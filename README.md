@@ -1,3 +1,7 @@
+# Aries Framework JavaScript
+
+Hyperledger Aries Framework JavaScript (Built using TypeScript) provides features for building SSI Agents / DIDComm services.
+
 # Project Description
 
 Main goal of this implementation is to run 2 independent Edge Agents (clients), running on mobile or desktop, which are able to make a connection and send basic messages to each other via Routing Agent with these restrictions:
