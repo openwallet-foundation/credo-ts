@@ -1,16 +1,38 @@
 {
-  "name": "aries-sdk-javascript",
+  "name": "aries-framework-javascript",
   "version": "1.0.0",
-  "main": "index.js",
   "license": "MIT",
+  "main": "build/lib/index.js",
+  "types": "build/lib/index.d.ts",
+  "files": [
+    "build/lib"
+  ],
   "scripts": {
-    "tsc": "tsc",
-    "lint": "eslint '**/*.ts'",
+    "compile": "tsc",
+    "lint": "eslint --ignore-path .gitignore '**/*.+(js|ts)'",
+    "prettier": "prettier --ignore-path .gitignore '**/*.+(js|json|ts)'",
+    "format": "yarn prettier --write",
+    "check-format": "yarn prettier --list-different",
     "test": "jest",
     "dev": "ts-node-dev --respawn --transpileOnly ./src/samples/agency.ts",
-    "prod": "rm -rf build && tsc && node ./build/samples/agency.js"
+    "prod": "rm -rf build && yarn compile && node ./build/samples/agency.js",
+    "validate": "npm-run-all --parallel lint compile",
+    "prepack": "rm -rf build && yarn compile"
+  },
+  "dependencies": {
+    "@types/express": "^4.17.0",
+    "await-poll": "^1.0.2",
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "dotenv": "^8.0.0",
+    "express": "^4.17.1",
+    "indy-sdk": "^1.10.1",
+    "lodash.isempty": "^4.4.0",
+    "node-fetch": "^2.6.0",
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.6",
     "@types/dotenv": "^6.1.1",
     "@types/jest": "^24.0.16",
     "@types/lodash.isempty": "^4.4.6",
@@ -21,22 +43,18 @@
     "eslint": "^6.0.1",
     "eslint-config-prettier": "^6.0.0",
     "eslint-plugin-prettier": "^3.1.0",
+    "husky": "^3.1.0",
     "jest": "^24.8.0",
+    "npm-run-all": "^4.1.5",
     "prettier": "^1.18.2",
     "rxjs": "^6.5.2",
     "ts-jest": "^24.0.2",
     "ts-node-dev": "^1.0.0-pre.40",
     "typescript": "^3.5.3"
   },
-  "dependencies": {
-    "@types/express": "^4.17.0",
-    "await-poll": "^1.0.2",
-    "body-parser": "^1.19.0",
-    "dotenv": "^8.0.0",
-    "express": "^4.17.1",
-    "indy-sdk": "^1.10.1",
-    "lodash.isempty": "^4.4.0",
-    "node-fetch": "^2.6.0",
-    "uuid": "^3.3.2"
+  "husky": {
+    "hooks": {
+      "pre-push": "yarn validate"
+    }
   }
 }

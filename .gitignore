@@ -2,3 +2,5 @@ node_modules
 build
 .vscode
 yarn-error.log
+
+aries-framework-javascript-*.tgz
