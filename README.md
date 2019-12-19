@@ -23,6 +23,20 @@ If handler returns an outbound message then method `sendMessage` **packs** the m
 yarn
 ```
 
+## Usage
+
+Currently we don't have published npm package yet, but you can use this library by packaging and adding as a file
+
+In this project folder, run:
+```
+npm pack
+```
+
+In a project, where you want to use this library as dependency, run:
+```
+yarn add file:PATH_TO_REPOSITORY_FOLDER/aries-framework-javascript/aries-framework-javascript-1.0.0.tgz
+```
+
 # Running tests
 
 ## Run e2e tests with in memory messaging
