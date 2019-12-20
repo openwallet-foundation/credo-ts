@@ -2,7 +2,7 @@
 
 AGENT="$1"
 
-if [ "$AGENT" = "agency01" ]; then
+if [ "$AGENT" = "agency01" ] || [ "$AGENT" = "alice" ]; then
   AGENT_URL=http://localhost
   AGENT_PORT=3001
   AGENT_LABEL=RoutingAgency01
@@ -10,7 +10,7 @@ if [ "$AGENT" = "agency01" ]; then
   WALLET_KEY=000000000000000000000000000Agency01
   PUBLIC_DID=DtWRdd6C5dN5vpcN6XRAvu
   PUBLIC_DID_SEED=00000000000000000000000Forward01
-elif [ "$AGENT" = "agency02" ]; then
+elif [ "$AGENT" = "agency02" ] || [ "$AGENT" = "bob" ]; then
   AGENT_URL=http://localhost
   AGENT_PORT=3002
   AGENT_LABEL=RoutingAgency02
