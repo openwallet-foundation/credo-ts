@@ -21,7 +21,7 @@ jobs:
           curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
           echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
           sudo apt-get -qq update
-          sudo apt-get -qq install -y libindy
+          sudo apt-get -qq install -y -q libindy
         displayName: 'install libindy'
 
       - script: |
@@ -37,6 +37,16 @@ jobs:
         displayName: 'npm pack aries'
 
       - script: |
+          set -ex
           yarn test -t "agents"
         displayName: 'yarn test, No networking'
+
+      - script: |
+          set -ex
+          ./run.sh alice >/dev/null 2>/dev/null &
+          sleep 10
+          ./run.sh bob >/dev/null 2>/dev/null &
+          sleep 10
+          yarn test --forceExit
+        displayName: 'yarn test, networking'
 
