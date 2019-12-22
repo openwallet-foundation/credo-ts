@@ -1,5 +1,7 @@
 # Aries Framework JavaScript
 
+[![Build Status](https://dev.azure.com/Hyperledger/Aries/_apis/build/status/hyperledger.aries-framework-javascript?branchName=master)](https://dev.azure.com/Hyperledger/Aries/_build/latest?definitionId=73&branchName=master)
+
 Hyperledger Aries Framework JavaScript (Built using TypeScript) provides features for building SSI Agents / DIDComm services.
 
 # Project Description
