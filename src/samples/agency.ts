@@ -1,4 +1,5 @@
 import express, { Express } from 'express';
+import cors from 'cors';
 import bodyParser from 'body-parser';
 import config from './config';
 import logger from '../lib/logger';
@@ -56,6 +57,7 @@ class StorageOutboundTransporter implements OutboundTransporter {
 const PORT = config.port;
 const app = express();
 
+app.use(cors());
 app.use(bodyParser.text());
 app.set('json spaces', 2);
 
