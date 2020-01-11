@@ -2,7 +2,7 @@
 // @ts-ignore
 import { poll } from 'await-poll';
 import { Agent, decodeInvitationFromUrl, InboundTransporter, OutboundTransporter } from '../../lib';
-import { Connection, WireMessage, OutboundPackage } from '../../lib/types';
+import { WireMessage, OutboundPackage } from '../../lib/types';
 import { get, post } from '../http';
 import { toBeConnectedWith } from '../../lib/testUtils';
 
@@ -72,20 +72,26 @@ describe('with agency', () => {
     // It can be maybe better to get connection ID instead of invitationUrl from the previous step and work with that
     const invitation = decodeInvitationFromUrl(invitationUrl);
     const aliceKeyAtAliceBob = invitation.recipientKeys[0];
+    const aliceConnectionAtAliceBob = aliceAgent.findConnectionByMyKey(aliceKeyAtAliceBob);
 
-    const aliceConnectionAtAliceBob = await poll(
-      () => aliceAgent.findConnectionByMyKey(aliceKeyAtAliceBob),
-      (connection: Connection) => connection.state !== 4,
-      200
-    );
+    if (!aliceConnectionAtAliceBob) {
+      throw new Error('Connection not found!');
+    }
+
+    await aliceConnectionAtAliceBob.isConnected();
     console.log('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob);
 
+    if (!aliceConnectionAtAliceBob.theirKey) {
+      throw new Error('Connection has not been initialized correctly!');
+    }
+
     const bobKeyAtBobAlice = aliceConnectionAtAliceBob.theirKey;
-    const bobConnectionAtBobAlice = await poll(
-      () => bobAgent.findConnectionByMyKey(bobKeyAtBobAlice),
-      (connection: Connection) => connection.state !== 4,
-      200
-    );
+    const bobConnectionAtBobAlice = bobAgent.findConnectionByMyKey(bobKeyAtBobAlice);
+    if (!bobConnectionAtBobAlice) {
+      throw new Error('Connection not found!');
+    }
+
+    await bobConnectionAtBobAlice.isConnected();
     console.log('bobConnectionAtAliceBob\n', bobConnectionAtBobAlice);
 
     expect(aliceConnectionAtAliceBob).toBeConnectedWith(bobConnectionAtBobAlice);
@@ -129,12 +135,11 @@ class PollingInboundTransporter implements InboundTransporter {
 
     this.pollMessages(agent, agencyUrl, agentKeyAtAgency);
 
-    const agentConnectionAtAgency = await poll(
-      () => agent.findConnectionByMyKey(agentKeyAtAgency),
-      (connection: Connection) => connection.state !== 4,
-      100
-    );
-
+    const agentConnectionAtAgency = agent.findConnectionByMyKey(agentKeyAtAgency);
+    if (!agentConnectionAtAgency) {
+      throw new Error('Connection not found!');
+    }
+    await agentConnectionAtAgency.isConnected();
     console.log('agentConnectionAtAgency\n', agentConnectionAtAgency);
 
     const { verkey: agencyVerkey } = JSON.parse(await get(`${agencyUrl}/`));

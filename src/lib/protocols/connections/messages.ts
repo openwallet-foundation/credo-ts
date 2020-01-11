@@ -1,5 +1,6 @@
 import uuid from 'uuid/v4';
-import { InvitationDetails, Connection } from '../../types';
+import { Connection } from './domain/Connection';
+import { InvitationDetails } from './domain/InvitationDetails';
 
 export enum MessageType {
   ConnectionInvitation = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/didexchange/1.0/invitation',

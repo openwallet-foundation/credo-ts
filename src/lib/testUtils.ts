@@ -1,4 +1,4 @@
-import { Connection } from './types';
+import { Connection } from './index';
 
 // Custom matchers which can be used to extend Jest matchers via extend, e. g. `expect.extend({ toBeConnectedWith })`.
 

@@ -1,4 +1,4 @@
-import { Connection, ConnectionState, InitConfig, Message, InboundMessage } from '../../types';
+import { InitConfig, Message, InboundMessage } from '../../types';
 import {
   createInvitationMessage,
   createConnectionRequestMessage,
@@ -7,6 +7,8 @@ import {
 } from './messages';
 import { Context } from '../../agent/Context';
 import { createOutboundMessage } from '../helpers';
+import { Connection } from './domain/Connection';
+import { ConnectionState } from './domain/ConnectionState';
 
 class ConnectionService {
   context: Context;
@@ -20,17 +22,15 @@ class ConnectionService {
     const connection = await this.createConnection();
     const invitationDetails = this.createInvitationDetails(this.context.config, connection);
     const invitation = await createInvitationMessage(invitationDetails);
-    connection.state = ConnectionState.INVITED;
     connection.invitation = invitation;
+    connection.updateState(ConnectionState.INVITED);
     return connection;
   }
 
   async acceptInvitation(invitation: Message) {
     const connection = await this.createConnection();
     const connectionRequest = createConnectionRequestMessage(connection, this.context.config.label);
-
-    connection.state = ConnectionState.REQUESTED;
-
+    connection.updateState(ConnectionState.REQUESTED);
     return createOutboundMessage(connection, connectionRequest, invitation);
   }
 
@@ -73,7 +73,7 @@ class ConnectionService {
 
     const signedConnectionResponse = await wallet.sign(connectionResponse, 'connection', connection.verkey);
 
-    connection.state = ConnectionState.RESPONDED;
+    connection.updateState(ConnectionState.RESPONDED);
 
     return createOutboundMessage(connection, signedConnectionResponse);
   }
@@ -117,7 +117,7 @@ class ConnectionService {
 
     const response = createAckMessage(message['@id']);
 
-    connection.state = ConnectionState.COMPLETE;
+    connection.updateState(ConnectionState.COMPLETE);
 
     return createOutboundMessage(connection, response);
   }
@@ -130,8 +130,8 @@ class ConnectionService {
       throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
     }
 
-    if (connection.state !== ConnectionState.COMPLETE) {
-      connection.state = ConnectionState.COMPLETE;
+    if (connection.getState() !== ConnectionState.COMPLETE) {
+      connection.updateState(ConnectionState.COMPLETE);
     }
 
     return null;
@@ -153,13 +153,13 @@ class ConnectionService {
       ],
     };
 
-    const connection = {
+    const connection = new Connection({
       did,
       didDoc: did_doc,
       verkey,
       state: ConnectionState.INIT,
       messages: [],
-    };
+    });
 
     this.connections.push(connection);
 

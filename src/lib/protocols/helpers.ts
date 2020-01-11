@@ -1,4 +1,5 @@
-import { Connection, Message } from '../types';
+import { Message } from '../types';
+import { Connection } from './connections/domain/Connection';
 
 export function createOutboundMessage(connection: Connection, payload: Message, invitation?: any) {
   if (invitation) {
