@@ -1,5 +1,6 @@
-import { Connection, InboundMessage } from '../../types';
+import { InboundMessage } from '../../types';
 import { createOutboundMessage } from '../helpers';
+import { Connection } from '../connections/domain/Connection';
 
 interface RouteUpdate {
   action: 'add' | 'remove';

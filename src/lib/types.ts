@@ -1,3 +1,5 @@
+import { Connection } from './protocols/connections/domain/Connection';
+
 type $FixMe = any;
 
 export type WireMessage = $FixMe;
@@ -11,45 +13,6 @@ export interface InitConfig {
   publicDid?: Did;
   publicDidSeed?: string;
   agencyUrl?: string;
-}
-
-export enum ConnectionState {
-  INIT,
-  INVITED,
-  REQUESTED,
-  RESPONDED,
-  COMPLETE,
-}
-
-export interface Connection {
-  did: Did;
-  didDoc: DidDoc;
-  verkey: Verkey;
-  theirDid?: Did;
-  theirKey?: Verkey;
-  theirDidDoc?: any;
-  invitation?: InvitationDetails;
-  state: ConnectionState;
-  endpoint?: string;
-  messages: any[];
-}
-
-export interface InvitationDetails {
-  label: string;
-  recipientKeys: Verkey[];
-  serviceEndpoint: string;
-  routingKeys: Verkey[];
-}
-
-export interface DidDoc {
-  '@context': string;
-  service: Service[];
-}
-
-interface Service {
-  serviceEndpoint: string;
-  recipientKeys: Verkey[];
-  routingKeys: Verkey[];
 }
 
 export interface Message {

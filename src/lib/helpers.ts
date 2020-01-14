@@ -1,4 +1,4 @@
-import { InvitationDetails } from './types';
+import { InvitationDetails } from './protocols/connections/domain/InvitationDetails';
 
 export function decodeInvitationFromUrl(invitationUrl: string) {
   const [, encodedInvitation] = invitationUrl.split('c_i=');

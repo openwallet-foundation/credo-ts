@@ -1,6 +1,7 @@
-import { InboundMessage, Connection } from '../../types';
+import { InboundMessage } from '../../types';
 import { createOutboundMessage } from '../helpers';
 import { createAckMessage } from '../connections/messages';
+import { Connection } from '../connections/domain/Connection';
 import { createBasicMessage } from './messages';
 
 class BasicMessageService {

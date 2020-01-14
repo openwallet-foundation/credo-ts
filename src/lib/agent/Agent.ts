@@ -1,7 +1,8 @@
 import logger from '../logger';
-import { Connection, InitConfig } from '../types';
+import { InitConfig } from '../types';
 import { encodeInvitationToUrl, decodeInvitationFromUrl } from '../helpers';
 import { IndyWallet } from '../wallet/IndyWallet';
+import { Connection } from '../protocols/connections/domain/Connection';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { MessageType as ConnectionsMessageType } from '../protocols/connections/messages';
 import { MessageType as BasicMessageMessageType } from '../protocols/basicmessage/messages';

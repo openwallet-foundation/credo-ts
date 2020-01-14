@@ -4,7 +4,7 @@ import { poll } from 'await-poll';
 import { Subject } from 'rxjs';
 import { Agent, decodeInvitationFromUrl, InboundTransporter, OutboundTransporter } from '..';
 import { toBeConnectedWith } from '../testUtils';
-import { Connection, OutboundPackage, WireMessage } from '../types';
+import { OutboundPackage, WireMessage } from '../types';
 
 jest.setTimeout(10000);
 
@@ -50,19 +50,25 @@ describe('agents', () => {
     const invitation = decodeInvitationFromUrl(invitationUrl);
     const aliceKeyAtAliceBob = invitation.recipientKeys[0];
 
-    const aliceConnectionAtAliceBob = await poll(
-      () => aliceAgent.findConnectionByMyKey(aliceKeyAtAliceBob),
-      (connection: Connection) => connection.state !== 4,
-      100
-    );
+    const aliceConnectionAtAliceBob = aliceAgent.findConnectionByMyKey(aliceKeyAtAliceBob);
+    if (!aliceConnectionAtAliceBob) {
+      throw new Error('Connection not found!');
+    }
+
+    await aliceConnectionAtAliceBob.isConnected();
     console.log('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob);
 
+    if (!aliceConnectionAtAliceBob.theirKey) {
+      throw new Error('Connection has not been initialized correctly!');
+    }
+
     const bobKeyAtBobAlice = aliceConnectionAtAliceBob.theirKey;
-    const bobConnectionAtBobAlice = await poll(
-      () => bobAgent.findConnectionByMyKey(bobKeyAtBobAlice),
-      (connection: Connection) => connection.state !== 4,
-      100
-    );
+    const bobConnectionAtBobAlice = bobAgent.findConnectionByMyKey(bobKeyAtBobAlice);
+    if (!bobConnectionAtBobAlice) {
+      throw new Error('Connection not found!');
+    }
+
+    await bobConnectionAtBobAlice.isConnected();
     console.log('bobConnectionAtAliceBob\n', bobConnectionAtBobAlice);
 
     expect(aliceConnectionAtAliceBob).toBeConnectedWith(bobConnectionAtBobAlice);
