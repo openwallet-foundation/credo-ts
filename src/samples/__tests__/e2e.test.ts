@@ -2,6 +2,8 @@
 // @ts-ignore
 import { poll } from 'await-poll';
 import { Agent, decodeInvitationFromUrl, InboundTransporter, OutboundTransporter, Connection } from '../../lib';
+import { IndyWallet } from '../../lib/wallet/IndyWallet';
+
 import { WireMessage, OutboundPackage } from '../../lib/types';
 import { get, post } from '../http';
 import { toBeConnectedWith } from '../../lib/testUtils';
@@ -34,10 +36,12 @@ describe('with agency', () => {
     const bobAgentSender = new HttpOutboundTransporter();
     const bobAgentReceiver = new PollingInboundTransporter();
 
-    aliceAgent = new Agent(aliceConfig, aliceAgentReceiver, aliceAgentSender);
+    const aliceWallet = new IndyWallet({ id: aliceConfig.walletName }, { key: aliceConfig.walletKey })
+    aliceAgent = new Agent(aliceConfig, aliceAgentReceiver, aliceAgentSender, aliceWallet);
     await aliceAgent.init();
 
-    bobAgent = new Agent(bobConfig, bobAgentReceiver, bobAgentSender);
+    const bobWallet = new IndyWallet({ id: bobConfig.walletName }, { key: bobConfig.walletKey })
+    bobAgent = new Agent(bobConfig, bobAgentReceiver, bobAgentSender, bobWallet);
     await bobAgent.init();
 
     const aliceInbound = aliceAgent.getInboundConnection();

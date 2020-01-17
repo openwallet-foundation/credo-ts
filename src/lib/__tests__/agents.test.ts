@@ -5,6 +5,7 @@ import { Subject } from 'rxjs';
 import { Agent, decodeInvitationFromUrl, InboundTransporter, OutboundTransporter } from '..';
 import { toBeConnectedWith } from '../testUtils';
 import { OutboundPackage, WireMessage } from '../types';
+import { IndyWallet } from '../wallet/IndyWallet';
 
 jest.setTimeout(10000);
 
@@ -36,10 +37,12 @@ describe('agents', () => {
     const bobAgentInbound = new SubjectInboundTransporter(bobMessages);
     const bobAgentOutbound = new SubjectOutboundTransporter(aliceMessages);
 
-    aliceAgent = new Agent(aliceConfig, aliceAgentInbound, aliceAgentOutbound);
+    const aliceWallet = new IndyWallet({ id: aliceConfig.walletName }, { key: aliceConfig.walletKey })
+    aliceAgent = new Agent(aliceConfig, aliceAgentInbound, aliceAgentOutbound, aliceWallet);
     await aliceAgent.init();
 
-    bobAgent = new Agent(bobConfig, bobAgentInbound, bobAgentOutbound);
+    const bobWallet = new IndyWallet({ id: bobConfig.walletName }, { key: bobConfig.walletKey })
+    bobAgent = new Agent(bobConfig, bobAgentInbound, bobAgentOutbound, bobWallet);
     await bobAgent.init();
 
     const invitationUrl = await aliceAgent.createInvitationUrl();

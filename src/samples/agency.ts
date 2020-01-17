@@ -5,6 +5,7 @@ import config from './config';
 import logger from '../lib/logger';
 import { Agent, InboundTransporter, OutboundTransporter } from '../lib';
 import { OutboundPackage } from '../lib/types';
+import { IndyWallet } from '../lib/wallet/IndyWallet';
 
 class HttpInboundTransporter implements InboundTransporter {
   app: Express;
@@ -63,7 +64,8 @@ app.set('json spaces', 2);
 
 const messageSender = new StorageOutboundTransporter();
 const messageReceiver = new HttpInboundTransporter(app);
-const agent = new Agent(config, messageReceiver, messageSender);
+const wallet = new IndyWallet({ id: config.walletName }, { key: config.walletKey })
+const agent = new Agent(config, messageReceiver, messageSender, wallet);
 
 app.get('/', async (req, res) => {
   const agentDid = agent.getPublicDid();
