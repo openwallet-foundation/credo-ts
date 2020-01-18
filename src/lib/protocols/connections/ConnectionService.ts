@@ -35,7 +35,6 @@ class ConnectionService {
   }
 
   async acceptRequest(inboundMessage: InboundMessage) {
-    // TODO Temporarily get context from service until this code will be move into connection service itself
     const { wallet } = this.context;
     const { message, recipient_verkey } = inboundMessage;
     const connection = this.findByVerkey(recipient_verkey);
@@ -48,10 +47,8 @@ class ConnectionService {
       throw new Error('Invalid message');
     }
 
-    const connectionRequest = message;
-
-    connection.theirDid = connectionRequest.connection.did;
-    connection.theirDidDoc = connectionRequest.connection.did_doc;
+    const requestConnection = message.connection;
+    connection.updateDidExchangeConnection(requestConnection);
 
     if (!connection.theirKey) {
       throw new Error('Missing verkey in connection request!');
@@ -67,9 +64,13 @@ class ConnectionService {
   }
 
   async acceptResponse(inboundMessage: InboundMessage) {
-    // TODO Temporarily get context from service until this code will be move into connection service itself
     const { wallet } = this.context;
     const { message, recipient_verkey, sender_verkey } = inboundMessage;
+    const connection = this.findByVerkey(recipient_verkey);
+
+    if (!connection) {
+      throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
+    }
 
     if (!message['connection~sig']) {
       throw new Error('Invalid message');
@@ -77,25 +78,18 @@ class ConnectionService {
 
     const connectionSignature = message['connection~sig'];
     const signerVerkey = connectionSignature.signers;
-    const data = Buffer.from(connectionSignature.sig_data, 'base64');
+    const signedData = Buffer.from(connectionSignature.sig_data, 'base64');
     const signature = Buffer.from(connectionSignature.signature, 'base64');
 
     // check signature
-    const valid = await wallet.verify(signerVerkey, data, signature);
+    const valid = await wallet.verify(signerVerkey, signedData, signature);
 
     if (!valid) {
       throw new Error('Signature is not valid!');
     }
 
-    const connection = this.findByVerkey(recipient_verkey);
-
-    if (!connection) {
-      throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
-    }
-
-    const connectionReponse = JSON.parse(data.toString('utf-8'));
-    connection.theirDid = connectionReponse.did;
-    connection.theirDidDoc = connectionReponse.did_doc;
+    const responseConnection = JSON.parse(signedData.toString('utf-8'));
+    connection.updateDidExchangeConnection(responseConnection);
 
     if (!connection.theirKey) {
       throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`);
