@@ -37,21 +37,11 @@ class ConnectionService {
   async acceptRequest(inboundMessage: InboundMessage) {
     // TODO Temporarily get context from service until this code will be move into connection service itself
     const { wallet } = this.context;
-    const { message, recipient_verkey, sender_verkey } = inboundMessage;
+    const { message, recipient_verkey } = inboundMessage;
     const connection = this.findByVerkey(recipient_verkey);
 
     if (!connection) {
       throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
-    }
-
-    // TODO I have 2 questions
-    // 1. I don't know whether following check is necessary.
-    // 2. I don't know whether to use `connection.theirKey` or `sender_verkey` for outbound message.
-    //
-    // This problem in other handlers is handled just by checking existance of attribute `connection.theirKey`
-    // and omitting `sender_key` from any usage.
-    if (sender_verkey !== connection.theirKey) {
-      throw new Error('Inbound message `sender_key` attribute is different from connection.theirKey');
     }
 
     if (!message.connection) {
@@ -62,8 +52,6 @@ class ConnectionService {
 
     connection.theirDid = connectionRequest.connection.did;
     connection.theirDidDoc = connectionRequest.connection.did_doc;
-    // Keep also theirKey for debug reasons
-    connection.theirKey = connection.theirDidDoc.service[0].recipientKeys[0];
 
     if (!connection.theirKey) {
       throw new Error('Missing verkey in connection request!');
@@ -108,12 +96,12 @@ class ConnectionService {
     const connectionReponse = JSON.parse(data.toString('utf-8'));
     connection.theirDid = connectionReponse.did;
     connection.theirDidDoc = connectionReponse.did_doc;
-    // Keep also theirKey for debug reasons
-    connection.theirKey = connection.theirDidDoc.service[0].recipientKeys[0];
 
     if (!connection.theirKey) {
       throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`);
     }
+
+    validateSenderKey(connection, sender_verkey);
 
     const response = createAckMessage(message['@id']);
 
@@ -123,12 +111,14 @@ class ConnectionService {
   }
 
   async acceptAck(inboundMessage: InboundMessage) {
-    const { message, recipient_verkey, sender_verkey } = inboundMessage;
+    const { recipient_verkey, sender_verkey } = inboundMessage;
     const connection = this.findByVerkey(recipient_verkey);
 
     if (!connection) {
       throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
     }
+
+    validateSenderKey(connection, sender_verkey);
 
     if (connection.getState() !== ConnectionState.COMPLETE) {
       connection.updateState(ConnectionState.COMPLETE);
@@ -178,11 +168,6 @@ class ConnectionService {
     return this.connections.find(connection => connection.theirKey === verkey);
   }
 
-  // TODO Temporarily get context from service until this code will be move into connection service itself
-  getContext() {
-    return this.context;
-  }
-
   private createInvitationDetails(config: InitConfig, connection: Connection) {
     const { didDoc } = connection;
     return {
@@ -202,6 +187,22 @@ class ConnectionService {
   private getRoutingKeys() {
     const verkey = this.context.inboundConnection && this.context.inboundConnection.verkey;
     return verkey ? [verkey] : [];
+  }
+}
+
+function validateSenderKey(connection: Connection, senderKey: Verkey) {
+  // TODO I have 2 questions
+
+  // 1. I don't know whether following check is necessary. I guess it is, but we should validate this condition
+  // for every other protocol. I also don't validate it `acceptRequest` because there is no `senderVk` in invitation
+  // (which could be also a bug and against protocol starndard)
+
+  // 2. I don't know whether to use `connection.theirKey` or `sender_verkey` for outbound message.
+
+  if (connection.theirKey !== senderKey) {
+    throw new Error(
+      `Inbound message 'sender_key' ${senderKey} is different from connection.theirKey ${connection.theirKey}`
+    );
   }
 }
 

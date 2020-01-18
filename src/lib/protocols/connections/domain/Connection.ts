@@ -9,7 +9,7 @@ interface ConnectionProps {
   verkey: Verkey;
   theirDid?: Did;
   theirKey?: Verkey;
-  theirDidDoc?: any;
+  theirDidDoc?: DidDoc;
   invitation?: InvitationDetails;
   state: ConnectionState;
   endpoint?: string;
@@ -21,8 +21,7 @@ export class Connection extends EventEmitter {
   didDoc: DidDoc;
   verkey: Verkey;
   theirDid?: Did;
-  theirKey?: Verkey;
-  theirDidDoc?: any;
+  theirDidDoc?: DidDoc;
   invitation?: InvitationDetails;
   endpoint?: string;
   messages: any[];
@@ -36,6 +35,13 @@ export class Connection extends EventEmitter {
     this.verkey = props.verkey;
     this.state = props.state;
     this.messages = props.messages;
+  }
+
+  get theirKey() {
+    if (!this.theirDidDoc) {
+      return null;
+    }
+    return this.theirDidDoc.service[0].recipientKeys[0];
   }
 
   getState() {
