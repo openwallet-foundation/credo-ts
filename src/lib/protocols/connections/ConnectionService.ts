@@ -51,15 +51,12 @@ class ConnectionService {
     connection.updateDidExchangeConnection(requestConnection);
 
     if (!connection.theirKey) {
-      throw new Error('Missing verkey in connection request!');
+      throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`);
     }
 
     const connectionResponse = createConnectionResponseMessage(connection, message['@id']);
-
     const signedConnectionResponse = await wallet.sign(connectionResponse, 'connection', connection.verkey);
-
     connection.updateState(ConnectionState.RESPONDED);
-
     return createOutboundMessage(connection, signedConnectionResponse);
   }
 
@@ -76,20 +73,8 @@ class ConnectionService {
       throw new Error('Invalid message');
     }
 
-    const connectionSignature = message['connection~sig'];
-    const signerVerkey = connectionSignature.signers;
-    const signedData = Buffer.from(connectionSignature.sig_data, 'base64');
-    const signature = Buffer.from(connectionSignature.signature, 'base64');
-
-    // check signature
-    const valid = await wallet.verify(signerVerkey, signedData, signature);
-
-    if (!valid) {
-      throw new Error('Signature is not valid!');
-    }
-
-    const responseConnection = JSON.parse(signedData.toString('utf-8'));
-    connection.updateDidExchangeConnection(responseConnection);
+    const originalMessage = await wallet.verify(message, 'connection');
+    connection.updateDidExchangeConnection(originalMessage.connection);
 
     if (!connection.theirKey) {
       throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`);
@@ -98,9 +83,7 @@ class ConnectionService {
     validateSenderKey(connection, sender_verkey);
 
     const response = createAckMessage(message['@id']);
-
     connection.updateState(ConnectionState.COMPLETE);
-
     return createOutboundMessage(connection, response);
   }
 

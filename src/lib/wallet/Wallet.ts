@@ -10,7 +10,7 @@ export interface Wallet {
   pack(payload: {}, recipientKeys: Verkey[], senderVk: Verkey | null): Promise<JsonWebKey>;
   unpack(messagePackage: JsonWebKey): Promise<InboundMessage>;
   sign(message: Message, attribute: string, verkey: Verkey): Promise<Message>;
-  verify(signerVerkey: Verkey, data: Buffer, signature: Buffer): Promise<boolean>;
+  verify(message: Message, attribute: string): Promise<Message>;
 }
 
 export interface DidInfo {
