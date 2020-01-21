@@ -1,16 +1,21 @@
 import indy from 'indy-sdk';
 import logger from '../logger';
-import { InboundMessage, Message } from '../types';
 import { sign, verify } from '../decorators';
+import { InboundMessage, Message, TYPES } from '../types';
 import { Wallet, WalletConfig, WalletCredentials, DidInfo, DidConfig } from './Wallet';
+import { injectable, inject } from 'inversify';
 
+@injectable()
 export class IndyWallet implements Wallet {
   wh?: number;
   walletConfig: WalletConfig;
   walletCredentials: WalletCredentials;
   publicDid: DidInfo | {} = {};
 
-  constructor(walletConfig: WalletConfig, walletCredentials: WalletCredentials) {
+  constructor(
+    @inject(TYPES.WalletConfig) walletConfig: WalletConfig,
+    @inject(TYPES.WalletCredentials) walletCredentials: WalletCredentials
+  ) {
     this.walletConfig = walletConfig;
     this.walletCredentials = walletCredentials;
   }

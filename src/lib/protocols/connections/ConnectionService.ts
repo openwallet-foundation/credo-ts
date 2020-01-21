@@ -1,4 +1,4 @@
-import { InitConfig, Message, InboundMessage } from '../../types';
+import { InitConfig, Message, InboundMessage, TYPES } from '../../types';
 import {
   createInvitationMessage,
   createConnectionRequestMessage,
@@ -9,12 +9,14 @@ import { Context } from '../../agent/Context';
 import { createOutboundMessage } from '../helpers';
 import { Connection } from './domain/Connection';
 import { ConnectionState } from './domain/ConnectionState';
+import { injectable, inject } from 'inversify';
 
+@injectable()
 class ConnectionService {
   context: Context;
   connections: Connection[] = [];
 
-  constructor(context: Context) {
+  constructor(@inject(TYPES.Context) context: Context) {
     this.context = context;
   }
 

@@ -46,3 +46,38 @@ export interface InboundConnection {
   verkey: Verkey;
   connection: Connection;
 }
+
+const TYPES = {
+  Agent: Symbol.for('Agent'),
+  Context: Symbol.for('Context'),
+
+  InitConfig: Symbol.for('InitConfig'),
+  InboundConnection: Symbol.for('InboundConnection'),
+  MessageSender: Symbol.for('MessageSender'),
+  Dispatcher: Symbol.for('Dispatcher'),
+  InboundTransporter: Symbol.for('InboundTransporter'),
+  OutboundTransporter: Symbol.for('OutboundTransporter'),
+
+  Wallet: Symbol.for('Wallet'),
+  WalletConfig: Symbol.for('WalletConfig'),
+  WalletCredentials: Symbol.for('WalletCredentials'),
+
+  Handlers: Symbol.for('Handlers'),
+
+  InvitationHandler: Symbol.for('InvitationHandler'),
+  ConnectionRequestHandler: Symbol.for('ConnectionRequestHandler'),
+  ConnectionResponseHandler: Symbol.for('ConnectionResponseHandler'),
+  AckMessageHandler: Symbol.for('AckMessageHandler'),
+  BasicMessageHandler: Symbol.for('BasicMessageHandler'),
+  RouteUpdateHandler: Symbol.for('RouteUpdateHandler'),
+  ForwardHandler: Symbol.for('ForwardHandler'),
+
+  ConnectionService: Symbol.for('ConnectionService'),
+  BasicMessageService: Symbol.for('BasicMessageService'),
+  RoutingService: Symbol.for('RoutingService'),
+  ProviderRoutingService: Symbol.for('ProviderRoutingService'),
+  ConsumerRoutingService: Symbol.for('ConsumerRoutingService'),
+  MessageReceiver: Symbol.for('MessageReceiver'),
+};
+
+export { TYPES };

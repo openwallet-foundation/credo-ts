@@ -1,13 +1,18 @@
-import { InboundMessage } from '../types';
+import { InboundMessage, TYPES } from '../types';
 import { Handler } from './Handler';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { BasicMessageService } from '../protocols/basicmessage/BasicMessageService';
+import { injectable, inject } from 'inversify';
 
+@injectable()
 export class BasicMessageHandler implements Handler {
   connectionService: ConnectionService;
   basicMessageService: BasicMessageService;
 
-  constructor(connectionService: ConnectionService, basicMessageService: BasicMessageService) {
+  constructor(
+    @inject(TYPES.ConnectionService) connectionService: ConnectionService,
+    @inject(TYPES.BasicMessageService) basicMessageService: BasicMessageService
+  ) {
     this.connectionService = connectionService;
     this.basicMessageService = basicMessageService;
   }

@@ -4,13 +4,29 @@ import bodyParser from 'body-parser';
 import config from './config';
 import logger from '../lib/logger';
 import { Agent, InboundTransporter, OutboundTransporter } from '../lib';
-import { OutboundPackage } from '../lib/types';
+import { OutboundPackage, TYPES, InitConfig } from '../lib/types';
 import { IndyWallet } from '../lib/wallet/IndyWallet';
+import { injectable, inject } from 'inversify';
+import { container } from '../lib/inversify.config';
+import { WalletConfig, WalletCredentials, Wallet } from '../lib/wallet/Wallet';
+import { MessageSender } from '../lib/agent/MessageSender';
+import { Context } from '../lib/agent/Context';
+import { ContextImpl } from '../lib/agent/Agent';
+import { ConnectionService } from '../lib/protocols/connections/ConnectionService';
+import { BasicMessageService } from '../lib/protocols/basicmessage/BasicMessageService';
+import { ProviderRoutingService } from '../lib/protocols/routing/ProviderRoutingService';
+import { ConsumerRoutingService } from '../lib/protocols/routing/ConsumerRoutingService';
+import { MessageReceiver } from '../lib/agent/MessageReceiver';
+import ContainerHelper from '../lib/agent/ContainerHelper';
+import { Dispatcher } from '../lib/agent/Dispatcher';
 
+const TYPE_EXPRESS = Symbol.for('Express');
+
+@injectable()
 class HttpInboundTransporter implements InboundTransporter {
   app: Express;
 
-  constructor(app: Express) {
+  constructor(@inject(TYPE_EXPRESS) app: Express) {
     this.app = app;
   }
 
@@ -24,6 +40,7 @@ class HttpInboundTransporter implements InboundTransporter {
   }
 }
 
+@injectable()
 class StorageOutboundTransporter implements OutboundTransporter {
   messages: { [key: string]: any } = {};
 
@@ -56,16 +73,51 @@ class StorageOutboundTransporter implements OutboundTransporter {
 }
 
 const PORT = config.port;
-const app = express();
+container.bind<Express>(TYPE_EXPRESS).toConstantValue(express());
+const app = container.get<Express>(TYPE_EXPRESS);
 
 app.use(cors());
 app.use(bodyParser.text());
 app.set('json spaces', 2);
+container
+  .bind<OutboundTransporter>(TYPES.OutboundTransporter)
+  .to(StorageOutboundTransporter)
+  .inSingletonScope();
+container.bind<InboundTransporter>(TYPES.InboundTransporter).to(HttpInboundTransporter);
+container.bind<InitConfig>(TYPES.InitConfig).toConstantValue(config);
+container.bind<WalletConfig>(TYPES.WalletConfig).toConstantValue({ id: config.walletName });
+container.bind<WalletCredentials>(TYPES.WalletCredentials).toConstantValue({ key: config.walletKey });
+container
+  .bind<Wallet>(TYPES.Wallet)
+  .to(IndyWallet)
+  .inSingletonScope();
+container.bind<MessageSender>(TYPES.MessageSender).to(MessageSender);
+container
+  .bind<Context>(TYPES.Context)
+  .to(ContextImpl)
+  .inSingletonScope();
+container
+  .bind<ConnectionService>(TYPES.ConnectionService)
+  .to(ConnectionService)
+  .inSingletonScope();
+container.bind<BasicMessageService>(TYPES.BasicMessageService).to(BasicMessageService);
+container
+  .bind<ProviderRoutingService>(TYPES.ProviderRoutingService)
+  .to(ProviderRoutingService)
+  .inSingletonScope();
+container.bind<ConsumerRoutingService>(TYPES.ConsumerRoutingService).to(ConsumerRoutingService);
+container.bind<MessageReceiver>(TYPES.MessageReceiver).to(MessageReceiver);
+ContainerHelper.registerDefaultHandlers(container);
+container.bind<Dispatcher>(TYPES.Dispatcher).to(Dispatcher);
 
-const messageSender = new StorageOutboundTransporter();
-const messageReceiver = new HttpInboundTransporter(app);
-const wallet = new IndyWallet({ id: config.walletName }, { key: config.walletKey })
-const agent = new Agent(config, messageReceiver, messageSender, wallet);
+container
+  .bind<Agent>(TYPES.Agent)
+  .to(Agent)
+  .inSingletonScope();
+
+const agent = container.get<Agent>(TYPES.Agent);
+const messageSender = container.get<StorageOutboundTransporter>(TYPES.OutboundTransporter);
+const messageReceiver = container.get<HttpInboundTransporter>(TYPES.InboundTransporter);
 
 app.get('/', async (req, res) => {
   const agentDid = agent.getPublicDid();

@@ -1,13 +1,18 @@
-import { InboundMessage } from '../types';
+import { InboundMessage, TYPES } from '../types';
 import { Handler } from './Handler';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
+import { inject, injectable } from 'inversify';
 
+@injectable()
 export class RouteUpdateHandler implements Handler {
   connectionService: ConnectionService;
   routingService: ProviderRoutingService;
 
-  constructor(connectionService: ConnectionService, routingService: ProviderRoutingService) {
+  constructor(
+    @inject(TYPES.ConnectionService) connectionService: ConnectionService,
+    @inject(TYPES.ProviderRoutingService) routingService: ProviderRoutingService
+  ) {
     this.connectionService = connectionService;
     this.routingService = routingService;
   }

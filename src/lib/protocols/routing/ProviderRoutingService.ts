@@ -1,12 +1,14 @@
 import { InboundMessage } from '../../types';
 import { createOutboundMessage } from '../helpers';
 import { Connection } from '../connections/domain/Connection';
+import { injectable } from 'inversify';
 
 interface RouteUpdate {
   action: 'add' | 'remove';
   recipient_key: Verkey;
 }
 
+@injectable()
 class ProviderRoutingService {
   routingTable: { [recipientKey: string]: Connection } = {};
 

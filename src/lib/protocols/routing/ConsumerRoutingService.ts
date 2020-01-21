@@ -2,11 +2,14 @@ import logger from '../../logger';
 import { createRouteUpdateMessage } from './messages';
 import { createOutboundMessage } from '../helpers';
 import { Context } from '../../agent/Context';
+import { injectable, inject } from 'inversify';
+import { TYPES } from '../../types';
 
+@injectable()
 class ConsumerRoutingService {
   context: Context;
 
-  constructor(context: Context) {
+  constructor(@inject(TYPES.Context) context: Context) {
     this.context = context;
   }
 

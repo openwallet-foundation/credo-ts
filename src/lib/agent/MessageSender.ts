@@ -1,14 +1,19 @@
 import logger from '../logger';
 import { Wallet } from '../wallet/Wallet';
-import { OutboundMessage } from '../types';
+import { OutboundMessage, TYPES } from '../types';
 import { createForwardMessage } from '../protocols/routing/messages';
 import { OutboundTransporter } from '../transport/OutboundTransporter';
+import { inject, injectable } from 'inversify';
 
+@injectable()
 class MessageSender {
   wallet: Wallet;
   outboundTransporter: OutboundTransporter;
 
-  constructor(wallet: Wallet, outboundTransporter: OutboundTransporter) {
+  constructor(
+    @inject(TYPES.Wallet) wallet: Wallet,
+    @inject(TYPES.OutboundTransporter) outboundTransporter: OutboundTransporter
+  ) {
     this.wallet = wallet;
     this.outboundTransporter = outboundTransporter;
   }

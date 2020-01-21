@@ -1,11 +1,13 @@
-import { InboundMessage } from '../types';
+import { InboundMessage, TYPES } from '../types';
 import { Handler } from './Handler';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
+import { inject, injectable } from 'inversify';
 
+@injectable()
 export class AckMessageHandler implements Handler {
   connectionService: ConnectionService;
 
-  constructor(connectionService: ConnectionService) {
+  constructor(@inject(TYPES.ConnectionService) connectionService: ConnectionService) {
     this.connectionService = connectionService;
   }
 

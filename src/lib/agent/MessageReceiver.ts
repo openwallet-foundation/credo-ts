@@ -1,14 +1,20 @@
 import logger from '../logger';
 import { Dispatcher } from './Dispatcher';
 import { Wallet } from '../wallet/Wallet';
-import { InitConfig } from '../types';
+import { InitConfig, TYPES } from '../types';
+import { injectable, inject } from 'inversify';
 
+@injectable()
 class MessageReceiver {
   config: InitConfig;
   wallet: Wallet;
   dispatcher: Dispatcher;
 
-  constructor(config: InitConfig, wallet: Wallet, dispatcher: Dispatcher) {
+  constructor(
+    @inject(TYPES.InitConfig) config: InitConfig,
+    @inject(TYPES.Wallet) wallet: Wallet,
+    @inject(TYPES.Dispatcher) dispatcher: Dispatcher
+  ) {
     this.config = config;
     this.wallet = wallet;
     this.dispatcher = dispatcher;

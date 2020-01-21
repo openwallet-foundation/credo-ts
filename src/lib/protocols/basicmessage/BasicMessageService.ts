@@ -3,7 +3,9 @@ import { createOutboundMessage } from '../helpers';
 import { createAckMessage } from '../connections/messages';
 import { Connection } from '../connections/domain/Connection';
 import { createBasicMessage } from './messages';
+import { injectable } from 'inversify';
 
+@injectable()
 class BasicMessageService {
   send(message: string, connection: Connection) {
     const basicMessage = createBasicMessage(message);

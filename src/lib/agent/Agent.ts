@@ -1,30 +1,22 @@
+import { injectable, inject, optional } from 'inversify';
+import 'reflect-metadata';
 import logger from '../logger';
-import { InitConfig } from '../types';
+import { InitConfig, InboundConnection, TYPES } from '../types';
 import { encodeInvitationToUrl, decodeInvitationFromUrl } from '../helpers';
 import { Connection } from '../protocols/connections/domain/Connection';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
-import { MessageType as ConnectionsMessageType } from '../protocols/connections/messages';
-import { MessageType as BasicMessageMessageType } from '../protocols/basicmessage/messages';
-import { MessageType as RoutingMessageType } from '../protocols/routing/messages';
 import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
 import { BasicMessageService } from '../protocols/basicmessage/BasicMessageService';
 import { ConsumerRoutingService } from '../protocols/routing/ConsumerRoutingService';
 import { Context } from './Context';
 import { MessageReceiver } from './MessageReceiver';
-import { Dispatcher } from './Dispatcher';
 import { MessageSender } from './MessageSender';
 import { InboundTransporter } from '../transport/InboundTransporter';
 import { OutboundTransporter } from '../transport/OutboundTransporter';
-import { InvitationHandler } from '../handlers/InvitationHandler';
-import { ConnectionRequestHandler } from '../handlers/ConnectionRequestHandler';
-import { ConnectionResponseHandler } from '../handlers/ConnectionResponseHandler';
-import { AckMessageHandler } from '../handlers/AckMessageHandler';
-import { BasicMessageHandler } from '../handlers/BasicMessageHandler';
-import { RouteUpdateHandler } from '../handlers/RouteUpdateHandler';
-import { ForwardHandler } from '../handlers/ForwardHandler';
 import { Handler } from '../handlers/Handler';
 import { Wallet } from '../wallet/Wallet';
 
+@injectable()
 export class Agent {
   inboundTransporter: InboundTransporter;
   context: Context;
@@ -35,28 +27,30 @@ export class Agent {
   consumerRoutingService: ConsumerRoutingService;
   handlers: { [key: string]: Handler } = {};
 
-  constructor(config: InitConfig, inboundTransporter: InboundTransporter, outboundTransporter: OutboundTransporter, wallet : Wallet) {
+  constructor(
+    @inject(TYPES.InitConfig) config: InitConfig,
+    @inject(TYPES.InboundTransporter) inboundTransporter: InboundTransporter,
+    @inject(TYPES.OutboundTransporter) outboundTransporter: OutboundTransporter,
+    @inject(TYPES.Wallet) wallet: Wallet,
+    @inject(TYPES.Context) context: Context,
+    @inject(TYPES.ConnectionService) connectionService: ConnectionService,
+    @inject(TYPES.BasicMessageService) basicMessageService: BasicMessageService,
+    @inject(TYPES.ProviderRoutingService) providerRoutingService: ProviderRoutingService,
+    @inject(TYPES.ConsumerRoutingService) consumerRoutingService: ConsumerRoutingService,
+    @inject(TYPES.MessageReceiver) messageReceiver: MessageReceiver,
+    @inject(TYPES.Handlers) handlers: { [key: string]: Handler }
+  ) {
     logger.logJson('Creating agent with config', config);
-
-    const messageSender = new MessageSender(wallet, outboundTransporter);
 
     this.inboundTransporter = inboundTransporter;
 
-    this.context = {
-      config,
-      wallet,
-      messageSender,
-    };
-
-    this.connectionService = new ConnectionService(this.context);
-    this.basicMessageService = new BasicMessageService();
-    this.providerRoutingService = new ProviderRoutingService();
-    this.consumerRoutingService = new ConsumerRoutingService(this.context);
-
-    this.registerHandlers();
-
-    const dispatcher = new Dispatcher(this.handlers, messageSender);
-    this.messageReceiver = new MessageReceiver(config, wallet, dispatcher);
+    this.context = context;
+    this.connectionService = connectionService;
+    this.basicMessageService = basicMessageService;
+    this.providerRoutingService = providerRoutingService;
+    this.consumerRoutingService = consumerRoutingService;
+    this.messageReceiver = messageReceiver;
+    this.handlers = handlers;
   }
 
   async init() {
@@ -139,24 +133,24 @@ export class Agent {
   getInboundConnection() {
     return this.context.inboundConnection;
   }
+}
 
-  private registerHandlers() {
-    const handlers = {
-      [ConnectionsMessageType.ConnectionInvitation]: new InvitationHandler(
-        this.connectionService,
-        this.consumerRoutingService
-      ),
-      [ConnectionsMessageType.ConnectionRequest]: new ConnectionRequestHandler(this.connectionService),
-      [ConnectionsMessageType.ConnectionResposne]: new ConnectionResponseHandler(this.connectionService),
-      [ConnectionsMessageType.Ack]: new AckMessageHandler(this.connectionService),
-      [BasicMessageMessageType.BasicMessage]: new BasicMessageHandler(this.connectionService, this.basicMessageService),
-      [RoutingMessageType.RouteUpdateMessage]: new RouteUpdateHandler(
-        this.connectionService,
-        this.providerRoutingService
-      ),
-      [RoutingMessageType.ForwardMessage]: new ForwardHandler(this.providerRoutingService),
-    };
+@injectable()
+export class ContextImpl implements Context {
+  config: InitConfig;
+  wallet: Wallet;
+  inboundConnection?: InboundConnection | undefined;
+  messageSender: MessageSender;
 
-    this.handlers = handlers;
+  public constructor(
+    @inject(TYPES.InitConfig) config: InitConfig,
+    @inject(TYPES.Wallet) wallet: Wallet,
+    @inject(TYPES.InboundConnection) @optional() inboundConnection: InboundConnection,
+    @inject(TYPES.MessageSender) messageSender: MessageSender
+  ) {
+    this.config = config;
+    this.wallet = wallet;
+    this.inboundConnection = inboundConnection;
+    this.messageSender = messageSender;
   }
 }

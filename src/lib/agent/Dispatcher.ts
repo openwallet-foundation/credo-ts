@@ -1,12 +1,17 @@
-import { OutboundMessage } from '../types';
+import { OutboundMessage, TYPES } from '../types';
 import { Handler } from '../handlers/Handler';
 import { MessageSender } from './MessageSender';
+import { injectable, inject, optional } from 'inversify';
 
+@injectable()
 class Dispatcher {
   handlers: { [key: string]: Handler } = {};
   messageSender: MessageSender;
 
-  constructor(handlers: { [key: string]: Handler } = {}, messageSender: MessageSender) {
+  constructor(
+    @inject(TYPES.Handlers) @optional() handlers: { [key: string]: Handler } = {},
+    @inject(TYPES.MessageSender) messageSender: MessageSender
+  ) {
     this.handlers = handlers;
     this.messageSender = messageSender;
   }
