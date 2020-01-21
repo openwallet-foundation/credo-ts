@@ -35,100 +35,67 @@ class ConnectionService {
   }
 
   async acceptRequest(inboundMessage: InboundMessage) {
-    // TODO Temporarily get context from service until this code will be move into connection service itself
     const { wallet } = this.context;
-    const { message, recipient_verkey, sender_verkey } = inboundMessage;
+    const { message, recipient_verkey } = inboundMessage;
     const connection = this.findByVerkey(recipient_verkey);
 
     if (!connection) {
       throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
-    }
-
-    // TODO I have 2 questions
-    // 1. I don't know whether following check is necessary.
-    // 2. I don't know whether to use `connection.theirKey` or `sender_verkey` for outbound message.
-    //
-    // This problem in other handlers is handled just by checking existance of attribute `connection.theirKey`
-    // and omitting `sender_key` from any usage.
-    if (sender_verkey !== connection.theirKey) {
-      throw new Error('Inbound message `sender_key` attribute is different from connection.theirKey');
     }
 
     if (!message.connection) {
       throw new Error('Invalid message');
     }
 
-    const connectionRequest = message;
-
-    connection.theirDid = connectionRequest.connection.did;
-    connection.theirDidDoc = connectionRequest.connection.did_doc;
-    // Keep also theirKey for debug reasons
-    connection.theirKey = connection.theirDidDoc.service[0].recipientKeys[0];
-
-    if (!connection.theirKey) {
-      throw new Error('Missing verkey in connection request!');
-    }
-
-    const connectionResponse = createConnectionResponseMessage(connection, message['@id']);
-
-    const signedConnectionResponse = await wallet.sign(connectionResponse, 'connection', connection.verkey);
-
-    connection.updateState(ConnectionState.RESPONDED);
-
-    return createOutboundMessage(connection, signedConnectionResponse);
-  }
-
-  async acceptResponse(inboundMessage: InboundMessage) {
-    // TODO Temporarily get context from service until this code will be move into connection service itself
-    const { wallet } = this.context;
-    const { message, recipient_verkey, sender_verkey } = inboundMessage;
-
-    if (!message['connection~sig']) {
-      throw new Error('Invalid message');
-    }
-
-    const connectionSignature = message['connection~sig'];
-    const signerVerkey = connectionSignature.signers;
-    const data = Buffer.from(connectionSignature.sig_data, 'base64');
-    const signature = Buffer.from(connectionSignature.signature, 'base64');
-
-    // check signature
-    const valid = await wallet.verify(signerVerkey, data, signature);
-
-    if (!valid) {
-      throw new Error('Signature is not valid!');
-    }
-
-    const connection = this.findByVerkey(recipient_verkey);
-
-    if (!connection) {
-      throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
-    }
-
-    const connectionReponse = JSON.parse(data.toString('utf-8'));
-    connection.theirDid = connectionReponse.did;
-    connection.theirDidDoc = connectionReponse.did_doc;
-    // Keep also theirKey for debug reasons
-    connection.theirKey = connection.theirDidDoc.service[0].recipientKeys[0];
+    const requestConnection = message.connection;
+    connection.updateDidExchangeConnection(requestConnection);
 
     if (!connection.theirKey) {
       throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`);
     }
 
-    const response = createAckMessage(message['@id']);
-
-    connection.updateState(ConnectionState.COMPLETE);
-
-    return createOutboundMessage(connection, response);
+    const connectionResponse = createConnectionResponseMessage(connection, message['@id']);
+    const signedConnectionResponse = await wallet.sign(connectionResponse, 'connection', connection.verkey);
+    connection.updateState(ConnectionState.RESPONDED);
+    return createOutboundMessage(connection, signedConnectionResponse);
   }
 
-  async acceptAck(inboundMessage: InboundMessage) {
+  async acceptResponse(inboundMessage: InboundMessage) {
+    const { wallet } = this.context;
     const { message, recipient_verkey, sender_verkey } = inboundMessage;
     const connection = this.findByVerkey(recipient_verkey);
 
     if (!connection) {
       throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
     }
+
+    if (!message['connection~sig']) {
+      throw new Error('Invalid message');
+    }
+
+    const originalMessage = await wallet.verify(message, 'connection');
+    connection.updateDidExchangeConnection(originalMessage.connection);
+
+    if (!connection.theirKey) {
+      throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`);
+    }
+
+    validateSenderKey(connection, sender_verkey);
+
+    const response = createAckMessage(message['@id']);
+    connection.updateState(ConnectionState.COMPLETE);
+    return createOutboundMessage(connection, response);
+  }
+
+  async acceptAck(inboundMessage: InboundMessage) {
+    const { recipient_verkey, sender_verkey } = inboundMessage;
+    const connection = this.findByVerkey(recipient_verkey);
+
+    if (!connection) {
+      throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
+    }
+
+    validateSenderKey(connection, sender_verkey);
 
     if (connection.getState() !== ConnectionState.COMPLETE) {
       connection.updateState(ConnectionState.COMPLETE);
@@ -178,11 +145,6 @@ class ConnectionService {
     return this.connections.find(connection => connection.theirKey === verkey);
   }
 
-  // TODO Temporarily get context from service until this code will be move into connection service itself
-  getContext() {
-    return this.context;
-  }
-
   private createInvitationDetails(config: InitConfig, connection: Connection) {
     const { didDoc } = connection;
     return {
@@ -202,6 +164,22 @@ class ConnectionService {
   private getRoutingKeys() {
     const verkey = this.context.inboundConnection && this.context.inboundConnection.verkey;
     return verkey ? [verkey] : [];
+  }
+}
+
+function validateSenderKey(connection: Connection, senderKey: Verkey) {
+  // TODO I have 2 questions
+
+  // 1. I don't know whether following check is necessary. I guess it is, but we should validate this condition
+  // for every other protocol. I also don't validate it `acceptRequest` because there is no `senderVk` in invitation
+  // (which could be also a bug and against protocol starndard)
+
+  // 2. I don't know whether to use `connection.theirKey` or `sender_verkey` for outbound message.
+
+  if (connection.theirKey !== senderKey) {
+    throw new Error(
+      `Inbound message 'sender_key' ${senderKey} is different from connection.theirKey ${connection.theirKey}`
+    );
   }
 }
 

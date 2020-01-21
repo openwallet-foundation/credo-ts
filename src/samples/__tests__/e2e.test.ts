@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 // @ts-ignore
 import { poll } from 'await-poll';
-import { Agent, decodeInvitationFromUrl, InboundTransporter, OutboundTransporter } from '../../lib';
+import { Agent, decodeInvitationFromUrl, InboundTransporter, OutboundTransporter, Connection } from '../../lib';
 import { WireMessage, OutboundPackage } from '../../lib/types';
 import { get, post } from '../http';
 import { toBeConnectedWith } from '../../lib/testUtils';
@@ -60,8 +60,11 @@ describe('with agency', () => {
       await get(`${bobAgent.getAgencyUrl()}/api/connections/${bobKeyAtBobAgency}`)
     );
 
-    expect(aliceInboundConnection).toBeConnectedWith(agencyConnectionAtAliceAgency);
-    expect(bobInboundConnection).toBeConnectedWith(agencyConnectionAtBobAgency);
+    // Here I'm creating instance based on JSON response to be able to call methods on connection. Matcher calls
+    // `theirKey` which is getter method to access verkey in DidDoc If this will become a problem we can consider to add
+    // some (de)serialization mechanism.
+    expect(aliceInboundConnection).toBeConnectedWith(new Connection(agencyConnectionAtAliceAgency));
+    expect(bobInboundConnection).toBeConnectedWith(new Connection(agencyConnectionAtBobAgency));
   });
 
   test('make a connection via agency', async () => {

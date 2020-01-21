@@ -1,7 +1,7 @@
 import indy from 'indy-sdk';
 import logger from '../logger';
 import { InboundMessage, Message } from '../types';
-import { sign } from '../decorators';
+import { sign, verify } from '../decorators';
 import { Wallet, WalletConfig, WalletCredentials, DidInfo, DidConfig } from './Wallet';
 
 export class IndyWallet implements Wallet {
@@ -102,8 +102,8 @@ export class IndyWallet implements Wallet {
     return sign(this.wh, message, attribute, verkey);
   }
 
-  async verify(signerVerkey: Verkey, data: Buffer, signature: Buffer) {
-    return indy.cryptoVerify(signerVerkey, data, signature);
+  async verify(message: Message, attribute: string) {
+    return verify(message, attribute);
   }
 
   async close() {

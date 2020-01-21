@@ -7,7 +7,7 @@ declare module 'indy-sdk' {
   function keyForLocalDid(wh: WalletHandle, did: Did): Promise<Verkey>;
   function cryptoAnonCrypt(recipientVk: Verkey, messageRaw: Buffer): Promise<Buffer>;
   function cryptoSign(wh: WalletHandle, signerVk: Verkey, messageRaw: Buffer): Promise<Buffer>;
-  function cryptoVerify(signerVk: Verkey, messageRaw: Buffer, signatureRaw: Buffer): boolean;
+  function cryptoVerify(signerVk: Verkey, messageRaw: Buffer, signatureRaw: Buffer): Promise<boolean>;
   function createKey(wh: WalletHandle, key: KeyConfig): Promise<Verkey>;
   function packMessage(
     wh: WalletHandle,

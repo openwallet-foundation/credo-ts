@@ -8,12 +8,16 @@ interface ConnectionProps {
   didDoc: DidDoc;
   verkey: Verkey;
   theirDid?: Did;
-  theirKey?: Verkey;
-  theirDidDoc?: any;
+  theirDidDoc?: DidDoc;
   invitation?: InvitationDetails;
   state: ConnectionState;
   endpoint?: string;
   messages: any[];
+}
+
+interface DidExchangeConnection {
+  did: Did;
+  did_doc: DidDoc;
 }
 
 export class Connection extends EventEmitter {
@@ -21,8 +25,7 @@ export class Connection extends EventEmitter {
   didDoc: DidDoc;
   verkey: Verkey;
   theirDid?: Did;
-  theirKey?: Verkey;
-  theirDidDoc?: any;
+  theirDidDoc?: DidDoc;
   invitation?: InvitationDetails;
   endpoint?: string;
   messages: any[];
@@ -34,12 +37,27 @@ export class Connection extends EventEmitter {
     this.did = props.did;
     this.didDoc = props.didDoc;
     this.verkey = props.verkey;
+    this.theirDid = props.theirDid;
+    this.theirDidDoc = props.theirDidDoc;
+    this.invitation = props.invitation;
     this.state = props.state;
     this.messages = props.messages;
   }
 
+  get theirKey() {
+    if (!this.theirDidDoc) {
+      return null;
+    }
+    return this.theirDidDoc.service[0].recipientKeys[0];
+  }
+
   getState() {
     return this.state;
+  }
+
+  updateDidExchangeConnection(didExchangeConnection: DidExchangeConnection) {
+    this.theirDid = didExchangeConnection.did;
+    this.theirDidDoc = didExchangeConnection.did_doc;
   }
 
   updateState(newState: ConnectionState) {
