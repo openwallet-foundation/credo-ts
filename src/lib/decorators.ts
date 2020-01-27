@@ -42,7 +42,8 @@ export async function verify(message: Message, field: string) {
     '@type': message['@type'],
     '@id': message['@id'],
     ...signedMessage,
-    [`${field}`]: JSON.parse(signedData.toString('utf-8')),
+    // first 8 bytes are for 64 bit integer from unix epoch
+    [`${field}`]: JSON.parse(signedData.slice(8).toString('utf-8')),
   };
 
   return originalMessage;
