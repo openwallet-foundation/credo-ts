@@ -9,7 +9,7 @@ export function createOutboundMessage(connection: Connection, payload: Message, 
       payload,
       recipientKeys: invitation.recipientKeys,
       routingKeys: invitation.routingKeys,
-      senderVk: null,
+      senderVk: connection.verkey,
     };
   }
 
