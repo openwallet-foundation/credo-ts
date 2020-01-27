@@ -16,8 +16,8 @@ interface ConnectionProps {
 }
 
 interface DidExchangeConnection {
-  did: Did;
-  did_doc: DidDoc;
+  DID: Did;
+  DIDDoc: DidDoc;
 }
 
 export class Connection extends EventEmitter {
@@ -56,8 +56,8 @@ export class Connection extends EventEmitter {
   }
 
   updateDidExchangeConnection(didExchangeConnection: DidExchangeConnection) {
-    this.theirDid = didExchangeConnection.did;
-    this.theirDidDoc = didExchangeConnection.did_doc;
+    this.theirDid = didExchangeConnection.DID;
+    this.theirDidDoc = didExchangeConnection.DIDDoc;
   }
 
   updateState(newState: ConnectionState) {
