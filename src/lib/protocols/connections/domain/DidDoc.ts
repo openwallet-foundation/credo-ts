@@ -80,7 +80,7 @@ export class PublicKey {
 
   toJSON() {
     // @ts-ignore
-    const [ver_type, auth_type, specifier] = PublicKeyType[this.type].split('|');
+    const [ver_type, auth_type, specifier] = this.type.split('|');
     return {
       id: this.id,
       type: ver_type,
@@ -100,7 +100,8 @@ export class PublicKey {
       .map(t => [PublicKeyType[t].split('|')[0], t])
       .filter(verkeyType => verkeyType[0] == pk.type)[0][1];
     const specifier = _type.split('|')[2];
-    return new PublicKey(pk.id, _type, pk.controller, pk[`${specifier}`], authn);
+    // @ts-ignore
+    return new PublicKey(pk.id, PublicKeyType[_type], pk.controller, pk[`${specifier}`], authn);
   }
 }
 
