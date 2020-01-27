@@ -9,6 +9,7 @@ import { Context } from '../../agent/Context';
 import { createOutboundMessage } from '../helpers';
 import { Connection } from './domain/Connection';
 import { ConnectionState } from './domain/ConnectionState';
+import { DidDoc, Service, PublicKey, PublicKeyType } from './domain/DidDoc';
 
 class ConnectionService {
   context: Context;
@@ -106,19 +107,9 @@ class ConnectionService {
 
   async createConnection(): Promise<Connection> {
     const [did, verkey] = await this.context.wallet.createDid();
-    const did_doc = {
-      '@context': 'https://w3id.org/did/v1',
-      service: [
-        {
-          id: 'did:example:123456789abcdefghi#did-communication',
-          type: 'did-communication',
-          priority: 0,
-          recipientKeys: [verkey],
-          routingKeys: this.getRoutingKeys(),
-          serviceEndpoint: this.getEndpoint(),
-        },
-      ],
-    };
+    const publicKey = new PublicKey(`${did}#1`, PublicKeyType.ED25519_SIG_2018, did, verkey, true);
+    const service = new Service(`${did};indy`, this.getEndpoint(), [verkey], this.getRoutingKeys(), 0, 'IndyAgent');
+    const did_doc = new DidDoc(did, [publicKey], [service]);
 
     const connection = new Connection({
       did,
