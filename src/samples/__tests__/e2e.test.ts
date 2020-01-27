@@ -28,6 +28,14 @@ describe('with agency', () => {
   let aliceAgent: Agent;
   let bobAgent: Agent;
 
+  afterAll(async () => {
+    (aliceAgent.inboundTransporter as PollingInboundTransporter).stop = true;
+    (bobAgent.inboundTransporter as PollingInboundTransporter).stop = true;
+
+    // Wait for messages to flush out
+    await new Promise(r => setTimeout(r, 1000));
+  });
+
   test('make a connection with agency', async () => {
     const aliceAgentSender = new HttpOutboundTransporter();
     const aliceAgentReceiver = new PollingInboundTransporter();
@@ -127,6 +135,11 @@ describe('with agency', () => {
 });
 
 class PollingInboundTransporter implements InboundTransporter {
+  stop: boolean;
+
+  constructor() {
+    this.stop = false;
+  }
   async start(agent: Agent) {
     await this.registerAgency(agent);
   }
@@ -157,7 +170,7 @@ class PollingInboundTransporter implements InboundTransporter {
           agent.receiveMessage(JSON.parse(message));
         }
       },
-      () => true,
+      () => !this.stop,
       100
     );
   }
