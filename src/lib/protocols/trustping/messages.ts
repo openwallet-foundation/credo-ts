@@ -2,7 +2,7 @@ import uuid from 'uuid/v4';
 
 export enum MessageType {
   TrustPingMessage = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/trust_ping/1.0/ping',
-  TrustPingReplyMessage = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/trust_ping/1.0/ping_response'
+  TrustPingReplyMessage = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/trust_ping/1.0/ping_response',
 }
 
 export function createTrustPingMessage(response_requested: boolean = true, comment: string = '') {
@@ -19,7 +19,7 @@ export function createTrustPingResponseMessage(thid: string, comment: string = '
     '@id': uuid(),
     '@type': MessageType.TrustPingMessage,
     '~thread': {
-        thid,
+      thid,
     },
     ...(comment && { comment }),
   };

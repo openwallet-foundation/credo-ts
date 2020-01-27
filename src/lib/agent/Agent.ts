@@ -147,6 +147,7 @@ export class Agent {
   }
 
   private registerHandlers() {
+    const trustPingHandler = new TrustPingHandler(this.trustPingService, this.connectionService);
     const handlers = {
       [ConnectionsMessageType.ConnectionInvitation]: new InvitationHandler(
         this.connectionService,
@@ -161,7 +162,8 @@ export class Agent {
         this.providerRoutingService
       ),
       [RoutingMessageType.ForwardMessage]: new ForwardHandler(this.providerRoutingService),
-      [TrustPingMessageType.TrustPingMessage]: new TrustPingHandler(this.trustPingService, this.connectionService),
+      [TrustPingMessageType.TrustPingMessage]: trustPingHandler,
+      [TrustPingMessageType.TrustPingReplyMessage]: trustPingHandler,
     };
 
     this.handlers = handlers;
