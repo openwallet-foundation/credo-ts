@@ -2,7 +2,11 @@ import indy from 'indy-sdk';
 import { Message } from './types';
 
 // Question: Spec isn't clear about the endianness. Assumes little-endian here
-function timestamp(): Uint8Array {
+function timestamp(isTest: boolean): Uint8Array {
+  if (isTest) {
+    return Uint8Array.of(0, 0, 0, 0, 0, 0, 0, 0);
+  }
+
   let time = Date.now();
   const bytes = [];
   for (let i = 0; i < 8; i++) {
@@ -13,12 +17,18 @@ function timestamp(): Uint8Array {
   return Uint8Array.from(bytes);
 }
 
-export async function sign(wh: WalletHandle, message: Message, field: string, signer: Verkey): Promise<Message> {
+export async function sign(
+  wh: WalletHandle,
+  message: Message,
+  field: string,
+  signer: Verkey,
+  isTest: boolean = false
+): Promise<Message> {
   const { [field]: data, ...originalMessage } = message;
 
   const dataBuffer = Buffer.from(JSON.stringify(data), 'utf8');
   const signatureBuffer = await indy.cryptoSign(wh, signer, dataBuffer);
-  const sigdataBuffer = Buffer.concat([timestamp(), dataBuffer]);
+  const sigdataBuffer = Buffer.concat([timestamp(isTest), dataBuffer]);
 
   const signedMessage = {
     // TypeScript is not able to infer mandatory type and id attribute, so we have to write it specifically.

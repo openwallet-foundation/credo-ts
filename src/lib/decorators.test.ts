@@ -38,7 +38,7 @@ describe('decorators', () => {
       '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/signature/1.0/ed25519Sha512_single',
       signature: 'FnVvO/NJqmDM9OiIdg3zN4yCZ7dowDjARymMSpO1ngX0f4ehPQzkweNdHwvInm9QfMhNoWgXz4esHpayuhVbDQ==',
       sig_data:
-        'eyJkaWQiOiJkaWQiLCJkaWRfZG9jIjp7IkBjb250ZXh0IjoiaHR0cHM6Ly93M2lkLm9yZy9kaWQvdjEiLCJzZXJ2aWNlIjpbeyJpZCI6ImRpZDpleGFtcGxlOjEyMzQ1Njc4OWFiY2RlZmdoaSNkaWQtY29tbXVuaWNhdGlvbiIsInR5cGUiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbInNvbWVWZXJrZXkiXSwicm91dGluZ0tleXMiOltdLCJzZXJ2aWNlRW5kcG9pbnQiOiJodHRwczovL2FnZW50LmV4YW1wbGUuY29tLyJ9XX19',
+        'AAAAAAAAAAB7ImRpZCI6ImRpZCIsImRpZF9kb2MiOnsiQGNvbnRleHQiOiJodHRwczovL3czaWQub3JnL2RpZC92MSIsInNlcnZpY2UiOlt7ImlkIjoiZGlkOmV4YW1wbGU6MTIzNDU2Nzg5YWJjZGVmZ2hpI2RpZC1jb21tdW5pY2F0aW9uIiwidHlwZSI6ImRpZC1jb21tdW5pY2F0aW9uIiwicHJpb3JpdHkiOjAsInJlY2lwaWVudEtleXMiOlsic29tZVZlcmtleSJdLCJyb3V0aW5nS2V5cyI6W10sInNlcnZpY2VFbmRwb2ludCI6Imh0dHBzOi8vYWdlbnQuZXhhbXBsZS5jb20vIn1dfX0=',
       signers: 'GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa',
     },
   };
@@ -59,7 +59,7 @@ describe('decorators', () => {
     const seed1 = '00000000000000000000000000000My1';
     const verkey = await indy.createKey(wh, { seed: seed1 });
 
-    const result = await sign(wh, message, 'connection', verkey);
+    const result = await sign(wh, message, 'connection', verkey, true);
     expect(result).toEqual(signedMessage);
   });
 
