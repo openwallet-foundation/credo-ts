@@ -95,7 +95,7 @@ export class Agent {
 
   async acceptInvitationUrl(invitationUrl: string) {
     const invitation = decodeInvitationFromUrl(invitationUrl);
-    const verkey = await this.messageReceiver.receiveMessage(invitation);
+    const verkey = (await this.messageReceiver.receiveMessage(invitation))?.connection.verkey;
 
     if (!verkey) {
       throw new Error('No verkey has been return');
@@ -105,7 +105,7 @@ export class Agent {
   }
 
   async receiveMessage(inboundPackedMessage: any) {
-    this.messageReceiver.receiveMessage(inboundPackedMessage);
+    return await this.messageReceiver.receiveMessage(inboundPackedMessage);
   }
 
   getConnections() {

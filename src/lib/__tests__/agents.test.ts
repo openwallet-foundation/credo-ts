@@ -124,7 +124,7 @@ class SubjectOutboundTransporter implements OutboundTransporter {
     this.subject = subject;
   }
 
-  sendMessage(outboundPackage: OutboundPackage) {
+  async sendMessage(outboundPackage: OutboundPackage, receive_reply: boolean) {
     console.log('Sending message...');
     const { payload } = outboundPackage;
     console.log(payload);
