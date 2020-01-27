@@ -4,3 +4,4 @@ export { OutboundTransporter } from './transport/OutboundTransporter';
 export { decodeInvitationFromUrl } from './helpers';
 
 export { Connection } from './protocols/connections/domain/Connection';
+export { ContainerHelper } from './agent/ContainerHelper';

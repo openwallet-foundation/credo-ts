@@ -11,8 +11,17 @@ import { Handler } from '../handlers/Handler';
 import { MessageType as ConnectionsMessageType } from '../protocols/connections/messages';
 import { MessageType as BasicMessageMessageType } from '../protocols/basicmessage/messages';
 import { MessageType as RoutingMessageType } from '../protocols/routing/messages';
+import { MessageSender } from './MessageSender';
+import { ContextImpl } from './Agent';
+import { Context } from './Context';
+import { ConnectionService } from '../protocols/connections/ConnectionService';
+import { BasicMessageService } from '../protocols/basicmessage/BasicMessageService';
+import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
+import { ConsumerRoutingService } from '../protocols/routing/ConsumerRoutingService';
+import { MessageReceiver } from './MessageReceiver';
+import { Dispatcher } from './Dispatcher';
 
-export default class ContainerHelper {
+export class ContainerHelper {
   static registerDefaultHandlers(container: Container) {
     container.bind<InvitationHandler>(TYPES.InvitationHandler).to(InvitationHandler);
     container.bind<ConnectionRequestHandler>(TYPES.ConnectionRequestHandler).to(ConnectionRequestHandler);
@@ -37,5 +46,30 @@ export default class ContainerHelper {
     };
 
     container.bind<{ [key: string]: Handler }>(TYPES.Handlers).toConstantValue(handlers);
+  }
+
+  static registerDefaultServices(container: Container) {
+    container
+      .bind<Context>(TYPES.Context)
+      .to(ContextImpl)
+      .inSingletonScope();
+    container
+      .bind<ConnectionService>(TYPES.ConnectionService)
+      .to(ConnectionService)
+      .inSingletonScope();
+    container.bind<BasicMessageService>(TYPES.BasicMessageService).to(BasicMessageService);
+    container
+      .bind<ProviderRoutingService>(TYPES.ProviderRoutingService)
+      .to(ProviderRoutingService)
+      .inSingletonScope();
+    container.bind<ConsumerRoutingService>(TYPES.ConsumerRoutingService).to(ConsumerRoutingService);
+  }
+
+  static registerDefaults(container: Container) {
+    container.bind<MessageSender>(TYPES.MessageSender).to(MessageSender);
+    ContainerHelper.registerDefaultServices(container);
+    ContainerHelper.registerDefaultHandlers(container);
+    container.bind<MessageReceiver>(TYPES.MessageReceiver).to(MessageReceiver);
+    container.bind<Dispatcher>(TYPES.Dispatcher).to(Dispatcher);
   }
 }

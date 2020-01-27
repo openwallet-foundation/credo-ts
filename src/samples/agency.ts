@@ -6,19 +6,9 @@ import logger from '../lib/logger';
 import { Agent, InboundTransporter, OutboundTransporter } from '../lib';
 import { OutboundPackage, TYPES, InitConfig } from '../lib/types';
 import { IndyWallet } from '../lib/wallet/IndyWallet';
-import { injectable, inject } from 'inversify';
-import { container } from '../lib/inversify.config';
+import { injectable, inject, Container } from 'inversify';
 import { WalletConfig, WalletCredentials, Wallet } from '../lib/wallet/Wallet';
-import { MessageSender } from '../lib/agent/MessageSender';
-import { Context } from '../lib/agent/Context';
-import { ContextImpl } from '../lib/agent/Agent';
-import { ConnectionService } from '../lib/protocols/connections/ConnectionService';
-import { BasicMessageService } from '../lib/protocols/basicmessage/BasicMessageService';
-import { ProviderRoutingService } from '../lib/protocols/routing/ProviderRoutingService';
-import { ConsumerRoutingService } from '../lib/protocols/routing/ConsumerRoutingService';
-import { MessageReceiver } from '../lib/agent/MessageReceiver';
-import ContainerHelper from '../lib/agent/ContainerHelper';
-import { Dispatcher } from '../lib/agent/Dispatcher';
+import { ContainerHelper } from '../lib/agent/ContainerHelper';
 
 const TYPE_EXPRESS = Symbol.for('Express');
 
@@ -73,6 +63,7 @@ class StorageOutboundTransporter implements OutboundTransporter {
 }
 
 const PORT = config.port;
+const container = new Container();
 container.bind<Express>(TYPE_EXPRESS).toConstantValue(express());
 const app = container.get<Express>(TYPE_EXPRESS);
 
@@ -91,24 +82,7 @@ container
   .bind<Wallet>(TYPES.Wallet)
   .to(IndyWallet)
   .inSingletonScope();
-container.bind<MessageSender>(TYPES.MessageSender).to(MessageSender);
-container
-  .bind<Context>(TYPES.Context)
-  .to(ContextImpl)
-  .inSingletonScope();
-container
-  .bind<ConnectionService>(TYPES.ConnectionService)
-  .to(ConnectionService)
-  .inSingletonScope();
-container.bind<BasicMessageService>(TYPES.BasicMessageService).to(BasicMessageService);
-container
-  .bind<ProviderRoutingService>(TYPES.ProviderRoutingService)
-  .to(ProviderRoutingService)
-  .inSingletonScope();
-container.bind<ConsumerRoutingService>(TYPES.ConsumerRoutingService).to(ConsumerRoutingService);
-container.bind<MessageReceiver>(TYPES.MessageReceiver).to(MessageReceiver);
-ContainerHelper.registerDefaultHandlers(container);
-container.bind<Dispatcher>(TYPES.Dispatcher).to(Dispatcher);
+ContainerHelper.registerDefaults(container);
 
 container
   .bind<Agent>(TYPES.Agent)

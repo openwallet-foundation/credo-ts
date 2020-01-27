@@ -1,6 +1,13 @@
 /* eslint-disable no-console */
 // @ts-ignore
-import { Agent, decodeInvitationFromUrl, InboundTransporter, OutboundTransporter, Connection } from '../../lib';
+import {
+  Agent,
+  decodeInvitationFromUrl,
+  InboundTransporter,
+  OutboundTransporter,
+  Connection,
+  ContainerHelper,
+} from '../../lib';
 import { IndyWallet } from '../../lib/wallet/IndyWallet';
 
 import { WireMessage, OutboundPackage, TYPES, InitConfig } from '../../lib/types';
@@ -8,16 +15,6 @@ import { get, post } from '../http';
 import { toBeConnectedWith } from '../../lib/testUtils';
 import { Container, injectable, inject } from 'inversify';
 import { Wallet, WalletConfig, WalletCredentials } from '../../lib/wallet/Wallet';
-import { Context } from '../../lib/agent/Context';
-import { ContextImpl } from '../../lib/agent/Agent';
-import { ConnectionService } from '../../lib/protocols/connections/ConnectionService';
-import { BasicMessageService } from '../../lib/protocols/basicmessage/BasicMessageService';
-import { ProviderRoutingService } from '../../lib/protocols/routing/ProviderRoutingService';
-import { ConsumerRoutingService } from '../../lib/protocols/routing/ConsumerRoutingService';
-import { MessageReceiver } from '../../lib/agent/MessageReceiver';
-import ContainerHelper from '../../lib/agent/ContainerHelper';
-import { Dispatcher } from '../../lib/agent/Dispatcher';
-import { MessageSender } from '../../lib/agent/MessageSender';
 import logger from '../../lib/logger';
 import { Poller } from '../../lib/helpers';
 
@@ -45,88 +42,36 @@ describe('with agency', () => {
   let aliceContainer: Container;
   let bobContainer: Container;
 
+  const newContainer = (config: InitConfig): Container => {
+    const container = new Container();
+    container.bind<Poller>(TYPE_POLLER).to(Poller);
+    container
+      .bind<OutboundTransporter>(TYPES.OutboundTransporter)
+      .to(HttpOutboundTransporter)
+      .inSingletonScope();
+    container
+      .bind<InboundTransporter>(TYPES.InboundTransporter)
+      .to(PollingInboundTransporter)
+      .inSingletonScope();
+    container.bind<InitConfig>(TYPES.InitConfig).toConstantValue(config);
+    container.bind<WalletConfig>(TYPES.WalletConfig).toConstantValue({ id: config.walletName });
+    container.bind<WalletCredentials>(TYPES.WalletCredentials).toConstantValue({ key: config.walletKey });
+    container
+      .bind<Wallet>(TYPES.Wallet)
+      .to(IndyWallet)
+      .inSingletonScope();
+    ContainerHelper.registerDefaults(container);
+
+    container
+      .bind<Agent>(TYPES.Agent)
+      .to(Agent)
+      .inSingletonScope();
+    return container;
+  };
+
   beforeAll(() => {
-    aliceContainer = new Container();
-    aliceContainer.bind<Poller>(TYPE_POLLER).to(Poller);
-    aliceContainer
-      .bind<OutboundTransporter>(TYPES.OutboundTransporter)
-      .to(HttpOutboundTransporter)
-      .inSingletonScope();
-    aliceContainer
-      .bind<InboundTransporter>(TYPES.InboundTransporter)
-      .to(PollingInboundTransporter)
-      .inSingletonScope();
-    aliceContainer.bind<InitConfig>(TYPES.InitConfig).toConstantValue(aliceConfig);
-    aliceContainer.bind<WalletConfig>(TYPES.WalletConfig).toConstantValue({ id: aliceConfig.walletName });
-    aliceContainer.bind<WalletCredentials>(TYPES.WalletCredentials).toConstantValue({ key: aliceConfig.walletKey });
-    aliceContainer
-      .bind<Wallet>(TYPES.Wallet)
-      .to(IndyWallet)
-      .inSingletonScope();
-    aliceContainer.bind<MessageSender>(TYPES.MessageSender).to(MessageSender);
-    aliceContainer
-      .bind<Context>(TYPES.Context)
-      .to(ContextImpl)
-      .inSingletonScope();
-    aliceContainer
-      .bind<ConnectionService>(TYPES.ConnectionService)
-      .to(ConnectionService)
-      .inSingletonScope();
-    aliceContainer.bind<BasicMessageService>(TYPES.BasicMessageService).to(BasicMessageService);
-    aliceContainer
-      .bind<ProviderRoutingService>(TYPES.ProviderRoutingService)
-      .to(ProviderRoutingService)
-      .inSingletonScope();
-    aliceContainer.bind<ConsumerRoutingService>(TYPES.ConsumerRoutingService).to(ConsumerRoutingService);
-    aliceContainer.bind<MessageReceiver>(TYPES.MessageReceiver).to(MessageReceiver);
-    ContainerHelper.registerDefaultHandlers(aliceContainer);
-    aliceContainer.bind<Dispatcher>(TYPES.Dispatcher).to(Dispatcher);
-
-    aliceContainer
-      .bind<Agent>(TYPES.Agent)
-      .to(Agent)
-      .inSingletonScope();
-
-    bobContainer = new Container();
-    bobContainer.bind<Poller>(TYPE_POLLER).to(Poller);
-    bobContainer
-      .bind<OutboundTransporter>(TYPES.OutboundTransporter)
-      .to(HttpOutboundTransporter)
-      .inSingletonScope();
-    bobContainer
-      .bind<InboundTransporter>(TYPES.InboundTransporter)
-      .to(PollingInboundTransporter)
-      .inSingletonScope();
-    bobContainer.bind<InitConfig>(TYPES.InitConfig).toConstantValue(bobConfig);
-    bobContainer.bind<WalletConfig>(TYPES.WalletConfig).toConstantValue({ id: bobConfig.walletName });
-    bobContainer.bind<WalletCredentials>(TYPES.WalletCredentials).toConstantValue({ key: bobConfig.walletKey });
-    bobContainer
-      .bind<Wallet>(TYPES.Wallet)
-      .to(IndyWallet)
-      .inSingletonScope();
-    bobContainer.bind<MessageSender>(TYPES.MessageSender).to(MessageSender);
-    bobContainer
-      .bind<Context>(TYPES.Context)
-      .to(ContextImpl)
-      .inSingletonScope();
-    bobContainer
-      .bind<ConnectionService>(TYPES.ConnectionService)
-      .to(ConnectionService)
-      .inSingletonScope();
-    bobContainer.bind<BasicMessageService>(TYPES.BasicMessageService).to(BasicMessageService);
-    bobContainer
-      .bind<ProviderRoutingService>(TYPES.ProviderRoutingService)
-      .to(ProviderRoutingService)
-      .inSingletonScope();
-    bobContainer.bind<ConsumerRoutingService>(TYPES.ConsumerRoutingService).to(ConsumerRoutingService);
-    bobContainer.bind<MessageReceiver>(TYPES.MessageReceiver).to(MessageReceiver);
-    ContainerHelper.registerDefaultHandlers(bobContainer);
-    bobContainer.bind<Dispatcher>(TYPES.Dispatcher).to(Dispatcher);
-
-    bobContainer
-      .bind<Agent>(TYPES.Agent)
-      .to(Agent)
-      .inSingletonScope();
+    aliceContainer = newContainer(aliceConfig);
+    bobContainer = newContainer(bobConfig);
   });
 
   afterAll(async () => {

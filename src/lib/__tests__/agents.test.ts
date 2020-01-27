@@ -7,16 +7,7 @@ import { OutboundPackage, WireMessage, TYPES, InitConfig } from '../types';
 import { IndyWallet } from '../wallet/IndyWallet';
 import { Container, injectable, inject, named } from 'inversify';
 import { WalletConfig, WalletCredentials, Wallet } from '../wallet/Wallet';
-import { MessageSender } from '../agent/MessageSender';
-import { Context } from '../agent/Context';
-import { ContextImpl } from '../agent/Agent';
-import { ConnectionService } from '../protocols/connections/ConnectionService';
-import { BasicMessageService } from '../protocols/basicmessage/BasicMessageService';
-import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
-import { ConsumerRoutingService } from '../protocols/routing/ConsumerRoutingService';
-import { MessageReceiver } from '../agent/MessageReceiver';
-import ContainerHelper from '../agent/ContainerHelper';
-import { Dispatcher } from '../agent/Dispatcher';
+import { ContainerHelper } from '../agent/ContainerHelper';
 import { Poller } from '../helpers';
 
 jest.setTimeout(10000);
@@ -43,107 +34,49 @@ describe('agents', () => {
   let aliceContainer: Container;
   let bobContainer: Container;
 
+  const newContainer = (config: InitConfig, sender: Subject<unknown>, receiver: Subject<unknown>): Container => {
+    const container = new Container();
+
+    container
+      .bind<Subject<unknown>>(TYPE_SUBJECT)
+      .toConstantValue(receiver)
+      .whenTargetNamed('receiver');
+    container
+      .bind<Subject<unknown>>(TYPE_SUBJECT)
+      .toConstantValue(sender)
+      .whenTargetNamed('sender');
+    container
+      .bind<OutboundTransporter>(TYPES.OutboundTransporter)
+      .to(SubjectOutboundTransporter)
+      .inSingletonScope();
+    container
+      .bind<InboundTransporter>(TYPES.InboundTransporter)
+      .to(SubjectInboundTransporter)
+      .inSingletonScope();
+
+    container.bind<InitConfig>(TYPES.InitConfig).toConstantValue(config);
+    container.bind<WalletConfig>(TYPES.WalletConfig).toConstantValue({ id: config.walletName });
+    container.bind<WalletCredentials>(TYPES.WalletCredentials).toConstantValue({ key: config.walletKey });
+    container
+      .bind<Wallet>(TYPES.Wallet)
+      .to(IndyWallet)
+      .inSingletonScope();
+    ContainerHelper.registerDefaults(container);
+    container
+      .bind<Agent>(TYPES.Agent)
+      .to(Agent)
+      .inSingletonScope();
+    return container;
+  };
+
   beforeAll(() => {
     const aliceMessages = new Subject();
     const bobMessages = new Subject();
 
-    aliceContainer = new Container();
-    aliceContainer
-      .bind<Subject<unknown>>(TYPE_SUBJECT)
-      .toConstantValue(aliceMessages)
-      .whenTargetNamed('receiver');
-    aliceContainer
-      .bind<Subject<unknown>>(TYPE_SUBJECT)
-      .toConstantValue(bobMessages)
-      .whenTargetNamed('sender');
-
-    aliceContainer
-      .bind<OutboundTransporter>(TYPES.OutboundTransporter)
-      .to(SubjectOutboundTransporter)
-      .inSingletonScope();
-    aliceContainer
-      .bind<InboundTransporter>(TYPES.InboundTransporter)
-      .to(SubjectInboundTransporter)
-      .inSingletonScope();
-    aliceContainer.bind<InitConfig>(TYPES.InitConfig).toConstantValue(aliceConfig);
-    aliceContainer.bind<WalletConfig>(TYPES.WalletConfig).toConstantValue({ id: aliceConfig.walletName });
-    aliceContainer.bind<WalletCredentials>(TYPES.WalletCredentials).toConstantValue({ key: aliceConfig.walletKey });
-    aliceContainer
-      .bind<Wallet>(TYPES.Wallet)
-      .to(IndyWallet)
-      .inSingletonScope();
-    aliceContainer.bind<MessageSender>(TYPES.MessageSender).to(MessageSender);
-    aliceContainer
-      .bind<Context>(TYPES.Context)
-      .to(ContextImpl)
-      .inSingletonScope();
-    aliceContainer
-      .bind<ConnectionService>(TYPES.ConnectionService)
-      .to(ConnectionService)
-      .inSingletonScope();
-    aliceContainer.bind<BasicMessageService>(TYPES.BasicMessageService).to(BasicMessageService);
-    aliceContainer
-      .bind<ProviderRoutingService>(TYPES.ProviderRoutingService)
-      .to(ProviderRoutingService)
-      .inSingletonScope();
-    aliceContainer.bind<ConsumerRoutingService>(TYPES.ConsumerRoutingService).to(ConsumerRoutingService);
-    aliceContainer.bind<MessageReceiver>(TYPES.MessageReceiver).to(MessageReceiver);
-    ContainerHelper.registerDefaultHandlers(aliceContainer);
-    aliceContainer.bind<Dispatcher>(TYPES.Dispatcher).to(Dispatcher);
-
-    aliceContainer
-      .bind<Agent>(TYPES.Agent)
-      .to(Agent)
-      .inSingletonScope();
+    aliceContainer = newContainer(aliceConfig, bobMessages, aliceMessages);
     aliceAgent = aliceContainer.get<Agent>(TYPES.Agent);
 
-    bobContainer = new Container();
-    bobContainer
-      .bind<Subject<unknown>>(TYPE_SUBJECT)
-      .toConstantValue(bobMessages)
-      .whenTargetNamed('receiver');
-    bobContainer
-      .bind<Subject<unknown>>(TYPE_SUBJECT)
-      .toConstantValue(aliceMessages)
-      .whenTargetNamed('sender');
-    bobContainer
-      .bind<OutboundTransporter>(TYPES.OutboundTransporter)
-      .to(SubjectOutboundTransporter)
-      .inSingletonScope();
-    bobContainer
-      .bind<InboundTransporter>(TYPES.InboundTransporter)
-      .to(SubjectInboundTransporter)
-      .inSingletonScope();
-    bobContainer.bind<InitConfig>(TYPES.InitConfig).toConstantValue(bobConfig);
-    bobContainer.bind<WalletConfig>(TYPES.WalletConfig).toConstantValue({ id: bobConfig.walletName });
-    bobContainer.bind<WalletCredentials>(TYPES.WalletCredentials).toConstantValue({ key: bobConfig.walletKey });
-    bobContainer
-      .bind<Wallet>(TYPES.Wallet)
-      .to(IndyWallet)
-      .inSingletonScope();
-    bobContainer.bind<MessageSender>(TYPES.MessageSender).to(MessageSender);
-    bobContainer
-      .bind<Context>(TYPES.Context)
-      .to(ContextImpl)
-      .inSingletonScope();
-    bobContainer
-      .bind<ConnectionService>(TYPES.ConnectionService)
-      .to(ConnectionService)
-      .inSingletonScope();
-    bobContainer.bind<BasicMessageService>(TYPES.BasicMessageService).to(BasicMessageService);
-    bobContainer
-      .bind<ProviderRoutingService>(TYPES.ProviderRoutingService)
-      .to(ProviderRoutingService)
-      .inSingletonScope();
-    bobContainer.bind<ConsumerRoutingService>(TYPES.ConsumerRoutingService).to(ConsumerRoutingService);
-    bobContainer.bind<MessageReceiver>(TYPES.MessageReceiver).to(MessageReceiver);
-    ContainerHelper.registerDefaultHandlers(bobContainer);
-    bobContainer.bind<Dispatcher>(TYPES.Dispatcher).to(Dispatcher);
-
-    bobContainer
-      .bind<Agent>(TYPES.Agent)
-      .to(Agent)
-      .inSingletonScope();
+    bobContainer = newContainer(bobConfig, aliceMessages, bobMessages);
     bobAgent = bobContainer.get<Agent>(TYPES.Agent);
   });
 
