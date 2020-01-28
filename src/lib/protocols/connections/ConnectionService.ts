@@ -75,12 +75,12 @@ class ConnectionService {
 
     const originalMessage = await wallet.verify(message, 'connection');
     connection.updateDidExchangeConnection(originalMessage.connection);
-
     if (!connection.theirKey) {
       throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`);
     }
 
-    validateSenderKey(connection, sender_verkey);
+    // dotnet doesn't send senderVk here
+    // validateSenderKey(connection, sender_verkey);
 
     const response = createAckMessage(message['@id']);
     connection.updateState(ConnectionState.COMPLETE);
