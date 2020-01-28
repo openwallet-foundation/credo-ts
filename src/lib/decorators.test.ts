@@ -1,5 +1,13 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import indy from 'indy-sdk';
+
+jest.mock('./timestamp', () => {
+  return {
+    __esModule: true,
+    default: jest.fn(() => Uint8Array.of(0, 0, 0, 0, 0, 0, 0, 0)),
+  };
+});
+
 import { sign, verify } from './decorators';
 
 describe('decorators', () => {
@@ -58,8 +66,7 @@ describe('decorators', () => {
   test('sign decorator signs data in a given field of message', async () => {
     const seed1 = '00000000000000000000000000000My1';
     const verkey = await indy.createKey(wh, { seed: seed1 });
-
-    const result = await sign(wh, message, 'connection', verkey, true);
+    const result = await sign(wh, message, 'connection', verkey);
     expect(result).toEqual(signedMessage);
   });
 

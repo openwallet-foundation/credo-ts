@@ -74,8 +74,8 @@ export class Connection extends EventEmitter {
         if (newState == state) {
           resolve(true);
         }
-      })
-    })
+      });
+    });
   }
 
   async isConnected() {

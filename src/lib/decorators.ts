@@ -1,22 +1,6 @@
 import indy from 'indy-sdk';
 import { Message } from './types';
-
-// Question: Spec isn't clear about the endianness. Assumes big-endian here
-// since ACA-Py uses big-endian
-function timestamp(isTest: boolean): Uint8Array {
-  if (isTest) {
-    return Uint8Array.of(0, 0, 0, 0, 0, 0, 0, 0);
-  }
-
-  let time = Date.now();
-  const bytes = [];
-  for (let i = 0; i < 8; i++) {
-    const byte = time & 0xff;
-    bytes.push(byte);
-    time = (time - byte) / 256; // Javascript right shift (>>>) only works on 32 bit integers
-  }
-  return Uint8Array.from(bytes).reverse();
-}
+import timestamp from './timestamp';
 
 export async function sign(
   wh: WalletHandle,
@@ -27,7 +11,7 @@ export async function sign(
 ): Promise<Message> {
   const { [field]: data, ...originalMessage } = message;
 
-  const dataBuffer = Buffer.concat([timestamp(isTest), Buffer.from(JSON.stringify(data), 'utf8')]);
+  const dataBuffer = Buffer.concat([timestamp(), Buffer.from(JSON.stringify(data), 'utf8')]);
   const signatureBuffer = await indy.cryptoSign(wh, signer, dataBuffer);
 
   const signedMessage = {
