@@ -163,7 +163,7 @@ export class Agent {
       ),
       [RoutingMessageType.ForwardMessage]: new ForwardHandler(this.providerRoutingService),
       [TrustPingMessageType.TrustPingMessage]: trustPingHandler,
-      [TrustPingMessageType.TrustPingReplyMessage]: trustPingHandler,
+      [TrustPingMessageType.TrustPingResponseMessage]: trustPingHandler,
     };
 
     this.handlers = handlers;
