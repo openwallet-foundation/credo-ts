@@ -2,13 +2,7 @@ import indy from 'indy-sdk';
 import { Message } from './types';
 import timestamp from './timestamp';
 
-export async function sign(
-  wh: WalletHandle,
-  message: Message,
-  field: string,
-  signer: Verkey,
-  isTest: boolean = false
-): Promise<Message> {
+export async function sign(wh: WalletHandle, message: Message, field: string, signer: Verkey): Promise<Message> {
   const { [field]: data, ...originalMessage } = message;
 
   const dataBuffer = Buffer.concat([timestamp(), Buffer.from(JSON.stringify(data), 'utf8')]);
