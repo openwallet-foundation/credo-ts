@@ -3,9 +3,9 @@ import { Connection } from './domain/Connection';
 import { InvitationDetails } from './domain/InvitationDetails';
 
 export enum MessageType {
-  ConnectionInvitation = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/didexchange/1.0/invitation',
-  ConnectionRequest = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/didexchange/1.0/request',
-  ConnectionResposne = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/didexchange/1.0/response',
+  ConnectionInvitation = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation',
+  ConnectionRequest = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/request',
+  ConnectionResposne = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/response',
   Ack = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/notification/1.0/ack',
 }
 
@@ -31,8 +31,8 @@ export function createConnectionRequestMessage(connection: Connection, label: st
     '@id': uuid(),
     label: label,
     connection: {
-      did: connection.did,
-      did_doc: connection.didDoc,
+      DID: connection.did,
+      DIDDoc: connection.didDoc,
     },
   };
 }
@@ -45,8 +45,8 @@ export function createConnectionResponseMessage(connection: Connection, thid: st
       thid,
     },
     connection: {
-      did: connection.did,
-      did_doc: connection.didDoc,
+      DID: connection.did,
+      DIDDoc: connection.didDoc,
     },
   };
 }

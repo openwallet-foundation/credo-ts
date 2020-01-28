@@ -8,8 +8,8 @@ export function createOutboundMessage(connection: Connection, payload: Message, 
       endpoint: invitation.serviceEndpoint,
       payload,
       recipientKeys: invitation.recipientKeys,
-      routingKeys: invitation.routingKeys,
-      senderVk: null,
+      routingKeys: invitation.routingKeys || [],
+      senderVk: connection.verkey,
     };
   }
 
