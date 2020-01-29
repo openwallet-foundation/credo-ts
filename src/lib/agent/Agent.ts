@@ -7,6 +7,7 @@ import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { MessageType as ConnectionsMessageType } from '../protocols/connections/messages';
 import { MessageType as BasicMessageMessageType } from '../protocols/basicmessage/messages';
 import { MessageType as RoutingMessageType } from '../protocols/routing/messages';
+import { MessageType as TrustPingMessageType } from '../protocols/trustping/messages';
 import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
 import { BasicMessageService } from '../protocols/basicmessage/BasicMessageService';
 import { ConsumerRoutingService } from '../protocols/routing/ConsumerRoutingService';
@@ -24,6 +25,9 @@ import { BasicMessageHandler } from '../handlers/BasicMessageHandler';
 import { RouteUpdateHandler } from '../handlers/RouteUpdateHandler';
 import { ForwardHandler } from '../handlers/ForwardHandler';
 import { Handler } from '../handlers/Handler';
+import { TrustPingService } from '../protocols/trustping/TrustPingService';
+import { TrustPingMessageHandler } from '../handlers/TrustPingMessageHandler';
+import { TrustPingResponseMessageHandler } from '../handlers/TrustPingResponseMessageHandler';
 
 export class Agent {
   inboundTransporter: InboundTransporter;
@@ -33,6 +37,7 @@ export class Agent {
   basicMessageService: BasicMessageService;
   providerRoutingService: ProviderRoutingService;
   consumerRoutingService: ConsumerRoutingService;
+  trustPingService: TrustPingService;
   handlers: { [key: string]: Handler } = {};
 
   constructor(config: InitConfig, inboundTransporter: InboundTransporter, outboundTransporter: OutboundTransporter) {
@@ -53,6 +58,7 @@ export class Agent {
     this.basicMessageService = new BasicMessageService();
     this.providerRoutingService = new ProviderRoutingService();
     this.consumerRoutingService = new ConsumerRoutingService(this.context);
+    this.trustPingService = new TrustPingService();
 
     this.registerHandlers();
 
@@ -156,6 +162,11 @@ export class Agent {
         this.providerRoutingService
       ),
       [RoutingMessageType.ForwardMessage]: new ForwardHandler(this.providerRoutingService),
+      [TrustPingMessageType.TrustPingMessage]: new TrustPingMessageHandler(
+        this.trustPingService,
+        this.connectionService
+      ),
+      [TrustPingMessageType.TrustPingResponseMessage]: new TrustPingResponseMessageHandler(this.trustPingService),
     };
 
     this.handlers = handlers;

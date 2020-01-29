@@ -9,6 +9,7 @@ import { Context } from '../../agent/Context';
 import { createOutboundMessage } from '../helpers';
 import { Connection } from './domain/Connection';
 import { ConnectionState } from './domain/ConnectionState';
+import { createTrustPingMessage } from '../trustping/messages';
 
 class ConnectionService {
   context: Context;
@@ -82,7 +83,7 @@ class ConnectionService {
     // dotnet doesn't send senderVk here
     // validateSenderKey(connection, sender_verkey);
 
-    const response = createAckMessage(message['@id']);
+    const response = createTrustPingMessage();
     connection.updateState(ConnectionState.COMPLETE);
     return createOutboundMessage(connection, response);
   }
