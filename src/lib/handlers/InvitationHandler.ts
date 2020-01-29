@@ -17,7 +17,7 @@ export class InvitationHandler implements Handler {
     const outboundMessage = await this.connectionService.acceptInvitation(invitation);
 
     const { verkey } = outboundMessage.connection;
-    this.routingService.createRoute(verkey);
+    await this.routingService.createRoute(verkey);
 
     return outboundMessage;
   }
