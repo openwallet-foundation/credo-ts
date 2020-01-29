@@ -22,7 +22,7 @@ class MessageSender {
     const outboundPackedMessage = await this.wallet.pack(payload, recipientKeys, senderVk);
 
     let message = outboundPackedMessage;
-    if (routingKeys.length > 0) {
+    if (routingKeys && routingKeys.length > 0) {
       for (const routingKey of routingKeys) {
         const [recipientKey] = recipientKeys;
         const forwardMessage = createForwardMessage(recipientKey, message);
