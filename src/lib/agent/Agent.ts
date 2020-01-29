@@ -25,8 +25,9 @@ import { BasicMessageHandler } from '../handlers/BasicMessageHandler';
 import { RouteUpdateHandler } from '../handlers/RouteUpdateHandler';
 import { ForwardHandler } from '../handlers/ForwardHandler';
 import { Handler } from '../handlers/Handler';
-import { TrustPingHandler } from '../handlers/TrustPingHandler';
 import { TrustPingService } from '../protocols/trustping/TrustPingService';
+import { TrustPingMessageHandler } from '../handlers/TrustPingMessageHandler';
+import { TrustPingResponseMessageHandler } from '../handlers/TrustPingResponseMessageHandler';
 
 export class Agent {
   inboundTransporter: InboundTransporter;
@@ -147,7 +148,6 @@ export class Agent {
   }
 
   private registerHandlers() {
-    const trustPingHandler = new TrustPingHandler(this.trustPingService, this.connectionService);
     const handlers = {
       [ConnectionsMessageType.ConnectionInvitation]: new InvitationHandler(
         this.connectionService,
@@ -162,8 +162,11 @@ export class Agent {
         this.providerRoutingService
       ),
       [RoutingMessageType.ForwardMessage]: new ForwardHandler(this.providerRoutingService),
-      [TrustPingMessageType.TrustPingMessage]: trustPingHandler,
-      [TrustPingMessageType.TrustPingResponseMessage]: trustPingHandler,
+      [TrustPingMessageType.TrustPingMessage]: new TrustPingMessageHandler(
+        this.trustPingService,
+        this.connectionService
+      ),
+      [TrustPingMessageType.TrustPingResponseMessage]: new TrustPingResponseMessageHandler(this.trustPingService),
     };
 
     this.handlers = handlers;

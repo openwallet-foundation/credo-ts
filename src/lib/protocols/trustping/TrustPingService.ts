@@ -5,7 +5,7 @@ import { Connection } from '../..';
 import { ConnectionState } from '../connections/domain/ConnectionState';
 
 export class TrustPingService {
-  process_ping(inboundMessage: InboundMessage, connection: Connection) {
+  processPing(inboundMessage: InboundMessage, connection: Connection) {
     if (connection.getState() != ConnectionState.COMPLETE) {
       connection.updateState(ConnectionState.COMPLETE);
     }
@@ -16,7 +16,7 @@ export class TrustPingService {
     return null;
   }
 
-  process_ping_response(inboundMessage: InboundMessage) {
+  processPingResponse(inboundMessage: InboundMessage) {
     return null;
   }
 }
