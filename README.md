@@ -78,3 +78,7 @@ You have to start agencies first, because it runs all tests togheter.
 ```
 yarn test
 ```
+
+## Logs
+
+If you don't want agency to be logging you just remove `DEBUG=aries-framework-javascript` from `yarn prod` command in `package.json`
