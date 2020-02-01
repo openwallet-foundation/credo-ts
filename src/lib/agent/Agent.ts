@@ -17,17 +17,17 @@ import { Dispatcher } from './Dispatcher';
 import { MessageSender } from './MessageSender';
 import { InboundTransporter } from '../transport/InboundTransporter';
 import { OutboundTransporter } from '../transport/OutboundTransporter';
-import { InvitationHandler } from '../handlers/InvitationHandler';
-import { ConnectionRequestHandler } from '../handlers/ConnectionRequestHandler';
-import { ConnectionResponseHandler } from '../handlers/ConnectionResponseHandler';
-import { AckMessageHandler } from '../handlers/AckMessageHandler';
-import { BasicMessageHandler } from '../handlers/BasicMessageHandler';
-import { RouteUpdateHandler } from '../handlers/RouteUpdateHandler';
-import { ForwardHandler } from '../handlers/ForwardHandler';
+import { InvitationHandler } from '../handlers/connections/InvitationHandler';
+import { ConnectionRequestHandler } from '../handlers/connections/ConnectionRequestHandler';
+import { ConnectionResponseHandler } from '../handlers/connections/ConnectionResponseHandler';
+import { AckMessageHandler } from '../handlers/acks/AckMessageHandler';
+import { BasicMessageHandler } from '../handlers/basicmessage/BasicMessageHandler';
+import { RouteUpdateHandler } from '../handlers/routing/RouteUpdateHandler';
+import { ForwardHandler } from '../handlers/routing/ForwardHandler';
 import { Handler } from '../handlers/Handler';
 import { TrustPingService } from '../protocols/trustping/TrustPingService';
-import { TrustPingMessageHandler } from '../handlers/TrustPingMessageHandler';
-import { TrustPingResponseMessageHandler } from '../handlers/TrustPingResponseMessageHandler';
+import { TrustPingMessageHandler } from '../handlers/trustping/TrustPingMessageHandler';
+import { TrustPingResponseMessageHandler } from '../handlers/trustping/TrustPingResponseMessageHandler';
 
 export class Agent {
   inboundTransporter: InboundTransporter;

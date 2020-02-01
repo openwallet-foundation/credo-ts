@@ -1,7 +1,7 @@
-import { InboundMessage } from '../types';
-import { Handler } from './Handler';
-import { ConnectionService } from '../protocols/connections/ConnectionService';
-import { ConsumerRoutingService } from '../protocols/routing/ConsumerRoutingService';
+import { InboundMessage } from '../../types';
+import { Handler } from '../Handler';
+import { ConnectionService } from '../../protocols/connections/ConnectionService';
+import { ConsumerRoutingService } from '../../protocols/routing/ConsumerRoutingService';
 
 export class InvitationHandler implements Handler {
   connectionService: ConnectionService;

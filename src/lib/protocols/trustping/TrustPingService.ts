@@ -1,6 +1,6 @@
 import { InboundMessage } from '../../types';
 import { createOutboundMessage } from '../helpers';
-import { createTrustPingResponseMessage, MessageType } from './messages';
+import { createTrustPingResponseMessage } from './messages';
 import { Connection } from '../..';
 import { ConnectionState } from '../connections/domain/ConnectionState';
 

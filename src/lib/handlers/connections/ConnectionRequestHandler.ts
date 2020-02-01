@@ -1,6 +1,6 @@
-import { InboundMessage } from '../types';
-import { Handler } from './Handler';
-import { ConnectionService } from '../protocols/connections/ConnectionService';
+import { InboundMessage } from '../../types';
+import { Handler } from '../Handler';
+import { ConnectionService } from '../../protocols/connections/ConnectionService';
 
 export class ConnectionRequestHandler implements Handler {
   connectionService: ConnectionService;
