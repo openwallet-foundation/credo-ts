@@ -13,10 +13,8 @@ class BasicMessageService {
   save(inboundMessage: InboundMessage, connection: Connection) {
     const { message } = inboundMessage;
     connection.messages.push(message);
-
-    const response = createAckMessage(message['@id']);
-
-    return createOutboundMessage(connection, response);
+    connection.emit('basicMessageReceived', message);
+    return null;
   }
 }
 
