@@ -18,7 +18,7 @@ export async function sign(wh: WalletHandle, message: Message, field: string, si
       '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/signature/1.0/ed25519Sha512_single',
       signature: base64url.encode(signatureBuffer),
       sig_data: base64url.encode(dataBuffer),
-      signer: base64url.encode(signer),
+      signer: signer,
     },
   };
 
@@ -28,7 +28,7 @@ export async function sign(wh: WalletHandle, message: Message, field: string, si
 export async function verify(message: Message, field: string) {
   const { [`${field}~sig`]: data, ...signedMessage } = message;
 
-  const signerVerkey = base64url.decode(data.signer);
+  const signerVerkey = data.signer;
   // first 8 bytes are for 64 bit integer from unix epoch
   const signedData = base64url.toBuffer(data.sig_data);
   const signature = base64url.toBuffer(data.signature);
