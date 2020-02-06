@@ -1,4 +1,5 @@
 import indy from 'indy-sdk';
+import base64url from 'base64url';
 import { Message } from './types';
 import timestamp from './timestamp';
 
@@ -15,8 +16,8 @@ export async function sign(wh: WalletHandle, message: Message, field: string, si
     ...originalMessage,
     [`${field}~sig`]: {
       '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/signature/1.0/ed25519Sha512_single',
-      signature: signatureBuffer.toString('base64'),
-      sig_data: dataBuffer.toString('base64'),
+      signature: base64url.encode(signatureBuffer),
+      sig_data: base64url.encode(dataBuffer),
       signer: signer,
     },
   };
@@ -29,8 +30,8 @@ export async function verify(message: Message, field: string) {
 
   const signerVerkey = data.signer;
   // first 8 bytes are for 64 bit integer from unix epoch
-  const signedData = Buffer.from(data.sig_data, 'base64');
-  const signature = Buffer.from(data.signature, 'base64');
+  const signedData = base64url.toBuffer(data.sig_data);
+  const signature = base64url.toBuffer(data.signature);
 
   // check signature
   const valid = await indy.cryptoVerify(signerVerkey, signedData, signature);
