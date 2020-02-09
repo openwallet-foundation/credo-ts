@@ -1,3 +1,18 @@
+interface Indy {
+  createWallet(config: {}, credentials: {}): Promise<void>;
+  openWallet(config: {}, credentials: {}): Promise<WalletHandle>;
+  closeWallet(wh: WalletHandle): Promise<void>;
+  deleteWallet(config: {}, credentials: {}): Promise<void>;
+  createAndStoreMyDid(wh: WalletHandle, credentials: {}): Promise<[Did, Verkey]>;
+  keyForLocalDid(wh: WalletHandle, did: Did): Promise<Verkey>;
+  cryptoAnonCrypt(recipientVk: Verkey, messageRaw: Buffer): Promise<Buffer>;
+  cryptoSign(wh: WalletHandle, signerVk: Verkey, messageRaw: Buffer): Promise<Buffer>;
+  cryptoVerify(signerVk: Verkey, messageRaw: Buffer, signatureRaw: Buffer): Promise<boolean>;
+  createKey(wh: WalletHandle, key: KeyConfig): Promise<Verkey>;
+  packMessage(wh: WalletHandle, message: Buffer, receiverKeys: Verkey[], senderVk: Verkey | null): Promise<Buffer>;
+  unpackMessage(wh: WalletHandle, jwe: Buffer): Promise<Buffer>;
+}
+
 declare module 'indy-sdk' {
   function createWallet(config: {}, credentials: {}): Promise<void>;
   function openWallet(config: {}, credentials: {}): Promise<WalletHandle>;

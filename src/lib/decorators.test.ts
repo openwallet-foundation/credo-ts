@@ -66,12 +66,12 @@ describe('decorators', () => {
   test('sign decorator signs data in a given field of message', async () => {
     const seed1 = '00000000000000000000000000000My1';
     const verkey = await indy.createKey(wh, { seed: seed1 });
-    const result = await sign(wh, message, 'connection', verkey);
+    const result = await sign(wh, message, 'connection', verkey, indy);
     expect(result).toEqual(signedMessage);
   });
 
   test('verify decorator verifies data in a given field of message', async () => {
-    const result = await verify(signedMessage, 'connection');
+    const result = await verify(signedMessage, 'connection', indy);
     expect(result).toEqual(message);
   });
 
@@ -87,7 +87,7 @@ describe('decorators', () => {
 
     expect.assertions(1);
     try {
-      await verify(wronglySignedMessage, 'connection');
+      await verify(wronglySignedMessage, 'connection', indy);
     } catch (error) {
       expect(error.message).toEqual('Signature is not valid!');
     }

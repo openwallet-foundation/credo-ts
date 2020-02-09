@@ -1,4 +1,3 @@
-import indy from 'indy-sdk';
 import logger from '../logger';
 import { InboundMessage, Message } from '../types';
 import { sign, verify } from '../decorators';
@@ -9,15 +8,17 @@ export class IndyWallet implements Wallet {
   walletConfig: WalletConfig;
   walletCredentials: WalletCredentials;
   publicDid: DidInfo | {} = {};
+  indy: Indy;
 
-  constructor(walletConfig: WalletConfig, walletCredentials: WalletCredentials) {
+  constructor(walletConfig: WalletConfig, walletCredentials: WalletCredentials, indy: Indy) {
     this.walletConfig = walletConfig;
     this.walletCredentials = walletCredentials;
+    this.indy = indy;
   }
 
   async init() {
     try {
-      await indy.createWallet(this.walletConfig, this.walletCredentials);
+      await this.indy.createWallet(this.walletConfig, this.walletCredentials);
     } catch (error) {
       if (error.indyName && error.indyName === 'WalletAlreadyExistsError') {
         logger.log(error.indyName);
@@ -26,7 +27,7 @@ export class IndyWallet implements Wallet {
       }
     }
 
-    this.wh = await indy.openWallet(this.walletConfig, this.walletCredentials);
+    this.wh = await this.indy.openWallet(this.walletConfig, this.walletCredentials);
     logger.log(`Wallet opened with handle: ${this.wh}`);
   }
 
@@ -65,7 +66,7 @@ export class IndyWallet implements Wallet {
       throw Error('Wallet has not been initialized yet');
     }
 
-    return indy.createAndStoreMyDid(this.wh, didConfig || {});
+    return this.indy.createAndStoreMyDid(this.wh, didConfig || {});
   }
 
   async pack(payload: {}, recipientKeys: Verkey[], senderVk: Verkey): Promise<JsonWebKey> {
@@ -74,7 +75,7 @@ export class IndyWallet implements Wallet {
     }
 
     const messageRaw = Buffer.from(JSON.stringify(payload), 'utf-8');
-    const packedMessage = await indy.packMessage(this.wh, messageRaw, recipientKeys, senderVk);
+    const packedMessage = await this.indy.packMessage(this.wh, messageRaw, recipientKeys, senderVk);
     return JSON.parse(packedMessage.toString('utf-8'));
   }
 
@@ -83,7 +84,7 @@ export class IndyWallet implements Wallet {
       throw Error('Wallet has not been initialized yet');
     }
 
-    const unpackedMessageBuffer = await indy.unpackMessage(
+    const unpackedMessageBuffer = await this.indy.unpackMessage(
       this.wh,
       Buffer.from(JSON.stringify(messagePackage), 'utf-8')
     );
@@ -99,11 +100,11 @@ export class IndyWallet implements Wallet {
       throw Error('Wallet has not been initialized yet');
     }
 
-    return sign(this.wh, message, attribute, verkey);
+    return sign(this.wh, message, attribute, verkey, this.indy);
   }
 
   async verify(message: Message, attribute: string) {
-    return verify(message, attribute);
+    return verify(message, attribute, this.indy);
   }
 
   async close() {
@@ -111,7 +112,7 @@ export class IndyWallet implements Wallet {
       throw Error('Wallet has not been initialized yet');
     }
 
-    return indy.closeWallet(this.wh);
+    return this.indy.closeWallet(this.wh);
   }
 
   async delete() {
@@ -119,7 +120,7 @@ export class IndyWallet implements Wallet {
       throw Error('Wallet has not been initialized yet');
     }
 
-    return indy.deleteWallet(this.walletConfig, this.walletCredentials);
+    return this.indy.deleteWallet(this.walletConfig, this.walletCredentials);
   }
 
   private keyForLocalDid(did: Did) {
@@ -127,6 +128,6 @@ export class IndyWallet implements Wallet {
       throw Error('Wallet has not been initialized yet');
     }
 
-    return indy.keyForLocalDid(this.wh, did);
+    return this.indy.keyForLocalDid(this.wh, did);
   }
 }
