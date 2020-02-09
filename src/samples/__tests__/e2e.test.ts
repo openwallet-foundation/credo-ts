@@ -5,6 +5,7 @@ import { Agent, decodeInvitationFromUrl, InboundTransporter, OutboundTransporter
 import { WireMessage, OutboundPackage } from '../../lib/types';
 import { get, post } from '../http';
 import { toBeConnectedWith } from '../../lib/testUtils';
+import indy from 'indy-sdk';
 
 jest.setTimeout(15000);
 
@@ -42,10 +43,10 @@ describe('with agency', () => {
     const bobAgentSender = new HttpOutboundTransporter();
     const bobAgentReceiver = new PollingInboundTransporter();
 
-    aliceAgent = new Agent(aliceConfig, aliceAgentReceiver, aliceAgentSender);
+    aliceAgent = new Agent(aliceConfig, aliceAgentReceiver, aliceAgentSender, indy);
     await aliceAgent.init();
 
-    bobAgent = new Agent(bobConfig, bobAgentReceiver, bobAgentSender);
+    bobAgent = new Agent(bobConfig, bobAgentReceiver, bobAgentSender, indy);
     await bobAgent.init();
 
     const aliceInbound = aliceAgent.getInboundConnection();

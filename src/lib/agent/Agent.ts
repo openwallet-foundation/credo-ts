@@ -40,10 +40,15 @@ export class Agent {
   trustPingService: TrustPingService;
   handlers: { [key: string]: Handler } = {};
 
-  constructor(config: InitConfig, inboundTransporter: InboundTransporter, outboundTransporter: OutboundTransporter) {
+  constructor(
+    config: InitConfig,
+    inboundTransporter: InboundTransporter,
+    outboundTransporter: OutboundTransporter,
+    indy: Indy
+  ) {
     logger.logJson('Creating agent with config', config);
 
-    const wallet = new IndyWallet({ id: config.walletName }, { key: config.walletKey });
+    const wallet = new IndyWallet({ id: config.walletName }, { key: config.walletKey }, indy);
     const messageSender = new MessageSender(wallet, outboundTransporter);
 
     this.inboundTransporter = inboundTransporter;

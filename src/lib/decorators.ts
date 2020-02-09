@@ -1,9 +1,14 @@
-import indy from 'indy-sdk';
 import base64url from 'base64url';
 import { Message } from './types';
 import timestamp from './timestamp';
 
-export async function sign(wh: WalletHandle, message: Message, field: string, signer: Verkey): Promise<Message> {
+export async function sign(
+  wh: WalletHandle,
+  message: Message,
+  field: string,
+  signer: Verkey,
+  indy: Indy
+): Promise<Message> {
   const { [field]: data, ...originalMessage } = message;
 
   const dataBuffer = Buffer.concat([timestamp(), Buffer.from(JSON.stringify(data), 'utf8')]);
@@ -25,7 +30,7 @@ export async function sign(wh: WalletHandle, message: Message, field: string, si
   return signedMessage;
 }
 
-export async function verify(message: Message, field: string) {
+export async function verify(message: Message, field: string, indy: Indy) {
   const { [`${field}~sig`]: data, ...signedMessage } = message;
 
   const signerVerkey = data.signer;
