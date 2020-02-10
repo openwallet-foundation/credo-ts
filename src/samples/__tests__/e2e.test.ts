@@ -122,10 +122,13 @@ describe('with agency', () => {
     await aliceAgent.sendMessageToConnection(aliceConnections[1], message);
 
     const bobMessages = await poll(
-      () => {
-        console.log(`Getting Bob's connection messages...`);
-        const connections = bobAgent.getConnections();
-        return connections[1].messages;
+      async () => {
+        console.log(`Getting Bob's messages from Alice...`);
+        const messages = await bobAgent.basicMessageRepository.findByQuery({
+          from: aliceConnections[1].did,
+          to: aliceConnections[1].theirDid,
+        });
+        return messages;
       },
       (messages: WireMessage[]) => messages.length < 1,
       100
