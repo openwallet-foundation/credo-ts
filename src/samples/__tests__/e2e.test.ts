@@ -13,16 +13,16 @@ expect.extend({ toBeConnectedWith });
 
 const aliceConfig = {
   label: 'e2e Alice',
-  walletName: 'e2e-alice',
-  walletKey: '00000000000000000000000000000Test01',
   agencyUrl: 'http://localhost:3001',
+  walletConfig: { id: 'e2e-alice' },
+  walletCredentials: { key: '00000000000000000000000000000Test01' },
 };
 
 const bobConfig = {
   label: 'e2e Bob',
-  walletName: 'e2e-bob',
-  walletKey: '00000000000000000000000000000Test02',
   agencyUrl: 'http://localhost:3002',
+  walletConfig: { id: 'e2e-bob' },
+  walletCredentials: { key: '00000000000000000000000000000Test02' },
 };
 
 describe('with agency', () => {

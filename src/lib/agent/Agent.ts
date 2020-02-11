@@ -48,7 +48,7 @@ export class Agent {
   ) {
     logger.logJson('Creating agent with config', config);
 
-    const wallet = new IndyWallet({ id: config.walletName }, { key: config.walletKey }, indy);
+    const wallet = new IndyWallet(config.walletConfig, config.walletCredentials, indy);
     const messageSender = new MessageSender(wallet, outboundTransporter);
 
     this.inboundTransporter = inboundTransporter;
