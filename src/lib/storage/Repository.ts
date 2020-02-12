@@ -1,11 +1,11 @@
-import { BaseRecord, RecordTypes } from './BaseRecord';
+import { BaseRecord, RecordType } from './BaseRecord';
 import { StorageService } from './StorageService';
 
 export class Repository<T extends BaseRecord> {
   storageService: StorageService<T>;
-  recordType: { new (...args: any[]): T; type: RecordTypes };
+  recordType: { new (...args: any[]): T; type: RecordType };
 
-  constructor(recordType: { new (...args: any[]): T; type: RecordTypes }, storageService: StorageService<T>) {
+  constructor(recordType: { new (...args: any[]): T; type: RecordType }, storageService: StorageService<T>) {
     this.storageService = storageService;
     this.recordType = recordType;
   }

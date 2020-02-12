@@ -31,7 +31,6 @@ import { TrustPingResponseMessageHandler } from '../handlers/TrustPingResponseMe
 import { BasicMessageRecord } from '../storage/BasicMessageRecord';
 import { Repository } from '../storage/Repository';
 import { IndyStorageService } from '../storage/IndyStorageService';
-import { StorageService } from '../storage/StorageService';
 import { ConnectionRecord } from '../storage/ConnectionRecord';
 
 export class Agent {

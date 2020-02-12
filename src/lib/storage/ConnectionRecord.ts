@@ -1,4 +1,4 @@
-import { BaseRecord, RecordTypes } from './BaseRecord';
+import { BaseRecord, RecordType } from './BaseRecord';
 import { ConnectionProps } from '../protocols/connections/domain/Connection';
 import { DidDoc } from '../protocols/connections/domain/DidDoc';
 import { InvitationDetails } from '../protocols/connections/domain/InvitationDetails';
@@ -20,8 +20,8 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
   state: ConnectionState;
   endpoint?: string;
 
-  type = RecordTypes.CONNECTION_RECORD;
-  static type: RecordTypes = RecordTypes.CONNECTION_RECORD;
+  type = RecordType.ConnectionRecord;
+  static type: RecordType = RecordType.ConnectionRecord;
 
   constructor(props: ConnectionStorageProps) {
     super(props.id ? props.id : uuid());

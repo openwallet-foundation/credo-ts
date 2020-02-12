@@ -1,9 +1,7 @@
-import uuid from 'uuid/v4';
-
-export enum RecordTypes {
-  BASE_RECORD = 'BaseRecord',
-  CONNECTION_RECORD = 'ConnectionRecord',
-  BASIC_MESSAGE_RECORD = 'BasicMessageRecord',
+export enum RecordType {
+  BaseRecord = 'BaseRecord',
+  ConnectionRecord = 'ConnectionRecord',
+  BasicMessageRecord = 'BasicMessageRecord',
 }
 
 export abstract class BaseRecord {
@@ -14,8 +12,8 @@ export abstract class BaseRecord {
 
   // Required because Javascript doesn't allow accessing static types
   // like instance.static_memeber
-  type: RecordTypes = RecordTypes.BASE_RECORD;
-  static type: RecordTypes = RecordTypes.BASE_RECORD;
+  type: RecordType = RecordType.BaseRecord;
+  static type: RecordType = RecordType.BaseRecord;
 
   constructor(id: string) {
     this.id = id;

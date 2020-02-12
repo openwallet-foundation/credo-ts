@@ -2,7 +2,6 @@ import { Repository } from './Repository';
 import { IndyStorageService } from './IndyStorageService';
 import { IndyWallet } from '../wallet/IndyWallet';
 import { ConnectionRecord } from './ConnectionRecord';
-import { RecordTypes } from './BaseRecord';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
 
 describe('connection repository', () => {

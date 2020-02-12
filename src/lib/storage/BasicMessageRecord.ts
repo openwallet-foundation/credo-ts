@@ -1,5 +1,5 @@
 import uuid from 'uuid/v4';
-import { BaseRecord, RecordTypes } from './BaseRecord';
+import { BaseRecord, RecordType } from './BaseRecord';
 
 export interface BasicMessageStorageProps {
   id?: string;
@@ -13,8 +13,8 @@ export class BasicMessageRecord extends BaseRecord implements BasicMessageStorag
   content: string;
   sent_time: string;
 
-  type = RecordTypes.BASIC_MESSAGE_RECORD;
-  static type: RecordTypes = RecordTypes.BASIC_MESSAGE_RECORD;
+  type = RecordType.BasicMessageRecord;
+  static type: RecordType = RecordType.BasicMessageRecord;
 
   constructor(props: BasicMessageStorageProps) {
     super(props.id ? props.id : uuid());
