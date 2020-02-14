@@ -9,6 +9,7 @@ import { Context } from '../../agent/Context';
 import { createOutboundMessage } from '../helpers';
 import { Connection } from './domain/Connection';
 import { ConnectionState } from './domain/ConnectionState';
+import { DidDoc, Service, PublicKey, PublicKeyType, Authentication } from './domain/DidDoc';
 import { createTrustPingMessage } from '../trustping/messages';
 
 class ConnectionService {
@@ -106,20 +107,11 @@ class ConnectionService {
   }
 
   async createConnection(): Promise<Connection> {
-    const [did, verkey] = await this.context.wallet.createDid();
-    const did_doc = {
-      '@context': 'https://w3id.org/did/v1',
-      service: [
-        {
-          id: 'did:example:123456789abcdefghi#did-communication',
-          type: 'did-communication',
-          priority: 0,
-          recipientKeys: [verkey],
-          routingKeys: this.getRoutingKeys(),
-          serviceEndpoint: this.getEndpoint(),
-        },
-      ],
-    };
+    const [did, verkey] = await this.context.wallet.createDid({ method_name: 'sov' });
+    const publicKey = new PublicKey(`${did}#1`, PublicKeyType.ED25519_SIG_2018, did, verkey);
+    const service = new Service(`${did};indy`, this.getEndpoint(), [verkey], this.getRoutingKeys(), 0, 'IndyAgent');
+    const auth = new Authentication(publicKey);
+    const did_doc = new DidDoc(did, [auth], [publicKey], [service]);
 
     const connection = new Connection({
       did,

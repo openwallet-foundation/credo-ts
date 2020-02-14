@@ -25,8 +25,11 @@ export interface DidInfo {
 }
 
 export interface DidConfig {
-  did: string;
-  seed: string;
+  did?: string;
+  seed?: string;
+  crypto_type?: string;
+  cid?: boolean;
+  method_name?: string;
 }
 
 export interface WalletConfig {
