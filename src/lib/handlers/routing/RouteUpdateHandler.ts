@@ -1,7 +1,7 @@
-import { InboundMessage } from '../types';
-import { Handler } from './Handler';
-import { ConnectionService } from '../protocols/connections/ConnectionService';
-import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
+import { InboundMessage } from '../../types';
+import { Handler } from '../Handler';
+import { ConnectionService } from '../../protocols/connections/ConnectionService';
+import { ProviderRoutingService } from '../../protocols/routing/ProviderRoutingService';
 
 export class RouteUpdateHandler implements Handler {
   connectionService: ConnectionService;

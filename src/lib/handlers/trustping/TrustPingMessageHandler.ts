@@ -1,8 +1,7 @@
-import { Handler } from './Handler';
-import { InboundMessage } from '../types';
-import { TrustPingService } from '../protocols/trustping/TrustPingService';
-import { ConnectionService } from '../protocols/connections/ConnectionService';
-import { MessageType } from '../protocols/trustping/messages';
+import { Handler } from '../Handler';
+import { InboundMessage } from '../../types';
+import { TrustPingService } from '../../protocols/trustping/TrustPingService';
+import { ConnectionService } from '../../protocols/connections/ConnectionService';
 
 export class TrustPingMessageHandler implements Handler {
   trustPingService: TrustPingService;
