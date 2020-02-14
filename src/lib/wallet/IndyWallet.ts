@@ -123,6 +123,66 @@ export class IndyWallet implements Wallet {
     return this.indy.deleteWallet(this.walletConfig, this.walletCredentials);
   }
 
+  async addWalletRecord(type: string, id: string, value: string, tags: {}) {
+    if (!this.wh) {
+      throw new Error(`Wallet has not been initialized yet`);
+    }
+    return this.indy.addWalletRecord(this.wh, type, id, value, tags);
+  }
+
+  async updateWalletRecordValue(type: string, id: string, value: string) {
+    if (!this.wh) {
+      throw new Error(`Wallet has not been initialized yet`);
+    }
+    return this.indy.updateWalletRecordValue(this.wh, type, id, value);
+  }
+
+  async updateWalletRecordTags(type: string, id: string, tags: {}) {
+    if (!this.wh) {
+      throw new Error(`Wallet has not been initialized yet`);
+    }
+    return this.indy.addWalletRecordTags(this.wh, type, id, tags);
+  }
+
+  async deleteWalletRecord(type: string, id: string) {
+    if (!this.wh) {
+      throw new Error(`Wallet has not been initialized yet`);
+    }
+    return this.indy.deleteWalletRecord(this.wh, type, id);
+  }
+
+  async search(type: string, query: {}, options: {}) {
+    if (!this.wh) {
+      throw new Error(`Wallet has not been initialized yet`);
+    }
+    const sh: number = await this.indy.openWalletSearch(this.wh, type, query, options);
+    const generator = async function*(indy: Indy, wh: number) {
+      try {
+        while (true) {
+          // count should probably be exported as a config?
+          const recordSearch = await indy.fetchWalletSearchNextRecords(wh, sh, 10);
+          for (const record of recordSearch.records) {
+            yield record;
+          }
+        }
+      } catch (error) {
+        // pass
+      } finally {
+        await indy.closeWalletSearch(sh);
+        return;
+      }
+    };
+
+    return generator(this.indy, this.wh);
+  }
+
+  getWalletRecord(type: string, id: string, options: {}): Promise<WalletRecord> {
+    if (!this.wh) {
+      throw new Error(`Wallet has not been initialized yet`);
+    }
+    return this.indy.getWalletRecord(this.wh, type, id, options);
+  }
+
   private keyForLocalDid(did: Did) {
     if (!this.wh) {
       throw Error('Wallet has not been initialized yet');

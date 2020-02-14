@@ -11,6 +11,12 @@ export interface Wallet {
   unpack(messagePackage: JsonWebKey): Promise<InboundMessage>;
   sign(message: Message, attribute: string, verkey: Verkey): Promise<Message>;
   verify(message: Message, attribute: string): Promise<Message>;
+  addWalletRecord(type: string, id: string, value: string, tags: {}): Promise<void>;
+  updateWalletRecordValue(type: string, id: string, value: string): Promise<void>;
+  updateWalletRecordTags(type: string, id: string, tags: {}): Promise<void>;
+  deleteWalletRecord(type: string, id: string): Promise<void>;
+  getWalletRecord(type: string, id: string, options: {}): Promise<WalletRecord>;
+  search(type: string, query: {}, options: {}): Promise<AsyncIterable<WalletRecord>>;
 }
 
 export interface DidInfo {

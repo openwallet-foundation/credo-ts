@@ -28,6 +28,10 @@ import { Handler } from '../handlers/Handler';
 import { TrustPingService } from '../protocols/trustping/TrustPingService';
 import { TrustPingMessageHandler } from '../handlers/trustping/TrustPingMessageHandler';
 import { TrustPingResponseMessageHandler } from '../handlers/trustping/TrustPingResponseMessageHandler';
+import { BasicMessageRecord } from '../storage/BasicMessageRecord';
+import { Repository } from '../storage/Repository';
+import { IndyStorageService } from '../storage/IndyStorageService';
+import { ConnectionRecord } from '../storage/ConnectionRecord';
 
 export class Agent {
   inboundTransporter: InboundTransporter;
@@ -39,6 +43,8 @@ export class Agent {
   consumerRoutingService: ConsumerRoutingService;
   trustPingService: TrustPingService;
   handlers: { [key: string]: Handler } = {};
+  basicMessageRepository: Repository<BasicMessageRecord>;
+  connectionRepository: Repository<ConnectionRecord>;
 
   constructor(
     config: InitConfig,
@@ -59,8 +65,13 @@ export class Agent {
       messageSender,
     };
 
+    const storageService = new IndyStorageService(wallet);
+
+    this.basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService);
+    this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService);
+
     this.connectionService = new ConnectionService(this.context);
-    this.basicMessageService = new BasicMessageService();
+    this.basicMessageService = new BasicMessageService(this.basicMessageRepository);
     this.providerRoutingService = new ProviderRoutingService();
     this.consumerRoutingService = new ConsumerRoutingService(this.context);
     this.trustPingService = new TrustPingService();
@@ -140,7 +151,7 @@ export class Agent {
   }
 
   async sendMessageToConnection(connection: Connection, message: string) {
-    const outboundMessage = this.basicMessageService.send(message, connection);
+    const outboundMessage = await this.basicMessageService.send(message, connection);
     await this.context.messageSender.sendMessage(outboundMessage);
   }
 

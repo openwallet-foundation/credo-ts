@@ -3,7 +3,7 @@ import { ConnectionState } from './ConnectionState';
 import { DidDoc } from './DidDoc';
 import { InvitationDetails } from './InvitationDetails';
 
-interface ConnectionProps {
+export interface ConnectionProps {
   did: Did;
   didDoc: DidDoc;
   verkey: Verkey;
@@ -12,7 +12,6 @@ interface ConnectionProps {
   invitation?: InvitationDetails;
   state: ConnectionState;
   endpoint?: string;
-  messages: any[];
 }
 
 interface DidExchangeConnection {
@@ -28,7 +27,6 @@ export class Connection extends EventEmitter {
   theirDidDoc?: DidDoc;
   invitation?: InvitationDetails;
   endpoint?: string;
-  messages: any[];
 
   private state: ConnectionState;
 
@@ -41,7 +39,6 @@ export class Connection extends EventEmitter {
     this.theirDidDoc = props.theirDidDoc;
     this.invitation = props.invitation;
     this.state = props.state;
-    this.messages = props.messages;
   }
 
   get theirKey() {

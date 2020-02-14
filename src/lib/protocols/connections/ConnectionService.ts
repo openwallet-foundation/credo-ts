@@ -126,7 +126,6 @@ class ConnectionService {
       didDoc: did_doc,
       verkey,
       state: ConnectionState.INIT,
-      messages: [],
     });
 
     this.connections.push(connection);
