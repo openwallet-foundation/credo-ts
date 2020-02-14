@@ -1,4 +1,4 @@
-import { OutboundMessage } from '../types';
+import { OutboundMessage, OutboundPackage } from '../types';
 import { Handler } from '../handlers/Handler';
 import { MessageSender } from './MessageSender';
 
@@ -11,7 +11,7 @@ class Dispatcher {
     this.messageSender = messageSender;
   }
 
-  async dispatch(inboundMessage: any): Promise<OutboundMessage | null> {
+  async dispatch(inboundMessage: any): Promise<OutboundMessage | OutboundPackage | null> {
     const messageType: string = inboundMessage.message['@type'];
     const handler = this.handlers[messageType];
 
@@ -21,7 +21,10 @@ class Dispatcher {
 
     const outboundMessage = await handler.handle(inboundMessage);
     if (outboundMessage) {
-      this.messageSender.sendMessage(outboundMessage);
+      if (inboundMessage.message['~transport']) {
+        return await this.messageSender.packMessage(outboundMessage);
+      }
+      await this.messageSender.sendMessage(outboundMessage);
     }
     return outboundMessage;
   }

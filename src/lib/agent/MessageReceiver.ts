@@ -34,8 +34,7 @@ class MessageReceiver {
     }
 
     logger.logJson('inboundMessage', inboundMessage);
-    const outboundMessage = await this.dispatcher.dispatch(inboundMessage);
-    return outboundMessage && outboundMessage.connection.verkey;
+    return await this.dispatcher.dispatch(inboundMessage);
   }
 }
 
