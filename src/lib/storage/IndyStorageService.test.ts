@@ -1,17 +1,37 @@
 import { Repository } from './Repository';
 import { IndyStorageService } from './IndyStorageService';
 import { IndyWallet } from '../wallet/IndyWallet';
-import { ConnectionRecord } from './ConnectionRecord';
-import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
+import { BaseRecord, RecordType } from './BaseRecord';
+import uuid from 'uuid/v4';
+import indy from 'indy-sdk';
+
+interface TestRecordProps {
+  id?: string;
+  tags: { [keys: string]: string };
+  foo: string;
+}
+
+class TestRecord extends BaseRecord {
+  foo: string;
+
+  static type: RecordType = RecordType.BaseRecord;
+  type: RecordType = RecordType.BaseRecord;
+
+  constructor(props: TestRecordProps) {
+    super(props.id ? props.id : uuid());
+    this.foo = props.foo;
+    this.tags = props.tags;
+  }
+}
 
 describe('connection repository', () => {
   let wallet: IndyWallet;
-  let cr: Repository<ConnectionRecord>;
+  let tr: Repository<TestRecord>;
 
   beforeEach(async () => {
-    wallet = new IndyWallet({ id: 'testWallet' }, { key: 'asbdabsd' });
+    wallet = new IndyWallet({ id: 'testWallet' }, { key: 'asbdabsd' }, indy);
     const storageService = new IndyStorageService(wallet);
-    cr = new Repository<ConnectionRecord>(ConnectionRecord, storageService);
+    tr = new Repository<TestRecord>(TestRecord, storageService);
     await wallet.init();
   });
 
@@ -22,17 +42,11 @@ describe('connection repository', () => {
 
   const insertRecord = async () => {
     const props = {
-      did: '123123',
-      didDoc: {
-        '@context': 'diddoccontext',
-        service: [],
-      },
-      verkey: 'myverkey',
-      state: ConnectionState.INVITED,
+      foo: 'bar',
       tags: { myTag: 'foobar' },
     };
-    const record = new ConnectionRecord(props);
-    await cr.save(record);
+    const record = new TestRecord(props);
+    await tr.save(record);
     return record;
   };
 
@@ -42,51 +56,45 @@ describe('connection repository', () => {
 
   test('it is able to get the record', async () => {
     const record = await insertRecord();
-    const found = await cr.find(record.id);
+    const found = await tr.find(record.id);
     expect(found.id).toStrictEqual(record.id);
   });
 
   test('it is able to find all records', async () => {
     for (let i = 0; i < 10; i++) {
       const props = {
-        did: `123123_${i}`,
-        didDoc: {
-          '@context': 'diddoccontext',
-          service: [],
-        },
-        verkey: 'myverkey',
-        state: ConnectionState.INVITED,
+        foo: `123123_${i}`,
         tags: {},
       };
-      const rec = new ConnectionRecord(props);
-      await cr.save(rec);
+      const rec = new TestRecord(props);
+      await tr.save(rec);
     }
 
-    const records = await cr.findAll();
+    const records = await tr.findAll();
     expect(records.length).toStrictEqual(10);
   });
 
   test('it is able to update records', async () => {
     const record = await insertRecord();
     record.tags = { ...record.tags, foo: 'bar' };
-    record.endpoint = 'https://example.com';
-    await cr.update(record);
-    const got = await cr.find(record.id);
-    expect(got.endpoint).toStrictEqual(record.endpoint);
+    record.foo = 'foobaz';
+    await tr.update(record);
+    const got = await tr.find(record.id);
+    expect(got.foo).toStrictEqual(record.foo);
     expect(got.tags).toStrictEqual(record.tags);
   });
 
   test('it is able to delete a record', async () => {
     const record = await insertRecord();
-    await cr.delete(record);
+    await tr.delete(record);
     expect(async () => {
-      await cr.find(record.id);
+      await tr.find(record.id);
     }).rejects;
   });
 
   test('it is able to query a record', async () => {
-    const record = await insertRecord();
-    const result = await cr.findByQuery({ myTag: 'foobar' });
+    await insertRecord();
+    const result = await tr.findByQuery({ myTag: 'foobar' });
     expect(result.length).toBe(1);
   });
 });

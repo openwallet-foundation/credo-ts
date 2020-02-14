@@ -17,7 +17,7 @@ export abstract class BaseRecord {
 
   constructor(id: string) {
     this.id = id;
-    this.createdAt = new Date().getUTCMilliseconds();
+    this.createdAt = Date.now();
     this.tags = {};
   }
 
