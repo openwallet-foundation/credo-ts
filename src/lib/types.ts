@@ -1,4 +1,5 @@
 import { Connection } from './protocols/connections/domain/Connection';
+import { WalletConfig, WalletCredentials } from './wallet/Wallet';
 
 type $FixMe = any;
 
@@ -8,11 +9,11 @@ export interface InitConfig {
   url?: string;
   port?: string | number;
   label: string;
-  walletName: string;
-  walletKey: string;
   publicDid?: Did;
   publicDidSeed?: string;
   agencyUrl?: string;
+  walletConfig: WalletConfig;
+  walletCredentials: WalletCredentials;
 }
 
 export interface Message {

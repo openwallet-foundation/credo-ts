@@ -5,6 +5,7 @@ import { Agent, decodeInvitationFromUrl, InboundTransporter, OutboundTransporter
 import { WireMessage, OutboundPackage } from '../../lib/types';
 import { get, post } from '../http';
 import { toBeConnectedWith } from '../../lib/testUtils';
+import indy from 'indy-sdk';
 
 jest.setTimeout(15000);
 
@@ -12,21 +13,29 @@ expect.extend({ toBeConnectedWith });
 
 const aliceConfig = {
   label: 'e2e Alice',
-  walletName: 'e2e-alice',
-  walletKey: '00000000000000000000000000000Test01',
   agencyUrl: 'http://localhost:3001',
+  walletConfig: { id: 'e2e-alice' },
+  walletCredentials: { key: '00000000000000000000000000000Test01' },
 };
 
 const bobConfig = {
   label: 'e2e Bob',
-  walletName: 'e2e-bob',
-  walletKey: '00000000000000000000000000000Test02',
   agencyUrl: 'http://localhost:3002',
+  walletConfig: { id: 'e2e-bob' },
+  walletCredentials: { key: '00000000000000000000000000000Test02' },
 };
 
 describe('with agency', () => {
   let aliceAgent: Agent;
   let bobAgent: Agent;
+
+  afterAll(async () => {
+    (aliceAgent.inboundTransporter as PollingInboundTransporter).stop = true;
+    (bobAgent.inboundTransporter as PollingInboundTransporter).stop = true;
+
+    // Wait for messages to flush out
+    await new Promise(r => setTimeout(r, 1000));
+  });
 
   test('make a connection with agency', async () => {
     const aliceAgentSender = new HttpOutboundTransporter();
@@ -34,10 +43,10 @@ describe('with agency', () => {
     const bobAgentSender = new HttpOutboundTransporter();
     const bobAgentReceiver = new PollingInboundTransporter();
 
-    aliceAgent = new Agent(aliceConfig, aliceAgentReceiver, aliceAgentSender);
+    aliceAgent = new Agent(aliceConfig, aliceAgentReceiver, aliceAgentSender, indy);
     await aliceAgent.init();
 
-    bobAgent = new Agent(bobConfig, bobAgentReceiver, bobAgentSender);
+    bobAgent = new Agent(bobConfig, bobAgentReceiver, bobAgentSender, indy);
     await bobAgent.init();
 
     const aliceInbound = aliceAgent.getInboundConnection();
@@ -127,6 +136,11 @@ describe('with agency', () => {
 });
 
 class PollingInboundTransporter implements InboundTransporter {
+  stop: boolean;
+
+  constructor() {
+    this.stop = false;
+  }
   async start(agent: Agent) {
     await this.registerAgency(agent);
   }
@@ -157,7 +171,7 @@ class PollingInboundTransporter implements InboundTransporter {
           agent.receiveMessage(JSON.parse(message));
         }
       },
-      () => true,
+      () => !this.stop,
       100
     );
   }

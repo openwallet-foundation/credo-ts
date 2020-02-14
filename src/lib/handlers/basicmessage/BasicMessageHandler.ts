@@ -1,7 +1,7 @@
-import { InboundMessage } from '../types';
-import { Handler } from './Handler';
-import { ConnectionService } from '../protocols/connections/ConnectionService';
-import { BasicMessageService } from '../protocols/basicmessage/BasicMessageService';
+import { InboundMessage } from '../../types';
+import { Handler } from '../Handler';
+import { ConnectionService } from '../../protocols/connections/ConnectionService';
+import { BasicMessageService } from '../../protocols/basicmessage/BasicMessageService';
 
 export class BasicMessageHandler implements Handler {
   connectionService: ConnectionService;

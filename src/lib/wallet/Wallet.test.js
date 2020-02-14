@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { IndyWallet } = require('./IndyWallet');
+const indy = require('indy-sdk');
 
 describe('Wallet', () => {
-  const wallet = new IndyWallet({ id: 'test_wallet' }, { key: 'test_key' });
+  const wallet = new IndyWallet({ id: 'test_wallet' }, { key: 'test_key' }, indy);
 
   test('initialize public did', async () => {
     await wallet.init();

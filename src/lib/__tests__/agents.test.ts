@@ -5,6 +5,7 @@ import { Subject } from 'rxjs';
 import { Agent, decodeInvitationFromUrl, InboundTransporter, OutboundTransporter } from '..';
 import { toBeConnectedWith } from '../testUtils';
 import { OutboundPackage, WireMessage } from '../types';
+import indy from 'indy-sdk';
 
 jest.setTimeout(10000);
 
@@ -12,14 +13,14 @@ expect.extend({ toBeConnectedWith });
 
 const aliceConfig = {
   label: 'Alice',
-  walletName: 'alice',
-  walletKey: '00000000000000000000000000000Test01',
+  walletConfig: { id: 'alice' },
+  walletCredentials: { key: '00000000000000000000000000000Test01' },
 };
 
 const bobConfig = {
   label: 'Bob',
-  walletName: 'bob',
-  walletKey: '00000000000000000000000000000Test02',
+  walletConfig: { id: 'bob' },
+  walletCredentials: { key: '00000000000000000000000000000Test02' },
 };
 
 describe('agents', () => {
@@ -36,10 +37,10 @@ describe('agents', () => {
     const bobAgentInbound = new SubjectInboundTransporter(bobMessages);
     const bobAgentOutbound = new SubjectOutboundTransporter(aliceMessages);
 
-    aliceAgent = new Agent(aliceConfig, aliceAgentInbound, aliceAgentOutbound);
+    aliceAgent = new Agent(aliceConfig, aliceAgentInbound, aliceAgentOutbound, indy);
     await aliceAgent.init();
 
-    bobAgent = new Agent(bobConfig, bobAgentInbound, bobAgentOutbound);
+    bobAgent = new Agent(bobConfig, bobAgentInbound, bobAgentOutbound, indy);
     await bobAgent.init();
 
     const invitationUrl = await aliceAgent.createInvitationUrl();
@@ -124,7 +125,7 @@ class SubjectOutboundTransporter implements OutboundTransporter {
     this.subject = subject;
   }
 
-  sendMessage(outboundPackage: OutboundPackage) {
+  async sendMessage(outboundPackage: OutboundPackage, receive_reply: boolean) {
     console.log('Sending message...');
     const { payload } = outboundPackage;
     console.log(payload);

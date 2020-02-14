@@ -19,14 +19,31 @@ export interface DidInfo {
 }
 
 export interface DidConfig {
-  did: string;
-  seed: string;
+  did?: string;
+  seed?: string;
+  crypto_type?: string;
+  cid?: boolean;
+  method_name?: string;
 }
 
 export interface WalletConfig {
   id: string;
+  storage_type?: string;
+  storage_config?: WalletStorageConfig;
+}
+
+export interface WalletStorageConfig {
+  path?: string;
 }
 
 export interface WalletCredentials {
   key: string;
+  storage_credentials?: {};
+  key_derivation_method?: WalletKeyDerivationMethod;
+}
+
+export enum WalletKeyDerivationMethod {
+  ARGON2I_MOD = 'ARGON2I_MOD',
+  ARGON2I_INT = 'ARGON2I_INT',
+  RAW = 'RAW',
 }

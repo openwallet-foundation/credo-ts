@@ -13,16 +13,23 @@ class MessageSender {
     this.outboundTransporter = outboundTransporter;
   }
 
-  async sendMessage(outboundMessage: OutboundMessage) {
+  async packMessage(outboundMessage: OutboundMessage, receive_reply: boolean = false) {
     const { connection, routingKeys, recipientKeys, senderVk, payload, endpoint } = outboundMessage;
-
     const { verkey, theirKey } = connection;
-    logger.logJson('outboundMessage', { verkey, theirKey, routingKeys, endpoint, payload });
 
+    if (receive_reply) {
+      if (!payload['~transport']) {
+        payload['~transport'] = {
+          return_route: 'all',
+        };
+      }
+    }
+
+    logger.logJson('outboundMessage', { verkey, theirKey, routingKeys, endpoint, payload });
     const outboundPackedMessage = await this.wallet.pack(payload, recipientKeys, senderVk);
 
     let message = outboundPackedMessage;
-    if (routingKeys.length > 0) {
+    if (routingKeys && routingKeys.length > 0) {
       for (const routingKey of routingKeys) {
         const [recipientKey] = recipientKeys;
         const forwardMessage = createForwardMessage(recipientKey, message);
@@ -30,9 +37,19 @@ class MessageSender {
         message = await this.wallet.pack(forwardMessage, [routingKey], senderVk);
       }
     }
+    return { connection, payload: message, endpoint };
+  }
 
-    const outboundPackage = { connection, payload: message, endpoint };
-    this.outboundTransporter.sendMessage(outboundPackage);
+  async sendMessage(outboundMessage: OutboundMessage, receive_reply: boolean = false) {
+    const outboundPackage = await this.packMessage(outboundMessage, receive_reply);
+    const reply = await this.outboundTransporter.sendMessage(outboundPackage, receive_reply);
+    if (receive_reply) {
+      return reply;
+    }
+  }
+
+  async sendMessageAndGetReply(outboundMessage: OutboundMessage) {
+    return await this.sendMessage(outboundMessage, true);
   }
 }
 

@@ -1,7 +1,7 @@
-import { InboundMessage } from '../types';
-import { Handler } from './Handler';
-import { ConnectionService } from '../protocols/connections/ConnectionService';
-import { ConsumerRoutingService } from '../protocols/routing/ConsumerRoutingService';
+import { InboundMessage } from '../../types';
+import { Handler } from '../Handler';
+import { ConnectionService } from '../../protocols/connections/ConnectionService';
+import { ConsumerRoutingService } from '../../protocols/routing/ConsumerRoutingService';
 
 export class InvitationHandler implements Handler {
   connectionService: ConnectionService;
@@ -17,7 +17,7 @@ export class InvitationHandler implements Handler {
     const outboundMessage = await this.connectionService.acceptInvitation(invitation);
 
     const { verkey } = outboundMessage.connection;
-    this.routingService.createRoute(verkey);
+    await this.routingService.createRoute(verkey);
 
     return outboundMessage;
   }

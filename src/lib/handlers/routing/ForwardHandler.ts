@@ -1,6 +1,6 @@
-import { InboundMessage } from '../types';
-import { Handler } from './Handler';
-import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
+import { InboundMessage } from '../../types';
+import { Handler } from '../Handler';
+import { ProviderRoutingService } from '../../protocols/routing/ProviderRoutingService';
 
 export class ForwardHandler implements Handler {
   routingService: ProviderRoutingService;

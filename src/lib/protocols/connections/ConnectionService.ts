@@ -9,7 +9,8 @@ import { Context } from '../../agent/Context';
 import { createOutboundMessage } from '../helpers';
 import { Connection } from './domain/Connection';
 import { ConnectionState } from './domain/ConnectionState';
-import { DidDoc, Service, PublicKey, PublicKeyType } from './domain/DidDoc';
+import { DidDoc, Service, PublicKey, PublicKeyType, Authentication } from './domain/DidDoc';
+import { createTrustPingMessage } from '../trustping/messages';
 
 class ConnectionService {
   context: Context;
@@ -76,14 +77,14 @@ class ConnectionService {
 
     const originalMessage = await wallet.verify(message, 'connection');
     connection.updateDidExchangeConnection(originalMessage.connection);
-
     if (!connection.theirKey) {
       throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`);
     }
 
-    validateSenderKey(connection, sender_verkey);
+    // dotnet doesn't send senderVk here
+    // validateSenderKey(connection, sender_verkey);
 
-    const response = createAckMessage(message['@id']);
+    const response = createTrustPingMessage();
     connection.updateState(ConnectionState.COMPLETE);
     return createOutboundMessage(connection, response);
   }
@@ -106,10 +107,11 @@ class ConnectionService {
   }
 
   async createConnection(): Promise<Connection> {
-    const [did, verkey] = await this.context.wallet.createDid();
-    const publicKey = new PublicKey(`${did}#1`, PublicKeyType.ED25519_SIG_2018, did, verkey, true);
+    const [did, verkey] = await this.context.wallet.createDid({ method_name: 'sov' });
+    const publicKey = new PublicKey(`${did}#1`, PublicKeyType.ED25519_SIG_2018, did, verkey);
     const service = new Service(`${did};indy`, this.getEndpoint(), [verkey], this.getRoutingKeys(), 0, 'IndyAgent');
-    const did_doc = new DidDoc(did, [publicKey], [service]);
+    const auth = new Authentication(publicKey);
+    const did_doc = new DidDoc(did, [auth], [publicKey], [service]);
 
     const connection = new Connection({
       did,

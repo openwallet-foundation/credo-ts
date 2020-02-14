@@ -1,4 +1,4 @@
-import EventEmitter from 'events';
+import { EventEmitter } from 'events';
 import { ConnectionState } from './ConnectionState';
 import { DidDoc } from './DidDoc';
 import { InvitationDetails } from './InvitationDetails';
@@ -16,8 +16,8 @@ interface ConnectionProps {
 }
 
 interface DidExchangeConnection {
-  did: Did;
-  did_doc: DidDoc;
+  DID: Did;
+  DIDDoc: DidDoc;
 }
 
 export class Connection extends EventEmitter {
@@ -56,8 +56,8 @@ export class Connection extends EventEmitter {
   }
 
   updateDidExchangeConnection(didExchangeConnection: DidExchangeConnection) {
-    this.theirDid = didExchangeConnection.did;
-    this.theirDidDoc = didExchangeConnection.did_doc;
+    this.theirDid = didExchangeConnection.DID;
+    this.theirDidDoc = didExchangeConnection.DIDDoc;
   }
 
   updateState(newState: ConnectionState) {
@@ -65,16 +65,20 @@ export class Connection extends EventEmitter {
     this.emit('change', newState);
   }
 
-  async isConnected() {
+  async hasState(state: ConnectionState) {
     return new Promise(resolve => {
-      if (this.getState() == 4) {
+      if (this.getState() == state) {
         resolve(true);
       }
       this.on('change', (newState: number) => {
-        if (newState === 4) {
+        if (newState == state) {
           resolve(true);
         }
       });
     });
+  }
+
+  async isConnected() {
+    return this.hasState(ConnectionState.COMPLETE);
   }
 }

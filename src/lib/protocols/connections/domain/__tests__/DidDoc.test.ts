@@ -15,7 +15,7 @@ describe('DidDoc', () => {
           publicKeyPem: '-----BEGIN PUBLIC X...',
         },
         {
-          id: '4',
+          id: 'did:sov:LjgpST2rjsoxYegQDRm7EL#4',
           type: 'RsaVerificationKey2018',
           controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
           publicKeyPem: '-----BEGIN PUBLIC 9...',

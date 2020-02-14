@@ -7,6 +7,7 @@ import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { MessageType as ConnectionsMessageType } from '../protocols/connections/messages';
 import { MessageType as BasicMessageMessageType } from '../protocols/basicmessage/messages';
 import { MessageType as RoutingMessageType } from '../protocols/routing/messages';
+import { MessageType as TrustPingMessageType } from '../protocols/trustping/messages';
 import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
 import { BasicMessageService } from '../protocols/basicmessage/BasicMessageService';
 import { ConsumerRoutingService } from '../protocols/routing/ConsumerRoutingService';
@@ -16,14 +17,17 @@ import { Dispatcher } from './Dispatcher';
 import { MessageSender } from './MessageSender';
 import { InboundTransporter } from '../transport/InboundTransporter';
 import { OutboundTransporter } from '../transport/OutboundTransporter';
-import { InvitationHandler } from '../handlers/InvitationHandler';
-import { ConnectionRequestHandler } from '../handlers/ConnectionRequestHandler';
-import { ConnectionResponseHandler } from '../handlers/ConnectionResponseHandler';
-import { AckMessageHandler } from '../handlers/AckMessageHandler';
-import { BasicMessageHandler } from '../handlers/BasicMessageHandler';
-import { RouteUpdateHandler } from '../handlers/RouteUpdateHandler';
-import { ForwardHandler } from '../handlers/ForwardHandler';
+import { InvitationHandler } from '../handlers/connections/InvitationHandler';
+import { ConnectionRequestHandler } from '../handlers/connections/ConnectionRequestHandler';
+import { ConnectionResponseHandler } from '../handlers/connections/ConnectionResponseHandler';
+import { AckMessageHandler } from '../handlers/acks/AckMessageHandler';
+import { BasicMessageHandler } from '../handlers/basicmessage/BasicMessageHandler';
+import { RouteUpdateHandler } from '../handlers/routing/RouteUpdateHandler';
+import { ForwardHandler } from '../handlers/routing/ForwardHandler';
 import { Handler } from '../handlers/Handler';
+import { TrustPingService } from '../protocols/trustping/TrustPingService';
+import { TrustPingMessageHandler } from '../handlers/trustping/TrustPingMessageHandler';
+import { TrustPingResponseMessageHandler } from '../handlers/trustping/TrustPingResponseMessageHandler';
 
 export class Agent {
   inboundTransporter: InboundTransporter;
@@ -33,12 +37,18 @@ export class Agent {
   basicMessageService: BasicMessageService;
   providerRoutingService: ProviderRoutingService;
   consumerRoutingService: ConsumerRoutingService;
+  trustPingService: TrustPingService;
   handlers: { [key: string]: Handler } = {};
 
-  constructor(config: InitConfig, inboundTransporter: InboundTransporter, outboundTransporter: OutboundTransporter) {
+  constructor(
+    config: InitConfig,
+    inboundTransporter: InboundTransporter,
+    outboundTransporter: OutboundTransporter,
+    indy: Indy
+  ) {
     logger.logJson('Creating agent with config', config);
 
-    const wallet = new IndyWallet({ id: config.walletName }, { key: config.walletKey });
+    const wallet = new IndyWallet(config.walletConfig, config.walletCredentials, indy);
     const messageSender = new MessageSender(wallet, outboundTransporter);
 
     this.inboundTransporter = inboundTransporter;
@@ -53,6 +63,7 @@ export class Agent {
     this.basicMessageService = new BasicMessageService();
     this.providerRoutingService = new ProviderRoutingService();
     this.consumerRoutingService = new ConsumerRoutingService(this.context);
+    this.trustPingService = new TrustPingService();
 
     this.registerHandlers();
 
@@ -95,7 +106,7 @@ export class Agent {
 
   async acceptInvitationUrl(invitationUrl: string) {
     const invitation = decodeInvitationFromUrl(invitationUrl);
-    const verkey = await this.messageReceiver.receiveMessage(invitation);
+    const verkey = (await this.messageReceiver.receiveMessage(invitation))?.connection.verkey;
 
     if (!verkey) {
       throw new Error('No verkey has been return');
@@ -105,7 +116,7 @@ export class Agent {
   }
 
   async receiveMessage(inboundPackedMessage: any) {
-    this.messageReceiver.receiveMessage(inboundPackedMessage);
+    return await this.messageReceiver.receiveMessage(inboundPackedMessage);
   }
 
   getConnections() {
@@ -156,6 +167,11 @@ export class Agent {
         this.providerRoutingService
       ),
       [RoutingMessageType.ForwardMessage]: new ForwardHandler(this.providerRoutingService),
+      [TrustPingMessageType.TrustPingMessage]: new TrustPingMessageHandler(
+        this.trustPingService,
+        this.connectionService
+      ),
+      [TrustPingMessageType.TrustPingResponseMessage]: new TrustPingResponseMessageHandler(this.trustPingService),
     };
 
     this.handlers = handlers;
