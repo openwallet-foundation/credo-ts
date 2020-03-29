@@ -77,14 +77,14 @@ describe('with agency', () => {
   });
 
   test('make a connection via agency', async () => {
-    const invitationUrl = await aliceAgent.createInvitationUrl();
-    await bobAgent.acceptInvitationUrl(invitationUrl);
+    const aliceConnectionAtAliceBob = await aliceAgent.createConnection();
+    const { invitation } = aliceConnectionAtAliceBob;
 
-    // We need to decode invitation URL to get keys from invitation
-    // It can be maybe better to get connection ID instead of invitationUrl from the previous step and work with that
-    const invitation = decodeInvitationFromUrl(invitationUrl);
-    const aliceKeyAtAliceBob = invitation.recipientKeys[0];
-    const aliceConnectionAtAliceBob = aliceAgent.findConnectionByMyKey(aliceKeyAtAliceBob);
+    if (!invitation) {
+      throw new Error('There is no invitation in newly created connection!');
+    }
+
+    const bobConnectionAtBobAlice = await bobAgent.acceptInvitation(invitation);
 
     if (!aliceConnectionAtAliceBob) {
       throw new Error('Connection not found!');
@@ -93,12 +93,6 @@ describe('with agency', () => {
     await aliceConnectionAtAliceBob.isConnected();
     console.log('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob);
 
-    if (!aliceConnectionAtAliceBob.theirKey) {
-      throw new Error('Connection has not been initialized correctly!');
-    }
-
-    const bobKeyAtBobAlice = aliceConnectionAtAliceBob.theirKey;
-    const bobConnectionAtBobAlice = bobAgent.findConnectionByMyKey(bobKeyAtBobAlice);
     if (!bobConnectionAtBobAlice) {
       throw new Error('Connection not found!');
     }
@@ -151,11 +145,11 @@ class PollingInboundTransporter implements InboundTransporter {
   async registerAgency(agent: Agent) {
     const agencyUrl = agent.getAgencyUrl() || '';
     const agencyInvitationUrl = await get(`${agencyUrl}/invitation`);
-    const agentKeyAtAgency = await agent.acceptInvitationUrl(agencyInvitationUrl);
+    const agencyInvitation = decodeInvitationFromUrl(agencyInvitationUrl);
+    const agentConnectionAtAgency = await agent.acceptInvitation(agencyInvitation);
 
-    this.pollMessages(agent, agencyUrl, agentKeyAtAgency);
+    this.pollMessages(agent, agencyUrl, agentConnectionAtAgency.verkey);
 
-    const agentConnectionAtAgency = agent.findConnectionByMyKey(agentKeyAtAgency);
     if (!agentConnectionAtAgency) {
       throw new Error('Connection not found!');
     }

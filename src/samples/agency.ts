@@ -3,7 +3,7 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import config from './config';
 import logger from '../lib/logger';
-import { Agent, InboundTransporter, OutboundTransporter } from '../lib';
+import { Agent, InboundTransporter, OutboundTransporter, encodeInvitationToUrl } from '../lib';
 import { OutboundPackage } from '../lib/types';
 import indy from 'indy-sdk';
 
@@ -73,7 +73,14 @@ app.get('/', async (req, res) => {
 
 // Create new invitation as inviter to invitee
 app.get('/invitation', async (req, res) => {
-  const invitationUrl = await agent.createInvitationUrl();
+  const connection = await agent.createConnection();
+  const { invitation } = connection;
+
+  if (!invitation) {
+    throw new Error('There is no invitation in newly created connection!');
+  }
+
+  const invitationUrl = encodeInvitationToUrl(invitation);
   res.send(invitationUrl);
 });
 
