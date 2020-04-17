@@ -98,7 +98,7 @@ export class Agent {
     return this.context.wallet.getPublicDid();
   }
 
-  async createInvitationUrl() {
+  async createConnection() {
     const connection = await this.connectionService.createConnectionWithInvitation();
     const { invitation } = connection;
 
@@ -112,18 +112,21 @@ export class Agent {
       this.consumerRoutingService.createRoute(connection.verkey);
     }
 
-    return encodeInvitationToUrl(invitation);
+    return connection;
   }
 
-  async acceptInvitationUrl(invitationUrl: string) {
-    const invitation = decodeInvitationFromUrl(invitationUrl);
-    const verkey = (await this.messageReceiver.receiveMessage(invitation))?.connection.verkey;
+  async acceptInvitation(invitation: any) {
+    const connection = (await this.messageReceiver.receiveMessage(invitation))?.connection;
 
-    if (!verkey) {
-      throw new Error('No verkey has been return');
+    if (!connection) {
+      throw new Error('No connection returned from receiveMessage');
     }
 
-    return verkey;
+    if (!connection.verkey) {
+      throw new Error('No verkey in connection returned from receiveMessage');
+    }
+
+    return connection;
   }
 
   async receiveMessage(inboundPackedMessage: any) {

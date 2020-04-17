@@ -2,7 +2,7 @@
 // @ts-ignore
 import { poll } from 'await-poll';
 import { Subject } from 'rxjs';
-import { Agent, decodeInvitationFromUrl, InboundTransporter, OutboundTransporter } from '..';
+import { Agent, InboundTransporter, OutboundTransporter } from '..';
 import { toBeConnectedWith } from '../testUtils';
 import { OutboundPackage, WireMessage } from '../types';
 import indy from 'indy-sdk';
@@ -43,30 +43,20 @@ describe('agents', () => {
     bobAgent = new Agent(bobConfig, bobAgentInbound, bobAgentOutbound, indy);
     await bobAgent.init();
 
-    const invitationUrl = await aliceAgent.createInvitationUrl();
-    await bobAgent.acceptInvitationUrl(invitationUrl);
+    const aliceConnectionAtAliceBob = await aliceAgent.createConnection();
+    const { invitation } = aliceConnectionAtAliceBob;
 
-    // We need to decode invitation URL to get keys from invitation
-    // It can be maybe better to get connection ID instead of invitationUrl from the previous step and work with that
-    const invitation = decodeInvitationFromUrl(invitationUrl);
-    const aliceKeyAtAliceBob = invitation.recipientKeys[0];
-
-    const aliceConnectionAtAliceBob = aliceAgent.findConnectionByMyKey(aliceKeyAtAliceBob);
-    if (!aliceConnectionAtAliceBob) {
-      throw new Error('Connection not found!');
+    if (!invitation) {
+      throw new Error('There is no invitation in newly created connection!');
     }
+
+    const bobConnectionAtBobAlice = await bobAgent.acceptInvitation(invitation);
 
     await aliceConnectionAtAliceBob.isConnected();
     console.log('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob);
 
     if (!aliceConnectionAtAliceBob.theirKey) {
       throw new Error('Connection has not been initialized correctly!');
-    }
-
-    const bobKeyAtBobAlice = aliceConnectionAtAliceBob.theirKey;
-    const bobConnectionAtBobAlice = bobAgent.findConnectionByMyKey(bobKeyAtBobAlice);
-    if (!bobConnectionAtBobAlice) {
-      throw new Error('Connection not found!');
     }
 
     await bobConnectionAtBobAlice.isConnected();
