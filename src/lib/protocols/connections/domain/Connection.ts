@@ -1,9 +1,12 @@
+// @ts-ignore
+import { wait } from 'await-poll';
 import { EventEmitter } from 'events';
 import { ConnectionState } from './ConnectionState';
 import { DidDoc } from './DidDoc';
 import { InvitationDetails } from './InvitationDetails';
 
 export interface ConnectionProps {
+  id: string;
   did: Did;
   didDoc: DidDoc;
   verkey: Verkey;
@@ -20,6 +23,7 @@ interface DidExchangeConnection {
 }
 
 export class Connection extends EventEmitter {
+  id: string;
   did: Did;
   didDoc: DidDoc;
   verkey: Verkey;
@@ -32,6 +36,7 @@ export class Connection extends EventEmitter {
 
   constructor(props: ConnectionProps) {
     super();
+    this.id = props.id;
     this.did = props.did;
     this.didDoc = props.didDoc;
     this.verkey = props.verkey;
@@ -62,20 +67,10 @@ export class Connection extends EventEmitter {
     this.emit('change', newState);
   }
 
-  async hasState(state: ConnectionState) {
-    return new Promise(resolve => {
-      if (this.getState() == state) {
-        resolve(true);
-      }
-      this.on('change', (newState: number) => {
-        if (newState == state) {
-          resolve(true);
-        }
-      });
-    });
-  }
-
   async isConnected() {
-    return this.hasState(ConnectionState.COMPLETE);
+    while (this.state !== ConnectionState.COMPLETE) {
+      await wait(1000);
+    }
+    return true;
   }
 }

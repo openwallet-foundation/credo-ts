@@ -1,23 +1,23 @@
+import uuid from 'uuid';
 import { InitConfig, Message, InboundMessage } from '../../types';
-import {
-  createInvitationMessage,
-  createConnectionRequestMessage,
-  createConnectionResponseMessage,
-  createAckMessage,
-} from './messages';
+import { createInvitationMessage, createConnectionRequestMessage, createConnectionResponseMessage } from './messages';
 import { Context } from '../../agent/Context';
 import { createOutboundMessage } from '../helpers';
 import { Connection } from './domain/Connection';
 import { ConnectionState } from './domain/ConnectionState';
 import { DidDoc, Service, PublicKey, PublicKeyType, Authentication } from './domain/DidDoc';
 import { createTrustPingMessage } from '../trustping/messages';
+import { ConnectionRecord } from '../../storage/ConnectionRecord';
+import { Repository } from '../../storage/Repository';
 
 class ConnectionService {
   context: Context;
   connections: Connection[] = [];
+  connectionRepository: Repository<ConnectionRecord>;
 
-  constructor(context: Context) {
+  constructor(context: Context, connectionRepository: Repository<ConnectionRecord>) {
     this.context = context;
+    this.connectionRepository = connectionRepository;
   }
 
   async createConnectionWithInvitation(): Promise<Connection> {
@@ -26,6 +26,7 @@ class ConnectionService {
     const invitation = await createInvitationMessage(invitationDetails);
     connection.invitation = invitation;
     connection.updateState(ConnectionState.INVITED);
+    this.connectionRepository.update(convertConnectionToRecord(connection));
     return connection;
   }
 
@@ -33,13 +34,14 @@ class ConnectionService {
     const connection = await this.createConnection();
     const connectionRequest = createConnectionRequestMessage(connection, this.context.config.label);
     connection.updateState(ConnectionState.REQUESTED);
+    this.connectionRepository.update(convertConnectionToRecord(connection));
     return createOutboundMessage(connection, connectionRequest, invitation);
   }
 
   async acceptRequest(inboundMessage: InboundMessage) {
     const { wallet } = this.context;
     const { message, recipient_verkey } = inboundMessage;
-    const connection = this.findByVerkey(recipient_verkey);
+    const connection = await this.findByVerkey(recipient_verkey);
 
     if (!connection) {
       throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
@@ -59,13 +61,14 @@ class ConnectionService {
     const connectionResponse = createConnectionResponseMessage(connection, message['@id']);
     const signedConnectionResponse = await wallet.sign(connectionResponse, 'connection', connection.verkey);
     connection.updateState(ConnectionState.RESPONDED);
+    this.connectionRepository.update(convertConnectionToRecord(connection));
     return createOutboundMessage(connection, signedConnectionResponse);
   }
 
   async acceptResponse(inboundMessage: InboundMessage) {
     const { wallet } = this.context;
     const { message, recipient_verkey, sender_verkey } = inboundMessage;
-    const connection = this.findByVerkey(recipient_verkey);
+    const connection = await this.findByVerkey(recipient_verkey);
 
     if (!connection) {
       throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
@@ -77,6 +80,7 @@ class ConnectionService {
 
     const originalMessage = await wallet.verify(message, 'connection');
     connection.updateDidExchangeConnection(originalMessage.connection);
+    this.connectionRepository.update(convertConnectionToRecord(connection));
     if (!connection.theirKey) {
       throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`);
     }
@@ -91,7 +95,7 @@ class ConnectionService {
 
   async acceptAck(inboundMessage: InboundMessage) {
     const { recipient_verkey, sender_verkey } = inboundMessage;
-    const connection = this.findByVerkey(recipient_verkey);
+    const connection = await this.findByVerkey(recipient_verkey);
 
     if (!connection) {
       throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
@@ -101,12 +105,14 @@ class ConnectionService {
 
     if (connection.getState() !== ConnectionState.COMPLETE) {
       connection.updateState(ConnectionState.COMPLETE);
+      this.connectionRepository.update(convertConnectionToRecord(connection));
     }
 
     return null;
   }
 
   async createConnection(): Promise<Connection> {
+    const id = uuid();
     const [did, verkey] = await this.context.wallet.createDid({ method_name: 'sov' });
     const publicKey = new PublicKey(`${did}#1`, PublicKeyType.ED25519_SIG_2018, did, verkey);
     const service = new Service(`${did};indy`, this.getEndpoint(), [verkey], this.getRoutingKeys(), 0, 'IndyAgent');
@@ -114,6 +120,7 @@ class ConnectionService {
     const did_doc = new DidDoc(did, [auth], [publicKey], [service]);
 
     const connection = new Connection({
+      id,
       did,
       didDoc: did_doc,
       verkey,
@@ -121,15 +128,22 @@ class ConnectionService {
     });
 
     this.connections.push(connection);
+    this.connectionRepository.save(convertConnectionToRecord(connection));
 
     return connection;
   }
 
-  getConnections() {
+  async getConnections() {
+    if (this.connections.length < 1) {
+      await this.loadConnections();
+    }
     return this.connections;
   }
 
-  findByVerkey(verkey: Verkey) {
+  async findByVerkey(verkey: Verkey) {
+    if (this.connections.length < 1) {
+      await this.loadConnections();
+    }
     return this.connections.find(connection => connection.verkey === verkey);
   }
 
@@ -157,6 +171,13 @@ class ConnectionService {
     const verkey = this.context.inboundConnection && this.context.inboundConnection.verkey;
     return verkey ? [verkey] : [];
   }
+
+  private async loadConnections() {
+    const connectionRecords = await this.connectionRepository.findAll();
+    return connectionRecords.forEach(connectionRecord => {
+      this.connections.push(convertRecordToConnection(connectionRecord));
+    });
+  }
 }
 
 function validateSenderKey(connection: Connection, senderKey: Verkey) {
@@ -173,6 +194,35 @@ function validateSenderKey(connection: Connection, senderKey: Verkey) {
       `Inbound message 'sender_key' ${senderKey} is different from connection.theirKey ${connection.theirKey}`
     );
   }
+}
+
+function convertConnectionToRecord(connection: Connection) {
+  const { id, did, didDoc, verkey, theirDid, theirDidDoc, invitation } = connection;
+  return new ConnectionRecord({
+    id,
+    did,
+    didDoc,
+    verkey,
+    theirDid,
+    theirDidDoc,
+    invitation,
+    state: connection.getState(),
+    tags: { verkey },
+  });
+}
+
+function convertRecordToConnection(connectionRecord: ConnectionRecord) {
+  const { id, did, didDoc, verkey, theirDid, theirDidDoc, invitation, state } = connectionRecord;
+  return new Connection({
+    id,
+    did,
+    didDoc,
+    verkey,
+    theirDid,
+    theirDidDoc,
+    invitation,
+    state,
+  });
 }
 
 export { ConnectionService };
