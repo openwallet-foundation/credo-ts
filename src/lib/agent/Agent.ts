@@ -32,6 +32,7 @@ import { BasicMessageRecord } from '../storage/BasicMessageRecord';
 import { Repository } from '../storage/Repository';
 import { IndyStorageService } from '../storage/IndyStorageService';
 import { ConnectionRecord } from '../storage/ConnectionRecord';
+import { EnvelopeService } from './EnvelopeService';
 
 export class Agent {
   inboundTransporter: InboundTransporter;
@@ -55,7 +56,8 @@ export class Agent {
     logger.logJson('Creating agent with config', config);
 
     const wallet = new IndyWallet(config.walletConfig, config.walletCredentials, indy);
-    const messageSender = new MessageSender(wallet, outboundTransporter);
+    const envelopeService = new EnvelopeService(wallet);
+    const messageSender = new MessageSender(envelopeService, outboundTransporter);
 
     this.inboundTransporter = inboundTransporter;
 
@@ -79,7 +81,7 @@ export class Agent {
     this.registerHandlers();
 
     const dispatcher = new Dispatcher(this.handlers, messageSender);
-    this.messageReceiver = new MessageReceiver(config, wallet, dispatcher);
+    this.messageReceiver = new MessageReceiver(config, envelopeService, dispatcher);
   }
 
   async init() {
