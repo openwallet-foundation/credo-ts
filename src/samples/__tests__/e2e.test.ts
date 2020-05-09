@@ -146,9 +146,7 @@ class PollingInboundTransporter implements InboundTransporter {
     const agencyUrl = agent.getAgencyUrl() || '';
     const agencyInvitationUrl = await get(`${agencyUrl}/invitation`);
     const agencyInvitation = decodeInvitationFromUrl(agencyInvitationUrl);
-    const agentConnectionAtAgency = await agent.acceptInvitation(agencyInvitation);
-
-    this.pollMessages(agent, agencyUrl, agentConnectionAtAgency.verkey);
+    const agentConnectionAtAgency = await agent.provision(agencyInvitation);
 
     if (!agentConnectionAtAgency) {
       throw new Error('Connection not found!');
@@ -158,6 +156,7 @@ class PollingInboundTransporter implements InboundTransporter {
 
     const { verkey: agencyVerkey } = JSON.parse(await get(`${agencyUrl}/`));
     agent.establishInbound(agencyVerkey, agentConnectionAtAgency);
+    this.pollMessages(agent, agencyUrl, agentConnectionAtAgency.verkey);
   }
 
   pollMessages(agent: Agent, agencyUrl: string, verkey: Verkey) {
@@ -175,7 +174,7 @@ class PollingInboundTransporter implements InboundTransporter {
 }
 
 class HttpOutboundTransporter implements OutboundTransporter {
-  async sendMessage(outboundPackage: OutboundPackage) {
+  async sendMessage(outboundPackage: OutboundPackage, receiveReply: boolean) {
     const { payload, endpoint } = outboundPackage;
 
     if (!endpoint) {
@@ -184,6 +183,15 @@ class HttpOutboundTransporter implements OutboundTransporter {
 
     console.log('Sending message...');
     console.log(payload);
-    await post(`${endpoint}`, JSON.stringify(payload));
+
+    if (receiveReply) {
+      const response = await post(`${endpoint}`, JSON.stringify(payload));
+      console.log('response', response);
+      const wireMessage = JSON.parse(response);
+      console.log('wireMessage', wireMessage);
+      return wireMessage;
+    } else {
+      await post(`${endpoint}`, JSON.stringify(payload));
+    }
   }
 }

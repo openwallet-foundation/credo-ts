@@ -38,6 +38,7 @@ export class Agent {
   inboundTransporter: InboundTransporter;
   context: Context;
   messageReceiver: MessageReceiver;
+  messageSender: MessageSender;
   connectionService: ConnectionService;
   basicMessageService: BasicMessageService;
   providerRoutingService: ProviderRoutingService;
@@ -82,6 +83,7 @@ export class Agent {
 
     const dispatcher = new Dispatcher(this.handlers, messageSender);
     this.messageReceiver = new MessageReceiver(config, envelopeService, dispatcher);
+    this.messageSender = messageSender;
   }
 
   async init() {
@@ -98,6 +100,15 @@ export class Agent {
 
   getPublicDid() {
     return this.context.wallet.getPublicDid();
+  }
+
+  async provision(agencyInvitation: any) {
+    const connectionRequestOutboundMessage = await this.connectionService.acceptInvitation(agencyInvitation);
+    const connectionResponseInboundMessage = await this.messageSender.sendAndReceive(connectionRequestOutboundMessage);
+    const ackOutboundMessage = await this.connectionService.acceptResponse(connectionResponseInboundMessage);
+    await this.messageSender.sendMessage(ackOutboundMessage);
+    const { connection } = connectionRequestOutboundMessage;
+    return connection;
   }
 
   async createConnection() {

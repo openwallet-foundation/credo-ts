@@ -31,6 +31,14 @@ class MessageSender {
   async sendMessageAndGetReply(outboundMessage: OutboundMessage) {
     return await this.sendMessage(outboundMessage, true);
   }
+
+  async sendAndReceive(outboundMessage: OutboundMessage) {
+    transport(outboundMessage.payload);
+    const outboundPackage = await this.envelopeService.packMessage(outboundMessage);
+    const packedMessage = await this.outboundTransporter.sendMessage(outboundPackage, true);
+    const message = await this.envelopeService.unpackMessage(packedMessage);
+    return message;
+  }
 }
 
 export { MessageSender };

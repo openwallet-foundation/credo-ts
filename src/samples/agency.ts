@@ -18,8 +18,15 @@ class HttpInboundTransporter implements InboundTransporter {
     this.app.post('/msg', async (req, res) => {
       const message = req.body;
       const packedMessage = JSON.parse(message);
-      await agent.receiveMessage(packedMessage);
-      res.status(200).end();
+      const outboundMessage = await agent.receiveMessage(packedMessage);
+      if (outboundMessage) {
+        res
+          .status(200)
+          .json(outboundMessage.payload)
+          .end();
+      } else {
+        res.status(200).end();
+      }
     });
   }
 }
