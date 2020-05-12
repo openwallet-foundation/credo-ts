@@ -110,11 +110,11 @@ export class Agent {
   }
 
   async provision(agencyInvitation: any) {
-    const connectionRequestOutboundMessage = await this.connectionService.acceptInvitation(agencyInvitation);
-    const connectionResponseInboundMessage = await this.messageSender.sendAndReceive(connectionRequestOutboundMessage);
-    const ackOutboundMessage = await this.connectionService.acceptResponse(connectionResponseInboundMessage);
-    await this.messageSender.sendMessage(ackOutboundMessage);
-    const { connection } = connectionRequestOutboundMessage;
+    const connectionRequest = await this.connectionService.acceptInvitation(agencyInvitation);
+    const connectionResponse = await this.messageSender.sendAndReceiveMessage(connectionRequest);
+    const ack = await this.connectionService.acceptResponse(connectionResponse);
+    await this.messageSender.sendMessage(ack);
+    const { connection } = connectionRequest;
     return connection;
   }
 
@@ -122,8 +122,7 @@ export class Agent {
     const inboundConnection = this.getInboundConnection();
     if (inboundConnection) {
       const outboundMessage = await this.messagePickupService.batchPickup(inboundConnection);
-      const batchMessage = await this.messageSender.sendAndReceive(outboundMessage);
-      logger.logJson('batchMessage', batchMessage);
+      const batchMessage = await this.messageSender.sendAndReceiveMessage(outboundMessage);
       return batchMessage.message.messages;
     }
     return [];
