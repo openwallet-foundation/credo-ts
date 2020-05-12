@@ -1,6 +1,7 @@
 import { InboundMessage } from '../../types';
 import { createOutboundMessage } from '../helpers';
 import { Connection } from '../connections/domain/Connection';
+import { MessageRepository } from '../../storage/MessageRepository';
 
 interface RouteUpdate {
   action: 'add' | 'remove';

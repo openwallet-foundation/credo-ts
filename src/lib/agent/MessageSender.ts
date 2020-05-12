@@ -1,4 +1,3 @@
-import logger from '../logger';
 import { OutboundMessage } from '../types';
 import { OutboundTransporter } from '../transport/OutboundTransporter';
 import { transport } from '../decorators';

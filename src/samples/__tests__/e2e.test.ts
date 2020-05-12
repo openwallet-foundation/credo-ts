@@ -156,15 +156,18 @@ class PollingInboundTransporter implements InboundTransporter {
 
     const { verkey: agencyVerkey } = JSON.parse(await get(`${agencyUrl}/`));
     agent.establishInbound(agencyVerkey, agentConnectionAtAgency);
-    this.pollMessages(agent, agencyUrl, agentConnectionAtAgency.verkey);
+    this.pollDownloadMessages(agent);
   }
 
-  pollMessages(agent: Agent, agencyUrl: string, verkey: Verkey) {
+  pollDownloadMessages(agent: Agent) {
     poll(
       async () => {
-        const message = await get(`${agencyUrl}/api/connections/${verkey}/message`);
-        if (message && message.length > 0) {
-          agent.receiveMessage(JSON.parse(message));
+        const downloadedMessages = await agent.downloadMessages();
+        const messages = [...downloadedMessages];
+        console.log('downloaded messges', messages);
+        while (messages && messages.length > 0) {
+          const message = messages.shift();
+          await agent.receiveMessage(message);
         }
       },
       () => !this.stop,

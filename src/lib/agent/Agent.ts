@@ -8,6 +8,7 @@ import { MessageType as ConnectionsMessageType } from '../protocols/connections/
 import { MessageType as BasicMessageMessageType } from '../protocols/basicmessage/messages';
 import { MessageType as RoutingMessageType } from '../protocols/routing/messages';
 import { MessageType as TrustPingMessageType } from '../protocols/trustping/messages';
+import { MessageType as MessagePickupType } from '../protocols/messagepickup/messages';
 import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
 import { BasicMessageService } from '../protocols/basicmessage/BasicMessageService';
 import { ConsumerRoutingService } from '../protocols/routing/ConsumerRoutingService';
@@ -33,6 +34,9 @@ import { Repository } from '../storage/Repository';
 import { IndyStorageService } from '../storage/IndyStorageService';
 import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { EnvelopeService } from './EnvelopeService';
+import { MessagePickupService } from '../protocols/messagepickup/MessagePickupService';
+import { MessagePickupHandler } from '../handlers/messagepickup/MessagePickupHandler';
+import { MessageRepository } from '../storage/MessageRepository';
 
 export class Agent {
   inboundTransporter: InboundTransporter;
@@ -44,6 +48,7 @@ export class Agent {
   providerRoutingService: ProviderRoutingService;
   consumerRoutingService: ConsumerRoutingService;
   trustPingService: TrustPingService;
+  messagePickupService: MessagePickupService;
   handlers: { [key: string]: Handler } = {};
   basicMessageRepository: Repository<BasicMessageRecord>;
   connectionRepository: Repository<ConnectionRecord>;
@@ -52,11 +57,17 @@ export class Agent {
     config: InitConfig,
     inboundTransporter: InboundTransporter,
     outboundTransporter: OutboundTransporter,
-    indy: Indy
+    indy: Indy,
+    messageRepository?: MessageRepository
   ) {
     logger.logJson('Creating agent with config', config);
 
     const wallet = new IndyWallet(config.walletConfig, config.walletCredentials, indy);
+    const storageService = new IndyStorageService(wallet);
+
+    this.basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService);
+    this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService);
+
     const envelopeService = new EnvelopeService(wallet);
     const messageSender = new MessageSender(envelopeService, outboundTransporter);
 
@@ -68,16 +79,12 @@ export class Agent {
       messageSender,
     };
 
-    const storageService = new IndyStorageService(wallet);
-
-    this.basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService);
-    this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService);
-
     this.connectionService = new ConnectionService(this.context, this.connectionRepository);
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository);
     this.providerRoutingService = new ProviderRoutingService();
     this.consumerRoutingService = new ConsumerRoutingService(this.context);
     this.trustPingService = new TrustPingService();
+    this.messagePickupService = new MessagePickupService(messageRepository);
 
     this.registerHandlers();
 
@@ -109,6 +116,17 @@ export class Agent {
     await this.messageSender.sendMessage(ackOutboundMessage);
     const { connection } = connectionRequestOutboundMessage;
     return connection;
+  }
+
+  async downloadMessages() {
+    const inboundConnection = this.getInboundConnection();
+    if (inboundConnection) {
+      const outboundMessage = await this.messagePickupService.batchPickup(inboundConnection);
+      const batchMessage = await this.messageSender.sendAndReceive(outboundMessage);
+      logger.logJson('batchMessage', batchMessage);
+      return batchMessage.message.messages;
+    }
+    return [];
   }
 
   async createConnection() {
@@ -164,7 +182,7 @@ export class Agent {
 
   async sendMessageToConnection(connection: Connection, message: string) {
     const outboundMessage = await this.basicMessageService.send(message, connection);
-    await this.context.messageSender.sendMessage(outboundMessage);
+    await this.messageSender.sendMessage(outboundMessage);
   }
 
   getAgencyUrl() {
@@ -195,6 +213,7 @@ export class Agent {
         this.connectionService
       ),
       [TrustPingMessageType.TrustPingResponseMessage]: new TrustPingResponseMessageHandler(this.trustPingService),
+      [MessagePickupType.BatchPickup]: new MessagePickupHandler(this.connectionService, this.messagePickupService),
     };
 
     this.handlers = handlers;

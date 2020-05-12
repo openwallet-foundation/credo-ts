@@ -6,6 +6,8 @@ import logger from '../lib/logger';
 import { Agent, InboundTransporter, OutboundTransporter, encodeInvitationToUrl } from '../lib';
 import { OutboundPackage } from '../lib/types';
 import indy from 'indy-sdk';
+import { MessageRepository } from '../lib/storage/MessageRepository';
+import { InMemoryMessageRepository } from '../lib/storage/InMemoryMessageRepository';
 
 class HttpInboundTransporter implements InboundTransporter {
   app: Express;
@@ -33,6 +35,11 @@ class HttpInboundTransporter implements InboundTransporter {
 
 class StorageOutboundTransporter implements OutboundTransporter {
   messages: { [key: string]: any } = {};
+  messageRepository: MessageRepository;
+
+  constructor(messageRepository: MessageRepository) {
+    this.messageRepository = messageRepository;
+  }
 
   async sendMessage(outboundPackage: OutboundPackage) {
     const { connection, payload } = outboundPackage;
@@ -45,13 +52,9 @@ class StorageOutboundTransporter implements OutboundTransporter {
       throw new Error('Trying to save message without theirKey!');
     }
 
-    if (!this.messages[connection.theirKey]) {
-      this.messages[connection.theirKey] = [];
-    }
-
     logger.logJson('Storing message', { connection, payload });
 
-    this.messages[connection.theirKey].push(payload);
+    this.messageRepository.save(connection.theirKey, payload);
   }
 
   takeFirstMessage(verkey: Verkey) {
@@ -69,9 +72,10 @@ app.use(cors());
 app.use(bodyParser.text());
 app.set('json spaces', 2);
 
-const messageSender = new StorageOutboundTransporter();
+const messageRepository = new InMemoryMessageRepository();
+const messageSender = new StorageOutboundTransporter(messageRepository);
 const messageReceiver = new HttpInboundTransporter(app);
-const agent = new Agent(config, messageReceiver, messageSender, indy);
+const agent = new Agent(config, messageReceiver, messageSender, indy, messageRepository);
 
 app.get('/', async (req, res) => {
   const agentDid = agent.getPublicDid();
