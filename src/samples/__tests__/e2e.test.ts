@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 // @ts-ignore
 import { poll } from 'await-poll';
-import { Agent, decodeInvitationFromUrl, InboundTransporter, OutboundTransporter, Connection } from '../../lib';
+import { Agent, InboundTransporter, OutboundTransporter, Connection } from '../../lib';
 import { WireMessage, OutboundPackage } from '../../lib/types';
 import { get, post } from '../http';
 import { toBeConnectedWith } from '../../lib/testUtils';
@@ -145,17 +145,8 @@ class PollingInboundTransporter implements InboundTransporter {
   async registerAgency(agent: Agent) {
     const agencyUrl = agent.getAgencyUrl() || '';
     const agencyInvitationUrl = await get(`${agencyUrl}/invitation`);
-    const agencyInvitation = decodeInvitationFromUrl(agencyInvitationUrl);
-    const agentConnectionAtAgency = await agent.provision(agencyInvitation);
-
-    if (!agentConnectionAtAgency) {
-      throw new Error('Connection not found!');
-    }
-    await agentConnectionAtAgency.isConnected();
-    console.log('agentConnectionAtAgency\n', agentConnectionAtAgency);
-
     const { verkey: agencyVerkey } = JSON.parse(await get(`${agencyUrl}/`));
-    agent.establishInbound(agencyVerkey, agentConnectionAtAgency);
+    await agent.provision({ verkey: agencyVerkey, invitationUrl: agencyInvitationUrl });
     this.pollDownloadMessages(agent);
   }
 

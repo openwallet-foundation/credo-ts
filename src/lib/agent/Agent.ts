@@ -109,13 +109,25 @@ export class Agent {
     return this.context.wallet.getPublicDid();
   }
 
-  async provision(agencyInvitation: any) {
+  async provision(agencyConfiguration: AgencyConfiguration) {
+    const { verkey, invitationUrl } = agencyConfiguration;
+    const agencyInvitation = decodeInvitationFromUrl(invitationUrl);
+
     const connectionRequest = await this.connectionService.acceptInvitation(agencyInvitation);
     const connectionResponse = await this.messageSender.sendAndReceiveMessage(connectionRequest);
     const ack = await this.connectionService.acceptResponse(connectionResponse);
     await this.messageSender.sendMessage(ack);
-    const { connection } = connectionRequest;
-    return connection;
+    const { connection: agentConnectionAtAgency } = connectionRequest;
+
+    if (!agentConnectionAtAgency) {
+      throw new Error('Connection not found!');
+    }
+    await agentConnectionAtAgency.isConnected();
+    logger.log('agentConnectionAtAgency\n', agentConnectionAtAgency);
+
+    this.establishInbound(verkey, agentConnectionAtAgency);
+
+    return agentConnectionAtAgency;
   }
 
   async downloadMessages() {
@@ -217,4 +229,9 @@ export class Agent {
 
     this.handlers = handlers;
   }
+}
+
+interface AgencyConfiguration {
+  verkey: Verkey;
+  invitationUrl: string;
 }
