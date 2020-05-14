@@ -21,6 +21,10 @@ If handler returns an outbound message then method `sendMessage` **packs** the m
 
 # Install dependencies
 
+Aries Framework JavaScript depends on the indy-sdk which has some manual installation requirements. Before installing dependencies make sure to [install](https://github.com/hyperledger/indy-sdk/#installing-the-sdk) `libindy` and have the right tools installed for the [NodeJS wrapper](https://github.com/hyperledger/indy-sdk/tree/master/wrappers/nodejs#installing). The NodeJS wrapper link also contains some common troubleshooting steps.
+
+You can now install dependencies using yarn:
+
 ```
 yarn
 ```
