@@ -14,7 +14,7 @@ export class RouteUpdateHandler implements Handler {
 
   async handle(inboundMessage: InboundMessage) {
     const { recipient_verkey } = inboundMessage;
-    const connection = this.connectionService.findByVerkey(recipient_verkey);
+    const connection = await this.connectionService.findByVerkey(recipient_verkey);
 
     if (!connection) {
       throw new Error(`Connection for verkey ${recipient_verkey} not found!`);

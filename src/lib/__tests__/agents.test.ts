@@ -60,7 +60,7 @@ describe('agents', () => {
     }
 
     await bobConnectionAtBobAlice.isConnected();
-    console.log('bobConnectionAtAliceBob\n', bobConnectionAtBobAlice);
+    console.log('bobConnectionAtBobAlice\n', bobConnectionAtBobAlice);
 
     expect(aliceConnectionAtAliceBob).toBeConnectedWith(bobConnectionAtBobAlice);
     expect(bobConnectionAtBobAlice).toBeConnectedWith(aliceConnectionAtAliceBob);
@@ -74,15 +74,18 @@ describe('agents', () => {
     console.log('bobConnections', bobConnections);
 
     // send message from Alice to Bob
+    const lastAliceConnection = aliceConnections[aliceConnections.length - 1];
+    console.log('lastAliceConnection\n', lastAliceConnection);
+
     const message = 'hello, world';
-    await aliceAgent.sendMessageToConnection(aliceConnections[0], message);
+    await aliceAgent.sendMessageToConnection(lastAliceConnection, message);
 
     const bobMessages = await poll(
       async () => {
         console.log(`Getting Bob's messages from Alice...`);
         const messages = await bobAgent.basicMessageRepository.findByQuery({
-          from: aliceConnections[0].did,
-          to: aliceConnections[0].theirDid,
+          from: lastAliceConnection.did,
+          to: lastAliceConnection.theirDid,
         });
         return messages;
       },

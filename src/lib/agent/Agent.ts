@@ -70,7 +70,7 @@ export class Agent {
     this.basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService);
     this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService);
 
-    this.connectionService = new ConnectionService(this.context);
+    this.connectionService = new ConnectionService(this.context, this.connectionRepository);
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository);
     this.providerRoutingService = new ProviderRoutingService();
     this.consumerRoutingService = new ConsumerRoutingService(this.context);
@@ -133,12 +133,8 @@ export class Agent {
     return await this.messageReceiver.receiveMessage(inboundPackedMessage);
   }
 
-  getConnections() {
+  async getConnections() {
     return this.connectionService.getConnections();
-  }
-
-  findConnectionByMyKey(verkey: Verkey) {
-    return this.connectionService.findByVerkey(verkey);
   }
 
   findConnectionByTheirKey(verkey: Verkey) {

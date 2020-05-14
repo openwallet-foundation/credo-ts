@@ -13,7 +13,7 @@
     "prettier": "prettier --ignore-path .gitignore '**/*.+(js|json|ts)'",
     "format": "yarn prettier --write",
     "check-format": "yarn prettier --list-different",
-    "test": "jest",
+    "test": "jest --verbose",
     "dev": "ts-node-dev --respawn --transpileOnly ./src/samples/agency.ts",
     "prod": "rm -rf build && yarn compile && DEBUG=aries-framework-javascript node ./build/samples/agency.js",
     "validate": "npm-run-all --parallel lint compile",
