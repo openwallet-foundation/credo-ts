@@ -2,6 +2,7 @@ import { InboundMessage } from '../../types';
 import { Handler } from '../Handler';
 import { ConnectionService } from '../../protocols/connections/ConnectionService';
 import { ProviderRoutingService } from '../../protocols/routing/ProviderRoutingService';
+import { MessageType } from '../../protocols/routing/messages';
 
 export class RouteUpdateHandler implements Handler {
   connectionService: ConnectionService;
@@ -10,6 +11,10 @@ export class RouteUpdateHandler implements Handler {
   constructor(connectionService: ConnectionService, routingService: ProviderRoutingService) {
     this.connectionService = connectionService;
     this.routingService = routingService;
+  }
+
+  get supportedMessageTypes(): [MessageType.RouteUpdateMessage] {
+    return [MessageType.RouteUpdateMessage];
   }
 
   async handle(inboundMessage: InboundMessage) {

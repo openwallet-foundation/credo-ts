@@ -1,14 +1,9 @@
 import logger from '../logger';
 import { InitConfig } from '../types';
-import { encodeInvitationToUrl, decodeInvitationFromUrl } from '../helpers';
+import { decodeInvitationFromUrl } from '../helpers';
 import { IndyWallet } from '../wallet/IndyWallet';
 import { Connection } from '../protocols/connections/domain/Connection';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
-import { MessageType as ConnectionsMessageType } from '../protocols/connections/messages';
-import { MessageType as BasicMessageMessageType } from '../protocols/basicmessage/messages';
-import { MessageType as RoutingMessageType } from '../protocols/routing/messages';
-import { MessageType as TrustPingMessageType } from '../protocols/trustping/messages';
-import { MessageType as MessagePickupType } from '../protocols/messagepickup/messages';
 import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
 import { BasicMessageService } from '../protocols/basicmessage/BasicMessageService';
 import { ConsumerRoutingService } from '../protocols/routing/ConsumerRoutingService';
@@ -49,7 +44,7 @@ export class Agent {
   consumerRoutingService: ConsumerRoutingService;
   trustPingService: TrustPingService;
   messagePickupService: MessagePickupService;
-  handlers: { [key: string]: Handler } = {};
+  handlers: Handler[] = [];
   basicMessageRepository: Repository<BasicMessageRecord>;
   connectionRepository: Repository<ConnectionRecord>;
 
@@ -205,27 +200,18 @@ export class Agent {
   }
 
   private registerHandlers() {
-    const handlers = {
-      [ConnectionsMessageType.ConnectionInvitation]: new InvitationHandler(
-        this.connectionService,
-        this.consumerRoutingService
-      ),
-      [ConnectionsMessageType.ConnectionRequest]: new ConnectionRequestHandler(this.connectionService),
-      [ConnectionsMessageType.ConnectionResposne]: new ConnectionResponseHandler(this.connectionService),
-      [ConnectionsMessageType.Ack]: new AckMessageHandler(this.connectionService),
-      [BasicMessageMessageType.BasicMessage]: new BasicMessageHandler(this.connectionService, this.basicMessageService),
-      [RoutingMessageType.RouteUpdateMessage]: new RouteUpdateHandler(
-        this.connectionService,
-        this.providerRoutingService
-      ),
-      [RoutingMessageType.ForwardMessage]: new ForwardHandler(this.providerRoutingService),
-      [TrustPingMessageType.TrustPingMessage]: new TrustPingMessageHandler(
-        this.trustPingService,
-        this.connectionService
-      ),
-      [TrustPingMessageType.TrustPingResponseMessage]: new TrustPingResponseMessageHandler(this.trustPingService),
-      [MessagePickupType.BatchPickup]: new MessagePickupHandler(this.connectionService, this.messagePickupService),
-    };
+    const handlers = [
+      new InvitationHandler(this.connectionService, this.consumerRoutingService),
+      new ConnectionRequestHandler(this.connectionService),
+      new ConnectionResponseHandler(this.connectionService),
+      new AckMessageHandler(this.connectionService),
+      new BasicMessageHandler(this.connectionService, this.basicMessageService),
+      new RouteUpdateHandler(this.connectionService, this.providerRoutingService),
+      new ForwardHandler(this.providerRoutingService),
+      new TrustPingMessageHandler(this.trustPingService, this.connectionService),
+      new TrustPingResponseMessageHandler(this.trustPingService),
+      new MessagePickupHandler(this.connectionService, this.messagePickupService),
+    ];
 
     this.handlers = handlers;
   }

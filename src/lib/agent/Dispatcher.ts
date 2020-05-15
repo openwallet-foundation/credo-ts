@@ -3,17 +3,17 @@ import { Handler } from '../handlers/Handler';
 import { MessageSender } from './MessageSender';
 
 class Dispatcher {
-  handlers: { [key: string]: Handler } = {};
+  handlers: Handler[];
   messageSender: MessageSender;
 
-  constructor(handlers: { [key: string]: Handler } = {}, messageSender: MessageSender) {
+  constructor(handlers: Handler[], messageSender: MessageSender) {
     this.handlers = handlers;
     this.messageSender = messageSender;
   }
 
   async dispatch(inboundMessage: any): Promise<OutboundMessage | OutboundPackage | null> {
     const messageType: string = inboundMessage.message['@type'];
-    const handler = this.handlers[messageType];
+    const handler = this.getHandlerForType(messageType);
 
     if (!handler) {
       throw new Error(`No handler for message type "${messageType}" found`);
@@ -27,6 +27,10 @@ class Dispatcher {
       await this.messageSender.sendMessage(outboundMessage);
     }
     return outboundMessage;
+  }
+
+  private getHandlerForType(messageType: string): Handler | undefined {
+    return this.handlers.find(handler => handler.supportedMessageTypes.includes(messageType));
   }
 }
 
