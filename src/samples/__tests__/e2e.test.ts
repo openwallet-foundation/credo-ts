@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 // @ts-ignore
 import { poll } from 'await-poll';
-import { Agent, decodeInvitationFromUrl, InboundTransporter, OutboundTransporter, Connection } from '../../lib';
+import { Agent, InboundTransporter, OutboundTransporter, Connection } from '../../lib';
 import { WireMessage, OutboundPackage } from '../../lib/types';
 import { get, post } from '../http';
 import { toBeConnectedWith } from '../../lib/testUtils';
@@ -145,27 +145,20 @@ class PollingInboundTransporter implements InboundTransporter {
   async registerAgency(agent: Agent) {
     const agencyUrl = agent.getAgencyUrl() || '';
     const agencyInvitationUrl = await get(`${agencyUrl}/invitation`);
-    const agencyInvitation = decodeInvitationFromUrl(agencyInvitationUrl);
-    const agentConnectionAtAgency = await agent.acceptInvitation(agencyInvitation);
-
-    this.pollMessages(agent, agencyUrl, agentConnectionAtAgency.verkey);
-
-    if (!agentConnectionAtAgency) {
-      throw new Error('Connection not found!');
-    }
-    await agentConnectionAtAgency.isConnected();
-    console.log('agentConnectionAtAgency\n', agentConnectionAtAgency);
-
     const { verkey: agencyVerkey } = JSON.parse(await get(`${agencyUrl}/`));
-    agent.establishInbound(agencyVerkey, agentConnectionAtAgency);
+    await agent.provision({ verkey: agencyVerkey, invitationUrl: agencyInvitationUrl });
+    this.pollDownloadMessages(agent);
   }
 
-  pollMessages(agent: Agent, agencyUrl: string, verkey: Verkey) {
+  pollDownloadMessages(agent: Agent) {
     poll(
       async () => {
-        const message = await get(`${agencyUrl}/api/connections/${verkey}/message`);
-        if (message && message.length > 0) {
-          agent.receiveMessage(JSON.parse(message));
+        const downloadedMessages = await agent.downloadMessages();
+        const messages = [...downloadedMessages];
+        console.log('downloaded messges', messages);
+        while (messages && messages.length > 0) {
+          const message = messages.shift();
+          await agent.receiveMessage(message);
         }
       },
       () => !this.stop,
@@ -175,7 +168,7 @@ class PollingInboundTransporter implements InboundTransporter {
 }
 
 class HttpOutboundTransporter implements OutboundTransporter {
-  async sendMessage(outboundPackage: OutboundPackage) {
+  async sendMessage(outboundPackage: OutboundPackage, receiveReply: boolean) {
     const { payload, endpoint } = outboundPackage;
 
     if (!endpoint) {
@@ -184,6 +177,15 @@ class HttpOutboundTransporter implements OutboundTransporter {
 
     console.log('Sending message...');
     console.log(payload);
-    await post(`${endpoint}`, JSON.stringify(payload));
+
+    if (receiveReply) {
+      const response = await post(`${endpoint}`, JSON.stringify(payload));
+      console.log('response', response);
+      const wireMessage = JSON.parse(response);
+      console.log('wireMessage', wireMessage);
+      return wireMessage;
+    } else {
+      await post(`${endpoint}`, JSON.stringify(payload));
+    }
   }
 }

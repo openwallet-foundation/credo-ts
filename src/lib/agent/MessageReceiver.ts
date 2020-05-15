@@ -1,16 +1,16 @@
 import logger from '../logger';
 import { Dispatcher } from './Dispatcher';
-import { Wallet } from '../wallet/Wallet';
 import { InitConfig } from '../types';
+import { EnvelopeService } from './EnvelopeService';
 
 class MessageReceiver {
   config: InitConfig;
-  wallet: Wallet;
+  envelopeService: EnvelopeService;
   dispatcher: Dispatcher;
 
-  constructor(config: InitConfig, wallet: Wallet, dispatcher: Dispatcher) {
+  constructor(config: InitConfig, envelopeService: EnvelopeService, dispatcher: Dispatcher) {
     this.config = config;
-    this.wallet = wallet;
+    this.envelopeService = envelopeService;
     this.dispatcher = dispatcher;
   }
 
@@ -19,7 +19,7 @@ class MessageReceiver {
     let inboundMessage;
 
     if (!inboundPackedMessage['@type']) {
-      inboundMessage = await this.wallet.unpack(inboundPackedMessage);
+      inboundMessage = await this.envelopeService.unpackMessage(inboundPackedMessage);
 
       if (!inboundMessage.message['@type']) {
         // TODO In this case we assume we got forwarded JWE message (wire message?) to this agent from agency. We should
@@ -27,7 +27,7 @@ class MessageReceiver {
         logger.logJson('Forwarded message', inboundMessage);
 
         // @ts-ignore
-        inboundMessage = await this.wallet.unpack(inboundMessage.message);
+        inboundMessage = await this.envelopeService.unpackMessage(inboundMessage.message);
       }
     } else {
       inboundMessage = { message: inboundPackedMessage };

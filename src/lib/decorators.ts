@@ -55,3 +55,11 @@ export async function verify(message: Message, field: string, indy: Indy) {
 
   return originalMessage;
 }
+
+export function transport(message: Message) {
+  if (!message['~transport']) {
+    message['~transport'] = {
+      return_route: 'all',
+    };
+  }
+}

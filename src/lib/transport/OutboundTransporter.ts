@@ -1,5 +1,5 @@
 import { OutboundPackage } from '../types';
 
 export interface OutboundTransporter {
-  sendMessage(outboundPackage: OutboundPackage, receive_reply: boolean): Promise<any>;
+  sendMessage(outboundPackage: OutboundPackage, receiveReply: boolean): Promise<any>;
 }
