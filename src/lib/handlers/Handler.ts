@@ -1,5 +1,7 @@
 import { InboundMessage, OutboundMessage } from '../types';
 
 export interface Handler {
-  handle(inboudMessage: InboundMessage): Promise<OutboundMessage | null>;
+  readonly supportedMessageTypes: string[];
+
+  handle(inboundMessage: InboundMessage): Promise<OutboundMessage | null>;
 }

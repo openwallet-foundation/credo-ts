@@ -5,7 +5,7 @@ import { InvitationDetails } from './domain/InvitationDetails';
 export enum MessageType {
   ConnectionInvitation = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation',
   ConnectionRequest = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/request',
-  ConnectionResposne = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/response',
+  ConnectionResponse = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/response',
   Ack = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/notification/1.0/ack',
 }
 
@@ -39,7 +39,7 @@ export function createConnectionRequestMessage(connection: Connection, label: st
 
 export function createConnectionResponseMessage(connection: Connection, thid: string) {
   return {
-    '@type': MessageType.ConnectionResposne,
+    '@type': MessageType.ConnectionResponse,
     '@id': uuid(),
     '~thread': {
       thid,
