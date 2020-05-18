@@ -3,7 +3,7 @@
 version: '3'
 
 networks:
-  kiva-network:
+  hyperledger-network:
     driver: bridge
     ipam:
       driver: default
@@ -22,7 +22,7 @@ services:
      - ./:/www
      - node_modules:/www/node_modules
     networks:
-      - kiva-network
+      - hyperledger-network
     tty: true
 volumes:
   node_modules:

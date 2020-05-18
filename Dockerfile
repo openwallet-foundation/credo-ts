@@ -1,5 +1,5 @@
 # Note that the indy-sdk requires ubuntu 16 and some custom dependencies so we can't use node:carbon-apline like the others
-FROM ubuntu:16.04
+FROM ubuntu:16.04 as base
 
 # Grab dependencies via apt-get
 RUN apt-get update && \
@@ -23,14 +23,14 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 && \
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash && \
     apt-get install nodejs -y
 
-# setup yarn
-RUN curl -o- -L https://yarnpkg.com/install.sh | bash
-
 # Setup our server
 RUN mkdir www/
 WORKDIR www/
 ADD package.json ./
-# RUN yarn install
 ADD . .
-# @todo need an easy way to switch between dev and prod, can use docker-compose
-CMD [ "bash" ]
+
+# setup yarn
+RUN curl -o- -L https://yarnpkg.com/install.sh | bash
+RUN PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH" yarn install
+# start it up
+CMD ["bash"]
