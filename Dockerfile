@@ -19,7 +19,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 && \
     apt-get update && \
     apt-get install -y libindy=${libindy_ver}
 
-# Setup nodejs --- prob dont need this
+# Setup nodejs
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash && \
     apt-get install nodejs -y
 
@@ -32,5 +32,6 @@ ADD . .
 # setup yarn
 RUN curl -o- -L https://yarnpkg.com/install.sh | bash
 RUN PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH" yarn install
-# start it up
+# start it up, would like to get the server working but needs indy node etc.
+# CMD ["bash", "npm", "run", "dev"]
 CMD ["bash"]
