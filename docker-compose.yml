@@ -1,0 +1,44 @@
+#
+#
+version: '3'
+
+networks:
+  hyperledger-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.0.0/24
+
+services:
+  aries-javascript-alice:
+    env_file:
+      - ./.env
+    build: ./
+    image: aries-javascript
+    container_name: aries-javascript-alice
+    working_dir: /www
+    command: ./run.sh alice server
+    volumes:
+     - ./:/www
+     - node_modules:/www/node_modules
+    networks:
+      - hyperledger-network
+    tty: true
+  aries-javascript-bob:
+    env_file:
+      - ./.env
+    build: ./
+    image: aries-javascript
+    container_name: aries-javascript-bob
+    working_dir: /www
+    command: ./run.sh bob server
+    volumes:
+      - ./:/www
+      - node_modules:/www/node_modules
+    networks:
+      - hyperledger-network
+    tty: true
+volumes:
+  node_modules:
+  db_data: {}
