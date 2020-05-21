@@ -15,7 +15,7 @@ Main goal of this implementation is to run 2 independent Edge Agents (clients), 
 
 ## Basic Explanation of Implementation
 
-Agent class has method `receiveMessage` which **unpacks** incoming **inboud message** and then pass it to the `dispatch` method. This method just tries to find particular `handler` according to message `@type` attribute. Handler then process the message, calls services if needed and also creates **outbound message** to be send by sender, if it's required by protocol.
+Agent class has method `receiveMessage` which **unpacks** incoming **inbound message** and then pass it to the `dispatch` method. This method just tries to find particular `handler` according to message `@type` attribute. Handler then process the message, calls services if needed and also creates **outbound message** to be send by sender, if it's required by protocol.
 
 If handler returns an outbound message then method `sendMessage` **packs** the message with defined recepient and routing keys. This method also creates **forwardMessage** when routing keys are available. The way an outbound message is send depends on the implementation of MessageSender interface. Outbound message just need to contain all information which is needed for given comminucation (e. g. HTTP endpoint for HTTP protocol).
 
