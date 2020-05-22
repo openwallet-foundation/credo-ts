@@ -1,7 +1,7 @@
 import uuid from 'uuid';
-import { InitConfig, Message, InboundMessage } from '../../types';
+import { Message, InboundMessage } from '../../types';
 import { createInvitationMessage, createConnectionRequestMessage, createConnectionResponseMessage } from './messages';
-import { Context } from '../../agent/Context';
+import { AgentConfig } from '../../agent/AgentConfig';
 import { createOutboundMessage } from '../helpers';
 import { Connection } from './domain/Connection';
 import { ConnectionState } from './domain/ConnectionState';
@@ -9,20 +9,23 @@ import { DidDoc, Service, PublicKey, PublicKeyType, Authentication } from './dom
 import { createTrustPingMessage } from '../trustping/messages';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
 import { Repository } from '../../storage/Repository';
+import { Wallet } from '../../wallet/Wallet';
 
 class ConnectionService {
-  context: Context;
+  wallet: Wallet;
+  config: AgentConfig;
   connections: Connection[] = [];
   connectionRepository: Repository<ConnectionRecord>;
 
-  constructor(context: Context, connectionRepository: Repository<ConnectionRecord>) {
-    this.context = context;
+  constructor(wallet: Wallet, config: AgentConfig, connectionRepository: Repository<ConnectionRecord>) {
+    this.wallet = wallet;
+    this.config = config;
     this.connectionRepository = connectionRepository;
   }
 
   async createConnectionWithInvitation(): Promise<Connection> {
     const connection = await this.createConnection();
-    const invitationDetails = this.createInvitationDetails(this.context.config, connection);
+    const invitationDetails = this.createInvitationDetails(this.config, connection);
     const invitation = await createInvitationMessage(invitationDetails);
     connection.invitation = invitation;
     connection.updateState(ConnectionState.INVITED);
@@ -32,14 +35,13 @@ class ConnectionService {
 
   async acceptInvitation(invitation: Message) {
     const connection = await this.createConnection();
-    const connectionRequest = createConnectionRequestMessage(connection, this.context.config.label);
+    const connectionRequest = createConnectionRequestMessage(connection, this.config.label);
     connection.updateState(ConnectionState.REQUESTED);
     this.connectionRepository.update(convertConnectionToRecord(connection));
     return createOutboundMessage(connection, connectionRequest, invitation);
   }
 
   async acceptRequest(inboundMessage: InboundMessage) {
-    const { wallet } = this.context;
     const { message, recipient_verkey } = inboundMessage;
     const connection = await this.findByVerkey(recipient_verkey);
 
@@ -59,14 +61,13 @@ class ConnectionService {
     }
 
     const connectionResponse = createConnectionResponseMessage(connection, message['@id']);
-    const signedConnectionResponse = await wallet.sign(connectionResponse, 'connection', connection.verkey);
+    const signedConnectionResponse = await this.wallet.sign(connectionResponse, 'connection', connection.verkey);
     connection.updateState(ConnectionState.RESPONDED);
     this.connectionRepository.update(convertConnectionToRecord(connection));
     return createOutboundMessage(connection, signedConnectionResponse);
   }
 
   async acceptResponse(inboundMessage: InboundMessage) {
-    const { wallet } = this.context;
     const { message, recipient_verkey, sender_verkey } = inboundMessage;
     const connection = await this.findByVerkey(recipient_verkey);
 
@@ -78,7 +79,7 @@ class ConnectionService {
       throw new Error('Invalid message');
     }
 
-    const originalMessage = await wallet.verify(message, 'connection');
+    const originalMessage = await this.wallet.verify(message, 'connection');
     connection.updateDidExchangeConnection(originalMessage.connection);
     this.connectionRepository.update(convertConnectionToRecord(connection));
     if (!connection.theirKey) {
@@ -113,9 +114,16 @@ class ConnectionService {
 
   async createConnection(): Promise<Connection> {
     const id = uuid();
-    const [did, verkey] = await this.context.wallet.createDid({ method_name: 'sov' });
+    const [did, verkey] = await this.wallet.createDid({ method_name: 'sov' });
     const publicKey = new PublicKey(`${did}#1`, PublicKeyType.ED25519_SIG_2018, did, verkey);
-    const service = new Service(`${did};indy`, this.getEndpoint(), [verkey], this.getRoutingKeys(), 0, 'IndyAgent');
+    const service = new Service(
+      `${did};indy`,
+      this.config.getEndpoint(),
+      [verkey],
+      this.config.getRoutingKeys(),
+      0,
+      'IndyAgent'
+    );
     const auth = new Authentication(publicKey);
     const did_doc = new DidDoc(did, [auth], [publicKey], [service]);
 
@@ -151,7 +159,7 @@ class ConnectionService {
     return this.connections.find(connection => connection.theirKey === verkey);
   }
 
-  private createInvitationDetails(config: InitConfig, connection: Connection) {
+  private createInvitationDetails(config: AgentConfig, connection: Connection) {
     const { didDoc } = connection;
     return {
       label: config.label,
@@ -159,17 +167,6 @@ class ConnectionService {
       serviceEndpoint: didDoc.service[0].serviceEndpoint,
       routingKeys: didDoc.service[0].routingKeys,
     };
-  }
-
-  private getEndpoint() {
-    const connection = this.context.inboundConnection && this.context.inboundConnection.connection;
-    const endpoint = connection && connection.theirDidDoc && connection.theirDidDoc.service[0].serviceEndpoint;
-    return endpoint ? `${endpoint}` : `${this.context.config.url}:${this.context.config.port}/msg`;
-  }
-
-  private getRoutingKeys() {
-    const verkey = this.context.inboundConnection && this.context.inboundConnection.verkey;
-    return verkey ? [verkey] : [];
   }
 
   private async loadConnections() {

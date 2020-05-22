@@ -5,10 +5,12 @@ import { IndyWallet } from '../wallet/IndyWallet';
 import { Connection } from '../protocols/connections/domain/Connection';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
-import { BasicMessageService } from '../protocols/basicmessage/BasicMessageService';
 import { ConsumerRoutingService } from '../protocols/routing/ConsumerRoutingService';
-import { Context } from './Context';
+import { BasicMessageService } from '../protocols/basicmessage/BasicMessageService';
+import { TrustPingService } from '../protocols/trustping/TrustPingService';
+import { MessagePickupService } from '../protocols/messagepickup/MessagePickupService';
 import { MessageReceiver } from './MessageReceiver';
+import { EnvelopeService } from './EnvelopeService';
 import { Dispatcher } from './Dispatcher';
 import { MessageSender } from './MessageSender';
 import { InboundTransporter } from '../transport/InboundTransporter';
@@ -21,21 +23,21 @@ import { BasicMessageHandler } from '../handlers/basicmessage/BasicMessageHandle
 import { RouteUpdateHandler } from '../handlers/routing/RouteUpdateHandler';
 import { ForwardHandler } from '../handlers/routing/ForwardHandler';
 import { Handler } from '../handlers/Handler';
-import { TrustPingService } from '../protocols/trustping/TrustPingService';
 import { TrustPingMessageHandler } from '../handlers/trustping/TrustPingMessageHandler';
 import { TrustPingResponseMessageHandler } from '../handlers/trustping/TrustPingResponseMessageHandler';
+import { MessagePickupHandler } from '../handlers/messagepickup/MessagePickupHandler';
+import { MessageRepository } from '../storage/MessageRepository';
 import { BasicMessageRecord } from '../storage/BasicMessageRecord';
 import { Repository } from '../storage/Repository';
 import { IndyStorageService } from '../storage/IndyStorageService';
 import { ConnectionRecord } from '../storage/ConnectionRecord';
-import { EnvelopeService } from './EnvelopeService';
-import { MessagePickupService } from '../protocols/messagepickup/MessagePickupService';
-import { MessagePickupHandler } from '../handlers/messagepickup/MessagePickupHandler';
-import { MessageRepository } from '../storage/MessageRepository';
+import { AgentConfig } from './AgentConfig';
+import { Wallet } from '../wallet/Wallet';
 
 export class Agent {
   inboundTransporter: InboundTransporter;
-  context: Context;
+  wallet: Wallet;
+  agentConfig: AgentConfig;
   messageReceiver: MessageReceiver;
   messageSender: MessageSender;
   connectionService: ConnectionService;
@@ -49,59 +51,51 @@ export class Agent {
   connectionRepository: Repository<ConnectionRecord>;
 
   constructor(
-    config: InitConfig,
+    initialConfig: InitConfig,
     inboundTransporter: InboundTransporter,
     outboundTransporter: OutboundTransporter,
     indy: Indy,
     messageRepository?: MessageRepository
   ) {
-    logger.logJson('Creating agent with config', config);
+    logger.logJson('Creating agent with config', initialConfig);
+    this.wallet = new IndyWallet(initialConfig.walletConfig, initialConfig.walletCredentials, indy);
+    const envelopeService = new EnvelopeService(this.wallet);
 
-    const wallet = new IndyWallet(config.walletConfig, config.walletCredentials, indy);
-    const storageService = new IndyStorageService(wallet);
-
+    const storageService = new IndyStorageService(this.wallet);
     this.basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService);
     this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService);
 
-    const envelopeService = new EnvelopeService(wallet);
-    const messageSender = new MessageSender(envelopeService, outboundTransporter);
+    this.agentConfig = new AgentConfig(initialConfig);
+    this.messageSender = new MessageSender(envelopeService, outboundTransporter);
 
-    this.inboundTransporter = inboundTransporter;
-
-    this.context = {
-      config,
-      wallet,
-      messageSender,
-    };
-
-    this.connectionService = new ConnectionService(this.context, this.connectionRepository);
+    this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository);
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository);
     this.providerRoutingService = new ProviderRoutingService();
-    this.consumerRoutingService = new ConsumerRoutingService(this.context);
+    this.consumerRoutingService = new ConsumerRoutingService(this.messageSender, this.agentConfig);
     this.trustPingService = new TrustPingService();
     this.messagePickupService = new MessagePickupService(messageRepository);
 
     this.registerHandlers();
 
-    const dispatcher = new Dispatcher(this.handlers, messageSender);
-    this.messageReceiver = new MessageReceiver(config, envelopeService, dispatcher);
-    this.messageSender = messageSender;
+    const dispatcher = new Dispatcher(this.handlers, this.messageSender);
+    this.messageReceiver = new MessageReceiver(this.agentConfig, envelopeService, dispatcher);
+    this.inboundTransporter = inboundTransporter;
   }
 
   async init() {
-    await this.context.wallet.init();
+    await this.wallet.init();
 
-    const { publicDid, publicDidSeed } = this.context.config;
+    const { publicDid, publicDidSeed } = this.agentConfig;
     if (publicDid && publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
-      this.context.wallet.initPublicDid(publicDid, publicDidSeed);
+      this.wallet.initPublicDid(publicDid, publicDidSeed);
     }
 
     return this.inboundTransporter.start(this);
   }
 
   getPublicDid() {
-    return this.context.wallet.getPublicDid();
+    return this.wallet.getPublicDid();
   }
 
   async provision(agencyConfiguration: AgencyConfiguration) {
@@ -145,7 +139,7 @@ export class Agent {
 
     // If agent has inbound connection, which means it's using agency, we need to create a route for newly created
     // connection verkey at agency.
-    if (this.context.inboundConnection) {
+    if (this.agentConfig.inboundConnection) {
       this.consumerRoutingService.createRoute(connection.verkey);
     }
 
@@ -183,7 +177,7 @@ export class Agent {
   }
 
   establishInbound(agencyVerkey: Verkey, connection: Connection) {
-    this.context.inboundConnection = { verkey: agencyVerkey, connection };
+    this.agentConfig.establishInbound({ verkey: agencyVerkey, connection });
   }
 
   async sendMessageToConnection(connection: Connection, message: string) {
@@ -192,11 +186,11 @@ export class Agent {
   }
 
   getAgencyUrl() {
-    return this.context.config.agencyUrl;
+    return this.agentConfig.agencyUrl;
   }
 
   getInboundConnection() {
-    return this.context.inboundConnection;
+    return this.agentConfig.inboundConnection;
   }
 
   private registerHandlers() {

@@ -1,14 +1,14 @@
 import logger from '../logger';
+import { AgentConfig } from './AgentConfig';
 import { Dispatcher } from './Dispatcher';
-import { InitConfig } from '../types';
 import { EnvelopeService } from './EnvelopeService';
 
 class MessageReceiver {
-  config: InitConfig;
+  config: AgentConfig;
   envelopeService: EnvelopeService;
   dispatcher: Dispatcher;
 
-  constructor(config: InitConfig, envelopeService: EnvelopeService, dispatcher: Dispatcher) {
+  constructor(config: AgentConfig, envelopeService: EnvelopeService, dispatcher: Dispatcher) {
     this.config = config;
     this.envelopeService = envelopeService;
     this.dispatcher = dispatcher;
