@@ -56,13 +56,6 @@ class StorageOutboundTransporter implements OutboundTransporter {
 
     this.messageRepository.save(connection.theirKey, payload);
   }
-
-  takeFirstMessage(verkey: Verkey) {
-    if (this.messages[verkey]) {
-      return this.messages[verkey].shift();
-    }
-    return null;
-  }
 }
 
 const PORT = config.port;
@@ -93,12 +86,6 @@ app.get('/invitation', async (req, res) => {
 
   const invitationUrl = encodeInvitationToUrl(invitation);
   res.send(invitationUrl);
-});
-
-app.get('/api/connections/:verkey/message', async (req, res) => {
-  const verkey = req.params.verkey;
-  const message = messageSender.takeFirstMessage(verkey);
-  res.send(message);
 });
 
 app.get('/api/connections/:verkey', async (req, res) => {
