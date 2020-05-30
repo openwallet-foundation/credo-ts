@@ -1,6 +1,6 @@
 import uuid from 'uuid/v4';
-import { Connection } from './domain/Connection';
 import { InvitationDetails } from './domain/InvitationDetails';
+import { ConnectionRecord } from '../../storage/ConnectionRecord';
 
 export enum MessageType {
   ConnectionInvitation = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation',
@@ -25,7 +25,7 @@ export async function createInvitationMessage({
   };
 }
 
-export function createConnectionRequestMessage(connection: Connection, label: string) {
+export function createConnectionRequestMessage(connection: ConnectionRecord, label: string) {
   return {
     '@type': MessageType.ConnectionRequest,
     '@id': uuid(),
@@ -37,7 +37,7 @@ export function createConnectionRequestMessage(connection: Connection, label: st
   };
 }
 
-export function createConnectionResponseMessage(connection: Connection, thid: string) {
+export function createConnectionResponseMessage(connection: ConnectionRecord, thid: string) {
   return {
     '@type': MessageType.ConnectionResponse,
     '@id': uuid(),

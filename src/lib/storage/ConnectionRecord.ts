@@ -1,8 +1,24 @@
 import { BaseRecord, RecordType } from './BaseRecord';
-import { ConnectionProps } from '../protocols/connections/domain/Connection';
 import { DidDoc } from '../protocols/connections/domain/DidDoc';
 import { InvitationDetails } from '../protocols/connections/domain/InvitationDetails';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
+
+interface DidExchangeConnection {
+  DID: Did;
+  DIDDoc: DidDoc;
+}
+
+interface ConnectionProps {
+  id: string;
+  did: Did;
+  didDoc: DidDoc;
+  verkey: Verkey;
+  theirDid?: Did;
+  theirDidDoc?: DidDoc;
+  invitation?: InvitationDetails;
+  state: ConnectionState;
+  endpoint?: string;
+}
 
 export interface ConnectionStorageProps extends ConnectionProps {
   id: string;
@@ -33,5 +49,24 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
     this.state = props.state;
     this.endpoint = props.endpoint;
     this.tags = props.tags as { [keys: string]: string };
+  }
+
+  get myKey() {
+    if (!this.didDoc) {
+      return null;
+    }
+    return this.didDoc.service[0].recipientKeys[0];
+  }
+
+  get theirKey() {
+    if (!this.theirDidDoc) {
+      return null;
+    }
+    return this.theirDidDoc.service[0].recipientKeys[0];
+  }
+
+  updateDidExchangeConnection(didExchangeConnection: DidExchangeConnection) {
+    this.theirDid = didExchangeConnection.DID;
+    this.theirDidDoc = didExchangeConnection.DIDDoc;
   }
 }

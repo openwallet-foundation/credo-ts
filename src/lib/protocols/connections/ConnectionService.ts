@@ -1,9 +1,9 @@
 import uuid from 'uuid';
+import { EventEmitter } from 'events';
 import { Message, InboundMessage } from '../../types';
 import { createInvitationMessage, createConnectionRequestMessage, createConnectionResponseMessage } from './messages';
 import { AgentConfig } from '../../agent/AgentConfig';
 import { createOutboundMessage } from '../helpers';
-import { Connection } from './domain/Connection';
 import { ConnectionState } from './domain/ConnectionState';
 import { DidDoc, Service, PublicKey, PublicKeyType, Authentication } from './domain/DidDoc';
 import { createTrustPingMessage } from '../trustping/messages';
@@ -11,41 +11,39 @@ import { ConnectionRecord } from '../../storage/ConnectionRecord';
 import { Repository } from '../../storage/Repository';
 import { Wallet } from '../../wallet/Wallet';
 
-class ConnectionService {
+class ConnectionService extends EventEmitter {
   wallet: Wallet;
   config: AgentConfig;
-  connections: Connection[] = [];
   connectionRepository: Repository<ConnectionRecord>;
 
   constructor(wallet: Wallet, config: AgentConfig, connectionRepository: Repository<ConnectionRecord>) {
+    super();
     this.wallet = wallet;
     this.config = config;
     this.connectionRepository = connectionRepository;
   }
 
-  async createConnectionWithInvitation(): Promise<Connection> {
-    const connection = await this.createConnection();
-    const invitationDetails = this.createInvitationDetails(this.config, connection);
+  async createConnectionWithInvitation(): Promise<ConnectionRecord> {
+    const connectionRecord = await this.createConnection();
+    const invitationDetails = this.createInvitationDetails(this.config, connectionRecord);
     const invitation = await createInvitationMessage(invitationDetails);
-    connection.invitation = invitation;
-    connection.updateState(ConnectionState.INVITED);
-    this.connectionRepository.update(convertConnectionToRecord(connection));
-    return connection;
+    connectionRecord.invitation = invitation;
+    await this.updateState(connectionRecord, ConnectionState.INVITED);
+    return connectionRecord;
   }
 
   async acceptInvitation(invitation: Message) {
-    const connection = await this.createConnection();
-    const connectionRequest = createConnectionRequestMessage(connection, this.config.label);
-    connection.updateState(ConnectionState.REQUESTED);
-    this.connectionRepository.update(convertConnectionToRecord(connection));
-    return createOutboundMessage(connection, connectionRequest, invitation);
+    const connectionRecord = await this.createConnection();
+    const connectionRequest = createConnectionRequestMessage(connectionRecord, this.config.label);
+    await this.updateState(connectionRecord, ConnectionState.REQUESTED);
+    return createOutboundMessage(connectionRecord, connectionRequest, invitation);
   }
 
   async acceptRequest(inboundMessage: InboundMessage) {
     const { message, recipient_verkey } = inboundMessage;
-    const connection = await this.findByVerkey(recipient_verkey);
+    const connectionRecord = await this.findByVerkey(recipient_verkey);
 
-    if (!connection) {
+    if (!connectionRecord) {
       throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
     }
 
@@ -54,24 +52,25 @@ class ConnectionService {
     }
 
     const requestConnection = message.connection;
-    connection.updateDidExchangeConnection(requestConnection);
+    connectionRecord.updateDidExchangeConnection(requestConnection);
 
-    if (!connection.theirKey) {
-      throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`);
+    if (!connectionRecord.theirKey) {
+      throw new Error(`Connection with verkey ${connectionRecord.verkey} has no recipient keys.`);
     }
 
-    const connectionResponse = createConnectionResponseMessage(connection, message['@id']);
-    const signedConnectionResponse = await this.wallet.sign(connectionResponse, 'connection', connection.verkey);
-    connection.updateState(ConnectionState.RESPONDED);
-    this.connectionRepository.update(convertConnectionToRecord(connection));
-    return createOutboundMessage(connection, signedConnectionResponse);
+    connectionRecord.tags = { ...connectionRecord.tags, theirKey: connectionRecord.theirKey };
+
+    const connectionResponse = createConnectionResponseMessage(connectionRecord, message['@id']);
+    const signedConnectionResponse = await this.wallet.sign(connectionResponse, 'connection', connectionRecord.verkey);
+    await this.updateState(connectionRecord, ConnectionState.RESPONDED);
+    return createOutboundMessage(connectionRecord, signedConnectionResponse);
   }
 
   async acceptResponse(inboundMessage: InboundMessage) {
     const { message, recipient_verkey, sender_verkey } = inboundMessage;
-    const connection = await this.findByVerkey(recipient_verkey);
+    const connectionRecord = await this.findByVerkey(recipient_verkey);
 
-    if (!connection) {
+    if (!connectionRecord) {
       throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
     }
 
@@ -80,39 +79,47 @@ class ConnectionService {
     }
 
     const originalMessage = await this.wallet.verify(message, 'connection');
-    connection.updateDidExchangeConnection(originalMessage.connection);
-    this.connectionRepository.update(convertConnectionToRecord(connection));
-    if (!connection.theirKey) {
-      throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`);
+    connectionRecord.updateDidExchangeConnection(originalMessage.connection);
+
+    if (!connectionRecord.theirKey) {
+      throw new Error(`Connection with verkey ${connectionRecord.verkey} has no recipient keys.`);
     }
+
+    connectionRecord.tags = { ...connectionRecord.tags, theirKey: connectionRecord.theirKey };
 
     // dotnet doesn't send senderVk here
     // validateSenderKey(connection, sender_verkey);
 
     const response = createTrustPingMessage();
-    connection.updateState(ConnectionState.COMPLETE);
-    return createOutboundMessage(connection, response);
+    await this.updateState(connectionRecord, ConnectionState.COMPLETE);
+    return createOutboundMessage(connectionRecord, response);
   }
 
   async acceptAck(inboundMessage: InboundMessage) {
     const { recipient_verkey, sender_verkey } = inboundMessage;
-    const connection = await this.findByVerkey(recipient_verkey);
+    const connectionRecord = await this.findByVerkey(recipient_verkey);
 
-    if (!connection) {
+    if (!connectionRecord) {
       throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
     }
 
-    validateSenderKey(connection, sender_verkey);
+    validateSenderKey(connectionRecord, sender_verkey);
 
-    if (connection.getState() !== ConnectionState.COMPLETE) {
-      connection.updateState(ConnectionState.COMPLETE);
-      this.connectionRepository.update(convertConnectionToRecord(connection));
+    if (connectionRecord.state !== ConnectionState.COMPLETE) {
+      await this.updateState(connectionRecord, ConnectionState.COMPLETE);
     }
 
     return null;
   }
 
-  async createConnection(): Promise<Connection> {
+  async updateState(connectionRecord: ConnectionRecord, newState: ConnectionState) {
+    connectionRecord.state = newState;
+    await this.connectionRepository.update(connectionRecord);
+    const { verkey, state } = connectionRecord;
+    this.emit('stateChange', { verkey, newState: state });
+  }
+
+  private async createConnection(): Promise<ConnectionRecord> {
     const id = uuid();
     const [did, verkey] = await this.wallet.createDid({ method_name: 'sov' });
     const publicKey = new PublicKey(`${did}#1`, PublicKeyType.ED25519_SIG_2018, did, verkey);
@@ -125,41 +132,45 @@ class ConnectionService {
       'IndyAgent'
     );
     const auth = new Authentication(publicKey);
-    const did_doc = new DidDoc(did, [auth], [publicKey], [service]);
+    const didDoc = new DidDoc(did, [auth], [publicKey], [service]);
 
-    const connection = new Connection({
+    const connectionRecord = new ConnectionRecord({
       id,
       did,
-      didDoc: did_doc,
+      didDoc,
       verkey,
       state: ConnectionState.INIT,
+      tags: { verkey },
     });
 
-    this.connections.push(connection);
-    this.connectionRepository.save(convertConnectionToRecord(connection));
-
-    return connection;
+    await this.connectionRepository.save(connectionRecord);
+    return connectionRecord;
   }
 
   async getConnections() {
-    if (this.connections.length < 1) {
-      await this.loadConnections();
-    }
-    return this.connections;
+    return this.connectionRepository.findAll();
   }
 
   async findByVerkey(verkey: Verkey) {
-    if (this.connections.length < 1) {
-      await this.loadConnections();
+    const connectionRecords = await this.connectionRepository.findByQuery({ verkey });
+    return connectionRecords[0];
+  }
+
+  async findByTheirKey(verkey: Verkey) {
+    const connectionRecords = await this.connectionRepository.findByQuery({ theirKey: verkey });
+
+    if (connectionRecords.length > 1) {
+      throw new Error(`There is more than one connection for given verkey ${verkey}`);
     }
-    return this.connections.find(connection => connection.verkey === verkey);
+
+    if (connectionRecords.length < 1) {
+      return null;
+    }
+
+    return connectionRecords[0];
   }
 
-  findByTheirKey(verkey: Verkey) {
-    return this.connections.find(connection => connection.theirKey === verkey);
-  }
-
-  private createInvitationDetails(config: AgentConfig, connection: Connection) {
+  private createInvitationDetails(config: AgentConfig, connection: ConnectionRecord) {
     const { didDoc } = connection;
     return {
       label: config.label,
@@ -168,16 +179,9 @@ class ConnectionService {
       routingKeys: didDoc.service[0].routingKeys,
     };
   }
-
-  private async loadConnections() {
-    const connectionRecords = await this.connectionRepository.findAll();
-    return connectionRecords.forEach(connectionRecord => {
-      this.connections.push(convertRecordToConnection(connectionRecord));
-    });
-  }
 }
 
-function validateSenderKey(connection: Connection, senderKey: Verkey) {
+function validateSenderKey(connection: ConnectionRecord, senderKey: Verkey) {
   // TODO I have 2 questions
 
   // 1. I don't know whether following check is necessary. I guess it is, but we should validate this condition
@@ -191,35 +195,6 @@ function validateSenderKey(connection: Connection, senderKey: Verkey) {
       `Inbound message 'sender_key' ${senderKey} is different from connection.theirKey ${connection.theirKey}`
     );
   }
-}
-
-function convertConnectionToRecord(connection: Connection) {
-  const { id, did, didDoc, verkey, theirDid, theirDidDoc, invitation } = connection;
-  return new ConnectionRecord({
-    id,
-    did,
-    didDoc,
-    verkey,
-    theirDid,
-    theirDidDoc,
-    invitation,
-    state: connection.getState(),
-    tags: { verkey },
-  });
-}
-
-function convertRecordToConnection(connectionRecord: ConnectionRecord) {
-  const { id, did, didDoc, verkey, theirDid, theirDidDoc, invitation, state } = connectionRecord;
-  return new Connection({
-    id,
-    did,
-    didDoc,
-    verkey,
-    theirDid,
-    theirDidDoc,
-    invitation,
-    state,
-  });
 }
 
 export { ConnectionService };

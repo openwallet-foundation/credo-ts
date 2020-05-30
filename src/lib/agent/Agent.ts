@@ -1,8 +1,9 @@
+// @ts-ignore
+import { poll } from 'await-poll';
 import logger from '../logger';
 import { InitConfig } from '../types';
 import { decodeInvitationFromUrl } from '../helpers';
 import { IndyWallet } from '../wallet/IndyWallet';
-import { Connection } from '../protocols/connections/domain/Connection';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
 import { ConsumerRoutingService } from '../protocols/routing/ConsumerRoutingService';
@@ -33,6 +34,7 @@ import { IndyStorageService } from '../storage/IndyStorageService';
 import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { AgentConfig } from './AgentConfig';
 import { Wallet } from '../wallet/Wallet';
+import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
 
 export class Agent {
   inboundTransporter: InboundTransporter;
@@ -106,13 +108,19 @@ export class Agent {
     const connectionResponse = await this.messageSender.sendAndReceiveMessage(connectionRequest);
     const ack = await this.connectionService.acceptResponse(connectionResponse);
     await this.messageSender.sendMessage(ack);
-    const { connection: agentConnectionAtAgency } = connectionRequest;
+
+    const inboundConnectionVerkey = connectionRequest.connection.verkey;
+    const agentConnectionAtAgency = await this.connectionService.findByVerkey(inboundConnectionVerkey);
 
     if (!agentConnectionAtAgency) {
       throw new Error('Connection not found!');
     }
-    await agentConnectionAtAgency.isConnected();
-    logger.log('agentConnectionAtAgency\n', agentConnectionAtAgency);
+
+    logger.log('agentConnectionAtAgency', agentConnectionAtAgency);
+
+    if (agentConnectionAtAgency.state !== ConnectionState.COMPLETE) {
+      throw new Error('Connection has not been established.');
+    }
 
     this.establishInbound(verkey, agentConnectionAtAgency);
 
@@ -168,7 +176,11 @@ export class Agent {
     return this.connectionService.getConnections();
   }
 
-  findConnectionByTheirKey(verkey: Verkey) {
+  async findConnectionByVerkey(verkey: Verkey) {
+    return this.connectionService.findByVerkey(verkey);
+  }
+
+  async findConnectionByTheirKey(verkey: Verkey) {
     return this.connectionService.findByTheirKey(verkey);
   }
 
@@ -176,11 +188,11 @@ export class Agent {
     return this.providerRoutingService.getRoutes();
   }
 
-  establishInbound(agencyVerkey: Verkey, connection: Connection) {
+  establishInbound(agencyVerkey: Verkey, connection: ConnectionRecord) {
     this.agentConfig.establishInbound({ verkey: agencyVerkey, connection });
   }
 
-  async sendMessageToConnection(connection: Connection, message: string) {
+  async sendMessageToConnection(connection: ConnectionRecord, message: string) {
     const outboundMessage = await this.basicMessageService.send(message, connection);
     await this.messageSender.sendMessage(outboundMessage);
   }
@@ -191,6 +203,20 @@ export class Agent {
 
   getInboundConnection() {
     return this.agentConfig.inboundConnection;
+  }
+
+  async returnWhenIsConnected(verkey: Verkey) {
+    const connectionRecord = await poll(
+      () => this.findConnectionByVerkey(verkey),
+      (c: ConnectionRecord) => c.state !== ConnectionState.COMPLETE,
+      100
+    );
+    return connectionRecord;
+  }
+
+  async closeAndDeleteWallet() {
+    await this.wallet.close();
+    await this.wallet.delete();
   }
 
   private registerHandlers() {

@@ -91,13 +91,13 @@ app.get('/invitation', async (req, res) => {
 app.get('/api/connections/:verkey', async (req, res) => {
   // TODO This endpoint is for testing purpose only. Return agency connection by their verkey.
   const verkey = req.params.verkey;
-  const connection = agent.findConnectionByTheirKey(verkey);
+  const connection = await agent.findConnectionByTheirKey(verkey);
   res.send(connection);
 });
 
 app.get('/api/connections', async (req, res) => {
   // TODO This endpoint is for testing purpose only. Return agency connection by their verkey.
-  const connections = agent.getConnections();
+  const connections = await agent.getConnections();
   res.json(connections);
 });
 

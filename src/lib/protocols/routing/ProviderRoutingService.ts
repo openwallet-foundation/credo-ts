@@ -1,7 +1,6 @@
 import { InboundMessage } from '../../types';
 import { createOutboundMessage } from '../helpers';
-import { Connection } from '../connections/domain/Connection';
-import { MessageRepository } from '../../storage/MessageRepository';
+import { ConnectionRecord } from '../../storage/ConnectionRecord';
 
 interface RouteUpdate {
   action: 'add' | 'remove';
@@ -9,9 +8,9 @@ interface RouteUpdate {
 }
 
 class ProviderRoutingService {
-  routingTable: { [recipientKey: string]: Connection } = {};
+  routingTable: { [recipientKey: string]: ConnectionRecord } = {};
 
-  updateRoutes(inboudMessage: InboundMessage, connection: Connection) {
+  updateRoutes(inboudMessage: InboundMessage, connection: ConnectionRecord) {
     const { message } = inboudMessage;
     message.updates.forEach((update: RouteUpdate) => {
       const { action, recipient_key } = update;
@@ -61,7 +60,7 @@ class ProviderRoutingService {
     return connection;
   }
 
-  saveRoute(recipientKey: Verkey, connection: Connection) {
+  saveRoute(recipientKey: Verkey, connection: ConnectionRecord) {
     if (this.routingTable[recipientKey]) {
       throw new Error(`Routing entry for recipientKey ${recipientKey} already exists.`);
     }

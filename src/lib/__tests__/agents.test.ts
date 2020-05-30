@@ -27,13 +27,17 @@ describe('agents', () => {
   let aliceAgent: Agent;
   let bobAgent: Agent;
 
+  afterAll(async () => {
+    await aliceAgent.closeAndDeleteWallet();
+    await bobAgent.closeAndDeleteWallet();
+  });
+
   test('make a connection between agents', async () => {
     const aliceMessages = new Subject();
     const bobMessages = new Subject();
 
     const aliceAgentInbound = new SubjectInboundTransporter(aliceMessages);
     const aliceAgentOutbound = new SubjectOutboundTransporter(bobMessages);
-
     const bobAgentInbound = new SubjectInboundTransporter(bobMessages);
     const bobAgentOutbound = new SubjectOutboundTransporter(aliceMessages);
 
@@ -52,18 +56,18 @@ describe('agents', () => {
 
     const bobConnectionAtBobAlice = await bobAgent.acceptInvitation(invitation);
 
-    await aliceConnectionAtAliceBob.isConnected();
-    console.log('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob);
-
-    if (!aliceConnectionAtAliceBob.theirKey) {
-      throw new Error('Connection has not been initialized correctly!');
+    const aliceConnectionRecordAtAliceBob = await aliceAgent.returnWhenIsConnected(aliceConnectionAtAliceBob.verkey);
+    if (!aliceConnectionRecordAtAliceBob) {
+      throw new Error('Connection not found!');
     }
 
-    await bobConnectionAtBobAlice.isConnected();
-    console.log('bobConnectionAtBobAlice\n', bobConnectionAtBobAlice);
+    const bobConnectionRecordAtBobAlice = await bobAgent.returnWhenIsConnected(bobConnectionAtBobAlice.verkey);
+    if (!bobConnectionRecordAtBobAlice) {
+      throw new Error('Connection not found!');
+    }
 
-    expect(aliceConnectionAtAliceBob).toBeConnectedWith(bobConnectionAtBobAlice);
-    expect(bobConnectionAtBobAlice).toBeConnectedWith(aliceConnectionAtAliceBob);
+    expect(aliceConnectionRecordAtAliceBob).toBeConnectedWith(bobConnectionRecordAtBobAlice);
+    expect(bobConnectionRecordAtBobAlice).toBeConnectedWith(aliceConnectionRecordAtAliceBob);
   });
 
   test('send a message to connection', async () => {

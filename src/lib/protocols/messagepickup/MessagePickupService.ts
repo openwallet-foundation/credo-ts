@@ -1,8 +1,8 @@
-import { Connection } from '../connections/domain/Connection';
 import { InboundConnection } from '../../types';
 import { createOutboundMessage } from '../helpers';
 import { createBatchPickupMessage, createBatchMessage } from './messages';
 import { MessageRepository } from '../../storage/MessageRepository';
+import { ConnectionRecord } from '../../storage/ConnectionRecord';
 
 export class MessagePickupService {
   messageRepository?: MessageRepository;
@@ -16,7 +16,7 @@ export class MessagePickupService {
     return createOutboundMessage(inboundConnection.connection, batchPickupMessage);
   }
 
-  async batch(connection: Connection) {
+  async batch(connection: ConnectionRecord) {
     if (!this.messageRepository) {
       throw new Error('There is no message repository.');
     }
