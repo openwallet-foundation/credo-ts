@@ -1,5 +1,6 @@
 // @ts-ignore
 import { poll } from 'await-poll';
+import { EventEmitter } from 'events';
 import logger from '../logger';
 import { InitConfig } from '../types';
 import { decodeInvitationFromUrl } from '../helpers';
@@ -217,6 +218,13 @@ export class Agent {
   async closeAndDeleteWallet() {
     await this.wallet.close();
     await this.wallet.delete();
+  }
+
+  events(): { connections: EventEmitter; basicMessages: EventEmitter } {
+    return {
+      connections: this.connectionService,
+      basicMessages: this.basicMessageService,
+    };
   }
 
   private registerHandlers() {
