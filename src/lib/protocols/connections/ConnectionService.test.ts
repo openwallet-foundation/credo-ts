@@ -1,14 +1,13 @@
 /* eslint-disable no-console */
 import indy from 'indy-sdk';
-
-import { ConnectionService } from './ConnectionService';
 import { IndyWallet } from '../../wallet/IndyWallet';
 import { Wallet } from '../../wallet/Wallet';
-import { AgentConfig } from '../../agent/AgentConfig';
 import { Repository } from '../../storage/Repository';
-import { ConnectionRecord } from '../../storage/ConnectionRecord';
-import { IndyStorageService } from '../../storage/IndyStorageService';
 import { StorageService } from '../../storage/StorageService';
+import { IndyStorageService } from '../../storage/IndyStorageService';
+import { ConnectionService } from './ConnectionService';
+import { ConnectionRecord } from '../../storage/ConnectionRecord';
+import { AgentConfig } from '../../agent/AgentConfig';
 import { ConnectionState } from './domain/ConnectionState';
 
 describe('ConnectionService', () => {

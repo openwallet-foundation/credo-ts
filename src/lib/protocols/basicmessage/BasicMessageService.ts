@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events';
 import { InboundMessage } from '../../types';
 import { createOutboundMessage } from '../helpers';
 import { createBasicMessage } from './messages';
@@ -5,10 +6,11 @@ import { Repository } from '../../storage/Repository';
 import { BasicMessageRecord } from '../../storage/BasicMessageRecord';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
 
-class BasicMessageService {
+class BasicMessageService extends EventEmitter {
   basicMessageRepository: Repository<BasicMessageRecord>;
 
   constructor(basicMessageRepository: Repository<BasicMessageRecord>) {
+    super();
     this.basicMessageRepository = basicMessageRepository;
   }
 
@@ -35,8 +37,7 @@ class BasicMessageService {
       tags: { from: connection.theirDid || '', to: connection.did || '' },
     });
     await this.basicMessageRepository.save(basicMessageRecord);
-    // TODO emit from basicMessageService
-    // connection.emit('basicMessageReceived', message);
+    this.emit('newMessage', { verkey: connection.verkey, message });
     return null;
   }
 }
