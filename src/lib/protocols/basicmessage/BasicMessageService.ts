@@ -6,6 +6,10 @@ import { Repository } from '../../storage/Repository';
 import { BasicMessageRecord } from '../../storage/BasicMessageRecord';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
 
+enum EventType {
+  MessageReceived = 'messageReceived',
+}
+
 class BasicMessageService extends EventEmitter {
   basicMessageRepository: Repository<BasicMessageRecord>;
 
@@ -37,9 +41,9 @@ class BasicMessageService extends EventEmitter {
       tags: { from: connection.theirDid || '', to: connection.did || '' },
     });
     await this.basicMessageRepository.save(basicMessageRecord);
-    this.emit('newMessage', { verkey: connection.verkey, message });
+    this.emit(EventType.MessageReceived, { verkey: connection.verkey, message });
     return null;
   }
 }
 
-export { BasicMessageService };
+export { BasicMessageService, EventType };

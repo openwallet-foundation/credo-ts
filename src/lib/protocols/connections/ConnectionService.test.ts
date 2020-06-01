@@ -5,7 +5,7 @@ import { Wallet } from '../../wallet/Wallet';
 import { Repository } from '../../storage/Repository';
 import { StorageService } from '../../storage/StorageService';
 import { IndyStorageService } from '../../storage/IndyStorageService';
-import { ConnectionService } from './ConnectionService';
+import { ConnectionService, EventType } from './ConnectionService';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
 import { AgentConfig } from '../../agent/AgentConfig';
 import { ConnectionState } from './domain/ConnectionState';
@@ -62,7 +62,7 @@ describe('ConnectionService', () => {
 
     it(`emits stateChange with INVITED`, async () => {
       const eventListenerMock = jest.fn();
-      connectionService.on('stateChange', eventListenerMock);
+      connectionService.on(EventType.StateChanged, eventListenerMock);
 
       await connectionService.createConnectionWithInvitation();
 

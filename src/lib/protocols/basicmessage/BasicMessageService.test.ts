@@ -5,7 +5,7 @@ import { Wallet } from '../../wallet/Wallet';
 import { Repository } from '../../storage/Repository';
 import { StorageService } from '../../storage/StorageService';
 import { IndyStorageService } from '../../storage/IndyStorageService';
-import { BasicMessageService } from './BasicMessageService';
+import { BasicMessageService, EventType } from './BasicMessageService';
 import { BasicMessageRecord } from '../../storage/BasicMessageRecord';
 
 describe('BasicMessageService', () => {
@@ -44,7 +44,7 @@ describe('BasicMessageService', () => {
 
     it(`emits newMessage with connection verkey and message itself`, async () => {
       const eventListenerMock = jest.fn();
-      basicMessageService.on('newMessage', eventListenerMock);
+      basicMessageService.on(EventType.MessageReceived, eventListenerMock);
 
       const message = {
         message: { '@id': '123', '@type': 'aaa', some: 'message' },

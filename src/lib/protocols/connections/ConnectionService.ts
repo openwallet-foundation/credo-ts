@@ -11,6 +11,10 @@ import { ConnectionRecord } from '../../storage/ConnectionRecord';
 import { Repository } from '../../storage/Repository';
 import { Wallet } from '../../wallet/Wallet';
 
+enum EventType {
+  StateChanged = 'stateChanged',
+}
+
 class ConnectionService extends EventEmitter {
   wallet: Wallet;
   config: AgentConfig;
@@ -116,7 +120,7 @@ class ConnectionService extends EventEmitter {
     connectionRecord.state = newState;
     await this.connectionRepository.update(connectionRecord);
     const { verkey, state } = connectionRecord;
-    this.emit('stateChange', { verkey, newState: state });
+    this.emit(EventType.StateChanged, { verkey, newState: state });
   }
 
   private async createConnection(): Promise<ConnectionRecord> {
@@ -197,4 +201,4 @@ function validateSenderKey(connection: ConnectionRecord, senderKey: Verkey) {
   }
 }
 
-export { ConnectionService };
+export { ConnectionService, EventType };

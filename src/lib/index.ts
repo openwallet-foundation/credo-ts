@@ -4,3 +4,5 @@ export { OutboundTransporter } from './transport/OutboundTransporter';
 export { encodeInvitationToUrl, decodeInvitationFromUrl } from './helpers';
 
 export { ConnectionRecord } from './storage/ConnectionRecord';
+export { EventType as ConnectionEventType } from './protocols/connections/ConnectionService';
+export { EventType as BasicMessageEventType } from './protocols/basicmessage/BasicMessageService';
