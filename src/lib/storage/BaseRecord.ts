@@ -2,6 +2,7 @@ export enum RecordType {
   BaseRecord = 'BaseRecord',
   ConnectionRecord = 'ConnectionRecord',
   BasicMessageRecord = 'BasicMessageRecord',
+  ProvisioningRecord = 'ProvisioningRecord',
 }
 
 export abstract class BaseRecord {
