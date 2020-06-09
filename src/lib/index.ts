@@ -3,4 +3,6 @@ export { InboundTransporter } from './transport/InboundTransporter';
 export { OutboundTransporter } from './transport/OutboundTransporter';
 export { encodeInvitationToUrl, decodeInvitationFromUrl } from './helpers';
 
-export { Connection } from './protocols/connections/domain/Connection';
+export { ConnectionRecord } from './storage/ConnectionRecord';
+export { EventType as ConnectionEventType } from './protocols/connections/ConnectionService';
+export { EventType as BasicMessageEventType } from './protocols/basicmessage/BasicMessageService';

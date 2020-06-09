@@ -1,5 +1,5 @@
-import { Connection } from './protocols/connections/domain/Connection';
 import { WalletConfig, WalletCredentials } from './wallet/Wallet';
+import { ConnectionRecord } from './storage/ConnectionRecord';
 
 type $FixMe = any;
 
@@ -29,7 +29,7 @@ export interface InboundMessage {
 }
 
 export interface OutboundMessage {
-  connection: Connection;
+  connection: ConnectionRecord;
   endpoint?: string;
   payload: Message;
   recipientKeys: Verkey[];
@@ -38,12 +38,12 @@ export interface OutboundMessage {
 }
 
 export interface OutboundPackage {
-  connection: Connection;
+  connection: ConnectionRecord;
   payload: WireMessage;
   endpoint?: string;
 }
 
 export interface InboundConnection {
   verkey: Verkey;
-  connection: Connection;
+  connection: ConnectionRecord;
 }

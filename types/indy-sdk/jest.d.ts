@@ -1,9 +1,9 @@
-import { Connection } from '../../src/lib';
+import { ConnectionRecord } from '../../src/lib/storage/ConnectionRecord';
 
 declare global {
   namespace jest {
     interface Matchers<R, T> {
-      toBeConnectedWith(connection: Connection): R;
+      toBeConnectedWith(connection: ConnectionRecord): R;
     }
   }
 }

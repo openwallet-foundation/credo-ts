@@ -1,7 +1,7 @@
 import { Message } from '../types';
-import { Connection } from './connections/domain/Connection';
+import { ConnectionRecord } from '../storage/ConnectionRecord';
 
-export function createOutboundMessage(connection: Connection, payload: Message, invitation?: any) {
+export function createOutboundMessage(connection: ConnectionRecord, payload: Message, invitation?: any) {
   if (invitation) {
     return {
       connection,

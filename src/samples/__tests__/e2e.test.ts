@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 // @ts-ignore
 import { poll } from 'await-poll';
-import { Agent, InboundTransporter, OutboundTransporter, Connection } from '../../lib';
+import { Agent, InboundTransporter, OutboundTransporter } from '../../lib';
 import { WireMessage, OutboundPackage } from '../../lib/types';
 import { get, post } from '../http';
 import { toBeConnectedWith } from '../../lib/testUtils';
@@ -28,6 +28,7 @@ const bobConfig = {
 describe('with agency', () => {
   let aliceAgent: Agent;
   let bobAgent: Agent;
+  let aliceAtAliceBobVerkey: Verkey;
 
   afterAll(async () => {
     (aliceAgent.inboundTransporter as PollingInboundTransporter).stop = true;
@@ -35,9 +36,12 @@ describe('with agency', () => {
 
     // Wait for messages to flush out
     await new Promise(r => setTimeout(r, 1000));
+
+    await aliceAgent.closeAndDeleteWallet();
+    await bobAgent.closeAndDeleteWallet();
   });
 
-  test('make a connection with agency', async () => {
+  test('Alice and Bob make a connection with agency', async () => {
     const aliceAgentSender = new HttpOutboundTransporter();
     const aliceAgentReceiver = new PollingInboundTransporter();
     const bobAgentSender = new HttpOutboundTransporter();
@@ -52,13 +56,11 @@ describe('with agency', () => {
     const aliceInbound = aliceAgent.getInboundConnection();
     const aliceInboundConnection = aliceInbound && aliceInbound.connection;
     const aliceKeyAtAliceAgency = aliceInboundConnection && aliceInboundConnection.verkey;
-
     console.log('aliceInboundConnection', aliceInboundConnection);
 
     const bobInbound = bobAgent.getInboundConnection();
     const bobInboundConnection = bobInbound && bobInbound.connection;
     const bobKeyAtBobAgency = bobInboundConnection && bobInboundConnection.verkey;
-
     console.log('bobInboundConnection', bobInboundConnection);
 
     // TODO This endpoint currently exists at agency only for the testing purpose. It returns agency's part of the pairwise connection.
@@ -69,14 +71,14 @@ describe('with agency', () => {
       await get(`${bobAgent.getAgencyUrl()}/api/connections/${bobKeyAtBobAgency}`)
     );
 
-    // Here I'm creating instance based on JSON response to be able to call methods on connection. Matcher calls
-    // `theirKey` which is getter method to access verkey in DidDoc If this will become a problem we can consider to add
-    // some (de)serialization mechanism.
-    expect(aliceInboundConnection).toBeConnectedWith(new Connection(agencyConnectionAtAliceAgency));
-    expect(bobInboundConnection).toBeConnectedWith(new Connection(agencyConnectionAtBobAgency));
+    console.log('agencyConnectionAtAliceAgency', agencyConnectionAtAliceAgency);
+    console.log('agencyConnectionAtBobAgency', agencyConnectionAtBobAgency);
+
+    expect(aliceInboundConnection).toBeConnectedWith(agencyConnectionAtAliceAgency);
+    expect(bobInboundConnection).toBeConnectedWith(agencyConnectionAtBobAgency);
   });
 
-  test('make a connection via agency', async () => {
+  test('Alice and Bob make a connection via agency', async () => {
     const aliceConnectionAtAliceBob = await aliceAgent.createConnection();
     const { invitation } = aliceConnectionAtAliceBob;
 
@@ -86,49 +88,50 @@ describe('with agency', () => {
 
     const bobConnectionAtBobAlice = await bobAgent.acceptInvitation(invitation);
 
-    if (!aliceConnectionAtAliceBob) {
+    const aliceConnectionRecordAtAliceBob = await aliceAgent.returnWhenIsConnected(aliceConnectionAtAliceBob.verkey);
+    if (!aliceConnectionRecordAtAliceBob) {
       throw new Error('Connection not found!');
     }
 
-    await aliceConnectionAtAliceBob.isConnected();
-    console.log('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob);
-
-    if (!bobConnectionAtBobAlice) {
+    const bobConnectionRecordAtBobAlice = await bobAgent.returnWhenIsConnected(bobConnectionAtBobAlice.verkey);
+    if (!bobConnectionRecordAtBobAlice) {
       throw new Error('Connection not found!');
     }
 
-    await bobConnectionAtBobAlice.isConnected();
-    console.log('bobConnectionAtAliceBob\n', bobConnectionAtBobAlice);
+    expect(aliceConnectionRecordAtAliceBob).toBeConnectedWith(bobConnectionRecordAtBobAlice);
+    expect(bobConnectionRecordAtBobAlice).toBeConnectedWith(aliceConnectionRecordAtAliceBob);
 
-    expect(aliceConnectionAtAliceBob).toBeConnectedWith(bobConnectionAtBobAlice);
-    expect(bobConnectionAtBobAlice).toBeConnectedWith(aliceConnectionAtAliceBob);
+    // We save this verkey to send message via this connection in the following test
+    aliceAtAliceBobVerkey = aliceConnectionAtAliceBob.verkey;
   });
 
-  test('send a message to connection via agency', async () => {
-    const aliceConnections = await aliceAgent.getConnections();
-    console.log('aliceConnections', JSON.stringify(aliceConnections, null, 2));
-
-    const bobConnections = await bobAgent.getConnections();
-    console.log('bobConnections', JSON.stringify(bobConnections, null, 2));
-
+  test('Send a message from Alice to Bob via agency', async () => {
     // send message from Alice to Bob
+    const aliceConnectionAtAliceBob = await aliceAgent.findConnectionByVerkey(aliceAtAliceBobVerkey);
+    if (!aliceConnectionAtAliceBob) {
+      throw new Error(`There is no connection for verkey ${aliceAtAliceBobVerkey}`);
+    }
+
+    console.log('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob);
+
     const message = 'hello, world';
-    await aliceAgent.sendMessageToConnection(aliceConnections[1], message);
+    await aliceAgent.sendMessageToConnection(aliceConnectionAtAliceBob, message);
 
     const bobMessages = await poll(
       async () => {
         console.log(`Getting Bob's messages from Alice...`);
         const messages = await bobAgent.basicMessageRepository.findByQuery({
-          from: aliceConnections[1].did,
-          to: aliceConnections[1].theirDid,
+          from: aliceConnectionAtAliceBob.did,
+          to: aliceConnectionAtAliceBob.theirDid,
         });
         return messages;
       },
       (messages: WireMessage[]) => messages.length < 1,
-      100
+      1000
     );
     console.log(bobMessages);
-    expect(bobMessages[0].content).toBe(message);
+    const lastMessage = bobMessages[bobMessages.length - 1];
+    expect(lastMessage.content).toBe(message);
   });
 });
 
@@ -162,7 +165,7 @@ class PollingInboundTransporter implements InboundTransporter {
         }
       },
       () => !this.stop,
-      100
+      1000
     );
   }
 }
