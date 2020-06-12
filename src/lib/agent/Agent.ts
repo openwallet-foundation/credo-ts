@@ -36,6 +36,8 @@ import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { AgentConfig } from './AgentConfig';
 import { Wallet } from '../wallet/Wallet';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
+import { ProvisioningRecord } from '../storage/ProvisioningRecord';
+import { ProvisioninService } from './ProvisioningService';
 
 export class Agent {
   inboundTransporter: InboundTransporter;
@@ -49,9 +51,11 @@ export class Agent {
   consumerRoutingService: ConsumerRoutingService;
   trustPingService: TrustPingService;
   messagePickupService: MessagePickupService;
+  provisioningService: ProvisioninService;
   handlers: Handler[] = [];
   basicMessageRepository: Repository<BasicMessageRecord>;
   connectionRepository: Repository<ConnectionRecord>;
+  provisioningRepository: Repository<ProvisioningRecord>;
 
   constructor(
     initialConfig: InitConfig,
@@ -67,10 +71,12 @@ export class Agent {
     const storageService = new IndyStorageService(this.wallet);
     this.basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService);
     this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService);
+    this.provisioningRepository = new Repository<ProvisioningRecord>(ProvisioningRecord, storageService);
 
     this.agentConfig = new AgentConfig(initialConfig);
     this.messageSender = new MessageSender(envelopeService, outboundTransporter);
 
+    this.provisioningService = new ProvisioninService(this.provisioningRepository);
     this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository);
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository);
     this.providerRoutingService = new ProviderRoutingService();
@@ -102,28 +108,42 @@ export class Agent {
   }
 
   async provision(agencyConfiguration: AgencyConfiguration) {
-    const { verkey, invitationUrl } = agencyConfiguration;
-    const agencyInvitation = decodeInvitationFromUrl(invitationUrl);
+    let provisioningRecord = await this.provisioningService.find();
 
-    const connectionRequest = await this.connectionService.acceptInvitation(agencyInvitation);
-    const connectionResponse = await this.messageSender.sendAndReceiveMessage(connectionRequest);
-    const ack = await this.connectionService.acceptResponse(connectionResponse);
-    await this.messageSender.sendMessage(ack);
+    if (!provisioningRecord) {
+      logger.log('There is no provisioning. Creating connection with agency...');
+      const { verkey, invitationUrl } = agencyConfiguration;
+      const agencyInvitation = decodeInvitationFromUrl(invitationUrl);
 
-    const inboundConnectionVerkey = connectionRequest.connection.verkey;
-    const agentConnectionAtAgency = await this.connectionService.findByVerkey(inboundConnectionVerkey);
+      const connectionRequest = await this.connectionService.acceptInvitation(agencyInvitation);
+      const connectionResponse = await this.messageSender.sendAndReceiveMessage(connectionRequest);
+      const ack = await this.connectionService.acceptResponse(connectionResponse);
+      await this.messageSender.sendMessage(ack);
+
+      const provisioningProps = {
+        agencyConnectionVerkey: connectionRequest.connection.verkey,
+        agencyPublicVerkey: verkey,
+      };
+      provisioningRecord = await this.provisioningService.create(provisioningProps);
+      logger.log('Provisioning record has been saved.');
+    }
+
+    logger.log('Provisioning record:', provisioningRecord);
+
+    const agentConnectionAtAgency = await this.connectionService.findByVerkey(
+      provisioningRecord.agencyConnectionVerkey
+    );
 
     if (!agentConnectionAtAgency) {
       throw new Error('Connection not found!');
     }
-
     logger.log('agentConnectionAtAgency', agentConnectionAtAgency);
 
     if (agentConnectionAtAgency.state !== ConnectionState.COMPLETE) {
       throw new Error('Connection has not been established.');
     }
 
-    this.establishInbound(verkey, agentConnectionAtAgency);
+    this.establishInbound(provisioningRecord.agencyPublicVerkey, agentConnectionAtAgency);
 
     return agentConnectionAtAgency;
   }
