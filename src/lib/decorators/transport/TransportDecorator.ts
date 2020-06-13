@@ -17,6 +17,7 @@ export enum ReturnRouteTypes {
 
 /**
  * Represents `~transport` decorator
+ * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0092-transport-return-route/README.md
  */
 export class TransportDecorator {
   constructor(partial?: Partial<TransportDecorator>) {
