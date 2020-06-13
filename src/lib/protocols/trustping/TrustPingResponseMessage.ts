@@ -2,14 +2,27 @@ import { Equals, IsString } from 'class-validator';
 
 import { AgentMessage } from '../../agent/AgentMessage';
 import { MessageType } from './messages';
+import { TimingDecorator } from '../../decorators/timing/TimingDecorator';
 
+export interface TrustPingResponseMessageOptions {
+  comment?: string;
+  id?: string;
+  threadId: string;
+  timing?: Pick<TimingDecorator, 'inTime' | 'outTime'>;
+}
+
+/**
+ * Message to respond to a trust ping message
+ *
+ * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0048-trust-ping/README.md#messages
+ */
 export class TrustPingResponseMessage extends AgentMessage {
   /**
-   * Create new TrustPingMessage instance.
-   * responseRequested will be true if not passed, id will be assigned to uuid/v4 if not passed
+   * Create new TrustPingResponseMessage instance.
+   * responseRequested will be true if not passed
    * @param options
    */
-  constructor(options: { comment?: string; id?: string; threadId: string }) {
+  constructor(options: TrustPingResponseMessageOptions) {
     super();
 
     if (options) {
@@ -19,6 +32,13 @@ export class TrustPingResponseMessage extends AgentMessage {
       this.setThread({
         threadId: options.threadId,
       });
+
+      if (options.timing) {
+        this.setTiming({
+          inTime: options.timing.inTime,
+          outTime: options.timing.outTime,
+        });
+      }
     }
   }
 
