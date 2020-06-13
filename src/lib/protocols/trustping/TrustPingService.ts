@@ -1,18 +1,20 @@
 import { InboundMessage } from '../../types';
 import { createOutboundMessage } from '../helpers';
-import { createTrustPingResponseMessage } from './messages';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
+import { TrustPingMessage } from './TrustPingMessage';
+import { TrustPingResponseMessage } from './TrustPingResponseMessage';
 
 export class TrustPingService {
-  processPing(inboundMessage: InboundMessage, connection: ConnectionRecord) {
-    if (inboundMessage.message['response_requested']) {
-      const reply = createTrustPingResponseMessage(inboundMessage.message['@id']);
-      return createOutboundMessage(connection, reply);
+  processPing({ message }: InboundMessage<TrustPingMessage>, connection: ConnectionRecord) {
+    if (message.responseRequested) {
+      const response = new TrustPingResponseMessage({
+        threadId: message.id,
+      });
+
+      return createOutboundMessage(connection, response);
     }
-    return null;
   }
 
-  processPingResponse(inboundMessage: InboundMessage) {
-    return null;
-  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  processPingResponse(inboundMessage: InboundMessage<TrustPingResponseMessage>) {}
 }

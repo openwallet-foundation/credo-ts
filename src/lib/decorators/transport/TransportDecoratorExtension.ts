@@ -10,7 +10,7 @@ export function TransportDecorated<T extends BaseMessageConstructor>(Base: T) {
     @ValidateNested()
     transport?: TransportDecorator;
 
-    addReturnRouting(type: ReturnRouteTypes, thread?: string) {
+    setReturnRouting(type: ReturnRouteTypes, thread?: string) {
       this.transport = new TransportDecorator({
         returnRoute: type,
         returnRouteThread: thread,

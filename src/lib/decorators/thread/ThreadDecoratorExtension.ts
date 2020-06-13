@@ -14,6 +14,10 @@ export function ThreadDecorated<T extends BaseMessageConstructor>(Base: T) {
     getThreadId(): string | undefined {
       return this.thread?.threadId || this.id;
     }
+
+    setThread(options: Partial<ThreadDecorator>) {
+      this.thread = new ThreadDecorator(options);
+    }
   }
 
   return ThreadDecoratorExtension;
