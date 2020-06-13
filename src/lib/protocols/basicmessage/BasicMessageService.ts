@@ -1,10 +1,10 @@
 import { EventEmitter } from 'events';
-import { InboundMessage } from '../../types';
+import { InboundMessage, OutboundMessage } from '../../types';
 import { createOutboundMessage } from '../helpers';
-import { createBasicMessage } from './messages';
 import { Repository } from '../../storage/Repository';
 import { BasicMessageRecord } from '../../storage/BasicMessageRecord';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
+import { BasicMessage } from './BasicMessage';
 
 enum EventType {
   MessageReceived = 'messageReceived',
@@ -18,31 +18,32 @@ class BasicMessageService extends EventEmitter {
     this.basicMessageRepository = basicMessageRepository;
   }
 
-  async send(message: string, connection: ConnectionRecord) {
-    const basicMessage = createBasicMessage(message);
-    const { sent_time, content } = basicMessage;
+  async send(message: string, connection: ConnectionRecord): Promise<OutboundMessage<BasicMessage>> {
+    const basicMessage = new BasicMessage({
+      content: message,
+    });
+
     const basicMessageRecord = new BasicMessageRecord({
-      id: basicMessage['@id'],
-      sent_time,
-      content,
+      id: basicMessage.id,
+      sent_time: basicMessage.sentTime.toISOString(),
+      content: basicMessage.content,
       tags: { from: connection.did || '', to: connection.theirDid || '' },
     });
+
     await this.basicMessageRepository.save(basicMessageRecord);
     return createOutboundMessage(connection, basicMessage);
   }
 
-  async save(inboundMessage: InboundMessage, connection: ConnectionRecord) {
-    const { message } = inboundMessage;
-    const { id, sent_time, content } = message;
+  async save({ message }: InboundMessage<BasicMessage>, connection: ConnectionRecord) {
     const basicMessageRecord = new BasicMessageRecord({
-      id,
-      sent_time,
-      content,
+      id: message.id,
+      sent_time: message.sentTime.toISOString(),
+      content: message.content,
       tags: { from: connection.theirDid || '', to: connection.did || '' },
     });
+
     await this.basicMessageRepository.save(basicMessageRecord);
     this.emit(EventType.MessageReceived, { verkey: connection.verkey, message });
-    return null;
   }
 
   async findAllByQuery(query: {}) {

@@ -1,23 +1,19 @@
-import { InboundMessage } from '../../types';
-import { Handler } from '../Handler';
+import { Handler, HandlerInboundMessage } from '../Handler';
 import { ConnectionService } from '../../protocols/connections/ConnectionService';
 import { BasicMessageService } from '../../protocols/basicmessage/BasicMessageService';
-import { MessageType } from '../../protocols/basicmessage/messages';
+import { BasicMessage } from '../../protocols/basicmessage/BasicMessage';
 
 export class BasicMessageHandler implements Handler {
   connectionService: ConnectionService;
   basicMessageService: BasicMessageService;
+  supportedMessages = [BasicMessage];
 
   constructor(connectionService: ConnectionService, basicMessageService: BasicMessageService) {
     this.connectionService = connectionService;
     this.basicMessageService = basicMessageService;
   }
 
-  get supportedMessageTypes(): [MessageType.BasicMessage] {
-    return [MessageType.BasicMessage];
-  }
-
-  async handle(inboundMessage: InboundMessage) {
+  async handle(inboundMessage: HandlerInboundMessage<BasicMessageHandler>) {
     const { recipient_verkey } = inboundMessage;
     const connection = await this.connectionService.findByVerkey(recipient_verkey);
 
@@ -29,7 +25,6 @@ export class BasicMessageHandler implements Handler {
       throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`);
     }
 
-    const outboundMessage = this.basicMessageService.save(inboundMessage, connection);
-    return outboundMessage;
+    await this.basicMessageService.save(inboundMessage, connection);
   }
 }

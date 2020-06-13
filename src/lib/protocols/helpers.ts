@@ -1,7 +1,11 @@
-import { Message } from '../types';
 import { ConnectionRecord } from '../storage/ConnectionRecord';
+import { AgentMessage } from '../agent/AgentMessage';
 
-export function createOutboundMessage(connection: ConnectionRecord, payload: Message, invitation?: any) {
+export function createOutboundMessage<T extends AgentMessage = AgentMessage>(
+  connection: ConnectionRecord,
+  payload: T,
+  invitation?: any
+) {
   if (invitation) {
     return {
       connection,

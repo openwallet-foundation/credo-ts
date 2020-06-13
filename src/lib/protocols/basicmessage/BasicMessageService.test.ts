@@ -7,6 +7,7 @@ import { StorageService } from '../../storage/StorageService';
 import { IndyStorageService } from '../../storage/IndyStorageService';
 import { BasicMessageService, EventType } from './BasicMessageService';
 import { BasicMessageRecord } from '../../storage/BasicMessageRecord';
+import { BasicMessage } from './BasicMessage';
 
 describe('BasicMessageService', () => {
   const walletConfig = { id: 'test-wallet' + '-BasicMessageServiceTest' };
@@ -46,17 +47,22 @@ describe('BasicMessageService', () => {
       const eventListenerMock = jest.fn();
       basicMessageService.on(EventType.MessageReceived, eventListenerMock);
 
+      const basicMessage = new BasicMessage({
+        id: '123',
+        content: 'message',
+      });
+
       const message = {
-        message: { '@id': '123', '@type': 'aaa', some: 'message' },
+        message: basicMessage,
         sender_verkey: 'senderKey',
         recipient_verkey: 'recipientKey',
       };
 
       // TODO
       // Currently, it's not so easy to create instance of ConnectionRecord object.
-      // We use simple `mockConnectionRecord` object with ts-ingore.
-      // @ts-ignore
-      await basicMessageService.save(message, mockConnectionRecord);
+      // We use simple `mockConnectionRecord` as any type
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await basicMessageService.save(message, mockConnectionRecord as any);
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         verkey: mockConnectionRecord.verkey,
