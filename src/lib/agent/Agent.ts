@@ -44,6 +44,7 @@ export class Agent {
   wallet: Wallet;
   agentConfig: AgentConfig;
   messageReceiver: MessageReceiver;
+  dispatcher: Dispatcher;
   messageSender: MessageSender;
   connectionService: ConnectionService;
   basicMessageService: BasicMessageService;
@@ -68,13 +69,16 @@ export class Agent {
     this.wallet = new IndyWallet(initialConfig.walletConfig, initialConfig.walletCredentials, indy);
     const envelopeService = new EnvelopeService(this.wallet);
 
+    this.agentConfig = new AgentConfig(initialConfig);
+    this.messageSender = new MessageSender(envelopeService, outboundTransporter);
+    this.dispatcher = new Dispatcher(this.messageSender);
+    this.messageReceiver = new MessageReceiver(this.agentConfig, envelopeService, this.dispatcher);
+    this.inboundTransporter = inboundTransporter;
+
     const storageService = new IndyStorageService(this.wallet);
     this.basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService);
     this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService);
     this.provisioningRepository = new Repository<ProvisioningRecord>(ProvisioningRecord, storageService);
-
-    this.agentConfig = new AgentConfig(initialConfig);
-    this.messageSender = new MessageSender(envelopeService, outboundTransporter);
 
     this.provisioningService = new ProvisioninService(this.provisioningRepository);
     this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository);
@@ -85,10 +89,6 @@ export class Agent {
     this.messagePickupService = new MessagePickupService(messageRepository);
 
     this.registerHandlers();
-
-    const dispatcher = new Dispatcher(this.handlers, this.messageSender);
-    this.messageReceiver = new MessageReceiver(this.agentConfig, envelopeService, dispatcher);
-    this.inboundTransporter = inboundTransporter;
   }
 
   async init() {
@@ -248,20 +248,16 @@ export class Agent {
   }
 
   private registerHandlers() {
-    const handlers = [
-      new InvitationHandler(this.connectionService, this.consumerRoutingService),
-      new ConnectionRequestHandler(this.connectionService),
-      new ConnectionResponseHandler(this.connectionService),
-      new AckMessageHandler(this.connectionService),
-      new BasicMessageHandler(this.connectionService, this.basicMessageService),
-      new RouteUpdateHandler(this.connectionService, this.providerRoutingService),
-      new ForwardHandler(this.providerRoutingService),
-      new TrustPingMessageHandler(this.trustPingService, this.connectionService),
-      new TrustPingResponseMessageHandler(this.trustPingService),
-      new MessagePickupHandler(this.connectionService, this.messagePickupService),
-    ];
-
-    this.handlers = handlers;
+    this.dispatcher.registerHandler(new InvitationHandler(this.connectionService, this.consumerRoutingService));
+    this.dispatcher.registerHandler(new ConnectionRequestHandler(this.connectionService));
+    this.dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService));
+    this.dispatcher.registerHandler(new AckMessageHandler(this.connectionService));
+    this.dispatcher.registerHandler(new BasicMessageHandler(this.connectionService, this.basicMessageService));
+    this.dispatcher.registerHandler(new RouteUpdateHandler(this.connectionService, this.providerRoutingService));
+    this.dispatcher.registerHandler(new ForwardHandler(this.providerRoutingService));
+    this.dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService));
+    this.dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService));
+    this.dispatcher.registerHandler(new MessagePickupHandler(this.connectionService, this.messagePickupService));
   }
 }
 
