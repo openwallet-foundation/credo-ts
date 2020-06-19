@@ -119,7 +119,7 @@ describe('with agency', () => {
     console.log('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob);
 
     const message = 'hello, world';
-    await aliceAgent.sendMessageToConnection(aliceConnectionAtAliceBob, message);
+    await aliceAgent.basicMessages.sendMessageToConnection(aliceConnectionAtAliceBob, message);
 
     const bobMessages = await poll(
       async () => {

@@ -86,7 +86,7 @@ describe('agents', () => {
     console.log('lastAliceConnection\n', lastAliceConnection);
 
     const message = 'hello, world';
-    await aliceAgent.sendMessageToConnection(lastAliceConnection, message);
+    await aliceAgent.basicMessages.sendMessageToConnection(lastAliceConnection, message);
 
     const bobMessages = await poll(
       async () => {

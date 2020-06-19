@@ -36,6 +36,7 @@ import { ProvisioningRecord } from '../storage/ProvisioningRecord';
 import { ProvisioninService } from './ProvisioningService';
 import { ConnectionsModule } from '../modules/ConnectionsModule';
 import { RoutingModule } from '../modules/RoutingModule';
+import { BasicMessagesModule } from '../modules/BasicMessagesModule';
 
 export class Agent {
   inboundTransporter: InboundTransporter;
@@ -56,8 +57,9 @@ export class Agent {
   connectionRepository: Repository<ConnectionRecord>;
   provisioningRepository: Repository<ProvisioningRecord>;
 
-  connections: ConnectionsModule;
-  routing: RoutingModule;
+  connections!: ConnectionsModule;
+  routing!: RoutingModule;
+  basicMessages!: BasicMessagesModule;
 
   constructor(
     initialConfig: InitConfig,
@@ -90,22 +92,7 @@ export class Agent {
     this.messagePickupService = new MessagePickupService(messageRepository);
 
     this.registerHandlers();
-
-    this.connections = new ConnectionsModule(
-      this.agentConfig,
-      this.connectionService,
-      this.consumerRoutingService,
-      this.messageReceiver
-    );
-
-    this.routing = new RoutingModule(
-      this.agentConfig,
-      this.providerRoutingService,
-      this.provisioningService,
-      this.messagePickupService,
-      this.connectionService,
-      this.messageSender
-    );
+    this.registerModules();
   }
 
   async init() {
@@ -124,17 +111,12 @@ export class Agent {
     return this.wallet.getPublicDid();
   }
 
-  async receiveMessage(inboundPackedMessage: any) {
-    return await this.messageReceiver.receiveMessage(inboundPackedMessage);
-  }
-
-  async sendMessageToConnection(connection: ConnectionRecord, message: string) {
-    const outboundMessage = await this.basicMessageService.send(message, connection);
-    await this.messageSender.sendMessage(outboundMessage);
-  }
-
   getAgencyUrl() {
     return this.agentConfig.agencyUrl;
+  }
+
+  async receiveMessage(inboundPackedMessage: any) {
+    return await this.messageReceiver.receiveMessage(inboundPackedMessage);
   }
 
   async closeAndDeleteWallet() {
@@ -160,5 +142,25 @@ export class Agent {
     this.dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService));
     this.dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService));
     this.dispatcher.registerHandler(new MessagePickupHandler(this.connectionService, this.messagePickupService));
+  }
+
+  private registerModules() {
+    this.connections = new ConnectionsModule(
+      this.agentConfig,
+      this.connectionService,
+      this.consumerRoutingService,
+      this.messageReceiver
+    );
+
+    this.routing = new RoutingModule(
+      this.agentConfig,
+      this.providerRoutingService,
+      this.provisioningService,
+      this.messagePickupService,
+      this.connectionService,
+      this.messageSender
+    );
+
+    this.basicMessages = new BasicMessagesModule(this.basicMessageService, this.messageSender);
   }
 }
