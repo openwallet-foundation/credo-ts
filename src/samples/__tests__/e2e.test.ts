@@ -53,12 +53,12 @@ describe('with agency', () => {
     bobAgent = new Agent(bobConfig, bobAgentReceiver, bobAgentSender, indy);
     await bobAgent.init();
 
-    const aliceInbound = aliceAgent.getInboundConnection();
+    const aliceInbound = aliceAgent.routing.getInboundConnection();
     const aliceInboundConnection = aliceInbound && aliceInbound.connection;
     const aliceKeyAtAliceAgency = aliceInboundConnection && aliceInboundConnection.verkey;
     console.log('aliceInboundConnection', aliceInboundConnection);
 
-    const bobInbound = bobAgent.getInboundConnection();
+    const bobInbound = bobAgent.routing.getInboundConnection();
     const bobInboundConnection = bobInbound && bobInbound.connection;
     const bobKeyAtBobAgency = bobInboundConnection && bobInboundConnection.verkey;
     console.log('bobInboundConnection', bobInboundConnection);
@@ -153,14 +153,14 @@ class PollingInboundTransporter implements InboundTransporter {
     const agencyUrl = agent.getAgencyUrl() || '';
     const agencyInvitationUrl = await get(`${agencyUrl}/invitation`);
     const { verkey: agencyVerkey } = JSON.parse(await get(`${agencyUrl}/`));
-    await agent.provision({ verkey: agencyVerkey, invitationUrl: agencyInvitationUrl });
+    await agent.routing.provision({ verkey: agencyVerkey, invitationUrl: agencyInvitationUrl });
     this.pollDownloadMessages(agent);
   }
 
   pollDownloadMessages(agent: Agent) {
     poll(
       async () => {
-        const downloadedMessages = await agent.downloadMessages();
+        const downloadedMessages = await agent.routing.downloadMessages();
         const messages = [...downloadedMessages];
         console.log('downloaded messges', messages);
         while (messages && messages.length > 0) {

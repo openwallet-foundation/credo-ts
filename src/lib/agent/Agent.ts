@@ -1,7 +1,6 @@
 import { EventEmitter } from 'events';
 import logger from '../logger';
 import { InitConfig } from '../types';
-import { decodeInvitationFromUrl } from '../helpers';
 import { IndyWallet } from '../wallet/IndyWallet';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
@@ -33,10 +32,10 @@ import { IndyStorageService } from '../storage/IndyStorageService';
 import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { AgentConfig } from './AgentConfig';
 import { Wallet } from '../wallet/Wallet';
-import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
 import { ProvisioningRecord } from '../storage/ProvisioningRecord';
 import { ProvisioninService } from './ProvisioningService';
 import { ConnectionsModule } from '../modules/ConnectionsModule';
+import { RoutingModule } from '../modules/RoutingModule';
 
 export class Agent {
   inboundTransporter: InboundTransporter;
@@ -58,6 +57,7 @@ export class Agent {
   provisioningRepository: Repository<ProvisioningRecord>;
 
   connections: ConnectionsModule;
+  routing: RoutingModule;
 
   constructor(
     initialConfig: InitConfig,
@@ -97,6 +97,15 @@ export class Agent {
       this.consumerRoutingService,
       this.messageReceiver
     );
+
+    this.routing = new RoutingModule(
+      this.agentConfig,
+      this.providerRoutingService,
+      this.provisioningService,
+      this.messagePickupService,
+      this.connectionService,
+      this.messageSender
+    );
   }
 
   async init() {
@@ -115,67 +124,8 @@ export class Agent {
     return this.wallet.getPublicDid();
   }
 
-  async provision(agencyConfiguration: AgencyConfiguration) {
-    let provisioningRecord = await this.provisioningService.find();
-
-    if (!provisioningRecord) {
-      logger.log('There is no provisioning. Creating connection with agency...');
-      const { verkey, invitationUrl } = agencyConfiguration;
-      const agencyInvitation = decodeInvitationFromUrl(invitationUrl);
-
-      const connectionRequest = await this.connectionService.acceptInvitation(agencyInvitation);
-      const connectionResponse = await this.messageSender.sendAndReceiveMessage(connectionRequest);
-      const ack = await this.connectionService.acceptResponse(connectionResponse);
-      await this.messageSender.sendMessage(ack);
-
-      const provisioningProps = {
-        agencyConnectionVerkey: connectionRequest.connection.verkey,
-        agencyPublicVerkey: verkey,
-      };
-      provisioningRecord = await this.provisioningService.create(provisioningProps);
-      logger.log('Provisioning record has been saved.');
-    }
-
-    logger.log('Provisioning record:', provisioningRecord);
-
-    const agentConnectionAtAgency = await this.connectionService.findByVerkey(
-      provisioningRecord.agencyConnectionVerkey
-    );
-
-    if (!agentConnectionAtAgency) {
-      throw new Error('Connection not found!');
-    }
-    logger.log('agentConnectionAtAgency', agentConnectionAtAgency);
-
-    if (agentConnectionAtAgency.state !== ConnectionState.COMPLETE) {
-      throw new Error('Connection has not been established.');
-    }
-
-    this.establishInbound(provisioningRecord.agencyPublicVerkey, agentConnectionAtAgency);
-
-    return agentConnectionAtAgency;
-  }
-
-  async downloadMessages() {
-    const inboundConnection = this.getInboundConnection();
-    if (inboundConnection) {
-      const outboundMessage = await this.messagePickupService.batchPickup(inboundConnection);
-      const batchMessage = await this.messageSender.sendAndReceiveMessage(outboundMessage);
-      return batchMessage.message.messages;
-    }
-    return [];
-  }
-
   async receiveMessage(inboundPackedMessage: any) {
     return await this.messageReceiver.receiveMessage(inboundPackedMessage);
-  }
-
-  getRoutes() {
-    return this.providerRoutingService.getRoutes();
-  }
-
-  establishInbound(agencyVerkey: Verkey, connection: ConnectionRecord) {
-    this.agentConfig.establishInbound({ verkey: agencyVerkey, connection });
   }
 
   async sendMessageToConnection(connection: ConnectionRecord, message: string) {
@@ -185,10 +135,6 @@ export class Agent {
 
   getAgencyUrl() {
     return this.agentConfig.agencyUrl;
-  }
-
-  getInboundConnection() {
-    return this.agentConfig.inboundConnection;
   }
 
   async closeAndDeleteWallet() {
@@ -215,9 +161,4 @@ export class Agent {
     this.dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService));
     this.dispatcher.registerHandler(new MessagePickupHandler(this.connectionService, this.messagePickupService));
   }
-}
-
-interface AgencyConfiguration {
-  verkey: Verkey;
-  invitationUrl: string;
 }

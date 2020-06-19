@@ -103,7 +103,7 @@ app.get('/api/connections', async (req, res) => {
 
 app.get('/api/routes', async (req, res) => {
   // TODO This endpoint is for testing purpose only. Return agency connection by their verkey.
-  const routes = agent.getRoutes();
+  const routes = agent.routing.getRoutes();
   res.send(routes);
 });
 
