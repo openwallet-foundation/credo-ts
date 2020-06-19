@@ -79,21 +79,25 @@ describe('with agency', () => {
   });
 
   test('Alice and Bob make a connection via agency', async () => {
-    const aliceConnectionAtAliceBob = await aliceAgent.createConnection();
+    const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection();
     const { invitation } = aliceConnectionAtAliceBob;
 
     if (!invitation) {
       throw new Error('There is no invitation in newly created connection!');
     }
 
-    const bobConnectionAtBobAlice = await bobAgent.acceptInvitation(invitation);
+    const bobConnectionAtBobAlice = await bobAgent.connections.acceptInvitation(invitation);
 
-    const aliceConnectionRecordAtAliceBob = await aliceAgent.returnWhenIsConnected(aliceConnectionAtAliceBob.verkey);
+    const aliceConnectionRecordAtAliceBob = await aliceAgent.connections.returnWhenIsConnected(
+      aliceConnectionAtAliceBob.verkey
+    );
     if (!aliceConnectionRecordAtAliceBob) {
       throw new Error('Connection not found!');
     }
 
-    const bobConnectionRecordAtBobAlice = await bobAgent.returnWhenIsConnected(bobConnectionAtBobAlice.verkey);
+    const bobConnectionRecordAtBobAlice = await bobAgent.connections.returnWhenIsConnected(
+      bobConnectionAtBobAlice.verkey
+    );
     if (!bobConnectionRecordAtBobAlice) {
       throw new Error('Connection not found!');
     }
@@ -107,7 +111,7 @@ describe('with agency', () => {
 
   test('Send a message from Alice to Bob via agency', async () => {
     // send message from Alice to Bob
-    const aliceConnectionAtAliceBob = await aliceAgent.findConnectionByVerkey(aliceAtAliceBobVerkey);
+    const aliceConnectionAtAliceBob = await aliceAgent.connections.findConnectionByVerkey(aliceAtAliceBobVerkey);
     if (!aliceConnectionAtAliceBob) {
       throw new Error(`There is no connection for verkey ${aliceAtAliceBobVerkey}`);
     }

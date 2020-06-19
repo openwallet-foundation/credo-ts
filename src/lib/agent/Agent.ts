@@ -1,5 +1,3 @@
-// @ts-ignore
-import { poll } from 'await-poll';
 import { EventEmitter } from 'events';
 import logger from '../logger';
 import { InitConfig } from '../types';
@@ -38,6 +36,7 @@ import { Wallet } from '../wallet/Wallet';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
 import { ProvisioningRecord } from '../storage/ProvisioningRecord';
 import { ProvisioninService } from './ProvisioningService';
+import { ConnectionsModule } from '../modules/ConnectionsModule';
 
 export class Agent {
   inboundTransporter: InboundTransporter;
@@ -57,6 +56,8 @@ export class Agent {
   basicMessageRepository: Repository<BasicMessageRecord>;
   connectionRepository: Repository<ConnectionRecord>;
   provisioningRepository: Repository<ProvisioningRecord>;
+
+  connections: ConnectionsModule;
 
   constructor(
     initialConfig: InitConfig,
@@ -89,6 +90,13 @@ export class Agent {
     this.messagePickupService = new MessagePickupService(messageRepository);
 
     this.registerHandlers();
+
+    this.connections = new ConnectionsModule(
+      this.agentConfig,
+      this.connectionService,
+      this.consumerRoutingService,
+      this.messageReceiver
+    );
   }
 
   async init() {
@@ -158,51 +166,8 @@ export class Agent {
     return [];
   }
 
-  async createConnection() {
-    const connection = await this.connectionService.createConnectionWithInvitation();
-    const { invitation } = connection;
-
-    if (!invitation) {
-      throw new Error('Connection has no invitation assigned.');
-    }
-
-    // If agent has inbound connection, which means it's using agency, we need to create a route for newly created
-    // connection verkey at agency.
-    if (this.agentConfig.inboundConnection) {
-      this.consumerRoutingService.createRoute(connection.verkey);
-    }
-
-    return connection;
-  }
-
-  async acceptInvitation(invitation: any) {
-    const connection = (await this.messageReceiver.receiveMessage(invitation))?.connection;
-
-    if (!connection) {
-      throw new Error('No connection returned from receiveMessage');
-    }
-
-    if (!connection.verkey) {
-      throw new Error('No verkey in connection returned from receiveMessage');
-    }
-
-    return connection;
-  }
-
   async receiveMessage(inboundPackedMessage: any) {
     return await this.messageReceiver.receiveMessage(inboundPackedMessage);
-  }
-
-  async getConnections() {
-    return this.connectionService.getConnections();
-  }
-
-  async findConnectionByVerkey(verkey: Verkey) {
-    return this.connectionService.findByVerkey(verkey);
-  }
-
-  async findConnectionByTheirKey(verkey: Verkey) {
-    return this.connectionService.findByTheirKey(verkey);
   }
 
   getRoutes() {
@@ -224,15 +189,6 @@ export class Agent {
 
   getInboundConnection() {
     return this.agentConfig.inboundConnection;
-  }
-
-  async returnWhenIsConnected(verkey: Verkey) {
-    const connectionRecord = await poll(
-      () => this.findConnectionByVerkey(verkey),
-      (c: ConnectionRecord) => c.state !== ConnectionState.COMPLETE,
-      100
-    );
-    return connectionRecord;
   }
 
   async closeAndDeleteWallet() {
