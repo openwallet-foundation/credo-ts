@@ -21,7 +21,6 @@ import { AckMessageHandler } from '../handlers/acks/AckMessageHandler';
 import { BasicMessageHandler } from '../handlers/basicmessage/BasicMessageHandler';
 import { RouteUpdateHandler } from '../handlers/routing/RouteUpdateHandler';
 import { ForwardHandler } from '../handlers/routing/ForwardHandler';
-import { Handler } from '../handlers/Handler';
 import { TrustPingMessageHandler } from '../handlers/trustping/TrustPingMessageHandler';
 import { TrustPingResponseMessageHandler } from '../handlers/trustping/TrustPingResponseMessageHandler';
 import { MessagePickupHandler } from '../handlers/messagepickup/MessagePickupHandler';
@@ -52,7 +51,6 @@ export class Agent {
   trustPingService: TrustPingService;
   messagePickupService: MessagePickupService;
   provisioningService: ProvisioninService;
-  handlers: Handler[] = [];
   basicMessageRepository: Repository<BasicMessageRecord>;
   connectionRepository: Repository<ConnectionRecord>;
   provisioningRepository: Repository<ProvisioningRecord>;
