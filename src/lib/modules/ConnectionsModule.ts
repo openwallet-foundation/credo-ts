@@ -1,5 +1,6 @@
 // @ts-ignore
 import { poll } from 'await-poll';
+import { EventEmitter } from 'events';
 import { AgentConfig } from '../agent/AgentConfig';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { ConsumerRoutingService } from '../protocols/routing/ConsumerRoutingService';
@@ -75,5 +76,9 @@ export class ConnectionsModule {
 
   async findConnectionByTheirKey(verkey: Verkey) {
     return this.connectionService.findByTheirKey(verkey);
+  }
+
+  events(): EventEmitter {
+    return this.connectionService;
   }
 }

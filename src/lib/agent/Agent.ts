@@ -1,4 +1,3 @@
-import { EventEmitter } from 'events';
 import logger from '../logger';
 import { InitConfig } from '../types';
 import { IndyWallet } from '../wallet/IndyWallet';
@@ -120,13 +119,6 @@ export class Agent {
   async closeAndDeleteWallet() {
     await this.wallet.close();
     await this.wallet.delete();
-  }
-
-  events(): { connections: EventEmitter; basicMessages: EventEmitter } {
-    return {
-      connections: this.connectionService,
-      basicMessages: this.basicMessageService,
-    };
   }
 
   private registerHandlers() {

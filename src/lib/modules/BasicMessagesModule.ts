@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events';
 import { BasicMessageService } from '../protocols/basicmessage/BasicMessageService';
 import { MessageSender } from '../agent/MessageSender';
 import { ConnectionRecord } from '../storage/ConnectionRecord';
@@ -18,5 +19,9 @@ export class BasicMessagesModule {
 
   async findAllByQuery(query: {}) {
     return this.basicMessageService.findAllByQuery(query);
+  }
+
+  events(): EventEmitter {
+    return this.basicMessageService;
   }
 }
