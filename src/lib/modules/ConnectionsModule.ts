@@ -65,7 +65,7 @@ export class ConnectionsModule {
     return connectionRecord;
   }
 
-  async getConnections() {
+  async getAll() {
     return this.connectionService.getConnections();
   }
 

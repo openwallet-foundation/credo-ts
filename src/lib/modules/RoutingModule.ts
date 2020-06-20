@@ -90,7 +90,7 @@ export class RoutingModule {
     return this.agentConfig.inboundConnection;
   }
 
-  getRoutes() {
+  getRoutingTable() {
     return this.providerRoutingService.getRoutes();
   }
 }

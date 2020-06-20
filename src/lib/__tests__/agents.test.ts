@@ -75,10 +75,10 @@ describe('agents', () => {
   });
 
   test('send a message to connection', async () => {
-    const aliceConnections = await aliceAgent.connections.getConnections();
+    const aliceConnections = await aliceAgent.connections.getAll();
     console.log('aliceConnections', aliceConnections);
 
-    const bobConnections = await bobAgent.connections.getConnections();
+    const bobConnections = await bobAgent.connections.getAll();
     console.log('bobConnections', bobConnections);
 
     // send message from Alice to Bob
@@ -86,12 +86,12 @@ describe('agents', () => {
     console.log('lastAliceConnection\n', lastAliceConnection);
 
     const message = 'hello, world';
-    await aliceAgent.basicMessages.sendMessageToConnection(lastAliceConnection, message);
+    await aliceAgent.basicMessages.sendMessage(lastAliceConnection, message);
 
     const bobMessages = await poll(
       async () => {
         console.log(`Getting Bob's messages from Alice...`);
-        const messages = await bobAgent.basicMessageRepository.findByQuery({
+        const messages = await bobAgent.basicMessages.findAllByQuery({
           from: lastAliceConnection.did,
           to: lastAliceConnection.theirDid,
         });
@@ -99,8 +99,8 @@ describe('agents', () => {
       },
       (messages: WireMessage[]) => messages.length < 1
     );
-    console.log(bobMessages);
-    expect(bobMessages[0].content).toBe(message);
+    const lastMessage = bobMessages[bobMessages.length - 1];
+    expect(lastMessage.content).toBe(message);
   });
 });
 

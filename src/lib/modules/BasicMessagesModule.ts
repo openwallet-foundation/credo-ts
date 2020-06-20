@@ -11,8 +11,12 @@ export class BasicMessagesModule {
     this.messageSender = messageSender;
   }
 
-  async sendMessageToConnection(connection: ConnectionRecord, message: string) {
+  async sendMessage(connection: ConnectionRecord, message: string) {
     const outboundMessage = await this.basicMessageService.send(message, connection);
     await this.messageSender.sendMessage(outboundMessage);
+  }
+
+  async findAllByQuery(query: {}) {
+    return this.basicMessageService.findAllByQuery(query);
   }
 }

@@ -119,12 +119,12 @@ describe('with agency', () => {
     console.log('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob);
 
     const message = 'hello, world';
-    await aliceAgent.basicMessages.sendMessageToConnection(aliceConnectionAtAliceBob, message);
+    await aliceAgent.basicMessages.sendMessage(aliceConnectionAtAliceBob, message);
 
     const bobMessages = await poll(
       async () => {
         console.log(`Getting Bob's messages from Alice...`);
-        const messages = await bobAgent.basicMessageRepository.findByQuery({
+        const messages = await bobAgent.basicMessages.findAllByQuery({
           from: aliceConnectionAtAliceBob.did,
           to: aliceConnectionAtAliceBob.theirDid,
         });
@@ -133,7 +133,6 @@ describe('with agency', () => {
       (messages: WireMessage[]) => messages.length < 1,
       1000
     );
-    console.log(bobMessages);
     const lastMessage = bobMessages[bobMessages.length - 1];
     expect(lastMessage.content).toBe(message);
   });
