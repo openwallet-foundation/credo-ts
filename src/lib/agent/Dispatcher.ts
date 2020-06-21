@@ -1,6 +1,8 @@
-import { OutboundMessage, OutboundPackage } from '../types';
+import { OutboundMessage, OutboundPackage, UnpackedMessage } from '../types';
 import { Handler } from '../handlers/Handler';
 import { MessageSender } from './MessageSender';
+import { AgentMessage } from './AgentMessage';
+import { MessageTransformer } from './MessageTransformer';
 
 class Dispatcher {
   handlers: Handler[] = [];
@@ -14,26 +16,40 @@ class Dispatcher {
     this.handlers.push(handler);
   }
 
-  async dispatch(inboundMessage: any): Promise<OutboundMessage | OutboundPackage | null> {
+  async dispatch(inboundMessage: UnpackedMessage): Promise<OutboundMessage | OutboundPackage | undefined> {
     const messageType: string = inboundMessage.message['@type'];
-    const handler = this.getHandlerForType(messageType);
+    const { handler, MessageClass } = this.getHandlerForType(messageType);
 
-    if (!handler) {
-      throw new Error(`No handler for message type "${messageType}" found`);
+    if (!handler || !MessageClass) {
+      throw new Error(`No handler or message class for message type "${messageType}" found`);
     }
 
-    const outboundMessage = await handler.handle(inboundMessage);
+    // Cast the plain JSON object to specific instance of Message extended from AgentMessage
+    const message = MessageTransformer.toMessageInstance(inboundMessage.message, MessageClass);
+    const outboundMessage = await handler.handle({ ...inboundMessage, message });
+
     if (outboundMessage) {
-      if (inboundMessage.message['~transport']) {
+      const threadId = outboundMessage.payload.getThreadId();
+
+      // check for return routing, with thread id
+      if (message.hasReturnRouting(threadId)) {
         return await this.messageSender.packMessage(outboundMessage);
       }
+
       await this.messageSender.sendMessage(outboundMessage);
     }
-    return outboundMessage;
+
+    return;
   }
 
-  private getHandlerForType(messageType: string): Handler | undefined {
-    return this.handlers.find(handler => handler.supportedMessageTypes.includes(messageType));
+  private getHandlerForType(messageType: string): { handler?: Handler; MessageClass?: typeof AgentMessage } {
+    for (const handler of this.handlers) {
+      for (const MessageClass of handler.supportedMessages) {
+        if (MessageClass.type === messageType) return { handler, MessageClass };
+      }
+    }
+
+    return {};
   }
 }
 

@@ -47,8 +47,7 @@ describe('agents', () => {
     bobAgent = new Agent(bobConfig, bobAgentInbound, bobAgentOutbound, indy);
     await bobAgent.init();
 
-    const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection();
-    const { invitation } = aliceConnectionAtAliceBob;
+    const { connection: aliceConnectionAtAliceBob, invitation } = await aliceAgent.connections.createConnection();
 
     if (!invitation) {
       throw new Error('There is no invitation in newly created connection!');

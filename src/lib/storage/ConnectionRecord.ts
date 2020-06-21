@@ -2,11 +2,7 @@ import { BaseRecord, RecordType } from './BaseRecord';
 import { DidDoc } from '../protocols/connections/domain/DidDoc';
 import { InvitationDetails } from '../protocols/connections/domain/InvitationDetails';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
-
-interface DidExchangeConnection {
-  DID: Did;
-  DIDDoc: DidDoc;
-}
+import { Connection } from '../protocols/connections/domain/Connection';
 
 interface ConnectionProps {
   id: string;
@@ -65,8 +61,8 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
     return this.theirDidDoc.service[0].recipientKeys[0];
   }
 
-  updateDidExchangeConnection(didExchangeConnection: DidExchangeConnection) {
-    this.theirDid = didExchangeConnection.DID;
-    this.theirDidDoc = didExchangeConnection.DIDDoc;
+  updateDidExchangeConnection(didExchangeConnection: Connection) {
+    this.theirDid = didExchangeConnection.did;
+    this.theirDidDoc = didExchangeConnection.didDoc;
   }
 }

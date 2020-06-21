@@ -2,6 +2,7 @@ import logger from '../logger';
 import { AgentConfig } from './AgentConfig';
 import { Dispatcher } from './Dispatcher';
 import { EnvelopeService } from './EnvelopeService';
+import { UnpackedMessage } from '../types';
 
 class MessageReceiver {
   config: AgentConfig;
@@ -34,7 +35,10 @@ class MessageReceiver {
     }
 
     logger.logJson('inboundMessage', inboundMessage);
-    return await this.dispatcher.dispatch(inboundMessage);
+
+    // TODO: dispatcher expects UnpackedMessage
+    // however the type can also be { message: inboundPackedMessage }
+    return await this.dispatcher.dispatch(inboundMessage as UnpackedMessage);
   }
 }
 

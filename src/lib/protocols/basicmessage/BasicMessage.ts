@@ -22,8 +22,8 @@ export class BasicMessage extends AgentMessage {
   }
 
   @Equals(BasicMessage.type)
-  static readonly type = MessageType.BasicMessage;
   readonly type = BasicMessage.type;
+  static readonly type = MessageType.BasicMessage;
 
   @Expose({ name: 'sent_time' })
   @Type(() => Date)

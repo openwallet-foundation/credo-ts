@@ -24,7 +24,7 @@ export class TrustPingMessage extends AgentMessage {
    * responseRequested will be true if not passed
    * @param options
    */
-  constructor(options: TrustPingMessageOptions) {
+  constructor(options?: TrustPingMessageOptions) {
     super();
 
     if (options) {
@@ -43,8 +43,8 @@ export class TrustPingMessage extends AgentMessage {
   }
 
   @Equals(TrustPingMessage.type)
-  static readonly type = MessageType.TrustPingMessage;
   readonly type = TrustPingMessage.type;
+  static readonly type = MessageType.TrustPingMessage;
 
   @IsString()
   comment?: string;

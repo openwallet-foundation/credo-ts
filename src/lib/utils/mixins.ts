@@ -24,7 +24,7 @@ type Mixin = (Base: Constructor<any>) => Constructor<any>;
 export function Compose<B, T extends Mixin[]>(
   Base: Constructor<B>,
   extensions: T
-): Constructor<MergeConstructorTypes<T>> {
+): Constructor<MergeConstructorTypes<T>> & B {
   // It errors without casting to any, but function + typings works
   return extensions.reduce((extended, extend) => extend(extended), Base) as any;
 }

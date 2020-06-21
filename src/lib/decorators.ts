@@ -1,6 +1,6 @@
 import base64url from 'base64url';
 import { Message } from './types';
-import timestamp from './timestamp';
+import timestamp from './utils/timestamp';
 
 export async function sign(
   wh: WalletHandle,

@@ -4,9 +4,10 @@ import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { MessagePickupService } from '../protocols/messagepickup/MessagePickupService';
 import { MessageSender } from '../agent/MessageSender';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
-import { decodeInvitationFromUrl } from '../helpers';
+import { decodeInvitationFromUrl } from '../utils/invitationUrl';
 import logger from '../logger';
 import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
+import { ConnectionResponseMessage } from '../protocols/connections/ConnectionResponseMessage';
 
 export class RoutingModule {
   agentConfig: AgentConfig;
@@ -38,10 +39,13 @@ export class RoutingModule {
     if (!provisioningRecord) {
       logger.log('There is no provisioning. Creating connection with agency...');
       const { verkey, invitationUrl } = agencyConfiguration;
-      const agencyInvitation = decodeInvitationFromUrl(invitationUrl);
+      const agencyInvitation = await decodeInvitationFromUrl(invitationUrl);
 
       const connectionRequest = await this.connectionService.acceptInvitation(agencyInvitation);
-      const connectionResponse = await this.messageSender.sendAndReceiveMessage(connectionRequest);
+      const connectionResponse = await this.messageSender.sendAndReceiveMessage(
+        connectionRequest,
+        ConnectionResponseMessage
+      );
       const ack = await this.connectionService.acceptResponse(connectionResponse);
       await this.messageSender.sendMessage(ack);
 

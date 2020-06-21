@@ -7,6 +7,7 @@ import { ThreadDecorated } from '../decorators/thread/ThreadDecoratorExtension';
 import { L10nDecorated } from '../decorators/l10n/L10nDecoratorExtension';
 import { TransportDecorated } from '../decorators/transport/TransportDecoratorExtension';
 import { TimingDecorated } from '../decorators/timing/TimingDecoratorExtension';
+import { MessageTransformer } from './MessageTransformer';
 
 export const MessageIdRegExp = /[-_./a-zA-Z0-9]{8,64}/;
 export const MessageTypeRegExp = /(.*?)([a-z0-9._-]+)\/(\d[^/]*)\/([a-z0-9._-]+)$/;
@@ -20,8 +21,8 @@ export class BaseMessage {
 
   @Expose({ name: '@type' })
   @Matches(MessageTypeRegExp)
-  static readonly type: string;
   readonly type!: string;
+  static readonly type: string;
 
   generateId() {
     return uuid();
@@ -33,4 +34,9 @@ export class BaseMessage {
 }
 
 const DefaultDecorators = [ThreadDecorated, L10nDecorated, TransportDecorated, TimingDecorated];
-export class AgentMessage extends Compose(BaseMessage, DefaultDecorators) {}
+
+export class AgentMessage extends Compose(BaseMessage, DefaultDecorators) {
+  toJSON(): object {
+    return MessageTransformer.toJSON(this);
+  }
+}

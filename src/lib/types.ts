@@ -23,6 +23,12 @@ export interface Message {
   [key: string]: any;
 }
 
+export interface UnpackedMessage {
+  message: any;
+  sender_verkey: Verkey; // TODO make it optional
+  recipient_verkey: Verkey; // TODO make it optional
+}
+
 export interface InboundMessage<T extends AgentMessage = AgentMessage> {
   message: T;
   sender_verkey: Verkey; // TODO make it optional

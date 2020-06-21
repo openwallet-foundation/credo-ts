@@ -1,4 +1,4 @@
-import { InboundMessage, Message } from '../types';
+import { UnpackedMessage } from '../types';
 
 export interface Wallet {
   init(): Promise<void>;
@@ -8,9 +8,9 @@ export interface Wallet {
   getPublicDid(): DidInfo | {};
   createDid(didConfig?: DidConfig): Promise<[Did, Verkey]>;
   pack(payload: {}, recipientKeys: Verkey[], senderVk: Verkey | null): Promise<JsonWebKey>;
-  unpack(messagePackage: JsonWebKey): Promise<InboundMessage>;
-  sign(message: Message, attribute: string, verkey: Verkey): Promise<Message>;
-  verify(message: Message, attribute: string): Promise<Message>;
+  unpack(messagePackage: JsonWebKey): Promise<UnpackedMessage>;
+  sign(data: Buffer, verkey: Verkey): Promise<Buffer>;
+  verify(signerVerkey: Verkey, data: Buffer, signature: Buffer): Promise<boolean>;
   addWalletRecord(type: string, id: string, value: string, tags: {}): Promise<void>;
   updateWalletRecordValue(type: string, id: string, value: string): Promise<void>;
   updateWalletRecordTags(type: string, id: string, tags: {}): Promise<void>;

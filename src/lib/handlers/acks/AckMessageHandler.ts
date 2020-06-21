@@ -1,21 +1,16 @@
-import { InboundMessage } from '../../types';
-import { Handler } from '../Handler';
+import { Handler, HandlerInboundMessage } from '../Handler';
 import { ConnectionService } from '../../protocols/connections/ConnectionService';
-import { MessageType } from '../../protocols/connections/messages';
+import { AckMessage } from '../../protocols/connections/AckMessage';
 
 export class AckMessageHandler implements Handler {
   connectionService: ConnectionService;
+  supportedMessages = [AckMessage];
 
   constructor(connectionService: ConnectionService) {
     this.connectionService = connectionService;
   }
 
-  get supportedMessageTypes(): [MessageType.Ack] {
-    return [MessageType.Ack];
-  }
-
-  async handle(inboundMessage: InboundMessage) {
-    const outboundMessage = await this.connectionService.acceptAck(inboundMessage);
-    return outboundMessage;
+  async handle(inboundMessage: HandlerInboundMessage<AckMessageHandler>) {
+    await this.connectionService.acceptAck(inboundMessage);
   }
 }

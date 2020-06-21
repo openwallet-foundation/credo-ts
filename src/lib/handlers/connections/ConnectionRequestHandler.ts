@@ -1,20 +1,16 @@
-import { InboundMessage } from '../../types';
-import { Handler } from '../Handler';
+import { Handler, HandlerInboundMessage } from '../Handler';
 import { ConnectionService } from '../../protocols/connections/ConnectionService';
-import { MessageType } from '../../protocols/connections/messages';
+import { ConnectionRequestMessage } from '../../protocols/connections/ConnectionRequestMessage';
 
 export class ConnectionRequestHandler implements Handler {
   connectionService: ConnectionService;
+  supportedMessages = [ConnectionRequestMessage];
 
   constructor(connectionService: ConnectionService) {
     this.connectionService = connectionService;
   }
 
-  get supportedMessageTypes(): [MessageType.ConnectionRequest] {
-    return [MessageType.ConnectionRequest];
-  }
-
-  async handle(inboundMessage: InboundMessage) {
+  async handle(inboundMessage: HandlerInboundMessage<ConnectionRequestHandler>) {
     const outboudMessage = await this.connectionService.acceptRequest(inboundMessage);
     return outboudMessage;
   }
