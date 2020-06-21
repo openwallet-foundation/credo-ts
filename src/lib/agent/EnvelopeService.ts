@@ -1,7 +1,7 @@
 import logger from '../logger';
 import { OutboundMessage, OutboundPackage, UnpackedMessage } from '../types';
 import { Wallet } from '../wallet/Wallet';
-import { createForwardMessage } from '../protocols/routing/messages';
+import { ForwardMessage } from '../protocols/routing/ForwardMessage';
 
 class EnvelopeService {
   wallet: Wallet;
@@ -22,9 +22,14 @@ class EnvelopeService {
     if (routingKeys && routingKeys.length > 0) {
       for (const routingKey of routingKeys) {
         const [recipientKey] = recipientKeys;
-        const forwardMessage = createForwardMessage(recipientKey, message);
+
+        const forwardMessage = new ForwardMessage({
+          to: recipientKey,
+          message: outboundPackedMessage,
+        });
+
         logger.logJson('Forward message created', forwardMessage);
-        outboundPackedMessage = await this.wallet.pack(forwardMessage, [routingKey], senderVk);
+        outboundPackedMessage = await this.wallet.pack(forwardMessage.toJSON(), [routingKey], senderVk);
       }
     }
     return { connection, payload: outboundPackedMessage, endpoint };

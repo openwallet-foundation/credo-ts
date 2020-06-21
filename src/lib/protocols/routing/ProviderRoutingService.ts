@@ -1,7 +1,8 @@
-import { InboundMessage } from '../../types';
+import { InboundMessage, OutboundMessage } from '../../types';
 import { createOutboundMessage } from '../helpers';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
 import { KeylistUpdateMessage, KeylistUpdateAction } from '../coordinatemediation/KeylistUpdateMessage';
+import { ForwardMessage } from './ForwardMessage';
 
 class ProviderRoutingService {
   routingTable: { [recipientKey: string]: ConnectionRecord | undefined } = {};
@@ -21,16 +22,15 @@ class ProviderRoutingService {
     }
   }
 
-  forward(inboundMessage: InboundMessage) {
-    const { message, recipient_verkey, sender_verkey } = inboundMessage;
+  forward(inboundMessage: InboundMessage<ForwardMessage>): OutboundMessage<ForwardMessage> {
+    const { message, recipient_verkey } = inboundMessage;
 
-    const { msg, to } = message;
-
-    if (!to) {
+    // TODO: update to class-validator validation
+    if (!message.to) {
       throw new Error('Invalid Message: Missing required attribute "to"');
     }
 
-    const connection = this.findRecipient(to);
+    const connection = this.findRecipient(message.to);
 
     if (!connection) {
       throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
@@ -40,7 +40,7 @@ class ProviderRoutingService {
       throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`);
     }
 
-    return createOutboundMessage(connection, msg);
+    return createOutboundMessage(connection, message);
   }
 
   getRoutes() {

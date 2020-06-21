@@ -1,20 +1,16 @@
-import { InboundMessage } from '../../types';
-import { Handler } from '../Handler';
+import { Handler, HandlerInboundMessage } from '../Handler';
 import { ProviderRoutingService } from '../../protocols/routing/ProviderRoutingService';
-import { MessageType } from '../../protocols/routing/messages';
+import { ForwardMessage } from '../../protocols/routing/ForwardMessage';
 
 export class ForwardHandler implements Handler {
   routingService: ProviderRoutingService;
+  supportedMessages = [ForwardMessage];
 
   constructor(routingService: ProviderRoutingService) {
     this.routingService = routingService;
   }
 
-  get supportedMessageTypes(): [MessageType.ForwardMessage] {
-    return [MessageType.ForwardMessage];
-  }
-
-  async handle(inboundMessage: InboundMessage) {
+  async handle(inboundMessage: HandlerInboundMessage<ForwardHandler>) {
     const outboundMessage = this.routingService.forward(inboundMessage);
     return outboundMessage;
   }
