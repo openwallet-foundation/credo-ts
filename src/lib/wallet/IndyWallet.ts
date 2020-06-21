@@ -1,6 +1,5 @@
 import logger from '../logger';
-import { InboundMessage, Message, UnpackedMessage } from '../types';
-import { sign, verify } from '../decorators';
+import { UnpackedMessage } from '../types';
 import { Wallet, WalletConfig, WalletCredentials, DidInfo, DidConfig } from './Wallet';
 
 export class IndyWallet implements Wallet {
