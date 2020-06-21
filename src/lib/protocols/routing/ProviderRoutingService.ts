@@ -1,27 +1,24 @@
 import { InboundMessage } from '../../types';
 import { createOutboundMessage } from '../helpers';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
-
-interface RouteUpdate {
-  action: 'add' | 'remove';
-  recipient_key: Verkey;
-}
+import { KeylistUpdateMessage, KeylistUpdateAction } from '../coordinatemediation/KeylistUpdateMessage';
 
 class ProviderRoutingService {
-  routingTable: { [recipientKey: string]: ConnectionRecord } = {};
+  routingTable: { [recipientKey: string]: ConnectionRecord | undefined } = {};
 
-  updateRoutes(inboudMessage: InboundMessage, connection: ConnectionRecord) {
-    const { message } = inboudMessage;
-    message.updates.forEach((update: RouteUpdate) => {
-      const { action, recipient_key } = update;
-      if (action === 'add') {
-        this.saveRoute(recipient_key, connection);
-      } else {
-        throw new Error(`Unsupported operation ${action}`);
+  updateRoutes(inboundMessage: InboundMessage<KeylistUpdateMessage>, connection: ConnectionRecord) {
+    const { message } = inboundMessage;
+
+    for (const update of message.updates) {
+      switch (update.action) {
+        case KeylistUpdateAction.add:
+          this.saveRoute(update.recipientKey, connection);
+          break;
+        case KeylistUpdateAction.remove:
+          this.removeRoute(update.recipientKey, connection);
+          break;
       }
-    });
-
-    return null;
+    }
   }
 
   forward(inboundMessage: InboundMessage) {
@@ -66,6 +63,20 @@ class ProviderRoutingService {
     }
 
     this.routingTable[recipientKey] = connection;
+  }
+
+  removeRoute(recipientKey: Verkey, connection: ConnectionRecord) {
+    const storedConnection = this.routingTable[recipientKey];
+
+    if (!storedConnection) {
+      throw new Error('Cannot remove non-existing routing entry');
+    }
+
+    if (storedConnection.id !== connection.id) {
+      throw new Error('Cannot remove routing entry for another connection');
+    }
+
+    delete this.routingTable[recipientKey];
   }
 }
 

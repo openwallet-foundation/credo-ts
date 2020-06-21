@@ -17,11 +17,6 @@ export interface BatchMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0212-pickup/README.md#batch
  */
 export class BatchMessage extends AgentMessage {
-  /**
-   * Create new TrustPingMessage instance.
-   * responseRequested will be true if not passed
-   * @param options
-   */
   constructor(options: BatchMessageOptions) {
     super();
 

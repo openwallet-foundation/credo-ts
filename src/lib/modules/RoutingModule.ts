@@ -8,6 +8,7 @@ import { decodeInvitationFromUrl } from '../utils/invitationUrl';
 import logger from '../logger';
 import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
 import { ConnectionResponseMessage } from '../protocols/connections/ConnectionResponseMessage';
+import { BatchMessage } from '../protocols/messagepickup/BatchMessage';
 
 export class RoutingModule {
   agentConfig: AgentConfig;
@@ -84,8 +85,10 @@ export class RoutingModule {
     const inboundConnection = this.getInboundConnection();
     if (inboundConnection) {
       const outboundMessage = await this.messagePickupService.batchPickup(inboundConnection);
-      const batchMessage = await this.messageSender.sendAndReceiveMessage(outboundMessage);
-      return batchMessage.message.messages;
+      const batchMessage = await this.messageSender.sendAndReceiveMessage(outboundMessage, BatchMessage);
+
+      // TODO: do something about the different types of message variable all having a different purpose
+      return batchMessage.message.messages.map(msg => msg.message);
     }
     return [];
   }
