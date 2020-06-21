@@ -89,7 +89,7 @@ describe('with agency', () => {
     const bobConnectionAtBobAlice = await bobAgent.connections.acceptInvitation(invitation);
 
     const aliceConnectionRecordAtAliceBob = await aliceAgent.connections.returnWhenIsConnected(
-      aliceConnectionAtAliceBob.verkey
+      aliceConnectionAtAliceBob.connection.verkey
     );
     if (!aliceConnectionRecordAtAliceBob) {
       throw new Error('Connection not found!');
@@ -106,7 +106,7 @@ describe('with agency', () => {
     expect(bobConnectionRecordAtBobAlice).toBeConnectedWith(aliceConnectionRecordAtAliceBob);
 
     // We save this verkey to send message via this connection in the following test
-    aliceAtAliceBobVerkey = aliceConnectionAtAliceBob.verkey;
+    aliceAtAliceBobVerkey = aliceConnectionAtAliceBob.connection.verkey;
   });
 
   test('Send a message from Alice to Bob via agency', async () => {
