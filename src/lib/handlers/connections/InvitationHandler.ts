@@ -18,6 +18,8 @@ export class InvitationHandler implements Handler {
     const outboundMessage = await this.connectionService.acceptInvitation(invitation);
 
     const { verkey } = outboundMessage.connection;
+
+    // TODO: we should only create a route if we are using a mediator
     await this.routingService.createRoute(verkey);
 
     return outboundMessage;

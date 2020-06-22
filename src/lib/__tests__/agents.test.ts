@@ -53,7 +53,7 @@ describe('agents', () => {
       throw new Error('There is no invitation in newly created connection!');
     }
 
-    const bobConnectionAtBobAlice = await bobAgent.connections.acceptInvitation(invitation);
+    const bobConnectionAtBobAlice = await bobAgent.connections.acceptInvitation(invitation.toJSON());
 
     const aliceConnectionRecordAtAliceBob = await aliceAgent.connections.returnWhenIsConnected(
       aliceConnectionAtAliceBob.verkey
