@@ -1,5 +1,5 @@
 import { AgentConfig } from '../agent/AgentConfig';
-import { ProvisioninService } from '../agent/ProvisioningService';
+import { ProvisioningService } from '../agent/ProvisioningService';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { MessagePickupService } from '../protocols/messagepickup/MessagePickupService';
 import { MessageSender } from '../agent/MessageSender';
@@ -13,7 +13,7 @@ import { BatchMessage } from '../protocols/messagepickup/BatchMessage';
 export class RoutingModule {
   agentConfig: AgentConfig;
   providerRoutingService: ProviderRoutingService;
-  provisioningService: ProvisioninService;
+  provisioningService: ProvisioningService;
   messagePickupService: MessagePickupService;
   connectionService: ConnectionService;
   messageSender: MessageSender;
@@ -21,7 +21,7 @@ export class RoutingModule {
   constructor(
     agentConfig: AgentConfig,
     providerRoutingService: ProviderRoutingService,
-    provisioningService: ProvisioninService,
+    provisioningService: ProvisioningService,
     messagePickupService: MessagePickupService,
     connectionService: ConnectionService,
     messageSender: MessageSender

@@ -31,7 +31,7 @@ import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { AgentConfig } from './AgentConfig';
 import { Wallet } from '../wallet/Wallet';
 import { ProvisioningRecord } from '../storage/ProvisioningRecord';
-import { ProvisioninService } from './ProvisioningService';
+import { ProvisioningService } from './ProvisioningService';
 import { ConnectionsModule } from '../modules/ConnectionsModule';
 import { RoutingModule } from '../modules/RoutingModule';
 import { BasicMessagesModule } from '../modules/BasicMessagesModule';
@@ -49,7 +49,7 @@ export class Agent {
   consumerRoutingService: ConsumerRoutingService;
   trustPingService: TrustPingService;
   messagePickupService: MessagePickupService;
-  provisioningService: ProvisioninService;
+  provisioningService: ProvisioningService;
   basicMessageRepository: Repository<BasicMessageRecord>;
   connectionRepository: Repository<ConnectionRecord>;
   provisioningRepository: Repository<ProvisioningRecord>;
@@ -80,7 +80,7 @@ export class Agent {
     this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService);
     this.provisioningRepository = new Repository<ProvisioningRecord>(ProvisioningRecord, storageService);
 
-    this.provisioningService = new ProvisioninService(this.provisioningRepository);
+    this.provisioningService = new ProvisioningService(this.provisioningRepository);
     this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository);
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository);
     this.providerRoutingService = new ProviderRoutingService();
