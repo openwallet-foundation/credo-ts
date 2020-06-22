@@ -12,7 +12,7 @@ export class SignatureDecorator {
     if (options) {
       this.signatureType = options.signatureType;
       this.signatureData = options.signatureData;
-      this.signature = options.signer;
+      this.signer = options.signer;
       this.signature = options.signature;
     }
   }

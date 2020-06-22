@@ -39,7 +39,7 @@ class Dispatcher {
       await this.messageSender.sendMessage(outboundMessage);
     }
 
-    return;
+    return outboundMessage || undefined;
   }
 
   private getHandlerForType(messageType: string): { handler?: Handler; MessageClass?: typeof AgentMessage } {

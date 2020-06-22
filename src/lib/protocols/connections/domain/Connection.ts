@@ -1,5 +1,5 @@
 import { IsString } from 'class-validator';
-import { Expose, Type } from 'class-transformer';
+import { Expose, Transform } from 'class-transformer';
 
 import { DidDoc } from './DidDoc';
 
@@ -21,6 +21,13 @@ export class Connection {
   did!: string;
 
   @Expose({ name: 'DIDDoc' })
-  @Type(() => DidDoc)
+  // TODO: add type for DidDoc
+  // When we add the @Type json object DidDoc parameter will be cast to DidDoc class instance
+  // However the DidDoc class is not yet decorated using class-transformer
+  // meaning it will give errors because the class will be invalid.
+  // for now the DidDoc class is however correctly cast from class instance to json
+  // @Type(() => DidDoc)
+  // This way we also don't need the custom transformer
+  @Transform((value: DidDoc) => (value.toJSON ? value.toJSON() : value), { toPlainOnly: true })
   didDoc?: DidDoc;
 }

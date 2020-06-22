@@ -1,18 +1,21 @@
 import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { AgentMessage } from '../agent/AgentMessage';
 import { OutboundMessage } from '../types';
+import { ConnectionInvitationMessage } from './connections/ConnectionInvitationMessage';
 
 export function createOutboundMessage<T extends AgentMessage = AgentMessage>(
   connection: ConnectionRecord,
   payload: T,
-  invitation?: any
+  invitation?: ConnectionInvitationMessage
 ): OutboundMessage<T> {
   if (invitation) {
+    // TODO: invitation recipientKeys, routingKeys, endpoint could be missing
+    // When invitation uses DID
     return {
       connection,
       endpoint: invitation.serviceEndpoint,
       payload,
-      recipientKeys: invitation.recipientKeys,
+      recipientKeys: invitation.recipientKeys || [],
       routingKeys: invitation.routingKeys || [],
       senderVk: connection.verkey,
     };

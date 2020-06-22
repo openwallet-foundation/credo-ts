@@ -44,8 +44,6 @@ describe('ConnectionService', () => {
 
       expect(connection.invitation).toEqual(
         expect.objectContaining({
-          '@id': expect.any(String),
-          '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation',
           label: 'agent label',
           recipientKeys: [expect.any(String)],
           routingKeys: [],
