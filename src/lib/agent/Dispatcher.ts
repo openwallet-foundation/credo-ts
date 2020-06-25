@@ -3,12 +3,15 @@ import { Handler } from '../handlers/Handler';
 import { MessageSender } from './MessageSender';
 
 class Dispatcher {
-  handlers: Handler[];
+  handlers: Handler[] = [];
   messageSender: MessageSender;
 
-  constructor(handlers: Handler[], messageSender: MessageSender) {
-    this.handlers = handlers;
+  constructor(messageSender: MessageSender) {
     this.messageSender = messageSender;
+  }
+
+  registerHandler(handler: Handler) {
+    this.handlers.push(handler);
   }
 
   async dispatch(inboundMessage: any): Promise<OutboundMessage | OutboundPackage | null> {

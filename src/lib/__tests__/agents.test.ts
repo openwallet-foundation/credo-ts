@@ -47,21 +47,25 @@ describe('agents', () => {
     bobAgent = new Agent(bobConfig, bobAgentInbound, bobAgentOutbound, indy);
     await bobAgent.init();
 
-    const aliceConnectionAtAliceBob = await aliceAgent.createConnection();
+    const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection();
     const { invitation } = aliceConnectionAtAliceBob;
 
     if (!invitation) {
       throw new Error('There is no invitation in newly created connection!');
     }
 
-    const bobConnectionAtBobAlice = await bobAgent.acceptInvitation(invitation);
+    const bobConnectionAtBobAlice = await bobAgent.connections.acceptInvitation(invitation);
 
-    const aliceConnectionRecordAtAliceBob = await aliceAgent.returnWhenIsConnected(aliceConnectionAtAliceBob.verkey);
+    const aliceConnectionRecordAtAliceBob = await aliceAgent.connections.returnWhenIsConnected(
+      aliceConnectionAtAliceBob.verkey
+    );
     if (!aliceConnectionRecordAtAliceBob) {
       throw new Error('Connection not found!');
     }
 
-    const bobConnectionRecordAtBobAlice = await bobAgent.returnWhenIsConnected(bobConnectionAtBobAlice.verkey);
+    const bobConnectionRecordAtBobAlice = await bobAgent.connections.returnWhenIsConnected(
+      bobConnectionAtBobAlice.verkey
+    );
     if (!bobConnectionRecordAtBobAlice) {
       throw new Error('Connection not found!');
     }
@@ -71,10 +75,10 @@ describe('agents', () => {
   });
 
   test('send a message to connection', async () => {
-    const aliceConnections = await aliceAgent.getConnections();
+    const aliceConnections = await aliceAgent.connections.getAll();
     console.log('aliceConnections', aliceConnections);
 
-    const bobConnections = await bobAgent.getConnections();
+    const bobConnections = await bobAgent.connections.getAll();
     console.log('bobConnections', bobConnections);
 
     // send message from Alice to Bob
@@ -82,12 +86,12 @@ describe('agents', () => {
     console.log('lastAliceConnection\n', lastAliceConnection);
 
     const message = 'hello, world';
-    await aliceAgent.sendMessageToConnection(lastAliceConnection, message);
+    await aliceAgent.basicMessages.sendMessage(lastAliceConnection, message);
 
     const bobMessages = await poll(
       async () => {
         console.log(`Getting Bob's messages from Alice...`);
-        const messages = await bobAgent.basicMessageRepository.findByQuery({
+        const messages = await bobAgent.basicMessages.findAllByQuery({
           from: lastAliceConnection.did,
           to: lastAliceConnection.theirDid,
         });
@@ -95,8 +99,8 @@ describe('agents', () => {
       },
       (messages: WireMessage[]) => messages.length < 1
     );
-    console.log(bobMessages);
-    expect(bobMessages[0].content).toBe(message);
+    const lastMessage = bobMessages[bobMessages.length - 1];
+    expect(lastMessage.content).toBe(message);
   });
 });
 

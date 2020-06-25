@@ -1,9 +1,5 @@
-// @ts-ignore
-import { poll } from 'await-poll';
-import { EventEmitter } from 'events';
 import logger from '../logger';
 import { InitConfig } from '../types';
-import { decodeInvitationFromUrl } from '../helpers';
 import { IndyWallet } from '../wallet/IndyWallet';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
@@ -24,7 +20,6 @@ import { AckMessageHandler } from '../handlers/acks/AckMessageHandler';
 import { BasicMessageHandler } from '../handlers/basicmessage/BasicMessageHandler';
 import { RouteUpdateHandler } from '../handlers/routing/RouteUpdateHandler';
 import { ForwardHandler } from '../handlers/routing/ForwardHandler';
-import { Handler } from '../handlers/Handler';
 import { TrustPingMessageHandler } from '../handlers/trustping/TrustPingMessageHandler';
 import { TrustPingResponseMessageHandler } from '../handlers/trustping/TrustPingResponseMessageHandler';
 import { MessagePickupHandler } from '../handlers/messagepickup/MessagePickupHandler';
@@ -35,15 +30,18 @@ import { IndyStorageService } from '../storage/IndyStorageService';
 import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { AgentConfig } from './AgentConfig';
 import { Wallet } from '../wallet/Wallet';
-import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
 import { ProvisioningRecord } from '../storage/ProvisioningRecord';
 import { ProvisioninService } from './ProvisioningService';
+import { ConnectionsModule } from '../modules/ConnectionsModule';
+import { RoutingModule } from '../modules/RoutingModule';
+import { BasicMessagesModule } from '../modules/BasicMessagesModule';
 
 export class Agent {
   inboundTransporter: InboundTransporter;
   wallet: Wallet;
   agentConfig: AgentConfig;
   messageReceiver: MessageReceiver;
+  dispatcher: Dispatcher;
   messageSender: MessageSender;
   connectionService: ConnectionService;
   basicMessageService: BasicMessageService;
@@ -52,10 +50,13 @@ export class Agent {
   trustPingService: TrustPingService;
   messagePickupService: MessagePickupService;
   provisioningService: ProvisioninService;
-  handlers: Handler[] = [];
   basicMessageRepository: Repository<BasicMessageRecord>;
   connectionRepository: Repository<ConnectionRecord>;
   provisioningRepository: Repository<ProvisioningRecord>;
+
+  connections!: ConnectionsModule;
+  routing!: RoutingModule;
+  basicMessages!: BasicMessagesModule;
 
   constructor(
     initialConfig: InitConfig,
@@ -68,13 +69,16 @@ export class Agent {
     this.wallet = new IndyWallet(initialConfig.walletConfig, initialConfig.walletCredentials, indy);
     const envelopeService = new EnvelopeService(this.wallet);
 
+    this.agentConfig = new AgentConfig(initialConfig);
+    this.messageSender = new MessageSender(envelopeService, outboundTransporter);
+    this.dispatcher = new Dispatcher(this.messageSender);
+    this.messageReceiver = new MessageReceiver(this.agentConfig, envelopeService, this.dispatcher);
+    this.inboundTransporter = inboundTransporter;
+
     const storageService = new IndyStorageService(this.wallet);
     this.basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService);
     this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService);
     this.provisioningRepository = new Repository<ProvisioningRecord>(ProvisioningRecord, storageService);
-
-    this.agentConfig = new AgentConfig(initialConfig);
-    this.messageSender = new MessageSender(envelopeService, outboundTransporter);
 
     this.provisioningService = new ProvisioninService(this.provisioningRepository);
     this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository);
@@ -85,10 +89,7 @@ export class Agent {
     this.messagePickupService = new MessagePickupService(messageRepository);
 
     this.registerHandlers();
-
-    const dispatcher = new Dispatcher(this.handlers, this.messageSender);
-    this.messageReceiver = new MessageReceiver(this.agentConfig, envelopeService, dispatcher);
-    this.inboundTransporter = inboundTransporter;
+    this.registerModules();
   }
 
   async init() {
@@ -107,132 +108,12 @@ export class Agent {
     return this.wallet.getPublicDid();
   }
 
-  async provision(agencyConfiguration: AgencyConfiguration) {
-    let provisioningRecord = await this.provisioningService.find();
-
-    if (!provisioningRecord) {
-      logger.log('There is no provisioning. Creating connection with agency...');
-      const { verkey, invitationUrl } = agencyConfiguration;
-      const agencyInvitation = decodeInvitationFromUrl(invitationUrl);
-
-      const connectionRequest = await this.connectionService.acceptInvitation(agencyInvitation);
-      const connectionResponse = await this.messageSender.sendAndReceiveMessage(connectionRequest);
-      const ack = await this.connectionService.acceptResponse(connectionResponse);
-      await this.messageSender.sendMessage(ack);
-
-      const provisioningProps = {
-        agencyConnectionVerkey: connectionRequest.connection.verkey,
-        agencyPublicVerkey: verkey,
-      };
-      provisioningRecord = await this.provisioningService.create(provisioningProps);
-      logger.log('Provisioning record has been saved.');
-    }
-
-    logger.log('Provisioning record:', provisioningRecord);
-
-    const agentConnectionAtAgency = await this.connectionService.findByVerkey(
-      provisioningRecord.agencyConnectionVerkey
-    );
-
-    if (!agentConnectionAtAgency) {
-      throw new Error('Connection not found!');
-    }
-    logger.log('agentConnectionAtAgency', agentConnectionAtAgency);
-
-    if (agentConnectionAtAgency.state !== ConnectionState.COMPLETE) {
-      throw new Error('Connection has not been established.');
-    }
-
-    this.establishInbound(provisioningRecord.agencyPublicVerkey, agentConnectionAtAgency);
-
-    return agentConnectionAtAgency;
-  }
-
-  async downloadMessages() {
-    const inboundConnection = this.getInboundConnection();
-    if (inboundConnection) {
-      const outboundMessage = await this.messagePickupService.batchPickup(inboundConnection);
-      const batchMessage = await this.messageSender.sendAndReceiveMessage(outboundMessage);
-      return batchMessage.message.messages;
-    }
-    return [];
-  }
-
-  async createConnection() {
-    const connection = await this.connectionService.createConnectionWithInvitation();
-    const { invitation } = connection;
-
-    if (!invitation) {
-      throw new Error('Connection has no invitation assigned.');
-    }
-
-    // If agent has inbound connection, which means it's using agency, we need to create a route for newly created
-    // connection verkey at agency.
-    if (this.agentConfig.inboundConnection) {
-      this.consumerRoutingService.createRoute(connection.verkey);
-    }
-
-    return connection;
-  }
-
-  async acceptInvitation(invitation: any) {
-    const connection = (await this.messageReceiver.receiveMessage(invitation))?.connection;
-
-    if (!connection) {
-      throw new Error('No connection returned from receiveMessage');
-    }
-
-    if (!connection.verkey) {
-      throw new Error('No verkey in connection returned from receiveMessage');
-    }
-
-    return connection;
-  }
-
-  async receiveMessage(inboundPackedMessage: any) {
-    return await this.messageReceiver.receiveMessage(inboundPackedMessage);
-  }
-
-  async getConnections() {
-    return this.connectionService.getConnections();
-  }
-
-  async findConnectionByVerkey(verkey: Verkey) {
-    return this.connectionService.findByVerkey(verkey);
-  }
-
-  async findConnectionByTheirKey(verkey: Verkey) {
-    return this.connectionService.findByTheirKey(verkey);
-  }
-
-  getRoutes() {
-    return this.providerRoutingService.getRoutes();
-  }
-
-  establishInbound(agencyVerkey: Verkey, connection: ConnectionRecord) {
-    this.agentConfig.establishInbound({ verkey: agencyVerkey, connection });
-  }
-
-  async sendMessageToConnection(connection: ConnectionRecord, message: string) {
-    const outboundMessage = await this.basicMessageService.send(message, connection);
-    await this.messageSender.sendMessage(outboundMessage);
-  }
-
   getAgencyUrl() {
     return this.agentConfig.agencyUrl;
   }
 
-  getInboundConnection() {
-    return this.agentConfig.inboundConnection;
-  }
-
-  async returnWhenIsConnected(verkey: Verkey) {
-    const connectionRecord = await poll(
-      () => this.findConnectionByVerkey(verkey),
-      (c: ConnectionRecord) => c.state !== ConnectionState.COMPLETE,
-      100
-    );
-    return connectionRecord;
+  async receiveMessage(inboundPackedMessage: any) {
+    return await this.messageReceiver.receiveMessage(inboundPackedMessage);
   }
 
   async closeAndDeleteWallet() {
@@ -240,32 +121,36 @@ export class Agent {
     await this.wallet.delete();
   }
 
-  events(): { connections: EventEmitter; basicMessages: EventEmitter } {
-    return {
-      connections: this.connectionService,
-      basicMessages: this.basicMessageService,
-    };
-  }
-
   private registerHandlers() {
-    const handlers = [
-      new InvitationHandler(this.connectionService, this.consumerRoutingService),
-      new ConnectionRequestHandler(this.connectionService),
-      new ConnectionResponseHandler(this.connectionService),
-      new AckMessageHandler(this.connectionService),
-      new BasicMessageHandler(this.connectionService, this.basicMessageService),
-      new RouteUpdateHandler(this.connectionService, this.providerRoutingService),
-      new ForwardHandler(this.providerRoutingService),
-      new TrustPingMessageHandler(this.trustPingService, this.connectionService),
-      new TrustPingResponseMessageHandler(this.trustPingService),
-      new MessagePickupHandler(this.connectionService, this.messagePickupService),
-    ];
-
-    this.handlers = handlers;
+    this.dispatcher.registerHandler(new InvitationHandler(this.connectionService, this.consumerRoutingService));
+    this.dispatcher.registerHandler(new ConnectionRequestHandler(this.connectionService));
+    this.dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService));
+    this.dispatcher.registerHandler(new AckMessageHandler(this.connectionService));
+    this.dispatcher.registerHandler(new BasicMessageHandler(this.connectionService, this.basicMessageService));
+    this.dispatcher.registerHandler(new RouteUpdateHandler(this.connectionService, this.providerRoutingService));
+    this.dispatcher.registerHandler(new ForwardHandler(this.providerRoutingService));
+    this.dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService));
+    this.dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService));
+    this.dispatcher.registerHandler(new MessagePickupHandler(this.connectionService, this.messagePickupService));
   }
-}
 
-interface AgencyConfiguration {
-  verkey: Verkey;
-  invitationUrl: string;
+  private registerModules() {
+    this.connections = new ConnectionsModule(
+      this.agentConfig,
+      this.connectionService,
+      this.consumerRoutingService,
+      this.messageReceiver
+    );
+
+    this.routing = new RoutingModule(
+      this.agentConfig,
+      this.providerRoutingService,
+      this.provisioningService,
+      this.messagePickupService,
+      this.connectionService,
+      this.messageSender
+    );
+
+    this.basicMessages = new BasicMessagesModule(this.basicMessageService, this.messageSender);
+  }
 }

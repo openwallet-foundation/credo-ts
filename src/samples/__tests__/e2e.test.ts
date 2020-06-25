@@ -53,12 +53,12 @@ describe('with agency', () => {
     bobAgent = new Agent(bobConfig, bobAgentReceiver, bobAgentSender, indy);
     await bobAgent.init();
 
-    const aliceInbound = aliceAgent.getInboundConnection();
+    const aliceInbound = aliceAgent.routing.getInboundConnection();
     const aliceInboundConnection = aliceInbound && aliceInbound.connection;
     const aliceKeyAtAliceAgency = aliceInboundConnection && aliceInboundConnection.verkey;
     console.log('aliceInboundConnection', aliceInboundConnection);
 
-    const bobInbound = bobAgent.getInboundConnection();
+    const bobInbound = bobAgent.routing.getInboundConnection();
     const bobInboundConnection = bobInbound && bobInbound.connection;
     const bobKeyAtBobAgency = bobInboundConnection && bobInboundConnection.verkey;
     console.log('bobInboundConnection', bobInboundConnection);
@@ -79,21 +79,25 @@ describe('with agency', () => {
   });
 
   test('Alice and Bob make a connection via agency', async () => {
-    const aliceConnectionAtAliceBob = await aliceAgent.createConnection();
+    const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection();
     const { invitation } = aliceConnectionAtAliceBob;
 
     if (!invitation) {
       throw new Error('There is no invitation in newly created connection!');
     }
 
-    const bobConnectionAtBobAlice = await bobAgent.acceptInvitation(invitation);
+    const bobConnectionAtBobAlice = await bobAgent.connections.acceptInvitation(invitation);
 
-    const aliceConnectionRecordAtAliceBob = await aliceAgent.returnWhenIsConnected(aliceConnectionAtAliceBob.verkey);
+    const aliceConnectionRecordAtAliceBob = await aliceAgent.connections.returnWhenIsConnected(
+      aliceConnectionAtAliceBob.verkey
+    );
     if (!aliceConnectionRecordAtAliceBob) {
       throw new Error('Connection not found!');
     }
 
-    const bobConnectionRecordAtBobAlice = await bobAgent.returnWhenIsConnected(bobConnectionAtBobAlice.verkey);
+    const bobConnectionRecordAtBobAlice = await bobAgent.connections.returnWhenIsConnected(
+      bobConnectionAtBobAlice.verkey
+    );
     if (!bobConnectionRecordAtBobAlice) {
       throw new Error('Connection not found!');
     }
@@ -107,7 +111,7 @@ describe('with agency', () => {
 
   test('Send a message from Alice to Bob via agency', async () => {
     // send message from Alice to Bob
-    const aliceConnectionAtAliceBob = await aliceAgent.findConnectionByVerkey(aliceAtAliceBobVerkey);
+    const aliceConnectionAtAliceBob = await aliceAgent.connections.findConnectionByVerkey(aliceAtAliceBobVerkey);
     if (!aliceConnectionAtAliceBob) {
       throw new Error(`There is no connection for verkey ${aliceAtAliceBobVerkey}`);
     }
@@ -115,12 +119,12 @@ describe('with agency', () => {
     console.log('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob);
 
     const message = 'hello, world';
-    await aliceAgent.sendMessageToConnection(aliceConnectionAtAliceBob, message);
+    await aliceAgent.basicMessages.sendMessage(aliceConnectionAtAliceBob, message);
 
     const bobMessages = await poll(
       async () => {
         console.log(`Getting Bob's messages from Alice...`);
-        const messages = await bobAgent.basicMessageRepository.findByQuery({
+        const messages = await bobAgent.basicMessages.findAllByQuery({
           from: aliceConnectionAtAliceBob.did,
           to: aliceConnectionAtAliceBob.theirDid,
         });
@@ -129,7 +133,6 @@ describe('with agency', () => {
       (messages: WireMessage[]) => messages.length < 1,
       1000
     );
-    console.log(bobMessages);
     const lastMessage = bobMessages[bobMessages.length - 1];
     expect(lastMessage.content).toBe(message);
   });
@@ -149,14 +152,14 @@ class PollingInboundTransporter implements InboundTransporter {
     const agencyUrl = agent.getAgencyUrl() || '';
     const agencyInvitationUrl = await get(`${agencyUrl}/invitation`);
     const { verkey: agencyVerkey } = JSON.parse(await get(`${agencyUrl}/`));
-    await agent.provision({ verkey: agencyVerkey, invitationUrl: agencyInvitationUrl });
+    await agent.routing.provision({ verkey: agencyVerkey, invitationUrl: agencyInvitationUrl });
     this.pollDownloadMessages(agent);
   }
 
   pollDownloadMessages(agent: Agent) {
     poll(
       async () => {
-        const downloadedMessages = await agent.downloadMessages();
+        const downloadedMessages = await agent.routing.downloadMessages();
         const messages = [...downloadedMessages];
         console.log('downloaded messges', messages);
         while (messages && messages.length > 0) {
