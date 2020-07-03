@@ -1,6 +1,5 @@
 import logger from '../logger';
-import { InboundMessage, Message } from '../types';
-import { sign, verify } from '../decorators';
+import { UnpackedMessage } from '../types';
 import { Wallet, WalletConfig, WalletCredentials, DidInfo, DidConfig } from './Wallet';
 
 export class IndyWallet implements Wallet {
@@ -79,7 +78,7 @@ export class IndyWallet implements Wallet {
     return JSON.parse(packedMessage.toString('utf-8'));
   }
 
-  async unpack(messagePackage: JsonWebKey): Promise<InboundMessage> {
+  async unpack(messagePackage: JsonWebKey): Promise<UnpackedMessage> {
     if (!this.wh) {
       throw Error('Wallet has not been initialized yet');
     }
@@ -95,16 +94,21 @@ export class IndyWallet implements Wallet {
     };
   }
 
-  async sign(message: Message, attribute: string, verkey: Verkey) {
+  async sign(data: Buffer, verkey: Verkey): Promise<Buffer> {
     if (!this.wh) {
       throw Error('Wallet has not been initialized yet');
     }
 
-    return sign(this.wh, message, attribute, verkey, this.indy);
+    const signatureBuffer = await this.indy.cryptoSign(this.wh, verkey, data);
+
+    return signatureBuffer;
   }
 
-  async verify(message: Message, attribute: string) {
-    return verify(message, attribute, this.indy);
+  async verify(signerVerkey: Verkey, data: Buffer, signature: Buffer): Promise<boolean> {
+    // check signature
+    const isValid = await this.indy.cryptoVerify(signerVerkey, data, signature);
+
+    return isValid;
   }
 
   async close() {

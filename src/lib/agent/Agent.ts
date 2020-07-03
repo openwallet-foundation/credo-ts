@@ -18,11 +18,11 @@ import { ConnectionRequestHandler } from '../handlers/connections/ConnectionRequ
 import { ConnectionResponseHandler } from '../handlers/connections/ConnectionResponseHandler';
 import { AckMessageHandler } from '../handlers/acks/AckMessageHandler';
 import { BasicMessageHandler } from '../handlers/basicmessage/BasicMessageHandler';
-import { RouteUpdateHandler } from '../handlers/routing/RouteUpdateHandler';
 import { ForwardHandler } from '../handlers/routing/ForwardHandler';
 import { TrustPingMessageHandler } from '../handlers/trustping/TrustPingMessageHandler';
 import { TrustPingResponseMessageHandler } from '../handlers/trustping/TrustPingResponseMessageHandler';
 import { MessagePickupHandler } from '../handlers/messagepickup/MessagePickupHandler';
+import { KeylistUpdateHandler } from '../handlers/coordinatemediation/KeylistUpdateHandler';
 import { MessageRepository } from '../storage/MessageRepository';
 import { BasicMessageRecord } from '../storage/BasicMessageRecord';
 import { Repository } from '../storage/Repository';
@@ -31,7 +31,7 @@ import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { AgentConfig } from './AgentConfig';
 import { Wallet } from '../wallet/Wallet';
 import { ProvisioningRecord } from '../storage/ProvisioningRecord';
-import { ProvisioninService } from './ProvisioningService';
+import { ProvisioningService } from './ProvisioningService';
 import { ConnectionsModule } from '../modules/ConnectionsModule';
 import { RoutingModule } from '../modules/RoutingModule';
 import { BasicMessagesModule } from '../modules/BasicMessagesModule';
@@ -49,7 +49,7 @@ export class Agent {
   consumerRoutingService: ConsumerRoutingService;
   trustPingService: TrustPingService;
   messagePickupService: MessagePickupService;
-  provisioningService: ProvisioninService;
+  provisioningService: ProvisioningService;
   basicMessageRepository: Repository<BasicMessageRecord>;
   connectionRepository: Repository<ConnectionRecord>;
   provisioningRepository: Repository<ProvisioningRecord>;
@@ -80,7 +80,7 @@ export class Agent {
     this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService);
     this.provisioningRepository = new Repository<ProvisioningRecord>(ProvisioningRecord, storageService);
 
-    this.provisioningService = new ProvisioninService(this.provisioningRepository);
+    this.provisioningService = new ProvisioningService(this.provisioningRepository);
     this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository);
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository);
     this.providerRoutingService = new ProviderRoutingService();
@@ -127,7 +127,7 @@ export class Agent {
     this.dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService));
     this.dispatcher.registerHandler(new AckMessageHandler(this.connectionService));
     this.dispatcher.registerHandler(new BasicMessageHandler(this.connectionService, this.basicMessageService));
-    this.dispatcher.registerHandler(new RouteUpdateHandler(this.connectionService, this.providerRoutingService));
+    this.dispatcher.registerHandler(new KeylistUpdateHandler(this.connectionService, this.providerRoutingService));
     this.dispatcher.registerHandler(new ForwardHandler(this.providerRoutingService));
     this.dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService));
     this.dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService));

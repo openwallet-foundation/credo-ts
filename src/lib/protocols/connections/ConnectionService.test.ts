@@ -40,12 +40,10 @@ describe('ConnectionService', () => {
     });
 
     it('returns connection record with invitation', async () => {
-      const connectionRecord = await connectionService.createConnectionWithInvitation();
+      const { connection } = await connectionService.createConnectionWithInvitation();
 
-      expect(connectionRecord.invitation).toEqual(
+      expect(connection.invitation).toEqual(
         expect.objectContaining({
-          '@id': expect.any(String),
-          '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation',
           label: 'agent label',
           recipientKeys: [expect.any(String)],
           routingKeys: [],
@@ -55,9 +53,9 @@ describe('ConnectionService', () => {
     });
 
     it(`returns connection record with state INVITED`, async () => {
-      const connectionRecord = await connectionService.createConnectionWithInvitation();
+      const { connection } = await connectionService.createConnectionWithInvitation();
 
-      expect(connectionRecord.state).toEqual(ConnectionState.INVITED);
+      expect(connection.state).toEqual(ConnectionState.INVITED);
     });
 
     it(`emits stateChange with INVITED`, async () => {

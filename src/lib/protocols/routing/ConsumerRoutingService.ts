@@ -1,8 +1,8 @@
 import logger from '../../logger';
-import { createRouteUpdateMessage } from './messages';
 import { createOutboundMessage } from '../helpers';
 import { AgentConfig } from '../../agent/AgentConfig';
 import { MessageSender } from '../../agent/MessageSender';
+import { KeylistUpdateMessage, KeylistUpdate, KeylistUpdateAction } from '../coordinatemediation/KeylistUpdateMessage';
 
 class ConsumerRoutingService {
   messageSender: MessageSender;
@@ -20,9 +20,17 @@ class ConsumerRoutingService {
       logger.log('There is no agency. Creating route skipped.');
     } else {
       const routingConnection = this.agentConfig.inboundConnection.connection;
-      const routeUpdateMessage = createRouteUpdateMessage(verkey);
 
-      const outboundMessage = createOutboundMessage(routingConnection, routeUpdateMessage);
+      const keylistUpdateMessage = new KeylistUpdateMessage({
+        updates: [
+          new KeylistUpdate({
+            action: KeylistUpdateAction.add,
+            recipientKey: verkey,
+          }),
+        ],
+      });
+
+      const outboundMessage = createOutboundMessage(routingConnection, keylistUpdateMessage);
       await this.messageSender.sendMessage(outboundMessage);
     }
   }

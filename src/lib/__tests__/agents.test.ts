@@ -47,14 +47,13 @@ describe('agents', () => {
     bobAgent = new Agent(bobConfig, bobAgentInbound, bobAgentOutbound, indy);
     await bobAgent.init();
 
-    const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection();
-    const { invitation } = aliceConnectionAtAliceBob;
+    const { connection: aliceConnectionAtAliceBob, invitation } = await aliceAgent.connections.createConnection();
 
     if (!invitation) {
       throw new Error('There is no invitation in newly created connection!');
     }
 
-    const bobConnectionAtBobAlice = await bobAgent.connections.acceptInvitation(invitation);
+    const bobConnectionAtBobAlice = await bobAgent.connections.acceptInvitation(invitation.toJSON());
 
     const aliceConnectionRecordAtAliceBob = await aliceAgent.connections.returnWhenIsConnected(
       aliceConnectionAtAliceBob.verkey
@@ -129,7 +128,7 @@ class SubjectOutboundTransporter implements OutboundTransporter {
     this.subject = subject;
   }
 
-  async sendMessage(outboundPackage: OutboundPackage, receive_reply: boolean) {
+  async sendMessage(outboundPackage: OutboundPackage) {
     console.log('Sending message...');
     const { payload } = outboundPackage;
     console.log(payload);

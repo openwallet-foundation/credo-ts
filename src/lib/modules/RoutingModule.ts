@@ -1,17 +1,19 @@
 import { AgentConfig } from '../agent/AgentConfig';
-import { ProvisioninService } from '../agent/ProvisioningService';
+import { ProvisioningService } from '../agent/ProvisioningService';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { MessagePickupService } from '../protocols/messagepickup/MessagePickupService';
 import { MessageSender } from '../agent/MessageSender';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
-import { decodeInvitationFromUrl } from '../helpers';
+import { decodeInvitationFromUrl } from '../utils/invitationUrl';
 import logger from '../logger';
 import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
+import { ConnectionResponseMessage } from '../protocols/connections/ConnectionResponseMessage';
+import { BatchMessage } from '../protocols/messagepickup/BatchMessage';
 
 export class RoutingModule {
   agentConfig: AgentConfig;
   providerRoutingService: ProviderRoutingService;
-  provisioningService: ProvisioninService;
+  provisioningService: ProvisioningService;
   messagePickupService: MessagePickupService;
   connectionService: ConnectionService;
   messageSender: MessageSender;
@@ -19,7 +21,7 @@ export class RoutingModule {
   constructor(
     agentConfig: AgentConfig,
     providerRoutingService: ProviderRoutingService,
-    provisioningService: ProvisioninService,
+    provisioningService: ProvisioningService,
     messagePickupService: MessagePickupService,
     connectionService: ConnectionService,
     messageSender: MessageSender
@@ -38,10 +40,13 @@ export class RoutingModule {
     if (!provisioningRecord) {
       logger.log('There is no provisioning. Creating connection with agency...');
       const { verkey, invitationUrl } = agencyConfiguration;
-      const agencyInvitation = decodeInvitationFromUrl(invitationUrl);
+      const agencyInvitation = await decodeInvitationFromUrl(invitationUrl);
 
       const connectionRequest = await this.connectionService.acceptInvitation(agencyInvitation);
-      const connectionResponse = await this.messageSender.sendAndReceiveMessage(connectionRequest);
+      const connectionResponse = await this.messageSender.sendAndReceiveMessage(
+        connectionRequest,
+        ConnectionResponseMessage
+      );
       const ack = await this.connectionService.acceptResponse(connectionResponse);
       await this.messageSender.sendMessage(ack);
 
@@ -80,8 +85,10 @@ export class RoutingModule {
     const inboundConnection = this.getInboundConnection();
     if (inboundConnection) {
       const outboundMessage = await this.messagePickupService.batchPickup(inboundConnection);
-      const batchMessage = await this.messageSender.sendAndReceiveMessage(outboundMessage);
-      return batchMessage.message.messages;
+      const batchMessage = await this.messageSender.sendAndReceiveMessage(outboundMessage, BatchMessage);
+
+      // TODO: do something about the different types of message variable all having a different purpose
+      return batchMessage.message.messages.map(msg => msg.message);
     }
     return [];
   }

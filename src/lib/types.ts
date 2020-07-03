@@ -1,5 +1,6 @@
 import { WalletConfig, WalletCredentials } from './wallet/Wallet';
 import { ConnectionRecord } from './storage/ConnectionRecord';
+import { AgentMessage } from './agent/AgentMessage';
 
 type $FixMe = any;
 
@@ -22,16 +23,22 @@ export interface Message {
   [key: string]: any;
 }
 
-export interface InboundMessage {
-  message: Message;
+export interface UnpackedMessage {
+  message: any;
   sender_verkey: Verkey; // TODO make it optional
   recipient_verkey: Verkey; // TODO make it optional
 }
 
-export interface OutboundMessage {
+export interface InboundMessage<T extends AgentMessage = AgentMessage> {
+  message: T;
+  sender_verkey: Verkey; // TODO make it optional
+  recipient_verkey: Verkey; // TODO make it optional
+}
+
+export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
   connection: ConnectionRecord;
   endpoint?: string;
-  payload: Message;
+  payload: T;
   recipientKeys: Verkey[];
   routingKeys: Verkey[];
   senderVk: Verkey | null;

@@ -4,7 +4,7 @@ import logger from '../logger';
 
 const UNIQUE_PROVISIONING_ID = 'UNIQUE_PROVISIONING_ID';
 
-export class ProvisioninService {
+export class ProvisioningService {
   provisioningRepository: Repository<ProvisioningRecord>;
 
   constructor(provisioningRepository: Repository<ProvisioningRecord>) {

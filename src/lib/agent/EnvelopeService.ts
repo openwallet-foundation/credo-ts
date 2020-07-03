@@ -1,7 +1,7 @@
 import logger from '../logger';
-import { OutboundMessage } from '../types';
+import { OutboundMessage, OutboundPackage, UnpackedMessage } from '../types';
 import { Wallet } from '../wallet/Wallet';
-import { createForwardMessage } from '../protocols/routing/messages';
+import { ForwardMessage } from '../protocols/routing/ForwardMessage';
 
 class EnvelopeService {
   wallet: Wallet;
@@ -10,26 +10,32 @@ class EnvelopeService {
     this.wallet = wallet;
   }
 
-  async packMessage(outboundMessage: OutboundMessage) {
+  async packMessage(outboundMessage: OutboundMessage): Promise<OutboundPackage> {
     const { connection, routingKeys, recipientKeys, senderVk, payload, endpoint } = outboundMessage;
     const { verkey, theirKey } = connection;
 
-    logger.logJson('outboundMessage', { verkey, theirKey, routingKeys, endpoint, payload });
-    const outboundPackedMessage = await this.wallet.pack(payload, recipientKeys, senderVk);
+    const message = payload.toJSON();
 
-    let message = outboundPackedMessage;
+    logger.logJson('outboundMessage', { verkey, theirKey, routingKeys, endpoint, message });
+    let outboundPackedMessage = await this.wallet.pack(message, recipientKeys, senderVk);
+
     if (routingKeys && routingKeys.length > 0) {
       for (const routingKey of routingKeys) {
         const [recipientKey] = recipientKeys;
-        const forwardMessage = createForwardMessage(recipientKey, message);
+
+        const forwardMessage = new ForwardMessage({
+          to: recipientKey,
+          message: outboundPackedMessage,
+        });
+
         logger.logJson('Forward message created', forwardMessage);
-        message = await this.wallet.pack(forwardMessage, [routingKey], senderVk);
+        outboundPackedMessage = await this.wallet.pack(forwardMessage.toJSON(), [routingKey], senderVk);
       }
     }
-    return { connection, payload: message, endpoint };
+    return { connection, payload: outboundPackedMessage, endpoint };
   }
 
-  async unpackMessage(packedMessage: JsonWebKey) {
+  async unpackMessage(packedMessage: JsonWebKey): Promise<UnpackedMessage> {
     return this.wallet.unpack(packedMessage);
   }
 }

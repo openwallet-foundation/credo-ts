@@ -1,15 +1,22 @@
 import uuid from 'uuid';
 import { EventEmitter } from 'events';
-import { Message, InboundMessage } from '../../types';
-import { createInvitationMessage, createConnectionRequestMessage, createConnectionResponseMessage } from './messages';
+import { InboundMessage, OutboundMessage } from '../../types';
 import { AgentConfig } from '../../agent/AgentConfig';
 import { createOutboundMessage } from '../helpers';
 import { ConnectionState } from './domain/ConnectionState';
 import { DidDoc, Service, PublicKey, PublicKeyType, Authentication } from './domain/DidDoc';
-import { createTrustPingMessage } from '../trustping/messages';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
 import { Repository } from '../../storage/Repository';
 import { Wallet } from '../../wallet/Wallet';
+import { TrustPingMessage } from '../trustping/TrustPingMessage';
+import { ConnectionInvitationMessage } from './ConnectionInvitationMessage';
+import { ConnectionRequestMessage } from './ConnectionRequestMessage';
+import { ConnectionResponseMessage } from './ConnectionResponseMessage';
+import { signData, unpackAndVerifySignatureDecorator } from '../../decorators/signature/SignatureDecoratorUtils';
+import { Connection } from './domain/Connection';
+import { classToPlain, plainToClass } from 'class-transformer';
+import { validateOrReject } from 'class-validator';
+import { AckMessage } from './AckMessage';
 
 enum EventType {
   StateChanged = 'stateChanged',
@@ -27,23 +34,37 @@ class ConnectionService extends EventEmitter {
     this.connectionRepository = connectionRepository;
   }
 
-  async createConnectionWithInvitation(): Promise<ConnectionRecord> {
+  async createConnectionWithInvitation(): Promise<{
+    invitation: ConnectionInvitationMessage;
+    connection: ConnectionRecord;
+  }> {
     const connectionRecord = await this.createConnection();
     const invitationDetails = this.createInvitationDetails(this.config, connectionRecord);
-    const invitation = await createInvitationMessage(invitationDetails);
-    connectionRecord.invitation = invitation;
+
+    const invitation = new ConnectionInvitationMessage(invitationDetails);
+
+    connectionRecord.invitation = invitationDetails;
     await this.updateState(connectionRecord, ConnectionState.INVITED);
-    return connectionRecord;
+    return { invitation, connection: connectionRecord };
   }
 
-  async acceptInvitation(invitation: Message) {
+  async acceptInvitation(invitation: ConnectionInvitationMessage): Promise<OutboundMessage<ConnectionRequestMessage>> {
     const connectionRecord = await this.createConnection();
-    const connectionRequest = createConnectionRequestMessage(connectionRecord, this.config.label);
+
+    const connectionRequest = new ConnectionRequestMessage({
+      label: this.config.label,
+      did: connectionRecord.did,
+      didDoc: connectionRecord.didDoc,
+    });
+
     await this.updateState(connectionRecord, ConnectionState.REQUESTED);
+
     return createOutboundMessage(connectionRecord, connectionRequest, invitation);
   }
 
-  async acceptRequest(inboundMessage: InboundMessage) {
+  async acceptRequest(
+    inboundMessage: InboundMessage<ConnectionRequestMessage>
+  ): Promise<OutboundMessage<ConnectionResponseMessage>> {
     const { message, recipient_verkey } = inboundMessage;
     const connectionRecord = await this.findByVerkey(recipient_verkey);
 
@@ -64,26 +85,34 @@ class ConnectionService extends EventEmitter {
 
     connectionRecord.tags = { ...connectionRecord.tags, theirKey: connectionRecord.theirKey };
 
-    const connectionResponse = createConnectionResponseMessage(connectionRecord, message['@id']);
-    const signedConnectionResponse = await this.wallet.sign(connectionResponse, 'connection', connectionRecord.verkey);
+    const connection = new Connection({
+      did: connectionRecord.did,
+      didDoc: connectionRecord.didDoc,
+    });
+    const plainConnection = classToPlain(connection);
+
+    const connectionResponse = new ConnectionResponseMessage({
+      threadId: message.id,
+      connectionSig: await signData(plainConnection, this.wallet, connectionRecord.verkey),
+    });
+
     await this.updateState(connectionRecord, ConnectionState.RESPONDED);
-    return createOutboundMessage(connectionRecord, signedConnectionResponse);
+    return createOutboundMessage(connectionRecord, connectionResponse);
   }
 
-  async acceptResponse(inboundMessage: InboundMessage) {
-    const { message, recipient_verkey, sender_verkey } = inboundMessage;
+  async acceptResponse(inboundMessage: InboundMessage<ConnectionResponseMessage>) {
+    const { message, recipient_verkey } = inboundMessage;
     const connectionRecord = await this.findByVerkey(recipient_verkey);
 
     if (!connectionRecord) {
       throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
     }
 
-    if (!message['connection~sig']) {
-      throw new Error('Invalid message');
-    }
+    const connectionJson = await unpackAndVerifySignatureDecorator(message.connectionSig, this.wallet);
+    const connection = plainToClass(Connection, connectionJson);
+    await validateOrReject(connection);
 
-    const originalMessage = await this.wallet.verify(message, 'connection');
-    connectionRecord.updateDidExchangeConnection(originalMessage.connection);
+    connectionRecord.updateDidExchangeConnection(connection);
 
     if (!connectionRecord.theirKey) {
       throw new Error(`Connection with verkey ${connectionRecord.verkey} has no recipient keys.`);
@@ -94,12 +123,12 @@ class ConnectionService extends EventEmitter {
     // dotnet doesn't send senderVk here
     // validateSenderKey(connection, sender_verkey);
 
-    const response = createTrustPingMessage();
+    const response = new TrustPingMessage();
     await this.updateState(connectionRecord, ConnectionState.COMPLETE);
     return createOutboundMessage(connectionRecord, response);
   }
 
-  async acceptAck(inboundMessage: InboundMessage) {
+  async acceptAck(inboundMessage: InboundMessage<AckMessage>) {
     const { recipient_verkey, sender_verkey } = inboundMessage;
     const connectionRecord = await this.findByVerkey(recipient_verkey);
 
@@ -112,8 +141,6 @@ class ConnectionService extends EventEmitter {
     if (connectionRecord.state !== ConnectionState.COMPLETE) {
       await this.updateState(connectionRecord, ConnectionState.COMPLETE);
     }
-
-    return null;
   }
 
   async updateState(connectionRecord: ConnectionRecord, newState: ConnectionState) {

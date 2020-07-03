@@ -27,8 +27,7 @@ export class ConnectionsModule {
   }
 
   async createConnection() {
-    const connection = await this.connectionService.createConnectionWithInvitation();
-    const { invitation } = connection;
+    const { invitation, connection } = await this.connectionService.createConnectionWithInvitation();
 
     if (!invitation) {
       throw new Error('Connection has no invitation assigned.');
@@ -40,7 +39,7 @@ export class ConnectionsModule {
       this.consumerRoutingService.createRoute(connection.verkey);
     }
 
-    return connection;
+    return { invitation, connection };
   }
 
   async acceptInvitation(invitation: any) {

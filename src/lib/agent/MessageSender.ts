@@ -1,7 +1,10 @@
-import { OutboundMessage } from '../types';
+import { OutboundMessage, OutboundPackage, InboundMessage } from '../types';
 import { OutboundTransporter } from '../transport/OutboundTransporter';
-import { transport } from '../decorators';
 import { EnvelopeService } from './EnvelopeService';
+import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator';
+import { MessageTransformer } from './MessageTransformer';
+import { AgentMessage } from './AgentMessage';
+import { Constructor } from '../utils/mixins';
 
 class MessageSender {
   envelopeService: EnvelopeService;
@@ -12,21 +15,27 @@ class MessageSender {
     this.outboundTransporter = outboundTransporter;
   }
 
-  async packMessage(outboundMessage: OutboundMessage) {
+  async packMessage(outboundMessage: OutboundMessage): Promise<OutboundPackage> {
     return this.envelopeService.packMessage(outboundMessage);
   }
 
-  async sendMessage(outboundMessage: OutboundMessage) {
+  async sendMessage(outboundMessage: OutboundMessage): Promise<void> {
     const outboundPackage = await this.envelopeService.packMessage(outboundMessage);
     await this.outboundTransporter.sendMessage(outboundPackage, false);
   }
 
-  async sendAndReceiveMessage(outboundMessage: OutboundMessage) {
-    transport(outboundMessage.payload);
+  async sendAndReceiveMessage<T extends AgentMessage>(
+    outboundMessage: OutboundMessage,
+    ReceivedMessageClass: Constructor<T>
+  ): Promise<InboundMessage<T>> {
+    outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all);
+
     const outboundPackage = await this.envelopeService.packMessage(outboundMessage);
-    const packedMessage = await this.outboundTransporter.sendMessage(outboundPackage, true);
-    const message = await this.envelopeService.unpackMessage(packedMessage);
-    return message;
+    const inboundPackedMessage = await this.outboundTransporter.sendMessage(outboundPackage, true);
+    const inboundUnpackedMessage = await this.envelopeService.unpackMessage(inboundPackedMessage);
+
+    const message = MessageTransformer.toMessageInstance(inboundUnpackedMessage.message, ReceivedMessageClass);
+    return { ...inboundUnpackedMessage, message };
   }
 }
 
