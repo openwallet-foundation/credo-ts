@@ -4,7 +4,7 @@ import { poll } from 'await-poll';
 import { Agent, InboundTransporter, OutboundTransporter } from '../../lib';
 import { WireMessage, OutboundPackage } from '../../lib/types';
 import { get, post } from '../http';
-import { toBeConnectedWith } from '../../lib/testUtils';
+import { toBeConnectedWith } from '../../lib/__tests__/helpers';
 import indy from 'indy-sdk';
 
 jest.setTimeout(15000);

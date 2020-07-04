@@ -4,7 +4,7 @@ import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { MessagePickupService } from '../protocols/messagepickup/MessagePickupService';
 import { MessageSender } from '../agent/MessageSender';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
-import { decodeInvitationFromUrl } from '../utils/invitationUrl';
+import { decodeInvitationFromUrl } from '../helpers';
 import logger from '../logger';
 import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
 import { ConnectionResponseMessage } from '../protocols/connections/ConnectionResponseMessage';
