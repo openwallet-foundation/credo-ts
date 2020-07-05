@@ -3,7 +3,7 @@
 import { poll } from 'await-poll';
 import { Subject } from 'rxjs';
 import { Agent, InboundTransporter, OutboundTransporter } from '..';
-import { toBeConnectedWith } from '../testUtils';
+import { toBeConnectedWith } from './helpers';
 import { OutboundPackage, WireMessage } from '../types';
 import indy from 'indy-sdk';
 

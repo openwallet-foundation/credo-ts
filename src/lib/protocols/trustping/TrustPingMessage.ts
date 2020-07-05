@@ -3,7 +3,7 @@ import { Expose } from 'class-transformer';
 
 import { AgentMessage } from '../../agent/AgentMessage';
 import { MessageType } from './messages';
-import { Default } from '../../utils/class-transformer/Default';
+import { Default } from '../../helpers';
 import { TimingDecorator } from '../../decorators/timing/TimingDecorator';
 
 export interface TrustPingMessageOptions {

@@ -56,7 +56,7 @@ export class ConnectionsModule {
     return connection;
   }
 
-  async returnWhenIsConnected(verkey: Verkey) {
+  async returnWhenIsConnected(verkey: Verkey): Promise<ConnectionRecord> {
     const connectionRecord = await poll(
       () => this.findConnectionByVerkey(verkey),
       (c: ConnectionRecord) => c.state !== ConnectionState.COMPLETE,

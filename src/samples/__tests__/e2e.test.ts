@@ -4,7 +4,7 @@ import { poll } from 'await-poll';
 import { Agent, InboundTransporter, OutboundTransporter } from '../../lib';
 import { WireMessage, OutboundPackage } from '../../lib/types';
 import { get, post } from '../http';
-import { toBeConnectedWith } from '../../lib/testUtils';
+import { toBeConnectedWith } from '../../lib/__tests__/helpers';
 import indy from 'indy-sdk';
 
 jest.setTimeout(15000);
@@ -79,8 +79,7 @@ describe('with agency', () => {
   });
 
   test('Alice and Bob make a connection via agency', async () => {
-    const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection();
-    const { invitation } = aliceConnectionAtAliceBob;
+    const { connection: aliceConnectionAtAliceBob, invitation } = await aliceAgent.connections.createConnection();
 
     if (!invitation) {
       throw new Error('There is no invitation in newly created connection!');
@@ -89,7 +88,7 @@ describe('with agency', () => {
     const bobConnectionAtBobAlice = await bobAgent.connections.acceptInvitation(invitation.toJSON());
 
     const aliceConnectionRecordAtAliceBob = await aliceAgent.connections.returnWhenIsConnected(
-      aliceConnectionAtAliceBob.connection.verkey
+      aliceConnectionAtAliceBob.verkey
     );
     if (!aliceConnectionRecordAtAliceBob) {
       throw new Error('Connection not found!');
@@ -106,7 +105,7 @@ describe('with agency', () => {
     expect(bobConnectionRecordAtBobAlice).toBeConnectedWith(aliceConnectionRecordAtAliceBob);
 
     // We save this verkey to send message via this connection in the following test
-    aliceAtAliceBobVerkey = aliceConnectionAtAliceBob.connection.verkey;
+    aliceAtAliceBobVerkey = aliceConnectionAtAliceBob.verkey;
   });
 
   test('Send a message from Alice to Bob via agency', async () => {

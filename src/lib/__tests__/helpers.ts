@@ -1,4 +1,4 @@
-import { ConnectionRecord } from './storage/ConnectionRecord';
+import { ConnectionRecord } from '../storage/ConnectionRecord';
 
 // Custom matchers which can be used to extend Jest matchers via extend, e. g. `expect.extend({ toBeConnectedWith })`.
 
