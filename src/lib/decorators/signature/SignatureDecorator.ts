@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer';
 import { Matches } from 'class-validator';
 
-import { MessageTypeRegExp } from '../../agent/AgentMessage';
+import { MessageTypeRegExp } from '../../agent/BaseMessage';
 
 /**
  * Represents `[field]~sig` decorator

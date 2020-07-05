@@ -1,7 +1,7 @@
 import { Expose, Type } from 'class-transformer';
 import { ValidateNested } from 'class-validator';
 
-import { BaseMessageConstructor } from '../../agent/AgentMessage';
+import { BaseMessageConstructor } from '../../agent/BaseMessage';
 import { L10nDecorator } from './L10nDecorator';
 
 export function L10nDecorated<T extends BaseMessageConstructor>(Base: T) {
