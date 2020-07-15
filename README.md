@@ -25,6 +25,8 @@ Aries Framework JavaScript depends on the indy-sdk which has some manual install
 
 > NOTE: The package is not tested in multiple versions of Node at the moment. If you're having trouble installing dependencies or running the framework know that at least **Node v12 DOES WORK** and **Node v14 DOES NOT WORk**.
 
+> If you're having trouble running this project, please the the [troubleshooting](./TROUBLESHOOTING.md) section. It contains the most common errors that arise when first installing libindy.
+
 You can now install dependencies using yarn:
 
 ```
@@ -45,38 +47,6 @@ In a project, where you want to use this library as dependency, run:
 
 ```
 yarn add file:PATH_TO_REPOSITORY_FOLDER/aries-framework-javascript/aries-framework-javascript-1.0.0.tgz
-```
-
-## Troubleshooting
-
-### macOS
-
-Installing Libindy on macOS can be tricky. If the the troubleshooting section of the NodeJS Wrapper documentation doesn't provide an answer and you're getting the following error:
-
-```
-dlopen(/<absolute-path>/aries-framework-javascript/node_modules/indy-sdk/build/Release/indynodejs.node, 1): Library not loaded: /Users/jenkins/workspace/indy-sdk_indy-sdk-cd_master/libindy/target/release/deps/libindy.dylib
-     Referenced from: /<absolute-path>/aries-framework-javascript/node_modules/indy-sdk/build/Release/indynodejs.node
-     Reason: image not found
-```
-
-See this StackOverflow answer: https://stackoverflow.com/questions/19776571/error-dlopen-library-not-loaded-reason-image-not-found
-
-The NodeJS Wrapper tries to find the library at the hardcoded CI built path `/Users/jenkins/workspace/indy-sdk_indy-sdk-cd_master/libindy/target/release/deps/libindy.dylib`. However the library will probably be located at `/usr/local/lib/libindy.dylib` (depending on how you installed libindy).
-
-To check where the NodeJS wrapper points to the static CI build path you can run:
-
-```bash
-$ otool -L node_modules/indy-sdk/build/Release/indynodejs.node
-node_modules/indy-sdk/build/Release/indynodejs.node:
-        /Users/jenkins/workspace/indy-sdk_indy-sdk-cd_master/libindy/target/release/deps/libindy.dylib (compatibility version 0.0.0, current version 0.0.0)
-        /usr/lib/libc++.1.dylib (compatibility version 1.0.0, current version 902.1.0)
-        /usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1281.100.1)
-```
-
-You can manually change the path using the `install_name_tool`. Be sure change the path if you're not using the default.
-
-```bash
-install_name_tool -change /Users/jenkins/workspace/indy-sdk_indy-sdk-cd_master/libindy/target/release/deps/libindy.dylib /usr/local/lib/libindy.dylib node_modules/indy-sdk/build/Release/indynodejs.node
 ```
 
 # Running tests
