@@ -13,15 +13,11 @@ export class MessagePickupHandler implements Handler {
     this.messagePickupService = messagePickupService;
   }
 
-  async handle(inboundMessage: HandlerInboundMessage<MessagePickupHandler>) {
-    const { recipient_verkey } = inboundMessage;
-    const connection = await this.connectionService.findByVerkey(recipient_verkey);
-
-    if (!connection) {
-      throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
+  async handle(messageContext: HandlerInboundMessage<MessagePickupHandler>) {
+    if (!messageContext.connection) {
+      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`);
     }
 
-    const outboundMessage = this.messagePickupService.batch(connection);
-    return outboundMessage;
+    return this.messagePickupService.batch(messageContext.connection);
   }
 }

@@ -10,8 +10,7 @@ export class ForwardHandler implements Handler {
     this.routingService = routingService;
   }
 
-  async handle(inboundMessage: HandlerInboundMessage<ForwardHandler>) {
-    const outboundMessage = this.routingService.forward(inboundMessage);
-    return outboundMessage;
+  async handle(messageContext: HandlerInboundMessage<ForwardHandler>) {
+    return this.routingService.forward(messageContext);
   }
 }

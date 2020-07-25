@@ -1,8 +1,8 @@
-import { OutboundMessage, OutboundPackage, UnpackedMessage } from '../types';
+import { OutboundMessage, OutboundPackage } from '../types';
 import { Handler } from '../handlers/Handler';
 import { MessageSender } from './MessageSender';
 import { AgentMessage } from './AgentMessage';
-import { MessageTransformer } from './MessageTransformer';
+import { MessageContext } from './models/MessageContext';
 
 class Dispatcher {
   handlers: Handler[] = [];
@@ -16,17 +16,15 @@ class Dispatcher {
     this.handlers.push(handler);
   }
 
-  async dispatch(inboundMessage: UnpackedMessage): Promise<OutboundMessage | OutboundPackage | undefined> {
-    const messageType: string = inboundMessage.message['@type'];
-    const { handler, MessageClass } = this.getHandlerForType(messageType);
+  async dispatch(messageContext: MessageContext): Promise<OutboundMessage | OutboundPackage | undefined> {
+    const message = messageContext.message;
+    const handler = this.getHandlerForType(message.type);
 
-    if (!handler || !MessageClass) {
-      throw new Error(`No handler or message class for message type "${messageType}" found`);
+    if (!handler) {
+      throw new Error(`No handler for message type "${message.type}" found`);
     }
 
-    // Cast the plain JSON object to specific instance of Message extended from AgentMessage
-    const message = MessageTransformer.toMessageInstance(inboundMessage.message, MessageClass);
-    const outboundMessage = await handler.handle({ ...inboundMessage, message });
+    const outboundMessage = await handler.handle(messageContext);
 
     if (outboundMessage) {
       const threadId = outboundMessage.payload.getThreadId();
@@ -42,14 +40,20 @@ class Dispatcher {
     return outboundMessage || undefined;
   }
 
-  private getHandlerForType(messageType: string): { handler?: Handler; MessageClass?: typeof AgentMessage } {
+  public getHandlerForType(messageType: string): Handler | undefined {
     for (const handler of this.handlers) {
       for (const MessageClass of handler.supportedMessages) {
-        if (MessageClass.type === messageType) return { handler, MessageClass };
+        if (MessageClass.type === messageType) return handler;
       }
     }
+  }
 
-    return {};
+  public getMessageClassForType(messageType: string): typeof AgentMessage | undefined {
+    for (const handler of this.handlers) {
+      for (const MessageClass of handler.supportedMessages) {
+        if (MessageClass.type === messageType) return MessageClass;
+      }
+    }
   }
 }
 

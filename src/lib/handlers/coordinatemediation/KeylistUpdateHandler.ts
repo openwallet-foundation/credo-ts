@@ -13,14 +13,11 @@ export class KeylistUpdateHandler implements Handler {
     this.routingService = routingService;
   }
 
-  async handle(inboundMessage: HandlerInboundMessage<KeylistUpdateHandler>) {
-    const { recipient_verkey } = inboundMessage;
-    const connection = await this.connectionService.findByVerkey(recipient_verkey);
-
-    if (!connection) {
-      throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
+  async handle(messageContext: HandlerInboundMessage<KeylistUpdateHandler>) {
+    if (!messageContext.connection) {
+      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`);
     }
 
-    this.routingService.updateRoutes(inboundMessage, connection);
+    this.routingService.updateRoutes(messageContext, messageContext.connection);
   }
 }

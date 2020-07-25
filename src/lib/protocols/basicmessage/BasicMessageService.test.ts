@@ -8,6 +8,7 @@ import { IndyStorageService } from '../../storage/IndyStorageService';
 import { BasicMessageService, EventType } from './BasicMessageService';
 import { BasicMessageRecord } from '../../storage/BasicMessageRecord';
 import { BasicMessage } from './BasicMessage';
+import { MessageContext } from '../../agent/models/MessageContext';
 
 describe('BasicMessageService', () => {
   const walletConfig = { id: 'test-wallet' + '-BasicMessageServiceTest' };
@@ -52,21 +53,20 @@ describe('BasicMessageService', () => {
         content: 'message',
       });
 
-      const message = {
-        message: basicMessage,
-        sender_verkey: 'senderKey',
-        recipient_verkey: 'recipientKey',
-      };
+      const messageContext = new MessageContext(basicMessage, {
+        senderVerkey: 'senderKey',
+        recipientVerkey: 'recipientKey',
+      });
 
       // TODO
       // Currently, it's not so easy to create instance of ConnectionRecord object.
       // We use simple `mockConnectionRecord` as any type
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await basicMessageService.save(message, mockConnectionRecord as any);
+      await basicMessageService.save(messageContext, mockConnectionRecord as any);
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         verkey: mockConnectionRecord.verkey,
-        message: message.message,
+        message: messageContext.message,
       });
     });
   });

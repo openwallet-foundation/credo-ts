@@ -17,22 +17,13 @@ export interface InitConfig {
   walletCredentials: WalletCredentials;
 }
 
-export interface Message {
-  '@id': string;
-  '@type': string;
-  [key: string]: any;
-}
-
 export interface UnpackedMessage {
-  message: any;
-  sender_verkey: Verkey; // TODO make it optional
-  recipient_verkey: Verkey; // TODO make it optional
-}
-
-export interface InboundMessage<T extends AgentMessage = AgentMessage> {
-  message: T;
-  sender_verkey: Verkey; // TODO make it optional
-  recipient_verkey: Verkey; // TODO make it optional
+  message: {
+    '@type': string;
+    [key: string]: any;
+  };
+  sender_verkey?: Verkey;
+  recipient_verkey?: Verkey;
 }
 
 export interface OutboundMessage<T extends AgentMessage = AgentMessage> {

@@ -1,6 +1,6 @@
 import uuid from 'uuid';
 import { EventEmitter } from 'events';
-import { InboundMessage, OutboundMessage } from '../../types';
+import { OutboundMessage } from '../../types';
 import { AgentConfig } from '../../agent/AgentConfig';
 import { createOutboundMessage } from '../helpers';
 import { ConnectionState } from './domain/ConnectionState';
@@ -17,6 +17,7 @@ import { Connection } from './domain/Connection';
 import { classToPlain, plainToClass } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
 import { AckMessage } from './AckMessage';
+import { MessageContext } from '../../agent/models/MessageContext';
 
 enum EventType {
   StateChanged = 'stateChanged',
@@ -63,21 +64,20 @@ class ConnectionService extends EventEmitter {
   }
 
   async acceptRequest(
-    inboundMessage: InboundMessage<ConnectionRequestMessage>
+    messageContext: MessageContext<ConnectionRequestMessage>
   ): Promise<OutboundMessage<ConnectionResponseMessage>> {
-    const { message, recipient_verkey } = inboundMessage;
-    const connectionRecord = await this.findByVerkey(recipient_verkey);
+    const { message, connection: connectionRecord, recipientVerkey } = messageContext;
 
     if (!connectionRecord) {
-      throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
+      throw new Error(`Connection for verkey ${recipientVerkey} not found!`);
     }
 
+    // TODO: validate using class-validator
     if (!message.connection) {
       throw new Error('Invalid message');
     }
 
-    const requestConnection = message.connection;
-    connectionRecord.updateDidExchangeConnection(requestConnection);
+    connectionRecord.updateDidExchangeConnection(message.connection);
 
     if (!connectionRecord.theirKey) {
       throw new Error(`Connection with verkey ${connectionRecord.verkey} has no recipient keys.`);
@@ -89,6 +89,8 @@ class ConnectionService extends EventEmitter {
       did: connectionRecord.did,
       didDoc: connectionRecord.didDoc,
     });
+
+    // TODO: find a better way that directly calling classToPlain here
     const plainConnection = classToPlain(connection);
 
     const connectionResponse = new ConnectionResponseMessage({
@@ -100,12 +102,11 @@ class ConnectionService extends EventEmitter {
     return createOutboundMessage(connectionRecord, connectionResponse);
   }
 
-  async acceptResponse(inboundMessage: InboundMessage<ConnectionResponseMessage>) {
-    const { message, recipient_verkey } = inboundMessage;
-    const connectionRecord = await this.findByVerkey(recipient_verkey);
+  async acceptResponse(messageContext: MessageContext<ConnectionResponseMessage>) {
+    const { message, connection: connectionRecord, recipientVerkey } = messageContext;
 
     if (!connectionRecord) {
-      throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
+      throw new Error(`Connection for verkey ${recipientVerkey} not found!`);
     }
 
     const connectionJson = await unpackAndVerifySignatureDecorator(message.connectionSig, this.wallet);
@@ -128,18 +129,15 @@ class ConnectionService extends EventEmitter {
     return createOutboundMessage(connectionRecord, response);
   }
 
-  async acceptAck(inboundMessage: InboundMessage<AckMessage>) {
-    const { recipient_verkey, sender_verkey } = inboundMessage;
-    const connectionRecord = await this.findByVerkey(recipient_verkey);
+  async acceptAck(messageContext: MessageContext<AckMessage>) {
+    const connection = messageContext.connection;
 
-    if (!connectionRecord) {
-      throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
+    if (!connection) {
+      throw new Error(`Connection for ${messageContext.recipientVerkey} not found!`);
     }
 
-    validateSenderKey(connectionRecord, sender_verkey);
-
-    if (connectionRecord.state !== ConnectionState.COMPLETE) {
-      await this.updateState(connectionRecord, ConnectionState.COMPLETE);
+    if (connection.state !== ConnectionState.COMPLETE) {
+      await this.updateState(connection, ConnectionState.COMPLETE);
     }
   }
 
@@ -182,12 +180,21 @@ class ConnectionService extends EventEmitter {
     return this.connectionRepository.findAll();
   }
 
-  async findByVerkey(verkey: Verkey) {
+  async findByVerkey(verkey: Verkey): Promise<ConnectionRecord | null> {
     const connectionRecords = await this.connectionRepository.findByQuery({ verkey });
-    return connectionRecords[0];
+
+    if (connectionRecords.length > 1) {
+      throw new Error(`There is more than one connection for given verkey ${verkey}`);
+    }
+
+    if (connectionRecords.length < 1) {
+      return null;
+    }
+
+    return connectionRecords.length > 0 ? connectionRecords[0] : null;
   }
 
-  async findByTheirKey(verkey: Verkey) {
+  async findByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
     const connectionRecords = await this.connectionRepository.findByQuery({ theirKey: verkey });
 
     if (connectionRecords.length > 1) {
