@@ -51,7 +51,7 @@ export class RoutingModule {
       await this.messageSender.sendMessage(ack);
 
       const provisioningProps = {
-        agencyConnectionVerkey: connectionRequest.connection.verkey,
+        agencyConnectionId: connectionRequest.connection.id,
         agencyPublicVerkey: verkey,
       };
       provisioningRecord = await this.provisioningService.create(provisioningProps);
@@ -60,9 +60,7 @@ export class RoutingModule {
 
     logger.log('Provisioning record:', provisioningRecord);
 
-    const agentConnectionAtAgency = await this.connectionService.findByVerkey(
-      provisioningRecord.agencyConnectionVerkey
-    );
+    const agentConnectionAtAgency = await this.connectionService.getById(provisioningRecord.agencyConnectionId);
 
     if (!agentConnectionAtAgency) {
       throw new Error('Connection not found!');

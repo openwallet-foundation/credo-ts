@@ -56,15 +56,13 @@ describe('agents', () => {
     const bobConnectionAtBobAlice = await bobAgent.connections.acceptInvitation(invitation.toJSON());
 
     const aliceConnectionRecordAtAliceBob = await aliceAgent.connections.returnWhenIsConnected(
-      aliceConnectionAtAliceBob.verkey
+      aliceConnectionAtAliceBob.id
     );
     if (!aliceConnectionRecordAtAliceBob) {
       throw new Error('Connection not found!');
     }
 
-    const bobConnectionRecordAtBobAlice = await bobAgent.connections.returnWhenIsConnected(
-      bobConnectionAtBobAlice.verkey
-    );
+    const bobConnectionRecordAtBobAlice = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice.id);
     if (!bobConnectionRecordAtBobAlice) {
       throw new Error('Connection not found!');
     }
