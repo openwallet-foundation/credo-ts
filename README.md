@@ -94,7 +94,7 @@ yarn test
 If you don't want to install the libindy dependencies yourself, or want a clean environment when running the framework or tests you can use docker.
 
 ```sh
-# This build the docker image with all dependencies installed
+# This builds the docker image with all dependencies installed
 docker build -t aries-framework-javascript .
 
 # Run tests without network
@@ -107,4 +107,4 @@ docker run -it --rm --network host aries-framework-javascript yarn test
 
 # Logs
 
-If you don't want agency to be logging you just remove `DEBUG=aries-framework-javascript` from `yarn prod:start` command in `package.json`
+If you want the agency to show the logs, you can run the `prod:debug` command instead of `prod:debug`.

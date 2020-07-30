@@ -2,12 +2,6 @@
 
 AGENT="$1"
 YARN_COMMAND=yarn
-COMMAND=prod
-
-# Docker image already compiles. Not needed to do again
-if [ "$RUN_MODE" = "docker" ]; then
-  COMMAND="prod:start"
-fi
 
 if [[ "$AGENT" = "agency01" ]] || [[ "$AGENT" = "alice" ]]; then
   AGENT_URL=http://localhost
@@ -34,4 +28,9 @@ if [ "$2" = "server" ]; then
   YARN_COMMAND=.yarn/bin/yarn
 fi
 
-AGENT_URL=${AGENT_URL} AGENT_PORT=${AGENT_PORT} AGENT_LABEL=${AGENT_LABEL} WALLET_NAME=${WALLET_NAME} WALLET_KEY=${WALLET_KEY} PUBLIC_DID=${PUBLIC_DID} PUBLIC_DID_SEED=${PUBLIC_DID_SEED} ${YARN_COMMAND} ${COMMAND}
+# Docker image already compiles. Not needed to do again
+if [ "$RUN_MODE" != "docker" ]; then
+  ${YARN_COMMAND} prod:build
+fi
+
+AGENT_URL=${AGENT_URL} AGENT_PORT=${AGENT_PORT} AGENT_LABEL=${AGENT_LABEL} WALLET_NAME=${WALLET_NAME} WALLET_KEY=${WALLET_KEY} PUBLIC_DID=${PUBLIC_DID} PUBLIC_DID_SEED=${PUBLIC_DID_SEED} ${YARN_COMMAND} prod:debug
