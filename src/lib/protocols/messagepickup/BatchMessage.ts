@@ -1,6 +1,6 @@
 import { Equals, Matches, IsArray, ValidateNested } from 'class-validator';
 import { Type, Expose } from 'class-transformer';
-import uuid from 'uuid/v4';
+import { v4 as uuid } from 'uuid';
 
 import { MessageIdRegExp } from '../../agent/BaseMessage';
 import { AgentMessage } from '../../agent/AgentMessage';
