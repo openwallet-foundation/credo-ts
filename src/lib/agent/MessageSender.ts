@@ -5,7 +5,7 @@ import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator';
 import { MessageTransformer } from './MessageTransformer';
 import { AgentMessage } from './AgentMessage';
 import { Constructor } from '../utils/mixins';
-import { MessageContext } from './models/MessageContext';
+import { InboundMessageContext } from './models/InboundMessageContext';
 
 class MessageSender {
   envelopeService: EnvelopeService;
@@ -28,7 +28,7 @@ class MessageSender {
   async sendAndReceiveMessage<T extends AgentMessage>(
     outboundMessage: OutboundMessage,
     ReceivedMessageClass: Constructor<T>
-  ): Promise<MessageContext<T>> {
+  ): Promise<InboundMessageContext<T>> {
     outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all);
 
     const outboundPackage = await this.envelopeService.packMessage(outboundMessage);
@@ -37,7 +37,7 @@ class MessageSender {
 
     const message = MessageTransformer.toMessageInstance(inboundUnpackedMessage.message, ReceivedMessageClass);
 
-    const messageContext = new MessageContext(message, {
+    const messageContext = new InboundMessageContext(message, {
       connection: outboundMessage.connection,
       recipientVerkey: inboundUnpackedMessage.recipient_verkey,
       senderVerkey: inboundUnpackedMessage.sender_verkey,

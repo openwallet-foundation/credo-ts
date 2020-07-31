@@ -17,7 +17,7 @@ import { Connection } from './domain/Connection';
 import { classToPlain, plainToClass } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
 import { AckMessage } from './AckMessage';
-import { MessageContext } from '../../agent/models/MessageContext';
+import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 
 enum EventType {
   StateChanged = 'stateChanged',
@@ -64,7 +64,7 @@ class ConnectionService extends EventEmitter {
   }
 
   async acceptRequest(
-    messageContext: MessageContext<ConnectionRequestMessage>
+    messageContext: InboundMessageContext<ConnectionRequestMessage>
   ): Promise<OutboundMessage<ConnectionResponseMessage>> {
     const { message, connection: connectionRecord, recipientVerkey } = messageContext;
 
@@ -102,7 +102,7 @@ class ConnectionService extends EventEmitter {
     return createOutboundMessage(connectionRecord, connectionResponse);
   }
 
-  async acceptResponse(messageContext: MessageContext<ConnectionResponseMessage>) {
+  async acceptResponse(messageContext: InboundMessageContext<ConnectionResponseMessage>) {
     const { message, connection: connectionRecord, recipientVerkey } = messageContext;
 
     if (!connectionRecord) {
@@ -129,7 +129,7 @@ class ConnectionService extends EventEmitter {
     return createOutboundMessage(connectionRecord, response);
   }
 
-  async acceptAck(messageContext: MessageContext<AckMessage>) {
+  async acceptAck(messageContext: InboundMessageContext<AckMessage>) {
     const connection = messageContext.connection;
 
     if (!connection) {

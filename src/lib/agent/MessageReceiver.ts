@@ -4,7 +4,7 @@ import { Dispatcher } from './Dispatcher';
 import { EnvelopeService } from './EnvelopeService';
 import { UnpackedMessage } from '../types';
 import { MessageType } from '../protocols/routing/messages';
-import { MessageContext } from './models/MessageContext';
+import { InboundMessageContext } from './models/InboundMessageContext';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { AgentMessage } from './AgentMessage';
 import { MessageTransformer } from './MessageTransformer';

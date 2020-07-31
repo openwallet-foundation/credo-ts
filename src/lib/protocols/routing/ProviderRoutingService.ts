@@ -3,7 +3,7 @@ import { createOutboundMessage } from '../helpers';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
 import { KeylistUpdateMessage, KeylistUpdateAction } from '../coordinatemediation/KeylistUpdateMessage';
 import { ForwardMessage } from './ForwardMessage';
-import { MessageContext } from '../../agent/models/MessageContext';
+import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 
 class ProviderRoutingService {
   routingTable: { [recipientKey: string]: ConnectionRecord | undefined } = {};
@@ -11,7 +11,7 @@ class ProviderRoutingService {
   /**
    * @todo use connection from message context
    */
-  updateRoutes(messageContext: MessageContext<KeylistUpdateMessage>, connection: ConnectionRecord) {
+  updateRoutes(messageContext: InboundMessageContext<KeylistUpdateMessage>, connection: ConnectionRecord) {
     const { message } = messageContext;
 
     for (const update of message.updates) {
@@ -26,7 +26,7 @@ class ProviderRoutingService {
     }
   }
 
-  forward(messageContext: MessageContext<ForwardMessage>): OutboundMessage<ForwardMessage> {
+  forward(messageContext: InboundMessageContext<ForwardMessage>): OutboundMessage<ForwardMessage> {
     const { message, recipientVerkey } = messageContext;
 
     // TODO: update to class-validator validation

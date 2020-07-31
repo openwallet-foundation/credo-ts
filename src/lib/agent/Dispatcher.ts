@@ -2,7 +2,7 @@ import { OutboundMessage, OutboundPackage } from '../types';
 import { Handler } from '../handlers/Handler';
 import { MessageSender } from './MessageSender';
 import { AgentMessage } from './AgentMessage';
-import { MessageContext } from './models/MessageContext';
+import { InboundMessageContext } from './models/InboundMessageContext';
 
 class Dispatcher {
   handlers: Handler[] = [];
@@ -16,7 +16,7 @@ class Dispatcher {
     this.handlers.push(handler);
   }
 
-  async dispatch(messageContext: MessageContext): Promise<OutboundMessage | OutboundPackage | undefined> {
+  async dispatch(messageContext: InboundMessageContext): Promise<OutboundMessage | OutboundPackage | undefined> {
     const message = messageContext.message;
     const handler = this.getHandlerForType(message.type);
 

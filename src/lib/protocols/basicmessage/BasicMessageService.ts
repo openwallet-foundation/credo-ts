@@ -5,7 +5,7 @@ import { Repository } from '../../storage/Repository';
 import { BasicMessageRecord } from '../../storage/BasicMessageRecord';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
 import { BasicMessage } from './BasicMessage';
-import { MessageContext } from '../../agent/models/MessageContext';
+import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 
 enum EventType {
   MessageReceived = 'messageReceived',
@@ -38,7 +38,7 @@ class BasicMessageService extends EventEmitter {
   /**
    * @todo use connection from message context
    */
-  async save({ message }: MessageContext<BasicMessage>, connection: ConnectionRecord) {
+  async save({ message }: InboundMessageContext<BasicMessage>, connection: ConnectionRecord) {
     const basicMessageRecord = new BasicMessageRecord({
       id: message.id,
       sent_time: message.sentTime.toISOString(),

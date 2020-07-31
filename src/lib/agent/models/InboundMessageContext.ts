@@ -7,7 +7,7 @@ export interface MessageContextParams {
   recipientVerkey?: Verkey;
 }
 
-export class MessageContext<T extends AgentMessage = AgentMessage> {
+export class InboundMessageContext<T extends AgentMessage = AgentMessage> {
   message: T;
   connection?: ConnectionRecord;
   senderVerkey?: Verkey;

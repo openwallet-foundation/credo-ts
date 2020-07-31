@@ -8,7 +8,7 @@ import { IndyStorageService } from '../../storage/IndyStorageService';
 import { BasicMessageService, EventType } from './BasicMessageService';
 import { BasicMessageRecord } from '../../storage/BasicMessageRecord';
 import { BasicMessage } from './BasicMessage';
-import { MessageContext } from '../../agent/models/MessageContext';
+import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 
 describe('BasicMessageService', () => {
   const walletConfig = { id: 'test-wallet' + '-BasicMessageServiceTest' };
@@ -53,7 +53,7 @@ describe('BasicMessageService', () => {
         content: 'message',
       });
 
-      const messageContext = new MessageContext(basicMessage, {
+      const messageContext = new InboundMessageContext(basicMessage, {
         senderVerkey: 'senderKey',
         recipientVerkey: 'recipientKey',
       });
