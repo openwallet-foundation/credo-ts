@@ -60,7 +60,7 @@ export class RoutingModule {
 
     logger.log('Provisioning record:', provisioningRecord);
 
-    const agentConnectionAtAgency = await this.connectionService.getById(provisioningRecord.agencyConnectionId);
+    const agentConnectionAtAgency = await this.connectionService.find(provisioningRecord.agencyConnectionId);
 
     if (!agentConnectionAtAgency) {
       throw new Error('Connection not found!');

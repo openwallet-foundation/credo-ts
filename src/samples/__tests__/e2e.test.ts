@@ -108,7 +108,7 @@ describe('with agency', () => {
 
   test('Send a message from Alice to Bob via agency', async () => {
     // send message from Alice to Bob
-    const aliceConnectionAtAliceBob = await aliceAgent.connections.getById(aliceAtAliceBobId);
+    const aliceConnectionAtAliceBob = await aliceAgent.connections.find(aliceAtAliceBobId);
     if (!aliceConnectionAtAliceBob) {
       throw new Error(`There is no connection for id ${aliceAtAliceBobId}`);
     }
