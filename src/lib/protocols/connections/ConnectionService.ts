@@ -121,9 +121,6 @@ class ConnectionService extends EventEmitter {
 
     connectionRecord.tags = { ...connectionRecord.tags, theirKey: connectionRecord.theirKey };
 
-    // dotnet doesn't send senderVk here
-    // validateSenderKey(connection, sender_verkey);
-
     const response = new TrustPingMessage();
     await this.updateState(connectionRecord, ConnectionState.COMPLETE);
     return createOutboundMessage(connectionRecord, response);
@@ -216,22 +213,6 @@ class ConnectionService extends EventEmitter {
       serviceEndpoint: didDoc.service[0].serviceEndpoint,
       routingKeys: didDoc.service[0].routingKeys,
     };
-  }
-}
-
-function validateSenderKey(connection: ConnectionRecord, senderKey: Verkey) {
-  // TODO I have 2 questions
-
-  // 1. I don't know whether following check is necessary. I guess it is, but we should validate this condition
-  // for every other protocol. I also don't validate it `acceptRequest` because there is no `senderVk` in invitation
-  // (which could be also a bug and against protocol starndard)
-
-  // 2. I don't know whether to use `connection.theirKey` or `sender_verkey` for outbound message.
-
-  if (connection.theirKey !== senderKey) {
-    throw new Error(
-      `Inbound message 'sender_key' ${senderKey} is different from connection.theirKey ${connection.theirKey}`
-    );
   }
 }
 

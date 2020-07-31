@@ -43,7 +43,7 @@ export class MessagePickupService {
       messages: batchMessages,
     });
 
-    this.messageRepository.deleteAllByVerkey(connection.theirKey); // TODO Maybe, don't delete, but just marked them as read
+    await this.messageRepository.deleteAllByVerkey(connection.theirKey); // TODO Maybe, don't delete, but just marked them as read
     return createOutboundMessage(connection, batchMessage);
   }
 }

@@ -40,7 +40,7 @@ class Dispatcher {
     return outboundMessage || undefined;
   }
 
-  public getHandlerForType(messageType: string): Handler | undefined {
+  private getHandlerForType(messageType: string): Handler | undefined {
     for (const handler of this.handlers) {
       for (const MessageClass of handler.supportedMessages) {
         if (MessageClass.type === messageType) return handler;

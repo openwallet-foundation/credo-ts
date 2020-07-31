@@ -41,15 +41,16 @@ class MessageReceiver {
     logger.logJson('inboundMessage', unpackedMessage);
 
     const message = await this.transformMessage(unpackedMessage);
-    let senderKey = unpackedMessage.sender_verkey;
+    const senderKey = unpackedMessage.sender_verkey;
     let connection = undefined;
     if (senderKey && unpackedMessage.recipient_verkey) {
+      // TODO: only attach if theirKey is present. Otherwise a connection that may not be complete, validated or correct will
+      // be attached to the message context. See #76
       connection = (await this.connectionService.findByVerkey(unpackedMessage.recipient_verkey)) || undefined;
 
-      // we validate the sender key if it is the one we have the connection with
-      // otherwise everyone could send message for our key, and we would just accept
-      // it as if it was send by the connection.
-      // TODO: does this correctly work for the connection process? Keys can be swapped during the protocol
+      // We check whether the sender key is the same as the key we have stored in the connection
+      // otherwise everyone could send messages to our key and we would just accept
+      // it as if it was send by the key of the connection.
       if (connection && connection.theirKey != null && connection.theirKey != senderKey) {
         throw new Error(
           `Inbound message 'sender_key' ${senderKey} is different from connection.theirKey ${connection.theirKey}`
@@ -57,7 +58,7 @@ class MessageReceiver {
       }
     }
 
-    const messageContext = new MessageContext(message, {
+    const messageContext = new InboundMessageContext(message, {
       connection,
       senderVerkey: senderKey,
       recipientVerkey: unpackedMessage.recipient_verkey,
