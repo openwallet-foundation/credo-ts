@@ -1,37 +1,47 @@
-# Note that the indy-sdk requires ubuntu 16 and some custom dependencies so we can't use node:carbon-apline like the others
 FROM ubuntu:18.04 as base
 
-# Grab dependencies via apt-get
-RUN apt-get update && \
-      apt-get install -y \
-      software-properties-common \
-      apt-transport-https \
-      curl \
-      build-essential \
-      python2.7 \
-      python-pip
+ENV DEBIAN_FRONTEND noninteractive
 
-# Setup nodejs
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash && \
-    apt-get install nodejs -y
+RUN apt-get update -y && apt-get install -y \
+    software-properties-common \
+    apt-transport-https \
+    curl \
+    # Only needed to build indy-sdk
+    build-essential 
 
-ARG libindy_ver=1.14.0
-# Recommended way to get setup with libindy: https://github.com/hyperledger/indy-sdk#ubuntu-based-distributions-ubuntu-1604
-ARG indy_stream=stable
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 && \
-    add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial $indy_stream" && \
-    apt-get update && \
-    apt-get install -y libindy=${libindy_ver}
+# libindy
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
+RUN add-apt-repository "deb https://repo.sovrin.org/sdk/deb bionic stable"
 
-# Setup our server
-RUN mkdir www/
-WORKDIR www/
-ADD package.json ./
-ADD . .
+# nodejs
+RUN curl -sL https://deb.nodesource.com/setup_12.x | bash
 
-# setup yarn
-RUN curl -o- -L https://yarnpkg.com/install.sh | bash
-RUN cp -R $HOME/.yarn/bin .
-RUN PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH" yarn install
-# start it up, would like to get the server working but needs indy node etc.
-CMD ["bash"]
+# yarn
+RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
+    echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
+
+# install depdencies
+RUN apt-get update -y && apt-get install -y --allow-unauthenticated \
+    libindy \
+    nodejs
+
+# Install yarn seperately due to `no-install-recommends` to skip nodejs install 
+RUN apt-get install -y --no-install-recommends yarn
+
+FROM base as final
+
+# AFJ specifc setup
+WORKDIR /www
+ENV RUN_MODE="docker"
+
+COPY package.json package.json
+COPY yarn.lock yarn.lock
+
+# Run install after copying only depdendency file
+# to make use of docker layer caching
+RUN yarn install
+
+# Copy other depdencies
+COPY . . 
+
+RUN yarn compile
