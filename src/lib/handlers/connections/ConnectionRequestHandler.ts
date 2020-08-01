@@ -10,8 +10,8 @@ export class ConnectionRequestHandler implements Handler {
     this.connectionService = connectionService;
   }
 
-  async handle(inboundMessage: HandlerInboundMessage<ConnectionRequestHandler>) {
-    const outboudMessage = await this.connectionService.acceptRequest(inboundMessage);
+  async handle(messageContext: HandlerInboundMessage<ConnectionRequestHandler>) {
+    const outboudMessage = await this.connectionService.acceptRequest(messageContext);
     return outboudMessage;
   }
 }

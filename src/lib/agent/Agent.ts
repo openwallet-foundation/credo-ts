@@ -72,7 +72,6 @@ export class Agent {
     this.agentConfig = new AgentConfig(initialConfig);
     this.messageSender = new MessageSender(envelopeService, outboundTransporter);
     this.dispatcher = new Dispatcher(this.messageSender);
-    this.messageReceiver = new MessageReceiver(this.agentConfig, envelopeService, this.dispatcher);
     this.inboundTransporter = inboundTransporter;
 
     const storageService = new IndyStorageService(this.wallet);
@@ -87,6 +86,13 @@ export class Agent {
     this.consumerRoutingService = new ConsumerRoutingService(this.messageSender, this.agentConfig);
     this.trustPingService = new TrustPingService();
     this.messagePickupService = new MessagePickupService(messageRepository);
+
+    this.messageReceiver = new MessageReceiver(
+      this.agentConfig,
+      envelopeService,
+      this.connectionService,
+      this.dispatcher
+    );
 
     this.registerHandlers();
     this.registerModules();

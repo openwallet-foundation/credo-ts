@@ -1,17 +1,20 @@
-import { InboundMessage, OutboundMessage } from '../types';
+import { OutboundMessage } from '../types';
 import { AgentMessage } from '../agent/AgentMessage';
+import { InboundMessageContext } from '../agent/models/InboundMessageContext';
 
 export interface Handler<T extends typeof AgentMessage = typeof AgentMessage> {
   readonly supportedMessages: readonly T[];
 
-  handle(inboundMessage: InboundMessage): Promise<OutboundMessage | void>;
+  handle(messageContext: InboundMessageContext): Promise<OutboundMessage | void>;
 }
 
 /**
- * Provides exact typing for the AgentMessage in the inbound message in the `handle` function
+ * Provides exact typing for the AgentMessage in the message context in the `handle` function
  * of a handler. It takes all possible types from `supportedMessageTypes`
  *
  * @example
- * async handle(inboundMessage: HandlerInboundMessage<BasicMessageHandler>) {}
+ * async handle(messageContext: HandlerInboundMessage<BasicMessageHandler>) {}
  */
-export type HandlerInboundMessage<H extends Handler> = InboundMessage<InstanceType<H['supportedMessages'][number]>>;
+export type HandlerInboundMessage<H extends Handler> = InboundMessageContext<
+  InstanceType<H['supportedMessages'][number]>
+>;

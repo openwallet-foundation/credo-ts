@@ -13,18 +13,17 @@ export class BasicMessageHandler implements Handler {
     this.basicMessageService = basicMessageService;
   }
 
-  async handle(inboundMessage: HandlerInboundMessage<BasicMessageHandler>) {
-    const { recipient_verkey } = inboundMessage;
-    const connection = await this.connectionService.findByVerkey(recipient_verkey);
+  async handle(messageContext: HandlerInboundMessage<BasicMessageHandler>) {
+    const connection = messageContext.connection;
 
     if (!connection) {
-      throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
+      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`);
     }
 
     if (!connection.theirKey) {
       throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`);
     }
 
-    await this.basicMessageService.save(inboundMessage, connection);
+    await this.basicMessageService.save(messageContext, connection);
   }
 }

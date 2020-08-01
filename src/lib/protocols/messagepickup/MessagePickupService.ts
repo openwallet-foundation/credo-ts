@@ -29,7 +29,7 @@ export class MessagePickupService {
       throw new Error('Trying to find messages to connection without theirKey!');
     }
 
-    const messages = await this.messageRepository.findByVerkey(connection.theirKey);
+    const messages = this.messageRepository.findByVerkey(connection.theirKey);
     // TODO: each message should be stored with an id. to be able to conform to the id property
     // of batch message
     const batchMessages = messages.map(

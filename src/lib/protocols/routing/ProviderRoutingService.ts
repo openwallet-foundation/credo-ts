@@ -1,14 +1,18 @@
-import { InboundMessage, OutboundMessage } from '../../types';
+import { OutboundMessage } from '../../types';
 import { createOutboundMessage } from '../helpers';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
 import { KeylistUpdateMessage, KeylistUpdateAction } from '../coordinatemediation/KeylistUpdateMessage';
 import { ForwardMessage } from './ForwardMessage';
+import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 
 class ProviderRoutingService {
   routingTable: { [recipientKey: string]: ConnectionRecord | undefined } = {};
 
-  updateRoutes(inboundMessage: InboundMessage<KeylistUpdateMessage>, connection: ConnectionRecord) {
-    const { message } = inboundMessage;
+  /**
+   * @todo use connection from message context
+   */
+  updateRoutes(messageContext: InboundMessageContext<KeylistUpdateMessage>, connection: ConnectionRecord) {
+    const { message } = messageContext;
 
     for (const update of message.updates) {
       switch (update.action) {
@@ -22,8 +26,8 @@ class ProviderRoutingService {
     }
   }
 
-  forward(inboundMessage: InboundMessage<ForwardMessage>): OutboundMessage<ForwardMessage> {
-    const { message, recipient_verkey } = inboundMessage;
+  forward(messageContext: InboundMessageContext<ForwardMessage>): OutboundMessage<ForwardMessage> {
+    const { message, recipientVerkey } = messageContext;
 
     // TODO: update to class-validator validation
     if (!message.to) {
@@ -33,7 +37,7 @@ class ProviderRoutingService {
     const connection = this.findRecipient(message.to);
 
     if (!connection) {
-      throw new Error(`Connection for verkey ${recipient_verkey} not found!`);
+      throw new Error(`Connection for verkey ${recipientVerkey} not found!`);
     }
 
     if (!connection.theirKey) {

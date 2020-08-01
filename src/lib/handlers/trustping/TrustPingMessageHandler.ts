@@ -14,18 +14,16 @@ export class TrustPingMessageHandler implements Handler {
     this.connectionService = connectionService;
   }
 
-  async handle(inboundMessage: HandlerInboundMessage<TrustPingMessageHandler>) {
-    const { recipient_verkey } = inboundMessage;
-    const connectionRecord = await this.connectionService.findByVerkey(recipient_verkey);
-
-    if (!connectionRecord) {
-      throw new Error(`Connection for recipient_verkey ${recipient_verkey} not found`);
+  async handle(messageContext: HandlerInboundMessage<TrustPingMessageHandler>) {
+    const { connection, recipientVerkey } = messageContext;
+    if (!connection) {
+      throw new Error(`Connection for verkey ${recipientVerkey} not found!`);
     }
 
-    if (connectionRecord.state != ConnectionState.COMPLETE) {
-      await this.connectionService.updateState(connectionRecord, ConnectionState.COMPLETE);
+    if (connection.state != ConnectionState.COMPLETE) {
+      await this.connectionService.updateState(connection, ConnectionState.COMPLETE);
     }
 
-    return this.trustPingService.processPing(inboundMessage, connectionRecord);
+    return this.trustPingService.processPing(messageContext, connection);
   }
 }

@@ -1,10 +1,11 @@
-import { OutboundMessage, OutboundPackage, InboundMessage } from '../types';
+import { OutboundMessage, OutboundPackage } from '../types';
 import { OutboundTransporter } from '../transport/OutboundTransporter';
 import { EnvelopeService } from './EnvelopeService';
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator';
 import { MessageTransformer } from './MessageTransformer';
 import { AgentMessage } from './AgentMessage';
 import { Constructor } from '../utils/mixins';
+import { InboundMessageContext } from './models/InboundMessageContext';
 
 class MessageSender {
   envelopeService: EnvelopeService;
@@ -27,7 +28,7 @@ class MessageSender {
   async sendAndReceiveMessage<T extends AgentMessage>(
     outboundMessage: OutboundMessage,
     ReceivedMessageClass: Constructor<T>
-  ): Promise<InboundMessage<T>> {
+  ): Promise<InboundMessageContext<T>> {
     outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all);
 
     const outboundPackage = await this.envelopeService.packMessage(outboundMessage);
@@ -35,7 +36,14 @@ class MessageSender {
     const inboundUnpackedMessage = await this.envelopeService.unpackMessage(inboundPackedMessage);
 
     const message = MessageTransformer.toMessageInstance(inboundUnpackedMessage.message, ReceivedMessageClass);
-    return { ...inboundUnpackedMessage, message };
+
+    const messageContext = new InboundMessageContext(message, {
+      connection: outboundMessage.connection,
+      recipientVerkey: inboundUnpackedMessage.recipient_verkey,
+      senderVerkey: inboundUnpackedMessage.sender_verkey,
+    });
+
+    return messageContext;
   }
 }
 

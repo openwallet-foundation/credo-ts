@@ -85,10 +85,10 @@ export class RoutingModule {
     const inboundConnection = this.getInboundConnection();
     if (inboundConnection) {
       const outboundMessage = await this.messagePickupService.batchPickup(inboundConnection);
-      const batchMessage = await this.messageSender.sendAndReceiveMessage(outboundMessage, BatchMessage);
+      const batchResponse = await this.messageSender.sendAndReceiveMessage(outboundMessage, BatchMessage);
 
       // TODO: do something about the different types of message variable all having a different purpose
-      return batchMessage.message.messages.map(msg => msg.message);
+      return batchResponse.message.messages.map(msg => msg.message);
     }
     return [];
   }
