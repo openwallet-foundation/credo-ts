@@ -1,10 +1,13 @@
 import logger from '../logger';
+import { Wallet } from '../wallet/Wallet';
 
 export class LedgerService {
+  wallet: Wallet;
   indy: Indy;
   poolHandle?: PoolHandle;
 
-  constructor(indy: Indy) {
+  constructor(wallet: Wallet, indy: Indy) {
+    this.wallet = wallet;
     this.indy = indy;
   }
 
@@ -30,7 +33,7 @@ export class LedgerService {
 
   async getPublicDid(myDid: Did) {
     if (!this.poolHandle) {
-      throw new Error('There is no pool handle.');
+      throw new Error('Pool has not been initialized.');
     }
     const request = await this.indy.buildGetNymRequest(null, myDid);
     logger.log('request', request);
@@ -40,4 +43,43 @@ export class LedgerService {
     logger.log('result', result);
     return result;
   }
+
+  async registerSchema(myDid: Did, schemaTemplate: SchemaTemplate): Promise<[string, {}]> {
+    if (!this.poolHandle) {
+      throw new Error('Pool has not been initialized.');
+    }
+
+    const { name, attributes, version } = schemaTemplate;
+    const [schemaId, schema] = await this.indy.issuerCreateSchema(myDid, name, version, attributes);
+    logger.log('schemaId, schema', schemaId, schema);
+
+    const request = await this.indy.buildSchemaRequest(myDid, schema);
+    logger.log('request', request);
+
+    const signedRequest = await this.wallet.signRequest(myDid, request);
+    logger.log('signedRequest', signedRequest);
+
+    const response = await this.indy.submitRequest(this.poolHandle, signedRequest);
+    logger.log('response', response);
+
+    return [schemaId, schema];
+  }
+
+  async getSchema(myDid: Did, schemaId: SchemaId) {
+    if (!this.poolHandle) {
+      throw new Error('Pool has not been initialized.');
+    }
+    const request = await this.indy.buildGetSchemaRequest(myDid, schemaId);
+    logger.log('request', request);
+    const response = await this.indy.submitRequest(this.poolHandle, request);
+    const result = await this.indy.parseGetSchemaResponse(response);
+    logger.log('result', result);
+    return result;
+  }
+}
+
+export interface SchemaTemplate {
+  name: string;
+  version: string;
+  attributes: string[];
 }

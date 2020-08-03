@@ -13,14 +13,16 @@ const faberConfig = {
 describe('ledger', () => {
   let faberAgent: Agent;
 
+  beforeAll(async () => {
+    faberAgent = new Agent(faberConfig, new DummyInboundTransporter(), new DummyOutboundTransporter(), indy);
+    await faberAgent.init();
+  });
+
   afterAll(async () => {
     await faberAgent.closeAndDeleteWallet();
   });
 
   test('faber can register public DID on ledger', async () => {
-    faberAgent = new Agent(faberConfig, new DummyInboundTransporter(), new DummyOutboundTransporter(), indy);
-    await faberAgent.init();
-
     const poolName = 'pool1';
     console.log(`Open Pool Ledger: ${poolName}`);
     const poolConfig = {
@@ -32,8 +34,11 @@ describe('ledger', () => {
 
     await faberAgent.connectToLedger(poolName, poolConfig);
 
-    // const stewardDid = await getStewardDid();
+    console.log('"Sovrin Steward" -> Create and store in Wallet DID from seed');
     const stewardDid = 'Th7MpTaRZVRYnPiabds81Y';
+    const stewardDidInfo = { seed: '000000000000000000000000Steward1' };
+
+    await faberAgent.initPublicDid(stewardDid, stewardDidInfo.seed);
     console.log('stewardDid', stewardDid);
 
     const result = await faberAgent.getPublicDidFromLedger(stewardDid);
@@ -44,9 +49,29 @@ describe('ledger', () => {
     });
   });
 
-  // test('faber can register schema on ledger', async () => {
-  //   expect(true).toBe(false);
-  // });
+  test('faber can register schema on ledger', async () => {
+    const myDid = 'Th7MpTaRZVRYnPiabds81Y';
+    const schemaName = `test-schema-${Date.now()}`;
+    const schemaTemplate = {
+      name: schemaName,
+      attributes: ['name', 'age'],
+      version: '1.0',
+    };
+    const [schemaId] = await faberAgent.registerSchema(myDid, schemaTemplate);
+    const [ledgerSchemaId, ledgerSchema] = await faberAgent.getSchemaFromLedger(myDid, schemaId);
+
+    expect(ledgerSchemaId).toBe(`Th7MpTaRZVRYnPiabds81Y:2:${schemaName}:1.0`);
+    expect(ledgerSchema).toEqual(
+      expect.objectContaining({
+        attrNames: expect.arrayContaining(['name', 'age']),
+        id: `Th7MpTaRZVRYnPiabds81Y:2:${schemaName}:1.0`,
+        name: schemaName,
+        seqNo: expect.any(Number),
+        ver: '1.0',
+        version: '1.0',
+      })
+    );
+  });
 
   // test('faber can register definition on ledger', async () => {
   //   expect(true).toBe(false);
@@ -65,7 +90,7 @@ class DummyOutboundTransporter implements OutboundTransporter {
   }
 }
 
-async function getStewardDid() {
+async function createStewardDid() {
   const stewardWalletConfig = { id: 'stewardWalletName' };
   const stewardWalletCredentials = { key: 'steward_key' };
   try {

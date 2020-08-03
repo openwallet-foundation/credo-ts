@@ -9,7 +9,7 @@ import { TrustPingService } from '../protocols/trustping/TrustPingService';
 import { MessagePickupService } from '../protocols/messagepickup/MessagePickupService';
 import { MessageReceiver } from './MessageReceiver';
 import { EnvelopeService } from './EnvelopeService';
-import { LedgerService } from './LedgerService';
+import { LedgerService, SchemaTemplate } from './LedgerService';
 import { Dispatcher } from './Dispatcher';
 import { MessageSender } from './MessageSender';
 import { InboundTransporter } from '../transport/InboundTransporter';
@@ -30,7 +30,7 @@ import { Repository } from '../storage/Repository';
 import { IndyStorageService } from '../storage/IndyStorageService';
 import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { AgentConfig } from './AgentConfig';
-import { Wallet } from '../wallet/Wallet';
+import { Wallet, DidConfig } from '../wallet/Wallet';
 import { ProvisioningRecord } from '../storage/ProvisioningRecord';
 import { ProvisioningService } from './ProvisioningService';
 import { ConnectionsModule } from '../modules/ConnectionsModule';
@@ -90,7 +90,7 @@ export class Agent {
     this.consumerRoutingService = new ConsumerRoutingService(this.messageSender, this.agentConfig);
     this.trustPingService = new TrustPingService();
     this.messagePickupService = new MessagePickupService(messageRepository);
-    this.ledgerService = new LedgerService(indy);
+    this.ledgerService = new LedgerService(this.wallet, indy);
 
     this.messageReceiver = new MessageReceiver(
       this.agentConfig,
@@ -121,6 +121,18 @@ export class Agent {
 
   async getPublicDidFromLedger(did: Did) {
     return this.ledgerService.getPublicDid(did);
+  }
+
+  async registerSchema(myDid: Did, schema: SchemaTemplate) {
+    return this.ledgerService.registerSchema(myDid, schema);
+  }
+
+  async getSchemaFromLedger(myDid: Did, schemaId: SchemaId) {
+    return this.ledgerService.getSchema(myDid, schemaId);
+  }
+
+  async initPublicDid(did: Did, seed: string) {
+    return this.wallet.initPublicDid2(did, seed);
   }
 
   getPublicDid() {
