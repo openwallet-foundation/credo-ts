@@ -11,5 +11,6 @@ export interface StorageService<T extends BaseRecord> {
 
   findAll<T>(typeClass: { new (...args: any[]): T }, type: string): Promise<T[]>;
 
+  // eslint-disable-next-line @typescript-eslint/ban-types
   findByQuery<T>(typeClass: { new (...args: any[]): T }, type: string, query: {}): Promise<T[]>;
 }

@@ -36,16 +36,17 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   async findAll<T>(typeClass: { new (...args: any[]): T }, type: string): Promise<T[]> {
     const recordIterator = await this.wallet.search(type, {}, IndyStorageService.DEFAULT_QUERY_OPTIONS);
     const records = [];
-    for await (let record of recordIterator) {
+    for await (const record of recordIterator) {
       records.push(BaseRecord.fromPersistence<T>(typeClass, record));
     }
     return records;
   }
 
+  // eslint-disable-next-line @typescript-eslint/ban-types
   async findByQuery<T>(typeClass: { new (...args: any[]): T }, type: string, query: {}): Promise<T[]> {
     const recordIterator = await this.wallet.search(type, query, IndyStorageService.DEFAULT_QUERY_OPTIONS);
     const records = [];
-    for await (let record of recordIterator) {
+    for await (const record of recordIterator) {
       records.push(BaseRecord.fromPersistence<T>(typeClass, record));
     }
     return records;

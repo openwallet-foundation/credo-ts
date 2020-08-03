@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-types */
+
 interface Indy {
   createWallet(config: {}, credentials: {}): Promise<void>;
   openWallet(config: {}, credentials: {}): Promise<WalletHandle>;

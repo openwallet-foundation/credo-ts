@@ -17,6 +17,7 @@ export class BasicMessagesModule {
     await this.messageSender.sendMessage(outboundMessage);
   }
 
+  // eslint-disable-next-line @typescript-eslint/ban-types
   async findAllByQuery(query: {}) {
     return this.basicMessageService.findAllByQuery(query);
   }

@@ -30,6 +30,7 @@ export class Repository<T extends BaseRecord> {
     return this.storageService.findAll<T>(this.recordType, this.recordType.type);
   }
 
+  // eslint-disable-next-line @typescript-eslint/ban-types
   async findByQuery(query: {}): Promise<T[]> {
     return this.storageService.findByQuery<T>(this.recordType, this.recordType.type, query);
   }

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-types */
+
 import logger from '../logger';
 import { UnpackedMessage } from '../types';
 import { Wallet, WalletConfig, WalletCredentials, DidInfo, DidConfig } from './Wallet';
@@ -158,7 +160,7 @@ export class IndyWallet implements Wallet {
       throw new Error(`Wallet has not been initialized yet`);
     }
     const sh: number = await this.indy.openWalletSearch(this.wh, type, query, options);
-    const generator = async function*(indy: Indy, wh: number) {
+    const generator = async function* (indy: Indy, wh: number) {
       try {
         while (true) {
           // count should probably be exported as a config?

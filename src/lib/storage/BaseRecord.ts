@@ -27,7 +27,9 @@ export abstract class BaseRecord {
     return JSON.stringify(value);
   }
 
+  // eslint-disable-next-line @typescript-eslint/ban-types
   static fromPersistence<T>(typeClass: { new (...args: any[]): T }, props: {}): T {
+    // eslint-disable-next-line
     // @ts-ignore
     const { value, ...rest } = props;
 

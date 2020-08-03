@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+// eslint-disable-next-line
 // @ts-ignore
 import { poll } from 'await-poll';
 import { Agent, InboundTransporter, OutboundTransporter } from '../../lib';

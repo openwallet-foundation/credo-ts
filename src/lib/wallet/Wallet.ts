@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-types */
+
 import { UnpackedMessage } from '../types';
 
 export interface Wallet {

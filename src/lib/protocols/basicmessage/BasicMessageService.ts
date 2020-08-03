@@ -50,6 +50,7 @@ class BasicMessageService extends EventEmitter {
     this.emit(EventType.MessageReceived, { verkey: connection.verkey, message });
   }
 
+  // eslint-disable-next-line @typescript-eslint/ban-types
   async findAllByQuery(query: {}) {
     return this.basicMessageRepository.findByQuery(query);
   }

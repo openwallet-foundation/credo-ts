@@ -22,10 +22,7 @@ class HttpInboundTransporter implements InboundTransporter {
       const packedMessage = JSON.parse(message);
       const outboundMessage = await agent.receiveMessage(packedMessage);
       if (outboundMessage) {
-        res
-          .status(200)
-          .json(outboundMessage.payload)
-          .end();
+        res.status(200).json(outboundMessage.payload).end();
       } else {
         res.status(200).end();
       }

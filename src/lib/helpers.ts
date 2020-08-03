@@ -14,7 +14,7 @@ import { MessageTransformer } from './agent/MessageTransformer';
 export async function decodeInvitationFromUrl(invitationUrl: string): Promise<ConnectionInvitationMessage> {
   // TODO: properly extract c_i param from invitation URL
   const [, encodedInvitation] = invitationUrl.split('c_i=');
-  const invitationJson: object = JSON.parse(Buffer.from(encodedInvitation, 'base64').toString());
+  const invitationJson: Record<string, unknown> = JSON.parse(Buffer.from(encodedInvitation, 'base64').toString());
 
   const invitation = MessageTransformer.toMessageInstance(invitationJson, ConnectionInvitationMessage);
 
@@ -32,7 +32,7 @@ export async function decodeInvitationFromUrl(invitationUrl: string): Promise<Co
  */
 export function encodeInvitationToUrl(
   invitation: ConnectionInvitationMessage,
-  domain: string = 'https://example.com/ssi'
+  domain = 'https://example.com/ssi'
 ): string {
   const invitationJson = MessageTransformer.toJSON(invitation);
   const stringifiedInvitation = JSON.stringify(invitationJson);

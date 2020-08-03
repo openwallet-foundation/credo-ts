@@ -9,7 +9,7 @@ import { BaseMessage } from './BaseMessage';
 const DefaultDecorators = [ThreadDecorated, L10nDecorated, TransportDecorated, TimingDecorated];
 
 export class AgentMessage extends Compose(BaseMessage, DefaultDecorators) {
-  toJSON(): object {
+  toJSON(): Record<string, unknown> {
     return MessageTransformer.toJSON(this);
   }
 
