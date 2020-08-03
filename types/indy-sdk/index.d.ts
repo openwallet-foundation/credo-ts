@@ -24,6 +24,12 @@ interface Indy {
     count: number
   ): Promise<WalletRecordSearch>;
   closeWalletSearch(sh: SearchHandle): Promise<void>;
+  createPoolLedgerConfig(configName: string, config?: PoolConfig): Promise<void>;
+  openPoolLedger(configName: string, config?: RuntimePoolConfig): Promise<PoolHandle>;
+  setProtocolVersion(version: number): Promise<void>;
+  buildGetNymRequest(submitterDid: Did | null, targetDid: Did): Promise<{}>;
+  submitRequest(poolHandle: PoolHandle, request: {}): Promise<{}>;
+  parseGetNymResponse(response: {}): Promise<{}>;
 }
 
 declare module 'indy-sdk' {
@@ -57,16 +63,34 @@ declare module 'indy-sdk' {
     count: number
   ): Promise<WalletRecordSearch>;
   function closeWalletSearch(sh: SearchHandle): Promise<void>;
+  function createPoolLedgerConfig(configName: string, config?: PoolConfig): Promise<void>;
+  function openPoolLedger(configName: string, config?: RuntimePoolConfig): Promise<PoolHandle>;
+  function setProtocolVersion(version: number): Promise<void>;
+  function buildGetNymRequest(submitterDid: Did | null, targetDid: Did): Promise<{}>;
+  function submitRequest(poolHandle: PoolHandle, request: {}): Promise<{}>;
+  function parseGetNymResponse(response: {}): Promise<{}>;
 }
 
 type WalletHandle = number;
 type SearchHandle = number;
+type PoolHandle = number;
 type Did = string;
 type Verkey = string;
 type ByteArray = number[];
 
 interface KeyConfig {
   seed?: string;
+}
+
+interface PoolConfig {
+  genesis_txn: string;
+}
+
+interface RuntimePoolConfig {
+  timeout?: number;
+  extended_timeout?: number;
+  preordered_nodes?: string[];
+  number_read_nodes?: number;
 }
 
 interface WalletRecord {
