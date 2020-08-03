@@ -9,6 +9,7 @@ import { TrustPingService } from '../protocols/trustping/TrustPingService';
 import { MessagePickupService } from '../protocols/messagepickup/MessagePickupService';
 import { MessageReceiver } from './MessageReceiver';
 import { EnvelopeService } from './EnvelopeService';
+import { LedgerService } from './LedgerService';
 import { Dispatcher } from './Dispatcher';
 import { MessageSender } from './MessageSender';
 import { InboundTransporter } from '../transport/InboundTransporter';
@@ -35,6 +36,7 @@ import { ProvisioningService } from './ProvisioningService';
 import { ConnectionsModule } from '../modules/ConnectionsModule';
 import { RoutingModule } from '../modules/RoutingModule';
 import { BasicMessagesModule } from '../modules/BasicMessagesModule';
+import { CredentialsModule } from '../modules/Credentials';
 
 export class Agent {
   inboundTransporter: InboundTransporter;
@@ -50,6 +52,7 @@ export class Agent {
   trustPingService: TrustPingService;
   messagePickupService: MessagePickupService;
   provisioningService: ProvisioningService;
+  ledgerService: LedgerService;
   basicMessageRepository: Repository<BasicMessageRecord>;
   connectionRepository: Repository<ConnectionRecord>;
   provisioningRepository: Repository<ProvisioningRecord>;
@@ -57,6 +60,7 @@ export class Agent {
   connections!: ConnectionsModule;
   routing!: RoutingModule;
   basicMessages!: BasicMessagesModule;
+  credentials!: CredentialsModule;
 
   constructor(
     initialConfig: InitConfig,
@@ -86,6 +90,7 @@ export class Agent {
     this.consumerRoutingService = new ConsumerRoutingService(this.messageSender, this.agentConfig);
     this.trustPingService = new TrustPingService();
     this.messagePickupService = new MessagePickupService(messageRepository);
+    this.ledgerService = new LedgerService(indy);
 
     this.messageReceiver = new MessageReceiver(
       this.agentConfig,
@@ -108,6 +113,14 @@ export class Agent {
     }
 
     return this.inboundTransporter.start(this);
+  }
+
+  async connectToLedger(poolName: string, poolConfig: PoolConfig) {
+    return this.ledgerService.connect(poolName, poolConfig);
+  }
+
+  async getPublicDidFromLedger(did: Did) {
+    return this.ledgerService.getPublicDid(did);
   }
 
   getPublicDid() {
