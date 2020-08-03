@@ -28,8 +28,13 @@ interface Indy {
   openPoolLedger(configName: string, config?: RuntimePoolConfig): Promise<PoolHandle>;
   setProtocolVersion(version: number): Promise<void>;
   buildGetNymRequest(submitterDid: Did | null, targetDid: Did): Promise<{}>;
-  submitRequest(poolHandle: PoolHandle, request: {}): Promise<{}>;
   parseGetNymResponse(response: {}): Promise<{}>;
+  buildSchemaRequest(myDid: Did, schema: {}): Promise<{}>;
+  buildGetSchemaRequest(myDid: Did, schemaId: SchemaId): Promise<{}>;
+  parseGetSchemaResponse(response: {}): Promise<[SchemaId, Schema]>;
+  signRequest(wh: WalletHandle, myDid: Did, request: {}): Promise<{}>;
+  submitRequest(poolHandle: PoolHandle, request: {}): Promise<{}>;
+  issuerCreateSchema(myDid: Did, name: string, version: string, attributes: string[]): Promise<[SchemaId, Schema]>;
 }
 
 declare module 'indy-sdk' {
@@ -67,8 +72,18 @@ declare module 'indy-sdk' {
   function openPoolLedger(configName: string, config?: RuntimePoolConfig): Promise<PoolHandle>;
   function setProtocolVersion(version: number): Promise<void>;
   function buildGetNymRequest(submitterDid: Did | null, targetDid: Did): Promise<{}>;
-  function submitRequest(poolHandle: PoolHandle, request: {}): Promise<{}>;
   function parseGetNymResponse(response: {}): Promise<{}>;
+  function buildSchemaRequest(myDid: Did, schema: {}): Promise<{}>;
+  function buildGetSchemaRequest(myDid: Did, schemaId: SchemaId): Promise<{}>;
+  function parseGetSchemaResponse(response: {}): Promise<[SchemaId, Schema]>;
+  function signRequest(wh: WalletHandle, myDid: Did, request: {}): Promise<{}>;
+  function submitRequest(poolHandle: PoolHandle, request: {}): Promise<{}>;
+  function issuerCreateSchema(
+    myDid: Did,
+    name: string,
+    version: string,
+    attributes: string[]
+  ): Promise<[SchemaId, Schema]>;
 }
 
 type WalletHandle = number;
@@ -77,6 +92,16 @@ type PoolHandle = number;
 type Did = string;
 type Verkey = string;
 type ByteArray = number[];
+type SchemaId = string;
+type CredDefId = string;
+
+interface Schema {
+  id: SchemaId;
+  attrNames: string[];
+  name: string;
+  version: string;
+  ver: string;
+}
 
 interface KeyConfig {
   seed?: string;

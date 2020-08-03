@@ -5,6 +5,7 @@ export interface Wallet {
   close(): Promise<void>;
   delete(): Promise<void>;
   initPublicDid(did: Did, seed: string): Promise<void>;
+  initPublicDid2(did: Did, seed: string): Promise<void>;
   getPublicDid(): DidInfo | {};
   createDid(didConfig?: DidConfig): Promise<[Did, Verkey]>;
   pack(payload: {}, recipientKeys: Verkey[], senderVk: Verkey | null): Promise<JsonWebKey>;
@@ -17,6 +18,7 @@ export interface Wallet {
   deleteWalletRecord(type: string, id: string): Promise<void>;
   getWalletRecord(type: string, id: string, options: {}): Promise<WalletRecord>;
   search(type: string, query: {}, options: {}): Promise<AsyncIterable<WalletRecord>>;
+  signRequest(myDid: Did, request: {}): Promise<{}>;
 }
 
 export interface DidInfo {
