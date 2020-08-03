@@ -3,12 +3,12 @@ import { BaseRecord, RecordType } from './BaseRecord';
 interface ProvisioningRecordProps {
   id: string;
   tags?: { [keys: string]: string };
-  agencyConnectionVerkey: Verkey;
+  agencyConnectionId: string;
   agencyPublicVerkey: Verkey;
 }
 
 export class ProvisioningRecord extends BaseRecord {
-  agencyConnectionVerkey: Verkey;
+  agencyConnectionId: string;
   agencyPublicVerkey: Verkey;
 
   type = RecordType.ProvisioningRecord;
@@ -16,7 +16,7 @@ export class ProvisioningRecord extends BaseRecord {
 
   constructor(props: ProvisioningRecordProps) {
     super(props.id);
-    this.agencyConnectionVerkey = props.agencyConnectionVerkey;
+    this.agencyConnectionId = props.agencyConnectionId;
     this.agencyPublicVerkey = props.agencyPublicVerkey;
     this.tags = props.tags || {};
   }

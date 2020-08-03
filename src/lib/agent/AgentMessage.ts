@@ -12,4 +12,8 @@ export class AgentMessage extends Compose(BaseMessage, DefaultDecorators) {
   toJSON(): object {
     return MessageTransformer.toJSON(this);
   }
+
+  is<C extends typeof AgentMessage>(Class: C): this is InstanceType<C> {
+    return this.type === Class.type;
+  }
 }

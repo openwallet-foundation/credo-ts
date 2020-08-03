@@ -22,8 +22,4 @@ export class BaseMessage {
   generateId() {
     return uuid();
   }
-
-  is<C extends typeof BaseMessage>(Class: C): this is InstanceType<C> {
-    return this.type === Class.type;
-  }
 }

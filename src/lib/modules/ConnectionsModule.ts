@@ -56,9 +56,9 @@ export class ConnectionsModule {
     return connection;
   }
 
-  async returnWhenIsConnected(verkey: Verkey): Promise<ConnectionRecord> {
+  async returnWhenIsConnected(connectionId: string): Promise<ConnectionRecord> {
     const connectionRecord = await poll(
-      () => this.findConnectionByVerkey(verkey),
+      () => this.find(connectionId),
       (c: ConnectionRecord) => c.state !== ConnectionState.COMPLETE,
       100
     );
@@ -69,11 +69,15 @@ export class ConnectionsModule {
     return this.connectionService.getConnections();
   }
 
-  async findConnectionByVerkey(verkey: Verkey) {
+  async find(connectionId: string): Promise<ConnectionRecord | null> {
+    return this.connectionService.find(connectionId);
+  }
+
+  async findConnectionByVerkey(verkey: Verkey): Promise<ConnectionRecord | null> {
     return this.connectionService.findByVerkey(verkey);
   }
 
-  async findConnectionByTheirKey(verkey: Verkey) {
+  async findConnectionByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
     return this.connectionService.findByTheirKey(verkey);
   }
 

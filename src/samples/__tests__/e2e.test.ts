@@ -28,7 +28,7 @@ const bobConfig = {
 describe('with agency', () => {
   let aliceAgent: Agent;
   let bobAgent: Agent;
-  let aliceAtAliceBobVerkey: Verkey;
+  let aliceAtAliceBobId: string;
 
   afterAll(async () => {
     (aliceAgent.inboundTransporter as PollingInboundTransporter).stop = true;
@@ -88,15 +88,13 @@ describe('with agency', () => {
     const bobConnectionAtBobAlice = await bobAgent.connections.acceptInvitation(invitation.toJSON());
 
     const aliceConnectionRecordAtAliceBob = await aliceAgent.connections.returnWhenIsConnected(
-      aliceConnectionAtAliceBob.verkey
+      aliceConnectionAtAliceBob.id
     );
     if (!aliceConnectionRecordAtAliceBob) {
       throw new Error('Connection not found!');
     }
 
-    const bobConnectionRecordAtBobAlice = await bobAgent.connections.returnWhenIsConnected(
-      bobConnectionAtBobAlice.verkey
-    );
+    const bobConnectionRecordAtBobAlice = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice.id);
     if (!bobConnectionRecordAtBobAlice) {
       throw new Error('Connection not found!');
     }
@@ -105,14 +103,14 @@ describe('with agency', () => {
     expect(bobConnectionRecordAtBobAlice).toBeConnectedWith(aliceConnectionRecordAtAliceBob);
 
     // We save this verkey to send message via this connection in the following test
-    aliceAtAliceBobVerkey = aliceConnectionAtAliceBob.verkey;
+    aliceAtAliceBobId = aliceConnectionAtAliceBob.id;
   });
 
   test('Send a message from Alice to Bob via agency', async () => {
     // send message from Alice to Bob
-    const aliceConnectionAtAliceBob = await aliceAgent.connections.findConnectionByVerkey(aliceAtAliceBobVerkey);
+    const aliceConnectionAtAliceBob = await aliceAgent.connections.find(aliceAtAliceBobId);
     if (!aliceConnectionAtAliceBob) {
-      throw new Error(`There is no connection for verkey ${aliceAtAliceBobVerkey}`);
+      throw new Error(`There is no connection for id ${aliceAtAliceBobId}`);
     }
 
     console.log('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob);

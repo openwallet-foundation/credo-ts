@@ -177,6 +177,17 @@ class ConnectionService extends EventEmitter {
     return this.connectionRepository.findAll();
   }
 
+  async find(connectionId: string): Promise<ConnectionRecord | null> {
+    try {
+      const connection = await this.connectionRepository.find(connectionId);
+
+      return connection;
+    } catch {
+      // connection not found.
+      return null;
+    }
+  }
+
   async findByVerkey(verkey: Verkey): Promise<ConnectionRecord | null> {
     const connectionRecords = await this.connectionRepository.findByQuery({ verkey });
 
