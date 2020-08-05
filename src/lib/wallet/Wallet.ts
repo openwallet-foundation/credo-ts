@@ -1,6 +1,7 @@
 import { UnpackedMessage } from '../types';
 
 export interface Wallet {
+  wh?: WalletHandle;
   init(): Promise<void>;
   close(): Promise<void>;
   delete(): Promise<void>;
@@ -18,7 +19,7 @@ export interface Wallet {
   deleteWalletRecord(type: string, id: string): Promise<void>;
   getWalletRecord(type: string, id: string, options: {}): Promise<WalletRecord>;
   search(type: string, query: {}, options: {}): Promise<AsyncIterable<WalletRecord>>;
-  signRequest(myDid: Did, request: {}): Promise<{}>;
+  signRequest(myDid: Did, request: LedgerRequest): Promise<LedgerRequest>;
 }
 
 export interface DidInfo {

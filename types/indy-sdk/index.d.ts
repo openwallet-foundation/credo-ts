@@ -27,14 +27,25 @@ interface Indy {
   createPoolLedgerConfig(configName: string, config?: PoolConfig): Promise<void>;
   openPoolLedger(configName: string, config?: RuntimePoolConfig): Promise<PoolHandle>;
   setProtocolVersion(version: number): Promise<void>;
-  buildGetNymRequest(submitterDid: Did | null, targetDid: Did): Promise<{}>;
+  buildGetNymRequest(submitterDid: Did | null, targetDid: Did): Promise<LedgerRequest>;
   parseGetNymResponse(response: {}): Promise<{}>;
-  buildSchemaRequest(myDid: Did, schema: {}): Promise<{}>;
-  buildGetSchemaRequest(myDid: Did, schemaId: SchemaId): Promise<{}>;
+  buildSchemaRequest(myDid: Did, schema: Schema): Promise<LedgerRequest>;
+  buildGetSchemaRequest(myDid: Did, schemaId: SchemaId): Promise<LedgerRequest>;
   parseGetSchemaResponse(response: {}): Promise<[SchemaId, Schema]>;
-  signRequest(wh: WalletHandle, myDid: Did, request: {}): Promise<{}>;
-  submitRequest(poolHandle: PoolHandle, request: {}): Promise<{}>;
+  buildCredDefRequest(submitterDid: Did, credDef: CredDef): Promise<LedgerRequest>;
+  buildGetCredDefRequest(submitterDid: Did, credDefId: CredDefId): Promise<LedgerRequest>;
+  parseGetCredDefResponse(response: {}): Promise<[CredDefId, CredDef]>;
+  signRequest(wh: WalletHandle, myDid: Did, request: LedgerRequest): Promise<LedgerRequest>;
+  submitRequest(poolHandle: PoolHandle, request: LedgerRequest): Promise<{}>;
   issuerCreateSchema(myDid: Did, name: string, version: string, attributes: string[]): Promise<[SchemaId, Schema]>;
+  issuerCreateAndStoreCredentialDef(
+    wh: WalletHandle,
+    myDid: Did,
+    schema: Schema,
+    tag: string,
+    signatureType: string,
+    config: {}
+  ): Promise<[CredDefId, CredDef]>;
 }
 
 declare module 'indy-sdk' {
@@ -71,19 +82,30 @@ declare module 'indy-sdk' {
   function createPoolLedgerConfig(configName: string, config?: PoolConfig): Promise<void>;
   function openPoolLedger(configName: string, config?: RuntimePoolConfig): Promise<PoolHandle>;
   function setProtocolVersion(version: number): Promise<void>;
-  function buildGetNymRequest(submitterDid: Did | null, targetDid: Did): Promise<{}>;
+  function buildGetNymRequest(submitterDid: Did | null, targetDid: Did): Promise<LedgerRequest>;
   function parseGetNymResponse(response: {}): Promise<{}>;
-  function buildSchemaRequest(myDid: Did, schema: {}): Promise<{}>;
-  function buildGetSchemaRequest(myDid: Did, schemaId: SchemaId): Promise<{}>;
+  function buildSchemaRequest(submitterDid: Did, schema: Schema): Promise<LedgerRequest>;
+  function buildGetSchemaRequest(submitterDid: Did, schemaId: SchemaId): Promise<LedgerRequest>;
   function parseGetSchemaResponse(response: {}): Promise<[SchemaId, Schema]>;
-  function signRequest(wh: WalletHandle, myDid: Did, request: {}): Promise<{}>;
-  function submitRequest(poolHandle: PoolHandle, request: {}): Promise<{}>;
+  function buildCredDefRequest(submitterDid: Did, credDef: CredDef): Promise<LedgerRequest>;
+  function buildGetCredDefRequest(submitterDid: Did, credDefId: CredDefId): Promise<LedgerRequest>;
+  function parseGetCredDefResponse(response: {}): Promise<[CredDefId, CredDef]>;
+  function signRequest(wh: WalletHandle, myDid: Did, request: LedgerRequest): Promise<LedgerRequest>;
+  function submitRequest(poolHandle: PoolHandle, request: LedgerRequest): Promise<{}>;
   function issuerCreateSchema(
     myDid: Did,
     name: string,
     version: string,
     attributes: string[]
   ): Promise<[SchemaId, Schema]>;
+  function issuerCreateAndStoreCredentialDef(
+    wh: WalletHandle,
+    myDid: Did,
+    schema: Schema,
+    tag: string,
+    signatureType: string,
+    config: {}
+  ): Promise<[CredDefId, CredDef]>;
 }
 
 type WalletHandle = number;
@@ -95,11 +117,27 @@ type ByteArray = number[];
 type SchemaId = string;
 type CredDefId = string;
 
+interface LedgerRequest {
+  reqId: number;
+  identifier: Did;
+  operation: {};
+  protocolVersion: 2;
+}
+
 interface Schema {
   id: SchemaId;
   attrNames: string[];
   name: string;
   version: string;
+  ver: string;
+}
+
+interface CredDef {
+  id: string;
+  schemaId: string;
+  type: string;
+  tag: string;
+  value: any;
   ver: string;
 }
 

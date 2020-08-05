@@ -4,6 +4,8 @@ import { OutboundPackage } from '../types';
 import fs from 'fs';
 import indy from 'indy-sdk';
 
+jest.setTimeout(10000);
+
 const faberConfig = {
   label: 'Faber',
   walletConfig: { id: 'faber' },
@@ -12,6 +14,7 @@ const faberConfig = {
 
 describe('ledger', () => {
   let faberAgent: Agent;
+  let schemaId: SchemaId;
 
   beforeAll(async () => {
     faberAgent = new Agent(faberConfig, new DummyInboundTransporter(), new DummyOutboundTransporter(), indy);
@@ -57,7 +60,8 @@ describe('ledger', () => {
       attributes: ['name', 'age'],
       version: '1.0',
     };
-    const [schemaId] = await faberAgent.registerSchema(myDid, schemaTemplate);
+
+    [schemaId] = await faberAgent.registerSchema(myDid, schemaTemplate);
     const [ledgerSchemaId, ledgerSchema] = await faberAgent.getSchemaFromLedger(myDid, schemaId);
 
     expect(ledgerSchemaId).toBe(`Th7MpTaRZVRYnPiabds81Y:2:${schemaName}:1.0`);
@@ -73,9 +77,35 @@ describe('ledger', () => {
     );
   });
 
-  // test('faber can register definition on ledger', async () => {
-  //   expect(true).toBe(false);
-  // });
+  test('faber can register definition on ledger', async () => {
+    const myDid = 'Th7MpTaRZVRYnPiabds81Y';
+    const [, ledgerSchema] = await faberAgent.getSchemaFromLedger(myDid, schemaId);
+    const credentialDefinitionTemplate = {
+      schema: ledgerSchema,
+      tag: 'TAG',
+      signatureType: 'CL',
+      config: { support_revocation: true },
+    };
+
+    const [credDefId] = await faberAgent.registerDefinition(myDid, credentialDefinitionTemplate);
+    const [ledgerCredDefId, ledgerCredDef] = await faberAgent.getDefinitionFromLedger(myDid, credDefId);
+
+    const credDefIdRegExp = new RegExp(`${myDid}:3:CL:[0-9]+:TAG`);
+    expect(ledgerCredDefId).toEqual(expect.stringMatching(credDefIdRegExp));
+    expect(ledgerCredDef).toEqual(
+      expect.objectContaining({
+        id: expect.stringMatching(credDefIdRegExp),
+        schemaId: expect.any(String),
+        type: 'CL',
+        tag: 'TAG',
+        ver: '1.0',
+        value: expect.objectContaining({
+          primary: expect.anything(),
+          revocation: expect.anything(),
+        }),
+      })
+    );
+  });
 });
 
 class DummyInboundTransporter implements InboundTransporter {

@@ -9,7 +9,7 @@ import { TrustPingService } from '../protocols/trustping/TrustPingService';
 import { MessagePickupService } from '../protocols/messagepickup/MessagePickupService';
 import { MessageReceiver } from './MessageReceiver';
 import { EnvelopeService } from './EnvelopeService';
-import { LedgerService, SchemaTemplate } from './LedgerService';
+import { LedgerService, SchemaTemplate, CredDefTemplate } from './LedgerService';
 import { Dispatcher } from './Dispatcher';
 import { MessageSender } from './MessageSender';
 import { InboundTransporter } from '../transport/InboundTransporter';
@@ -129,6 +129,14 @@ export class Agent {
 
   async getSchemaFromLedger(myDid: Did, schemaId: SchemaId) {
     return this.ledgerService.getSchema(myDid, schemaId);
+  }
+
+  async registerDefinition(myDid: Did, credentialDefinitionTemplate: CredDefTemplate) {
+    return this.ledgerService.registerDefinition(myDid, credentialDefinitionTemplate);
+  }
+
+  async getDefinitionFromLedger(myDid: Did, credDefId: CredDefId) {
+    return this.ledgerService.getDefinitionFromLedger(myDid, credDefId);
   }
 
   async initPublicDid(did: Did, seed: string) {
