@@ -211,7 +211,7 @@ export class IndyWallet implements Wallet {
     return this.indy.getWalletRecord(this.wh, type, id, options);
   }
 
-  signRequest(myDid: Did, request: {}) {
+  signRequest(myDid: Did, request: LedgerRequest) {
     if (!this.wh) {
       throw new Error(`Wallet has not been initialized yet`);
     }
