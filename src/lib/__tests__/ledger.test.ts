@@ -25,9 +25,8 @@ describe('ledger', () => {
     await faberAgent.closeAndDeleteWallet();
   });
 
-  test('faber can register public DID on ledger', async () => {
-    const poolName = 'pool1';
-    console.log(`Open Pool Ledger: ${poolName}`);
+  test('faber can init its public DID', async () => {
+    const poolName = 'test-pool';
     const poolConfig = {
       genesis_txn: '/Users/abjk833/projects/_forks/aries-framework-javascript/src/lib/__tests__/genesis.txn',
     };
@@ -35,16 +34,33 @@ describe('ledger', () => {
     const fileExists = fs.existsSync(poolConfig.genesis_txn);
     console.log(fileExists);
 
+    console.log(`Connection to ledger pool ${poolName}`);
     await faberAgent.connectToLedger(poolName, poolConfig);
 
-    console.log('"Sovrin Steward" -> Create and store in Wallet DID from seed');
     const stewardDid = 'Th7MpTaRZVRYnPiabds81Y';
     const stewardDidInfo = { seed: '000000000000000000000000Steward1' };
 
     await faberAgent.initPublicDid(stewardDid, stewardDidInfo.seed);
-    console.log('stewardDid', stewardDid);
+    const faberAgentPublicDid = faberAgent.getPublicDid();
+    console.log('faberAgentPublicDid', faberAgentPublicDid);
 
-    const result = await faberAgent.getPublicDidFromLedger(stewardDid);
+    expect(faberAgentPublicDid).toEqual({
+      did: 'Th7MpTaRZVRYnPiabds81Y',
+      verkey: 'FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4',
+    });
+  });
+
+  test('faber can get public DID from ledger', async () => {
+    const agentPublicDid = faberAgent.getPublicDid();
+
+    // @ts-ignore
+    if (!agentPublicDid.did) {
+      throw new Error('Agent does not have publid did.');
+    }
+    console.log('faberAgentPublicDid', agentPublicDid);
+
+    // @ts-ignore
+    const result = await faberAgent.getPublicDidFromLedger(agentPublicDid.did);
     expect(result).toEqual({
       did: 'Th7MpTaRZVRYnPiabds81Y',
       verkey: '~7TYfekw4GUagBnBVCqPjiC',
