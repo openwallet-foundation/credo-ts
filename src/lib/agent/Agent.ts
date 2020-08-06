@@ -109,7 +109,7 @@ export class Agent {
     const { publicDid, publicDidSeed } = this.agentConfig;
     if (publicDid && publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
-      this.wallet.initPublicDid(publicDid, publicDidSeed);
+      this.wallet.initAgentDid(publicDid, publicDidSeed);
     }
 
     return this.inboundTransporter.start(this);
@@ -140,7 +140,11 @@ export class Agent {
   }
 
   async initPublicDid(did: Did, seed: string) {
-    return this.wallet.initPublicDid2(did, seed);
+    return this.wallet.initPublicDid(did, seed);
+  }
+
+  getAgentDid() {
+    return this.wallet.getAgentDid();
   }
 
   getPublicDid() {

@@ -5,8 +5,9 @@ export interface Wallet {
   init(): Promise<void>;
   close(): Promise<void>;
   delete(): Promise<void>;
+  initAgentDid(did: Did, seed: string): Promise<void>;
   initPublicDid(did: Did, seed: string): Promise<void>;
-  initPublicDid2(did: Did, seed: string): Promise<void>;
+  getAgentDid(): DidInfo | {};
   getPublicDid(): DidInfo | {};
   createDid(didConfig?: DidConfig): Promise<[Did, Verkey]>;
   pack(payload: {}, recipientKeys: Verkey[], senderVk: Verkey | null): Promise<JsonWebKey>;

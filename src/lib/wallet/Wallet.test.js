@@ -8,9 +8,9 @@ describe('Wallet', () => {
   test('initialize public did', async () => {
     await wallet.init();
 
-    await wallet.initPublicDid('DtWRdd6C5dN5vpcN6XRAvu', '00000000000000000000000Forward01');
+    await wallet.initAgentDid('DtWRdd6C5dN5vpcN6XRAvu', '00000000000000000000000Forward01');
 
-    expect(wallet.getPublicDid()).toEqual({
+    expect(wallet.getAgentDid()).toEqual({
       did: 'DtWRdd6C5dN5vpcN6XRAvu',
       verkey: '82RBSn3heLgXzZd74UsMC8Q8YRfEEhQoAM7LUqE6bevJ',
     });
