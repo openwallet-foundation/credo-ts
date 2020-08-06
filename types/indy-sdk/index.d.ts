@@ -28,15 +28,15 @@ interface Indy {
   openPoolLedger(configName: string, config?: RuntimePoolConfig): Promise<PoolHandle>;
   setProtocolVersion(version: number): Promise<void>;
   buildGetNymRequest(submitterDid: Did | null, targetDid: Did): Promise<LedgerRequest>;
-  parseGetNymResponse(response: {}): Promise<{}>;
+  parseGetNymResponse(response: LedgerResponse): Promise<{}>;
   buildSchemaRequest(myDid: Did, schema: Schema): Promise<LedgerRequest>;
   buildGetSchemaRequest(myDid: Did, schemaId: SchemaId): Promise<LedgerRequest>;
-  parseGetSchemaResponse(response: {}): Promise<[SchemaId, Schema]>;
+  parseGetSchemaResponse(response: LedgerResponse): Promise<[SchemaId, Schema]>;
   buildCredDefRequest(submitterDid: Did, credDef: CredDef): Promise<LedgerRequest>;
   buildGetCredDefRequest(submitterDid: Did, credDefId: CredDefId): Promise<LedgerRequest>;
-  parseGetCredDefResponse(response: {}): Promise<[CredDefId, CredDef]>;
-  signRequest(wh: WalletHandle, myDid: Did, request: LedgerRequest): Promise<LedgerRequest>;
-  submitRequest(poolHandle: PoolHandle, request: LedgerRequest): Promise<{}>;
+  parseGetCredDefResponse(response: LedgerResponse): Promise<[CredDefId, CredDef]>;
+  signRequest(wh: WalletHandle, myDid: Did, request: LedgerRequest): Promise<SignedLedgerRequest>;
+  submitRequest(poolHandle: PoolHandle, request: LedgerRequest): Promise<LedgerResponse>;
   issuerCreateSchema(myDid: Did, name: string, version: string, attributes: string[]): Promise<[SchemaId, Schema]>;
   issuerCreateAndStoreCredentialDef(
     wh: WalletHandle,
@@ -83,15 +83,15 @@ declare module 'indy-sdk' {
   function openPoolLedger(configName: string, config?: RuntimePoolConfig): Promise<PoolHandle>;
   function setProtocolVersion(version: number): Promise<void>;
   function buildGetNymRequest(submitterDid: Did | null, targetDid: Did): Promise<LedgerRequest>;
-  function parseGetNymResponse(response: {}): Promise<{}>;
+  function parseGetNymResponse(response: LedgerResponse): Promise<{}>;
   function buildSchemaRequest(submitterDid: Did, schema: Schema): Promise<LedgerRequest>;
   function buildGetSchemaRequest(submitterDid: Did, schemaId: SchemaId): Promise<LedgerRequest>;
-  function parseGetSchemaResponse(response: {}): Promise<[SchemaId, Schema]>;
+  function parseGetSchemaResponse(response: LedgerResponse): Promise<[SchemaId, Schema]>;
   function buildCredDefRequest(submitterDid: Did, credDef: CredDef): Promise<LedgerRequest>;
   function buildGetCredDefRequest(submitterDid: Did, credDefId: CredDefId): Promise<LedgerRequest>;
-  function parseGetCredDefResponse(response: {}): Promise<[CredDefId, CredDef]>;
-  function signRequest(wh: WalletHandle, myDid: Did, request: LedgerRequest): Promise<LedgerRequest>;
-  function submitRequest(poolHandle: PoolHandle, request: LedgerRequest): Promise<{}>;
+  function parseGetCredDefResponse(response: LedgerResponse): Promise<[CredDefId, CredDef]>;
+  function signRequest(wh: WalletHandle, myDid: Did, request: LedgerRequest): Promise<SignedLedgerRequest>;
+  function submitRequest(poolHandle: PoolHandle, request: LedgerRequest): Promise<LedgerResponse>;
   function issuerCreateSchema(
     myDid: Did,
     name: string,
@@ -119,9 +119,18 @@ type CredDefId = string;
 
 interface LedgerRequest {
   reqId: number;
-  identifier: Did;
+  identifier: string;
   operation: {};
-  protocolVersion: 2;
+  protocolVersion: number;
+}
+
+interface SignedLedgerRequest extends LedgerRequest {
+  signature: string;
+}
+
+interface LedgerResponse {
+  op: string;
+  result: {};
 }
 
 interface Schema {
