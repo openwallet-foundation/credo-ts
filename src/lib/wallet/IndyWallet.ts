@@ -32,23 +32,19 @@ export class IndyWallet implements Wallet {
   }
 
   async initAgentDid(did: Did, seed: string) {
-    let didInfo = {};
     const [, verkey] = await this.createDid({ did, seed });
-    didInfo = {
+    this.agentDidInfo = {
       did,
       verkey,
     };
-    this.agentDidInfo = didInfo;
   }
 
   async initPublicDid(did: Did, seed: string) {
-    let didInfo = {};
     const [, verkey] = await this.createDid({ did, seed });
-    didInfo = {
+    this.publicDidInfo = {
       did,
       verkey,
     };
-    this.publicDidInfo = didInfo;
   }
 
   getAgentDid(): DidInfo | {} {
