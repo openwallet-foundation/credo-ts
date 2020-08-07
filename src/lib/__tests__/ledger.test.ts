@@ -26,7 +26,7 @@ describe('ledger', () => {
     };
 
     console.log(`Connection to ledger pool ${poolName}`);
-    await faberAgent.connectToLedger(poolName, poolConfig);
+    await faberAgent.ledger.connect(poolName, poolConfig);
   });
 
   afterAll(async () => {
@@ -51,19 +51,13 @@ describe('ledger', () => {
   });
 
   test('get public DID from ledger', async () => {
-    // TODO
-    // I add ts-ignore above `faberAgent.getPublicDid();`, because `Wallet` interface contains this method signature
-    // `getPublicDid(): DidInfo | {};`, but even if I check it with `if (!didInfo.did)` TypeScript still comlpaints
-    // with message "property 'did' does not exist on type '{}'.".
-
-    // @ts-ignore
     const { did } = faberAgent.getPublicDid();
 
     if (!did) {
       throw new Error('Agent does not have publid did.');
     }
 
-    const result = await faberAgent.getPublicDidFromLedger(did);
+    const result = await faberAgent.ledger.getPublicDid(did);
     expect(result).toEqual({
       did: 'Th7MpTaRZVRYnPiabds81Y',
       verkey: '~7TYfekw4GUagBnBVCqPjiC',
@@ -72,7 +66,6 @@ describe('ledger', () => {
   });
 
   test('register schema on ledger', async () => {
-    const myDid = 'Th7MpTaRZVRYnPiabds81Y';
     const schemaName = `test-schema-${Date.now()}`;
     const schemaTemplate = {
       name: schemaName,
@@ -80,8 +73,8 @@ describe('ledger', () => {
       version: '1.0',
     };
 
-    [schemaId] = await faberAgent.registerSchema(myDid, schemaTemplate);
-    const [ledgerSchemaId, ledgerSchema] = await faberAgent.getSchemaFromLedger(myDid, schemaId);
+    [schemaId] = await faberAgent.ledger.registerCredentialSchema(schemaTemplate);
+    const [ledgerSchemaId, ledgerSchema] = await faberAgent.ledger.getSchema(schemaId);
 
     expect(ledgerSchemaId).toBe(`Th7MpTaRZVRYnPiabds81Y:2:${schemaName}:1.0`);
     expect(ledgerSchema).toEqual(
@@ -97,19 +90,18 @@ describe('ledger', () => {
   });
 
   test('register definition on ledger', async () => {
-    const myDid = 'Th7MpTaRZVRYnPiabds81Y';
-    const [, ledgerSchema] = await faberAgent.getSchemaFromLedger(myDid, schemaId);
+    const [, schema] = await faberAgent.ledger.getSchema(schemaId);
     const credentialDefinitionTemplate = {
-      schema: ledgerSchema,
+      schema: schema,
       tag: 'TAG',
       signatureType: 'CL',
       config: { support_revocation: true },
     };
 
-    const [credDefId] = await faberAgent.registerDefinition(myDid, credentialDefinitionTemplate);
-    const [ledgerCredDefId, ledgerCredDef] = await faberAgent.getDefinitionFromLedger(myDid, credDefId);
+    const [credDefId] = await faberAgent.ledger.registerCredentialDefinition(credentialDefinitionTemplate);
+    const [ledgerCredDefId, ledgerCredDef] = await faberAgent.ledger.getCredentialDefinition(credDefId);
 
-    const credDefIdRegExp = new RegExp(`${myDid}:3:CL:[0-9]+:TAG`);
+    const credDefIdRegExp = new RegExp(`Th7MpTaRZVRYnPiabds81Y:3:CL:[0-9]+:TAG`);
     expect(ledgerCredDefId).toEqual(expect.stringMatching(credDefIdRegExp));
     expect(ledgerCredDef).toEqual(
       expect.objectContaining({

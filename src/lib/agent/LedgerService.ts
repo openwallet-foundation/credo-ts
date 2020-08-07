@@ -37,10 +37,13 @@ export class LedgerService {
     }
     const request = await this.indy.buildGetNymRequest(null, myDid);
     logger.log('request', request);
+
     const response = await this.indy.submitRequest(this.poolHandle, request);
     logger.log('response', response);
+
     const result = await this.indy.parseGetNymResponse(response);
     logger.log('result', result);
+
     return result;
   }
 
@@ -48,7 +51,6 @@ export class LedgerService {
     if (!this.poolHandle) {
       throw new Error('Pool has not been initialized.');
     }
-
     const { name, attributes, version } = schemaTemplate;
     const [schemaId, schema] = await this.indy.issuerCreateSchema(myDid, name, version, attributes);
     logger.log('schemaId, schema', schemaId, schema);
@@ -71,10 +73,13 @@ export class LedgerService {
     }
     const request = await this.indy.buildGetSchemaRequest(myDid, schemaId);
     logger.log('request', request);
+
     const response = await this.indy.submitRequest(this.poolHandle, request);
     logger.log('response', response);
+
     const result = await this.indy.parseGetSchemaResponse(response);
     logger.log('Credential Schema from ledger: ', result);
+
     return result;
   }
 
@@ -82,21 +87,9 @@ export class LedgerService {
     if (!this.poolHandle) {
       throw new Error('Pool has not been initialized.');
     }
-
-    if (!this.wallet.wh) {
-      throw Error('Wallet has not been initialized yet');
-    }
-
     const { schema, tag, signatureType, config } = credentialDefinitionTemplate;
 
-    const [credDefId, credDef] = await this.indy.issuerCreateAndStoreCredentialDef(
-      this.wallet.wh,
-      myDid,
-      schema,
-      tag,
-      signatureType,
-      config
-    );
+    const [credDefId, credDef] = await this.wallet.createCredDef(myDid, schema, tag, signatureType, config);
     const request = await this.indy.buildCredDefRequest(myDid, credDef);
     logger.log('request', request);
 
@@ -109,14 +102,19 @@ export class LedgerService {
     return [credDefId, credDef];
   }
 
-  async getDefinitionFromLedger(myDid: Did, credDefId: CredDefId) {
+  async getDefinition(myDid: Did, credDefId: CredDefId) {
     if (!this.poolHandle) {
       throw new Error('Pool has not been initialized.');
     }
     const request = await this.indy.buildGetCredDefRequest(myDid, credDefId);
+    logger.log('request', request);
+
     const response = await this.indy.submitRequest(this.poolHandle, request);
+    logger.log('response', response);
+
     const result = await this.indy.parseGetCredDefResponse(response);
     logger.log('Credential Definition from ledger: ', result);
+
     return result;
   }
 }

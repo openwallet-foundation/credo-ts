@@ -7,7 +7,7 @@ export class IndyWallet implements Wallet {
   walletConfig: WalletConfig;
   walletCredentials: WalletCredentials;
   agentDidInfo: DidInfo | {} = {};
-  publicDidInfo: DidInfo | {} = {};
+  publicDidInfo: DidInfo | Record<string, undefined> = {};
   indy: Indy;
 
   constructor(walletConfig: WalletConfig, walletCredentials: WalletCredentials, indy: Indy) {
@@ -61,6 +61,20 @@ export class IndyWallet implements Wallet {
     }
 
     return this.indy.createAndStoreMyDid(this.wh, didConfig || {});
+  }
+
+  async createCredDef(
+    issuerDid: string,
+    schema: Schema,
+    tag: string,
+    signatureType: string,
+    config: {}
+  ): Promise<[string, CredDef]> {
+    if (!this.wh) {
+      throw Error('Wallet has not been initialized yet');
+    }
+
+    return this.indy.issuerCreateAndStoreCredentialDef(this.wh, issuerDid, schema, tag, signatureType, config);
   }
 
   async pack(payload: {}, recipientKeys: Verkey[], senderVk: Verkey): Promise<JsonWebKey> {

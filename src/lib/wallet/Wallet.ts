@@ -8,8 +8,15 @@ export interface Wallet {
   initAgentDid(did: Did, seed: string): Promise<void>;
   initPublicDid(did: Did, seed: string): Promise<void>;
   getAgentDid(): DidInfo | {};
-  getPublicDid(): DidInfo | {};
+  getPublicDid(): DidInfo | Record<string, undefined>;
   createDid(didConfig?: DidConfig): Promise<[Did, Verkey]>;
+  createCredDef(
+    issuerDid: Did,
+    schema: Schema,
+    tag: string,
+    signatureType: string,
+    config: {}
+  ): Promise<[CredDefId, CredDef]>;
   pack(payload: {}, recipientKeys: Verkey[], senderVk: Verkey | null): Promise<JsonWebKey>;
   unpack(messagePackage: JsonWebKey): Promise<UnpackedMessage>;
   sign(data: Buffer, verkey: Verkey): Promise<Buffer>;
