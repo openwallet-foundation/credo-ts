@@ -51,16 +51,19 @@ describe('ledger', () => {
   });
 
   test('get public DID from ledger', async () => {
-    const agentPublicDid = faberAgent.getPublicDid();
+    // TODO
+    // I add ts-ignore above `faberAgent.getPublicDid();`, because `Wallet` interface contains this method signature
+    // `getPublicDid(): DidInfo | {};`, but even if I check it with `if (!didInfo.did)` TypeScript still comlpaints
+    // with message "property 'did' does not exist on type '{}'.".
 
     // @ts-ignore
-    if (!agentPublicDid.did) {
+    const { did } = faberAgent.getPublicDid();
+
+    if (!did) {
       throw new Error('Agent does not have publid did.');
     }
-    console.log('faberAgentPublicDid', agentPublicDid);
 
-    // @ts-ignore
-    const result = await faberAgent.getPublicDidFromLedger(agentPublicDid.did);
+    const result = await faberAgent.getPublicDidFromLedger(did);
     expect(result).toEqual({
       did: 'Th7MpTaRZVRYnPiabds81Y',
       verkey: '~7TYfekw4GUagBnBVCqPjiC',
