@@ -9,7 +9,7 @@ import { TrustPingService } from '../protocols/trustping/TrustPingService';
 import { MessagePickupService } from '../protocols/messagepickup/MessagePickupService';
 import { MessageReceiver } from './MessageReceiver';
 import { EnvelopeService } from './EnvelopeService';
-import { LedgerService, SchemaTemplate, CredDefTemplate } from './LedgerService';
+import { LedgerService } from './LedgerService';
 import { Dispatcher } from './Dispatcher';
 import { MessageSender } from './MessageSender';
 import { InboundTransporter } from '../transport/InboundTransporter';
@@ -30,13 +30,13 @@ import { Repository } from '../storage/Repository';
 import { IndyStorageService } from '../storage/IndyStorageService';
 import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { AgentConfig } from './AgentConfig';
-import { Wallet, DidConfig } from '../wallet/Wallet';
+import { Wallet } from '../wallet/Wallet';
 import { ProvisioningRecord } from '../storage/ProvisioningRecord';
 import { ProvisioningService } from './ProvisioningService';
 import { ConnectionsModule } from '../modules/ConnectionsModule';
 import { RoutingModule } from '../modules/RoutingModule';
 import { BasicMessagesModule } from '../modules/BasicMessagesModule';
-import { CredentialsModule } from '../modules/Credentials';
+import { LedgerModule } from '../modules/LedgerModule';
 
 export class Agent {
   inboundTransporter: InboundTransporter;
@@ -60,7 +60,7 @@ export class Agent {
   connections!: ConnectionsModule;
   routing!: RoutingModule;
   basicMessages!: BasicMessagesModule;
-  credentials!: CredentialsModule;
+  ledger!: LedgerModule;
 
   constructor(
     initialConfig: InitConfig,
@@ -113,30 +113,6 @@ export class Agent {
     }
 
     return this.inboundTransporter.start(this);
-  }
-
-  async connectToLedger(poolName: string, poolConfig: PoolConfig) {
-    return this.ledgerService.connect(poolName, poolConfig);
-  }
-
-  async getPublicDidFromLedger(did: Did) {
-    return this.ledgerService.getPublicDid(did);
-  }
-
-  async registerSchema(myDid: Did, schema: SchemaTemplate) {
-    return this.ledgerService.registerSchema(myDid, schema);
-  }
-
-  async getSchemaFromLedger(myDid: Did, schemaId: SchemaId) {
-    return this.ledgerService.getSchema(myDid, schemaId);
-  }
-
-  async registerDefinition(myDid: Did, credentialDefinitionTemplate: CredDefTemplate) {
-    return this.ledgerService.registerDefinition(myDid, credentialDefinitionTemplate);
-  }
-
-  async getDefinitionFromLedger(myDid: Did, credDefId: CredDefId) {
-    return this.ledgerService.getDefinitionFromLedger(myDid, credDefId);
   }
 
   async initPublicDid(did: Did, seed: string) {
@@ -195,5 +171,6 @@ export class Agent {
     );
 
     this.basicMessages = new BasicMessagesModule(this.basicMessageService, this.messageSender);
+    this.ledger = new LedgerModule(this.wallet, this.ledgerService);
   }
 }

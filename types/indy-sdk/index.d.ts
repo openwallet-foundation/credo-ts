@@ -29,13 +29,13 @@ interface Indy {
   setProtocolVersion(version: number): Promise<void>;
   buildGetNymRequest(submitterDid: Did | null, targetDid: Did): Promise<LedgerRequest>;
   parseGetNymResponse(response: LedgerResponse): Promise<{}>;
-  buildSchemaRequest(myDid: Did, schema: Schema): Promise<LedgerRequest>;
-  buildGetSchemaRequest(myDid: Did, schemaId: SchemaId): Promise<LedgerRequest>;
+  buildSchemaRequest(submitterDid: Did, schema: Schema): Promise<LedgerRequest>;
+  buildGetSchemaRequest(submitterDid: Did, schemaId: SchemaId): Promise<LedgerRequest>;
   parseGetSchemaResponse(response: LedgerResponse): Promise<[SchemaId, Schema]>;
   buildCredDefRequest(submitterDid: Did, credDef: CredDef): Promise<LedgerRequest>;
   buildGetCredDefRequest(submitterDid: Did, credDefId: CredDefId): Promise<LedgerRequest>;
   parseGetCredDefResponse(response: LedgerResponse): Promise<[CredDefId, CredDef]>;
-  signRequest(wh: WalletHandle, myDid: Did, request: LedgerRequest): Promise<SignedLedgerRequest>;
+  signRequest(wh: WalletHandle, submitterDid: Did, request: LedgerRequest): Promise<SignedLedgerRequest>;
   submitRequest(poolHandle: PoolHandle, request: LedgerRequest): Promise<LedgerResponse>;
   issuerCreateSchema(myDid: Did, name: string, version: string, attributes: string[]): Promise<[SchemaId, Schema]>;
   issuerCreateAndStoreCredentialDef(
@@ -90,7 +90,7 @@ declare module 'indy-sdk' {
   function buildCredDefRequest(submitterDid: Did, credDef: CredDef): Promise<LedgerRequest>;
   function buildGetCredDefRequest(submitterDid: Did, credDefId: CredDefId): Promise<LedgerRequest>;
   function parseGetCredDefResponse(response: LedgerResponse): Promise<[CredDefId, CredDef]>;
-  function signRequest(wh: WalletHandle, myDid: Did, request: LedgerRequest): Promise<SignedLedgerRequest>;
+  function signRequest(wh: WalletHandle, submitterDid: Did, request: LedgerRequest): Promise<SignedLedgerRequest>;
   function submitRequest(poolHandle: PoolHandle, request: LedgerRequest): Promise<LedgerResponse>;
   function issuerCreateSchema(
     myDid: Did,
