@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import { Agent, InboundTransporter, OutboundTransporter } from '..';
 import { OutboundPackage } from '../types';
-import fs from 'fs';
+import path from 'path';
 import indy from 'indy-sdk';
 
 jest.setTimeout(10000);
@@ -19,24 +19,24 @@ describe('ledger', () => {
   beforeAll(async () => {
     faberAgent = new Agent(faberConfig, new DummyInboundTransporter(), new DummyOutboundTransporter(), indy);
     await faberAgent.init();
+
+    const poolName = 'test-pool';
+    const poolConfig = {
+      genesis_txn: path.join(__dirname, 'genesis.txn'),
+    };
+
+    console.log(`Connection to ledger pool ${poolName}`);
+    await faberAgent.connectToLedger(poolName, poolConfig);
   });
 
   afterAll(async () => {
     await faberAgent.closeAndDeleteWallet();
   });
 
-  test('faber can init its public DID', async () => {
-    const poolName = 'test-pool';
-    const poolConfig = {
-      genesis_txn: '/Users/abjk833/projects/_forks/aries-framework-javascript/src/lib/__tests__/genesis.txn',
-    };
-
-    const fileExists = fs.existsSync(poolConfig.genesis_txn);
-    console.log(fileExists);
-
-    console.log(`Connection to ledger pool ${poolName}`);
-    await faberAgent.connectToLedger(poolName, poolConfig);
-
+  test(`initialization of agent's public DID`, async () => {
+    // We're pretending we have Steward DID to have the write permission to the ledger. This is a small simplification
+    // because, in the real world, the agent doesn't necessarily need the write permission and could just create and
+    // sign request, send it to another agent that has the permission and ask him to write it on its behalf.
     const stewardDid = 'Th7MpTaRZVRYnPiabds81Y';
     const stewardDidInfo = { seed: '000000000000000000000000Steward1' };
 
@@ -50,7 +50,7 @@ describe('ledger', () => {
     });
   });
 
-  test('faber can get public DID from ledger', async () => {
+  test('get public DID from ledger', async () => {
     const agentPublicDid = faberAgent.getPublicDid();
 
     // @ts-ignore
@@ -68,7 +68,7 @@ describe('ledger', () => {
     });
   });
 
-  test('faber can register schema on ledger', async () => {
+  test('register schema on ledger', async () => {
     const myDid = 'Th7MpTaRZVRYnPiabds81Y';
     const schemaName = `test-schema-${Date.now()}`;
     const schemaTemplate = {
@@ -93,7 +93,7 @@ describe('ledger', () => {
     );
   });
 
-  test('faber can register definition on ledger', async () => {
+  test('register definition on ledger', async () => {
     const myDid = 'Th7MpTaRZVRYnPiabds81Y';
     const [, ledgerSchema] = await faberAgent.getSchemaFromLedger(myDid, schemaId);
     const credentialDefinitionTemplate = {
@@ -134,24 +134,4 @@ class DummyOutboundTransporter implements OutboundTransporter {
   async sendMessage(outboundPackage: OutboundPackage) {
     console.log('Sending message...');
   }
-}
-
-async function createStewardDid() {
-  const stewardWalletConfig = { id: 'stewardWalletName' };
-  const stewardWalletCredentials = { key: 'steward_key' };
-  try {
-    await indy.createWallet(stewardWalletConfig, stewardWalletCredentials);
-  } catch (e) {
-    if (e.message !== 'WalletAlreadyExistsError') {
-      throw e;
-    }
-  }
-
-  const stewardWallet = await indy.openWallet(stewardWalletConfig, stewardWalletCredentials);
-
-  console.log('"Sovrin Steward" -> Create and store in Wallet DID from seed');
-  const stewardDidInfo = { seed: '000000000000000000000000Steward1' };
-
-  const [stewardDid] = await indy.createAndStoreMyDid(stewardWallet, stewardDidInfo);
-  return stewardDid;
 }
