@@ -115,8 +115,8 @@ export class Agent {
     return this.inboundTransporter.start(this);
   }
 
-  async initPublicDid(did: Did, seed: string) {
-    return this.wallet.initPublicDid(did, seed);
+  async initPublicDid(seed: string) {
+    return this.wallet.initPublicDid(seed);
   }
 
   getAgentDid() {

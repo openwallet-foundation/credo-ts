@@ -51,4 +51,12 @@ export class LedgerModule {
     }
     return this.ledgerService.getDefinition(did, id);
   }
+
+  async getTransactionAuthorAgreement() {
+    const { did } = this.wallet.getPublicDid();
+    if (!did) {
+      throw new Error('Agent has no public DID.');
+    }
+    return this.ledgerService.getTransactionAuthorAgreement(did);
+  }
 }

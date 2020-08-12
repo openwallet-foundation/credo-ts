@@ -6,7 +6,7 @@ export interface Wallet {
   close(): Promise<void>;
   delete(): Promise<void>;
   initAgentDid(did: Did, seed: string): Promise<void>;
-  initPublicDid(did: Did, seed: string): Promise<void>;
+  initPublicDid(seed: string): Promise<void>;
   getAgentDid(): DidInfo | {};
   getPublicDid(): DidInfo | Record<string, undefined>;
   createDid(didConfig?: DidConfig): Promise<[Did, Verkey]>;
