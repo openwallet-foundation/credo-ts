@@ -4,7 +4,7 @@ import { OutboundPackage } from '../types';
 import path from 'path';
 import indy from 'indy-sdk';
 
-jest.setTimeout(10000);
+jest.setTimeout(15000);
 
 const faberConfig = {
   label: 'Faber',
@@ -22,7 +22,7 @@ describe('ledger', () => {
 
     const poolName = 'test-pool';
     const poolConfig = {
-      genesis_txn: path.join(__dirname, 'genesis.txn'),
+      genesis_txn: path.join(__dirname, 'builder-net-genesis.txn'),
     };
 
     console.log(`Connection to ledger pool ${poolName}`);
@@ -37,17 +37,33 @@ describe('ledger', () => {
     // We're pretending we have Steward DID to have the write permission to the ledger. This is a small simplification
     // because, in the real world, the agent doesn't necessarily need the write permission and could just create and
     // sign request, send it to another agent that has the permission and ask him to write it on its behalf.
-    const stewardDid = 'Th7MpTaRZVRYnPiabds81Y';
-    const stewardDidInfo = { seed: '000000000000000000000000Steward1' };
+    const didInfo = { seed: 'ENTER_SEED' };
 
-    await faberAgent.initPublicDid(stewardDid, stewardDidInfo.seed);
+    await faberAgent.initPublicDid(didInfo.seed);
     const faberAgentPublicDid = faberAgent.getPublicDid();
     console.log('faberAgentPublicDid', faberAgentPublicDid);
 
     expect(faberAgentPublicDid).toEqual({
-      did: 'Th7MpTaRZVRYnPiabds81Y',
-      verkey: 'FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4',
+      did: 'TygUVyv8Je7GRPL9o1nJm2',
+      verkey: 'Fhoe1CzB6zJsfX2VcnvvpzhzRoL2JE2v253scM6Bm43z',
     });
+  });
+
+  test('test taa', async () => {
+    const { did } = faberAgent.getPublicDid();
+
+    if (!did) {
+      throw new Error('Agent does not have publid did.');
+    }
+
+    const result = await faberAgent.ledger.getTransactionAuthorAgreement();
+    expect(result).toEqual(
+      expect.objectContaining({
+        digest: expect.any(String),
+        ratification_ts: expect.any(Number),
+        text: expect.any(String),
+      })
+    );
   });
 
   test('get public DID from ledger', async () => {
@@ -59,9 +75,9 @@ describe('ledger', () => {
 
     const result = await faberAgent.ledger.getPublicDid(did);
     expect(result).toEqual({
-      did: 'Th7MpTaRZVRYnPiabds81Y',
-      verkey: '~7TYfekw4GUagBnBVCqPjiC',
-      role: '2',
+      did: 'TygUVyv8Je7GRPL9o1nJm2',
+      verkey: 'Fhoe1CzB6zJsfX2VcnvvpzhzRoL2JE2v253scM6Bm43z',
+      role: '101',
     });
   });
 
@@ -76,11 +92,11 @@ describe('ledger', () => {
     [schemaId] = await faberAgent.ledger.registerCredentialSchema(schemaTemplate);
     const [ledgerSchemaId, ledgerSchema] = await faberAgent.ledger.getSchema(schemaId);
 
-    expect(ledgerSchemaId).toBe(`Th7MpTaRZVRYnPiabds81Y:2:${schemaName}:1.0`);
+    expect(ledgerSchemaId).toBe(`TygUVyv8Je7GRPL9o1nJm2:2:${schemaName}:1.0`);
     expect(ledgerSchema).toEqual(
       expect.objectContaining({
         attrNames: expect.arrayContaining(['name', 'age']),
-        id: `Th7MpTaRZVRYnPiabds81Y:2:${schemaName}:1.0`,
+        id: `TygUVyv8Je7GRPL9o1nJm2:2:${schemaName}:1.0`,
         name: schemaName,
         seqNo: expect.any(Number),
         ver: '1.0',
@@ -101,7 +117,7 @@ describe('ledger', () => {
     const [credDefId] = await faberAgent.ledger.registerCredentialDefinition(credentialDefinitionTemplate);
     const [ledgerCredDefId, ledgerCredDef] = await faberAgent.ledger.getCredentialDefinition(credDefId);
 
-    const credDefIdRegExp = new RegExp(`Th7MpTaRZVRYnPiabds81Y:3:CL:[0-9]+:TAG`);
+    const credDefIdRegExp = new RegExp(`TygUVyv8Je7GRPL9o1nJm2:3:CL:[0-9]+:TAG`);
     expect(ledgerCredDefId).toEqual(expect.stringMatching(credDefIdRegExp));
     expect(ledgerCredDef).toEqual(
       expect.objectContaining({

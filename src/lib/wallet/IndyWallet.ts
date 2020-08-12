@@ -39,8 +39,8 @@ export class IndyWallet implements Wallet {
     };
   }
 
-  async initPublicDid(did: Did, seed: string) {
-    const [, verkey] = await this.createDid({ did, seed });
+  async initPublicDid(seed: string) {
+    const [did, verkey] = await this.createDid({ seed });
     this.publicDidInfo = {
       did,
       verkey,

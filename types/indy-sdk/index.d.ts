@@ -46,6 +46,16 @@ interface Indy {
     signatureType: string,
     config: {}
   ): Promise<[CredDefId, CredDef]>;
+  buildGetTxnAuthorAgreementRequest(myDid: string): Promise<LedgerRequest>;
+  buildGetAcceptanceMechanismsRequest(myDid: string): Promise<LedgerRequest>;
+  appendTxnAuthorAgreementAcceptanceToRequest(
+    request: LedgerRequest,
+    text: string,
+    version: string,
+    digest: string,
+    accMechType: string,
+    timeOfAcceptance: number
+  ): Promise<LedgerRequest>;
 }
 
 declare module 'indy-sdk' {
@@ -106,6 +116,16 @@ declare module 'indy-sdk' {
     signatureType: string,
     config: {}
   ): Promise<[CredDefId, CredDef]>;
+  function buildGetTxnAuthorAgreementRequest(myDid: string): Promise<LedgerRequest>;
+  function buildGetAcceptanceMechanismsRequest(myDid: string): Promise<LedgerRequest>;
+  function appendTxnAuthorAgreementAcceptanceToRequest(
+    request: LedgerRequest,
+    text: string,
+    version: string,
+    digest: string,
+    accMechType: string,
+    timeOfAcceptance: number
+  ): Promise<LedgerRequest>;
 }
 
 type WalletHandle = number;
@@ -130,7 +150,9 @@ interface SignedLedgerRequest extends LedgerRequest {
 
 interface LedgerResponse {
   op: string;
-  result: {};
+  result: {
+    data: any;
+  };
 }
 
 interface Schema {
