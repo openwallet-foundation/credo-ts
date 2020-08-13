@@ -123,7 +123,7 @@ export class LedgerService {
     return result;
   }
 
-  async appendTaa(myDid: Did, request: LedgerRequest) {
+  private async appendTaa(myDid: Did, request: LedgerRequest) {
     const authorAgreement = await this.getTransactionAuthorAgreement(myDid);
     const requestWithTaa = await this.indy.appendTxnAuthorAgreementAcceptanceToRequest(
       request,
@@ -136,33 +136,24 @@ export class LedgerService {
     return requestWithTaa;
   }
 
-  async getTransactionAuthorAgreement(myDid: Did) {
+  private async getTransactionAuthorAgreement(myDid: Did) {
     // TODO Replace this condition with memoization
     if (this.authorAgreement) {
       return this.authorAgreement;
     }
 
-    logger.log('------------ getTransactionAuthorAgreement START ------------');
     if (!this.poolHandle) {
       throw new Error('Pool has not been initialized.');
     }
-    const request = await this.indy.buildGetTxnAuthorAgreementRequest(myDid);
-    logger.log('request', request);
 
-    const response = await this.indy.submitRequest(this.poolHandle, request);
+    const taaRequest = await this.indy.buildGetTxnAuthorAgreementRequest(myDid);
+    const taaResponse = await this.indy.submitRequest(this.poolHandle, taaRequest);
+    const acceptanceMechanismRequest = await this.indy.buildGetAcceptanceMechanismsRequest(myDid);
+    const acceptanceMechanismResponse = await this.indy.submitRequest(this.poolHandle, acceptanceMechanismRequest);
+    const acceptanceMechanisms = acceptanceMechanismResponse.result.data;
 
-    const authorAgreement: AuthorAgreement = response.result.data;
-
-    const request2 = await this.indy.buildGetAcceptanceMechanismsRequest(myDid);
-    logger.log('request', request);
-
-    const response2 = await this.indy.submitRequest(this.poolHandle, request2);
-    logger.log('response2', response2);
-
-    logger.log('aml', response2.result.data.aml);
-
-    logger.log('------------ getTransactionAuthorAgreement END ------------');
-    this.authorAgreement = authorAgreement;
+    const authorAgreement: AuthorAgreement = taaResponse.result.data;
+    this.authorAgreement = { ...authorAgreement, acceptanceMechanisms };
 
     return this.authorAgreement;
   }
@@ -173,6 +164,7 @@ interface AuthorAgreement {
   version: string;
   text: string;
   ratification_ts: number;
+  acceptanceMechanisms: any;
 }
 
 export interface SchemaTemplate {
