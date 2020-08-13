@@ -47,6 +47,7 @@ jobs:
           sleep 10
           ./run.sh bob >/dev/null 2>/dev/null &
           sleep 10
-          yarn test --forceExit
+          if [ "" == "${AGENT-PUBLIC-DID-SEED}" ]; then echo "Missing environment variable test-did-seed"; exit 1 ;fi
+          TEST_AGENT_PUBLIC_DID_SEED=${AGENT-PUBLIC-DID-SEED} yarn test --forceExit
         displayName: 'yarn test, networking'
 
