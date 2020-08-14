@@ -30,10 +30,10 @@ interface Indy {
   buildGetNymRequest(submitterDid: Did | null, targetDid: Did): Promise<LedgerRequest>;
   parseGetNymResponse(response: LedgerResponse): Promise<{}>;
   buildSchemaRequest(submitterDid: Did, schema: Schema): Promise<LedgerRequest>;
-  buildGetSchemaRequest(submitterDid: Did, schemaId: SchemaId): Promise<LedgerRequest>;
+  buildGetSchemaRequest(submitterDid: Did | null, schemaId: SchemaId): Promise<LedgerRequest>;
   parseGetSchemaResponse(response: LedgerResponse): Promise<[SchemaId, Schema]>;
   buildCredDefRequest(submitterDid: Did, credDef: CredDef): Promise<LedgerRequest>;
-  buildGetCredDefRequest(submitterDid: Did, credDefId: CredDefId): Promise<LedgerRequest>;
+  buildGetCredDefRequest(submitterDid: Did | null, credDefId: CredDefId): Promise<LedgerRequest>;
   parseGetCredDefResponse(response: LedgerResponse): Promise<[CredDefId, CredDef]>;
   signRequest(wh: WalletHandle, submitterDid: Did, request: LedgerRequest): Promise<SignedLedgerRequest>;
   submitRequest(poolHandle: PoolHandle, request: LedgerRequest): Promise<LedgerResponse>;
@@ -95,10 +95,10 @@ declare module 'indy-sdk' {
   function buildGetNymRequest(submitterDid: Did | null, targetDid: Did): Promise<LedgerRequest>;
   function parseGetNymResponse(response: LedgerResponse): Promise<{}>;
   function buildSchemaRequest(submitterDid: Did, schema: Schema): Promise<LedgerRequest>;
-  function buildGetSchemaRequest(submitterDid: Did, schemaId: SchemaId): Promise<LedgerRequest>;
+  function buildGetSchemaRequest(submitterDid: Did | null, schemaId: SchemaId): Promise<LedgerRequest>;
   function parseGetSchemaResponse(response: LedgerResponse): Promise<[SchemaId, Schema]>;
   function buildCredDefRequest(submitterDid: Did, credDef: CredDef): Promise<LedgerRequest>;
-  function buildGetCredDefRequest(submitterDid: Did, credDefId: CredDefId): Promise<LedgerRequest>;
+  function buildGetCredDefRequest(submitterDid: Did | null, credDefId: CredDefId): Promise<LedgerRequest>;
   function parseGetCredDefResponse(response: LedgerResponse): Promise<[CredDefId, CredDef]>;
   function signRequest(wh: WalletHandle, submitterDid: Did, request: LedgerRequest): Promise<SignedLedgerRequest>;
   function submitRequest(poolHandle: PoolHandle, request: LedgerRequest): Promise<LedgerResponse>;
