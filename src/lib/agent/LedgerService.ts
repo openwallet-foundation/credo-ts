@@ -14,14 +14,13 @@ export class LedgerService {
 
   async connect(poolName: string, poolConfig: PoolConfig) {
     try {
-      logger.log(__dirname);
-
-      logger.log('Creating pool config');
+      logger.log(`Creating pool config with name "${poolName}".`);
       await this.indy.createPoolLedgerConfig(poolName, poolConfig);
-    } catch (e) {
-      logger.log('PoolLedgerConfigAlreadyExists');
-      if (e.message !== 'PoolLedgerConfigAlreadyExistsError') {
-        throw e;
+    } catch (error) {
+      if (error.message === 'PoolLedgerConfigAlreadyExistsError') {
+        logger.log('PoolLedgerConfigAlreadyExistsError');
+      } else {
+        throw error;
       }
     }
 
@@ -54,18 +53,16 @@ export class LedgerService {
     }
     const { name, attributes, version } = schemaTemplate;
     const [schemaId, schema] = await this.indy.issuerCreateSchema(myDid, name, version, attributes);
-    logger.log('schemaId, schema', schemaId, schema);
+    logger.log(`Register schema with ID = ${schemaId}:`, schema);
 
     const request = await this.indy.buildSchemaRequest(myDid, schema);
-    logger.log('request', request);
+    logger.log('Register schema request', request);
 
     const requestWithTaa = await this.appendTaa(myDid, request);
-
     const signedRequest = await this.wallet.signRequest(myDid, requestWithTaa);
-    logger.log('signedRequest', signedRequest);
 
     const response = await this.indy.submitRequest(this.poolHandle, signedRequest);
-    logger.log('response', response);
+    logger.log('Register schema response', response);
 
     return [schemaId, schema];
   }
@@ -75,13 +72,13 @@ export class LedgerService {
       throw new Error('Pool has not been initialized.');
     }
     const request = await this.indy.buildGetSchemaRequest(myDid, schemaId);
-    logger.log('request', request);
+    logger.log('Get schema request', request);
 
     const response = await this.indy.submitRequest(this.poolHandle, request);
-    logger.log('response', response);
+    logger.log('Get schema response', response);
 
     const result = await this.indy.parseGetSchemaResponse(response);
-    logger.log('Credential Schema from ledger: ', result);
+    logger.log('Get schema result: ', result);
 
     return result;
   }
@@ -93,16 +90,16 @@ export class LedgerService {
     const { schema, tag, signatureType, config } = credentialDefinitionTemplate;
 
     const [credDefId, credDef] = await this.wallet.createCredDef(myDid, schema, tag, signatureType, config);
+    logger.log(`Register credential definition with ID = ${credDefId}:`, credDef);
+
     const request = await this.indy.buildCredDefRequest(myDid, credDef);
-    logger.log('request', request);
+    logger.log('Register credential definition request:', request);
 
     const requestWithTaa = await this.appendTaa(myDid, request);
-
     const signedRequest = await this.wallet.signRequest(myDid, requestWithTaa);
-    logger.log('signedRequest', signedRequest);
 
     const response = await this.indy.submitRequest(this.poolHandle, signedRequest);
-    logger.log('response', response);
+    logger.log('Register credential definition response:', response);
 
     return [credDefId, credDef];
   }
@@ -112,13 +109,13 @@ export class LedgerService {
       throw new Error('Pool has not been initialized.');
     }
     const request = await this.indy.buildGetCredDefRequest(myDid, credDefId);
-    logger.log('request', request);
+    logger.log('Get credential definition request:', request);
 
     const response = await this.indy.submitRequest(this.poolHandle, request);
-    logger.log('response', response);
+    logger.log('Get credential definition response:', response);
 
     const result = await this.indy.parseGetCredDefResponse(response);
-    logger.log('Credential Definition from ledger: ', result);
+    logger.log('Get credential definition result: ', result);
 
     return result;
   }
