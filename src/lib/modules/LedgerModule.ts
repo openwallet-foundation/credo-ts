@@ -29,11 +29,7 @@ export class LedgerModule {
   }
 
   async getSchema(id: SchemaId) {
-    const { did } = this.wallet.getPublicDid();
-    if (!did) {
-      throw new Error('Agent has no public DID.');
-    }
-    return this.ledgerService.getSchema(did, id);
+    return this.ledgerService.getCredentialSchema(id);
   }
 
   async registerCredentialDefinition(credentialDefinitionTemplate: CredDefTemplate) {
@@ -41,14 +37,10 @@ export class LedgerModule {
     if (!did) {
       throw new Error('Agent has no public DID.');
     }
-    return this.ledgerService.registerDefinition(did, credentialDefinitionTemplate);
+    return this.ledgerService.registerCredentialDefinition(did, credentialDefinitionTemplate);
   }
 
   async getCredentialDefinition(id: CredDefId) {
-    const { did } = this.wallet.getPublicDid();
-    if (!did) {
-      throw new Error('Agent has no public DID.');
-    }
-    return this.ledgerService.getDefinition(did, id);
+    return this.ledgerService.getCredentialDefinition(id);
   }
 }
