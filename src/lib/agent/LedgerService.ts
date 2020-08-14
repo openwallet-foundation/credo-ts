@@ -5,7 +5,7 @@ export class LedgerService {
   wallet: Wallet;
   indy: Indy;
   poolHandle?: PoolHandle;
-  authorAgreement?: AuthorAgreement;
+  authorAgreement?: AuthorAgreement | null;
 
   constructor(wallet: Wallet, indy: Indy) {
     this.wallet = wallet;
@@ -58,7 +58,7 @@ export class LedgerService {
     const request = await this.indy.buildSchemaRequest(did, schema);
     logger.log('Register schema request', request);
 
-    const requestWithTaa = await this.appendTaa(did, request);
+    const requestWithTaa = await this.appendTaa(request);
     const signedRequest = await this.wallet.signRequest(did, requestWithTaa);
 
     const response = await this.indy.submitRequest(this.poolHandle, signedRequest);
@@ -98,7 +98,7 @@ export class LedgerService {
     const request = await this.indy.buildCredDefRequest(did, credDef);
     logger.log('Register credential definition request:', request);
 
-    const requestWithTaa = await this.appendTaa(did, request);
+    const requestWithTaa = await this.appendTaa(request);
     const signedRequest = await this.wallet.signRequest(did, requestWithTaa);
 
     const response = await this.indy.submitRequest(this.poolHandle, signedRequest);
@@ -123,8 +123,12 @@ export class LedgerService {
     return result;
   }
 
-  private async appendTaa(did: Did, request: LedgerRequest) {
-    const authorAgreement = await this.getTransactionAuthorAgreement(did);
+  private async appendTaa(request: LedgerRequest) {
+    const authorAgreement = await this.getTransactionAuthorAgreement();
+
+    // If ledger does not have TAA, we can just send request
+    if (authorAgreement == null) return request;
+
     const requestWithTaa = await this.indy.appendTxnAuthorAgreementAcceptanceToRequest(
       request,
       authorAgreement.text,
@@ -136,9 +140,9 @@ export class LedgerService {
     return requestWithTaa;
   }
 
-  private async getTransactionAuthorAgreement(did: Did) {
+  private async getTransactionAuthorAgreement(): Promise<AuthorAgreement | null> {
     // TODO Replace this condition with memoization
-    if (this.authorAgreement) {
+    if (this.authorAgreement !== undefined) {
       return this.authorAgreement;
     }
 
@@ -146,15 +150,20 @@ export class LedgerService {
       throw new Error('Pool has not been initialized.');
     }
 
-    const taaRequest = await this.indy.buildGetTxnAuthorAgreementRequest(did);
+    const taaRequest = await this.indy.buildGetTxnAuthorAgreementRequest(null);
     const taaResponse = await this.indy.submitRequest(this.poolHandle, taaRequest);
-    const acceptanceMechanismRequest = await this.indy.buildGetAcceptanceMechanismsRequest(did);
+    const acceptanceMechanismRequest = await this.indy.buildGetAcceptanceMechanismsRequest(null);
     const acceptanceMechanismResponse = await this.indy.submitRequest(this.poolHandle, acceptanceMechanismRequest);
     const acceptanceMechanisms = acceptanceMechanismResponse.result.data;
 
+    // TAA can be null
+    if (taaResponse.result.data == null) {
+      this.authorAgreement = null;
+      return null;
+    }
+
     const authorAgreement: AuthorAgreement = taaResponse.result.data;
     this.authorAgreement = { ...authorAgreement, acceptanceMechanisms };
-
     return this.authorAgreement;
   }
 }
