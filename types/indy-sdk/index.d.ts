@@ -46,8 +46,8 @@ interface Indy {
     signatureType: string,
     config: {}
   ): Promise<[CredDefId, CredDef]>;
-  buildGetTxnAuthorAgreementRequest(myDid: string): Promise<LedgerRequest>;
-  buildGetAcceptanceMechanismsRequest(myDid: string): Promise<LedgerRequest>;
+  buildGetTxnAuthorAgreementRequest(submitterDid: Did | null): Promise<LedgerRequest>;
+  buildGetAcceptanceMechanismsRequest(submitterDid: Did | null): Promise<LedgerRequest>;
   appendTxnAuthorAgreementAcceptanceToRequest(
     request: LedgerRequest,
     text: string,
