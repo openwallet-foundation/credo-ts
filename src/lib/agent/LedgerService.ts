@@ -31,11 +31,11 @@ export class LedgerService {
     this.poolHandle = await this.indy.openPoolLedger(poolName);
   }
 
-  async getPublicDid(myDid: Did) {
+  async getPublicDid(did: Did) {
     if (!this.poolHandle) {
       throw new Error('Pool has not been initialized.');
     }
-    const request = await this.indy.buildGetNymRequest(null, myDid);
+    const request = await this.indy.buildGetNymRequest(null, did);
     logger.log('request', request);
 
     const response = await this.indy.submitRequest(this.poolHandle, request);
@@ -47,19 +47,19 @@ export class LedgerService {
     return result;
   }
 
-  async registerSchema(myDid: Did, schemaTemplate: SchemaTemplate): Promise<[SchemaId, Schema]> {
+  async registerSchema(did: Did, schemaTemplate: SchemaTemplate): Promise<[SchemaId, Schema]> {
     if (!this.poolHandle) {
       throw new Error('Pool has not been initialized.');
     }
     const { name, attributes, version } = schemaTemplate;
-    const [schemaId, schema] = await this.indy.issuerCreateSchema(myDid, name, version, attributes);
+    const [schemaId, schema] = await this.indy.issuerCreateSchema(did, name, version, attributes);
     logger.log(`Register schema with ID = ${schemaId}:`, schema);
 
-    const request = await this.indy.buildSchemaRequest(myDid, schema);
+    const request = await this.indy.buildSchemaRequest(did, schema);
     logger.log('Register schema request', request);
 
-    const requestWithTaa = await this.appendTaa(myDid, request);
-    const signedRequest = await this.wallet.signRequest(myDid, requestWithTaa);
+    const requestWithTaa = await this.appendTaa(did, request);
+    const signedRequest = await this.wallet.signRequest(did, requestWithTaa);
 
     const response = await this.indy.submitRequest(this.poolHandle, signedRequest);
     logger.log('Register schema response', response);
@@ -67,11 +67,11 @@ export class LedgerService {
     return [schemaId, schema];
   }
 
-  async getSchema(myDid: Did, schemaId: SchemaId) {
+  async getSchema(did: Did, schemaId: SchemaId) {
     if (!this.poolHandle) {
       throw new Error('Pool has not been initialized.');
     }
-    const request = await this.indy.buildGetSchemaRequest(myDid, schemaId);
+    const request = await this.indy.buildGetSchemaRequest(did, schemaId);
     logger.log('Get schema request', request);
 
     const response = await this.indy.submitRequest(this.poolHandle, request);
@@ -83,20 +83,20 @@ export class LedgerService {
     return result;
   }
 
-  async registerDefinition(myDid: Did, credentialDefinitionTemplate: CredDefTemplate): Promise<[CredDefId, CredDef]> {
+  async registerDefinition(did: Did, credentialDefinitionTemplate: CredDefTemplate): Promise<[CredDefId, CredDef]> {
     if (!this.poolHandle) {
       throw new Error('Pool has not been initialized.');
     }
     const { schema, tag, signatureType, config } = credentialDefinitionTemplate;
 
-    const [credDefId, credDef] = await this.wallet.createCredDef(myDid, schema, tag, signatureType, config);
+    const [credDefId, credDef] = await this.wallet.createCredDef(did, schema, tag, signatureType, config);
     logger.log(`Register credential definition with ID = ${credDefId}:`, credDef);
 
-    const request = await this.indy.buildCredDefRequest(myDid, credDef);
+    const request = await this.indy.buildCredDefRequest(did, credDef);
     logger.log('Register credential definition request:', request);
 
-    const requestWithTaa = await this.appendTaa(myDid, request);
-    const signedRequest = await this.wallet.signRequest(myDid, requestWithTaa);
+    const requestWithTaa = await this.appendTaa(did, request);
+    const signedRequest = await this.wallet.signRequest(did, requestWithTaa);
 
     const response = await this.indy.submitRequest(this.poolHandle, signedRequest);
     logger.log('Register credential definition response:', response);
@@ -104,11 +104,11 @@ export class LedgerService {
     return [credDefId, credDef];
   }
 
-  async getDefinition(myDid: Did, credDefId: CredDefId) {
+  async getDefinition(did: Did, credDefId: CredDefId) {
     if (!this.poolHandle) {
       throw new Error('Pool has not been initialized.');
     }
-    const request = await this.indy.buildGetCredDefRequest(myDid, credDefId);
+    const request = await this.indy.buildGetCredDefRequest(did, credDefId);
     logger.log('Get credential definition request:', request);
 
     const response = await this.indy.submitRequest(this.poolHandle, request);
@@ -120,8 +120,8 @@ export class LedgerService {
     return result;
   }
 
-  private async appendTaa(myDid: Did, request: LedgerRequest) {
-    const authorAgreement = await this.getTransactionAuthorAgreement(myDid);
+  private async appendTaa(did: Did, request: LedgerRequest) {
+    const authorAgreement = await this.getTransactionAuthorAgreement(did);
     const requestWithTaa = await this.indy.appendTxnAuthorAgreementAcceptanceToRequest(
       request,
       authorAgreement.text,
@@ -133,7 +133,7 @@ export class LedgerService {
     return requestWithTaa;
   }
 
-  private async getTransactionAuthorAgreement(myDid: Did) {
+  private async getTransactionAuthorAgreement(did: Did) {
     // TODO Replace this condition with memoization
     if (this.authorAgreement) {
       return this.authorAgreement;
@@ -143,9 +143,9 @@ export class LedgerService {
       throw new Error('Pool has not been initialized.');
     }
 
-    const taaRequest = await this.indy.buildGetTxnAuthorAgreementRequest(myDid);
+    const taaRequest = await this.indy.buildGetTxnAuthorAgreementRequest(did);
     const taaResponse = await this.indy.submitRequest(this.poolHandle, taaRequest);
-    const acceptanceMechanismRequest = await this.indy.buildGetAcceptanceMechanismsRequest(myDid);
+    const acceptanceMechanismRequest = await this.indy.buildGetAcceptanceMechanismsRequest(did);
     const acceptanceMechanismResponse = await this.indy.submitRequest(this.poolHandle, acceptanceMechanismRequest);
     const acceptanceMechanisms = acceptanceMechanismResponse.result.data;
 
