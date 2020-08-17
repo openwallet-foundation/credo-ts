@@ -28,7 +28,9 @@ describe('ledger', () => {
 
     const poolName = 'test-pool';
     const poolConfig = {
-      genesis_txn: path.join(__dirname, 'builder-net-genesis.txn'),
+      genesis_txn: process.env.GENESIS_TXN_PATH
+        ? path.resolve(process.env.GENESIS_TXN_PATH)
+        : path.join(__dirname, 'genesis.txn'),
     };
 
     console.log(`Connection to ledger pool ${poolName}`);
