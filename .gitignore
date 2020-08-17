@@ -4,3 +4,4 @@ build
 yarn-error.log
 .idea
 aries-framework-javascript-*.tgz
+src/lib/__tests__/genesis-von.txn
