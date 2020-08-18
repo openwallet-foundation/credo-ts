@@ -1,0 +1,84 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+    branches: [master]
+
+env:
+  TEST_AGENT_PUBLIC_DID_SEED: 000000000000000000000000Trustee8
+  GENESIS_TXN_PATH: src/lib/__tests__/genesis-von.txn
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-18.04
+    name: Integration Tests
+    steps:
+      - name: Checkout aries-framework-javascript
+        uses: actions/checkout@v2
+
+      - name: Checkout von-network
+        uses: actions/checkout@v2
+        with:
+          repository: bcgov/von-network
+          path: von-network
+          ref: 736de6da81df3a8e7409908acb8bef5819780acc
+
+      - name: Get docker cache
+        uses: satackey/action-docker-layer-caching@v0.0.5
+
+      - name: Start von-network
+        run: |
+          cd von-network
+          cp config/sample_taa.json config/taa.json
+          cp config/sample_aml.json config/aml.json
+          ./manage build
+          ./manage start
+
+      # Von network takes some time to start
+      # we will retry downloading the genesis
+      - name: Download genesis transaction
+        uses: nick-invision/retry@v1
+        with:
+          timeout_minutes: 2
+          max_attempts: 10
+          command: >-
+            curl http://localhost:9000/genesis
+            -o ${GENESIS_TXN_PATH}
+
+      - name: Register DID on ledger
+        run: >-
+          curl http://localhost:9000/register
+          -X POST
+          -d '{"alias":"Test","seed":"'${TEST_AGENT_PUBLIC_DID_SEED}'","role":"TRUST_ANCHOR"}'
+
+      - name: Build framework docker image
+        run: docker build -t aries-framework-javascript .
+
+      - name: Start mediator agents
+        run: docker-compose up -d
+
+      - name: Run tests
+        run: >-
+          docker run 
+          --network host
+          --name framework-jest-tests 
+          --env TEST_AGENT_PUBLIC_DID_SEED=${TEST_AGENT_PUBLIC_DID_SEED}
+          --env GENESIS_TXN_PATH=${GENESIS_TXN_PATH}
+          aries-framework-javascript 
+          yarn test
+
+      - name: Export docker logs
+        if: always()
+        run: |
+          mkdir logs
+          docker-compose logs --no-color > logs/docker-mediator-agents.log
+          docker logs framework-jest-tests > logs/docker-framework-jest-tests.log
+          cd von-network
+          ./manage logs --no-tail > ../logs/docker-von.log
+
+      - name: Upload docker logs
+        uses: actions/upload-artifact@v1
+        if: always()
+        with:
+          name: docker-logs
+          path: logs
