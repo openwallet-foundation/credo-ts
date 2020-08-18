@@ -21,22 +21,16 @@ jobs:
         with:
           repository: bcgov/von-network
           path: von-network
-          ref: ad1f84f64d4f4c106a81462f5fbff496c5fbf10e
+          ref: 736de6da81df3a8e7409908acb8bef5819780acc
 
       - name: Get docker cache
         uses: satackey/action-docker-layer-caching@v0.0.5
 
-      # We need to add taa.json and aml.json for Von to start with an TAA and AML.
-      # Without this we can't properly test appendTAA.
-      # However the  von-network doesn't add the newly required `ratification_ts` parameter
-      # ERROR: Cannot create transaction author agreement without a 'ratification_ts' field.
-      # We need to wait this PR to be merged: https://github.com/bcgov/von-network/pull/126
-      # https://github.com/hyperledger/indy-sdk/blob/master/docs/how-tos/transaction-author-agreement.md
-      # cp config/sample_taa.json config/taa.json
-      # cp config/sample_aml.json config/aml.json
       - name: Start von-network
         run: |
           cd von-network
+          cp config/sample_taa.json config/taa.json
+          cp config/sample_aml.json config/aml.json
           ./manage build
           ./manage start
 
