@@ -127,16 +127,19 @@ export class LedgerService {
     const authorAgreement = await this.getTransactionAuthorAgreement();
 
     // If ledger does not have TAA, we can just send request
-    if (authorAgreement == null) return request;
+    if (authorAgreement == null) {
+      return request;
+    }
 
     const requestWithTaa = await this.indy.appendTxnAuthorAgreementAcceptanceToRequest(
       request,
       authorAgreement.text,
       authorAgreement.version,
       authorAgreement.digest,
-      'click_agreement',
-      Date.now() / 1000
+      this.getFirstAcceptanceMechanism(authorAgreement),
+      authorAgreement.ratification_ts
     );
+
     return requestWithTaa;
   }
 
@@ -166,14 +169,11 @@ export class LedgerService {
     this.authorAgreement = { ...authorAgreement, acceptanceMechanisms };
     return this.authorAgreement;
   }
-}
 
-interface AuthorAgreement {
-  digest: string;
-  version: string;
-  text: string;
-  ratification_ts: number;
-  acceptanceMechanisms: any;
+  private getFirstAcceptanceMechanism(authorAgreement: AuthorAgreement) {
+    const [firstMechanism] = Object.keys(authorAgreement.acceptanceMechanisms.aml);
+    return firstMechanism;
+  }
 }
 
 export interface SchemaTemplate {
@@ -187,4 +187,18 @@ export interface CredDefTemplate {
   tag: string;
   signatureType: string;
   config: { support_revocation: boolean };
+}
+
+interface AuthorAgreement {
+  digest: string;
+  version: string;
+  text: string;
+  ratification_ts: number;
+  acceptanceMechanisms: AcceptanceMechanisms;
+}
+
+interface AcceptanceMechanisms {
+  aml: Record<string, string>;
+  amlContext: string;
+  version: string;
 }

@@ -33,7 +33,7 @@ describe('ledger', () => {
         : path.join(__dirname, 'genesis.txn'),
     };
 
-    console.log(`Connection to ledger pool ${poolName}`);
+    console.log(`Connecting to ledger pool ${poolName} with config:`, poolConfig);
     await faberAgent.ledger.connect(poolName, poolConfig);
   });
 
