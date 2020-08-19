@@ -20,6 +20,7 @@ export class IndyWallet implements Wallet {
     try {
       await this.indy.createWallet(this.walletConfig, this.walletCredentials);
     } catch (error) {
+      logger.log('error', error);
       if (error.indyName && error.indyName === 'WalletAlreadyExistsError') {
         logger.log(error.indyName);
       } else {
@@ -39,16 +40,12 @@ export class IndyWallet implements Wallet {
     };
   }
 
-  async initPublicDid(seed: string) {
-    const [did, verkey] = await this.createDid({ seed });
+  async initPublicDid(didConfig: DidConfig) {
+    const [did, verkey] = await this.createDid(didConfig);
     this.publicDidInfo = {
       did,
       verkey,
     };
-  }
-
-  getAgentDid(): DidInfo | {} {
-    return this.agentDidInfo;
   }
 
   getPublicDid(): DidInfo | {} {

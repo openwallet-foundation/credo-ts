@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-const { IndyWallet } = require('./IndyWallet');
-const indy = require('indy-sdk');
+import { IndyWallet } from './IndyWallet';
+import indy from 'indy-sdk';
 
 describe('Wallet', () => {
   const wallet = new IndyWallet({ id: 'test_wallet' }, { key: 'test_key' }, indy);
@@ -8,9 +7,9 @@ describe('Wallet', () => {
   test('initialize public did', async () => {
     await wallet.init();
 
-    await wallet.initAgentDid('DtWRdd6C5dN5vpcN6XRAvu', '00000000000000000000000Forward01');
+    await wallet.initPublicDid({ seed: '00000000000000000000000Forward01' });
 
-    expect(wallet.getAgentDid()).toEqual({
+    expect(wallet.getPublicDid()).toEqual({
       did: 'DtWRdd6C5dN5vpcN6XRAvu',
       verkey: '82RBSn3heLgXzZd74UsMC8Q8YRfEEhQoAM7LUqE6bevJ',
     });

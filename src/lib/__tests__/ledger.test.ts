@@ -15,6 +15,7 @@ const faberConfig = {
   label: 'Faber',
   walletConfig: { id: 'faber' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
+  publicDidSeed: process.env.TEST_AGENT_PUBLIC_DID_SEED,
 };
 
 describe('ledger', () => {
@@ -42,18 +43,6 @@ describe('ledger', () => {
   });
 
   test(`initialization of agent's public DID`, async () => {
-    // We're pretending we have Steward DID to have the write permission to the ledger. This is a small simplification
-    // because, in the real world, the agent doesn't necessarily need the write permission and could just create and
-    // sign request, send it to another agent that has the permission and ask him to write it on its behalf.
-    const seed = process.env.TEST_AGENT_PUBLIC_DID_SEED;
-
-    if (!seed) {
-      throw new Error('There is no framework seed in environment variables.');
-    }
-
-    const didInfo = { seed };
-
-    await faberAgent.initPublicDid(didInfo.seed);
     faberAgentPublicDid = faberAgent.getPublicDid();
     console.log('faberAgentPublicDid', faberAgentPublicDid);
 

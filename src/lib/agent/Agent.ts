@@ -106,21 +106,13 @@ export class Agent {
   async init() {
     await this.wallet.init();
 
-    const { publicDid, publicDidSeed } = this.agentConfig;
-    if (publicDid && publicDidSeed) {
+    const { publicDidSeed } = this.agentConfig;
+    if (publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
-      this.wallet.initAgentDid(publicDid, publicDidSeed);
+      this.wallet.initPublicDid({ seed: publicDidSeed });
     }
 
     return this.inboundTransporter.start(this);
-  }
-
-  async initPublicDid(seed: string) {
-    return this.wallet.initPublicDid(seed);
-  }
-
-  getAgentDid() {
-    return this.wallet.getAgentDid();
   }
 
   getPublicDid() {

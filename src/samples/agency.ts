@@ -71,7 +71,7 @@ const messageReceiver = new HttpInboundTransporter(app);
 const agent = new Agent(config, messageReceiver, messageSender, indy, messageRepository);
 
 app.get('/', async (req, res) => {
-  const agentDid = agent.getAgentDid();
+  const agentDid = agent.getPublicDid();
   res.send(agentDid);
 });
 
