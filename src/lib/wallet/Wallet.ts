@@ -1,12 +1,20 @@
 import { UnpackedMessage } from '../types';
 
 export interface Wallet {
+  wh?: WalletHandle;
   init(): Promise<void>;
   close(): Promise<void>;
   delete(): Promise<void>;
-  initPublicDid(did: Did, seed: string): Promise<void>;
-  getPublicDid(): DidInfo | {};
+  initPublicDid(didConfig: DidConfig): Promise<void>;
+  getPublicDid(): DidInfo | Record<string, undefined>;
   createDid(didConfig?: DidConfig): Promise<[Did, Verkey]>;
+  createCredDef(
+    issuerDid: Did,
+    schema: Schema,
+    tag: string,
+    signatureType: string,
+    config: {}
+  ): Promise<[CredDefId, CredDef]>;
   pack(payload: {}, recipientKeys: Verkey[], senderVk: Verkey | null): Promise<JsonWebKey>;
   unpack(messagePackage: JsonWebKey): Promise<UnpackedMessage>;
   sign(data: Buffer, verkey: Verkey): Promise<Buffer>;
@@ -17,6 +25,7 @@ export interface Wallet {
   deleteWalletRecord(type: string, id: string): Promise<void>;
   getWalletRecord(type: string, id: string, options: {}): Promise<WalletRecord>;
   search(type: string, query: {}, options: {}): Promise<AsyncIterable<WalletRecord>>;
+  signRequest(myDid: Did, request: LedgerRequest): Promise<LedgerRequest>;
 }
 
 export interface DidInfo {

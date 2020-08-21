@@ -51,6 +51,12 @@ yarn add file:PATH_TO_REPOSITORY_FOLDER/aries-framework-javascript/aries-framewo
 
 # Running tests
 
+To run all tests or tests requiring a connection to the ledger pool, you need to set environment variable `TEST_AGENT_PUBLIC_DID_SEED` to some DID which has been written to BuilderNet ledger with TAA. Then run test with this variable like this for example:
+
+```
+TEST_AGENT_PUBLIC_DID_SEED=someseedwrittentobuildernetleder yarn test
+```
+
 ## Run e2e tests with in memory messaging
 
 You don't have to start agencies for these tests. Communication is done via RxJS subscriptions.

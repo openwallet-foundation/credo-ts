@@ -24,6 +24,38 @@ interface Indy {
     count: number
   ): Promise<WalletRecordSearch>;
   closeWalletSearch(sh: SearchHandle): Promise<void>;
+  createPoolLedgerConfig(configName: string, config?: PoolConfig): Promise<void>;
+  openPoolLedger(configName: string, config?: RuntimePoolConfig): Promise<PoolHandle>;
+  setProtocolVersion(version: number): Promise<void>;
+  buildGetNymRequest(submitterDid: Did | null, targetDid: Did): Promise<LedgerRequest>;
+  parseGetNymResponse(response: LedgerResponse): Promise<{}>;
+  buildSchemaRequest(submitterDid: Did, schema: Schema): Promise<LedgerRequest>;
+  buildGetSchemaRequest(submitterDid: Did | null, schemaId: SchemaId): Promise<LedgerRequest>;
+  parseGetSchemaResponse(response: LedgerResponse): Promise<[SchemaId, Schema]>;
+  buildCredDefRequest(submitterDid: Did, credDef: CredDef): Promise<LedgerRequest>;
+  buildGetCredDefRequest(submitterDid: Did | null, credDefId: CredDefId): Promise<LedgerRequest>;
+  parseGetCredDefResponse(response: LedgerResponse): Promise<[CredDefId, CredDef]>;
+  signRequest(wh: WalletHandle, submitterDid: Did, request: LedgerRequest): Promise<SignedLedgerRequest>;
+  submitRequest(poolHandle: PoolHandle, request: LedgerRequest): Promise<LedgerResponse>;
+  issuerCreateSchema(myDid: Did, name: string, version: string, attributes: string[]): Promise<[SchemaId, Schema]>;
+  issuerCreateAndStoreCredentialDef(
+    wh: WalletHandle,
+    myDid: Did,
+    schema: Schema,
+    tag: string,
+    signatureType: string,
+    config: {}
+  ): Promise<[CredDefId, CredDef]>;
+  buildGetTxnAuthorAgreementRequest(submitterDid: Did | null): Promise<LedgerRequest>;
+  buildGetAcceptanceMechanismsRequest(submitterDid: Did | null): Promise<LedgerRequest>;
+  appendTxnAuthorAgreementAcceptanceToRequest(
+    request: LedgerRequest,
+    text: string,
+    version: string,
+    digest: string,
+    accMechType: string,
+    timeOfAcceptance: number
+  ): Promise<LedgerRequest>;
 }
 
 declare module 'indy-sdk' {
@@ -57,16 +89,102 @@ declare module 'indy-sdk' {
     count: number
   ): Promise<WalletRecordSearch>;
   function closeWalletSearch(sh: SearchHandle): Promise<void>;
+  function createPoolLedgerConfig(configName: string, config?: PoolConfig): Promise<void>;
+  function openPoolLedger(configName: string, config?: RuntimePoolConfig): Promise<PoolHandle>;
+  function setProtocolVersion(version: number): Promise<void>;
+  function buildGetNymRequest(submitterDid: Did | null, targetDid: Did): Promise<LedgerRequest>;
+  function parseGetNymResponse(response: LedgerResponse): Promise<{}>;
+  function buildSchemaRequest(submitterDid: Did, schema: Schema): Promise<LedgerRequest>;
+  function buildGetSchemaRequest(submitterDid: Did | null, schemaId: SchemaId): Promise<LedgerRequest>;
+  function parseGetSchemaResponse(response: LedgerResponse): Promise<[SchemaId, Schema]>;
+  function buildCredDefRequest(submitterDid: Did, credDef: CredDef): Promise<LedgerRequest>;
+  function buildGetCredDefRequest(submitterDid: Did | null, credDefId: CredDefId): Promise<LedgerRequest>;
+  function parseGetCredDefResponse(response: LedgerResponse): Promise<[CredDefId, CredDef]>;
+  function signRequest(wh: WalletHandle, submitterDid: Did, request: LedgerRequest): Promise<SignedLedgerRequest>;
+  function submitRequest(poolHandle: PoolHandle, request: LedgerRequest): Promise<LedgerResponse>;
+  function issuerCreateSchema(
+    myDid: Did,
+    name: string,
+    version: string,
+    attributes: string[]
+  ): Promise<[SchemaId, Schema]>;
+  function issuerCreateAndStoreCredentialDef(
+    wh: WalletHandle,
+    myDid: Did,
+    schema: Schema,
+    tag: string,
+    signatureType: string,
+    config: {}
+  ): Promise<[CredDefId, CredDef]>;
+  function buildGetTxnAuthorAgreementRequest(myDid: string): Promise<LedgerRequest>;
+  function buildGetAcceptanceMechanismsRequest(myDid: string): Promise<LedgerRequest>;
+  function appendTxnAuthorAgreementAcceptanceToRequest(
+    request: LedgerRequest,
+    text: string,
+    version: string,
+    digest: string,
+    accMechType: string,
+    timeOfAcceptance: number
+  ): Promise<LedgerRequest>;
 }
 
 type WalletHandle = number;
 type SearchHandle = number;
+type PoolHandle = number;
 type Did = string;
 type Verkey = string;
 type ByteArray = number[];
+type SchemaId = string;
+type CredDefId = string;
+
+interface LedgerRequest {
+  reqId: number;
+  identifier: string;
+  operation: {};
+  protocolVersion: number;
+}
+
+interface SignedLedgerRequest extends LedgerRequest {
+  signature: string;
+}
+
+interface LedgerResponse {
+  op: string;
+  result: {
+    data: any;
+  };
+}
+
+interface Schema {
+  id: SchemaId;
+  attrNames: string[];
+  name: string;
+  version: string;
+  ver: string;
+}
+
+interface CredDef {
+  id: string;
+  schemaId: string;
+  type: string;
+  tag: string;
+  value: any;
+  ver: string;
+}
 
 interface KeyConfig {
   seed?: string;
+}
+
+interface PoolConfig {
+  genesis_txn: string;
+}
+
+interface RuntimePoolConfig {
+  timeout?: number;
+  extended_timeout?: number;
+  preordered_nodes?: string[];
+  number_read_nodes?: number;
 }
 
 interface WalletRecord {

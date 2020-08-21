@@ -9,6 +9,7 @@ import { TrustPingService } from '../protocols/trustping/TrustPingService';
 import { MessagePickupService } from '../protocols/messagepickup/MessagePickupService';
 import { MessageReceiver } from './MessageReceiver';
 import { EnvelopeService } from './EnvelopeService';
+import { LedgerService } from './LedgerService';
 import { Dispatcher } from './Dispatcher';
 import { MessageSender } from './MessageSender';
 import { InboundTransporter } from '../transport/InboundTransporter';
@@ -35,6 +36,7 @@ import { ProvisioningService } from './ProvisioningService';
 import { ConnectionsModule } from '../modules/ConnectionsModule';
 import { RoutingModule } from '../modules/RoutingModule';
 import { BasicMessagesModule } from '../modules/BasicMessagesModule';
+import { LedgerModule } from '../modules/LedgerModule';
 
 export class Agent {
   inboundTransporter: InboundTransporter;
@@ -50,6 +52,7 @@ export class Agent {
   trustPingService: TrustPingService;
   messagePickupService: MessagePickupService;
   provisioningService: ProvisioningService;
+  ledgerService: LedgerService;
   basicMessageRepository: Repository<BasicMessageRecord>;
   connectionRepository: Repository<ConnectionRecord>;
   provisioningRepository: Repository<ProvisioningRecord>;
@@ -57,6 +60,7 @@ export class Agent {
   connections!: ConnectionsModule;
   routing!: RoutingModule;
   basicMessages!: BasicMessagesModule;
+  ledger!: LedgerModule;
 
   constructor(
     initialConfig: InitConfig,
@@ -86,6 +90,7 @@ export class Agent {
     this.consumerRoutingService = new ConsumerRoutingService(this.messageSender, this.agentConfig);
     this.trustPingService = new TrustPingService();
     this.messagePickupService = new MessagePickupService(messageRepository);
+    this.ledgerService = new LedgerService(this.wallet, indy);
 
     this.messageReceiver = new MessageReceiver(
       this.agentConfig,
@@ -101,10 +106,10 @@ export class Agent {
   async init() {
     await this.wallet.init();
 
-    const { publicDid, publicDidSeed } = this.agentConfig;
-    if (publicDid && publicDidSeed) {
+    const { publicDidSeed } = this.agentConfig;
+    if (publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
-      this.wallet.initPublicDid(publicDid, publicDidSeed);
+      this.wallet.initPublicDid({ seed: publicDidSeed });
     }
 
     return this.inboundTransporter.start(this);
@@ -158,5 +163,6 @@ export class Agent {
     );
 
     this.basicMessages = new BasicMessagesModule(this.basicMessageService, this.messageSender);
+    this.ledger = new LedgerModule(this.wallet, this.ledgerService);
   }
 }
