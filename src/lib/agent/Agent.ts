@@ -37,6 +37,7 @@ import { ConnectionsModule } from '../modules/ConnectionsModule';
 import { RoutingModule } from '../modules/RoutingModule';
 import { BasicMessagesModule } from '../modules/BasicMessagesModule';
 import { LedgerModule } from '../modules/LedgerModule';
+import { CredentialsModule } from '../modules/CredentialsModule';
 
 export class Agent {
   protected wallet: Wallet;
@@ -62,6 +63,7 @@ export class Agent {
   public routing!: RoutingModule;
   public basicMessages!: BasicMessagesModule;
   public ledger!: LedgerModule;
+  public credentials!: CredentialsModule;
 
   public constructor(
     initialConfig: InitConfig,
@@ -165,5 +167,7 @@ export class Agent {
 
     this.basicMessages = new BasicMessagesModule(this.basicMessageService, this.messageSender);
     this.ledger = new LedgerModule(this.wallet, this.ledgerService);
+
+    this.credentials = new CredentialsModule();
   }
 }

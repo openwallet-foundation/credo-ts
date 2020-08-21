@@ -32,6 +32,7 @@ describe('credentials', () => {
   let faberAgent: Agent;
   let aliceAgent: Agent;
   let schemaId: SchemaId;
+  let credDefId: CredDefId;
   let faberAgentPublicDid: DidInfo | Record<string, undefined>;
 
   beforeAll(async () => {
@@ -70,7 +71,7 @@ describe('credentials', () => {
       config: { support_revocation: false },
     };
 
-    const [credDefId] = await faberAgent.ledger.registerCredentialDefinition(credentialDefinitionTemplate);
+    [credDefId] = await faberAgent.ledger.registerCredentialDefinition(credentialDefinitionTemplate);
     const [ledgerCredDefId, ledgerCredDef] = await faberAgent.ledger.getCredentialDefinition(credDefId);
     console.log('ledgerCredDefId, ledgerCredDef', ledgerCredDefId, ledgerCredDef);
 
@@ -82,11 +83,17 @@ describe('credentials', () => {
     await aliceAgent.closeAndDeleteWallet();
   });
 
-  test(`initialization of agent's public DID`, async () => {
+  test(`when faber issues credential then alice gets credential offer`, async () => {
     faberAgentPublicDid = await faberAgent.ledger.getPublicDid('Th7MpTaRZVRYnPiabds81Y');
     console.log('faberAgentPublicDid', faberAgentPublicDid);
 
-    expect({}).toEqual(null);
+    const [firstConnection] = await faberAgent.connections.getAll();
+    console.log(firstConnection);
+
+    await faberAgent.credentials.issueCredential(firstConnection, { credDefId });
+    const [firstCredential] = await aliceAgent.credentials.getCredentials();
+
+    expect(firstCredential).toEqual({});
   });
 });
 
