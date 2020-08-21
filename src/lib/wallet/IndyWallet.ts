@@ -32,14 +32,6 @@ export class IndyWallet implements Wallet {
     logger.log(`Wallet opened with handle: ${this.wh}`);
   }
 
-  async initAgentDid(did: Did, seed: string) {
-    const [, verkey] = await this.createDid({ did, seed });
-    this.agentDidInfo = {
-      did,
-      verkey,
-    };
-  }
-
   async initPublicDid(didConfig: DidConfig) {
     const [did, verkey] = await this.createDid(didConfig);
     this.publicDidInfo = {
