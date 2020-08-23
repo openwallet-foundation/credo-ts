@@ -28,7 +28,7 @@ interface Indy {
   openPoolLedger(configName: string, config?: RuntimePoolConfig): Promise<PoolHandle>;
   setProtocolVersion(version: number): Promise<void>;
   buildGetNymRequest(submitterDid: Did | null, targetDid: Did): Promise<LedgerRequest>;
-  parseGetNymResponse(response: LedgerResponse): Promise<{}>;
+  parseGetNymResponse(response: LedgerResponse): Promise<GetNymResponse>;
   buildSchemaRequest(submitterDid: Did, schema: Schema): Promise<LedgerRequest>;
   buildGetSchemaRequest(submitterDid: Did | null, schemaId: SchemaId): Promise<LedgerRequest>;
   parseGetSchemaResponse(response: LedgerResponse): Promise<[SchemaId, Schema]>;
@@ -56,6 +56,7 @@ interface Indy {
     accMechType: string,
     timeOfAcceptance: number
   ): Promise<LedgerRequest>;
+  abbreviateVerkey(did: Did, fullVerkey: Verkey): Promise<Verkey>;
 }
 
 declare module 'indy-sdk' {
@@ -93,7 +94,7 @@ declare module 'indy-sdk' {
   function openPoolLedger(configName: string, config?: RuntimePoolConfig): Promise<PoolHandle>;
   function setProtocolVersion(version: number): Promise<void>;
   function buildGetNymRequest(submitterDid: Did | null, targetDid: Did): Promise<LedgerRequest>;
-  function parseGetNymResponse(response: LedgerResponse): Promise<{}>;
+  function parseGetNymResponse(response: LedgerResponse): Promise<GetNymResponse>;
   function buildSchemaRequest(submitterDid: Did, schema: Schema): Promise<LedgerRequest>;
   function buildGetSchemaRequest(submitterDid: Did | null, schemaId: SchemaId): Promise<LedgerRequest>;
   function parseGetSchemaResponse(response: LedgerResponse): Promise<[SchemaId, Schema]>;
@@ -126,6 +127,7 @@ declare module 'indy-sdk' {
     accMechType: string,
     timeOfAcceptance: number
   ): Promise<LedgerRequest>;
+  function abbreviateVerkey(did: Did, fullVerkey: Verkey): Promise<Verkey>;
 }
 
 type WalletHandle = number;
@@ -197,4 +199,18 @@ interface WalletRecord {
 interface WalletRecordSearch {
   totalCount: string | null;
   records: WalletRecord[];
+}
+
+interface GetNymResponse {
+  did: Did;
+  verkey: Verkey;
+  role: NymRole;
+}
+
+declare enum NymRole {
+  TRUSTEE = 0,
+  STEWARD = 2,
+  TRUST_ANCHOR = 101,
+  ENDORSER = 101,
+  NETWORK_MONITOR = 201,
 }
