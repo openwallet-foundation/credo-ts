@@ -69,6 +69,13 @@ export class IndyWallet implements Wallet {
     return this.indy.issuerCreateAndStoreCredentialDef(this.wh, issuerDid, schema, tag, signatureType, config);
   }
 
+  public async createCredentialOffer(credDefId: CredDefId) {
+    if (!this.wh) {
+      throw Error('Wallet has not been initialized yet');
+    }
+    return this.indy.issuerCreateCredentialOffer(this.wh, credDefId);
+  }
+
   public async pack(payload: Record<string, unknown>, recipientKeys: Verkey[], senderVk: Verkey): Promise<JsonWebKey> {
     if (!this.wh) {
       throw Error('Wallet has not been initialized yet');

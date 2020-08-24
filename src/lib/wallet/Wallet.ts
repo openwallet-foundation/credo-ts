@@ -14,6 +14,7 @@ export interface Wallet {
     signatureType: string,
     config?: CredDefConfig
   ): Promise<[CredDefId, CredDef]>;
+  createCredentialOffer(credDefId: CredDefId): Promise<CredOffer>;
   pack(payload: Record<string, unknown>, recipientKeys: Verkey[], senderVk: Verkey | null): Promise<JsonWebKey>;
   unpack(messagePackage: JsonWebKey): Promise<UnpackedMessageContext>;
   sign(data: Buffer, verkey: Verkey): Promise<Buffer>;

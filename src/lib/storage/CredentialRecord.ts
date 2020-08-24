@@ -1,13 +1,14 @@
 import uuid from 'uuid/v4';
 import { BaseRecord, RecordType } from './BaseRecord';
+import { CredentialOfferMessage } from '../protocols/credentials/messages/CredentialOfferMessage';
 
 export interface CredentialStorageProps {
   id?: string;
-  offer: string;
+  offer: CredentialOfferMessage;
 }
 
 export class CredentialRecord extends BaseRecord implements CredentialStorageProps {
-  offer: string;
+  offer: CredentialOfferMessage;
 
   type = RecordType.CredentialRecord;
   static type: RecordType = RecordType.CredentialRecord;

@@ -38,6 +38,9 @@ import { RoutingModule } from '../modules/RoutingModule';
 import { BasicMessagesModule } from '../modules/BasicMessagesModule';
 import { LedgerModule } from '../modules/LedgerModule';
 import { CredentialsModule } from '../modules/CredentialsModule';
+import { CredentialService } from '../protocols/credentials/CredentialService';
+import { CredentialRecord } from '../storage/CredentialRecord';
+import { CredentialOfferHandler } from '../handlers/credentials/CredentialOfferHandler';
 
 export class Agent {
   protected wallet: Wallet;
@@ -53,9 +56,11 @@ export class Agent {
   protected messagePickupService: MessagePickupService;
   protected provisioningService: ProvisioningService;
   protected ledgerService: LedgerService;
+  protected credentialService: CredentialService;
   protected basicMessageRepository: Repository<BasicMessageRecord>;
   protected connectionRepository: Repository<ConnectionRecord>;
   protected provisioningRepository: Repository<ProvisioningRecord>;
+  protected credentialRepository: Repository<CredentialRecord>;
 
   public inboundTransporter: InboundTransporter;
 
@@ -85,6 +90,7 @@ export class Agent {
     this.basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService);
     this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService);
     this.provisioningRepository = new Repository<ProvisioningRecord>(ProvisioningRecord, storageService);
+    this.credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService);
 
     this.provisioningService = new ProvisioningService(this.provisioningRepository);
     this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository);
@@ -94,6 +100,7 @@ export class Agent {
     this.trustPingService = new TrustPingService();
     this.messagePickupService = new MessagePickupService(messageRepository);
     this.ledgerService = new LedgerService(this.wallet, indy);
+    this.credentialService = new CredentialService(this.wallet, this.credentialRepository);
 
     this.messageReceiver = new MessageReceiver(
       this.agentConfig,
@@ -146,6 +153,7 @@ export class Agent {
     this.dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService));
     this.dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService));
     this.dispatcher.registerHandler(new MessagePickupHandler(this.messagePickupService));
+    this.dispatcher.registerHandler(new CredentialOfferHandler(this.credentialService));
   }
 
   protected registerModules() {
@@ -168,6 +176,6 @@ export class Agent {
     this.basicMessages = new BasicMessagesModule(this.basicMessageService, this.messageSender);
     this.ledger = new LedgerModule(this.wallet, this.ledgerService);
 
-    this.credentials = new CredentialsModule();
+    this.credentials = new CredentialsModule(this.credentialService, this.messageSender);
   }
 }

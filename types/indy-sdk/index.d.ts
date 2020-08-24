@@ -140,6 +140,7 @@ interface Indy {
     signatureType: string,
     config?: CredDefConfig
   ): Promise<[CredDefId, CredDef]>;
+  issuerCreateCredentialOffer(wh: WalletHandle, credDefId: CredDefId): Promise<CredOffer>;
   buildGetTxnAuthorAgreementRequest(submitterDid: Did | null): Promise<LedgerRequest>;
   buildGetAcceptanceMechanismsRequest(submitterDid: Did | null): Promise<LedgerRequest>;
   appendTxnAuthorAgreementAcceptanceToRequest(
@@ -248,6 +249,13 @@ interface CredDef {
 
 interface CredDefConfig {
   support_revocation?: boolean;
+}
+
+interface CredOffer {
+  schema_id: SchemaId;
+  cred_def_id: CredDefId;
+  nonce: string;
+  key_correctness_proof: string;
 }
 
 interface KeyConfig {

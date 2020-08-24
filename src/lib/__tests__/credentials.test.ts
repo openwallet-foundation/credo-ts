@@ -1,10 +1,13 @@
 /* eslint-disable no-console */
+// @ts-ignore
+import { poll } from 'await-poll';
 import { Agent } from '..';
 import { Subject } from 'rxjs';
 import path from 'path';
 import indy from 'indy-sdk';
 import { DidInfo } from '../wallet/Wallet';
 import { SubjectInboundTransporter, SubjectOutboundTransporter } from './helpers';
+import { CredentialRecord } from '../storage/CredentialRecord';
 
 jest.setTimeout(15000);
 
@@ -90,10 +93,32 @@ describe('credentials', () => {
     const [firstConnection] = await faberAgent.connections.getAll();
     console.log(firstConnection);
 
-    await faberAgent.credentials.issueCredential(firstConnection, { credDefId });
-    const [firstCredential] = await aliceAgent.credentials.getCredentials();
+    await faberAgent.credentials.issueCredential(firstConnection, {
+      credDefId,
+      comment: 'some comment about credential',
+    });
 
-    expect(firstCredential).toEqual({});
+    const [firstCredential] = await poll(
+      () => aliceAgent.credentials.getCredentials(),
+      (credentials: CredentialRecord[]) => credentials.length < 1,
+      100
+    );
+
+    expect(firstCredential).toEqual(
+      expect.objectContaining({
+        createdAt: expect.any(Number),
+        id: expect.any(String),
+        offer: {
+          '@id': expect.any(String),
+          '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential',
+          comment: 'some comment about credential',
+          credential_preview: {},
+          'offers~attach': expect.any(Array),
+        },
+        tags: {},
+        type: 'CredentialRecord',
+      })
+    );
   });
 });
 

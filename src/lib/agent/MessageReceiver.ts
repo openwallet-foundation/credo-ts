@@ -44,6 +44,7 @@ class MessageReceiver {
 
     logger.logJson('inboundMessage', unpackedMessage);
 
+    // TODO move `message` declaration down right above `messageContext` creation
     const message = await this.transformMessage(unpackedMessage);
     const senderKey = unpackedMessage.sender_verkey;
     let connection = undefined;

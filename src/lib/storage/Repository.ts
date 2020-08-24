@@ -23,14 +23,14 @@ export class Repository<T extends BaseRecord> {
   }
 
   public async find(id: string): Promise<T> {
-    return this.storageService.find<T>(this.recordType, id, this.recordType.type);
+    return this.storageService.find(this.recordType, id, this.recordType.type);
   }
 
   public async findAll(): Promise<T[]> {
-    return this.storageService.findAll<T>(this.recordType, this.recordType.type);
+    return this.storageService.findAll(this.recordType, this.recordType.type);
   }
 
   public async findByQuery(query: WalletQuery): Promise<T[]> {
-    return this.storageService.findByQuery<T>(this.recordType, this.recordType.type, query);
+    return this.storageService.findByQuery(this.recordType, this.recordType.type, query);
   }
 }
