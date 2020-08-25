@@ -1,11 +1,12 @@
 /* eslint-disable no-console */
-import { Wallet, DidConfig } from '../../wallet/Wallet';
+import { Wallet, DidConfig, DidInfo } from '../../wallet/Wallet';
 import { Repository } from '../../storage/Repository';
 import { StorageService } from '../../storage/StorageService';
 import { CredentialService } from './CredentialService';
 import { CredentialRecord } from '../../storage/CredentialRecord';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 import { BaseRecord } from '../../storage/BaseRecord';
+import { UnpackedMessage } from '../../types';
 
 describe('CredentialService', () => {
   let wallet: Wallet;
@@ -62,7 +63,6 @@ describe('CredentialService', () => {
         credDefId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
         comment: 'some comment',
       });
-
       const messageContext = new InboundMessageContext(credentialOffer);
 
       await credentialService.acceptCredentialOffer(messageContext);
@@ -95,10 +95,10 @@ class StubWallet implements Wallet {
   initPublicDid(didConfig: DidConfig): Promise<void> {
     throw new Error('Method not implemented.');
   }
-  getPublicDid(): import('../../wallet/Wallet').DidInfo | Record<string, undefined> {
+  getPublicDid(): DidInfo | Record<string, undefined> {
     throw new Error('Method not implemented.');
   }
-  createDid(didConfig?: import('../../wallet/Wallet').DidConfig | undefined): Promise<[string, string]> {
+  createDid(didConfig?: DidConfig | undefined): Promise<[string, string]> {
     throw new Error('Method not implemented.');
   }
   createCredDef(
@@ -122,7 +122,7 @@ class StubWallet implements Wallet {
   pack(payload: {}, recipientKeys: string[], senderVk: string | null): Promise<JsonWebKey> {
     throw new Error('Method not implemented.');
   }
-  unpack(messagePackage: JsonWebKey): Promise<import('../../types').UnpackedMessage> {
+  unpack(messagePackage: JsonWebKey): Promise<UnpackedMessage> {
     throw new Error('Method not implemented.');
   }
   sign(data: Buffer, verkey: string): Promise<Buffer> {
@@ -156,7 +156,6 @@ class StubWallet implements Wallet {
 
 class StubStorageService<T extends BaseRecord> implements StorageService<T> {
   records: T[] = [];
-
   save(record: T): Promise<void> {
     this.records.push(record);
     return Promise.resolve();
@@ -171,7 +170,6 @@ class StubStorageService<T extends BaseRecord> implements StorageService<T> {
     throw new Error('Method not implemented.');
   }
   findAll(typeClass: new (...args: any[]) => T, type: string): Promise<T[]> {
-    console.log('StubStorageService findAll');
     return Promise.resolve(this.records);
   }
   findByQuery(typeClass: new (...args: any[]) => T, type: string, query: {}): Promise<T[]> {

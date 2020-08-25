@@ -1,13 +1,13 @@
 /* eslint-disable no-console */
 // @ts-ignore
 import { poll } from 'await-poll';
-import { Agent } from '..';
 import { Subject } from 'rxjs';
 import path from 'path';
 import indy from 'indy-sdk';
-import { DidInfo } from '../wallet/Wallet';
+import { Agent } from '..';
 import { SubjectInboundTransporter, SubjectOutboundTransporter } from './helpers';
 import { CredentialRecord } from '../storage/CredentialRecord';
+import { SchemaTemplate, CredDefTemplate } from '../agent/LedgerService';
 
 jest.setTimeout(15000);
 
@@ -34,9 +34,7 @@ const poolConfig = {
 describe('credentials', () => {
   let faberAgent: Agent;
   let aliceAgent: Agent;
-  let schemaId: SchemaId;
   let credDefId: CredDefId;
-  let faberAgentPublicDid: DidInfo | Record<string, undefined>;
 
   beforeAll(async () => {
     const faberMessages = new Subject();
@@ -55,29 +53,24 @@ describe('credentials', () => {
     console.log(`Connecting to ledger pool ${poolName} with config:`, poolConfig);
     await faberAgent.ledger.connect(poolName, poolConfig);
 
-    const schemaName = `test-schema-${Date.now()}`;
     const schemaTemplate = {
-      name: schemaName,
+      name: `test-schema-${Date.now()}`,
       attributes: ['name', 'age'],
       version: '1.0',
     };
+    const [, ledgerSchema] = await registerSchema(faberAgent, schemaTemplate);
 
-    [schemaId] = await faberAgent.ledger.registerCredentialSchema(schemaTemplate);
-    console.log('schemaId', schemaId);
-    const [ledgerSchemaId, ledgerSchema] = await faberAgent.ledger.getSchema(schemaId);
-    console.log('ledgerSchemaId, ledgerSchema', ledgerSchemaId, ledgerSchema);
-
-    const credentialDefinitionTemplate = {
+    const definitionTemplate = {
       schema: ledgerSchema,
       tag: 'TAG',
       signatureType: 'CL',
       config: { support_revocation: false },
     };
+    const [ledgerCredDefId] = await registerDefinition(faberAgent, definitionTemplate);
+    credDefId = ledgerCredDefId;
 
-    [credDefId] = await faberAgent.ledger.registerCredentialDefinition(credentialDefinitionTemplate);
-    const [ledgerCredDefId, ledgerCredDef] = await faberAgent.ledger.getCredentialDefinition(credDefId);
-    console.log('ledgerCredDefId, ledgerCredDef', ledgerCredDefId, ledgerCredDef);
-
+    const publidDid = 'Th7MpTaRZVRYnPiabds81Y';
+    await ensurePublicDidIsOnLedger(faberAgent, publidDid);
     await makeConnection(faberAgent, aliceAgent);
   });
 
@@ -87,17 +80,16 @@ describe('credentials', () => {
   });
 
   test(`when faber issues credential then alice gets credential offer`, async () => {
-    faberAgentPublicDid = await faberAgent.ledger.getPublicDid('Th7MpTaRZVRYnPiabds81Y');
-    console.log('faberAgentPublicDid', faberAgentPublicDid);
-
+    // We assume that Faber has only one connection and it's a connection with Alice
     const [firstConnection] = await faberAgent.connections.getAll();
-    console.log(firstConnection);
 
+    // Issue credential from Faber to Alice
     await faberAgent.credentials.issueCredential(firstConnection, {
       credDefId,
       comment: 'some comment about credential',
     });
 
+    // We assume that Alice has only one credential and it's a credential from Faber
     const [firstCredential] = await poll(
       () => aliceAgent.credentials.getCredentials(),
       (credentials: CredentialRecord[]) => credentials.length < 1,
@@ -121,6 +113,33 @@ describe('credentials', () => {
     );
   });
 });
+
+async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<[SchemaId, Schema]> {
+  const [schemaId] = await agent.ledger.registerCredentialSchema(schemaTemplate);
+  console.log('schemaId', schemaId);
+  const [ledgerSchemaId, ledgerSchema] = await agent.ledger.getSchema(schemaId);
+  console.log('ledgerSchemaId, ledgerSchema', ledgerSchemaId, ledgerSchema);
+  return [ledgerSchemaId, ledgerSchema];
+}
+
+async function registerDefinition(agent: Agent, definitionTemplate: CredDefTemplate): Promise<[CredDefId, CredDef]> {
+  const [credDefId] = await agent.ledger.registerCredentialDefinition(definitionTemplate);
+  const [ledgerCredDefId, ledgerCredDef] = await agent.ledger.getCredentialDefinition(credDefId);
+  console.log('ledgerCredDefId, ledgerCredDef', ledgerCredDefId, ledgerCredDef);
+  return [ledgerCredDefId, ledgerCredDef];
+}
+
+async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: Did) {
+  try {
+    console.log(`Ensure test DID ${publicDid} is written to ledger`);
+    const agentPublicDid = await agent.ledger.getPublicDid(publicDid);
+    console.log(`Ensure test DID ${publicDid} is written to ledger: Success`, agentPublicDid);
+  } catch (error) {
+    // Unfortunately, this won't prevent from the test suite running because of Jest runner runs all tests
+    // regardless thorwn errors. We're more explicit about the problem with this error handling.
+    throw new Error(`Test DID ${publicDid} is not written on ledger or ledger is not available.`);
+  }
+}
 
 async function makeConnection(agentA: Agent, agentB: Agent) {
   const { connection: aliceConnectionAtAliceBob, invitation } = await agentA.connections.createConnection();
