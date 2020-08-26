@@ -60,17 +60,8 @@ describe('ledger', () => {
 
     const result = await faberAgent.ledger.getPublicDid(did);
 
-    // TLDR: indy createAndStoreMyDid returns verkey "9iRCvQujJqjMDnX23kV64BKX2y9EzQdqLCHoFuge1apJ", ledger returns verkey "~Rn9y1NrwrLuHGYtCKDDRxN". Both are correct (did: GzKBNShs4KiBksKUkAZud2)
-    //
-    // .NET also abbreviates verkey before sending to ledger:
-    // https://github.com/hyperledger/aries-framework-dotnet/blob/f90eaf9db8548f6fc831abea917e906201755763/src/Hyperledger.Aries/Ledger/DefaultLedgerService.cs#L139-L147
-    //
-    //
-    // The verkey is 32 bytes, and by default in Indy the DID is chosen as the first 16 bytes of that key, before base58 encoding.
-    // The abbreviated verkey just replaces the first 16 bytes with ~ when it matches the DID.
-    //
-    // When full verkey is used to register on ledger, this is stored on ledger and also returned as full verkey
-    // same applies to abbreviated verkey. If it is used it will be stored abbreviated and returned abbreviated.
+    // Agent’s public did stored locally in Indy wallet and created from public did seed during
+    // its initialization always returns full verkey. Therefore we need to align that here.
     let verkey = faberAgentPublicDid.verkey as string;
     if (isFullVerkey(verkey) && isAbbreviatedVerkey(result.verkey)) {
       verkey = await indy.abbreviateVerkey(faberAgentPublicDid.did as string, verkey);

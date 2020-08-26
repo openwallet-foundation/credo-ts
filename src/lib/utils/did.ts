@@ -1,5 +1,19 @@
-// Based on DidUtils implementation in Aries Framework .NET
-// see: https://github.com/hyperledger/aries-framework-dotnet/blob/f90eaf9db8548f6fc831abea917e906201755763/src/Hyperledger.Aries/Utils/DidUtils.cs
+/**
+ * Based on DidUtils implementation in Aries Framework .NET
+ * @see: https://github.com/hyperledger/aries-framework-dotnet/blob/f90eaf9db8548f6fc831abea917e906201755763/src/Hyperledger.Aries/Utils/DidUtils.cs
+ *
+ * Some context about full verkeys versus abbreviated verkeys:
+ *  A standard verkey is 32 bytes, and by default in Indy the DID is chosen as the first 16 bytes of that key, before base58 encoding.
+ *  An abbreviated verkey replaces the first 16 bytes of the verkey with ~ when it matches the DID.
+ *
+ *  When a full verkey is used to register on the ledger, this is stored as a full verkey on the ledger and also returned from the ledger as a full verkey.
+ *  The same applies to an abbreviated verkey. If an abbreviated verkey is used to register on the ledger, this is stored as an abbreviated verkey on the ledger and also returned from the ledger as an abbreviated verkey.
+ *
+ *  For this reason we need some methods to check whether verkeys are full or abbreviated, so we can align this with `indy.abbreviateVerkey`
+ *
+ *  Aries Framework .NET also abbreviates verkey before sending to ledger:
+ *  https://github.com/hyperledger/aries-framework-dotnet/blob/f90eaf9db8548f6fc831abea917e906201755763/src/Hyperledger.Aries/Ledger/DefaultLedgerService.cs#L139-L147
+ */
 
 export const FULL_VERKEY_REGEX = /^[1-9A-HJ-NP-Za-km-z]{44}$/;
 export const ABBREVIATED_VERKEY_REGEX = /^~[1-9A-HJ-NP-Za-km-z]{22}$/;
