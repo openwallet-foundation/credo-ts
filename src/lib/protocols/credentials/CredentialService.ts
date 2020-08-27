@@ -1,18 +1,24 @@
+import uuid from 'uuid';
+import { EventEmitter } from 'events';
 import { CredentialRecord } from '../../storage/CredentialRecord';
 import { Repository } from '../../storage/Repository';
 import { Wallet } from '../../wallet/Wallet';
 import { CredentialOfferMessage } from './messages/CredentialOfferMessage';
-import uuid from 'uuid';
 import { Expose } from 'class-transformer';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 import logger from '../../logger';
 import { CredentialState } from './CredentialState';
 
-export class CredentialService {
+export enum EventType {
+  StateChanged = 'stateChanged',
+}
+
+export class CredentialService extends EventEmitter {
   wallet: Wallet;
   credentialRepository: Repository<CredentialRecord>;
 
   constructor(wallet: Wallet, credentialRepository: Repository<CredentialRecord>) {
+    super();
     this.wallet = wallet;
     this.credentialRepository = credentialRepository;
   }
@@ -33,6 +39,7 @@ export class CredentialService {
     const credential = new CredentialRecord({ offer: credentialOffer, state: CredentialState.OfferSent });
     await this.credentialRepository.save(credential);
 
+    this.emit(EventType.StateChanged, { credentialId: credential.id, newState: credential.state });
     return credentialOffer;
   }
 
@@ -41,6 +48,7 @@ export class CredentialService {
     const credentialOffer = messageContext.message;
     const credential = new CredentialRecord({ offer: credentialOffer, state: CredentialState.OfferReceived });
     await this.credentialRepository.save(credential);
+    this.emit(EventType.StateChanged, { credentialId: credential.id, newState: credential.state });
   }
 
   async getAll(): Promise<CredentialRecord[]> {

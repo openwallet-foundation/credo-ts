@@ -2,7 +2,7 @@
 import { Wallet, DidConfig, DidInfo } from '../../wallet/Wallet';
 import { Repository } from '../../storage/Repository';
 import { StorageService } from '../../storage/StorageService';
-import { CredentialService } from './CredentialService';
+import { CredentialService, EventType } from './CredentialService';
 import { CredentialRecord } from '../../storage/CredentialRecord';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 import { BaseRecord } from '../../storage/BaseRecord';
@@ -77,6 +77,23 @@ describe('CredentialService', () => {
         })
       );
     });
+
+    test(`emits stateChange event with ${CredentialState.OfferSent}`, async () => {
+      const eventListenerMock = jest.fn();
+      credentialService.on(EventType.StateChanged, eventListenerMock);
+
+      await credentialService.createCredentialOffer({
+        credDefId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
+        comment: 'some comment',
+      });
+
+      expect(eventListenerMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          newState: CredentialState.OfferSent,
+          credentialId: expect.any(String),
+        })
+      );
+    });
   });
 
   describe('acceptCredentialOffer', () => {
@@ -104,6 +121,26 @@ describe('CredentialService', () => {
           tags: {},
           type: 'CredentialRecord',
           state: CredentialState.OfferReceived,
+        })
+      );
+    });
+
+    test(`emits stateChange event with ${CredentialState.OfferReceived}`, async () => {
+      const eventListenerMock = jest.fn();
+      credentialService.on(EventType.StateChanged, eventListenerMock);
+
+      const credentialOffer = await credentialService.createCredentialOffer({
+        credDefId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
+        comment: 'some comment',
+      });
+      const messageContext = new InboundMessageContext(credentialOffer);
+
+      await credentialService.acceptCredentialOffer(messageContext);
+
+      expect(eventListenerMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          newState: CredentialState.OfferReceived,
+          credentialId: expect.any(String),
         })
       );
     });
