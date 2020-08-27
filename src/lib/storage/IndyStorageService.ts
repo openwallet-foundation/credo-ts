@@ -28,12 +28,12 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     return this.wallet.deleteWalletRecord(type, id);
   }
 
-  async find<T>(typeClass: { new (...args: any[]): T }, id: string, type: string): Promise<T> {
+  async find<T>(typeClass: { new (...args: unknown[]): T }, id: string, type: string): Promise<T> {
     const record = await this.wallet.getWalletRecord(type, id, IndyStorageService.DEFAULT_QUERY_OPTIONS);
     return BaseRecord.fromPersistence<T>(typeClass, record);
   }
 
-  async findAll<T>(typeClass: { new (...args: any[]): T }, type: string): Promise<T[]> {
+  async findAll<T>(typeClass: { new (...args: unknown[]): T }, type: string): Promise<T[]> {
     const recordIterator = await this.wallet.search(type, {}, IndyStorageService.DEFAULT_QUERY_OPTIONS);
     const records = [];
     for await (const record of recordIterator) {
@@ -42,8 +42,7 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     return records;
   }
 
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  async findByQuery<T>(typeClass: { new (...args: any[]): T }, type: string, query: {}): Promise<T[]> {
+  async findByQuery<T>(typeClass: { new (...args: unknown[]): T }, type: string, query: WalletQuery): Promise<T[]> {
     const recordIterator = await this.wallet.search(type, query, IndyStorageService.DEFAULT_QUERY_OPTIONS);
     const records = [];
     for await (const record of recordIterator) {

@@ -1,6 +1,5 @@
 /* eslint-disable no-console */
 import { Agent, InboundTransporter, OutboundTransporter } from '..';
-import { OutboundPackage } from '../types';
 import path from 'path';
 import indy from 'indy-sdk';
 import { DidInfo } from '../wallet/Wallet';
@@ -138,13 +137,13 @@ describe('ledger', () => {
 });
 
 class DummyInboundTransporter implements InboundTransporter {
-  start(agent: Agent) {
+  start() {
     console.log('Starting agent...');
   }
 }
 
 class DummyOutboundTransporter implements OutboundTransporter {
-  async sendMessage(outboundPackage: OutboundPackage) {
+  async sendMessage() {
     console.log('Sending message...');
   }
 }

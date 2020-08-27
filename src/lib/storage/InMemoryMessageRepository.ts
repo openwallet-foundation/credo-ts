@@ -2,9 +2,9 @@ import { MessageRepository } from './MessageRepository';
 import { WireMessage } from '../types';
 
 export class InMemoryMessageRepository implements MessageRepository {
-  messages: { [key: string]: any } = {};
+  messages: { [key: string]: WireMessage } = {};
 
-  findByVerkey(theirKey: Verkey): any[] {
+  findByVerkey(theirKey: Verkey): WireMessage[] {
     if (this.messages[theirKey]) {
       return this.messages[theirKey];
     }

@@ -12,7 +12,7 @@ export abstract class BaseRecord {
   tags: { [keys: string]: string };
 
   // Required because Javascript doesn't allow accessing static types
-  // like instance.static_memeber
+  // like instance.static_member
   type: RecordType = RecordType.BaseRecord;
   static type: RecordType = RecordType.BaseRecord;
 
@@ -23,12 +23,12 @@ export abstract class BaseRecord {
   }
 
   getValue(): string {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, tags, ...value } = this;
     return JSON.stringify(value);
   }
 
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  static fromPersistence<T>(typeClass: { new (...args: any[]): T }, props: {}): T {
+  static fromPersistence<T>(typeClass: { new (...args: unknown[]): T }, props: Record<string, any>): T {
     // eslint-disable-next-line
     // @ts-ignore
     const { value, ...rest } = props;

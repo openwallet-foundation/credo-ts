@@ -14,7 +14,8 @@ export class Authentication {
   }
 
   toJSON() {
-    const [ver_type, auth_type, specifier] = this.publicKey.type.split('|');
+    // verType|authType|specifier
+    const [, auth_type] = this.publicKey.type.split('|');
     return this.embed
       ? this.publicKey.toJSON()
       : {
@@ -108,7 +109,7 @@ export class PublicKey {
   }
 
   toJSON() {
-    const [ver_type, auth_type, specifier] = this.type.split('|');
+    const [ver_type, , specifier] = this.type.split('|');
     return {
       id: this.id,
       type: ver_type,
@@ -168,8 +169,7 @@ export class Service {
     return new Service(id, serviceEndpoint, recipientKeys, routingKeys, priority || 0, type);
   }
 
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  toJSON(): {} {
+  toJSON(): Record<string, unknown> {
     const res: { [key: string]: any } = {
       id: this.id,
       type: this.type,

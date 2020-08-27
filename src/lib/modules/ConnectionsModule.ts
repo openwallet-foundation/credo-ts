@@ -1,4 +1,3 @@
-// eslint-disable-next-line
 // @ts-ignore
 import { poll } from 'await-poll';
 import { EventEmitter } from 'events';
@@ -43,7 +42,7 @@ export class ConnectionsModule {
     return { invitation, connection };
   }
 
-  async acceptInvitation(invitation: any) {
+  async acceptInvitation(invitation: unknown) {
     const connection = (await this.messageReceiver.receiveMessage(invitation))?.connection;
 
     if (!connection) {
