@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/ban-types */
-
 import logger from '../logger';
-import { UnpackedMessage } from '../types';
+import { UnpackedMessageContext } from '../types';
 import { Wallet, WalletConfig, WalletCredentials, DidInfo, DidConfig } from './Wallet';
 
 export class IndyWallet implements Wallet {
@@ -54,12 +52,12 @@ export class IndyWallet implements Wallet {
     return this.indy.createAndStoreMyDid(this.wh, didConfig || {});
   }
 
-  async createCredDef(
+  async createCredentialDefinition(
     issuerDid: string,
     schema: Schema,
     tag: string,
     signatureType: string,
-    config: {}
+    config?: CredDefConfig
   ): Promise<[string, CredDef]> {
     if (!this.wh) {
       throw Error('Wallet has not been initialized yet');
@@ -78,7 +76,7 @@ export class IndyWallet implements Wallet {
     return JSON.parse(packedMessage.toString('utf-8'));
   }
 
-  async unpack(messagePackage: JsonWebKey): Promise<UnpackedMessage> {
+  async unpack(messagePackage: JsonWebKey): Promise<UnpackedMessageContext> {
     if (!this.wh) {
       throw Error('Wallet has not been initialized yet');
     }

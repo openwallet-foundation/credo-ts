@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-types */
-
-import { UnpackedMessage } from '../types';
+import { UnpackedMessageContext } from '../types';
 
 export interface Wallet {
   wh?: WalletHandle;
@@ -10,15 +8,15 @@ export interface Wallet {
   initPublicDid(didConfig: DidConfig): Promise<void>;
   getPublicDid(): DidInfo | Record<string, undefined>;
   createDid(didConfig?: DidConfig): Promise<[Did, Verkey]>;
-  createCredDef(
+  createCredentialDefinition(
     issuerDid: Did,
     schema: Schema,
     tag: string,
     signatureType: string,
-    config: {}
+    config?: CredDefConfig
   ): Promise<[CredDefId, CredDef]>;
   pack(payload: {}, recipientKeys: Verkey[], senderVk: Verkey | null): Promise<JsonWebKey>;
-  unpack(messagePackage: JsonWebKey): Promise<UnpackedMessage>;
+  unpack(messagePackage: JsonWebKey): Promise<UnpackedMessageContext>;
   sign(data: Buffer, verkey: Verkey): Promise<Buffer>;
   verify(signerVerkey: Verkey, data: Buffer, signature: Buffer): Promise<boolean>;
   addWalletRecord(type: string, id: string, value: string, tags: {}): Promise<void>;

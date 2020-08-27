@@ -2,7 +2,7 @@ import logger from '../logger';
 import { AgentConfig } from './AgentConfig';
 import { Dispatcher } from './Dispatcher';
 import { EnvelopeService } from './EnvelopeService';
-import { UnpackedMessage } from '../types';
+import { UnpackedMessageContext, UnpackedMessage } from '../types';
 import { MessageType } from '../protocols/routing/messages';
 import { InboundMessageContext } from './models/InboundMessageContext';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
@@ -33,10 +33,14 @@ class MessageReceiver {
    *
    * @param inboundPackedMessage the message to receive and handle
    */
-  public async receiveMessage(inboundPackedMessage: any) {
+  public async receiveMessage(inboundPackedMessage: unknown) {
+    if (typeof inboundPackedMessage !== 'object' || inboundPackedMessage == null) {
+      throw new Error('Invalid message received. Message should be object');
+    }
+
     logger.logJson(`Agent ${this.config.label} received message:`, inboundPackedMessage);
 
-    const unpackedMessage = await this.unpackMessage(inboundPackedMessage);
+    const unpackedMessage = await this.unpackMessage(inboundPackedMessage as Record<string, unknown>);
 
     logger.logJson('inboundMessage', unpackedMessage);
 
@@ -73,13 +77,24 @@ class MessageReceiver {
    *
    * @param packedMessage the received, probably packed, message to unpack
    */
-  private async unpackMessage(packedMessage: any): Promise<UnpackedMessage> {
+  private async unpackMessage(packedMessage: Record<string, unknown>): Promise<UnpackedMessageContext> {
     // If the inbound message has no @type field we assume
     // the message is packed and must be unpacked first
-    if (!packedMessage['@type']) {
-      // TODO: handle when the unpacking fails. At the moment this will throw a cryptic
-      // indy-sdk error. Eventually we should create a problem report message
-      let unpackedMessage = await this.envelopeService.unpackMessage(packedMessage);
+    if (!this.isUnpackedMessage(packedMessage)) {
+      let unpackedMessage: UnpackedMessageContext;
+      try {
+        // TODO: handle when the unpacking fails. At the moment this will throw a cryptic
+        // indy-sdk error. Eventually we should create a problem report message
+        unpackedMessage = await this.envelopeService.unpackMessage(packedMessage);
+      } catch (error) {
+        logger.log('error while unpacking message', error);
+        throw error;
+        // if (error.indyName && error.indyName === 'WalletAlreadyExistsError') {
+        //   logger.log(error.indyName);
+        // } else {
+        //   throw error;
+        // }
+      }
 
       // if the message is of type forward we should check whether the
       //  - forward message is intended for us (so unpack inner `msg` and pass that to dispatcher)
@@ -88,7 +103,7 @@ class MessageReceiver {
         logger.logJson('Forwarded message', unpackedMessage);
 
         try {
-          unpackedMessage = await this.envelopeService.unpackMessage(unpackedMessage.message.msg);
+          unpackedMessage = await this.envelopeService.unpackMessage(unpackedMessage.message.msg as JsonWebKey);
         } catch {
           // To check whether the `to` field is a key belonging to us could be done in two ways.
           // We now just try to unpack, if it errors it means we don't have the key to unpack the message
@@ -104,9 +119,13 @@ class MessageReceiver {
     // If the message does have an @type field we assume
     // the message is already unpacked an use it directly
     else {
-      const unpackedMessage: UnpackedMessage = { message: packedMessage };
+      const unpackedMessage: UnpackedMessageContext = { message: packedMessage };
       return unpackedMessage;
     }
+  }
+
+  private isUnpackedMessage(message: Record<string, unknown>): message is UnpackedMessage {
+    return '@type' in message;
   }
 
   /**
@@ -114,7 +133,7 @@ class MessageReceiver {
    *
    * @param unpackedMessage the unpacked message for which to transform the message in to a class instance
    */
-  private async transformMessage(unpackedMessage: UnpackedMessage): Promise<AgentMessage> {
+  private async transformMessage(unpackedMessage: UnpackedMessageContext): Promise<AgentMessage> {
     const messageType = unpackedMessage.message['@type'];
     const MessageClass = this.dispatcher.getMessageClassForType(messageType);
 

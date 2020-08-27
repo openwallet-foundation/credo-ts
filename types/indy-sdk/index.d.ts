@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-types */
-
 interface Indy {
   createWallet(config: {}, credentials: {}): Promise<void>;
   openWallet(config: {}, credentials: {}): Promise<WalletHandle>;
@@ -13,10 +11,16 @@ interface Indy {
   createKey(wh: WalletHandle, key: KeyConfig): Promise<Verkey>;
   packMessage(wh: WalletHandle, message: Buffer, receiverKeys: Verkey[], senderVk: Verkey | null): Promise<Buffer>;
   unpackMessage(wh: WalletHandle, jwe: Buffer): Promise<Buffer>;
-  addWalletRecord(wh: WalletHandle, type: string, id: string, value: string, tags: {}): Promise<void>;
+  addWalletRecord(
+    wh: WalletHandle,
+    type: string,
+    id: string,
+    value: string,
+    tags: Record<string, string>
+  ): Promise<void>;
   updateWalletRecordValue(wh: WalletHandle, type: string, id: string, value: string): Promise<void>;
-  updateWalletRecordTags(wh: WalletHandle, type: string, id: string, tags: {}): Promise<void>;
-  addWalletRecordTags(wh: WalletHandle, type: string, id: string, tags: {}): Promise<void>;
+  updateWalletRecordTags(wh: WalletHandle, type: string, id: string, tags: Record<string, string>): Promise<void>;
+  addWalletRecordTags(wh: WalletHandle, type: string, id: string, tags: Record<string, string>): Promise<void>;
   deleteWalletRecord(wh: WalletHandle, type: string, id: string): Promise<void>;
   getWalletRecord(wh: WalletHandle, type: string, id: string, options: {}): Promise<WalletRecord>;
   openWalletSearch(wh: WalletHandle, type: string, query: {}, options: {}): Promise<SearchHandle>;
@@ -46,7 +50,7 @@ interface Indy {
     schema: Schema,
     tag: string,
     signatureType: string,
-    config: {}
+    config?: CredDefConfig
   ): Promise<[CredDefId, CredDef]>;
   buildGetTxnAuthorAgreementRequest(submitterDid: Did | null): Promise<LedgerRequest>;
   buildGetAcceptanceMechanismsRequest(submitterDid: Did | null): Promise<LedgerRequest>;
@@ -79,10 +83,21 @@ declare module 'indy-sdk' {
     senderVk: Verkey | null
   ): Promise<Buffer>;
   function unpackMessage(wh: WalletHandle, jwe: Buffer): Promise<Buffer>;
-  function addWalletRecord(wh: WalletHandle, type: string, id: string, value: string, tags: {}): Promise<void>;
+  function addWalletRecord(
+    wh: WalletHandle,
+    type: string,
+    id: string,
+    value: string,
+    tags: Record<string, string>
+  ): Promise<void>;
   function updateWalletRecordValue(wh: WalletHandle, type: string, id: string, value: string): Promise<void>;
-  function updateWalletRecordTags(wh: WalletHandle, type: string, id: string, tags: {}): Promise<void>;
-  function addWalletRecordTags(wh: WalletHandle, type: string, id: string, tags: {}): Promise<void>;
+  function updateWalletRecordTags(
+    wh: WalletHandle,
+    type: string,
+    id: string,
+    tags: Record<string, string>
+  ): Promise<void>;
+  function addWalletRecordTags(wh: WalletHandle, type: string, id: string, tags: Record<string, string>): Promise<void>;
   function deleteWalletRecord(wh: WalletHandle, type: string, id: string): Promise<void>;
   function getWalletRecord(wh: WalletHandle, type: string, id: string, options: {}): Promise<WalletRecord>;
   function openWalletSearch(wh: WalletHandle, type: string, query: {}, options: {}): Promise<SearchHandle>;
@@ -117,7 +132,7 @@ declare module 'indy-sdk' {
     schema: Schema,
     tag: string,
     signatureType: string,
-    config: {}
+    config?: CredDefConfig
   ): Promise<[CredDefId, CredDef]>;
   function buildGetTxnAuthorAgreementRequest(myDid: string): Promise<LedgerRequest>;
   function buildGetAcceptanceMechanismsRequest(myDid: string): Promise<LedgerRequest>;
@@ -155,7 +170,7 @@ interface SignedLedgerRequest extends LedgerRequest {
 interface LedgerResponse {
   op: string;
   result: {
-    data: any;
+    data: unknown;
   };
 }
 
@@ -174,6 +189,10 @@ interface CredDef {
   tag: string;
   value: any;
   ver: string;
+}
+
+interface CredDefConfig {
+  support_revocation?: boolean;
 }
 
 interface KeyConfig {

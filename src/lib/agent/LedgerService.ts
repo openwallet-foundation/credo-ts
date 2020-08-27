@@ -92,7 +92,7 @@ export class LedgerService {
     }
     const { schema, tag, signatureType, config } = credentialDefinitionTemplate;
 
-    const [credDefId, credDef] = await this.wallet.createCredDef(did, schema, tag, signatureType, config);
+    const [credDefId, credDef] = await this.wallet.createCredentialDefinition(did, schema, tag, signatureType, config);
     logger.log(`Register credential definition with ID = ${credDefId}:`, credDef);
 
     const request = await this.indy.buildCredDefRequest(did, credDef);
@@ -159,7 +159,6 @@ export class LedgerService {
     const taaResponse = await this.indy.submitRequest(this.poolHandle, taaRequest);
     const acceptanceMechanismRequest = await this.indy.buildGetAcceptanceMechanismsRequest(null);
     const acceptanceMechanismResponse = await this.indy.submitRequest(this.poolHandle, acceptanceMechanismRequest);
-    const acceptanceMechanisms = acceptanceMechanismResponse.result.data;
 
     // TAA can be null
     if (taaResponse.result.data == null) {
@@ -167,8 +166,13 @@ export class LedgerService {
       return null;
     }
 
-    const authorAgreement: AuthorAgreement = taaResponse.result.data;
-    this.authorAgreement = { ...authorAgreement, acceptanceMechanisms };
+    // If TAA is not null, we can be sure AcceptanceMechanisms is also not null
+    const authorAgreement = taaResponse.result.data as AuthorAgreement;
+    const acceptanceMechanisms = acceptanceMechanismResponse.result.data as AcceptanceMechanisms;
+    this.authorAgreement = {
+      ...authorAgreement,
+      acceptanceMechanisms,
+    };
     return this.authorAgreement;
   }
 

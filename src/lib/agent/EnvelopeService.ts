@@ -1,5 +1,5 @@
 import logger from '../logger';
-import { OutboundMessage, OutboundPackage, UnpackedMessage } from '../types';
+import { OutboundMessage, OutboundPackage, UnpackedMessageContext } from '../types';
 import { Wallet } from '../wallet/Wallet';
 import { ForwardMessage } from '../protocols/routing/ForwardMessage';
 
@@ -35,7 +35,7 @@ class EnvelopeService {
     return { connection, payload: outboundPackedMessage, endpoint };
   }
 
-  async unpackMessage(packedMessage: JsonWebKey): Promise<UnpackedMessage> {
+  async unpackMessage(packedMessage: JsonWebKey): Promise<UnpackedMessageContext> {
     return this.wallet.unpack(packedMessage);
   }
 }

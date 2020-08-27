@@ -18,10 +18,12 @@ export interface InitConfig {
 }
 
 export interface UnpackedMessage {
-  message: {
-    '@type': string;
-    [key: string]: any;
-  };
+  '@type': string;
+  [key: string]: unknown;
+}
+
+export interface UnpackedMessageContext {
+  message: UnpackedMessage;
   sender_verkey?: Verkey;
   recipient_verkey?: Verkey;
 }
