@@ -5,7 +5,6 @@ import { Repository } from '../../storage/Repository';
 import { Wallet } from '../../wallet/Wallet';
 import { CredentialOfferMessage, Attachment } from './messages/CredentialOfferMessage';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
-import logger from '../../logger';
 import { CredentialState } from './CredentialState';
 
 export enum EventType {
@@ -45,9 +44,7 @@ export class CredentialService extends EventEmitter {
   }
 
   async acceptCredentialOffer(messageContext: InboundMessageContext<CredentialOfferMessage>): Promise<void> {
-    logger.log('messageContext', messageContext);
     const credentialOffer = messageContext.message;
-    logger.log('credentialOffer.offersAttachments[0]', credentialOffer.offersAttachments[0]);
     const credential = new CredentialRecord({ offer: credentialOffer, state: CredentialState.OfferReceived });
     await this.credentialRepository.save(credential);
     this.emit(EventType.StateChanged, { credentialId: credential.id, newState: credential.state });
