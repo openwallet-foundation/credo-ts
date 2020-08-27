@@ -14,7 +14,9 @@ export class LedgerModule {
     return this.ledgerService.connect(poolName, poolConfig);
   }
 
-  async registerPublicDid() {}
+  async registerPublicDid() {
+    // TODO: handle ping response message
+  }
 
   async getPublicDid(did: Did) {
     return this.ledgerService.getPublicDid(did);
