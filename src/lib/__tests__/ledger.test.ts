@@ -4,12 +4,9 @@ import { OutboundPackage } from '../types';
 import path from 'path';
 import indy from 'indy-sdk';
 import { DidInfo } from '../wallet/Wallet';
+import { DID_IDENTIFIER_REGEX, VERKEY_REGEX, isFullVerkey, isAbbreviatedVerkey } from '../utils/did';
 
 jest.setTimeout(15000);
-
-// TODO Is there a more restrict way how to define these regex?
-const DidRegExp = /[-_./a-zA-Z0-9]{8,64}/;
-const VerkeyRegExp = /[-_./a-zA-Z0-9]{8,64}/;
 
 const faberConfig = {
   label: 'Faber',
@@ -31,7 +28,7 @@ describe('ledger', () => {
     const poolConfig = {
       genesis_txn: process.env.GENESIS_TXN_PATH
         ? path.resolve(process.env.GENESIS_TXN_PATH)
-        : path.join(__dirname, 'genesis.txn'),
+        : path.join(__dirname, '../../../network/genesis/local-genesis.txn'),
     };
 
     console.log(`Connecting to ledger pool ${poolName} with config:`, poolConfig);
@@ -48,8 +45,8 @@ describe('ledger', () => {
 
     expect(faberAgentPublicDid).toEqual(
       expect.objectContaining({
-        did: expect.stringMatching(DidRegExp),
-        verkey: expect.stringMatching(VerkeyRegExp),
+        did: expect.stringMatching(DID_IDENTIFIER_REGEX),
+        verkey: expect.stringMatching(VERKEY_REGEX),
       })
     );
   });
@@ -62,11 +59,21 @@ describe('ledger', () => {
     }
 
     const result = await faberAgent.ledger.getPublicDid(did);
-    expect(result).toEqual({
-      did: faberAgentPublicDid.did,
-      verkey: faberAgentPublicDid.verkey,
-      role: '101',
-    });
+
+    // Agent’s public did stored locally in Indy wallet and created from public did seed during
+    // its initialization always returns full verkey. Therefore we need to align that here.
+    let verkey = faberAgentPublicDid.verkey as string;
+    if (isFullVerkey(verkey) && isAbbreviatedVerkey(result.verkey)) {
+      verkey = await indy.abbreviateVerkey(faberAgentPublicDid.did as string, verkey);
+    }
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        did: faberAgentPublicDid.did,
+        verkey: verkey,
+        role: '101',
+      })
+    );
   });
 
   test('register schema on ledger', async () => {
@@ -120,7 +127,9 @@ describe('ledger', () => {
         }),
       })
     );
-  });
+    // Submitting new credential definition can take a while
+    // and somtimes exceeds the default 15000ms
+  }, 30000);
 });
 
 class DummyInboundTransporter implements InboundTransporter {

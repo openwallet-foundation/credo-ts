@@ -137,7 +137,9 @@ export class LedgerService {
       authorAgreement.version,
       authorAgreement.digest,
       this.getFirstAcceptanceMechanism(authorAgreement),
-      authorAgreement.ratification_ts
+      // Current time since epoch
+      // We can't use ratification_ts, as it must be greater than 1499906902
+      Math.floor(new Date().getTime() / 1000)
     );
 
     return requestWithTaa;
