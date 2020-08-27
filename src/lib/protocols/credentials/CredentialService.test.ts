@@ -7,6 +7,7 @@ import { CredentialRecord } from '../../storage/CredentialRecord';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 import { BaseRecord } from '../../storage/BaseRecord';
 import { UnpackedMessage } from '../../types';
+import { CredentialState } from './CredentialState';
 
 describe('CredentialService', () => {
   let wallet: Wallet;
@@ -16,7 +17,6 @@ describe('CredentialService', () => {
 
   beforeAll(async () => {
     wallet = new StubWallet();
-    storageService = new StubStorageService();
     await wallet.init();
   });
 
@@ -25,13 +25,14 @@ describe('CredentialService', () => {
     await wallet.delete();
   });
 
-  beforeEach(() => {
-    credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService);
-    credentialService = new CredentialService(wallet, credentialRepository);
-  });
-
   describe('createCredentialOffer', () => {
-    it('returns credential offer message', async () => {
+    beforeEach(() => {
+      storageService = new StubStorageService();
+      credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService);
+      credentialService = new CredentialService(wallet, credentialRepository);
+    });
+
+    test('returns credential offer message', async () => {
       const credentialOffer = await credentialService.createCredentialOffer({
         credDefId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
         comment: 'some comment',
@@ -55,17 +56,14 @@ describe('CredentialService', () => {
         })
       );
     });
-  });
 
-  describe('acceptCredentialOffer', () => {
-    it('creates credential base on credential offer message', async () => {
+    test('creates credential in OFFER_SENT state', async () => {
       const credentialOffer = await credentialService.createCredentialOffer({
         credDefId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
         comment: 'some comment',
       });
-      const messageContext = new InboundMessageContext(credentialOffer);
+      console.log('Credential offer message JSON: ', credentialOffer.toJSON());
 
-      await credentialService.acceptCredentialOffer(messageContext);
       const [firstCredential] = await credentialService.getAll();
 
       expect(firstCredential).toEqual(
@@ -75,6 +73,37 @@ describe('CredentialService', () => {
           offer: credentialOffer,
           tags: {},
           type: 'CredentialRecord',
+          state: CredentialState.OfferSent,
+        })
+      );
+    });
+  });
+
+  describe('acceptCredentialOffer', () => {
+    beforeEach(() => {
+      storageService = new StubStorageService();
+      credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService);
+      credentialService = new CredentialService(wallet, credentialRepository);
+    });
+
+    test('creates credential in OFFER base on credential offer message', async () => {
+      const credentialOffer = await credentialService.createCredentialOffer({
+        credDefId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
+        comment: 'some comment',
+      });
+      const messageContext = new InboundMessageContext(credentialOffer);
+
+      await credentialService.acceptCredentialOffer(messageContext);
+      const [, secondCredential] = await credentialService.getAll();
+
+      expect(secondCredential).toEqual(
+        expect.objectContaining({
+          createdAt: expect.any(Number),
+          id: expect.any(String),
+          offer: credentialOffer,
+          tags: {},
+          type: 'CredentialRecord',
+          state: CredentialState.OfferReceived,
         })
       );
     });

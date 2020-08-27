@@ -6,6 +6,7 @@ import uuid from 'uuid';
 import { Expose } from 'class-transformer';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 import logger from '../../logger';
+import { CredentialState } from './CredentialState';
 
 export class CredentialService {
   wallet: Wallet;
@@ -28,13 +29,17 @@ export class CredentialService {
       offersAttachments: [attachment],
       credentialPreview: {},
     });
+
+    const credential = new CredentialRecord({ offer: credentialOffer, state: CredentialState.OfferSent });
+    await this.credentialRepository.save(credential);
+
     return credentialOffer;
   }
 
   async acceptCredentialOffer(messageContext: InboundMessageContext<CredentialOfferMessage>): Promise<void> {
     logger.log('messageContext', messageContext);
     const credentialOffer = messageContext.message;
-    const credential = new CredentialRecord({ offer: credentialOffer });
+    const credential = new CredentialRecord({ offer: credentialOffer, state: CredentialState.OfferReceived });
     await this.credentialRepository.save(credential);
   }
 
