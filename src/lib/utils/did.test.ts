@@ -80,24 +80,21 @@ const invalidDidIdentifiers = [
 
 describe('Utils | Did', () => {
   describe('isAbbreviatedVerkey()', () => {
-    test.each(validAbbreviatedVerkeys)('returns true when valid abbreviated verkey "%s" is passed in', (verkey) => {
+    test.each(validAbbreviatedVerkeys)('returns true when valid abbreviated verkey "%s" is passed in', verkey => {
       expect(isAbbreviatedVerkey(verkey)).toBe(true);
     });
 
-    test.each(invalidAbbreviatedVerkeys)(
-      'returns false when invalid abbreviated verkey "%s" is passed in',
-      (verkey) => {
-        expect(isAbbreviatedVerkey(verkey)).toBe(false);
-      }
-    );
+    test.each(invalidAbbreviatedVerkeys)('returns false when invalid abbreviated verkey "%s" is passed in', verkey => {
+      expect(isAbbreviatedVerkey(verkey)).toBe(false);
+    });
   });
 
   describe('isFullVerkey()', () => {
-    test.each(validFullVerkeys)('returns true when valid full verkey "%s" is passed in', (verkey) => {
+    test.each(validFullVerkeys)('returns true when valid full verkey "%s" is passed in', verkey => {
       expect(isFullVerkey(verkey)).toBe(true);
     });
 
-    test.each(invalidFullVerkeys)('returns false when invalid full verkey "%s" is passed in', (verkey) => {
+    test.each(invalidFullVerkeys)('returns false when invalid full verkey "%s" is passed in', verkey => {
       expect(isFullVerkey(verkey)).toBe(false);
     });
   });
@@ -105,31 +102,31 @@ describe('Utils | Did', () => {
   describe('isVerkey()', () => {
     const validVerkeys = [...validAbbreviatedVerkeys, ...validFullVerkeys];
 
-    test.each(validVerkeys)('returns true when valid verkey "%s" is passed in', (verkey) => {
+    test.each(validVerkeys)('returns true when valid verkey "%s" is passed in', verkey => {
       expect(isVerkey(verkey)).toBe(true);
     });
 
-    test.each(invalidVerkeys)('returns false when invalid verkey "%s" is passed in', (verkey) => {
+    test.each(invalidVerkeys)('returns false when invalid verkey "%s" is passed in', verkey => {
       expect(isVerkey(verkey)).toBe(false);
     });
   });
 
   describe('isDid()', () => {
-    test.each(validDids)('returns true when valid did "%s" is passed in', (did) => {
+    test.each(validDids)('returns true when valid did "%s" is passed in', did => {
       expect(isDid(did)).toBe(true);
     });
 
-    test.each(invalidDids)('returns false when invalid did "%s" is passed in', (did) => {
+    test.each(invalidDids)('returns false when invalid did "%s" is passed in', did => {
       expect(isDid(did)).toBe(false);
     });
   });
 
   describe('isDidIdentifier()', () => {
-    test.each(validDidIdentifiers)('returns true when valid did identifier "%s" is passed in', (didIdentifier) => {
+    test.each(validDidIdentifiers)('returns true when valid did identifier "%s" is passed in', didIdentifier => {
       expect(isDidIdentifier(didIdentifier)).toBe(true);
     });
 
-    test.each(invalidDidIdentifiers)('returns false when invalid did identifier "%s" is passed in', (didIdentifier) => {
+    test.each(invalidDidIdentifiers)('returns false when invalid did identifier "%s" is passed in', didIdentifier => {
       expect(isDidIdentifier(didIdentifier)).toBe(false);
     });
   });
