@@ -18,7 +18,7 @@ const faberConfig = {
 describe('ledger', () => {
   let faberAgent: Agent;
   let schemaId: SchemaId;
-  let faberAgentPublicDid: DidInfo | Record<string, undefined>;
+  let faberAgentPublicDid: DidInfo | undefined;
 
   beforeAll(async () => {
     faberAgent = new Agent(faberConfig, new DummyInboundTransporter(), new DummyOutboundTransporter(), indy);
@@ -52,19 +52,17 @@ describe('ledger', () => {
   });
 
   test('get public DID from ledger', async () => {
-    const { did } = faberAgent.getPublicDid();
-
-    if (!did) {
+    if (!faberAgentPublicDid) {
       throw new Error('Agent does not have publid did.');
     }
 
-    const result = await faberAgent.ledger.getPublicDid(did);
+    const result = await faberAgent.ledger.getPublicDid(faberAgentPublicDid.did);
 
+    let { verkey } = faberAgentPublicDid;
     // Agent’s public did stored locally in Indy wallet and created from public did seed during
     // its initialization always returns full verkey. Therefore we need to align that here.
-    let verkey = faberAgentPublicDid.verkey as string;
     if (isFullVerkey(verkey) && isAbbreviatedVerkey(result.verkey)) {
-      verkey = await indy.abbreviateVerkey(faberAgentPublicDid.did as string, verkey);
+      verkey = await indy.abbreviateVerkey(faberAgentPublicDid.did, verkey);
     }
 
     expect(result).toEqual(
@@ -77,6 +75,10 @@ describe('ledger', () => {
   });
 
   test('register schema on ledger', async () => {
+    if (!faberAgentPublicDid) {
+      throw new Error('Agent does not have publid did.');
+    }
+
     const schemaName = `test-schema-${Date.now()}`;
     const schemaTemplate = {
       name: schemaName,
@@ -101,6 +103,9 @@ describe('ledger', () => {
   });
 
   test('register definition on ledger', async () => {
+    if (!faberAgentPublicDid) {
+      throw new Error('Agent does not have publid did.');
+    }
     const [, schema] = await faberAgent.ledger.getSchema(schemaId);
     const credentialDefinitionTemplate = {
       schema: schema,

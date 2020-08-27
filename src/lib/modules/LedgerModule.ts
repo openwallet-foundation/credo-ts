@@ -23,7 +23,7 @@ export class LedgerModule {
   }
 
   async registerCredentialSchema(schema: SchemaTemplate) {
-    const { did } = this.wallet.getPublicDid();
+    const did = this.wallet.getPublicDid()?.did;
     if (!did) {
       throw new Error('Agent has no public DID.');
     }
@@ -35,7 +35,7 @@ export class LedgerModule {
   }
 
   async registerCredentialDefinition(credentialDefinitionTemplate: CredDefTemplate) {
-    const { did } = this.wallet.getPublicDid();
+    const did = this.wallet.getPublicDid()?.did;
     if (!did) {
       throw new Error('Agent has no public DID.');
     }

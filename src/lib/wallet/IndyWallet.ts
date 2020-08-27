@@ -1,13 +1,12 @@
 import logger from '../logger';
 import { UnpackedMessageContext } from '../types';
-import { Wallet, WalletConfig, WalletCredentials, DidInfo, DidConfig } from './Wallet';
+import { Wallet, DidInfo } from './Wallet';
 
 export class IndyWallet implements Wallet {
   wh?: number;
   walletConfig: WalletConfig;
   walletCredentials: WalletCredentials;
-  agentDidInfo: DidInfo | {} = {};
-  publicDidInfo: DidInfo | Record<string, undefined> = {};
+  publicDidInfo: DidInfo | undefined;
   indy: Indy;
 
   constructor(walletConfig: WalletConfig, walletCredentials: WalletCredentials, indy: Indy) {
@@ -40,7 +39,7 @@ export class IndyWallet implements Wallet {
     };
   }
 
-  getPublicDid(): DidInfo | {} {
+  getPublicDid() {
     return this.publicDidInfo;
   }
 
@@ -66,7 +65,7 @@ export class IndyWallet implements Wallet {
     return this.indy.issuerCreateAndStoreCredentialDef(this.wh, issuerDid, schema, tag, signatureType, config);
   }
 
-  async pack(payload: {}, recipientKeys: Verkey[], senderVk: Verkey): Promise<JsonWebKey> {
+  async pack(payload: Record<string, unknown>, recipientKeys: Verkey[], senderVk: Verkey): Promise<JsonWebKey> {
     if (!this.wh) {
       throw Error('Wallet has not been initialized yet');
     }
@@ -125,7 +124,7 @@ export class IndyWallet implements Wallet {
     return this.indy.deleteWallet(this.walletConfig, this.walletCredentials);
   }
 
-  async addWalletRecord(type: string, id: string, value: string, tags: {}) {
+  async addWalletRecord(type: string, id: string, value: string, tags: Record<string, string>) {
     if (!this.wh) {
       throw new Error(`Wallet has not been initialized yet`);
     }
@@ -139,7 +138,7 @@ export class IndyWallet implements Wallet {
     return this.indy.updateWalletRecordValue(this.wh, type, id, value);
   }
 
-  async updateWalletRecordTags(type: string, id: string, tags: {}) {
+  async updateWalletRecordTags(type: string, id: string, tags: Record<string, string>) {
     if (!this.wh) {
       throw new Error(`Wallet has not been initialized yet`);
     }
@@ -153,7 +152,7 @@ export class IndyWallet implements Wallet {
     return this.indy.deleteWalletRecord(this.wh, type, id);
   }
 
-  async search(type: string, query: {}, options: {}) {
+  async search(type: string, query: WalletQuery, options: WalletSearchOptions) {
     if (!this.wh) {
       throw new Error(`Wallet has not been initialized yet`);
     }
@@ -178,7 +177,7 @@ export class IndyWallet implements Wallet {
     return generator(this.indy, this.wh);
   }
 
-  getWalletRecord(type: string, id: string, options: {}): Promise<WalletRecord> {
+  getWalletRecord(type: string, id: string, options: WalletRecordOptions): Promise<WalletRecord> {
     if (!this.wh) {
       throw new Error(`Wallet has not been initialized yet`);
     }

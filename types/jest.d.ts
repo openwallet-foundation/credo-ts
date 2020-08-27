@@ -1,4 +1,4 @@
-import { ConnectionRecord } from '../../src/lib/storage/ConnectionRecord';
+import { ConnectionRecord } from '../src/lib/storage/ConnectionRecord';
 
 declare global {
   namespace jest {

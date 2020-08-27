@@ -1,4 +1,3 @@
-import { WalletConfig, WalletCredentials } from './wallet/Wallet';
 import { ConnectionRecord } from './storage/ConnectionRecord';
 import { AgentMessage } from './agent/AgentMessage';
 
