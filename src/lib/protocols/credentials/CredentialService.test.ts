@@ -38,8 +38,6 @@ describe('CredentialService', () => {
         comment: 'some comment',
       });
 
-      console.log('Credential offer message JSON: ', credentialOffer.toJSON());
-
       expect(credentialOffer.toJSON()).toEqual(
         expect.objectContaining({
           '@id': expect.any(String),
@@ -50,7 +48,9 @@ describe('CredentialService', () => {
             {
               '@id': expect.any(String),
               'mime-type': 'application/json',
-              data: expect.anything(),
+              data: {
+                base64: expect.any(String),
+              },
             },
           ],
         })
@@ -62,8 +62,6 @@ describe('CredentialService', () => {
         credDefId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
         comment: 'some comment',
       });
-      console.log('Credential offer message JSON: ', credentialOffer.toJSON());
-
       const [firstCredential] = await credentialService.getAll();
 
       expect(firstCredential).toEqual(

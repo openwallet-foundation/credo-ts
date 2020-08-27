@@ -48,8 +48,21 @@ export class CredentialOfferMessage extends AgentMessage {
 
 type JsonLd = Record<string, unknown>;
 
-interface Attachment {
+export class Attachment {
+  constructor(options: Attachment) {
+    this.id = options.id;
+    this.mimeType = options.mimeType;
+    this.data = options.data;
+  }
+
+  @Expose({ name: '@id' })
   id: string;
+
+  @Expose({ name: 'mime-type' })
   mimeType: string;
-  data: any;
+
+  @Expose({ name: 'data' })
+  data: {
+    base64: string;
+  };
 }

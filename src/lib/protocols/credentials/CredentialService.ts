@@ -3,8 +3,7 @@ import { EventEmitter } from 'events';
 import { CredentialRecord } from '../../storage/CredentialRecord';
 import { Repository } from '../../storage/Repository';
 import { Wallet } from '../../wallet/Wallet';
-import { CredentialOfferMessage } from './messages/CredentialOfferMessage';
-import { Expose } from 'class-transformer';
+import { CredentialOfferMessage, Attachment } from './messages/CredentialOfferMessage';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 import logger from '../../logger';
 import { CredentialState } from './CredentialState';
@@ -28,7 +27,9 @@ export class CredentialService extends EventEmitter {
     const attachment = new Attachment({
       id: uuid(),
       mimeType: 'application/json',
-      data: credOffer,
+      data: {
+        base64: Buffer.from(JSON.stringify(credOffer)).toString('base64'),
+      },
     });
     const credentialOffer = new CredentialOfferMessage({
       comment,
@@ -46,6 +47,7 @@ export class CredentialService extends EventEmitter {
   async acceptCredentialOffer(messageContext: InboundMessageContext<CredentialOfferMessage>): Promise<void> {
     logger.log('messageContext', messageContext);
     const credentialOffer = messageContext.message;
+    logger.log('credentialOffer.offersAttachments[0]', credentialOffer.offersAttachments[0]);
     const credential = new CredentialRecord({ offer: credentialOffer, state: CredentialState.OfferReceived });
     await this.credentialRepository.save(credential);
     this.emit(EventType.StateChanged, { credentialId: credential.id, newState: credential.state });
@@ -59,21 +61,4 @@ export class CredentialService extends EventEmitter {
 export interface CredentialOfferTemplate {
   credDefId: CredDefId;
   comment: string;
-}
-
-export class Attachment {
-  constructor(options: Attachment) {
-    this.id = options.id;
-    this.mimeType = options.mimeType;
-    this.data = options.data;
-  }
-
-  @Expose({ name: '@id' })
-  id: string;
-
-  @Expose({ name: 'mime-type' })
-  mimeType: string;
-
-  @Expose({ name: 'data' })
-  data: any;
 }
