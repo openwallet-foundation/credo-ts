@@ -1,15 +1,48 @@
 import { Equals, IsString } from 'class-validator';
-import { Expose } from 'class-transformer';
+import { Expose, classToPlain } from 'class-transformer';
 
 import { AgentMessage } from '../../../agent/AgentMessage';
 import { MessageType } from './MessageType';
+import { MessageTransformer } from '../../../agent/MessageTransformer';
 // import { AttachmentDecorator } from '../../decorators/attachments/AttachmentDecorator';
+
+interface CredentialPreviewOptions {
+  attributes: CredentialPreviewAttribute[];
+}
+
+export class CredentialPreview {
+  constructor(options: CredentialPreviewOptions) {
+    this.attributes = options.attributes;
+  }
+
+  @Equals(CredentialPreview.type)
+  readonly type = CredentialPreview.type;
+  static readonly type = MessageType.CredentialPreview;
+
+  @Expose({ name: 'attributes' })
+  attributes: CredentialPreviewAttribute[];
+}
+
+export class CredentialPreviewAttribute {
+  constructor(options: CredentialPreviewAttribute) {
+    this.name = options.name;
+    this.mimeType = options.mimeType;
+    this.value = options.value;
+  }
+
+  name: string;
+
+  @Expose({ name: 'mime-type' })
+  mimeType: string;
+
+  value: string;
+}
 
 export interface CredentialOfferMessageOptions {
   id?: string;
   comment: string;
-  offersAttachments: [Attachment];
-  credentialPreview: JsonLd;
+  offersAttachments: Attachment[];
+  credentialPreview: CredentialPreview;
 }
 
 /**
@@ -38,15 +71,13 @@ export class CredentialOfferMessage extends AgentMessage {
 
   @IsString()
   @Expose({ name: 'credential_preview' })
-  credentialPreview!: JsonLd;
+  credentialPreview!: CredentialPreview;
 
   // @Type(() => AttachmentDecorator)
   // @ValidateNested()
   @Expose({ name: 'offers~attach' })
-  offersAttachments!: [Attachment];
+  offersAttachments!: Attachment[];
 }
-
-type JsonLd = Record<string, unknown>;
 
 export class Attachment {
   constructor(options: Attachment) {

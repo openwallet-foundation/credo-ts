@@ -8,6 +8,8 @@ import { Agent } from '..';
 import { SubjectInboundTransporter, SubjectOutboundTransporter } from './helpers';
 import { CredentialRecord } from '../storage/CredentialRecord';
 import { SchemaTemplate, CredDefTemplate } from '../agent/LedgerService';
+import { CredentialPreview } from '../protocols/credentials/messages/CredentialOfferMessage';
+import { CredentialState } from '../protocols/credentials/CredentialState';
 
 jest.setTimeout(15000);
 
@@ -30,6 +32,21 @@ const poolConfig = {
     ? path.resolve(process.env.GENESIS_TXN_PATH)
     : path.join(__dirname, 'genesis.txn'),
 };
+
+const credentialPreview = new CredentialPreview({
+  attributes: [
+    {
+      name: 'name',
+      mimeType: 'text/plain',
+      value: 'John',
+    },
+    {
+      name: 'age',
+      mimeType: 'text/plain',
+      value: '99',
+    },
+  ],
+});
 
 describe('credentials', () => {
   let faberAgent: Agent;
@@ -87,6 +104,7 @@ describe('credentials', () => {
     await faberAgent.credentials.issueCredential(firstConnection, {
       credDefId,
       comment: 'some comment about credential',
+      preview: credentialPreview,
     });
 
     // We assume that Alice has only one credential and it's a credential from Faber
@@ -104,11 +122,26 @@ describe('credentials', () => {
           '@id': expect.any(String),
           '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential',
           comment: 'some comment about credential',
-          credential_preview: {},
+          credential_preview: {
+            type: 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/credential-preview',
+            attributes: [
+              {
+                name: 'name',
+                mimeType: 'text/plain',
+                value: 'John',
+              },
+              {
+                name: 'age',
+                mimeType: 'text/plain',
+                value: '99',
+              },
+            ],
+          },
           'offers~attach': expect.any(Array),
         },
         tags: {},
         type: 'CredentialRecord',
+        state: CredentialState.OfferReceived,
       })
     );
   });

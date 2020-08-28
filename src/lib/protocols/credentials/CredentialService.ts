@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 import { CredentialRecord } from '../../storage/CredentialRecord';
 import { Repository } from '../../storage/Repository';
 import { Wallet } from '../../wallet/Wallet';
-import { CredentialOfferMessage, Attachment } from './messages/CredentialOfferMessage';
+import { CredentialOfferMessage, CredentialPreview, Attachment } from './messages/CredentialOfferMessage';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 import { CredentialState } from './CredentialState';
 
@@ -21,7 +21,11 @@ export class CredentialService extends EventEmitter {
     this.credentialRepository = credentialRepository;
   }
 
-  async createCredentialOffer({ credDefId, comment }: CredentialOfferTemplate): Promise<CredentialOfferMessage> {
+  async createCredentialOffer({
+    credDefId,
+    comment,
+    preview,
+  }: CredentialOfferTemplate): Promise<CredentialOfferMessage> {
     const credOffer = await this.wallet.createCredentialOffer(credDefId);
     const attachment = new Attachment({
       id: uuid(),
@@ -33,7 +37,7 @@ export class CredentialService extends EventEmitter {
     const credentialOffer = new CredentialOfferMessage({
       comment,
       offersAttachments: [attachment],
-      credentialPreview: {},
+      credentialPreview: preview,
     });
 
     const credential = new CredentialRecord({ offer: credentialOffer, state: CredentialState.OfferSent });
@@ -58,4 +62,5 @@ export class CredentialService extends EventEmitter {
 export interface CredentialOfferTemplate {
   credDefId: CredDefId;
   comment: string;
+  preview: CredentialPreview;
 }
