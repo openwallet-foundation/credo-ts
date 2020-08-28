@@ -130,7 +130,7 @@ describe('CredentialService', () => {
     });
   });
 
-  describe('acceptCredentialOffer', () => {
+  describe('processCredentialOffer', () => {
     beforeEach(() => {
       storageService = new StubStorageService();
       credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService);
@@ -145,7 +145,7 @@ describe('CredentialService', () => {
       });
       const messageContext = new InboundMessageContext(credentialOffer);
 
-      await credentialService.acceptCredentialOffer(messageContext);
+      await credentialService.processCredentialOffer(messageContext);
       const [, secondCredential] = await credentialService.getAll();
 
       expect(secondCredential).toEqual(
@@ -171,7 +171,7 @@ describe('CredentialService', () => {
       });
       const messageContext = new InboundMessageContext(credentialOffer);
 
-      await credentialService.acceptCredentialOffer(messageContext);
+      await credentialService.processCredentialOffer(messageContext);
 
       expect(eventListenerMock).toHaveBeenLastCalledWith(
         expect.objectContaining({

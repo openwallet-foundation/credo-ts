@@ -47,7 +47,7 @@ export class CredentialService extends EventEmitter {
     return credentialOffer;
   }
 
-  async acceptCredentialOffer(messageContext: InboundMessageContext<CredentialOfferMessage>): Promise<void> {
+  async processCredentialOffer(messageContext: InboundMessageContext<CredentialOfferMessage>): Promise<void> {
     const credentialOffer = messageContext.message;
     const credential = new CredentialRecord({ offer: credentialOffer, state: CredentialState.OfferReceived });
     await this.credentialRepository.save(credential);
