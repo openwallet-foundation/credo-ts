@@ -26,7 +26,7 @@ class BasicMessageService extends EventEmitter {
 
     const basicMessageRecord = new BasicMessageRecord({
       id: basicMessage.id,
-      sent_time: basicMessage.sentTime.toISOString(),
+      sentTime: basicMessage.sentTime.toISOString(),
       content: basicMessage.content,
       tags: { from: connection.did || '', to: connection.theirDid || '' },
     });
@@ -41,7 +41,7 @@ class BasicMessageService extends EventEmitter {
   public async save({ message }: InboundMessageContext<BasicMessage>, connection: ConnectionRecord) {
     const basicMessageRecord = new BasicMessageRecord({
       id: message.id,
-      sent_time: message.sentTime.toISOString(),
+      sentTime: message.sentTime.toISOString(),
       content: message.content,
       tags: { from: connection.theirDid || '', to: connection.did || '' },
     });
