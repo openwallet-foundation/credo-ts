@@ -3,14 +3,14 @@ import { ConnectionService } from '../../protocols/connections/ConnectionService
 import { ConnectionRequestMessage } from '../../protocols/connections/ConnectionRequestMessage';
 
 export class ConnectionRequestHandler implements Handler {
-  connectionService: ConnectionService;
-  supportedMessages = [ConnectionRequestMessage];
+  private connectionService: ConnectionService;
+  public supportedMessages = [ConnectionRequestMessage];
 
-  constructor(connectionService: ConnectionService) {
+  public constructor(connectionService: ConnectionService) {
     this.connectionService = connectionService;
   }
 
-  async handle(messageContext: HandlerInboundMessage<ConnectionRequestHandler>) {
+  public async handle(messageContext: HandlerInboundMessage<ConnectionRequestHandler>) {
     const outboudMessage = await this.connectionService.acceptRequest(messageContext);
     return outboudMessage;
   }

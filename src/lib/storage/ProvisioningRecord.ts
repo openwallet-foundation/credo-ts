@@ -8,13 +8,13 @@ interface ProvisioningRecordProps {
 }
 
 export class ProvisioningRecord extends BaseRecord {
-  agencyConnectionId: string;
-  agencyPublicVerkey: Verkey;
+  public agencyConnectionId: string;
+  public agencyPublicVerkey: Verkey;
 
-  type = RecordType.ProvisioningRecord;
-  static type: RecordType = RecordType.ProvisioningRecord;
+  public static readonly type: RecordType = RecordType.ProvisioningRecord;
+  public readonly type = ProvisioningRecord.type;
 
-  constructor(props: ProvisioningRecordProps) {
+  public constructor(props: ProvisioningRecordProps) {
     super(props.id);
     this.agencyConnectionId = props.agencyConnectionId;
     this.agencyPublicVerkey = props.agencyPublicVerkey;

@@ -39,30 +39,31 @@ import { BasicMessagesModule } from '../modules/BasicMessagesModule';
 import { LedgerModule } from '../modules/LedgerModule';
 
 export class Agent {
-  inboundTransporter: InboundTransporter;
-  wallet: Wallet;
-  agentConfig: AgentConfig;
-  messageReceiver: MessageReceiver;
-  dispatcher: Dispatcher;
-  messageSender: MessageSender;
-  connectionService: ConnectionService;
-  basicMessageService: BasicMessageService;
-  providerRoutingService: ProviderRoutingService;
-  consumerRoutingService: ConsumerRoutingService;
-  trustPingService: TrustPingService;
-  messagePickupService: MessagePickupService;
-  provisioningService: ProvisioningService;
-  ledgerService: LedgerService;
-  basicMessageRepository: Repository<BasicMessageRecord>;
-  connectionRepository: Repository<ConnectionRecord>;
-  provisioningRepository: Repository<ProvisioningRecord>;
+  protected wallet: Wallet;
+  protected agentConfig: AgentConfig;
+  protected messageReceiver: MessageReceiver;
+  protected dispatcher: Dispatcher;
+  protected messageSender: MessageSender;
+  protected connectionService: ConnectionService;
+  protected basicMessageService: BasicMessageService;
+  protected providerRoutingService: ProviderRoutingService;
+  protected consumerRoutingService: ConsumerRoutingService;
+  protected trustPingService: TrustPingService;
+  protected messagePickupService: MessagePickupService;
+  protected provisioningService: ProvisioningService;
+  protected ledgerService: LedgerService;
+  protected basicMessageRepository: Repository<BasicMessageRecord>;
+  protected connectionRepository: Repository<ConnectionRecord>;
+  protected provisioningRepository: Repository<ProvisioningRecord>;
 
-  connections!: ConnectionsModule;
-  routing!: RoutingModule;
-  basicMessages!: BasicMessagesModule;
-  ledger!: LedgerModule;
+  public inboundTransporter: InboundTransporter;
 
-  constructor(
+  public connections!: ConnectionsModule;
+  public routing!: RoutingModule;
+  public basicMessages!: BasicMessagesModule;
+  public ledger!: LedgerModule;
+
+  public constructor(
     initialConfig: InitConfig,
     inboundTransporter: InboundTransporter,
     outboundTransporter: OutboundTransporter,
@@ -103,7 +104,7 @@ export class Agent {
     this.registerModules();
   }
 
-  async init() {
+  public async init() {
     await this.wallet.init();
 
     const { publicDidSeed } = this.agentConfig;
@@ -115,24 +116,24 @@ export class Agent {
     return this.inboundTransporter.start(this);
   }
 
-  getPublicDid() {
+  public getPublicDid() {
     return this.wallet.getPublicDid();
   }
 
-  getAgencyUrl() {
+  public getAgencyUrl() {
     return this.agentConfig.agencyUrl;
   }
 
-  async receiveMessage(inboundPackedMessage: unknown) {
+  public async receiveMessage(inboundPackedMessage: unknown) {
     return await this.messageReceiver.receiveMessage(inboundPackedMessage);
   }
 
-  async closeAndDeleteWallet() {
+  public async closeAndDeleteWallet() {
     await this.wallet.close();
     await this.wallet.delete();
   }
 
-  private registerHandlers() {
+  protected registerHandlers() {
     this.dispatcher.registerHandler(new InvitationHandler(this.connectionService, this.consumerRoutingService));
     this.dispatcher.registerHandler(new ConnectionRequestHandler(this.connectionService));
     this.dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService));
@@ -145,7 +146,7 @@ export class Agent {
     this.dispatcher.registerHandler(new MessagePickupHandler(this.connectionService, this.messagePickupService));
   }
 
-  private registerModules() {
+  protected registerModules() {
     this.connections = new ConnectionsModule(
       this.agentConfig,
       this.connectionService,

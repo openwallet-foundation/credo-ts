@@ -5,16 +5,16 @@ import { ConnectionState } from '../../protocols/connections/domain/ConnectionSt
 import { TrustPingMessage } from '../../protocols/trustping/TrustPingMessage';
 
 export class TrustPingMessageHandler implements Handler {
-  trustPingService: TrustPingService;
-  connectionService: ConnectionService;
-  supportedMessages = [TrustPingMessage];
+  private trustPingService: TrustPingService;
+  private connectionService: ConnectionService;
+  public supportedMessages = [TrustPingMessage];
 
-  constructor(trustPingService: TrustPingService, connectionService: ConnectionService) {
+  public constructor(trustPingService: TrustPingService, connectionService: ConnectionService) {
     this.trustPingService = trustPingService;
     this.connectionService = connectionService;
   }
 
-  async handle(messageContext: HandlerInboundMessage<TrustPingMessageHandler>) {
+  public async handle(messageContext: HandlerInboundMessage<TrustPingMessageHandler>) {
     const { connection, recipientVerkey } = messageContext;
     if (!connection) {
       throw new Error(`Connection for verkey ${recipientVerkey} not found!`);

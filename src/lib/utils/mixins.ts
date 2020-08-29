@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Utils for Mixins in TypeScript
 // @see https://www.typescriptlang.org/docs/handbook/mixins.html
 

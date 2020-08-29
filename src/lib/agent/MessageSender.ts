@@ -8,24 +8,24 @@ import { Constructor } from '../utils/mixins';
 import { InboundMessageContext } from './models/InboundMessageContext';
 
 class MessageSender {
-  envelopeService: EnvelopeService;
-  outboundTransporter: OutboundTransporter;
+  private envelopeService: EnvelopeService;
+  private outboundTransporter: OutboundTransporter;
 
-  constructor(envelopeService: EnvelopeService, outboundTransporter: OutboundTransporter) {
+  public constructor(envelopeService: EnvelopeService, outboundTransporter: OutboundTransporter) {
     this.envelopeService = envelopeService;
     this.outboundTransporter = outboundTransporter;
   }
 
-  async packMessage(outboundMessage: OutboundMessage): Promise<OutboundPackage> {
+  public async packMessage(outboundMessage: OutboundMessage): Promise<OutboundPackage> {
     return this.envelopeService.packMessage(outboundMessage);
   }
 
-  async sendMessage(outboundMessage: OutboundMessage): Promise<void> {
+  public async sendMessage(outboundMessage: OutboundMessage): Promise<void> {
     const outboundPackage = await this.envelopeService.packMessage(outboundMessage);
     await this.outboundTransporter.sendMessage(outboundPackage, false);
   }
 
-  async sendAndReceiveMessage<T extends AgentMessage>(
+  public async sendAndReceiveMessage<T extends AgentMessage>(
     outboundMessage: OutboundMessage,
     ReceivedMessageClass: Constructor<T>
   ): Promise<InboundMessageContext<T>> {

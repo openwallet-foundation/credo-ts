@@ -2,20 +2,17 @@ import { MessageRepository } from './MessageRepository';
 import { WireMessage } from '../types';
 
 export class InMemoryMessageRepository implements MessageRepository {
-  messages: { [key: string]: WireMessage } = {};
+  private messages: { [key: string]: WireMessage } = {};
 
-  findByVerkey(theirKey: Verkey): WireMessage[] {
-    if (this.messages[theirKey]) {
-      return this.messages[theirKey];
-    }
-    return [];
+  public findByVerkey(theirKey: Verkey): WireMessage[] {
+    return this.messages[theirKey] ?? [];
   }
 
-  deleteAllByVerkey(theirKey: Verkey): void {
+  public deleteAllByVerkey(theirKey: Verkey): void {
     this.messages[theirKey] = [];
   }
 
-  save(theirKey: Verkey, payload: WireMessage) {
+  public save(theirKey: Verkey, payload: WireMessage) {
     if (!this.messages[theirKey]) {
       this.messages[theirKey] = [];
     }

@@ -2,35 +2,35 @@ import { BaseRecord, RecordType } from './BaseRecord';
 import { StorageService } from './StorageService';
 
 export class Repository<T extends BaseRecord> {
-  storageService: StorageService<T>;
-  recordType: { new (...args: unknown[]): T; type: RecordType };
+  private storageService: StorageService<T>;
+  private recordType: { new (...args: unknown[]): T; type: RecordType };
 
-  constructor(recordType: { new (...args: any[]): T; type: RecordType }, storageService: StorageService<T>) {
+  public constructor(recordType: { new (...args: any[]): T; type: RecordType }, storageService: StorageService<T>) {
     this.storageService = storageService;
     this.recordType = recordType;
   }
 
-  async save(record: T): Promise<void> {
+  public async save(record: T): Promise<void> {
     this.storageService.save(record);
   }
 
-  async update(record: T): Promise<void> {
+  public async update(record: T): Promise<void> {
     return this.storageService.update(record);
   }
 
-  async delete(record: T): Promise<void> {
+  public async delete(record: T): Promise<void> {
     return this.storageService.delete(record);
   }
 
-  async find(id: string): Promise<T> {
+  public async find(id: string): Promise<T> {
     return this.storageService.find<T>(this.recordType, id, this.recordType.type);
   }
 
-  async findAll(): Promise<T[]> {
+  public async findAll(): Promise<T[]> {
     return this.storageService.findAll<T>(this.recordType, this.recordType.type);
   }
 
-  async findByQuery(query: WalletQuery): Promise<T[]> {
+  public async findByQuery(query: WalletQuery): Promise<T[]> {
     return this.storageService.findByQuery<T>(this.recordType, this.recordType.type, query);
   }
 }

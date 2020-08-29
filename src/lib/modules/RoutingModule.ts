@@ -11,14 +11,14 @@ import { ConnectionResponseMessage } from '../protocols/connections/ConnectionRe
 import { BatchMessage } from '../protocols/messagepickup/BatchMessage';
 
 export class RoutingModule {
-  agentConfig: AgentConfig;
-  providerRoutingService: ProviderRoutingService;
-  provisioningService: ProvisioningService;
-  messagePickupService: MessagePickupService;
-  connectionService: ConnectionService;
-  messageSender: MessageSender;
+  private agentConfig: AgentConfig;
+  private providerRoutingService: ProviderRoutingService;
+  private provisioningService: ProvisioningService;
+  private messagePickupService: MessagePickupService;
+  private connectionService: ConnectionService;
+  private messageSender: MessageSender;
 
-  constructor(
+  public constructor(
     agentConfig: AgentConfig,
     providerRoutingService: ProviderRoutingService,
     provisioningService: ProvisioningService,
@@ -34,7 +34,7 @@ export class RoutingModule {
     this.messageSender = messageSender;
   }
 
-  async provision(agencyConfiguration: AgencyConfiguration) {
+  public async provision(agencyConfiguration: AgencyConfiguration) {
     let provisioningRecord = await this.provisioningService.find();
 
     if (!provisioningRecord) {
@@ -79,7 +79,7 @@ export class RoutingModule {
     return agentConnectionAtAgency;
   }
 
-  async downloadMessages() {
+  public async downloadMessages() {
     const inboundConnection = this.getInboundConnection();
     if (inboundConnection) {
       const outboundMessage = await this.messagePickupService.batchPickup(inboundConnection);
@@ -91,11 +91,11 @@ export class RoutingModule {
     return [];
   }
 
-  getInboundConnection() {
+  public getInboundConnection() {
     return this.agentConfig.inboundConnection;
   }
 
-  getRoutingTable() {
+  public getRoutingTable() {
     return this.providerRoutingService.getRoutes();
   }
 }

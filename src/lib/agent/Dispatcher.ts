@@ -5,18 +5,18 @@ import { AgentMessage } from './AgentMessage';
 import { InboundMessageContext } from './models/InboundMessageContext';
 
 class Dispatcher {
-  handlers: Handler[] = [];
-  messageSender: MessageSender;
+  private handlers: Handler[] = [];
+  private messageSender: MessageSender;
 
-  constructor(messageSender: MessageSender) {
+  public constructor(messageSender: MessageSender) {
     this.messageSender = messageSender;
   }
 
-  registerHandler(handler: Handler) {
+  public registerHandler(handler: Handler) {
     this.handlers.push(handler);
   }
 
-  async dispatch(messageContext: InboundMessageContext): Promise<OutboundMessage | OutboundPackage | undefined> {
+  public async dispatch(messageContext: InboundMessageContext): Promise<OutboundMessage | OutboundPackage | undefined> {
     const message = messageContext.message;
     const handler = this.getHandlerForType(message.type);
 

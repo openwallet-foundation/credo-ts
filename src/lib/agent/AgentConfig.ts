@@ -1,41 +1,41 @@
 import { InitConfig, InboundConnection } from '../types';
 
 export class AgentConfig {
-  initConfig: InitConfig;
-  inboundConnection?: InboundConnection;
+  private initConfig: InitConfig;
+  public inboundConnection?: InboundConnection;
 
-  constructor(initConfig: InitConfig) {
+  public constructor(initConfig: InitConfig) {
     this.initConfig = initConfig;
   }
 
-  get label() {
+  public get label() {
     return this.initConfig.label;
   }
 
-  get publicDid() {
+  public get publicDid() {
     return this.initConfig.publicDid;
   }
 
-  get publicDidSeed() {
+  public get publicDidSeed() {
     return this.initConfig.publicDidSeed;
   }
 
-  get agencyUrl() {
+  public get agencyUrl() {
     return this.initConfig.agencyUrl;
   }
 
-  establishInbound(inboundConnection: InboundConnection) {
+  public establishInbound(inboundConnection: InboundConnection) {
     this.inboundConnection = inboundConnection;
   }
 
-  getEndpoint() {
+  public getEndpoint() {
     const connection = this.inboundConnection && this.inboundConnection.connection;
     const endpoint = connection && connection.theirDidDoc && connection.theirDidDoc.service[0].serviceEndpoint;
-    return endpoint ? `${endpoint}` : `${this.initConfig.url}:${this.initConfig.port}/msg`;
+    return endpoint ?? `${this.initConfig.url}:${this.initConfig.port}/msg`;
   }
 
-  getRoutingKeys() {
-    const verkey = this.inboundConnection && this.inboundConnection.verkey;
+  public getRoutingKeys() {
+    const verkey = this.inboundConnection?.verkey;
     return verkey ? [verkey] : [];
   }
 }

@@ -12,14 +12,14 @@ enum EventType {
 }
 
 class BasicMessageService extends EventEmitter {
-  basicMessageRepository: Repository<BasicMessageRecord>;
+  private basicMessageRepository: Repository<BasicMessageRecord>;
 
-  constructor(basicMessageRepository: Repository<BasicMessageRecord>) {
+  public constructor(basicMessageRepository: Repository<BasicMessageRecord>) {
     super();
     this.basicMessageRepository = basicMessageRepository;
   }
 
-  async send(message: string, connection: ConnectionRecord): Promise<OutboundMessage<BasicMessage>> {
+  public async send(message: string, connection: ConnectionRecord): Promise<OutboundMessage<BasicMessage>> {
     const basicMessage = new BasicMessage({
       content: message,
     });
@@ -38,7 +38,7 @@ class BasicMessageService extends EventEmitter {
   /**
    * @todo use connection from message context
    */
-  async save({ message }: InboundMessageContext<BasicMessage>, connection: ConnectionRecord) {
+  public async save({ message }: InboundMessageContext<BasicMessage>, connection: ConnectionRecord) {
     const basicMessageRecord = new BasicMessageRecord({
       id: message.id,
       sent_time: message.sentTime.toISOString(),
@@ -50,7 +50,7 @@ class BasicMessageService extends EventEmitter {
     this.emit(EventType.MessageReceived, { verkey: connection.verkey, message });
   }
 
-  async findAllByQuery(query: WalletQuery) {
+  public async findAllByQuery(query: WalletQuery) {
     return this.basicMessageRepository.findByQuery(query);
   }
 }

@@ -8,7 +8,7 @@ import { MessageTypeRegExp } from '../../agent/BaseMessage';
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0234-signature-decorator/README.md
  */
 export class SignatureDecorator {
-  constructor(options: SignatureDecorator) {
+  public constructor(options: SignatureDecorator) {
     if (options) {
       this.signatureType = options.signatureType;
       this.signatureData = options.signatureData;
@@ -19,14 +19,14 @@ export class SignatureDecorator {
 
   @Expose({ name: '@type' })
   @Matches(MessageTypeRegExp)
-  signatureType!: string;
+  public signatureType!: string;
 
   @Expose({ name: 'sig_data' })
-  signatureData!: string;
+  public signatureData!: string;
 
   @Expose({ name: 'signer' })
-  signer!: string;
+  public signer!: string;
 
   @Expose({ name: 'signature' })
-  signature!: string;
+  public signature!: string;
 }

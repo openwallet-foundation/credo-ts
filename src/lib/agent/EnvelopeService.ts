@@ -4,13 +4,13 @@ import { Wallet } from '../wallet/Wallet';
 import { ForwardMessage } from '../protocols/routing/ForwardMessage';
 
 class EnvelopeService {
-  wallet: Wallet;
+  private wallet: Wallet;
 
-  constructor(wallet: Wallet) {
+  public constructor(wallet: Wallet) {
     this.wallet = wallet;
   }
 
-  async packMessage(outboundMessage: OutboundMessage): Promise<OutboundPackage> {
+  public async packMessage(outboundMessage: OutboundMessage): Promise<OutboundPackage> {
     const { connection, routingKeys, recipientKeys, senderVk, payload, endpoint } = outboundMessage;
     const { verkey, theirKey } = connection;
 
@@ -35,7 +35,7 @@ class EnvelopeService {
     return { connection, payload: outboundPackedMessage, endpoint };
   }
 
-  async unpackMessage(packedMessage: JsonWebKey): Promise<UnpackedMessageContext> {
+  public async unpackMessage(packedMessage: JsonWebKey): Promise<UnpackedMessageContext> {
     return this.wallet.unpack(packedMessage);
   }
 }

@@ -3,14 +3,14 @@ import { ConnectionService } from '../../protocols/connections/ConnectionService
 import { AckMessage } from '../../protocols/connections/AckMessage';
 
 export class AckMessageHandler implements Handler {
-  connectionService: ConnectionService;
-  supportedMessages = [AckMessage];
+  private connectionService: ConnectionService;
+  public supportedMessages = [AckMessage];
 
-  constructor(connectionService: ConnectionService) {
+  public constructor(connectionService: ConnectionService) {
     this.connectionService = connectionService;
   }
 
-  async handle(inboundMessage: HandlerInboundMessage<AckMessageHandler>) {
+  public async handle(inboundMessage: HandlerInboundMessage<AckMessageHandler>) {
     await this.connectionService.acceptAck(inboundMessage);
   }
 }

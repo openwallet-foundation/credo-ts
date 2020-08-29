@@ -5,15 +5,15 @@ import { MessageSender } from '../../agent/MessageSender';
 import { KeylistUpdateMessage, KeylistUpdate, KeylistUpdateAction } from '../coordinatemediation/KeylistUpdateMessage';
 
 class ConsumerRoutingService {
-  messageSender: MessageSender;
-  agentConfig: AgentConfig;
+  private messageSender: MessageSender;
+  private agentConfig: AgentConfig;
 
-  constructor(messageSender: MessageSender, agentConfig: AgentConfig) {
+  public constructor(messageSender: MessageSender, agentConfig: AgentConfig) {
     this.messageSender = messageSender;
     this.agentConfig = agentConfig;
   }
 
-  async createRoute(verkey: Verkey) {
+  public async createRoute(verkey: Verkey) {
     logger.log('Creating route...');
 
     if (!this.agentConfig.inboundConnection) {

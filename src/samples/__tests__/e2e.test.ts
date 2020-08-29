@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 // eslint-disable-next-line
 // @ts-ignore
 import { poll } from 'await-poll';
@@ -137,16 +136,16 @@ describe('with agency', () => {
 });
 
 class PollingInboundTransporter implements InboundTransporter {
-  stop: boolean;
+  public stop: boolean;
 
-  constructor() {
+  public constructor() {
     this.stop = false;
   }
-  async start(agent: Agent) {
+  public async start(agent: Agent) {
     await this.registerAgency(agent);
   }
 
-  async registerAgency(agent: Agent) {
+  public async registerAgency(agent: Agent) {
     const agencyUrl = agent.getAgencyUrl() || '';
     const agencyInvitationUrl = await get(`${agencyUrl}/invitation`);
     const { verkey: agencyVerkey } = JSON.parse(await get(`${agencyUrl}/`));
@@ -154,7 +153,7 @@ class PollingInboundTransporter implements InboundTransporter {
     this.pollDownloadMessages(agent);
   }
 
-  pollDownloadMessages(agent: Agent) {
+  private pollDownloadMessages(agent: Agent) {
     poll(
       async () => {
         const downloadedMessages = await agent.routing.downloadMessages();
@@ -172,7 +171,7 @@ class PollingInboundTransporter implements InboundTransporter {
 }
 
 class HttpOutboundTransporter implements OutboundTransporter {
-  async sendMessage(outboundPackage: OutboundPackage, receiveReply: boolean) {
+  public async sendMessage(outboundPackage: OutboundPackage, receiveReply: boolean) {
     const { payload, endpoint } = outboundPackage;
 
     if (!endpoint) {

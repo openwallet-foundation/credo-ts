@@ -13,9 +13,17 @@ module.exports = {
     // Aries protocol defines attributes with snake case.
     '@typescript-eslint/camelcase': 'off',
     '@typescript-eslint/no-use-before-define': ['error', { functions: false, classes: false, variables: true }],
-    '@typescript-eslint/explicit-member-accessibility': 'off',
+    '@typescript-eslint/explicit-member-accessibility': 'error',
     'no-console': 'error',
     // Because of early development, we only warn on ts-ignore. In future we want to move to error
     '@typescript-eslint/ban-ts-comment': 'warn',
   },
+  overrides: [
+    {
+      files: ['*.test.*'],
+      rules: {
+        'no-console': 'off',
+      },
+    },
+  ],
 };

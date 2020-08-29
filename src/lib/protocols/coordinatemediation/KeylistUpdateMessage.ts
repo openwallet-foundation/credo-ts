@@ -15,7 +15,7 @@ export interface KeylistUpdateMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#keylist-update
  */
 export class KeylistUpdateMessage extends AgentMessage {
-  constructor(options: KeylistUpdateMessageOptions) {
+  public constructor(options: KeylistUpdateMessageOptions) {
     super();
 
     if (options) {
@@ -25,13 +25,13 @@ export class KeylistUpdateMessage extends AgentMessage {
   }
 
   @Equals(KeylistUpdateMessage.type)
-  readonly type = KeylistUpdateMessage.type;
-  static readonly type = MessageType.KeylistUpdate;
+  public readonly type = KeylistUpdateMessage.type;
+  public static readonly type = MessageType.KeylistUpdate;
 
   @Type(() => KeylistUpdate)
   @IsArray()
   @ValidateNested()
-  updates!: KeylistUpdate[];
+  public updates!: KeylistUpdate[];
 }
 
 export enum KeylistUpdateAction {
@@ -40,7 +40,7 @@ export enum KeylistUpdateAction {
 }
 
 export class KeylistUpdate {
-  constructor(options: { recipientKey: Verkey; action: KeylistUpdateAction }) {
+  public constructor(options: { recipientKey: Verkey; action: KeylistUpdateAction }) {
     if (options) {
       this.recipientKey = options.recipientKey;
       this.action = options.action;
@@ -48,8 +48,8 @@ export class KeylistUpdate {
   }
 
   @IsString()
-  recipientKey!: Verkey;
+  public recipientKey!: Verkey;
 
   @IsEnum(KeylistUpdateAction)
-  action!: KeylistUpdateAction;
+  public action!: KeylistUpdateAction;
 }

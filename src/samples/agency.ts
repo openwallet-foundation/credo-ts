@@ -10,13 +10,13 @@ import { MessageRepository } from '../lib/storage/MessageRepository';
 import { InMemoryMessageRepository } from '../lib/storage/InMemoryMessageRepository';
 
 class HttpInboundTransporter implements InboundTransporter {
-  app: Express;
+  private app: Express;
 
-  constructor(app: Express) {
+  public constructor(app: Express) {
     this.app = app;
   }
 
-  start(agent: Agent) {
+  public start(agent: Agent) {
     this.app.post('/msg', async (req, res) => {
       const message = req.body;
       const packedMessage = JSON.parse(message);
@@ -31,14 +31,14 @@ class HttpInboundTransporter implements InboundTransporter {
 }
 
 class StorageOutboundTransporter implements OutboundTransporter {
-  messages: { [key: string]: any } = {};
-  messageRepository: MessageRepository;
+  public messages: { [key: string]: any } = {};
+  private messageRepository: MessageRepository;
 
-  constructor(messageRepository: MessageRepository) {
+  public constructor(messageRepository: MessageRepository) {
     this.messageRepository = messageRepository;
   }
 
-  async sendMessage(outboundPackage: OutboundPackage) {
+  public async sendMessage(outboundPackage: OutboundPackage) {
     const { connection, payload } = outboundPackage;
 
     if (!connection) {

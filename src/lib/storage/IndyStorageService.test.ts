@@ -12,13 +12,13 @@ interface TestRecordProps {
 }
 
 class TestRecord extends BaseRecord {
-  foo: string;
+  public foo: string;
 
-  static type: RecordType = RecordType.BaseRecord;
-  type: RecordType = RecordType.BaseRecord;
+  public static readonly type: RecordType = RecordType.BaseRecord;
+  public readonly type = TestRecord.type;
 
-  constructor(props: TestRecordProps) {
-    super(props.id ? props.id : uuid());
+  public constructor(props: TestRecordProps) {
+    super(props.id || uuid());
     this.foo = props.foo;
     this.tags = props.tags;
   }

@@ -4,16 +4,16 @@ import { ConsumerRoutingService } from '../../protocols/routing/ConsumerRoutingS
 import { ConnectionInvitationMessage } from '../../protocols/connections/ConnectionInvitationMessage';
 
 export class InvitationHandler implements Handler {
-  connectionService: ConnectionService;
-  routingService: ConsumerRoutingService;
-  supportedMessages = [ConnectionInvitationMessage];
+  private connectionService: ConnectionService;
+  private routingService: ConsumerRoutingService;
+  public supportedMessages = [ConnectionInvitationMessage];
 
-  constructor(connectionService: ConnectionService, routingService: ConsumerRoutingService) {
+  public constructor(connectionService: ConnectionService, routingService: ConsumerRoutingService) {
     this.connectionService = connectionService;
     this.routingService = routingService;
   }
 
-  async handle(inboundMessage: HandlerInboundMessage<InvitationHandler>) {
+  public async handle(inboundMessage: HandlerInboundMessage<InvitationHandler>) {
     const invitation = inboundMessage.message;
     const outboundMessage = await this.connectionService.acceptInvitation(invitation);
 

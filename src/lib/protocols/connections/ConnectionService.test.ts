@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import indy from 'indy-sdk';
 import { IndyWallet } from '../../wallet/IndyWallet';
 import { Wallet } from '../../wallet/Wallet';

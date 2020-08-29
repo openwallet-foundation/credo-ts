@@ -12,14 +12,14 @@ export type BaseMessageConstructor = Constructor<BaseMessage>;
 export class BaseMessage {
   @Matches(MessageIdRegExp)
   @Expose({ name: '@id' })
-  id!: string;
+  public id!: string;
 
   @Expose({ name: '@type' })
   @Matches(MessageTypeRegExp)
-  readonly type!: string;
-  static readonly type: string;
+  public readonly type!: string;
+  public static readonly type: string;
 
-  generateId() {
+  public generateId() {
     return uuid();
   }
 }

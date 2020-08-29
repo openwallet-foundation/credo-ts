@@ -2,7 +2,6 @@ import debugFactory from 'debug';
 
 const debug = debugFactory('aries-framework-javascript');
 
-/* eslint-disable no-console */
 export default {
   log: (...args: unknown[]) => {
     debug('', ...args);

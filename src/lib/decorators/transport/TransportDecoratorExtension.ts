@@ -8,16 +8,16 @@ export function TransportDecorated<T extends BaseMessageConstructor>(Base: T) {
     @Expose({ name: '~transport' })
     @Type(() => TransportDecorator)
     @ValidateNested()
-    transport?: TransportDecorator;
+    public transport?: TransportDecorator;
 
-    setReturnRouting(type: ReturnRouteTypes, thread?: string) {
+    public setReturnRouting(type: ReturnRouteTypes, thread?: string) {
       this.transport = new TransportDecorator({
         returnRoute: type,
         returnRouteThread: thread,
       });
     }
 
-    hasReturnRouting(threadId?: string): boolean {
+    public hasReturnRouting(threadId?: string): boolean {
       //   transport 'none' or undefined always false
       if (!this.transport || this.transport.returnRoute === ReturnRouteTypes.none) return false;
       // transport 'all' always true

@@ -12,9 +12,9 @@ export function TimingDecorated<T extends BaseMessageConstructor>(Base: T) {
     @Expose({ name: '~timing' })
     @Type(() => TimingDecorator)
     @ValidateNested()
-    timing?: TimingDecorator;
+    public timing?: TimingDecorator;
 
-    setTiming(options: Partial<TimingDecorator>) {
+    public setTiming(options: Partial<TimingDecorator>) {
       this.timing = new TimingDecorator(options);
     }
   }

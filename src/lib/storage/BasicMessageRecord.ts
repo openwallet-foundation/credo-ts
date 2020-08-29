@@ -10,14 +10,14 @@ export interface BasicMessageStorageProps {
 }
 
 export class BasicMessageRecord extends BaseRecord implements BasicMessageStorageProps {
-  content: string;
-  sent_time: string;
+  public content: string;
+  public sentTime: string;
 
-  type = RecordType.BasicMessageRecord;
-  static type: RecordType = RecordType.BasicMessageRecord;
+  public static readonly type: RecordType = RecordType.BasicMessageRecord;
+  public readonly type = BasicMessageRecord.type;
 
-  constructor(props: BasicMessageStorageProps) {
-    super(props.id ? props.id : uuid());
+  public constructor(props: BasicMessageStorageProps) {
+    super(props.id || uuid());
     this.content = props.content;
     this.sent_time = props.sent_time;
     this.tags = props.tags;

@@ -2,17 +2,17 @@ import logger from '../logger';
 import { Wallet } from '../wallet/Wallet';
 
 export class LedgerService {
-  wallet: Wallet;
-  indy: Indy;
-  poolHandle?: PoolHandle;
-  authorAgreement?: AuthorAgreement | null;
+  private wallet: Wallet;
+  private indy: Indy;
+  private poolHandle?: PoolHandle;
+  private authorAgreement?: AuthorAgreement | null;
 
-  constructor(wallet: Wallet, indy: Indy) {
+  public constructor(wallet: Wallet, indy: Indy) {
     this.wallet = wallet;
     this.indy = indy;
   }
 
-  async connect(poolName: string, poolConfig: PoolConfig) {
+  public async connect(poolName: string, poolConfig: PoolConfig) {
     try {
       logger.log(`Creating pool config with name "${poolName}".`);
       await this.indy.createPoolLedgerConfig(poolName, poolConfig);
@@ -31,7 +31,7 @@ export class LedgerService {
     this.poolHandle = await this.indy.openPoolLedger(poolName);
   }
 
-  async getPublicDid(did: Did) {
+  public async getPublicDid(did: Did) {
     if (!this.poolHandle) {
       throw new Error('Pool has not been initialized.');
     }
@@ -47,7 +47,7 @@ export class LedgerService {
     return result;
   }
 
-  async registerSchema(did: Did, schemaTemplate: SchemaTemplate): Promise<[SchemaId, Schema]> {
+  public async registerSchema(did: Did, schemaTemplate: SchemaTemplate): Promise<[SchemaId, Schema]> {
     if (!this.poolHandle) {
       throw new Error('Pool has not been initialized.');
     }
@@ -67,7 +67,7 @@ export class LedgerService {
     return [schemaId, schema];
   }
 
-  async getCredentialSchema(schemaId: SchemaId) {
+  public async getCredentialSchema(schemaId: SchemaId) {
     if (!this.poolHandle) {
       throw new Error('Pool has not been initialized.');
     }
@@ -83,7 +83,7 @@ export class LedgerService {
     return result;
   }
 
-  async registerCredentialDefinition(
+  public async registerCredentialDefinition(
     did: Did,
     credentialDefinitionTemplate: CredDefTemplate
   ): Promise<[CredDefId, CredDef]> {
@@ -107,7 +107,7 @@ export class LedgerService {
     return [credDefId, credDef];
   }
 
-  async getCredentialDefinition(credDefId: CredDefId) {
+  public async getCredentialDefinition(credDefId: CredDefId) {
     if (!this.poolHandle) {
       throw new Error('Pool has not been initialized.');
     }

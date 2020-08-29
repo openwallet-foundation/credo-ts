@@ -4,16 +4,16 @@ import { BasicMessageService } from '../../protocols/basicmessage/BasicMessageSe
 import { BasicMessage } from '../../protocols/basicmessage/BasicMessage';
 
 export class BasicMessageHandler implements Handler {
-  connectionService: ConnectionService;
-  basicMessageService: BasicMessageService;
-  supportedMessages = [BasicMessage];
+  private connectionService: ConnectionService;
+  private basicMessageService: BasicMessageService;
+  public supportedMessages = [BasicMessage];
 
-  constructor(connectionService: ConnectionService, basicMessageService: BasicMessageService) {
+  public constructor(connectionService: ConnectionService, basicMessageService: BasicMessageService) {
     this.connectionService = connectionService;
     this.basicMessageService = basicMessageService;
   }
 
-  async handle(messageContext: HandlerInboundMessage<BasicMessageHandler>) {
+  public async handle(messageContext: HandlerInboundMessage<BasicMessageHandler>) {
     const connection = messageContext.connection;
 
     if (!connection) {

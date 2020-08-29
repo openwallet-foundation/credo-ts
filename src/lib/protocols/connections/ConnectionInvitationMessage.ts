@@ -23,7 +23,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
    * Create new ConnectionInvitationMessage instance.
    * @param options
    */
-  constructor(options: { id?: string; label: string } & (DIDInvitationData | InlineInvitationData)) {
+  public constructor(options: { id?: string; label: string } & (DIDInvitationData | InlineInvitationData)) {
     super();
 
     if (options) {
@@ -41,32 +41,32 @@ export class ConnectionInvitationMessage extends AgentMessage {
   }
 
   @Equals(ConnectionInvitationMessage.type)
-  readonly type = ConnectionInvitationMessage.type;
-  static readonly type = MessageType.ConnectionInvitation;
+  public readonly type = ConnectionInvitationMessage.type;
+  public static readonly type = MessageType.ConnectionInvitation;
 
   @IsString()
-  label!: string;
+  public label!: string;
 
   @IsString()
   @ValidateIf((o: ConnectionInvitationMessage) => o.recipientKeys === undefined)
-  did?: string;
+  public did?: string;
 
   @IsString({
     each: true,
   })
   @IsArray()
   @ValidateIf((o: ConnectionInvitationMessage) => o.did === undefined)
-  recipientKeys?: string[];
+  public recipientKeys?: string[];
 
   @IsString()
   @ValidateIf((o: ConnectionInvitationMessage) => o.did === undefined)
-  serviceEndpoint?: string;
+  public serviceEndpoint?: string;
 
   @IsString({
     each: true,
   })
   @ValidateIf((o: ConnectionInvitationMessage) => o.did === undefined)
-  routingKeys?: string[];
+  public routingKeys?: string[];
 }
 
 /**

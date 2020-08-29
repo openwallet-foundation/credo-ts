@@ -9,11 +9,11 @@ import { BaseMessage } from './BaseMessage';
 const DefaultDecorators = [ThreadDecorated, L10nDecorated, TransportDecorated, TimingDecorated];
 
 export class AgentMessage extends Compose(BaseMessage, DefaultDecorators) {
-  toJSON(): Record<string, unknown> {
+  public toJSON(): Record<string, unknown> {
     return MessageTransformer.toJSON(this);
   }
 
-  is<C extends typeof AgentMessage>(Class: C): this is InstanceType<C> {
+  public is<C extends typeof AgentMessage>(Class: C): this is InstanceType<C> {
     return this.type === Class.type;
   }
 }

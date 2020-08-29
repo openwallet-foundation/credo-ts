@@ -8,12 +8,12 @@ export interface MessageContextParams {
 }
 
 export class InboundMessageContext<T extends AgentMessage = AgentMessage> {
-  message: T;
-  connection?: ConnectionRecord;
-  senderVerkey?: Verkey;
-  recipientVerkey?: Verkey;
+  public message: T;
+  public connection?: ConnectionRecord;
+  public senderVerkey?: Verkey;
+  public recipientVerkey?: Verkey;
 
-  constructor(message: T, context: MessageContextParams = {}) {
+  public constructor(message: T, context: MessageContextParams = {}) {
     this.message = message;
     this.recipientVerkey = context.recipientVerkey;
 

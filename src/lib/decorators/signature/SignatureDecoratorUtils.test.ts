@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
 import indy from 'indy-sdk';
 import { signData, unpackAndVerifySignatureDecorator } from './SignatureDecoratorUtils';
 import { IndyWallet } from '../../wallet/IndyWallet';
@@ -54,7 +53,7 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
 
   test('signData signs json object and returns SignatureDecorator', async () => {
     const seed1 = '00000000000000000000000000000My1';
-    const verkey = await indy.createKey(wallet.wh as number, { seed: seed1 });
+    const verkey = await indy.createKey(wallet.walletHandle as number, { seed: seed1 });
 
     const result = await signData(data, wallet, verkey);
 

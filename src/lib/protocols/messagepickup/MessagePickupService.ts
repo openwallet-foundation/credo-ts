@@ -6,13 +6,13 @@ import { BatchPickupMessage } from './BatchPickupMessage';
 import { BatchMessage, BatchMessageMessage } from './BatchMessage';
 
 export class MessagePickupService {
-  messageRepository?: MessageRepository;
+  private messageRepository?: MessageRepository;
 
-  constructor(messageRepository?: MessageRepository) {
+  public constructor(messageRepository?: MessageRepository) {
     this.messageRepository = messageRepository;
   }
 
-  async batchPickup(inboundConnection: InboundConnection) {
+  public async batchPickup(inboundConnection: InboundConnection) {
     const batchPickupMessage = new BatchPickupMessage({
       batchSize: 10,
     });
@@ -21,7 +21,7 @@ export class MessagePickupService {
   }
 
   // TODO: add support for batchSize property
-  async batch(connection: ConnectionRecord) {
+  public async batch(connection: ConnectionRecord) {
     if (!this.messageRepository) {
       throw new Error('There is no message repository.');
     }

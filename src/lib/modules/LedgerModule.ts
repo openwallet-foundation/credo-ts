@@ -2,27 +2,27 @@ import { LedgerService, SchemaTemplate, CredDefTemplate } from '../agent/LedgerS
 import { Wallet } from '../wallet/Wallet';
 
 export class LedgerModule {
-  ledgerService: LedgerService;
-  wallet: Wallet;
+  private ledgerService: LedgerService;
+  private wallet: Wallet;
 
-  constructor(wallet: Wallet, ledgerService: LedgerService) {
+  public constructor(wallet: Wallet, ledgerService: LedgerService) {
     this.ledgerService = ledgerService;
     this.wallet = wallet;
   }
 
-  async connect(poolName: string, poolConfig: PoolConfig) {
+  public async connect(poolName: string, poolConfig: PoolConfig) {
     return this.ledgerService.connect(poolName, poolConfig);
   }
 
-  async registerPublicDid() {
+  public async registerPublicDid() {
     // TODO: handle ping response message
   }
 
-  async getPublicDid(did: Did) {
+  public async getPublicDid(did: Did) {
     return this.ledgerService.getPublicDid(did);
   }
 
-  async registerCredentialSchema(schema: SchemaTemplate) {
+  public async registerCredentialSchema(schema: SchemaTemplate) {
     const did = this.wallet.getPublicDid()?.did;
     if (!did) {
       throw new Error('Agent has no public DID.');
@@ -30,11 +30,11 @@ export class LedgerModule {
     return this.ledgerService.registerSchema(did, schema);
   }
 
-  async getSchema(id: SchemaId) {
+  public async getSchema(id: SchemaId) {
     return this.ledgerService.getCredentialSchema(id);
   }
 
-  async registerCredentialDefinition(credentialDefinitionTemplate: CredDefTemplate) {
+  public async registerCredentialDefinition(credentialDefinitionTemplate: CredDefTemplate) {
     const did = this.wallet.getPublicDid()?.did;
     if (!did) {
       throw new Error('Agent has no public DID.');
@@ -42,7 +42,7 @@ export class LedgerModule {
     return this.ledgerService.registerCredentialDefinition(did, credentialDefinitionTemplate);
   }
 
-  async getCredentialDefinition(id: CredDefId) {
+  public async getCredentialDefinition(id: CredDefId) {
     return this.ledgerService.getCredentialDefinition(id);
   }
 }

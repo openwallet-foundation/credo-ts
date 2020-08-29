@@ -3,19 +3,23 @@ import { UnpackedMessageContext } from '../types';
 import { Wallet, DidInfo } from './Wallet';
 
 export class IndyWallet implements Wallet {
-  wh?: number;
-  walletConfig: WalletConfig;
-  walletCredentials: WalletCredentials;
-  publicDidInfo: DidInfo | undefined;
-  indy: Indy;
+  private wh?: number;
+  private walletConfig: WalletConfig;
+  private walletCredentials: WalletCredentials;
+  private publicDidInfo: DidInfo | undefined;
+  private indy: Indy;
 
-  constructor(walletConfig: WalletConfig, walletCredentials: WalletCredentials, indy: Indy) {
+  public constructor(walletConfig: WalletConfig, walletCredentials: WalletCredentials, indy: Indy) {
     this.walletConfig = walletConfig;
     this.walletCredentials = walletCredentials;
     this.indy = indy;
   }
 
-  async init() {
+  public get walletHandle() {
+    return this.wh;
+  }
+
+  public async init() {
     try {
       await this.indy.createWallet(this.walletConfig, this.walletCredentials);
     } catch (error) {
@@ -31,7 +35,7 @@ export class IndyWallet implements Wallet {
     logger.log(`Wallet opened with handle: ${this.wh}`);
   }
 
-  async initPublicDid(didConfig: DidConfig) {
+  public async initPublicDid(didConfig: DidConfig) {
     const [did, verkey] = await this.createDid(didConfig);
     this.publicDidInfo = {
       did,
@@ -39,11 +43,11 @@ export class IndyWallet implements Wallet {
     };
   }
 
-  getPublicDid() {
+  public getPublicDid() {
     return this.publicDidInfo;
   }
 
-  async createDid(didConfig?: DidConfig): Promise<[Did, Verkey]> {
+  public async createDid(didConfig?: DidConfig): Promise<[Did, Verkey]> {
     if (!this.wh) {
       throw Error('Wallet has not been initialized yet');
     }
@@ -51,7 +55,7 @@ export class IndyWallet implements Wallet {
     return this.indy.createAndStoreMyDid(this.wh, didConfig || {});
   }
 
-  async createCredentialDefinition(
+  public async createCredentialDefinition(
     issuerDid: string,
     schema: Schema,
     tag: string,
@@ -65,7 +69,7 @@ export class IndyWallet implements Wallet {
     return this.indy.issuerCreateAndStoreCredentialDef(this.wh, issuerDid, schema, tag, signatureType, config);
   }
 
-  async pack(payload: Record<string, unknown>, recipientKeys: Verkey[], senderVk: Verkey): Promise<JsonWebKey> {
+  public async pack(payload: Record<string, unknown>, recipientKeys: Verkey[], senderVk: Verkey): Promise<JsonWebKey> {
     if (!this.wh) {
       throw Error('Wallet has not been initialized yet');
     }
@@ -75,7 +79,7 @@ export class IndyWallet implements Wallet {
     return JSON.parse(packedMessage.toString('utf-8'));
   }
 
-  async unpack(messagePackage: JsonWebKey): Promise<UnpackedMessageContext> {
+  public async unpack(messagePackage: JsonWebKey): Promise<UnpackedMessageContext> {
     if (!this.wh) {
       throw Error('Wallet has not been initialized yet');
     }
@@ -91,7 +95,7 @@ export class IndyWallet implements Wallet {
     };
   }
 
-  async sign(data: Buffer, verkey: Verkey): Promise<Buffer> {
+  public async sign(data: Buffer, verkey: Verkey): Promise<Buffer> {
     if (!this.wh) {
       throw Error('Wallet has not been initialized yet');
     }
@@ -101,14 +105,14 @@ export class IndyWallet implements Wallet {
     return signatureBuffer;
   }
 
-  async verify(signerVerkey: Verkey, data: Buffer, signature: Buffer): Promise<boolean> {
+  public async verify(signerVerkey: Verkey, data: Buffer, signature: Buffer): Promise<boolean> {
     // check signature
     const isValid = await this.indy.cryptoVerify(signerVerkey, data, signature);
 
     return isValid;
   }
 
-  async close() {
+  public async close() {
     if (!this.wh) {
       throw Error('Wallet has not been initialized yet');
     }
@@ -116,7 +120,7 @@ export class IndyWallet implements Wallet {
     return this.indy.closeWallet(this.wh);
   }
 
-  async delete() {
+  public async delete() {
     if (!this.wh) {
       throw Error('Wallet has not been initialized yet');
     }
@@ -124,35 +128,35 @@ export class IndyWallet implements Wallet {
     return this.indy.deleteWallet(this.walletConfig, this.walletCredentials);
   }
 
-  async addWalletRecord(type: string, id: string, value: string, tags: Record<string, string>) {
+  public async addWalletRecord(type: string, id: string, value: string, tags: Record<string, string>) {
     if (!this.wh) {
       throw new Error(`Wallet has not been initialized yet`);
     }
     return this.indy.addWalletRecord(this.wh, type, id, value, tags);
   }
 
-  async updateWalletRecordValue(type: string, id: string, value: string) {
+  public async updateWalletRecordValue(type: string, id: string, value: string) {
     if (!this.wh) {
       throw new Error(`Wallet has not been initialized yet`);
     }
     return this.indy.updateWalletRecordValue(this.wh, type, id, value);
   }
 
-  async updateWalletRecordTags(type: string, id: string, tags: Record<string, string>) {
+  public async updateWalletRecordTags(type: string, id: string, tags: Record<string, string>) {
     if (!this.wh) {
       throw new Error(`Wallet has not been initialized yet`);
     }
     return this.indy.addWalletRecordTags(this.wh, type, id, tags);
   }
 
-  async deleteWalletRecord(type: string, id: string) {
+  public async deleteWalletRecord(type: string, id: string) {
     if (!this.wh) {
       throw new Error(`Wallet has not been initialized yet`);
     }
     return this.indy.deleteWalletRecord(this.wh, type, id);
   }
 
-  async search(type: string, query: WalletQuery, options: WalletSearchOptions) {
+  public async search(type: string, query: WalletQuery, options: WalletSearchOptions) {
     if (!this.wh) {
       throw new Error(`Wallet has not been initialized yet`);
     }
@@ -177,14 +181,14 @@ export class IndyWallet implements Wallet {
     return generator(this.indy, this.wh);
   }
 
-  getWalletRecord(type: string, id: string, options: WalletRecordOptions): Promise<WalletRecord> {
+  public getWalletRecord(type: string, id: string, options: WalletRecordOptions): Promise<WalletRecord> {
     if (!this.wh) {
       throw new Error(`Wallet has not been initialized yet`);
     }
     return this.indy.getWalletRecord(this.wh, type, id, options);
   }
 
-  signRequest(myDid: Did, request: LedgerRequest) {
+  public signRequest(myDid: Did, request: LedgerRequest) {
     if (!this.wh) {
       throw new Error(`Wallet has not been initialized yet`);
     }

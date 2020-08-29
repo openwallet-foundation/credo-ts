@@ -23,7 +23,7 @@ export class ConnectionRequestMessage extends AgentMessage {
    * Create new ConnectionRequestMessage instance.
    * @param options
    */
-  constructor(options: ConnectionRequestMessageOptions) {
+  public constructor(options: ConnectionRequestMessageOptions) {
     super();
 
     if (options) {
@@ -38,13 +38,13 @@ export class ConnectionRequestMessage extends AgentMessage {
   }
 
   @Equals(ConnectionRequestMessage.type)
-  readonly type = ConnectionRequestMessage.type;
-  static readonly type = MessageType.ConnectionRequest;
+  public readonly type = ConnectionRequestMessage.type;
+  public static readonly type = MessageType.ConnectionRequest;
 
   @IsString()
-  label!: string;
+  public label!: string;
 
   @Type(() => Connection)
   @ValidateNested()
-  connection!: Connection;
+  public connection!: Connection;
 }

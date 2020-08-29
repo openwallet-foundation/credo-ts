@@ -22,19 +22,19 @@ export interface ConnectionStorageProps extends ConnectionProps {
 }
 
 export class ConnectionRecord extends BaseRecord implements ConnectionStorageProps {
-  did: Did;
-  didDoc: DidDoc;
-  verkey: Verkey;
-  theirDid?: Did;
-  theirDidDoc?: DidDoc;
-  invitation?: InvitationDetails;
-  state: ConnectionState;
-  endpoint?: string;
+  public did: Did;
+  public didDoc: DidDoc;
+  public verkey: Verkey;
+  public theirDid?: Did;
+  public theirDidDoc?: DidDoc;
+  public invitation?: InvitationDetails;
+  public state: ConnectionState;
+  public endpoint?: string;
 
-  type = RecordType.ConnectionRecord;
-  static type: RecordType = RecordType.ConnectionRecord;
+  public static readonly type: RecordType = RecordType.ConnectionRecord;
+  public readonly type = ConnectionRecord.type;
 
-  constructor(props: ConnectionStorageProps) {
+  public constructor(props: ConnectionStorageProps) {
     super(props.id);
     this.did = props.did;
     this.didDoc = props.didDoc;
@@ -47,21 +47,21 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
     this.tags = props.tags as { [keys: string]: string };
   }
 
-  get myKey() {
+  public get myKey() {
     if (!this.didDoc) {
       return null;
     }
     return this.didDoc.service[0].recipientKeys[0];
   }
 
-  get theirKey() {
+  public get theirKey() {
     if (!this.theirDidDoc) {
       return null;
     }
     return this.theirDidDoc.service[0].recipientKeys[0];
   }
 
-  updateDidExchangeConnection(didExchangeConnection: Connection) {
+  public updateDidExchangeConnection(didExchangeConnection: Connection) {
     this.theirDid = didExchangeConnection.did;
     this.theirDidDoc = didExchangeConnection.didDoc;
   }

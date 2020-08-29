@@ -9,7 +9,7 @@ export interface ConnectionOptions {
 }
 
 export class Connection {
-  constructor(options: ConnectionOptions) {
+  public constructor(options: ConnectionOptions) {
     if (options) {
       this.did = options.did;
       this.didDoc = options.didDoc;
@@ -18,7 +18,7 @@ export class Connection {
 
   @IsString()
   @Expose({ name: 'DID' })
-  did!: string;
+  public did!: string;
 
   @Expose({ name: 'DIDDoc' })
   // TODO: add type for DidDoc
@@ -29,5 +29,5 @@ export class Connection {
   // @Type(() => DidDoc)
   // This way we also don't need the custom transformer
   @Transform((value: DidDoc) => (value.toJSON ? value.toJSON() : value), { toPlainOnly: true })
-  didDoc?: DidDoc;
+  public didDoc?: DidDoc;
 }
