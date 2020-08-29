@@ -1,15 +1,12 @@
 import { Handler, HandlerInboundMessage } from '../Handler';
-import { ConnectionService } from '../../protocols/connections/ConnectionService';
 import { MessagePickupService } from '../../protocols/messagepickup/MessagePickupService';
 import { BatchPickupMessage } from '../../protocols/messagepickup/BatchPickupMessage';
 
 export class MessagePickupHandler implements Handler {
-  private connectionService: ConnectionService;
   private messagePickupService: MessagePickupService;
   public supportedMessages = [BatchPickupMessage];
 
-  public constructor(connectionService: ConnectionService, messagePickupService: MessagePickupService) {
-    this.connectionService = connectionService;
+  public constructor(messagePickupService: MessagePickupService) {
     this.messagePickupService = messagePickupService;
   }
 

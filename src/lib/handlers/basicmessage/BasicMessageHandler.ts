@@ -1,15 +1,12 @@
 import { Handler, HandlerInboundMessage } from '../Handler';
-import { ConnectionService } from '../../protocols/connections/ConnectionService';
 import { BasicMessageService } from '../../protocols/basicmessage/BasicMessageService';
 import { BasicMessage } from '../../protocols/basicmessage/BasicMessage';
 
 export class BasicMessageHandler implements Handler {
-  private connectionService: ConnectionService;
   private basicMessageService: BasicMessageService;
   public supportedMessages = [BasicMessage];
 
-  public constructor(connectionService: ConnectionService, basicMessageService: BasicMessageService) {
-    this.connectionService = connectionService;
+  public constructor(basicMessageService: BasicMessageService) {
     this.basicMessageService = basicMessageService;
   }
 

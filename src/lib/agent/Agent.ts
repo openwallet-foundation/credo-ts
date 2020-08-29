@@ -138,12 +138,12 @@ export class Agent {
     this.dispatcher.registerHandler(new ConnectionRequestHandler(this.connectionService));
     this.dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService));
     this.dispatcher.registerHandler(new AckMessageHandler(this.connectionService));
-    this.dispatcher.registerHandler(new BasicMessageHandler(this.connectionService, this.basicMessageService));
-    this.dispatcher.registerHandler(new KeylistUpdateHandler(this.connectionService, this.providerRoutingService));
+    this.dispatcher.registerHandler(new BasicMessageHandler(this.basicMessageService));
+    this.dispatcher.registerHandler(new KeylistUpdateHandler(this.providerRoutingService));
     this.dispatcher.registerHandler(new ForwardHandler(this.providerRoutingService));
     this.dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService));
     this.dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService));
-    this.dispatcher.registerHandler(new MessagePickupHandler(this.connectionService, this.messagePickupService));
+    this.dispatcher.registerHandler(new MessagePickupHandler(this.messagePickupService));
   }
 
   protected registerModules() {
