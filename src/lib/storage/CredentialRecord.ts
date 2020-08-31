@@ -1,4 +1,4 @@
-import uuid from 'uuid/v4';
+import { v4 as uuid } from 'uuid';
 import { BaseRecord, RecordType } from './BaseRecord';
 import { CredentialOfferMessage } from '../protocols/credentials/messages/CredentialOfferMessage';
 import { CredentialState } from '../protocols/credentials/CredentialState';
@@ -10,14 +10,14 @@ export interface CredentialStorageProps {
 }
 
 export class CredentialRecord extends BaseRecord implements CredentialStorageProps {
-  offer: CredentialOfferMessage;
+  public offer: CredentialOfferMessage;
 
-  type = RecordType.CredentialRecord;
-  static type: RecordType = RecordType.CredentialRecord;
+  public type = RecordType.CredentialRecord;
+  public static type: RecordType = RecordType.CredentialRecord;
 
-  state: CredentialState;
+  public state: CredentialState;
 
-  constructor(props: CredentialStorageProps) {
+  public constructor(props: CredentialStorageProps) {
     super(props.id ? props.id : uuid());
     this.offer = props.offer;
     this.state = props.state;

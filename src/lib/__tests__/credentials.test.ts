@@ -26,7 +26,7 @@ const aliceConfig = {
   walletCredentials: { key: '00000000000000000000000000000Test01' },
 };
 
-const poolName = 'test-pool';
+const poolName = 'test-pool-credentials';
 const poolConfig = {
   genesis_txn: process.env.GENESIS_TXN_PATH
     ? path.resolve(process.env.GENESIS_TXN_PATH)

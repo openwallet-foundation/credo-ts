@@ -24,17 +24,17 @@ export function toBeConnectedWith(received: ConnectionRecord, connection: Connec
 }
 
 export class SubjectInboundTransporter implements InboundTransporter {
-  subject: Subject<WireMessage>;
+  private subject: Subject<WireMessage>;
 
-  constructor(subject: Subject<WireMessage>) {
+  public constructor(subject: Subject<WireMessage>) {
     this.subject = subject;
   }
 
-  start(agent: Agent) {
+  public start(agent: Agent) {
     this.subscribe(agent, this.subject);
   }
 
-  subscribe(agent: Agent, subject: Subject<WireMessage>) {
+  private subscribe(agent: Agent, subject: Subject<WireMessage>) {
     subject.subscribe({
       next: (message: WireMessage) => agent.receiveMessage(message),
     });
@@ -42,13 +42,13 @@ export class SubjectInboundTransporter implements InboundTransporter {
 }
 
 export class SubjectOutboundTransporter implements OutboundTransporter {
-  subject: Subject<WireMessage>;
+  private subject: Subject<WireMessage>;
 
-  constructor(subject: Subject<WireMessage>) {
+  public constructor(subject: Subject<WireMessage>) {
     this.subject = subject;
   }
 
-  async sendMessage(outboundPackage: OutboundPackage) {
+  public async sendMessage(outboundPackage: OutboundPackage) {
     console.log('Sending message...');
     const { payload } = outboundPackage;
     console.log(payload);

@@ -11,31 +11,31 @@ interface CredentialPreviewOptions {
 }
 
 export class CredentialPreview {
-  constructor(options: CredentialPreviewOptions) {
+  public constructor(options: CredentialPreviewOptions) {
     this.attributes = options.attributes;
   }
 
   @Equals(CredentialPreview.type)
-  readonly type = CredentialPreview.type;
-  static readonly type = MessageType.CredentialPreview;
+  public readonly type = CredentialPreview.type;
+  public static readonly type = MessageType.CredentialPreview;
 
   @Expose({ name: 'attributes' })
-  attributes: CredentialPreviewAttribute[];
+  public attributes: CredentialPreviewAttribute[];
 }
 
 export class CredentialPreviewAttribute {
-  constructor(options: CredentialPreviewAttribute) {
+  public constructor(options: CredentialPreviewAttribute) {
     this.name = options.name;
     this.mimeType = options.mimeType;
     this.value = options.value;
   }
 
-  name: string;
+  public name: string;
 
   @Expose({ name: 'mime-type' })
-  mimeType: string;
+  public mimeType: string;
 
-  value: string;
+  public value: string;
 }
 
 export interface CredentialOfferMessageOptions {
@@ -51,7 +51,7 @@ export interface CredentialOfferMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#offer-credential
  */
 export class CredentialOfferMessage extends AgentMessage {
-  constructor(options: CredentialOfferMessageOptions) {
+  public constructor(options: CredentialOfferMessageOptions) {
     super();
 
     if (options) {
@@ -63,37 +63,37 @@ export class CredentialOfferMessage extends AgentMessage {
   }
 
   @Equals(CredentialOfferMessage.type)
-  readonly type = CredentialOfferMessage.type;
-  static readonly type = MessageType.CredentialOffer;
+  public readonly type = CredentialOfferMessage.type;
+  public static readonly type = MessageType.CredentialOffer;
 
   @IsString()
-  comment!: string;
+  public comment!: string;
 
   @IsString()
   @Expose({ name: 'credential_preview' })
-  credentialPreview!: CredentialPreview;
+  public credentialPreview!: CredentialPreview;
 
   // @Type(() => AttachmentDecorator)
   // @ValidateNested()
   @Expose({ name: 'offers~attach' })
-  offersAttachments!: Attachment[];
+  public offersAttachments!: Attachment[];
 }
 
 export class Attachment {
-  constructor(options: Attachment) {
+  public constructor(options: Attachment) {
     this.id = options.id;
     this.mimeType = options.mimeType;
     this.data = options.data;
   }
 
   @Expose({ name: '@id' })
-  id: string;
+  public id: string;
 
   @Expose({ name: 'mime-type' })
-  mimeType: string;
+  public mimeType: string;
 
   @Expose({ name: 'data' })
-  data: {
+  public data: {
     base64: string;
   };
 }

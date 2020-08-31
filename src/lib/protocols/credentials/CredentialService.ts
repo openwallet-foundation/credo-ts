@@ -1,4 +1,4 @@
-import uuid from 'uuid';
+import { v4 as uuid } from 'uuid';
 import { EventEmitter } from 'events';
 import { CredentialRecord } from '../../storage/CredentialRecord';
 import { Repository } from '../../storage/Repository';
@@ -12,16 +12,16 @@ export enum EventType {
 }
 
 export class CredentialService extends EventEmitter {
-  wallet: Wallet;
-  credentialRepository: Repository<CredentialRecord>;
+  private wallet: Wallet;
+  private credentialRepository: Repository<CredentialRecord>;
 
-  constructor(wallet: Wallet, credentialRepository: Repository<CredentialRecord>) {
+  public constructor(wallet: Wallet, credentialRepository: Repository<CredentialRecord>) {
     super();
     this.wallet = wallet;
     this.credentialRepository = credentialRepository;
   }
 
-  async createCredentialOffer({
+  public async createCredentialOffer({
     credDefId,
     comment,
     preview,
@@ -47,14 +47,14 @@ export class CredentialService extends EventEmitter {
     return credentialOffer;
   }
 
-  async processCredentialOffer(messageContext: InboundMessageContext<CredentialOfferMessage>): Promise<void> {
+  public async processCredentialOffer(messageContext: InboundMessageContext<CredentialOfferMessage>): Promise<void> {
     const credentialOffer = messageContext.message;
     const credential = new CredentialRecord({ offer: credentialOffer, state: CredentialState.OfferReceived });
     await this.credentialRepository.save(credential);
     this.emit(EventType.StateChanged, { credentialId: credential.id, newState: credential.state });
   }
 
-  async getAll(): Promise<CredentialRecord[]> {
+  public async getAll(): Promise<CredentialRecord[]> {
     return this.credentialRepository.findAll();
   }
 }

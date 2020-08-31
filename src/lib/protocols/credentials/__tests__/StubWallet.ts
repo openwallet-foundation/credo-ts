@@ -1,37 +1,37 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Wallet, DidConfig, DidInfo } from '../../../wallet/Wallet';
-import { UnpackedMessage } from '../../../types';
+import { Wallet, DidInfo } from '../../../wallet/Wallet';
+import { UnpackedMessageContext } from '../../../types';
 
 export class StubWallet implements Wallet {
-  wh?: number | undefined;
-  init(): Promise<void> {
+  private wh?: number | undefined;
+  public init(): Promise<void> {
     return Promise.resolve();
   }
-  close(): Promise<void> {
+  public close(): Promise<void> {
     throw new Error('Method not implemented.');
   }
-  delete(): Promise<void> {
+  public delete(): Promise<void> {
     throw new Error('Method not implemented.');
   }
-  initPublicDid(didConfig: DidConfig): Promise<void> {
+  public initPublicDid(didConfig: DidConfig): Promise<void> {
     throw new Error('Method not implemented.');
   }
-  getPublicDid(): DidInfo | Record<string, undefined> {
+  public getPublicDid(): DidInfo | undefined {
     throw new Error('Method not implemented.');
   }
-  createDid(didConfig?: DidConfig | undefined): Promise<[string, string]> {
+  public createDid(didConfig?: DidConfig | undefined): Promise<[string, string]> {
     throw new Error('Method not implemented.');
   }
-  createCredDef(
+  public createCredentialDefinition(
     issuerDid: string,
     schema: Schema,
     tag: string,
     signatureType: string,
-    config: {}
+    config: CredDefConfig
   ): Promise<[string, CredDef]> {
     throw new Error('Method not implemented.');
   }
-  createCredentialOffer(credDefId: string): Promise<CredOffer> {
+  public createCredentialOffer(credDefId: string): Promise<CredOffer> {
     return Promise.resolve({
       schema_id: 'aaa',
       cred_def_id: credDefId,
@@ -40,37 +40,37 @@ export class StubWallet implements Wallet {
       key_correctness_proof: 'key_correctness_proof',
     });
   }
-  pack(payload: {}, recipientKeys: string[], senderVk: string | null): Promise<JsonWebKey> {
+  public pack(payload: Record<string, unknown>, recipientKeys: string[], senderVk: string | null): Promise<JsonWebKey> {
     throw new Error('Method not implemented.');
   }
-  unpack(messagePackage: JsonWebKey): Promise<UnpackedMessage> {
+  public unpack(messagePackage: JsonWebKey): Promise<UnpackedMessageContext> {
     throw new Error('Method not implemented.');
   }
-  sign(data: Buffer, verkey: string): Promise<Buffer> {
+  public sign(data: Buffer, verkey: string): Promise<Buffer> {
     throw new Error('Method not implemented.');
   }
-  verify(signerVerkey: string, data: Buffer, signature: Buffer): Promise<boolean> {
+  public verify(signerVerkey: string, data: Buffer, signature: Buffer): Promise<boolean> {
     throw new Error('Method not implemented.');
   }
-  addWalletRecord(type: string, id: string, value: string, tags: {}): Promise<void> {
+  public addWalletRecord(type: string, id: string, value: string, tags: Record<string, string>): Promise<void> {
     throw new Error('Method not implemented.');
   }
-  updateWalletRecordValue(type: string, id: string, value: string): Promise<void> {
+  public updateWalletRecordValue(type: string, id: string, value: string): Promise<void> {
     throw new Error('Method not implemented.');
   }
-  updateWalletRecordTags(type: string, id: string, tags: {}): Promise<void> {
+  public updateWalletRecordTags(type: string, id: string, tags: Record<string, string>): Promise<void> {
     throw new Error('Method not implemented.');
   }
-  deleteWalletRecord(type: string, id: string): Promise<void> {
+  public deleteWalletRecord(type: string, id: string): Promise<void> {
     throw new Error('Method not implemented.');
   }
-  getWalletRecord(type: string, id: string, options: {}): Promise<WalletRecord> {
+  public getWalletRecord(type: string, id: string, options: WalletRecordOptions): Promise<WalletRecord> {
     throw new Error('Method not implemented.');
   }
-  search(type: string, query: {}, options: {}): Promise<AsyncIterable<WalletRecord>> {
+  public search(type: string, query: WalletQuery, options: WalletRecordOptions): Promise<AsyncIterable<WalletRecord>> {
     throw new Error('Method not implemented.');
   }
-  signRequest(myDid: string, request: LedgerRequest): Promise<LedgerRequest> {
+  public signRequest(myDid: string, request: LedgerRequest): Promise<LedgerRequest> {
     throw new Error('Method not implemented.');
   }
 }
