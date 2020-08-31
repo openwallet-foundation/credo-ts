@@ -17,7 +17,7 @@ const faberConfig = {
   label: 'Faber',
   walletConfig: { id: 'credentials-test-faber' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
-  publicDidSeed: '000000000000000000000000Steward1',
+  publicDidSeed: process.env.TEST_AGENT_PUBLIC_DID_SEED,
 };
 
 const aliceConfig = {
@@ -30,7 +30,7 @@ const poolName = 'test-pool';
 const poolConfig = {
   genesis_txn: process.env.GENESIS_TXN_PATH
     ? path.resolve(process.env.GENESIS_TXN_PATH)
-    : path.join(__dirname, 'genesis.txn'),
+    : path.join(__dirname, '../../../network/genesis/local-genesis.txn'),
 };
 
 const credentialPreview = new CredentialPreview({
