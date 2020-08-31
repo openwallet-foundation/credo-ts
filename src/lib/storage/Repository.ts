@@ -3,7 +3,7 @@ import { StorageService } from './StorageService';
 
 export class Repository<T extends BaseRecord> {
   storageService: StorageService<T>;
-  recordType: { new (...args: any[]): T; type: RecordType };
+  recordType: { new (...args: unknown[]): T; type: RecordType };
 
   constructor(recordType: { new (...args: any[]): T; type: RecordType }, storageService: StorageService<T>) {
     this.storageService = storageService;
@@ -30,7 +30,7 @@ export class Repository<T extends BaseRecord> {
     return this.storageService.findAll<T>(this.recordType, this.recordType.type);
   }
 
-  async findByQuery(query: {}): Promise<T[]> {
+  async findByQuery(query: WalletQuery): Promise<T[]> {
     return this.storageService.findByQuery<T>(this.recordType, this.recordType.type, query);
   }
 }

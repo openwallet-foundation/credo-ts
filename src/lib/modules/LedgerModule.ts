@@ -14,14 +14,16 @@ export class LedgerModule {
     return this.ledgerService.connect(poolName, poolConfig);
   }
 
-  async registerPublicDid() {}
+  async registerPublicDid() {
+    // TODO: handle ping response message
+  }
 
   async getPublicDid(did: Did) {
     return this.ledgerService.getPublicDid(did);
   }
 
   async registerCredentialSchema(schema: SchemaTemplate) {
-    const { did } = this.wallet.getPublicDid();
+    const did = this.wallet.getPublicDid()?.did;
     if (!did) {
       throw new Error('Agent has no public DID.');
     }
@@ -33,7 +35,7 @@ export class LedgerModule {
   }
 
   async registerCredentialDefinition(credentialDefinitionTemplate: CredDefTemplate) {
-    const { did } = this.wallet.getPublicDid();
+    const did = this.wallet.getPublicDid()?.did;
     if (!did) {
       throw new Error('Agent has no public DID.');
     }

@@ -1,4 +1,3 @@
-import { WalletConfig, WalletCredentials } from './wallet/Wallet';
 import { ConnectionRecord } from './storage/ConnectionRecord';
 import { AgentMessage } from './agent/AgentMessage';
 
@@ -18,10 +17,12 @@ export interface InitConfig {
 }
 
 export interface UnpackedMessage {
-  message: {
-    '@type': string;
-    [key: string]: any;
-  };
+  '@type': string;
+  [key: string]: unknown;
+}
+
+export interface UnpackedMessageContext {
+  message: UnpackedMessage;
   sender_verkey?: Verkey;
   recipient_verkey?: Verkey;
 }

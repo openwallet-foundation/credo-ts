@@ -42,7 +42,7 @@ export class ConnectionsModule {
     return { invitation, connection };
   }
 
-  async acceptInvitation(invitation: any) {
+  async acceptInvitation(invitation: unknown) {
     const connection = (await this.messageReceiver.receiveMessage(invitation))?.connection;
 
     if (!connection) {

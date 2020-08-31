@@ -2,9 +2,9 @@ import { plainToClass, classToPlain } from 'class-transformer';
 import { TransportDecorator, ReturnRouteTypes } from './TransportDecorator';
 import { validateOrReject } from 'class-validator';
 
-const validTranport = (obj: object) => validateOrReject(plainToClass(TransportDecorator, obj));
-const expectValid = (obj: object) => expect(validTranport(obj)).resolves.toBeUndefined();
-const expectInvalid = (obj: object) => expect(validTranport(obj)).rejects.not.toBeNull();
+const validTranport = (obj: Record<string, unknown>) => validateOrReject(plainToClass(TransportDecorator, obj));
+const expectValid = (obj: Record<string, unknown>) => expect(validTranport(obj)).resolves.toBeUndefined();
+const expectInvalid = (obj: Record<string, unknown>) => expect(validTranport(obj)).rejects.not.toBeNull();
 
 const valid = {
   all: {

@@ -19,5 +19,7 @@ export class TrustPingService {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  processPingResponse(messageContext: InboundMessageContext<TrustPingResponseMessage>) {}
+  processPingResponse(inboundMessage: InboundMessageContext<TrustPingResponseMessage>) {
+    // TODO: handle ping response message
+  }
 }

@@ -123,7 +123,7 @@ export class Agent {
     return this.agentConfig.agencyUrl;
   }
 
-  async receiveMessage(inboundPackedMessage: any) {
+  async receiveMessage(inboundPackedMessage: unknown) {
     return await this.messageReceiver.receiveMessage(inboundPackedMessage);
   }
 

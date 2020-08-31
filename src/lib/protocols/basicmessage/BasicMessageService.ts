@@ -50,7 +50,7 @@ class BasicMessageService extends EventEmitter {
     this.emit(EventType.MessageReceived, { verkey: connection.verkey, message });
   }
 
-  async findAllByQuery(query: {}) {
+  async findAllByQuery(query: WalletQuery) {
     return this.basicMessageRepository.findByQuery(query);
   }
 }

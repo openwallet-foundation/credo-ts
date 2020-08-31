@@ -4,10 +4,11 @@ const debug = debugFactory('aries-framework-javascript');
 
 /* eslint-disable no-console */
 export default {
-  log: (...args: any[]) => {
+  log: (...args: unknown[]) => {
     debug('', ...args);
   },
-  logJson: (message: string, json: {} | null) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  logJson: (message: string, json: Record<string, any>) => {
     debug(`---------- ${message} ---------- \n`, JSON.stringify(json, null, 2), '\n');
   },
 };

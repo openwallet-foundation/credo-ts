@@ -2,7 +2,7 @@ import { Repository } from './Repository';
 import { IndyStorageService } from './IndyStorageService';
 import { IndyWallet } from '../wallet/IndyWallet';
 import { BaseRecord, RecordType } from './BaseRecord';
-import uuid from 'uuid/v4';
+import { v4 as uuid } from 'uuid';
 import indy from 'indy-sdk';
 
 interface TestRecordProps {

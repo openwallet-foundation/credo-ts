@@ -17,7 +17,7 @@ export class BasicMessagesModule {
     await this.messageSender.sendMessage(outboundMessage);
   }
 
-  async findAllByQuery(query: {}) {
+  async findAllByQuery(query: WalletQuery) {
     return this.basicMessageService.findAllByQuery(query);
   }
 
