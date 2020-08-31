@@ -24,18 +24,18 @@ enum EventType {
 }
 
 class ConnectionService extends EventEmitter {
-  wallet: Wallet;
-  config: AgentConfig;
-  connectionRepository: Repository<ConnectionRecord>;
+  private wallet: Wallet;
+  private config: AgentConfig;
+  private connectionRepository: Repository<ConnectionRecord>;
 
-  constructor(wallet: Wallet, config: AgentConfig, connectionRepository: Repository<ConnectionRecord>) {
+  public constructor(wallet: Wallet, config: AgentConfig, connectionRepository: Repository<ConnectionRecord>) {
     super();
     this.wallet = wallet;
     this.config = config;
     this.connectionRepository = connectionRepository;
   }
 
-  async createConnectionWithInvitation(): Promise<{
+  public async createConnectionWithInvitation(): Promise<{
     invitation: ConnectionInvitationMessage;
     connection: ConnectionRecord;
   }> {
@@ -49,7 +49,9 @@ class ConnectionService extends EventEmitter {
     return { invitation, connection: connectionRecord };
   }
 
-  async acceptInvitation(invitation: ConnectionInvitationMessage): Promise<OutboundMessage<ConnectionRequestMessage>> {
+  public async acceptInvitation(
+    invitation: ConnectionInvitationMessage
+  ): Promise<OutboundMessage<ConnectionRequestMessage>> {
     const connectionRecord = await this.createConnection();
 
     const connectionRequest = new ConnectionRequestMessage({
@@ -63,7 +65,7 @@ class ConnectionService extends EventEmitter {
     return createOutboundMessage(connectionRecord, connectionRequest, invitation);
   }
 
-  async acceptRequest(
+  public async acceptRequest(
     messageContext: InboundMessageContext<ConnectionRequestMessage>
   ): Promise<OutboundMessage<ConnectionResponseMessage>> {
     const { message, connection: connectionRecord, recipientVerkey } = messageContext;
@@ -102,7 +104,7 @@ class ConnectionService extends EventEmitter {
     return createOutboundMessage(connectionRecord, connectionResponse);
   }
 
-  async acceptResponse(messageContext: InboundMessageContext<ConnectionResponseMessage>) {
+  public async acceptResponse(messageContext: InboundMessageContext<ConnectionResponseMessage>) {
     const { message, connection: connectionRecord, recipientVerkey } = messageContext;
 
     if (!connectionRecord) {
@@ -126,7 +128,7 @@ class ConnectionService extends EventEmitter {
     return createOutboundMessage(connectionRecord, response);
   }
 
-  async acceptAck(messageContext: InboundMessageContext<AckMessage>) {
+  public async acceptAck(messageContext: InboundMessageContext<AckMessage>) {
     const connection = messageContext.connection;
 
     if (!connection) {
@@ -138,7 +140,7 @@ class ConnectionService extends EventEmitter {
     }
   }
 
-  async updateState(connectionRecord: ConnectionRecord, newState: ConnectionState) {
+  public async updateState(connectionRecord: ConnectionRecord, newState: ConnectionState) {
     connectionRecord.state = newState;
     await this.connectionRepository.update(connectionRecord);
     const { verkey, state } = connectionRecord;
@@ -173,11 +175,11 @@ class ConnectionService extends EventEmitter {
     return connectionRecord;
   }
 
-  async getConnections() {
+  public async getConnections() {
     return this.connectionRepository.findAll();
   }
 
-  async find(connectionId: string): Promise<ConnectionRecord | null> {
+  public async find(connectionId: string): Promise<ConnectionRecord | null> {
     try {
       const connection = await this.connectionRepository.find(connectionId);
 
@@ -188,7 +190,7 @@ class ConnectionService extends EventEmitter {
     }
   }
 
-  async findByVerkey(verkey: Verkey): Promise<ConnectionRecord | null> {
+  public async findByVerkey(verkey: Verkey): Promise<ConnectionRecord | null> {
     const connectionRecords = await this.connectionRepository.findByQuery({ verkey });
 
     if (connectionRecords.length > 1) {
@@ -202,7 +204,7 @@ class ConnectionService extends EventEmitter {
     return connectionRecords.length > 0 ? connectionRecords[0] : null;
   }
 
-  async findByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
+  public async findByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
     const connectionRecords = await this.connectionRepository.findByQuery({ theirKey: verkey });
 
     if (connectionRecords.length > 1) {

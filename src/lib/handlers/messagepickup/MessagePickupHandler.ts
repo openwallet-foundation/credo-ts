@@ -1,19 +1,16 @@
 import { Handler, HandlerInboundMessage } from '../Handler';
-import { ConnectionService } from '../../protocols/connections/ConnectionService';
 import { MessagePickupService } from '../../protocols/messagepickup/MessagePickupService';
 import { BatchPickupMessage } from '../../protocols/messagepickup/BatchPickupMessage';
 
 export class MessagePickupHandler implements Handler {
-  connectionService: ConnectionService;
-  messagePickupService: MessagePickupService;
-  supportedMessages = [BatchPickupMessage];
+  private messagePickupService: MessagePickupService;
+  public supportedMessages = [BatchPickupMessage];
 
-  constructor(connectionService: ConnectionService, messagePickupService: MessagePickupService) {
-    this.connectionService = connectionService;
+  public constructor(messagePickupService: MessagePickupService) {
     this.messagePickupService = messagePickupService;
   }
 
-  async handle(messageContext: HandlerInboundMessage<MessagePickupHandler>) {
+  public async handle(messageContext: HandlerInboundMessage<MessagePickupHandler>) {
     if (!messageContext.connection) {
       throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`);
     }

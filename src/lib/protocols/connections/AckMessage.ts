@@ -26,7 +26,7 @@ export class AckMessage extends AgentMessage {
    * Create new AckMessage instance.
    * @param options
    */
-  constructor(options: AckMessageOptions) {
+  public constructor(options: AckMessageOptions) {
     super();
 
     if (options) {
@@ -40,9 +40,9 @@ export class AckMessage extends AgentMessage {
   }
 
   @Equals(AckMessage.type)
-  readonly type = AckMessage.type;
-  static readonly type = MessageType.Ack;
+  public readonly type = AckMessage.type;
+  public static readonly type = MessageType.Ack;
 
   @IsEnum(AckStatus)
-  status!: AckStatus;
+  public status!: AckStatus;
 }

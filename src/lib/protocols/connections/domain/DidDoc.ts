@@ -5,15 +5,15 @@ export enum PublicKeyType {
 }
 
 export class Authentication {
-  publicKey: PublicKey;
-  embed: boolean;
+  public publicKey: PublicKey;
+  public embed: boolean;
 
-  constructor(publicKey: PublicKey, embed = false) {
+  public constructor(publicKey: PublicKey, embed = false) {
     this.publicKey = publicKey;
     this.embed = embed;
   }
 
-  toJSON() {
+  public toJSON() {
     // verType|authType|specifier
     const [, auth_type] = this.publicKey.type.split('|');
     return this.embed
@@ -26,13 +26,13 @@ export class Authentication {
 }
 
 export class DidDoc {
-  '@context': string;
-  id: string;
-  publicKey: PublicKey[];
-  service: Service[];
-  authentication: Authentication[];
+  public '@context': string;
+  public id: string;
+  public publicKey: PublicKey[];
+  public service: Service[];
+  public authentication: Authentication[];
 
-  constructor(id: string, authentication: Authentication[], publicKey: PublicKey[], service: Service[]) {
+  public constructor(id: string, authentication: Authentication[], publicKey: PublicKey[], service: Service[]) {
     this['@context'] = 'https://w3id.org/did/v1';
     this.id = id;
     this.publicKey = publicKey;
@@ -40,7 +40,7 @@ export class DidDoc {
     this.authentication = authentication;
   }
 
-  toJSON() {
+  public toJSON() {
     const publicKey = this.publicKey.map(pk => pk.toJSON());
     const authentication = this.authentication.map(auth => auth.toJSON());
     const service = this.service.map(s => s.toJSON());
@@ -53,11 +53,11 @@ export class DidDoc {
     };
   }
 
-  serialize() {
+  public serialize() {
     return JSON.stringify(this.toJSON());
   }
 
-  static deserialize(doc: string): DidDoc {
+  public static deserialize(doc: string): DidDoc {
     const json = JSON.parse(doc);
     const publicKey = (json.publicKey as [{ [key: string]: any }]).map(pk => {
       return PublicKey.fromJSON(pk);
@@ -92,23 +92,23 @@ export class DidDoc {
 }
 
 export class PublicKey {
-  id: string;
-  type: PublicKeyType;
-  controller: string;
-  value: string;
+  public id: string;
+  public type: PublicKeyType;
+  public controller: string;
+  public value: string;
 
-  constructor(id: string, type: PublicKeyType, controller: string, value: string) {
+  public constructor(id: string, type: PublicKeyType, controller: string, value: string) {
     this.id = id;
     this.type = type;
     this.controller = controller;
     this.value = value;
   }
 
-  serialize(): string {
+  public serialize(): string {
     return JSON.stringify(this.toJSON());
   }
 
-  toJSON() {
+  public toJSON() {
     const [ver_type, , specifier] = this.type.split('|');
     return {
       id: this.id,
@@ -118,12 +118,12 @@ export class PublicKey {
     };
   }
 
-  static deserialize(pk: string): PublicKey {
+  public static deserialize(pk: string): PublicKey {
     const json = JSON.parse(pk);
     return PublicKey.fromJSON(json);
   }
 
-  static fromJSON(pk: { [key: string]: string }): PublicKey {
+  public static fromJSON(pk: { [key: string]: string }): PublicKey {
     const _type: PublicKeyType = Object.keys(PublicKeyType)
       // eslint-disable-next-line
       // @ts-ignore
@@ -137,14 +137,14 @@ export class PublicKey {
 }
 
 export class Service {
-  id: string;
-  serviceEndpoint: string;
-  recipientKeys: string[];
-  routingKeys: string[];
-  type: string;
-  priority = 0;
+  public id: string;
+  public serviceEndpoint: string;
+  public recipientKeys: string[];
+  public routingKeys: string[];
+  public type: string;
+  public priority = 0;
 
-  constructor(
+  public constructor(
     id: string,
     serviceEndpoint: string,
     recipientKeys: Verkey[] = [],
@@ -160,16 +160,16 @@ export class Service {
     this.type = type;
   }
 
-  static deserialize(serviceDoc: string): Service {
+  public static deserialize(serviceDoc: string): Service {
     return Service.fromJSON(JSON.parse(serviceDoc));
   }
 
-  static fromJSON(serviceDoc: { [key: string]: any }) {
+  public static fromJSON(serviceDoc: { [key: string]: any }) {
     const { id, serviceEndpoint, type, priority, recipientKeys, routingKeys } = serviceDoc;
     return new Service(id, serviceEndpoint, recipientKeys, routingKeys, priority || 0, type);
   }
 
-  toJSON(): Record<string, unknown> {
+  public toJSON(): Record<string, unknown> {
     const res: { [key: string]: any } = {
       id: this.id,
       type: this.type,

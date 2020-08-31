@@ -12,13 +12,13 @@ export function ThreadDecorated<T extends BaseMessageConstructor>(Base: T) {
     @Expose({ name: '~thread' })
     @Type(() => ThreadDecorator)
     @ValidateNested()
-    thread?: ThreadDecorator;
+    public thread?: ThreadDecorator;
 
-    getThreadId(): string | undefined {
+    public getThreadId(): string | undefined {
       return this.thread?.threadId || this.id;
     }
 
-    setThread(options: Partial<ThreadDecorator>) {
+    public setThread(options: Partial<ThreadDecorator>) {
       this.thread = new ThreadDecorator(options);
     }
   }

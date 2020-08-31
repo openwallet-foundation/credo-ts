@@ -20,17 +20,17 @@ export enum ReturnRouteTypes {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0092-transport-return-route/README.md
  */
 export class TransportDecorator {
-  constructor(partial?: Partial<TransportDecorator>) {
+  public constructor(partial?: Partial<TransportDecorator>) {
     this.returnRoute = partial?.returnRoute;
     this.returnRouteThread = partial?.returnRouteThread;
   }
 
   @Expose({ name: 'return_route' })
   @IsEnum(ReturnRouteTypes)
-  returnRoute?: ReturnRouteTypes;
+  public returnRoute?: ReturnRouteTypes;
 
   @Expose({ name: 'return_route_thread' })
   @ValidateIf((o: TransportDecorator) => o.returnRoute === ReturnRouteTypes.thread)
   @Matches(MessageIdRegExp)
-  returnRouteThread?: string;
+  public returnRouteThread?: string;
 }

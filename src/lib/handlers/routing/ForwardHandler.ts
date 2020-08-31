@@ -3,14 +3,14 @@ import { ProviderRoutingService } from '../../protocols/routing/ProviderRoutingS
 import { ForwardMessage } from '../../protocols/routing/ForwardMessage';
 
 export class ForwardHandler implements Handler {
-  routingService: ProviderRoutingService;
-  supportedMessages = [ForwardMessage];
+  private routingService: ProviderRoutingService;
+  public supportedMessages = [ForwardMessage];
 
-  constructor(routingService: ProviderRoutingService) {
+  public constructor(routingService: ProviderRoutingService) {
     this.routingService = routingService;
   }
 
-  async handle(messageContext: HandlerInboundMessage<ForwardHandler>) {
+  public async handle(messageContext: HandlerInboundMessage<ForwardHandler>) {
     return this.routingService.forward(messageContext);
   }
 }

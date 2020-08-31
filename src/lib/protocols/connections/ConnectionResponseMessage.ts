@@ -21,7 +21,7 @@ export class ConnectionResponseMessage extends AgentMessage {
    * Create new ConnectionResponseMessage instance.
    * @param options
    */
-  constructor(options: ConnectionResponseMessageOptions) {
+  public constructor(options: ConnectionResponseMessageOptions) {
     super();
 
     if (options) {
@@ -33,11 +33,11 @@ export class ConnectionResponseMessage extends AgentMessage {
   }
 
   @Equals(ConnectionResponseMessage.type)
-  readonly type = ConnectionResponseMessage.type;
-  static readonly type = MessageType.ConnectionResponse;
+  public readonly type = ConnectionResponseMessage.type;
+  public static readonly type = MessageType.ConnectionResponse;
 
   @Type(() => SignatureDecorator)
   @ValidateNested()
   @Expose({ name: 'connection~sig' })
-  connectionSig!: SignatureDecorator;
+  public connectionSig!: SignatureDecorator;
 }

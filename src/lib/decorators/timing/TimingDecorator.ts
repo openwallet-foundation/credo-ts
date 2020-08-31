@@ -6,7 +6,7 @@ import { IsDate, IsNumber } from 'class-validator';
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0032-message-timing/README.md
  */
 export class TimingDecorator {
-  constructor(partial?: Partial<TimingDecorator>) {
+  public constructor(partial?: Partial<TimingDecorator>) {
     this.inTime = partial?.inTime;
     this.outTime = partial?.outTime;
     this.staleTime = partial?.staleTime;
@@ -22,7 +22,7 @@ export class TimingDecorator {
   @Expose({ name: 'in_time' })
   @Type(() => Date)
   @IsDate()
-  inTime?: Date;
+  public inTime?: Date;
 
   /**
    * The timestamp when the message was emitted. At least millisecond precision is preferred, though second precision is acceptable.
@@ -30,7 +30,7 @@ export class TimingDecorator {
   @Expose({ name: 'out_time' })
   @Type(() => Date)
   @IsDate()
-  outTime?: Date;
+  public outTime?: Date;
 
   /**
    * Ideally, the decorated message should be processed by the the specified timestamp. After that, the message may become irrelevant or less meaningful than intended.
@@ -39,7 +39,7 @@ export class TimingDecorator {
   @Expose({ name: 'stale_time' })
   @Type(() => Date)
   @IsDate()
-  staleTime?: Date;
+  public staleTime?: Date;
 
   /**
    * The decorated message should be considered invalid or expired if encountered after the specified timestamp.
@@ -51,7 +51,7 @@ export class TimingDecorator {
   @Expose({ name: 'expires_time' })
   @Type(() => Date)
   @IsDate()
-  expiresTime?: Date;
+  public expiresTime?: Date;
 
   /**
    * Wait at least this many milliseconds before processing the message. This may be useful to defeat temporal correlation.
@@ -59,7 +59,7 @@ export class TimingDecorator {
    */
   @Expose({ name: 'delay_milli' })
   @IsNumber()
-  delayMilli?: number;
+  public delayMilli?: number;
 
   /**
    * Wait until this time before processing the message.
@@ -67,5 +67,5 @@ export class TimingDecorator {
   @Expose({ name: 'wait_until_time' })
   @Type(() => Date)
   @IsDate()
-  waitUntilTime?: Date;
+  public waitUntilTime?: Date;
 }

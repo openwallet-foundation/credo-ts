@@ -6,29 +6,29 @@ export enum RecordType {
 }
 
 export abstract class BaseRecord {
-  createdAt: number;
-  updatedAt?: number;
-  id: string;
-  tags: { [keys: string]: string };
+  public createdAt: number;
+  public updatedAt?: number;
+  public id: string;
+  public tags: { [keys: string]: string };
 
   // Required because Javascript doesn't allow accessing static types
   // like instance.static_member
-  type: RecordType = RecordType.BaseRecord;
-  static type: RecordType = RecordType.BaseRecord;
+  public static readonly type: RecordType = RecordType.BaseRecord;
+  public readonly type = BaseRecord.type;
 
-  constructor(id: string) {
+  public constructor(id: string) {
     this.id = id;
     this.createdAt = Date.now();
     this.tags = {};
   }
 
-  getValue(): string {
+  public getValue(): string {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, tags, ...value } = this;
     return JSON.stringify(value);
   }
 
-  static fromPersistence<T>(typeClass: { new (...args: unknown[]): T }, props: Record<string, any>): T {
+  public static fromPersistence<T>(typeClass: { new (...args: unknown[]): T }, props: Record<string, any>): T {
     // eslint-disable-next-line
     // @ts-ignore
     const { value, ...rest } = props;

@@ -9,15 +9,15 @@ export function L10nDecorated<T extends BaseMessageConstructor>(Base: T) {
     @Expose({ name: '~l10n' })
     @Type(() => L10nDecorator)
     @ValidateNested()
-    l10n?: L10nDecorator;
+    public l10n?: L10nDecorator;
 
-    addLocale(locale: string) {
+    public addLocale(locale: string) {
       this.l10n = new L10nDecorator({
         locale,
       });
     }
 
-    getLocale(): string | undefined {
+    public getLocale(): string | undefined {
       if (this.l10n?.locale) return this.l10n.locale;
 
       return undefined;

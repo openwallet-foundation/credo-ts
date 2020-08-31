@@ -12,21 +12,21 @@ enum EventType {
 }
 
 class BasicMessageService extends EventEmitter {
-  basicMessageRepository: Repository<BasicMessageRecord>;
+  private basicMessageRepository: Repository<BasicMessageRecord>;
 
-  constructor(basicMessageRepository: Repository<BasicMessageRecord>) {
+  public constructor(basicMessageRepository: Repository<BasicMessageRecord>) {
     super();
     this.basicMessageRepository = basicMessageRepository;
   }
 
-  async send(message: string, connection: ConnectionRecord): Promise<OutboundMessage<BasicMessage>> {
+  public async send(message: string, connection: ConnectionRecord): Promise<OutboundMessage<BasicMessage>> {
     const basicMessage = new BasicMessage({
       content: message,
     });
 
     const basicMessageRecord = new BasicMessageRecord({
       id: basicMessage.id,
-      sent_time: basicMessage.sentTime.toISOString(),
+      sentTime: basicMessage.sentTime.toISOString(),
       content: basicMessage.content,
       tags: { from: connection.did || '', to: connection.theirDid || '' },
     });
@@ -38,10 +38,10 @@ class BasicMessageService extends EventEmitter {
   /**
    * @todo use connection from message context
    */
-  async save({ message }: InboundMessageContext<BasicMessage>, connection: ConnectionRecord) {
+  public async save({ message }: InboundMessageContext<BasicMessage>, connection: ConnectionRecord) {
     const basicMessageRecord = new BasicMessageRecord({
       id: message.id,
-      sent_time: message.sentTime.toISOString(),
+      sentTime: message.sentTime.toISOString(),
       content: message.content,
       tags: { from: connection.theirDid || '', to: connection.did || '' },
     });
@@ -50,7 +50,7 @@ class BasicMessageService extends EventEmitter {
     this.emit(EventType.MessageReceived, { verkey: connection.verkey, message });
   }
 
-  async findAllByQuery(query: WalletQuery) {
+  public async findAllByQuery(query: WalletQuery) {
     return this.basicMessageRepository.findByQuery(query);
   }
 }

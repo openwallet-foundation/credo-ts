@@ -19,7 +19,7 @@ export class ForwardMessage extends AgentMessage {
    *
    * @param options
    */
-  constructor(options: ForwardMessageOptions) {
+  public constructor(options: ForwardMessageOptions) {
     super();
 
     if (options) {
@@ -30,12 +30,12 @@ export class ForwardMessage extends AgentMessage {
   }
 
   @Equals(ForwardMessage.type)
-  readonly type = ForwardMessage.type;
-  static readonly type = MessageType.ForwardMessage;
+  public readonly type = ForwardMessage.type;
+  public static readonly type = MessageType.ForwardMessage;
 
   @IsString()
-  to!: string;
+  public to!: string;
 
   @Expose({ name: 'msg' })
-  message!: JsonWebKey;
+  public message!: JsonWebKey;
 }

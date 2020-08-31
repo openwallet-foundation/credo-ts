@@ -5,13 +5,17 @@ import { KeylistUpdateMessage, KeylistUpdateAction } from '../coordinatemediatio
 import { ForwardMessage } from './ForwardMessage';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 
+export interface RoutingTable {
+  [recipientKey: string]: ConnectionRecord | undefined;
+}
+
 class ProviderRoutingService {
-  routingTable: { [recipientKey: string]: ConnectionRecord | undefined } = {};
+  private routingTable: RoutingTable = {};
 
   /**
    * @todo use connection from message context
    */
-  updateRoutes(messageContext: InboundMessageContext<KeylistUpdateMessage>, connection: ConnectionRecord) {
+  public updateRoutes(messageContext: InboundMessageContext<KeylistUpdateMessage>, connection: ConnectionRecord) {
     const { message } = messageContext;
 
     for (const update of message.updates) {
@@ -26,7 +30,7 @@ class ProviderRoutingService {
     }
   }
 
-  forward(messageContext: InboundMessageContext<ForwardMessage>): OutboundMessage<ForwardMessage> {
+  public forward(messageContext: InboundMessageContext<ForwardMessage>): OutboundMessage<ForwardMessage> {
     const { message, recipientVerkey } = messageContext;
 
     // TODO: update to class-validator validation
@@ -47,13 +51,16 @@ class ProviderRoutingService {
     return createOutboundMessage(connection, message);
   }
 
-  getRoutes() {
+  public getRoutes() {
     return this.routingTable;
   }
 
-  findRecipient(recipientKey: Verkey) {
+  public findRecipient(recipientKey: Verkey) {
     const connection = this.routingTable[recipientKey];
 
+    // TODO: function with find in name should now throw error when not found.
+    // It should either be called getRecipient and throw error
+    // or findRecipient and return null
     if (!connection) {
       throw new Error(`Routing entry for recipientKey ${recipientKey} does not exists.`);
     }
@@ -61,7 +68,7 @@ class ProviderRoutingService {
     return connection;
   }
 
-  saveRoute(recipientKey: Verkey, connection: ConnectionRecord) {
+  public saveRoute(recipientKey: Verkey, connection: ConnectionRecord) {
     if (this.routingTable[recipientKey]) {
       throw new Error(`Routing entry for recipientKey ${recipientKey} already exists.`);
     }
@@ -69,7 +76,7 @@ class ProviderRoutingService {
     this.routingTable[recipientKey] = connection;
   }
 
-  removeRoute(recipientKey: Verkey, connection: ConnectionRecord) {
+  public removeRoute(recipientKey: Verkey, connection: ConnectionRecord) {
     const storedConnection = this.routingTable[recipientKey];
 
     if (!storedConnection) {

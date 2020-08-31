@@ -20,7 +20,7 @@ export class BatchPickupMessage extends AgentMessage {
    *
    * @param options
    */
-  constructor(options: BatchPickupMessageOptions) {
+  public constructor(options: BatchPickupMessageOptions) {
     super();
 
     if (options) {
@@ -30,10 +30,10 @@ export class BatchPickupMessage extends AgentMessage {
   }
 
   @Equals(BatchPickupMessage.type)
-  readonly type = BatchPickupMessage.type;
-  static readonly type = MessageType.BatchPickup;
+  public readonly type = BatchPickupMessage.type;
+  public static readonly type = MessageType.BatchPickup;
 
   @IsNumber()
   @Expose({ name: 'batch_size' })
-  batchSize!: number;
+  public batchSize!: number;
 }

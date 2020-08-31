@@ -1,3 +1,4 @@
+// eslint-disable-next-line
 // @ts-ignore
 import { poll } from 'await-poll';
 import { EventEmitter } from 'events';
@@ -9,12 +10,12 @@ import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
 
 export class ConnectionsModule {
-  agentConfig: AgentConfig;
-  connectionService: ConnectionService;
-  consumerRoutingService: ConsumerRoutingService;
-  messageReceiver: MessageReceiver;
+  private agentConfig: AgentConfig;
+  private connectionService: ConnectionService;
+  private consumerRoutingService: ConsumerRoutingService;
+  private messageReceiver: MessageReceiver;
 
-  constructor(
+  public constructor(
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
     consumerRoutingService: ConsumerRoutingService,
@@ -26,7 +27,7 @@ export class ConnectionsModule {
     this.messageReceiver = messageReceiver;
   }
 
-  async createConnection() {
+  public async createConnection() {
     const { invitation, connection } = await this.connectionService.createConnectionWithInvitation();
 
     if (!invitation) {
@@ -42,7 +43,7 @@ export class ConnectionsModule {
     return { invitation, connection };
   }
 
-  async acceptInvitation(invitation: unknown) {
+  public async acceptInvitation(invitation: unknown) {
     const connection = (await this.messageReceiver.receiveMessage(invitation))?.connection;
 
     if (!connection) {
@@ -56,7 +57,7 @@ export class ConnectionsModule {
     return connection;
   }
 
-  async returnWhenIsConnected(connectionId: string): Promise<ConnectionRecord> {
+  public async returnWhenIsConnected(connectionId: string): Promise<ConnectionRecord> {
     const connectionRecord = await poll(
       () => this.find(connectionId),
       (c: ConnectionRecord) => c.state !== ConnectionState.COMPLETE,
@@ -65,23 +66,23 @@ export class ConnectionsModule {
     return connectionRecord;
   }
 
-  async getAll() {
+  public async getAll() {
     return this.connectionService.getConnections();
   }
 
-  async find(connectionId: string): Promise<ConnectionRecord | null> {
+  public async find(connectionId: string): Promise<ConnectionRecord | null> {
     return this.connectionService.find(connectionId);
   }
 
-  async findConnectionByVerkey(verkey: Verkey): Promise<ConnectionRecord | null> {
+  public async findConnectionByVerkey(verkey: Verkey): Promise<ConnectionRecord | null> {
     return this.connectionService.findByVerkey(verkey);
   }
 
-  async findConnectionByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
+  public async findConnectionByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
     return this.connectionService.findByTheirKey(verkey);
   }
 
-  events(): EventEmitter {
+  public events(): EventEmitter {
     return this.connectionService;
   }
 }

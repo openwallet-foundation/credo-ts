@@ -10,12 +10,12 @@ import { AgentMessage } from './AgentMessage';
 import { MessageTransformer } from './MessageTransformer';
 
 class MessageReceiver {
-  config: AgentConfig;
-  envelopeService: EnvelopeService;
-  connectionService: ConnectionService;
-  dispatcher: Dispatcher;
+  private config: AgentConfig;
+  private envelopeService: EnvelopeService;
+  private connectionService: ConnectionService;
+  private dispatcher: Dispatcher;
 
-  constructor(
+  public constructor(
     config: AgentConfig,
     envelopeService: EnvelopeService,
     connectionService: ConnectionService,

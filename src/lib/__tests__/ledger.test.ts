@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { Agent, InboundTransporter, OutboundTransporter } from '..';
 import path from 'path';
 import indy from 'indy-sdk';
@@ -137,13 +136,13 @@ describe('ledger', () => {
 });
 
 class DummyInboundTransporter implements InboundTransporter {
-  start() {
+  public start() {
     console.log('Starting agent...');
   }
 }
 
 class DummyOutboundTransporter implements OutboundTransporter {
-  async sendMessage() {
+  public async sendMessage() {
     console.log('Sending message...');
   }
 }

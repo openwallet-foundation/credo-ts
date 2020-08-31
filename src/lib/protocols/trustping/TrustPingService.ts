@@ -8,7 +8,7 @@ import { InboundMessageContext } from '../../agent/models/InboundMessageContext'
  * @todo use connection from message context
  */
 export class TrustPingService {
-  processPing({ message }: InboundMessageContext<TrustPingMessage>, connection: ConnectionRecord) {
+  public processPing({ message }: InboundMessageContext<TrustPingMessage>, connection: ConnectionRecord) {
     if (message.responseRequested) {
       const response = new TrustPingResponseMessage({
         threadId: message.id,
@@ -19,7 +19,7 @@ export class TrustPingService {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  processPingResponse(inboundMessage: InboundMessageContext<TrustPingResponseMessage>) {
+  public processPingResponse(inboundMessage: InboundMessageContext<TrustPingResponseMessage>) {
     // TODO: handle ping response message
   }
 }

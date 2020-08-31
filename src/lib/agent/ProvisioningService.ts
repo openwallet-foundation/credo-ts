@@ -5,13 +5,13 @@ import logger from '../logger';
 const UNIQUE_PROVISIONING_ID = 'UNIQUE_PROVISIONING_ID';
 
 export class ProvisioningService {
-  provisioningRepository: Repository<ProvisioningRecord>;
+  private provisioningRepository: Repository<ProvisioningRecord>;
 
-  constructor(provisioningRepository: Repository<ProvisioningRecord>) {
+  public constructor(provisioningRepository: Repository<ProvisioningRecord>) {
     this.provisioningRepository = provisioningRepository;
   }
 
-  async find(): Promise<ProvisioningRecord | null> {
+  public async find(): Promise<ProvisioningRecord | null> {
     try {
       const provisioningRecord = await this.provisioningRepository.find(UNIQUE_PROVISIONING_ID);
       return provisioningRecord;
@@ -26,7 +26,7 @@ export class ProvisioningService {
     }
   }
 
-  async create({ agencyConnectionId, agencyPublicVerkey }: ProvisioningProps): Promise<ProvisioningRecord> {
+  public async create({ agencyConnectionId, agencyPublicVerkey }: ProvisioningProps): Promise<ProvisioningRecord> {
     const provisioningRecord = new ProvisioningRecord({
       id: UNIQUE_PROVISIONING_ID,
       agencyConnectionId,

@@ -10,7 +10,7 @@ export class BasicMessage extends AgentMessage {
    * sentTime will be assigned to new Date if not passed, id will be assigned to uuid/v4 if not passed
    * @param options
    */
-  constructor(options: { content: string; sentTime?: Date; id?: string; locale?: string }) {
+  public constructor(options: { content: string; sentTime?: Date; id?: string; locale?: string }) {
     super();
 
     if (options) {
@@ -22,15 +22,15 @@ export class BasicMessage extends AgentMessage {
   }
 
   @Equals(BasicMessage.type)
-  readonly type = BasicMessage.type;
-  static readonly type = MessageType.BasicMessage;
+  public readonly type = BasicMessage.type;
+  public static readonly type = MessageType.BasicMessage;
 
   @Expose({ name: 'sent_time' })
   @Type(() => Date)
   @IsDate()
-  sentTime!: Date;
+  public sentTime!: Date;
 
   @Expose({ name: 'content' })
   @IsString()
-  content!: string;
+  public content!: string;
 }

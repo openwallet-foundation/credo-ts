@@ -3,14 +3,14 @@ import { TrustPingService } from '../../protocols/trustping/TrustPingService';
 import { TrustPingResponseMessage } from '../../protocols/trustping/TrustPingResponseMessage';
 
 export class TrustPingResponseMessageHandler implements Handler {
-  trustPingService: TrustPingService;
-  supportedMessages = [TrustPingResponseMessage];
+  private trustPingService: TrustPingService;
+  public supportedMessages = [TrustPingResponseMessage];
 
-  constructor(trustPingService: TrustPingService) {
+  public constructor(trustPingService: TrustPingService) {
     this.trustPingService = trustPingService;
   }
 
-  async handle(inboundMessage: HandlerInboundMessage<TrustPingResponseMessageHandler>) {
+  public async handle(inboundMessage: HandlerInboundMessage<TrustPingResponseMessageHandler>) {
     return this.trustPingService.processPingResponse(inboundMessage);
   }
 }

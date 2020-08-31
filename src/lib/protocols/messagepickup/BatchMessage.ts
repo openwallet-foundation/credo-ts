@@ -18,7 +18,7 @@ export interface BatchMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0212-pickup/README.md#batch
  */
 export class BatchMessage extends AgentMessage {
-  constructor(options: BatchMessageOptions) {
+  public constructor(options: BatchMessageOptions) {
     super();
 
     if (options) {
@@ -28,8 +28,8 @@ export class BatchMessage extends AgentMessage {
   }
 
   @Equals(BatchMessage.type)
-  readonly type = BatchMessage.type;
-  static readonly type = MessageType.Batch;
+  public readonly type = BatchMessage.type;
+  public static readonly type = MessageType.Batch;
 
   @Type(() => BatchMessageMessage)
   @IsArray()
@@ -38,11 +38,11 @@ export class BatchMessage extends AgentMessage {
   // However i think the usage of the attachment decorator
   // as specified in the Pickup Protocol is incorrect
   @Expose({ name: 'messages~attach' })
-  messages!: BatchMessageMessage[];
+  public messages!: BatchMessageMessage[];
 }
 
 export class BatchMessageMessage {
-  constructor(options: { id?: string; message: WireMessage }) {
+  public constructor(options: { id?: string; message: WireMessage }) {
     if (options) {
       this.id = options.id || uuid();
       this.message = options.message;
@@ -50,7 +50,7 @@ export class BatchMessageMessage {
   }
 
   @Matches(MessageIdRegExp)
-  id!: string;
+  public id!: string;
 
-  message!: WireMessage;
+  public message!: WireMessage;
 }
