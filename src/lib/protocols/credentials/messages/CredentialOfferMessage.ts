@@ -1,10 +1,8 @@
 import { Equals, IsString } from 'class-validator';
-import { Expose, classToPlain } from 'class-transformer';
+import { Expose } from 'class-transformer';
 
 import { AgentMessage } from '../../../agent/AgentMessage';
 import { MessageType } from './MessageType';
-import { MessageTransformer } from '../../../agent/MessageTransformer';
-// import { AttachmentDecorator } from '../../decorators/attachments/AttachmentDecorator';
 
 interface CredentialPreviewOptions {
   attributes: CredentialPreviewAttribute[];
@@ -73,8 +71,6 @@ export class CredentialOfferMessage extends AgentMessage {
   @Expose({ name: 'credential_preview' })
   public credentialPreview!: CredentialPreview;
 
-  // @Type(() => AttachmentDecorator)
-  // @ValidateNested()
   @Expose({ name: 'offers~attach' })
   public offersAttachments!: Attachment[];
 }
