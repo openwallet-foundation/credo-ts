@@ -19,8 +19,16 @@ export class CredentialsModule {
     await this.messageSender.sendMessage(outboundMessage);
   }
 
+  public async acceptCredential(firstCredential: CredentialRecord) {
+    throw new Error('Method not implemented.');
+  }
+
   public async getCredentials(): Promise<CredentialRecord[]> {
     return this.credentialService.getAll();
+  }
+
+  public async find(id: string) {
+    throw new Error('Method not implemented.');
   }
 }
 

@@ -142,6 +142,32 @@ describe('credentials', () => {
       })
     );
   });
+
+  test(`when alice accepts the credential offer then faber sends a credential to alice`, async () => {
+    // We assume that Alice has only one credential and it's a credential from Faber
+    const [firstCredential] = await aliceAgent.credentials.getCredentials();
+
+    // Accept credential offer from Faber
+    await aliceAgent.credentials.acceptCredential(firstCredential);
+
+    // We assume that Alice has only one credential and it's a credential from Faber
+    const credential = await poll(
+      () => aliceAgent.credentials.find(firstCredential.id),
+      (credential: CredentialRecord) => !credential || credential.state !== CredentialState.CredentialReceived,
+      100
+    );
+
+    expect(credential).toEqual(
+      expect.objectContaining({
+        createdAt: expect.any(Number),
+        id: expect.any(String),
+        offer: expect.any(Object),
+        tags: {},
+        type: 'CredentialRecord',
+        state: CredentialState.CredentialReceived,
+      })
+    );
+  });
 });
 
 async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<[SchemaId, Schema]> {
