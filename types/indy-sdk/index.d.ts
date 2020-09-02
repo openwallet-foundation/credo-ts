@@ -64,6 +64,22 @@ declare module 'indy-sdk' {
       config?: CredDefConfig
     ): Promise<[CredDefId, CredDef]>;
     issuerCreateCredentialOffer(wh: WalletHandle, credDefId: CredDefId): Promise<CredOffer>;
+    proverCreateCredentialReq(
+      wh: WalletHandle,
+      proverDid: Did,
+      credOffer: CredOffer,
+      credDef: CredDef,
+      masterSecretId: string
+    ): Promise<[CredReq, CredReqMetadata]>;
+    proverCreateMasterSecret(wh: number, masterSecretId: string): Promise<string>;
+    issuerCreateCredential(
+      wh: WalletHandle,
+      credOffer: CredOffer,
+      credReq: CredReq,
+      credValues: CredValues,
+      revRegId: RevRegId,
+      blobStorageReaderHandle: BlobStorageReaderHandle
+    ): Promise<[Cred, CredRevocId, RevocRegDelta]>;
     buildGetTxnAuthorAgreementRequest(submitterDid: Did | null): Promise<LedgerRequest>;
     buildGetAcceptanceMechanismsRequest(submitterDid: Did | null): Promise<LedgerRequest>;
     appendTxnAuthorAgreementAcceptanceToRequest(
@@ -142,6 +158,22 @@ interface Indy {
     config?: CredDefConfig
   ): Promise<[CredDefId, CredDef]>;
   issuerCreateCredentialOffer(wh: WalletHandle, credDefId: CredDefId): Promise<CredOffer>;
+  proverCreateCredentialReq(
+    wh: WalletHandle,
+    proverDid: Did,
+    credOffer: CredOffer,
+    credDef: CredDef,
+    masterSecretId: string
+  ): Promise<[CredReq, CredReqMetadata]>;
+  proverCreateMasterSecret(wh: number, masterSecretId: string): Promise<string>;
+  issuerCreateCredential(
+    wh: WalletHandle,
+    credOffer: CredOffer,
+    credReq: CredReq,
+    credValues: CredValues,
+    revRegId: RevRegId,
+    blobStorageReaderHandle: BlobStorageReaderHandle
+  ): Promise<[Cred, CredRevocId, RevocRegDelta]>;
   buildGetTxnAuthorAgreementRequest(submitterDid: Did | null): Promise<LedgerRequest>;
   buildGetAcceptanceMechanismsRequest(submitterDid: Did | null): Promise<LedgerRequest>;
   appendTxnAuthorAgreementAcceptanceToRequest(
@@ -243,7 +275,7 @@ interface CredDef {
   tag: string;
   value: {
     primary: Record<string, unknown>;
-    revocation: unknown;
+    revocation?: unknown;
   };
   ver: string;
 }
@@ -256,8 +288,40 @@ interface CredOffer {
   schema_id: SchemaId;
   cred_def_id: CredDefId;
   nonce: string;
-  key_correctness_proof: string;
+  key_correctness_proof: Record<string, unknown>;
 }
+
+interface CredReq {
+  prover_did: Did;
+  cred_def_id: CredDefId;
+  blinded_ms: Record<string, unknown>;
+  blinded_ms_correctness_proof: Record<string, unknown>;
+  nonce: string;
+}
+
+type CredReqMetadata = Record<string, unknown>;
+
+type CredValues = Record<string, CredValue>;
+
+interface CredValue {
+  raw: string;
+  encoded: string; // Raw value as number in string
+}
+
+type RevRegId = string;
+type BlobStorageReaderHandle = number;
+
+interface Cred {
+  schema_id: SchemaId;
+  cred_def_id: CredDefId;
+  rev_reg_def_id: string;
+  values: CredValues;
+  signature: unknown;
+  signature_correctness_proof: unknown;
+}
+
+type CredRevocId = string;
+type RevocRegDelta = Record<string, unknown>;
 
 interface KeyConfig {
   seed?: string;

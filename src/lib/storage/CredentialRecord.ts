@@ -7,9 +7,11 @@ export interface CredentialStorageProps {
   id?: string;
   offer: CredentialOfferMessage;
   state: CredentialState;
+  connectionId: string;
 }
 
 export class CredentialRecord extends BaseRecord implements CredentialStorageProps {
+  public connectionId: string;
   public offer: CredentialOfferMessage;
 
   public type = RecordType.CredentialRecord;
@@ -21,5 +23,6 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
     super(props.id ? props.id : uuid());
     this.offer = props.offer;
     this.state = props.state;
+    this.connectionId = props.connectionId;
   }
 }

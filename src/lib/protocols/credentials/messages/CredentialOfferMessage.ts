@@ -3,6 +3,7 @@ import { Expose } from 'class-transformer';
 
 import { AgentMessage } from '../../../agent/AgentMessage';
 import { MessageType } from './MessageType';
+import { Attachment } from './Attachment';
 
 interface CredentialPreviewOptions {
   attributes: CredentialPreviewAttribute[];
@@ -73,23 +74,4 @@ export class CredentialOfferMessage extends AgentMessage {
 
   @Expose({ name: 'offers~attach' })
   public offersAttachments!: Attachment[];
-}
-
-export class Attachment {
-  public constructor(options: Attachment) {
-    this.id = options.id;
-    this.mimeType = options.mimeType;
-    this.data = options.data;
-  }
-
-  @Expose({ name: '@id' })
-  public id: string;
-
-  @Expose({ name: 'mime-type' })
-  public mimeType: string;
-
-  @Expose({ name: 'data' })
-  public data: {
-    base64: string;
-  };
 }

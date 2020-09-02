@@ -40,6 +40,7 @@ import { CredentialsModule } from '../modules/CredentialsModule';
 import { CredentialService } from '../protocols/credentials/CredentialService';
 import { CredentialRecord } from '../storage/CredentialRecord';
 import { CredentialOfferHandler } from '../handlers/credentials/CredentialOfferHandler';
+import { CredentialRequestHandler } from '../handlers/credentials/CredentialRequestHandler';
 
 export class Agent {
   protected wallet: Wallet;
@@ -160,6 +161,7 @@ export class Agent {
     this.dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService));
     this.dispatcher.registerHandler(new MessagePickupHandler(this.messagePickupService));
     this.dispatcher.registerHandler(new CredentialOfferHandler(this.credentialService));
+    this.dispatcher.registerHandler(new CredentialRequestHandler(this.credentialService));
   }
 
   protected registerModules() {
@@ -182,6 +184,11 @@ export class Agent {
     this.basicMessages = new BasicMessagesModule(this.basicMessageService, this.messageSender);
     this.ledger = new LedgerModule(this.wallet, this.ledgerService);
 
-    this.credentials = new CredentialsModule(this.credentialService, this.messageSender);
+    this.credentials = new CredentialsModule(
+      this.connectionService,
+      this.credentialService,
+      this.ledgerService,
+      this.messageSender
+    );
   }
 }

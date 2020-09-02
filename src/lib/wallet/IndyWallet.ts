@@ -61,7 +61,7 @@ export class IndyWallet implements Wallet {
     tag: string,
     signatureType: string,
     config?: CredDefConfig
-  ): Promise<[string, CredDef]> {
+  ): Promise<[CredDefId, CredDef]> {
     if (!this.wh) {
       throw Error('Wallet has not been initialized yet');
     }
@@ -74,6 +74,33 @@ export class IndyWallet implements Wallet {
       throw Error('Wallet has not been initialized yet');
     }
     return this.indy.issuerCreateCredentialOffer(this.wh, credDefId);
+  }
+
+  public async createCredentialRequest(
+    proverDid: string,
+    offer: CredOffer,
+    credDef: CredDef,
+    masterSecretName: string
+  ): Promise<[CredReq, CredReqMetadata]> {
+    if (!this.wh) {
+      throw Error('Wallet has not been initialized yet');
+    }
+    // TODO save `masterSecret` during wallet init and just use it in `proverCreateCredentialReq`
+    const masterSecretId = await this.indy.proverCreateMasterSecret(this.wh, masterSecretName);
+    return this.indy.proverCreateCredentialReq(this.wh, proverDid, offer, credDef, masterSecretId);
+  }
+
+  public createCredential(
+    credOffer: CredOffer,
+    credReq: CredReq,
+    credValues: CredValues,
+    revRegId: RevRegId,
+    blobStorageReaderHandle: BlobStorageReaderHandle
+  ): Promise<[Cred, CredRevocId, RevocRegDelta]> {
+    if (!this.wh) {
+      throw Error('Wallet has not been initialized yet');
+    }
+    return this.indy.issuerCreateCredential(this.wh, credOffer, credReq, credValues, revRegId, blobStorageReaderHandle);
   }
 
   public async pack(payload: Record<string, unknown>, recipientKeys: Verkey[], senderVk: Verkey): Promise<JsonWebKey> {

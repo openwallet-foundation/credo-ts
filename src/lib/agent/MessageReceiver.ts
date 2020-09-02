@@ -139,7 +139,7 @@ class MessageReceiver {
     const MessageClass = this.dispatcher.getMessageClassForType(messageType);
 
     if (!MessageClass) {
-      throw new Error(`No message class for message type "${messageType}" found`);
+      throw new Error(`No handler for message type "${messageType}" found`);
     }
 
     // Cast the plain JSON object to specific instance of Message extended from AgentMessage
