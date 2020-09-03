@@ -7,9 +7,9 @@ export interface StorageService<T extends BaseRecord> {
 
   delete(record: T): Promise<void>;
 
-  find<T>(typeClass: { new (...args: unknown[]): T }, id: string, type: string): Promise<T>;
+  find(typeClass: { new (...args: unknown[]): T }, id: string, type: string): Promise<T>;
 
-  findAll<T>(typeClass: { new (...args: unknown[]): T }, type: string): Promise<T[]>;
+  findAll(typeClass: { new (...args: unknown[]): T }, type: string): Promise<T[]>;
 
-  findByQuery<T>(typeClass: { new (...args: unknown[]): T }, type: string, query: WalletQuery): Promise<T[]>;
+  findByQuery(typeClass: { new (...args: unknown[]): T }, type: string, query: WalletQuery): Promise<T[]>;
 }

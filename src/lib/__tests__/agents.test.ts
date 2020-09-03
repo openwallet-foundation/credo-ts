@@ -2,9 +2,9 @@
 // @ts-ignore
 import { poll } from 'await-poll';
 import { Subject } from 'rxjs';
-import { Agent, InboundTransporter, OutboundTransporter } from '..';
-import { toBeConnectedWith } from './helpers';
-import { OutboundPackage, WireMessage } from '../types';
+import { Agent } from '..';
+import { toBeConnectedWith, SubjectInboundTransporter, SubjectOutboundTransporter } from './helpers';
+import { WireMessage } from '../types';
 import indy from 'indy-sdk';
 
 jest.setTimeout(10000);
@@ -100,36 +100,3 @@ describe('agents', () => {
     expect(lastMessage.content).toBe(message);
   });
 });
-
-class SubjectInboundTransporter implements InboundTransporter {
-  private subject: Subject<WireMessage>;
-
-  public constructor(subject: Subject<WireMessage>) {
-    this.subject = subject;
-  }
-
-  public start(agent: Agent) {
-    this.subscribe(agent, this.subject);
-  }
-
-  private subscribe(agent: Agent, subject: Subject<WireMessage>) {
-    subject.subscribe({
-      next: (message: WireMessage) => agent.receiveMessage(message),
-    });
-  }
-}
-
-class SubjectOutboundTransporter implements OutboundTransporter {
-  private subject: Subject<WireMessage>;
-
-  public constructor(subject: Subject<WireMessage>) {
-    this.subject = subject;
-  }
-
-  public async sendMessage(outboundPackage: OutboundPackage) {
-    console.log('Sending message...');
-    const { payload } = outboundPackage;
-    console.log(payload);
-    this.subject.next(payload);
-  }
-}
