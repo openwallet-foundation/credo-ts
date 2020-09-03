@@ -22,6 +22,7 @@ const validFullVerkeys = [
   '9wMLhw9SSxtTUyosrndMbvWY4TtDbVvRnMtzG2NysniP',
   '6m2XT39vivJ7tLSxNPM8siMnhYCZcdMxbkTcJDSzAQTu',
   'CAgL85iEecPNQMmxQ1hgbqczwq7SAerQ8RbWTRtC7SoK',
+  'MqXmB7cTsTXqyxDPBbrgu5EPqw61kouK1qjMvnoPa96',
 ];
 
 const invalidFullVerkeys = [
@@ -64,6 +65,7 @@ const invalidDids = [
 
 const validDidIdentifiers = [
   '8kyt-fzzq-qpqq-ljsc-5l',
+  'fEMDp21GvaafC5hXLaLHf',
   '9noxi4nL4SiJAsFcMLp2U4',
   'QdAJFDpbVoHYrUpNAMe3An',
   'B9Y3e8PUKrM1ShumWU36xW',

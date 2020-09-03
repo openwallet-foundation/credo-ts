@@ -15,8 +15,8 @@
  *  https://github.com/hyperledger/aries-framework-dotnet/blob/f90eaf9db8548f6fc831abea917e906201755763/src/Hyperledger.Aries/Ledger/DefaultLedgerService.cs#L139-L147
  */
 
-export const FULL_VERKEY_REGEX = /^[1-9A-HJ-NP-Za-km-z]{44}$/;
-export const ABBREVIATED_VERKEY_REGEX = /^~[1-9A-HJ-NP-Za-km-z]{22}$/;
+export const FULL_VERKEY_REGEX = /^[1-9A-HJ-NP-Za-km-z]{43,44}$/;
+export const ABBREVIATED_VERKEY_REGEX = /^~[1-9A-HJ-NP-Za-km-z]{21,22}$/;
 export const VERKEY_REGEX = new RegExp(`${FULL_VERKEY_REGEX.source}|${ABBREVIATED_VERKEY_REGEX.source}`);
 export const DID_REGEX = /^did:([a-z]+):([a-zA-z\d]+)/;
 export const DID_IDENTIFIER_REGEX = /^[a-zA-z\d-]+$/;
