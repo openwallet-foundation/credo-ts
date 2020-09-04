@@ -20,8 +20,8 @@ export class TrustPingMessageHandler implements Handler {
       throw new Error(`Connection for verkey ${recipientVerkey} not found!`);
     }
 
-    if (connection.state != ConnectionState.COMPLETE) {
-      await this.connectionService.updateState(connection, ConnectionState.COMPLETE);
+    if (connection.state != ConnectionState.Complete) {
+      await this.connectionService.updateState(connection, ConnectionState.Complete);
     }
 
     return this.trustPingService.processPing(messageContext, connection);

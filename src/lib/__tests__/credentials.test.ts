@@ -10,20 +10,21 @@ import { CredentialRecord } from '../storage/CredentialRecord';
 import { SchemaTemplate, CredDefTemplate } from '../agent/LedgerService';
 import { CredentialPreview } from '../protocols/credentials/messages/CredentialOfferMessage';
 import { CredentialState } from '../protocols/credentials/CredentialState';
+import { InitConfig } from '../types';
 
-jest.setTimeout(15000);
-
-const faberConfig = {
+const faberConfig: InitConfig = {
   label: 'Faber',
   walletConfig: { id: 'credentials-test-faber' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
   publicDidSeed: process.env.TEST_AGENT_PUBLIC_DID_SEED,
+  autoAcceptConnections: true,
 };
 
-const aliceConfig = {
+const aliceConfig: InitConfig = {
   label: 'Alice',
   walletConfig: { id: 'credentials-test-alice' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
+  autoAcceptConnections: true,
 };
 
 const poolName = 'test-pool-credentials';
@@ -86,7 +87,7 @@ describe('credentials', () => {
     const [ledgerCredDefId] = await registerDefinition(faberAgent, definitionTemplate);
     credDefId = ledgerCredDefId;
 
-    const publidDid = 'Th7MpTaRZVRYnPiabds81Y';
+    const publidDid = faberAgent.getPublicDid()?.did ?? 'Th7MpTaRZVRYnPiabds81Y';
     await ensurePublicDidIsOnLedger(faberAgent, publidDid);
     await makeConnection(faberAgent, aliceAgent);
   });
@@ -175,13 +176,15 @@ async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: Did) {
 }
 
 async function makeConnection(agentA: Agent, agentB: Agent) {
-  const { connection: aliceConnectionAtAliceBob, invitation } = await agentA.connections.createConnection();
+  const aliceConnectionAtAliceBob = await agentA.connections.createConnection();
 
-  if (!invitation) {
+  if (!aliceConnectionAtAliceBob.invitation) {
     throw new Error('There is no invitation in newly created connection!');
   }
 
-  const bobConnectionAtBobAlice = await agentB.connections.acceptInvitation(invitation.toJSON());
+  const bobConnectionAtBobAlice = await agentB.connections.receiveInvitation(
+    aliceConnectionAtAliceBob.invitation.toJSON()
+  );
 
   const aliceConnectionRecordAtAliceBob = await agentA.connections.returnWhenIsConnected(aliceConnectionAtAliceBob.id);
   if (!aliceConnectionRecordAtAliceBob) {

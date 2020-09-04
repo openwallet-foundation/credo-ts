@@ -4,8 +4,6 @@ import indy from 'indy-sdk';
 import { DidInfo } from '../wallet/Wallet';
 import { DID_IDENTIFIER_REGEX, VERKEY_REGEX, isFullVerkey, isAbbreviatedVerkey } from '../utils/did';
 
-jest.setTimeout(15000);
-
 const faberConfig = {
   label: 'Faber',
   walletConfig: { id: 'faber' },

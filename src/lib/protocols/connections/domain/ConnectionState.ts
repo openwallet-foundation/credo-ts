@@ -1,7 +1,7 @@
 export enum ConnectionState {
-  INIT,
-  INVITED,
-  REQUESTED,
-  RESPONDED,
-  COMPLETE,
+  Init = 'INIT',
+  Invited = 'INVITED',
+  Requested = 'REQUESTED',
+  Responded = 'RESPONDED',
+  Complete = 'COMPLETE',
 }

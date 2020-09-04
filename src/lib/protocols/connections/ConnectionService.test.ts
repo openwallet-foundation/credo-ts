@@ -4,7 +4,7 @@ import { Wallet } from '../../wallet/Wallet';
 import { Repository } from '../../storage/Repository';
 import { StorageService } from '../../storage/StorageService';
 import { IndyStorageService } from '../../storage/IndyStorageService';
-import { ConnectionService, EventType } from './ConnectionService';
+import { ConnectionService } from './ConnectionService';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
 import { AgentConfig } from '../../agent/AgentConfig';
 import { ConnectionState } from './domain/ConnectionState';
@@ -39,7 +39,7 @@ describe('ConnectionService', () => {
     });
 
     it('returns connection record with invitation', async () => {
-      const { connection } = await connectionService.createConnectionWithInvitation();
+      const connection = await connectionService.createConnectionWithInvitation();
 
       expect(connection.invitation).toEqual(
         expect.objectContaining({
@@ -52,23 +52,9 @@ describe('ConnectionService', () => {
     });
 
     it(`returns connection record with state INVITED`, async () => {
-      const { connection } = await connectionService.createConnectionWithInvitation();
+      const connection = await connectionService.createConnectionWithInvitation();
 
-      expect(connection.state).toEqual(ConnectionState.INVITED);
-    });
-
-    it(`emits stateChange with INVITED`, async () => {
-      const eventListenerMock = jest.fn();
-      connectionService.on(EventType.StateChanged, eventListenerMock);
-
-      await connectionService.createConnectionWithInvitation();
-
-      expect(eventListenerMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          newState: 1,
-          verkey: expect.any(String),
-        })
-      );
+      expect(connection.state).toEqual(ConnectionState.Invited);
     });
   });
 });

@@ -14,7 +14,6 @@ import { Dispatcher } from './Dispatcher';
 import { MessageSender } from './MessageSender';
 import { InboundTransporter } from '../transport/InboundTransporter';
 import { OutboundTransporter } from '../transport/OutboundTransporter';
-import { InvitationHandler } from '../handlers/connections/InvitationHandler';
 import { ConnectionRequestHandler } from '../handlers/connections/ConnectionRequestHandler';
 import { ConnectionResponseHandler } from '../handlers/connections/ConnectionResponseHandler';
 import { AckMessageHandler } from '../handlers/acks/AckMessageHandler';
@@ -143,9 +142,8 @@ export class Agent {
   }
 
   protected registerHandlers() {
-    this.dispatcher.registerHandler(new InvitationHandler(this.connectionService, this.consumerRoutingService));
-    this.dispatcher.registerHandler(new ConnectionRequestHandler(this.connectionService));
-    this.dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService));
+    this.dispatcher.registerHandler(new ConnectionRequestHandler(this.connectionService, this.agentConfig));
+    this.dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService, this.agentConfig));
     this.dispatcher.registerHandler(new AckMessageHandler(this.connectionService));
     this.dispatcher.registerHandler(new BasicMessageHandler(this.basicMessageService));
     this.dispatcher.registerHandler(new KeylistUpdateHandler(this.providerRoutingService));
@@ -161,7 +159,7 @@ export class Agent {
       this.agentConfig,
       this.connectionService,
       this.consumerRoutingService,
-      this.messageReceiver
+      this.messageSender
     );
 
     this.routing = new RoutingModule(

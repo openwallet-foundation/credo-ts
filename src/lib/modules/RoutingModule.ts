@@ -42,12 +42,14 @@ export class RoutingModule {
       const { verkey, invitationUrl } = agencyConfiguration;
       const agencyInvitation = await decodeInvitationFromUrl(invitationUrl);
 
-      const connectionRequest = await this.connectionService.acceptInvitation(agencyInvitation);
+      const connection = await this.connectionService.processInvitation(agencyInvitation);
+      const connectionRequest = await this.connectionService.createRequest(connection.id);
       const connectionResponse = await this.messageSender.sendAndReceiveMessage(
         connectionRequest,
         ConnectionResponseMessage
       );
-      const ack = await this.connectionService.acceptResponse(connectionResponse);
+      await this.connectionService.processResponse(connectionResponse);
+      const ack = await this.connectionService.createAck(connection.id);
       await this.messageSender.sendMessage(ack);
 
       const provisioningProps = {
@@ -67,7 +69,7 @@ export class RoutingModule {
     }
     logger.log('agentConnectionAtAgency', agentConnectionAtAgency);
 
-    if (agentConnectionAtAgency.state !== ConnectionState.COMPLETE) {
+    if (agentConnectionAtAgency.state !== ConnectionState.Complete) {
       throw new Error('Connection has not been established.');
     }
 
