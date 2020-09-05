@@ -20,9 +20,11 @@ export class ConnectionResponseHandler implements Handler {
 
     await this.connectionService.processResponse(messageContext);
 
-    // TODO: should we only send ack message in case of autoAcceptConnection or always?
+    // TODO: should we only send ping message in case of autoAcceptConnection or always?
+    // In AATH we have a separate step to send the ping. So for now we'll only do it
+    // if auto accept is enable
     if (messageContext.connection?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      return await this.connectionService.createAck(messageContext.connection.id);
+      return await this.connectionService.createTrustPing(messageContext.connection.id);
     }
   }
 }

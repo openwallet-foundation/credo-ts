@@ -49,8 +49,8 @@ export class RoutingModule {
         ConnectionResponseMessage
       );
       await this.connectionService.processResponse(connectionResponse);
-      const ack = await this.connectionService.createAck(connection.id);
-      await this.messageSender.sendMessage(ack);
+      const trustPing = await this.connectionService.createTrustPing(connection.id);
+      await this.messageSender.sendMessage(trustPing);
 
       const provisioningProps = {
         agencyConnectionId: connectionRequest.connection.id,

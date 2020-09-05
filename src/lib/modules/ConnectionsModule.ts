@@ -113,7 +113,7 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
-    const outboundMessage = await this.connectionService.createAck(connectionId);
+    const outboundMessage = await this.connectionService.createTrustPing(connectionId);
     await this.messageSender.sendMessage(outboundMessage);
 
     return outboundMessage.connection;

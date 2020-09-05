@@ -19,6 +19,7 @@ import { Connection } from './domain/Connection';
 import { AckMessage, AckStatus } from './AckMessage';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 import { ConnectionRole } from './domain/ConnectionRole';
+import { TrustPingMessage } from '../trustping/TrustPingMessage';
 
 enum EventType {
   StateChanged = 'stateChanged',
@@ -198,17 +199,17 @@ class ConnectionService extends EventEmitter {
     await this.updateState(connectionRecord, ConnectionState.Responded);
   }
 
-  public async createAck(connectionId: string) {
+  public async createTrustPing(connectionId: string) {
     const connectionRecord = await this.connectionRepository.find(connectionId);
 
-    if (connectionRecord.state !== ConnectionState.Responded) {
-      throw new Error('Connection must be in Responded state to send ack message');
+    if (connectionRecord.state !== ConnectionState.Responded && connectionRecord.state !== ConnectionState.Complete) {
+      throw new Error('Connection must be in Responded or Complete state to send ack message');
     }
 
-    const response = new AckMessage({
-      status: AckStatus.OK,
-      threadId: connectionRecord.tags.threadId!,
-    });
+    // TODO: create ack message
+    // TODO: allow for options
+    // TODO: maybe this shouldn't be in the connection service?
+    const response = new TrustPingMessage();
 
     await this.updateState(connectionRecord, ConnectionState.Complete);
 
