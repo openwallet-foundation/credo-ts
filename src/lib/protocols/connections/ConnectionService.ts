@@ -16,7 +16,7 @@ import { ConnectionRequestMessage } from './ConnectionRequestMessage';
 import { ConnectionResponseMessage } from './ConnectionResponseMessage';
 import { signData, unpackAndVerifySignatureDecorator } from '../../decorators/signature/SignatureDecoratorUtils';
 import { Connection } from './domain/Connection';
-import { AckMessage, AckStatus } from './AckMessage';
+import { AckMessage } from './AckMessage';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 import { ConnectionRole } from './domain/ConnectionRole';
 import { TrustPingMessage } from '../trustping/TrustPingMessage';
@@ -206,9 +206,10 @@ class ConnectionService extends EventEmitter {
       throw new Error('Connection must be in Responded or Complete state to send ack message');
     }
 
-    // TODO: create ack message
-    // TODO: allow for options
-    // TODO: maybe this shouldn't be in the connection service?
+    // TODO:
+    //  - create ack message
+    //  - allow for options
+    //  - maybe this shouldn't be in the connection service?
     const response = new TrustPingMessage();
 
     await this.updateState(connectionRecord, ConnectionState.Complete);
@@ -223,10 +224,9 @@ class ConnectionService extends EventEmitter {
       throw new Error(`Connection for ${messageContext.recipientVerkey} not found!`);
     }
 
-    // TODO: we need a bit more general approach for
-    // changing the state to complete. Per the RFC the state will be
-    // complete when any message is received from the other party.
-    if (connection.state !== ConnectionState.Complete) {
+    // TODO: This is better addressed in a middleware of some kind because
+    // any message can transition the state to complete, not just an ack or trust ping
+    if (connection.state === ConnectionState.Responded && connection.role === ConnectionRole.Inviter) {
       await this.updateState(connection, ConnectionState.Complete);
     }
   }
