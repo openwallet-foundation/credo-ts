@@ -124,6 +124,14 @@ class ConnectionService extends EventEmitter {
     return createOutboundMessage(connectionRecord, connectionRequest, connectionRecord.invitation);
   }
 
+  /**
+   * Process a received connection request message. This will not accept the connection request
+   * or send a connection response message. It will only update the existing connection record
+   * with all the new information from the connection request message. Use {@link ConnectionService#createResponse}
+   * after calling this function to create a connection respone.
+   *
+   * @param messageContext the message context containing a connetion request message
+   */
   public async processRequest(messageContext: InboundMessageContext<ConnectionRequestMessage>): Promise<void> {
     const { message, connection: connectionRecord, recipientVerkey } = messageContext;
 
@@ -152,6 +160,12 @@ class ConnectionService extends EventEmitter {
     await this.updateState(connectionRecord, ConnectionState.Requested);
   }
 
+  /**
+   * Create a connection response message for the connection with the specified connection id.
+   *
+   * @param connectionId the id of the connection for which to create a connection response
+   * @returns outbound message contaning connection response
+   */
   public async createResponse(connectionId: string): Promise<OutboundMessage<ConnectionResponseMessage>> {
     const connectionRecord = await this.connectionRepository.find(connectionId);
 
@@ -172,6 +186,14 @@ class ConnectionService extends EventEmitter {
     return createOutboundMessage(connectionRecord, connectionResponse);
   }
 
+  /**
+   * Process a received connection response message. This will not accept the connection request
+   * or send a connection acknowledgement message. It will only update the existing connection record
+   * with all the new information from the connection response message. Use {@link ConnectionService#createTrustPing}
+   * after calling this function to create a trust ping message.
+   *
+   * @param messageContext the message context containing a connetion response message
+   */
   public async processResponse(messageContext: InboundMessageContext<ConnectionResponseMessage>): Promise<void> {
     const { message, connection: connectionRecord, recipientVerkey } = messageContext;
 
@@ -199,6 +221,12 @@ class ConnectionService extends EventEmitter {
     await this.updateState(connectionRecord, ConnectionState.Responded);
   }
 
+  /**
+   * Create a trust ping message for the connection with the specified connection id.
+   *
+   * @param connectionId the id of the connection for which to create a trust ping message
+   * @returns outbound message contaning trust ping message
+   */
   public async createTrustPing(connectionId: string) {
     const connectionRecord = await this.connectionRepository.find(connectionId);
 
@@ -217,6 +245,12 @@ class ConnectionService extends EventEmitter {
     return createOutboundMessage(connectionRecord, response);
   }
 
+  /**
+   * Process a received ack message. This will update the state of the connection
+   * to Completed if this is not already the case.
+   *
+   * @param messageContext the message context containing an ack message
+   */
   public async processAck(messageContext: InboundMessageContext<AckMessage>) {
     const connection = messageContext.connection;
 

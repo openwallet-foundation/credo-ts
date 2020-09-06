@@ -77,7 +77,7 @@ export class ConnectionsModule {
   }
 
   /**
-   * Accept a connection invitation for the connection with the specified connection id.
+   * Accept a connection invitation (by sending a connection request message) for the connection with the specified connection id.
    * This is not needed when auto accepting of connections is enabled.
    *
    * @param connectionId the id of the connection for which to accept the invitation
@@ -98,7 +98,10 @@ export class ConnectionsModule {
   }
 
   /**
-   * @param connectionId the id of the connection for which to accept the response
+   * Accept a connection request (by sending a connection response message) for the connection with the specified connection id.
+   * This is not needed when auto accepting of connection is enabled.
+   *
+   * @param connectionId the id of the connection for which to accept the request
    * @returns connection record
    */
   public async acceptRequest(connectionId: string): Promise<ConnectionRecord> {
@@ -109,6 +112,9 @@ export class ConnectionsModule {
   }
 
   /**
+   * Accept a connection response (by sending a trust ping message) for the connection with the specified connection id.
+   * This is not needed when auto accepting of connection is enabled.
+   *
    * @param connectionId the id of the connection for which to accept the response
    * @returns connection record
    */
