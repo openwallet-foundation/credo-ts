@@ -3,6 +3,7 @@ import { Equals, IsString, ValidateIf, IsArray } from 'class-validator';
 import { AgentMessage } from '../../agent/AgentMessage';
 import { MessageType } from './messages';
 
+// TODO: improve typing of `DIDInvitationData` and `InlineInvitationData` so properties can't be mixed
 export interface InlineInvitationData {
   recipientKeys: string[];
   serviceEndpoint: string;
@@ -36,6 +37,12 @@ export class ConnectionInvitationMessage extends AgentMessage {
         this.recipientKeys = options.recipientKeys;
         this.serviceEndpoint = options.serviceEndpoint;
         this.routingKeys = options.routingKeys;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      if (options.did && (options.recipientKeys || options.routingKeys || options.serviceEndpoint)) {
+        throw new Error('either the did or the recipientKeys/serviceEndpoint/routingKeys must be set, but not both');
       }
     }
   }

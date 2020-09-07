@@ -1,9 +1,9 @@
 import { BaseRecord, RecordType, Tags } from './BaseRecord';
 import { DidDoc } from '../protocols/connections/domain/DidDoc';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
-import { Connection } from '../protocols/connections/domain/Connection';
 import { ConnectionInvitationMessage } from '../protocols/connections/ConnectionInvitationMessage';
 import { ConnectionRole } from '../protocols/connections/domain/ConnectionRole';
+import { MessageTransformer } from '../agent/MessageTransformer';
 
 interface ConnectionProps {
   id: string;
@@ -37,7 +37,7 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
   public verkey: Verkey;
   public theirDid?: Did;
   public theirDidDoc?: DidDoc;
-  public invitation?: ConnectionInvitationMessage;
+  private _invitation?: Record<string, unknown>;
   public state: ConnectionState;
   public role: ConnectionRole;
   public endpoint?: string;
@@ -55,13 +55,31 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
     this.verkey = props.verkey;
     this.theirDid = props.theirDid;
     this.theirDidDoc = props.theirDidDoc;
-    this.invitation = props.invitation;
     this.state = props.state;
     this.role = props.role;
     this.endpoint = props.endpoint;
     this.alias = props.alias;
     this.autoAcceptConnection = props.autoAcceptConnection;
     this.tags = props.tags;
+    this.invitation = props.invitation;
+
+    // We need a better approach for this. After retrieving the connection message from
+    // persistence it is plain json, so we need to transform it to a message class
+    // if transform all record classes with class transformer this wouldn't be needed anymore
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const _invitation = props._invitation;
+    if (_invitation) {
+      this._invitation = _invitation;
+    }
+  }
+
+  public get invitation() {
+    if (this._invitation) return MessageTransformer.toMessageInstance(this._invitation, ConnectionInvitationMessage);
+  }
+
+  public set invitation(invitation: ConnectionInvitationMessage | undefined) {
+    if (invitation) this._invitation = MessageTransformer.toJSON(invitation);
   }
 
   public get myKey() {

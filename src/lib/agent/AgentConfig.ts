@@ -33,8 +33,7 @@ export class AgentConfig {
   }
 
   public getEndpoint() {
-    const connection = this.inboundConnection && this.inboundConnection.connection;
-    const endpoint = connection && connection.theirDidDoc && connection.theirDidDoc.service[0].serviceEndpoint;
+    const endpoint = this.inboundConnection?.connection?.theirDidDoc?.service[0].serviceEndpoint;
     return endpoint ?? `${this.initConfig.url}:${this.initConfig.port}/msg`;
   }
 

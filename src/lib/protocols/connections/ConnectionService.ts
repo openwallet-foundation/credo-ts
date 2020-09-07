@@ -91,8 +91,7 @@ class ConnectionService extends EventEmitter {
       autoAcceptConnection: config?.autoAcceptConnection,
       invitation,
       tags: {
-        // TODO: make this cleaner
-        invitationKey: invitation.recipientKeys?.find(() => true),
+        invitationKey: invitation.recipientKeys && invitation.recipientKeys[0],
       },
     });
 
@@ -108,6 +107,7 @@ class ConnectionService extends EventEmitter {
   public async createRequest(connectionId: string): Promise<OutboundMessage<ConnectionRequestMessage>> {
     const connectionRecord = await this.connectionRepository.find(connectionId);
 
+    // TODO: should we also check for role? In theory we can only send request if we are the invitee
     if (connectionRecord.state !== ConnectionState.Invited) {
       throw new Error('Connection must be in Invited state to send connection request message');
     }
@@ -168,6 +168,11 @@ class ConnectionService extends EventEmitter {
    */
   public async createResponse(connectionId: string): Promise<OutboundMessage<ConnectionResponseMessage>> {
     const connectionRecord = await this.connectionRepository.find(connectionId);
+
+    // TODO: should we also check for role? In theory we can only send response if we are the inviter
+    if (connectionRecord.state !== ConnectionState.Requested) {
+      throw new Error('Connection must be in Requested state to send connection response message');
+    }
 
     const connection = new Connection({
       did: connectionRecord.did,
