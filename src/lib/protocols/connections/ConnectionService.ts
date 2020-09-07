@@ -132,7 +132,9 @@ class ConnectionService extends EventEmitter {
    *
    * @param messageContext the message context containing a connetion request message
    */
-  public async processRequest(messageContext: InboundMessageContext<ConnectionRequestMessage>): Promise<void> {
+  public async processRequest(
+    messageContext: InboundMessageContext<ConnectionRequestMessage>
+  ): Promise<ConnectionRecord> {
     const { message, connection: connectionRecord, recipientVerkey } = messageContext;
 
     if (!connectionRecord) {
@@ -148,7 +150,7 @@ class ConnectionService extends EventEmitter {
     connectionRecord.theirDidDoc = message.connection.didDoc;
 
     if (!connectionRecord.theirKey) {
-      throw new Error(`Connection with verkey ${connectionRecord.verkey} has no recipient keys.`);
+      throw new Error(`Connection with id ${connectionRecord.id} has no recipient keys.`);
     }
 
     connectionRecord.tags = {
@@ -158,6 +160,8 @@ class ConnectionService extends EventEmitter {
     };
 
     await this.updateState(connectionRecord, ConnectionState.Requested);
+
+    return connectionRecord;
   }
 
   /**
@@ -199,7 +203,9 @@ class ConnectionService extends EventEmitter {
    *
    * @param messageContext the message context containing a connetion response message
    */
-  public async processResponse(messageContext: InboundMessageContext<ConnectionResponseMessage>): Promise<void> {
+  public async processResponse(
+    messageContext: InboundMessageContext<ConnectionResponseMessage>
+  ): Promise<ConnectionRecord> {
     const { message, connection: connectionRecord, recipientVerkey } = messageContext;
 
     if (!connectionRecord) {
@@ -207,14 +213,23 @@ class ConnectionService extends EventEmitter {
     }
 
     const connectionJson = await unpackAndVerifySignatureDecorator(message.connectionSig, this.wallet);
+
     const connection = plainToClass(Connection, connectionJson);
     await validateOrReject(connection);
+
+    // Per the Connection RFC we must check if the key used to sign the connection~sig is the same key
+    // as the recipient key(s) in the connection invitation message
+    const signerVerkey = message.connectionSig.signer;
+    const invitationKey = connectionRecord.tags.invitationKey;
+    if (signerVerkey !== invitationKey) {
+      throw new Error('Connection in connection response is not signed with same key as recipient key in invitation');
+    }
 
     connectionRecord.theirDid = connection.did;
     connectionRecord.theirDidDoc = connection.didDoc;
 
     if (!connectionRecord.theirKey) {
-      throw new Error(`Connection with verkey ${connectionRecord.verkey} has no recipient keys.`);
+      throw new Error(`Connection with id ${connectionRecord.id} has no recipient keys.`);
     }
 
     connectionRecord.tags = {
@@ -224,6 +239,7 @@ class ConnectionService extends EventEmitter {
     };
 
     await this.updateState(connectionRecord, ConnectionState.Responded);
+    return connectionRecord;
   }
 
   /**
@@ -256,11 +272,11 @@ class ConnectionService extends EventEmitter {
    *
    * @param messageContext the message context containing an ack message
    */
-  public async processAck(messageContext: InboundMessageContext<AckMessage>) {
+  public async processAck(messageContext: InboundMessageContext<AckMessage>): Promise<ConnectionRecord> {
     const connection = messageContext.connection;
 
     if (!connection) {
-      throw new Error(`Connection for ${messageContext.recipientVerkey} not found!`);
+      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`);
     }
 
     // TODO: This is better addressed in a middleware of some kind because
@@ -268,6 +284,8 @@ class ConnectionService extends EventEmitter {
     if (connection.state === ConnectionState.Responded && connection.role === ConnectionRole.Inviter) {
       await this.updateState(connection, ConnectionState.Complete);
     }
+
+    return connection;
   }
 
   public async updateState(connectionRecord: ConnectionRecord, newState: ConnectionState) {
@@ -285,7 +303,7 @@ class ConnectionService extends EventEmitter {
 
   private async createConnection(options: {
     role: ConnectionRole;
-    state?: ConnectionState;
+    state: ConnectionState;
     invitation?: ConnectionInvitationMessage;
     autoAcceptConnection?: boolean;
     tags?: ConnectionTags;
@@ -309,7 +327,7 @@ class ConnectionService extends EventEmitter {
       did,
       didDoc,
       verkey,
-      state: options.state ?? ConnectionState.Init,
+      state: options.state,
       role: options.role,
       tags: {
         verkey,
@@ -349,7 +367,7 @@ class ConnectionService extends EventEmitter {
       return null;
     }
 
-    return connectionRecords.length > 0 ? connectionRecords[0] : null;
+    return connectionRecords[0];
   }
 
   public async findByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
