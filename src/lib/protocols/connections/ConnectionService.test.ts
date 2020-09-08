@@ -616,6 +616,29 @@ describe('ConnectionService', () => {
 
       expect(updatedConnection.state).toBe(ConnectionState.Complete);
     });
+
+    it('does not update the state when te state is not Responded or the role is not Inviter', async () => {
+      expect.assertions(1);
+
+      const connection = getMockConnection({
+        state: ConnectionState.Responded,
+        role: ConnectionRole.Invitee,
+      });
+
+      const ack = new AckMessage({
+        status: AckStatus.OK,
+        threadId: 'thread-id',
+      });
+
+      const messageContext = new InboundMessageContext(ack, {
+        recipientVerkey: 'test-verkey',
+        connection,
+      });
+
+      const updatedConnection = await connectionService.processAck(messageContext);
+
+      expect(updatedConnection.state).toBe(ConnectionState.Responded);
+    });
   });
 
   describe('getConnections', () => {
