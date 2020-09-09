@@ -131,6 +131,7 @@ class ConnectionService extends EventEmitter {
    * after calling this function to create a connection respone.
    *
    * @param messageContext the message context containing a connetion request message
+   * @returns updated connection record
    */
   public async processRequest(
     messageContext: InboundMessageContext<ConnectionRequestMessage>
@@ -202,6 +203,7 @@ class ConnectionService extends EventEmitter {
    * after calling this function to create a trust ping message.
    *
    * @param messageContext the message context containing a connetion response message
+   * @returns updated connection record
    */
   public async processResponse(
     messageContext: InboundMessageContext<ConnectionResponseMessage>
@@ -271,6 +273,7 @@ class ConnectionService extends EventEmitter {
    * to Completed if this is not already the case.
    *
    * @param messageContext the message context containing an ack message
+   * @returns updated connection record
    */
   public async processAck(messageContext: InboundMessageContext<AckMessage>): Promise<ConnectionRecord> {
     const connection = messageContext.connection;

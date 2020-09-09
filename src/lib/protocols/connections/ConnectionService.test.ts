@@ -594,7 +594,7 @@ describe('ConnectionService', () => {
       );
     });
 
-    it('updates the state to Completed when te state is Responded and role is Inviter', async () => {
+    it('updates the state to Completed when the state is Responded and role is Inviter', async () => {
       expect.assertions(1);
 
       const connection = getMockConnection({
@@ -617,7 +617,7 @@ describe('ConnectionService', () => {
       expect(updatedConnection.state).toBe(ConnectionState.Complete);
     });
 
-    it('does not update the state when te state is not Responded or the role is not Inviter', async () => {
+    it('does not update the state when the state is not Responded or the role is not Inviter', async () => {
       expect.assertions(1);
 
       const connection = getMockConnection({
@@ -735,7 +735,7 @@ describe('ConnectionService', () => {
       expect(mockFindByQuery).toBeCalledWith({ verkey });
     });
 
-    it('throw an error when the connection repository returns more than one connection', async () => {
+    it('throws an error when the connection repository returns more than one connection', async () => {
       expect.assertions(2);
 
       const verkey = 'test-verkey';
@@ -796,7 +796,7 @@ describe('ConnectionService', () => {
       expect(mockFindByQuery).toBeCalledWith({ theirKey });
     });
 
-    it('throw an error when the connection repository returns more than one connection', async () => {
+    it('throws an error when the connection repository returns more than one connection', async () => {
       expect.assertions(2);
 
       const theirKey = 'test-theirVerkey';
