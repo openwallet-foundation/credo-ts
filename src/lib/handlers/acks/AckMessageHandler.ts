@@ -11,6 +11,6 @@ export class AckMessageHandler implements Handler {
   }
 
   public async handle(inboundMessage: HandlerInboundMessage<AckMessageHandler>) {
-    await this.connectionService.acceptAck(inboundMessage);
+    await this.connectionService.processAck(inboundMessage);
   }
 }

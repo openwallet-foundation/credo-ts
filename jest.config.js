@@ -1,3 +1,6 @@
+// TODO: maybe we use runner groups to make it
+// easier to run specific groups of tests
+// @see https://www.npmjs.com/package/jest-runner-groups
 module.exports = {
   preset: 'ts-jest',
   roots: ['<rootDir>/src'],
@@ -8,4 +11,5 @@ module.exports = {
   transform: {
     '^.+\\.(ts|tsx)?$': 'ts-jest',
   },
+  testTimeout: 30000,
 };

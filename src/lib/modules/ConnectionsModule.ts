@@ -1,69 +1,148 @@
-// eslint-disable-next-line
-// @ts-ignore
-import { poll } from 'await-poll';
 import { EventEmitter } from 'events';
+
 import { AgentConfig } from '../agent/AgentConfig';
-import { ConnectionService } from '../protocols/connections/ConnectionService';
+import { ConnectionService, ConnectionStateChangedEvent } from '../protocols/connections/ConnectionService';
 import { ConsumerRoutingService } from '../protocols/routing/ConsumerRoutingService';
-import { MessageReceiver } from '../agent/MessageReceiver';
 import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
+import { ConnectionInvitationMessage } from '../protocols/connections/ConnectionInvitationMessage';
+import { MessageSender } from '../agent/MessageSender';
+import { MessageTransformer } from '../agent/MessageTransformer';
+import { ConnectionEventType } from '..';
 
 export class ConnectionsModule {
   private agentConfig: AgentConfig;
   private connectionService: ConnectionService;
   private consumerRoutingService: ConsumerRoutingService;
-  private messageReceiver: MessageReceiver;
+  private messageSender: MessageSender;
 
   public constructor(
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
     consumerRoutingService: ConsumerRoutingService,
-    messageReceiver: MessageReceiver
+    messageSender: MessageSender
   ) {
     this.agentConfig = agentConfig;
     this.connectionService = connectionService;
     this.consumerRoutingService = consumerRoutingService;
-    this.messageReceiver = messageReceiver;
+    this.messageSender = messageSender;
   }
 
-  public async createConnection() {
-    const { invitation, connection } = await this.connectionService.createConnectionWithInvitation();
+  public async createConnection(config?: { autoAcceptConnection?: boolean }) {
+    const connection = await this.connectionService.createConnectionWithInvitation({
+      autoAcceptConnection: config?.autoAcceptConnection,
+    });
 
-    if (!invitation) {
+    if (!connection.invitation) {
       throw new Error('Connection has no invitation assigned.');
     }
 
-    // If agent has inbound connection, which means it's using agency, we need to create a route for newly created
+    // If agent has inbound connection, which means it's using a mediator, we need to create a route for newly created
     // connection verkey at agency.
     if (this.agentConfig.inboundConnection) {
       this.consumerRoutingService.createRoute(connection.verkey);
     }
 
-    return { invitation, connection };
+    return connection;
   }
 
-  public async acceptInvitation(invitation: unknown) {
-    const connection = (await this.messageReceiver.receiveMessage(invitation))?.connection;
-
-    if (!connection) {
-      throw new Error('No connection returned from receiveMessage');
+  /**
+   * Receive connection invitation and create connection. If auto accepting is enabled
+   * via either the config passed in the function or the global agent config, a connection
+   * request message will be send.
+   *
+   * @param invitationJson json object containing the invitation to receive
+   * @param config config for handling of invitation
+   * @returns new connection record
+   */
+  public async receiveInvitation(
+    invitationJson: Record<string, unknown>,
+    config?: {
+      autoAcceptConnection?: boolean;
     }
+  ): Promise<ConnectionRecord> {
+    const invitationMessage = MessageTransformer.toMessageInstance(invitationJson, ConnectionInvitationMessage);
 
-    if (!connection.verkey) {
-      throw new Error('No verkey in connection returned from receiveMessage');
+    let connection = await this.connectionService.processInvitation(invitationMessage, {
+      autoAcceptConnection: config?.autoAcceptConnection,
+    });
+
+    // if auto accept is enabled (either on the record or the global agent config)
+    // we directly send a connection request
+    if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
+      connection = await this.acceptInvitation(connection.id);
     }
 
     return connection;
   }
 
+  /**
+   * Accept a connection invitation (by sending a connection request message) for the connection with the specified connection id.
+   * This is not needed when auto accepting of connections is enabled.
+   *
+   * @param connectionId the id of the connection for which to accept the invitation
+   * @returns connection record
+   */
+  public async acceptInvitation(connectionId: string): Promise<ConnectionRecord> {
+    const outboundMessage = await this.connectionService.createRequest(connectionId);
+
+    // If agent has inbound connection, which means it's using a mediator,
+    // we need to create a route for newly created connection verkey at mediator.
+    if (this.agentConfig.inboundConnection) {
+      await this.consumerRoutingService.createRoute(outboundMessage.connection.verkey);
+    }
+
+    await this.messageSender.sendMessage(outboundMessage);
+
+    return outboundMessage.connection;
+  }
+
+  /**
+   * Accept a connection request (by sending a connection response message) for the connection with the specified connection id.
+   * This is not needed when auto accepting of connection is enabled.
+   *
+   * @param connectionId the id of the connection for which to accept the request
+   * @returns connection record
+   */
+  public async acceptRequest(connectionId: string): Promise<ConnectionRecord> {
+    const outboundMessage = await this.connectionService.createResponse(connectionId);
+    await this.messageSender.sendMessage(outboundMessage);
+
+    return outboundMessage.connection;
+  }
+
+  /**
+   * Accept a connection response (by sending a trust ping message) for the connection with the specified connection id.
+   * This is not needed when auto accepting of connection is enabled.
+   *
+   * @param connectionId the id of the connection for which to accept the response
+   * @returns connection record
+   */
+  public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
+    const outboundMessage = await this.connectionService.createTrustPing(connectionId);
+    await this.messageSender.sendMessage(outboundMessage);
+
+    return outboundMessage.connection;
+  }
+
   public async returnWhenIsConnected(connectionId: string): Promise<ConnectionRecord> {
-    const connectionRecord = await poll(
-      () => this.find(connectionId),
-      (c: ConnectionRecord) => c.state !== ConnectionState.COMPLETE,
-      100
-    );
-    return connectionRecord;
+    const isConnected = (connection: ConnectionRecord) => {
+      return connection.id === connectionId && connection.state === ConnectionState.Complete;
+    };
+
+    const connection = await this.connectionService.find(connectionId);
+    if (connection && isConnected(connection)) return connection;
+
+    return new Promise(resolve => {
+      const listener = ({ connection }: ConnectionStateChangedEvent) => {
+        if (isConnected(connection)) {
+          this.events().off(ConnectionEventType.StateChanged, listener);
+          resolve(connection);
+        }
+      };
+
+      this.events().on(ConnectionEventType.StateChanged, listener);
+    });
   }
 
   public async getAll() {

@@ -28,6 +28,7 @@ export async function unpackAndVerifySignatureDecorator(
     throw new Error('Signature is not valid!');
   }
 
+  // TODO: return Connection instance instead of raw json
   return JSON.parse(signedData.slice(8).toString('utf-8'));
 }
 

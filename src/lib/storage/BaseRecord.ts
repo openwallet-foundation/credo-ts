@@ -6,11 +6,13 @@ export enum RecordType {
   CredentialRecord = 'CredentialRecord',
 }
 
+export type Tags = Record<string, string | undefined>;
+
 export abstract class BaseRecord {
   public createdAt: number;
   public updatedAt?: number;
   public id: string;
-  public tags: { [keys: string]: string };
+  public tags: Tags;
 
   // Required because Javascript doesn't allow accessing static types
   // like instance.static_member

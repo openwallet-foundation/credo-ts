@@ -28,6 +28,6 @@ export class Connection {
   // for now the DidDoc class is however correctly cast from class instance to json
   // @Type(() => DidDoc)
   // This way we also don't need the custom transformer
-  @Transform((value: DidDoc) => (value.toJSON ? value.toJSON() : value), { toPlainOnly: true })
+  @Transform((value: DidDoc | undefined) => (value?.toJSON ? value.toJSON() : value), { toPlainOnly: true })
   public didDoc?: DidDoc;
 }

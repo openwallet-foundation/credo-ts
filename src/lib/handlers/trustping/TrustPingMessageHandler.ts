@@ -3,6 +3,7 @@ import { TrustPingService } from '../../protocols/trustping/TrustPingService';
 import { ConnectionService } from '../../protocols/connections/ConnectionService';
 import { ConnectionState } from '../../protocols/connections/domain/ConnectionState';
 import { TrustPingMessage } from '../../protocols/trustping/TrustPingMessage';
+import { ConnectionRole } from '../../protocols/connections/domain/ConnectionRole';
 
 export class TrustPingMessageHandler implements Handler {
   private trustPingService: TrustPingService;
@@ -20,8 +21,10 @@ export class TrustPingMessageHandler implements Handler {
       throw new Error(`Connection for verkey ${recipientVerkey} not found!`);
     }
 
-    if (connection.state != ConnectionState.COMPLETE) {
-      await this.connectionService.updateState(connection, ConnectionState.COMPLETE);
+    // TODO: This is better addressed in a middleware of some kind because
+    // any message can transition the state to complete, not just an ack or trust ping
+    if (connection.state === ConnectionState.Responded && connection.role === ConnectionRole.Inviter) {
+      await this.connectionService.updateState(connection, ConnectionState.Complete);
     }
 
     return this.trustPingService.processPing(messageContext, connection);

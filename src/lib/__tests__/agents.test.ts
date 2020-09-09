@@ -4,23 +4,23 @@ import { poll } from 'await-poll';
 import { Subject } from 'rxjs';
 import { Agent } from '..';
 import { toBeConnectedWith, SubjectInboundTransporter, SubjectOutboundTransporter } from './helpers';
-import { WireMessage } from '../types';
+import { InitConfig, WireMessage } from '../types';
 import indy from 'indy-sdk';
-
-jest.setTimeout(10000);
 
 expect.extend({ toBeConnectedWith });
 
-const aliceConfig = {
+const aliceConfig: InitConfig = {
   label: 'Alice',
   walletConfig: { id: 'alice' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
+  autoAcceptConnections: true,
 };
 
-const bobConfig = {
+const bobConfig: InitConfig = {
   label: 'Bob',
   walletConfig: { id: 'bob' },
   walletCredentials: { key: '00000000000000000000000000000Test02' },
+  autoAcceptConnections: true,
 };
 
 describe('agents', () => {
@@ -47,13 +47,15 @@ describe('agents', () => {
     bobAgent = new Agent(bobConfig, bobAgentInbound, bobAgentOutbound, indy);
     await bobAgent.init();
 
-    const { connection: aliceConnectionAtAliceBob, invitation } = await aliceAgent.connections.createConnection();
+    const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection();
 
-    if (!invitation) {
+    if (!aliceConnectionAtAliceBob.invitation) {
       throw new Error('There is no invitation in newly created connection!');
     }
 
-    const bobConnectionAtBobAlice = await bobAgent.connections.acceptInvitation(invitation.toJSON());
+    const bobConnectionAtBobAlice = await bobAgent.connections.receiveInvitation(
+      aliceConnectionAtAliceBob.invitation.toJSON()
+    );
 
     const aliceConnectionRecordAtAliceBob = await aliceAgent.connections.returnWhenIsConnected(
       aliceConnectionAtAliceBob.id

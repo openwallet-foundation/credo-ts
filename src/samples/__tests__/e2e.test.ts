@@ -2,27 +2,27 @@
 // @ts-ignore
 import { poll } from 'await-poll';
 import { Agent, InboundTransporter, OutboundTransporter } from '../../lib';
-import { WireMessage, OutboundPackage } from '../../lib/types';
+import { WireMessage, OutboundPackage, InitConfig } from '../../lib/types';
 import { get, post } from '../http';
 import { toBeConnectedWith } from '../../lib/__tests__/helpers';
 import indy from 'indy-sdk';
 
-jest.setTimeout(15000);
-
 expect.extend({ toBeConnectedWith });
 
-const aliceConfig = {
+const aliceConfig: InitConfig = {
   label: 'e2e Alice',
   agencyUrl: 'http://localhost:3001',
   walletConfig: { id: 'e2e-alice' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
+  autoAcceptConnections: true,
 };
 
-const bobConfig = {
+const bobConfig: InitConfig = {
   label: 'e2e Bob',
   agencyUrl: 'http://localhost:3002',
   walletConfig: { id: 'e2e-bob' },
   walletCredentials: { key: '00000000000000000000000000000Test02' },
+  autoAcceptConnections: true,
 };
 
 describe('with agency', () => {
@@ -79,13 +79,15 @@ describe('with agency', () => {
   });
 
   test('Alice and Bob make a connection via agency', async () => {
-    const { connection: aliceConnectionAtAliceBob, invitation } = await aliceAgent.connections.createConnection();
+    const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection();
 
-    if (!invitation) {
+    if (!aliceConnectionAtAliceBob.invitation) {
       throw new Error('There is no invitation in newly created connection!');
     }
 
-    const bobConnectionAtBobAlice = await bobAgent.connections.acceptInvitation(invitation.toJSON());
+    const bobConnectionAtBobAlice = await bobAgent.connections.receiveInvitation(
+      aliceConnectionAtAliceBob.invitation.toJSON()
+    );
 
     const aliceConnectionRecordAtAliceBob = await aliceAgent.connections.returnWhenIsConnected(
       aliceConnectionAtAliceBob.id

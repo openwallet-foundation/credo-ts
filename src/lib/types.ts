@@ -14,6 +14,7 @@ export interface InitConfig {
   agencyUrl?: string;
   walletConfig: WalletConfig;
   walletCredentials: WalletCredentials;
+  autoAcceptConnections?: boolean;
 }
 
 export interface UnpackedMessage {
