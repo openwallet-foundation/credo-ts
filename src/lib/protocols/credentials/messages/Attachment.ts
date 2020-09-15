@@ -1,7 +1,15 @@
-import { Expose } from 'class-transformer';
+import { classToPlain, Expose } from 'class-transformer';
+
+interface AttachmentOptions {
+  id: string;
+  mimeType: string;
+  data: {
+    base64: string;
+  };
+}
 
 export class Attachment {
-  public constructor(options: Attachment) {
+  public constructor(options: AttachmentOptions) {
     if (options) {
       this.id = options.id;
       this.mimeType = options.mimeType;
@@ -19,4 +27,8 @@ export class Attachment {
   public data!: {
     base64: string;
   };
+
+  public toJSON(): Record<string, unknown> {
+    return classToPlain(this);
+  }
 }

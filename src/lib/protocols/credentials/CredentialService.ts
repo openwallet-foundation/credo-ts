@@ -53,10 +53,6 @@ export class CredentialService extends EventEmitter {
     });
     await this.credentialRepository.save(credential);
 
-    // TODO remove this when you have mock credential based on output
-    const savedCredential = await this.credentialRepository.find(credential.id);
-    logger.log('savedCredential', JSON.parse(JSON.stringify(savedCredential)));
-
     this.emit(EventType.StateChanged, { credentialId: credential.id, newState: credential.state });
     return credentialOffer;
   }
@@ -113,7 +109,7 @@ export class CredentialService extends EventEmitter {
     logger.log('credReq', credReq);
 
     // TODO const credential = this.credentialRepository.findByThreadId();
-    const [credential] = await this.credentialRepository.findAll();
+    const [credential] = await this.credentialRepository.findByQuery({ threadId: 'TODO' });
     logger.log('credential', credential);
 
     const offer = credential.offer;

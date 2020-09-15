@@ -1,16 +1,55 @@
 /* eslint-disable no-console */
 import { Wallet } from '../../../wallet/Wallet';
 import { Repository } from '../../../storage/Repository';
-import { StorageService } from '../../../storage/StorageService';
 import { CredentialService, EventType } from '../CredentialService';
 import { CredentialRecord } from '../../../storage/CredentialRecord';
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
 import { CredentialState } from '../CredentialState';
 import { StubWallet } from './StubWallet';
-import { StubStorageService } from './StubStorageService';
-import { CredentialPreview, CredentialPreviewAttribute } from '../messages/CredentialOfferMessage';
+import {
+  CredentialOfferMessage,
+  CredentialPreview,
+  CredentialPreviewAttribute,
+} from '../messages/CredentialOfferMessage';
 import { ConnectionRecord } from '../../../storage/ConnectionRecord';
 import { JsonEncoder } from '../JsonEncoder';
+import { Attachment } from '../messages/Attachment';
+import { CredentialRequestMessage } from '../messages/CredentialRequestMessage';
+
+jest.mock('./../../../storage/Repository');
+
+const CredentialRepository = <jest.Mock<Repository<CredentialRecord>>>(<unknown>Repository);
+
+const mockCredentialRecord = {
+  type: 'CredentialRecord',
+  id: '6587f70a-4724-46cd-a101-b7ae3fe8668b',
+  createdAt: 1600200859673,
+  tags: {},
+  offer: {
+    '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential',
+    '@id': '8de59ed2-0140-4e65-9c15-25eea23af4a4',
+    comment: 'some credential offer comment',
+    credential_preview: {
+      type: 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/credential-preview',
+      attributes: [
+        { name: 'name', 'mime-type': 'text/plain', value: 'John' },
+        { name: 'age', 'mime-type': 'text/plain', value: '99' },
+      ],
+    },
+    'offers~attach': [
+      {
+        '@id': '6526420d-8d1c-4f70-89de-54c9f3fa9f5c',
+        'mime-type': 'application/json',
+        data: {
+          base64:
+            'eyJzY2hlbWFfaWQiOiJhYWEiLCJjcmVkX2RlZl9pZCI6IlRoN01wVGFSWlZSWW5QaWFiZHM4MVk6MzpDTDoxNzpUQUciLCJub25jZSI6Im5vbmNlIiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7fX0=',
+        },
+      },
+    ],
+  },
+  state: 'OFFER_SENT',
+  connectionId: '123',
+};
 
 const preview = new CredentialPreview({
   attributes: [
@@ -25,6 +64,25 @@ const preview = new CredentialPreview({
       value: '99',
     }),
   ],
+});
+
+const attachment = new Attachment({
+  id: '6526420d-8d1c-4f70-89de-54c9f3fa9f5c',
+  mimeType: '',
+  data: {
+    base64:
+      'eyJzY2hlbWFfaWQiOiJhYWEiLCJjcmVkX2RlZl9pZCI6IlRoN01wVGFSWlZSWW5QaWFiZHM4MVk6MzpDTDoxNzpUQUciLCJub25jZSI6Im5vbmNlIiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7fX0',
+  },
+});
+
+const mockc = new CredentialRecord({
+  offer: new CredentialOfferMessage({
+    comment: 'some comment',
+    credentialPreview: preview,
+    offersAttachments: [attachment],
+  }),
+  state: CredentialState.OfferSent,
+  connectionId: '123',
 });
 
 const connection = { id: '123' } as ConnectionRecord;
@@ -96,7 +154,6 @@ const credReq = {
 
 describe('CredentialService', () => {
   let wallet: Wallet;
-  let storageService: StorageService<CredentialRecord>;
   let credentialRepository: Repository<CredentialRecord>;
   let credentialService: CredentialService;
 
@@ -112,8 +169,7 @@ describe('CredentialService', () => {
 
   describe('createCredentialOffer', () => {
     beforeEach(() => {
-      storageService = new StubStorageService();
-      credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService);
+      credentialRepository = new CredentialRepository();
       credentialService = new CredentialService(wallet, credentialRepository);
     });
 
@@ -160,14 +216,17 @@ describe('CredentialService', () => {
     });
 
     test('creates credential in OFFER_SENT state', async () => {
+      expect.assertions(1);
+
+      const saveSpy = jest.spyOn(credentialRepository, 'save');
+
       const credentialOffer = await credentialService.createCredentialOffer(connection, {
         credDefId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
         comment: 'some comment',
         preview,
       });
-      const [firstCredential] = await credentialService.getAll();
 
-      expect(firstCredential).toEqual(
+      expect(saveSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           createdAt: expect.any(Number),
           id: expect.any(String),
@@ -200,28 +259,29 @@ describe('CredentialService', () => {
 
   describe('processCredentialOffer', () => {
     beforeEach(() => {
-      storageService = new StubStorageService();
-      credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService);
+      credentialRepository = new CredentialRepository();
       credentialService = new CredentialService(wallet, credentialRepository);
     });
 
     test('creates credential in OFFER base on credential offer message', async () => {
-      const credentialOffer = await credentialService.createCredentialOffer(connection, {
-        credDefId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
+      const saveSpy = jest.spyOn(credentialRepository, 'save');
+
+      const credentialOfferMessage = new CredentialOfferMessage({
         comment: 'some comment',
-        preview,
+        credentialPreview: preview,
+        offersAttachments: [attachment],
       });
-      const messageContext = new InboundMessageContext(credentialOffer);
+
+      const messageContext = new InboundMessageContext(credentialOfferMessage);
       messageContext.connection = connection;
 
       await credentialService.processCredentialOffer(messageContext);
-      const [, secondCredential] = await credentialService.getAll();
 
-      expect(secondCredential).toEqual(
+      expect(saveSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           createdAt: expect.any(Number),
           id: expect.any(String),
-          offer: credentialOffer,
+          offer: credentialOfferMessage,
           tags: {},
           type: CredentialRecord.name,
           state: CredentialState.OfferReceived,
@@ -233,12 +293,13 @@ describe('CredentialService', () => {
       const eventListenerMock = jest.fn();
       credentialService.on(EventType.StateChanged, eventListenerMock);
 
-      const credentialOffer = await credentialService.createCredentialOffer(connection, {
-        credDefId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
+      const credentialOfferMessage = new CredentialOfferMessage({
         comment: 'some comment',
-        preview,
+        credentialPreview: preview,
+        offersAttachments: [attachment],
       });
-      const messageContext = new InboundMessageContext(credentialOffer);
+
+      const messageContext = new InboundMessageContext(credentialOfferMessage);
       messageContext.connection = connection;
 
       await credentialService.processCredentialOffer(messageContext);
@@ -254,18 +315,12 @@ describe('CredentialService', () => {
 
   describe('acceptCredentialOffer', () => {
     beforeEach(() => {
-      storageService = new StubStorageService();
-      credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService);
+      credentialRepository = new CredentialRepository();
       credentialService = new CredentialService(wallet, credentialRepository);
     });
 
     test('returns credential request message base on existing credential offer message', async () => {
-      await credentialService.createCredentialOffer(connection, {
-        credDefId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
-        comment: 'some credential offer comment',
-        preview,
-      });
-      const [credential] = await credentialService.getAll();
+      const credential = mockc;
       console.log('credential', credential);
 
       const credentialRequest = await credentialService.acceptCredentialOffer(connection, credential, credDef);
@@ -293,24 +348,17 @@ describe('CredentialService', () => {
 
   describe('processCredentialRequest', () => {
     beforeEach(() => {
-      storageService = new StubStorageService();
-      credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService);
+      credentialRepository = new CredentialRepository();
       credentialService = new CredentialService(wallet, credentialRepository);
     });
 
     test('returns credential response message base on credential request message', async () => {
-      await credentialService.createCredentialOffer(connection, {
-        credDefId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
-        comment: 'some credential offer comment',
-        preview,
-      });
-      const [credential] = await credentialService.getAll();
-      console.log('credential', credential);
-
-      const credentialRequest = await credentialService.acceptCredentialOffer(connection, credential, credDef);
-
-      // const credentialRequest = new CredentialRequestMessage({});
+      const credentialRequest = new CredentialRequestMessage({ comment: 'abcd', requestsAttachments: [attachment] });
       const messageContext = new InboundMessageContext(credentialRequest);
+
+      // make separate mockFind variable to get the correct jest mock typing
+      const mockFind = credentialRepository.findByQuery as jest.Mock<Promise<CredentialRecord[]>, [WalletQuery]>;
+      mockFind.mockReturnValue(Promise.resolve([mockc]));
 
       const comment = 'some credential response comment';
       const credentialResponse = await credentialService.processCredentialRequest(messageContext, { comment });
@@ -336,8 +384,8 @@ describe('CredentialService', () => {
 
       // We're using instance of `StubWallet`. Value of `cred` should be as same as in the credential response message.
       const [cred] = await wallet.createCredential(credOffer, credReq, {}, '1', 0);
-      const [attachment] = credentialResponse.attachments;
-      expect(JsonEncoder.decode(attachment.data.base64)).toEqual(cred);
+      const [responseAttachment] = credentialResponse.attachments;
+      expect(JsonEncoder.decode(responseAttachment.data.base64)).toEqual(cred);
     });
   });
 });
