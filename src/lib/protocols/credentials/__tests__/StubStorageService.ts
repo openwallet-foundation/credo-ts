@@ -15,7 +15,11 @@ export class StubStorageService<T extends BaseRecord> implements StorageService<
     throw new Error('Method not implemented.');
   }
   public find(typeClass: new (...args: any[]) => T, id: string, type: string): Promise<T> {
-    throw new Error('Method not implemented.');
+    const r = this.records.find(r => (r.id = id));
+    if (!r) {
+      throw new Error();
+    }
+    return Promise.resolve(r);
   }
   public findAll(typeClass: new (...args: any[]) => T, type: string): Promise<T[]> {
     return Promise.resolve(this.records);

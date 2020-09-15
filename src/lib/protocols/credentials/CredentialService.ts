@@ -53,6 +53,10 @@ export class CredentialService extends EventEmitter {
     });
     await this.credentialRepository.save(credential);
 
+    // TODO remove this when you have mock credential based on output
+    const savedCredential = await this.credentialRepository.find(credential.id);
+    logger.log('savedCredential', JSON.parse(JSON.stringify(savedCredential)));
+
     this.emit(EventType.StateChanged, { credentialId: credential.id, newState: credential.state });
     return credentialOffer;
   }
@@ -110,7 +114,10 @@ export class CredentialService extends EventEmitter {
 
     // TODO const credential = this.credentialRepository.findByThreadId();
     const [credential] = await this.credentialRepository.findAll();
-    const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
+    logger.log('credential', credential);
+
+    const offer = credential.offer;
+    // const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
 
     const [offerAttachment] = offer.offersAttachments;
     logger.log('offer attachment', offerAttachment);

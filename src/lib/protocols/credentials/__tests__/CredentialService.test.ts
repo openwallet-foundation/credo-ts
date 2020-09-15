@@ -8,23 +8,22 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { CredentialState } from '../CredentialState';
 import { StubWallet } from './StubWallet';
 import { StubStorageService } from './StubStorageService';
-import { CredentialPreview } from '../messages/CredentialOfferMessage';
+import { CredentialPreview, CredentialPreviewAttribute } from '../messages/CredentialOfferMessage';
 import { ConnectionRecord } from '../../../storage/ConnectionRecord';
-import { Attachment } from '../messages/Attachment';
 import { JsonEncoder } from '../JsonEncoder';
 
 const preview = new CredentialPreview({
   attributes: [
-    {
+    new CredentialPreviewAttribute({
       name: 'name',
       mimeType: 'text/plain',
       value: 'John',
-    },
-    {
+    }),
+    new CredentialPreviewAttribute({
       name: 'age',
       mimeType: 'text/plain',
       value: '99',
-    },
+    }),
   ],
 });
 
@@ -143,18 +142,17 @@ describe('CredentialService', () => {
         })
       );
 
-      // @ts-ignore
       expect(credentialOffer.toJSON().credential_preview).toEqual({
         type: 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/credential-preview',
         attributes: [
           {
             name: 'name',
-            mimeType: 'text/plain',
+            'mime-type': 'text/plain',
             value: 'John',
           },
           {
             name: 'age',
-            mimeType: 'text/plain',
+            'mime-type': 'text/plain',
             value: '99',
           },
         ],
@@ -310,6 +308,8 @@ describe('CredentialService', () => {
       console.log('credential', credential);
 
       const credentialRequest = await credentialService.acceptCredentialOffer(connection, credential, credDef);
+
+      // const credentialRequest = new CredentialRequestMessage({});
       const messageContext = new InboundMessageContext(credentialRequest);
 
       const comment = 'some credential response comment';

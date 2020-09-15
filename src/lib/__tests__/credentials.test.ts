@@ -8,7 +8,10 @@ import { Agent } from '..';
 import { SubjectInboundTransporter, SubjectOutboundTransporter } from './helpers';
 import { CredentialRecord } from '../storage/CredentialRecord';
 import { SchemaTemplate, CredDefTemplate } from '../agent/LedgerService';
-import { CredentialPreview } from '../protocols/credentials/messages/CredentialOfferMessage';
+import {
+  CredentialPreview,
+  CredentialPreviewAttribute,
+} from '../protocols/credentials/messages/CredentialOfferMessage';
 import { CredentialState } from '../protocols/credentials/CredentialState';
 import { InitConfig } from '../types';
 
@@ -35,16 +38,16 @@ const aliceConfig: InitConfig = {
 
 const credentialPreview = new CredentialPreview({
   attributes: [
-    {
+    new CredentialPreviewAttribute({
       name: 'name',
       mimeType: 'text/plain',
       value: 'John',
-    },
-    {
+    }),
+    new CredentialPreviewAttribute({
       name: 'age',
       mimeType: 'text/plain',
       value: '99',
-    },
+    }),
   ],
 });
 

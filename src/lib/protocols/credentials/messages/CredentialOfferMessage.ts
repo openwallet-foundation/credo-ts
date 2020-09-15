@@ -1,5 +1,5 @@
 import { Equals, IsString } from 'class-validator';
-import { Expose } from 'class-transformer';
+import { classToPlain, Expose } from 'class-transformer';
 
 import { AgentMessage } from '../../../agent/AgentMessage';
 import { MessageType } from './MessageType';
@@ -11,7 +11,9 @@ interface CredentialPreviewOptions {
 
 export class CredentialPreview {
   public constructor(options: CredentialPreviewOptions) {
-    this.attributes = options.attributes;
+    if (options) {
+      this.attributes = options.attributes;
+    }
   }
 
   @Equals(CredentialPreview.type)
@@ -19,22 +21,38 @@ export class CredentialPreview {
   public static readonly type = MessageType.CredentialPreview;
 
   @Expose({ name: 'attributes' })
-  public attributes: CredentialPreviewAttribute[];
+  public attributes!: CredentialPreviewAttribute[];
+
+  public toJSON(): Record<string, unknown> {
+    return classToPlain(this);
+  }
+}
+
+interface CredentialPreviewAttributeOptions {
+  name: string;
+  mimeType: string;
+  value: string;
 }
 
 export class CredentialPreviewAttribute {
-  public constructor(options: CredentialPreviewAttribute) {
-    this.name = options.name;
-    this.mimeType = options.mimeType;
-    this.value = options.value;
+  public constructor(options: CredentialPreviewAttributeOptions) {
+    if (options) {
+      this.name = options.name;
+      this.mimeType = options.mimeType;
+      this.value = options.value;
+    }
   }
 
-  public name: string;
+  public name!: string;
 
   @Expose({ name: 'mime-type' })
-  public mimeType: string;
+  public mimeType!: string;
 
-  public value: string;
+  public value!: string;
+
+  public toJSON(): Record<string, unknown> {
+    return classToPlain(this);
+  }
 }
 
 export interface CredentialOfferMessageOptions {
