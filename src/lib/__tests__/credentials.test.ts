@@ -123,23 +123,23 @@ describe('credentials', () => {
           '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential',
           comment: 'some comment about credential',
           credential_preview: {
-            type: 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/credential-preview',
+            '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/credential-preview',
             attributes: [
               {
                 name: 'name',
-                mimeType: 'text/plain',
+                'mime-type': 'text/plain',
                 value: 'John',
               },
               {
                 name: 'age',
-                mimeType: 'text/plain',
+                'mime-type': 'text/plain',
                 value: '99',
               },
             ],
           },
           'offers~attach': expect.any(Array),
         },
-        tags: {},
+        tags: { threadId: firstCredential.offer['@id'] },
         type: 'CredentialRecord',
         state: CredentialState.OfferReceived,
       })

@@ -9,6 +9,9 @@ interface CredentialPreviewOptions {
   attributes: CredentialPreviewAttribute[];
 }
 
+/**
+ * This is not a message but an inner object for other messages in this protocol. It is used construct a preview of the data for the credential that is to be issued.
+ */
 export class CredentialPreview {
   public constructor(options: CredentialPreviewOptions) {
     if (options) {
@@ -16,6 +19,7 @@ export class CredentialPreview {
     }
   }
 
+  @Expose({ name: '@type' })
   @Equals(CredentialPreview.type)
   public readonly type = CredentialPreview.type;
   public static readonly type = MessageType.CredentialPreview;

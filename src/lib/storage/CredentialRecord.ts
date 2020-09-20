@@ -8,6 +8,7 @@ export interface CredentialStorageProps {
   offer: CredentialOfferMessage;
   state: CredentialState;
   connectionId: string;
+  tags: { [keys: string]: string };
 }
 
 export class CredentialRecord extends BaseRecord implements CredentialStorageProps {
@@ -24,5 +25,6 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
     this.offer = props.offer;
     this.state = props.state;
     this.connectionId = props.connectionId;
+    this.tags = props.tags as { [keys: string]: string };
   }
 }

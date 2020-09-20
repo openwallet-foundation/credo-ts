@@ -12,7 +12,7 @@ import { Attachment } from './messages/Attachment';
 import logger from '../../logger';
 import { CredentialResponseMessage } from './messages/CredentialResponseMessage';
 import { JsonEncoder } from './JsonEncoder';
-import { MessageTransformer } from '../../agent/MessageTransformer';
+import { ThreadDecorator } from '../../decorators/thread/ThreadDecorator';
 
 export enum EventType {
   StateChanged = 'stateChanged',
@@ -50,6 +50,7 @@ export class CredentialService extends EventEmitter {
       connectionId: connection.id,
       offer: credentialOffer,
       state: CredentialState.OfferSent,
+      tags: { threadId: credentialOffer.id },
     });
     await this.credentialRepository.save(credential);
 
@@ -59,6 +60,7 @@ export class CredentialService extends EventEmitter {
 
   public async processCredentialOffer(messageContext: InboundMessageContext<CredentialOfferMessage>): Promise<void> {
     const credentialOffer = messageContext.message;
+    logger.log('processCredentialOffer credentialOffer', credentialOffer);
     const connection = messageContext.connection;
 
     if (!connection) {
@@ -69,6 +71,7 @@ export class CredentialService extends EventEmitter {
       connectionId: connection.id,
       offer: credentialOffer,
       state: CredentialState.OfferReceived,
+      tags: { threadId: credentialOffer.id },
     });
     await this.credentialRepository.save(credential);
     this.emit(EventType.StateChanged, { credentialId: credential.id, newState: credential.state });
@@ -96,6 +99,7 @@ export class CredentialService extends EventEmitter {
       comment: 'some credential request comment',
       requestsAttachments: [attachment],
     });
+    credentialRequest.setThread(new ThreadDecorator({ threadId: credential.offer.id }));
     return credentialRequest;
   }
 
@@ -103,13 +107,15 @@ export class CredentialService extends EventEmitter {
     messageContext: InboundMessageContext<CredentialRequestMessage>,
     { comment }: CredentialResponseOptions
   ): Promise<CredentialResponseMessage> {
+    logger.log('messageContext.message', messageContext.message);
     const [requestAttachment] = messageContext.message.requestsAttachments;
     logger.log('request attachment', requestAttachment);
     const credReq = JsonEncoder.decode(requestAttachment.data.base64);
     logger.log('credReq', credReq);
 
-    // TODO const credential = this.credentialRepository.findByThreadId();
-    const [credential] = await this.credentialRepository.findByQuery({ threadId: 'TODO' });
+    const [credential] = await this.credentialRepository.findByQuery({
+      threadId: messageContext.message.thread?.threadId,
+    });
     logger.log('credential', credential);
 
     const offer = credential.offer;
