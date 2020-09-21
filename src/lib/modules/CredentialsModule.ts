@@ -36,8 +36,8 @@ export class CredentialsModule {
   public async acceptCredential(credential: CredentialRecord) {
     logger.log('credential', credential);
     logger.log('credential.offer', credential.offer);
-    credential.offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
-    const [offerAttachment] = credential.offer.offersAttachments;
+    const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
+    const [offerAttachment] = offer.offersAttachments;
     logger.log('offerAttachment', offerAttachment);
     const credOffer = JSON.parse(Buffer.from(offerAttachment.data.base64, 'base64').toString('utf-8'));
     logger.log('credOffer', credOffer);

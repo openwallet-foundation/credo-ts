@@ -76,16 +76,18 @@ const attachment = new Attachment({
   },
 });
 
+// A record is deserialized to JSON when it's stored into the storage. We want to simulate this behaviour for `offer`
+// object to test our service would behave correctly. We use type assertion for `offer` attribute to `any`.
 const mockCredentialRecord = new CredentialRecord({
   offer: new CredentialOfferMessage({
     comment: 'some comment',
     credentialPreview: preview,
     offersAttachments: [attachment],
-  }),
+  }).toJSON(),
   state: CredentialState.OfferSent,
   tags: {},
   connectionId: '123',
-});
+} as any);
 
 const connection = { id: '123' } as ConnectionRecord;
 
@@ -335,7 +337,8 @@ describe('CredentialService', () => {
           '@id': expect.any(String),
           '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/request-credential',
           '~thread': {
-            thid: mockCredentialRecord.offer.id,
+            // @ts-ignore
+            thid: mockCredentialRecord.offer['@id'],
           },
           comment: 'some credential request comment',
           'requests~attach': [

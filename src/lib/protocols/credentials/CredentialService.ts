@@ -13,6 +13,7 @@ import logger from '../../logger';
 import { CredentialResponseMessage } from './messages/CredentialResponseMessage';
 import { JsonEncoder } from './JsonEncoder';
 import { ThreadDecorator } from '../../decorators/thread/ThreadDecorator';
+import { MessageTransformer } from '../../agent/MessageTransformer';
 
 export enum EventType {
   StateChanged = 'stateChanged',
@@ -83,8 +84,8 @@ export class CredentialService extends EventEmitter {
     credDef: CredDef
   ): Promise<CredentialRequestMessage> {
     const proverDid = connection.did;
-    logger.log('credential.offer.offersAttachments', credential.offer.offersAttachments);
-    const [offerAttachment] = credential.offer.offersAttachments;
+    const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
+    const [offerAttachment] = offer.offersAttachments;
     const credOffer = JSON.parse(Buffer.from(offerAttachment.data.base64, 'base64').toString('utf-8'));
     logger.log('credOffer', credOffer);
     const [credReq] = await this.wallet.createCredentialRequest(proverDid, credOffer, credDef, 'master_secret');
@@ -99,7 +100,7 @@ export class CredentialService extends EventEmitter {
       comment: 'some credential request comment',
       requestsAttachments: [attachment],
     });
-    credentialRequest.setThread(new ThreadDecorator({ threadId: credential.offer.id }));
+    credentialRequest.setThread(new ThreadDecorator({ threadId: offer.id }));
     return credentialRequest;
   }
 
@@ -118,9 +119,7 @@ export class CredentialService extends EventEmitter {
     });
     logger.log('credential', credential);
 
-    const offer = credential.offer;
-    // const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
-
+    const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
     const [offerAttachment] = offer.offersAttachments;
     logger.log('offer attachment', offerAttachment);
     const credOffer = JsonEncoder.decode(offerAttachment.data.base64);
