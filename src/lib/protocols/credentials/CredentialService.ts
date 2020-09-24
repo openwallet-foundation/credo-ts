@@ -14,6 +14,7 @@ import { CredentialResponseMessage } from './messages/CredentialResponseMessage'
 import { JsonEncoder } from './JsonEncoder';
 import { ThreadDecorator } from '../../decorators/thread/ThreadDecorator';
 import { MessageTransformer } from '../../agent/MessageTransformer';
+import { CredentialUtils } from './CredentialUtils';
 
 export enum EventType {
   StateChanged = 'stateChanged',
@@ -123,7 +124,7 @@ export class CredentialService extends EventEmitter {
     const [offerAttachment] = offer.offersAttachments;
     logger.log('offer attachment', offerAttachment);
     const credOffer = JsonEncoder.decode(offerAttachment.data.base64);
-    const credValues = this.convertPreviewToCredValues(credential.offer.credentialPreview);
+    const credValues = CredentialUtils.convertPreviewToValues(offer.credentialPreview);
 
     // TODO Pass real values here
     const [cred] = await this.wallet.createCredential(credOffer, credReq, credValues, '', 1);
@@ -147,10 +148,6 @@ export class CredentialService extends EventEmitter {
 
   public async find(id: string): Promise<CredentialRecord> {
     return this.credentialRepository.find(id);
-  }
-
-  private convertPreviewToCredValues(preview: CredentialPreview): CredValues {
-    return {};
   }
 }
 
