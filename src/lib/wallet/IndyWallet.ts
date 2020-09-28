@@ -90,17 +90,24 @@ export class IndyWallet implements Wallet {
     return this.indy.proverCreateCredentialReq(this.wh, proverDid, offer, credDef, masterSecretId);
   }
 
-  public createCredential(
+  public async createCredential(
     credOffer: CredOffer,
     credReq: CredReq,
-    credValues: CredValues,
-    revRegId: RevRegId,
-    blobStorageReaderHandle: BlobStorageReaderHandle
+    credValues: CredValues
   ): Promise<[Cred, CredRevocId, RevocRegDelta]> {
     if (!this.wh) {
       throw Error('Wallet has not been initialized yet');
     }
-    return this.indy.issuerCreateCredential(this.wh, credOffer, credReq, credValues, revRegId, blobStorageReaderHandle);
+    // TODO This is just dummy tails writer config to get dummy blob reader handle because revocations feature
+    // is not part of the credential issuance task. It needs to be implemented properly together with revocations
+    // feature implementation.
+    const tailsWriterConfig = {
+      base_dir: '',
+      uri_pattern: '',
+    };
+    const blobReaderHandle = await this.indy.openBlobStorageReader('default', tailsWriterConfig);
+
+    return this.indy.issuerCreateCredential(this.wh, credOffer, credReq, credValues, null, blobReaderHandle);
   }
 
   public async pack(payload: Record<string, unknown>, recipientKeys: Verkey[], senderVk: Verkey): Promise<JsonWebKey> {

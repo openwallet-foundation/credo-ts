@@ -396,7 +396,7 @@ describe('CredentialService', () => {
       );
 
       // We're using instance of `StubWallet`. Value of `cred` should be as same as in the credential response message.
-      const [cred] = await wallet.createCredential(credOffer, credReq, {}, '1', 0);
+      const [cred] = await wallet.createCredential(credOffer, credReq, {});
       const [responseAttachment] = credentialResponse.attachments;
       expect(JsonEncoder.decode(responseAttachment.data.base64)).toEqual(cred);
     });

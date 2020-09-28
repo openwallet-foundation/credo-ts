@@ -24,9 +24,7 @@ export interface Wallet {
   createCredential(
     credOffer: CredOffer,
     credReq: CredReq,
-    credValues: CredValues,
-    revRegId: RevRegId,
-    blobStorageReaderHandle: BlobStorageReaderHandle
+    credValues: CredValues
   ): Promise<[Cred, CredRevocId, RevocRegDelta]>;
   pack(payload: Record<string, unknown>, recipientKeys: Verkey[], senderVk: Verkey | null): Promise<JsonWebKey>;
   unpack(messagePackage: JsonWebKey): Promise<UnpackedMessageContext>;

@@ -109,25 +109,22 @@ export class CredentialService extends EventEmitter {
     messageContext: InboundMessageContext<CredentialRequestMessage>,
     { comment }: CredentialResponseOptions
   ): Promise<CredentialResponseMessage> {
-    logger.log('messageContext.message', messageContext.message);
     const [requestAttachment] = messageContext.message.requestsAttachments;
-    logger.log('request attachment', requestAttachment);
     const credReq = JsonEncoder.decode(requestAttachment.data.base64);
-    logger.log('credReq', credReq);
 
     const [credential] = await this.credentialRepository.findByQuery({
       threadId: messageContext.message.thread?.threadId,
     });
-    logger.log('credential', credential);
 
     const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
     const [offerAttachment] = offer.offersAttachments;
-    logger.log('offer attachment', offerAttachment);
     const credOffer = JsonEncoder.decode(offerAttachment.data.base64);
     const credValues = CredentialUtils.convertPreviewToValues(offer.credentialPreview);
 
-    // TODO Pass real values here
-    const [cred] = await this.wallet.createCredential(credOffer, credReq, credValues, '', 1);
+    const [cred] = await this.wallet.createCredential(credOffer, credReq, credValues);
+
+    logger.log('cred', cred);
+
     const responseAttachment = new Attachment({
       id: uuid(),
       mimeType: 'application/json',
@@ -135,10 +132,12 @@ export class CredentialService extends EventEmitter {
         base64: Buffer.from(JSON.stringify(cred)).toString('base64'),
       },
     });
+
     const credentialResponse = new CredentialResponseMessage({
       comment,
       attachments: [responseAttachment],
     });
+
     return credentialResponse;
   }
 

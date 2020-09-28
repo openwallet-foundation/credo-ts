@@ -77,9 +77,17 @@ declare module 'indy-sdk' {
       credOffer: CredOffer,
       credReq: CredReq,
       credValues: CredValues,
-      revRegId: RevRegId,
+      revRegId: RevRegId | null,
       blobStorageReaderHandle: BlobStorageReaderHandle
     ): Promise<[Cred, CredRevocId, RevocRegDelta]>;
+    openBlobStorageWriter(
+      type: string,
+      tailsWriterConfig: { base_dir: string; uri_pattern: string }
+    ): Promise<BlobReaderHandle>;
+    openBlobStorageReader(
+      type: string,
+      tailsWriterConfig: { base_dir: string; uri_pattern: string }
+    ): Promise<BlobReaderHandle>;
     buildGetTxnAuthorAgreementRequest(submitterDid: Did | null): Promise<LedgerRequest>;
     buildGetAcceptanceMechanismsRequest(submitterDid: Did | null): Promise<LedgerRequest>;
     appendTxnAuthorAgreementAcceptanceToRequest(
@@ -171,9 +179,17 @@ interface Indy {
     credOffer: CredOffer,
     credReq: CredReq,
     credValues: CredValues,
-    revRegId: RevRegId,
+    revRegId: RevRegId | null,
     blobStorageReaderHandle: BlobStorageReaderHandle
   ): Promise<[Cred, CredRevocId, RevocRegDelta]>;
+  openBlobStorageWriter(
+    type: string,
+    tailsWriterConfig: { base_dir: string; uri_pattern: string }
+  ): Promise<BlobReaderHandle>;
+  openBlobStorageReader(
+    type: string,
+    tailsWriterConfig: { base_dir: string; uri_pattern: string }
+  ): Promise<BlobReaderHandle>;
   buildGetTxnAuthorAgreementRequest(submitterDid: Did | null): Promise<LedgerRequest>;
   buildGetAcceptanceMechanismsRequest(submitterDid: Did | null): Promise<LedgerRequest>;
   appendTxnAuthorAgreementAcceptanceToRequest(
@@ -190,6 +206,7 @@ interface Indy {
 type WalletHandle = number;
 type SearchHandle = number;
 type PoolHandle = number;
+type BlobReaderHandle = number;
 type Did = string;
 type Verkey = string;
 type ByteArray = number[];

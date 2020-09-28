@@ -60,9 +60,7 @@ export class StubWallet implements Wallet {
   public createCredential(
     credOffer: CredOffer,
     credReq: CredReq,
-    credValues: CredValues,
-    revRegId: RevRegId,
-    blobStorageReaderHandle: BlobStorageReaderHandle
+    credValues: CredValues
   ): Promise<[Cred, CredRevocId, RevocRegDelta]> {
     return Promise.resolve([
       {
