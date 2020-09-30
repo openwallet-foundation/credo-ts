@@ -160,16 +160,17 @@ describe('credentials', () => {
       100
     );
 
-    expect(credential).toEqual(
-      expect.objectContaining({
-        createdAt: expect.any(Number),
-        id: expect.any(String),
-        offer: expect.any(Object),
-        tags: {},
-        type: 'CredentialRecord',
-        state: CredentialState.CredentialReceived,
-      })
-    );
+    expect(credential).toMatchObject({
+      id: expect.any(String),
+      createdAt: expect.any(Number),
+      offer: expect.any(Object),
+      tags: {
+        threadId: expect.any(String),
+      },
+      credentialId: expect.any(String),
+      type: 'CredentialRecord',
+      state: CredentialState.CredentialReceived,
+    });
   });
 });
 

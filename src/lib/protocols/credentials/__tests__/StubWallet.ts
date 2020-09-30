@@ -54,7 +54,7 @@ export class StubWallet implements Wallet {
         blinded_ms_correctness_proof: {},
         nonce: 'nonce',
       },
-      {},
+      { cred_req: 'meta-data' },
     ]);
   }
   public createCredential(
@@ -74,6 +74,9 @@ export class StubWallet implements Wallet {
       '1',
       {},
     ]);
+  }
+  public storeCredential(credentialId: CredentialId): Promise<string> {
+    return Promise.resolve(credentialId);
   }
   public pack(payload: Record<string, unknown>, recipientKeys: string[], senderVk: string | null): Promise<JsonWebKey> {
     throw new Error('Method not implemented.');

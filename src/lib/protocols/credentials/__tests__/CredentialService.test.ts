@@ -16,6 +16,7 @@ import { JsonEncoder } from '../JsonEncoder';
 import { Attachment } from '../messages/Attachment';
 import { CredentialRequestMessage } from '../messages/CredentialRequestMessage';
 import { ThreadDecorator } from '../../../decorators/thread/ThreadDecorator';
+import { CredentialResponseMessage } from '../messages/CredentialResponseMessage';
 
 jest.mock('./../../../storage/Repository');
 
@@ -270,7 +271,7 @@ describe('CredentialService', () => {
       credentialService = new CredentialService(wallet, credentialRepository);
     });
 
-    test('creates credential in OFFER base on credential offer message', async () => {
+    test('creates credential in OFFER_RECEIVED state based on credential offer message', async () => {
       const saveSpy = jest.spyOn(credentialRepository, 'save');
 
       const credentialOfferMessage = new CredentialOfferMessage({
@@ -326,11 +327,24 @@ describe('CredentialService', () => {
       credentialService = new CredentialService(wallet, credentialRepository);
     });
 
+    test('updates credential to REQUEST_SENT state', async () => {
+      const saveSpy = jest.spyOn(credentialRepository, 'update');
+      const credential = mockCredentialRecord;
+      await credentialService.acceptCredentialOffer(connection, credential, credDef);
+
+      const [firstCall] = saveSpy.mock.calls;
+      const [savedCredentialRecord] = firstCall;
+
+      expect(savedCredentialRecord).toMatchObject({
+        requestMetadata: { cred_req: 'meta-data' },
+        type: CredentialRecord.name,
+        state: CredentialState.RequestSent,
+      });
+    });
+
     test('returns credential request message base on existing credential offer message', async () => {
       const credential = mockCredentialRecord;
       const credentialRequest = await credentialService.acceptCredentialOffer(connection, credential, credDef);
-
-      console.log('credentialRequest', credentialRequest);
 
       expect(credentialRequest.toJSON()).toEqual(
         expect.objectContaining({
@@ -361,6 +375,27 @@ describe('CredentialService', () => {
       credentialService = new CredentialService(wallet, credentialRepository);
     });
 
+    test('updates credential to CREDENTIAL_ISSUED state', async () => {
+      const saveSpy = jest.spyOn(credentialRepository, 'update');
+      const credentialRequest = new CredentialRequestMessage({ comment: 'abcd', requestsAttachments: [attachment] });
+      credentialRequest.setThread(new ThreadDecorator({ threadId: 'somethreadid' }));
+      const messageContext = new InboundMessageContext(credentialRequest);
+
+      // make separate mockFind variable to get the correct jest mock typing
+      const mockFind = credentialRepository.findByQuery as jest.Mock<Promise<CredentialRecord[]>, [WalletQuery]>;
+      mockFind.mockReturnValue(Promise.resolve([mockCredentialRecord]));
+
+      const comment = 'credential response comment';
+      await credentialService.processCredentialRequest(messageContext, { comment });
+
+      const [firstCall] = saveSpy.mock.calls;
+      const [savedCredentialRecord] = firstCall;
+
+      expect(savedCredentialRecord).toMatchObject({
+        state: 'CREDENTIAL_ISSUED',
+      });
+    });
+
     test('returns credential response message base on credential request message', async () => {
       const credentialRequest = new CredentialRequestMessage({ comment: 'abcd', requestsAttachments: [attachment] });
       credentialRequest.setThread(new ThreadDecorator({ threadId: 'somethreadid' }));
@@ -370,10 +405,8 @@ describe('CredentialService', () => {
       const mockFind = credentialRepository.findByQuery as jest.Mock<Promise<CredentialRecord[]>, [WalletQuery]>;
       mockFind.mockReturnValue(Promise.resolve([mockCredentialRecord]));
 
-      const comment = 'some credential response comment';
+      const comment = 'credential response comment';
       const credentialResponse = await credentialService.processCredentialRequest(messageContext, { comment });
-
-      console.log('credentialResponse', credentialResponse);
 
       const [findByQueryArg] = mockFind.mock.calls[0];
       expect(findByQueryArg).toEqual({ threadId: 'somethreadid' });
@@ -399,6 +432,43 @@ describe('CredentialService', () => {
       const [cred] = await wallet.createCredential(credOffer, credReq, {});
       const [responseAttachment] = credentialResponse.attachments;
       expect(JsonEncoder.decode(responseAttachment.data.base64)).toEqual(cred);
+    });
+  });
+
+  describe('processCredentialResponse', () => {
+    beforeEach(() => {
+      credentialRepository = new CredentialRepository();
+      credentialService = new CredentialService(wallet, credentialRepository);
+    });
+
+    test('stores credential from incoming credential response message into given credential record', async () => {
+      const saveSpy = jest.spyOn(credentialRepository, 'update');
+      const walletSaveSpy = jest.spyOn(wallet, 'storeCredential');
+
+      const credentialResponse = new CredentialResponseMessage({ comment: 'abcd', attachments: [attachment] });
+      credentialResponse.setThread(new ThreadDecorator({ threadId: 'somethreadid' }));
+      const messageContext = new InboundMessageContext(credentialResponse);
+
+      // make separate mockFind variable to get the correct jest mock typing
+      const mockFind = credentialRepository.findByQuery as jest.Mock<Promise<CredentialRecord[]>, [WalletQuery]>;
+      mockFind.mockReturnValue(Promise.resolve([mockCredentialRecord]));
+
+      await credentialService.processCredentialResponse(messageContext, credDef);
+
+      const [findByQueryArg] = mockFind.mock.calls[0];
+      expect(findByQueryArg).toEqual({ threadId: 'somethreadid' });
+
+      console.log(walletSaveSpy.mock.calls);
+
+      const [firstCall] = saveSpy.mock.calls;
+      const [savedCredentialRecord] = firstCall;
+
+      expect(savedCredentialRecord).toMatchObject({
+        id: expect.any(String),
+        credentialId: expect.any(String),
+        type: CredentialRecord.name,
+        state: CredentialState.CredentialReceived,
+      });
     });
   });
 });

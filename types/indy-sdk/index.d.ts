@@ -88,6 +88,14 @@ declare module 'indy-sdk' {
       type: string,
       tailsWriterConfig: { base_dir: string; uri_pattern: string }
     ): Promise<BlobReaderHandle>;
+    proverStoreCredential(
+      wh: WalletHandle,
+      credentialId: CredentialId,
+      credReqMetadata: CredReqMetadata,
+      cred: Cred,
+      credDef: CredDef,
+      revRegDef: null
+    ): Promise<CredentialId>;
     buildGetTxnAuthorAgreementRequest(submitterDid: Did | null): Promise<LedgerRequest>;
     buildGetAcceptanceMechanismsRequest(submitterDid: Did | null): Promise<LedgerRequest>;
     appendTxnAuthorAgreementAcceptanceToRequest(
@@ -190,6 +198,14 @@ interface Indy {
     type: string,
     tailsWriterConfig: { base_dir: string; uri_pattern: string }
   ): Promise<BlobReaderHandle>;
+  proverStoreCredential(
+    wh: WalletHandle,
+    credentialId: CredentialId,
+    credReqMetadata: CredReqMetadata,
+    cred: Cred,
+    credDef: CredDef,
+    revRegDef: null
+  ): Promise<CredentialId>;
   buildGetTxnAuthorAgreementRequest(submitterDid: Did | null): Promise<LedgerRequest>;
   buildGetAcceptanceMechanismsRequest(submitterDid: Did | null): Promise<LedgerRequest>;
   appendTxnAuthorAgreementAcceptanceToRequest(
@@ -212,6 +228,7 @@ type Verkey = string;
 type ByteArray = number[];
 type SchemaId = string;
 type CredDefId = string;
+type CredentialId = string;
 type KeyDerivationMethod = 'ARGON2I_MOD' | 'ARGON2I_INT' | 'RAW';
 
 // TODO: Maybe we can make this a bit more specific?

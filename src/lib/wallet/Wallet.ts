@@ -26,6 +26,12 @@ export interface Wallet {
     credReq: CredReq,
     credValues: CredValues
   ): Promise<[Cred, CredRevocId, RevocRegDelta]>;
+  storeCredential(
+    credentialId: CredentialId,
+    credReqMetadata: CredReqMetadata,
+    cred: Cred,
+    credDef: CredDef
+  ): Promise<string>;
   pack(payload: Record<string, unknown>, recipientKeys: Verkey[], senderVk: Verkey | null): Promise<JsonWebKey>;
   unpack(messagePackage: JsonWebKey): Promise<UnpackedMessageContext>;
   sign(data: Buffer, verkey: Verkey): Promise<Buffer>;

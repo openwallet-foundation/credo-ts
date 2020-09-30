@@ -89,7 +89,12 @@ export class CredentialService extends EventEmitter {
     const [offerAttachment] = offer.offersAttachments;
     const credOffer = JSON.parse(Buffer.from(offerAttachment.data.base64, 'base64').toString('utf-8'));
     logger.log('credOffer', credOffer);
-    const [credReq] = await this.wallet.createCredentialRequest(proverDid, credOffer, credDef, 'master_secret');
+    const [credReq, credReqMetadata] = await this.wallet.createCredentialRequest(
+      proverDid,
+      credOffer,
+      credDef,
+      'master_secret'
+    );
     const attachment = new Attachment({
       id: uuid(),
       mimeType: 'application/json',
@@ -102,6 +107,16 @@ export class CredentialService extends EventEmitter {
       requestsAttachments: [attachment],
     });
     credentialRequest.setThread(new ThreadDecorator({ threadId: offer.id }));
+
+    logger.log('credential before', credential);
+
+    credential.requestMetadata = credReqMetadata;
+    credential.state = CredentialState.RequestSent;
+
+    logger.log('credential before update', credential);
+    await this.credentialRepository.update(credential);
+    const credential2 = await this.credentialRepository.find(credential.id);
+    logger.log('credential after update', credential2);
     return credentialRequest;
   }
 
@@ -112,9 +127,13 @@ export class CredentialService extends EventEmitter {
     const [requestAttachment] = messageContext.message.requestsAttachments;
     const credReq = JsonEncoder.decode(requestAttachment.data.base64);
 
+    logger.log('messageContext.message', messageContext.message);
+
     const [credential] = await this.credentialRepository.findByQuery({
       threadId: messageContext.message.thread?.threadId,
     });
+
+    logger.log('credential', credential);
 
     const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
     const [offerAttachment] = offer.offersAttachments;
@@ -138,7 +157,39 @@ export class CredentialService extends EventEmitter {
       attachments: [responseAttachment],
     });
 
+    credential.state = CredentialState.CredentialIssued;
+    await this.credentialRepository.update(credential);
+
     return credentialResponse;
+  }
+
+  public async processCredentialResponse(
+    messageContext: InboundMessageContext<CredentialResponseMessage>,
+    credentialDefinition: CredDef
+  ) {
+    const [responseAttachment] = messageContext.message.attachments;
+    const cred = JsonEncoder.decode(responseAttachment.data.base64);
+
+    const [credential] = await this.credentialRepository.findByQuery({
+      threadId: messageContext.message.thread?.threadId,
+    });
+
+    logger.log('credential', credential);
+
+    if (!credential.requestMetadata) {
+      throw new Error(`Credential does not contain credReqMetadata.`);
+    }
+
+    const credentialId = await this.wallet.storeCredential(
+      uuid(),
+      credential.requestMetadata,
+      cred,
+      credentialDefinition
+    );
+
+    credential.credentialId = credentialId;
+    credential.state = CredentialState.CredentialReceived;
+    this.credentialRepository.update(credential);
   }
 
   public async getAll(): Promise<CredentialRecord[]> {
