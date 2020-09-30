@@ -92,15 +92,6 @@ const mockCredentialRecord = new CredentialRecord({
 
 const connection = { id: '123' } as ConnectionRecord;
 
-const schema = {
-  ver: '1.0',
-  id: 'TL1EaPFCZ8Si5aUrqScBDt:2:test-schema-1598956183615:1.0',
-  name: 'test-schema-1598956183615',
-  version: '1.0',
-  attrNames: ['age', 'name'],
-  seqNo: 16,
-};
-
 const credDef = {
   ver: '1.0',
   id: 'TL1EaPFCZ8Si5aUrqScBDt:3:CL:16:TAG',
@@ -185,45 +176,39 @@ describe('CredentialService', () => {
         preview,
       });
 
-      expect(credentialOffer.toJSON()).toEqual(
-        expect.objectContaining({
-          '@id': expect.any(String),
-          '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential',
-          comment: 'some comment',
-          credential_preview: expect.any(Object),
-          'offers~attach': [
+      expect(credentialOffer.toJSON()).toMatchObject({
+        '@id': expect.any(String),
+        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential',
+        comment: 'some comment',
+        credential_preview: {
+          '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/credential-preview',
+          attributes: [
             {
-              '@id': expect.any(String),
-              'mime-type': 'application/json',
-              data: {
-                base64: expect.any(String),
-              },
+              name: 'name',
+              'mime-type': 'text/plain',
+              value: 'John',
+            },
+            {
+              name: 'age',
+              'mime-type': 'text/plain',
+              value: '99',
             },
           ],
-        })
-      );
-
-      expect(credentialOffer.toJSON().credential_preview).toEqual({
-        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/credential-preview',
-        attributes: [
+        },
+        'offers~attach': [
           {
-            name: 'name',
-            'mime-type': 'text/plain',
-            value: 'John',
-          },
-          {
-            name: 'age',
-            'mime-type': 'text/plain',
-            value: '99',
+            '@id': expect.any(String),
+            'mime-type': 'application/json',
+            data: {
+              base64: expect.any(String),
+            },
           },
         ],
       });
     });
 
     test('creates credential in OFFER_SENT state', async () => {
-      expect.assertions(2);
-
-      const saveSpy = jest.spyOn(credentialRepository, 'save');
+      const repositorySaveSpy = jest.spyOn(credentialRepository, 'save');
 
       const credentialOffer = await credentialService.createCredentialOffer(connection, {
         credDefId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
@@ -231,19 +216,15 @@ describe('CredentialService', () => {
         preview,
       });
 
-      expect(saveSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          createdAt: expect.any(Number),
-          id: expect.any(String),
-          offer: credentialOffer,
-          tags: { threadId: expect.any(String) },
-          type: CredentialRecord.name,
-          state: CredentialState.OfferSent,
-        })
-      );
-
-      const [credentialRecord] = saveSpy.mock.calls[0];
-      expect(credentialRecord.tags.threadId).toEqual(credentialRecord.offer.id);
+      const [[createdCredentialRecord]] = repositorySaveSpy.mock.calls;
+      expect(createdCredentialRecord).toMatchObject({
+        createdAt: expect.any(Number),
+        id: expect.any(String),
+        offer: credentialOffer,
+        tags: { threadId: createdCredentialRecord.offer.id },
+        type: CredentialRecord.name,
+        state: 'OFFER_SENT',
+      });
     });
 
     test(`emits stateChange event with ${CredentialState.OfferSent}`, async () => {
@@ -272,7 +253,7 @@ describe('CredentialService', () => {
     });
 
     test('creates credential in OFFER_RECEIVED state based on credential offer message', async () => {
-      const saveSpy = jest.spyOn(credentialRepository, 'save');
+      const repositorySaveSpy = jest.spyOn(credentialRepository, 'save');
 
       const credentialOfferMessage = new CredentialOfferMessage({
         comment: 'some comment',
@@ -285,16 +266,15 @@ describe('CredentialService', () => {
 
       await credentialService.processCredentialOffer(messageContext);
 
-      expect(saveSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          createdAt: expect.any(Number),
-          id: expect.any(String),
-          offer: credentialOfferMessage,
-          tags: { threadId: credentialOfferMessage.id },
-          type: CredentialRecord.name,
-          state: CredentialState.OfferReceived,
-        })
-      );
+      const [[createdCredentialRecord]] = repositorySaveSpy.mock.calls;
+      expect(createdCredentialRecord).toMatchObject({
+        createdAt: expect.any(Number),
+        id: expect.any(String),
+        offer: credentialOfferMessage,
+        tags: { threadId: credentialOfferMessage.id },
+        type: CredentialRecord.name,
+        state: 'OFFER_RECEIVED',
+      });
     });
 
     test(`emits stateChange event with ${CredentialState.OfferReceived}`, async () => {
@@ -328,17 +308,15 @@ describe('CredentialService', () => {
     });
 
     test('updates credential to REQUEST_SENT state', async () => {
-      const saveSpy = jest.spyOn(credentialRepository, 'update');
+      const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update');
       const credential = mockCredentialRecord;
       await credentialService.acceptCredentialOffer(connection, credential, credDef);
 
-      const [firstCall] = saveSpy.mock.calls;
-      const [savedCredentialRecord] = firstCall;
-
-      expect(savedCredentialRecord).toMatchObject({
+      const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls;
+      expect(updatedCredentialRecord).toMatchObject({
         requestMetadata: { cred_req: 'meta-data' },
         type: CredentialRecord.name,
-        state: CredentialState.RequestSent,
+        state: 'REQUEST_SENT',
       });
     });
 
@@ -346,26 +324,24 @@ describe('CredentialService', () => {
       const credential = mockCredentialRecord;
       const credentialRequest = await credentialService.acceptCredentialOffer(connection, credential, credDef);
 
-      expect(credentialRequest.toJSON()).toEqual(
-        expect.objectContaining({
-          '@id': expect.any(String),
-          '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/request-credential',
-          '~thread': {
-            // @ts-ignore
-            thid: mockCredentialRecord.offer['@id'],
-          },
-          comment: 'some credential request comment',
-          'requests~attach': [
-            {
-              '@id': expect.any(String),
-              'mime-type': 'application/json',
-              data: {
-                base64: expect.any(String),
-              },
+      expect(credentialRequest.toJSON()).toMatchObject({
+        '@id': expect.any(String),
+        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/request-credential',
+        '~thread': {
+          // @ts-ignore
+          thid: mockCredentialRecord.offer['@id'],
+        },
+        comment: 'some credential request comment',
+        'requests~attach': [
+          {
+            '@id': expect.any(String),
+            'mime-type': 'application/json',
+            data: {
+              base64: expect.any(String),
             },
-          ],
-        })
-      );
+          },
+        ],
+      });
     });
   });
 
@@ -376,7 +352,7 @@ describe('CredentialService', () => {
     });
 
     test('updates credential to CREDENTIAL_ISSUED state', async () => {
-      const saveSpy = jest.spyOn(credentialRepository, 'update');
+      const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update');
       const credentialRequest = new CredentialRequestMessage({ comment: 'abcd', requestsAttachments: [attachment] });
       credentialRequest.setThread(new ThreadDecorator({ threadId: 'somethreadid' }));
       const messageContext = new InboundMessageContext(credentialRequest);
@@ -388,10 +364,8 @@ describe('CredentialService', () => {
       const comment = 'credential response comment';
       await credentialService.processCredentialRequest(messageContext, { comment });
 
-      const [firstCall] = saveSpy.mock.calls;
-      const [savedCredentialRecord] = firstCall;
-
-      expect(savedCredentialRecord).toMatchObject({
+      const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls;
+      expect(updatedCredentialRecord).toMatchObject({
         state: 'CREDENTIAL_ISSUED',
       });
     });
@@ -411,22 +385,20 @@ describe('CredentialService', () => {
       const [findByQueryArg] = mockFind.mock.calls[0];
       expect(findByQueryArg).toEqual({ threadId: 'somethreadid' });
 
-      expect(credentialResponse.toJSON()).toEqual(
-        expect.objectContaining({
-          '@id': expect.any(String),
-          '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/issue-credential',
-          comment,
-          'credentials~attach': [
-            {
-              '@id': expect.any(String),
-              'mime-type': 'application/json',
-              data: {
-                base64: expect.any(String),
-              },
+      expect(credentialResponse.toJSON()).toMatchObject({
+        '@id': expect.any(String),
+        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/issue-credential',
+        comment,
+        'credentials~attach': [
+          {
+            '@id': expect.any(String),
+            'mime-type': 'application/json',
+            data: {
+              base64: expect.any(String),
             },
-          ],
-        })
-      );
+          },
+        ],
+      });
 
       // We're using instance of `StubWallet`. Value of `cred` should be as same as in the credential response message.
       const [cred] = await wallet.createCredential(credOffer, credReq, {});
@@ -442,7 +414,7 @@ describe('CredentialService', () => {
     });
 
     test('stores credential from incoming credential response message into given credential record', async () => {
-      const saveSpy = jest.spyOn(credentialRepository, 'update');
+      const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update');
       const walletSaveSpy = jest.spyOn(wallet, 'storeCredential');
 
       const credentialResponse = new CredentialResponseMessage({ comment: 'abcd', attachments: [attachment] });
@@ -455,15 +427,13 @@ describe('CredentialService', () => {
 
       await credentialService.processCredentialResponse(messageContext, credDef);
 
-      const [findByQueryArg] = mockFind.mock.calls[0];
+      const [[findByQueryArg]] = mockFind.mock.calls;
       expect(findByQueryArg).toEqual({ threadId: 'somethreadid' });
 
       console.log(walletSaveSpy.mock.calls);
 
-      const [firstCall] = saveSpy.mock.calls;
-      const [savedCredentialRecord] = firstCall;
-
-      expect(savedCredentialRecord).toMatchObject({
+      const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls;
+      expect(updatedCredentialRecord).toMatchObject({
         id: expect.any(String),
         credentialId: expect.any(String),
         type: CredentialRecord.name,

@@ -114,36 +114,34 @@ describe('credentials', () => {
       100
     );
 
-    expect(firstCredential).toEqual(
-      expect.objectContaining({
-        createdAt: expect.any(Number),
-        id: expect.any(String),
-        offer: {
-          '@id': expect.any(String),
-          '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential',
-          comment: 'some comment about credential',
-          credential_preview: {
-            '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/credential-preview',
-            attributes: [
-              {
-                name: 'name',
-                'mime-type': 'text/plain',
-                value: 'John',
-              },
-              {
-                name: 'age',
-                'mime-type': 'text/plain',
-                value: '99',
-              },
-            ],
-          },
-          'offers~attach': expect.any(Array),
+    expect(firstCredential).toMatchObject({
+      createdAt: expect.any(Number),
+      id: expect.any(String),
+      offer: {
+        '@id': expect.any(String),
+        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential',
+        comment: 'some comment about credential',
+        credential_preview: {
+          '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/credential-preview',
+          attributes: [
+            {
+              name: 'name',
+              'mime-type': 'text/plain',
+              value: 'John',
+            },
+            {
+              name: 'age',
+              'mime-type': 'text/plain',
+              value: '99',
+            },
+          ],
         },
-        tags: { threadId: firstCredential.offer['@id'] },
-        type: 'CredentialRecord',
-        state: CredentialState.OfferReceived,
-      })
-    );
+        'offers~attach': expect.any(Array),
+      },
+      tags: { threadId: firstCredential.offer['@id'] },
+      type: CredentialRecord.name,
+      state: CredentialState.OfferReceived,
+    });
   });
 
   test(`when alice accepts the credential offer then faber sends a credential to alice`, async () => {
@@ -168,7 +166,7 @@ describe('credentials', () => {
         threadId: expect.any(String),
       },
       credentialId: expect.any(String),
-      type: 'CredentialRecord',
+      type: CredentialRecord.name,
       state: CredentialState.CredentialReceived,
     });
   });
