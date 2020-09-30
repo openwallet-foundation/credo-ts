@@ -39,7 +39,7 @@ export class CredentialService extends EventEmitter {
       id: uuid(),
       mimeType: 'application/json',
       data: {
-        base64: Buffer.from(JSON.stringify(credOffer)).toString('base64'),
+        base64: JsonEncoder.encode(credOffer),
       },
     });
     const credentialOffer = new CredentialOfferMessage({
@@ -55,14 +55,12 @@ export class CredentialService extends EventEmitter {
       tags: { threadId: credentialOffer.id },
     });
     await this.credentialRepository.save(credential);
-
     this.emit(EventType.StateChanged, { credentialId: credential.id, newState: credential.state });
     return credentialOffer;
   }
 
   public async processCredentialOffer(messageContext: InboundMessageContext<CredentialOfferMessage>): Promise<void> {
     const credentialOffer = messageContext.message;
-    logger.log('processCredentialOffer credentialOffer', credentialOffer);
     const connection = messageContext.connection;
 
     if (!connection) {
@@ -87,8 +85,8 @@ export class CredentialService extends EventEmitter {
     const proverDid = connection.did;
     const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
     const [offerAttachment] = offer.offersAttachments;
-    const credOffer = JSON.parse(Buffer.from(offerAttachment.data.base64, 'base64').toString('utf-8'));
-    logger.log('credOffer', credOffer);
+    const credOffer = JsonEncoder.decode(offerAttachment.data.base64);
+
     const [credReq, credReqMetadata] = await this.wallet.createCredentialRequest(
       proverDid,
       credOffer,
@@ -99,7 +97,7 @@ export class CredentialService extends EventEmitter {
       id: uuid(),
       mimeType: 'application/json',
       data: {
-        base64: Buffer.from(JSON.stringify(credReq)).toString('base64'),
+        base64: JsonEncoder.encode(credReq),
       },
     });
     const credentialRequest = new CredentialRequestMessage({
@@ -108,15 +106,9 @@ export class CredentialService extends EventEmitter {
     });
     credentialRequest.setThread(new ThreadDecorator({ threadId: offer.id }));
 
-    logger.log('credential before', credential);
-
     credential.requestMetadata = credReqMetadata;
     credential.state = CredentialState.RequestSent;
-
-    logger.log('credential before update', credential);
     await this.credentialRepository.update(credential);
-    const credential2 = await this.credentialRepository.find(credential.id);
-    logger.log('credential after update', credential2);
     return credentialRequest;
   }
 
@@ -127,13 +119,11 @@ export class CredentialService extends EventEmitter {
     const [requestAttachment] = messageContext.message.requestsAttachments;
     const credReq = JsonEncoder.decode(requestAttachment.data.base64);
 
-    logger.log('messageContext.message', messageContext.message);
-
     const [credential] = await this.credentialRepository.findByQuery({
       threadId: messageContext.message.thread?.threadId,
     });
 
-    logger.log('credential', credential);
+    logger.log('processCredentialRequest credential record', credential);
 
     const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
     const [offerAttachment] = offer.offersAttachments;
@@ -142,13 +132,11 @@ export class CredentialService extends EventEmitter {
 
     const [cred] = await this.wallet.createCredential(credOffer, credReq, credValues);
 
-    logger.log('cred', cred);
-
     const responseAttachment = new Attachment({
       id: uuid(),
       mimeType: 'application/json',
       data: {
-        base64: Buffer.from(JSON.stringify(cred)).toString('base64'),
+        base64: JsonEncoder.encode(cred),
       },
     });
 
@@ -174,7 +162,7 @@ export class CredentialService extends EventEmitter {
       threadId: messageContext.message.thread?.threadId,
     });
 
-    logger.log('credential', credential);
+    logger.log('processCredentialResponse credential record', credential);
 
     if (!credential.requestMetadata) {
       throw new Error(`Credential does not contain credReqMetadata.`);

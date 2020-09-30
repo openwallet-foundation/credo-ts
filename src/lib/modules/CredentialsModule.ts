@@ -8,6 +8,7 @@ import { LedgerService } from '../agent/LedgerService';
 import logger from '../logger';
 import { CredentialOfferMessage } from '../protocols/credentials/messages/CredentialOfferMessage';
 import { MessageTransformer } from '../agent/MessageTransformer';
+import { JsonEncoder } from '../protocols/credentials/JsonEncoder';
 
 export class CredentialsModule {
   private connectionService: ConnectionService;
@@ -34,16 +35,13 @@ export class CredentialsModule {
   }
 
   public async acceptCredential(credential: CredentialRecord) {
-    logger.log('credential', credential);
-    logger.log('credential.offer', credential.offer);
+    logger.log('acceptCredential credential', credential);
+
     const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
     const [offerAttachment] = offer.offersAttachments;
-    logger.log('offerAttachment', offerAttachment);
-    const credOffer = JSON.parse(Buffer.from(offerAttachment.data.base64, 'base64').toString('utf-8'));
-    logger.log('credOffer', credOffer);
+    const credOffer = JsonEncoder.decode(offerAttachment.data.base64);
 
     const [, credentialDefinition] = await this.ledgerService.getCredentialDefinition(credOffer.cred_def_id);
-    logger.log('credentialDefinition', credentialDefinition);
     const connection = await this.connectionService.find(credential.connectionId);
 
     if (!connection) {
@@ -67,8 +65,4 @@ export class CredentialsModule {
   public async find(id: string) {
     return this.credentialService.find(id);
   }
-}
-
-interface CredentialTemplate {
-  credDefId: string;
 }
