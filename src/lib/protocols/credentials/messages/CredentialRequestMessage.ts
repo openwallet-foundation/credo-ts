@@ -7,7 +7,7 @@ import { Attachment } from './Attachment';
 interface CredentialRequestMessageOptions {
   id?: string;
   comment: string;
-  requestsAttachments: Attachment[];
+  attachments: Attachment[];
 }
 
 export class CredentialRequestMessage extends AgentMessage {
@@ -17,7 +17,7 @@ export class CredentialRequestMessage extends AgentMessage {
     if (options) {
       this.id = options.id || this.generateId();
       this.comment = options.comment;
-      this.requestsAttachments = options.requestsAttachments;
+      this.attachments = options.attachments;
     }
   }
 
@@ -29,5 +29,5 @@ export class CredentialRequestMessage extends AgentMessage {
   public comment!: string;
 
   @Expose({ name: 'requests~attach' })
-  public requestsAttachments!: Attachment[];
+  public attachments!: Attachment[];
 }

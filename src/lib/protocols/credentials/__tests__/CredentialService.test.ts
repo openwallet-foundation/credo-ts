@@ -83,7 +83,7 @@ const mockCredentialRecord = new CredentialRecord({
   offer: new CredentialOfferMessage({
     comment: 'some comment',
     credentialPreview: preview,
-    offersAttachments: [attachment],
+    attachments: [attachment],
   }).toJSON(),
   state: CredentialState.OfferSent,
   tags: {},
@@ -258,7 +258,7 @@ describe('CredentialService', () => {
       const credentialOfferMessage = new CredentialOfferMessage({
         comment: 'some comment',
         credentialPreview: preview,
-        offersAttachments: [attachment],
+        attachments: [attachment],
       });
 
       const messageContext = new InboundMessageContext(credentialOfferMessage);
@@ -284,7 +284,7 @@ describe('CredentialService', () => {
       const credentialOfferMessage = new CredentialOfferMessage({
         comment: 'some comment',
         credentialPreview: preview,
-        offersAttachments: [attachment],
+        attachments: [attachment],
       });
 
       const messageContext = new InboundMessageContext(credentialOfferMessage);
@@ -353,7 +353,7 @@ describe('CredentialService', () => {
 
     test('updates credential to CREDENTIAL_ISSUED state', async () => {
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update');
-      const credentialRequest = new CredentialRequestMessage({ comment: 'abcd', requestsAttachments: [attachment] });
+      const credentialRequest = new CredentialRequestMessage({ comment: 'abcd', attachments: [attachment] });
       credentialRequest.setThread(new ThreadDecorator({ threadId: 'somethreadid' }));
       const messageContext = new InboundMessageContext(credentialRequest);
 
@@ -371,7 +371,7 @@ describe('CredentialService', () => {
     });
 
     test('returns credential response message base on credential request message', async () => {
-      const credentialRequest = new CredentialRequestMessage({ comment: 'abcd', requestsAttachments: [attachment] });
+      const credentialRequest = new CredentialRequestMessage({ comment: 'abcd', attachments: [attachment] });
       credentialRequest.setThread(new ThreadDecorator({ threadId: 'somethreadid' }));
       const messageContext = new InboundMessageContext(credentialRequest);
 

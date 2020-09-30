@@ -44,7 +44,7 @@ export class CredentialService extends EventEmitter {
     });
     const credentialOffer = new CredentialOfferMessage({
       comment,
-      offersAttachments: [attachment],
+      attachments: [attachment],
       credentialPreview: preview,
     });
 
@@ -84,7 +84,7 @@ export class CredentialService extends EventEmitter {
   ): Promise<CredentialRequestMessage> {
     const proverDid = connection.did;
     const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
-    const [offerAttachment] = offer.offersAttachments;
+    const [offerAttachment] = offer.attachments;
     const credOffer = JsonEncoder.decode(offerAttachment.data.base64);
 
     const [credReq, credReqMetadata] = await this.wallet.createCredentialRequest(
@@ -102,7 +102,7 @@ export class CredentialService extends EventEmitter {
     });
     const credentialRequest = new CredentialRequestMessage({
       comment: 'some credential request comment',
-      requestsAttachments: [attachment],
+      attachments: [attachment],
     });
     credentialRequest.setThread(new ThreadDecorator({ threadId: offer.id }));
 
@@ -116,7 +116,7 @@ export class CredentialService extends EventEmitter {
     messageContext: InboundMessageContext<CredentialRequestMessage>,
     { comment }: CredentialResponseOptions
   ): Promise<CredentialResponseMessage> {
-    const [requestAttachment] = messageContext.message.requestsAttachments;
+    const [requestAttachment] = messageContext.message.attachments;
     const credReq = JsonEncoder.decode(requestAttachment.data.base64);
 
     const [credential] = await this.credentialRepository.findByQuery({
@@ -126,7 +126,7 @@ export class CredentialService extends EventEmitter {
     logger.log('processCredentialRequest credential record', credential);
 
     const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
-    const [offerAttachment] = offer.offersAttachments;
+    const [offerAttachment] = offer.attachments;
     const credOffer = JsonEncoder.decode(offerAttachment.data.base64);
     const credValues = CredentialUtils.convertPreviewToValues(offer.credentialPreview);
 

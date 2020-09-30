@@ -11,6 +11,8 @@ interface CredentialPreviewOptions {
 
 /**
  * This is not a message but an inner object for other messages in this protocol. It is used construct a preview of the data for the credential that is to be issued.
+ *
+ * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#preview-credential
  */
 export class CredentialPreview {
   public constructor(options: CredentialPreviewOptions) {
@@ -62,7 +64,7 @@ export class CredentialPreviewAttribute {
 export interface CredentialOfferMessageOptions {
   id?: string;
   comment: string;
-  offersAttachments: Attachment[];
+  attachments: Attachment[];
   credentialPreview: CredentialPreview;
 }
 
@@ -79,7 +81,7 @@ export class CredentialOfferMessage extends AgentMessage {
       this.id = options.id || this.generateId();
       this.comment = options.comment;
       this.credentialPreview = options.credentialPreview;
-      this.offersAttachments = options.offersAttachments;
+      this.attachments = options.attachments;
     }
   }
 
@@ -95,5 +97,5 @@ export class CredentialOfferMessage extends AgentMessage {
   public credentialPreview!: CredentialPreview;
 
   @Expose({ name: 'offers~attach' })
-  public offersAttachments!: Attachment[];
+  public attachments!: Attachment[];
 }

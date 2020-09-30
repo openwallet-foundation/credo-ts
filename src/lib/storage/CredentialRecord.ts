@@ -10,7 +10,7 @@ export interface CredentialStorageProps {
   connectionId: string;
   requestMetadata?: Record<string, unknown>;
   credentialId?: CredentialId;
-  tags: { [keys: string]: string };
+  tags: Record<string, unknown>;
 }
 
 export class CredentialRecord extends BaseRecord implements CredentialStorageProps {

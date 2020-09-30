@@ -38,7 +38,7 @@ export class CredentialsModule {
     logger.log('acceptCredential credential', credential);
 
     const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
-    const [offerAttachment] = offer.offersAttachments;
+    const [offerAttachment] = offer.attachments;
     const credOffer = JsonEncoder.decode(offerAttachment.data.base64);
 
     const [, credentialDefinition] = await this.ledgerService.getCredentialDefinition(credOffer.cred_def_id);
