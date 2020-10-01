@@ -15,6 +15,8 @@ export interface InitConfig {
   walletConfig: WalletConfig;
   walletCredentials: WalletCredentials;
   autoAcceptConnections?: boolean;
+  genesisPath?: string;
+  poolName?: string;
 }
 
 export interface UnpackedMessage {

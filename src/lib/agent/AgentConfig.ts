@@ -24,6 +24,14 @@ export class AgentConfig {
     return this.initConfig.agencyUrl;
   }
 
+  public get poolName() {
+    return this.initConfig.poolName ?? 'default-pool';
+  }
+
+  public get genesisPath() {
+    return this.initConfig.genesisPath;
+  }
+
   public establishInbound(inboundConnection: InboundConnection) {
     this.inboundConnection = inboundConnection;
   }

@@ -12,12 +12,18 @@ import { CredentialPreview } from '../protocols/credentials/messages/CredentialO
 import { CredentialState } from '../protocols/credentials/CredentialState';
 import { InitConfig } from '../types';
 
+const genesisPath = process.env.GENESIS_TXN_PATH
+  ? path.resolve(process.env.GENESIS_TXN_PATH)
+  : path.join(__dirname, '../../../network/genesis/local-genesis.txn');
+
 const faberConfig: InitConfig = {
   label: 'Faber',
   walletConfig: { id: 'credentials-test-faber' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
   publicDidSeed: process.env.TEST_AGENT_PUBLIC_DID_SEED,
   autoAcceptConnections: true,
+  genesisPath,
+  poolName: 'test-pool-credentials',
 };
 
 const aliceConfig: InitConfig = {
@@ -25,13 +31,6 @@ const aliceConfig: InitConfig = {
   walletConfig: { id: 'credentials-test-alice' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
   autoAcceptConnections: true,
-};
-
-const poolName = 'test-pool-credentials';
-const poolConfig = {
-  genesis_txn: process.env.GENESIS_TXN_PATH
-    ? path.resolve(process.env.GENESIS_TXN_PATH)
-    : path.join(__dirname, '../../../network/genesis/local-genesis.txn'),
 };
 
 const credentialPreview = new CredentialPreview({
@@ -67,9 +66,6 @@ describe('credentials', () => {
     aliceAgent = new Agent(aliceConfig, aliceAgentInbound, aliceAgentOutbound, indy);
     await faberAgent.init();
     await aliceAgent.init();
-
-    console.log(`Connecting to ledger pool ${poolName} with config:`, poolConfig);
-    await faberAgent.ledger.connect(poolName, poolConfig);
 
     const schemaTemplate = {
       name: `test-schema-${Date.now()}`,
