@@ -48,7 +48,7 @@ export class CredentialsModule {
       throw new Error(`There is no connection with ID ${credential.connectionId}`);
     }
 
-    const credentialRequestMessage = await this.credentialService.acceptCredentialOffer(
+    const credentialRequestMessage = await this.credentialService.createCredentialRequest(
       connection,
       credential,
       credentialDefinition

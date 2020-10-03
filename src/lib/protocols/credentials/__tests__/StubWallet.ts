@@ -45,7 +45,7 @@ export class StubWallet implements Wallet {
     offer: CredOffer,
     credDef: CredDef,
     masterSecretName: string
-  ): Promise<[CredReq, Record<string, unknown>]> {
+  ): Promise<[CredReq, CredReqMetadata]> {
     return Promise.resolve([
       {
         prover_did: proverDid,

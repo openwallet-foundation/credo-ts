@@ -12,7 +12,8 @@ export class CredentialRequestHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<CredentialRequestHandler>) {
-    const message = await this.credentialService.processCredentialRequest(messageContext, { comment: '' });
+    const credential = await this.credentialService.processCredentialRequest(messageContext);
+    const message = await this.credentialService.createCredentialResponse(credential.id, { comment: '' });
     if (!messageContext.connection) {
       throw new Error('There is no connection in message context.');
     }

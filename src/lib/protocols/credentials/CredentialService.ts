@@ -30,6 +30,13 @@ export class CredentialService extends EventEmitter {
     this.credentialRepository = credentialRepository;
   }
 
+  /**
+   * Create a new credential record and credential offer message to be send by issuer to holder.
+   *
+   * @param connection Connection to which you want to issue a credential
+   * @param credentialOfferTemplate Template for credential offer
+   * @returns Credential offer message
+   */
   public async createCredentialOffer(
     connection: ConnectionRecord,
     { credDefId, comment, preview }: CredentialOfferTemplate
@@ -55,10 +62,16 @@ export class CredentialService extends EventEmitter {
       tags: { threadId: credentialOffer.id },
     });
     await this.credentialRepository.save(credential);
-    this.emit(EventType.StateChanged, { credentialId: credential.id, newState: credential.state });
+    this.emit(EventType.StateChanged, { credential, prevState: null });
     return credentialOffer;
   }
 
+  /**
+   * Receive credential offer and create a new credential record.
+   * This does not accept the credential offer but just saves it and emit event to inform about it.
+   *
+   * @param messageContext
+   */
   public async processCredentialOffer(messageContext: InboundMessageContext<CredentialOfferMessage>): Promise<void> {
     const credentialOffer = messageContext.message;
     const connection = messageContext.connection;
@@ -74,10 +87,17 @@ export class CredentialService extends EventEmitter {
       tags: { threadId: credentialOffer.id },
     });
     await this.credentialRepository.save(credential);
-    this.emit(EventType.StateChanged, { credentialId: credential.id, newState: credential.state });
+    this.emit(EventType.StateChanged, { credential, prevState: null });
   }
 
-  public async acceptCredentialOffer(
+  /**
+   * Creates credential request message
+   *
+   * @param connection Connection between holder and issuer
+   * @param credential
+   * @param credDef
+   */
+  public async createCredentialRequest(
     connection: ConnectionRecord,
     credential: CredentialRecord,
     credDef: CredDef
@@ -107,30 +127,39 @@ export class CredentialService extends EventEmitter {
     credentialRequest.setThread(new ThreadDecorator({ threadId: offer.id }));
 
     credential.requestMetadata = credReqMetadata;
-    credential.state = CredentialState.RequestSent;
-    await this.credentialRepository.update(credential);
+    await this.updateState(credential, CredentialState.RequestSent);
     return credentialRequest;
   }
 
   public async processCredentialRequest(
-    messageContext: InboundMessageContext<CredentialRequestMessage>,
-    { comment }: CredentialResponseOptions
-  ): Promise<CredentialResponseMessage> {
+    messageContext: InboundMessageContext<CredentialRequestMessage>
+  ): Promise<CredentialRecord> {
     const [requestAttachment] = messageContext.message.attachments;
     const credReq = JsonEncoder.decode(requestAttachment.data.base64);
 
     const [credential] = await this.credentialRepository.findByQuery({
       threadId: messageContext.message.thread?.threadId,
     });
+    credential.request = credReq;
 
     logger.log('processCredentialRequest credential record', credential);
 
+    await this.updateState(credential, CredentialState.RequestReceived);
+    return credential;
+  }
+
+  public async createCredentialResponse(credentialId: string, { comment }: CredentialResponseOptions) {
+    const credential = await this.credentialRepository.find(credentialId);
     const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
     const [offerAttachment] = offer.attachments;
     const credOffer = JsonEncoder.decode(offerAttachment.data.base64);
     const credValues = CredentialUtils.convertPreviewToValues(offer.credentialPreview);
 
-    const [cred] = await this.wallet.createCredential(credOffer, credReq, credValues);
+    if (!credential.request) {
+      throw new Error(`Credential does not contain credReqMetadata.`);
+    }
+
+    const [cred] = await this.wallet.createCredential(credOffer, credential.request, credValues);
 
     const responseAttachment = new Attachment({
       id: uuid(),
@@ -145,9 +174,7 @@ export class CredentialService extends EventEmitter {
       attachments: [responseAttachment],
     });
 
-    credential.state = CredentialState.CredentialIssued;
-    await this.credentialRepository.update(credential);
-
+    await this.updateState(credential, CredentialState.CredentialIssued);
     return credentialResponse;
   }
 
@@ -186,6 +213,13 @@ export class CredentialService extends EventEmitter {
 
   public async find(id: string): Promise<CredentialRecord> {
     return this.credentialRepository.find(id);
+  }
+
+  private async updateState(credential: CredentialRecord, newState: CredentialState) {
+    const prevState = credential.state;
+    credential.state = newState;
+    await this.credentialRepository.update(credential);
+    this.emit(EventType.StateChanged, { credential, prevState });
   }
 }
 
