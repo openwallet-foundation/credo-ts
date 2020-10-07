@@ -33,7 +33,7 @@ export class CredentialService extends EventEmitter {
   /**
    * Create a new credential record and credential offer message to be send by issuer to holder.
    *
-   * @param connection Connection to which you want to issue a credential
+   * @param connection Connection to which issuer wants to issue a credential
    * @param credentialOfferTemplate Template for credential offer
    * @returns Credential offer message
    */
@@ -67,8 +67,10 @@ export class CredentialService extends EventEmitter {
   }
 
   /**
-   * Receive credential offer and create a new credential record.
-   * This does not accept the credential offer but just saves it and emit event to inform about it.
+   * Creates a new credential record by holder based on incoming credential offer from issuer.
+   *
+   * It does not accept the credential offer. Holder needs to call `createCredentialRequest` method
+   * to accept the credential offer.
    *
    * @param messageContext
    */
@@ -91,7 +93,7 @@ export class CredentialService extends EventEmitter {
   }
 
   /**
-   * Creates credential request message
+   * Creates credential request message by holder to be send to issuer.
    *
    * @param connection Connection between holder and issuer
    * @param credential
@@ -124,13 +126,18 @@ export class CredentialService extends EventEmitter {
       comment: 'some credential request comment',
       attachments: [attachment],
     });
-    credentialRequest.setThread(new ThreadDecorator({ threadId: offer.id }));
+    credentialRequest.setThread(new ThreadDecorator({ threadId: credential.tags.threadId }));
 
     credential.requestMetadata = credReqMetadata;
     await this.updateState(credential, CredentialState.RequestSent);
     return credentialRequest;
   }
 
+  /**
+   * Updates credential record by issuer based on incoming credential request from holder.
+   *
+   * @param messageContext
+   */
   public async processCredentialRequest(
     messageContext: InboundMessageContext<CredentialRequestMessage>
   ): Promise<CredentialRecord> {
@@ -142,12 +149,18 @@ export class CredentialService extends EventEmitter {
     });
     credential.request = credReq;
 
-    logger.log('processCredentialRequest credential record', credential);
+    logger.log('Credential record found when processing credential request', credential);
 
     await this.updateState(credential, CredentialState.RequestReceived);
     return credential;
   }
 
+  /**
+   * Creates credential request message by issuer to be send to holder.
+   *
+   * @param credentialId Credential record ID
+   * @param credentialResponseOptions
+   */
   public async createCredentialResponse(credentialId: string, { comment }: CredentialResponseOptions) {
     const credential = await this.credentialRepository.find(credentialId);
     const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
@@ -173,11 +186,18 @@ export class CredentialService extends EventEmitter {
       comment,
       attachments: [responseAttachment],
     });
+    credentialResponse.setThread(new ThreadDecorator({ threadId: credential.tags.threadId }));
 
     await this.updateState(credential, CredentialState.CredentialIssued);
     return credentialResponse;
   }
 
+  /**
+   * Updates credential record by holder based on incoming credential request from issuer.
+   *
+   * @param messageContext
+   * @param credentialDefinition
+   */
   public async processCredentialResponse(
     messageContext: InboundMessageContext<CredentialResponseMessage>,
     credentialDefinition: CredDef
@@ -189,7 +209,7 @@ export class CredentialService extends EventEmitter {
       threadId: messageContext.message.thread?.threadId,
     });
 
-    logger.log('processCredentialResponse credential record', credential);
+    logger.log('Credential record found when processing credential response', credential);
 
     if (!credential.requestMetadata) {
       throw new Error(`Credential does not contain credReqMetadata.`);

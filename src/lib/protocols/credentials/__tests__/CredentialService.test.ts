@@ -83,10 +83,12 @@ const mockCredentialRecord = ({
   state,
   request,
   requestMetadata,
+  tags,
 }: {
   state: CredentialState;
   request?: CredReq;
   requestMetadata?: CredReqMetadata;
+  tags?: Record<string, unknown>;
 }) =>
   new CredentialRecord({
     offer: new CredentialOfferMessage({
@@ -97,7 +99,7 @@ const mockCredentialRecord = ({
     request: request,
     requestMetadata: requestMetadata,
     state: state || CredentialState.OfferSent,
-    tags: {},
+    tags: tags || {},
     connectionId: '123',
   } as any);
 
@@ -366,7 +368,10 @@ describe('CredentialService', () => {
     });
 
     test('returns credential request message base on existing credential offer message', async () => {
-      const credential = mockCredentialRecord({ state: CredentialState.OfferReceived });
+      const credential = mockCredentialRecord({
+        state: CredentialState.OfferReceived,
+        tags: { threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746' },
+      });
       const credentialRequest = await credentialService.createCredentialRequest(connection, credential, credDef);
 
       expect(credentialRequest.toJSON()).toMatchObject({
@@ -374,7 +379,7 @@ describe('CredentialService', () => {
         '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/request-credential',
         '~thread': {
           // @ts-ignore
-          thid: credential.offer['@id'],
+          thid: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
         },
         comment: 'some credential request comment',
         'requests~attach': [
@@ -490,7 +495,11 @@ describe('CredentialService', () => {
     });
 
     test('returns credential response message base on credential request message', async () => {
-      const credential = mockCredentialRecord({ state: CredentialState.RequestReceived, request: credReq });
+      const credential = mockCredentialRecord({
+        state: CredentialState.RequestReceived,
+        request: credReq,
+        tags: { threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746' },
+      });
 
       // make separate mockFind variable to get the correct jest mock typing
       const mockFind = credentialRepository.find as jest.Mock<Promise<CredentialRecord>, [string]>;
@@ -502,6 +511,10 @@ describe('CredentialService', () => {
       expect(credentialResponse.toJSON()).toMatchObject({
         '@id': expect.any(String),
         '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/issue-credential',
+        '~thread': {
+          // @ts-ignore
+          thid: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
+        },
         comment,
         'credentials~attach': [
           {
