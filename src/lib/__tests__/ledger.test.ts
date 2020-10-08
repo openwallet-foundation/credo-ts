@@ -3,12 +3,19 @@ import path from 'path';
 import indy from 'indy-sdk';
 import { DidInfo } from '../wallet/Wallet';
 import { DID_IDENTIFIER_REGEX, VERKEY_REGEX, isFullVerkey, isAbbreviatedVerkey } from '../utils/did';
+import { InitConfig } from '../types';
 
-const faberConfig = {
+const genesisPath = process.env.GENESIS_TXN_PATH
+  ? path.resolve(process.env.GENESIS_TXN_PATH)
+  : path.join(__dirname, '../../../network/genesis/local-genesis.txn');
+
+const faberConfig: InitConfig = {
   label: 'Faber',
   walletConfig: { id: 'faber' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
   publicDidSeed: process.env.TEST_AGENT_PUBLIC_DID_SEED,
+  genesisPath,
+  poolName: 'test-pool',
 };
 
 describe('ledger', () => {
@@ -19,16 +26,6 @@ describe('ledger', () => {
   beforeAll(async () => {
     faberAgent = new Agent(faberConfig, new DummyInboundTransporter(), new DummyOutboundTransporter(), indy);
     await faberAgent.init();
-
-    const poolName = 'test-pool';
-    const poolConfig = {
-      genesis_txn: process.env.GENESIS_TXN_PATH
-        ? path.resolve(process.env.GENESIS_TXN_PATH)
-        : path.join(__dirname, '../../../network/genesis/local-genesis.txn'),
-    };
-
-    console.log(`Connecting to ledger pool ${poolName} with config:`, poolConfig);
-    await faberAgent.ledger.connect(poolName, poolConfig);
   });
 
   afterAll(async () => {
