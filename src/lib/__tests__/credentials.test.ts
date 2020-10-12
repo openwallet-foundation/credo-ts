@@ -26,7 +26,7 @@ const faberConfig: InitConfig = {
   publicDidSeed: process.env.TEST_AGENT_PUBLIC_DID_SEED,
   autoAcceptConnections: true,
   genesisPath,
-  poolName: 'test-pool-credentials',
+  poolName: 'credentials-test-faber-pool',
 };
 
 const aliceConfig: InitConfig = {
@@ -34,6 +34,8 @@ const aliceConfig: InitConfig = {
   walletConfig: { id: 'credentials-test-alice' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
   autoAcceptConnections: true,
+  genesisPath,
+  poolName: 'credentials-test-alice-pool',
 };
 
 const credentialPreview = new CredentialPreview({
