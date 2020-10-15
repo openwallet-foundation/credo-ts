@@ -1,5 +1,5 @@
-import { Equals, IsString } from 'class-validator';
-import { classToPlain, Expose } from 'class-transformer';
+import { Equals, IsString, ValidateNested } from 'class-validator';
+import { classToPlain, Expose, Type } from 'class-transformer';
 
 import { AgentMessage } from '../../../agent/AgentMessage';
 import { MessageType } from './MessageType';
@@ -26,7 +26,8 @@ export class CredentialPreview {
   public readonly type = CredentialPreview.type;
   public static readonly type = MessageType.CredentialPreview;
 
-  @Expose({ name: 'attributes' })
+  @Type(() => CredentialPreviewAttribute)
+  @ValidateNested()
   public attributes!: CredentialPreviewAttribute[];
 
   public toJSON(): Record<string, unknown> {
@@ -36,7 +37,7 @@ export class CredentialPreview {
 
 interface CredentialPreviewAttributeOptions {
   name: string;
-  mimeType: string;
+  mimeType?: string;
   value: string;
 }
 
@@ -52,7 +53,7 @@ export class CredentialPreviewAttribute {
   public name!: string;
 
   @Expose({ name: 'mime-type' })
-  public mimeType!: string;
+  public mimeType?: string;
 
   public value!: string;
 
@@ -63,7 +64,7 @@ export class CredentialPreviewAttribute {
 
 export interface CredentialOfferMessageOptions {
   id?: string;
-  comment: string;
+  comment?: string;
   attachments: Attachment[];
   credentialPreview: CredentialPreview;
 }
@@ -90,12 +91,13 @@ export class CredentialOfferMessage extends AgentMessage {
   public static readonly type = MessageType.CredentialOffer;
 
   @IsString()
-  public comment!: string;
+  public comment?: string;
 
   @IsString()
   @Expose({ name: 'credential_preview' })
   public credentialPreview!: CredentialPreview;
 
   @Expose({ name: 'offers~attach' })
+  @Type(() => Attachment)
   public attachments!: Attachment[];
 }

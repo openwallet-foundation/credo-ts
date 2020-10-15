@@ -15,7 +15,6 @@ import { ConnectionRecord } from '../../../storage/ConnectionRecord';
 import { JsonEncoder } from '../JsonEncoder';
 import { Attachment } from '../messages/Attachment';
 import { CredentialRequestMessage } from '../messages/CredentialRequestMessage';
-import { ThreadDecorator } from '../../../decorators/thread/ThreadDecorator';
 import { CredentialResponseMessage } from '../messages/CredentialResponseMessage';
 
 jest.mock('./../../../storage/Repository');
@@ -379,7 +378,7 @@ describe('CredentialService', () => {
       repositoryFindMock.mockReturnValue(Promise.resolve([mockCredentialRecord({ state: CredentialState.OfferSent })]));
 
       const credentialRequest = new CredentialRequestMessage({ comment: 'abcd', attachments: [requestAttachment] });
-      credentialRequest.setThread(new ThreadDecorator({ threadId: 'somethreadid' }));
+      credentialRequest.setThread({ threadId: 'somethreadid' });
       const messageContext = new InboundMessageContext(credentialRequest);
 
       await credentialService.processCredentialRequest(messageContext);
@@ -400,7 +399,7 @@ describe('CredentialService', () => {
       repositoryFindMock.mockReturnValue(Promise.resolve([mockCredentialRecord({ state: CredentialState.OfferSent })]));
 
       const credentialRequest = new CredentialRequestMessage({ comment: 'abcd', attachments: [requestAttachment] });
-      credentialRequest.setThread(new ThreadDecorator({ threadId: 'somethreadid' }));
+      credentialRequest.setThread({ threadId: 'somethreadid' });
       const messageContext = new InboundMessageContext(credentialRequest);
 
       await credentialService.processCredentialRequest(messageContext);
@@ -517,7 +516,7 @@ describe('CredentialService', () => {
       );
 
       const credentialResponse = new CredentialResponseMessage({ comment: 'abcd', attachments: [attachment] });
-      credentialResponse.setThread(new ThreadDecorator({ threadId: 'somethreadid' }));
+      credentialResponse.setThread({ threadId: 'somethreadid' });
       const messageContext = new InboundMessageContext(credentialResponse);
 
       await credentialService.processCredentialResponse(messageContext, credDef);

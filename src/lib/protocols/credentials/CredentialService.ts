@@ -43,7 +43,6 @@ export class CredentialService extends EventEmitter {
   ): Promise<CredentialOfferMessage> {
     const credOffer = await this.wallet.createCredentialOffer(credDefId);
     const attachment = new Attachment({
-      id: uuid(),
       mimeType: 'application/json',
       data: {
         base64: JsonEncoder.encode(credOffer),
@@ -116,7 +115,6 @@ export class CredentialService extends EventEmitter {
       'master_secret'
     );
     const attachment = new Attachment({
-      id: uuid(),
       mimeType: 'application/json',
       data: {
         base64: JsonEncoder.encode(credReq),
@@ -126,7 +124,7 @@ export class CredentialService extends EventEmitter {
       comment: 'some credential request comment',
       attachments: [attachment],
     });
-    credentialRequest.setThread(new ThreadDecorator({ threadId: credential.tags.threadId }));
+    credentialRequest.setThread({ threadId: credential.tags.threadId });
 
     credential.requestMetadata = credReqMetadata;
     await this.updateState(credential, CredentialState.RequestSent);
@@ -175,7 +173,6 @@ export class CredentialService extends EventEmitter {
     const [cred] = await this.wallet.createCredential(credOffer, credential.request, credValues);
 
     const responseAttachment = new Attachment({
-      id: uuid(),
       mimeType: 'application/json',
       data: {
         base64: JsonEncoder.encode(cred),
@@ -186,7 +183,7 @@ export class CredentialService extends EventEmitter {
       comment,
       attachments: [responseAttachment],
     });
-    credentialResponse.setThread(new ThreadDecorator({ threadId: credential.tags.threadId }));
+    credentialResponse.setThread({ threadId: credential.tags.threadId });
 
     await this.updateState(credential, CredentialState.CredentialIssued);
     return credentialResponse;
@@ -245,10 +242,10 @@ export class CredentialService extends EventEmitter {
 
 export interface CredentialOfferTemplate {
   credDefId: CredDefId;
-  comment: string;
+  comment?: string;
   preview: CredentialPreview;
 }
 
 interface CredentialResponseOptions {
-  comment: string;
+  comment?: string;
 }

@@ -1,12 +1,12 @@
 import { Equals, IsString } from 'class-validator';
 import { AgentMessage } from '../../../agent/AgentMessage';
 import { MessageType } from '../../credentials/messages/MessageType';
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import { Attachment } from './Attachment';
 
 interface CredentialRequestMessageOptions {
   id?: string;
-  comment: string;
+  comment?: string;
   attachments: Attachment[];
 }
 
@@ -26,8 +26,9 @@ export class CredentialRequestMessage extends AgentMessage {
   public static readonly type = MessageType.CredentialRequest;
 
   @IsString()
-  public comment!: string;
+  public comment?: string;
 
   @Expose({ name: 'requests~attach' })
+  @Type(() => Attachment)
   public attachments!: Attachment[];
 }
