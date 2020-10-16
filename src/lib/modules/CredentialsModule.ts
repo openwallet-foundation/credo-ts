@@ -39,7 +39,7 @@ export class CredentialsModule {
 
     const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
     const [offerAttachment] = offer.attachments;
-    const credOffer = JsonEncoder.decode(offerAttachment.data.base64);
+    const credOffer = JsonEncoder.fromBase64(offerAttachment.data.base64);
 
     const [, credentialDefinition] = await this.ledgerService.getCredentialDefinition(credOffer.cred_def_id);
     const connection = await this.connectionService.find(credential.connectionId);

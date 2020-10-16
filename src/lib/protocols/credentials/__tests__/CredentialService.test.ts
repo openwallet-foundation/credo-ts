@@ -52,7 +52,7 @@ const requestAttachment = new Attachment({
   id: '6526420d-8d1c-4f70-89de-54c9f3fa9f5c',
   mimeType: '',
   data: {
-    base64: JsonEncoder.encode(credReq),
+    base64: JsonEncoder.toBase64(credReq),
   },
 });
 
@@ -437,7 +437,7 @@ describe('CredentialService', () => {
       // We're using instance of `StubWallet`. Value of `cred` should be as same as in the credential response message.
       const [cred] = await wallet.createCredential(credOffer, credReq, {});
       const [responseAttachment] = credentialResponse.attachments;
-      expect(JsonEncoder.decode(responseAttachment.data.base64)).toEqual(cred);
+      expect(JsonEncoder.fromBase64(responseAttachment.data.base64)).toEqual(cred);
     });
   });
 

@@ -12,7 +12,6 @@ import { Attachment } from './messages/Attachment';
 import logger from '../../logger';
 import { CredentialResponseMessage } from './messages/CredentialResponseMessage';
 import { JsonEncoder } from './JsonEncoder';
-import { ThreadDecorator } from '../../decorators/thread/ThreadDecorator';
 import { MessageTransformer } from '../../agent/MessageTransformer';
 import { CredentialUtils } from './CredentialUtils';
 
@@ -45,7 +44,7 @@ export class CredentialService extends EventEmitter {
     const attachment = new Attachment({
       mimeType: 'application/json',
       data: {
-        base64: JsonEncoder.encode(credOffer),
+        base64: JsonEncoder.toBase64(credOffer),
       },
     });
     const credentialOffer = new CredentialOfferMessage({
@@ -106,7 +105,7 @@ export class CredentialService extends EventEmitter {
     const proverDid = connection.did;
     const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
     const [offerAttachment] = offer.attachments;
-    const credOffer = JsonEncoder.decode(offerAttachment.data.base64);
+    const credOffer = JsonEncoder.fromBase64(offerAttachment.data.base64);
 
     const [credReq, credReqMetadata] = await this.wallet.createCredentialRequest(
       proverDid,
@@ -117,7 +116,7 @@ export class CredentialService extends EventEmitter {
     const attachment = new Attachment({
       mimeType: 'application/json',
       data: {
-        base64: JsonEncoder.encode(credReq),
+        base64: JsonEncoder.toBase64(credReq),
       },
     });
     const credentialRequest = new CredentialRequestMessage({
@@ -140,7 +139,7 @@ export class CredentialService extends EventEmitter {
     messageContext: InboundMessageContext<CredentialRequestMessage>
   ): Promise<CredentialRecord> {
     const [requestAttachment] = messageContext.message.attachments;
-    const credReq = JsonEncoder.decode(requestAttachment.data.base64);
+    const credReq = JsonEncoder.fromBase64(requestAttachment.data.base64);
 
     const [credential] = await this.credentialRepository.findByQuery({
       threadId: messageContext.message.thread?.threadId,
@@ -163,7 +162,7 @@ export class CredentialService extends EventEmitter {
     const credential = await this.credentialRepository.find(credentialId);
     const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
     const [offerAttachment] = offer.attachments;
-    const credOffer = JsonEncoder.decode(offerAttachment.data.base64);
+    const credOffer = JsonEncoder.fromBase64(offerAttachment.data.base64);
     const credValues = CredentialUtils.convertPreviewToValues(offer.credentialPreview);
 
     if (!credential.request) {
@@ -175,7 +174,7 @@ export class CredentialService extends EventEmitter {
     const responseAttachment = new Attachment({
       mimeType: 'application/json',
       data: {
-        base64: JsonEncoder.encode(cred),
+        base64: JsonEncoder.toBase64(cred),
       },
     });
 
@@ -200,7 +199,7 @@ export class CredentialService extends EventEmitter {
     credentialDefinition: CredDef
   ) {
     const [responseAttachment] = messageContext.message.attachments;
-    const cred = JsonEncoder.decode(responseAttachment.data.base64);
+    const cred = JsonEncoder.fromBase64(responseAttachment.data.base64);
 
     const [credential] = await this.credentialRepository.findByQuery({
       threadId: messageContext.message.thread?.threadId,
