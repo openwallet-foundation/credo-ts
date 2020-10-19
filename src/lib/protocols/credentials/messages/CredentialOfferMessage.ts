@@ -1,45 +1,71 @@
-import { Equals, IsString } from 'class-validator';
-import { Expose } from 'class-transformer';
+import { Equals, IsString, ValidateNested } from 'class-validator';
+import { classToPlain, Expose, Type } from 'class-transformer';
 
 import { AgentMessage } from '../../../agent/AgentMessage';
 import { MessageType } from './MessageType';
+import { Attachment } from './Attachment';
 
 interface CredentialPreviewOptions {
   attributes: CredentialPreviewAttribute[];
 }
 
+/**
+ * This is not a message but an inner object for other messages in this protocol. It is used construct a preview of the data for the credential that is to be issued.
+ *
+ * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#preview-credential
+ */
 export class CredentialPreview {
   public constructor(options: CredentialPreviewOptions) {
-    this.attributes = options.attributes;
+    if (options) {
+      this.attributes = options.attributes;
+    }
   }
 
+  @Expose({ name: '@type' })
   @Equals(CredentialPreview.type)
   public readonly type = CredentialPreview.type;
   public static readonly type = MessageType.CredentialPreview;
 
-  @Expose({ name: 'attributes' })
-  public attributes: CredentialPreviewAttribute[];
+  @Type(() => CredentialPreviewAttribute)
+  @ValidateNested()
+  public attributes!: CredentialPreviewAttribute[];
+
+  public toJSON(): Record<string, unknown> {
+    return classToPlain(this);
+  }
+}
+
+interface CredentialPreviewAttributeOptions {
+  name: string;
+  mimeType?: string;
+  value: string;
 }
 
 export class CredentialPreviewAttribute {
-  public constructor(options: CredentialPreviewAttribute) {
-    this.name = options.name;
-    this.mimeType = options.mimeType;
-    this.value = options.value;
+  public constructor(options: CredentialPreviewAttributeOptions) {
+    if (options) {
+      this.name = options.name;
+      this.mimeType = options.mimeType;
+      this.value = options.value;
+    }
   }
 
-  public name: string;
+  public name!: string;
 
   @Expose({ name: 'mime-type' })
-  public mimeType: string;
+  public mimeType?: string;
 
-  public value: string;
+  public value!: string;
+
+  public toJSON(): Record<string, unknown> {
+    return classToPlain(this);
+  }
 }
 
 export interface CredentialOfferMessageOptions {
   id?: string;
-  comment: string;
-  offersAttachments: Attachment[];
+  comment?: string;
+  attachments: Attachment[];
   credentialPreview: CredentialPreview;
 }
 
@@ -56,7 +82,7 @@ export class CredentialOfferMessage extends AgentMessage {
       this.id = options.id || this.generateId();
       this.comment = options.comment;
       this.credentialPreview = options.credentialPreview;
-      this.offersAttachments = options.offersAttachments;
+      this.attachments = options.attachments;
     }
   }
 
@@ -65,31 +91,13 @@ export class CredentialOfferMessage extends AgentMessage {
   public static readonly type = MessageType.CredentialOffer;
 
   @IsString()
-  public comment!: string;
+  public comment?: string;
 
   @IsString()
   @Expose({ name: 'credential_preview' })
   public credentialPreview!: CredentialPreview;
 
   @Expose({ name: 'offers~attach' })
-  public offersAttachments!: Attachment[];
-}
-
-export class Attachment {
-  public constructor(options: Attachment) {
-    this.id = options.id;
-    this.mimeType = options.mimeType;
-    this.data = options.data;
-  }
-
-  @Expose({ name: '@id' })
-  public id: string;
-
-  @Expose({ name: 'mime-type' })
-  public mimeType: string;
-
-  @Expose({ name: 'data' })
-  public data: {
-    base64: string;
-  };
+  @Type(() => Attachment)
+  public attachments!: Attachment[];
 }
