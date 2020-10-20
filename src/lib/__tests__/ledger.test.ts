@@ -80,9 +80,9 @@ describe('ledger', () => {
     };
 
     [schemaId] = await faberAgent.ledger.registerCredentialSchema(schemaTemplate);
-    const [ledgerSchemaId, ledgerSchema] = await faberAgent.ledger.getSchema(schemaId);
+    const ledgerSchema = await faberAgent.ledger.getSchema(schemaId);
 
-    expect(ledgerSchemaId).toBe(`${faberAgentPublicDid.did}:2:${schemaName}:1.0`);
+    expect(schemaId).toBe(`${faberAgentPublicDid.did}:2:${schemaName}:1.0`);
     expect(ledgerSchema).toEqual(
       expect.objectContaining({
         attrNames: expect.arrayContaining(['name', 'age']),
@@ -99,7 +99,7 @@ describe('ledger', () => {
     if (!faberAgentPublicDid) {
       throw new Error('Agent does not have publid did.');
     }
-    const [, schema] = await faberAgent.ledger.getSchema(schemaId);
+    const schema = await faberAgent.ledger.getSchema(schemaId);
     const credentialDefinitionTemplate = {
       schema: schema,
       tag: 'TAG',
@@ -108,10 +108,10 @@ describe('ledger', () => {
     };
 
     const [credDefId] = await faberAgent.ledger.registerCredentialDefinition(credentialDefinitionTemplate);
-    const [ledgerCredDefId, ledgerCredDef] = await faberAgent.ledger.getCredentialDefinition(credDefId);
+    const ledgerCredDef = await faberAgent.ledger.getCredentialDefinition(credDefId);
 
     const credDefIdRegExp = new RegExp(`${faberAgentPublicDid.did}:3:CL:[0-9]+:TAG`);
-    expect(ledgerCredDefId).toEqual(expect.stringMatching(credDefIdRegExp));
+    expect(credDefId).toEqual(expect.stringMatching(credDefIdRegExp));
     expect(ledgerCredDef).toEqual(
       expect.objectContaining({
         id: expect.stringMatching(credDefIdRegExp),
