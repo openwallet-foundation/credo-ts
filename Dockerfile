@@ -34,6 +34,7 @@ FROM base as final
 WORKDIR /www
 ENV RUN_MODE="docker"
 
+COPY class-transformer-0.3.1.tgz class-transformer-0.3.1.tgz
 COPY package.json package.json
 COPY yarn.lock yarn.lock
 
