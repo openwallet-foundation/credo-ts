@@ -13,5 +13,5 @@ module.exports = {
   },
   collectCoverageFrom: ['src/lib/**/*.{js,jsx,tsx,ts}'],
   coveragePathIgnorePatterns: ['/node_modules/', '/__tests__/'],
-  testTimeout: 30000,
+  testTimeout: 60000,
 };

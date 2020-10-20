@@ -3,7 +3,6 @@ import { validateOrReject } from 'class-validator';
 
 import { AgentConfig } from '../../agent/AgentConfig';
 import { ConnectionState } from './domain/ConnectionState';
-import { DidDoc, Service, PublicKey, PublicKeyType, Authentication } from './domain/DidDoc';
 import { ConnectionRecord, ConnectionTags } from '../../storage/ConnectionRecord';
 import { Repository } from '../../storage/Repository';
 import { Wallet } from '../../wallet/Wallet';
@@ -18,6 +17,11 @@ import { ConnectionRole } from './domain/ConnectionRole';
 import { TrustPingMessage } from '../trustping/TrustPingMessage';
 import { JsonTransformer } from '../../utils/JsonTransformer';
 import { AgentMessage } from '../../agent/AgentMessage';
+import { Ed25119Sig2018 } from './domain/did/publicKey';
+import { IndyAgentService } from './domain/did/service';
+import { DidDoc } from './domain/did/DidDoc';
+import { authenticationTypes, ReferencedAuthentication } from './domain/did/authentication';
+import { v4 as uuid } from 'uuid';
 
 export enum ConnectionEventType {
   StateChanged = 'stateChanged',
@@ -64,11 +68,12 @@ export class ConnectionService extends EventEmitter {
     });
 
     const { didDoc } = connectionRecord;
+    const [service] = didDoc.getServicesByClassType(IndyAgentService);
     const invitation = new ConnectionInvitationMessage({
       label: this.config.label,
-      recipientKeys: didDoc.service[0].recipientKeys,
-      serviceEndpoint: didDoc.service[0].serviceEndpoint,
-      routingKeys: didDoc.service[0].routingKeys,
+      recipientKeys: service.recipientKeys,
+      serviceEndpoint: service.serviceEndpoint,
+      routingKeys: service.routingKeys,
     });
 
     connectionRecord.invitation = invitation;
@@ -249,6 +254,7 @@ export class ConnectionService extends EventEmitter {
     const connectionJson = await unpackAndVerifySignatureDecorator(message.connectionSig, this.wallet);
 
     const connection = JsonTransformer.fromJSON(connectionJson, Connection);
+    // TODO: throw framework error stating the connection object is invalid
     await validateOrReject(connection);
 
     // Per the Connection RFC we must check if the key used to sign the connection~sig is the same key
@@ -345,18 +351,32 @@ export class ConnectionService extends EventEmitter {
     autoAcceptConnection?: boolean;
     tags?: ConnectionTags;
   }): Promise<ConnectionRecord> {
-    const [did, verkey] = await this.wallet.createDid();
-    const publicKey = new PublicKey(`${did}#1`, PublicKeyType.ED25519_SIG_2018, did, verkey);
-    const service = new Service(
-      `${did};indy`,
-      this.config.getEndpoint(),
-      [verkey],
-      this.config.getRoutingKeys(),
-      0,
-      'IndyAgent'
-    );
-    const auth = new Authentication(publicKey);
-    const didDoc = new DidDoc(did, [auth], [publicKey], [service]);
+    const id = uuid();
+    const [did, verkey] = await this.wallet.createDid({ method_name: 'sov' });
+
+    const publicKey = new Ed25119Sig2018({
+      id: `${did}#1`,
+      controller: did,
+      publicKeyBase58: verkey,
+    });
+
+    const service = new IndyAgentService({
+      id: `${did};indy`,
+      serviceEndpoint: this.config.getEndpoint(),
+      recipientKeys: [verkey],
+      routingKeys: this.config.getRoutingKeys(),
+    });
+
+    // TODO: abstract the second paramater for ReferencedAuthentication away. This can be
+    // inferred from the publicKey class instance
+    const auth = new ReferencedAuthentication(publicKey, authenticationTypes[publicKey.type]);
+
+    const didDoc = new DidDoc({
+      id: did,
+      authentication: [auth],
+      service: [service],
+      publicKey: [publicKey],
+    });
 
     const connectionRecord = new ConnectionRecord({
       did,
@@ -377,7 +397,7 @@ export class ConnectionService extends EventEmitter {
     return connectionRecord;
   }
 
-  public async getConnections() {
+  public getConnections() {
     return this.connectionRepository.findAll();
   }
 

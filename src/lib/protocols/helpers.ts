@@ -2,6 +2,7 @@ import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { AgentMessage } from '../agent/AgentMessage';
 import { OutboundMessage } from '../types';
 import { ConnectionInvitationMessage } from './connections/messages/ConnectionInvitationMessage';
+import { IndyAgentService } from './connections/domain/did/service';
 
 export function createOutboundMessage<T extends AgentMessage = AgentMessage>(
   connection: ConnectionRecord,
@@ -27,12 +28,14 @@ export function createOutboundMessage<T extends AgentMessage = AgentMessage>(
     throw new Error(`DidDoc for connection with verkey ${connection.verkey} not found!`);
   }
 
+  const [service] = theirDidDoc.getServicesByClassType(IndyAgentService);
+
   return {
     connection,
-    endpoint: theirDidDoc.service[0].serviceEndpoint,
+    endpoint: service.serviceEndpoint,
     payload,
-    recipientKeys: theirDidDoc.service[0].recipientKeys,
-    routingKeys: theirDidDoc.service[0].routingKeys,
+    recipientKeys: service.recipientKeys,
+    routingKeys: service.routingKeys ?? [],
     senderVk: connection.verkey,
   };
 }
