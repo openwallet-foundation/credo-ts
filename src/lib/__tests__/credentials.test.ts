@@ -177,16 +177,16 @@ describe('credentials', () => {
 async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<[SchemaId, Schema]> {
   const [schemaId] = await agent.ledger.registerCredentialSchema(schemaTemplate);
   console.log('schemaId', schemaId);
-  const [ledgerSchemaId, ledgerSchema] = await agent.ledger.getSchema(schemaId);
-  console.log('ledgerSchemaId, ledgerSchema', ledgerSchemaId, ledgerSchema);
-  return [ledgerSchemaId, ledgerSchema];
+  const ledgerSchema = await agent.ledger.getSchema(schemaId);
+  console.log('ledgerSchemaId, ledgerSchema', schemaId, ledgerSchema);
+  return [schemaId, ledgerSchema];
 }
 
 async function registerDefinition(agent: Agent, definitionTemplate: CredDefTemplate): Promise<[CredDefId, CredDef]> {
   const [credDefId] = await agent.ledger.registerCredentialDefinition(definitionTemplate);
-  const [ledgerCredDefId, ledgerCredDef] = await agent.ledger.getCredentialDefinition(credDefId);
-  console.log('ledgerCredDefId, ledgerCredDef', ledgerCredDefId, ledgerCredDef);
-  return [ledgerCredDefId, ledgerCredDef];
+  const ledgerCredDef = await agent.ledger.getCredentialDefinition(credDefId);
+  console.log('ledgerCredDefId, ledgerCredDef', credDefId, ledgerCredDef);
+  return [credDefId, ledgerCredDef];
 }
 
 async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: Did) {
