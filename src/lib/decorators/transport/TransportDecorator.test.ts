@@ -1,8 +1,9 @@
-import { plainToClass, classToPlain } from 'class-transformer';
 import { TransportDecorator, ReturnRouteTypes } from './TransportDecorator';
 import { validateOrReject } from 'class-validator';
+import { JsonTransformer } from '../../JsonTransformer';
 
-const validTranport = (obj: Record<string, unknown>) => validateOrReject(plainToClass(TransportDecorator, obj));
+const validTranport = (obj: Record<string, unknown>) =>
+  validateOrReject(JsonTransformer.fromJSON(obj, TransportDecorator));
 const expectValid = (obj: Record<string, unknown>) => expect(validTranport(obj)).resolves.toBeUndefined();
 const expectInvalid = (obj: Record<string, unknown>) => expect(validTranport(obj)).rejects.not.toBeNull();
 
@@ -34,7 +35,7 @@ const invalid = {
 
 describe('Decorators | TransportDecorator', () => {
   it('should correctly transform Json to TransportDecorator class', () => {
-    const decorator = plainToClass(TransportDecorator, valid.thread);
+    const decorator = JsonTransformer.fromJSON(valid.thread, TransportDecorator);
 
     expect(decorator.returnRoute).toBe(valid.thread.return_route);
     expect(decorator.returnRouteThread).toBe(valid.thread.return_route_thread);
@@ -47,7 +48,7 @@ describe('Decorators | TransportDecorator', () => {
       returnRouteThread: id,
     });
 
-    const json = classToPlain(decorator);
+    const json = JsonTransformer.toJSON(decorator);
     const transformed = {
       return_route: 'thread',
       return_route_thread: id,

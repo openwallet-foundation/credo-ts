@@ -1,4 +1,4 @@
-import { plainToClass, classToPlain } from 'class-transformer';
+import { JsonTransformer } from '../../JsonTransformer';
 import { TimingDecorator } from './TimingDecorator';
 
 describe('Decorators | TimingDecorator', () => {
@@ -11,7 +11,7 @@ describe('Decorators | TimingDecorator', () => {
       delay_milli: 12345,
       wait_until_time: '2019-01-24 00:00Z',
     };
-    const decorator = plainToClass(TimingDecorator, json);
+    const decorator = JsonTransformer.fromJSON(json, TimingDecorator);
 
     expect(decorator.inTime).toBeInstanceOf(Date);
     expect(decorator.outTime).toBeInstanceOf(Date);
@@ -38,7 +38,7 @@ describe('Decorators | TimingDecorator', () => {
       waitUntilTime,
     });
 
-    const json = JSON.stringify(classToPlain(decorator));
+    const jsonString = JsonTransformer.serialize(decorator);
     const transformed = JSON.stringify({
       in_time: '2019-01-23T18:03:27.123Z',
       out_time: '2019-01-23T18:03:27.123Z',
@@ -48,6 +48,6 @@ describe('Decorators | TimingDecorator', () => {
       wait_until_time: '2019-01-24T00:00:00.000Z',
     });
 
-    expect(json).toEqual(transformed);
+    expect(jsonString).toEqual(transformed);
   });
 });

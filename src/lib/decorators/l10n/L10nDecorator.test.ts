@@ -1,11 +1,11 @@
-import { plainToClass, classToPlain } from 'class-transformer';
+import { JsonTransformer } from '../../JsonTransformer';
 
 import { L10nDecorator } from './L10nDecorator';
 
 describe('Decorators | L10nDecorator', () => {
   it('should correctly transform Json to L10nDecorator class', () => {
     const locale = 'en';
-    const decorator = plainToClass(L10nDecorator, { locale });
+    const decorator = JsonTransformer.fromJSON({ locale }, L10nDecorator);
 
     expect(decorator.locale).toBe(locale);
   });
@@ -17,7 +17,7 @@ describe('Decorators | L10nDecorator', () => {
       locale,
     });
 
-    const json = classToPlain(decorator);
+    const json = JsonTransformer.toJSON(decorator);
     const transformed = {
       locale,
     };

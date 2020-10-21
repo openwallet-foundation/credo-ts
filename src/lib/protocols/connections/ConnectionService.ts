@@ -1,6 +1,5 @@
 import { v4 as uuid } from 'uuid';
 import { EventEmitter } from 'events';
-import { classToPlain, plainToClass } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
 
 import { OutboundMessage } from '../../types';
@@ -20,6 +19,7 @@ import { AckMessage } from './AckMessage';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 import { ConnectionRole } from './domain/ConnectionRole';
 import { TrustPingMessage } from '../trustping/TrustPingMessage';
+import { JsonTransformer } from '../../JsonTransformer';
 
 enum EventType {
   StateChanged = 'stateChanged',
@@ -184,12 +184,11 @@ class ConnectionService extends EventEmitter {
       didDoc: connectionRecord.didDoc,
     });
 
-    // TODO: find a better way that directly calling classToPlain here
-    const plainConnection = classToPlain(connection);
+    const connectionJson = JsonTransformer.toJSON(connection);
 
     const connectionResponse = new ConnectionResponseMessage({
       threadId: connectionRecord.tags.threadId!,
-      connectionSig: await signData(plainConnection, this.wallet, connectionRecord.verkey),
+      connectionSig: await signData(connectionJson, this.wallet, connectionRecord.verkey),
     });
 
     await this.updateState(connectionRecord, ConnectionState.Responded);
@@ -216,7 +215,7 @@ class ConnectionService extends EventEmitter {
 
     const connectionJson = await unpackAndVerifySignatureDecorator(message.connectionSig, this.wallet);
 
-    const connection = plainToClass(Connection, connectionJson);
+    const connection = JsonTransformer.fromJSON(connectionJson, Connection);
     await validateOrReject(connection);
 
     // Per the Connection RFC we must check if the key used to sign the connection~sig is the same key

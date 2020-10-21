@@ -7,8 +7,8 @@ import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
 import { ConnectionInvitationMessage } from '../protocols/connections/ConnectionInvitationMessage';
 import { MessageSender } from '../agent/MessageSender';
-import { MessageTransformer } from '../agent/MessageTransformer';
 import { ConnectionEventType } from '..';
+import { JsonTransformer } from '../JsonTransformer';
 
 export class ConnectionsModule {
   private agentConfig: AgentConfig;
@@ -61,7 +61,7 @@ export class ConnectionsModule {
       autoAcceptConnection?: boolean;
     }
   ): Promise<ConnectionRecord> {
-    const invitationMessage = MessageTransformer.toMessageInstance(invitationJson, ConnectionInvitationMessage);
+    const invitationMessage = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage);
 
     let connection = await this.connectionService.processInvitation(invitationMessage, {
       autoAcceptConnection: config?.autoAcceptConnection,

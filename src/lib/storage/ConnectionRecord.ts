@@ -3,7 +3,7 @@ import { DidDoc } from '../protocols/connections/domain/DidDoc';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
 import { ConnectionInvitationMessage } from '../protocols/connections/ConnectionInvitationMessage';
 import { ConnectionRole } from '../protocols/connections/domain/ConnectionRole';
-import { MessageTransformer } from '../agent/MessageTransformer';
+import { JsonTransformer } from '../JsonTransformer';
 
 interface ConnectionProps {
   id: string;
@@ -75,11 +75,11 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
   }
 
   public get invitation() {
-    if (this._invitation) return MessageTransformer.toMessageInstance(this._invitation, ConnectionInvitationMessage);
+    if (this._invitation) return JsonTransformer.fromJSON(this._invitation, ConnectionInvitationMessage);
   }
 
   public set invitation(invitation: ConnectionInvitationMessage | undefined) {
-    if (invitation) this._invitation = MessageTransformer.toJSON(invitation);
+    if (invitation) this._invitation = JsonTransformer.toJSON(invitation);
   }
 
   public get myKey() {

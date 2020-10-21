@@ -13,7 +13,6 @@ import { ConnectionInvitationMessage } from './ConnectionInvitationMessage';
 import { Repository } from '../../storage/Repository';
 import { DidDoc, Service } from './domain/DidDoc';
 import { Connection } from './domain/Connection';
-import { classToPlain } from 'class-transformer';
 import { signData, unpackAndVerifySignatureDecorator } from '../../decorators/signature/SignatureDecoratorUtils';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 import { ConnectionResponseMessage } from './ConnectionResponseMessage';
@@ -21,6 +20,7 @@ import { SignatureDecorator } from '../../decorators/signature/SignatureDecorato
 import { ConnectionRequestMessage } from './ConnectionRequestMessage';
 import { TrustPingMessage } from '../trustping/TrustPingMessage';
 import { AckMessage, AckStatus } from './AckMessage';
+import { JsonTransformer } from '../../JsonTransformer';
 jest.mock('./../../storage/Repository');
 const ConnectionRepository = <jest.Mock<Repository<ConnectionRecord>>>(<unknown>Repository);
 
@@ -356,7 +356,7 @@ describe('ConnectionService', () => {
         did: connectionRecord.did,
         didDoc: connectionRecord.didDoc,
       });
-      const plainConnection = classToPlain(connection);
+      const plainConnection = JsonTransformer.toJSON(connection);
 
       expect(outboundMessage.connection.state).toBe(ConnectionState.Responded);
       expect(await unpackAndVerifySignatureDecorator(outboundMessage.payload.connectionSig, wallet)).toEqual(
@@ -408,7 +408,7 @@ describe('ConnectionService', () => {
           [new Service(`${did};indy`, 'https://endpoint.com', [theirVerkey], [], 0, 'IndyAgent')]
         ),
       });
-      const plainConnection = classToPlain(otherPartyConnection);
+      const plainConnection = JsonTransformer.toJSON(otherPartyConnection);
       const connectionSig = await signData(plainConnection, wallet, theirVerkey);
 
       const connectionResponse = new ConnectionResponseMessage({
@@ -454,7 +454,7 @@ describe('ConnectionService', () => {
           [new Service(`${did};indy`, 'https://endpoint.com', [theirVerkey], [], 0, 'IndyAgent')]
         ),
       });
-      const plainConnection = classToPlain(otherPartyConnection);
+      const plainConnection = JsonTransformer.toJSON(otherPartyConnection);
       const connectionSig = await signData(plainConnection, wallet, theirVerkey);
 
       const connectionResponse = new ConnectionResponseMessage({
@@ -521,7 +521,7 @@ describe('ConnectionService', () => {
       const otherPartyConnection = new Connection({
         did: theirDid,
       });
-      const plainConnection = classToPlain(otherPartyConnection);
+      const plainConnection = JsonTransformer.toJSON(otherPartyConnection);
       const connectionSig = await signData(plainConnection, wallet, theirVerkey);
 
       const connectionResponse = new ConnectionResponseMessage({

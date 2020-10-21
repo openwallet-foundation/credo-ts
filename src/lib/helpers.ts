@@ -2,7 +2,7 @@ import { Transform } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
 
 import { ConnectionInvitationMessage } from './protocols/connections/ConnectionInvitationMessage';
-import { MessageTransformer } from './agent/MessageTransformer';
+import { JsonTransformer } from './JsonTransformer';
 
 /**
  * Create a `ConnectionInvitationMessage` instance from the `c_i` parameter of an URL
@@ -16,7 +16,7 @@ export async function decodeInvitationFromUrl(invitationUrl: string): Promise<Co
   const [, encodedInvitation] = invitationUrl.split('c_i=');
   const invitationJson: Record<string, unknown> = JSON.parse(Buffer.from(encodedInvitation, 'base64').toString());
 
-  const invitation = MessageTransformer.toMessageInstance(invitationJson, ConnectionInvitationMessage);
+  const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage);
 
   // TODO: should validation happen here?
   await validateOrReject(invitation);
@@ -34,7 +34,7 @@ export function encodeInvitationToUrl(
   invitation: ConnectionInvitationMessage,
   domain = 'https://example.com/ssi'
 ): string {
-  const invitationJson = MessageTransformer.toJSON(invitation);
+  const invitationJson = JsonTransformer.toJSON(invitation);
   const stringifiedInvitation = JSON.stringify(invitationJson);
   const encodedInvitation = Buffer.from(stringifiedInvitation).toString('base64');
   const invitationUrl = `${domain}?c_i=${encodedInvitation}`;
