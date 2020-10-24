@@ -2,7 +2,7 @@ import { Transform } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
 
 import { ConnectionInvitationMessage } from './protocols/connections/ConnectionInvitationMessage';
-import { JsonTransformer } from './JsonTransformer';
+import { JsonTransformer } from './utils/JsonTransformer';
 
 /**
  * Create a `ConnectionInvitationMessage` instance from the `c_i` parameter of an URL

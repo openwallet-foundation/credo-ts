@@ -8,7 +8,7 @@ import { ConnectionState } from '../protocols/connections/domain/ConnectionState
 import { ConnectionInvitationMessage } from '../protocols/connections/ConnectionInvitationMessage';
 import { MessageSender } from '../agent/MessageSender';
 import { ConnectionEventType } from '..';
-import { JsonTransformer } from '../JsonTransformer';
+import { JsonTransformer } from '../utils/JsonTransformer';
 
 export class ConnectionsModule {
   private agentConfig: AgentConfig;

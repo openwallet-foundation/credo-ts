@@ -19,7 +19,7 @@ import { AckMessage } from './AckMessage';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 import { ConnectionRole } from './domain/ConnectionRole';
 import { TrustPingMessage } from '../trustping/TrustPingMessage';
-import { JsonTransformer } from '../../JsonTransformer';
+import { JsonTransformer } from '../../utils/JsonTransformer';
 
 enum EventType {
   StateChanged = 'stateChanged',

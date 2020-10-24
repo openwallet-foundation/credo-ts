@@ -4,7 +4,7 @@ import { Expose, Type } from 'class-transformer';
 import { AgentMessage } from '../../../agent/AgentMessage';
 import { MessageType } from './MessageType';
 import { Attachment } from './Attachment';
-import { JsonTransformer } from '../../../JsonTransformer';
+import { JsonTransformer } from '../../../utils/JsonTransformer';
 
 interface CredentialPreviewOptions {
   attributes: CredentialPreviewAttribute[];

@@ -1,6 +1,6 @@
 import { Expose } from 'class-transformer';
 import { v4 as uuid } from 'uuid';
-import { JsonTransformer } from '../../../JsonTransformer';
+import { JsonTransformer } from '../../../utils/JsonTransformer';
 
 interface AttachmentOptions {
   id?: string;

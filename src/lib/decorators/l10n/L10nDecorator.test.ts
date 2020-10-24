@@ -1,4 +1,4 @@
-import { JsonTransformer } from '../../JsonTransformer';
+import { JsonTransformer } from '../../utils/JsonTransformer';
 
 import { L10nDecorator } from './L10nDecorator';
 

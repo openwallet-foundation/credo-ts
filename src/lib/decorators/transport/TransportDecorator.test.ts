@@ -1,6 +1,6 @@
 import { TransportDecorator, ReturnRouteTypes } from './TransportDecorator';
 import { validateOrReject } from 'class-validator';
-import { JsonTransformer } from '../../JsonTransformer';
+import { JsonTransformer } from '../../utils/JsonTransformer';
 
 const validTranport = (obj: Record<string, unknown>) =>
   validateOrReject(JsonTransformer.fromJSON(obj, TransportDecorator));

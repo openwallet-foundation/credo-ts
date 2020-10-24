@@ -11,9 +11,9 @@ import { CredentialRequestMessage } from './messages/CredentialRequestMessage';
 import { Attachment } from './messages/Attachment';
 import logger from '../../logger';
 import { CredentialResponseMessage } from './messages/CredentialResponseMessage';
-import { JsonEncoder } from './JsonEncoder';
+import { JsonEncoder } from '../../utils/JsonEncoder';
 import { CredentialUtils } from './CredentialUtils';
-import { JsonTransformer } from '../../JsonTransformer';
+import { JsonTransformer } from '../../utils/JsonTransformer';
 
 export enum EventType {
   StateChanged = 'stateChanged',

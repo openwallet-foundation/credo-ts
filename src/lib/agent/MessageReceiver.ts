@@ -7,7 +7,7 @@ import { MessageType } from '../protocols/routing/messages';
 import { InboundMessageContext } from './models/InboundMessageContext';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { AgentMessage } from './AgentMessage';
-import { JsonTransformer } from '../JsonTransformer';
+import { JsonTransformer } from '../utils/JsonTransformer';
 
 class MessageReceiver {
   private config: AgentConfig;

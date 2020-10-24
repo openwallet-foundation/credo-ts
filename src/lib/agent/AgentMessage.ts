@@ -4,7 +4,7 @@ import { L10nDecorated } from '../decorators/l10n/L10nDecoratorExtension';
 import { TransportDecorated } from '../decorators/transport/TransportDecoratorExtension';
 import { TimingDecorated } from '../decorators/timing/TimingDecoratorExtension';
 import { BaseMessage } from './BaseMessage';
-import { JsonTransformer } from '../JsonTransformer';
+import { JsonTransformer } from '../utils/JsonTransformer';
 
 const DefaultDecorators = [ThreadDecorated, L10nDecorated, TransportDecorated, TimingDecorated];
 

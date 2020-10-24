@@ -2,7 +2,7 @@ import { Handler, HandlerInboundMessage } from '../Handler';
 import { CredentialService } from '../../protocols/credentials/CredentialService';
 import { CredentialResponseMessage } from '../../protocols/credentials/messages/CredentialResponseMessage';
 import { LedgerService } from '../../agent/LedgerService';
-import { JsonEncoder } from '../../protocols/credentials/JsonEncoder';
+import { JsonEncoder } from '../../utils/JsonEncoder';
 
 export class CredentialResponseHandler implements Handler {
   private credentialService: CredentialService;

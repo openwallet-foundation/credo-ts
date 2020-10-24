@@ -3,7 +3,7 @@ import { DidDoc } from '../protocols/connections/domain/DidDoc';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
 import { ConnectionInvitationMessage } from '../protocols/connections/ConnectionInvitationMessage';
 import { ConnectionRole } from '../protocols/connections/domain/ConnectionRole';
-import { JsonTransformer } from '../JsonTransformer';
+import { JsonTransformer } from '../utils/JsonTransformer';
 
 interface ConnectionProps {
   id: string;

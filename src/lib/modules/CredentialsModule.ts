@@ -7,8 +7,8 @@ import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { LedgerService } from '../agent/LedgerService';
 import logger from '../logger';
 import { CredentialOfferMessage } from '../protocols/credentials/messages/CredentialOfferMessage';
-import { JsonEncoder } from '../protocols/credentials/JsonEncoder';
-import { JsonTransformer } from '../JsonTransformer';
+import { JsonEncoder } from '../utils/JsonEncoder';
+import { JsonTransformer } from '../utils/JsonTransformer';
 
 export class CredentialsModule {
   private connectionService: ConnectionService;

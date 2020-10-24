@@ -5,7 +5,7 @@ import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator';
 import { AgentMessage } from './AgentMessage';
 import { Constructor } from '../utils/mixins';
 import { InboundMessageContext } from './models/InboundMessageContext';
-import { JsonTransformer } from '../JsonTransformer';
+import { JsonTransformer } from '../utils/JsonTransformer';
 
 class MessageSender {
   private envelopeService: EnvelopeService;

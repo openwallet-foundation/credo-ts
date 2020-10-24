@@ -20,7 +20,7 @@ import { SignatureDecorator } from '../../decorators/signature/SignatureDecorato
 import { ConnectionRequestMessage } from './ConnectionRequestMessage';
 import { TrustPingMessage } from '../trustping/TrustPingMessage';
 import { AckMessage, AckStatus } from './AckMessage';
-import { JsonTransformer } from '../../JsonTransformer';
+import { JsonTransformer } from '../../utils/JsonTransformer';
 jest.mock('./../../storage/Repository');
 const ConnectionRepository = <jest.Mock<Repository<ConnectionRecord>>>(<unknown>Repository);
 
