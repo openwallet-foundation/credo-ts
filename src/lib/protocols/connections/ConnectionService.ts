@@ -1,4 +1,3 @@
-import { v4 as uuid } from 'uuid';
 import { EventEmitter } from 'events';
 import { classToPlain, plainToClass } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
@@ -311,7 +310,6 @@ class ConnectionService extends EventEmitter {
     autoAcceptConnection?: boolean;
     tags?: ConnectionTags;
   }): Promise<ConnectionRecord> {
-    const id = uuid();
     const [did, verkey] = await this.wallet.createDid({ method_name: 'sov' });
     const publicKey = new PublicKey(`${did}#1`, PublicKeyType.ED25519_SIG_2018, did, verkey);
     const service = new Service(
@@ -326,7 +324,6 @@ class ConnectionService extends EventEmitter {
     const didDoc = new DidDoc(did, [auth], [publicKey], [service]);
 
     const connectionRecord = new ConnectionRecord({
-      id,
       did,
       didDoc,
       verkey,
