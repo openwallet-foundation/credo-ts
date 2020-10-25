@@ -227,8 +227,7 @@ export class CredentialService extends EventEmitter {
     );
 
     credential.credentialId = credentialId;
-    credential.state = CredentialState.CredentialReceived;
-    this.credentialRepository.update(credential);
+    await this.updateState(credential, CredentialState.CredentialReceived);
   }
 
   public async getAll(): Promise<CredentialRecord[]> {

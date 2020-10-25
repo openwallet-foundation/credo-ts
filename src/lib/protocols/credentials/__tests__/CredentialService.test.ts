@@ -273,10 +273,10 @@ describe('CredentialService', () => {
 
       const [[event]] = eventListenerMock.mock.calls;
       expect(event).toMatchObject({
+        prevState: 'OFFER_RECEIVED',
         credential: {
           state: 'REQUEST_SENT',
         },
-        prevState: 'OFFER_RECEIVED',
       });
     });
 
@@ -477,6 +477,32 @@ describe('CredentialService', () => {
         credentialId: expect.any(String),
         type: CredentialRecord.name,
         state: CredentialState.CredentialReceived,
+      });
+    });
+
+    test(`emits stateChange event from REQUEST_SENT to CREDENTIAL_RECEIVED`, async () => {
+      const eventListenerMock = jest.fn();
+      credentialService.on(EventType.StateChanged, eventListenerMock);
+      repositoryFindMock.mockReturnValue(
+        Promise.resolve([
+          mockCredentialRecord({ state: CredentialState.RequestSent, requestMetadata: { cred_req: 'meta-data' } }),
+        ])
+      );
+
+      const credentialResponse = new CredentialResponseMessage({ comment: 'abcd', attachments: [attachment] });
+      credentialResponse.setThread({ threadId: 'somethreadid' });
+      const messageContext = new InboundMessageContext(credentialResponse);
+
+      await credentialService.processCredentialResponse(messageContext, credDef);
+
+      expect(eventListenerMock).toHaveBeenCalledTimes(1);
+
+      const [[event]] = eventListenerMock.mock.calls;
+      expect(event).toMatchObject({
+        prevState: 'REQUEST_SENT',
+        credential: {
+          state: 'CREDENTIAL_RECEIVED',
+        },
       });
     });
   });
