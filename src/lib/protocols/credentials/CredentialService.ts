@@ -235,6 +235,7 @@ export class CredentialService extends EventEmitter {
     const credential = await this.credentialRepository.find(credentialId);
     const ackMessage = new CredentialAckMessage({});
     ackMessage.setThread({ threadId: credential.tags.threadId });
+    ackMessage.setPleaseAck({});
     await this.updateState(credential, CredentialState.Done);
     return ackMessage;
   }

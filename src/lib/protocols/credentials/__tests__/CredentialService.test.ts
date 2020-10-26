@@ -430,6 +430,7 @@ describe('CredentialService', () => {
             },
           },
         ],
+        '~please_ack': {},
       });
 
       // We're using instance of `StubWallet`. Value of `cred` should be as same as in the credential response message.
