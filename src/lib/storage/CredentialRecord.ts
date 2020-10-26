@@ -28,7 +28,7 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
   public state: CredentialState;
 
   public constructor(props: CredentialStorageProps) {
-    super(props.id || uuid(), props.createdAt || Date.now());
+    super(props.id ?? uuid(), props.createdAt ?? Date.now());
     this.offer = props.offer;
     this.state = props.state;
     this.connectionId = props.connectionId;

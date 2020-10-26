@@ -19,7 +19,7 @@ class TestRecord extends BaseRecord {
   public readonly type = TestRecord.type;
 
   public constructor(props: TestRecordProps) {
-    super(props.id || uuid(), props.createdAt || Date.now());
+    super(props.id ?? uuid(), props.createdAt ?? Date.now());
     this.foo = props.foo;
     this.tags = props.tags;
   }

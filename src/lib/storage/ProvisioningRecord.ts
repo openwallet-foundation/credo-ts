@@ -17,7 +17,7 @@ export class ProvisioningRecord extends BaseRecord {
   public readonly type = ProvisioningRecord.type;
 
   public constructor(props: ProvisioningRecordProps) {
-    super(props.id || uuid(), props.createdAt || Date.now());
+    super(props.id ?? uuid(), props.createdAt ?? Date.now());
     this.agencyConnectionId = props.agencyConnectionId;
     this.agencyPublicVerkey = props.agencyPublicVerkey;
     this.tags = props.tags || {};

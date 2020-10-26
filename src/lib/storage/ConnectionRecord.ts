@@ -51,7 +51,7 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
   public readonly type = ConnectionRecord.type;
 
   public constructor(props: ConnectionStorageProps) {
-    super(props.id || uuid(), props.createdAt || Date.now());
+    super(props.id ?? uuid(), props.createdAt ?? Date.now());
     this.did = props.did;
     this.didDoc = props.didDoc;
     this.verkey = props.verkey;

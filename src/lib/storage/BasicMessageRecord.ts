@@ -18,7 +18,7 @@ export class BasicMessageRecord extends BaseRecord implements BasicMessageStorag
   public readonly type = BasicMessageRecord.type;
 
   public constructor(props: BasicMessageStorageProps) {
-    super(props.id || uuid(), props.createdAt || Date.now());
+    super(props.id ?? uuid(), props.createdAt ?? Date.now());
     this.content = props.content;
     this.sentTime = props.sentTime;
     this.tags = props.tags;
