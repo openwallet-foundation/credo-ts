@@ -7,8 +7,8 @@ import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { LedgerService } from '../agent/LedgerService';
 import logger from '../logger';
 import { CredentialOfferMessage } from '../protocols/credentials/messages/CredentialOfferMessage';
-import { MessageTransformer } from '../agent/MessageTransformer';
-import { JsonEncoder } from '../protocols/credentials/JsonEncoder';
+import { JsonEncoder } from '../utils/JsonEncoder';
+import { JsonTransformer } from '../utils/JsonTransformer';
 
 export class CredentialsModule {
   private connectionService: ConnectionService;
@@ -37,7 +37,10 @@ export class CredentialsModule {
   public async acceptCredential(credential: CredentialRecord) {
     logger.log('acceptCredential credential', credential);
 
-    const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
+    // FIXME: credential.offer is already CredentialOfferMessage type
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const offer = JsonTransformer.fromJSON(credential.offer, CredentialOfferMessage);
     const [offerAttachment] = offer.attachments;
     const credOffer = JsonEncoder.fromBase64(offerAttachment.data.base64);
 

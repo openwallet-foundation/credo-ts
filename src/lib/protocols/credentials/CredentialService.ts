@@ -11,9 +11,9 @@ import { CredentialRequestMessage } from './messages/CredentialRequestMessage';
 import { Attachment } from './messages/Attachment';
 import logger from '../../logger';
 import { CredentialResponseMessage } from './messages/CredentialResponseMessage';
-import { JsonEncoder } from './JsonEncoder';
-import { MessageTransformer } from '../../agent/MessageTransformer';
+import { JsonEncoder } from '../../utils/JsonEncoder';
 import { CredentialUtils } from './CredentialUtils';
+import { JsonTransformer } from '../../utils/JsonTransformer';
 
 export enum EventType {
   StateChanged = 'stateChanged',
@@ -103,7 +103,11 @@ export class CredentialService extends EventEmitter {
     credDef: CredDef
   ): Promise<CredentialRequestMessage> {
     const proverDid = connection.did;
-    const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
+
+    // FIXME: TypeScript thinks the type of credential.offer is already CredentialOfferMessage, but it still needs to be transformed
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const offer = JsonTransformer.fromJSON(credential.offer, CredentialOfferMessage);
     const [offerAttachment] = offer.attachments;
     const credOffer = JsonEncoder.fromBase64(offerAttachment.data.base64);
 
@@ -160,7 +164,11 @@ export class CredentialService extends EventEmitter {
    */
   public async createCredentialResponse(credentialId: string, { comment }: CredentialResponseOptions) {
     const credential = await this.credentialRepository.find(credentialId);
-    const offer = MessageTransformer.toMessageInstance(credential.offer, CredentialOfferMessage);
+
+    // FIXME: credential.offer is already CredentialOfferMessage type
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const offer = JsonTransformer.fromJSON(credential.offer, CredentialOfferMessage);
     const [offerAttachment] = offer.attachments;
     const credOffer = JsonEncoder.fromBase64(offerAttachment.data.base64);
     const credValues = CredentialUtils.convertPreviewToValues(offer.credentialPreview);

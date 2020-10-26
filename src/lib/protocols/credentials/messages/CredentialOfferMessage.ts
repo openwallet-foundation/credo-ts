@@ -1,9 +1,10 @@
 import { Equals, IsString, ValidateNested } from 'class-validator';
-import { classToPlain, Expose, Type } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 
 import { AgentMessage } from '../../../agent/AgentMessage';
 import { MessageType } from './MessageType';
 import { Attachment } from './Attachment';
+import { JsonTransformer } from '../../../utils/JsonTransformer';
 
 interface CredentialPreviewOptions {
   attributes: CredentialPreviewAttribute[];
@@ -31,7 +32,7 @@ export class CredentialPreview {
   public attributes!: CredentialPreviewAttribute[];
 
   public toJSON(): Record<string, unknown> {
-    return classToPlain(this);
+    return JsonTransformer.toJSON(this);
   }
 }
 
@@ -58,7 +59,7 @@ export class CredentialPreviewAttribute {
   public value!: string;
 
   public toJSON(): Record<string, unknown> {
-    return classToPlain(this);
+    return JsonTransformer.toJSON(this);
   }
 }
 
