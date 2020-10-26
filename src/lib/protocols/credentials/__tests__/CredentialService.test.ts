@@ -291,7 +291,6 @@ describe('CredentialService', () => {
         '@id': expect.any(String),
         '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/request-credential',
         '~thread': {
-          // @ts-ignore
           thid: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
         },
         comment: 'some credential request comment',
@@ -419,7 +418,6 @@ describe('CredentialService', () => {
         '@id': expect.any(String),
         '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/issue-credential',
         '~thread': {
-          // @ts-ignore
           thid: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
         },
         comment,
@@ -504,6 +502,36 @@ describe('CredentialService', () => {
           state: 'CREDENTIAL_RECEIVED',
         },
       });
+    });
+  });
+
+  describe('createAck', () => {
+    let repositoryFindMock: jest.Mock<Promise<CredentialRecord>, [string]>;
+
+    beforeEach(() => {
+      credentialRepository = new CredentialRepository();
+      credentialService = new CredentialService(wallet, credentialRepository);
+      // make separate mockFind variable to get the correct jest mock typing
+      repositoryFindMock = credentialRepository.find as jest.Mock<Promise<CredentialRecord>, [string]>;
+    });
+
+    test('returns credential response message base on credential request message', async () => {
+      const credential = mockCredentialRecord({
+        state: CredentialState.CredentialReceived,
+        tags: { threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746' },
+      });
+      repositoryFindMock.mockReturnValue(Promise.resolve(credential));
+
+      const ackMessage = await credentialService.createAck(credential.id);
+
+      expect(ackMessage.toJSON()).toMatchObject({
+        '@id': expect.any(String),
+        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/ack',
+        '~thread': {
+          thid: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
+        },
+      });
+      expect(false).toEqual(true);
     });
   });
 });

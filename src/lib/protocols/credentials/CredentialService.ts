@@ -14,6 +14,7 @@ import { CredentialResponseMessage } from './messages/CredentialResponseMessage'
 import { JsonEncoder } from '../../utils/JsonEncoder';
 import { CredentialUtils } from './CredentialUtils';
 import { JsonTransformer } from '../../utils/JsonTransformer';
+import { CredentialAckMessage } from './messages/CredentialAckMessage';
 
 export enum EventType {
   StateChanged = 'stateChanged',
@@ -228,6 +229,10 @@ export class CredentialService extends EventEmitter {
 
     credential.credentialId = credentialId;
     await this.updateState(credential, CredentialState.CredentialReceived);
+  }
+
+  public createAck(id: string): Promise<CredentialAckMessage> {
+    throw new Error('Method not implemented.');
   }
 
   public async getAll(): Promise<CredentialRecord[]> {

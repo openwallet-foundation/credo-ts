@@ -158,15 +158,13 @@ describe('credentials', () => {
 
     aliceCredential = await poll(
       () => aliceAgent.credentials.find(aliceCredential.id),
-      (credentialRecord: CredentialRecord) =>
-        !credentialRecord || credentialRecord.state !== CredentialState.CredentialReceived,
+      (credentialRecord: CredentialRecord) => !credentialRecord || credentialRecord.state !== CredentialState.Done,
       100
     );
 
     faberCredential = await poll(
       async () => faberAgent.credentials.find(faberCredential.id),
-      (credentialRecord: CredentialRecord) =>
-        !credentialRecord || credentialRecord.state !== CredentialState.CredentialIssued,
+      (credentialRecord: CredentialRecord) => !credentialRecord || credentialRecord.state !== CredentialState.Done,
       100
     );
 
@@ -184,7 +182,7 @@ describe('credentials', () => {
       request: undefined,
       requestMetadata: expect.any(Object),
       credentialId: expect.any(String),
-      state: CredentialState.CredentialReceived,
+      state: CredentialState.Done,
     });
 
     expect(faberCredential).toMatchObject({
@@ -198,7 +196,7 @@ describe('credentials', () => {
       request: expect.any(Object),
       requestMetadata: undefined,
       credentialId: undefined,
-      state: CredentialState.CredentialIssued,
+      state: CredentialState.Done,
     });
   });
 });
