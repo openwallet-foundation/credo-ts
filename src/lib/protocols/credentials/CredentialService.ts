@@ -104,7 +104,7 @@ export class CredentialService extends EventEmitter {
   ): Promise<CredentialRequestMessage> {
     const proverDid = connection.did;
 
-    // FIXME: credential.offer is already CredentialOfferMessage type
+    // FIXME: TypeScript thinks the type of credential.offer is already CredentialOfferMessage, but it still needs to be transformed
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     const offer = JsonTransformer.fromJSON(credential.offer, CredentialOfferMessage);
