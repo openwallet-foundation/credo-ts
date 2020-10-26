@@ -507,23 +507,65 @@ describe('CredentialService', () => {
 
   describe('createAck', () => {
     let repositoryFindMock: jest.Mock<Promise<CredentialRecord>, [string]>;
+    let credential: CredentialRecord;
 
     beforeEach(() => {
+      credential = mockCredentialRecord({
+        state: CredentialState.CredentialReceived,
+        tags: { threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746' },
+      });
+
       credentialRepository = new CredentialRepository();
       credentialService = new CredentialService(wallet, credentialRepository);
       // make separate mockFind variable to get the correct jest mock typing
       repositoryFindMock = credentialRepository.find as jest.Mock<Promise<CredentialRecord>, [string]>;
     });
 
-    test('returns credential response message base on credential request message', async () => {
-      const credential = mockCredentialRecord({
-        state: CredentialState.CredentialReceived,
-        tags: { threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746' },
-      });
+    test('updates credential state', async () => {
+      // given
+      const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update');
       repositoryFindMock.mockReturnValue(Promise.resolve(credential));
 
+      // when
+      await credentialService.createAck(credential.id);
+
+      // then
+      expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1);
+      const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls;
+      expect(updatedCredentialRecord).toMatchObject({
+        state: 'DONE',
+      });
+    });
+
+    test(`emits stateChange event from CREDENTIAL_RECEIVED to DONE`, async () => {
+      const eventListenerMock = jest.fn();
+      credentialService.on(EventType.StateChanged, eventListenerMock);
+
+      // given
+      repositoryFindMock.mockReturnValue(Promise.resolve(credential));
+
+      // when
+      await credentialService.createAck(credential.id);
+
+      // then
+      expect(eventListenerMock).toHaveBeenCalledTimes(1);
+      const [[event]] = eventListenerMock.mock.calls;
+      expect(event).toMatchObject({
+        prevState: 'CREDENTIAL_RECEIVED',
+        credential: {
+          state: 'DONE',
+        },
+      });
+    });
+
+    test('returns credential response message base on credential request message', async () => {
+      // given
+      repositoryFindMock.mockReturnValue(Promise.resolve(credential));
+
+      // when
       const ackMessage = await credentialService.createAck(credential.id);
 
+      // then
       expect(ackMessage.toJSON()).toMatchObject({
         '@id': expect.any(String),
         '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/ack',
@@ -531,7 +573,6 @@ describe('CredentialService', () => {
           thid: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
         },
       });
-      expect(false).toEqual(true);
     });
   });
 });

@@ -1,12 +1,9 @@
 import { Equals } from 'class-validator';
 import { AgentMessage } from '../../../agent/AgentMessage';
 import { MessageType } from './MessageType';
-import { Attachment } from './Attachment';
 
 interface CredentialAckMessageOptions {
   id?: string;
-  comment?: string;
-  attachments: Attachment[];
 }
 
 export class CredentialAckMessage extends AgentMessage {
@@ -20,5 +17,5 @@ export class CredentialAckMessage extends AgentMessage {
 
   @Equals(CredentialAckMessage.type)
   public readonly type = CredentialAckMessage.type;
-  public static readonly type = MessageType.CredentialResponse;
+  public static readonly type = MessageType.CredentialAck;
 }

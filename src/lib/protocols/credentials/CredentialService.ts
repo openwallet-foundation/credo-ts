@@ -231,8 +231,12 @@ export class CredentialService extends EventEmitter {
     await this.updateState(credential, CredentialState.CredentialReceived);
   }
 
-  public createAck(id: string): Promise<CredentialAckMessage> {
-    throw new Error('Method not implemented.');
+  public async createAck(credentialId: string): Promise<CredentialAckMessage> {
+    const credential = await this.credentialRepository.find(credentialId);
+    const ackMessage = new CredentialAckMessage({});
+    ackMessage.setThread({ threadId: credential.tags.threadId });
+    await this.updateState(credential, CredentialState.Done);
+    return ackMessage;
   }
 
   public async getAll(): Promise<CredentialRecord[]> {
