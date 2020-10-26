@@ -34,15 +34,15 @@ export class RoutingModule {
     this.messageSender = messageSender;
   }
 
-  public async provision(agencyConfiguration: AgencyConfiguration) {
+  public async provision(mediatorConfiguration: MediatorConfiguration) {
     let provisioningRecord = await this.provisioningService.find();
 
     if (!provisioningRecord) {
-      logger.log('There is no provisioning. Creating connection with agency...');
-      const { verkey, invitationUrl } = agencyConfiguration;
-      const agencyInvitation = await decodeInvitationFromUrl(invitationUrl);
+      logger.log('There is no provisioning. Creating connection with mediator...');
+      const { verkey, invitationUrl } = mediatorConfiguration;
+      const mediatorInvitation = await decodeInvitationFromUrl(invitationUrl);
 
-      const connection = await this.connectionService.processInvitation(agencyInvitation);
+      const connection = await this.connectionService.processInvitation(mediatorInvitation);
       const connectionRequest = await this.connectionService.createRequest(connection.id);
       const connectionResponse = await this.messageSender.sendAndReceiveMessage(
         connectionRequest,
@@ -53,8 +53,8 @@ export class RoutingModule {
       await this.messageSender.sendMessage(trustPing);
 
       const provisioningProps = {
-        agencyConnectionId: connectionRequest.connection.id,
-        agencyPublicVerkey: verkey,
+        mediatorConnectionId: connectionRequest.connection.id,
+        mediatorPublicVerkey: verkey,
       };
       provisioningRecord = await this.provisioningService.create(provisioningProps);
       logger.log('Provisioning record has been saved.');
@@ -62,23 +62,23 @@ export class RoutingModule {
 
     logger.log('Provisioning record:', provisioningRecord);
 
-    const agentConnectionAtAgency = await this.connectionService.find(provisioningRecord.agencyConnectionId);
+    const agentConnectionAtMediator = await this.connectionService.find(provisioningRecord.mediatorConnectionId);
 
-    if (!agentConnectionAtAgency) {
+    if (!agentConnectionAtMediator) {
       throw new Error('Connection not found!');
     }
-    logger.log('agentConnectionAtAgency', agentConnectionAtAgency);
+    logger.log('agentConnectionAtMediator', agentConnectionAtMediator);
 
-    if (agentConnectionAtAgency.state !== ConnectionState.Complete) {
+    if (agentConnectionAtMediator.state !== ConnectionState.Complete) {
       throw new Error('Connection has not been established.');
     }
 
     this.agentConfig.establishInbound({
-      verkey: provisioningRecord.agencyPublicVerkey,
-      connection: agentConnectionAtAgency,
+      verkey: provisioningRecord.mediatorPublicVerkey,
+      connection: agentConnectionAtMediator,
     });
 
-    return agentConnectionAtAgency;
+    return agentConnectionAtMediator;
   }
 
   public async downloadMessages() {
@@ -102,7 +102,7 @@ export class RoutingModule {
   }
 }
 
-interface AgencyConfiguration {
+interface MediatorConfiguration {
   verkey: Verkey;
   invitationUrl: string;
 }

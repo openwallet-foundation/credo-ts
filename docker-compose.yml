@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  alice-agency:
+  alice-mediator:
     build: .
     image: aries-framework-javascript
     command: ./run.sh alice
@@ -9,7 +9,7 @@ services:
       - hyperledger
     ports:
       - 3001:3001
-  bob-agency:
+  bob-mediator:
     build: .
     image: aries-framework-javascript
     command: ./run.sh bob

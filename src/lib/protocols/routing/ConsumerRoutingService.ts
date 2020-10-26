@@ -17,7 +17,7 @@ class ConsumerRoutingService {
     logger.log('Creating route...');
 
     if (!this.agentConfig.inboundConnection) {
-      logger.log('There is no agency. Creating route skipped.');
+      logger.log('There is no mediator. Creating route skipped.');
     } else {
       const routingConnection = this.agentConfig.inboundConnection.connection;
 
