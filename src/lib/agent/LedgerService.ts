@@ -77,10 +77,10 @@ export class LedgerService {
     const response = await this.indy.submitRequest(this.poolHandle, request);
     logger.log('Get schema response', response);
 
-    const result = await this.indy.parseGetSchemaResponse(response);
-    logger.log('Get schema result: ', result);
+    const [, schema] = await this.indy.parseGetSchemaResponse(response);
+    logger.log('Get schema result: ', schema);
 
-    return result;
+    return schema;
   }
 
   public async registerCredentialDefinition(
@@ -117,10 +117,10 @@ export class LedgerService {
     const response = await this.indy.submitRequest(this.poolHandle, request);
     logger.log('Get credential definition response:', response);
 
-    const result = await this.indy.parseGetCredDefResponse(response);
-    logger.log('Get credential definition result: ', result);
+    const [, credentialDefinition] = await this.indy.parseGetCredDefResponse(response);
+    logger.log('Get credential definition result: ', credentialDefinition);
 
-    return result;
+    return credentialDefinition;
   }
 
   private async appendTaa(request: LedgerRequest) {

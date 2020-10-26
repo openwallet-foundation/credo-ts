@@ -37,8 +37,46 @@ export class StubWallet implements Wallet {
       cred_def_id: credDefId,
       // Fields below can depend on Cred Def type
       nonce: 'nonce',
-      key_correctness_proof: 'key_correctness_proof',
+      key_correctness_proof: {},
     });
+  }
+  public createCredentialRequest(
+    proverDid: string,
+    offer: CredOffer,
+    credDef: CredDef,
+    masterSecretName: string
+  ): Promise<[CredReq, CredReqMetadata]> {
+    return Promise.resolve([
+      {
+        prover_did: proverDid,
+        cred_def_id: credDef.id,
+        blinded_ms: {},
+        blinded_ms_correctness_proof: {},
+        nonce: 'nonce',
+      },
+      { cred_req: 'meta-data' },
+    ]);
+  }
+  public createCredential(
+    credOffer: CredOffer,
+    credReq: CredReq,
+    credValues: CredValues
+  ): Promise<[Cred, CredRevocId, RevocRegDelta]> {
+    return Promise.resolve([
+      {
+        schema_id: 'schema_id',
+        cred_def_id: 'cred_def_id',
+        rev_reg_def_id: 'rev_reg_def_id',
+        values: {},
+        signature: 'signature',
+        signature_correctness_proof: 'signature_correctness_proof',
+      },
+      '1',
+      {},
+    ]);
+  }
+  public storeCredential(credentialId: CredentialId): Promise<string> {
+    return Promise.resolve(credentialId);
   }
   public pack(payload: Record<string, unknown>, recipientKeys: string[], senderVk: string | null): Promise<JsonWebKey> {
     throw new Error('Method not implemented.');

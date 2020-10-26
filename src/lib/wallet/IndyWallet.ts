@@ -61,7 +61,7 @@ export class IndyWallet implements Wallet {
     tag: string,
     signatureType: string,
     config?: CredDefConfig
-  ): Promise<[string, CredDef]> {
+  ): Promise<[CredDefId, CredDef]> {
     if (!this.wh) {
       throw Error('Wallet has not been initialized yet');
     }
@@ -74,6 +74,52 @@ export class IndyWallet implements Wallet {
       throw Error('Wallet has not been initialized yet');
     }
     return this.indy.issuerCreateCredentialOffer(this.wh, credDefId);
+  }
+
+  public async createCredentialRequest(
+    proverDid: string,
+    offer: CredOffer,
+    credDef: CredDef,
+    masterSecretName: string
+  ): Promise<[CredReq, CredReqMetadata]> {
+    if (!this.wh) {
+      throw Error('Wallet has not been initialized yet');
+    }
+    // TODO save `masterSecret` during wallet init and just use it in `proverCreateCredentialReq`
+    const masterSecretId = await this.indy.proverCreateMasterSecret(this.wh, masterSecretName);
+    return this.indy.proverCreateCredentialReq(this.wh, proverDid, offer, credDef, masterSecretId);
+  }
+
+  public async createCredential(
+    credOffer: CredOffer,
+    credReq: CredReq,
+    credValues: CredValues
+  ): Promise<[Cred, CredRevocId, RevocRegDelta]> {
+    if (!this.wh) {
+      throw Error('Wallet has not been initialized yet');
+    }
+    // TODO This is just dummy tails writer config to get dummy blob reader handle because revocations feature
+    // is not part of the credential issuance task. It needs to be implemented properly together with revocations
+    // feature implementation.
+    const tailsWriterConfig = {
+      base_dir: '',
+      uri_pattern: '',
+    };
+    const blobReaderHandle = await this.indy.openBlobStorageReader('default', tailsWriterConfig);
+
+    return this.indy.issuerCreateCredential(this.wh, credOffer, credReq, credValues, null, blobReaderHandle);
+  }
+
+  public async storeCredential(
+    credentialId: CredentialId,
+    credReqMetadata: CredReqMetadata,
+    cred: Cred,
+    credDef: CredDef
+  ) {
+    if (!this.wh) {
+      throw Error('Wallet has not been initialized yet');
+    }
+    return this.indy.proverStoreCredential(this.wh, credentialId, credReqMetadata, cred, credDef, null);
   }
 
   public async pack(payload: Record<string, unknown>, recipientKeys: Verkey[], senderVk: Verkey): Promise<JsonWebKey> {

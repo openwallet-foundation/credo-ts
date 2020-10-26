@@ -8,7 +8,10 @@ import { Agent } from '..';
 import { SubjectInboundTransporter, SubjectOutboundTransporter } from './helpers';
 import { CredentialRecord } from '../storage/CredentialRecord';
 import { SchemaTemplate, CredDefTemplate } from '../agent/LedgerService';
-import { CredentialPreview } from '../protocols/credentials/messages/CredentialOfferMessage';
+import {
+  CredentialPreview,
+  CredentialPreviewAttribute,
+} from '../protocols/credentials/messages/CredentialOfferMessage';
 import { CredentialState } from '../protocols/credentials/CredentialState';
 import { InitConfig } from '../types';
 
@@ -23,7 +26,7 @@ const faberConfig: InitConfig = {
   publicDidSeed: process.env.TEST_AGENT_PUBLIC_DID_SEED,
   autoAcceptConnections: true,
   genesisPath,
-  poolName: 'test-pool-credentials',
+  poolName: 'credentials-test-faber-pool',
 };
 
 const aliceConfig: InitConfig = {
@@ -31,20 +34,22 @@ const aliceConfig: InitConfig = {
   walletConfig: { id: 'credentials-test-alice' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
   autoAcceptConnections: true,
+  genesisPath,
+  poolName: 'credentials-test-alice-pool',
 };
 
 const credentialPreview = new CredentialPreview({
   attributes: [
-    {
+    new CredentialPreviewAttribute({
       name: 'name',
       mimeType: 'text/plain',
       value: 'John',
-    },
-    {
+    }),
+    new CredentialPreviewAttribute({
       name: 'age',
       mimeType: 'text/plain',
       value: '99',
-    },
+    }),
   ],
 });
 
@@ -111,52 +116,77 @@ describe('credentials', () => {
       100
     );
 
-    expect(firstCredential).toEqual(
-      expect.objectContaining({
-        createdAt: expect.any(Number),
-        id: expect.any(String),
-        offer: {
-          '@id': expect.any(String),
-          '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential',
-          comment: 'some comment about credential',
-          credential_preview: {
-            type: 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/credential-preview',
-            attributes: [
-              {
-                name: 'name',
-                mimeType: 'text/plain',
-                value: 'John',
-              },
-              {
-                name: 'age',
-                mimeType: 'text/plain',
-                value: '99',
-              },
-            ],
-          },
-          'offers~attach': expect.any(Array),
+    expect(firstCredential).toMatchObject({
+      createdAt: expect.any(Number),
+      id: expect.any(String),
+      offer: {
+        '@id': expect.any(String),
+        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential',
+        comment: 'some comment about credential',
+        credential_preview: {
+          '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/credential-preview',
+          attributes: [
+            {
+              name: 'name',
+              'mime-type': 'text/plain',
+              value: 'John',
+            },
+            {
+              name: 'age',
+              'mime-type': 'text/plain',
+              value: '99',
+            },
+          ],
         },
-        tags: {},
-        type: 'CredentialRecord',
-        state: CredentialState.OfferReceived,
-      })
+        'offers~attach': expect.any(Array),
+      },
+      tags: { threadId: firstCredential.offer['@id'] },
+      type: CredentialRecord.name,
+      state: CredentialState.OfferReceived,
+    });
+  });
+
+  test(`when alice accepts the credential offer then faber sends a credential to alice`, async () => {
+    // We assume that Alice has only one credential and it's a credential from Faber
+    const [firstCredential] = await aliceAgent.credentials.getCredentials();
+
+    // Accept credential offer from Faber
+    await aliceAgent.credentials.acceptCredential(firstCredential);
+
+    // We assume that Alice has only one credential and it's a credential from Faber
+    const credential = await poll(
+      () => aliceAgent.credentials.find(firstCredential.id),
+      (credential: CredentialRecord) => !credential || credential.state !== CredentialState.CredentialReceived,
+      100
     );
+
+    expect(credential).toMatchObject({
+      id: expect.any(String),
+      createdAt: expect.any(Number),
+      offer: expect.any(Object),
+      tags: {
+        threadId: expect.any(String),
+      },
+      credentialId: expect.any(String),
+      type: CredentialRecord.name,
+      state: CredentialState.CredentialReceived,
+    });
   });
 });
 
 async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<[SchemaId, Schema]> {
   const [schemaId] = await agent.ledger.registerCredentialSchema(schemaTemplate);
   console.log('schemaId', schemaId);
-  const [ledgerSchemaId, ledgerSchema] = await agent.ledger.getSchema(schemaId);
-  console.log('ledgerSchemaId, ledgerSchema', ledgerSchemaId, ledgerSchema);
-  return [ledgerSchemaId, ledgerSchema];
+  const ledgerSchema = await agent.ledger.getSchema(schemaId);
+  console.log('ledgerSchemaId, ledgerSchema', schemaId, ledgerSchema);
+  return [schemaId, ledgerSchema];
 }
 
 async function registerDefinition(agent: Agent, definitionTemplate: CredDefTemplate): Promise<[CredDefId, CredDef]> {
   const [credDefId] = await agent.ledger.registerCredentialDefinition(definitionTemplate);
-  const [ledgerCredDefId, ledgerCredDef] = await agent.ledger.getCredentialDefinition(credDefId);
-  console.log('ledgerCredDefId, ledgerCredDef', ledgerCredDefId, ledgerCredDef);
-  return [ledgerCredDefId, ledgerCredDef];
+  const ledgerCredDef = await agent.ledger.getCredentialDefinition(credDefId);
+  console.log('ledgerCredDefId, ledgerCredDef', credDefId, ledgerCredDef);
+  return [credDefId, ledgerCredDef];
 }
 
 async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: Did) {
