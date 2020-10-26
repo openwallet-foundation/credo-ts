@@ -1,3 +1,4 @@
+import { v4 as uuid } from 'uuid';
 import { BaseRecord, RecordType, Tags } from './BaseRecord';
 import { DidDoc } from '../protocols/connections/domain/DidDoc';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
@@ -6,7 +7,8 @@ import { ConnectionRole } from '../protocols/connections/domain/ConnectionRole';
 import { JsonTransformer } from '../utils/JsonTransformer';
 
 interface ConnectionProps {
-  id: string;
+  id?: string;
+  createdAt?: number;
   did: Did;
   didDoc: DidDoc;
   verkey: Verkey;
@@ -49,7 +51,7 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
   public readonly type = ConnectionRecord.type;
 
   public constructor(props: ConnectionStorageProps) {
-    super(props.id);
+    super(props.id ?? uuid(), props.createdAt ?? Date.now());
     this.did = props.did;
     this.didDoc = props.didDoc;
     this.verkey = props.verkey;

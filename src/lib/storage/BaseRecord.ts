@@ -19,9 +19,9 @@ export abstract class BaseRecord {
   public static readonly type: RecordType = RecordType.BaseRecord;
   public readonly type = BaseRecord.type;
 
-  public constructor(id: string) {
+  public constructor(id: string, createdAt: number) {
     this.id = id;
-    this.createdAt = Date.now();
+    this.createdAt = createdAt;
     this.tags = {};
   }
 

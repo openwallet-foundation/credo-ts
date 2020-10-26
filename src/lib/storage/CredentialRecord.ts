@@ -5,6 +5,7 @@ import { CredentialState } from '../protocols/credentials/CredentialState';
 
 export interface CredentialStorageProps {
   id?: string;
+  createdAt?: number;
   offer: CredentialOfferMessage;
   state: CredentialState;
   connectionId: string;
@@ -27,7 +28,7 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
   public state: CredentialState;
 
   public constructor(props: CredentialStorageProps) {
-    super(props.id ? props.id : uuid());
+    super(props.id ?? uuid(), props.createdAt ?? Date.now());
     this.offer = props.offer;
     this.state = props.state;
     this.connectionId = props.connectionId;
