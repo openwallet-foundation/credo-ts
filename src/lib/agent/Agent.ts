@@ -138,8 +138,8 @@ export class Agent {
     return this.wallet.getPublicDid();
   }
 
-  public getAgencyUrl() {
-    return this.agentConfig.agencyUrl;
+  public getMediatorUrl() {
+    return this.agentConfig.mediatorUrl;
   }
 
   public async receiveMessage(inboundPackedMessage: unknown) {

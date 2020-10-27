@@ -26,11 +26,11 @@ export class ProvisioningService {
     }
   }
 
-  public async create({ agencyConnectionId, agencyPublicVerkey }: ProvisioningProps): Promise<ProvisioningRecord> {
+  public async create({ mediatorConnectionId, mediatorPublicVerkey }: ProvisioningProps): Promise<ProvisioningRecord> {
     const provisioningRecord = new ProvisioningRecord({
       id: UNIQUE_PROVISIONING_ID,
-      agencyConnectionId,
-      agencyPublicVerkey,
+      mediatorConnectionId,
+      mediatorPublicVerkey,
     });
     await this.provisioningRepository.save(provisioningRecord);
     return provisioningRecord;
@@ -38,6 +38,6 @@ export class ProvisioningService {
 }
 
 interface ProvisioningProps {
-  agencyConnectionId: string;
-  agencyPublicVerkey: Verkey;
+  mediatorConnectionId: string;
+  mediatorPublicVerkey: Verkey;
 }

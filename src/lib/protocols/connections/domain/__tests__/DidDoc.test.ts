@@ -36,7 +36,7 @@ describe('DidDoc', () => {
       service: [
         {
           id: '0',
-          type: 'Agency',
+          type: 'Mediator',
           serviceEndpoint: 'did:sov:Q4zqM7aXqm7gDQkUVLng9h',
         },
       ],

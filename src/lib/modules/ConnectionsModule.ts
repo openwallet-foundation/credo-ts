@@ -38,7 +38,7 @@ export class ConnectionsModule {
     }
 
     // If agent has inbound connection, which means it's using a mediator, we need to create a route for newly created
-    // connection verkey at agency.
+    // connection verkey at mediator.
     if (this.agentConfig.inboundConnection) {
       this.consumerRoutingService.createRoute(connection.verkey);
     }
