@@ -18,9 +18,11 @@ export function AckDecorated<T extends BaseMessageConstructor>(Base: T) {
     }
 
     public getPleaseAck(): AckDecorator | undefined {
-      if (this.pleaseAck) return this.pleaseAck;
+      return this.pleaseAck;
+    }
 
-      return undefined;
+    public requiresAck(): boolean {
+      return !!this.pleaseAck;
     }
   }
 

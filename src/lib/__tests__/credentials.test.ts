@@ -161,14 +161,13 @@ describe('credentials', () => {
       (credentialRecord: CredentialRecord) => !credentialRecord || credentialRecord.state !== CredentialState.Done,
       100
     );
+    console.log('aliceCredential', aliceCredential);
 
     faberCredential = await poll(
       async () => faberAgent.credentials.find(faberCredential.id),
       (credentialRecord: CredentialRecord) => !credentialRecord || credentialRecord.state !== CredentialState.Done,
       100
     );
-
-    console.log('aliceCredential', aliceCredential);
     console.log('faberCredential', faberCredential);
 
     expect(aliceCredential).toMatchObject({
