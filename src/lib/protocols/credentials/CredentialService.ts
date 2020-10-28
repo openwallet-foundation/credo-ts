@@ -250,6 +250,7 @@ export class CredentialService extends EventEmitter {
     }
 
     await this.updateState(credential, CredentialState.Done);
+    return credential;
   }
 
   public async getAll(): Promise<CredentialRecord[]> {
