@@ -17,6 +17,7 @@ import { Attachment } from '../messages/Attachment';
 import { CredentialRequestMessage } from '../messages/CredentialRequestMessage';
 import { CredentialResponseMessage } from '../messages/CredentialResponseMessage';
 import { credDef, credOffer, credReq } from './fixtures';
+import { CredentialAckMessage } from '../messages/CredentialAckMessage';
 
 jest.mock('./../../../storage/Repository');
 
@@ -617,6 +618,75 @@ describe('CredentialService', () => {
           thid: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
         },
       });
+    });
+  });
+
+  describe('processAck', () => {
+    let repositoryFindByQueryMock: jest.Mock<Promise<CredentialRecord[]>, [WalletQuery]>;
+    let credential: CredentialRecord;
+    let messageContext: InboundMessageContext<CredentialAckMessage>;
+
+    beforeEach(() => {
+      credential = mockCredentialRecord({ state: CredentialState.CredentialIssued });
+
+      const credentialRequest = new CredentialAckMessage({});
+      credentialRequest.setThread({ threadId: 'somethreadid' });
+      messageContext = new InboundMessageContext(credentialRequest);
+
+      credentialRepository = new CredentialRepository();
+      credentialService = new CredentialService(wallet, credentialRepository);
+      // make separate mockFind variable to get the correct jest mock typing
+      repositoryFindByQueryMock = credentialRepository.findByQuery as jest.Mock<
+        Promise<CredentialRecord[]>,
+        [WalletQuery]
+      >;
+    });
+
+    test('updates credential state', async () => {
+      // given
+      repositoryFindByQueryMock.mockReturnValue(Promise.resolve([credential]));
+      const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update');
+
+      // when
+      await credentialService.processAck(messageContext);
+
+      // then
+      expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1);
+      const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls;
+      expect(updatedCredentialRecord).toMatchObject({
+        state: 'DONE',
+      });
+    });
+
+    test(`emits stateChange event from CREDENTIAL_ISSUED to DONE`, async () => {
+      const eventListenerMock = jest.fn();
+      credentialService.on(EventType.StateChanged, eventListenerMock);
+
+      // given
+      repositoryFindByQueryMock.mockReturnValue(Promise.resolve([credential]));
+
+      // when
+      await credentialService.processAck(messageContext);
+
+      // then
+      expect(eventListenerMock).toHaveBeenCalledTimes(1);
+      const [[event]] = eventListenerMock.mock.calls;
+      expect(event).toMatchObject({
+        prevState: 'CREDENTIAL_ISSUED',
+        credential: {
+          state: 'DONE',
+        },
+      });
+    });
+
+    test('throws error when there is no credential found by thread ID', async () => {
+      // given
+      repositoryFindByQueryMock.mockReturnValue(Promise.resolve([]));
+
+      // when, then
+      await expect(credentialService.processAck(messageContext)).rejects.toThrowError(
+        'No credential found for threadId = somethreadid'
+      );
     });
   });
 });

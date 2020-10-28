@@ -241,6 +241,17 @@ export class CredentialService extends EventEmitter {
     return ackMessage;
   }
 
+  public async processAck(messageContext: InboundMessageContext<CredentialAckMessage>) {
+    const threadId = messageContext.message.thread?.threadId;
+    const [credential] = await this.credentialRepository.findByQuery({ threadId });
+
+    if (!credential) {
+      throw new Error(`No credential found for threadId = ${threadId}`);
+    }
+
+    await this.updateState(credential, CredentialState.Done);
+  }
+
   public async getAll(): Promise<CredentialRecord[]> {
     return this.credentialRepository.findAll();
   }
