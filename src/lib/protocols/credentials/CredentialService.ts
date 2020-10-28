@@ -73,7 +73,9 @@ export class CredentialService extends EventEmitter {
    *
    * @param messageContext
    */
-  public async processCredentialOffer(messageContext: InboundMessageContext<CredentialOfferMessage>): Promise<void> {
+  public async processCredentialOffer(
+    messageContext: InboundMessageContext<CredentialOfferMessage>
+  ): Promise<CredentialRecord> {
     const credentialOffer = messageContext.message;
     const connection = messageContext.connection;
 
@@ -81,14 +83,15 @@ export class CredentialService extends EventEmitter {
       throw new Error('There is no connection in message context.');
     }
 
-    const credential = new CredentialRecord({
+    const credentialRecord = new CredentialRecord({
       connectionId: connection.id,
       offer: credentialOffer,
       state: CredentialState.OfferReceived,
       tags: { threadId: credentialOffer.id },
     });
-    await this.credentialRepository.save(credential);
-    this.emit(EventType.StateChanged, { credential, prevState: null });
+    await this.credentialRepository.save(credentialRecord);
+    this.emit(EventType.StateChanged, { credential: credentialRecord, prevState: null });
+    return credentialRecord;
   }
 
   /**

@@ -199,23 +199,25 @@ describe('CredentialService', () => {
       credentialService = new CredentialService(wallet, credentialRepository);
     });
 
-    test('creates credential record in OFFER_RECEIVED state with offer, thread ID', async () => {
+    test('creates and return credential record in OFFER_RECEIVED state with offer, thread ID', async () => {
       const repositorySaveSpy = jest.spyOn(credentialRepository, 'save');
 
       // when
-      await credentialService.processCredentialOffer(messageContext);
+      const returnedCredentialRecrod = await credentialService.processCredentialOffer(messageContext);
 
       // then
-      expect(repositorySaveSpy).toHaveBeenCalledTimes(1);
-      const [[createdCredentialRecord]] = repositorySaveSpy.mock.calls;
-      expect(createdCredentialRecord).toMatchObject({
+      const expectedCredentialRecord = {
         type: CredentialRecord.name,
         id: expect.any(String),
         createdAt: expect.any(Number),
         offer: credentialOfferMessage,
         tags: { threadId: credentialOfferMessage.id },
         state: 'OFFER_RECEIVED',
-      });
+      };
+      expect(repositorySaveSpy).toHaveBeenCalledTimes(1);
+      const [[createdCredentialRecord]] = repositorySaveSpy.mock.calls;
+      expect(createdCredentialRecord).toMatchObject(expectedCredentialRecord);
+      expect(returnedCredentialRecrod).toMatchObject(expectedCredentialRecord);
     });
 
     test(`emits stateChange event with OFFER_RECEIVED`, async () => {
