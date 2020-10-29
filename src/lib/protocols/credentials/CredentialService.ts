@@ -14,6 +14,7 @@ import { CredentialResponseMessage } from './messages/CredentialResponseMessage'
 import { JsonEncoder } from '../../utils/JsonEncoder';
 import { CredentialUtils } from './CredentialUtils';
 import { JsonTransformer } from '../../utils/JsonTransformer';
+import { CredentialAckMessage } from './messages/CredentialAckMessage';
 
 export enum EventType {
   StateChanged = 'stateChanged',
@@ -38,9 +39,10 @@ export class CredentialService extends EventEmitter {
    */
   public async createCredentialOffer(
     connection: ConnectionRecord,
-    { credDefId, comment, preview }: CredentialOfferTemplate
+    credentialTemplate: CredentialOfferTemplate
   ): Promise<CredentialOfferMessage> {
-    const credOffer = await this.wallet.createCredentialOffer(credDefId);
+    const { credentialDefinitionId, comment, preview } = credentialTemplate;
+    const credOffer = await this.wallet.createCredentialOffer(credentialDefinitionId);
     const attachment = new Attachment({
       mimeType: 'application/json',
       data: {
@@ -72,7 +74,9 @@ export class CredentialService extends EventEmitter {
    *
    * @param messageContext
    */
-  public async processCredentialOffer(messageContext: InboundMessageContext<CredentialOfferMessage>): Promise<void> {
+  public async processCredentialOffer(
+    messageContext: InboundMessageContext<CredentialOfferMessage>
+  ): Promise<CredentialRecord> {
     const credentialOffer = messageContext.message;
     const connection = messageContext.connection;
 
@@ -80,14 +84,15 @@ export class CredentialService extends EventEmitter {
       throw new Error('There is no connection in message context.');
     }
 
-    const credential = new CredentialRecord({
+    const credentialRecord = new CredentialRecord({
       connectionId: connection.id,
       offer: credentialOffer,
       state: CredentialState.OfferReceived,
       tags: { threadId: credentialOffer.id },
     });
-    await this.credentialRepository.save(credential);
-    this.emit(EventType.StateChanged, { credential, prevState: null });
+    await this.credentialRepository.save(credentialRecord);
+    this.emit(EventType.StateChanged, { credential: credentialRecord, prevState: null });
+    return credentialRecord;
   }
 
   /**
@@ -191,6 +196,7 @@ export class CredentialService extends EventEmitter {
       attachments: [responseAttachment],
     });
     credentialResponse.setThread({ threadId: credential.tags.threadId });
+    credentialResponse.setPleaseAck();
 
     await this.updateState(credential, CredentialState.CredentialIssued);
     return credentialResponse;
@@ -227,8 +233,28 @@ export class CredentialService extends EventEmitter {
     );
 
     credential.credentialId = credentialId;
-    credential.state = CredentialState.CredentialReceived;
-    this.credentialRepository.update(credential);
+    await this.updateState(credential, CredentialState.CredentialReceived);
+    return credential;
+  }
+
+  public async createAck(credentialId: string): Promise<CredentialAckMessage> {
+    const credential = await this.credentialRepository.find(credentialId);
+    const ackMessage = new CredentialAckMessage({});
+    ackMessage.setThread({ threadId: credential.tags.threadId });
+    await this.updateState(credential, CredentialState.Done);
+    return ackMessage;
+  }
+
+  public async processAck(messageContext: InboundMessageContext<CredentialAckMessage>) {
+    const threadId = messageContext.message.thread?.threadId;
+    const [credential] = await this.credentialRepository.findByQuery({ threadId });
+
+    if (!credential) {
+      throw new Error(`No credential found for threadId = ${threadId}`);
+    }
+
+    await this.updateState(credential, CredentialState.Done);
+    return credential;
   }
 
   public async getAll(): Promise<CredentialRecord[]> {
@@ -248,7 +274,7 @@ export class CredentialService extends EventEmitter {
 }
 
 export interface CredentialOfferTemplate {
-  credDefId: CredDefId;
+  credentialDefinitionId: CredDefId;
   comment?: string;
   preview: CredentialPreview;
 }

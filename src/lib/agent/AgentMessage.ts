@@ -5,8 +5,9 @@ import { TransportDecorated } from '../decorators/transport/TransportDecoratorEx
 import { TimingDecorated } from '../decorators/timing/TimingDecoratorExtension';
 import { BaseMessage } from './BaseMessage';
 import { JsonTransformer } from '../utils/JsonTransformer';
+import { AckDecorated } from '../decorators/ack/AckDecoratorExtension';
 
-const DefaultDecorators = [ThreadDecorated, L10nDecorated, TransportDecorated, TimingDecorated];
+const DefaultDecorators = [ThreadDecorated, L10nDecorated, TransportDecorated, TimingDecorated, AckDecorated];
 
 export class AgentMessage extends Compose(BaseMessage, DefaultDecorators) {
   public toJSON(): Record<string, unknown> {

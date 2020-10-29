@@ -42,6 +42,7 @@ import { CredentialRecord } from '../storage/CredentialRecord';
 import { CredentialOfferHandler } from '../handlers/credentials/CredentialOfferHandler';
 import { CredentialRequestHandler } from '../handlers/credentials/CredentialRequestHandler';
 import { CredentialResponseHandler } from '../handlers/credentials/CredentialResponseHandler';
+import { CredentialAckHandler } from '../handlers/credentials/CredentialAckHandler';
 
 export class Agent {
   protected wallet: Wallet;
@@ -164,6 +165,7 @@ export class Agent {
     this.dispatcher.registerHandler(new CredentialOfferHandler(this.credentialService));
     this.dispatcher.registerHandler(new CredentialRequestHandler(this.credentialService));
     this.dispatcher.registerHandler(new CredentialResponseHandler(this.credentialService, this.ledgerService));
+    this.dispatcher.registerHandler(new CredentialAckHandler(this.credentialService));
   }
 
   protected registerModules() {
