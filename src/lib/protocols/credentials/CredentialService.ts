@@ -39,9 +39,10 @@ export class CredentialService extends EventEmitter {
    */
   public async createCredentialOffer(
     connection: ConnectionRecord,
-    { credDefId, comment, preview }: CredentialOfferTemplate
+    credentialTemplate: CredentialOfferTemplate
   ): Promise<CredentialOfferMessage> {
-    const credOffer = await this.wallet.createCredentialOffer(credDefId);
+    const { credentialDefinitionId, comment, preview } = credentialTemplate;
+    const credOffer = await this.wallet.createCredentialOffer(credentialDefinitionId);
     const attachment = new Attachment({
       mimeType: 'application/json',
       data: {
@@ -195,7 +196,7 @@ export class CredentialService extends EventEmitter {
       attachments: [responseAttachment],
     });
     credentialResponse.setThread({ threadId: credential.tags.threadId });
-    credentialResponse.setPleaseAck({});
+    credentialResponse.setPleaseAck();
 
     await this.updateState(credential, CredentialState.CredentialIssued);
     return credentialResponse;
@@ -273,7 +274,7 @@ export class CredentialService extends EventEmitter {
 }
 
 export interface CredentialOfferTemplate {
-  credDefId: CredDefId;
+  credentialDefinitionId: CredDefId;
   comment?: string;
   preview: CredentialPreview;
 }

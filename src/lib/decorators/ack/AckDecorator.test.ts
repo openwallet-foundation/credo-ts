@@ -1,27 +1,26 @@
 import { JsonTransformer } from '../../utils/JsonTransformer';
+import { Compose } from '../../utils/mixins';
 
-import { AckDecorator } from './AckDecorator';
+import { BaseMessage } from '../../agent/BaseMessage';
+import { AckDecorated } from './AckDecoratorExtension';
 
-describe('Decorators | AckDecorator', () => {
-  it('should correctly transform Json to AckDecorator class', () => {
-    const pleaseAck = {};
-    const decorator = JsonTransformer.fromJSON({ pleaseAck }, AckDecorator);
+describe('Decorators | AckDecoratorExtension', () => {
+  class TestMessage extends Compose(BaseMessage, [AckDecorated]) {
+    public toJSON(): Record<string, unknown> {
+      return JsonTransformer.toJSON(this);
+    }
+  }
 
-    expect(decorator.pleaseAck).toEqual(pleaseAck);
+  test('transforms AckDecorator class to JSON', () => {
+    const message = new TestMessage();
+    message.setPleaseAck();
+    expect(message.toJSON()).toEqual({ '~please_ack': {} });
   });
 
-  it('should correctly transform AckDecorator class to Json', () => {
-    const pleaseAck = {};
+  test('transforms Json to AckDecorator class', () => {
+    const transformed = JsonTransformer.fromJSON({ '~please_ack': {} }, TestMessage);
 
-    const decorator = new AckDecorator({
-      pleaseAck,
-    });
-
-    const json = JsonTransformer.toJSON(decorator);
-    const transformed = {
-      pleaseAck,
-    };
-
-    expect(json).toEqual(transformed);
+    expect(transformed).toEqual({ pleaseAck: {} });
+    expect(transformed).toBeInstanceOf(TestMessage);
   });
 });

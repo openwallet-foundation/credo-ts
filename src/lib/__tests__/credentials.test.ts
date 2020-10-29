@@ -104,7 +104,7 @@ describe('credentials', () => {
 
     // Issue credential from Faber to Alice
     await faberAgent.credentials.issueCredential(firstConnection, {
-      credDefId,
+      credentialDefinitionId: credDefId,
       comment: 'some comment about credential',
       preview: credentialPreview,
     });

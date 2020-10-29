@@ -11,10 +11,8 @@ export function AckDecorated<T extends BaseMessageConstructor>(Base: T) {
     @ValidateNested()
     public pleaseAck?: AckDecorator;
 
-    public setPleaseAck(pleaseAck: Record<string, unknown>) {
-      this.pleaseAck = new AckDecorator({
-        pleaseAck,
-      });
+    public setPleaseAck() {
+      this.pleaseAck = new AckDecorator();
     }
 
     public getPleaseAck(): AckDecorator | undefined {
@@ -22,7 +20,7 @@ export function AckDecorated<T extends BaseMessageConstructor>(Base: T) {
     }
 
     public requiresAck(): boolean {
-      return !!this.pleaseAck;
+      return this.pleaseAck !== undefined;
     }
   }
 

@@ -11,7 +11,7 @@ export class CredentialAckMessage extends AgentMessage {
     super();
 
     if (options) {
-      this.id = options.id || this.generateId();
+      this.id = options.id ?? this.generateId();
     }
   }
 

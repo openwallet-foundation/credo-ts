@@ -99,13 +99,13 @@ describe('CredentialService', () => {
   });
 
   describe('createCredentialOffer', () => {
-    let credentialOfferTemplate: CredentialOfferTemplate;
+    let credentialTemplate: CredentialOfferTemplate;
 
     beforeEach(() => {
       credentialRepository = new CredentialRepository();
       credentialService = new CredentialService(wallet, credentialRepository);
-      credentialOfferTemplate = {
-        credDefId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
+      credentialTemplate = {
+        credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
         comment: 'some comment',
         preview,
       };
@@ -116,7 +116,7 @@ describe('CredentialService', () => {
       const repositorySaveSpy = jest.spyOn(credentialRepository, 'save');
 
       // when
-      const credentialOffer = await credentialService.createCredentialOffer(connection, credentialOfferTemplate);
+      const credentialOffer = await credentialService.createCredentialOffer(connection, credentialTemplate);
 
       // then
       expect(repositorySaveSpy).toHaveBeenCalledTimes(1);
@@ -135,7 +135,7 @@ describe('CredentialService', () => {
       const eventListenerMock = jest.fn();
       credentialService.on(EventType.StateChanged, eventListenerMock);
 
-      await credentialService.createCredentialOffer(connection, credentialOfferTemplate);
+      await credentialService.createCredentialOffer(connection, credentialTemplate);
 
       expect(eventListenerMock).toHaveBeenCalledTimes(1);
       const [[event]] = eventListenerMock.mock.calls;
@@ -148,7 +148,7 @@ describe('CredentialService', () => {
     });
 
     test('returns credential offer message', async () => {
-      const credentialOffer = await credentialService.createCredentialOffer(connection, credentialOfferTemplate);
+      const credentialOffer = await credentialService.createCredentialOffer(connection, credentialTemplate);
 
       expect(credentialOffer.toJSON()).toMatchObject({
         '@id': expect.any(String),
