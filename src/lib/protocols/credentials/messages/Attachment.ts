@@ -1,5 +1,6 @@
-import { classToPlain, Expose } from 'class-transformer';
+import { Expose } from 'class-transformer';
 import { v4 as uuid } from 'uuid';
+import { JsonTransformer } from '../../../utils/JsonTransformer';
 
 interface AttachmentOptions {
   id?: string;
@@ -30,6 +31,6 @@ export class Attachment {
   };
 
   public toJSON(): Record<string, unknown> {
-    return classToPlain(this);
+    return JsonTransformer.toJSON(this);
   }
 }

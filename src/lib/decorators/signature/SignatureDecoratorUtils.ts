@@ -15,7 +15,7 @@ import { Wallet } from '../../wallet/Wallet';
 export async function unpackAndVerifySignatureDecorator(
   decorator: SignatureDecorator,
   wallet: Wallet
-): Promise<unknown> {
+): Promise<Record<string, unknown>> {
   const signerVerkey = decorator.signer;
 
   // first 8 bytes are for 64 bit integer from unix epoch

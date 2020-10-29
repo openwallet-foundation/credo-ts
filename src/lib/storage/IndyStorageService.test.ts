@@ -7,6 +7,7 @@ import indy from 'indy-sdk';
 
 interface TestRecordProps {
   id?: string;
+  createdAt?: number;
   tags: { [keys: string]: string };
   foo: string;
 }
@@ -18,20 +19,20 @@ class TestRecord extends BaseRecord {
   public readonly type = TestRecord.type;
 
   public constructor(props: TestRecordProps) {
-    super(props.id || uuid());
+    super(props.id ?? uuid(), props.createdAt ?? Date.now());
     this.foo = props.foo;
     this.tags = props.tags;
   }
 }
 
-describe('connection repository', () => {
+describe('IndyStorageService', () => {
   let wallet: IndyWallet;
-  let tr: Repository<TestRecord>;
+  let testRepository: Repository<TestRecord>;
 
   beforeEach(async () => {
     wallet = new IndyWallet({ id: 'testWallet' }, { key: 'asbdabsd' }, indy);
     const storageService = new IndyStorageService(wallet);
-    tr = new Repository<TestRecord>(TestRecord, storageService);
+    testRepository = new Repository<TestRecord>(TestRecord, storageService);
     await wallet.init();
   });
 
@@ -46,7 +47,7 @@ describe('connection repository', () => {
       tags: { myTag: 'foobar' },
     };
     const record = new TestRecord(props);
-    await tr.save(record);
+    await testRepository.save(record);
     return record;
   };
 
@@ -54,9 +55,16 @@ describe('connection repository', () => {
     await insertRecord();
   });
 
+  test('does not change id, createdAt attributes', async () => {
+    const record = await insertRecord();
+    const found = await testRepository.find(record.id);
+    expect(found.id).toEqual(record.id);
+    expect(found.createdAt).toEqual(record.createdAt);
+  });
+
   test('it is able to get the record', async () => {
     const record = await insertRecord();
-    const found = await tr.find(record.id);
+    const found = await testRepository.find(record.id);
     expect(found.id).toStrictEqual(record.id);
   });
 
@@ -67,10 +75,10 @@ describe('connection repository', () => {
         tags: {},
       };
       const rec = new TestRecord(props);
-      await tr.save(rec);
+      await testRepository.save(rec);
     }
 
-    const records = await tr.findAll();
+    const records = await testRepository.findAll();
     expect(records.length).toStrictEqual(10);
   });
 
@@ -78,23 +86,23 @@ describe('connection repository', () => {
     const record = await insertRecord();
     record.tags = { ...record.tags, foo: 'bar' };
     record.foo = 'foobaz';
-    await tr.update(record);
-    const got = await tr.find(record.id);
+    await testRepository.update(record);
+    const got = await testRepository.find(record.id);
     expect(got.foo).toStrictEqual(record.foo);
     expect(got.tags).toStrictEqual(record.tags);
   });
 
   test('it is able to delete a record', async () => {
     const record = await insertRecord();
-    await tr.delete(record);
+    await testRepository.delete(record);
     expect(async () => {
-      await tr.find(record.id);
+      await testRepository.find(record.id);
     }).rejects;
   });
 
   test('it is able to query a record', async () => {
     await insertRecord();
-    const result = await tr.findByQuery({ myTag: 'foobar' });
+    const result = await testRepository.findByQuery({ myTag: 'foobar' });
     expect(result.length).toBe(1);
   });
 });

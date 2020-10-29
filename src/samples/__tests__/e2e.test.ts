@@ -11,7 +11,7 @@ expect.extend({ toBeConnectedWith });
 
 const aliceConfig: InitConfig = {
   label: 'e2e Alice',
-  agencyUrl: 'http://localhost:3001',
+  mediatorUrl: 'http://localhost:3001',
   walletConfig: { id: 'e2e-alice' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
   autoAcceptConnections: true,
@@ -19,13 +19,13 @@ const aliceConfig: InitConfig = {
 
 const bobConfig: InitConfig = {
   label: 'e2e Bob',
-  agencyUrl: 'http://localhost:3002',
+  mediatorUrl: 'http://localhost:3002',
   walletConfig: { id: 'e2e-bob' },
   walletCredentials: { key: '00000000000000000000000000000Test02' },
   autoAcceptConnections: true,
 };
 
-describe('with agency', () => {
+describe('with mediator', () => {
   let aliceAgent: Agent;
   let bobAgent: Agent;
   let aliceAtAliceBobId: string;
@@ -41,7 +41,7 @@ describe('with agency', () => {
     await bobAgent.closeAndDeleteWallet();
   });
 
-  test('Alice and Bob make a connection with agency', async () => {
+  test('Alice and Bob make a connection with mediator', async () => {
     const aliceAgentSender = new HttpOutboundTransporter();
     const aliceAgentReceiver = new PollingInboundTransporter();
     const bobAgentSender = new HttpOutboundTransporter();
@@ -55,30 +55,30 @@ describe('with agency', () => {
 
     const aliceInbound = aliceAgent.routing.getInboundConnection();
     const aliceInboundConnection = aliceInbound && aliceInbound.connection;
-    const aliceKeyAtAliceAgency = aliceInboundConnection && aliceInboundConnection.verkey;
+    const aliceKeyAtAliceMediator = aliceInboundConnection && aliceInboundConnection.verkey;
     console.log('aliceInboundConnection', aliceInboundConnection);
 
     const bobInbound = bobAgent.routing.getInboundConnection();
     const bobInboundConnection = bobInbound && bobInbound.connection;
-    const bobKeyAtBobAgency = bobInboundConnection && bobInboundConnection.verkey;
+    const bobKeyAtBobMediator = bobInboundConnection && bobInboundConnection.verkey;
     console.log('bobInboundConnection', bobInboundConnection);
 
-    // TODO This endpoint currently exists at agency only for the testing purpose. It returns agency's part of the pairwise connection.
-    const agencyConnectionAtAliceAgency = JSON.parse(
-      await get(`${aliceAgent.getAgencyUrl()}/api/connections/${aliceKeyAtAliceAgency}`)
+    // TODO This endpoint currently exists at mediator only for the testing purpose. It returns mediator's part of the pairwise connection.
+    const mediatorConnectionAtAliceMediator = JSON.parse(
+      await get(`${aliceAgent.getMediatorUrl()}/api/connections/${aliceKeyAtAliceMediator}`)
     );
-    const agencyConnectionAtBobAgency = JSON.parse(
-      await get(`${bobAgent.getAgencyUrl()}/api/connections/${bobKeyAtBobAgency}`)
+    const mediatorConnectionAtBobMediator = JSON.parse(
+      await get(`${bobAgent.getMediatorUrl()}/api/connections/${bobKeyAtBobMediator}`)
     );
 
-    console.log('agencyConnectionAtAliceAgency', agencyConnectionAtAliceAgency);
-    console.log('agencyConnectionAtBobAgency', agencyConnectionAtBobAgency);
+    console.log('mediatorConnectionAtAliceMediator', mediatorConnectionAtAliceMediator);
+    console.log('mediatorConnectionAtBobMediator', mediatorConnectionAtBobMediator);
 
-    expect(aliceInboundConnection).toBeConnectedWith(agencyConnectionAtAliceAgency);
-    expect(bobInboundConnection).toBeConnectedWith(agencyConnectionAtBobAgency);
+    expect(aliceInboundConnection).toBeConnectedWith(mediatorConnectionAtAliceMediator);
+    expect(bobInboundConnection).toBeConnectedWith(mediatorConnectionAtBobMediator);
   });
 
-  test('Alice and Bob make a connection via agency', async () => {
+  test('Alice and Bob make a connection via mediator', async () => {
     const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection();
 
     if (!aliceConnectionAtAliceBob.invitation) {
@@ -108,7 +108,7 @@ describe('with agency', () => {
     aliceAtAliceBobId = aliceConnectionAtAliceBob.id;
   });
 
-  test('Send a message from Alice to Bob via agency', async () => {
+  test('Send a message from Alice to Bob via mediator', async () => {
     // send message from Alice to Bob
     const aliceConnectionAtAliceBob = await aliceAgent.connections.find(aliceAtAliceBobId);
     if (!aliceConnectionAtAliceBob) {
@@ -144,14 +144,14 @@ class PollingInboundTransporter implements InboundTransporter {
     this.stop = false;
   }
   public async start(agent: Agent) {
-    await this.registerAgency(agent);
+    await this.registerMediator(agent);
   }
 
-  public async registerAgency(agent: Agent) {
-    const agencyUrl = agent.getAgencyUrl() || '';
-    const agencyInvitationUrl = await get(`${agencyUrl}/invitation`);
-    const { verkey: agencyVerkey } = JSON.parse(await get(`${agencyUrl}/`));
-    await agent.routing.provision({ verkey: agencyVerkey, invitationUrl: agencyInvitationUrl });
+  public async registerMediator(agent: Agent) {
+    const mediatorUrl = agent.getMediatorUrl() || '';
+    const mediatorInvitationUrl = await get(`${mediatorUrl}/invitation`);
+    const { verkey: mediatorVerkey } = JSON.parse(await get(`${mediatorUrl}/`));
+    await agent.routing.provision({ verkey: mediatorVerkey, invitationUrl: mediatorInvitationUrl });
     this.pollDownloadMessages(agent);
   }
 

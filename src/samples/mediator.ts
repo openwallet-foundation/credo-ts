@@ -86,20 +86,20 @@ app.get('/invitation', async (req, res) => {
 });
 
 app.get('/api/connections/:verkey', async (req, res) => {
-  // TODO This endpoint is for testing purpose only. Return agency connection by their verkey.
+  // TODO This endpoint is for testing purpose only. Return mediator connection by their verkey.
   const verkey = req.params.verkey;
   const connection = await agent.connections.findConnectionByTheirKey(verkey);
   res.send(connection);
 });
 
 app.get('/api/connections', async (req, res) => {
-  // TODO This endpoint is for testing purpose only. Return agency connection by their verkey.
+  // TODO This endpoint is for testing purpose only. Return mediator connection by their verkey.
   const connections = await agent.connections.getAll();
   res.json(connections);
 });
 
 app.get('/api/routes', async (req, res) => {
-  // TODO This endpoint is for testing purpose only. Return agency connection by their verkey.
+  // TODO This endpoint is for testing purpose only. Return mediator connection by their verkey.
   const routes = agent.routing.getRoutingTable();
   res.send(routes);
 });

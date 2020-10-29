@@ -7,7 +7,7 @@ import { MessageType } from '../protocols/routing/messages';
 import { InboundMessageContext } from './models/InboundMessageContext';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { AgentMessage } from './AgentMessage';
-import { MessageTransformer } from './MessageTransformer';
+import { JsonTransformer } from '../utils/JsonTransformer';
 
 class MessageReceiver {
   private config: AgentConfig;
@@ -143,7 +143,7 @@ class MessageReceiver {
     }
 
     // Cast the plain JSON object to specific instance of Message extended from AgentMessage
-    const message = MessageTransformer.toMessageInstance(unpackedMessage.message, MessageClass);
+    const message = JsonTransformer.fromJSON(unpackedMessage.message, MessageClass);
 
     return message;
   }

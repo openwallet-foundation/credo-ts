@@ -77,7 +77,7 @@ While the framework is still in early development the best way to know what API 
 
 ### Logs
 
-If you want the framework to show the logs while running, you can set the `DEBUG=aries-framework-javascript` debug environment variable. For running the sample agency this means running `yarn prod:debug` instead of `yarn prod:start`
+If you want the framework to show the logs while running, you can set the `DEBUG=aries-framework-javascript` debug environment variable. For running the sample mediator this means running `yarn prod:debug` instead of `yarn prod:start`
 
 ## Architecture
 
@@ -124,16 +124,16 @@ Test are executed using jest. Some test require either the **mediator agents** o
 
 To start the mediator agents you need to run two commands. See the [Usage with Docker](#usage-with-docker) section on how to run the mediators inside docker.
 
-Open terminal and start Alice's agency:
+Open terminal and start Alice's mediator:
 
 ```
-./run.sh agency01
+./run.sh mediator01
 ```
 
-Open new terminal and start Bob's agency:
+Open new terminal and start Bob's mediator:
 
 ```
-./run.sh agency02
+./run.sh mediator02
 ```
 
 #### Only run e2e tests with in memory messaging
@@ -149,7 +149,7 @@ yarn test -t "agents"
 Make sure the **mediator agents** from the [Starting mediator agents](#starting-mediator-agents) step are running and then run:
 
 ```
-yarn test -t "with agency"
+yarn test -t "with mediator"
 ```
 
 #### Run all tests

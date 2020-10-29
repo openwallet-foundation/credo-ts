@@ -3,6 +3,7 @@ import { BaseRecord, RecordType, Tags } from './BaseRecord';
 
 export interface BasicMessageStorageProps {
   id?: string;
+  createdAt?: number;
   tags: Tags;
 
   content: string;
@@ -17,7 +18,7 @@ export class BasicMessageRecord extends BaseRecord implements BasicMessageStorag
   public readonly type = BasicMessageRecord.type;
 
   public constructor(props: BasicMessageStorageProps) {
-    super(props.id || uuid());
+    super(props.id ?? uuid(), props.createdAt ?? Date.now());
     this.content = props.content;
     this.sentTime = props.sentTime;
     this.tags = props.tags;

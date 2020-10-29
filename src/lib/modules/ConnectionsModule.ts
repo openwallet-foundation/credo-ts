@@ -7,8 +7,8 @@ import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
 import { ConnectionInvitationMessage } from '../protocols/connections/ConnectionInvitationMessage';
 import { MessageSender } from '../agent/MessageSender';
-import { MessageTransformer } from '../agent/MessageTransformer';
 import { ConnectionEventType } from '..';
+import { JsonTransformer } from '../utils/JsonTransformer';
 
 export class ConnectionsModule {
   private agentConfig: AgentConfig;
@@ -38,7 +38,7 @@ export class ConnectionsModule {
     }
 
     // If agent has inbound connection, which means it's using a mediator, we need to create a route for newly created
-    // connection verkey at agency.
+    // connection verkey at mediator.
     if (this.agentConfig.inboundConnection) {
       this.consumerRoutingService.createRoute(connection.verkey);
     }
@@ -61,7 +61,7 @@ export class ConnectionsModule {
       autoAcceptConnection?: boolean;
     }
   ): Promise<ConnectionRecord> {
-    const invitationMessage = MessageTransformer.toMessageInstance(invitationJson, ConnectionInvitationMessage);
+    const invitationMessage = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage);
 
     let connection = await this.connectionService.processInvitation(invitationMessage, {
       autoAcceptConnection: config?.autoAcceptConnection,

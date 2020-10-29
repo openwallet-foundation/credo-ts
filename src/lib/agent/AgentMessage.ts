@@ -3,14 +3,14 @@ import { ThreadDecorated } from '../decorators/thread/ThreadDecoratorExtension';
 import { L10nDecorated } from '../decorators/l10n/L10nDecoratorExtension';
 import { TransportDecorated } from '../decorators/transport/TransportDecoratorExtension';
 import { TimingDecorated } from '../decorators/timing/TimingDecoratorExtension';
-import { MessageTransformer } from './MessageTransformer';
 import { BaseMessage } from './BaseMessage';
+import { JsonTransformer } from '../utils/JsonTransformer';
 
 const DefaultDecorators = [ThreadDecorated, L10nDecorated, TransportDecorated, TimingDecorated];
 
 export class AgentMessage extends Compose(BaseMessage, DefaultDecorators) {
   public toJSON(): Record<string, unknown> {
-    return MessageTransformer.toJSON(this);
+    return JsonTransformer.toJSON(this);
   }
 
   public is<C extends typeof AgentMessage>(Class: C): this is InstanceType<C> {

@@ -1,23 +1,25 @@
+import { v4 as uuid } from 'uuid';
 import { BaseRecord, RecordType } from './BaseRecord';
 
 interface ProvisioningRecordProps {
   id: string;
+  createdAt?: number;
   tags?: { [keys: string]: string };
-  agencyConnectionId: string;
-  agencyPublicVerkey: Verkey;
+  mediatorConnectionId: string;
+  mediatorPublicVerkey: Verkey;
 }
 
 export class ProvisioningRecord extends BaseRecord {
-  public agencyConnectionId: string;
-  public agencyPublicVerkey: Verkey;
+  public mediatorConnectionId: string;
+  public mediatorPublicVerkey: Verkey;
 
   public static readonly type: RecordType = RecordType.ProvisioningRecord;
   public readonly type = ProvisioningRecord.type;
 
   public constructor(props: ProvisioningRecordProps) {
-    super(props.id);
-    this.agencyConnectionId = props.agencyConnectionId;
-    this.agencyPublicVerkey = props.agencyPublicVerkey;
+    super(props.id ?? uuid(), props.createdAt ?? Date.now());
+    this.mediatorConnectionId = props.mediatorConnectionId;
+    this.mediatorPublicVerkey = props.mediatorPublicVerkey;
     this.tags = props.tags || {};
   }
 }

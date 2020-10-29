@@ -1,4 +1,4 @@
-import { plainToClass, classToPlain } from 'class-transformer';
+import { JsonTransformer } from '../../utils/JsonTransformer';
 import { ThreadDecorator } from './ThreadDecorator';
 
 describe('Decorators | ThreadDecorator', () => {
@@ -11,7 +11,7 @@ describe('Decorators | ThreadDecorator', () => {
         'did:sov:3ecf688c-cb3f-467b-8636-6b0c7f1d9022': 1,
       },
     };
-    const decorator = plainToClass(ThreadDecorator, json);
+    const decorator = JsonTransformer.fromJSON(json, ThreadDecorator);
 
     expect(decorator.threadId).toBe(json.thid);
     expect(decorator.parentThreadId).toBe(json.pthid);
@@ -34,7 +34,7 @@ describe('Decorators | ThreadDecorator', () => {
       receivedOrders,
     });
 
-    const json = classToPlain(decorator);
+    const json = JsonTransformer.toJSON(decorator);
     const transformed = {
       thid: threadId,
       pthid: parentThreadId,

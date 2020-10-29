@@ -12,7 +12,7 @@ import {
   CredentialPreviewAttribute,
 } from '../messages/CredentialOfferMessage';
 import { ConnectionRecord } from '../../../storage/ConnectionRecord';
-import { JsonEncoder } from '../JsonEncoder';
+import { JsonEncoder } from '../../../utils/JsonEncoder';
 import { Attachment } from '../messages/Attachment';
 import { CredentialRequestMessage } from '../messages/CredentialRequestMessage';
 import { CredentialResponseMessage } from '../messages/CredentialResponseMessage';

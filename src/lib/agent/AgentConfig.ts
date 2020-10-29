@@ -20,8 +20,8 @@ export class AgentConfig {
     return this.initConfig.publicDidSeed;
   }
 
-  public get agencyUrl() {
-    return this.initConfig.agencyUrl;
+  public get mediatorUrl() {
+    return this.initConfig.mediatorUrl;
   }
 
   public get poolName() {

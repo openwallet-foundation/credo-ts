@@ -1,12 +1,14 @@
+import { v4 as uuid } from 'uuid';
 import { BaseRecord, RecordType, Tags } from './BaseRecord';
 import { DidDoc } from '../protocols/connections/domain/DidDoc';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
 import { ConnectionInvitationMessage } from '../protocols/connections/ConnectionInvitationMessage';
 import { ConnectionRole } from '../protocols/connections/domain/ConnectionRole';
-import { MessageTransformer } from '../agent/MessageTransformer';
+import { JsonTransformer } from '../utils/JsonTransformer';
 
 interface ConnectionProps {
-  id: string;
+  id?: string;
+  createdAt?: number;
   did: Did;
   didDoc: DidDoc;
   verkey: Verkey;
@@ -49,7 +51,7 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
   public readonly type = ConnectionRecord.type;
 
   public constructor(props: ConnectionStorageProps) {
-    super(props.id);
+    super(props.id ?? uuid(), props.createdAt ?? Date.now());
     this.did = props.did;
     this.didDoc = props.didDoc;
     this.verkey = props.verkey;
@@ -75,11 +77,11 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
   }
 
   public get invitation() {
-    if (this._invitation) return MessageTransformer.toMessageInstance(this._invitation, ConnectionInvitationMessage);
+    if (this._invitation) return JsonTransformer.fromJSON(this._invitation, ConnectionInvitationMessage);
   }
 
   public set invitation(invitation: ConnectionInvitationMessage | undefined) {
-    if (invitation) this._invitation = MessageTransformer.toJSON(invitation);
+    if (invitation) this._invitation = JsonTransformer.toJSON(invitation);
   }
 
   public get myKey() {
