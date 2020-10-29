@@ -23,7 +23,7 @@ export class TrustPingMessageHandler implements Handler {
 
     // TODO: This is better addressed in a middleware of some kind because
     // any message can transition the state to complete, not just an ack or trust ping
-    if (connection.state === ConnectionState.Responded && connection.role === ConnectionRole.Inviter) {
+    if (connection.state === ConnectionState.Responded) {
       await this.connectionService.updateState(connection, ConnectionState.Complete);
     }
 
