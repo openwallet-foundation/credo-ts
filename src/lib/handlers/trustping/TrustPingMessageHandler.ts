@@ -3,7 +3,6 @@ import { TrustPingService } from '../../protocols/trustping/TrustPingService';
 import { ConnectionService } from '../../protocols/connections/ConnectionService';
 import { ConnectionState } from '../../protocols/connections/domain/ConnectionState';
 import { TrustPingMessage } from '../../protocols/trustping/TrustPingMessage';
-import { ConnectionRole } from '../../protocols/connections/domain/ConnectionRole';
 
 export class TrustPingMessageHandler implements Handler {
   private trustPingService: TrustPingService;
