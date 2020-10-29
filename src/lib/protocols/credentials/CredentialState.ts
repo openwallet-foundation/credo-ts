@@ -5,4 +5,5 @@ export enum CredentialState {
   RequestReceived = 'REQUEST_RECEIVED',
   CredentialIssued = 'CREDENTIAL_ISSUED',
   CredentialReceived = 'CREDENTIAL_RECEIVED',
+  Done = 'DONE',
 }

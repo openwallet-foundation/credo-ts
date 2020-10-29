@@ -3,6 +3,7 @@ import { CredentialService } from '../../protocols/credentials/CredentialService
 import { CredentialResponseMessage } from '../../protocols/credentials/messages/CredentialResponseMessage';
 import { LedgerService } from '../../agent/LedgerService';
 import { JsonEncoder } from '../../utils/JsonEncoder';
+import { createOutboundMessage } from '../../protocols/helpers';
 
 export class CredentialResponseHandler implements Handler {
   private credentialService: CredentialService;
@@ -18,6 +19,14 @@ export class CredentialResponseHandler implements Handler {
     const [responseAttachment] = messageContext.message.attachments;
     const cred = JsonEncoder.fromBase64(responseAttachment.data.base64);
     const credentialDefinition = await this.ledgerService.getCredentialDefinition(cred.cred_def_id);
-    await this.credentialService.processCredentialResponse(messageContext, credentialDefinition);
+    const credential = await this.credentialService.processCredentialResponse(messageContext, credentialDefinition);
+
+    if (messageContext.message.requiresAck()) {
+      if (!messageContext.connection) {
+        throw new Error('There is no connection in message context.');
+      }
+      const message = await this.credentialService.createAck(credential.id);
+      return createOutboundMessage(messageContext.connection, message);
+    }
   }
 }
