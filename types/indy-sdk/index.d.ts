@@ -229,6 +229,7 @@ type ByteArray = number[];
 type SchemaId = string;
 type CredDefId = string;
 type CredentialId = string;
+type PresentationId = string;
 type KeyDerivationMethod = 'ARGON2I_MOD' | 'ARGON2I_INT' | 'RAW';
 
 // TODO: Maybe we can make this a bit more specific?

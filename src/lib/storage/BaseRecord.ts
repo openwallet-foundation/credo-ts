@@ -4,6 +4,7 @@ export enum RecordType {
   BasicMessageRecord = 'BasicMessageRecord',
   ProvisioningRecord = 'ProvisioningRecord',
   CredentialRecord = 'CredentialRecord',
+  PresentationRecord = 'PresentationRecord'
 }
 
 export type Tags = Record<string, string | undefined>;
