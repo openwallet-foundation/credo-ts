@@ -256,7 +256,7 @@ describe('CredentialService', () => {
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update');
 
       // when
-      await credentialService.createCredentialRequest(connection, credentialRecord, credDef);
+      await credentialService.createCredentialRequest(connection, credentialRecord, credDef, {});
 
       // then
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1);
@@ -272,7 +272,7 @@ describe('CredentialService', () => {
       credentialService.on(EventType.StateChanged, eventListenerMock);
 
       // when
-      await credentialService.createCredentialRequest(connection, credentialRecord, credDef);
+      await credentialService.createCredentialRequest(connection, credentialRecord, credDef, {});
 
       // then
       expect(eventListenerMock).toHaveBeenCalledTimes(1);
@@ -286,15 +286,22 @@ describe('CredentialService', () => {
     });
 
     test('returns credential request message base on existing credential offer message', async () => {
-      const credentialRequest = await credentialService.createCredentialRequest(connection, credentialRecord, credDef);
+      // given
+      const comment = 'credential request comment';
 
+      // when
+      const credentialRequest = await credentialService.createCredentialRequest(connection, credentialRecord, credDef, {
+        comment,
+      });
+
+      // then
       expect(credentialRequest.toJSON()).toMatchObject({
         '@id': expect.any(String),
         '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/request-credential',
         '~thread': {
           thid: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
         },
-        comment: 'some credential request comment',
+        comment,
         'requests~attach': [
           {
             '@id': expect.any(String),
@@ -412,7 +419,6 @@ describe('CredentialService', () => {
 
       // when
       await credentialService.createCredentialResponse(credential.id, {});
-      expect(eventListenerMock).toHaveBeenCalledTimes(1);
 
       // then
       expect(eventListenerMock).toHaveBeenCalledTimes(1);
