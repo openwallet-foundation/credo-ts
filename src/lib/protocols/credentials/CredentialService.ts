@@ -100,12 +100,13 @@ export class CredentialService extends EventEmitter {
    *
    * @param connection Connection between holder and issuer
    * @param credential
-   * @param credDef
+   * @param credentialDefinition
    */
   public async createCredentialRequest(
     connection: ConnectionRecord,
     credential: CredentialRecord,
-    credDef: CredDef
+    credentialDefinition: CredDef,
+    options: CredentialRequestOptions = {}
   ): Promise<CredentialRequestMessage> {
     const proverDid = connection.did;
 
@@ -119,7 +120,7 @@ export class CredentialService extends EventEmitter {
     const [credReq, credReqMetadata] = await this.wallet.createCredentialRequest(
       proverDid,
       credOffer,
-      credDef,
+      credentialDefinition,
       'master_secret'
     );
     const attachment = new Attachment({
@@ -128,10 +129,9 @@ export class CredentialService extends EventEmitter {
         base64: JsonEncoder.toBase64(credReq),
       },
     });
-    const credentialRequest = new CredentialRequestMessage({
-      comment: 'some credential request comment',
-      attachments: [attachment],
-    });
+
+    const { comment } = options;
+    const credentialRequest = new CredentialRequestMessage({ comment, attachments: [attachment] });
     credentialRequest.setThread({ threadId: credential.tags.threadId });
 
     credential.requestMetadata = credReqMetadata;
@@ -167,7 +167,10 @@ export class CredentialService extends EventEmitter {
    * @param credentialId Credential record ID
    * @param credentialResponseOptions
    */
-  public async createCredentialResponse(credentialId: string, { comment }: CredentialResponseOptions) {
+  public async createCredentialResponse(
+    credentialId: string,
+    options: CredentialResponseOptions = {}
+  ): Promise<CredentialResponseMessage> {
     const credential = await this.credentialRepository.find(credentialId);
 
     // FIXME: credential.offer is already CredentialOfferMessage type
@@ -191,10 +194,8 @@ export class CredentialService extends EventEmitter {
       },
     });
 
-    const credentialResponse = new CredentialResponseMessage({
-      comment,
-      attachments: [responseAttachment],
-    });
+    const { comment } = options;
+    const credentialResponse = new CredentialResponseMessage({ comment, attachments: [responseAttachment] });
     credentialResponse.setThread({ threadId: credential.tags.threadId });
     credentialResponse.setPleaseAck();
 
@@ -211,7 +212,7 @@ export class CredentialService extends EventEmitter {
   public async processCredentialResponse(
     messageContext: InboundMessageContext<CredentialResponseMessage>,
     credentialDefinition: CredDef
-  ) {
+  ): Promise<CredentialRecord> {
     const [responseAttachment] = messageContext.message.attachments;
     const cred = JsonEncoder.fromBase64(responseAttachment.data.base64);
 
@@ -245,7 +246,7 @@ export class CredentialService extends EventEmitter {
     return ackMessage;
   }
 
-  public async processAck(messageContext: InboundMessageContext<CredentialAckMessage>) {
+  public async processAck(messageContext: InboundMessageContext<CredentialAckMessage>): Promise<CredentialRecord> {
     const threadId = messageContext.message.thread?.threadId;
     const [credential] = await this.credentialRepository.findByQuery({ threadId });
 
@@ -277,6 +278,10 @@ export interface CredentialOfferTemplate {
   credentialDefinitionId: CredDefId;
   comment?: string;
   preview: CredentialPreview;
+}
+
+interface CredentialRequestOptions {
+  comment?: string;
 }
 
 interface CredentialResponseOptions {

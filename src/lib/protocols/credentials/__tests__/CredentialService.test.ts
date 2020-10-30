@@ -286,15 +286,22 @@ describe('CredentialService', () => {
     });
 
     test('returns credential request message base on existing credential offer message', async () => {
-      const credentialRequest = await credentialService.createCredentialRequest(connection, credentialRecord, credDef);
+      // given
+      const comment = 'credential request comment';
 
+      // when
+      const credentialRequest = await credentialService.createCredentialRequest(connection, credentialRecord, credDef, {
+        comment,
+      });
+
+      // then
       expect(credentialRequest.toJSON()).toMatchObject({
         '@id': expect.any(String),
         '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/request-credential',
         '~thread': {
           thid: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
         },
-        comment: 'some credential request comment',
+        comment,
         'requests~attach': [
           {
             '@id': expect.any(String),
@@ -394,7 +401,7 @@ describe('CredentialService', () => {
       repositoryFindMock.mockReturnValue(Promise.resolve(credential));
 
       // when
-      await credentialService.createCredentialResponse(credential.id, {});
+      await credentialService.createCredentialResponse(credential.id);
 
       // then
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls;
@@ -411,8 +418,7 @@ describe('CredentialService', () => {
       repositoryFindMock.mockReturnValue(Promise.resolve(credential));
 
       // when
-      await credentialService.createCredentialResponse(credential.id, {});
-      expect(eventListenerMock).toHaveBeenCalledTimes(1);
+      await credentialService.createCredentialResponse(credential.id);
 
       // then
       expect(eventListenerMock).toHaveBeenCalledTimes(1);
