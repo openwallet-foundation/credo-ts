@@ -5,6 +5,7 @@ export { Agent } from './agent/Agent';
 export { InboundTransporter } from './transport/InboundTransporter';
 export { OutboundTransporter } from './transport/OutboundTransporter';
 export { encodeInvitationToUrl, decodeInvitationFromUrl } from './helpers';
+export { InitConfig, OutboundPackage } from './types';
 
 export { ConnectionRecord } from './storage/ConnectionRecord';
 export { EventType as ConnectionEventType } from './protocols/connections/ConnectionService';
