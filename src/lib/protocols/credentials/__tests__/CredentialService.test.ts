@@ -256,7 +256,7 @@ describe('CredentialService', () => {
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update');
 
       // when
-      await credentialService.createCredentialRequest(connection, credentialRecord, credDef, {});
+      await credentialService.createCredentialRequest(connection, credentialRecord, credDef);
 
       // then
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1);
@@ -272,7 +272,7 @@ describe('CredentialService', () => {
       credentialService.on(EventType.StateChanged, eventListenerMock);
 
       // when
-      await credentialService.createCredentialRequest(connection, credentialRecord, credDef, {});
+      await credentialService.createCredentialRequest(connection, credentialRecord, credDef);
 
       // then
       expect(eventListenerMock).toHaveBeenCalledTimes(1);
@@ -401,7 +401,7 @@ describe('CredentialService', () => {
       repositoryFindMock.mockReturnValue(Promise.resolve(credential));
 
       // when
-      await credentialService.createCredentialResponse(credential.id, {});
+      await credentialService.createCredentialResponse(credential.id);
 
       // then
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls;
@@ -418,7 +418,7 @@ describe('CredentialService', () => {
       repositoryFindMock.mockReturnValue(Promise.resolve(credential));
 
       // when
-      await credentialService.createCredentialResponse(credential.id, {});
+      await credentialService.createCredentialResponse(credential.id);
 
       // then
       expect(eventListenerMock).toHaveBeenCalledTimes(1);

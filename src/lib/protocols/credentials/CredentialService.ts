@@ -106,7 +106,7 @@ export class CredentialService extends EventEmitter {
     connection: ConnectionRecord,
     credential: CredentialRecord,
     credentialDefinition: CredDef,
-    options: CredentialRequestOptions
+    options: CredentialRequestOptions = {}
   ): Promise<CredentialRequestMessage> {
     const proverDid = connection.did;
 
@@ -169,7 +169,7 @@ export class CredentialService extends EventEmitter {
    */
   public async createCredentialResponse(
     credentialId: string,
-    options: CredentialResponseOptions
+    options: CredentialResponseOptions = {}
   ): Promise<CredentialResponseMessage> {
     const credential = await this.credentialRepository.find(credentialId);
 

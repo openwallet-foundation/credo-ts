@@ -54,8 +54,7 @@ export class CredentialsModule {
     const credentialRequestMessage = await this.credentialService.createCredentialRequest(
       connection,
       credential,
-      credentialDefinition,
-      {}
+      credentialDefinition
     );
 
     const outboundMessage = createOutboundMessage(connection, credentialRequestMessage);
