@@ -339,7 +339,7 @@ describe('ConnectionService', () => {
       expect.assertions(2);
 
       // Needed for signing connection~sig
-      const [did, verkey] = await wallet.createDid({ method_name: 'sov' });
+      const [did, verkey] = await wallet.createDid();
       const connectionRecord = getMockConnection({
         did,
         verkey,
@@ -387,8 +387,8 @@ describe('ConnectionService', () => {
     it('returns a connection record containing the information from the connection response', async () => {
       expect.assertions(3);
 
-      const [did, verkey] = await wallet.createDid({ method_name: 'sov' });
-      const [theirDid, theirVerkey] = await wallet.createDid({ method_name: 'sov' });
+      const [did, verkey] = await wallet.createDid();
+      const [theirDid, theirVerkey] = await wallet.createDid();
       const connectionRecord = getMockConnection({
         did,
         verkey,
@@ -433,8 +433,8 @@ describe('ConnectionService', () => {
     it('throws an error when the connection sig is not signed with the same key as the recipient key from the invitation', async () => {
       expect.assertions(1);
 
-      const [did, verkey] = await wallet.createDid({ method_name: 'sov' });
-      const [theirDid, theirVerkey] = await wallet.createDid({ method_name: 'sov' });
+      const [did, verkey] = await wallet.createDid();
+      const [theirDid, theirVerkey] = await wallet.createDid();
       const connectionRecord = getMockConnection({
         did,
         verkey,
@@ -504,8 +504,8 @@ describe('ConnectionService', () => {
     it('throws an error when the message does not contain a did doc with any recipientKeys', async () => {
       expect.assertions(1);
 
-      const [did, verkey] = await wallet.createDid({ method_name: 'sov' });
-      const [theirDid, theirVerkey] = await wallet.createDid({ method_name: 'sov' });
+      const [did, verkey] = await wallet.createDid();
+      const [theirDid, theirVerkey] = await wallet.createDid();
       const connectionRecord = getMockConnection({
         did,
         verkey,

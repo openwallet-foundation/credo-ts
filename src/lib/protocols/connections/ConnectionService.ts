@@ -309,7 +309,7 @@ class ConnectionService extends EventEmitter {
     autoAcceptConnection?: boolean;
     tags?: ConnectionTags;
   }): Promise<ConnectionRecord> {
-    const [did, verkey] = await this.wallet.createDid({ method_name: 'sov' });
+    const [did, verkey] = await this.wallet.createDid();
     const publicKey = new PublicKey(`${did}#1`, PublicKeyType.ED25519_SIG_2018, did, verkey);
     const service = new Service(
       `${did};indy`,
