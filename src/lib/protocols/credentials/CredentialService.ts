@@ -37,7 +37,7 @@ export class CredentialService extends EventEmitter {
    * @param credentialOfferTemplate Template for credential offer
    * @returns Credential offer message
    */
-  public async createCredentialOffer(
+  public async createOffer(
     connection: ConnectionRecord,
     credentialTemplate: CredentialOfferTemplate
   ): Promise<CredentialOfferMessage> {
@@ -74,9 +74,7 @@ export class CredentialService extends EventEmitter {
    *
    * @param messageContext
    */
-  public async processCredentialOffer(
-    messageContext: InboundMessageContext<CredentialOfferMessage>
-  ): Promise<CredentialRecord> {
+  public async processOffer(messageContext: InboundMessageContext<CredentialOfferMessage>): Promise<CredentialRecord> {
     const credentialOffer = messageContext.message;
     const connection = messageContext.connection;
 
@@ -102,7 +100,7 @@ export class CredentialService extends EventEmitter {
    * @param credential
    * @param credentialDefinition
    */
-  public async createCredentialRequest(
+  public async createRequest(
     connection: ConnectionRecord,
     credential: CredentialRecord,
     credentialDefinition: CredDef,
@@ -146,7 +144,7 @@ export class CredentialService extends EventEmitter {
    *
    * @param messageContext
    */
-  public async processCredentialRequest(
+  public async processRequest(
     messageContext: InboundMessageContext<CredentialRequestMessage>
   ): Promise<CredentialRecord> {
     const [requestAttachment] = messageContext.message.attachments;
@@ -171,7 +169,7 @@ export class CredentialService extends EventEmitter {
    * @param credentialId Credential record ID
    * @param credentialResponseOptions
    */
-  public async createCredentialResponse(
+  public async createResponse(
     credentialId: string,
     options: CredentialResponseOptions = {}
   ): Promise<CredentialResponseMessage> {
@@ -214,7 +212,7 @@ export class CredentialService extends EventEmitter {
    * @param messageContext
    * @param credentialDefinition
    */
-  public async processCredentialResponse(
+  public async processResponse(
     messageContext: InboundMessageContext<CredentialResponseMessage>,
     credentialDefinition: CredDef
   ): Promise<CredentialRecord> {
