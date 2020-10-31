@@ -87,6 +87,8 @@ describe('CredentialService', () => {
   let wallet: Wallet;
   let credentialRepository: Repository<CredentialRecord>;
   let credentialService: CredentialService;
+  let repositoryFindMock: jest.Mock<Promise<CredentialRecord>, [string]>;
+  let repositoryFindByQueryMock: jest.Mock<Promise<CredentialRecord[]>, [WalletQuery]>;
 
   beforeAll(async () => {
     wallet = new StubWallet();
@@ -98,12 +100,24 @@ describe('CredentialService', () => {
     await wallet.delete();
   });
 
+  beforeEach(() => {
+    credentialRepository = new CredentialRepository();
+    credentialService = new CredentialService(wallet, credentialRepository);
+
+    // make separate repositoryFindMock variable to get the correct jest mock typing
+    repositoryFindMock = credentialRepository.find as jest.Mock<Promise<CredentialRecord>, [string]>;
+
+    // make separate repositoryFindByQueryMock variable to get the correct jest mock typing
+    repositoryFindByQueryMock = credentialRepository.findByQuery as jest.Mock<
+      Promise<CredentialRecord[]>,
+      [WalletQuery]
+    >;
+  });
+
   describe('createCredentialOffer', () => {
     let credentialTemplate: CredentialOfferTemplate;
 
     beforeEach(() => {
-      credentialRepository = new CredentialRepository();
-      credentialService = new CredentialService(wallet, credentialRepository);
       credentialTemplate = {
         credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
         comment: 'some comment',
@@ -194,9 +208,6 @@ describe('CredentialService', () => {
       });
       messageContext = new InboundMessageContext(credentialOfferMessage);
       messageContext.connection = connection;
-
-      credentialRepository = new CredentialRepository();
-      credentialService = new CredentialService(wallet, credentialRepository);
     });
 
     test('creates and return credential record in OFFER_RECEIVED state with offer, thread ID', async () => {
@@ -247,9 +258,6 @@ describe('CredentialService', () => {
         state: CredentialState.OfferReceived,
         tags: { threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746' },
       });
-
-      credentialRepository = new CredentialRepository();
-      credentialService = new CredentialService(wallet, credentialRepository);
     });
 
     test('updates state to REQUEST_SENT, set request metadata', async () => {
@@ -316,7 +324,6 @@ describe('CredentialService', () => {
   });
 
   describe('processCredentialRequest', () => {
-    let repositoryFindByQueryMock: jest.Mock<Promise<CredentialRecord[]>, [WalletQuery]>;
     let credential: CredentialRecord;
     let messageContext: InboundMessageContext<CredentialRequestMessage>;
 
@@ -326,14 +333,6 @@ describe('CredentialService', () => {
       const credentialRequest = new CredentialRequestMessage({ comment: 'abcd', attachments: [requestAttachment] });
       credentialRequest.setThread({ threadId: 'somethreadid' });
       messageContext = new InboundMessageContext(credentialRequest);
-
-      credentialRepository = new CredentialRepository();
-      credentialService = new CredentialService(wallet, credentialRepository);
-      // make separate mockFind variable to get the correct jest mock typing
-      repositoryFindByQueryMock = credentialRepository.findByQuery as jest.Mock<
-        Promise<CredentialRecord[]>,
-        [WalletQuery]
-      >;
     });
 
     test('updates state to REQUEST_RECEIVED, set request and returns credential record', async () => {
@@ -379,7 +378,6 @@ describe('CredentialService', () => {
   });
 
   describe('createCredentialResponse', () => {
-    let repositoryFindMock: jest.Mock<Promise<CredentialRecord>, [string]>;
     let credential: CredentialRecord;
 
     beforeEach(() => {
@@ -388,10 +386,6 @@ describe('CredentialService', () => {
         request: credReq,
         tags: { threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746' },
       });
-      credentialRepository = new CredentialRepository();
-      credentialService = new CredentialService(wallet, credentialRepository);
-      // make separate mockFind variable to get the correct jest mock typing
-      repositoryFindMock = credentialRepository.find as jest.Mock<Promise<CredentialRecord>, [string]>;
     });
 
     test('updates state to CREDENTIAL_ISSUED', async () => {
@@ -404,6 +398,8 @@ describe('CredentialService', () => {
       await credentialService.createCredentialResponse(credential.id);
 
       // then
+      expect(repositoryFindMock).toHaveBeenCalledTimes(1);
+      expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1);
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls;
       expect(updatedCredentialRecord).toMatchObject({
         state: 'CREDENTIAL_ISSUED',
@@ -467,7 +463,6 @@ describe('CredentialService', () => {
   });
 
   describe('processCredentialResponse', () => {
-    let repositoryFindByQueryMock: jest.Mock<Promise<CredentialRecord[]>, [WalletQuery]>;
     let credential: CredentialRecord;
     let messageContext: InboundMessageContext<CredentialResponseMessage>;
 
@@ -480,14 +475,6 @@ describe('CredentialService', () => {
       const credentialResponse = new CredentialResponseMessage({ comment: 'abcd', attachments: [attachment] });
       credentialResponse.setThread({ threadId: 'somethreadid' });
       messageContext = new InboundMessageContext(credentialResponse);
-
-      credentialRepository = new CredentialRepository();
-      credentialService = new CredentialService(wallet, credentialRepository);
-      // make separate mockFind variable to get the correct jest mock typing
-      repositoryFindByQueryMock = credentialRepository.findByQuery as jest.Mock<
-        Promise<CredentialRecord[]>,
-        [WalletQuery]
-      >;
     });
 
     test('finds credential record by thread ID and saves credential attachment into the wallet', async () => {
@@ -564,7 +551,6 @@ describe('CredentialService', () => {
   });
 
   describe('createAck', () => {
-    let repositoryFindMock: jest.Mock<Promise<CredentialRecord>, [string]>;
     let credential: CredentialRecord;
 
     beforeEach(() => {
@@ -572,11 +558,6 @@ describe('CredentialService', () => {
         state: CredentialState.CredentialReceived,
         tags: { threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746' },
       });
-
-      credentialRepository = new CredentialRepository();
-      credentialService = new CredentialService(wallet, credentialRepository);
-      // make separate mockFind variable to get the correct jest mock typing
-      repositoryFindMock = credentialRepository.find as jest.Mock<Promise<CredentialRecord>, [string]>;
     });
 
     test('updates state to DONE', async () => {
@@ -588,6 +569,7 @@ describe('CredentialService', () => {
       await credentialService.createAck(credential.id);
 
       // then
+      expect(repositoryFindMock).toHaveBeenCalledTimes(1);
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1);
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls;
       expect(updatedCredentialRecord).toMatchObject({
@@ -635,7 +617,6 @@ describe('CredentialService', () => {
   });
 
   describe('processAck', () => {
-    let repositoryFindByQueryMock: jest.Mock<Promise<CredentialRecord[]>, [WalletQuery]>;
     let credential: CredentialRecord;
     let messageContext: InboundMessageContext<CredentialAckMessage>;
 
@@ -645,14 +626,6 @@ describe('CredentialService', () => {
       const credentialRequest = new CredentialAckMessage({});
       credentialRequest.setThread({ threadId: 'somethreadid' });
       messageContext = new InboundMessageContext(credentialRequest);
-
-      credentialRepository = new CredentialRepository();
-      credentialService = new CredentialService(wallet, credentialRepository);
-      // make separate mockFind variable to get the correct jest mock typing
-      repositoryFindByQueryMock = credentialRepository.findByQuery as jest.Mock<
-        Promise<CredentialRecord[]>,
-        [WalletQuery]
-      >;
     });
 
     test('updates state to DONE and returns credential record', async () => {
@@ -668,6 +641,7 @@ describe('CredentialService', () => {
       const expectedCredentialRecord = {
         state: 'DONE',
       };
+      expect(repositoryFindByQueryMock).toHaveBeenCalledTimes(1);
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1);
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls;
       expect(updatedCredentialRecord).toMatchObject(expectedCredentialRecord);
