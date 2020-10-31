@@ -321,6 +321,18 @@ describe('CredentialService', () => {
         ],
       });
     });
+
+    const validState = CredentialState.OfferReceived;
+    const invalidCredentialStates = Object.values(CredentialState).filter(state => state !== validState);
+    test(`throws an error when state transition is invalid`, async () => {
+      await Promise.all(
+        invalidCredentialStates.map(async state => {
+          await expect(
+            credentialService.createCredentialRequest(connection, mockCredentialRecord({ state }), credDef)
+          ).rejects.toThrowError(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`);
+        })
+      );
+    });
   });
 
   describe('processCredentialRequest', () => {
@@ -375,16 +387,30 @@ describe('CredentialService', () => {
         },
       });
     });
+
+    const validState = CredentialState.OfferSent;
+    const invalidCredentialStates = Object.values(CredentialState).filter(state => state !== validState);
+    test(`throws an error when state transition is invalid`, async () => {
+      await Promise.all(
+        invalidCredentialStates.map(async state => {
+          repositoryFindByQueryMock.mockReturnValue(Promise.resolve([mockCredentialRecord({ state })]));
+          await expect(credentialService.processCredentialRequest(messageContext)).rejects.toThrowError(
+            `Credential record is in invalid state ${state}. Valid states are: ${validState}.`
+          );
+        })
+      );
+    });
   });
 
   describe('createCredentialResponse', () => {
+    const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249746';
     let credential: CredentialRecord;
 
     beforeEach(() => {
       credential = mockCredentialRecord({
         state: CredentialState.RequestReceived,
         request: credReq,
-        tags: { threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746' },
+        tags: { threadId },
       });
     });
 
@@ -459,6 +485,19 @@ describe('CredentialService', () => {
       const [cred] = await wallet.createCredential(credOffer, credReq, {});
       const [responseAttachment] = credentialResponse.attachments;
       expect(JsonEncoder.fromBase64(responseAttachment.data.base64)).toEqual(cred);
+    });
+
+    const validState = CredentialState.RequestReceived;
+    const invalidCredentialStates = Object.values(CredentialState).filter(state => state !== validState);
+    test(`throws an error when state transition is invalid`, async () => {
+      await Promise.all(
+        invalidCredentialStates.map(async state => {
+          repositoryFindMock.mockReturnValue(Promise.resolve(mockCredentialRecord({ state, tags: { threadId } })));
+          await expect(credentialService.createCredentialResponse(credential.id)).rejects.toThrowError(
+            `Credential record is in invalid state ${state}. Valid states are: ${validState}.`
+          );
+        })
+      );
     });
   });
 
@@ -548,15 +587,29 @@ describe('CredentialService', () => {
         },
       });
     });
+
+    const validState = CredentialState.RequestSent;
+    const invalidCredentialStates = Object.values(CredentialState).filter(state => state !== validState);
+    test(`throws an error when state transition is invalid`, async () => {
+      await Promise.all(
+        invalidCredentialStates.map(async state => {
+          repositoryFindByQueryMock.mockReturnValue(Promise.resolve([mockCredentialRecord({ state })]));
+          await expect(credentialService.processCredentialResponse(messageContext, credDef)).rejects.toThrowError(
+            `Credential record is in invalid state ${state}. Valid states are: ${validState}.`
+          );
+        })
+      );
+    });
   });
 
   describe('createAck', () => {
+    const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249746';
     let credential: CredentialRecord;
 
     beforeEach(() => {
       credential = mockCredentialRecord({
         state: CredentialState.CredentialReceived,
-        tags: { threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746' },
+        tags: { threadId },
       });
     });
 
@@ -613,6 +666,19 @@ describe('CredentialService', () => {
           thid: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
         },
       });
+    });
+
+    const validState = CredentialState.CredentialReceived;
+    const invalidCredentialStates = Object.values(CredentialState).filter(state => state !== validState);
+    test(`throws an error when state transition is invalid`, async () => {
+      await Promise.all(
+        invalidCredentialStates.map(async state => {
+          repositoryFindMock.mockReturnValue(Promise.resolve(mockCredentialRecord({ state, tags: { threadId } })));
+          await expect(credentialService.createAck(credential.id)).rejects.toThrowError(
+            `Credential record is in invalid state ${state}. Valid states are: ${validState}.`
+          );
+        })
+      );
     });
   });
 
@@ -676,6 +742,19 @@ describe('CredentialService', () => {
       // when, then
       await expect(credentialService.processAck(messageContext)).rejects.toThrowError(
         'No credential found for threadId = somethreadid'
+      );
+    });
+
+    const validState = CredentialState.CredentialIssued;
+    const invalidCredentialStates = Object.values(CredentialState).filter(state => state !== validState);
+    test(`throws an error when state transition is invalid`, async () => {
+      await Promise.all(
+        invalidCredentialStates.map(async state => {
+          repositoryFindByQueryMock.mockReturnValue(Promise.resolve([mockCredentialRecord({ state })]));
+          await expect(credentialService.processAck(messageContext)).rejects.toThrowError(
+            `Credential record is in invalid state ${state}. Valid states are: ${validState}.`
+          );
+        })
       );
     });
   });
