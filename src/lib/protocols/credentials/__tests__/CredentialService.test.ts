@@ -487,12 +487,24 @@ describe('CredentialService', () => {
       expect(JsonEncoder.fromBase64(responseAttachment.data.base64)).toEqual(cred);
     });
 
+    test('throws error when credential record has no request', async () => {
+      // given
+      repositoryFindMock.mockReturnValue(Promise.resolve(mockCredentialRecord({ state: CredentialState.RequestSent })));
+
+      // when, then
+      await expect(credentialService.createCredentialResponse(credential.id)).rejects.toThrowError(
+        'Credential does not contain request.'
+      );
+    });
+
     const validState = CredentialState.RequestReceived;
     const invalidCredentialStates = Object.values(CredentialState).filter(state => state !== validState);
     test(`throws an error when state transition is invalid`, async () => {
       await Promise.all(
         invalidCredentialStates.map(async state => {
-          repositoryFindMock.mockReturnValue(Promise.resolve(mockCredentialRecord({ state, tags: { threadId } })));
+          repositoryFindMock.mockReturnValue(
+            Promise.resolve(mockCredentialRecord({ state, tags: { threadId }, request: credReq }))
+          );
           await expect(credentialService.createCredentialResponse(credential.id)).rejects.toThrowError(
             `Credential record is in invalid state ${state}. Valid states are: ${validState}.`
           );
@@ -588,12 +600,26 @@ describe('CredentialService', () => {
       });
     });
 
+    test('throws error when credential record has no request metadata', async () => {
+      // given
+      repositoryFindByQueryMock.mockReturnValue(
+        Promise.resolve([mockCredentialRecord({ state: CredentialState.RequestSent })])
+      );
+
+      // when, then
+      await expect(credentialService.processCredentialResponse(messageContext, credDef)).rejects.toThrowError(
+        'Credential does not contain request metadata.'
+      );
+    });
+
     const validState = CredentialState.RequestSent;
     const invalidCredentialStates = Object.values(CredentialState).filter(state => state !== validState);
     test(`throws an error when state transition is invalid`, async () => {
       await Promise.all(
         invalidCredentialStates.map(async state => {
-          repositoryFindByQueryMock.mockReturnValue(Promise.resolve([mockCredentialRecord({ state })]));
+          repositoryFindByQueryMock.mockReturnValue(
+            Promise.resolve([mockCredentialRecord({ state, requestMetadata: { cred_req: 'meta-data' } })])
+          );
           await expect(credentialService.processCredentialResponse(messageContext, credDef)).rejects.toThrowError(
             `Credential record is in invalid state ${state}. Valid states are: ${validState}.`
           );

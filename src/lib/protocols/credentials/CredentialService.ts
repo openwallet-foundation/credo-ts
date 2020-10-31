@@ -177,11 +177,11 @@ export class CredentialService extends EventEmitter {
   ): Promise<CredentialResponseMessage> {
     const credential = await this.credentialRepository.find(credentialId);
 
-    this.validateState(credential.state, CredentialState.RequestReceived);
-
     if (!credential.request) {
-      throw new Error(`Credential does not contain credReqMetadata.`);
+      throw new Error(`Credential does not contain request.`);
     }
+
+    this.validateState(credential.state, CredentialState.RequestReceived);
 
     // FIXME: credential.offer is already CredentialOfferMessage type
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -227,11 +227,11 @@ export class CredentialService extends EventEmitter {
 
     logger.log('Credential record found when processing credential response', credential);
 
-    this.validateState(credential.state, CredentialState.RequestSent);
-
     if (!credential.requestMetadata) {
-      throw new Error(`Credential does not contain credReqMetadata.`);
+      throw new Error('Credential does not contain request metadata.');
     }
+
+    this.validateState(credential.state, CredentialState.RequestSent);
 
     const [responseAttachment] = messageContext.message.attachments;
     const cred = JsonEncoder.fromBase64(responseAttachment.data.base64);
