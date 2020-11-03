@@ -43,8 +43,7 @@ export class StubWallet implements Wallet {
   public createCredentialRequest(
     proverDid: string,
     offer: CredOffer,
-    credDef: CredDef,
-    masterSecretName: string
+    credDef: CredDef
   ): Promise<[CredReq, CredReqMetadata]> {
     return Promise.resolve([
       {

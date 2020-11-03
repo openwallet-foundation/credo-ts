@@ -120,8 +120,7 @@ export class CredentialService extends EventEmitter {
     const [credReq, credReqMetadata] = await this.wallet.createCredentialRequest(
       proverDid,
       credOffer,
-      credentialDefinition,
-      'master_secret'
+      credentialDefinition
     );
     const attachment = new Attachment({
       mimeType: 'application/json',
