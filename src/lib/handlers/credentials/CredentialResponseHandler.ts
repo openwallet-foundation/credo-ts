@@ -19,7 +19,7 @@ export class CredentialResponseHandler implements Handler {
     const [responseAttachment] = messageContext.message.attachments;
     const cred = JsonEncoder.fromBase64(responseAttachment.data.base64);
     const credentialDefinition = await this.ledgerService.getCredentialDefinition(cred.cred_def_id);
-    const credential = await this.credentialService.processCredentialResponse(messageContext, credentialDefinition);
+    const credential = await this.credentialService.processResponse(messageContext, credentialDefinition);
 
     if (messageContext.message.requiresAck()) {
       if (!messageContext.connection) {

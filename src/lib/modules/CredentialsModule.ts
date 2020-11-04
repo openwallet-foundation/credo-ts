@@ -29,7 +29,7 @@ export class CredentialsModule {
   }
 
   public async issueCredential(connection: ConnectionRecord, credentialTemplate: CredentialOfferTemplate) {
-    const credentialOfferMessage = await this.credentialService.createCredentialOffer(connection, credentialTemplate);
+    const credentialOfferMessage = await this.credentialService.createOffer(connection, credentialTemplate);
     const outboundMessage = createOutboundMessage(connection, credentialOfferMessage);
     await this.messageSender.sendMessage(outboundMessage);
   }
@@ -51,7 +51,7 @@ export class CredentialsModule {
       throw new Error(`There is no connection with ID ${credential.connectionId}`);
     }
 
-    const credentialRequestMessage = await this.credentialService.createCredentialRequest(
+    const credentialRequestMessage = await this.credentialService.createRequest(
       connection,
       credential,
       credentialDefinition
