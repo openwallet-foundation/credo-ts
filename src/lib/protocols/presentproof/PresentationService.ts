@@ -48,7 +48,7 @@ export class PresentationService extends EventEmitter {
     const presentation = new PresentationRecord({
       connectionId: connection.id,
       presentationRequest: presentationReq,
-      state: PresentationStates.REQUEST_SENT,
+      state: PresentationStates.PresentationSent,
       tags: { threadId: presentationReq.id },
     });
     await this.proofPresentationRepository.save(presentation);

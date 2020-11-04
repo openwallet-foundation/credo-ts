@@ -3,7 +3,7 @@ import { createOutboundMessage } from '../protocols/helpers';
 import { MessageSender } from '../agent/MessageSender';
 import { presenationRequestTemplate, PresentationService } from '../protocols/presentproof/PresentationService';
 
-export class CredentialsModule {
+export class ProofsModule {
   private presentationService: PresentationService;
   private messageSender: MessageSender;
 
