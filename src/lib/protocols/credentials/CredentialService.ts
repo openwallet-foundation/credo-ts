@@ -106,7 +106,7 @@ export class CredentialService extends EventEmitter {
     credentialDefinition: CredDef,
     options: CredentialRequestOptions = {}
   ): Promise<CredentialRequestMessage> {
-    this.validateState(credential.state, CredentialState.OfferReceived);
+    this.assertState(credential.state, CredentialState.OfferReceived);
 
     const proverDid = connection.did;
 
@@ -154,7 +154,7 @@ export class CredentialService extends EventEmitter {
       threadId: messageContext.message.thread?.threadId,
     });
 
-    this.validateState(credential.state, CredentialState.OfferSent);
+    this.assertState(credential.state, CredentialState.OfferSent);
 
     logger.log('Credential record found when processing credential request', credential);
 
@@ -179,7 +179,7 @@ export class CredentialService extends EventEmitter {
       throw new Error(`Credential does not contain request.`);
     }
 
-    this.validateState(credential.state, CredentialState.RequestReceived);
+    this.assertState(credential.state, CredentialState.RequestReceived);
 
     // FIXME: credential.offer is already CredentialOfferMessage type
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -229,7 +229,7 @@ export class CredentialService extends EventEmitter {
       throw new Error('Credential does not contain request metadata.');
     }
 
-    this.validateState(credential.state, CredentialState.RequestSent);
+    this.assertState(credential.state, CredentialState.RequestSent);
 
     const [responseAttachment] = messageContext.message.attachments;
     const cred = JsonEncoder.fromBase64(responseAttachment.data.base64);
@@ -249,7 +249,7 @@ export class CredentialService extends EventEmitter {
   public async createAck(credentialId: string): Promise<CredentialAckMessage> {
     const credential = await this.credentialRepository.find(credentialId);
 
-    this.validateState(credential.state, CredentialState.CredentialReceived);
+    this.assertState(credential.state, CredentialState.CredentialReceived);
 
     const ackMessage = new CredentialAckMessage({});
     ackMessage.setThread({ threadId: credential.tags.threadId });
@@ -266,7 +266,7 @@ export class CredentialService extends EventEmitter {
       throw new Error(`No credential found for threadId = ${threadId}`);
     }
 
-    this.validateState(credential.state, CredentialState.CredentialIssued);
+    this.assertState(credential.state, CredentialState.CredentialIssued);
 
     await this.updateState(credential, CredentialState.Done);
     return credential;
@@ -280,9 +280,9 @@ export class CredentialService extends EventEmitter {
     return this.credentialRepository.find(id);
   }
 
-  private validateState(current: CredentialState, valid: CredentialState) {
-    if (current !== valid) {
-      throw new Error(`Credential record is in invalid state ${current}. Valid states are: ${valid}.`);
+  private assertState(current: CredentialState, expected: CredentialState) {
+    if (current !== expected) {
+      throw new Error(`Credential record is in invalid state ${current}. Valid states are: ${expected}.`);
     }
   }
 
