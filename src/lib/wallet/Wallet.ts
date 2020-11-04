@@ -15,12 +15,7 @@ export interface Wallet {
     config?: CredDefConfig
   ): Promise<[CredDefId, CredDef]>;
   createCredentialOffer(credDefId: CredDefId): Promise<CredOffer>;
-  createCredentialRequest(
-    proverDid: Did,
-    offer: CredOffer,
-    credDef: CredDef,
-    masterSecretName: string
-  ): Promise<[CredReq, CredReqMetadata]>;
+  createCredentialRequest(proverDid: Did, offer: CredOffer, credDef: CredDef): Promise<[CredReq, CredReqMetadata]>;
   createCredential(
     credOffer: CredOffer,
     credReq: CredReq,

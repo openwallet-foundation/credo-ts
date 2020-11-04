@@ -4,6 +4,7 @@ import { Wallet, DidInfo } from './Wallet';
 
 export class IndyWallet implements Wallet {
   private wh?: number;
+  private masterSecretId?: string;
   private walletConfig: WalletConfig;
   private walletCredentials: WalletCredentials;
   private publicDidInfo: DidInfo | undefined;
@@ -32,6 +33,22 @@ export class IndyWallet implements Wallet {
     }
 
     this.wh = await this.indy.openWallet(this.walletConfig, this.walletCredentials);
+
+    try {
+      logger.log(`Creating master secret...`);
+      this.masterSecretId = await this.indy.proverCreateMasterSecret(this.wh, this.walletConfig.id);
+    } catch (error) {
+      logger.log('error', error);
+      if (error.indyName && error.indyName === 'AnoncredsMasterSecretDuplicateNameError') {
+        // master secret id is the same as the master secret id passed in the create function
+        // so if it already exists we can just assign it.
+        this.masterSecretId = this.walletConfig.id;
+        logger.log(`master secret with id ${this.masterSecretId} already exists`, error.indyName);
+      } else {
+        throw error;
+      }
+    }
+
     logger.log(`Wallet opened with handle: ${this.wh}`);
   }
 
@@ -79,15 +96,13 @@ export class IndyWallet implements Wallet {
   public async createCredentialRequest(
     proverDid: string,
     offer: CredOffer,
-    credDef: CredDef,
-    masterSecretName: string
+    credDef: CredDef
   ): Promise<[CredReq, CredReqMetadata]> {
-    if (!this.wh) {
+    if (!this.wh || !this.masterSecretId) {
       throw Error('Wallet has not been initialized yet');
     }
-    // TODO save `masterSecret` during wallet init and just use it in `proverCreateCredentialReq`
-    const masterSecretId = await this.indy.proverCreateMasterSecret(this.wh, masterSecretName);
-    return this.indy.proverCreateCredentialReq(this.wh, proverDid, offer, credDef, masterSecretId);
+
+    return this.indy.proverCreateCredentialReq(this.wh, proverDid, offer, credDef, this.masterSecretId);
   }
 
   public async createCredential(
