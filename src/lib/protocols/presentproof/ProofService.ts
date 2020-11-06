@@ -2,20 +2,20 @@ import { EventEmitter } from 'events';
 import { Repository } from '../../storage/Repository';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
 import { JsonEncoder } from '../../utils/JsonEncoder';
-import { PresentationRecord } from '../../storage/PresentationRecord';
+import { ProofRecord } from '../../storage/ProofRecord';
 import { PresentationRequestMessage } from './messages/PresenationRequestMessage';
 import { Attachment } from './messages/Attachment';
-import { PresentationStates } from './PresentationStates';
+import { ProofStates } from './ProofStates';
 import { ProofRequest } from './messages/ProofRequest';
 
 export enum EventType {
   StateChanged = 'stateChanged',
 }
 
-export class PresentationService extends EventEmitter {
-  private proofPresentationRepository: Repository<PresentationRecord>;
+export class ProofService extends EventEmitter {
+  private proofPresentationRepository: Repository<ProofRecord>;
 
-  public constructor(credentialRepository: Repository<PresentationRecord>) {
+  public constructor(credentialRepository: Repository<ProofRecord>) {
     super();
     this.proofPresentationRepository = credentialRepository;
   }
@@ -23,32 +23,31 @@ export class PresentationService extends EventEmitter {
   /**
    * Create a new proof presentation request.
    * The presentation request will not be bound to any proposal or existing connection.
-   * 
+   *
    * @param connection Connection to which verifier wants to send presentation request
    * @param presenationRequestTemplate Template for presentation
    * @returns Presentation Request object
    */
   public async createPresentationRequest(
     connection: ConnectionRecord,
-    { comment, proofRequest }: presenationRequestTemplate,
+    { comment, proofRequest }: presenationRequestTemplate
   ): Promise<PresentationRequestMessage> {
-
     const attachment = new Attachment({
       // id: "libindy-request-presentation-0",
       mimeType: 'application/json',
       data: {
         base64: JsonEncoder.toBase64(proofRequest),
-      }
+      },
     });
     const presentationReq = new PresentationRequestMessage({
       comment,
       attachments: [attachment],
     });
 
-    const presentation = new PresentationRecord({
+    const presentation = new ProofRecord({
       connectionId: connection.id,
       presentationRequest: presentationReq,
-      state: PresentationStates.PresentationSent,
+      state: ProofStates.PresentationSent,
       tags: { threadId: presentationReq.id },
     });
     await this.proofPresentationRepository.save(presentation);
@@ -56,14 +55,13 @@ export class PresentationService extends EventEmitter {
     return presentationReq;
   }
 
-  public async getAll(): Promise<PresentationRecord[]> {
+  public async getAll(): Promise<ProofRecord[]> {
     return this.proofPresentationRepository.findAll();
   }
 
-  public async find(id: string): Promise<PresentationRecord> {
+  public async find(id: string): Promise<ProofRecord> {
     return this.proofPresentationRepository.find(id);
   }
-
 }
 
 export interface presenationRequestTemplate {

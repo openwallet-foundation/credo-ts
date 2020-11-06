@@ -4,7 +4,6 @@ import { AgentMessage } from '../../../agent/AgentMessage';
 import { MessageType } from './MessageType';
 import { Attachment } from './Attachment';
 
-
 export interface PresentationRequestMessageOptions {
   id?: string;
   comment?: string;
