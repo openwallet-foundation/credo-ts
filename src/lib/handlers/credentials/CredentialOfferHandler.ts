@@ -11,6 +11,6 @@ export class CredentialOfferHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<CredentialOfferHandler>) {
-    await this.credentialService.processCredentialOffer(messageContext);
+    await this.credentialService.processOffer(messageContext);
   }
 }
