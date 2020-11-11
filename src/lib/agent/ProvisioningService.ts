@@ -1,6 +1,7 @@
 import { Repository } from '../storage/Repository';
 import { ProvisioningRecord } from '../storage/ProvisioningRecord';
 import logger from '../logger';
+import { isIndyError } from '../utils/indyError';
 
 const UNIQUE_PROVISIONING_ID = 'UNIQUE_PROVISIONING_ID';
 
@@ -16,8 +17,7 @@ export class ProvisioningService {
       const provisioningRecord = await this.provisioningRepository.find(UNIQUE_PROVISIONING_ID);
       return provisioningRecord;
     } catch (error) {
-      if (error.name === 'IndyError' && error.message === '212') {
-        // WalletItemNotFound
+      if (isIndyError(error, 'WalletItemNotFound')) {
         logger.log('WalletItemNotFound');
         return null;
       } else {
