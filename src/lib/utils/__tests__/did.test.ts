@@ -1,4 +1,4 @@
-import { isAbbreviatedVerkey, isDid, isDidIdentifier, isFullVerkey, isVerkey } from './did';
+import { isAbbreviatedVerkey, isDid, isDidIdentifier, isFullVerkey, isVerkey } from '../did';
 
 const validAbbreviatedVerkeys = [
   '~PKAYz8Ev4yoQgr2LaMAWFx',

@@ -125,9 +125,7 @@ describe('ledger', () => {
         }),
       })
     );
-    // Submitting new credential definition can take a while
-    // and somtimes exceeds the default 15000ms
-  }, 30000);
+  });
 });
 
 class DummyInboundTransporter implements InboundTransporter {

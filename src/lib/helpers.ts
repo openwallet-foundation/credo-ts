@@ -2,6 +2,7 @@ import { Transform } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
 
 import { ConnectionInvitationMessage } from './protocols/connections/ConnectionInvitationMessage';
+import { JsonEncoder } from './utils/JsonEncoder';
 import { JsonTransformer } from './utils/JsonTransformer';
 
 /**
@@ -14,7 +15,7 @@ import { JsonTransformer } from './utils/JsonTransformer';
 export async function decodeInvitationFromUrl(invitationUrl: string): Promise<ConnectionInvitationMessage> {
   // TODO: properly extract c_i param from invitation URL
   const [, encodedInvitation] = invitationUrl.split('c_i=');
-  const invitationJson: Record<string, unknown> = JSON.parse(Buffer.from(encodedInvitation, 'base64').toString());
+  const invitationJson = JsonEncoder.fromBase64(encodedInvitation);
 
   const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage);
 
@@ -35,8 +36,7 @@ export function encodeInvitationToUrl(
   domain = 'https://example.com/ssi'
 ): string {
   const invitationJson = JsonTransformer.toJSON(invitation);
-  const stringifiedInvitation = JSON.stringify(invitationJson);
-  const encodedInvitation = Buffer.from(stringifiedInvitation).toString('base64');
+  const encodedInvitation = JsonEncoder.toBase64URL(invitationJson);
   const invitationUrl = `${domain}?c_i=${encodedInvitation}`;
 
   return invitationUrl;
