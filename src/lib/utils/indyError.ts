@@ -77,6 +77,10 @@ export function isIndyError(error: any, errorName?: string) {
       return errorName === indyErrors[errorCode];
     }
 
+    if (!isNaN(error.code) && indyErrors.hasOwnProperty(error.code)) {
+      return true;
+    }
+
     throw new Error(`Could not determine errorName of indyError ${error.message}`);
   }
 

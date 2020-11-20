@@ -20,6 +20,12 @@ describe('isIndyError()', () => {
     expect(isIndyError(error, 'WalletAlreadyExistsError')).toBe(true);
   });
 
+  it('should return true when the name is "IndyError" and error contains a matching error code', () => {
+    const error = { name: 'IndyError', code: 212 };
+
+    expect(isIndyError(error, 'WalletAlreadyExistsError')).toBe(true);
+  });
+
   it('should return false when the indyName does not match the passes errorName', () => {
     const error = { name: 'IndyError', indyName: 'WalletAlreadyExistsError' };
 
