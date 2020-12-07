@@ -136,6 +136,22 @@ Open new terminal and start Bob's mediator:
 ./scripts/run-mediator.sh mediator02
 ```
 
+##### With Docker
+
+To run the mediators inside docker you can use the `docker-compose-mediators.yml` file:
+
+```sh
+# Run alice-mediator and bob-mediator
+docker-compose -f docker/docker-compose-mediators.yml up -d
+```
+
+If you want the ports to be exposed to the outside world using ngrok you can use the `docker-compose-mediators-ngrok.yml` extension. Make sure the ngrok docker compose file is used after the normal docker compose file.
+
+```sh
+# Run alice-mediator and bob-mediator exposed via ngrok
+docker-compose -f docker/docker-compose-mediators.yml -f docker/docker-compose-mediators-ngrok.yml up -d
+```
+
 #### Only run e2e tests with in memory messaging
 
 You don't have to start mediator agents or the ledger for these tests. Communication is done via RxJS subscriptions.
@@ -174,7 +190,7 @@ docker build -t aries-framework-javascript .
 docker run -it --rm aries-framework-javascript  yarn test -t "agents"
 
 # Run test with mediator agents and ledger pool
-docker-compose up -d # Run alice-mediator and bob-mediator
+docker-compose -f docker/docker-compose-mediators.yml up -d # Run alice-mediator and bob-mediator
 docker run --rm --network host --env TEST_AGENT_PUBLIC_DID_SEED=000000000000000000000000Trustee9 --env GENESIS_TXN_PATH=network/genesis/local-genesis.txn --env DEBUG=aries-framework-javascript aries-framework-javascript yarn test
 ```
 
