@@ -127,13 +127,13 @@ To start the mediator agents you need to run two commands. See the [Usage with D
 Open terminal and start Alice's mediator:
 
 ```
-./run.sh mediator01
+./scripts/run-mediator.sh mediator01
 ```
 
 Open new terminal and start Bob's mediator:
 
 ```
-./run.sh mediator02
+./scripts/run-mediator.sh mediator02
 ```
 
 #### Only run e2e tests with in memory messaging

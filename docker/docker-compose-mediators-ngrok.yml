@@ -1,0 +1,27 @@
+version: '3'
+
+# This file extends docker-compose-mediators.yml
+
+services:
+  alice-mediator:
+    entrypoint: /bin/bash -c 'export AGENT_URL=$$(curl -s alice-ngrok:4040/api/tunnels/command_line | grep -o "https:\/\/.*\.ngrok\.io") && ./scripts/run-mediator.sh alice'
+    depends_on: [alice-ngrok]
+
+  alice-ngrok:
+    image: wernight/ngrok
+    command: ngrok http -bind-tls=true --log stdout alice-mediator:3001
+    networks:
+      - hyperledger
+
+  bob-mediator:
+    entrypoint: /bin/bash -c 'export AGENT_URL=$$(curl -s bob-ngrok:4040/api/tunnels/command_line | grep -o "https:\/\/.*\.ngrok\.io") && ./scripts/run-mediator.sh bob'
+    depends_on: [bob-ngrok]
+
+  bob-ngrok:
+    image: wernight/ngrok
+    command: ngrok http -bind-tls=true --log stdout bob-mediator:3002
+    networks:
+      - hyperledger
+
+networks:
+  hyperledger:
