@@ -47,11 +47,15 @@ class ConnectionService extends EventEmitter {
    * @param config config for creation of connection and invitation
    * @returns new connection record
    */
-  public async createConnectionWithInvitation(config?: { autoAcceptConnection?: boolean }): Promise<ConnectionRecord> {
+  public async createConnectionWithInvitation(config?: {
+    autoAcceptConnection?: boolean;
+    alias?: string;
+  }): Promise<ConnectionRecord> {
     // TODO: public did, multi use
     const connectionRecord = await this.createConnection({
       role: ConnectionRole.Inviter,
       state: ConnectionState.Invited,
+      alias: config?.alias,
       autoAcceptConnection: config?.autoAcceptConnection,
     });
 
@@ -82,11 +86,13 @@ class ConnectionService extends EventEmitter {
     invitation: ConnectionInvitationMessage,
     config?: {
       autoAcceptConnection?: boolean;
+      alias?: string;
     }
   ): Promise<ConnectionRecord> {
     const connectionRecord = await this.createConnection({
       role: ConnectionRole.Invitee,
       state: ConnectionState.Invited,
+      alias: config?.alias,
       autoAcceptConnection: config?.autoAcceptConnection,
       invitation,
       tags: {
@@ -306,6 +312,7 @@ class ConnectionService extends EventEmitter {
     role: ConnectionRole;
     state: ConnectionState;
     invitation?: ConnectionInvitationMessage;
+    alias?: string;
     autoAcceptConnection?: boolean;
     tags?: ConnectionTags;
   }): Promise<ConnectionRecord> {
@@ -333,6 +340,7 @@ class ConnectionService extends EventEmitter {
         ...options.tags,
       },
       invitation: options.invitation,
+      alias: options.alias,
       autoAcceptConnection: options.autoAcceptConnection,
     });
 
