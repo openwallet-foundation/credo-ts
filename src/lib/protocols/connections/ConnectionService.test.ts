@@ -150,7 +150,7 @@ describe('ConnectionService', () => {
     });
 
     it('returns a connection record with the alias parameter from the config', async () => {
-      expect.assertions(3);
+      expect.assertions(2);
 
       const aliasDefined = await connectionService.createConnectionWithInvitation({ alias: 'test-alias' });
       const aliasUndefined = await connectionService.createConnectionWithInvitation();
@@ -207,7 +207,7 @@ describe('ConnectionService', () => {
     });
 
     it('returns a connection record with the alias parameter from the config', async () => {
-      expect.assertions(3);
+      expect.assertions(2);
 
       const invitation = new ConnectionInvitationMessage({
         did: 'did:sov:test',
