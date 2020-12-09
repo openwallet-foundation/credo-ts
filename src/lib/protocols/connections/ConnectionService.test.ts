@@ -148,6 +148,16 @@ describe('ConnectionService', () => {
       expect(connectionFalse.autoAcceptConnection).toBe(false);
       expect(connectionUndefined.autoAcceptConnection).toBeUndefined();
     });
+
+    it('returns a connection record with the alias parameter from the config', async () => {
+      expect.assertions(3);
+
+      const aliasDefined = await connectionService.createConnectionWithInvitation({ alias: 'test-alias' });
+      const aliasUndefined = await connectionService.createConnectionWithInvitation();
+
+      expect(aliasDefined.alias).toBe('test-alias');
+      expect(aliasUndefined.alias).toBeUndefined();
+    });
   });
 
   describe('processInvitation', () => {
@@ -194,6 +204,21 @@ describe('ConnectionService', () => {
       expect(connectionTrue.autoAcceptConnection).toBe(true);
       expect(connectionFalse.autoAcceptConnection).toBe(false);
       expect(connectionUndefined.autoAcceptConnection).toBeUndefined();
+    });
+
+    it('returns a connection record with the alias parameter from the config', async () => {
+      expect.assertions(3);
+
+      const invitation = new ConnectionInvitationMessage({
+        did: 'did:sov:test',
+        label: 'test label',
+      });
+
+      const aliasDefined = await connectionService.processInvitation(invitation, { alias: 'test-alias' });
+      const aliasUndefined = await connectionService.processInvitation(invitation);
+
+      expect(aliasDefined.alias).toBe('test-alias');
+      expect(aliasUndefined.alias).toBeUndefined();
     });
   });
 
