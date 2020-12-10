@@ -162,7 +162,7 @@ describe('ConnectionService', () => {
 
   describe('processInvitation', () => {
     it('returns a connection record containing the information from the connection invitation', async () => {
-      expect.assertions(7);
+      expect.assertions(9);
 
       const recipientKey = 'key-1';
       const invitation = new ConnectionInvitationMessage({
@@ -172,6 +172,7 @@ describe('ConnectionService', () => {
       });
 
       const connection = await connectionService.processInvitation(invitation);
+      const connectionAlias = await connectionService.processInvitation(invitation, { alias: 'test-alias' });
 
       expect(connection.role).toBe(ConnectionRole.Invitee);
       expect(connection.state).toBe(ConnectionState.Invited);
@@ -185,6 +186,8 @@ describe('ConnectionService', () => {
         })
       );
       expect(connection.invitation).toMatchObject(invitation);
+      expect(connection.alias).toBeUndefined();
+      expect(connectionAlias.alias).toBe('test-alias');
     });
 
     it('returns a connection record with the autoAcceptConnection parameter from the config', async () => {
