@@ -39,10 +39,10 @@ export class RoutingModule {
 
     if (!provisioningRecord) {
       logger.log('There is no provisioning. Creating connection with mediator...');
-      const { verkey, invitationUrl } = mediatorConfiguration;
+      const { verkey, invitationUrl, alias = 'Mediator' } = mediatorConfiguration;
       const mediatorInvitation = await decodeInvitationFromUrl(invitationUrl);
 
-      const connection = await this.connectionService.processInvitation(mediatorInvitation);
+      const connection = await this.connectionService.processInvitation(mediatorInvitation, { alias });
       const connectionRequest = await this.connectionService.createRequest(connection.id);
       const connectionResponse = await this.messageSender.sendAndReceiveMessage(
         connectionRequest,
@@ -105,4 +105,5 @@ export class RoutingModule {
 interface MediatorConfiguration {
   verkey: Verkey;
   invitationUrl: string;
+  alias?: string;
 }
