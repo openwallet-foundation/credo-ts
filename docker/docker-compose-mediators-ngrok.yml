@@ -4,7 +4,9 @@ version: '3'
 
 services:
   alice-mediator:
-    entrypoint: /bin/bash -c 'export AGENT_URL=$$(curl -s alice-ngrok:4040/api/tunnels/command_line | grep -o "https:\/\/.*\.ngrok\.io") && ./scripts/run-mediator.sh alice'
+    environment:
+      NGROK_NAME: alice-ngrok
+    entrypoint: ./scripts/ngrok-wait.sh
     depends_on: [alice-ngrok]
 
   alice-ngrok:
@@ -14,7 +16,9 @@ services:
       - hyperledger
 
   bob-mediator:
-    entrypoint: /bin/bash -c 'export AGENT_URL=$$(curl -s bob-ngrok:4040/api/tunnels/command_line | grep -o "https:\/\/.*\.ngrok\.io") && ./scripts/run-mediator.sh bob'
+    environment:
+      NGROK_NAME: bob-ngrok
+    entrypoint: ./scripts/ngrok-wait.sh
     depends_on: [bob-ngrok]
 
   bob-ngrok:

@@ -4,7 +4,7 @@ services:
   alice-mediator:
     build: ..
     image: aries-framework-javascript
-    entrypoint: ./scripts/run-mediator.sh alice
+    command: ./scripts/run-mediator.sh alice
     networks:
       - hyperledger
     ports:
@@ -13,7 +13,7 @@ services:
   bob-mediator:
     build: ..
     image: aries-framework-javascript
-    entrypoint: ./scripts/run-mediator.sh bob
+    command: ./scripts/run-mediator.sh bob
     networks:
       - hyperledger
     ports:
