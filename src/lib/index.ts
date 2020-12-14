@@ -8,5 +8,9 @@ export { encodeInvitationToUrl, decodeInvitationFromUrl } from './helpers';
 export { InitConfig, OutboundPackage } from './types';
 
 export { ConnectionRecord } from './storage/ConnectionRecord';
+export { BasicMessageRecord } from './storage/BasicMessageRecord';
+export { CredentialRecord } from './storage/CredentialRecord';
 export { EventType as ConnectionEventType } from './protocols/connections/ConnectionService';
 export { EventType as BasicMessageEventType } from './protocols/basicmessage/BasicMessageService';
+export { EventType as CredentialEventType } from './protocols/credentials/CredentialService';
+export { CredentialPreview, CredentialOfferMessage } from './protocols/credentials/messages/CredentialOfferMessage';
