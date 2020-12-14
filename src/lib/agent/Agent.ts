@@ -2,6 +2,7 @@ import logger from '../logger';
 import { InitConfig } from '../types';
 import { IndyWallet } from '../wallet/IndyWallet';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
+import { ProofService } from '../protocols/proof/ProofService';
 import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
 import { ConsumerRoutingService } from '../protocols/routing/ConsumerRoutingService';
 import { BasicMessageService } from '../protocols/basicmessage/BasicMessageService';
@@ -37,12 +38,14 @@ import { RoutingModule } from '../modules/RoutingModule';
 import { BasicMessagesModule } from '../modules/BasicMessagesModule';
 import { LedgerModule } from '../modules/LedgerModule';
 import { CredentialsModule } from '../modules/CredentialsModule';
+import {ProofModule } from '../modules/ProofModule';
 import { CredentialService } from '../protocols/credentials/CredentialService';
 import { CredentialRecord } from '../storage/CredentialRecord';
 import { CredentialOfferHandler } from '../handlers/credentials/CredentialOfferHandler';
 import { CredentialRequestHandler } from '../handlers/credentials/CredentialRequestHandler';
 import { CredentialResponseHandler } from '../handlers/credentials/CredentialResponseHandler';
 import { CredentialAckHandler } from '../handlers/credentials/CredentialAckHandler';
+import {RequestPresentationHandler } from '../handlers/proof/RequestPresentationHandler'
 
 export class Agent {
   protected wallet: Wallet;
@@ -51,6 +54,7 @@ export class Agent {
   protected dispatcher: Dispatcher;
   protected messageSender: MessageSender;
   protected connectionService: ConnectionService;
+  protected proofService : ProofService
   protected basicMessageService: BasicMessageService;
   protected providerRoutingService: ProviderRoutingService;
   protected consumerRoutingService: ConsumerRoutingService;
@@ -67,6 +71,7 @@ export class Agent {
   public inboundTransporter: InboundTransporter;
 
   public connections!: ConnectionsModule;
+  public proof!: ProofModule;
   public routing!: RoutingModule;
   public basicMessages!: BasicMessagesModule;
   public ledger!: LedgerModule;
@@ -96,6 +101,7 @@ export class Agent {
 
     this.provisioningService = new ProvisioningService(this.provisioningRepository);
     this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository);
+    this.proofService = new ProofService(this.wallet);
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository);
     this.providerRoutingService = new ProviderRoutingService();
     this.consumerRoutingService = new ConsumerRoutingService(this.messageSender, this.agentConfig);
@@ -166,6 +172,7 @@ export class Agent {
     this.dispatcher.registerHandler(new CredentialRequestHandler(this.credentialService));
     this.dispatcher.registerHandler(new CredentialResponseHandler(this.credentialService, this.ledgerService));
     this.dispatcher.registerHandler(new CredentialAckHandler(this.credentialService));
+    this.dispatcher.registerHandler(new RequestPresentationHandler(this.proofService));
   }
 
   protected registerModules() {
@@ -173,6 +180,11 @@ export class Agent {
       this.agentConfig,
       this.connectionService,
       this.consumerRoutingService,
+      this.messageSender
+    );
+
+    this.proof = new ProofModule(
+      this.proofService,
       this.messageSender
     );
 
