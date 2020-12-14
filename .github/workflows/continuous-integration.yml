@@ -37,7 +37,7 @@ jobs:
         run: docker run aries-framework-javascript yarn validate
 
       - name: Start mediator agents
-        run: docker-compose up -d
+        run: docker-compose -f docker/docker-compose-mediators.yml up -d
 
       - name: Run tests
         run: >-
@@ -54,7 +54,7 @@ jobs:
         if: always()
         run: |
           mkdir logs
-          docker-compose logs --no-color > logs/docker-mediator-agents.log
+          docker-compose -f docker/docker-compose-mediators.yml logs --no-color > logs/docker-mediator-agents.log
           docker logs framework-jest-tests > logs/docker-framework-jest-tests.log
 
       - name: Upload docker logs

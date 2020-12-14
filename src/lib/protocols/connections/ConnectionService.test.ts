@@ -24,7 +24,7 @@ import { JsonTransformer } from '../../utils/JsonTransformer';
 jest.mock('./../../storage/Repository');
 const ConnectionRepository = <jest.Mock<Repository<ConnectionRecord>>>(<unknown>Repository);
 
-function getMockConnection({
+export function getMockConnection({
   state = ConnectionState.Invited,
   role = ConnectionRole.Invitee,
   id = 'test',
@@ -64,7 +64,7 @@ describe('ConnectionService', () => {
   const walletCredentials = { key: 'key' };
   const initConfig: InitConfig = {
     label: 'agent label',
-    url: 'http://agent.com',
+    host: 'http://agent.com',
     port: 8080,
     walletConfig,
     walletCredentials,
@@ -122,7 +122,7 @@ describe('ConnectionService', () => {
           label: initConfig.label,
           recipientKeys: [expect.any(String)],
           routingKeys: [],
-          serviceEndpoint: `${initConfig.url}:${initConfig.port}/msg`,
+          serviceEndpoint: `${initConfig.host}:${initConfig.port}/msg`,
         })
       );
     });
