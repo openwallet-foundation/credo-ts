@@ -1,10 +1,10 @@
-import { Equals, IsString, ValidateNested } from 'class-validator';
+import { Equals, IsArray, IsString, ValidateNested } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
 
 import { AgentMessage } from '../../../agent/AgentMessage';
 import { MessageType } from './MessageType';
-import { Attachment } from './Attachment';
 import { JsonTransformer } from '../../../utils/JsonTransformer';
+import { Attachment } from '../../../decorators/attachment/Attachment';
 
 interface CredentialPreviewOptions {
   attributes: CredentialPreviewAttribute[];
@@ -100,5 +100,9 @@ export class CredentialOfferMessage extends AgentMessage {
 
   @Expose({ name: 'offers~attach' })
   @Type(() => Attachment)
+  @IsArray()
+  @ValidateNested({
+    each: true,
+  })
   public attachments!: Attachment[];
 }
