@@ -1,8 +1,8 @@
 import { Expose, Type } from 'class-transformer';
-import { Equals, IsString } from 'class-validator';
+import { Equals, IsArray, IsString, ValidateNested } from 'class-validator';
 import { AgentMessage } from '../../../agent/AgentMessage';
+import { Attachment } from '../../../decorators/attachment/Attachment';
 import { MessageType } from './MessageType';
-import { Attachment } from './Attachment';
 
 interface CredentialResponseMessageOptions {
   id?: string;
@@ -30,5 +30,9 @@ export class CredentialResponseMessage extends AgentMessage {
 
   @Expose({ name: 'credentials~attach' })
   @Type(() => Attachment)
+  @IsArray()
+  @ValidateNested({
+    each: true,
+  })
   public attachments!: Attachment[];
 }

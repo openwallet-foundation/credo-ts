@@ -8,13 +8,13 @@ import { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import { CredentialState } from './CredentialState';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
 import { CredentialRequestMessage } from './messages/CredentialRequestMessage';
-import { Attachment } from './messages/Attachment';
 import logger from '../../logger';
 import { CredentialResponseMessage } from './messages/CredentialResponseMessage';
 import { JsonEncoder } from '../../utils/JsonEncoder';
 import { CredentialUtils } from './CredentialUtils';
 import { JsonTransformer } from '../../utils/JsonTransformer';
 import { CredentialAckMessage } from './messages/CredentialAckMessage';
+import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment';
 
 export enum EventType {
   StateChanged = 'stateChanged',
@@ -45,9 +45,9 @@ export class CredentialService extends EventEmitter {
     const credOffer = await this.wallet.createCredentialOffer(credentialDefinitionId);
     const attachment = new Attachment({
       mimeType: 'application/json',
-      data: {
+      data: new AttachmentData({
         base64: JsonEncoder.toBase64(credOffer),
-      },
+      }),
     });
     const credentialOffer = new CredentialOfferMessage({
       comment,
@@ -115,6 +115,11 @@ export class CredentialService extends EventEmitter {
     // @ts-ignore
     const offer = JsonTransformer.fromJSON(credential.offer, CredentialOfferMessage);
     const [offerAttachment] = offer.attachments;
+
+    if (!offerAttachment.data.base64) {
+      throw new Error('Missing required base64 encoded attachment data');
+    }
+
     const credOffer = JsonEncoder.fromBase64(offerAttachment.data.base64);
 
     const [credReq, credReqMetadata] = await this.wallet.createCredentialRequest(
@@ -124,9 +129,9 @@ export class CredentialService extends EventEmitter {
     );
     const attachment = new Attachment({
       mimeType: 'application/json',
-      data: {
+      data: new AttachmentData({
         base64: JsonEncoder.toBase64(credReq),
-      },
+      }),
     });
 
     const { comment } = options;
@@ -147,6 +152,11 @@ export class CredentialService extends EventEmitter {
     messageContext: InboundMessageContext<CredentialRequestMessage>
   ): Promise<CredentialRecord> {
     const [requestAttachment] = messageContext.message.attachments;
+
+    if (!requestAttachment.data.base64) {
+      throw new Error('Missing required base64 encoded attachment data');
+    }
+
     const credReq = JsonEncoder.fromBase64(requestAttachment.data.base64);
 
     const [credential] = await this.credentialRepository.findByQuery({
@@ -185,15 +195,20 @@ export class CredentialService extends EventEmitter {
     // @ts-ignore
     const offer = JsonTransformer.fromJSON(credential.offer, CredentialOfferMessage);
     const [offerAttachment] = offer.attachments;
+
+    if (!offerAttachment.data.base64) {
+      throw new Error('Missing required base64 encoded attachment data');
+    }
+
     const credOffer = JsonEncoder.fromBase64(offerAttachment.data.base64);
     const credValues = CredentialUtils.convertPreviewToValues(offer.credentialPreview);
     const [cred] = await this.wallet.createCredential(credOffer, credential.request, credValues);
 
     const responseAttachment = new Attachment({
       mimeType: 'application/json',
-      data: {
+      data: new AttachmentData({
         base64: JsonEncoder.toBase64(cred),
-      },
+      }),
     });
 
     const { comment } = options;
@@ -231,6 +246,11 @@ export class CredentialService extends EventEmitter {
     this.assertState(credential.state, CredentialState.RequestSent);
 
     const [responseAttachment] = messageContext.message.attachments;
+
+    if (!responseAttachment.data.base64) {
+      throw new Error('Missing required base64 encoded attachment data');
+    }
+
     const cred = JsonEncoder.fromBase64(responseAttachment.data.base64);
 
     const credentialId = await this.wallet.storeCredential(
