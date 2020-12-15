@@ -1,6 +1,7 @@
 import { Handler, HandlerInboundMessage } from '../Handler';
 import { ProofService } from '../../protocols/proof/ProofService';
 import { RequestPresentationMessage } from '../../protocols/proof/messages/RequestPresentation';
+import { JsonEncoder } from '../../utils/JsonEncoder';
 
 /**
  * The funtionalities of this class is used to handle proof request
@@ -18,7 +19,8 @@ export class RequestPresentationHandler implements Handler {
    * @param messageContext T
    */
   public async handle(messageContext: HandlerInboundMessage<RequestPresentationHandler>) {
-    console.log('Send proof request got:' + JSON.stringify(messageContext));
+    const [responseAttachment] = messageContext.message.attachments;
+    const proof = JsonEncoder.fromBase64(responseAttachment.data.base64);
     //TODO : Process Proof request
   }
 }

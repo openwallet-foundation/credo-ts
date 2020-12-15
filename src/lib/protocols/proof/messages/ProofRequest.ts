@@ -1,5 +1,3 @@
-import { Expose } from 'class-transformer/decorators';
-
 export class ProofRequest {
   public constructor(proofRequest: ProofRequestInterface) {
     if (proofRequest) {
@@ -40,6 +38,4 @@ export class AttributeFilter {
 }
 
 // IN PROGRESS
-export class RequestedPredicates {
-  
-}
+export class RequestedPredicates {}

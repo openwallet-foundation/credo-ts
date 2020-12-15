@@ -13,9 +13,8 @@ export enum EventType {
 }
 
 export class ProofService extends EventEmitter {
-
   private proofRepository: Repository<ProofRecord>;
-  
+
   public constructor(proofRepository: Repository<ProofRecord>) {
     super();
     this.proofRepository = proofRepository;
@@ -32,8 +31,7 @@ export class ProofService extends EventEmitter {
     connection: ConnectionRecord,
     proofRequestTemplate: ProofRequestTemplate
   ): Promise<RequestPresentationMessage> {
-    
-    const { comment,proofRequest } = proofRequestTemplate;
+    const { comment, proofRequest } = proofRequestTemplate;
     const attachment = new Attachment({
       // id: "libindy-request-presentation-0",
       mimeType: 'application/json',
@@ -57,7 +55,7 @@ export class ProofService extends EventEmitter {
 
     await this.proofRepository.save(proofRequestPresentation);
     this.emit(EventType.StateChanged, { proofRequestPresentation, prevState: null });
-    
+
     return requestPresentationMessage;
   }
 
@@ -77,5 +75,3 @@ export interface ProofRequestTemplate {
   comment?: string;
   proofRequest: ProofRequest;
 }
-
-

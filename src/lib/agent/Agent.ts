@@ -46,6 +46,7 @@ import { CredentialRequestHandler } from '../handlers/credentials/CredentialRequ
 import { CredentialResponseHandler } from '../handlers/credentials/CredentialResponseHandler';
 import { CredentialAckHandler } from '../handlers/credentials/CredentialAckHandler';
 import { RequestPresentationHandler } from '../handlers/proof/RequestPresentationHandler';
+import { ProofRecord } from '../storage/ProofRecord';
 
 export class Agent {
   protected wallet: Wallet;
@@ -67,6 +68,7 @@ export class Agent {
   protected connectionRepository: Repository<ConnectionRecord>;
   protected provisioningRepository: Repository<ProvisioningRecord>;
   protected credentialRepository: Repository<CredentialRecord>;
+  protected proofRepository: Repository<ProofRecord>;
 
   public inboundTransporter: InboundTransporter;
 
@@ -98,10 +100,9 @@ export class Agent {
     this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService);
     this.provisioningRepository = new Repository<ProvisioningRecord>(ProvisioningRecord, storageService);
     this.credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService);
-
+    this.proofRepository = new Repository<ProofRecord>(ProofRecord, storageService);
     this.provisioningService = new ProvisioningService(this.provisioningRepository);
     this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository);
-    this.proofService = new ProofService(this.wallet);
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository);
     this.providerRoutingService = new ProviderRoutingService();
     this.consumerRoutingService = new ConsumerRoutingService(this.messageSender, this.agentConfig);
@@ -109,6 +110,7 @@ export class Agent {
     this.messagePickupService = new MessagePickupService(messageRepository);
     this.ledgerService = new LedgerService(this.wallet, indy);
     this.credentialService = new CredentialService(this.wallet, this.credentialRepository);
+    this.proofService = new ProofService(this.proofRepository);
 
     this.messageReceiver = new MessageReceiver(
       this.agentConfig,
