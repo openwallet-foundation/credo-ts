@@ -10,10 +10,7 @@ export class ProofModule {
   private proofService: ProofService;
   private messageSender: MessageSender;
 
-  public constructor(
-    proofService: ProofService,
-    messageSender: MessageSender
-  ) {
+  public constructor(proofService: ProofService, messageSender: MessageSender) {
     this.proofService = proofService;
     this.messageSender = messageSender;
   }
@@ -24,7 +21,7 @@ export class ProofModule {
    * @param ProofRequestTemplate : Template used to send proof request
    */
   public async sendProofRequest(connection: ConnectionRecord, ProofRequestTemplate: ProofRequestTemplate) {
-    console.log("Inside [SendProof Rquest]");
+    console.log('Inside [SendProof Rquest]');
     const proofOfferMessage = await this.proofService.createProofRequest(connection, ProofRequestTemplate);
     const outboundMessage = createOutboundMessage(connection, proofOfferMessage);
     await this.messageSender.sendMessage(outboundMessage);

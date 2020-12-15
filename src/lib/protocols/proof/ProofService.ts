@@ -1,9 +1,12 @@
 import { EventEmitter } from 'events';
-import { Wallet } from '../../wallet/Wallet';
 import { RequestPresentationMessage } from './messages/RequestPresentation';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
 import { Attachment } from '../../utils/Attachment';
 import { JsonEncoder } from '../../utils/JsonEncoder';
+import { Repository } from '../../storage/Repository';
+import { ProofRecord } from '../../storage/ProofRecord';
+import { ProofState } from './ProofState';
+import { ProofRequest } from './messages/ProofRequest';
 
 export enum EventType {
   StateChanged = 'stateChanged',
@@ -11,8 +14,11 @@ export enum EventType {
 
 export class ProofService extends EventEmitter {
 
-  public constructor(wallet: Wallet) {
+  private proofRepository: Repository<ProofRecord>;
+  
+  public constructor(proofRepository: Repository<ProofRecord>) {
     super();
+    this.proofRepository = proofRepository;
   }
 
   /**
@@ -22,16 +28,17 @@ export class ProofService extends EventEmitter {
    * @param ProofRequestTemplate Template for Proof Request
    * @returns Proof Request message
    */
-  public async createProofRequest(connection: ConnectionRecord, proofRequestTemplate: ProofRequestTemplate,
+  public async createProofRequest(
+    connection: ConnectionRecord,
+    proofRequestTemplate: ProofRequestTemplate
   ): Promise<RequestPresentationMessage> {
-
-    const { comment } = proofRequestTemplate;
-    console.log("Insde Craete Proof Rquest");
+    
+    const { comment,proofRequest } = proofRequestTemplate;
     const attachment = new Attachment({
       // id: "libindy-request-presentation-0",
       mimeType: 'application/json',
       data: {
-        base64: JsonEncoder.toBase64(proofRequestTemplate),
+        base64: JsonEncoder.toBase64(proofRequest),
       },
     });
 
@@ -39,14 +46,36 @@ export class ProofService extends EventEmitter {
       comment,
       attachments: [attachment],
     });
+
+    //save in repository
+    const proofRequestPresentation = new ProofRecord({
+      connectionId: connection.id,
+      presentationRequest: requestPresentationMessage,
+      state: ProofState.RequestSent,
+      tags: { threadId: requestPresentationMessage.id },
+    });
+
+    await this.proofRepository.save(proofRequestPresentation);
+    this.emit(EventType.StateChanged, { proofRequestPresentation, prevState: null });
+    
     return requestPresentationMessage;
+  }
+
+  public async getAll(): Promise<ProofRecord[]> {
+    return this.proofRepository.findAll();
+  }
+
+  public async find(id: string): Promise<ProofRecord> {
+    return this.proofRepository.find(id);
   }
 }
 
 /*
-* This interface used as Proof Request Template
-*/
+ * This interface used as Proof Request Template
+ */
 export interface ProofRequestTemplate {
   comment?: string;
-  preview: RequestPresentationMessage;
+  proofRequest: ProofRequest;
 }
+
+

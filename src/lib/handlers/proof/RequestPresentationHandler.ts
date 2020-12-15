@@ -14,11 +14,11 @@ export class RequestPresentationHandler implements Handler {
   }
 
   /**
-   * This Method is used to hansle proof request 
+   * This Method is used to hansle proof request
    * @param messageContext T
    */
   public async handle(messageContext: HandlerInboundMessage<RequestPresentationHandler>) {
-    console.log("Send proof request got:"+JSON.stringify(messageContext));
+    console.log('Send proof request got:' + JSON.stringify(messageContext));
     //TODO : Process Proof request
   }
 }

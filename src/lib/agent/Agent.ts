@@ -38,14 +38,14 @@ import { RoutingModule } from '../modules/RoutingModule';
 import { BasicMessagesModule } from '../modules/BasicMessagesModule';
 import { LedgerModule } from '../modules/LedgerModule';
 import { CredentialsModule } from '../modules/CredentialsModule';
-import {ProofModule } from '../modules/ProofModule';
+import { ProofModule } from '../modules/ProofModule';
 import { CredentialService } from '../protocols/credentials/CredentialService';
 import { CredentialRecord } from '../storage/CredentialRecord';
 import { CredentialOfferHandler } from '../handlers/credentials/CredentialOfferHandler';
 import { CredentialRequestHandler } from '../handlers/credentials/CredentialRequestHandler';
 import { CredentialResponseHandler } from '../handlers/credentials/CredentialResponseHandler';
 import { CredentialAckHandler } from '../handlers/credentials/CredentialAckHandler';
-import {RequestPresentationHandler } from '../handlers/proof/RequestPresentationHandler'
+import { RequestPresentationHandler } from '../handlers/proof/RequestPresentationHandler';
 
 export class Agent {
   protected wallet: Wallet;
@@ -54,7 +54,7 @@ export class Agent {
   protected dispatcher: Dispatcher;
   protected messageSender: MessageSender;
   protected connectionService: ConnectionService;
-  protected proofService : ProofService
+  protected proofService: ProofService;
   protected basicMessageService: BasicMessageService;
   protected providerRoutingService: ProviderRoutingService;
   protected consumerRoutingService: ConsumerRoutingService;
@@ -183,10 +183,7 @@ export class Agent {
       this.messageSender
     );
 
-    this.proof = new ProofModule(
-      this.proofService,
-      this.messageSender
-    );
+    this.proof = new ProofModule(this.proofService, this.messageSender);
 
     this.routing = new RoutingModule(
       this.agentConfig,
