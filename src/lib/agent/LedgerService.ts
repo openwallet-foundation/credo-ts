@@ -1,4 +1,5 @@
 import logger from '../logger';
+import { isIndyError } from '../utils/indyError';
 import { Wallet } from '../wallet/Wallet';
 
 export class LedgerService {
@@ -17,8 +18,8 @@ export class LedgerService {
       logger.log(`Creating pool config with name "${poolName}".`);
       await this.indy.createPoolLedgerConfig(poolName, poolConfig);
     } catch (error) {
-      if (error.message === 'PoolLedgerConfigAlreadyExistsError') {
-        logger.log('PoolLedgerConfigAlreadyExistsError');
+      if (isIndyError(error, 'PoolLedgerConfigAlreadyExistsError')) {
+        logger.log(error.indyName);
       } else {
         throw error;
       }
