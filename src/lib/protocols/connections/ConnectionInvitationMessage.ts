@@ -1,4 +1,4 @@
-import { Equals, IsString, ValidateIf, IsArray } from 'class-validator';
+import { Equals, IsString, ValidateIf, IsArray, IsOptional } from 'class-validator';
 
 import { AgentMessage } from '../../agent/AgentMessage';
 import { MessageType } from './messages';
@@ -72,6 +72,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
   @IsString({
     each: true,
   })
+  @IsOptional()
   @ValidateIf((o: ConnectionInvitationMessage) => o.did === undefined)
   public routingKeys?: string[];
 }
