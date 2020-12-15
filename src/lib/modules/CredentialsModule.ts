@@ -42,6 +42,11 @@ export class CredentialsModule {
     // @ts-ignore
     const offer = JsonTransformer.fromJSON(credential.offer, CredentialOfferMessage);
     const [offerAttachment] = offer.attachments;
+
+    if (!offerAttachment.data.base64) {
+      throw new Error('Missing required base64 encoded attachment data');
+    }
+
     const credOffer = JsonEncoder.fromBase64(offerAttachment.data.base64);
 
     const credentialDefinition = await this.ledgerService.getCredentialDefinition(credOffer.cred_def_id);
