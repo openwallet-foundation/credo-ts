@@ -1,6 +1,6 @@
 import { Handler, HandlerInboundMessage } from '../Handler';
 import { ProofService } from '../../protocols/proof/ProofService';
-import { RequestPresentationMessage } from '../../protocols/proof/messages/RequestPresentation';
+import { RequestPresentationMessage } from '../../protocols/proof/messages/RequestPresentationMessage';
 import { JsonEncoder } from '../../utils/JsonEncoder';
 
 /**
@@ -19,8 +19,6 @@ export class RequestPresentationHandler implements Handler {
    * @param messageContext T
    */
   public async handle(messageContext: HandlerInboundMessage<RequestPresentationHandler>) {
-    const [responseAttachment] = messageContext.message.attachments;
-    const proof = JsonEncoder.fromBase64(responseAttachment.data.base64);
-    //TODO : Process Proof request
+    await this.proofService.processRequestPresentation(messageContext);
   }
 }

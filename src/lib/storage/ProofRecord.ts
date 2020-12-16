@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
 import { BaseRecord, RecordType } from './BaseRecord';
-import { RequestPresentationMessage } from '../protocols/proof/messages/RequestPresentation';
+import { RequestPresentationMessage } from '../protocols/proof/messages/RequestPresentationMessage';
 import { ProofState } from '../protocols/proof/ProofState';
 
 export interface ProofStorageProps {

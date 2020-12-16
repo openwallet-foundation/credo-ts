@@ -1,4 +1,4 @@
-export class ProofRequest {
+export class ProofRequestMessage {
   public constructor(proofRequest: ProofRequestInterface) {
     if (proofRequest) {
       this.name = proofRequest.name;
