@@ -6,7 +6,7 @@ import { ProofRecord } from '../storage/ProofRecord';
 /**
  * The fuctionalities of this Class is used to Send proof request
  */
-export class ProofModule {
+export class ProofsModule {
   private proofService: ProofService;
   private messageSender: MessageSender;
 

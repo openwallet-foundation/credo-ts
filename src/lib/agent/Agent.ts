@@ -38,7 +38,7 @@ import { RoutingModule } from '../modules/RoutingModule';
 import { BasicMessagesModule } from '../modules/BasicMessagesModule';
 import { LedgerModule } from '../modules/LedgerModule';
 import { CredentialsModule } from '../modules/CredentialsModule';
-import { ProofModule } from '../modules/ProofModule';
+import { ProofsModule } from '../modules/ProofsModule';
 import { CredentialService } from '../protocols/credentials/CredentialService';
 import { CredentialRecord } from '../storage/CredentialRecord';
 import { CredentialOfferHandler } from '../handlers/credentials/CredentialOfferHandler';
@@ -73,7 +73,7 @@ export class Agent {
   public inboundTransporter: InboundTransporter;
 
   public connections!: ConnectionsModule;
-  public proof!: ProofModule;
+  public proof!: ProofsModule;
   public routing!: RoutingModule;
   public basicMessages!: BasicMessagesModule;
   public ledger!: LedgerModule;
@@ -185,7 +185,7 @@ export class Agent {
       this.messageSender
     );
 
-    this.proof = new ProofModule(this.proofService, this.messageSender);
+    this.proof = new ProofsModule(this.proofService, this.messageSender);
 
     this.routing = new RoutingModule(
       this.agentConfig,
