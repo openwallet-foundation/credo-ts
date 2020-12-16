@@ -89,7 +89,7 @@ export class ProofService extends EventEmitter {
     //save in repository
     await this.proofRepository.save(proofRecord);
     this.emit(EventType.StateChanged, { proofRecord, prevState: ProofState.RequestReceived });
-    
+
     //TODO : process for genrating proof
     return proofRecord;
   }
