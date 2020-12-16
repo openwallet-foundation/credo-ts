@@ -1,7 +1,6 @@
 import { Handler, HandlerInboundMessage } from '../Handler';
 import { ProofService } from '../../protocols/proof/ProofService';
 import { RequestPresentationMessage } from '../../protocols/proof/messages/RequestPresentationMessage';
-import { JsonEncoder } from '../../utils/JsonEncoder';
 
 /**
  * The funtionalities of this class is used to handle proof request
