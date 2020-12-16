@@ -35,7 +35,7 @@ export class RequestPresentationMessage extends AgentMessage {
 
   @Equals(RequestPresentationMessage.type)
   public readonly type = RequestPresentationMessage.type;
-  public static readonly type = MessageType.ProposePresentation;
+  public static readonly type = MessageType.RequestPresentation;
 
   @IsOptional()
   @IsString()
