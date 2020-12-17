@@ -15,7 +15,6 @@ import { CredentialUtils } from './CredentialUtils';
 import { JsonTransformer } from '../../utils/JsonTransformer';
 import { CredentialAckMessage } from './messages/CredentialAckMessage';
 import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment';
-import { ProofRequestMessage } from '../proof/messages/ProofRequestMessage';
 
 export enum EventType {
   StateChanged = 'stateChanged',
