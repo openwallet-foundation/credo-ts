@@ -40,6 +40,12 @@ export class StubWallet implements Wallet {
       key_correctness_proof: {},
     });
   }
+  public getCredentialsForProofReq(proof: string): Promise<ProofCred> {
+    return Promise.resolve({
+      attrs: {},
+      predicates: {},
+    });
+  }
   public createCredentialRequest(
     proverDid: string,
     offer: CredOffer,

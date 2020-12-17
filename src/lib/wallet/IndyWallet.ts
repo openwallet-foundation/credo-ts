@@ -95,6 +95,17 @@ export class IndyWallet implements Wallet {
     return this.indy.issuerCreateCredentialOffer(this.wh, credDefId);
   }
 
+  /**
+   *
+   * @param proof This method is used to fetch credentials for proof request
+   */
+  public async getCredentialsForProofReq(proof: string): Promise<ProofCred> {
+    if (!this.wh) {
+      throw Error('Wallet has not been initialized yet');
+    }
+    return await this.indy.proverGetCredentialsForProofReq(this.wh, proof);
+  }
+
   public async createCredentialRequest(
     proverDid: string,
     offer: CredOffer,
