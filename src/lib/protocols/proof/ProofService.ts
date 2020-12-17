@@ -7,6 +7,7 @@ import { Repository } from '../../storage/Repository';
 import { ProofRecord } from '../../storage/ProofRecord';
 import { ProofState } from './ProofState';
 import { ProofRequestMessage } from './messages/ProofRequestMessage';
+
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 
 export enum EventType {

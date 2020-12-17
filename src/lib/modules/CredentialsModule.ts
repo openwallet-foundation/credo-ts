@@ -9,6 +9,7 @@ import logger from '../logger';
 import { CredentialOfferMessage } from '../protocols/credentials/messages/CredentialOfferMessage';
 import { JsonEncoder } from '../utils/JsonEncoder';
 import { JsonTransformer } from '../utils/JsonTransformer';
+import { ProofRequestMessage } from '../protocols/proof/messages/ProofRequestMessage';
 
 export class CredentialsModule {
   private connectionService: ConnectionService;
@@ -34,6 +35,13 @@ export class CredentialsModule {
     await this.messageSender.sendMessage(outboundMessage);
   }
 
+  /**
+   * This method is used to fetch credentials for proofRequest
+   * @param proofRequestMessage
+   */
+  public async getCredentialsForProofReq(proofRequestMessage: string) {
+    return await this.credentialService.getCredentialsForProofReq(proofRequestMessage);
+  }
   public async acceptCredential(credential: CredentialRecord) {
     logger.log('acceptCredential credential', credential);
 

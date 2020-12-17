@@ -64,6 +64,7 @@ declare module 'indy-sdk' {
       config?: CredDefConfig
     ): Promise<[CredDefId, CredDef]>;
     issuerCreateCredentialOffer(wh: WalletHandle, credDefId: CredDefId): Promise<CredOffer>;
+    proverGetCredentialsForProofReq(wh: WalletHandle, proof: string): Promise<ProofCred>;
     proverCreateCredentialReq(
       wh: WalletHandle,
       proverDid: Did,
@@ -174,6 +175,7 @@ interface Indy {
     config?: CredDefConfig
   ): Promise<[CredDefId, CredDef]>;
   issuerCreateCredentialOffer(wh: WalletHandle, credDefId: CredDefId): Promise<CredOffer>;
+  proverGetCredentialsForProofReq(wh: WalletHandle, proof: string): Promise<ProofCred>;
   proverCreateCredentialReq(
     wh: WalletHandle,
     proverDid: Did,
@@ -323,6 +325,11 @@ interface CredOffer {
   cred_def_id: CredDefId;
   nonce: string;
   key_correctness_proof: Record<string, unknown>;
+}
+
+interface ProofCred {
+  attrs: Record<string, unknown>;
+  predicates: Record<string, unknown>;
 }
 
 interface CredReq {

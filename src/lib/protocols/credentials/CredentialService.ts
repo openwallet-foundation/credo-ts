@@ -15,6 +15,7 @@ import { CredentialUtils } from './CredentialUtils';
 import { JsonTransformer } from '../../utils/JsonTransformer';
 import { CredentialAckMessage } from './messages/CredentialAckMessage';
 import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment';
+import { ProofRequestMessage } from '../proof/messages/ProofRequestMessage';
 
 export enum EventType {
   StateChanged = 'stateChanged',
@@ -91,6 +92,14 @@ export class CredentialService extends EventEmitter {
     await this.credentialRepository.save(credentialRecord);
     this.emit(EventType.StateChanged, { credential: credentialRecord, prevState: null });
     return credentialRecord;
+  }
+
+  /**
+   * This method is used to fetch credentials for proofRequest
+   * @param proofRequestMessage
+   */
+  public async getCredentialsForProofReq(proofRequestMessage: string): Promise<ProofCred> {
+    return await this.wallet.getCredentialsForProofReq(proofRequestMessage);
   }
 
   /**
