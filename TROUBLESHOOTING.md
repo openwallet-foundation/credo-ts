@@ -1,6 +1,7 @@
 # Troubleshooting
 
 This document contains the most common errors that arise when first installing libindy and Aries Framework JavaScript. If you encounter a problem that is not listed here and manage to fix it, please open a PR describing the steps taken to resolve the issue.
+
 - [macOS](#macos)
   - [Unable to find `libindy.dylib`](#unable-to-find-libindydylib)
   - [Unable to find `libssl.1.0.0.dylib`](#unable-to-find-libssl100dylib)
@@ -52,6 +53,19 @@ You can manually install OpenSSL 1.0 with the following Brew command:
 
 ```sh
 brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/64555220bfbf4a25598523c2e4d3a232560eaad7/Formula/openssl.rb -f
+```
+
+In newer versions of HomeBrew installing packages is disabled, which will give an error that looks something like this:
+
+```
+Error: Calling Installation of openssl from a GitHub commit URL is disabled! Use 'brew extract openssl' to stable tap on GitHub instead.
+```
+
+They advise to use `brew extract` which also gives errors. The easiest way is to download the file and then extract it:
+
+```sh
+curl https://raw.githubusercontent.com/Homebrew/homebrew-core/64555220bfbf4a25598523c2e4d3a232560eaad7/Formula/openssl.rb -o openssl.rb
+brew install openssl.rb
 ```
 
 ### Library not loaded: `libsodium.18.dylib`

@@ -24,7 +24,7 @@ import { JsonTransformer } from '../../utils/JsonTransformer';
 jest.mock('./../../storage/Repository');
 const ConnectionRepository = <jest.Mock<Repository<ConnectionRecord>>>(<unknown>Repository);
 
-function getMockConnection({
+export function getMockConnection({
   state = ConnectionState.Invited,
   role = ConnectionRole.Invitee,
   id = 'test',
@@ -64,7 +64,7 @@ describe('ConnectionService', () => {
   const walletCredentials = { key: 'key' };
   const initConfig: InitConfig = {
     label: 'agent label',
-    url: 'http://agent.com',
+    host: 'http://agent.com',
     port: 8080,
     walletConfig,
     walletCredentials,
@@ -122,7 +122,7 @@ describe('ConnectionService', () => {
           label: initConfig.label,
           recipientKeys: [expect.any(String)],
           routingKeys: [],
-          serviceEndpoint: `${initConfig.url}:${initConfig.port}/msg`,
+          serviceEndpoint: `${initConfig.host}:${initConfig.port}/msg`,
         })
       );
     });
@@ -148,11 +148,21 @@ describe('ConnectionService', () => {
       expect(connectionFalse.autoAcceptConnection).toBe(false);
       expect(connectionUndefined.autoAcceptConnection).toBeUndefined();
     });
+
+    it('returns a connection record with the alias parameter from the config', async () => {
+      expect.assertions(2);
+
+      const aliasDefined = await connectionService.createConnectionWithInvitation({ alias: 'test-alias' });
+      const aliasUndefined = await connectionService.createConnectionWithInvitation();
+
+      expect(aliasDefined.alias).toBe('test-alias');
+      expect(aliasUndefined.alias).toBeUndefined();
+    });
   });
 
   describe('processInvitation', () => {
     it('returns a connection record containing the information from the connection invitation', async () => {
-      expect.assertions(7);
+      expect.assertions(9);
 
       const recipientKey = 'key-1';
       const invitation = new ConnectionInvitationMessage({
@@ -162,6 +172,7 @@ describe('ConnectionService', () => {
       });
 
       const connection = await connectionService.processInvitation(invitation);
+      const connectionAlias = await connectionService.processInvitation(invitation, { alias: 'test-alias' });
 
       expect(connection.role).toBe(ConnectionRole.Invitee);
       expect(connection.state).toBe(ConnectionState.Invited);
@@ -175,6 +186,8 @@ describe('ConnectionService', () => {
         })
       );
       expect(connection.invitation).toMatchObject(invitation);
+      expect(connection.alias).toBeUndefined();
+      expect(connectionAlias.alias).toBe('test-alias');
     });
 
     it('returns a connection record with the autoAcceptConnection parameter from the config', async () => {
@@ -194,6 +207,21 @@ describe('ConnectionService', () => {
       expect(connectionTrue.autoAcceptConnection).toBe(true);
       expect(connectionFalse.autoAcceptConnection).toBe(false);
       expect(connectionUndefined.autoAcceptConnection).toBeUndefined();
+    });
+
+    it('returns a connection record with the alias parameter from the config', async () => {
+      expect.assertions(2);
+
+      const invitation = new ConnectionInvitationMessage({
+        did: 'did:sov:test',
+        label: 'test label',
+      });
+
+      const aliasDefined = await connectionService.processInvitation(invitation, { alias: 'test-alias' });
+      const aliasUndefined = await connectionService.processInvitation(invitation);
+
+      expect(aliasDefined.alias).toBe('test-alias');
+      expect(aliasUndefined.alias).toBeUndefined();
     });
   });
 

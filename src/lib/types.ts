@@ -6,8 +6,9 @@ type $FixMe = any;
 export type WireMessage = $FixMe;
 
 export interface InitConfig {
-  url?: string;
+  host?: string;
   port?: string | number;
+  endpoint?: string;
   label: string;
   publicDid?: Did;
   publicDidSeed?: string;

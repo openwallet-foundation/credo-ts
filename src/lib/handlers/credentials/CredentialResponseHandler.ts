@@ -17,6 +17,11 @@ export class CredentialResponseHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<CredentialResponseHandler>) {
     const [responseAttachment] = messageContext.message.attachments;
+
+    if (!responseAttachment.data.base64) {
+      throw new Error('Missing required base64 encoded attachment data');
+    }
+
     const cred = JsonEncoder.fromBase64(responseAttachment.data.base64);
     const credentialDefinition = await this.ledgerService.getCredentialDefinition(cred.cred_def_id);
     const credential = await this.credentialService.processResponse(messageContext, credentialDefinition);

@@ -90,11 +90,6 @@ class MessageReceiver {
       } catch (error) {
         logger.log('error while unpacking message', error);
         throw error;
-        // if (error.indyName && error.indyName === 'WalletAlreadyExistsError') {
-        //   logger.log(error.indyName);
-        // } else {
-        //   throw error;
-        // }
       }
 
       // if the message is of type forward we should check whether the

@@ -13,11 +13,11 @@ import {
 } from '../messages/CredentialOfferMessage';
 import { ConnectionRecord } from '../../../storage/ConnectionRecord';
 import { JsonEncoder } from '../../../utils/JsonEncoder';
-import { Attachment } from '../messages/Attachment';
 import { CredentialRequestMessage } from '../messages/CredentialRequestMessage';
 import { CredentialResponseMessage } from '../messages/CredentialResponseMessage';
 import { credDef, credOffer, credReq } from './fixtures';
 import { CredentialAckMessage } from '../messages/CredentialAckMessage';
+import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment';
 
 jest.mock('./../../../storage/Repository');
 
@@ -43,18 +43,18 @@ const preview = new CredentialPreview({
 const attachment = new Attachment({
   id: '6526420d-8d1c-4f70-89de-54c9f3fa9f5c',
   mimeType: '',
-  data: {
+  data: new AttachmentData({
     base64:
       'eyJzY2hlbWFfaWQiOiJhYWEiLCJjcmVkX2RlZl9pZCI6IlRoN01wVGFSWlZSWW5QaWFiZHM4MVk6MzpDTDoxNzpUQUciLCJub25jZSI6Im5vbmNlIiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7fX0',
-  },
+  }),
 });
 
 const requestAttachment = new Attachment({
   id: '6526420d-8d1c-4f70-89de-54c9f3fa9f5c',
   mimeType: '',
-  data: {
+  data: new AttachmentData({
     base64: JsonEncoder.toBase64(credReq),
-  },
+  }),
 });
 
 // A record is deserialized to JSON when it's stored into the storage. We want to simulate this behaviour for `offer`
@@ -484,7 +484,8 @@ describe('CredentialService', () => {
       // We're using instance of `StubWallet`. Value of `cred` should be as same as in the credential response message.
       const [cred] = await wallet.createCredential(credOffer, credReq, {});
       const [responseAttachment] = credentialResponse.attachments;
-      expect(JsonEncoder.fromBase64(responseAttachment.data.base64)).toEqual(cred);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      expect(JsonEncoder.fromBase64(responseAttachment.data.base64!)).toEqual(cred);
     });
 
     test('throws error when credential record has no request', async () => {

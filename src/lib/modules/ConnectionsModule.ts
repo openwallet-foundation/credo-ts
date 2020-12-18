@@ -28,9 +28,10 @@ export class ConnectionsModule {
     this.messageSender = messageSender;
   }
 
-  public async createConnection(config?: { autoAcceptConnection?: boolean }) {
+  public async createConnection(config?: { autoAcceptConnection?: boolean; alias?: string }) {
     const connection = await this.connectionService.createConnectionWithInvitation({
       autoAcceptConnection: config?.autoAcceptConnection,
+      alias: config?.alias,
     });
 
     if (!connection.invitation) {
@@ -59,12 +60,14 @@ export class ConnectionsModule {
     invitationJson: Record<string, unknown>,
     config?: {
       autoAcceptConnection?: boolean;
+      alias?: string;
     }
   ): Promise<ConnectionRecord> {
     const invitationMessage = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage);
 
     let connection = await this.connectionService.processInvitation(invitationMessage, {
       autoAcceptConnection: config?.autoAcceptConnection,
+      alias: config?.alias,
     });
 
     // if auto accept is enabled (either on the record or the global agent config)

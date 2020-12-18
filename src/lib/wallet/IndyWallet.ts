@@ -1,6 +1,8 @@
 import logger from '../logger';
 import { UnpackedMessageContext } from '../types';
+import { isIndyError } from '../utils/indyError';
 import { Wallet, DidInfo } from './Wallet';
+import { JsonEncoder } from '../utils/JsonEncoder';
 
 export class IndyWallet implements Wallet {
   private wh?: number;
@@ -25,7 +27,7 @@ export class IndyWallet implements Wallet {
       await this.indy.createWallet(this.walletConfig, this.walletCredentials);
     } catch (error) {
       logger.log('error', error);
-      if (error.indyName && error.indyName === 'WalletAlreadyExistsError') {
+      if (isIndyError(error, 'WalletAlreadyExistsError')) {
         logger.log(error.indyName);
       } else {
         throw error;
@@ -39,7 +41,7 @@ export class IndyWallet implements Wallet {
       this.masterSecretId = await this.indy.proverCreateMasterSecret(this.wh, this.walletConfig.id);
     } catch (error) {
       logger.log('error', error);
-      if (error.indyName && error.indyName === 'AnoncredsMasterSecretDuplicateNameError') {
+      if (isIndyError(error, 'AnoncredsMasterSecretDuplicateNameError')) {
         // master secret id is the same as the master secret id passed in the create function
         // so if it already exists we can just assign it.
         this.masterSecretId = this.walletConfig.id;
@@ -142,9 +144,9 @@ export class IndyWallet implements Wallet {
       throw Error('Wallet has not been initialized yet');
     }
 
-    const messageRaw = Buffer.from(JSON.stringify(payload), 'utf-8');
+    const messageRaw = JsonEncoder.toBuffer(payload);
     const packedMessage = await this.indy.packMessage(this.wh, messageRaw, recipientKeys, senderVk);
-    return JSON.parse(packedMessage.toString('utf-8'));
+    return JsonEncoder.fromBuffer(packedMessage);
   }
 
   public async unpack(messagePackage: JsonWebKey): Promise<UnpackedMessageContext> {
@@ -152,14 +154,11 @@ export class IndyWallet implements Wallet {
       throw Error('Wallet has not been initialized yet');
     }
 
-    const unpackedMessageBuffer = await this.indy.unpackMessage(
-      this.wh,
-      Buffer.from(JSON.stringify(messagePackage), 'utf-8')
-    );
-    const unpackedMessage = JSON.parse(unpackedMessageBuffer.toString('utf-8'));
+    const unpackedMessageBuffer = await this.indy.unpackMessage(this.wh, JsonEncoder.toBuffer(messagePackage));
+    const unpackedMessage = JsonEncoder.fromBuffer(unpackedMessageBuffer);
     return {
       ...unpackedMessage,
-      message: JSON.parse(unpackedMessage.message),
+      message: JsonEncoder.fromString(unpackedMessage.message),
     };
   }
 
