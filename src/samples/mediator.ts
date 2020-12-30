@@ -1,6 +1,5 @@
 import express, { Express } from 'express';
 import cors from 'cors';
-import bodyParser from 'body-parser';
 import config from './config';
 import logger from '../lib/logger';
 import { Agent, InboundTransporter, OutboundTransporter, encodeInvitationToUrl } from '../lib';
@@ -59,7 +58,11 @@ const PORT = config.port;
 const app = express();
 
 app.use(cors());
-app.use(bodyParser.text());
+app.use(
+  express.text({
+    type: ['application/ssi-agent-wire', 'text/plain'],
+  })
+);
 app.set('json spaces', 2);
 
 const messageRepository = new InMemoryMessageRepository();
