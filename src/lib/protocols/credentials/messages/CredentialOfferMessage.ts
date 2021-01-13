@@ -94,8 +94,9 @@ export class CredentialOfferMessage extends AgentMessage {
   @IsString()
   public comment?: string;
 
-  @IsString()
   @Expose({ name: 'credential_preview' })
+  @Type(() => CredentialPreview)
+  @ValidateNested()
   public credentialPreview!: CredentialPreview;
 
   @Expose({ name: 'offers~attach' })
