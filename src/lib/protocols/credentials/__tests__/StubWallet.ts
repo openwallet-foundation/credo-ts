@@ -4,6 +4,12 @@ import { UnpackedMessageContext } from '../../../types';
 
 export class StubWallet implements Wallet {
   private wh?: number | undefined;
+
+  public get walletHandle() {
+    if (!this.wh) throw new Error('Wallet not initialized');
+    return this.wh;
+  }
+
   public init(): Promise<void> {
     return Promise.resolve();
   }
