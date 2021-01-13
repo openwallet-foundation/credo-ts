@@ -9,6 +9,7 @@ import logger from '../logger';
 import { CredentialOfferMessage } from '../protocols/credentials/messages/CredentialOfferMessage';
 import { JsonEncoder } from '../utils/JsonEncoder';
 import { JsonTransformer } from '../utils/JsonTransformer';
+import { EventEmitter } from 'events';
 
 export class CredentialsModule {
   private connectionService: ConnectionService;
@@ -72,5 +73,9 @@ export class CredentialsModule {
 
   public async find(id: string) {
     return this.credentialService.find(id);
+  }
+
+  public events(): EventEmitter {
+    return this.credentialService;
   }
 }

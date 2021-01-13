@@ -68,7 +68,13 @@ class ConnectionService extends EventEmitter {
     });
 
     connectionRecord.invitation = invitation;
-    this.connectionRepository.update(connectionRecord);
+
+    await this.connectionRepository.update(connectionRecord);
+
+    this.emit(EventType.StateChanged, {
+      connection: connectionRecord,
+      prevState: null,
+    });
 
     return connectionRecord;
   }
@@ -98,6 +104,13 @@ class ConnectionService extends EventEmitter {
       tags: {
         invitationKey: invitation.recipientKeys && invitation.recipientKeys[0],
       },
+    });
+
+    await this.connectionRepository.update(connectionRecord);
+
+    this.emit(EventType.StateChanged, {
+      connection: connectionRecord,
+      prevState: null,
     });
 
     return connectionRecord;
