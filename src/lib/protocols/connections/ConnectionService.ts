@@ -69,7 +69,12 @@ class ConnectionService extends EventEmitter {
 
     connectionRecord.invitation = invitation;
 
-    await this.updateState(connectionRecord, ConnectionState.Invited);
+    await this.connectionRepository.update(connectionRecord);
+
+    this.emit(EventType.StateChanged, {
+      connection: connectionRecord,
+      prevState: null,
+    });
 
     return connectionRecord;
   }
@@ -101,7 +106,12 @@ class ConnectionService extends EventEmitter {
       },
     });
 
-    await this.updateState(connectionRecord, ConnectionState.Invited);
+    await this.connectionRepository.update(connectionRecord);
+
+    this.emit(EventType.StateChanged, {
+      connection: connectionRecord,
+      prevState: null,
+    });
 
     return connectionRecord;
   }
