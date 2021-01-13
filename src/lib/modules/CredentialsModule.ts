@@ -29,6 +29,16 @@ export class CredentialsModule {
     this.messageSender = messageSender;
   }
 
+  /**
+   * Get the event emitter for the credential service. Will emit state changed events
+   * when the state of credential records changes.
+   *
+   * @returns event emitter for proof related actions
+   */
+  public get events(): EventEmitter {
+    return this.credentialService;
+  }
+
   public async issueCredential(connection: ConnectionRecord, credentialTemplate: CredentialOfferTemplate) {
     const credentialOfferMessage = await this.credentialService.createOffer(connection, credentialTemplate);
     const outboundMessage = createOutboundMessage(connection, credentialOfferMessage);
@@ -73,9 +83,5 @@ export class CredentialsModule {
 
   public async find(id: string) {
     return this.credentialService.find(id);
-  }
-
-  public events(): EventEmitter {
-    return this.credentialService;
   }
 }
