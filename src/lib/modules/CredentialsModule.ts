@@ -38,10 +38,12 @@ export class CredentialsModule {
   public async acceptCredential(credential: CredentialRecord) {
     logger.log('acceptCredential credential', credential);
 
-    // FIXME: credential.offer is already CredentialOfferMessage type
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    const offer = JsonTransformer.fromJSON(credential.offer, CredentialOfferMessage);
+    // FIXME: transformation should be handled by credential record
+    const offer =
+      credential.offer instanceof CredentialOfferMessage
+        ? credential.offer
+        : JsonTransformer.fromJSON(credential.offer, CredentialOfferMessage);
+
     const [offerAttachment] = offer.attachments;
 
     if (!offerAttachment.data.base64) {
