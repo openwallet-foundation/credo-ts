@@ -254,7 +254,7 @@ class ConnectionService extends EventEmitter {
     connectionRecord.tags = {
       ...connectionRecord.tags,
       theirKey: connectionRecord.theirKey,
-      threadId: message.getThreadId(),
+      threadId: message.threadId,
     };
 
     await this.updateState(connectionRecord, ConnectionState.Responded);

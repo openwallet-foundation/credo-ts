@@ -14,8 +14,8 @@ export function ThreadDecorated<T extends BaseMessageConstructor>(Base: T) {
     @ValidateNested()
     public thread?: ThreadDecorator;
 
-    public getThreadId(): string | undefined {
-      return this.thread?.threadId || this.id;
+    public get threadId(): string {
+      return this.thread?.threadId ?? this.id;
     }
 
     public setThread(options: Partial<ThreadDecorator>) {
