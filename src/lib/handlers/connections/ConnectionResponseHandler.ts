@@ -2,6 +2,7 @@ import { Handler, HandlerInboundMessage } from '../Handler';
 import { ConnectionService } from '../../protocols/connections/ConnectionService';
 import { ConnectionResponseMessage } from '../../protocols/connections/ConnectionResponseMessage';
 import { AgentConfig } from '../../agent/AgentConfig';
+import { createOutboundMessage } from '../../protocols/helpers';
 
 export class ConnectionResponseHandler implements Handler {
   private connectionService: ConnectionService;
@@ -24,7 +25,8 @@ export class ConnectionResponseHandler implements Handler {
     // In AATH we have a separate step to send the ping. So for now we'll only do it
     // if auto accept is enable
     if (messageContext.connection?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      return await this.connectionService.createTrustPing(messageContext.connection.id);
+      const { message } = await this.connectionService.createTrustPing(messageContext.connection.id);
+      return createOutboundMessage(messageContext.connection, message);
     }
   }
 }

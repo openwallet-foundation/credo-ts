@@ -228,23 +228,17 @@ async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: Did) {
 }
 
 async function makeConnection(agentA: Agent, agentB: Agent) {
-  const aliceConnectionAtAliceBob = await agentA.connections.createConnection();
+  // eslint-disable-next-line prefer-const
+  let { invitation, connectionRecord: agentAConnection } = await agentA.connections.createConnection();
 
-  if (!aliceConnectionAtAliceBob.invitation) {
-    throw new Error('There is no invitation in newly created connection!');
-  }
+  let agentBConnection = await agentB.connections.receiveInvitation(invitation);
 
-  const bobConnectionAtBobAlice = await agentB.connections.receiveInvitation(
-    aliceConnectionAtAliceBob.invitation.toJSON()
-  );
+  agentAConnection = await agentA.connections.returnWhenIsConnected(agentAConnection.id);
 
-  const aliceConnectionRecordAtAliceBob = await agentA.connections.returnWhenIsConnected(aliceConnectionAtAliceBob.id);
-  if (!aliceConnectionRecordAtAliceBob) {
-    throw new Error('Connection not found!');
-  }
+  agentBConnection = await agentB.connections.returnWhenIsConnected(agentBConnection.id);
 
-  const bobConnectionRecordAtBobAlice = await agentB.connections.returnWhenIsConnected(bobConnectionAtBobAlice.id);
-  if (!bobConnectionRecordAtBobAlice) {
-    throw new Error('Connection not found!');
-  }
+  return {
+    agentAConnection,
+    agentBConnection,
+  };
 }

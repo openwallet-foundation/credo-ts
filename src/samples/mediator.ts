@@ -2,7 +2,7 @@ import express, { Express } from 'express';
 import cors from 'cors';
 import config from './config';
 import logger from '../lib/logger';
-import { Agent, InboundTransporter, OutboundTransporter, encodeInvitationToUrl } from '../lib';
+import { Agent, InboundTransporter, OutboundTransporter } from '../lib';
 import { OutboundPackage } from '../lib/types';
 import indy from 'indy-sdk';
 import { MessageRepository } from '../lib/storage/MessageRepository';
@@ -77,15 +77,9 @@ app.get('/', async (req, res) => {
 
 // Create new invitation as inviter to invitee
 app.get('/invitation', async (req, res) => {
-  const connection = await agent.connections.createConnection();
-  const { invitation } = connection;
+  const { invitation } = await agent.connections.createConnection();
 
-  if (!invitation) {
-    throw new Error('There is no invitation in newly created connection!');
-  }
-
-  const invitationUrl = encodeInvitationToUrl(invitation);
-  res.send(invitationUrl);
+  res.send(invitation.toUrl());
 });
 
 app.get('/api/connections/:verkey', async (req, res) => {
