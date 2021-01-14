@@ -5,7 +5,7 @@ import { Wallet, DidInfo } from './Wallet';
 import { JsonEncoder } from '../utils/JsonEncoder';
 
 export class IndyWallet implements Wallet {
-  private wh?: number;
+  private _walletHandle?: number;
   private _masterSecretId?: string;
   private walletConfig: WalletConfig;
   private walletCredentials: WalletCredentials;
@@ -19,11 +19,11 @@ export class IndyWallet implements Wallet {
   }
 
   public get walletHandle() {
-    if (!this.wh) {
+    if (!this._walletHandle) {
       throw new Error('Wallet has not been initialized yet');
     }
 
-    return this.wh;
+    return this._walletHandle;
   }
 
   private get masterSecretId() {
@@ -47,7 +47,7 @@ export class IndyWallet implements Wallet {
       }
     }
 
-    this.wh = await this.indy.openWallet(this.walletConfig, this.walletCredentials);
+    this._walletHandle = await this.indy.openWallet(this.walletConfig, this.walletCredentials);
 
     try {
       logger.log(`Creating master secret...`);

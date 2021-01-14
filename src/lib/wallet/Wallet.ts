@@ -1,8 +1,6 @@
 import { UnpackedMessageContext } from '../types';
 
 export interface Wallet {
-  walletHandle: number;
-
   init(): Promise<void>;
   close(): Promise<void>;
   delete(): Promise<void>;
