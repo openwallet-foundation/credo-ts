@@ -33,7 +33,7 @@ export class CredentialsModule {
    * Get the event emitter for the credential service. Will emit state changed events
    * when the state of credential records changes.
    *
-   * @returns event emitter for proof related actions
+   * @returns event emitter for credential related state changes
    */
   public get events(): EventEmitter {
     return this.credentialService;
