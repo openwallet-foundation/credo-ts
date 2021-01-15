@@ -27,7 +27,7 @@ class Dispatcher {
     const outboundMessage = await handler.handle(messageContext);
 
     if (outboundMessage) {
-      const threadId = outboundMessage.payload.getThreadId();
+      const threadId = outboundMessage.payload.threadId;
 
       // check for return routing, with thread id
       if (message.hasReturnRouting(threadId)) {

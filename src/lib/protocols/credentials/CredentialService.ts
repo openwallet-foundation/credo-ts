@@ -161,7 +161,7 @@ export class CredentialService extends EventEmitter {
     const credReq = JsonEncoder.fromBase64(requestAttachment.data.base64);
 
     const [credential] = await this.credentialRepository.findByQuery({
-      threadId: messageContext.message.thread?.threadId,
+      threadId: messageContext.message.threadId,
     });
 
     this.assertState(credential.state, CredentialState.OfferSent);
@@ -232,7 +232,7 @@ export class CredentialService extends EventEmitter {
     messageContext: InboundMessageContext<CredentialResponseMessage>,
     credentialDefinition: CredDef
   ): Promise<CredentialRecord> {
-    const threadId = messageContext.message.thread?.threadId;
+    const threadId = messageContext.message.threadId;
     const [credential] = await this.credentialRepository.findByQuery({ threadId });
 
     if (!credential) {
@@ -280,7 +280,7 @@ export class CredentialService extends EventEmitter {
   }
 
   public async processAck(messageContext: InboundMessageContext<CredentialAckMessage>): Promise<CredentialRecord> {
-    const threadId = messageContext.message.thread?.threadId;
+    const threadId = messageContext.message.threadId;
     const [credential] = await this.credentialRepository.findByQuery({ threadId });
 
     if (!credential) {
