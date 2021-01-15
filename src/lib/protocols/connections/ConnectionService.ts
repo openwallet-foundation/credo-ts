@@ -21,7 +21,6 @@ import { Ed25119Sig2018 } from './domain/did/publicKey';
 import { IndyAgentService } from './domain/did/service';
 import { DidDoc } from './domain/did/DidDoc';
 import { authenticationTypes, ReferencedAuthentication } from './domain/did/authentication';
-import { v4 as uuid } from 'uuid';
 
 export enum ConnectionEventType {
   StateChanged = 'stateChanged',
@@ -351,7 +350,6 @@ export class ConnectionService extends EventEmitter {
     autoAcceptConnection?: boolean;
     tags?: ConnectionTags;
   }): Promise<ConnectionRecord> {
-    const id = uuid();
     const [did, verkey] = await this.wallet.createDid({ method_name: 'sov' });
 
     const publicKey = new Ed25119Sig2018({
