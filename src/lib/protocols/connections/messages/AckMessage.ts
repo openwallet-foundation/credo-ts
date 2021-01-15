@@ -1,7 +1,7 @@
 import { Equals, IsEnum } from 'class-validator';
 
-import { AgentMessage } from '../../agent/AgentMessage';
-import { MessageType } from './messages';
+import { AgentMessage } from '../../../agent/AgentMessage';
+import { ConnectionMessageType } from './ConnectionMessageType';
 
 /**
  * Ack message status types
@@ -41,7 +41,7 @@ export class AckMessage extends AgentMessage {
 
   @Equals(AckMessage.type)
   public readonly type = AckMessage.type;
-  public static readonly type = MessageType.Ack;
+  public static readonly type = ConnectionMessageType.Ack;
 
   @IsEnum(AckStatus)
   public status!: AckStatus;

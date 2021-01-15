@@ -6,10 +6,10 @@ import { MessageSender } from '../agent/MessageSender';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
 import logger from '../logger';
 import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
-import { ConnectionResponseMessage } from '../protocols/connections/ConnectionResponseMessage';
+import { ConnectionResponseMessage } from '../protocols/connections/messages/ConnectionResponseMessage';
 import { BatchMessage } from '../protocols/messagepickup/BatchMessage';
 import { createOutboundMessage } from '../protocols/helpers';
-import { ConnectionInvitationMessage } from '../protocols/connections/ConnectionInvitationMessage';
+import { ConnectionInvitationMessage } from '../protocols/connections/messages/ConnectionInvitationMessage';
 
 export class RoutingModule {
   private agentConfig: AgentConfig;

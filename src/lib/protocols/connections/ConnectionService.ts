@@ -7,24 +7,24 @@ import { DidDoc, Service, PublicKey, PublicKeyType, Authentication } from './dom
 import { ConnectionRecord, ConnectionTags } from '../../storage/ConnectionRecord';
 import { Repository } from '../../storage/Repository';
 import { Wallet } from '../../wallet/Wallet';
-import { ConnectionInvitationMessage } from './ConnectionInvitationMessage';
-import { ConnectionRequestMessage } from './ConnectionRequestMessage';
-import { ConnectionResponseMessage } from './ConnectionResponseMessage';
+import { ConnectionInvitationMessage } from './messages/ConnectionInvitationMessage';
+import { ConnectionRequestMessage } from './messages/ConnectionRequestMessage';
+import { ConnectionResponseMessage } from './messages/ConnectionResponseMessage';
 import { signData, unpackAndVerifySignatureDecorator } from '../../decorators/signature/SignatureDecoratorUtils';
 import { Connection } from './domain/Connection';
-import { AckMessage } from './AckMessage';
+import { AckMessage } from './messages/AckMessage';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 import { ConnectionRole } from './domain/ConnectionRole';
 import { TrustPingMessage } from '../trustping/TrustPingMessage';
 import { JsonTransformer } from '../../utils/JsonTransformer';
 import { AgentMessage } from '../../agent/AgentMessage';
 
-export enum EventType {
+export enum ConnectionEventType {
   StateChanged = 'stateChanged',
 }
 
 export interface ConnectionStateChangedEvent {
-  connectionRecord: ConnectionRecord;
+  record: ConnectionRecord;
   prevState: ConnectionState | null;
 }
 
@@ -76,10 +76,10 @@ export class ConnectionService extends EventEmitter {
     await this.connectionRepository.update(connectionRecord);
 
     const event: ConnectionStateChangedEvent = {
-      connectionRecord,
+      record: connectionRecord,
       prevState: null,
     };
-    this.emit(EventType.StateChanged, event);
+    this.emit(ConnectionEventType.StateChanged, event);
 
     return { record: connectionRecord, message: invitation };
   }
@@ -114,10 +114,10 @@ export class ConnectionService extends EventEmitter {
     await this.connectionRepository.update(connectionRecord);
 
     const event: ConnectionStateChangedEvent = {
-      connectionRecord,
+      record: connectionRecord,
       prevState: null,
     };
-    this.emit(EventType.StateChanged, event);
+    this.emit(ConnectionEventType.StateChanged, event);
 
     return connectionRecord;
   }
@@ -330,11 +330,11 @@ export class ConnectionService extends EventEmitter {
     await this.connectionRepository.update(connectionRecord);
 
     const event: ConnectionStateChangedEvent = {
-      connectionRecord,
+      record: connectionRecord,
       prevState,
     };
 
-    this.emit(EventType.StateChanged, event);
+    this.emit(ConnectionEventType.StateChanged, event);
   }
 
   private async createConnection(options: {

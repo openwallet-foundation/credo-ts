@@ -1,9 +1,9 @@
 import { Equals, ValidateNested } from 'class-validator';
 import { Type, Expose } from 'class-transformer';
 
-import { AgentMessage } from '../../agent/AgentMessage';
-import { MessageType } from './messages';
-import { SignatureDecorator } from '../../decorators/signature/SignatureDecorator';
+import { AgentMessage } from '../../../agent/AgentMessage';
+import { ConnectionMessageType } from './ConnectionMessageType';
+import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator';
 
 export interface ConnectionResponseMessageOptions {
   id?: string;
@@ -34,7 +34,7 @@ export class ConnectionResponseMessage extends AgentMessage {
 
   @Equals(ConnectionResponseMessage.type)
   public readonly type = ConnectionResponseMessage.type;
-  public static readonly type = MessageType.ConnectionResponse;
+  public static readonly type = ConnectionMessageType.ConnectionResponse;
 
   @Type(() => SignatureDecorator)
   @ValidateNested()

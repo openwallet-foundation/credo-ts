@@ -7,11 +7,16 @@ import { ConnectionRecord } from '../../storage/ConnectionRecord';
 import { BasicMessage } from './BasicMessage';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 
-enum EventType {
+export enum BasicMessageEventType {
   MessageReceived = 'messageReceived',
 }
 
-class BasicMessageService extends EventEmitter {
+export interface BasicMessageReceivedEvent {
+  message: BasicMessage;
+  verkey: Verkey;
+}
+
+export class BasicMessageService extends EventEmitter {
   private basicMessageRepository: Repository<BasicMessageRecord>;
 
   public constructor(basicMessageRepository: Repository<BasicMessageRecord>) {
@@ -47,12 +52,14 @@ class BasicMessageService extends EventEmitter {
     });
 
     await this.basicMessageRepository.save(basicMessageRecord);
-    this.emit(EventType.MessageReceived, { verkey: connection.verkey, message });
+    const event: BasicMessageReceivedEvent = {
+      message,
+      verkey: connection.verkey,
+    };
+    this.emit(BasicMessageEventType.MessageReceived, event);
   }
 
   public async findAllByQuery(query: WalletQuery) {
     return this.basicMessageRepository.findByQuery(query);
   }
 }
-
-export { BasicMessageService, EventType };

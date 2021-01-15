@@ -1,9 +1,9 @@
 import { Equals, IsString, ValidateNested } from 'class-validator';
 
-import { AgentMessage } from '../../agent/AgentMessage';
-import { MessageType } from './messages';
-import { DidDoc } from './domain/DidDoc';
-import { Connection } from './domain/Connection';
+import { AgentMessage } from '../../../agent/AgentMessage';
+import { ConnectionMessageType } from './ConnectionMessageType';
+import { DidDoc } from '../domain/DidDoc';
+import { Connection } from '../domain/Connection';
 import { Type } from 'class-transformer';
 
 export interface ConnectionRequestMessageOptions {
@@ -39,7 +39,7 @@ export class ConnectionRequestMessage extends AgentMessage {
 
   @Equals(ConnectionRequestMessage.type)
   public readonly type = ConnectionRequestMessage.type;
-  public static readonly type = MessageType.ConnectionRequest;
+  public static readonly type = ConnectionMessageType.ConnectionRequest;
 
   @IsString()
   public label!: string;

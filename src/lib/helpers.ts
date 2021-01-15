@@ -1,7 +1,7 @@
 import { Transform } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
 
-import { ConnectionInvitationMessage } from './protocols/connections/ConnectionInvitationMessage';
+import { ConnectionInvitationMessage } from './protocols/connections/messages/ConnectionInvitationMessage';
 import { JsonEncoder } from './utils/JsonEncoder';
 import { JsonTransformer } from './utils/JsonTransformer';
 

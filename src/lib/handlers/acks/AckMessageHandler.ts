@@ -1,6 +1,6 @@
 import { Handler, HandlerInboundMessage } from '../Handler';
 import { ConnectionService } from '../../protocols/connections/ConnectionService';
-import { AckMessage } from '../../protocols/connections/AckMessage';
+import { AckMessage } from '../../protocols/connections/messages/AckMessage';
 
 export class AckMessageHandler implements Handler {
   private connectionService: ConnectionService;

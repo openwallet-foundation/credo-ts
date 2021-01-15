@@ -2,7 +2,7 @@ import { v4 as uuid } from 'uuid';
 import { BaseRecord, RecordType, Tags } from './BaseRecord';
 import { DidDoc } from '../protocols/connections/domain/DidDoc';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
-import { ConnectionInvitationMessage } from '../protocols/connections/ConnectionInvitationMessage';
+import { ConnectionInvitationMessage } from '../protocols/connections/messages/ConnectionInvitationMessage';
 import { ConnectionRole } from '../protocols/connections/domain/ConnectionRole';
 import { JsonTransformer } from '../utils/JsonTransformer';
 

@@ -1,6 +1,6 @@
 import { validateOrReject } from 'class-validator';
 
-import { ConnectionInvitationMessage } from '../ConnectionInvitationMessage';
+import { ConnectionInvitationMessage } from '../messages/ConnectionInvitationMessage';
 import { JsonTransformer } from '../../../utils/JsonTransformer';
 
 describe('ConnectionInvitationMessage', () => {

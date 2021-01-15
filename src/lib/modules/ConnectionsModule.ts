@@ -5,7 +5,7 @@ import { ConnectionService, ConnectionStateChangedEvent } from '../protocols/con
 import { ConsumerRoutingService } from '../protocols/routing/ConsumerRoutingService';
 import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
-import { ConnectionInvitationMessage } from '../protocols/connections/ConnectionInvitationMessage';
+import { ConnectionInvitationMessage } from '../protocols/connections/messages/ConnectionInvitationMessage';
 import { MessageSender } from '../agent/MessageSender';
 import { ConnectionEventType } from '..';
 import { createOutboundMessage } from '../protocols/helpers';
@@ -169,7 +169,7 @@ export class ConnectionsModule {
     if (connection && isConnected(connection)) return connection;
 
     return new Promise(resolve => {
-      const listener = ({ connectionRecord }: ConnectionStateChangedEvent) => {
+      const listener = ({ record: connectionRecord }: ConnectionStateChangedEvent) => {
         if (isConnected(connectionRecord)) {
           this.events.off(ConnectionEventType.StateChanged, listener);
           resolve(connectionRecord);
