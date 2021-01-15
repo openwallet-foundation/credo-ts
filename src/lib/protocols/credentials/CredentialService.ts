@@ -20,6 +20,11 @@ export enum EventType {
   StateChanged = 'stateChanged',
 }
 
+export interface CredentialStateChangedEvent {
+  credential: CredentialRecord;
+  prevState: CredentialState;
+}
+
 export class CredentialService extends EventEmitter {
   private wallet: Wallet;
   private credentialRepository: Repository<CredentialRecord>;
@@ -311,7 +316,13 @@ export class CredentialService extends EventEmitter {
     const prevState = credential.state;
     credential.state = newState;
     await this.credentialRepository.update(credential);
-    this.emit(EventType.StateChanged, { credential, prevState });
+
+    const event: CredentialStateChangedEvent = {
+      credential: credential,
+      prevState,
+    };
+
+    this.emit(EventType.StateChanged, event);
   }
 }
 
