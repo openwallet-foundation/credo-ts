@@ -42,7 +42,7 @@ export class ConnectionsModule {
     autoAcceptConnection?: boolean;
     alias?: string;
   }): Promise<{ invitation: ConnectionInvitationMessage; connectionRecord: ConnectionRecord }> {
-    const { connectionRecord, message: invitation } = await this.connectionService.createInvitation({
+    const { record: connectionRecord, message: invitation } = await this.connectionService.createInvitation({
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
     });
@@ -114,7 +114,7 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptInvitation(connectionId: string): Promise<ConnectionRecord> {
-    const { message, connectionRecord } = await this.connectionService.createRequest(connectionId);
+    const { message, record: connectionRecord } = await this.connectionService.createRequest(connectionId);
 
     // If agent has inbound connection, which means it's using a mediator,
     // we need to create a route for newly created connection verkey at mediator.
@@ -136,7 +136,7 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptRequest(connectionId: string): Promise<ConnectionRecord> {
-    const { message, connectionRecord } = await this.connectionService.createResponse(connectionId);
+    const { message, record: connectionRecord } = await this.connectionService.createResponse(connectionId);
 
     const outbound = createOutboundMessage(connectionRecord, message);
     await this.messageSender.sendMessage(outbound);
@@ -152,7 +152,7 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
-    const { message, connectionRecord } = await this.connectionService.createTrustPing(connectionId);
+    const { message, record: connectionRecord } = await this.connectionService.createTrustPing(connectionId);
 
     const outbound = createOutboundMessage(connectionRecord, message);
     await this.messageSender.sendMessage(outbound);

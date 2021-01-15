@@ -30,7 +30,7 @@ export interface ConnectionStateChangedEvent {
 
 export interface ConnectionProtocolMsgReturnType<MessageType extends AgentMessage> {
   message: MessageType;
-  connectionRecord: ConnectionRecord;
+  record: ConnectionRecord;
 }
 
 export class ConnectionService extends EventEmitter {
@@ -81,7 +81,7 @@ export class ConnectionService extends EventEmitter {
     };
     this.emit(EventType.StateChanged, event);
 
-    return { connectionRecord, message: invitation };
+    return { record: connectionRecord, message: invitation };
   }
 
   /**
@@ -143,7 +143,7 @@ export class ConnectionService extends EventEmitter {
     await this.updateState(connectionRecord, ConnectionState.Requested);
 
     return {
-      connectionRecord,
+      record: connectionRecord,
       message: connectionRequest,
     };
   }
@@ -221,7 +221,7 @@ export class ConnectionService extends EventEmitter {
     await this.updateState(connectionRecord, ConnectionState.Responded);
 
     return {
-      connectionRecord,
+      record: connectionRecord,
       message: connectionResponse,
     };
   }
@@ -296,7 +296,7 @@ export class ConnectionService extends EventEmitter {
     await this.updateState(connectionRecord, ConnectionState.Complete);
 
     return {
-      connectionRecord,
+      record: connectionRecord,
       message: trustPing,
     };
   }

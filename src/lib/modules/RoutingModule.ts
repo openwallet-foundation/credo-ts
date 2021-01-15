@@ -44,7 +44,7 @@ export class RoutingModule {
       const mediatorInvitation = await ConnectionInvitationMessage.fromUrl(invitationUrl);
 
       const connection = await this.connectionService.processInvitation(mediatorInvitation, { alias });
-      const { message: connectionRequest, connectionRecord } = await this.connectionService.createRequest(
+      const { message: connectionRequest, record: connectionRecord } = await this.connectionService.createRequest(
         connection.id
       );
       const connectionResponse = await this.messageSender.sendAndReceiveMessage(

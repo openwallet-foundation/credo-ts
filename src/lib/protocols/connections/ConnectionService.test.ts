@@ -98,7 +98,7 @@ describe('ConnectionService', () => {
     it('returns a connection record with values set', async () => {
       expect.assertions(6);
 
-      const { connectionRecord } = await connectionService.createInvitation();
+      const { record: connectionRecord } = await connectionService.createInvitation();
 
       expect(connectionRecord.role).toBe(ConnectionRole.Inviter);
       expect(connectionRecord.state).toBe(ConnectionState.Invited);
@@ -140,13 +140,13 @@ describe('ConnectionService', () => {
     it('returns a connection record with the autoAcceptConnection parameter from the config', async () => {
       expect.assertions(3);
 
-      const { connectionRecord: connectionTrue } = await connectionService.createInvitation({
+      const { record: connectionTrue } = await connectionService.createInvitation({
         autoAcceptConnection: true,
       });
-      const { connectionRecord: connectionFalse } = await connectionService.createInvitation({
+      const { record: connectionFalse } = await connectionService.createInvitation({
         autoAcceptConnection: false,
       });
-      const { connectionRecord: connectionUndefined } = await connectionService.createInvitation();
+      const { record: connectionUndefined } = await connectionService.createInvitation();
 
       expect(connectionTrue.autoAcceptConnection).toBe(true);
       expect(connectionFalse.autoAcceptConnection).toBe(false);
@@ -156,8 +156,8 @@ describe('ConnectionService', () => {
     it('returns a connection record with the alias parameter from the config', async () => {
       expect.assertions(2);
 
-      const { connectionRecord: aliasDefined } = await connectionService.createInvitation({ alias: 'test-alias' });
-      const { connectionRecord: aliasUndefined } = await connectionService.createInvitation();
+      const { record: aliasDefined } = await connectionService.createInvitation({ alias: 'test-alias' });
+      const { record: aliasUndefined } = await connectionService.createInvitation();
 
       expect(aliasDefined.alias).toBe('test-alias');
       expect(aliasUndefined.alias).toBeUndefined();
@@ -239,7 +239,7 @@ describe('ConnectionService', () => {
       const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>;
       mockFind.mockReturnValue(Promise.resolve(connection));
 
-      const { connectionRecord, message } = await connectionService.createRequest('test');
+      const { record: connectionRecord, message } = await connectionService.createRequest('test');
 
       expect(connectionRecord.state).toBe(ConnectionState.Requested);
       expect(message.label).toBe(initConfig.label);
@@ -412,7 +412,7 @@ describe('ConnectionService', () => {
       const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>;
       mockFind.mockReturnValue(Promise.resolve(mockConnection));
 
-      const { message, connectionRecord } = await connectionService.createResponse('test');
+      const { message, record: connectionRecord } = await connectionService.createResponse('test');
 
       const connection = new Connection({
         did: mockConnection.did,
@@ -635,7 +635,7 @@ describe('ConnectionService', () => {
       const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>;
       mockFind.mockReturnValue(Promise.resolve(mockConnection));
 
-      const { message, connectionRecord } = await connectionService.createTrustPing('test');
+      const { message, record: connectionRecord } = await connectionService.createTrustPing('test');
 
       expect(connectionRecord.state).toBe(ConnectionState.Complete);
       expect(message).toEqual(expect.any(TrustPingMessage));
