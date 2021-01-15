@@ -28,6 +28,16 @@ export class ConnectionsModule {
     this.messageSender = messageSender;
   }
 
+  /**
+   * Get the event emitter for the connection service. Will emit state changed events
+   * when the state of connections records changes.
+   *
+   * @returns event emitter for connection related actions
+   */
+  public get events(): EventEmitter {
+    return this.connectionService;
+  }
+
   public async createConnection(config?: { autoAcceptConnection?: boolean; alias?: string }) {
     const connection = await this.connectionService.createConnectionWithInvitation({
       autoAcceptConnection: config?.autoAcceptConnection,
@@ -139,12 +149,12 @@ export class ConnectionsModule {
     return new Promise(resolve => {
       const listener = ({ connection }: ConnectionStateChangedEvent) => {
         if (isConnected(connection)) {
-          this.events().off(ConnectionEventType.StateChanged, listener);
+          this.events.off(ConnectionEventType.StateChanged, listener);
           resolve(connection);
         }
       };
 
-      this.events().on(ConnectionEventType.StateChanged, listener);
+      this.events.on(ConnectionEventType.StateChanged, listener);
     });
   }
 
@@ -162,9 +172,5 @@ export class ConnectionsModule {
 
   public async findConnectionByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
     return this.connectionService.findByTheirKey(verkey);
-  }
-
-  public events(): EventEmitter {
-    return this.connectionService;
   }
 }
