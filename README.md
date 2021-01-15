@@ -5,7 +5,8 @@
   <p align="center">
     <img alt="Pipeline Status" src="https://github.com/hyperledger/aries-framework-javascript/workflows/Continuous%20Integration/badge.svg?branch=master">
     <a href="https://lgtm.com/projects/g/hyperledger/aries-framework-javascript/context:javascript"><img alt="Language grade: JavaScript" src="https://img.shields.io/lgtm/grade/javascript/g/hyperledger/aries-framework-javascript.svg?logo=lgtm&logoWidth=18"/></a>
-    <a href="https://raw.githubusercontent.com/hyperledger/aries-framework-go/master/LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"/></a>
+    <a href="https://codecov.io/gh/hyperledger/aries-framework-javascript/"><img alt="Codecov Coverage" src="https://img.shields.io/codecov/c/github/hyperledger/aries-framework-javascript/coverage.svg?style=flat-square"/></a>
+    <a href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/master/LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"/></a>
     <a href="https://npmjs.com/package/aries-framework-javascript"><img alt="aries-framework-javascript npm version" src="https://img.shields.io/npm/v/aries-framework-javascript"></a>
 </p>
 </p>
@@ -24,6 +25,12 @@ Aries Framework JavaScript is a framework for building SSI Agents and DIDComm se
 - [Development](#development)
   - [Setup Ledger](#setup-ledger)
   - [Running tests](#running-tests)
+    - [Setting environment variables](#setting-environment-variables)
+    - [Starting mediator agents](#starting-mediator-agents)
+      - [With Docker](#with-docker)
+    - [Only run e2e tests with in memory messaging](#only-run-e2e-tests-with-in-memory-messaging)
+    - [Only run e2e tests with HTTP based routing agencies](#only-run-e2e-tests-with-http-based-routing-agencies)
+    - [Run all tests](#run-all-tests)
 - [Usage with Docker](#usage-with-docker)
 - [Contributing](#contributing)
 - [License](#license)

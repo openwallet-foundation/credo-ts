@@ -48,7 +48,7 @@ jobs:
           --env GENESIS_TXN_PATH=${GENESIS_TXN_PATH}
           --env DEBUG=aries-framework-javascript
           aries-framework-javascript 
-          yarn test
+          yarn test --coverage
 
       - name: Export docker logs
         if: always()
@@ -63,3 +63,9 @@ jobs:
         with:
           name: docker-logs
           path: logs
+
+      - name: Export test coverage
+        if: always()
+        run: docker cp framework-jest-tests:/www/coverage ./
+      - uses: codecov/codecov-action@v1
+        if: always()
