@@ -1,5 +1,6 @@
 import { getMockConnection } from '../../protocols/connections/ConnectionService.test';
-import { DidDoc, Service } from '../../protocols/connections/domain/DidDoc';
+import { DidDoc } from '../../protocols/connections/domain/did/DidDoc';
+import { IndyAgentService } from '../../protocols/connections/domain/did/service';
 import { AgentConfig } from '../AgentConfig';
 
 describe('AgentConfig', () => {
@@ -15,7 +16,12 @@ describe('AgentConfig', () => {
       agentConfig.establishInbound({
         verkey: 'test',
         connection: getMockConnection({
-          theirDidDoc: new DidDoc('test', [], [], [new Service('test', endpoint, [], [], 1, 'type')]),
+          theirDidDoc: new DidDoc({
+            id: 'test',
+            publicKey: [],
+            authentication: [],
+            service: [new IndyAgentService({ id: `test;indy`, serviceEndpoint: endpoint, recipientKeys: [] })],
+          }),
         }),
       });
 
