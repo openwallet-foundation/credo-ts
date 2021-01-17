@@ -32,7 +32,7 @@ export class ConnectionsModule {
    * Get the event emitter for the connection service. Will emit state changed events
    * when the state of connections records changes.
    *
-   * @returns event emitter for connection related actions
+   * @returns event emitter for connection related state changes
    */
   public get events(): EventEmitter {
     return this.connectionService;

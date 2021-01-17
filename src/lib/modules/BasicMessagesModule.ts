@@ -13,10 +13,10 @@ export class BasicMessagesModule {
   }
 
   /**
-   * Get the event emitter for the basic message service. Will emit state changed events
-   * when the basic messages are received.
+   * Get the event emitter for the basic message service. Will emit message received events
+   * when basic messages are received.
    *
-   * @returns event emitter for basic message actions
+   * @returns event emitter for basic message related events
    */
   public get events(): EventEmitter {
     return this.basicMessageService;
