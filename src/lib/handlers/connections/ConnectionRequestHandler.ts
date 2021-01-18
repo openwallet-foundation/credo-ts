@@ -1,7 +1,8 @@
 import { Handler, HandlerInboundMessage } from '../Handler';
 import { ConnectionService } from '../../protocols/connections/ConnectionService';
-import { ConnectionRequestMessage } from '../../protocols/connections/ConnectionRequestMessage';
+import { ConnectionRequestMessage } from '../../protocols/connections/messages/ConnectionRequestMessage';
 import { AgentConfig } from '../../agent/AgentConfig';
+import { createOutboundMessage } from '../../protocols/helpers';
 
 export class ConnectionRequestHandler implements Handler {
   private connectionService: ConnectionService;
@@ -21,7 +22,8 @@ export class ConnectionRequestHandler implements Handler {
     await this.connectionService.processRequest(messageContext);
 
     if (messageContext.connection?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      return await this.connectionService.createResponse(messageContext.connection.id);
+      const { message } = await this.connectionService.createResponse(messageContext.connection.id);
+      return createOutboundMessage(messageContext.connection, message);
     }
   }
 }

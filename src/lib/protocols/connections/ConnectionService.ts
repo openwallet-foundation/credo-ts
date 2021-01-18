@@ -1,35 +1,39 @@
 import { EventEmitter } from 'events';
 import { validateOrReject } from 'class-validator';
 
-import { OutboundMessage } from '../../types';
 import { AgentConfig } from '../../agent/AgentConfig';
-import { createOutboundMessage } from '../helpers';
 import { ConnectionState } from './domain/ConnectionState';
 import { DidDoc, Service, PublicKey, PublicKeyType, Authentication } from './domain/DidDoc';
 import { ConnectionRecord, ConnectionTags } from '../../storage/ConnectionRecord';
 import { Repository } from '../../storage/Repository';
 import { Wallet } from '../../wallet/Wallet';
-import { ConnectionInvitationMessage } from './ConnectionInvitationMessage';
-import { ConnectionRequestMessage } from './ConnectionRequestMessage';
-import { ConnectionResponseMessage } from './ConnectionResponseMessage';
+import { ConnectionInvitationMessage } from './messages/ConnectionInvitationMessage';
+import { ConnectionRequestMessage } from './messages/ConnectionRequestMessage';
+import { ConnectionResponseMessage } from './messages/ConnectionResponseMessage';
 import { signData, unpackAndVerifySignatureDecorator } from '../../decorators/signature/SignatureDecoratorUtils';
 import { Connection } from './domain/Connection';
-import { AckMessage } from './AckMessage';
+import { AckMessage } from './messages/AckMessage';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
 import { ConnectionRole } from './domain/ConnectionRole';
 import { TrustPingMessage } from '../trustping/TrustPingMessage';
 import { JsonTransformer } from '../../utils/JsonTransformer';
+import { AgentMessage } from '../../agent/AgentMessage';
 
-enum EventType {
+export enum ConnectionEventType {
   StateChanged = 'stateChanged',
 }
 
-interface ConnectionStateChangedEvent {
-  connection: ConnectionRecord;
-  prevState: ConnectionState;
+export interface ConnectionStateChangedEvent {
+  record: ConnectionRecord;
+  prevState: ConnectionState | null;
 }
 
-class ConnectionService extends EventEmitter {
+export interface ConnectionProtocolMsgReturnType<MessageType extends AgentMessage> {
+  message: MessageType;
+  record: ConnectionRecord;
+}
+
+export class ConnectionService extends EventEmitter {
   private wallet: Wallet;
   private config: AgentConfig;
   private connectionRepository: Repository<ConnectionRecord>;
@@ -47,10 +51,10 @@ class ConnectionService extends EventEmitter {
    * @param config config for creation of connection and invitation
    * @returns new connection record
    */
-  public async createConnectionWithInvitation(config?: {
+  public async createInvitation(config?: {
     autoAcceptConnection?: boolean;
     alias?: string;
-  }): Promise<ConnectionRecord> {
+  }): Promise<ConnectionProtocolMsgReturnType<ConnectionInvitationMessage>> {
     // TODO: public did, multi use
     const connectionRecord = await this.createConnection({
       role: ConnectionRole.Inviter,
@@ -71,12 +75,13 @@ class ConnectionService extends EventEmitter {
 
     await this.connectionRepository.update(connectionRecord);
 
-    this.emit(EventType.StateChanged, {
-      connection: connectionRecord,
+    const event: ConnectionStateChangedEvent = {
+      record: connectionRecord,
       prevState: null,
-    });
+    };
+    this.emit(ConnectionEventType.StateChanged, event);
 
-    return connectionRecord;
+    return { record: connectionRecord, message: invitation };
   }
 
   /**
@@ -108,27 +113,26 @@ class ConnectionService extends EventEmitter {
 
     await this.connectionRepository.update(connectionRecord);
 
-    this.emit(EventType.StateChanged, {
-      connection: connectionRecord,
+    const event: ConnectionStateChangedEvent = {
+      record: connectionRecord,
       prevState: null,
-    });
+    };
+    this.emit(ConnectionEventType.StateChanged, event);
 
     return connectionRecord;
   }
 
   /**
-   * Create a connectino request message for the connection with the specified connection id.
+   * Create a connection request message for the connection with the specified connection id.
    *
    * @param connectionId the id of the connection for which to create a connection request
    * @returns outbound message contaning connection request
    */
-  public async createRequest(connectionId: string): Promise<OutboundMessage<ConnectionRequestMessage>> {
+  public async createRequest(connectionId: string): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
     const connectionRecord = await this.connectionRepository.find(connectionId);
 
-    // TODO: should we also check for role? In theory we can only send request if we are the invitee
-    if (connectionRecord.state !== ConnectionState.Invited) {
-      throw new Error('Connection must be in Invited state to send connection request message');
-    }
+    connectionRecord.assertState(ConnectionState.Invited);
+    connectionRecord.assertRole(ConnectionRole.Invitee);
 
     const connectionRequest = new ConnectionRequestMessage({
       label: this.config.label,
@@ -138,8 +142,10 @@ class ConnectionService extends EventEmitter {
 
     await this.updateState(connectionRecord, ConnectionState.Requested);
 
-    // TODO: remove invitation from this call. Will do when replacing outbound message
-    return createOutboundMessage(connectionRecord, connectionRequest, connectionRecord.invitation);
+    return {
+      record: connectionRecord,
+      message: connectionRequest,
+    };
   }
 
   /**
@@ -159,6 +165,9 @@ class ConnectionService extends EventEmitter {
     if (!connectionRecord) {
       throw new Error(`Connection for verkey ${recipientVerkey} not found!`);
     }
+
+    connectionRecord.assertState(ConnectionState.Invited);
+    connectionRecord.assertRole(ConnectionRole.Inviter);
 
     // TODO: validate using class-validator
     if (!message.connection) {
@@ -189,13 +198,13 @@ class ConnectionService extends EventEmitter {
    * @param connectionId the id of the connection for which to create a connection response
    * @returns outbound message contaning connection response
    */
-  public async createResponse(connectionId: string): Promise<OutboundMessage<ConnectionResponseMessage>> {
+  public async createResponse(
+    connectionId: string
+  ): Promise<ConnectionProtocolMsgReturnType<ConnectionResponseMessage>> {
     const connectionRecord = await this.connectionRepository.find(connectionId);
 
-    // TODO: should we also check for role? In theory we can only send response if we are the inviter
-    if (connectionRecord.state !== ConnectionState.Requested) {
-      throw new Error('Connection must be in Requested state to send connection response message');
-    }
+    connectionRecord.assertState(ConnectionState.Requested);
+    connectionRecord.assertRole(ConnectionRole.Inviter);
 
     const connection = new Connection({
       did: connectionRecord.did,
@@ -210,7 +219,11 @@ class ConnectionService extends EventEmitter {
     });
 
     await this.updateState(connectionRecord, ConnectionState.Responded);
-    return createOutboundMessage(connectionRecord, connectionResponse);
+
+    return {
+      record: connectionRecord,
+      message: connectionResponse,
+    };
   }
 
   /**
@@ -230,6 +243,8 @@ class ConnectionService extends EventEmitter {
     if (!connectionRecord) {
       throw new Error(`Connection for verkey ${recipientVerkey} not found!`);
     }
+    connectionRecord.assertState(ConnectionState.Requested);
+    connectionRecord.assertRole(ConnectionRole.Invitee);
 
     const connectionJson = await unpackAndVerifySignatureDecorator(message.connectionSig, this.wallet);
 
@@ -267,22 +282,23 @@ class ConnectionService extends EventEmitter {
    * @param connectionId the id of the connection for which to create a trust ping message
    * @returns outbound message contaning trust ping message
    */
-  public async createTrustPing(connectionId: string) {
+  public async createTrustPing(connectionId: string): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
     const connectionRecord = await this.connectionRepository.find(connectionId);
 
-    if (connectionRecord.state !== ConnectionState.Responded && connectionRecord.state !== ConnectionState.Complete) {
-      throw new Error('Connection must be in Responded or Complete state to send ack message');
-    }
+    connectionRecord.assertState([ConnectionState.Responded, ConnectionState.Complete]);
 
     // TODO:
     //  - create ack message
     //  - allow for options
     //  - maybe this shouldn't be in the connection service?
-    const response = new TrustPingMessage();
+    const trustPing = new TrustPingMessage();
 
     await this.updateState(connectionRecord, ConnectionState.Complete);
 
-    return createOutboundMessage(connectionRecord, response);
+    return {
+      record: connectionRecord,
+      message: trustPing,
+    };
   }
 
   /**
@@ -314,11 +330,11 @@ class ConnectionService extends EventEmitter {
     await this.connectionRepository.update(connectionRecord);
 
     const event: ConnectionStateChangedEvent = {
-      connection: connectionRecord,
+      record: connectionRecord,
       prevState,
     };
 
-    this.emit(EventType.StateChanged, event);
+    this.emit(ConnectionEventType.StateChanged, event);
   }
 
   private async createConnection(options: {
@@ -404,5 +420,3 @@ class ConnectionService extends EventEmitter {
     return connectionRecords[0];
   }
 }
-
-export { ConnectionService, EventType, ConnectionStateChangedEvent };

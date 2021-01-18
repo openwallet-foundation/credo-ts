@@ -1,4 +1,4 @@
-export enum MessageType {
+export enum ConnectionMessageType {
   ConnectionInvitation = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation',
   ConnectionRequest = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/request',
   ConnectionResponse = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/response',

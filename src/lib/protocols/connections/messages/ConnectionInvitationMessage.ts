@@ -1,7 +1,8 @@
 import { Equals, IsString, ValidateIf, IsArray, IsOptional } from 'class-validator';
 
-import { AgentMessage } from '../../agent/AgentMessage';
-import { MessageType } from './messages';
+import { AgentMessage } from '../../../agent/AgentMessage';
+import { decodeInvitationFromUrl, encodeInvitationToUrl } from '../../../helpers';
+import { ConnectionMessageType } from './ConnectionMessageType';
 
 // TODO: improve typing of `DIDInvitationData` and `InlineInvitationData` so properties can't be mixed
 export interface InlineInvitationData {
@@ -49,7 +50,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
 
   @Equals(ConnectionInvitationMessage.type)
   public readonly type = ConnectionInvitationMessage.type;
-  public static readonly type = MessageType.ConnectionInvitation;
+  public static readonly type = ConnectionMessageType.ConnectionInvitation;
 
   @IsString()
   public label!: string;
@@ -75,6 +76,14 @@ export class ConnectionInvitationMessage extends AgentMessage {
   @IsOptional()
   @ValidateIf((o: ConnectionInvitationMessage) => o.did === undefined)
   public routingKeys?: string[];
+
+  public toUrl(domain?: string) {
+    return encodeInvitationToUrl(this, domain);
+  }
+
+  public static async fromUrl(invitationUrl: string) {
+    return decodeInvitationFromUrl(invitationUrl);
+  }
 }
 
 /**

@@ -5,10 +5,10 @@ import { ConnectionService, ConnectionStateChangedEvent } from '../protocols/con
 import { ConsumerRoutingService } from '../protocols/routing/ConsumerRoutingService';
 import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
-import { ConnectionInvitationMessage } from '../protocols/connections/ConnectionInvitationMessage';
+import { ConnectionInvitationMessage } from '../protocols/connections/messages/ConnectionInvitationMessage';
 import { MessageSender } from '../agent/MessageSender';
 import { ConnectionEventType } from '..';
-import { JsonTransformer } from '../utils/JsonTransformer';
+import { createOutboundMessage } from '../protocols/helpers';
 
 export class ConnectionsModule {
   private agentConfig: AgentConfig;
@@ -38,23 +38,22 @@ export class ConnectionsModule {
     return this.connectionService;
   }
 
-  public async createConnection(config?: { autoAcceptConnection?: boolean; alias?: string }) {
-    const connection = await this.connectionService.createConnectionWithInvitation({
+  public async createConnection(config?: {
+    autoAcceptConnection?: boolean;
+    alias?: string;
+  }): Promise<{ invitation: ConnectionInvitationMessage; connectionRecord: ConnectionRecord }> {
+    const { record: connectionRecord, message: invitation } = await this.connectionService.createInvitation({
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
     });
 
-    if (!connection.invitation) {
-      throw new Error('Connection has no invitation assigned.');
-    }
-
     // If agent has inbound connection, which means it's using a mediator, we need to create a route for newly created
     // connection verkey at mediator.
     if (this.agentConfig.inboundConnection) {
-      this.consumerRoutingService.createRoute(connection.verkey);
+      this.consumerRoutingService.createRoute(connectionRecord.verkey);
     }
 
-    return connection;
+    return { connectionRecord, invitation };
   }
 
   /**
@@ -67,15 +66,13 @@ export class ConnectionsModule {
    * @returns new connection record
    */
   public async receiveInvitation(
-    invitationJson: Record<string, unknown>,
+    invitation: ConnectionInvitationMessage,
     config?: {
       autoAcceptConnection?: boolean;
       alias?: string;
     }
   ): Promise<ConnectionRecord> {
-    const invitationMessage = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage);
-
-    let connection = await this.connectionService.processInvitation(invitationMessage, {
+    let connection = await this.connectionService.processInvitation(invitation, {
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
     });
@@ -90,6 +87,26 @@ export class ConnectionsModule {
   }
 
   /**
+   * Receive connection invitation encoded as url and create connection. If auto accepting is enabled
+   * via either the config passed in the function or the global agent config, a connection
+   * request message will be send.
+   *
+   * @param invitationUrl url containing a base64 encoded invitation to receive
+   * @param config config for handling of invitation
+   * @returns new connection record
+   */
+  public async receiveInvitationFromUrl(
+    invitationUrl: string,
+    config?: {
+      autoAcceptConnection?: boolean;
+      alias?: string;
+    }
+  ): Promise<ConnectionRecord> {
+    const invitation = await ConnectionInvitationMessage.fromUrl(invitationUrl);
+    return this.receiveInvitation(invitation, config);
+  }
+
+  /**
    * Accept a connection invitation (by sending a connection request message) for the connection with the specified connection id.
    * This is not needed when auto accepting of connections is enabled.
    *
@@ -97,17 +114,18 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptInvitation(connectionId: string): Promise<ConnectionRecord> {
-    const outboundMessage = await this.connectionService.createRequest(connectionId);
+    const { message, record: connectionRecord } = await this.connectionService.createRequest(connectionId);
 
     // If agent has inbound connection, which means it's using a mediator,
     // we need to create a route for newly created connection verkey at mediator.
     if (this.agentConfig.inboundConnection) {
-      await this.consumerRoutingService.createRoute(outboundMessage.connection.verkey);
+      await this.consumerRoutingService.createRoute(connectionRecord.verkey);
     }
 
-    await this.messageSender.sendMessage(outboundMessage);
+    const outbound = createOutboundMessage(connectionRecord, message, connectionRecord.invitation);
+    await this.messageSender.sendMessage(outbound);
 
-    return outboundMessage.connection;
+    return connectionRecord;
   }
 
   /**
@@ -118,10 +136,12 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptRequest(connectionId: string): Promise<ConnectionRecord> {
-    const outboundMessage = await this.connectionService.createResponse(connectionId);
-    await this.messageSender.sendMessage(outboundMessage);
+    const { message, record: connectionRecord } = await this.connectionService.createResponse(connectionId);
 
-    return outboundMessage.connection;
+    const outbound = createOutboundMessage(connectionRecord, message);
+    await this.messageSender.sendMessage(outbound);
+
+    return connectionRecord;
   }
 
   /**
@@ -132,10 +152,12 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
-    const outboundMessage = await this.connectionService.createTrustPing(connectionId);
-    await this.messageSender.sendMessage(outboundMessage);
+    const { message, record: connectionRecord } = await this.connectionService.createTrustPing(connectionId);
 
-    return outboundMessage.connection;
+    const outbound = createOutboundMessage(connectionRecord, message);
+    await this.messageSender.sendMessage(outbound);
+
+    return connectionRecord;
   }
 
   public async returnWhenIsConnected(connectionId: string): Promise<ConnectionRecord> {
@@ -147,10 +169,10 @@ export class ConnectionsModule {
     if (connection && isConnected(connection)) return connection;
 
     return new Promise(resolve => {
-      const listener = ({ connection }: ConnectionStateChangedEvent) => {
-        if (isConnected(connection)) {
+      const listener = ({ record: connectionRecord }: ConnectionStateChangedEvent) => {
+        if (isConnected(connectionRecord)) {
           this.events.off(ConnectionEventType.StateChanged, listener);
-          resolve(connection);
+          resolve(connectionRecord);
         }
       };
 

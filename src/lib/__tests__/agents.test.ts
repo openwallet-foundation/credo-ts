@@ -48,26 +48,12 @@ describe('agents', () => {
     await bobAgent.init();
 
     const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection();
-
-    if (!aliceConnectionAtAliceBob.invitation) {
-      throw new Error('There is no invitation in newly created connection!');
-    }
-
-    const bobConnectionAtBobAlice = await bobAgent.connections.receiveInvitation(
-      aliceConnectionAtAliceBob.invitation.toJSON()
-    );
+    const bobConnectionAtBobAlice = await bobAgent.connections.receiveInvitation(aliceConnectionAtAliceBob.invitation);
 
     const aliceConnectionRecordAtAliceBob = await aliceAgent.connections.returnWhenIsConnected(
-      aliceConnectionAtAliceBob.id
+      aliceConnectionAtAliceBob.connectionRecord.id
     );
-    if (!aliceConnectionRecordAtAliceBob) {
-      throw new Error('Connection not found!');
-    }
-
     const bobConnectionRecordAtBobAlice = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice.id);
-    if (!bobConnectionRecordAtBobAlice) {
-      throw new Error('Connection not found!');
-    }
 
     expect(aliceConnectionRecordAtAliceBob).toBeConnectedWith(bobConnectionRecordAtBobAlice);
     expect(bobConnectionRecordAtBobAlice).toBeConnectedWith(aliceConnectionRecordAtAliceBob);

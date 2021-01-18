@@ -54,13 +54,13 @@ describe('with mediator', () => {
     await bobAgent.init();
 
     const aliceInbound = aliceAgent.routing.getInboundConnection();
-    const aliceInboundConnection = aliceInbound && aliceInbound.connection;
-    const aliceKeyAtAliceMediator = aliceInboundConnection && aliceInboundConnection.verkey;
+    const aliceInboundConnection = aliceInbound?.connection;
+    const aliceKeyAtAliceMediator = aliceInboundConnection?.verkey;
     console.log('aliceInboundConnection', aliceInboundConnection);
 
     const bobInbound = bobAgent.routing.getInboundConnection();
-    const bobInboundConnection = bobInbound && bobInbound.connection;
-    const bobKeyAtBobMediator = bobInboundConnection && bobInboundConnection.verkey;
+    const bobInboundConnection = bobInbound?.connection;
+    const bobKeyAtBobMediator = bobInboundConnection?.verkey;
     console.log('bobInboundConnection', bobInboundConnection);
 
     // TODO This endpoint currently exists at mediator only for the testing purpose. It returns mediator's part of the pairwise connection.
@@ -79,33 +79,20 @@ describe('with mediator', () => {
   });
 
   test('Alice and Bob make a connection via mediator', async () => {
-    const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection();
+    // eslint-disable-next-line prefer-const
+    let { invitation, connectionRecord: aliceAgentConnection } = await aliceAgent.connections.createConnection();
 
-    if (!aliceConnectionAtAliceBob.invitation) {
-      throw new Error('There is no invitation in newly created connection!');
-    }
+    let bobAgentConnection = await bobAgent.connections.receiveInvitation(invitation);
 
-    const bobConnectionAtBobAlice = await bobAgent.connections.receiveInvitation(
-      aliceConnectionAtAliceBob.invitation.toJSON()
-    );
+    aliceAgentConnection = await aliceAgent.connections.returnWhenIsConnected(aliceAgentConnection.id);
 
-    const aliceConnectionRecordAtAliceBob = await aliceAgent.connections.returnWhenIsConnected(
-      aliceConnectionAtAliceBob.id
-    );
-    if (!aliceConnectionRecordAtAliceBob) {
-      throw new Error('Connection not found!');
-    }
+    bobAgentConnection = await bobAgent.connections.returnWhenIsConnected(bobAgentConnection.id);
 
-    const bobConnectionRecordAtBobAlice = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice.id);
-    if (!bobConnectionRecordAtBobAlice) {
-      throw new Error('Connection not found!');
-    }
-
-    expect(aliceConnectionRecordAtAliceBob).toBeConnectedWith(bobConnectionRecordAtBobAlice);
-    expect(bobConnectionRecordAtBobAlice).toBeConnectedWith(aliceConnectionRecordAtAliceBob);
+    expect(aliceAgentConnection).toBeConnectedWith(bobAgentConnection);
+    expect(bobAgentConnection).toBeConnectedWith(aliceAgentConnection);
 
     // We save this verkey to send message via this connection in the following test
-    aliceAtAliceBobId = aliceConnectionAtAliceBob.id;
+    aliceAtAliceBobId = aliceAgentConnection.id;
   });
 
   test('Send a message from Alice to Bob via mediator', async () => {

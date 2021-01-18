@@ -8,18 +8,18 @@ import { AgentConfig } from '../../agent/AgentConfig';
 import { ConnectionState } from './domain/ConnectionState';
 import { InitConfig } from '../../types';
 import { ConnectionRole } from './domain/ConnectionRole';
-import { ConnectionInvitationMessage } from './ConnectionInvitationMessage';
+import { ConnectionInvitationMessage } from './messages/ConnectionInvitationMessage';
 
 import { Repository } from '../../storage/Repository';
 import { DidDoc, Service } from './domain/DidDoc';
 import { Connection } from './domain/Connection';
 import { signData, unpackAndVerifySignatureDecorator } from '../../decorators/signature/SignatureDecoratorUtils';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
-import { ConnectionResponseMessage } from './ConnectionResponseMessage';
+import { ConnectionResponseMessage } from './messages/ConnectionResponseMessage';
 import { SignatureDecorator } from '../../decorators/signature/SignatureDecorator';
-import { ConnectionRequestMessage } from './ConnectionRequestMessage';
+import { ConnectionRequestMessage } from './messages/ConnectionRequestMessage';
 import { TrustPingMessage } from '../trustping/TrustPingMessage';
-import { AckMessage, AckStatus } from './AckMessage';
+import { AckMessage, AckStatus } from './messages/AckMessage';
 import { JsonTransformer } from '../../utils/JsonTransformer';
 jest.mock('./../../storage/Repository');
 const ConnectionRepository = <jest.Mock<Repository<ConnectionRecord>>>(<unknown>Repository);
@@ -98,16 +98,16 @@ describe('ConnectionService', () => {
     it('returns a connection record with values set', async () => {
       expect.assertions(6);
 
-      const connection = await connectionService.createConnectionWithInvitation();
+      const { record: connectionRecord } = await connectionService.createInvitation();
 
-      expect(connection.role).toBe(ConnectionRole.Inviter);
-      expect(connection.state).toBe(ConnectionState.Invited);
-      expect(connection.autoAcceptConnection).toBeUndefined();
-      expect(connection.id).toEqual(expect.any(String));
-      expect(connection.verkey).toEqual(expect.any(String));
-      expect(connection.tags).toEqual(
+      expect(connectionRecord.role).toBe(ConnectionRole.Inviter);
+      expect(connectionRecord.state).toBe(ConnectionState.Invited);
+      expect(connectionRecord.autoAcceptConnection).toBeUndefined();
+      expect(connectionRecord.id).toEqual(expect.any(String));
+      expect(connectionRecord.verkey).toEqual(expect.any(String));
+      expect(connectionRecord.tags).toEqual(
         expect.objectContaining({
-          verkey: connection.verkey,
+          verkey: connectionRecord.verkey,
         })
       );
     });
@@ -115,9 +115,9 @@ describe('ConnectionService', () => {
     it('returns a connection record with invitation', async () => {
       expect.assertions(1);
 
-      const connection = await connectionService.createConnectionWithInvitation();
+      const { message: invitation } = await connectionService.createInvitation();
 
-      expect(connection.invitation).toEqual(
+      expect(invitation).toEqual(
         expect.objectContaining({
           label: initConfig.label,
           recipientKeys: [expect.any(String)],
@@ -132,7 +132,7 @@ describe('ConnectionService', () => {
 
       const saveSpy = jest.spyOn(connectionRepository, 'save');
 
-      await connectionService.createConnectionWithInvitation();
+      await connectionService.createInvitation();
 
       expect(saveSpy).toHaveBeenCalledWith(expect.any(ConnectionRecord));
     });
@@ -140,9 +140,13 @@ describe('ConnectionService', () => {
     it('returns a connection record with the autoAcceptConnection parameter from the config', async () => {
       expect.assertions(3);
 
-      const connectionTrue = await connectionService.createConnectionWithInvitation({ autoAcceptConnection: true });
-      const connectionFalse = await connectionService.createConnectionWithInvitation({ autoAcceptConnection: false });
-      const connectionUndefined = await connectionService.createConnectionWithInvitation();
+      const { record: connectionTrue } = await connectionService.createInvitation({
+        autoAcceptConnection: true,
+      });
+      const { record: connectionFalse } = await connectionService.createInvitation({
+        autoAcceptConnection: false,
+      });
+      const { record: connectionUndefined } = await connectionService.createInvitation();
 
       expect(connectionTrue.autoAcceptConnection).toBe(true);
       expect(connectionFalse.autoAcceptConnection).toBe(false);
@@ -152,8 +156,8 @@ describe('ConnectionService', () => {
     it('returns a connection record with the alias parameter from the config', async () => {
       expect.assertions(2);
 
-      const aliasDefined = await connectionService.createConnectionWithInvitation({ alias: 'test-alias' });
-      const aliasUndefined = await connectionService.createConnectionWithInvitation();
+      const { record: aliasDefined } = await connectionService.createInvitation({ alias: 'test-alias' });
+      const { record: aliasUndefined } = await connectionService.createInvitation();
 
       expect(aliasDefined.alias).toBe('test-alias');
       expect(aliasUndefined.alias).toBeUndefined();
@@ -235,12 +239,24 @@ describe('ConnectionService', () => {
       const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>;
       mockFind.mockReturnValue(Promise.resolve(connection));
 
-      const outboundMessage = await connectionService.createRequest('test');
+      const { record: connectionRecord, message } = await connectionService.createRequest('test');
 
-      expect(outboundMessage.connection.state).toBe(ConnectionState.Requested);
-      expect(outboundMessage.payload.label).toBe(initConfig.label);
-      expect(outboundMessage.payload.connection.did).toBe('test-did');
-      expect(outboundMessage.payload.connection.didDoc).toEqual(connection.didDoc);
+      expect(connectionRecord.state).toBe(ConnectionState.Requested);
+      expect(message.label).toBe(initConfig.label);
+      expect(message.connection.did).toBe('test-did');
+      expect(message.connection.didDoc).toEqual(connection.didDoc);
+    });
+
+    it(`throws an error when connection role is ${ConnectionRole.Inviter} and not ${ConnectionRole.Invitee}`, async () => {
+      expect.assertions(1);
+
+      // make separate mockFind variable to get the correct jest mock typing
+      const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>;
+
+      mockFind.mockReturnValue(Promise.resolve(getMockConnection({ role: ConnectionRole.Inviter })));
+      return expect(connectionService.createRequest('test')).rejects.toThrowError(
+        `Connection record has invalid role ${ConnectionRole.Inviter}. Expected role ${ConnectionRole.Invitee}.`
+      );
     });
 
     const invalidConnectionStates = [
@@ -256,8 +272,8 @@ describe('ConnectionService', () => {
       const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>;
 
       mockFind.mockReturnValue(Promise.resolve(getMockConnection({ state })));
-      expect(connectionService.createRequest('test')).rejects.toThrowError(
-        'Connection must be in Invited state to send connection request message'
+      return expect(connectionService.createRequest('test')).rejects.toThrowError(
+        `Connection record is in invalid state ${state}. Valid states are: ${ConnectionState.Invited}.`
       );
     });
   });
@@ -269,6 +285,7 @@ describe('ConnectionService', () => {
       const connectionRecord = getMockConnection({
         state: ConnectionState.Invited,
         verkey: 'my-key',
+        role: ConnectionRole.Inviter,
       });
 
       const theirDid = 'their-did';
@@ -314,7 +331,7 @@ describe('ConnectionService', () => {
         recipientVerkey: 'test-verkey',
       });
 
-      expect(connectionService.processRequest(messageContext)).rejects.toThrowError(
+      return expect(connectionService.processRequest(messageContext)).rejects.toThrowError(
         'Connection for verkey test-verkey not found!'
       );
     });
@@ -322,7 +339,9 @@ describe('ConnectionService', () => {
     it('throws an error when the message does not contain a connection parameter', async () => {
       expect.assertions(1);
 
-      const connection = getMockConnection();
+      const connection = getMockConnection({
+        role: ConnectionRole.Inviter,
+      });
 
       const connectionRequest = new ConnectionRequestMessage({
         did: 'did',
@@ -338,13 +357,27 @@ describe('ConnectionService', () => {
         recipientVerkey: 'test-verkey',
       });
 
-      expect(connectionService.processRequest(messageContext)).rejects.toThrowError('Invalid message');
+      return expect(connectionService.processRequest(messageContext)).rejects.toThrowError('Invalid message');
+    });
+
+    it(`throws an error when connection role is ${ConnectionRole.Invitee} and not ${ConnectionRole.Inviter}`, async () => {
+      expect.assertions(1);
+
+      const inboundMessage = new InboundMessageContext(jest.fn()(), {
+        connection: getMockConnection({ role: ConnectionRole.Invitee }),
+      });
+
+      return expect(connectionService.processRequest(inboundMessage)).rejects.toThrowError(
+        `Connection record has invalid role ${ConnectionRole.Invitee}. Expected role ${ConnectionRole.Inviter}.`
+      );
     });
 
     it('throws an error when the message does not contain a did doc with any recipientKeys', async () => {
       expect.assertions(1);
 
-      const connection = getMockConnection();
+      const connection = getMockConnection({
+        role: ConnectionRole.Inviter,
+      });
 
       const connectionRequest = new ConnectionRequestMessage({
         did: 'did',
@@ -356,7 +389,7 @@ describe('ConnectionService', () => {
         recipientVerkey: 'test-verkey',
       });
 
-      expect(connectionService.processRequest(messageContext)).rejects.toThrowError(
+      return expect(connectionService.processRequest(messageContext)).rejects.toThrowError(
         `Connection with id ${connection.id} has no recipient keys.`
       );
     });
@@ -368,27 +401,40 @@ describe('ConnectionService', () => {
 
       // Needed for signing connection~sig
       const [did, verkey] = await wallet.createDid();
-      const connectionRecord = getMockConnection({
+      const mockConnection = getMockConnection({
         did,
         verkey,
         state: ConnectionState.Requested,
+        role: ConnectionRole.Inviter,
       });
 
       // make separate mockFind variable to get the correct jest mock typing
       const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>;
-      mockFind.mockReturnValue(Promise.resolve(connectionRecord));
+      mockFind.mockReturnValue(Promise.resolve(mockConnection));
 
-      const outboundMessage = await connectionService.createResponse('test');
+      const { message, record: connectionRecord } = await connectionService.createResponse('test');
 
       const connection = new Connection({
-        did: connectionRecord.did,
-        didDoc: connectionRecord.didDoc,
+        did: mockConnection.did,
+        didDoc: mockConnection.didDoc,
       });
       const plainConnection = JsonTransformer.toJSON(connection);
 
-      expect(outboundMessage.connection.state).toBe(ConnectionState.Responded);
-      expect(await unpackAndVerifySignatureDecorator(outboundMessage.payload.connectionSig, wallet)).toEqual(
-        plainConnection
+      expect(connectionRecord.state).toBe(ConnectionState.Responded);
+      expect(await unpackAndVerifySignatureDecorator(message.connectionSig, wallet)).toEqual(plainConnection);
+    });
+
+    it(`throws an error when connection role is ${ConnectionRole.Invitee} and not ${ConnectionRole.Inviter}`, async () => {
+      expect.assertions(1);
+
+      // make separate mockFind variable to get the correct jest mock typing
+      const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>;
+
+      mockFind.mockReturnValue(
+        Promise.resolve(getMockConnection({ role: ConnectionRole.Invitee, state: ConnectionState.Requested }))
+      );
+      return expect(connectionService.createResponse('test')).rejects.toThrowError(
+        `Connection record has invalid role ${ConnectionRole.Invitee}. Expected role ${ConnectionRole.Inviter}.`
       );
     });
 
@@ -398,15 +444,15 @@ describe('ConnectionService', () => {
       ConnectionState.Responded,
       ConnectionState.Complete,
     ];
-    test.each(invalidConnectionStates)('throws an error when connection state is %s and not REQUESTED', state => {
+    test.each(invalidConnectionStates)('throws an error when connection state is %s and not REQUESTED', async state => {
       expect.assertions(1);
 
       // make separate mockFind variable to get the correct jest mock typing
       const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>;
       mockFind.mockReturnValue(Promise.resolve(getMockConnection({ state })));
 
-      expect(connectionService.createResponse('test')).rejects.toThrowError(
-        'Connection must be in Requested state to send connection response message'
+      return expect(connectionService.createResponse('test')).rejects.toThrowError(
+        `Connection record is in invalid state ${state}. Valid states are: ${ConnectionState.Requested}.`
       );
     });
   });
@@ -417,10 +463,12 @@ describe('ConnectionService', () => {
 
       const [did, verkey] = await wallet.createDid();
       const [theirDid, theirVerkey] = await wallet.createDid();
+
       const connectionRecord = getMockConnection({
         did,
         verkey,
         state: ConnectionState.Requested,
+        role: ConnectionRole.Invitee,
         tags: {
           // processResponse checks wether invitation key is same as signing key for connetion~sig
           invitationKey: theirVerkey,
@@ -436,6 +484,7 @@ describe('ConnectionService', () => {
           [new Service(`${did};indy`, 'https://endpoint.com', [theirVerkey], [], 0, 'IndyAgent')]
         ),
       });
+
       const plainConnection = JsonTransformer.toJSON(otherPartyConnection);
       const connectionSig = await signData(plainConnection, wallet, theirVerkey);
 
@@ -458,6 +507,18 @@ describe('ConnectionService', () => {
       expect(processedConnection.theirDidDoc).toEqual(otherPartyConnection.didDoc);
     });
 
+    it(`throws an error when connection role is ${ConnectionRole.Inviter} and not ${ConnectionRole.Invitee}`, async () => {
+      expect.assertions(1);
+
+      const inboundMessage = new InboundMessageContext(jest.fn()(), {
+        connection: getMockConnection({ role: ConnectionRole.Inviter, state: ConnectionState.Requested }),
+      });
+
+      return expect(connectionService.processResponse(inboundMessage)).rejects.toThrowError(
+        `Connection record has invalid role ${ConnectionRole.Inviter}. Expected role ${ConnectionRole.Invitee}.`
+      );
+    });
+
     it('throws an error when the connection sig is not signed with the same key as the recipient key from the invitation', async () => {
       expect.assertions(1);
 
@@ -466,6 +527,7 @@ describe('ConnectionService', () => {
       const connectionRecord = getMockConnection({
         did,
         verkey,
+        role: ConnectionRole.Invitee,
         state: ConnectionState.Requested,
         tags: {
           // processResponse checks wether invitation key is same as signing key for connetion~sig
@@ -496,15 +558,9 @@ describe('ConnectionService', () => {
         recipientVerkey: connectionRecord.myKey!,
       });
 
-      // For some reason expect(connectionService.processResponse(messageContext)).rejects.toThrowError()
-      // doesn't work here.
-      try {
-        await connectionService.processResponse(messageContext);
-      } catch (error) {
-        expect(error.message).toBe(
-          'Connection in connection response is not signed with same key as recipient key in invitation'
-        );
-      }
+      return expect(connectionService.processResponse(messageContext)).rejects.toThrowError(
+        'Connection in connection response is not signed with same key as recipient key in invitation'
+      );
     });
 
     it('throws an error when the message context does not have a connection', async () => {
@@ -524,7 +580,7 @@ describe('ConnectionService', () => {
         recipientVerkey: 'test-verkey',
       });
 
-      expect(connectionService.processResponse(messageContext)).rejects.toThrowError(
+      return expect(connectionService.processResponse(messageContext)).rejects.toThrowError(
         'Connection for verkey test-verkey not found!'
       );
     });
@@ -561,11 +617,9 @@ describe('ConnectionService', () => {
         connection: connectionRecord,
       });
 
-      try {
-        await connectionService.processResponse(messageContext);
-      } catch (error) {
-        expect(error.message).toBe(`Connection with id ${connectionRecord.id} has no recipient keys.`);
-      }
+      return expect(connectionService.processResponse(messageContext)).rejects.toThrowError(
+        `Connection with id ${connectionRecord.id} has no recipient keys.`
+      );
     });
   });
 
@@ -573,18 +627,18 @@ describe('ConnectionService', () => {
     it('returns a trust ping message', async () => {
       expect.assertions(2);
 
-      const connection = getMockConnection({
+      const mockConnection = getMockConnection({
         state: ConnectionState.Responded,
       });
 
       // make separate mockFind variable to get the correct jest mock typing
       const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>;
-      mockFind.mockReturnValue(Promise.resolve(connection));
+      mockFind.mockReturnValue(Promise.resolve(mockConnection));
 
-      const outboundMessage = await connectionService.createTrustPing('test');
+      const { message, record: connectionRecord } = await connectionService.createTrustPing('test');
 
-      expect(outboundMessage.connection.state).toBe(ConnectionState.Complete);
-      expect(outboundMessage.payload).toEqual(expect.any(TrustPingMessage));
+      expect(connectionRecord.state).toBe(ConnectionState.Complete);
+      expect(message).toEqual(expect.any(TrustPingMessage));
     });
 
     const invalidConnectionStates = [ConnectionState.Init, ConnectionState.Invited, ConnectionState.Requested];
@@ -597,8 +651,8 @@ describe('ConnectionService', () => {
         const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>;
 
         mockFind.mockReturnValue(Promise.resolve(getMockConnection({ state })));
-        expect(connectionService.createTrustPing('test')).rejects.toThrowError(
-          'Connection must be in Responded or Complete state to send ack message'
+        return expect(connectionService.createTrustPing('test')).rejects.toThrowError(
+          `Connection record is in invalid state ${state}. Valid states are: ${ConnectionState.Responded}, ${ConnectionState.Complete}.`
         );
       }
     );
@@ -617,7 +671,7 @@ describe('ConnectionService', () => {
         recipientVerkey: 'test-verkey',
       });
 
-      expect(connectionService.processAck(messageContext)).rejects.toThrowError(
+      return expect(connectionService.processAck(messageContext)).rejects.toThrowError(
         'Connection for verkey test-verkey not found!'
       );
     });

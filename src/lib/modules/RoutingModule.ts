@@ -4,11 +4,12 @@ import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { MessagePickupService } from '../protocols/messagepickup/MessagePickupService';
 import { MessageSender } from '../agent/MessageSender';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
-import { decodeInvitationFromUrl } from '../helpers';
 import logger from '../logger';
 import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
-import { ConnectionResponseMessage } from '../protocols/connections/ConnectionResponseMessage';
+import { ConnectionResponseMessage } from '../protocols/connections/messages/ConnectionResponseMessage';
 import { BatchMessage } from '../protocols/messagepickup/BatchMessage';
+import { createOutboundMessage } from '../protocols/helpers';
+import { ConnectionInvitationMessage } from '../protocols/connections/messages/ConnectionInvitationMessage';
 
 export class RoutingModule {
   private agentConfig: AgentConfig;
@@ -40,20 +41,22 @@ export class RoutingModule {
     if (!provisioningRecord) {
       logger.log('There is no provisioning. Creating connection with mediator...');
       const { verkey, invitationUrl, alias = 'Mediator' } = mediatorConfiguration;
-      const mediatorInvitation = await decodeInvitationFromUrl(invitationUrl);
+      const mediatorInvitation = await ConnectionInvitationMessage.fromUrl(invitationUrl);
 
       const connection = await this.connectionService.processInvitation(mediatorInvitation, { alias });
-      const connectionRequest = await this.connectionService.createRequest(connection.id);
+      const { message: connectionRequest, record: connectionRecord } = await this.connectionService.createRequest(
+        connection.id
+      );
       const connectionResponse = await this.messageSender.sendAndReceiveMessage(
-        connectionRequest,
+        createOutboundMessage(connectionRecord, connectionRequest, connectionRecord.invitation),
         ConnectionResponseMessage
       );
       await this.connectionService.processResponse(connectionResponse);
-      const trustPing = await this.connectionService.createTrustPing(connection.id);
-      await this.messageSender.sendMessage(trustPing);
+      const { message: trustPing } = await this.connectionService.createTrustPing(connectionRecord.id);
+      await this.messageSender.sendMessage(createOutboundMessage(connectionRecord, trustPing));
 
       const provisioningProps = {
-        mediatorConnectionId: connectionRequest.connection.id,
+        mediatorConnectionId: connectionRecord.id,
         mediatorPublicVerkey: verkey,
       };
       provisioningRecord = await this.provisioningService.create(provisioningProps);
@@ -69,9 +72,7 @@ export class RoutingModule {
     }
     logger.log('agentConnectionAtMediator', agentConnectionAtMediator);
 
-    if (agentConnectionAtMediator.state !== ConnectionState.Complete) {
-      throw new Error('Connection has not been established.');
-    }
+    agentConnectionAtMediator.assertState(ConnectionState.Complete);
 
     this.agentConfig.establishInbound({
       verkey: provisioningRecord.mediatorPublicVerkey,

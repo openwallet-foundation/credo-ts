@@ -2,7 +2,7 @@ import { v4 as uuid } from 'uuid';
 import { BaseRecord, RecordType, Tags } from './BaseRecord';
 import { DidDoc } from '../protocols/connections/domain/DidDoc';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
-import { ConnectionInvitationMessage } from '../protocols/connections/ConnectionInvitationMessage';
+import { ConnectionInvitationMessage } from '../protocols/connections/messages/ConnectionInvitationMessage';
 import { ConnectionRole } from '../protocols/connections/domain/ConnectionRole';
 import { JsonTransformer } from '../utils/JsonTransformer';
 
@@ -96,5 +96,35 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
       return null;
     }
     return this.theirDidDoc.service[0].recipientKeys[0];
+  }
+
+  public get isReady() {
+    return [ConnectionState.Responded, ConnectionState.Complete].includes(this.state);
+  }
+
+  public assertReady() {
+    if (!this.isReady) {
+      throw new Error(
+        `Connection record is not ready to be used. Expected ${ConnectionState.Responded} or ${ConnectionState.Complete}, found invalid state ${this.state}`
+      );
+    }
+  }
+
+  public assertState(expectedStates: ConnectionState | ConnectionState[]) {
+    if (!Array.isArray(expectedStates)) {
+      expectedStates = [expectedStates];
+    }
+
+    if (!expectedStates.includes(this.state)) {
+      throw new Error(
+        `Connection record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`
+      );
+    }
+  }
+
+  public assertRole(expectedRole: ConnectionRole) {
+    if (this.role !== expectedRole) {
+      throw new Error(`Connection record has invalid role ${this.role}. Expected role ${expectedRole}.`);
+    }
   }
 }
