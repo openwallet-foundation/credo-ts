@@ -11,5 +11,7 @@ module.exports = {
   transform: {
     '^.+\\.(ts|tsx)?$': 'ts-jest',
   },
+  collectCoverageFrom: ['src/lib/**/*.{js,jsx,tsx,ts}'],
+  coveragePathIgnorePatterns: ['/node_modules/', '/__tests__/'],
   testTimeout: 30000,
 };
