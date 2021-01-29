@@ -45,6 +45,13 @@ export class CredentialsModule {
     await this.messageSender.sendMessage(outboundMessage);
   }
 
+  /**
+   * This method is used to fetch credentials for proofRequest
+   * @param proofRequestMessage
+   */
+  public async getCredentialsForProofReq(proofRequestMessage: string) {
+    return await this.credentialService.getCredentialsForProofReq(proofRequestMessage);
+  }
   public async acceptCredential(credential: CredentialRecord) {
     logger.log('acceptCredential credential', credential);
 
