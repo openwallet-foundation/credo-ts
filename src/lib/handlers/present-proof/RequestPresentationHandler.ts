@@ -1,10 +1,7 @@
 import { Handler, HandlerInboundMessage } from '../Handler';
-import { ProofService } from '../../protocols/proof/ProofService';
-import { RequestPresentationMessage } from '../../protocols/proof/messages/RequestPresentationMessage';
 
-/**
- * The funtionalities of this class is used to handle proof request
- */
+import { RequestPresentationMessage, ProofService } from '../../protocols/present-proof';
+
 export class RequestPresentationHandler implements Handler {
   private proofService: ProofService;
   public supportedMessages = [RequestPresentationMessage];
@@ -13,11 +10,7 @@ export class RequestPresentationHandler implements Handler {
     this.proofService = proofService;
   }
 
-  /**
-   * This Method is used to hansle proof request
-   * @param messageContext T
-   */
   public async handle(messageContext: HandlerInboundMessage<RequestPresentationHandler>) {
-    await this.proofService.processRequestPresentation(messageContext);
+    await this.proofService.processRequest(messageContext);
   }
 }

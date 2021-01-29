@@ -54,49 +54,7 @@ declare module 'indy-sdk' {
     parseGetCredDefResponse(response: LedgerResponse): Promise<[CredDefId, CredDef]>;
     signRequest(wh: WalletHandle, submitterDid: Did, request: LedgerRequest): Promise<SignedLedgerRequest>;
     submitRequest(poolHandle: PoolHandle, request: LedgerRequest): Promise<LedgerResponse>;
-    issuerCreateSchema(myDid: Did, name: string, version: string, attributes: string[]): Promise<[SchemaId, Schema]>;
-    issuerCreateAndStoreCredentialDef(
-      wh: WalletHandle,
-      myDid: Did,
-      schema: Schema,
-      tag: string,
-      signatureType: string,
-      config?: CredDefConfig
-    ): Promise<[CredDefId, CredDef]>;
-    issuerCreateCredentialOffer(wh: WalletHandle, credDefId: CredDefId): Promise<CredOffer>;
-    proverGetCredentialsForProofReq(wh: WalletHandle, proof: string): Promise<ProofCred>;
-    proverCreateCredentialReq(
-      wh: WalletHandle,
-      proverDid: Did,
-      credOffer: CredOffer,
-      credDef: CredDef,
-      masterSecretId: string
-    ): Promise<[CredReq, CredReqMetadata]>;
-    proverCreateMasterSecret(wh: number, masterSecretId: string): Promise<string>;
-    issuerCreateCredential(
-      wh: WalletHandle,
-      credOffer: CredOffer,
-      credReq: CredReq,
-      credValues: CredValues,
-      revRegId: RevRegId | null,
-      blobStorageReaderHandle: BlobStorageReaderHandle
-    ): Promise<[Cred, CredRevocId, RevocRegDelta]>;
-    openBlobStorageWriter(
-      type: string,
-      tailsWriterConfig: { base_dir: string; uri_pattern: string }
-    ): Promise<BlobReaderHandle>;
-    openBlobStorageReader(
-      type: string,
-      tailsWriterConfig: { base_dir: string; uri_pattern: string }
-    ): Promise<BlobReaderHandle>;
-    proverStoreCredential(
-      wh: WalletHandle,
-      credentialId: CredentialId,
-      credReqMetadata: CredReqMetadata,
-      cred: Cred,
-      credDef: CredDef,
-      revRegDef: null
-    ): Promise<CredentialId>;
+
     buildGetTxnAuthorAgreementRequest(submitterDid: Did | null): Promise<LedgerRequest>;
     buildGetAcceptanceMechanismsRequest(submitterDid: Did | null): Promise<LedgerRequest>;
     appendTxnAuthorAgreementAcceptanceToRequest(
@@ -108,6 +66,103 @@ declare module 'indy-sdk' {
       timeOfAcceptance: number
     ): Promise<LedgerRequest>;
     abbreviateVerkey(did: Did, fullVerkey: Verkey): Promise<Verkey>;
+    generateNonce(): Promise<string>;
+
+    // -------------------------------------------- //
+    // ----------------- ANONCREDS ---------------- //
+    // -------------------------------------------- //
+
+    // ---- ISSUER ---- //
+    issuerCreateSchema(
+      issuerDid: Did,
+      name: string,
+      version: string,
+      attributes: string[]
+    ): Promise<[SchemaId, Schema]>;
+    issuerCreateAndStoreCredentialDef(
+      wh: WalletHandle,
+      issuerDid: Did,
+      schema: Schema,
+      tag: string,
+      signatureType: string,
+      config?: CredDefConfig
+    ): Promise<[CredDefId, CredDef]>;
+    // TODO: issuerRotateCredentialDefStart
+    // TODO: issuerRotateCredentialDefApply
+    // TODO: issuerCreateAndStoreRevocReg
+    issuerCreateCredentialOffer(wh: WalletHandle, credDefId: CredDefId): Promise<CredOffer>;
+    issuerCreateCredential(
+      wh: WalletHandle,
+      credOffer: CredOffer,
+      credReq: CredReq,
+      credValues: CredValues,
+      revRegId: RevRegId | null,
+      blobStorageReaderHandle: BlobStorageReaderHandle
+    ): Promise<[Cred, CredRevocId, RevocRegDelta]>;
+    // TODO: issuerRevokeCredential
+    // TODO: issuerMergeRevocationRegistryDeltas
+
+    // ---- PROVER ---- //
+    proverCreateMasterSecret(wh: WalletHandle, masterSecretId: string): Promise<string>;
+    proverCreateCredentialReq(
+      wh: WalletHandle,
+      proverDid: Did,
+      credOffer: CredOffer,
+      credDef: CredDef,
+      masterSecretId: string
+    ): Promise<[CredReq, CredReqMetadata]>;
+    proverStoreCredential(
+      wh: WalletHandle,
+      credentialId: CredentialId,
+      credReqMetadata: CredReqMetadata,
+      cred: Cred,
+      credDef: CredDef,
+      revRegDef: null
+    ): Promise<CredentialId>;
+    // TODO: proverGetCredentials
+    proverGetCredential(wh: WalletHandle, credId: string): Promise<IndyCredentialInfo>;
+    // TODO: proverSearchCredentials
+    // TODO: proverFetchCredentials
+    // TODO: proverCloseCredentialsSearch
+    proverGetCredentialsForProofReq(wh: WalletHandle, proofRequest: IndyProofRequest): Promise<ProofCred>;
+    proverSearchCredentialsForProofReq(
+      wh: WalletHandle,
+      proofRequest: IndyProofRequest,
+      extraQuery: { [key: string]: WalletQuery }[]
+    ): Promise<SearchHandle>;
+    proverFetchCredentialsForProofReq(sh: SearchHandle, itemReferent: string, count: number): Promise<IndyCredential[]>;
+    proverCloseCredentialsSearchForProofReq(sh: SearchHandle): Promise<void>;
+    proverCreateProof(
+      wh: WalletHandle,
+      proofRequest: IndyProofRequest,
+      requestedCredentials: IndyRequestedCredentials,
+      masterSecretName: string,
+      schemas: Schemas,
+      credentialDefs: CredentialDefs,
+      revStates: RevStates
+    ): Promise<IndyProof>;
+
+    // ---- VERIFIER ---- //
+    verifierVerifyProof(
+      proofRequest: IndyProofRequest,
+      proof: IndyProof,
+      schemas: Schemas,
+      credentialDefs: CredentialDefs,
+      revRegsDefs: RevRegsDefs,
+      revRegs: RevStates
+    ): Promise<boolean>;
+
+    // -------------------------------------------- //
+    // --------------- BLOB STORAGE --------------- //
+    // -------------------------------------------- //
+    openBlobStorageWriter(
+      type: string,
+      tailsWriterConfig: { base_dir: string; uri_pattern: string }
+    ): Promise<BlobReaderHandle>;
+    openBlobStorageReader(
+      type: string,
+      tailsWriterConfig: { base_dir: string; uri_pattern: string }
+    ): Promise<BlobReaderHandle>;
   }
 }
 
@@ -165,49 +220,7 @@ interface Indy {
   parseGetCredDefResponse(response: LedgerResponse): Promise<[CredDefId, CredDef]>;
   signRequest(wh: WalletHandle, submitterDid: Did, request: LedgerRequest): Promise<SignedLedgerRequest>;
   submitRequest(poolHandle: PoolHandle, request: LedgerRequest): Promise<LedgerResponse>;
-  issuerCreateSchema(myDid: Did, name: string, version: string, attributes: string[]): Promise<[SchemaId, Schema]>;
-  issuerCreateAndStoreCredentialDef(
-    wh: WalletHandle,
-    myDid: Did,
-    schema: Schema,
-    tag: string,
-    signatureType: string,
-    config?: CredDefConfig
-  ): Promise<[CredDefId, CredDef]>;
-  issuerCreateCredentialOffer(wh: WalletHandle, credDefId: CredDefId): Promise<CredOffer>;
-  proverGetCredentialsForProofReq(wh: WalletHandle, proof: string): Promise<ProofCred>;
-  proverCreateCredentialReq(
-    wh: WalletHandle,
-    proverDid: Did,
-    credOffer: CredOffer,
-    credDef: CredDef,
-    masterSecretId: string
-  ): Promise<[CredReq, CredReqMetadata]>;
-  proverCreateMasterSecret(wh: number, masterSecretId: string): Promise<string>;
-  issuerCreateCredential(
-    wh: WalletHandle,
-    credOffer: CredOffer,
-    credReq: CredReq,
-    credValues: CredValues,
-    revRegId: RevRegId | null,
-    blobStorageReaderHandle: BlobStorageReaderHandle
-  ): Promise<[Cred, CredRevocId, RevocRegDelta]>;
-  openBlobStorageWriter(
-    type: string,
-    tailsWriterConfig: { base_dir: string; uri_pattern: string }
-  ): Promise<BlobReaderHandle>;
-  openBlobStorageReader(
-    type: string,
-    tailsWriterConfig: { base_dir: string; uri_pattern: string }
-  ): Promise<BlobReaderHandle>;
-  proverStoreCredential(
-    wh: WalletHandle,
-    credentialId: CredentialId,
-    credReqMetadata: CredReqMetadata,
-    cred: Cred,
-    credDef: CredDef,
-    revRegDef: null
-  ): Promise<CredentialId>;
+
   buildGetTxnAuthorAgreementRequest(submitterDid: Did | null): Promise<LedgerRequest>;
   buildGetAcceptanceMechanismsRequest(submitterDid: Did | null): Promise<LedgerRequest>;
   appendTxnAuthorAgreementAcceptanceToRequest(
@@ -219,6 +232,98 @@ interface Indy {
     timeOfAcceptance: number
   ): Promise<LedgerRequest>;
   abbreviateVerkey(did: Did, fullVerkey: Verkey): Promise<Verkey>;
+  generateNonce(): Promise<string>;
+
+  // -------------------------------------------- //
+  // ----------------- ANONCREDS ---------------- //
+  // -------------------------------------------- //
+
+  // ---- ISSUER ---- //
+  issuerCreateSchema(issuerDid: Did, name: string, version: string, attributes: string[]): Promise<[SchemaId, Schema]>;
+  issuerCreateAndStoreCredentialDef(
+    wh: WalletHandle,
+    issuerDid: Did,
+    schema: Schema,
+    tag: string,
+    signatureType: string,
+    config?: CredDefConfig
+  ): Promise<[CredDefId, CredDef]>;
+  // TODO: issuerRotateCredentialDefStart
+  // TODO: issuerRotateCredentialDefApply
+  // TODO: issuerCreateAndStoreRevocReg
+  issuerCreateCredentialOffer(wh: WalletHandle, credDefId: CredDefId): Promise<CredOffer>;
+  issuerCreateCredential(
+    wh: WalletHandle,
+    credOffer: CredOffer,
+    credReq: CredReq,
+    credValues: CredValues,
+    revRegId: RevRegId | null,
+    blobStorageReaderHandle: BlobStorageReaderHandle
+  ): Promise<[Cred, CredRevocId, RevocRegDelta]>;
+  // TODO: issuerRevokeCredential
+  // TODO: issuerMergeRevocationRegistryDeltas
+
+  // ---- PROVER ---- //
+  proverCreateMasterSecret(wh: WalletHandle, masterSecretId: string): Promise<string>;
+  proverCreateCredentialReq(
+    wh: WalletHandle,
+    proverDid: Did,
+    credOffer: CredOffer,
+    credDef: CredDef,
+    masterSecretId: string
+  ): Promise<[CredReq, CredReqMetadata]>;
+  proverStoreCredential(
+    wh: WalletHandle,
+    credentialId: CredentialId,
+    credReqMetadata: CredReqMetadata,
+    cred: Cred,
+    credDef: CredDef,
+    revRegDef: null
+  ): Promise<CredentialId>;
+  // TODO: proverGetCredentials
+  proverGetCredential(wh: WalletHandle, credId: string): Promise<IndyCredentialInfo>;
+  // TODO: proverSearchCredentials
+  // TODO: proverFetchCredentials
+  // TODO: proverCloseCredentialsSearch
+  proverGetCredentialsForProofReq(wh: WalletHandle, proofRequest: IndyProofRequest): Promise<ProofCred>;
+  proverSearchCredentialsForProofReq(
+    wh: WalletHandle,
+    proofRequest: IndyProofRequest,
+    extraQuery?: { [key: string]: WalletQuery }[]
+  ): Promise<SearchHandle>;
+  proverFetchCredentialsForProofReq(sh: SearchHandle, itemReferent: string, count: number): Promise<IndyCredential[]>;
+  proverCloseCredentialsSearchForProofReq(sh: SearchHandle): Promise<void>;
+  proverCreateProof(
+    wh: WalletHandle,
+    proofRequest: IndyProofRequest,
+    requestedCredentials: IndyRequestedCredentials,
+    masterSecretName: string,
+    schemas: Schemas,
+    credentialDefs: CredentialDefs,
+    revStates: RevStates
+  ): Promise<IndyProof>;
+
+  // ---- VERIFIER ---- //
+  verifierVerifyProof(
+    proofRequest: IndyProofRequest,
+    proof: IndyProof,
+    schemas: Schemas,
+    credentialDefs: CredentialDefs,
+    revRegsDefs: RevRegsDefs,
+    revRegs: RevStates
+  ): Promise<boolean>;
+
+  // -------------------------------------------- //
+  // --------------- BLOB STORAGE --------------- //
+  // -------------------------------------------- //
+  openBlobStorageWriter(
+    type: string,
+    tailsWriterConfig: { base_dir: string; uri_pattern: string }
+  ): Promise<BlobReaderHandle>;
+  openBlobStorageReader(
+    type: string,
+    tailsWriterConfig: { base_dir: string; uri_pattern: string }
+  ): Promise<BlobReaderHandle>;
 }
 
 type WalletHandle = number;
@@ -327,9 +432,126 @@ interface CredOffer {
   key_correctness_proof: Record<string, unknown>;
 }
 
+interface IndyCredentialInfo {
+  referent: string;
+  attrs: {
+    [key: string]: string;
+  };
+  schema_id: string;
+  cred_def_id: string;
+  rev_reg_id?: number;
+  cred_rev_id?: number;
+}
+
+interface IndyCredential {
+  cred_info: IndyCredentialInfo;
+  interval?: NonRevokedInterval;
+}
 interface ProofCred {
-  attrs: Record<string, unknown>;
-  predicates: Record<string, unknown>;
+  requested_attrs: {
+    [key: string]: IndyCredential[];
+  };
+  requested_predicates: {
+    [key: string]: {
+      cred_info: IndyCredentialInfo;
+      timestamp?: number;
+    }[];
+  };
+}
+
+interface IndyProof {
+  requested_proof: {
+    revealed_attrs: {
+      [key: string]: {
+        sub_proof_index: number;
+        raw: string;
+        encoded: string;
+      };
+    };
+    revealed_attr_groups: {
+      [key: string]: {
+        sub_proof_index: number;
+        values: {
+          [key: string]: {
+            raw: string;
+            encoded: string;
+          };
+        };
+      };
+    };
+    unrevealed_attrs: {
+      [key: string]: {
+        sub_proof_index: number;
+      };
+    };
+    self_attested_attrs: {
+      [key: string]: string;
+    };
+    requested_predicates: {
+      [key: string]: { sub_proof_index: number };
+    };
+  };
+  proof: any;
+  identifiers: { schema_id: string; cred_def_id: string; rev_reg_id?: string; timestamp?: number }[];
+}
+
+interface Schemas {
+  [key: string]: Schema;
+}
+
+interface CredentialDefs {
+  [key: string]: CredDef;
+}
+
+interface RevRegsDefs {
+  [key: string]: unknown;
+}
+
+interface RevStates {
+  [key: string]: {
+    [key: string]: unknown;
+  };
+}
+
+interface IndyRequestedCredentials {
+  self_attested_attributes: {
+    [key: string]: string;
+  };
+  requested_attributes: {
+    [key: string]: { cred_id: string; timestamp?: number; revealed: boolean };
+  };
+  requested_predicates: {
+    [key: string]: { cred_id: string; timestamp?: number };
+  };
+}
+
+interface NonRevokedInterval {
+  from?: number;
+  to?: number;
+}
+interface IndyProofRequest {
+  name: string;
+  version: string;
+  nonce: string;
+  requested_attributes: {
+    [key: string]: {
+      name?: string;
+      names?: string;
+      restrictions?: WalletQuery[];
+      non_revoked?: NonRevokedInterval;
+    };
+  };
+  requested_predicates: {
+    [key: string]: {
+      name: string;
+      p_type: '>=' | '>' | '<=' | '<';
+      p_value: string;
+      restrictions?: WalletQuery[];
+      non_revoked?: NonRevokedInterval;
+    };
+  };
+  non_revoked?: NonRevokedInterval;
+  ver?: '1.0' | '2.0';
 }
 
 interface CredReq {

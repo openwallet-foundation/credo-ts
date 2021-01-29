@@ -100,19 +100,16 @@ export class IndyWallet implements Wallet {
     );
   }
 
+  public searchCredentialsForProofRequest(proofRequest: IndyProofRequest): Promise<number> {
+    return this.indy.proverSearchCredentialsForProofReq(this.walletHandle, proofRequest);
+  }
+
   public async createCredentialOffer(credDefId: CredDefId) {
     return this.indy.issuerCreateCredentialOffer(this.walletHandle, credDefId);
   }
 
-  /**
-   *
-   * @param proof This method is used to fetch credentials for proof request
-   */
-  public async getCredentialsForProofReq(proof: string): Promise<ProofCred> {
-    if (!this.wh) {
-      throw Error('Wallet has not been initialized yet');
-    }
-    return await this.indy.proverGetCredentialsForProofReq(this.wh, proof);
+  public async getCredentialsForProofRequest(proof: IndyProofRequest): Promise<ProofCred> {
+    return await this.indy.proverGetCredentialsForProofReq(this.walletHandle, proof);
   }
 
   public async createCredentialRequest(
@@ -147,6 +144,28 @@ export class IndyWallet implements Wallet {
     credDef: CredDef
   ) {
     return this.indy.proverStoreCredential(this.walletHandle, credentialId, credReqMetadata, cred, credDef, null);
+  }
+
+  public async getCredential(credentialId: CredentialId) {
+    return this.indy.proverGetCredential(this.walletHandle, credentialId);
+  }
+
+  public async createProof(
+    proofRequest: IndyProofRequest,
+    requestedCredentials: IndyRequestedCredentials,
+    schemas: Schemas,
+    credentialDefs: CredentialDefs,
+    revStates: RevStates
+  ) {
+    return this.indy.proverCreateProof(
+      this.walletHandle,
+      proofRequest,
+      requestedCredentials,
+      this.masterSecretId,
+      schemas,
+      credentialDefs,
+      revStates
+    );
   }
 
   public async pack(payload: Record<string, unknown>, recipientKeys: Verkey[], senderVk: Verkey): Promise<JsonWebKey> {

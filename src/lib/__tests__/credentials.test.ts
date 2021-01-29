@@ -5,9 +5,15 @@ import { Subject } from 'rxjs';
 import path from 'path';
 import indy from 'indy-sdk';
 import { Agent } from '..';
-import { SubjectInboundTransporter, SubjectOutboundTransporter } from './helpers';
+import {
+  ensurePublicDidIsOnLedger,
+  makeConnection,
+  registerDefinition,
+  registerSchema,
+  SubjectInboundTransporter,
+  SubjectOutboundTransporter,
+} from './helpers';
 import { CredentialRecord } from '../storage/CredentialRecord';
-import { SchemaTemplate, CredDefTemplate } from '../agent/LedgerService';
 import {
   CredentialPreview,
   CredentialPreviewAttribute,
@@ -199,46 +205,3 @@ describe('credentials', () => {
     });
   });
 });
-
-async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<[SchemaId, Schema]> {
-  const [schemaId] = await agent.ledger.registerCredentialSchema(schemaTemplate);
-  console.log('schemaId', schemaId);
-  const ledgerSchema = await agent.ledger.getSchema(schemaId);
-  console.log('ledgerSchemaId, ledgerSchema', schemaId, ledgerSchema);
-  return [schemaId, ledgerSchema];
-}
-
-async function registerDefinition(agent: Agent, definitionTemplate: CredDefTemplate): Promise<[CredDefId, CredDef]> {
-  const [credDefId] = await agent.ledger.registerCredentialDefinition(definitionTemplate);
-  const ledgerCredDef = await agent.ledger.getCredentialDefinition(credDefId);
-  console.log('ledgerCredDefId, ledgerCredDef', credDefId, ledgerCredDef);
-  return [credDefId, ledgerCredDef];
-}
-
-async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: Did) {
-  try {
-    console.log(`Ensure test DID ${publicDid} is written to ledger`);
-    const agentPublicDid = await agent.ledger.getPublicDid(publicDid);
-    console.log(`Ensure test DID ${publicDid} is written to ledger: Success`, agentPublicDid);
-  } catch (error) {
-    // Unfortunately, this won't prevent from the test suite running because of Jest runner runs all tests
-    // regardless thorwn errors. We're more explicit about the problem with this error handling.
-    throw new Error(`Test DID ${publicDid} is not written on ledger or ledger is not available.`);
-  }
-}
-
-async function makeConnection(agentA: Agent, agentB: Agent) {
-  // eslint-disable-next-line prefer-const
-  let { invitation, connectionRecord: agentAConnection } = await agentA.connections.createConnection();
-
-  let agentBConnection = await agentB.connections.receiveInvitation(invitation);
-
-  agentAConnection = await agentA.connections.returnWhenIsConnected(agentAConnection.id);
-
-  agentBConnection = await agentB.connections.returnWhenIsConnected(agentBConnection.id);
-
-  return {
-    agentAConnection,
-    agentBConnection,
-  };
-}

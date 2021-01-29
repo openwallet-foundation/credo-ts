@@ -99,14 +99,6 @@ export class CredentialService extends EventEmitter {
   }
 
   /**
-   * This method is used to fetch credentials for proofRequest
-   * @param proofRequestMessage
-   */
-  public async getCredentialsForProofReq(proofRequestMessage: string): Promise<ProofCred> {
-    return await this.wallet.getCredentialsForProofReq(proofRequestMessage);
-  }
-
-  /**
    * Creates credential request message by holder to be send to issuer.
    *
    * @param connection Connection between holder and issuer
