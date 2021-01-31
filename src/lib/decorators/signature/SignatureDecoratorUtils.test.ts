@@ -53,7 +53,7 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
 
   test('signData signs json object and returns SignatureDecorator', async () => {
     const seed1 = '00000000000000000000000000000My1';
-    const verkey = await indy.createKey(wallet.walletHandle as number, { seed: seed1 });
+    const [, verkey] = await wallet.createDid({ seed: seed1 });
 
     const result = await signData(data, wallet, verkey);
 

@@ -18,7 +18,7 @@ export class IndyWallet implements Wallet {
     this.indy = indy;
   }
 
-  public get walletHandle() {
+  private get walletHandle() {
     if (!this._walletHandle) {
       throw new Error('Wallet has not been initialized yet');
     }
