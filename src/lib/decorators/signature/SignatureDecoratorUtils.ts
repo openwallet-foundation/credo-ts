@@ -37,9 +37,8 @@ export async function unpackAndVerifySignatureDecorator(
  * Sign data supplied and return a signature decorator.
  *
  * @param data the data to sign
- * @param walletHandle the handle of the wallet to use for signing
- * @param signerKey Signers verkey
- * @param indy Indy instance
+ * @param wallet the wallet contianing a key to use for signing
+ * @param signerKey signers verkey
  *
  * @returns Resulting signature decorator.
  */
