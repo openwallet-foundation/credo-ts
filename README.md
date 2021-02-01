@@ -3,10 +3,10 @@
   <h1 align="center">Aries Framework JavaScript</h1>
   <p align="center"><font size="+1">Built using TypeScript</font></p>
   <p align="center">
-    <img alt="Pipeline Status" src="https://github.com/hyperledger/aries-framework-javascript/workflows/Continuous%20Integration/badge.svg?branch=master">
+    <img alt="Pipeline Status" src="https://github.com/hyperledger/aries-framework-javascript/workflows/Continuous%20Integration/badge.svg?branch=main">
     <a href="https://lgtm.com/projects/g/hyperledger/aries-framework-javascript/context:javascript"><img alt="Language grade: JavaScript" src="https://img.shields.io/lgtm/grade/javascript/g/hyperledger/aries-framework-javascript.svg?logo=lgtm&logoWidth=18"/></a>
     <a href="https://codecov.io/gh/hyperledger/aries-framework-javascript/"><img alt="Codecov Coverage" src="https://img.shields.io/codecov/c/github/hyperledger/aries-framework-javascript/coverage.svg?style=flat-square"/></a>
-    <a href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/master/LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"/></a>
+    <a href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"/></a>
     <a href="https://npmjs.com/package/aries-framework-javascript"><img alt="aries-framework-javascript npm version" src="https://img.shields.io/npm/v/aries-framework-javascript"></a>
 </p>
 </p>
