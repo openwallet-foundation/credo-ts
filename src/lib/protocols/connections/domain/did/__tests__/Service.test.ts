@@ -44,12 +44,7 @@ describe('Did | Service', () => {
       };
       const service = plainToClass(IndyAgentService, json);
 
-      expect(service.id).toBe(json.id);
-      expect(service.type).toBe(json.type);
-      expect(service.recipientKeys).toEqual(json.recipientKeys);
-      expect(service.routingKeys).toEqual(json.routingKeys);
-      expect(service.priority).toBe(json.priority);
-      expect(service.serviceEndpoint).toBe(json.serviceEndpoint);
+      expect(service).toMatchObject(json);
     });
 
     it('should correctly transform IndyAgentService class to Json', async () => {
@@ -137,12 +132,10 @@ describe('Did | Service', () => {
 
       expect(serviceWrapper.service.length).toBe(serviceArray.length);
 
-      for (let i = 0; i < serviceArray.length; i++) {
-        const serviceJson = serviceArray[i];
+      serviceArray.forEach((serviceJson, i) => {
         const service = serviceWrapper.service[i];
-
         expect(service).toBeInstanceOf(serviceTypes[serviceJson.type]);
-      }
+      });
     });
   });
 });
