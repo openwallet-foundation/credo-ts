@@ -9,9 +9,7 @@ import { ConnectionState } from './domain/ConnectionState';
 import { InitConfig } from '../../types';
 import { ConnectionRole } from './domain/ConnectionRole';
 import { ConnectionInvitationMessage } from './messages/ConnectionInvitationMessage';
-
 import { Repository } from '../../storage/Repository';
-import { DidDoc, Service } from './domain/DidDoc';
 import { Connection } from './domain/Connection';
 import { signData, unpackAndVerifySignatureDecorator } from '../../decorators/signature/SignatureDecoratorUtils';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
@@ -21,6 +19,9 @@ import { ConnectionRequestMessage } from './messages/ConnectionRequestMessage';
 import { TrustPingMessage } from '../trustping/TrustPingMessage';
 import { AckMessage, AckStatus } from './messages/AckMessage';
 import { JsonTransformer } from '../../utils/JsonTransformer';
+import { DidDoc } from './domain/did/DidDoc';
+import { IndyAgentService } from './domain/did/service';
+
 jest.mock('./../../storage/Repository');
 const ConnectionRepository = <jest.Mock<Repository<ConnectionRecord>>>(<unknown>Repository);
 
@@ -30,7 +31,14 @@ export function getMockConnection({
   id = 'test',
   did = 'test-did',
   verkey = 'key-1',
-  didDoc = new DidDoc(did, [], [], [new Service(`${did};indy`, 'https://endpoint.com', [verkey], [], 0, 'IndyAgent')]),
+  didDoc = new DidDoc({
+    id: did,
+    publicKey: [],
+    authentication: [],
+    service: [
+      new IndyAgentService({ id: `${did};indy`, serviceEndpoint: 'https://endpoint.com', recipientKeys: [verkey] }),
+    ],
+  }),
   tags = {},
   invitation = new ConnectionInvitationMessage({
     label: 'test',
@@ -38,12 +46,14 @@ export function getMockConnection({
     serviceEndpoint: 'https:endpoint.com/msg',
   }),
   theirDid = 'their-did',
-  theirDidDoc = new DidDoc(
-    theirDid,
-    [],
-    [],
-    [new Service(`${did};indy`, 'https://endpoint.com', [verkey], [], 0, 'IndyAgent')]
-  ),
+  theirDidDoc = new DidDoc({
+    id: theirDid,
+    publicKey: [],
+    authentication: [],
+    service: [
+      new IndyAgentService({ id: `${did};indy`, serviceEndpoint: 'https://endpoint.com', recipientKeys: [verkey] }),
+    ],
+  }),
 }: Partial<ConnectionStorageProps> = {}) {
   return new ConnectionRecord({
     did,
@@ -290,12 +300,18 @@ describe('ConnectionService', () => {
 
       const theirDid = 'their-did';
       const theirVerkey = 'their-verkey';
-      const theirDidDoc = new DidDoc(
-        theirDid,
-        [],
-        [],
-        [new Service(`${theirDid};indy`, 'https://endpoint.com', [theirVerkey], [], 0, 'IndyAgent')]
-      );
+      const theirDidDoc = new DidDoc({
+        id: theirDid,
+        publicKey: [],
+        authentication: [],
+        service: [
+          new IndyAgentService({
+            id: `${theirDid};indy`,
+            serviceEndpoint: 'https://endpoint.com',
+            recipientKeys: [theirVerkey],
+          }),
+        ],
+      });
 
       const connectionRequest = new ConnectionRequestMessage({
         did: theirDid,
@@ -477,12 +493,18 @@ describe('ConnectionService', () => {
 
       const otherPartyConnection = new Connection({
         did: theirDid,
-        didDoc: new DidDoc(
-          theirDid,
-          [],
-          [],
-          [new Service(`${did};indy`, 'https://endpoint.com', [theirVerkey], [], 0, 'IndyAgent')]
-        ),
+        didDoc: new DidDoc({
+          id: theirDid,
+          publicKey: [],
+          authentication: [],
+          service: [
+            new IndyAgentService({
+              id: `${did};indy`,
+              serviceEndpoint: 'https://endpoint.com',
+              recipientKeys: [theirVerkey],
+            }),
+          ],
+        }),
       });
 
       const plainConnection = JsonTransformer.toJSON(otherPartyConnection);
@@ -537,12 +559,18 @@ describe('ConnectionService', () => {
 
       const otherPartyConnection = new Connection({
         did: theirDid,
-        didDoc: new DidDoc(
-          theirDid,
-          [],
-          [],
-          [new Service(`${did};indy`, 'https://endpoint.com', [theirVerkey], [], 0, 'IndyAgent')]
-        ),
+        didDoc: new DidDoc({
+          id: theirDid,
+          publicKey: [],
+          authentication: [],
+          service: [
+            new IndyAgentService({
+              id: `${did};indy`,
+              serviceEndpoint: 'https://endpoint.com',
+              recipientKeys: [theirVerkey],
+            }),
+          ],
+        }),
       });
       const plainConnection = JsonTransformer.toJSON(otherPartyConnection);
       const connectionSig = await signData(plainConnection, wallet, theirVerkey);

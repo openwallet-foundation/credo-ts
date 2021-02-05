@@ -1,10 +1,10 @@
+import { Type } from 'class-transformer';
 import { Equals, IsString, ValidateNested } from 'class-validator';
 
 import { AgentMessage } from '../../../agent/AgentMessage';
 import { ConnectionMessageType } from './ConnectionMessageType';
-import { DidDoc } from '../domain/DidDoc';
+import { DidDoc } from '../domain/did/DidDoc';
 import { Connection } from '../domain/Connection';
-import { Type } from 'class-transformer';
 
 export interface ConnectionRequestMessageOptions {
   id?: string;

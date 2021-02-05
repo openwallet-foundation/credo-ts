@@ -1,10 +1,12 @@
 import { v4 as uuid } from 'uuid';
+import { classToPlain, plainToClass } from 'class-transformer';
 import { BaseRecord, RecordType, Tags } from './BaseRecord';
-import { DidDoc } from '../protocols/connections/domain/DidDoc';
 import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
 import { ConnectionInvitationMessage } from '../protocols/connections/messages/ConnectionInvitationMessage';
 import { ConnectionRole } from '../protocols/connections/domain/ConnectionRole';
 import { JsonTransformer } from '../utils/JsonTransformer';
+import { DidDoc } from '../protocols/connections/domain/did/DidDoc';
+import { IndyAgentService } from '../protocols/connections/domain/did/service';
 
 interface ConnectionProps {
   id?: string;
@@ -35,10 +37,10 @@ export interface ConnectionStorageProps extends ConnectionProps {
 
 export class ConnectionRecord extends BaseRecord implements ConnectionStorageProps {
   public did: Did;
-  public didDoc: DidDoc;
+  private _didDoc!: Record<string, unknown>;
   public verkey: Verkey;
   public theirDid?: Did;
-  public theirDidDoc?: DidDoc;
+  private _theirDidDoc?: Record<string, unknown>;
   private _invitation?: Record<string, unknown>;
   public state: ConnectionState;
   public role: ConnectionRole;
@@ -74,6 +76,20 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
     if (_invitation) {
       this._invitation = _invitation;
     }
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const _didDoc = props._didDoc;
+    if (_didDoc) {
+      this._didDoc = _didDoc;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const _theirDidDoc = props._theirDidDoc;
+    if (_theirDidDoc) {
+      this._theirDidDoc = _theirDidDoc;
+    }
   }
 
   public get invitation() {
@@ -84,18 +100,40 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
     if (invitation) this._invitation = JsonTransformer.toJSON(invitation);
   }
 
+  public get didDoc() {
+    return plainToClass(DidDoc, this._didDoc);
+  }
+
+  public set didDoc(didDoc: DidDoc) {
+    this._didDoc = classToPlain(didDoc);
+  }
+
+  public get theirDidDoc() {
+    if (this._theirDidDoc) return plainToClass(DidDoc, this._theirDidDoc);
+  }
+
+  public set theirDidDoc(didDoc: DidDoc | undefined) {
+    this._theirDidDoc = classToPlain(didDoc);
+  }
+
   public get myKey() {
-    if (!this.didDoc) {
+    const [service] = this.didDoc?.getServicesByClassType(IndyAgentService) ?? [];
+
+    if (!service) {
       return null;
     }
-    return this.didDoc.service[0].recipientKeys[0];
+
+    return service.recipientKeys[0];
   }
 
   public get theirKey() {
-    if (!this.theirDidDoc) {
+    const [service] = this.theirDidDoc?.getServicesByClassType(IndyAgentService) ?? [];
+
+    if (!service) {
       return null;
     }
-    return this.theirDidDoc.service[0].recipientKeys[0];
+
+    return service.recipientKeys[0];
   }
 
   public get isReady() {

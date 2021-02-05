@@ -3,7 +3,6 @@ import { Expose } from 'class-transformer';
 
 import { AgentMessage } from '../../agent/AgentMessage';
 import { MessageType } from './messages';
-import { Default } from '../../helpers';
 import { TimingDecorator } from '../../decorators/timing/TimingDecorator';
 
 export interface TrustPingMessageOptions {
@@ -49,8 +48,7 @@ export class TrustPingMessage extends AgentMessage {
   @IsString()
   public comment?: string;
 
-  @Default(true)
   @IsBoolean()
   @Expose({ name: 'response_requested' })
-  public responseRequested!: boolean;
+  public responseRequested = true;
 }
