@@ -21,6 +21,8 @@ import {
   ProposePresentationMessage,
   RequestPresentationMessage,
   PresentationAckMessage,
+  INDY_PROOF_REQUEST_ATTACHMENT_ID,
+  INDY_PROOF_ATTACHMENT_ID,
 } from './messages';
 import {
   CredentialInfo,
@@ -106,7 +108,7 @@ export class ProofService extends EventEmitter {
     const proofRecord = new ProofRecord({
       connectionId: connectionRecord.id,
       state: ProofState.ProposalSent,
-      proposal: proposalMessage.presentationProposal,
+      proposalMessage,
       tags: { threadId: proposalMessage.threadId },
     });
     await this.proofRepository.save(proofRecord);
@@ -143,7 +145,7 @@ export class ProofService extends EventEmitter {
     proposalMessage.setThread({ threadId: proofRecord.tags.threadId });
 
     // Update record
-    proofRecord.proposal = proposalMessage.presentationProposal;
+    proofRecord.proposalMessage = proposalMessage;
     this.updateState(proofRecord, ProofState.ProposalSent);
 
     return { message: proposalMessage, proofRecord };
@@ -182,13 +184,13 @@ export class ProofService extends EventEmitter {
       proofRecord.assertConnection(connection.id);
 
       // Update record
-      proofRecord.proposal = proposalMessage.presentationProposal;
+      proofRecord.proposalMessage = proposalMessage;
       await this.updateState(proofRecord, ProofState.ProposalReceived);
     } catch {
       // No proof record exists with thread id
       proofRecord = new ProofRecord({
         connectionId: connection.id,
-        proposal: proposalMessage.presentationProposal,
+        proposalMessage,
         state: ProofState.ProposalReceived,
         tags: { threadId: proposalMessage.threadId },
       });
@@ -223,6 +225,7 @@ export class ProofService extends EventEmitter {
 
     // Create message
     const attachment = new Attachment({
+      id: INDY_PROOF_REQUEST_ATTACHMENT_ID,
       mimeType: 'application/json',
       data: new AttachmentData({
         base64: JsonEncoder.toBase64(proofRequest),
@@ -235,7 +238,7 @@ export class ProofService extends EventEmitter {
     requestPresentationMessage.setThread({ threadId: proofRecord.tags.threadId });
 
     // Update record
-    proofRecord.request = proofRequest;
+    proofRecord.requestMessage = requestPresentationMessage;
     await this.updateState(proofRecord, ProofState.RequestSent);
 
     return { message: requestPresentationMessage, proofRecord };
@@ -263,6 +266,7 @@ export class ProofService extends EventEmitter {
 
     // Create message
     const attachment = new Attachment({
+      id: INDY_PROOF_REQUEST_ATTACHMENT_ID,
       mimeType: 'application/json',
       data: new AttachmentData({
         base64: JsonEncoder.toBase64(proofRequest),
@@ -276,7 +280,7 @@ export class ProofService extends EventEmitter {
     // Create record
     const proofRecord = new ProofRecord({
       connectionId: connectionRecord.id,
-      request: proofRequest,
+      requestMessage: requestPresentationMessage,
       state: ProofState.RequestSent,
       tags: { threadId: requestPresentationMessage.threadId },
     });
@@ -309,19 +313,17 @@ export class ProofService extends EventEmitter {
       );
     }
 
+    const proofRequest = proofRequestMessage.indyProofRequest;
+
     // Assert attachment
-    const [requestAttachment] = proofRequestMessage.attachments;
-    if (!requestAttachment?.data?.base64) {
+    if (!proofRequest) {
       throw new Error(
         `Missing required base64 encoded attachment data for presentation request with thread id ${proofRequestMessage.threadId}`
       );
     }
-
-    // Extract and validate proof request from attachment
-    const proofRequestJson = JsonEncoder.fromBase64(requestAttachment.data.base64);
-    const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest);
-    logger.logJson('received proof request', proofRequestJson);
     await validateOrReject(proofRequest);
+
+    logger.logJson('received proof request', proofRequest);
 
     try {
       // Proof record already exists
@@ -332,13 +334,13 @@ export class ProofService extends EventEmitter {
       proofRecord.assertConnection(connection.id);
 
       // Update record
-      proofRecord.request = proofRequest;
+      proofRecord.requestMessage = proofRequestMessage;
       await this.updateState(proofRecord, ProofState.RequestReceived);
     } catch {
       // No proof record exists with thread id
       proofRecord = new ProofRecord({
         connectionId: connection.id,
-        request: proofRequest,
+        requestMessage: proofRequestMessage,
         state: ProofState.RequestReceived,
         tags: { threadId: proofRequestMessage.threadId },
       });
@@ -372,16 +374,24 @@ export class ProofService extends EventEmitter {
 
     // Transform proof request to class instance if this is not already the case
     // FIXME: proof record should handle transformation
-    const request =
-      proofRecord.request instanceof ProofRequest
-        ? proofRecord.request
-        : JsonTransformer.fromJSON(proofRecord.request, ProofRequest);
+    const requestMessage =
+      proofRecord.requestMessage instanceof RequestPresentationMessage
+        ? proofRecord.requestMessage
+        : JsonTransformer.fromJSON(proofRecord.requestMessage, RequestPresentationMessage);
+
+    const indyProofRequest = requestMessage.indyProofRequest;
+    if (!indyProofRequest) {
+      throw new Error(
+        `Missing required base64 encoded attachment data for presentation with thread id ${proofRecord.tags.threadId}`
+      );
+    }
 
     // Create proof
-    const proof = await this.createProof(request, requestedCredentials);
+    const proof = await this.createProof(indyProofRequest, requestedCredentials);
 
     // Create message
     const attachment = new Attachment({
+      id: INDY_PROOF_ATTACHMENT_ID,
       mimeType: 'application/json',
       data: new AttachmentData({
         base64: JsonEncoder.toBase64(proof),
@@ -394,7 +404,7 @@ export class ProofService extends EventEmitter {
     presentationMessage.setThread({ threadId: proofRecord.tags.threadId });
 
     // Update record
-    proofRecord.proof = proof;
+    proofRecord.presentationMessage = presentationMessage;
     await this.updateState(proofRecord, ProofState.PresentationSent);
 
     return { message: presentationMessage, proofRecord };
@@ -425,22 +435,27 @@ export class ProofService extends EventEmitter {
     const proofRecord = await this.getByThreadId(presentationMessage.threadId);
     proofRecord.assertState(ProofState.RequestSent);
 
-    // Assert attachment
-    const [presentationAttachment] = presentationMessage.attachments;
-    if (!presentationAttachment?.data?.base64) {
+    // TODO: add proof class with validator
+    const indyProofJson = presentationMessage.indyProof;
+    const indyProofRequest = proofRecord.requestMessage?.indyProofRequest;
+
+    if (!indyProofJson) {
       throw new Error(
         `Missing required base64 encoded attachment data for presentation with thread id ${presentationMessage.threadId}`
       );
     }
 
-    // Extract and validate proof from attachment
-    const proofJson = JsonEncoder.fromBase64(presentationAttachment.data.base64);
-    const proofRequest = JsonTransformer.fromJSON(proofRecord.request, ProofRequest);
-    const isValid = await this.verifyProof(proofJson, proofRequest);
+    if (!indyProofRequest) {
+      throw new Error(
+        `Missing required base64 encoded attachment data for presentation request with thread id ${presentationMessage.threadId}`
+      );
+    }
+
+    const isValid = await this.verifyProof(indyProofJson, indyProofRequest);
 
     // Update record
     proofRecord.isVerified = isValid;
-    proofRecord.proof = proofJson;
+    proofRecord.presentationMessage = presentationMessage;
     await this.updateState(proofRecord, ProofState.PresentationReceived);
 
     return proofRecord;

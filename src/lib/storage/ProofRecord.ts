@@ -1,7 +1,11 @@
 import { v4 as uuid } from 'uuid';
 import { BaseRecord, RecordType, Tags } from './BaseRecord';
-import { ProofState, PresentationPreview } from '../protocols/present-proof';
-import { ProofRequest } from '../protocols/present-proof/models/ProofRequest';
+import {
+  ProofState,
+  ProposePresentationMessage,
+  RequestPresentationMessage,
+  PresentationMessage,
+} from '../protocols/present-proof';
 
 export interface ProofRecordProps {
   id?: string;
@@ -14,9 +18,9 @@ export interface ProofRecordProps {
   tags: ProofRecordTags;
 
   // message data
-  proposal?: PresentationPreview;
-  request?: ProofRequest;
-  proof?: IndyProof;
+  proposalMessage?: ProposePresentationMessage;
+  requestMessage?: RequestPresentationMessage;
+  presentationMessage?: PresentationMessage;
 }
 export interface ProofRecordTags extends Tags {
   threadId?: string;
@@ -30,18 +34,18 @@ export class ProofRecord extends BaseRecord implements ProofRecordProps {
   public tags: ProofRecordTags;
 
   // message data
-  public proposal?: PresentationPreview;
-  public request?: ProofRequest;
-  public proof?: IndyProof;
+  public proposalMessage?: ProposePresentationMessage;
+  public requestMessage?: RequestPresentationMessage;
+  public presentationMessage?: PresentationMessage;
 
   public static readonly type: RecordType = RecordType.ProofRecord;
   public readonly type = RecordType.ProofRecord;
 
   public constructor(props: ProofRecordProps) {
     super(props.id ?? uuid(), props.createdAt ?? Date.now());
-    this.request = props.request;
-    this.proposal = props.proposal;
-    this.proof = props.proof;
+    this.proposalMessage = props.proposalMessage;
+    this.requestMessage = props.requestMessage;
+    this.presentationMessage = props.presentationMessage;
     this.isVerified = props.isVerified;
     this.state = props.state;
     this.connectionId = props.connectionId;

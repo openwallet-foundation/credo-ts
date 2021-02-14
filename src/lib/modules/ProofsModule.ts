@@ -86,8 +86,14 @@ export class ProofsModule {
     const proofRecord = await this.proofService.getById(proofRecordId);
     const connection = await this.connectionService.getById(proofRecord.connectionId);
 
+    const presentationProposal = proofRecord.proposalMessage?.presentationProposal;
+
+    if (!presentationProposal) {
+      throw new Error(`Proof record with id ${proofRecordId} is missing required presentation proposal`);
+    }
+
     const proofRequest = await this.proofService.createProofRequestFromProposal(
-      JsonTransformer.fromJSON(proofRecord.proposal, PresentationPreview),
+      JsonTransformer.fromJSON(presentationProposal, PresentationPreview),
       {
         name: config?.request?.name ?? 'proof-request',
         version: config?.request?.version ?? '1.0',
