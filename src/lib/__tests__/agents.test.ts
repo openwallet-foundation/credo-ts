@@ -1,11 +1,14 @@
-// eslint-disable-next-line
-// @ts-ignore
-import { poll } from 'await-poll';
 import { Subject } from 'rxjs';
 import { Agent } from '..';
-import { toBeConnectedWith, SubjectInboundTransporter, SubjectOutboundTransporter } from './helpers';
-import { InitConfig, WireMessage } from '../types';
+import {
+  toBeConnectedWith,
+  SubjectInboundTransporter,
+  SubjectOutboundTransporter,
+  waitForBasicMessage,
+} from './helpers';
+import { InitConfig } from '../types';
 import indy from 'indy-sdk';
+import { ConnectionRecord } from '../storage/ConnectionRecord';
 
 expect.extend({ toBeConnectedWith });
 
@@ -26,6 +29,8 @@ const bobConfig: InitConfig = {
 describe('agents', () => {
   let aliceAgent: Agent;
   let bobAgent: Agent;
+  let aliceConnection: ConnectionRecord;
+  let bobConnection: ConnectionRecord;
 
   afterAll(async () => {
     await aliceAgent.closeAndDeleteWallet();
@@ -50,41 +55,21 @@ describe('agents', () => {
     const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection();
     const bobConnectionAtBobAlice = await bobAgent.connections.receiveInvitation(aliceConnectionAtAliceBob.invitation);
 
-    const aliceConnectionRecordAtAliceBob = await aliceAgent.connections.returnWhenIsConnected(
-      aliceConnectionAtAliceBob.connectionRecord.id
-    );
-    const bobConnectionRecordAtBobAlice = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice.id);
+    aliceConnection = await aliceAgent.connections.returnWhenIsConnected(aliceConnectionAtAliceBob.connectionRecord.id);
+    bobConnection = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice.id);
 
-    expect(aliceConnectionRecordAtAliceBob).toBeConnectedWith(bobConnectionRecordAtBobAlice);
-    expect(bobConnectionRecordAtBobAlice).toBeConnectedWith(aliceConnectionRecordAtAliceBob);
+    expect(aliceConnection).toBeConnectedWith(bobConnection);
+    expect(bobConnection).toBeConnectedWith(aliceConnection);
   });
 
   test('send a message to connection', async () => {
-    const aliceConnections = await aliceAgent.connections.getAll();
-    console.log('aliceConnections', aliceConnections);
-
-    const bobConnections = await bobAgent.connections.getAll();
-    console.log('bobConnections', bobConnections);
-
-    // send message from Alice to Bob
-    const lastAliceConnection = aliceConnections[aliceConnections.length - 1];
-    console.log('lastAliceConnection\n', lastAliceConnection);
-
     const message = 'hello, world';
-    await aliceAgent.basicMessages.sendMessage(lastAliceConnection, message);
+    await aliceAgent.basicMessages.sendMessage(aliceConnection, message);
 
-    const bobMessages = await poll(
-      async () => {
-        console.log(`Getting Bob's messages from Alice...`);
-        const messages = await bobAgent.basicMessages.findAllByQuery({
-          from: lastAliceConnection.did,
-          to: lastAliceConnection.theirDid,
-        });
-        return messages;
-      },
-      (messages: WireMessage[]) => messages.length < 1
-    );
-    const lastMessage = bobMessages[bobMessages.length - 1];
-    expect(lastMessage.content).toBe(message);
+    const basicMessage = await waitForBasicMessage(bobAgent, {
+      content: message,
+    });
+
+    expect(basicMessage.content).toBe(message);
   });
 });

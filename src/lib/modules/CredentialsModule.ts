@@ -1,14 +1,10 @@
-import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { CredentialRecord } from '../storage/CredentialRecord';
 import { createOutboundMessage } from '../protocols/helpers';
-import { CredentialService, CredentialOfferTemplate } from '../protocols/credentials/CredentialService';
+import { CredentialService, CredentialOfferTemplate } from '../protocols/issue-credential/CredentialService';
 import { MessageSender } from '../agent/MessageSender';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { LedgerService } from '../agent/LedgerService';
 import logger from '../logger';
-import { CredentialOfferMessage } from '../protocols/credentials/messages/CredentialOfferMessage';
-import { JsonEncoder } from '../utils/JsonEncoder';
-import { JsonTransformer } from '../utils/JsonTransformer';
 import { EventEmitter } from 'events';
 
 export class CredentialsModule {
@@ -39,51 +35,71 @@ export class CredentialsModule {
     return this.credentialService;
   }
 
-  public async issueCredential(connection: ConnectionRecord, credentialTemplate: CredentialOfferTemplate) {
-    const credentialOfferMessage = await this.credentialService.createOffer(connection, credentialTemplate);
-    const outboundMessage = createOutboundMessage(connection, credentialOfferMessage);
+  /**
+   * Initiate a new credential exchange by sending a credential offer message
+   * to the connection with the specified connection id.
+   *
+   * @param connectionId The connection to send the credential offer to
+   * @param credentialTemplate The credential template to use for the offer
+   * @returns Credential record associated with the sent credential offer message
+   */
+  public async issueCredential(
+    connectionId: string,
+    credentialTemplate: CredentialOfferTemplate
+  ): Promise<CredentialRecord> {
+    const connection = await this.connectionService.getById(connectionId);
+
+    const { message, credentialRecord } = await this.credentialService.createOffer(connection, credentialTemplate);
+
+    const outboundMessage = createOutboundMessage(connection, message);
     await this.messageSender.sendMessage(outboundMessage);
+
+    return credentialRecord;
   }
 
-  public async acceptCredential(credential: CredentialRecord) {
-    logger.log('acceptCredential credential', credential);
+  /**
+   * Accept a credential offer (by sending a credential request message) to the connection
+   * associated with the credential record.
+   *
+   * @param credentialRecordId The id of the credential record for which to accept the offer
+   * @param config Additional configuration to use for the request
+   * @returns Credential record associated with the credential request
+   *
+   */
+  public async acceptCredential(credentialRecordId: string, config?: { comment?: string }) {
+    const credentialRecord = await this.credentialService.getById(credentialRecordId);
+    const connection = await this.connectionService.getById(credentialRecord.connectionId);
+    logger.log('acceptCredential credential', credentialRecord);
 
-    // FIXME: transformation should be handled by credential record
-    const offer =
-      credential.offer instanceof CredentialOfferMessage
-        ? credential.offer
-        : JsonTransformer.fromJSON(credential.offer, CredentialOfferMessage);
-
-    const [offerAttachment] = offer.attachments;
-
-    if (!offerAttachment.data.base64) {
-      throw new Error('Missing required base64 encoded attachment data');
-    }
-
-    const credOffer = JsonEncoder.fromBase64(offerAttachment.data.base64);
-
-    const credentialDefinition = await this.ledgerService.getCredentialDefinition(credOffer.cred_def_id);
-    const connection = await this.connectionService.find(credential.connectionId);
-
-    if (!connection) {
-      throw new Error(`There is no connection with ID ${credential.connectionId}`);
-    }
-
-    const credentialRequestMessage = await this.credentialService.createRequest(
-      connection,
-      credential,
-      credentialDefinition
+    const { message, credentialRecord: credRecord } = await this.credentialService.createRequest(
+      credentialRecord,
+      config
     );
 
-    const outboundMessage = createOutboundMessage(connection, credentialRequestMessage);
+    const outboundMessage = createOutboundMessage(connection, message);
     await this.messageSender.sendMessage(outboundMessage);
+
+    return credRecord;
   }
 
-  public async getCredentials(): Promise<CredentialRecord[]> {
+  /**
+   * Retrieve all credential records
+   *
+   * @returns List containing all credential records
+   */
+  public async getAll(): Promise<CredentialRecord[]> {
     return this.credentialService.getAll();
   }
 
-  public async find(id: string) {
-    return this.credentialService.find(id);
+  /**
+   * Retrieve a credential record by id
+   *
+   * @param credentialRecordId The credential record id
+   * @throws {Error} If no record is found
+   * @return The credential record
+   *
+   */
+  public async getById(credentialRecordId: string) {
+    return this.credentialService.getById(credentialRecordId);
   }
 }

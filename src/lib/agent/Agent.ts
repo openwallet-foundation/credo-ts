@@ -39,12 +39,12 @@ import { BasicMessagesModule } from '../modules/BasicMessagesModule';
 import { LedgerModule } from '../modules/LedgerModule';
 import { CredentialsModule } from '../modules/CredentialsModule';
 import { ProofsModule } from '../modules/ProofsModule';
-import { CredentialService } from '../protocols/credentials/CredentialService';
+import { CredentialService } from '../protocols/issue-credential/CredentialService';
 import { CredentialRecord } from '../storage/CredentialRecord';
-import { CredentialOfferHandler } from '../handlers/credentials/CredentialOfferHandler';
-import { CredentialRequestHandler } from '../handlers/credentials/CredentialRequestHandler';
-import { CredentialResponseHandler } from '../handlers/credentials/CredentialResponseHandler';
-import { CredentialAckHandler } from '../handlers/credentials/CredentialAckHandler';
+import { OfferCredentialHandler } from '../handlers/issue-credential/OfferCredentialHandler';
+import { RequestCredentialHandler } from '../handlers/issue-credential/RequestCredentialHandler';
+import { IssueCredentialHandler } from '../handlers/issue-credential/IssueCredentialHandler';
+import { CredentialAckHandler } from '../handlers/issue-credential/CredentialAckHandler';
 import { RequestPresentationHandler } from '../handlers/present-proof/RequestPresentationHandler';
 import { ProofRecord } from '../storage/ProofRecord';
 import { ProposePresentationHandler } from '../handlers/present-proof/ProposePresentationHandler';
@@ -115,7 +115,12 @@ export class Agent {
     this.trustPingService = new TrustPingService();
     this.messagePickupService = new MessagePickupService(messageRepository);
     this.ledgerService = new LedgerService(this.wallet, indy);
-    this.credentialService = new CredentialService(this.wallet, this.credentialRepository);
+    this.credentialService = new CredentialService(
+      this.wallet,
+      this.credentialRepository,
+      this.connectionService,
+      this.ledgerService
+    );
     this.proofService = new ProofService(this.proofRepository, this.ledgerService, this.wallet, indy);
 
     this.messageReceiver = new MessageReceiver(
@@ -176,9 +181,9 @@ export class Agent {
     this.dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService));
     this.dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService));
     this.dispatcher.registerHandler(new MessagePickupHandler(this.messagePickupService));
-    this.dispatcher.registerHandler(new CredentialOfferHandler(this.credentialService));
-    this.dispatcher.registerHandler(new CredentialRequestHandler(this.credentialService));
-    this.dispatcher.registerHandler(new CredentialResponseHandler(this.credentialService, this.ledgerService));
+    this.dispatcher.registerHandler(new OfferCredentialHandler(this.credentialService));
+    this.dispatcher.registerHandler(new RequestCredentialHandler(this.credentialService));
+    this.dispatcher.registerHandler(new IssueCredentialHandler(this.credentialService));
     this.dispatcher.registerHandler(new CredentialAckHandler(this.credentialService));
     this.dispatcher.registerHandler(new ProposePresentationHandler(this.proofService));
     this.dispatcher.registerHandler(new RequestPresentationHandler(this.proofService));

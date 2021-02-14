@@ -1,6 +1,7 @@
 import { sha256 } from 'js-sha256';
 import BigNumber from 'bn.js';
-import { CredentialPreview } from './messages/CredentialOfferMessage';
+
+import { CredentialPreview } from './messages/CredentialPreview';
 
 export class CredentialUtils {
   /**

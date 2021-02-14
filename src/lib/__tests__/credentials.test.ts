@@ -1,10 +1,8 @@
 /* eslint-disable no-console */
-// @ts-ignore
-import { poll } from 'await-poll';
 import { Subject } from 'rxjs';
 import path from 'path';
 import indy from 'indy-sdk';
-import { Agent } from '..';
+import { Agent, ConnectionRecord } from '..';
 import {
   ensurePublicDidIsOnLedger,
   makeConnection,
@@ -12,14 +10,12 @@ import {
   registerSchema,
   SubjectInboundTransporter,
   SubjectOutboundTransporter,
+  waitForCredentialRecord,
 } from './helpers';
 import { CredentialRecord } from '../storage/CredentialRecord';
-import {
-  CredentialPreview,
-  CredentialPreviewAttribute,
-} from '../protocols/credentials/messages/CredentialOfferMessage';
-import { CredentialState } from '../protocols/credentials/CredentialState';
+import { CredentialPreview, CredentialPreviewAttribute, CredentialState } from '../protocols/issue-credential';
 import { InitConfig } from '../types';
+import logger from '../logger';
 
 const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
@@ -63,6 +59,9 @@ describe('credentials', () => {
   let faberAgent: Agent;
   let aliceAgent: Agent;
   let credDefId: CredDefId;
+  let faberConnection: ConnectionRecord;
+  let faberCredentialRecord: CredentialRecord;
+  let aliceCredentialRecord: CredentialRecord;
 
   beforeAll(async () => {
     const faberMessages = new Subject();
@@ -96,7 +95,8 @@ describe('credentials', () => {
 
     const publidDid = faberAgent.getPublicDid()?.did ?? 'Th7MpTaRZVRYnPiabds81Y';
     await ensurePublicDidIsOnLedger(faberAgent, publidDid);
-    await makeConnection(faberAgent, aliceAgent);
+    const { agentAConnection } = await makeConnection(faberAgent, aliceAgent);
+    faberConnection = agentAConnection;
   });
 
   afterAll(async () => {
@@ -105,27 +105,28 @@ describe('credentials', () => {
   });
 
   test(`when faber issues credential then alice gets credential offer`, async () => {
-    // We assume that Faber has only one connection and it's a connection with Alice
-    const [firstConnection] = await faberAgent.connections.getAll();
-
     // Issue credential from Faber to Alice
-    await faberAgent.credentials.issueCredential(firstConnection, {
+    logger.log('Faber sends credential offer to Alice');
+    faberCredentialRecord = await faberAgent.credentials.issueCredential(faberConnection.id, {
       credentialDefinitionId: credDefId,
       comment: 'some comment about credential',
       preview: credentialPreview,
     });
 
-    // We assume that Alice has only one credential and it's a credential from Faber
-    const [firstCredential] = await poll(
-      () => aliceAgent.credentials.getCredentials(),
-      (credentials: CredentialRecord[]) => credentials.length < 1,
-      100
-    );
+    logger.log('Alice waits for credential offer from faber');
+    aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+      threadId: faberCredentialRecord.tags.threadId,
+      state: CredentialState.OfferReceived,
+    });
 
-    expect(firstCredential).toMatchObject({
+    // update record
+    // FIXME: messages are in transformed state, below tests for untransformed state
+    aliceCredentialRecord = await aliceAgent.credentials.getById(aliceCredentialRecord.id);
+
+    expect(aliceCredentialRecord).toMatchObject({
       createdAt: expect.any(Number),
       id: expect.any(String),
-      offer: {
+      offerMessage: {
         '@id': expect.any(String),
         '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential',
         comment: 'some comment about credential',
@@ -146,59 +147,48 @@ describe('credentials', () => {
         },
         'offers~attach': expect.any(Array),
       },
-      tags: { threadId: firstCredential.offer['@id'] },
+      tags: { threadId: faberCredentialRecord.tags.threadId },
       type: CredentialRecord.name,
       state: CredentialState.OfferReceived,
     });
   });
 
   test(`when alice accepts the credential offer then faber sends a credential to alice`, async () => {
-    // We assume that Alice has only one credential and it's a credential from Faber
-    let [aliceCredential] = await aliceAgent.credentials.getCredentials();
+    logger.log('Alice accepts credential offer from Faber');
+    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id);
 
-    // We assume that Faber has only one credential and it's a credential issued to Alice
-    let [faberCredential] = await faberAgent.credentials.getCredentials();
+    logger.log('Faber automatically completes the issue credential protocol');
+    faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
+      threadId: faberCredentialRecord.tags.threadId,
+      state: CredentialState.Done,
+    });
 
-    // Accept credential offer from Faber
-    await aliceAgent.credentials.acceptCredential(aliceCredential);
+    // update record
+    aliceCredentialRecord = await aliceAgent.credentials.getById(aliceCredentialRecord.id);
 
-    aliceCredential = await poll(
-      () => aliceAgent.credentials.find(aliceCredential.id),
-      (credentialRecord: CredentialRecord) => !credentialRecord || credentialRecord.state !== CredentialState.Done,
-      100
-    );
-    console.log('aliceCredential', aliceCredential);
-
-    faberCredential = await poll(
-      async () => faberAgent.credentials.find(faberCredential.id),
-      (credentialRecord: CredentialRecord) => !credentialRecord || credentialRecord.state !== CredentialState.Done,
-      100
-    );
-    console.log('faberCredential', faberCredential);
-
-    expect(aliceCredential).toMatchObject({
+    expect(aliceCredentialRecord).toMatchObject({
       type: CredentialRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Number),
       tags: {
         threadId: expect.any(String),
       },
-      offer: expect.any(Object),
-      request: undefined,
+      offerMessage: expect.any(Object),
+      requestMessage: expect.any(Object),
       requestMetadata: expect.any(Object),
       credentialId: expect.any(String),
       state: CredentialState.Done,
     });
 
-    expect(faberCredential).toMatchObject({
+    expect(faberCredentialRecord).toMatchObject({
       type: CredentialRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Number),
       tags: {
         threadId: expect.any(String),
       },
-      offer: expect.any(Object),
-      request: expect.any(Object),
+      offerMessage: expect.any(Object),
+      requestMessage: expect.any(Object),
       requestMetadata: undefined,
       credentialId: undefined,
       state: CredentialState.Done,
