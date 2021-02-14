@@ -176,7 +176,7 @@ describe('CredentialService', () => {
         id: expect.any(String),
         createdAt: expect.any(Number),
         offerMessage: credentialOffer,
-        tags: { threadId: createdCredentialRecord.offerMessage.id },
+        tags: { threadId: createdCredentialRecord.offerMessage?.id },
         state: 'OFFER_SENT',
       });
     });

@@ -1,21 +1,25 @@
 import { v4 as uuid } from 'uuid';
 import { BaseRecord, RecordType, Tags } from './BaseRecord';
-import { OfferCredentialMessage } from '../protocols/issue-credential/messages/OfferCredentialMessage';
-import { CredentialState } from '../protocols/issue-credential/CredentialState';
-import { RequestCredentialMessage } from '../protocols/issue-credential/messages/RequestCredentialMessage';
-import { IssueCredentialMessage } from '../protocols/issue-credential/messages/IssueCredentialMessage';
+import {
+  ProposeCredentialMessage,
+  IssueCredentialMessage,
+  RequestCredentialMessage,
+  CredentialState,
+  OfferCredentialMessage,
+} from '../protocols/issue-credential';
 
 export interface CredentialStorageProps {
   id?: string;
   createdAt?: number;
   state: CredentialState;
   connectionId: string;
-  offerMessage: OfferCredentialMessage;
-  requestMessage?: RequestCredentialMessage;
   requestMetadata?: Record<string, unknown>;
-  credentialMessage?: IssueCredentialMessage;
   credentialId?: CredentialId;
   tags: CredentialRecordTags;
+  proposalMessage?: ProposeCredentialMessage;
+  offerMessage?: OfferCredentialMessage;
+  requestMessage?: RequestCredentialMessage;
+  credentialMessage?: IssueCredentialMessage;
 }
 
 export interface CredentialRecordTags extends Tags {
@@ -25,26 +29,31 @@ export interface CredentialRecordTags extends Tags {
 export class CredentialRecord extends BaseRecord implements CredentialStorageProps {
   public connectionId: string;
   public credentialId?: CredentialId;
-  public offerMessage: OfferCredentialMessage;
-  public requestMessage?: RequestCredentialMessage;
-  public credentialMessage?: IssueCredentialMessage;
   public requestMetadata?: Record<string, unknown>;
   public tags: CredentialRecordTags;
+  public state: CredentialState;
+
+  // message data
+  public proposalMessage?: ProposeCredentialMessage;
+  public offerMessage?: OfferCredentialMessage;
+  public requestMessage?: RequestCredentialMessage;
+  public credentialMessage?: IssueCredentialMessage;
 
   public type = RecordType.CredentialRecord;
   public static type: RecordType = RecordType.CredentialRecord;
 
-  public state: CredentialState;
-
   public constructor(props: CredentialStorageProps) {
     super(props.id ?? uuid(), props.createdAt ?? Date.now());
-    this.offerMessage = props.offerMessage;
     this.state = props.state;
     this.connectionId = props.connectionId;
-    this.requestMessage = props.requestMessage;
     this.requestMetadata = props.requestMetadata;
     this.credentialId = props.credentialId;
     this.tags = props.tags as { [keys: string]: string };
+
+    this.proposalMessage = props.proposalMessage;
+    this.offerMessage = props.offerMessage;
+    this.requestMessage = props.requestMessage;
+    this.credentialMessage = props.credentialMessage;
   }
 
   public assertState(expectedStates: CredentialState | CredentialState[]) {

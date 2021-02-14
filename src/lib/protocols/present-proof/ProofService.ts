@@ -171,7 +171,7 @@ export class ProofService extends EventEmitter {
     connection?.assertReady();
     if (!connection) {
       throw new Error(
-        `No connection associated with incoming presentation request message with thread id ${proposalMessage.threadId}`
+        `No connection associated with incoming presentation proposal message with thread id ${proposalMessage.threadId}`
       );
     }
 

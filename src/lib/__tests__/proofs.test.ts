@@ -100,8 +100,8 @@ describe('Present Proof', () => {
     const [ledgerCredDefId] = await registerDefinition(faberAgent, definitionTemplate);
     credDefId = ledgerCredDefId;
 
-    const publidDid = faberAgent.getPublicDid()?.did;
-    await ensurePublicDidIsOnLedger(faberAgent, publidDid!);
+    const publicDid = faberAgent.getPublicDid()?.did;
+    await ensurePublicDidIsOnLedger(faberAgent, publicDid!);
     const { agentAConnection, agentBConnection } = await makeConnection(faberAgent, aliceAgent);
 
     faberConnection = agentAConnection;
@@ -143,7 +143,7 @@ describe('Present Proof', () => {
     await aliceAgent.closeAndDeleteWallet();
   });
 
-  test('Alice start with proof proposal to Faber', async () => {
+  test('Alice starts with proof proposal to Faber', async () => {
     logger.log('Alice sends presentation proposal to Faber');
     let aliceProofRecord = await aliceAgent.proof.proposeProof(aliceConnection.id, presentationPreview);
 

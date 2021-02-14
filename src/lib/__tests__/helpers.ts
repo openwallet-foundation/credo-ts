@@ -187,25 +187,33 @@ export async function issueCredential({
   holderAgent: Agent;
   credentialTemplate: CredentialOfferTemplate;
 }) {
-  logger.log(`issue credential to connection ${issuerConnectionId}`);
-  let issuerCredentialRecord = await issuerAgent.credentials.issueCredential(issuerConnectionId, credentialTemplate);
+  let issuerCredentialRecord = await issuerAgent.credentials.offerCredential(issuerConnectionId, credentialTemplate);
 
-  logger.log(`holder waits to receive an offer`);
   let holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
     threadId: issuerCredentialRecord.tags.threadId,
     state: CredentialState.OfferReceived,
   });
 
-  logger.log(`holder accepts offer and sends request`);
+  holderCredentialRecord = await holderAgent.credentials.acceptOffer(holderCredentialRecord.id);
+
+  issuerCredentialRecord = await waitForCredentialRecord(issuerAgent, {
+    threadId: holderCredentialRecord.tags.threadId,
+    state: CredentialState.RequestReceived,
+  });
+
+  issuerCredentialRecord = await issuerAgent.credentials.acceptRequest(issuerCredentialRecord.id);
+
+  holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
+    threadId: issuerCredentialRecord.tags.threadId,
+    state: CredentialState.CredentialReceived,
+  });
+
   holderCredentialRecord = await holderAgent.credentials.acceptCredential(holderCredentialRecord.id);
 
-  // Wait for both record to reach state done
   issuerCredentialRecord = await waitForCredentialRecord(issuerAgent, {
     threadId: issuerCredentialRecord.tags.threadId,
     state: CredentialState.Done,
   });
-
-  holderCredentialRecord = await holderAgent.credentials.getById(holderCredentialRecord.id);
 
   return { issuerCredential: issuerCredentialRecord, holderCredential: holderCredentialRecord };
 }
