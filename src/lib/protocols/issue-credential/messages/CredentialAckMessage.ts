@@ -1,6 +1,6 @@
 import { Equals } from 'class-validator';
 import { AgentMessage } from '../../../agent/AgentMessage';
-import { MessageType } from './MessageType';
+import { IssueCredentialMessageType } from './IssueCredentialMessageType';
 
 interface CredentialAckMessageOptions {
   id?: string;
@@ -17,5 +17,5 @@ export class CredentialAckMessage extends AgentMessage {
 
   @Equals(CredentialAckMessage.type)
   public readonly type = CredentialAckMessage.type;
-  public static readonly type = MessageType.CredentialAck;
+  public static readonly type = IssueCredentialMessageType.CredentialAck;
 }

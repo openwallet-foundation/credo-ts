@@ -1,19 +1,18 @@
 import { Handler, HandlerInboundMessage } from '../Handler';
-import { CredentialService } from '../../protocols/credentials/CredentialService';
-import { CredentialRequestMessage } from '../../protocols/credentials/messages/CredentialRequestMessage';
 import { createOutboundMessage } from '../../protocols/helpers';
+import { CredentialService, RequestCredentialMessage } from '../../protocols/issue-credential';
 
-export class CredentialRequestHandler implements Handler {
+export class RequestCredentialHandler implements Handler {
   private credentialService: CredentialService;
-  public supportedMessages = [CredentialRequestMessage];
+  public supportedMessages = [RequestCredentialMessage];
 
   public constructor(credentialService: CredentialService) {
     this.credentialService = credentialService;
   }
 
-  public async handle(messageContext: HandlerInboundMessage<CredentialRequestHandler>) {
+  public async handle(messageContext: HandlerInboundMessage<RequestCredentialHandler>) {
     const credential = await this.credentialService.processRequest(messageContext);
-    const message = await this.credentialService.createResponse(credential.id);
+    const { message } = await this.credentialService.createCredential(credential);
     if (!messageContext.connection) {
       throw new Error('There is no connection in message context.');
     }

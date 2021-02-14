@@ -12,5 +12,5 @@ export { BasicMessageRecord } from './storage/BasicMessageRecord';
 export { CredentialRecord } from './storage/CredentialRecord';
 export { ConnectionEventType } from './protocols/connections/ConnectionService';
 export { BasicMessageEventType } from './protocols/basicmessage/BasicMessageService';
-export { EventType as CredentialEventType } from './protocols/credentials/CredentialService';
-export { CredentialPreview, CredentialOfferMessage } from './protocols/credentials/messages/CredentialOfferMessage';
+export * from './protocols/issue-credential';
+export * from './protocols/present-proof';

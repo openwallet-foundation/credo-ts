@@ -12,7 +12,7 @@ import { JsonEncoder } from '../../utils/JsonEncoder';
 import { JsonTransformer } from '../../utils/JsonTransformer';
 import { uuid } from '../../utils/uuid';
 import { Wallet } from '../../wallet/Wallet';
-import { CredentialUtils } from '../credentials/CredentialUtils';
+import { CredentialUtils } from '../issue-credential/CredentialUtils';
 
 import {
   PresentationMessage,
@@ -39,7 +39,7 @@ import {
 import { ProofState } from './ProofState';
 import logger from '../../logger';
 
-export enum EventType {
+export enum ProofEventType {
   StateChanged = 'stateChanged',
 }
 
@@ -112,7 +112,7 @@ export class ProofService extends EventEmitter {
       tags: { threadId: proposalMessage.threadId },
     });
     await this.proofRepository.save(proofRecord);
-    this.emit(EventType.StateChanged, { proofRecord, prevState: null });
+    this.emit(ProofEventType.StateChanged, { proofRecord, prevState: null });
 
     return { message: proposalMessage, proofRecord };
   }
@@ -197,7 +197,7 @@ export class ProofService extends EventEmitter {
 
       // Save record
       await this.proofRepository.save(proofRecord);
-      this.emit(EventType.StateChanged, { proofRecord, prevState: null });
+      this.emit(ProofEventType.StateChanged, { proofRecord, prevState: null });
     }
 
     return proofRecord;
@@ -286,7 +286,7 @@ export class ProofService extends EventEmitter {
     });
 
     await this.proofRepository.save(proofRecord);
-    this.emit(EventType.StateChanged, { proofRecord, prevState: null });
+    this.emit(ProofEventType.StateChanged, { proofRecord, prevState: null });
 
     return { message: requestPresentationMessage, proofRecord };
   }
@@ -347,7 +347,7 @@ export class ProofService extends EventEmitter {
 
       // Save in repository
       await this.proofRepository.save(proofRecord);
-      this.emit(EventType.StateChanged, { proofRecord, prevState: null });
+      this.emit(ProofEventType.StateChanged, { proofRecord, prevState: null });
     }
 
     return proofRecord;
@@ -487,7 +487,7 @@ export class ProofService extends EventEmitter {
   /**
    * Process a received {@link PresentationAckMessage}.
    *
-   * @param messageContext The message context containing a presentation message
+   * @param messageContext The message context containing a presentation acknowledgement message
    * @returns proof record associated with the presentation acknowledgement message
    *
    */
@@ -869,7 +869,7 @@ export class ProofService extends EventEmitter {
       prevState,
     };
 
-    this.emit(EventType.StateChanged, event);
+    this.emit(ProofEventType.StateChanged, event);
   }
 
   /**
