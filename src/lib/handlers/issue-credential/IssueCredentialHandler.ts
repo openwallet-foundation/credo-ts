@@ -1,5 +1,4 @@
 import { Handler, HandlerInboundMessage } from '../Handler';
-import { createOutboundMessage } from '../../protocols/helpers';
 import { CredentialService, IssueCredentialMessage } from '../../protocols/issue-credential';
 
 export class IssueCredentialHandler implements Handler {
@@ -11,14 +10,6 @@ export class IssueCredentialHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<IssueCredentialHandler>) {
-    const credentialRecord = await this.credentialService.processCredential(messageContext);
-
-    if (messageContext.message.requiresAck()) {
-      if (!messageContext.connection) {
-        throw new Error('There is no connection in message context.');
-      }
-      const { message } = await this.credentialService.createAck(credentialRecord);
-      return createOutboundMessage(messageContext.connection, message);
-    }
+    await this.credentialService.processCredential(messageContext);
   }
 }

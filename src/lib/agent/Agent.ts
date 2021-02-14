@@ -50,6 +50,7 @@ import { ProofRecord } from '../storage/ProofRecord';
 import { ProposePresentationHandler } from '../handlers/present-proof/ProposePresentationHandler';
 import { PresentationAckHandler } from '../handlers/present-proof/PresentationAckHandler';
 import { PresentationHandler } from '../handlers/present-proof/PresentationHandler';
+import { ProposeCredentialHandler } from '../handlers/issue-credential/ProposeCredentialHandler';
 
 export class Agent {
   protected wallet: Wallet;
@@ -181,6 +182,7 @@ export class Agent {
     this.dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService));
     this.dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService));
     this.dispatcher.registerHandler(new MessagePickupHandler(this.messagePickupService));
+    this.dispatcher.registerHandler(new ProposeCredentialHandler(this.credentialService));
     this.dispatcher.registerHandler(new OfferCredentialHandler(this.credentialService));
     this.dispatcher.registerHandler(new RequestCredentialHandler(this.credentialService));
     this.dispatcher.registerHandler(new IssueCredentialHandler(this.credentialService));

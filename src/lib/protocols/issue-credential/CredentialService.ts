@@ -25,6 +25,8 @@ import {
   CredentialAckMessage,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   INDY_CREDENTIAL_ATTACHMENT_ID,
+  ProposeCredentialMessage,
+  ProposeCredentialMessageOptions,
 } from './messages';
 
 export enum CredentialEventType {
@@ -61,7 +63,158 @@ export class CredentialService extends EventEmitter {
   }
 
   /**
+   * Create a {@link ProposeCredentialMessage} not bound to an existing credential exchange.
+   * To create a proposal as response to an existing credential exchange, use {@link CredentialService#createProposalAsResponse}.
+   *
+   * @param connectionRecord The connection for which to create the credential proposal
+   * @param config Additional configuration to use for the proposal
+   * @returns Object containing proposal message and associated credential record
+   *
+   */
+  public async createProposal(
+    connectionRecord: ConnectionRecord,
+    config?: Omit<ProposeCredentialMessageOptions, 'id'>
+  ): Promise<CredentialProtocolMsgReturnType<ProposeCredentialMessage>> {
+    // Assert
+    connectionRecord.assertReady();
+
+    // Create message
+    const proposalMessage = new ProposeCredentialMessage(config ?? {});
+
+    // Create record
+    const credentialRecord = new CredentialRecord({
+      connectionId: connectionRecord.id,
+      state: CredentialState.ProposalSent,
+      proposalMessage,
+      tags: { threadId: proposalMessage.threadId },
+    });
+    await this.credentialRepository.save(credentialRecord);
+    this.emit(CredentialEventType.StateChanged, { credentialRecord, prevState: null });
+
+    return { message: proposalMessage, credentialRecord };
+  }
+
+  /**
+   * Create a {@link ProposePresentationMessage} as response to a received credential offer.
+   * To create a proposal not bound to an existing credential exchange, use {@link CredentialService#createProposal}.
+   *
+   * @param credentialRecord The credential record for which to create the credential proposal
+   * @param config Additional configuration to use for the proposal
+   * @returns Object containing proposal message and associated credential record
+   *
+   */
+  public async createProposalAsResponse(
+    credentialRecord: CredentialRecord,
+    config?: Omit<ProposeCredentialMessageOptions, 'id'>
+  ): Promise<CredentialProtocolMsgReturnType<ProposeCredentialMessage>> {
+    // Assert
+    credentialRecord.assertState(CredentialState.OfferReceived);
+
+    // Create message
+    const proposalMessage = new ProposeCredentialMessage(config ?? {});
+    proposalMessage.setThread({ threadId: credentialRecord.tags.threadId });
+
+    // Update record
+    credentialRecord.proposalMessage = proposalMessage;
+    this.updateState(credentialRecord, CredentialState.ProposalSent);
+
+    return { message: proposalMessage, credentialRecord };
+  }
+
+  /**
+   * Process a received {@link ProposeCredentialMessage}. This will not accept the credential proposal
+   * or send a credential offer. It will only create a new, or update the existing credential record with
+   * the information from the credential proposal message. Use {@link CredentialService#createOfferAsResponse}
+   * after calling this method to create a credential offer.
+   *
+   * @param messageContext The message context containing a credential proposal message
+   * @returns credential record associated with the credential proposal message
+   *
+   */
+  public async processProposal(
+    messageContext: InboundMessageContext<ProposeCredentialMessage>
+  ): Promise<CredentialRecord> {
+    let credentialRecord: CredentialRecord;
+    const { message: proposalMessage, connection } = messageContext;
+
+    // Assert connection
+    connection?.assertReady();
+    if (!connection) {
+      throw new Error(
+        `No connection associated with incoming credential proposal message with thread id ${proposalMessage.threadId}`
+      );
+    }
+
+    try {
+      // Credential record already exists
+      credentialRecord = await this.getByThreadId(proposalMessage.threadId);
+
+      // Assert
+      credentialRecord.assertState(CredentialState.OfferSent);
+      credentialRecord.assertConnection(connection.id);
+
+      // Update record
+      credentialRecord.proposalMessage = proposalMessage;
+      await this.updateState(credentialRecord, CredentialState.ProposalReceived);
+    } catch {
+      // No credential record exists with thread id
+      credentialRecord = new CredentialRecord({
+        connectionId: connection.id,
+        proposalMessage,
+        state: CredentialState.ProposalReceived,
+        tags: { threadId: proposalMessage.threadId },
+      });
+
+      // Save record
+      await this.credentialRepository.save(credentialRecord);
+      this.emit(CredentialEventType.StateChanged, { credentialRecord, prevState: null });
+    }
+
+    return credentialRecord;
+  }
+
+  /**
+   * Create a {@link OfferCredentialMessage} as response to a received credential proposal.
+   * To create an offer not bound to an existing credential exchange, use {@link CredentialService#createOffer}.
+   *
+   * @param credentialRecord The credential record for which to create the credential offer
+   * @param credentialTemplate The credential template to use for the offer
+   * @returns Object containing offer message and associated credential record
+   *
+   */
+  public async createOfferAsResponse(
+    credentialRecord: CredentialRecord,
+    credentialTemplate: CredentialOfferTemplate
+  ): Promise<CredentialProtocolMsgReturnType<OfferCredentialMessage>> {
+    // Assert
+    credentialRecord.assertState(CredentialState.ProposalReceived);
+
+    // Create message
+    const { credentialDefinitionId, comment, preview } = credentialTemplate;
+    const credOffer = await this.wallet.createCredentialOffer(credentialDefinitionId);
+    const attachment = new Attachment({
+      id: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
+      mimeType: 'application/json',
+      data: new AttachmentData({
+        base64: JsonEncoder.toBase64(credOffer),
+      }),
+    });
+    const credentialOfferMessage = new OfferCredentialMessage({
+      comment,
+      attachments: [attachment],
+      credentialPreview: preview,
+    });
+    credentialOfferMessage.setThread({ threadId: credentialRecord.tags.threadId });
+
+    credentialRecord.offerMessage = credentialOfferMessage;
+    await this.updateState(credentialRecord, CredentialState.OfferSent);
+
+    return { message: credentialOfferMessage, credentialRecord };
+  }
+
+  /**
    * Create a {@link OfferCredentialMessage} not bound to an existing credential exchange.
+   * To create an offer as response to an existing credential exchange, use {@link ProofService#createOfferAsResponse}.
    *
    * @param connectionRecord The connection for which to create the credential offer
    * @param credentialTemplate The credential template to use for the offer
@@ -116,6 +269,7 @@ export class CredentialService extends EventEmitter {
    *
    */
   public async processOffer(messageContext: InboundMessageContext<OfferCredentialMessage>): Promise<CredentialRecord> {
+    let credentialRecord: CredentialRecord;
     const { message: credentialOfferMessage, connection } = messageContext;
 
     // Assert connection
@@ -134,14 +288,29 @@ export class CredentialService extends EventEmitter {
       );
     }
 
-    const credentialRecord = new CredentialRecord({
-      connectionId: connection.id,
-      offerMessage: credentialOfferMessage,
-      state: CredentialState.OfferReceived,
-      tags: { threadId: credentialOfferMessage.id },
-    });
-    await this.credentialRepository.save(credentialRecord);
-    this.emit(CredentialEventType.StateChanged, { credentialRecord, prevState: null });
+    try {
+      // Credential record already exists
+      credentialRecord = await this.getByThreadId(credentialOfferMessage.threadId);
+
+      // Assert
+      credentialRecord.assertState(CredentialState.ProposalSent);
+      credentialRecord.assertConnection(connection.id);
+
+      credentialRecord.offerMessage = credentialOfferMessage;
+      await this.updateState(credentialRecord, CredentialState.OfferReceived);
+    } catch {
+      // No credential record exists with thread id
+      credentialRecord = new CredentialRecord({
+        connectionId: connection.id,
+        offerMessage: credentialOfferMessage,
+        state: CredentialState.OfferReceived,
+        tags: { threadId: credentialOfferMessage.id },
+      });
+
+      // Save in repository
+      await this.credentialRepository.save(credentialRecord);
+      this.emit(CredentialEventType.StateChanged, { credentialRecord, prevState: null });
+    }
 
     return credentialRecord;
   }

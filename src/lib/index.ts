@@ -14,3 +14,5 @@ export { ConnectionEventType } from './protocols/connections/ConnectionService';
 export { BasicMessageEventType } from './protocols/basicmessage/BasicMessageService';
 export * from './protocols/issue-credential';
 export * from './protocols/present-proof';
+export * from './protocols/connections';
+export * from './utils/JsonTransformer';
