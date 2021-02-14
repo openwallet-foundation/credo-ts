@@ -19,6 +19,7 @@ export class ProofRequest {
       this.name = options.name;
       this.version = options.version;
       this.nonce = options.nonce;
+      // TODO: use object instead of map OR make it easier to construct
       this.requestedAttributes = options.requestedAttributes ?? new Map();
       this.requestedPredicates = options.requestedPredicates ?? new Map();
       this.nonRevoked = options.nonRevoked;

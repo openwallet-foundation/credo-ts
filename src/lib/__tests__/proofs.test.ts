@@ -1,6 +1,5 @@
 /* eslint-disable no-console */
 // @ts-ignore
-import { poll } from 'await-poll';
 import { Subject } from 'rxjs';
 import indy from 'indy-sdk';
 import { Agent } from '..';
@@ -24,11 +23,37 @@ import {
   PresentationPreview,
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
-  ProofRequest,
   ProofState,
+  EventType,
+  ProofStateChangedEvent,
+  ProofAttributeInfo,
+  AttributeFilter,
+  ProofPredicateInfo,
 } from '../protocols/present-proof';
 import { ProofRecord } from '../storage/ProofRecord';
-import { JsonTransformer } from '../utils/JsonTransformer';
+import { ConnectionRecord } from '../storage/ConnectionRecord';
+import logger from '../logger';
+
+async function waitForRecord(
+  agent: Agent,
+  { threadId, state, prevState }: { threadId?: string; state?: ProofState; prevState?: ProofState | null }
+): Promise<ProofRecord> {
+  return new Promise(resolve => {
+    const listener = (event: ProofStateChangedEvent) => {
+      const prevStateMatches = prevState === undefined || event.prevState === prevState;
+      const threadIdMatches = threadId === undefined || event.proofRecord.tags.threadId === threadId;
+      const stateMatches = state === undefined || event.proofRecord.state === state;
+
+      if (prevStateMatches && threadIdMatches && stateMatches) {
+        agent.proof.events.removeListener(EventType.StateChanged, listener);
+
+        resolve(event.proofRecord);
+      }
+    };
+
+    agent.proof.events.addListener(EventType.StateChanged, listener);
+  });
+}
 
 const faberConfig: InitConfig = {
   label: 'Faber',
@@ -64,10 +89,13 @@ const credentialPreview = new CredentialPreview({
   ],
 });
 
-xdescribe('proofstest', () => {
+describe('Present Proof', () => {
   let faberAgent: Agent;
   let aliceAgent: Agent;
   let credDefId: CredDefId;
+  let faberConnection: ConnectionRecord;
+  let aliceConnection: ConnectionRecord;
+  let presentationPreview: PresentationPreview;
 
   beforeAll(async () => {
     const faberMessages = new Subject();
@@ -99,12 +127,16 @@ xdescribe('proofstest', () => {
     const [ledgerCredDefId] = await registerDefinition(faberAgent, definitionTemplate);
     credDefId = ledgerCredDefId;
 
-    const publidDid = faberAgent.getPublicDid()?.did ?? 'Th7MpTaRZVRYnPiabds81Y';
-    await ensurePublicDidIsOnLedger(faberAgent, publidDid);
-    await makeConnection(faberAgent, aliceAgent);
+    const publidDid = faberAgent.getPublicDid()?.did;
+    await ensurePublicDidIsOnLedger(faberAgent, publidDid!);
+    const { agentAConnection, agentBConnection } = await makeConnection(faberAgent, aliceAgent);
+
+    faberConnection = agentAConnection;
+    aliceConnection = agentBConnection;
+
     await issueCredential({
       issuerAgent: faberAgent,
-      issuerConnectionId: (await faberAgent.connections.getAll())[0].id,
+      issuerConnectionId: faberConnection.id,
       holderAgent: aliceAgent,
       credentialTemplate: {
         credentialDefinitionId: credDefId,
@@ -119,11 +151,7 @@ xdescribe('proofstest', () => {
     await aliceAgent.closeAndDeleteWallet();
   });
 
-  test(`test`, async () => {
-    // We assume that Faber has only one connection and it's a connection with Alice
-    const [] = await faberAgent.connections.getAll();
-    const [holderConnection] = await aliceAgent.connections.getAll();
-
+  test('Alice start with proof proposal to Faber', async () => {
     const presentationPreview = new PresentationPreview({
       attributes: [
         new PresentationPreviewAttribute({
@@ -143,36 +171,118 @@ xdescribe('proofstest', () => {
       ],
     });
 
-    await aliceAgent.proof.proposeProof(holderConnection.id, presentationPreview);
+    logger.log('Alice sends presentation proposal to Faber');
+    let aliceProofRecord = await aliceAgent.proof.proposeProof(aliceConnection.id, presentationPreview);
 
-    // We assume that Faber has only one credential and it's a credential from Faber
-    let [faberProof] = await poll(
-      () => faberAgent.proof.getAll(),
-      (proofRecords: ProofRecord[]) => proofRecords.length < 1,
-      100
-    );
+    logger.log('Faber waits for presentation proposal from Alice');
+    let faberProofRecord = await waitForRecord(faberAgent, {
+      threadId: aliceProofRecord.tags.threadId,
+      state: ProofState.ProposalReceived,
+    });
 
-    await faberAgent.proof.acceptProposal(faberProof.id);
+    logger.log('Faber accepts presentation proposal from Alice');
+    faberProofRecord = await faberAgent.proof.acceptProposal(faberProofRecord.id);
 
-    const [aliceProof] = await poll(
-      () => faberAgent.proof.getAll(),
-      (proofRecords: ProofRecord[]) => proofRecords.length < 1 || proofRecords[0].state !== ProofState.RequestReceived,
-      100
-    );
+    logger.log('Alice waits for presentation request from Faber');
+    aliceProofRecord = await waitForRecord(aliceAgent, {
+      threadId: aliceProofRecord.tags.threadId,
+      state: ProofState.RequestReceived,
+    });
 
+    logger.log('Alice accepts presentation request from Faber');
+    const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest;
     const requestedCredentials = await aliceAgent.proof.getRequestedCredentialsForProofRequest(
-      JsonTransformer.fromJSON(aliceProof.proofRequest, ProofRequest),
+      indyProofRequest!,
       presentationPreview
     );
+    await aliceAgent.proof.acceptRequest(aliceProofRecord.id, requestedCredentials);
 
-    await aliceAgent.proof.acceptRequest(aliceProof.id, requestedCredentials);
+    logger.log('Faber waits for presentation from Alice');
+    faberProofRecord = await waitForRecord(faberAgent, {
+      threadId: aliceProofRecord.tags.threadId,
+      state: ProofState.PresentationReceived,
+    });
 
-    [faberProof] = await poll(
-      () => faberAgent.proof.getById(faberProof.id),
-      (proofRecord: ProofRecord) => proofRecord.state !== ProofState.PresentationReceived,
-      100
+    // assert presentation is valid
+    expect(faberProofRecord.isVerified).toBe(true);
+
+    // Faber accepts presentation
+    await faberAgent.proof.acceptPresentation(faberProofRecord.id);
+
+    // Alice waits till it receives presentation ack
+    aliceProofRecord = await waitForRecord(aliceAgent, {
+      threadId: aliceProofRecord.tags.threadId,
+      state: ProofState.Done,
+    });
+  });
+
+  test('Faber starts with proof requests to Alice', async () => {
+    logger.log('Faber sends presentation request to Alice');
+
+    const attributes = new Map();
+    attributes.set(
+      'name',
+      new ProofAttributeInfo({
+        name: 'name',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      })
     );
 
-    await faberAgent.proof.acceptPresentation(faberProof.id);
+    const predicates = new Map();
+    predicates.set(
+      'age',
+      new ProofPredicateInfo({
+        name: 'age',
+        predicateType: PredicateType.GreaterThanOrEqualTo,
+        predicateValue: 50,
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      })
+    );
+
+    let faberProofRecord = await faberAgent.proof.requestProof(faberConnection.id, {
+      name: 'test-proof-request',
+      requestedAttributes: attributes,
+      requestedPredicates: predicates,
+    });
+
+    logger.log('Alice waits for presentation request from Faber');
+    let aliceProofRecord = await waitForRecord(aliceAgent, {
+      threadId: faberProofRecord.tags.threadId,
+      state: ProofState.RequestReceived,
+    });
+
+    logger.log('Alice accepts presentation request from Faber');
+    const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest;
+    const requestedCredentials = await aliceAgent.proof.getRequestedCredentialsForProofRequest(
+      indyProofRequest!,
+      presentationPreview
+    );
+    await aliceAgent.proof.acceptRequest(aliceProofRecord.id, requestedCredentials);
+
+    logger.log('Faber waits for presentation from Alice');
+    faberProofRecord = await waitForRecord(faberAgent, {
+      threadId: aliceProofRecord.tags.threadId,
+      state: ProofState.PresentationReceived,
+    });
+
+    // assert presentation is valid
+    expect(faberProofRecord.isVerified).toBe(true);
+
+    // Faber accepts presentation
+    await faberAgent.proof.acceptPresentation(faberProofRecord.id);
+
+    // Alice waits till it receives presentation ack
+    aliceProofRecord = await waitForRecord(aliceAgent, {
+      threadId: aliceProofRecord.tags.threadId,
+      state: ProofState.Done,
+    });
   });
 });

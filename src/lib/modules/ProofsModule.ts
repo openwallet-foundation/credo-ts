@@ -3,7 +3,12 @@ import { MessageSender } from '../agent/MessageSender';
 import { ProofService } from '../protocols/present-proof/ProofService';
 import { ProofRecord } from '../storage/ProofRecord';
 import { ProofRequest } from '../protocols/present-proof/models/ProofRequest';
-import { PresentationPreview, ProofState, RequestedCredentials } from '../protocols/present-proof';
+import {
+  PresentationPreview,
+  ProofState,
+  ProposePresentationMessage,
+  RequestedCredentials,
+} from '../protocols/present-proof';
 import { JsonTransformer } from '../utils/JsonTransformer';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { EventEmitter } from 'events';
@@ -69,7 +74,7 @@ export class ProofsModule {
    *
    * @param proofRecordId The id of the proof record for which to accept the proposal
    * @param config Additional configuration to use for the request
-   * @returns Proof record associated with the presentation reuest
+   * @returns Proof record associated with the presentation request
    *
    */
   public async acceptProposal(
@@ -86,20 +91,19 @@ export class ProofsModule {
     const proofRecord = await this.proofService.getById(proofRecordId);
     const connection = await this.connectionService.getById(proofRecord.connectionId);
 
-    const presentationProposal = proofRecord.proposalMessage?.presentationProposal;
+    // FIXME: transformation should be handled by record class
+    const presentationProposal = JsonTransformer.fromJSON(proofRecord.proposalMessage, ProposePresentationMessage)
+      .presentationProposal;
 
     if (!presentationProposal) {
       throw new Error(`Proof record with id ${proofRecordId} is missing required presentation proposal`);
     }
 
-    const proofRequest = await this.proofService.createProofRequestFromProposal(
-      JsonTransformer.fromJSON(presentationProposal, PresentationPreview),
-      {
-        name: config?.request?.name ?? 'proof-request',
-        version: config?.request?.version ?? '1.0',
-        nonce: config?.request?.nonce,
-      }
-    );
+    const proofRequest = await this.proofService.createProofRequestFromProposal(presentationProposal, {
+      name: config?.request?.name ?? 'proof-request',
+      version: config?.request?.version ?? '1.0',
+      nonce: config?.request?.nonce,
+    });
 
     const { message } = await this.proofService.createRequestAsResponse(proofRecord, proofRequest, {
       comment: config?.comment,

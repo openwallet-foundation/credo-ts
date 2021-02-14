@@ -437,7 +437,9 @@ export class ProofService extends EventEmitter {
 
     // TODO: add proof class with validator
     const indyProofJson = presentationMessage.indyProof;
-    const indyProofRequest = proofRecord.requestMessage?.indyProofRequest;
+    // FIXME: Transformation should be handled by record class
+    const indyProofRequest = JsonTransformer.fromJSON(proofRecord.requestMessage, RequestPresentationMessage)
+      .indyProofRequest;
 
     if (!indyProofJson) {
       throw new Error(
@@ -574,7 +576,7 @@ export class ProofService extends EventEmitter {
       proofRequest.requestedAttributes.set(referent, requestedAttribute);
     }
 
-    logger.logJson('predicates', presentationProposal.predicates);
+    logger.logJson('proposal predicates', presentationProposal.predicates);
     // Transform proposed predicates to requested predicates
     for (const proposedPredicate of presentationProposal.predicates) {
       const requestedPredicate = new ProofPredicateInfo({
@@ -608,9 +610,9 @@ export class ProofService extends EventEmitter {
   ): Promise<Credential[]> {
     const searchHandle = await this.wallet.searchCredentialsForProofRequest(proofRequest.toJSON());
 
-    // TODO: make the count, offset etc more flexible
     const credentialsJson = await this.indy.proverFetchCredentialsForProofReq(searchHandle, attributeReferent, 100);
-    await this.indy.closeWalletSearch(searchHandle);
+    // TODO: make the count, offset etc more flexible
+    await this.indy.proverCloseCredentialsSearchForProofReq(searchHandle);
 
     return (JsonTransformer.fromJSON(credentialsJson, Credential) as unknown) as Credential[];
   }

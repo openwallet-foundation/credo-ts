@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 // @ts-ignore
 import { poll } from 'await-poll';
+import logger from '../logger';
 import path from 'path';
 import { Subject } from 'rxjs';
 import { ConnectionRecord } from '../storage/ConnectionRecord';
@@ -60,9 +61,8 @@ export class SubjectOutboundTransporter implements OutboundTransporter {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
-    console.log('Sending message...');
+    logger.logJson(`Sending outbound message to connection ${outboundPackage.connection.id}`, outboundPackage.payload);
     const { payload } = outboundPackage;
-    console.log(payload);
     this.subject.next(payload);
   }
 }
@@ -83,9 +83,8 @@ export async function makeConnection(agentA: Agent, agentB: Agent) {
 
 export async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<[SchemaId, Schema]> {
   const [schemaId] = await agent.ledger.registerCredentialSchema(schemaTemplate);
-  console.log('schemaId', schemaId);
   const ledgerSchema = await agent.ledger.getSchema(schemaId);
-  console.log('ledgerSchemaId, ledgerSchema', schemaId, ledgerSchema);
+  logger.logJson(`created schema with id ${schemaId}`, ledgerSchema);
   return [schemaId, ledgerSchema];
 }
 
@@ -95,15 +94,14 @@ export async function registerDefinition(
 ): Promise<[CredDefId, CredDef]> {
   const [credDefId] = await agent.ledger.registerCredentialDefinition(definitionTemplate);
   const ledgerCredDef = await agent.ledger.getCredentialDefinition(credDefId);
-  console.log('ledgerCredDefId, ledgerCredDef', credDefId, ledgerCredDef);
+  logger.logJson(`created credential definition with id ${credDefId}`, ledgerCredDef);
   return [credDefId, ledgerCredDef];
 }
 
 export async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: Did) {
   try {
-    console.log(`Ensure test DID ${publicDid} is written to ledger`);
-    const agentPublicDid = await agent.ledger.getPublicDid(publicDid);
-    console.log(`Ensure test DID ${publicDid} is written to ledger: Success`, agentPublicDid);
+    logger.log(`Ensure test DID ${publicDid} is written to ledger`);
+    await agent.ledger.getPublicDid(publicDid);
   } catch (error) {
     // Unfortunately, this won't prevent from the test suite running because of Jest runner runs all tests
     // regardless of thrown errors. We're more explicit about the problem with this error handling.
