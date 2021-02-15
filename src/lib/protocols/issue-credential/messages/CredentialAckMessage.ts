@@ -1,18 +1,20 @@
 import { Equals } from 'class-validator';
-import { AgentMessage } from '../../../agent/AgentMessage';
 import { IssueCredentialMessageType } from './IssueCredentialMessageType';
 
-interface CredentialAckMessageOptions {
-  id?: string;
-}
+import { AckMessage, AckMessageOptions } from '../../connections';
 
-export class CredentialAckMessage extends AgentMessage {
+export type CredentialAckMessageOptions = AckMessageOptions;
+
+/**
+ * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0015-acks/README.md#explicit-acks
+ */
+export class CredentialAckMessage extends AckMessage {
+  /**
+   * Create new CredentialAckMessage instance.
+   * @param options
+   */
   public constructor(options: CredentialAckMessageOptions) {
-    super();
-
-    if (options) {
-      this.id = options.id ?? this.generateId();
-    }
+    super(options);
   }
 
   @Equals(CredentialAckMessage.type)

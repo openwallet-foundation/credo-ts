@@ -46,7 +46,7 @@ export class RequestPresentationMessage extends AgentMessage {
   /**
    * An array of attachments defining the acceptable formats for the presentation.
    */
-  @Expose({ name: 'request-presentations~attach' })
+  @Expose({ name: 'request_presentations~attach' })
   @Type(() => Attachment)
   @IsArray()
   @ValidateNested({

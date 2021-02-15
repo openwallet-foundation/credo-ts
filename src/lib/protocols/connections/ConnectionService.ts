@@ -130,7 +130,7 @@ export class ConnectionService extends EventEmitter {
    * Create a connection request message for the connection with the specified connection id.
    *
    * @param connectionId the id of the connection for which to create a connection request
-   * @returns outbound message contaning connection request
+   * @returns outbound message containing connection request
    */
   public async createRequest(connectionId: string): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
     const connectionRecord = await this.connectionRepository.find(connectionId);
@@ -350,7 +350,7 @@ export class ConnectionService extends EventEmitter {
     autoAcceptConnection?: boolean;
     tags?: ConnectionTags;
   }): Promise<ConnectionRecord> {
-    const [did, verkey] = await this.wallet.createDid({ method_name: 'sov' });
+    const [did, verkey] = await this.wallet.createDid();
 
     const publicKey = new Ed25119Sig2018({
       id: `${did}#1`,
@@ -365,7 +365,7 @@ export class ConnectionService extends EventEmitter {
       routingKeys: this.config.getRoutingKeys(),
     });
 
-    // TODO: abstract the second paramater for ReferencedAuthentication away. This can be
+    // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
     // inferred from the publicKey class instance
     const auth = new ReferencedAuthentication(publicKey, authenticationTypes[publicKey.type]);
 

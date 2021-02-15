@@ -40,8 +40,8 @@ export class AckMessage extends AgentMessage {
   }
 
   @Equals(AckMessage.type)
-  public readonly type = AckMessage.type;
-  public static readonly type = ConnectionMessageType.Ack;
+  public readonly type: string = AckMessage.type;
+  public static readonly type: string = ConnectionMessageType.Ack;
 
   @IsEnum(AckStatus)
   public status!: AckStatus;
