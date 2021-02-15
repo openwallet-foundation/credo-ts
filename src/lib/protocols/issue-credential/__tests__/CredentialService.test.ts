@@ -23,6 +23,7 @@ import { Attachment, AttachmentData } from '../../../decorators/attachment/Attac
 import { LedgerService as LedgerServiceImpl } from '../../../agent/LedgerService';
 import { ConnectionState } from '../../connections/domain/ConnectionState';
 import { getMockConnection } from '../../connections/ConnectionService.test';
+import { AckStatus } from '../../connections';
 
 jest.mock('./../../../storage/Repository');
 jest.mock('./../../../agent/LedgerService');
@@ -750,8 +751,10 @@ describe('CredentialService', () => {
     beforeEach(() => {
       credential = mockCredentialRecord({ state: CredentialState.CredentialIssued });
 
-      const credentialRequest = new CredentialAckMessage({});
-      credentialRequest.setThread({ threadId: 'somethreadid' });
+      const credentialRequest = new CredentialAckMessage({
+        status: AckStatus.OK,
+        threadId: 'somethreadid',
+      });
       messageContext = new InboundMessageContext(credentialRequest, {
         connection,
       });

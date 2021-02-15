@@ -16,6 +16,7 @@ import { ConnectionService } from '../connections/ConnectionService';
 
 import { CredentialState } from './CredentialState';
 import { CredentialUtils } from './CredentialUtils';
+import { CredentialInfo } from './models';
 import {
   OfferCredentialMessage,
   CredentialPreview,
@@ -28,6 +29,7 @@ import {
   ProposeCredentialMessage,
   ProposeCredentialMessageOptions,
 } from './messages';
+import { AckStatus } from '../connections';
 
 export enum CredentialEventType {
   StateChanged = 'stateChanged',
@@ -554,8 +556,10 @@ export class CredentialService extends EventEmitter {
     credentialRecord.assertState(CredentialState.CredentialReceived);
 
     // Create message
-    const ackMessage = new CredentialAckMessage({});
-    ackMessage.setThread({ threadId: credentialRecord.tags.threadId });
+    const ackMessage = new CredentialAckMessage({
+      status: AckStatus.OK,
+      threadId: credentialRecord.tags.threadId!,
+    });
 
     await this.updateState(credentialRecord, CredentialState.Done);
 
@@ -631,6 +635,18 @@ export class CredentialService extends EventEmitter {
     }
 
     return credentialRecords[0];
+  }
+
+  /**
+   * Retrieve an indy credential by credential id (referent)
+   *
+   * @param credentialId the id (referent) of the indy credential
+   * @returns Indy credential info object
+   */
+  public async getIndyCredential(credentialId: string): Promise<CredentialInfo> {
+    const indyCredential = await this.wallet.getCredential(credentialId);
+
+    return JsonTransformer.fromJSON(indyCredential, CredentialInfo);
   }
 
   /**

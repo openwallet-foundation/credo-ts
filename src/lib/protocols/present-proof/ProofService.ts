@@ -12,7 +12,7 @@ import { JsonEncoder } from '../../utils/JsonEncoder';
 import { JsonTransformer } from '../../utils/JsonTransformer';
 import { uuid } from '../../utils/uuid';
 import { Wallet } from '../../wallet/Wallet';
-import { CredentialUtils } from '../issue-credential/CredentialUtils';
+import { CredentialUtils, Credential, CredentialInfo } from '../issue-credential';
 
 import {
   PresentationMessage,
@@ -25,8 +25,6 @@ import {
   INDY_PROOF_ATTACHMENT_ID,
 } from './messages';
 import {
-  CredentialInfo,
-  Credential,
   PartialProof,
   ProofAttributeInfo,
   AttributeFilter,
@@ -38,6 +36,7 @@ import {
 } from './models';
 import { ProofState } from './ProofState';
 import logger from '../../logger';
+import { AckStatus } from '../connections';
 
 export enum ProofEventType {
   StateChanged = 'stateChanged',
@@ -475,8 +474,10 @@ export class ProofService extends EventEmitter {
     proofRecord.assertState(ProofState.PresentationReceived);
 
     // Create message
-    const ackMessage = new PresentationAckMessage({});
-    ackMessage.setThread({ threadId: proofRecord.tags.threadId });
+    const ackMessage = new PresentationAckMessage({
+      status: AckStatus.OK,
+      threadId: proofRecord.tags.threadId!,
+    });
 
     // Update record
     await this.updateState(proofRecord, ProofState.Done);

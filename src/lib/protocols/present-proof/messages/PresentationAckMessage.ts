@@ -1,19 +1,16 @@
 import { Equals } from 'class-validator';
 
-import { AgentMessage } from '../../../agent/AgentMessage';
+import { AckMessage, AckMessageOptions } from '../../connections';
 import { PresentProofMessageType } from './PresentProofMessageType';
 
-interface PresentationAckMessageOptions {
-  id?: string;
-}
+export type PresentationAckMessageOptions = AckMessageOptions;
 
-export class PresentationAckMessage extends AgentMessage {
+/**
+ * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0015-acks/README.md#explicit-acks
+ */
+export class PresentationAckMessage extends AckMessage {
   public constructor(options: PresentationAckMessageOptions) {
-    super();
-
-    if (options) {
-      this.id = options.id ?? this.generateId();
-    }
+    super(options);
   }
 
   @Equals(PresentationAckMessage.type)

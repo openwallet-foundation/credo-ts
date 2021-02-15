@@ -9,6 +9,7 @@ import {
   CredentialService,
   CredentialOfferTemplate,
   ProposeCredentialMessageOptions,
+  CredentialInfo,
 } from '../protocols/issue-credential';
 import { JsonTransformer } from '../utils/JsonTransformer';
 
@@ -222,5 +223,15 @@ export class CredentialsModule {
    */
   public async getByThreadId(threadId: string): Promise<CredentialRecord> {
     return this.credentialService.getByThreadId(threadId);
+  }
+
+  /**
+   * Retrieve an indy credential by credential id (referent)
+   *
+   * @param credentialId the id (referent) of the indy credential
+   * @returns Indy credential info object
+   */
+  public async getIndyCredential(credentialId: string): Promise<CredentialInfo> {
+    return this.credentialService.getIndyCredential(credentialId);
   }
 }

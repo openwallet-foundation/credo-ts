@@ -3,7 +3,7 @@ import { IsOptional, ValidateNested } from 'class-validator';
 import { JsonTransformer } from '../../../utils/JsonTransformer';
 
 import { CredentialInfo } from './CredentialInfo';
-import { RevocationInterval } from './RevocationInterval';
+import { RevocationInterval } from '../../present-proof/models/RevocationInterval';
 
 export class Credential {
   public constructor(options: Credential) {
