@@ -1,3 +1,4 @@
+import type { Verkey } from 'indy-sdk';
 import { OutboundMessage } from '../../types';
 import { createOutboundMessage } from '../helpers';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';

@@ -1,3 +1,4 @@
+import type { CredOffer } from 'indy-sdk';
 import { Equals, IsArray, IsString, ValidateNested } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
 

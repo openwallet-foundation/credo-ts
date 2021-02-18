@@ -1,3 +1,5 @@
+import type { WalletQuery } from 'indy-sdk';
+
 import { BaseRecord } from './BaseRecord';
 
 export interface StorageService<T extends BaseRecord> {

@@ -1,3 +1,4 @@
+import type { Verkey } from 'indy-sdk';
 import logger from '../../logger';
 import { createOutboundMessage } from '../helpers';
 import { AgentConfig } from '../../agent/AgentConfig';

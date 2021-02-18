@@ -601,6 +601,13 @@
   dependencies:
     "@types/node" "*"
 
+"@types/indy-sdk@^1.15.0":
+  version "1.15.0"
+  resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.15.0.tgz#44b49978fc8c4892f2c90ec580d3c957b9a88805"
+  integrity sha512-xkxmHpxiCnw28URfP6xWtB93KAarfKPRDA3U1dv9ejkw4rLAXPeWkmnDmvmtoY2/QLCyq20hqP/ZEAV188okiw==
+  dependencies:
+    "@types/node" "*"
+
 "@types/istanbul-lib-coverage@*", "@types/istanbul-lib-coverage@^2.0.0", "@types/istanbul-lib-coverage@^2.0.1":
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/@types/istanbul-lib-coverage/-/istanbul-lib-coverage-2.0.3.tgz#4ba8ddb720221f432e443bd5f9117fd22cfd4762"

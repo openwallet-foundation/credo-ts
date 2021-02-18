@@ -1,3 +1,4 @@
+import type { Verkey } from 'indy-sdk';
 import { AgentMessage } from '../AgentMessage';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
 

@@ -1,6 +1,7 @@
+import indy from 'indy-sdk';
+import type { SchemaId } from 'indy-sdk';
 import { Agent, InboundTransporter, OutboundTransporter } from '..';
 import path from 'path';
-import indy from 'indy-sdk';
 import { DidInfo } from '../wallet/Wallet';
 import { DID_IDENTIFIER_REGEX, VERKEY_REGEX, isFullVerkey, isAbbreviatedVerkey } from '../utils/did';
 import { InitConfig } from '../types';

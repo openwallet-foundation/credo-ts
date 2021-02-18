@@ -1,7 +1,8 @@
 /* eslint-disable no-console */
+import indy from 'indy-sdk';
+import type { CredDefId } from 'indy-sdk';
 import { Subject } from 'rxjs';
 import path from 'path';
-import indy from 'indy-sdk';
 import { Agent, ConnectionRecord } from '..';
 import {
   ensurePublicDidIsOnLedger,

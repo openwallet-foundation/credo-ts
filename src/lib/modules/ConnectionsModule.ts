@@ -1,3 +1,4 @@
+import type { Verkey } from 'indy-sdk';
 import { EventEmitter } from 'events';
 
 import { AgentConfig } from '../agent/AgentConfig';

@@ -1,14 +1,16 @@
+import type Indy from 'indy-sdk';
+import type { CredDef, CredDefId, Did, LedgerRequest, PoolConfig, PoolHandle, Schema, SchemaId } from 'indy-sdk';
 import logger from '../logger';
 import { isIndyError } from '../utils/indyError';
 import { Wallet } from '../wallet/Wallet';
 
 export class LedgerService {
   private wallet: Wallet;
-  private indy: Indy;
+  private indy: typeof Indy;
   private poolHandle?: PoolHandle;
   private authorAgreement?: AuthorAgreement | null;
 
-  public constructor(wallet: Wallet, indy: Indy) {
+  public constructor(wallet: Wallet, indy: typeof Indy) {
     this.wallet = wallet;
     this.indy = indy;
   }

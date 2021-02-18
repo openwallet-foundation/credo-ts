@@ -1,3 +1,4 @@
+import type { CredentialId } from 'indy-sdk';
 import { v4 as uuid } from 'uuid';
 import { BaseRecord, RecordType, Tags } from './BaseRecord';
 import {

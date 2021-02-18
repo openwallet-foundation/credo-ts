@@ -1,3 +1,4 @@
+import type { WalletQuery } from 'indy-sdk';
 import { EventEmitter } from 'events';
 import { BasicMessageService } from '../protocols/basicmessage/BasicMessageService';
 import { MessageSender } from '../agent/MessageSender';

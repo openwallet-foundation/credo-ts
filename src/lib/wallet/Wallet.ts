@@ -1,3 +1,32 @@
+import type {
+  DidConfig,
+  Did,
+  Verkey,
+  Schema,
+  CredDefConfig,
+  CredDefId,
+  CredDef,
+  CredOffer,
+  CredReq,
+  CredReqMetadata,
+  CredValues,
+  Cred,
+  CredRevocId,
+  RevocRegDelta,
+  IndyProofRequest,
+  IndyRequestedCredentials,
+  Schemas,
+  CredentialDefs,
+  RevStates,
+  IndyProof,
+  CredentialId,
+  IndyCredentialInfo,
+  WalletRecordOptions,
+  WalletRecord,
+  WalletQuery,
+  WalletSearchOptions,
+  LedgerRequest,
+} from 'indy-sdk';
 import { UnpackedMessageContext } from '../types';
 
 export interface Wallet {
