@@ -2,6 +2,7 @@ import logger from '../logger';
 import { InitConfig } from '../types';
 import { IndyWallet } from '../wallet/IndyWallet';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
+import { ProofService } from '../protocols/present-proof/ProofService';
 import { ProviderRoutingService } from '../protocols/routing/ProviderRoutingService';
 import { ConsumerRoutingService } from '../protocols/routing/ConsumerRoutingService';
 import { BasicMessageService } from '../protocols/basicmessage/BasicMessageService';
@@ -37,12 +38,18 @@ import { RoutingModule } from '../modules/RoutingModule';
 import { BasicMessagesModule } from '../modules/BasicMessagesModule';
 import { LedgerModule } from '../modules/LedgerModule';
 import { CredentialsModule } from '../modules/CredentialsModule';
+import { ProofsModule } from '../modules/ProofsModule';
 import { CredentialService } from '../protocols/credentials/CredentialService';
 import { CredentialRecord } from '../storage/CredentialRecord';
 import { CredentialOfferHandler } from '../handlers/credentials/CredentialOfferHandler';
 import { CredentialRequestHandler } from '../handlers/credentials/CredentialRequestHandler';
 import { CredentialResponseHandler } from '../handlers/credentials/CredentialResponseHandler';
 import { CredentialAckHandler } from '../handlers/credentials/CredentialAckHandler';
+import { RequestPresentationHandler } from '../handlers/present-proof/RequestPresentationHandler';
+import { ProofRecord } from '../storage/ProofRecord';
+import { ProposePresentationHandler } from '../handlers/present-proof/ProposePresentationHandler';
+import { PresentationAckHandler } from '../handlers/present-proof/PresentationAckHandler';
+import { PresentationHandler } from '../handlers/present-proof/PresentationHandler';
 
 export class Agent {
   protected wallet: Wallet;
@@ -51,6 +58,7 @@ export class Agent {
   protected dispatcher: Dispatcher;
   protected messageSender: MessageSender;
   protected connectionService: ConnectionService;
+  protected proofService: ProofService;
   protected basicMessageService: BasicMessageService;
   protected providerRoutingService: ProviderRoutingService;
   protected consumerRoutingService: ConsumerRoutingService;
@@ -63,10 +71,13 @@ export class Agent {
   protected connectionRepository: Repository<ConnectionRecord>;
   protected provisioningRepository: Repository<ProvisioningRecord>;
   protected credentialRepository: Repository<CredentialRecord>;
+  protected proofRepository: Repository<ProofRecord>;
+  protected indy: Indy;
 
   public inboundTransporter: InboundTransporter;
 
   public connections!: ConnectionsModule;
+  public proof!: ProofsModule;
   public routing!: RoutingModule;
   public basicMessages!: BasicMessagesModule;
   public ledger!: LedgerModule;
@@ -83,6 +94,8 @@ export class Agent {
     this.wallet = new IndyWallet(initialConfig.walletConfig, initialConfig.walletCredentials, indy);
     const envelopeService = new EnvelopeService(this.wallet);
 
+    this.indy = indy;
+
     this.agentConfig = new AgentConfig(initialConfig);
     this.messageSender = new MessageSender(envelopeService, outboundTransporter);
     this.dispatcher = new Dispatcher(this.messageSender);
@@ -93,7 +106,7 @@ export class Agent {
     this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService);
     this.provisioningRepository = new Repository<ProvisioningRecord>(ProvisioningRecord, storageService);
     this.credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService);
-
+    this.proofRepository = new Repository<ProofRecord>(ProofRecord, storageService);
     this.provisioningService = new ProvisioningService(this.provisioningRepository);
     this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository);
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository);
@@ -103,6 +116,7 @@ export class Agent {
     this.messagePickupService = new MessagePickupService(messageRepository);
     this.ledgerService = new LedgerService(this.wallet, indy);
     this.credentialService = new CredentialService(this.wallet, this.credentialRepository);
+    this.proofService = new ProofService(this.proofRepository, this.ledgerService, this.wallet, indy);
 
     this.messageReceiver = new MessageReceiver(
       this.agentConfig,
@@ -166,6 +180,10 @@ export class Agent {
     this.dispatcher.registerHandler(new CredentialRequestHandler(this.credentialService));
     this.dispatcher.registerHandler(new CredentialResponseHandler(this.credentialService, this.ledgerService));
     this.dispatcher.registerHandler(new CredentialAckHandler(this.credentialService));
+    this.dispatcher.registerHandler(new ProposePresentationHandler(this.proofService));
+    this.dispatcher.registerHandler(new RequestPresentationHandler(this.proofService));
+    this.dispatcher.registerHandler(new PresentationHandler(this.proofService));
+    this.dispatcher.registerHandler(new PresentationAckHandler(this.proofService));
   }
 
   protected registerModules() {
@@ -175,6 +193,8 @@ export class Agent {
       this.consumerRoutingService,
       this.messageSender
     );
+
+    this.proof = new ProofsModule(this.proofService, this.connectionService, this.messageSender, this.indy);
 
     this.routing = new RoutingModule(
       this.agentConfig,

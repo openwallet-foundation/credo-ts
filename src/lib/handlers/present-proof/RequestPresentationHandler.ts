@@ -1,0 +1,16 @@
+import { Handler, HandlerInboundMessage } from '../Handler';
+
+import { RequestPresentationMessage, ProofService } from '../../protocols/present-proof';
+
+export class RequestPresentationHandler implements Handler {
+  private proofService: ProofService;
+  public supportedMessages = [RequestPresentationMessage];
+
+  public constructor(proofService: ProofService) {
+    this.proofService = proofService;
+  }
+
+  public async handle(messageContext: HandlerInboundMessage<RequestPresentationHandler>) {
+    await this.proofService.processRequest(messageContext);
+  }
+}

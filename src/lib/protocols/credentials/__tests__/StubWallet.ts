@@ -3,10 +3,28 @@ import { Wallet, DidInfo } from '../../../wallet/Wallet';
 import { UnpackedMessageContext } from '../../../types';
 
 export class StubWallet implements Wallet {
+  public get walletHandle() {
+    return 0;
+  }
   public init(): Promise<void> {
     return Promise.resolve();
   }
   public close(): Promise<void> {
+    throw new Error('Method not implemented.');
+  }
+  public createProof(
+    proofRequest: IndyProofRequest,
+    requestedCredentials: IndyRequestedCredentials,
+    schemas: Schemas,
+    credentialDefs: CredentialDefs,
+    revStates: RevStates
+  ): Promise<IndyProof> {
+    throw new Error('Method not implemented.');
+  }
+  public searchCredentialsForProofRequest(proofRequest: IndyProofRequest): Promise<number> {
+    throw new Error('Method not implemented.');
+  }
+  public getCredential(credentialId: string): Promise<IndyCredentialInfo> {
     throw new Error('Method not implemented.');
   }
   public delete(): Promise<void> {
@@ -38,6 +56,9 @@ export class StubWallet implements Wallet {
       nonce: 'nonce',
       key_correctness_proof: {},
     });
+  }
+  public getCredentialsForProofReq(proof: string): Promise<ProofCred> {
+    throw new Error('Method not implemented');
   }
   public createCredentialRequest(
     proverDid: string,

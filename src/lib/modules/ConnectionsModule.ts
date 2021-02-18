@@ -188,6 +188,10 @@ export class ConnectionsModule {
     return this.connectionService.find(connectionId);
   }
 
+  public async getById(connectionId: string): Promise<ConnectionRecord> {
+    return this.connectionService.getById(connectionId);
+  }
+
   public async findConnectionByVerkey(verkey: Verkey): Promise<ConnectionRecord | null> {
     return this.connectionService.findByVerkey(verkey);
   }

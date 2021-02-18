@@ -399,6 +399,18 @@ export class ConnectionService extends EventEmitter {
     return this.connectionRepository.findAll();
   }
 
+  /**
+   * Retrieve a connection record by id
+   *
+   * @param connectionId The connection record id
+   * @throws {Error} If no record is found
+   * @return The connection record
+   *
+   */
+  public async getById(connectionId: string): Promise<ConnectionRecord> {
+    return this.connectionRepository.find(connectionId);
+  }
+
   public async find(connectionId: string): Promise<ConnectionRecord | null> {
     try {
       const connection = await this.connectionRepository.find(connectionId);
