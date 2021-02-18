@@ -1,3 +1,6 @@
+import type { IndyProof, Schema, CredDef } from 'indy-sdk';
+import type Indy from 'indy-sdk';
+
 import { EventEmitter } from 'events';
 import { validateOrReject } from 'class-validator';
 
@@ -61,13 +64,13 @@ export class ProofService extends EventEmitter {
   private proofRepository: Repository<ProofRecord>;
   private ledgerService: LedgerService;
   private wallet: Wallet;
-  private indy: Indy;
+  private indy: typeof Indy;
 
   public constructor(
     proofRepository: Repository<ProofRecord>,
     ledgerService: LedgerService,
     wallet: Wallet,
-    indy: Indy
+    indy: typeof Indy
   ) {
     super();
 

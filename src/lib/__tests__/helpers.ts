@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import type { SchemaId, Schema, CredDefId, CredDef, Did } from 'indy-sdk';
 import logger from '../logger';
 import path from 'path';
 import { Subject } from 'rxjs';

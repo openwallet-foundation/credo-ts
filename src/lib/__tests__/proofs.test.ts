@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
-import { Subject } from 'rxjs';
 import indy from 'indy-sdk';
+import type { CredDefId } from 'indy-sdk';
+import { Subject } from 'rxjs';
 import { Agent } from '..';
 import {
   ensurePublicDidIsOnLedger,

@@ -1,3 +1,4 @@
+import type { IndyCredentialInfo } from 'indy-sdk';
 import { Expose } from 'class-transformer';
 import { IsOptional, IsString } from 'class-validator';
 

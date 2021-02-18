@@ -7,6 +7,7 @@ import { ConnectionRole } from '../protocols/connections/domain/ConnectionRole';
 import { JsonTransformer } from '../utils/JsonTransformer';
 import { DidDoc } from '../protocols/connections/domain/did/DidDoc';
 import { IndyAgentService } from '../protocols/connections/domain/did/service';
+import type { Did, Verkey } from 'indy-sdk';
 
 interface ConnectionProps {
   id?: string;

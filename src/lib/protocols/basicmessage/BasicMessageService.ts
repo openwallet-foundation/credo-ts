@@ -1,3 +1,4 @@
+import type { Verkey, WalletQuery } from 'indy-sdk';
 import { EventEmitter } from 'events';
 import { OutboundMessage } from '../../types';
 import { createOutboundMessage } from '../helpers';

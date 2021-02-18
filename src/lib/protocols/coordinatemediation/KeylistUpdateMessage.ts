@@ -1,3 +1,4 @@
+import type { Verkey } from 'indy-sdk';
 import { Equals, IsArray, ValidateNested, IsString, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 

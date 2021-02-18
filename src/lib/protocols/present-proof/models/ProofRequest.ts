@@ -1,3 +1,4 @@
+import type { IndyProofRequest } from 'indy-sdk';
 import { IsString, ValidateNested, IsOptional, IsIn } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
 

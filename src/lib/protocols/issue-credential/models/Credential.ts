@@ -1,3 +1,4 @@
+import type { IndyCredential } from 'indy-sdk';
 import { Expose, Type } from 'class-transformer';
 import { IsOptional, ValidateNested } from 'class-validator';
 import { JsonTransformer } from '../../../utils/JsonTransformer';

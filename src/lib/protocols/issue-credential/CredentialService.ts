@@ -1,3 +1,4 @@
+import type { CredDefId } from 'indy-sdk';
 import { v4 as uuid } from 'uuid';
 import { EventEmitter } from 'events';
 

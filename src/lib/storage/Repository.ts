@@ -1,3 +1,5 @@
+import type { WalletQuery } from 'indy-sdk';
+
 import { BaseRecord, RecordType } from './BaseRecord';
 import { StorageService } from './StorageService';
 

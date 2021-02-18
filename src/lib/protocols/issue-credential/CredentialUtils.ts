@@ -1,3 +1,4 @@
+import type { CredValues } from 'indy-sdk';
 import { sha256 } from 'js-sha256';
 import BigNumber from 'bn.js';
 

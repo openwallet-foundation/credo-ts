@@ -1,4 +1,30 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import type {
+  IndyProofRequest,
+  IndyRequestedCredentials,
+  Schemas,
+  CredentialDefs,
+  RevStates,
+  IndyProof,
+  IndyCredentialInfo,
+  DidConfig,
+  Schema,
+  CredDefConfig,
+  CredDef,
+  CredOffer,
+  ProofCred,
+  CredReq,
+  CredReqMetadata,
+  CredValues,
+  Cred,
+  CredRevocId,
+  RevocRegDelta,
+  CredentialId,
+  WalletRecordOptions,
+  WalletRecord,
+  WalletQuery,
+  LedgerRequest,
+} from 'indy-sdk';
 import { Wallet, DidInfo } from '../../../wallet/Wallet';
 import { UnpackedMessageContext } from '../../../types';
 

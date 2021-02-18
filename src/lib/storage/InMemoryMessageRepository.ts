@@ -1,3 +1,4 @@
+import type { Verkey } from 'indy-sdk';
 import { MessageRepository } from './MessageRepository';
 import { WireMessage } from '../types';
 

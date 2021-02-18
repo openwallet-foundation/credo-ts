@@ -1,3 +1,4 @@
+import type { Verkey } from 'indy-sdk';
 import { EventEmitter } from 'events';
 import { validateOrReject } from 'class-validator';
 

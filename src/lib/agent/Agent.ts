@@ -1,3 +1,4 @@
+import type Indy from 'indy-sdk';
 import logger from '../logger';
 import { InitConfig } from '../types';
 import { IndyWallet } from '../wallet/IndyWallet';
@@ -73,7 +74,7 @@ export class Agent {
   protected provisioningRepository: Repository<ProvisioningRecord>;
   protected credentialRepository: Repository<CredentialRecord>;
   protected proofRepository: Repository<ProofRecord>;
-  protected indy: Indy;
+  protected indy: typeof Indy;
 
   public inboundTransporter: InboundTransporter;
 
@@ -88,7 +89,7 @@ export class Agent {
     initialConfig: InitConfig,
     inboundTransporter: InboundTransporter,
     outboundTransporter: OutboundTransporter,
-    indy: Indy,
+    indy: typeof Indy,
     messageRepository?: MessageRepository
   ) {
     logger.logJson('Creating agent with config', initialConfig);

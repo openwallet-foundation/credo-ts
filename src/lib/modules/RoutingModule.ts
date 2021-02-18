@@ -10,6 +10,7 @@ import { ConnectionResponseMessage } from '../protocols/connections/messages/Con
 import { BatchMessage } from '../protocols/messagepickup/BatchMessage';
 import { createOutboundMessage } from '../protocols/helpers';
 import { ConnectionInvitationMessage } from '../protocols/connections/messages/ConnectionInvitationMessage';
+import type { Verkey } from 'indy-sdk';
 
 export class RoutingModule {
   private agentConfig: AgentConfig;

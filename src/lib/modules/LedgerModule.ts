@@ -1,3 +1,4 @@
+import type { CredDefId, Did, PoolConfig, SchemaId } from 'indy-sdk';
 import { LedgerService, SchemaTemplate, CredDefTemplate } from '../agent/LedgerService';
 import { Wallet } from '../wallet/Wallet';
 

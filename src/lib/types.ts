@@ -1,5 +1,6 @@
 import { ConnectionRecord } from './storage/ConnectionRecord';
 import { AgentMessage } from './agent/AgentMessage';
+import type { Did, WalletConfig, WalletCredentials, Verkey } from 'indy-sdk';
 
 type $FixMe = any;
 
