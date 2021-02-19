@@ -20,6 +20,7 @@ Aries Framework JavaScript is a framework for building SSI Agents and DIDComm se
   - [Prerequisites](#prerequisites)
   - [Installing](#installing)
   - [Using the framework](#using-the-framework)
+  - [Usage in React Native](#usage-in-react-native)
   - [Logs](#logs)
 - [Architecture](#architecture)
 - [Development](#development)
@@ -81,6 +82,33 @@ yarn add file:PATH_TO_REPOSITORY_FOLDER/aries-framework-javascript/aries-framewo
 ### Using the framework
 
 While the framework is still in early development the best way to know what API the framework exposes is by looking at the [tests](src/lib/__tests__), the [source code](src/lib) or the [samples](./src/samples). As the framework reaches a more mature state, documentation on the usage of the framework will be added.
+
+### Usage in React Native
+
+The framework is designed to be usable in multiple environments. The indy-sdk is the only dependency that needs special handling and is therefore an parameter when initializing the agent. Alongside Aries Framework JavaScript you need to install the indy-sdk for the environment you're using.
+
+```sh
+# for NodeJS
+yarn install indy-sdk
+
+# for React Native
+yarn install rn-indy-sdk
+```
+
+The when initializing the agent you can pass the specific Indy API as an input parameter:
+
+```typescript
+// for NodeJS
+import indy from 'indy-sdk';
+
+// for React Native
+import indy from 'rn-indy-sdk';
+
+// Pass indy to agent
+agent = new Agent(config, inboundTransport, outboundTransport, indy);
+```
+
+For an example react native app that makes use of the framework see [Aries Mobile Agent React Native](https://github.com/animo/aries-mobile-agent-react-native.git)
 
 ### Logs
 
