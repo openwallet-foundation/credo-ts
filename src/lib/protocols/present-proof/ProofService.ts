@@ -44,7 +44,7 @@ export enum ProofEventType {
 
 export interface ProofStateChangedEvent {
   proofRecord: ProofRecord;
-  prevState: ProofState;
+  previousState: ProofState;
 }
 
 export interface ProofProtocolMsgReturnType<MessageType extends AgentMessage> {
@@ -111,7 +111,7 @@ export class ProofService extends EventEmitter {
       tags: { threadId: proposalMessage.threadId },
     });
     await this.proofRepository.save(proofRecord);
-    this.emit(ProofEventType.StateChanged, { proofRecord, prevState: null });
+    this.emit(ProofEventType.StateChanged, { proofRecord, previousState: null });
 
     return { message: proposalMessage, proofRecord };
   }
@@ -196,7 +196,7 @@ export class ProofService extends EventEmitter {
 
       // Save record
       await this.proofRepository.save(proofRecord);
-      this.emit(ProofEventType.StateChanged, { proofRecord, prevState: null });
+      this.emit(ProofEventType.StateChanged, { proofRecord, previousState: null });
     }
 
     return proofRecord;
@@ -285,7 +285,7 @@ export class ProofService extends EventEmitter {
     });
 
     await this.proofRepository.save(proofRecord);
-    this.emit(ProofEventType.StateChanged, { proofRecord, prevState: null });
+    this.emit(ProofEventType.StateChanged, { proofRecord, previousState: null });
 
     return { message: requestPresentationMessage, proofRecord };
   }
@@ -346,7 +346,7 @@ export class ProofService extends EventEmitter {
 
       // Save in repository
       await this.proofRepository.save(proofRecord);
-      this.emit(ProofEventType.StateChanged, { proofRecord, prevState: null });
+      this.emit(ProofEventType.StateChanged, { proofRecord, previousState: null });
     }
 
     return proofRecord;
@@ -861,13 +861,13 @@ export class ProofService extends EventEmitter {
    *
    */
   private async updateState(proofRecord: ProofRecord, newState: ProofState) {
-    const prevState = proofRecord.state;
+    const previousState = proofRecord.state;
     proofRecord.state = newState;
     await this.proofRepository.update(proofRecord);
 
     const event: ProofStateChangedEvent = {
       proofRecord,
-      prevState,
+      previousState: previousState,
     };
 
     this.emit(ProofEventType.StateChanged, event);

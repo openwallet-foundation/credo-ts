@@ -42,15 +42,15 @@ export function toBeConnectedWith(received: ConnectionRecord, connection: Connec
 
 export async function waitForProofRecord(
   agent: Agent,
-  { threadId, state, prevState }: { threadId?: string; state?: ProofState; prevState?: ProofState | null }
+  { threadId, state, previousState }: { threadId?: string; state?: ProofState; previousState?: ProofState | null }
 ): Promise<ProofRecord> {
   return new Promise(resolve => {
     const listener = (event: ProofStateChangedEvent) => {
-      const prevStateMatches = prevState === undefined || event.prevState === prevState;
+      const previousStateMatches = previousState === undefined || event.previousState === previousState;
       const threadIdMatches = threadId === undefined || event.proofRecord.tags.threadId === threadId;
       const stateMatches = state === undefined || event.proofRecord.state === state;
 
-      if (prevStateMatches && threadIdMatches && stateMatches) {
+      if (previousStateMatches && threadIdMatches && stateMatches) {
         agent.proof.events.removeListener(ProofEventType.StateChanged, listener);
 
         resolve(event.proofRecord);
@@ -63,15 +63,19 @@ export async function waitForProofRecord(
 
 export async function waitForCredentialRecord(
   agent: Agent,
-  { threadId, state, prevState }: { threadId?: string; state?: CredentialState; prevState?: CredentialState | null }
+  {
+    threadId,
+    state,
+    previousState,
+  }: { threadId?: string; state?: CredentialState; previousState?: CredentialState | null }
 ): Promise<CredentialRecord> {
   return new Promise(resolve => {
     const listener = (event: CredentialStateChangedEvent) => {
-      const prevStateMatches = prevState === undefined || event.prevState === prevState;
+      const previousStateMatches = previousState === undefined || event.previousState === previousState;
       const threadIdMatches = threadId === undefined || event.credentialRecord.tags.threadId === threadId;
       const stateMatches = state === undefined || event.credentialRecord.state === state;
 
-      if (prevStateMatches && threadIdMatches && stateMatches) {
+      if (previousStateMatches && threadIdMatches && stateMatches) {
         agent.credentials.events.removeListener(CredentialEventType.StateChanged, listener);
 
         resolve(event.credentialRecord);

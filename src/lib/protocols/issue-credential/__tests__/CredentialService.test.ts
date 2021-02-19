@@ -191,7 +191,7 @@ describe('CredentialService', () => {
       expect(eventListenerMock).toHaveBeenCalledTimes(1);
       const [[event]] = eventListenerMock.mock.calls;
       expect(event).toMatchObject({
-        prevState: null,
+        previousState: null,
         credentialRecord: {
           state: 'OFFER_SENT',
         },
@@ -279,7 +279,7 @@ describe('CredentialService', () => {
       expect(eventListenerMock).toHaveBeenCalledTimes(1);
       const [[event]] = eventListenerMock.mock.calls;
       expect(event).toMatchObject({
-        prevState: null,
+        previousState: null,
         credentialRecord: {
           state: 'OFFER_RECEIVED',
         },
@@ -323,7 +323,7 @@ describe('CredentialService', () => {
       expect(eventListenerMock).toHaveBeenCalledTimes(1);
       const [[event]] = eventListenerMock.mock.calls;
       expect(event).toMatchObject({
-        prevState: 'OFFER_RECEIVED',
+        previousState: 'OFFER_RECEIVED',
         credentialRecord: {
           state: 'REQUEST_SENT',
         },
@@ -418,7 +418,7 @@ describe('CredentialService', () => {
       expect(eventListenerMock).toHaveBeenCalledTimes(1);
       const [[event]] = eventListenerMock.mock.calls;
       expect(event).toMatchObject({
-        prevState: 'OFFER_SENT',
+        previousState: 'OFFER_SENT',
         credentialRecord: {
           state: 'REQUEST_RECEIVED',
         },
@@ -482,7 +482,7 @@ describe('CredentialService', () => {
       expect(eventListenerMock).toHaveBeenCalledTimes(1);
       const [[event]] = eventListenerMock.mock.calls;
       expect(event).toMatchObject({
-        prevState: 'REQUEST_RECEIVED',
+        previousState: 'REQUEST_RECEIVED',
         credentialRecord: {
           state: 'CREDENTIAL_ISSUED',
         },
@@ -632,7 +632,7 @@ describe('CredentialService', () => {
       expect(eventListenerMock).toHaveBeenCalledTimes(1);
       const [[event]] = eventListenerMock.mock.calls;
       expect(event).toMatchObject({
-        prevState: 'REQUEST_SENT',
+        previousState: 'REQUEST_SENT',
         credentialRecord: {
           state: 'CREDENTIAL_RECEIVED',
         },
@@ -707,7 +707,7 @@ describe('CredentialService', () => {
       expect(eventListenerMock).toHaveBeenCalledTimes(1);
       const [[event]] = eventListenerMock.mock.calls;
       expect(event).toMatchObject({
-        prevState: 'CREDENTIAL_RECEIVED',
+        previousState: 'CREDENTIAL_RECEIVED',
         credentialRecord: {
           state: 'DONE',
         },
@@ -794,7 +794,7 @@ describe('CredentialService', () => {
       expect(eventListenerMock).toHaveBeenCalledTimes(1);
       const [[event]] = eventListenerMock.mock.calls;
       expect(event).toMatchObject({
-        prevState: 'CREDENTIAL_ISSUED',
+        previousState: 'CREDENTIAL_ISSUED',
         credentialRecord: {
           state: 'DONE',
         },

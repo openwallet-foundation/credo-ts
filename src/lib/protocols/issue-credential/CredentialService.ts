@@ -37,7 +37,7 @@ export enum CredentialEventType {
 
 export interface CredentialStateChangedEvent {
   credentialRecord: CredentialRecord;
-  prevState: CredentialState;
+  previousState: CredentialState;
 }
 
 export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessage> {
@@ -91,7 +91,7 @@ export class CredentialService extends EventEmitter {
       tags: { threadId: proposalMessage.threadId },
     });
     await this.credentialRepository.save(credentialRecord);
-    this.emit(CredentialEventType.StateChanged, { credentialRecord, prevState: null });
+    this.emit(CredentialEventType.StateChanged, { credentialRecord, previousState: null });
 
     return { message: proposalMessage, credentialRecord };
   }
@@ -169,7 +169,7 @@ export class CredentialService extends EventEmitter {
 
       // Save record
       await this.credentialRepository.save(credentialRecord);
-      this.emit(CredentialEventType.StateChanged, { credentialRecord, prevState: null });
+      this.emit(CredentialEventType.StateChanged, { credentialRecord, previousState: null });
     }
 
     return credentialRecord;
@@ -255,7 +255,7 @@ export class CredentialService extends EventEmitter {
     });
 
     await this.credentialRepository.save(credentialRecord);
-    this.emit(CredentialEventType.StateChanged, { credentialRecord, prevState: null });
+    this.emit(CredentialEventType.StateChanged, { credentialRecord, previousState: null });
 
     return { message: credentialOfferMessage, credentialRecord };
   }
@@ -311,7 +311,7 @@ export class CredentialService extends EventEmitter {
 
       // Save in repository
       await this.credentialRepository.save(credentialRecord);
-      this.emit(CredentialEventType.StateChanged, { credentialRecord, prevState: null });
+      this.emit(CredentialEventType.StateChanged, { credentialRecord, previousState: null });
     }
 
     return credentialRecord;
@@ -658,13 +658,13 @@ export class CredentialService extends EventEmitter {
    *
    */
   private async updateState(credentialRecord: CredentialRecord, newState: CredentialState) {
-    const prevState = credentialRecord.state;
+    const previousState = credentialRecord.state;
     credentialRecord.state = newState;
     await this.credentialRepository.update(credentialRecord);
 
     const event: CredentialStateChangedEvent = {
       credentialRecord,
-      prevState,
+      previousState: previousState,
     };
 
     this.emit(CredentialEventType.StateChanged, event);
