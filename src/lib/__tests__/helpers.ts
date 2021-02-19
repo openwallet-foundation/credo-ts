@@ -1,16 +1,21 @@
 /* eslint-disable no-console */
-// @ts-ignore
-import { poll } from 'await-poll';
 import logger from '../logger';
 import path from 'path';
 import { Subject } from 'rxjs';
 import { ConnectionRecord } from '../storage/ConnectionRecord';
-import { Agent, InboundTransporter, OutboundTransporter } from '..';
+import { Agent, InboundTransporter, OutboundTransporter, ProofEventType, ProofState, ProofStateChangedEvent } from '..';
 import { OutboundPackage, WireMessage } from '../types';
 import { SchemaTemplate, CredDefTemplate } from '../agent/LedgerService';
-import { CredentialOfferTemplate } from '../protocols/credentials/CredentialService';
-import { CredentialState } from '../protocols/credentials/CredentialState';
+import {
+  CredentialState,
+  CredentialOfferTemplate,
+  CredentialEventType,
+  CredentialStateChangedEvent,
+} from '../protocols/issue-credential';
 import { CredentialRecord } from '../storage/CredentialRecord';
+import { ProofRecord } from '../storage/ProofRecord';
+import { BasicMessage } from '../protocols/basicmessage/BasicMessage';
+import { BasicMessageEventType, BasicMessageReceivedEvent } from '../protocols/basicmessage/BasicMessageService';
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
@@ -33,6 +38,72 @@ export function toBeConnectedWith(received: ConnectionRecord, connection: Connec
       pass: false,
     };
   }
+}
+
+export async function waitForProofRecord(
+  agent: Agent,
+  { threadId, state, previousState }: { threadId?: string; state?: ProofState; previousState?: ProofState | null }
+): Promise<ProofRecord> {
+  return new Promise(resolve => {
+    const listener = (event: ProofStateChangedEvent) => {
+      const previousStateMatches = previousState === undefined || event.previousState === previousState;
+      const threadIdMatches = threadId === undefined || event.proofRecord.tags.threadId === threadId;
+      const stateMatches = state === undefined || event.proofRecord.state === state;
+
+      if (previousStateMatches && threadIdMatches && stateMatches) {
+        agent.proof.events.removeListener(ProofEventType.StateChanged, listener);
+
+        resolve(event.proofRecord);
+      }
+    };
+
+    agent.proof.events.addListener(ProofEventType.StateChanged, listener);
+  });
+}
+
+export async function waitForCredentialRecord(
+  agent: Agent,
+  {
+    threadId,
+    state,
+    previousState,
+  }: { threadId?: string; state?: CredentialState; previousState?: CredentialState | null }
+): Promise<CredentialRecord> {
+  return new Promise(resolve => {
+    const listener = (event: CredentialStateChangedEvent) => {
+      const previousStateMatches = previousState === undefined || event.previousState === previousState;
+      const threadIdMatches = threadId === undefined || event.credentialRecord.tags.threadId === threadId;
+      const stateMatches = state === undefined || event.credentialRecord.state === state;
+
+      if (previousStateMatches && threadIdMatches && stateMatches) {
+        agent.credentials.events.removeListener(CredentialEventType.StateChanged, listener);
+
+        resolve(event.credentialRecord);
+      }
+    };
+
+    agent.credentials.events.addListener(CredentialEventType.StateChanged, listener);
+  });
+}
+
+export async function waitForBasicMessage(
+  agent: Agent,
+  { verkey, content }: { verkey?: string; content?: string }
+): Promise<BasicMessage> {
+  return new Promise(resolve => {
+    const listener = (event: BasicMessageReceivedEvent) => {
+      const verkeyMatches = verkey === undefined || event.verkey === verkey;
+      const contentMatches = content === undefined || event.message.content === content;
+
+      if (verkeyMatches && contentMatches) {
+        agent.basicMessages.events.removeListener(BasicMessageEventType.MessageReceived, listener);
+
+        resolve(event.message);
+      }
+    };
+
+    agent.basicMessages.events.addListener(BasicMessageEventType.MessageReceived, listener);
+  });
 }
 
 export class SubjectInboundTransporter implements InboundTransporter {
@@ -120,31 +191,33 @@ export async function issueCredential({
   holderAgent: Agent;
   credentialTemplate: CredentialOfferTemplate;
 }) {
-  const issuerConnection = await issuerAgent.connections.getById(issuerConnectionId);
+  let issuerCredentialRecord = await issuerAgent.credentials.offerCredential(issuerConnectionId, credentialTemplate);
 
-  await issuerAgent.credentials.issueCredential(issuerConnection, credentialTemplate);
-  // We assume that Alice has only one credential and it's a credential from Faber
-  let [holderCredential] = await poll(
-    () => holderAgent.credentials.getCredentials(),
-    (credentials: CredentialRecord[]) => credentials.length < 1,
-    100
-  );
-  // Accept credential offer from Faber
-  await holderAgent.credentials.acceptCredential(holderCredential);
+  let holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
+    threadId: issuerCredentialRecord.tags.threadId,
+    state: CredentialState.OfferReceived,
+  });
 
-  // We assume that Alice has only one credential and it's a credential from Faber
-  const [issuerCredential] = await poll(
-    () => issuerAgent.credentials.getCredentials(),
-    (credentials: CredentialRecord[]) => credentials.length < 1 || credentials[0].state !== CredentialState.Done,
-    100
-  );
+  holderCredentialRecord = await holderAgent.credentials.acceptOffer(holderCredentialRecord.id);
 
-  // We assume that Alice has only one credential and it's a credential from Faber
-  [holderCredential] = await poll(
-    () => holderAgent.credentials.getCredentials(),
-    (credentials: CredentialRecord[]) => credentials.length < 1 || credentials[0].state !== CredentialState.Done,
-    100
-  );
+  issuerCredentialRecord = await waitForCredentialRecord(issuerAgent, {
+    threadId: holderCredentialRecord.tags.threadId,
+    state: CredentialState.RequestReceived,
+  });
 
-  return { issuerCredential, holderCredential };
+  issuerCredentialRecord = await issuerAgent.credentials.acceptRequest(issuerCredentialRecord.id);
+
+  holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
+    threadId: issuerCredentialRecord.tags.threadId,
+    state: CredentialState.CredentialReceived,
+  });
+
+  holderCredentialRecord = await holderAgent.credentials.acceptCredential(holderCredentialRecord.id);
+
+  issuerCredentialRecord = await waitForCredentialRecord(issuerAgent, {
+    threadId: issuerCredentialRecord.tags.threadId,
+    state: CredentialState.Done,
+  });
+
+  return { issuerCredential: issuerCredentialRecord, holderCredential: holderCredentialRecord };
 }

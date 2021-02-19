@@ -2,10 +2,11 @@
 // @ts-ignore
 import { poll } from 'await-poll';
 import { Agent, InboundTransporter, OutboundTransporter } from '../../lib';
-import { WireMessage, OutboundPackage, InitConfig } from '../../lib/types';
+import { OutboundPackage, InitConfig } from '../../lib/types';
 import { get, post } from '../http';
-import { toBeConnectedWith } from '../../lib/__tests__/helpers';
+import { toBeConnectedWith, waitForBasicMessage } from '../../lib/__tests__/helpers';
 import indy from 'indy-sdk';
+import logger from '../../lib/logger';
 
 expect.extend({ toBeConnectedWith });
 
@@ -56,12 +57,12 @@ describe('with mediator', () => {
     const aliceInbound = aliceAgent.routing.getInboundConnection();
     const aliceInboundConnection = aliceInbound?.connection;
     const aliceKeyAtAliceMediator = aliceInboundConnection?.verkey;
-    console.log('aliceInboundConnection', aliceInboundConnection);
+    logger.logJson('aliceInboundConnection', aliceInboundConnection);
 
     const bobInbound = bobAgent.routing.getInboundConnection();
     const bobInboundConnection = bobInbound?.connection;
     const bobKeyAtBobMediator = bobInboundConnection?.verkey;
-    console.log('bobInboundConnection', bobInboundConnection);
+    logger.logJson('bobInboundConnection', bobInboundConnection);
 
     // TODO This endpoint currently exists at mediator only for the testing purpose. It returns mediator's part of the pairwise connection.
     const mediatorConnectionAtAliceMediator = JSON.parse(
@@ -71,8 +72,8 @@ describe('with mediator', () => {
       await get(`${bobAgent.getMediatorUrl()}/api/connections/${bobKeyAtBobMediator}`)
     );
 
-    console.log('mediatorConnectionAtAliceMediator', mediatorConnectionAtAliceMediator);
-    console.log('mediatorConnectionAtBobMediator', mediatorConnectionAtBobMediator);
+    logger.logJson('mediatorConnectionAtAliceMediator', mediatorConnectionAtAliceMediator);
+    logger.logJson('mediatorConnectionAtBobMediator', mediatorConnectionAtBobMediator);
 
     expect(aliceInboundConnection).toBeConnectedWith(mediatorConnectionAtAliceMediator);
     expect(bobInboundConnection).toBeConnectedWith(mediatorConnectionAtBobMediator);
@@ -102,25 +103,16 @@ describe('with mediator', () => {
       throw new Error(`There is no connection for id ${aliceAtAliceBobId}`);
     }
 
-    console.log('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob);
+    logger.logJson('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob);
 
     const message = 'hello, world';
     await aliceAgent.basicMessages.sendMessage(aliceConnectionAtAliceBob, message);
 
-    const bobMessages = await poll(
-      async () => {
-        console.log(`Getting Bob's messages from Alice...`);
-        const messages = await bobAgent.basicMessages.findAllByQuery({
-          from: aliceConnectionAtAliceBob.did,
-          to: aliceConnectionAtAliceBob.theirDid,
-        });
-        return messages;
-      },
-      (messages: WireMessage[]) => messages.length < 1,
-      1000
-    );
-    const lastMessage = bobMessages[bobMessages.length - 1];
-    expect(lastMessage.content).toBe(message);
+    const basicMessage = await waitForBasicMessage(bobAgent, {
+      content: message,
+    });
+
+    expect(basicMessage.content).toBe(message);
   });
 });
 
@@ -147,7 +139,7 @@ class PollingInboundTransporter implements InboundTransporter {
       async () => {
         const downloadedMessages = await agent.routing.downloadMessages();
         const messages = [...downloadedMessages];
-        console.log('downloaded messges', messages);
+        logger.logJson('downloaded messages', messages);
         while (messages && messages.length > 0) {
           const message = messages.shift();
           await agent.receiveMessage(message);
@@ -167,14 +159,12 @@ class HttpOutboundTransporter implements OutboundTransporter {
       throw new Error(`Missing endpoint. I don't know how and where to send the message.`);
     }
 
-    console.log('Sending message...');
-    console.log(payload);
+    logger.logJson(`Sending outbound message to connection ${outboundPackage.connection.id}`, outboundPackage.payload);
 
     if (receiveReply) {
       const response = await post(`${endpoint}`, JSON.stringify(payload));
-      console.log('response', response);
       const wireMessage = JSON.parse(response);
-      console.log('wireMessage', wireMessage);
+      logger.logJson('received response', wireMessage);
       return wireMessage;
     } else {
       await post(`${endpoint}`, JSON.stringify(payload));

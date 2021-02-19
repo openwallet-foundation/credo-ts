@@ -27,13 +27,13 @@ export enum ConnectionEventType {
 }
 
 export interface ConnectionStateChangedEvent {
-  record: ConnectionRecord;
-  prevState: ConnectionState | null;
+  connectionRecord: ConnectionRecord;
+  previousState: ConnectionState | null;
 }
 
 export interface ConnectionProtocolMsgReturnType<MessageType extends AgentMessage> {
   message: MessageType;
-  record: ConnectionRecord;
+  connectionRecord: ConnectionRecord;
 }
 
 export class ConnectionService extends EventEmitter {
@@ -80,12 +80,12 @@ export class ConnectionService extends EventEmitter {
     await this.connectionRepository.update(connectionRecord);
 
     const event: ConnectionStateChangedEvent = {
-      record: connectionRecord,
-      prevState: null,
+      connectionRecord: connectionRecord,
+      previousState: null,
     };
     this.emit(ConnectionEventType.StateChanged, event);
 
-    return { record: connectionRecord, message: invitation };
+    return { connectionRecord: connectionRecord, message: invitation };
   }
 
   /**
@@ -118,8 +118,8 @@ export class ConnectionService extends EventEmitter {
     await this.connectionRepository.update(connectionRecord);
 
     const event: ConnectionStateChangedEvent = {
-      record: connectionRecord,
-      prevState: null,
+      connectionRecord: connectionRecord,
+      previousState: null,
     };
     this.emit(ConnectionEventType.StateChanged, event);
 
@@ -130,7 +130,7 @@ export class ConnectionService extends EventEmitter {
    * Create a connection request message for the connection with the specified connection id.
    *
    * @param connectionId the id of the connection for which to create a connection request
-   * @returns outbound message contaning connection request
+   * @returns outbound message containing connection request
    */
   public async createRequest(connectionId: string): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
     const connectionRecord = await this.connectionRepository.find(connectionId);
@@ -147,7 +147,7 @@ export class ConnectionService extends EventEmitter {
     await this.updateState(connectionRecord, ConnectionState.Requested);
 
     return {
-      record: connectionRecord,
+      connectionRecord: connectionRecord,
       message: connectionRequest,
     };
   }
@@ -225,7 +225,7 @@ export class ConnectionService extends EventEmitter {
     await this.updateState(connectionRecord, ConnectionState.Responded);
 
     return {
-      record: connectionRecord,
+      connectionRecord: connectionRecord,
       message: connectionResponse,
     };
   }
@@ -301,7 +301,7 @@ export class ConnectionService extends EventEmitter {
     await this.updateState(connectionRecord, ConnectionState.Complete);
 
     return {
-      record: connectionRecord,
+      connectionRecord: connectionRecord,
       message: trustPing,
     };
   }
@@ -330,13 +330,13 @@ export class ConnectionService extends EventEmitter {
   }
 
   public async updateState(connectionRecord: ConnectionRecord, newState: ConnectionState) {
-    const prevState = connectionRecord.state;
+    const previousState = connectionRecord.state;
     connectionRecord.state = newState;
     await this.connectionRepository.update(connectionRecord);
 
     const event: ConnectionStateChangedEvent = {
-      record: connectionRecord,
-      prevState,
+      connectionRecord: connectionRecord,
+      previousState,
     };
 
     this.emit(ConnectionEventType.StateChanged, event);
@@ -350,7 +350,7 @@ export class ConnectionService extends EventEmitter {
     autoAcceptConnection?: boolean;
     tags?: ConnectionTags;
   }): Promise<ConnectionRecord> {
-    const [did, verkey] = await this.wallet.createDid({ method_name: 'sov' });
+    const [did, verkey] = await this.wallet.createDid();
 
     const publicKey = new Ed25119Sig2018({
       id: `${did}#1`,
@@ -365,7 +365,7 @@ export class ConnectionService extends EventEmitter {
       routingKeys: this.config.getRoutingKeys(),
     });
 
-    // TODO: abstract the second paramater for ReferencedAuthentication away. This can be
+    // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
     // inferred from the publicKey class instance
     const auth = new ReferencedAuthentication(publicKey, authenticationTypes[publicKey.type]);
 

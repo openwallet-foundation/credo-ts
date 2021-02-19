@@ -1,6 +1,4 @@
 export * from './AttributeFilter';
-export * from './Credential';
-export * from './CredentialInfo';
 export * from './PartialProof';
 export * from './PredicateType';
 export * from './ProofAttribute';

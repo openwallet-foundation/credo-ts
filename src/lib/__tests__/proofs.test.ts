@@ -1,5 +1,4 @@
 /* eslint-disable no-console */
-// @ts-ignore
 import { Subject } from 'rxjs';
 import indy from 'indy-sdk';
 import { Agent } from '..';
@@ -12,11 +11,9 @@ import {
   SubjectOutboundTransporter,
   genesisPath,
   issueCredential,
+  waitForProofRecord,
 } from './helpers';
-import {
-  CredentialPreview,
-  CredentialPreviewAttribute,
-} from '../protocols/credentials/messages/CredentialOfferMessage';
+import { CredentialPreview, CredentialPreviewAttribute } from '../protocols/issue-credential';
 import { InitConfig } from '../types';
 import {
   PredicateType,
@@ -24,36 +21,12 @@ import {
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
   ProofState,
-  EventType,
-  ProofStateChangedEvent,
   ProofAttributeInfo,
   AttributeFilter,
   ProofPredicateInfo,
 } from '../protocols/present-proof';
-import { ProofRecord } from '../storage/ProofRecord';
 import { ConnectionRecord } from '../storage/ConnectionRecord';
 import logger from '../logger';
-
-async function waitForRecord(
-  agent: Agent,
-  { threadId, state, prevState }: { threadId?: string; state?: ProofState; prevState?: ProofState | null }
-): Promise<ProofRecord> {
-  return new Promise(resolve => {
-    const listener = (event: ProofStateChangedEvent) => {
-      const prevStateMatches = prevState === undefined || event.prevState === prevState;
-      const threadIdMatches = threadId === undefined || event.proofRecord.tags.threadId === threadId;
-      const stateMatches = state === undefined || event.proofRecord.state === state;
-
-      if (prevStateMatches && threadIdMatches && stateMatches) {
-        agent.proof.events.removeListener(EventType.StateChanged, listener);
-
-        resolve(event.proofRecord);
-      }
-    };
-
-    agent.proof.events.addListener(EventType.StateChanged, listener);
-  });
-}
 
 const faberConfig: InitConfig = {
   label: 'Faber',
@@ -127,32 +100,14 @@ describe('Present Proof', () => {
     const [ledgerCredDefId] = await registerDefinition(faberAgent, definitionTemplate);
     credDefId = ledgerCredDefId;
 
-    const publidDid = faberAgent.getPublicDid()?.did;
-    await ensurePublicDidIsOnLedger(faberAgent, publidDid!);
+    const publicDid = faberAgent.getPublicDid()?.did;
+    await ensurePublicDidIsOnLedger(faberAgent, publicDid!);
     const { agentAConnection, agentBConnection } = await makeConnection(faberAgent, aliceAgent);
 
     faberConnection = agentAConnection;
     aliceConnection = agentBConnection;
 
-    await issueCredential({
-      issuerAgent: faberAgent,
-      issuerConnectionId: faberConnection.id,
-      holderAgent: aliceAgent,
-      credentialTemplate: {
-        credentialDefinitionId: credDefId,
-        comment: 'some comment about credential',
-        preview: credentialPreview,
-      },
-    });
-  });
-
-  afterAll(async () => {
-    await faberAgent.closeAndDeleteWallet();
-    await aliceAgent.closeAndDeleteWallet();
-  });
-
-  test('Alice start with proof proposal to Faber', async () => {
-    const presentationPreview = new PresentationPreview({
+    presentationPreview = new PresentationPreview({
       attributes: [
         new PresentationPreviewAttribute({
           name: 'name',
@@ -171,11 +126,29 @@ describe('Present Proof', () => {
       ],
     });
 
+    await issueCredential({
+      issuerAgent: faberAgent,
+      issuerConnectionId: faberConnection.id,
+      holderAgent: aliceAgent,
+      credentialTemplate: {
+        credentialDefinitionId: credDefId,
+        comment: 'some comment about credential',
+        preview: credentialPreview,
+      },
+    });
+  });
+
+  afterAll(async () => {
+    await faberAgent.closeAndDeleteWallet();
+    await aliceAgent.closeAndDeleteWallet();
+  });
+
+  test('Alice starts with proof proposal to Faber', async () => {
     logger.log('Alice sends presentation proposal to Faber');
     let aliceProofRecord = await aliceAgent.proof.proposeProof(aliceConnection.id, presentationPreview);
 
     logger.log('Faber waits for presentation proposal from Alice');
-    let faberProofRecord = await waitForRecord(faberAgent, {
+    let faberProofRecord = await waitForProofRecord(faberAgent, {
       threadId: aliceProofRecord.tags.threadId,
       state: ProofState.ProposalReceived,
     });
@@ -184,7 +157,7 @@ describe('Present Proof', () => {
     faberProofRecord = await faberAgent.proof.acceptProposal(faberProofRecord.id);
 
     logger.log('Alice waits for presentation request from Faber');
-    aliceProofRecord = await waitForRecord(aliceAgent, {
+    aliceProofRecord = await waitForProofRecord(aliceAgent, {
       threadId: aliceProofRecord.tags.threadId,
       state: ProofState.RequestReceived,
     });
@@ -198,7 +171,7 @@ describe('Present Proof', () => {
     await aliceAgent.proof.acceptRequest(aliceProofRecord.id, requestedCredentials);
 
     logger.log('Faber waits for presentation from Alice');
-    faberProofRecord = await waitForRecord(faberAgent, {
+    faberProofRecord = await waitForProofRecord(faberAgent, {
       threadId: aliceProofRecord.tags.threadId,
       state: ProofState.PresentationReceived,
     });
@@ -210,7 +183,7 @@ describe('Present Proof', () => {
     await faberAgent.proof.acceptPresentation(faberProofRecord.id);
 
     // Alice waits till it receives presentation ack
-    aliceProofRecord = await waitForRecord(aliceAgent, {
+    aliceProofRecord = await waitForProofRecord(aliceAgent, {
       threadId: aliceProofRecord.tags.threadId,
       state: ProofState.Done,
     });
@@ -254,7 +227,7 @@ describe('Present Proof', () => {
     });
 
     logger.log('Alice waits for presentation request from Faber');
-    let aliceProofRecord = await waitForRecord(aliceAgent, {
+    let aliceProofRecord = await waitForProofRecord(aliceAgent, {
       threadId: faberProofRecord.tags.threadId,
       state: ProofState.RequestReceived,
     });
@@ -268,7 +241,7 @@ describe('Present Proof', () => {
     await aliceAgent.proof.acceptRequest(aliceProofRecord.id, requestedCredentials);
 
     logger.log('Faber waits for presentation from Alice');
-    faberProofRecord = await waitForRecord(faberAgent, {
+    faberProofRecord = await waitForProofRecord(faberAgent, {
       threadId: aliceProofRecord.tags.threadId,
       state: ProofState.PresentationReceived,
     });
@@ -280,7 +253,7 @@ describe('Present Proof', () => {
     await faberAgent.proof.acceptPresentation(faberProofRecord.id);
 
     // Alice waits till it receives presentation ack
-    aliceProofRecord = await waitForRecord(aliceAgent, {
+    aliceProofRecord = await waitForProofRecord(aliceAgent, {
       threadId: aliceProofRecord.tags.threadId,
       state: ProofState.Done,
     });

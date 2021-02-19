@@ -1,6 +1,5 @@
 import { Handler, HandlerInboundMessage } from '../Handler';
-import { CredentialService } from '../../protocols/credentials/CredentialService';
-import { CredentialAckMessage } from '../../protocols/credentials/messages/CredentialAckMessage';
+import { CredentialService, CredentialAckMessage } from '../../protocols/issue-credential';
 
 export class CredentialAckHandler implements Handler {
   private credentialService: CredentialService;

@@ -7,7 +7,7 @@ export default {
     debug('', ...args);
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  logJson: (message: string, json: Record<string, any>) => {
+  logJson: (message: string, json: Record<string, any> | any) => {
     debug(`---------- ${message} ---------- \n`, JSON.stringify(json, null, 2), '\n');
   },
 };

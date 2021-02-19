@@ -3,12 +3,7 @@ import { MessageSender } from '../agent/MessageSender';
 import { ProofService } from '../protocols/present-proof/ProofService';
 import { ProofRecord } from '../storage/ProofRecord';
 import { ProofRequest } from '../protocols/present-proof/models/ProofRequest';
-import {
-  PresentationPreview,
-  ProofState,
-  ProposePresentationMessage,
-  RequestedCredentials,
-} from '../protocols/present-proof';
+import { PresentationPreview, ProposePresentationMessage, RequestedCredentials } from '../protocols/present-proof';
 import { JsonTransformer } from '../utils/JsonTransformer';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
 import { EventEmitter } from 'events';
@@ -190,8 +185,6 @@ export class ProofsModule {
     const proofRecord = await this.proofService.getById(proofRecordId);
     const connection = await this.connectionService.getById(proofRecord.connectionId);
 
-    proofRecord.assertState(ProofState.PresentationReceived);
-
     const { message } = await this.proofService.createAck(proofRecord);
     const outboundMessage = createOutboundMessage(connection, message);
     await this.messageSender.sendMessage(outboundMessage);
@@ -225,5 +218,17 @@ export class ProofsModule {
    */
   public async getById(proofRecordId: string): Promise<ProofRecord> {
     return this.proofService.getById(proofRecordId);
+  }
+
+  /**
+   * Retrieve a proof record by thread id
+   *
+   * @param threadId The thread id
+   * @throws {Error} If no record is found
+   * @throws {Error} If multiple records are found
+   * @returns The proof record
+   */
+  public async getByThreadId(threadId: string): Promise<ProofRecord> {
+    return this.proofService.getByThreadId(threadId);
   }
 }
