@@ -4,6 +4,7 @@ import indy from 'indy-sdk';
 import { DidInfo } from '../wallet/Wallet';
 import { DID_IDENTIFIER_REGEX, VERKEY_REGEX, isFullVerkey, isAbbreviatedVerkey } from '../utils/did';
 import { InitConfig } from '../types';
+import logger from '../logger';
 
 const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
@@ -34,7 +35,7 @@ describe('ledger', () => {
 
   test(`initialization of agent's public DID`, async () => {
     faberAgentPublicDid = faberAgent.getPublicDid();
-    console.log('faberAgentPublicDid', faberAgentPublicDid);
+    logger.logJson('faberAgentPublicDid', faberAgentPublicDid!);
 
     expect(faberAgentPublicDid).toEqual(
       expect.objectContaining({
@@ -130,12 +131,12 @@ describe('ledger', () => {
 
 class DummyInboundTransporter implements InboundTransporter {
   public start() {
-    console.log('Starting agent...');
+    logger.log('Starting agent...');
   }
 }
 
 class DummyOutboundTransporter implements OutboundTransporter {
   public async sendMessage() {
-    console.log('Sending message...');
+    logger.log('Sending message...');
   }
 }
