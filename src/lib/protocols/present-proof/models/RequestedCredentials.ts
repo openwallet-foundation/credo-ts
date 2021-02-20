@@ -1,3 +1,4 @@
+import type { IndyRequestedCredentials } from 'indy-sdk';
 import { IsString, ValidateNested } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
 

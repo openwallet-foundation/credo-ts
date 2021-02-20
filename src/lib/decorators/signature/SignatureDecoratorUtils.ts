@@ -1,3 +1,4 @@
+import type { Verkey } from 'indy-sdk';
 import { SignatureDecorator } from './SignatureDecorator';
 import timestamp from '../../utils/timestamp';
 import { Wallet } from '../../wallet/Wallet';

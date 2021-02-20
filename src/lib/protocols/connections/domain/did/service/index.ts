@@ -8,7 +8,7 @@ export const serviceTypes: { [key: string]: unknown | undefined } = {
 };
 
 /**
- * Decorator that transforms service json to corresonding class instances. See {@link serviceTypes}
+ * Decorator that transforms service json to corresponding class instances. See {@link serviceTypes}
  *
  * @example
  * class Example {

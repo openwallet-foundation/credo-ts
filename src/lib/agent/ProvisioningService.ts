@@ -1,3 +1,4 @@
+import type { Verkey } from 'indy-sdk';
 import { Repository } from '../storage/Repository';
 import { ProvisioningRecord } from '../storage/ProvisioningRecord';
 import logger from '../logger';

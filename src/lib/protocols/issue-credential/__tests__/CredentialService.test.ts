@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import type { CredReqMetadata, WalletQuery, CredDef } from 'indy-sdk';
 import { Wallet } from '../../../wallet/Wallet';
 import { Repository } from '../../../storage/Repository';
 import { CredentialOfferTemplate, CredentialService, CredentialEventType } from '../CredentialService';

@@ -1,3 +1,4 @@
+import type Indy from 'indy-sdk';
 import { createOutboundMessage } from '../protocols/helpers';
 import { MessageSender } from '../agent/MessageSender';
 import { ProofService } from '../protocols/present-proof/ProofService';
@@ -12,13 +13,13 @@ export class ProofsModule {
   private proofService: ProofService;
   private connectionService: ConnectionService;
   private messageSender: MessageSender;
-  private indy: Indy;
+  private indy: typeof Indy;
 
   public constructor(
     proofService: ProofService,
     connectionService: ConnectionService,
     messageSender: MessageSender,
-    indy: Indy
+    indy: typeof Indy
   ) {
     this.proofService = proofService;
     this.connectionService = connectionService;

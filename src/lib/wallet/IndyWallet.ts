@@ -1,3 +1,35 @@
+import type {
+  Cred,
+  CredDef,
+  CredDefConfig,
+  CredDefId,
+  CredentialDefs,
+  CredentialId,
+  CredOffer,
+  CredReq,
+  CredReqMetadata,
+  CredRevocId,
+  CredValues,
+  Did,
+  DidConfig,
+  IndyProofRequest,
+  IndyRequestedCredentials,
+  LedgerRequest,
+  ProofCred,
+  RevocRegDelta,
+  RevStates,
+  Schema,
+  Schemas,
+  Verkey,
+  WalletConfig,
+  WalletCredentials,
+  WalletQuery,
+  WalletRecord,
+  WalletRecordOptions,
+  WalletSearchOptions,
+} from 'indy-sdk';
+import type Indy from 'indy-sdk';
+
 import logger from '../logger';
 import { UnpackedMessageContext } from '../types';
 import { isIndyError } from '../utils/indyError';
@@ -10,9 +42,9 @@ export class IndyWallet implements Wallet {
   private walletConfig: WalletConfig;
   private walletCredentials: WalletCredentials;
   private publicDidInfo: DidInfo | undefined;
-  private indy: Indy;
+  private indy: typeof Indy;
 
-  public constructor(walletConfig: WalletConfig, walletCredentials: WalletCredentials, indy: Indy) {
+  public constructor(walletConfig: WalletConfig, walletCredentials: WalletCredentials, indy: typeof Indy) {
     this.walletConfig = walletConfig;
     this.walletCredentials = walletCredentials;
     this.indy = indy;
@@ -101,7 +133,7 @@ export class IndyWallet implements Wallet {
   }
 
   public searchCredentialsForProofRequest(proofRequest: IndyProofRequest): Promise<number> {
-    return this.indy.proverSearchCredentialsForProofReq(this.walletHandle, proofRequest);
+    return this.indy.proverSearchCredentialsForProofReq(this.walletHandle, proofRequest, {} as any);
   }
 
   public async createCredentialOffer(credDefId: CredDefId) {
@@ -225,7 +257,7 @@ export class IndyWallet implements Wallet {
 
   public async search(type: string, query: WalletQuery, options: WalletSearchOptions) {
     const sh: number = await this.indy.openWalletSearch(this.walletHandle, type, query, options);
-    const generator = async function* (indy: Indy, wh: number) {
+    const generator = async function* (indy: typeof Indy, wh: number) {
       try {
         while (true) {
           // count should probably be exported as a config?

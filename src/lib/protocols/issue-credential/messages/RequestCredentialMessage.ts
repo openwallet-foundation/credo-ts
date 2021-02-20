@@ -1,3 +1,4 @@
+import type { CredReq } from 'indy-sdk';
 import { Equals, IsArray, IsString, ValidateNested } from 'class-validator';
 import { AgentMessage } from '../../../agent/AgentMessage';
 import { IssueCredentialMessageType } from './IssueCredentialMessageType';
