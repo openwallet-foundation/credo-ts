@@ -516,6 +516,10 @@ export class ProofService extends EventEmitter {
     return proofRecord;
   }
 
+  public async generateProofRequestNonce() {
+    return this.wallet.generateNonce();
+  }
+
   /**
    * Create a {@link ProofRequest} from a presentation proposal. This method can be used to create the
    * proof request from a received proposal for use in {@link ProofService#createRequestAsResponse}
@@ -529,10 +533,12 @@ export class ProofService extends EventEmitter {
     presentationProposal: PresentationPreview,
     config: { name: string; version: string; nonce?: string }
   ): Promise<ProofRequest> {
+    const nonce = config.nonce ?? (await this.generateProofRequestNonce());
+
     const proofRequest = new ProofRequest({
       name: config.name,
       version: config.version,
-      nonce: config.nonce ?? (await this.indy.generateNonce()),
+      nonce,
     });
 
     /**

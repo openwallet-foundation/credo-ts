@@ -1,4 +1,3 @@
-import type Indy from 'indy-sdk';
 import { createOutboundMessage } from '../protocols/helpers';
 import { MessageSender } from '../agent/MessageSender';
 import { ProofService } from '../protocols/present-proof/ProofService';
@@ -13,18 +12,11 @@ export class ProofsModule {
   private proofService: ProofService;
   private connectionService: ConnectionService;
   private messageSender: MessageSender;
-  private indy: typeof Indy;
 
-  public constructor(
-    proofService: ProofService,
-    connectionService: ConnectionService,
-    messageSender: MessageSender,
-    indy: typeof Indy
-  ) {
+  public constructor(proofService: ProofService, connectionService: ConnectionService, messageSender: MessageSender) {
     this.proofService = proofService;
     this.connectionService = connectionService;
     this.messageSender = messageSender;
-    this.indy = indy;
   }
 
   /**
@@ -130,10 +122,12 @@ export class ProofsModule {
   ): Promise<ProofRecord> {
     const connection = await this.connectionService.getById(connectionId);
 
+    const nonce = proofRequestOptions.nonce ?? (await this.proofService.generateProofRequestNonce());
+
     const proofRequest = new ProofRequest({
       name: proofRequestOptions.name ?? 'proof-request',
       version: proofRequestOptions.name ?? '1.0',
-      nonce: proofRequestOptions.nonce ?? (await this.indy.generateNonce()),
+      nonce,
       requestedAttributes: proofRequestOptions.requestedAttributes,
       requestedPredicates: proofRequestOptions.requestedPredicates,
     });

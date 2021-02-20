@@ -156,4 +156,8 @@ export class StubWallet implements Wallet {
   public signRequest(myDid: string, request: LedgerRequest): Promise<LedgerRequest> {
     throw new Error('Method not implemented.');
   }
+
+  public async generateNonce(): Promise<string> {
+    throw new Error('Method not implemented');
+  }
 }

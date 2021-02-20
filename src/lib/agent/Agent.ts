@@ -202,7 +202,7 @@ export class Agent {
       this.messageSender
     );
 
-    this.proof = new ProofsModule(this.proofService, this.connectionService, this.messageSender, this.indy);
+    this.proof = new ProofsModule(this.proofService, this.connectionService, this.messageSender);
 
     this.routing = new RoutingModule(
       this.agentConfig,
