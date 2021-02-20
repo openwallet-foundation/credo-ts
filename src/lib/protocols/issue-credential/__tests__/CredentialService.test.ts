@@ -22,7 +22,7 @@ import { credDef, credOffer, credReq } from './fixtures';
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment';
 import { LedgerService as LedgerServiceImpl } from '../../../agent/LedgerService';
 import { ConnectionState } from '../../connections/domain/ConnectionState';
-import { getMockConnection } from '../../connections/ConnectionService.test';
+import { getMockConnection } from '../../connections/__tests__/ConnectionService.test';
 import { AckStatus } from '../../connections';
 
 jest.mock('./../../../storage/Repository');
@@ -162,7 +162,7 @@ describe('CredentialService', () => {
       };
     });
 
-    test('creates credential record in OFFER_SENT state with offer, thread ID', async () => {
+    test(`creates credential record in ${CredentialState.OfferSent} state with offer, thread ID`, async () => {
       // given
       const repositorySaveSpy = jest.spyOn(credentialRepository, 'save');
 
@@ -178,11 +178,11 @@ describe('CredentialService', () => {
         createdAt: expect.any(Number),
         offerMessage: credentialOffer,
         tags: { threadId: createdCredentialRecord.offerMessage?.id },
-        state: 'OFFER_SENT',
+        state: CredentialState.OfferSent,
       });
     });
 
-    test(`emits stateChange event with a new credential in OFFER_SENT state`, async () => {
+    test(`emits stateChange event with a new credential in ${CredentialState.OfferSent} state`, async () => {
       const eventListenerMock = jest.fn();
       credentialService.on(CredentialEventType.StateChanged, eventListenerMock);
 
@@ -193,7 +193,7 @@ describe('CredentialService', () => {
       expect(event).toMatchObject({
         previousState: null,
         credentialRecord: {
-          state: 'OFFER_SENT',
+          state: CredentialState.OfferSent,
         },
       });
     });
@@ -247,7 +247,7 @@ describe('CredentialService', () => {
       messageContext.connection = connection;
     });
 
-    test('creates and return credential record in OFFER_RECEIVED state with offer, thread ID', async () => {
+    test(`creates and return credential record in ${CredentialState.OfferReceived} state with offer, thread ID`, async () => {
       const repositorySaveSpy = jest.spyOn(credentialRepository, 'save');
 
       // when
@@ -260,7 +260,7 @@ describe('CredentialService', () => {
         createdAt: expect.any(Number),
         offerMessage: credentialOfferMessage,
         tags: { threadId: credentialOfferMessage.id },
-        state: 'OFFER_RECEIVED',
+        state: CredentialState.OfferReceived,
       };
       expect(repositorySaveSpy).toHaveBeenCalledTimes(1);
       const [[createdCredentialRecord]] = repositorySaveSpy.mock.calls;
@@ -268,7 +268,7 @@ describe('CredentialService', () => {
       expect(returnedCredentialRecord).toMatchObject(expectedCredentialRecord);
     });
 
-    test(`emits stateChange event with OFFER_RECEIVED`, async () => {
+    test(`emits stateChange event with ${CredentialState.OfferReceived}`, async () => {
       const eventListenerMock = jest.fn();
       credentialService.on(CredentialEventType.StateChanged, eventListenerMock);
 
@@ -281,7 +281,7 @@ describe('CredentialService', () => {
       expect(event).toMatchObject({
         previousState: null,
         credentialRecord: {
-          state: 'OFFER_RECEIVED',
+          state: CredentialState.OfferReceived,
         },
       });
     });
@@ -297,7 +297,7 @@ describe('CredentialService', () => {
       });
     });
 
-    test('updates state to REQUEST_SENT, set request metadata', async () => {
+    test(`updates state to ${CredentialState.RequestSent}, set request metadata`, async () => {
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update');
 
       // when
@@ -308,11 +308,11 @@ describe('CredentialService', () => {
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls;
       expect(updatedCredentialRecord).toMatchObject({
         requestMetadata: { cred_req: 'meta-data' },
-        state: 'REQUEST_SENT',
+        state: CredentialState.RequestSent,
       });
     });
 
-    test(`emits stateChange event with REQUEST_SENT`, async () => {
+    test(`emits stateChange event with ${CredentialState.RequestSent}`, async () => {
       const eventListenerMock = jest.fn();
       credentialService.on(CredentialEventType.StateChanged, eventListenerMock);
 
@@ -323,9 +323,9 @@ describe('CredentialService', () => {
       expect(eventListenerMock).toHaveBeenCalledTimes(1);
       const [[event]] = eventListenerMock.mock.calls;
       expect(event).toMatchObject({
-        previousState: 'OFFER_RECEIVED',
+        previousState: CredentialState.OfferReceived,
         credentialRecord: {
-          state: 'REQUEST_SENT',
+          state: CredentialState.RequestSent,
         },
       });
     });
@@ -384,7 +384,7 @@ describe('CredentialService', () => {
       messageContext = new InboundMessageContext(credentialRequest, { connection });
     });
 
-    test('updates state to REQUEST_RECEIVED, set request and returns credential record', async () => {
+    test(`updates state to ${CredentialState.RequestReceived}, set request and returns credential record`, async () => {
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update');
 
       // given
@@ -399,7 +399,7 @@ describe('CredentialService', () => {
       expect(findByQueryArg).toEqual({ threadId: 'somethreadid' });
 
       const expectedCredentialRecord = {
-        state: 'REQUEST_RECEIVED',
+        state: CredentialState.RequestReceived,
         requestMessage: messageContext.message,
       };
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1);
@@ -408,7 +408,7 @@ describe('CredentialService', () => {
       expect(returnedCredentialRecord).toMatchObject(expectedCredentialRecord);
     });
 
-    test(`emits stateChange event from OFFER_SENT to REQUEST_RECEIVED`, async () => {
+    test(`emits stateChange event from ${CredentialState.OfferSent} to ${CredentialState.RequestReceived}`, async () => {
       const eventListenerMock = jest.fn();
       credentialService.on(CredentialEventType.StateChanged, eventListenerMock);
       repositoryFindByQueryMock.mockReturnValue(Promise.resolve([credential]));
@@ -418,9 +418,9 @@ describe('CredentialService', () => {
       expect(eventListenerMock).toHaveBeenCalledTimes(1);
       const [[event]] = eventListenerMock.mock.calls;
       expect(event).toMatchObject({
-        previousState: 'OFFER_SENT',
+        previousState: CredentialState.OfferSent,
         credentialRecord: {
-          state: 'REQUEST_RECEIVED',
+          state: CredentialState.RequestReceived,
         },
       });
     });
@@ -454,7 +454,7 @@ describe('CredentialService', () => {
       });
     });
 
-    test('updates state to CREDENTIAL_ISSUED', async () => {
+    test(`updates state to ${CredentialState.CredentialIssued}`, async () => {
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update');
 
       // when
@@ -464,11 +464,11 @@ describe('CredentialService', () => {
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1);
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls;
       expect(updatedCredentialRecord).toMatchObject({
-        state: 'CREDENTIAL_ISSUED',
+        state: CredentialState.CredentialIssued,
       });
     });
 
-    test(`emits stateChange event from REQUEST_RECEIVED to CREDENTIAL_ISSUED`, async () => {
+    test(`emits stateChange event from ${CredentialState.RequestReceived} to ${CredentialState.CredentialIssued}`, async () => {
       const eventListenerMock = jest.fn();
       credentialService.on(CredentialEventType.StateChanged, eventListenerMock);
 
@@ -482,9 +482,9 @@ describe('CredentialService', () => {
       expect(eventListenerMock).toHaveBeenCalledTimes(1);
       const [[event]] = eventListenerMock.mock.calls;
       expect(event).toMatchObject({
-        previousState: 'REQUEST_RECEIVED',
+        previousState: CredentialState.RequestReceived,
         credentialRecord: {
-          state: 'CREDENTIAL_ISSUED',
+          state: CredentialState.CredentialIssued,
         },
       });
     });
@@ -598,7 +598,7 @@ describe('CredentialService', () => {
       );
     });
 
-    test(`updates state to CREDENTIAL_RECEIVED, set credentialId and returns credential record`, async () => {
+    test(`updates state to ${CredentialState.CredentialReceived}, set credentialId and returns credential record`, async () => {
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update');
 
       // given
@@ -610,7 +610,7 @@ describe('CredentialService', () => {
       // then
       const expectedCredentialRecord = {
         credentialId: expect.any(String),
-        state: 'CREDENTIAL_RECEIVED',
+        state: CredentialState.CredentialReceived,
       };
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1);
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls;
@@ -618,7 +618,7 @@ describe('CredentialService', () => {
       expect(updatedCredential).toMatchObject(expectedCredentialRecord);
     });
 
-    test(`emits stateChange event from REQUEST_SENT to CREDENTIAL_RECEIVED`, async () => {
+    test(`emits stateChange event from ${CredentialState.RequestSent} to ${CredentialState.CredentialReceived}`, async () => {
       const eventListenerMock = jest.fn();
       credentialService.on(CredentialEventType.StateChanged, eventListenerMock);
 
@@ -632,9 +632,9 @@ describe('CredentialService', () => {
       expect(eventListenerMock).toHaveBeenCalledTimes(1);
       const [[event]] = eventListenerMock.mock.calls;
       expect(event).toMatchObject({
-        previousState: 'REQUEST_SENT',
+        previousState: CredentialState.RequestSent,
         credentialRecord: {
-          state: 'CREDENTIAL_RECEIVED',
+          state: CredentialState.CredentialReceived,
         },
       });
     });
@@ -678,7 +678,7 @@ describe('CredentialService', () => {
       });
     });
 
-    test('updates state to DONE', async () => {
+    test(`updates state to ${CredentialState.Done}`, async () => {
       // given
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update');
 
@@ -689,11 +689,11 @@ describe('CredentialService', () => {
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1);
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls;
       expect(updatedCredentialRecord).toMatchObject({
-        state: 'DONE',
+        state: CredentialState.Done,
       });
     });
 
-    test(`emits stateChange event from CREDENTIAL_RECEIVED to DONE`, async () => {
+    test(`emits stateChange event from ${CredentialState.CredentialReceived} to ${CredentialState.Done}`, async () => {
       const eventListenerMock = jest.fn();
       credentialService.on(CredentialEventType.StateChanged, eventListenerMock);
 
@@ -707,9 +707,9 @@ describe('CredentialService', () => {
       expect(eventListenerMock).toHaveBeenCalledTimes(1);
       const [[event]] = eventListenerMock.mock.calls;
       expect(event).toMatchObject({
-        previousState: 'CREDENTIAL_RECEIVED',
+        previousState: CredentialState.CredentialReceived,
         credentialRecord: {
-          state: 'DONE',
+          state: CredentialState.Done,
         },
       });
     });
@@ -760,7 +760,7 @@ describe('CredentialService', () => {
       });
     });
 
-    test('updates state to DONE and returns credential record', async () => {
+    test(`updates state to ${CredentialState.Done} and returns credential record`, async () => {
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update');
 
       // given
@@ -771,7 +771,7 @@ describe('CredentialService', () => {
 
       // then
       const expectedCredentialRecord = {
-        state: 'DONE',
+        state: CredentialState.Done,
       };
       expect(repositoryFindByQueryMock).toHaveBeenCalledTimes(1);
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1);
@@ -780,7 +780,7 @@ describe('CredentialService', () => {
       expect(returnedCredentialRecord).toMatchObject(expectedCredentialRecord);
     });
 
-    test(`emits stateChange event from CREDENTIAL_ISSUED to DONE`, async () => {
+    test(`emits stateChange event from ${CredentialState.CredentialIssued} to ${CredentialState.Done}`, async () => {
       const eventListenerMock = jest.fn();
       credentialService.on(CredentialEventType.StateChanged, eventListenerMock);
 
@@ -794,9 +794,9 @@ describe('CredentialService', () => {
       expect(eventListenerMock).toHaveBeenCalledTimes(1);
       const [[event]] = eventListenerMock.mock.calls;
       expect(event).toMatchObject({
-        previousState: 'CREDENTIAL_ISSUED',
+        previousState: CredentialState.CredentialIssued,
         credentialRecord: {
-          state: 'DONE',
+          state: CredentialState.Done,
         },
       });
     });

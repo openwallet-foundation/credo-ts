@@ -1,11 +1,16 @@
+/**
+ * Issue Credential states as defined in RFC 0036
+ *
+ * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#states
+ */
 export enum CredentialState {
-  ProposalSent = 'PROPOSAL_SENT',
-  ProposalReceived = 'PROPOSAL_RECEIVED',
-  OfferSent = 'OFFER_SENT',
-  OfferReceived = 'OFFER_RECEIVED',
-  RequestSent = 'REQUEST_SENT',
-  RequestReceived = 'REQUEST_RECEIVED',
-  CredentialIssued = 'CREDENTIAL_ISSUED',
-  CredentialReceived = 'CREDENTIAL_RECEIVED',
-  Done = 'DONE',
+  ProposalSent = 'proposal-sent',
+  ProposalReceived = 'proposal-received',
+  OfferSent = 'offer-sent',
+  OfferReceived = 'offer-received',
+  RequestSent = 'request-sent',
+  RequestReceived = 'request-received',
+  CredentialIssued = 'credential-issued',
+  CredentialReceived = 'credential-received',
+  Done = 'done',
 }

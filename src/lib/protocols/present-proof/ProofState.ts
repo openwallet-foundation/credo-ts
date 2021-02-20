@@ -4,12 +4,11 @@
  * @see https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#states
  */
 export enum ProofState {
-  RequestSent = 'request-sent',
-  RequestReceived = 'request-received',
   ProposalSent = 'proposal-sent',
   ProposalReceived = 'proposal-received',
+  RequestSent = 'request-sent',
+  RequestReceived = 'request-received',
   PresentationSent = 'presentation-sent',
   PresentationReceived = 'presentation-received',
-  RejectSent = 'reject-sent',
   Done = 'done',
 }
