@@ -768,8 +768,8 @@ export class ProofService extends EventEmitter {
     // I'm not 100% sure how much indy does. Also if it checks whether the proof requests matches the proof
     // @see https://github.com/hyperledger/aries-cloudagent-python/blob/master/aries_cloudagent/indy/sdk/verifier.py#L79-L164
 
-    const schemas = await this.buildSchemas(new Set(proof.identifiers.map(i => i.schemaId)));
-    const credentialDefinitions = await this.buildCredentialDefinitions(
+    const schemas = await this.getSchemas(new Set(proof.identifiers.map(i => i.schemaId)));
+    const credentialDefinitions = await this.getCredentialDefinitions(
       new Set(proof.identifiers.map(i => i.credentialDefinitionId))
     );
 
@@ -845,8 +845,8 @@ export class ProofService extends EventEmitter {
       credentialObjects.push(credentialInfo);
     }
 
-    const schemas = await this.buildSchemas(new Set(credentialObjects.map(c => c.schemaId)));
-    const credentialDefinitions = await this.buildCredentialDefinitions(
+    const schemas = await this.getSchemas(new Set(credentialObjects.map(c => c.schemaId)));
+    const credentialDefinitions = await this.getCredentialDefinitions(
       new Set(credentialObjects.map(c => c.credentialDefinitionId))
     );
 
@@ -887,11 +887,11 @@ export class ProofService extends EventEmitter {
    *
    * Creates object with `{ schemaId: Schema }` mapping
    *
-   * @param schemaIds List of schema id
+   * @param schemaIds List of schema ids
    * @returns Object containing schemas for specified schema ids
    *
    */
-  private async buildSchemas(schemaIds: Set<string>) {
+  private async getSchemas(schemaIds: Set<string>) {
     const schemas: { [key: string]: Schema } = {};
 
     for (const schemaId of schemaIds) {
@@ -905,13 +905,13 @@ export class ProofService extends EventEmitter {
   /**
    * Build credential definitions object needed to create and verify proof objects.
    *
-   * Creates object with `{ schemaId: Schema }` mapping
+   * Creates object with `{ credentialDefinitionId: CredentialDefinition }` mapping
    *
-   * @param schemaIds List of schema id
+   * @param credentialDefinitionIds List of credential definition ids
    * @returns Object containing credential definitions for specified credential definition ids
    *
    */
-  private async buildCredentialDefinitions(credentialDefinitionIds: Set<string>) {
+  private async getCredentialDefinitions(credentialDefinitionIds: Set<string>) {
     const credentialDefinitions: { [key: string]: CredDef } = {};
 
     for (const credDefId of credentialDefinitionIds) {
