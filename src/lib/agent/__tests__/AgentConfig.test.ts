@@ -1,4 +1,4 @@
-import { getMockConnection } from '../../protocols/connections/ConnectionService.test';
+import { getMockConnection } from '../../protocols/connections/__tests__/ConnectionService.test';
 import { DidDoc } from '../../protocols/connections/domain/did/DidDoc';
 import { IndyAgentService } from '../../protocols/connections/domain/did/service';
 import { AgentConfig } from '../AgentConfig';

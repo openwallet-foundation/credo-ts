@@ -1,28 +1,28 @@
 import indy from 'indy-sdk';
 import { v4 as uuid } from 'uuid';
-import { IndyWallet } from '../../wallet/IndyWallet';
-import { Wallet } from '../../wallet/Wallet';
-import { ConnectionService } from './ConnectionService';
-import { ConnectionRecord, ConnectionStorageProps } from '../../storage/ConnectionRecord';
-import { AgentConfig } from '../../agent/AgentConfig';
-import { ConnectionState } from './domain/ConnectionState';
-import { InitConfig } from '../../types';
-import { ConnectionRole } from './domain/ConnectionRole';
-import { ConnectionInvitationMessage } from './messages/ConnectionInvitationMessage';
-import { Repository } from '../../storage/Repository';
-import { Connection } from './domain/Connection';
-import { signData, unpackAndVerifySignatureDecorator } from '../../decorators/signature/SignatureDecoratorUtils';
-import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
-import { ConnectionResponseMessage } from './messages/ConnectionResponseMessage';
-import { SignatureDecorator } from '../../decorators/signature/SignatureDecorator';
-import { ConnectionRequestMessage } from './messages/ConnectionRequestMessage';
-import { TrustPingMessage } from '../trustping/TrustPingMessage';
-import { AckMessage, AckStatus } from './messages/AckMessage';
-import { JsonTransformer } from '../../utils/JsonTransformer';
-import { DidDoc } from './domain/did/DidDoc';
-import { IndyAgentService } from './domain/did/service';
+import { IndyWallet } from '../../../wallet/IndyWallet';
+import { Wallet } from '../../../wallet/Wallet';
+import { ConnectionService } from '../ConnectionService';
+import { ConnectionRecord, ConnectionStorageProps } from '../../../storage/ConnectionRecord';
+import { AgentConfig } from '../../../agent/AgentConfig';
+import { ConnectionState } from '../domain/ConnectionState';
+import { InitConfig } from '../../../types';
+import { ConnectionRole } from '../domain/ConnectionRole';
+import { ConnectionInvitationMessage } from '../messages/ConnectionInvitationMessage';
+import { Repository } from '../../../storage/Repository';
+import { Connection } from '../domain/Connection';
+import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils';
+import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
+import { ConnectionResponseMessage } from '../messages/ConnectionResponseMessage';
+import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator';
+import { ConnectionRequestMessage } from '../messages/ConnectionRequestMessage';
+import { TrustPingMessage } from '../../trustping/TrustPingMessage';
+import { AckMessage, AckStatus } from '../messages/AckMessage';
+import { JsonTransformer } from '../../../utils/JsonTransformer';
+import { DidDoc } from '../domain/did/DidDoc';
+import { IndyAgentService } from '../domain/did/service';
 
-jest.mock('./../../storage/Repository');
+jest.mock('./../../../storage/Repository');
 const ConnectionRepository = <jest.Mock<Repository<ConnectionRecord>>>(<unknown>Repository);
 
 export function getMockConnection({
@@ -275,17 +275,20 @@ describe('ConnectionService', () => {
       ConnectionState.Responded,
       ConnectionState.Complete,
     ];
-    test.each(invalidConnectionStates)('throws an error when connection state is %s and not INVITED', state => {
-      expect.assertions(1);
+    test.each(invalidConnectionStates)(
+      `throws an error when connection state is %s and not ${ConnectionState.Invited}`,
+      state => {
+        expect.assertions(1);
 
-      // make separate mockFind variable to get the correct jest mock typing
-      const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>;
+        // make separate mockFind variable to get the correct jest mock typing
+        const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>;
 
-      mockFind.mockReturnValue(Promise.resolve(getMockConnection({ state })));
-      return expect(connectionService.createRequest('test')).rejects.toThrowError(
-        `Connection record is in invalid state ${state}. Valid states are: ${ConnectionState.Invited}.`
-      );
-    });
+        mockFind.mockReturnValue(Promise.resolve(getMockConnection({ state })));
+        return expect(connectionService.createRequest('test')).rejects.toThrowError(
+          `Connection record is in invalid state ${state}. Valid states are: ${ConnectionState.Invited}.`
+        );
+      }
+    );
   });
 
   describe('processRequest', () => {
@@ -460,17 +463,20 @@ describe('ConnectionService', () => {
       ConnectionState.Responded,
       ConnectionState.Complete,
     ];
-    test.each(invalidConnectionStates)('throws an error when connection state is %s and not REQUESTED', async state => {
-      expect.assertions(1);
+    test.each(invalidConnectionStates)(
+      `throws an error when connection state is %s and not ${ConnectionState.Requested}`,
+      async state => {
+        expect.assertions(1);
 
-      // make separate mockFind variable to get the correct jest mock typing
-      const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>;
-      mockFind.mockReturnValue(Promise.resolve(getMockConnection({ state })));
+        // make separate mockFind variable to get the correct jest mock typing
+        const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>;
+        mockFind.mockReturnValue(Promise.resolve(getMockConnection({ state })));
 
-      return expect(connectionService.createResponse('test')).rejects.toThrowError(
-        `Connection record is in invalid state ${state}. Valid states are: ${ConnectionState.Requested}.`
-      );
-    });
+        return expect(connectionService.createResponse('test')).rejects.toThrowError(
+          `Connection record is in invalid state ${state}. Valid states are: ${ConnectionState.Requested}.`
+        );
+      }
+    );
   });
 
   describe('processResponse', () => {
@@ -671,7 +677,7 @@ describe('ConnectionService', () => {
 
     const invalidConnectionStates = [ConnectionState.Init, ConnectionState.Invited, ConnectionState.Requested];
     test.each(invalidConnectionStates)(
-      'throws an error when connection state is %s and not RESPONDED or COMPLETED',
+      `throws an error when connection state is %s and not ${ConnectionState.Responded} or ${ConnectionState.Complete}`,
       state => {
         expect.assertions(1);
 
