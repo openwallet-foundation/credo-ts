@@ -42,7 +42,7 @@ export class CredentialsModule {
   }
 
   /**
-   * Initiate a new credential exchange by sending a credential proposal message
+   * Initiate a new credential exchange as holder by sending a credential proposal message
    * to the connection with the specified connection id.
    *
    * @param connectionId The connection to send the credential proposal to
@@ -61,7 +61,7 @@ export class CredentialsModule {
   }
 
   /**
-   * Accept a credential proposal (by sending a credential offer message) to the connection
+   * Accept a credential proposal as issuer (by sending a credential offer message) to the connection
    * associated with the credential record.
    *
    * @param credentialRecordId The id of the credential record for which to accept the proposal
@@ -111,7 +111,7 @@ export class CredentialsModule {
   }
 
   /**
-   * Initiate a new credential exchange by sending a credential offer message
+   * Initiate a new credential exchange as issuer by sending a credential offer message
    * to the connection with the specified connection id.
    *
    * @param connectionId The connection to send the credential offer to
@@ -133,7 +133,7 @@ export class CredentialsModule {
   }
 
   /**
-   * Accept a credential offer (by sending a credential request message) to the connection
+   * Accept a credential offer as holder (by sending a credential request message) to the connection
    * associated with the credential record.
    *
    * @param credentialRecordId The id of the credential record for which to accept the offer
@@ -154,7 +154,7 @@ export class CredentialsModule {
   }
 
   /**
-   * Accept a credential request (by sending a credential message) to the connection
+   * Accept a credential request as issuer (by sending a credential message) to the connection
    * associated with the credential record.
    *
    * @param credentialRecordId The id of the credential record for which to accept the request
@@ -174,7 +174,7 @@ export class CredentialsModule {
   }
 
   /**
-   * Accept a credential (by sending a credential acknowledgement message) to the connection
+   * Accept a credential as holder (by sending a credential acknowledgement message) to the connection
    * associated with the credential record.
    *
    * @param credentialRecordId The id of the credential record for which to accept the credential
