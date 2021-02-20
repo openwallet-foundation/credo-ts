@@ -2,7 +2,6 @@ import { CredentialRecord } from '../storage/CredentialRecord';
 import { createOutboundMessage } from '../protocols/helpers';
 import { MessageSender } from '../agent/MessageSender';
 import { ConnectionService } from '../protocols/connections/ConnectionService';
-import { LedgerService } from '../agent/LedgerService';
 import { EventEmitter } from 'events';
 import {
   ProposeCredentialMessage,
@@ -16,18 +15,15 @@ import { JsonTransformer } from '../utils/JsonTransformer';
 export class CredentialsModule {
   private connectionService: ConnectionService;
   private credentialService: CredentialService;
-  private ledgerService: LedgerService;
   private messageSender: MessageSender;
 
   public constructor(
     connectionService: ConnectionService,
     credentialService: CredentialService,
-    ledgerService: LedgerService,
     messageSender: MessageSender
   ) {
     this.connectionService = connectionService;
     this.credentialService = credentialService;
-    this.ledgerService = ledgerService;
     this.messageSender = messageSender;
   }
 

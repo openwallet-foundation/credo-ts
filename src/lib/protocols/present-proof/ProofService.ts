@@ -551,11 +551,11 @@ export class ProofService extends EventEmitter {
      *  "referent2": [Attribute3]
      * }
      */
-    const attributesByReferent = new Map<string, PresentationPreviewAttribute[]>();
+    const attributesByReferent: Record<string, PresentationPreviewAttribute[]> = {};
     for (const proposedAttributes of presentationProposal.attributes) {
       if (!proposedAttributes.referent) proposedAttributes.referent = uuid();
 
-      const referentAttributes = attributesByReferent.get(proposedAttributes.referent);
+      const referentAttributes = attributesByReferent[proposedAttributes.referent];
 
       // Referent key already exist, add to list
       if (referentAttributes) {
@@ -563,12 +563,12 @@ export class ProofService extends EventEmitter {
       }
       // Referent key does not exist yet, create new entry
       else {
-        attributesByReferent.set(proposedAttributes.referent, [proposedAttributes]);
+        attributesByReferent[proposedAttributes.referent] = [proposedAttributes];
       }
     }
 
     // Transform attributes by referent to requested attributes
-    for (const [referent, proposedAttributes] of attributesByReferent) {
+    for (const [referent, proposedAttributes] of Object.entries(attributesByReferent)) {
       // Either attributeName or attributeNames will be undefined
       const attributeName = proposedAttributes.length == 1 ? proposedAttributes[0].name : undefined;
       const attributeNames = proposedAttributes.length > 1 ? proposedAttributes.map(a => a.name) : undefined;
@@ -583,7 +583,7 @@ export class ProofService extends EventEmitter {
         ],
       });
 
-      proofRequest.requestedAttributes.set(referent, requestedAttribute);
+      proofRequest.requestedAttributes[referent] = requestedAttribute;
     }
 
     logger.logJson('proposal predicates', presentationProposal.predicates);
@@ -600,7 +600,7 @@ export class ProofService extends EventEmitter {
         ],
       });
 
-      proofRequest.requestedPredicates.set(uuid(), requestedPredicate);
+      proofRequest.requestedPredicates[uuid()] = requestedPredicate;
     }
 
     return proofRequest;
@@ -611,7 +611,7 @@ export class ProofService extends EventEmitter {
    *
    * @param proofRequest The proof request to retrieve the credentials for
    * @param attributeReferent An attribute referent from the proof request to retrieve the credentials for
-   * @returns List of credentials that are available for bulding a proof for the given proof request
+   * @returns List of credentials that are available for building a proof for the given proof request
    *
    */
   public async getCredentialsForProofRequest(
@@ -645,7 +645,7 @@ export class ProofService extends EventEmitter {
   ): Promise<RequestedCredentials> {
     const requestedCredentials = new RequestedCredentials({});
 
-    for (const [referent, requestedAttribute] of proofRequest.requestedAttributes) {
+    for (const [referent, requestedAttribute] of Object.entries(proofRequest.requestedAttributes)) {
       let credentialMatch: Credential | null = null;
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent);
 
@@ -674,7 +674,7 @@ export class ProofService extends EventEmitter {
               a =>
                 a.name === name &&
                 a.credentialDefinitionId === credentialDefinitionId &&
-                (!a.value || a.value === attributes.get(name))
+                (!a.value || a.value === attributes[name])
             )
           );
 
@@ -692,25 +692,22 @@ export class ProofService extends EventEmitter {
       }
 
       if (requestedAttribute.restrictions) {
-        requestedCredentials.requestedAttributes.set(
-          referent,
-          new RequestedAttribute({
-            credentialId: credentialMatch.credentialInfo.referent,
-            revealed: true,
-          })
-        );
+        requestedCredentials.requestedAttributes[referent] = new RequestedAttribute({
+          credentialId: credentialMatch.credentialInfo.referent,
+          revealed: true,
+        });
       }
       // If there are no restrictions we can self attest the attribute
       else {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const value = credentialMatch.credentialInfo.attributes.get(requestedAttribute.name!);
+        const value = credentialMatch.credentialInfo.attributes[requestedAttribute.name!];
 
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        requestedCredentials.selfAttestedAttributes.set(referent, value!);
+        requestedCredentials.selfAttestedAttributes[referent] = value!;
       }
     }
 
-    for (const [referent, requestedPredicate] of proofRequest.requestedPredicates) {
+    for (const [referent, requestedPredicate] of Object.entries(proofRequest.requestedPredicates)) {
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent);
 
       // Can't create requestedPredicates without matching credentials
@@ -722,20 +719,17 @@ export class ProofService extends EventEmitter {
 
       const credentialMatch = credentials[0];
       if (requestedPredicate.restrictions) {
-        requestedCredentials.requestedPredicates.set(
-          referent,
-          new RequestedPredicate({
-            credentialId: credentialMatch.credentialInfo.referent,
-          })
-        );
+        requestedCredentials.requestedPredicates[referent] = new RequestedPredicate({
+          credentialId: credentialMatch.credentialInfo.referent,
+        });
       }
       // If there are no restrictions we can self attest the attribute
       else {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const value = credentialMatch.credentialInfo.attributes.get(requestedPredicate.name!);
+        const value = credentialMatch.credentialInfo.attributes[requestedPredicate.name!];
 
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        requestedCredentials.selfAttestedAttributes.set(referent, value!);
+        requestedCredentials.selfAttestedAttributes[referent] = value!;
       }
     }
 

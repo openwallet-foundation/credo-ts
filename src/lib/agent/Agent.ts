@@ -216,11 +216,6 @@ export class Agent {
     this.basicMessages = new BasicMessagesModule(this.basicMessageService, this.messageSender);
     this.ledger = new LedgerModule(this.wallet, this.ledgerService);
 
-    this.credentials = new CredentialsModule(
-      this.connectionService,
-      this.credentialService,
-      this.ledgerService,
-      this.messageSender
-    );
+    this.credentials = new CredentialsModule(this.connectionService, this.credentialService, this.messageSender);
   }
 }
