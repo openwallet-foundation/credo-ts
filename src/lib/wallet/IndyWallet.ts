@@ -285,7 +285,7 @@ export class IndyWallet implements Wallet {
     return this.indy.signRequest(this.walletHandle, myDid, request);
   }
 
-  private keyForLocalDid(did: Did) {
-    return this.indy.keyForLocalDid(this.walletHandle, did);
+  public async generateNonce() {
+    return this.indy.generateNonce();
   }
 }

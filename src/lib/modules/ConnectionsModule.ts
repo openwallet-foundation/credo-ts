@@ -58,7 +58,7 @@ export class ConnectionsModule {
   }
 
   /**
-   * Receive connection invitation and create connection. If auto accepting is enabled
+   * Receive connection invitation as invitee and create connection. If auto accepting is enabled
    * via either the config passed in the function or the global agent config, a connection
    * request message will be send.
    *
@@ -88,7 +88,7 @@ export class ConnectionsModule {
   }
 
   /**
-   * Receive connection invitation encoded as url and create connection. If auto accepting is enabled
+   * Receive connection invitation as invitee encoded as url and create connection. If auto accepting is enabled
    * via either the config passed in the function or the global agent config, a connection
    * request message will be send.
    *
@@ -108,7 +108,7 @@ export class ConnectionsModule {
   }
 
   /**
-   * Accept a connection invitation (by sending a connection request message) for the connection with the specified connection id.
+   * Accept a connection invitation as invitee (by sending a connection request message) for the connection with the specified connection id.
    * This is not needed when auto accepting of connections is enabled.
    *
    * @param connectionId the id of the connection for which to accept the invitation
@@ -130,7 +130,7 @@ export class ConnectionsModule {
   }
 
   /**
-   * Accept a connection request (by sending a connection response message) for the connection with the specified connection id.
+   * Accept a connection request as inviter (by sending a connection response message) for the connection with the specified connection id.
    * This is not needed when auto accepting of connection is enabled.
    *
    * @param connectionId the id of the connection for which to accept the request
@@ -146,7 +146,7 @@ export class ConnectionsModule {
   }
 
   /**
-   * Accept a connection response (by sending a trust ping message) for the connection with the specified connection id.
+   * Accept a connection response as invitee (by sending a trust ping message) for the connection with the specified connection id.
    * This is not needed when auto accepting of connection is enabled.
    *
    * @param connectionId the id of the connection for which to accept the response

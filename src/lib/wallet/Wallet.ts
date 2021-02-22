@@ -76,6 +76,7 @@ export interface Wallet {
   search(type: string, query: WalletQuery, options: WalletSearchOptions): Promise<AsyncIterable<WalletRecord>>;
   signRequest(myDid: Did, request: LedgerRequest): Promise<LedgerRequest>;
   searchCredentialsForProofRequest(proofRequest: IndyProofRequest): Promise<number>;
+  generateNonce(): Promise<string>;
 }
 
 export interface DidInfo {

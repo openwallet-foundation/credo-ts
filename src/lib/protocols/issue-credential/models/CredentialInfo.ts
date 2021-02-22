@@ -24,7 +24,7 @@ export class CredentialInfo {
 
   @Expose({ name: 'attrs' })
   @IsString({ each: true })
-  public attributes!: Map<string, string>;
+  public attributes!: Record<string, string>;
 
   @Expose({ name: 'schema_id' })
   @IsString()

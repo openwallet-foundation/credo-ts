@@ -1,4 +1,3 @@
-import type Indy from 'indy-sdk';
 import { createOutboundMessage } from '../protocols/helpers';
 import { MessageSender } from '../agent/MessageSender';
 import { ProofService } from '../protocols/present-proof/ProofService';
@@ -13,18 +12,11 @@ export class ProofsModule {
   private proofService: ProofService;
   private connectionService: ConnectionService;
   private messageSender: MessageSender;
-  private indy: typeof Indy;
 
-  public constructor(
-    proofService: ProofService,
-    connectionService: ConnectionService,
-    messageSender: MessageSender,
-    indy: typeof Indy
-  ) {
+  public constructor(proofService: ProofService, connectionService: ConnectionService, messageSender: MessageSender) {
     this.proofService = proofService;
     this.connectionService = connectionService;
     this.messageSender = messageSender;
-    this.indy = indy;
   }
 
   /**
@@ -38,7 +30,7 @@ export class ProofsModule {
   }
 
   /**
-   * Initiate a new presentation exchange by sending a presentation proposal message
+   * Initiate a new presentation exchange as prover by sending a presentation proposal message
    * to the connection with the specified connection id.
    *
    * @param connectionId The connection to send the proof proposal to
@@ -65,7 +57,7 @@ export class ProofsModule {
   }
 
   /**
-   * Accept a presentation proposal (by sending a presentation request message) to the connection
+   * Accept a presentation proposal as verifier (by sending a presentation request message) to the connection
    * associated with the proof record.
    *
    * @param proofRecordId The id of the proof record for which to accept the proposal
@@ -112,7 +104,7 @@ export class ProofsModule {
   }
 
   /**
-   * Initiate a new presentation exchange by sending a presentation request message
+   * Initiate a new presentation exchange as verifier by sending a presentation request message
    * to the connection with the specified connection id
    *
    * @param connectionId The connection to send the proof request to
@@ -130,10 +122,12 @@ export class ProofsModule {
   ): Promise<ProofRecord> {
     const connection = await this.connectionService.getById(connectionId);
 
+    const nonce = proofRequestOptions.nonce ?? (await this.proofService.generateProofRequestNonce());
+
     const proofRequest = new ProofRequest({
       name: proofRequestOptions.name ?? 'proof-request',
       version: proofRequestOptions.name ?? '1.0',
-      nonce: proofRequestOptions.nonce ?? (await this.indy.generateNonce()),
+      nonce,
       requestedAttributes: proofRequestOptions.requestedAttributes,
       requestedPredicates: proofRequestOptions.requestedPredicates,
     });
@@ -147,7 +141,7 @@ export class ProofsModule {
   }
 
   /**
-   * Accept a presentation request (by sending a presentation message) to the connection
+   * Accept a presentation request as prover (by sending a presentation message) to the connection
    * associated with the proof record.
    *
    * @param proofRecordId The id of the proof record for which to accept the request
@@ -175,7 +169,7 @@ export class ProofsModule {
   }
 
   /**
-   * Accept a presentation (by sending a presentation acknowledgement message) to the connection
+   * Accept a presentation as prover (by sending a presentation acknowledgement message) to the connection
    * associated with the proof record.
    *
    * @param proofRecordId The id of the proof record for which to accept the presentation
@@ -193,6 +187,18 @@ export class ProofsModule {
     return proofRecord;
   }
 
+  /**
+   * Create a RequestedCredentials object. Given input proof request and presentation proposal,
+   * use credentials in the wallet to build indy requested credentials object for input to proof creation.
+   * If restrictions allow, self attested attributes will be used.
+   *
+   * Use the return value of this method as input to {@link ProofService.createPresentation} to automatically
+   * accept a received presentation request.
+   *
+   * @param proofRequest The proof request to build the requested credentials object from
+   * @param presentationProposal Optional presentation proposal to improve credential selection algorithm
+   * @returns Requested credentials object for use in proof creation
+   */
   public async getRequestedCredentialsForProofRequest(
     proofRequest: ProofRequest,
     presentationProposal: PresentationPreview

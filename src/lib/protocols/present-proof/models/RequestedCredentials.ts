@@ -1,15 +1,16 @@
 import type { IndyRequestedCredentials } from 'indy-sdk';
-import { IsString, ValidateNested } from 'class-validator';
+import { ValidateNested } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
 
 import { RequestedAttribute } from './RequestedAttribute';
 import { RequestedPredicate } from './RequestedPredicate';
 import { JsonTransformer } from '../../../utils/JsonTransformer';
+import { RecordTransformer } from '../../../utils/transformers';
 
 interface RequestedCredentialsOptions {
-  requestedAttributes?: Map<string, RequestedAttribute>;
-  requestedPredicates?: Map<string, RequestedPredicate>;
-  selfAttestedAttributes?: Map<string, string>;
+  requestedAttributes?: Record<string, RequestedAttribute>;
+  requestedPredicates?: Record<string, RequestedPredicate>;
+  selfAttestedAttributes?: Record<string, string>;
 }
 
 /**
@@ -20,25 +21,25 @@ interface RequestedCredentialsOptions {
 export class RequestedCredentials {
   public constructor(options: RequestedCredentialsOptions) {
     if (options) {
-      this.requestedAttributes = options.requestedAttributes ?? new Map();
-      this.requestedPredicates = options.requestedPredicates ?? new Map();
-      this.selfAttestedAttributes = options.selfAttestedAttributes ?? new Map();
+      this.requestedAttributes = options.requestedAttributes ?? {};
+      this.requestedPredicates = options.requestedPredicates ?? {};
+      this.selfAttestedAttributes = options.selfAttestedAttributes ?? {};
     }
   }
 
   @Expose({ name: 'requested_attributes' })
   @ValidateNested({ each: true })
-  @Type(() => RequestedAttribute)
-  public requestedAttributes!: Map<string, RequestedAttribute>;
+  @RecordTransformer(RequestedAttribute)
+  public requestedAttributes!: Record<string, RequestedAttribute>;
 
   @Expose({ name: 'requested_predicates' })
   @ValidateNested({ each: true })
   @Type(() => RequestedPredicate)
-  public requestedPredicates!: Map<string, RequestedPredicate>;
+  @RecordTransformer(RequestedPredicate)
+  public requestedPredicates!: Record<string, RequestedPredicate>;
 
   @Expose({ name: 'self_attested_attributes' })
-  @IsString({ each: true })
-  public selfAttestedAttributes!: Map<string, string>;
+  public selfAttestedAttributes!: Record<string, string>;
 
   public toJSON() {
     // IndyRequestedCredentials is indy-sdk json type
@@ -48,11 +49,11 @@ export class RequestedCredentials {
   public getCredentialIdentifiers(): string[] {
     const credIds = new Set<string>();
 
-    this.requestedAttributes.forEach(attr => {
+    Object.values(this.requestedAttributes).forEach(attr => {
       credIds.add(attr.credentialId);
     });
 
-    this.requestedPredicates.forEach(pred => {
+    Object.values(this.requestedPredicates).forEach(pred => {
       credIds.add(pred.credentialId);
     });
 

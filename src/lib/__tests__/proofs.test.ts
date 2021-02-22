@@ -193,23 +193,19 @@ describe('Present Proof', () => {
   test('Faber starts with proof requests to Alice', async () => {
     logger.log('Faber sends presentation request to Alice');
 
-    const attributes = new Map();
-    attributes.set(
-      'name',
-      new ProofAttributeInfo({
+    const attributes = {
+      name: new ProofAttributeInfo({
         name: 'name',
         restrictions: [
           new AttributeFilter({
             credentialDefinitionId: credDefId,
           }),
         ],
-      })
-    );
+      }),
+    };
 
-    const predicates = new Map();
-    predicates.set(
-      'age',
-      new ProofPredicateInfo({
+    const predicates = {
+      age: new ProofPredicateInfo({
         name: 'age',
         predicateType: PredicateType.GreaterThanOrEqualTo,
         predicateValue: 50,
@@ -218,8 +214,8 @@ describe('Present Proof', () => {
             credentialDefinitionId: credDefId,
           }),
         ],
-      })
-    );
+      }),
+    };
 
     let faberProofRecord = await faberAgent.proof.requestProof(faberConnection.id, {
       name: 'test-proof-request',

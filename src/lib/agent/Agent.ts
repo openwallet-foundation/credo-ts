@@ -202,7 +202,7 @@ export class Agent {
       this.messageSender
     );
 
-    this.proof = new ProofsModule(this.proofService, this.connectionService, this.messageSender, this.indy);
+    this.proof = new ProofsModule(this.proofService, this.connectionService, this.messageSender);
 
     this.routing = new RoutingModule(
       this.agentConfig,
@@ -216,11 +216,6 @@ export class Agent {
     this.basicMessages = new BasicMessagesModule(this.basicMessageService, this.messageSender);
     this.ledger = new LedgerModule(this.wallet, this.ledgerService);
 
-    this.credentials = new CredentialsModule(
-      this.connectionService,
-      this.credentialService,
-      this.ledgerService,
-      this.messageSender
-    );
+    this.credentials = new CredentialsModule(this.connectionService, this.credentialService, this.messageSender);
   }
 }

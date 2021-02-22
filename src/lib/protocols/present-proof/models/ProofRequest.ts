@@ -8,6 +8,7 @@ import { ProofPredicateInfo } from './ProofPredicateInfo';
 
 import { JsonTransformer } from '../../../utils/JsonTransformer';
 import { Optional } from '../../../utils/type';
+import { RecordTransformer } from '../../../utils/transformers';
 
 /**
  * Proof Request for Indy based proof format
@@ -20,9 +21,8 @@ export class ProofRequest {
       this.name = options.name;
       this.version = options.version;
       this.nonce = options.nonce;
-      // TODO: use object instead of map OR make it easier to construct
-      this.requestedAttributes = options.requestedAttributes ?? new Map();
-      this.requestedPredicates = options.requestedPredicates ?? new Map();
+      this.requestedAttributes = options.requestedAttributes ?? {};
+      this.requestedPredicates = options.requestedPredicates ?? {};
       this.nonRevoked = options.nonRevoked;
       this.ver = options.ver;
     }
@@ -39,13 +39,13 @@ export class ProofRequest {
 
   @Expose({ name: 'requested_attributes' })
   @ValidateNested({ each: true })
-  @Type(() => ProofAttributeInfo)
-  public requestedAttributes!: Map<string, ProofAttributeInfo>;
+  @RecordTransformer(ProofAttributeInfo)
+  public requestedAttributes!: Record<string, ProofAttributeInfo>;
 
   @Expose({ name: 'requested_predicates' })
   @ValidateNested({ each: true })
-  @Type(() => ProofPredicateInfo)
-  public requestedPredicates!: Map<string, ProofPredicateInfo>;
+  @RecordTransformer(ProofPredicateInfo)
+  public requestedPredicates!: Record<string, ProofPredicateInfo>;
 
   @Expose({ name: 'non_revoked' })
   @ValidateNested()
