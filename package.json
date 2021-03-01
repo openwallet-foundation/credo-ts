@@ -14,14 +14,16 @@
     "format": "yarn prettier --write",
     "check-format": "yarn prettier --list-different",
     "test": "jest --verbose",
-    "dev": "ts-node-dev --respawn --transpile-only ./src/samples/mediator.ts",
-    "prod:start": "node ./build/samples/mediator.js",
+    "dev": "ts-node-dev --respawn --transpile-only ./samples/mediator-ws.ts",
+    "prod:start": "node ./build/samples/mediator-ws.js",
     "prod:build": "rm -rf build && yarn compile",
     "validate": "npm-run-all --parallel lint compile",
     "prepack": "rm -rf build && yarn compile",
     "prepare": "husky install"
   },
   "dependencies": {
+    "@types/socket.io": "^2.1.13",
+    "@types/socket.io-client": "^1.4.36",
     "bn.js": "^5.2.0",
     "buffer": "^6.0.3",
     "class-transformer": "^0.4.0",
@@ -29,6 +31,8 @@
     "events": "^3.3.0",
     "js-sha256": "^0.9.0",
     "reflect-metadata": "^0.1.13",
+    "socket.io": "2.4.1",
+    "socket.io-client": "2.4.0",
     "uuid": "^8.3.0"
   },
   "devDependencies": {

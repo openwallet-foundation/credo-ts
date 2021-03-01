@@ -6,13 +6,20 @@ import { AgentMessage } from './AgentMessage';
 import { Constructor } from '../utils/mixins';
 import { InboundMessageContext } from './models/InboundMessageContext';
 import { JsonTransformer } from '../utils/JsonTransformer';
+import { TransportService } from './TransportService';
 
 class MessageSender {
   private envelopeService: EnvelopeService;
+  private transportService: TransportService;
   private outboundTransporter: OutboundTransporter;
 
-  public constructor(envelopeService: EnvelopeService, outboundTransporter: OutboundTransporter) {
+  public constructor(
+    envelopeService: EnvelopeService,
+    transportService: TransportService,
+    outboundTransporter: OutboundTransporter
+  ) {
     this.envelopeService = envelopeService;
+    this.transportService = transportService;
     this.outboundTransporter = outboundTransporter;
   }
 
@@ -22,6 +29,10 @@ class MessageSender {
 
   public async sendMessage(outboundMessage: OutboundMessage): Promise<void> {
     const outboundPackage = await this.envelopeService.packMessage(outboundMessage);
+    const transport = this.transportService.getTransport(outboundMessage.connection.id);
+    if (transport) {
+      outboundPackage.transport = transport;
+    }
     await this.outboundTransporter.sendMessage(outboundPackage, false);
   }
 
@@ -32,6 +43,10 @@ class MessageSender {
     outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all);
 
     const outboundPackage = await this.envelopeService.packMessage(outboundMessage);
+    const transport = this.transportService.getTransport(outboundMessage.connection.id);
+    if (transport) {
+      outboundPackage.transport = transport;
+    }
     const inboundPackedMessage = await this.outboundTransporter.sendMessage(outboundPackage, true);
     const inboundUnpackedMessage = await this.envelopeService.unpackMessage(inboundPackedMessage);
 

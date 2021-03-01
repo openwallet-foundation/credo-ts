@@ -1,40 +1,48 @@
+// eslint-disable-next-line
+// @ts-ignore
+import io from 'socket.io-client';
 import { Agent, InboundTransporter, OutboundTransporter } from '../../src';
-import { OutboundPackage, InitConfig } from '../../src/types';
+import { OutboundPackage, InitConfig, WireMessage } from '../../src/types';
 import { get, post } from '../http';
-import { sleep, toBeConnectedWith, waitForBasicMessage } from '../../src/__tests__/helpers';
+import { toBeConnectedWith, waitForBasicMessage } from '../../src/__tests__/helpers';
 import indy from 'indy-sdk';
-import testLogger from '../../src/__tests__/logger';
+// import logger from '../../src/__tests__/logger';
+import { ConsoleLogger, LogLevel } from '../../src/logger';
+import { Socket } from 'socket.io';
+import { Transport } from '../../src/agent/TransportService';
+
+const logger = new ConsoleLogger(LogLevel.test);
 
 expect.extend({ toBeConnectedWith });
 
 const aliceConfig: InitConfig = {
   label: 'e2e Alice',
   mediatorUrl: 'http://localhost:3001',
-  walletConfig: { id: 'e2e-alice' },
+  walletConfig: { id: 'e2e-alice-ws' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
   autoAcceptConnections: true,
-  logger: testLogger,
+  logger,
   indy,
 };
 
 const bobConfig: InitConfig = {
   label: 'e2e Bob',
   mediatorUrl: 'http://localhost:3002',
-  walletConfig: { id: 'e2e-bob' },
+  walletConfig: { id: 'e2e-bob-ws' },
   walletCredentials: { key: '00000000000000000000000000000Test02' },
   autoAcceptConnections: true,
-  logger: testLogger,
+  logger,
   indy,
 };
 
-describe('with mediator via http', () => {
+describe('with mediator via websockets', () => {
   let aliceAgent: Agent;
   let bobAgent: Agent;
   let aliceAtAliceBobId: string;
 
   afterAll(async () => {
-    (aliceAgent.inboundTransporter as PollingInboundTransporter).stop = true;
-    (bobAgent.inboundTransporter as PollingInboundTransporter).stop = true;
+    (aliceAgent.inboundTransporter as WsInboundTransporter).stop();
+    (bobAgent.inboundTransporter as WsInboundTransporter).stop();
 
     // Wait for messages to flush out
     await new Promise(r => setTimeout(r, 1000));
@@ -44,10 +52,14 @@ describe('with mediator via http', () => {
   });
 
   test('Alice and Bob make a connection with mediator', async () => {
-    const aliceAgentSender = new HttpOutboundTransporter();
-    const aliceAgentReceiver = new PollingInboundTransporter();
-    const bobAgentSender = new HttpOutboundTransporter();
-    const bobAgentReceiver = new PollingInboundTransporter();
+    console.log('Connection to WebSocket');
+    const socket: any = await createSocketConnection(aliceConfig.mediatorUrl);
+    const socket2: any = await createSocketConnection(bobConfig.mediatorUrl);
+
+    const aliceAgentReceiver = new WsInboundTransporter(socket);
+    const aliceAgentSender = new WsOutboundTransporter();
+    const bobAgentReceiver = new WsInboundTransporter(socket2);
+    const bobAgentSender = new WsOutboundTransporter();
 
     aliceAgent = new Agent(aliceConfig, aliceAgentReceiver, aliceAgentSender);
     await aliceAgent.init();
@@ -58,12 +70,12 @@ describe('with mediator via http', () => {
     const aliceInbound = aliceAgent.routing.getInboundConnection();
     const aliceInboundConnection = aliceInbound?.connection;
     const aliceKeyAtAliceMediator = aliceInboundConnection?.verkey;
-    testLogger.test('aliceInboundConnection', aliceInboundConnection);
+    logger.test('aliceInboundConnection', aliceInboundConnection);
 
     const bobInbound = bobAgent.routing.getInboundConnection();
     const bobInboundConnection = bobInbound?.connection;
     const bobKeyAtBobMediator = bobInboundConnection?.verkey;
-    testLogger.test('bobInboundConnection', bobInboundConnection);
+    logger.test('bobInboundConnection', bobInboundConnection);
 
     // TODO This endpoint currently exists at mediator only for the testing purpose. It returns mediator's part of the pairwise connection.
     const mediatorConnectionAtAliceMediator = JSON.parse(
@@ -73,8 +85,8 @@ describe('with mediator via http', () => {
       await get(`${bobAgent.getMediatorUrl()}/api/connections/${bobKeyAtBobMediator}`)
     );
 
-    testLogger.test('mediatorConnectionAtAliceMediator', mediatorConnectionAtAliceMediator);
-    testLogger.test('mediatorConnectionAtBobMediator', mediatorConnectionAtBobMediator);
+    logger.test('mediatorConnectionAtAliceMediator', mediatorConnectionAtAliceMediator);
+    logger.test('mediatorConnectionAtBobMediator', mediatorConnectionAtBobMediator);
 
     expect(aliceInboundConnection).toBeConnectedWith(mediatorConnectionAtAliceMediator);
     expect(bobInboundConnection).toBeConnectedWith(mediatorConnectionAtBobMediator);
@@ -104,7 +116,7 @@ describe('with mediator via http', () => {
       throw new Error(`There is no connection for id ${aliceAtAliceBobId}`);
     }
 
-    testLogger.test('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob);
+    logger.test('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob);
 
     const message = 'hello, world';
     await aliceAgent.basicMessages.sendMessage(aliceConnectionAtAliceBob, message);
@@ -117,56 +129,116 @@ describe('with mediator via http', () => {
   });
 });
 
-class PollingInboundTransporter implements InboundTransporter {
-  public stop: boolean;
-
-  public constructor() {
-    this.stop = false;
+function createSocketConnection(mediatorUrl: string | undefined) {
+  if (!mediatorUrl) {
+    throw new Error('Mediator URL is missing.');
   }
+  return new Promise((resolve, reject) => {
+    console.log('Connecting to mediator via WebSocket');
+    const socket = io(mediatorUrl);
+    socket.on('connect', () => {
+      console.log('Client connected');
+      resolve(socket);
+    });
+    socket.on('connect_error', (e: Error) => {
+      console.log('Client connection failed');
+      reject(e);
+    });
+  });
+}
+
+class WsInboundTransporter implements InboundTransporter {
+  private socket: any;
+
+  public constructor(socket: any) {
+    this.socket = socket;
+  }
+
   public async start(agent: Agent) {
     // TODO align edge agent inbound tranporters
-    await this.registerMediator(agent);
-  }
-
-  public async registerMediator(agent: Agent) {
     const mediatorUrl = agent.getMediatorUrl() || '';
     const mediatorInvitationUrl = await get(`${mediatorUrl}/invitation`);
     const { verkey: mediatorVerkey } = JSON.parse(await get(`${mediatorUrl}/`));
-    await agent.routing.provision({ verkey: mediatorVerkey, invitationUrl: mediatorInvitationUrl });
-    this.pollDownloadMessages(agent);
+
+    // TODO introduce WebSocketTransport and HttpTransport classes
+    const transport = {
+      type: 'ws',
+      socket: this.socket,
+    } as const;
+
+    await agent.routing.provision({
+      verkey: mediatorVerkey,
+      invitationUrl: mediatorInvitationUrl,
+      transport,
+    });
+
+    this.socket.on('agentMessage', (payload: any) => {
+      console.log('on agentMessage', payload);
+      agent.receiveMessage(payload);
+    });
   }
 
-  private pollDownloadMessages(agent: Agent) {
-    new Promise(async () => {
-      while (!this.stop) {
-        const downloadedMessages = await agent.routing.downloadMessages();
-        const messages = [...downloadedMessages];
-        testLogger.test('downloaded messages', messages);
-        while (messages && messages.length > 0) {
-          const message = messages.shift();
-          await agent.receiveMessage(message);
-        }
-
-        await sleep(1000);
-      }
-    });
+  public stop() {
+    this.socket.close();
   }
 }
 
-class HttpOutboundTransporter implements OutboundTransporter {
+class WsOutboundTransporter implements OutboundTransporter {
   public async sendMessage(outboundPackage: OutboundPackage, receiveReply: boolean) {
-    const { payload, endpoint } = outboundPackage;
+    const { payload, endpoint, transport } = outboundPackage;
 
+    logger.debug('WsOutboundTransporter sendMessage', {
+      endpoint,
+      payload,
+      transport: { type: transport?.type, socketId: transport?.socket?.id },
+    });
+
+    if (transport?.socket?.connected) {
+      return this.sendViaWebSocket(transport, payload, receiveReply);
+    } else {
+      return this.sendViaHttp(endpoint, payload, receiveReply);
+    }
+  }
+
+  private async sendViaWebSocket(transport: Transport, payload: WireMessage, receiveReply: boolean) {
+    logger.debug('Sending message over ws...');
+    const { socket } = transport;
+
+    if (!socket?.connected) {
+      throw new Error('Socket is not available or connected.');
+    }
+
+    if (receiveReply) {
+      const response: any = await this.emitMessage(socket, payload);
+      logger.debug('response', response);
+      const wireMessage = response;
+      logger.debug('wireMessage', wireMessage);
+      return wireMessage;
+    } else {
+      this.emitMessage(socket, payload);
+    }
+  }
+
+  private async emitMessage(socket: Socket, payload: any) {
+    return new Promise((resolve, reject) => {
+      console.log('emit agentMessage', payload);
+      socket.emit('agentMessage', payload, (response: any) => {
+        resolve(response);
+      });
+    });
+  }
+
+  private async sendViaHttp(endpoint: string | undefined, payload: WireMessage, receiveReply: boolean) {
     if (!endpoint) {
       throw new Error(`Missing endpoint. I don't know how and where to send the message.`);
     }
 
-    testLogger.test(`Sending outbound message to connection ${outboundPackage.connection.id}`, outboundPackage.payload);
+    logger.debug('Sending message over http...');
 
     if (receiveReply) {
       const response = await post(`${endpoint}`, JSON.stringify(payload));
       const wireMessage = JSON.parse(response);
-      testLogger.test('received response', wireMessage);
+      logger.debug('received response', wireMessage);
       return wireMessage;
     } else {
       await post(`${endpoint}`, JSON.stringify(payload));

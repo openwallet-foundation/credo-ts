@@ -11,10 +11,13 @@ import {
 import { BatchMessage } from './messages';
 import type { Verkey } from 'indy-sdk';
 import { Dispatcher } from '../../agent/Dispatcher';
+import { TransportService, Transport } from '../../agent/TransportService';
 import { MessagePickupHandler, ForwardHandler, KeylistUpdateHandler } from './handlers';
 import { Logger } from '../../logger';
+
 export class RoutingModule {
   private agentConfig: AgentConfig;
+  private transportService: TransportService;
   private providerRoutingService: ProviderRoutingService;
   private provisioningService: ProvisioningService;
   private messagePickupService: MessagePickupService;
@@ -25,6 +28,7 @@ export class RoutingModule {
   public constructor(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
+    transportService: TransportService,
     providerRoutingService: ProviderRoutingService,
     provisioningService: ProvisioningService,
     messagePickupService: MessagePickupService,
@@ -32,6 +36,7 @@ export class RoutingModule {
     messageSender: MessageSender
   ) {
     this.agentConfig = agentConfig;
+    this.transportService = transportService;
     this.providerRoutingService = providerRoutingService;
     this.provisioningService = provisioningService;
     this.messagePickupService = messagePickupService;
@@ -50,6 +55,12 @@ export class RoutingModule {
       const mediatorInvitation = await ConnectionInvitationMessage.fromUrl(invitationUrl);
 
       const connection = await this.connectionService.processInvitation(mediatorInvitation, { alias });
+
+      const { transport } = mediatorConfiguration;
+      if (transport && transport.socket) {
+        this.transportService.saveTransport(connection.id, transport);
+      }
+
       const {
         message: connectionRequest,
         connectionRecord: connectionRecord,
@@ -120,4 +131,5 @@ interface MediatorConfiguration {
   verkey: Verkey;
   invitationUrl: string;
   alias?: string;
+  transport?: Transport;
 }

@@ -30,6 +30,7 @@ import { ProofsModule } from '../modules/proofs/ProofsModule';
 import { RoutingModule } from '../modules/routing/RoutingModule';
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule';
 import { LedgerModule } from '../modules/ledger/LedgerModule';
+import { Transport, TransportService } from './TransportService';
 
 export class Agent {
   protected logger: Logger;
@@ -38,6 +39,7 @@ export class Agent {
   protected messageReceiver: MessageReceiver;
   protected dispatcher: Dispatcher;
   protected messageSender: MessageSender;
+  protected transportService: TransportService;
   protected connectionService: ConnectionService;
   protected proofService: ProofService;
   protected basicMessageService: BasicMessageService;
@@ -81,8 +83,9 @@ export class Agent {
     });
     this.wallet = new IndyWallet(this.agentConfig);
     const envelopeService = new EnvelopeService(this.wallet, this.agentConfig);
+    this.transportService = new TransportService();
 
-    this.messageSender = new MessageSender(envelopeService, outboundTransporter);
+    this.messageSender = new MessageSender(envelopeService, this.transportService, outboundTransporter);
     this.dispatcher = new Dispatcher(this.messageSender);
     this.inboundTransporter = inboundTransporter;
 
@@ -92,6 +95,7 @@ export class Agent {
     this.provisioningRepository = new Repository<ProvisioningRecord>(ProvisioningRecord, storageService);
     this.credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService);
     this.proofRepository = new Repository<ProofRecord>(ProofRecord, storageService);
+
     this.provisioningService = new ProvisioningService(this.provisioningRepository, this.agentConfig);
     this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository);
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository);
@@ -112,6 +116,7 @@ export class Agent {
     this.messageReceiver = new MessageReceiver(
       this.agentConfig,
       envelopeService,
+      this.transportService,
       this.connectionService,
       this.dispatcher
     );
@@ -147,8 +152,8 @@ export class Agent {
     return this.agentConfig.mediatorUrl;
   }
 
-  public async receiveMessage(inboundPackedMessage: unknown) {
-    return await this.messageReceiver.receiveMessage(inboundPackedMessage);
+  public async receiveMessage(inboundPackedMessage: unknown, transport?: Transport) {
+    return await this.messageReceiver.receiveMessage(inboundPackedMessage, transport);
   }
 
   public async closeAndDeleteWallet() {
@@ -178,6 +183,7 @@ export class Agent {
     this.routing = new RoutingModule(
       this.dispatcher,
       this.agentConfig,
+      this.transportService,
       this.providerRoutingService,
       this.provisioningService,
       this.messagePickupService,

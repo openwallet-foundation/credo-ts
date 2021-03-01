@@ -2,6 +2,7 @@ import type Indy from 'indy-sdk';
 import type { Did, WalletConfig, WalletCredentials, Verkey } from 'indy-sdk';
 import { ConnectionRecord } from './modules/connections';
 import { AgentMessage } from './agent/AgentMessage';
+import { Transport } from './agent/TransportService';
 import { Logger } from './logger';
 
 type $FixMe = any;
@@ -49,6 +50,7 @@ export interface OutboundPackage {
   connection: ConnectionRecord;
   payload: WireMessage;
   endpoint?: string;
+  transport?: Transport;
 }
 
 export interface InboundConnection {
