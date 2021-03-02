@@ -7,7 +7,7 @@ import {
   RequestCredentialMessage,
   CredentialState,
   OfferCredentialMessage,
-} from '../protocols/issue-credential';
+} from '../modules/credentials';
 
 export interface CredentialStorageProps {
   id?: string;

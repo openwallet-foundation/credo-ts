@@ -1,12 +1,12 @@
 import { v4 as uuid } from 'uuid';
 import { classToPlain, plainToClass } from 'class-transformer';
 import { BaseRecord, RecordType, Tags } from './BaseRecord';
-import { ConnectionState } from '../protocols/connections/domain/ConnectionState';
-import { ConnectionInvitationMessage } from '../protocols/connections/messages/ConnectionInvitationMessage';
-import { ConnectionRole } from '../protocols/connections/domain/ConnectionRole';
+import { ConnectionState } from '../modules/connections';
+import { ConnectionInvitationMessage } from '../modules/connections';
+import { ConnectionRole } from '../modules/connections';
 import { JsonTransformer } from '../utils/JsonTransformer';
-import { DidDoc } from '../protocols/connections/domain/did/DidDoc';
-import { IndyAgentService } from '../protocols/connections/domain/did/service';
+import { DidDoc } from '../modules/connections';
+import { IndyAgentService } from '../modules/connections';
 import type { Did, Verkey } from 'indy-sdk';
 
 interface ConnectionProps {

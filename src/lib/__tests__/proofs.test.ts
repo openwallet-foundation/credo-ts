@@ -14,7 +14,7 @@ import {
   issueCredential,
   waitForProofRecord,
 } from './helpers';
-import { CredentialPreview, CredentialPreviewAttribute } from '../protocols/issue-credential';
+import { CredentialPreview, CredentialPreviewAttribute } from '../modules/credentials';
 import { InitConfig } from '../types';
 import {
   PredicateType,
@@ -25,7 +25,7 @@ import {
   ProofAttributeInfo,
   AttributeFilter,
   ProofPredicateInfo,
-} from '../protocols/present-proof';
+} from '../modules/proofs';
 import { ConnectionRecord } from '../storage/ConnectionRecord';
 import logger from '../logger';
 

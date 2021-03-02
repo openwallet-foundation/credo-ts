@@ -1,0 +1,16 @@
+import { Handler, HandlerInboundMessage } from '../../../handlers/Handler';
+import { CredentialService } from '../CredentialService';
+import { RequestCredentialMessage } from '../messages';
+
+export class RequestCredentialHandler implements Handler {
+  private credentialService: CredentialService;
+  public supportedMessages = [RequestCredentialMessage];
+
+  public constructor(credentialService: CredentialService) {
+    this.credentialService = credentialService;
+  }
+
+  public async handle(messageContext: HandlerInboundMessage<RequestCredentialHandler>) {
+    this.credentialService.processRequest(messageContext);
+  }
+}
