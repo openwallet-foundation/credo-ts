@@ -3,9 +3,9 @@ import { AgentConfig } from './AgentConfig';
 import { Dispatcher } from './Dispatcher';
 import { EnvelopeService } from './EnvelopeService';
 import { UnpackedMessageContext, UnpackedMessage } from '../types';
-import { MessageType } from '../protocols/routing/messages';
+import { MessageType } from '../modules/routing/messages';
 import { InboundMessageContext } from './models/InboundMessageContext';
-import { ConnectionService } from '../protocols/connections/ConnectionService';
+import { ConnectionService } from '../modules/connections/ConnectionService';
 import { AgentMessage } from './AgentMessage';
 import { JsonTransformer } from '../utils/JsonTransformer';
 
@@ -44,8 +44,6 @@ class MessageReceiver {
 
     logger.logJson('inboundMessage', unpackedMessage);
 
-    // TODO move `message` declaration down right above `messageContext` creation
-    const message = await this.transformMessage(unpackedMessage);
     const senderKey = unpackedMessage.sender_verkey;
     let connection = undefined;
     if (senderKey && unpackedMessage.recipient_verkey) {
@@ -63,6 +61,7 @@ class MessageReceiver {
       }
     }
 
+    const message = await this.transformMessage(unpackedMessage);
     const messageContext = new InboundMessageContext(message, {
       connection,
       senderVerkey: senderKey,

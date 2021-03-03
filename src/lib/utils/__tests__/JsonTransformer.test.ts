@@ -1,4 +1,4 @@
-import { ConnectionInvitationMessage } from '../../protocols/connections/messages/ConnectionInvitationMessage';
+import { ConnectionInvitationMessage } from '../../modules/connections';
 import { JsonTransformer } from '../JsonTransformer';
 
 describe('JsonTransformer', () => {

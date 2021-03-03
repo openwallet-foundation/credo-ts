@@ -1,6 +1,6 @@
 import { validateOrReject } from 'class-validator';
 
-import { ConnectionInvitationMessage } from './protocols/connections/messages/ConnectionInvitationMessage';
+import { ConnectionInvitationMessage } from './modules/connections';
 import { JsonEncoder } from './utils/JsonEncoder';
 import { JsonTransformer } from './utils/JsonTransformer';
 

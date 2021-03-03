@@ -1,6 +1,5 @@
-import { getMockConnection } from '../../protocols/connections/__tests__/ConnectionService.test';
-import { DidDoc } from '../../protocols/connections/domain/did/DidDoc';
-import { IndyAgentService } from '../../protocols/connections/domain/did/service';
+import { getMockConnection } from '../../modules/connections/__tests__/ConnectionService.test';
+import { DidDoc, IndyAgentService } from '../../modules/connections';
 import { AgentConfig } from '../AgentConfig';
 
 describe('AgentConfig', () => {

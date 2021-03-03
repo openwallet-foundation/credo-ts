@@ -5,7 +5,7 @@ import {
   ProposePresentationMessage,
   RequestPresentationMessage,
   PresentationMessage,
-} from '../protocols/present-proof';
+} from '../modules/proofs';
 
 export interface ProofRecordProps {
   id?: string;

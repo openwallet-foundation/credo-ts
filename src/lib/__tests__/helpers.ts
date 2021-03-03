@@ -4,19 +4,19 @@ import logger from '../logger';
 import path from 'path';
 import { Subject } from 'rxjs';
 import { ConnectionRecord } from '../storage/ConnectionRecord';
-import { Agent, InboundTransporter, OutboundTransporter, ProofEventType, ProofState, ProofStateChangedEvent } from '..';
+import { Agent, InboundTransporter, OutboundTransporter } from '..';
+import { ProofEventType, ProofState, ProofStateChangedEvent } from '../modules/proofs';
 import { OutboundPackage, WireMessage } from '../types';
-import { SchemaTemplate, CredDefTemplate } from '../agent/LedgerService';
+import { SchemaTemplate, CredDefTemplate } from '../modules/ledger/LedgerService';
 import {
   CredentialState,
   CredentialOfferTemplate,
   CredentialEventType,
   CredentialStateChangedEvent,
-} from '../protocols/issue-credential';
+} from '../modules/credentials';
 import { CredentialRecord } from '../storage/CredentialRecord';
 import { ProofRecord } from '../storage/ProofRecord';
-import { BasicMessage } from '../protocols/basicmessage/BasicMessage';
-import { BasicMessageEventType, BasicMessageReceivedEvent } from '../protocols/basicmessage/BasicMessageService';
+import { BasicMessage, BasicMessageEventType, BasicMessageReceivedEvent } from '../modules/basic-messages';
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
