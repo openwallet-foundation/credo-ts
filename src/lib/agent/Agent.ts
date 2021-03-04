@@ -16,15 +16,6 @@ import { Dispatcher } from './Dispatcher';
 import { MessageSender } from './MessageSender';
 import { InboundTransporter } from '../transport/InboundTransporter';
 import { OutboundTransporter } from '../transport/OutboundTransporter';
-import { ConnectionRequestHandler } from '../modules/connections/handlers/ConnectionRequestHandler';
-import { ConnectionResponseHandler } from '../modules/connections/handlers/ConnectionResponseHandler';
-import { AckMessageHandler } from '../modules/connections/handlers/AckMessageHandler';
-import { BasicMessageHandler } from '../modules/basic-messages/handlers/BasicMessageHandler';
-import { ForwardHandler } from '../modules/routing/handlers/ForwardHandler';
-import { TrustPingMessageHandler } from '../modules/connections/handlers/TrustPingMessageHandler';
-import { TrustPingResponseMessageHandler } from '../modules/connections/handlers/TrustPingResponseMessageHandler';
-import { MessagePickupHandler } from '../modules/routing/handlers/MessagePickupHandler';
-import { KeylistUpdateHandler } from '../modules/routing/handlers/KeylistUpdateHandler';
 import { MessageRepository } from '../storage/MessageRepository';
 import { BasicMessageRecord } from '../storage/BasicMessageRecord';
 import { Repository } from '../storage/Repository';
@@ -42,16 +33,7 @@ import { CredentialsModule } from '../modules/credentials/CredentialsModule';
 import { ProofsModule } from '../modules/proofs/ProofsModule';
 import { CredentialService } from '../modules/credentials/CredentialService';
 import { CredentialRecord } from '../storage/CredentialRecord';
-import { OfferCredentialHandler } from '../modules/credentials/handlers/OfferCredentialHandler';
-import { RequestCredentialHandler } from '../modules/credentials/handlers/RequestCredentialHandler';
-import { IssueCredentialHandler } from '../modules/credentials/handlers/IssueCredentialHandler';
-import { CredentialAckHandler } from '../modules/credentials/handlers/CredentialAckHandler';
-import { RequestPresentationHandler } from '../modules/proofs/handlers/RequestPresentationHandler';
 import { ProofRecord } from '../storage/ProofRecord';
-import { ProposePresentationHandler } from '../modules/proofs/handlers/ProposePresentationHandler';
-import { PresentationAckHandler } from '../modules/proofs/handlers/PresentationAckHandler';
-import { PresentationHandler } from '../modules/proofs/handlers/PresentationHandler';
-import { ProposeCredentialHandler } from '../modules/credentials/handlers/ProposeCredentialHandler';
 
 export class Agent {
   protected wallet: Wallet;
@@ -132,7 +114,6 @@ export class Agent {
       this.dispatcher
     );
 
-    this.registerHandlers();
     this.registerModules();
   }
 
@@ -173,36 +154,21 @@ export class Agent {
     await this.wallet.delete();
   }
 
-  protected registerHandlers() {
-    this.dispatcher.registerHandler(new ConnectionRequestHandler(this.connectionService, this.agentConfig));
-    this.dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService, this.agentConfig));
-    this.dispatcher.registerHandler(new AckMessageHandler(this.connectionService));
-    this.dispatcher.registerHandler(new BasicMessageHandler(this.basicMessageService));
-    this.dispatcher.registerHandler(new KeylistUpdateHandler(this.providerRoutingService));
-    this.dispatcher.registerHandler(new ForwardHandler(this.providerRoutingService));
-    this.dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService));
-    this.dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService));
-    this.dispatcher.registerHandler(new MessagePickupHandler(this.messagePickupService));
-    this.dispatcher.registerHandler(new ProposeCredentialHandler(this.credentialService));
-    this.dispatcher.registerHandler(new OfferCredentialHandler(this.credentialService));
-    this.dispatcher.registerHandler(new RequestCredentialHandler(this.credentialService));
-    this.dispatcher.registerHandler(new IssueCredentialHandler(this.credentialService));
-    this.dispatcher.registerHandler(new CredentialAckHandler(this.credentialService));
-    this.dispatcher.registerHandler(new ProposePresentationHandler(this.proofService));
-    this.dispatcher.registerHandler(new RequestPresentationHandler(this.proofService));
-    this.dispatcher.registerHandler(new PresentationHandler(this.proofService));
-    this.dispatcher.registerHandler(new PresentationAckHandler(this.proofService));
-  }
-
   protected registerModules() {
     this.connections = new ConnectionsModule(
       this.agentConfig,
       this.connectionService,
+      this.trustPingService,
       this.consumerRoutingService,
       this.messageSender
     );
+    this.connections.registerHandlers(this.dispatcher);
+
+    this.credentials = new CredentialsModule(this.connectionService, this.credentialService, this.messageSender);
+    this.credentials.registerHandlers(this.dispatcher);
 
     this.proofs = new ProofsModule(this.proofService, this.connectionService, this.messageSender);
+    this.proofs.registerHandlers(this.dispatcher);
 
     this.routing = new RoutingModule(
       this.agentConfig,
@@ -212,10 +178,11 @@ export class Agent {
       this.connectionService,
       this.messageSender
     );
+    this.routing.registerHandlers(this.dispatcher);
 
     this.basicMessages = new BasicMessagesModule(this.basicMessageService, this.messageSender);
-    this.ledger = new LedgerModule(this.wallet, this.ledgerService);
+    this.basicMessages.registerHandlers(this.dispatcher);
 
-    this.credentials = new CredentialsModule(this.connectionService, this.credentialService, this.messageSender);
+    this.ledger = new LedgerModule(this.wallet, this.ledgerService);
   }
 }

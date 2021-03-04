@@ -13,6 +13,10 @@ import { MessagePickupService } from './MessagePickupService';
 import { ProviderRoutingService } from './ProviderRoutingService';
 import { BatchMessage } from './BatchMessage';
 import type { Verkey } from 'indy-sdk';
+import { Dispatcher } from '../../agent/Dispatcher';
+import { MessagePickupHandler } from './handlers/MessagePickupHandler';
+import { ForwardHandler } from './handlers/ForwardHandler';
+import { KeylistUpdateHandler } from './handlers/KeylistUpdateHandler';
 
 export class RoutingModule {
   private agentConfig: AgentConfig;
@@ -36,6 +40,12 @@ export class RoutingModule {
     this.messagePickupService = messagePickupService;
     this.connectionService = connectionService;
     this.messageSender = messageSender;
+  }
+
+  public registerHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerHandler(new KeylistUpdateHandler(this.providerRoutingService));
+    dispatcher.registerHandler(new ForwardHandler(this.providerRoutingService));
+    dispatcher.registerHandler(new MessagePickupHandler(this.messagePickupService));
   }
 
   public async provision(mediatorConfiguration: MediatorConfiguration) {

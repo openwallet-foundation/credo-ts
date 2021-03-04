@@ -7,6 +7,12 @@ import { CredentialOfferTemplate, CredentialService } from './CredentialService'
 import { ProposeCredentialMessage, ProposeCredentialMessageOptions } from './messages';
 import { JsonTransformer } from '../../utils/JsonTransformer';
 import { CredentialInfo } from './models';
+import { Dispatcher } from '../../agent/Dispatcher';
+import { ProposeCredentialHandler } from './handlers/ProposeCredentialHandler';
+import { OfferCredentialHandler } from './handlers/OfferCredentialHandler';
+import { RequestCredentialHandler } from './handlers/RequestCredentialHandler';
+import { IssueCredentialHandler } from './handlers/IssueCredentialHandler';
+import { CredentialAckHandler } from './handlers/CredentialAckHandler';
 
 export class CredentialsModule {
   private connectionService: ConnectionService;
@@ -21,6 +27,14 @@ export class CredentialsModule {
     this.connectionService = connectionService;
     this.credentialService = credentialService;
     this.messageSender = messageSender;
+  }
+
+  public registerHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerHandler(new ProposeCredentialHandler(this.credentialService));
+    dispatcher.registerHandler(new OfferCredentialHandler(this.credentialService));
+    dispatcher.registerHandler(new RequestCredentialHandler(this.credentialService));
+    dispatcher.registerHandler(new IssueCredentialHandler(this.credentialService));
+    dispatcher.registerHandler(new CredentialAckHandler(this.credentialService));
   }
 
   /**

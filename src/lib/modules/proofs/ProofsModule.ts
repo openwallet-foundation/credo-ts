@@ -8,6 +8,11 @@ import { JsonTransformer } from '../../utils/JsonTransformer';
 import { EventEmitter } from 'events';
 import { PresentationPreview, ProposePresentationMessage } from './messages';
 import { RequestedCredentials } from './models';
+import { Dispatcher } from '../../agent/Dispatcher';
+import { ProposePresentationHandler } from './handlers/ProposePresentationHandler';
+import { RequestPresentationHandler } from './handlers/RequestPresentationHandler';
+import { PresentationHandler } from './handlers/PresentationHandler';
+import { PresentationAckHandler } from './handlers/PresentationAckHandler';
 
 export class ProofsModule {
   private proofService: ProofService;
@@ -18,6 +23,13 @@ export class ProofsModule {
     this.proofService = proofService;
     this.connectionService = connectionService;
     this.messageSender = messageSender;
+  }
+
+  public registerHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerHandler(new ProposePresentationHandler(this.proofService));
+    dispatcher.registerHandler(new RequestPresentationHandler(this.proofService));
+    dispatcher.registerHandler(new PresentationHandler(this.proofService));
+    dispatcher.registerHandler(new PresentationAckHandler(this.proofService));
   }
 
   /**

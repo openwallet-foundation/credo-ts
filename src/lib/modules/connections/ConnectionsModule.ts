@@ -10,23 +10,41 @@ import { MessageSender } from '../../agent/MessageSender';
 import { ConnectionEventType } from './ConnectionService';
 import { createOutboundMessage } from '../../agent/helpers';
 import { ConnectionInvitationMessage } from './messages';
+import { Dispatcher } from '../../agent/Dispatcher';
+import { ConnectionRequestHandler } from './handlers/ConnectionRequestHandler';
+import { ConnectionResponseHandler } from './handlers/ConnectionResponseHandler';
+import { AckMessageHandler } from './handlers/AckMessageHandler';
+import { TrustPingMessageHandler } from './handlers/TrustPingMessageHandler';
+import { TrustPingResponseMessageHandler } from './handlers/TrustPingResponseMessageHandler';
+import { TrustPingService } from './TrustPingService';
 
 export class ConnectionsModule {
   private agentConfig: AgentConfig;
   private connectionService: ConnectionService;
   private consumerRoutingService: ConsumerRoutingService;
   private messageSender: MessageSender;
+  private trustPingService: TrustPingService;
 
   public constructor(
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
+    trustPingService: TrustPingService,
     consumerRoutingService: ConsumerRoutingService,
     messageSender: MessageSender
   ) {
     this.agentConfig = agentConfig;
     this.connectionService = connectionService;
+    this.trustPingService = trustPingService;
     this.consumerRoutingService = consumerRoutingService;
     this.messageSender = messageSender;
+  }
+
+  public registerHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerHandler(new ConnectionRequestHandler(this.connectionService, this.agentConfig));
+    dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService, this.agentConfig));
+    dispatcher.registerHandler(new AckMessageHandler(this.connectionService));
+    dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService));
+    dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService));
   }
 
   /**

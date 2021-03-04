@@ -3,6 +3,8 @@ import { EventEmitter } from 'events';
 import { BasicMessageService } from './BasicMessageService';
 import { MessageSender } from '../../agent/MessageSender';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
+import { Dispatcher } from '../../agent/Dispatcher';
+import { BasicMessageHandler } from './handlers/BasicMessageHandler';
 
 export class BasicMessagesModule {
   private basicMessageService: BasicMessageService;
@@ -30,5 +32,9 @@ export class BasicMessagesModule {
 
   public async findAllByQuery(query: WalletQuery) {
     return this.basicMessageService.findAllByQuery(query);
+  }
+
+  public registerHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerHandler(new BasicMessageHandler(this.basicMessageService));
   }
 }
