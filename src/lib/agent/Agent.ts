@@ -79,7 +79,7 @@ export class Agent {
   public inboundTransporter: InboundTransporter;
 
   public connections!: ConnectionsModule;
-  public proof!: ProofsModule;
+  public proofs!: ProofsModule;
   public routing!: RoutingModule;
   public basicMessages!: BasicMessagesModule;
   public ledger!: LedgerModule;
@@ -202,7 +202,7 @@ export class Agent {
       this.messageSender
     );
 
-    this.proof = new ProofsModule(this.proofService, this.connectionService, this.messageSender);
+    this.proofs = new ProofsModule(this.proofService, this.connectionService, this.messageSender);
 
     this.routing = new RoutingModule(
       this.agentConfig,

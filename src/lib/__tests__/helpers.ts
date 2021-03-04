@@ -52,13 +52,13 @@ export async function waitForProofRecord(
       const stateMatches = state === undefined || event.proofRecord.state === state;
 
       if (previousStateMatches && threadIdMatches && stateMatches) {
-        agent.proof.events.removeListener(ProofEventType.StateChanged, listener);
+        agent.proofs.events.removeListener(ProofEventType.StateChanged, listener);
 
         resolve(event.proofRecord);
       }
     };
 
-    agent.proof.events.addListener(ProofEventType.StateChanged, listener);
+    agent.proofs.events.addListener(ProofEventType.StateChanged, listener);
   });
 }
 
