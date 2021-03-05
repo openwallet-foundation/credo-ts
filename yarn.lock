@@ -601,10 +601,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/indy-sdk@^1.15.0":
-  version "1.15.0"
-  resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.15.0.tgz#44b49978fc8c4892f2c90ec580d3c957b9a88805"
-  integrity sha512-xkxmHpxiCnw28URfP6xWtB93KAarfKPRDA3U1dv9ejkw4rLAXPeWkmnDmvmtoY2/QLCyq20hqP/ZEAV188okiw==
+"@types/indy-sdk@^1.15.1":
+  version "1.15.1"
+  resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.15.1.tgz#7baf9eab749ddac643126d8553ce5295ba256952"
+  integrity sha512-H8ZvxwpR0L+I9Was0Mcx4POmC5DCVaMMAVM7feEX1u7DFdMNoK7jWruP0sT8IT/UaeQ+ie3dArYis72i4wuVTg==
   dependencies:
     "@types/node" "*"
 

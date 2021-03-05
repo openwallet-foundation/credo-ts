@@ -50,6 +50,10 @@ export class IndyWallet implements Wallet {
     this.indy = indy;
   }
 
+  public get publicDid() {
+    return this.publicDidInfo;
+  }
+
   private get walletHandle() {
     if (!this._walletHandle) {
       throw new Error('Wallet has not been initialized yet');
@@ -105,10 +109,6 @@ export class IndyWallet implements Wallet {
       did,
       verkey,
     };
-  }
-
-  public getPublicDid() {
-    return this.publicDidInfo;
   }
 
   public async createDid(didConfig?: DidConfig): Promise<[Did, Verkey]> {

@@ -9,7 +9,7 @@ describe('Wallet', () => {
 
     await wallet.initPublicDid({ seed: '00000000000000000000000Forward01' });
 
-    expect(wallet.getPublicDid()).toEqual({
+    expect(wallet.publicDid).toEqual({
       did: 'DtWRdd6C5dN5vpcN6XRAvu',
       verkey: '82RBSn3heLgXzZd74UsMC8Q8YRfEEhQoAM7LUqE6bevJ',
     });

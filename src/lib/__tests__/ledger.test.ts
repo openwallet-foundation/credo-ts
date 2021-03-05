@@ -35,7 +35,7 @@ describe('ledger', () => {
   });
 
   test(`initialization of agent's public DID`, async () => {
-    faberAgentPublicDid = faberAgent.getPublicDid();
+    faberAgentPublicDid = faberAgent.publicDid;
     logger.logJson('faberAgentPublicDid', faberAgentPublicDid!);
 
     expect(faberAgentPublicDid).toEqual(
@@ -48,7 +48,7 @@ describe('ledger', () => {
 
   test('get public DID from ledger', async () => {
     if (!faberAgentPublicDid) {
-      throw new Error('Agent does not have publid did.');
+      throw new Error('Agent does not have public did.');
     }
 
     const result = await faberAgent.ledger.getPublicDid(faberAgentPublicDid.did);
@@ -71,7 +71,7 @@ describe('ledger', () => {
 
   test('register schema on ledger', async () => {
     if (!faberAgentPublicDid) {
-      throw new Error('Agent does not have publid did.');
+      throw new Error('Agent does not have public did.');
     }
 
     const schemaName = `test-schema-${Date.now()}`;
@@ -81,32 +81,36 @@ describe('ledger', () => {
       version: '1.0',
     };
 
-    [schemaId] = await faberAgent.ledger.registerCredentialSchema(schemaTemplate);
+    const schemaResponse = await faberAgent.ledger.registerSchema(schemaTemplate);
+    schemaId = schemaResponse[0];
+    const schema = schemaResponse[1];
+
     const ledgerSchema = await faberAgent.ledger.getSchema(schemaId);
 
     expect(schemaId).toBe(`${faberAgentPublicDid.did}:2:${schemaName}:1.0`);
+
     expect(ledgerSchema).toEqual(
       expect.objectContaining({
-        attrNames: expect.arrayContaining(['name', 'age']),
+        attrNames: expect.arrayContaining(schemaTemplate.attributes),
         id: `${faberAgentPublicDid.did}:2:${schemaName}:1.0`,
         name: schemaName,
-        seqNo: expect.any(Number),
-        ver: '1.0',
-        version: '1.0',
+        seqNo: schema.seqNo,
+        ver: schemaTemplate.version,
+        version: schemaTemplate.version,
       })
     );
   });
 
   test('register definition on ledger', async () => {
     if (!faberAgentPublicDid) {
-      throw new Error('Agent does not have publid did.');
+      throw new Error('Agent does not have public did.');
     }
     const schema = await faberAgent.ledger.getSchema(schemaId);
     const credentialDefinitionTemplate = {
       schema: schema,
       tag: 'TAG',
       signatureType: 'CL',
-      config: { support_revocation: true },
+      config: { supportRevocation: true },
     };
 
     const [credDefId] = await faberAgent.ledger.registerCredentialDefinition(credentialDefinitionTemplate);
@@ -117,9 +121,9 @@ describe('ledger', () => {
     expect(ledgerCredDef).toEqual(
       expect.objectContaining({
         id: expect.stringMatching(credDefIdRegExp),
-        schemaId: expect.any(String),
-        type: 'CL',
-        tag: 'TAG',
+        schemaId: String(schema.seqNo),
+        type: credentialDefinitionTemplate.signatureType,
+        tag: credentialDefinitionTemplate.tag,
         ver: '1.0',
         value: expect.objectContaining({
           primary: expect.anything(),
