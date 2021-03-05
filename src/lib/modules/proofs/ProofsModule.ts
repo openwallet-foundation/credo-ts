@@ -202,7 +202,7 @@ export class ProofsModule {
    */
   public async getRequestedCredentialsForProofRequest(
     proofRequest: ProofRequest,
-    presentationProposal: PresentationPreview
+    presentationProposal?: PresentationPreview
   ) {
     return this.proofService.getRequestedCredentialsForProofRequest(proofRequest, presentationProposal);
   }
