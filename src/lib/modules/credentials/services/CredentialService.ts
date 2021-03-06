@@ -2,22 +2,22 @@ import type { CredDefId } from 'indy-sdk';
 import { v4 as uuid } from 'uuid';
 import { EventEmitter } from 'events';
 
-import { AgentMessage } from '../../agent/AgentMessage';
-import { LedgerService } from '../ledger/LedgerService';
-import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
-import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment';
-import logger from '../../logger';
-import { ConnectionRecord } from '../../storage/ConnectionRecord';
-import { CredentialRecord } from '../../storage/CredentialRecord';
-import { Repository } from '../../storage/Repository';
-import { JsonEncoder } from '../../utils/JsonEncoder';
-import { Wallet } from '../../wallet/Wallet';
-import { JsonTransformer } from '../../utils/JsonTransformer';
-import { ConnectionService } from '../connections/ConnectionService';
+import { AgentMessage } from '../../../agent/AgentMessage';
+import { LedgerService } from '../../ledger/services/LedgerService';
+import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
+import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment';
+import logger from '../../../logger';
+import { ConnectionRecord } from '../../../storage/ConnectionRecord';
+import { CredentialRecord } from '../../../storage/CredentialRecord';
+import { Repository } from '../../../storage/Repository';
+import { JsonEncoder } from '../../../utils/JsonEncoder';
+import { Wallet } from '../../../wallet/Wallet';
+import { JsonTransformer } from '../../../utils/JsonTransformer';
+import { ConnectionService } from '../../connections';
 
-import { CredentialState } from './CredentialState';
-import { CredentialUtils } from './CredentialUtils';
-import { CredentialInfo } from './models';
+import { CredentialState } from '../CredentialState';
+import { CredentialUtils } from '../CredentialUtils';
+import { CredentialInfo } from '../models';
 import {
   OfferCredentialMessage,
   CredentialPreview,
@@ -29,8 +29,8 @@ import {
   INDY_CREDENTIAL_ATTACHMENT_ID,
   ProposeCredentialMessage,
   ProposeCredentialMessageOptions,
-} from './messages';
-import { AckStatus } from '../connections';
+} from '../messages';
+import { AckStatus } from '../../connections';
 
 export enum CredentialEventType {
   StateChanged = 'stateChanged',

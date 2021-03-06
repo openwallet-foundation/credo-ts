@@ -1,5 +1,4 @@
 export * from './messages';
-export * from './CredentialService';
-export * from './CredentialState';
+export * from './services';
 export * from './CredentialUtils';
 export * from './models';

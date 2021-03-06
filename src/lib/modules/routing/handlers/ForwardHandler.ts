@@ -1,5 +1,5 @@
 import { Handler, HandlerInboundMessage } from '../../../handlers/Handler';
-import { ProviderRoutingService } from '../ProviderRoutingService';
+import { ProviderRoutingService } from '../services';
 import { ForwardMessage } from '../messages';
 
 export class ForwardHandler implements Handler {

@@ -1,6 +1,6 @@
 import logger from '../../logger';
 import { AgentConfig } from '../../agent/AgentConfig';
-import { ProvisioningService } from './ProvisioningService';
+import { ProviderRoutingService, MessagePickupService, ProvisioningService } from './services';
 import { MessageSender } from '../../agent/MessageSender';
 import { createOutboundMessage } from '../../agent/helpers';
 import {
@@ -9,8 +9,6 @@ import {
   ConnectionInvitationMessage,
   ConnectionResponseMessage,
 } from '../connections';
-import { MessagePickupService } from './MessagePickupService';
-import { ProviderRoutingService } from './ProviderRoutingService';
 import { BatchMessage } from './messages';
 import type { Verkey } from 'indy-sdk';
 import { Dispatcher } from '../../agent/Dispatcher';

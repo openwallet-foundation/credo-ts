@@ -4,7 +4,7 @@ import { Wallet } from '../../../wallet/Wallet';
 import { Repository } from '../../../storage/Repository';
 import { StorageService } from '../../../storage/StorageService';
 import { IndyStorageService } from '../../../storage/IndyStorageService';
-import { BasicMessageService, BasicMessageEventType } from '../BasicMessageService';
+import { BasicMessageService, BasicMessageEventType } from '../services/BasicMessageService';
 import { BasicMessageRecord } from '../../../storage/BasicMessageRecord';
 import { BasicMessage } from '../messages/BasicMessage';
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';

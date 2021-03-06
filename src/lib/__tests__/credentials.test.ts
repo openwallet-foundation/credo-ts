@@ -14,9 +14,10 @@ import {
   waitForCredentialRecord,
 } from './helpers';
 import { CredentialRecord } from '../storage/CredentialRecord';
-import { CredentialPreview, CredentialPreviewAttribute, CredentialState } from '../modules/credentials';
+import { CredentialPreview, CredentialPreviewAttribute } from '../modules/credentials';
 import { InitConfig } from '../types';
 import logger from '../logger';
+import { CredentialState } from '../modules/credentials/CredentialState';
 
 const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)

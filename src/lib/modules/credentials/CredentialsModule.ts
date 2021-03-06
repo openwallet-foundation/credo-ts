@@ -1,9 +1,9 @@
 import { CredentialRecord } from '../../storage/CredentialRecord';
 import { createOutboundMessage } from '../../agent/helpers';
 import { MessageSender } from '../../agent/MessageSender';
-import { ConnectionService } from '../connections/ConnectionService';
+import { ConnectionService } from '../connections';
 import { EventEmitter } from 'events';
-import { CredentialOfferTemplate, CredentialService } from './CredentialService';
+import { CredentialOfferTemplate, CredentialService } from './services';
 import { ProposeCredentialMessage, ProposeCredentialMessageOptions } from './messages';
 import { JsonTransformer } from '../../utils/JsonTransformer';
 import { CredentialInfo } from './models';

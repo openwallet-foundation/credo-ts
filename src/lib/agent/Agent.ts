@@ -2,16 +2,19 @@ import type Indy from 'indy-sdk';
 import logger from '../logger';
 import { InitConfig } from '../types';
 import { IndyWallet } from '../wallet/IndyWallet';
-import { ConnectionService } from '../modules/connections/ConnectionService';
-import { ProofService } from '../modules/proofs/ProofService';
-import { ProviderRoutingService } from '../modules/routing/ProviderRoutingService';
-import { ConsumerRoutingService } from '../modules/routing/ConsumerRoutingService';
-import { BasicMessageService } from '../modules/basic-messages/BasicMessageService';
-import { TrustPingService } from '../modules/connections/TrustPingService';
-import { MessagePickupService } from '../modules/routing/MessagePickupService';
 import { MessageReceiver } from './MessageReceiver';
 import { EnvelopeService } from './EnvelopeService';
-import { LedgerService } from '../modules/ledger/LedgerService';
+import { ConnectionService, TrustPingService } from '../modules/connections';
+import { CredentialService } from '../modules/credentials';
+import { ProofService } from '../modules/proofs';
+import {
+  ConsumerRoutingService,
+  ProviderRoutingService,
+  MessagePickupService,
+  ProvisioningService,
+} from '../modules/routing';
+import { BasicMessageService } from '../modules/basic-messages';
+import { LedgerService } from '../modules/ledger';
 import { Dispatcher } from './Dispatcher';
 import { MessageSender } from './MessageSender';
 import { InboundTransporter } from '../transport/InboundTransporter';
@@ -24,14 +27,12 @@ import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { AgentConfig } from './AgentConfig';
 import { Wallet } from '../wallet/Wallet';
 import { ProvisioningRecord } from '../storage/ProvisioningRecord';
-import { ProvisioningService } from '../modules/routing/ProvisioningService';
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule';
+import { CredentialsModule } from '../modules/credentials/CredentialsModule';
+import { ProofsModule } from '../modules/proofs/ProofsModule';
 import { RoutingModule } from '../modules/routing/RoutingModule';
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule';
 import { LedgerModule } from '../modules/ledger/LedgerModule';
-import { CredentialsModule } from '../modules/credentials/CredentialsModule';
-import { ProofsModule } from '../modules/proofs/ProofsModule';
-import { CredentialService } from '../modules/credentials/CredentialService';
 import { CredentialRecord } from '../storage/CredentialRecord';
 import { ProofRecord } from '../storage/ProofRecord';
 

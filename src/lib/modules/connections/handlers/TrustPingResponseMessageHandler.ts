@@ -1,6 +1,6 @@
 import { Handler, HandlerInboundMessage } from '../../../handlers/Handler';
-import { TrustPingService } from '../TrustPingService';
-import { TrustPingResponseMessage } from '../messages/TrustPingResponseMessage';
+import { TrustPingService } from '../services/TrustPingService';
+import { TrustPingResponseMessage } from '../messages';
 
 export class TrustPingResponseMessageHandler implements Handler {
   private trustPingService: TrustPingService;

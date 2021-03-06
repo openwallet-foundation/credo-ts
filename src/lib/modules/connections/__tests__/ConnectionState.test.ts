@@ -1,4 +1,4 @@
-import { ConnectionState } from '../domain/ConnectionState';
+import { ConnectionState } from '../models/ConnectionState';
 
 describe('ConnectionState', () => {
   test('state matches Connection 1.0 (RFC 0160) state value', () => {

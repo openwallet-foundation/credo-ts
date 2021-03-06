@@ -5,7 +5,7 @@ import { EnvelopeService } from './EnvelopeService';
 import { UnpackedMessageContext, UnpackedMessage } from '../types';
 import { RoutingMessageType as MessageType } from '../modules/routing/messages';
 import { InboundMessageContext } from './models/InboundMessageContext';
-import { ConnectionService } from '../modules/connections/ConnectionService';
+import { ConnectionService } from '../modules/connections/services/ConnectionService';
 import { AgentMessage } from './AgentMessage';
 import { JsonTransformer } from '../utils/JsonTransformer';
 

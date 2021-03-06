@@ -1,12 +1,12 @@
 import type { Verkey, WalletQuery } from 'indy-sdk';
 import { EventEmitter } from 'events';
-import { OutboundMessage } from '../../types';
-import { createOutboundMessage } from '../../agent/helpers';
-import { Repository } from '../../storage/Repository';
-import { BasicMessageRecord } from '../../storage/BasicMessageRecord';
-import { ConnectionRecord } from '../../storage/ConnectionRecord';
-import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
-import { BasicMessage } from './messages';
+import { OutboundMessage } from '../../../types';
+import { createOutboundMessage } from '../../../agent/helpers';
+import { Repository } from '../../../storage/Repository';
+import { BasicMessageRecord } from '../../../storage/BasicMessageRecord';
+import { ConnectionRecord } from '../../../storage/ConnectionRecord';
+import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
+import { BasicMessage } from '../messages';
 
 export enum BasicMessageEventType {
   MessageReceived = 'messageReceived',

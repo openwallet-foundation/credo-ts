@@ -3,8 +3,7 @@ import { Equals, IsString, ValidateNested } from 'class-validator';
 
 import { AgentMessage } from '../../../agent/AgentMessage';
 import { ConnectionMessageType } from './ConnectionMessageType';
-import { DidDoc } from '../domain/did/DidDoc';
-import { Connection } from '../domain/Connection';
+import { Connection, DidDoc } from '../models';
 
 export interface ConnectionRequestMessageOptions {
   id?: string;

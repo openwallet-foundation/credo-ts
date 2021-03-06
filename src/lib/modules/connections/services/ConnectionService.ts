@@ -2,26 +2,31 @@ import type { Verkey } from 'indy-sdk';
 import { EventEmitter } from 'events';
 import { validateOrReject } from 'class-validator';
 
-import { AgentConfig } from '../../agent/AgentConfig';
-import { ConnectionState } from './domain/ConnectionState';
-import { ConnectionRecord, ConnectionTags } from '../../storage/ConnectionRecord';
-import { Repository } from '../../storage/Repository';
-import { Wallet } from '../../wallet/Wallet';
-import { ConnectionInvitationMessage } from './messages/ConnectionInvitationMessage';
-import { ConnectionRequestMessage } from './messages/ConnectionRequestMessage';
-import { ConnectionResponseMessage } from './messages/ConnectionResponseMessage';
-import { signData, unpackAndVerifySignatureDecorator } from '../../decorators/signature/SignatureDecoratorUtils';
-import { Connection } from './domain/Connection';
-import { AckMessage } from './messages/AckMessage';
-import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
-import { ConnectionRole } from './domain/ConnectionRole';
-import { TrustPingMessage } from './messages/TrustPingMessage';
-import { JsonTransformer } from '../../utils/JsonTransformer';
-import { AgentMessage } from '../../agent/AgentMessage';
-import { Ed25119Sig2018 } from './domain/did/publicKey';
-import { IndyAgentService } from './domain/did/service';
-import { DidDoc } from './domain/did/DidDoc';
-import { authenticationTypes, ReferencedAuthentication } from './domain/did/authentication';
+import { AgentConfig } from '../../../agent/AgentConfig';
+import { ConnectionRecord, ConnectionTags } from '../../../storage/ConnectionRecord';
+import { Repository } from '../../../storage/Repository';
+import { Wallet } from '../../../wallet/Wallet';
+import {
+  ConnectionInvitationMessage,
+  ConnectionRequestMessage,
+  ConnectionResponseMessage,
+  AckMessage,
+  TrustPingMessage,
+} from '../messages';
+import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils';
+import {
+  Connection,
+  ConnectionState,
+  ConnectionRole,
+  DidDoc,
+  Ed25119Sig2018,
+  IndyAgentService,
+  authenticationTypes,
+  ReferencedAuthentication,
+} from '../models';
+import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
+import { JsonTransformer } from '../../../utils/JsonTransformer';
+import { AgentMessage } from '../../../agent/AgentMessage';
 
 export enum ConnectionEventType {
   StateChanged = 'stateChanged',

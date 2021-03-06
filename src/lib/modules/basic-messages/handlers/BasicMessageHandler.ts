@@ -1,5 +1,5 @@
 import { Handler, HandlerInboundMessage } from '../../../handlers/Handler';
-import { BasicMessageService } from '../BasicMessageService';
+import { BasicMessageService } from '../services/BasicMessageService';
 import { BasicMessage } from '../messages';
 
 export class BasicMessageHandler implements Handler {

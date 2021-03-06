@@ -4,18 +4,18 @@ import type Indy from 'indy-sdk';
 import { EventEmitter } from 'events';
 import { validateOrReject } from 'class-validator';
 
-import { AgentMessage } from '../../agent/AgentMessage';
-import { LedgerService } from '../ledger/LedgerService';
-import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
-import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment';
-import { ConnectionRecord } from '../../storage/ConnectionRecord';
-import { ProofRecord } from '../../storage/ProofRecord';
-import { Repository } from '../../storage/Repository';
-import { JsonEncoder } from '../../utils/JsonEncoder';
-import { JsonTransformer } from '../../utils/JsonTransformer';
-import { uuid } from '../../utils/uuid';
-import { Wallet } from '../../wallet/Wallet';
-import { CredentialUtils, Credential, CredentialInfo } from '../credentials';
+import { AgentMessage } from '../../../agent/AgentMessage';
+import { LedgerService } from '../../ledger/services/LedgerService';
+import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
+import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment';
+import { ConnectionRecord } from '../../../storage/ConnectionRecord';
+import { ProofRecord } from '../../../storage/ProofRecord';
+import { Repository } from '../../../storage/Repository';
+import { JsonEncoder } from '../../../utils/JsonEncoder';
+import { JsonTransformer } from '../../../utils/JsonTransformer';
+import { uuid } from '../../../utils/uuid';
+import { Wallet } from '../../../wallet/Wallet';
+import { CredentialUtils, Credential, CredentialInfo } from '../../credentials';
 
 import {
   PresentationMessage,
@@ -26,7 +26,7 @@ import {
   PresentationAckMessage,
   INDY_PROOF_REQUEST_ATTACHMENT_ID,
   INDY_PROOF_ATTACHMENT_ID,
-} from './messages';
+} from '../messages';
 import {
   PartialProof,
   ProofAttributeInfo,
@@ -36,10 +36,10 @@ import {
   RequestedCredentials,
   RequestedAttribute,
   RequestedPredicate,
-} from './models';
-import { ProofState } from './ProofState';
-import logger from '../../logger';
-import { AckStatus } from '../connections';
+} from '../models';
+import { ProofState } from '../ProofState';
+import logger from '../../../logger';
+import { AckStatus } from '../../connections';
 
 export enum ProofEventType {
   StateChanged = 'stateChanged',

@@ -1,3 +1,3 @@
 export * from './messages';
-export * from './ConnectionService';
-export * from './domain';
+export * from './services';
+export * from './models';

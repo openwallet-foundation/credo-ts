@@ -1,6 +1,6 @@
 import type { WalletQuery } from 'indy-sdk';
 import { EventEmitter } from 'events';
-import { BasicMessageService } from './BasicMessageService';
+import { BasicMessageService } from './services';
 import { MessageSender } from '../../agent/MessageSender';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
 import { Dispatcher } from '../../agent/Dispatcher';

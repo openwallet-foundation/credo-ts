@@ -1,9 +1,9 @@
 import type { Verkey } from 'indy-sdk';
-import logger from '../../logger';
-import { createOutboundMessage } from '../../agent/helpers';
-import { AgentConfig } from '../../agent/AgentConfig';
-import { MessageSender } from '../../agent/MessageSender';
-import { KeylistUpdateMessage, KeylistUpdate, KeylistUpdateAction } from './messages';
+import logger from '../../../logger';
+import { createOutboundMessage } from '../../../agent/helpers';
+import { AgentConfig } from '../../../agent/AgentConfig';
+import { MessageSender } from '../../../agent/MessageSender';
+import { KeylistUpdateMessage, KeylistUpdate, KeylistUpdateAction } from '../messages';
 
 class ConsumerRoutingService {
   private messageSender: MessageSender;

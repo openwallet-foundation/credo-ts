@@ -1,8 +1,7 @@
-import { createOutboundMessage } from '../../agent/helpers';
-import { ConnectionRecord } from '../../storage/ConnectionRecord';
-import { TrustPingMessage } from './messages/TrustPingMessage';
-import { TrustPingResponseMessage } from './messages/TrustPingResponseMessage';
-import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
+import { createOutboundMessage } from '../../../agent/helpers';
+import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
+import { ConnectionRecord } from '../../../storage/ConnectionRecord';
+import { TrustPingMessage, TrustPingResponseMessage } from '../messages';
 
 /**
  * @todo use connection from message context

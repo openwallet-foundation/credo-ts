@@ -1,7 +1,7 @@
 import { createOutboundMessage } from '../../agent/helpers';
 import { MessageSender } from '../../agent/MessageSender';
 import { ConnectionService } from '../connections';
-import { ProofService } from './ProofService';
+import { ProofService } from './services';
 import { ProofRecord } from '../../storage/ProofRecord';
 import { ProofRequest } from './models/ProofRequest';
 import { JsonTransformer } from '../../utils/JsonTransformer';

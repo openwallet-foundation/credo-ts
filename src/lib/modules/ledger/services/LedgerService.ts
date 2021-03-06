@@ -1,8 +1,8 @@
 import type Indy from 'indy-sdk';
 import type { CredDef, CredDefId, Did, LedgerRequest, PoolConfig, PoolHandle, Schema, SchemaId } from 'indy-sdk';
-import logger from '../../logger';
-import { isIndyError } from '../../utils/indyError';
-import { Wallet } from '../../wallet/Wallet';
+import logger from '../../../logger';
+import { isIndyError } from '../../../utils/indyError';
+import { Wallet } from '../../../wallet/Wallet';
 
 export class LedgerService {
   private wallet: Wallet;

@@ -7,16 +7,12 @@ import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { Agent, InboundTransporter, OutboundTransporter } from '..';
 import { ProofEventType, ProofState, ProofStateChangedEvent } from '../modules/proofs';
 import { OutboundPackage, WireMessage } from '../types';
-import { SchemaTemplate, CredDefTemplate } from '../modules/ledger/LedgerService';
-import {
-  CredentialState,
-  CredentialOfferTemplate,
-  CredentialEventType,
-  CredentialStateChangedEvent,
-} from '../modules/credentials';
+import { SchemaTemplate, CredDefTemplate } from '../modules/ledger/services/LedgerService';
+import { CredentialOfferTemplate, CredentialEventType, CredentialStateChangedEvent } from '../modules/credentials';
 import { CredentialRecord } from '../storage/CredentialRecord';
 import { ProofRecord } from '../storage/ProofRecord';
 import { BasicMessage, BasicMessageEventType, BasicMessageReceivedEvent } from '../modules/basic-messages';
+import { CredentialState } from '../modules/credentials/CredentialState';
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)

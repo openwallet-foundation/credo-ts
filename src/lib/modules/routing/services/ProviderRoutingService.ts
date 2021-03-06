@@ -1,9 +1,9 @@
 import type { Verkey } from 'indy-sdk';
-import { OutboundMessage } from '../../types';
-import { createOutboundMessage } from '../../agent/helpers';
-import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
-import { ConnectionRecord } from '../../storage/ConnectionRecord';
-import { KeylistUpdateMessage, KeylistUpdateAction, ForwardMessage } from './messages';
+import { OutboundMessage } from '../../../types';
+import { createOutboundMessage } from '../../../agent/helpers';
+import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
+import { ConnectionRecord } from '../../../storage/ConnectionRecord';
+import { KeylistUpdateMessage, KeylistUpdateAction, ForwardMessage } from '../messages';
 
 export interface RoutingTable {
   [recipientKey: string]: ConnectionRecord | undefined;
