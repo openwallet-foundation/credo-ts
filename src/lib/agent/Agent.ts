@@ -24,7 +24,7 @@ import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { AgentConfig } from './AgentConfig';
 import { Wallet } from '../wallet/Wallet';
 import { ProvisioningRecord } from '../storage/ProvisioningRecord';
-import { ProvisioningService } from './ProvisioningService';
+import { ProvisioningService } from '../modules/routing/ProvisioningService';
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule';
 import { RoutingModule } from '../modules/routing/RoutingModule';
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule';

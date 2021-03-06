@@ -1,8 +1,8 @@
 import { Equals, IsNumber } from 'class-validator';
 import { Expose } from 'class-transformer';
 
-import { AgentMessage } from '../../agent/AgentMessage';
-import { MessageType } from './messages';
+import { AgentMessage } from '../../../agent/AgentMessage';
+import { RoutingMessageType as MessageType } from './RoutingMessageType';
 
 export interface BatchPickupMessageOptions {
   id?: string;

@@ -1,8 +1,8 @@
 import { Equals, IsDate, IsString } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
 
-import { AgentMessage } from '../../agent/AgentMessage';
-import { MessageType } from './messages';
+import { AgentMessage } from '../../../agent/AgentMessage';
+import { MessageType } from './BasicMessageMessageType';
 
 export class BasicMessage extends AgentMessage {
   /**

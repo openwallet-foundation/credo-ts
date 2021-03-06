@@ -3,7 +3,7 @@ import logger from '../../logger';
 import { createOutboundMessage } from '../../agent/helpers';
 import { AgentConfig } from '../../agent/AgentConfig';
 import { MessageSender } from '../../agent/MessageSender';
-import { KeylistUpdateMessage, KeylistUpdate, KeylistUpdateAction } from '../../modules/routing/KeylistUpdateMessage';
+import { KeylistUpdateMessage, KeylistUpdate, KeylistUpdateAction } from './messages';
 
 class ConsumerRoutingService {
   private messageSender: MessageSender;

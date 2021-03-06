@@ -2,10 +2,10 @@ import { Equals, Matches, IsArray, ValidateNested } from 'class-validator';
 import { Type, Expose } from 'class-transformer';
 import { v4 as uuid } from 'uuid';
 
-import { MessageIdRegExp } from '../../agent/BaseMessage';
-import { AgentMessage } from '../../agent/AgentMessage';
-import { MessageType } from './messages';
-import { WireMessage } from '../../types';
+import { MessageIdRegExp } from '../../../agent/BaseMessage';
+import { AgentMessage } from '../../../agent/AgentMessage';
+import { RoutingMessageType as MessageType } from './RoutingMessageType';
+import { WireMessage } from '../../../types';
 
 export interface BatchMessageOptions {
   id?: string;

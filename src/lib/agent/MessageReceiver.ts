@@ -3,7 +3,7 @@ import { AgentConfig } from './AgentConfig';
 import { Dispatcher } from './Dispatcher';
 import { EnvelopeService } from './EnvelopeService';
 import { UnpackedMessageContext, UnpackedMessage } from '../types';
-import { MessageType } from '../modules/routing/messages';
+import { RoutingMessageType as MessageType } from '../modules/routing/messages';
 import { InboundMessageContext } from './models/InboundMessageContext';
 import { ConnectionService } from '../modules/connections/ConnectionService';
 import { AgentMessage } from './AgentMessage';

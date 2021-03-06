@@ -1,14 +1,14 @@
 import indy from 'indy-sdk';
-import { IndyWallet } from '../../wallet/IndyWallet';
-import { Wallet } from '../../wallet/Wallet';
-import { Repository } from '../../storage/Repository';
-import { StorageService } from '../../storage/StorageService';
-import { IndyStorageService } from '../../storage/IndyStorageService';
-import { BasicMessageService, BasicMessageEventType } from './BasicMessageService';
-import { BasicMessageRecord } from '../../storage/BasicMessageRecord';
-import { BasicMessage } from './BasicMessage';
-import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
-import { ConnectionRecord } from '../../storage/ConnectionRecord';
+import { IndyWallet } from '../../../wallet/IndyWallet';
+import { Wallet } from '../../../wallet/Wallet';
+import { Repository } from '../../../storage/Repository';
+import { StorageService } from '../../../storage/StorageService';
+import { IndyStorageService } from '../../../storage/IndyStorageService';
+import { BasicMessageService, BasicMessageEventType } from '../BasicMessageService';
+import { BasicMessageRecord } from '../../../storage/BasicMessageRecord';
+import { BasicMessage } from '../messages/BasicMessage';
+import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
+import { ConnectionRecord } from '../../../storage/ConnectionRecord';
 
 describe('BasicMessageService', () => {
   const walletConfig = { id: 'test-wallet' + '-BasicMessageServiceTest' };

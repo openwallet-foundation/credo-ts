@@ -5,8 +5,8 @@ import { createOutboundMessage } from '../../agent/helpers';
 import { Repository } from '../../storage/Repository';
 import { BasicMessageRecord } from '../../storage/BasicMessageRecord';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
-import { BasicMessage } from './BasicMessage';
 import { InboundMessageContext } from '../../agent/models/InboundMessageContext';
+import { BasicMessage } from './messages';
 
 export enum BasicMessageEventType {
   MessageReceived = 'messageReceived',

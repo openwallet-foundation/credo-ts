@@ -2,8 +2,7 @@ import { InboundConnection } from '../../types';
 import { createOutboundMessage } from '../../agent/helpers';
 import { MessageRepository } from '../../storage/MessageRepository';
 import { ConnectionRecord } from '../../storage/ConnectionRecord';
-import { BatchPickupMessage } from './BatchPickupMessage';
-import { BatchMessage, BatchMessageMessage } from './BatchMessage';
+import { BatchMessage, BatchMessageMessage, BatchPickupMessage } from './messages';
 
 export class MessagePickupService {
   private messageRepository?: MessageRepository;

@@ -1,7 +1,7 @@
 import logger from '../logger';
 import { OutboundMessage, OutboundPackage, UnpackedMessageContext } from '../types';
 import { Wallet } from '../wallet/Wallet';
-import { ForwardMessage } from '../modules/routing/ForwardMessage';
+import { ForwardMessage } from '../modules/routing/messages';
 
 class EnvelopeService {
   private wallet: Wallet;

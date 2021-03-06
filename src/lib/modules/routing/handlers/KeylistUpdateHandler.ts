@@ -1,6 +1,6 @@
 import { Handler, HandlerInboundMessage } from '../../../handlers/Handler';
 import { ProviderRoutingService } from '../ProviderRoutingService';
-import { KeylistUpdateMessage } from '../KeylistUpdateMessage';
+import { KeylistUpdateMessage } from '../messages';
 
 export class KeylistUpdateHandler implements Handler {
   private routingService: ProviderRoutingService;

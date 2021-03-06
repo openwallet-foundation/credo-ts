@@ -1,8 +1,8 @@
 import type { Verkey } from 'indy-sdk';
-import { Repository } from '../storage/Repository';
-import { ProvisioningRecord } from '../storage/ProvisioningRecord';
-import logger from '../logger';
-import { isIndyError } from '../utils/indyError';
+import { Repository } from '../../storage/Repository';
+import { ProvisioningRecord } from '../../storage/ProvisioningRecord';
+import logger from '../../logger';
+import { isIndyError } from '../../utils/indyError';
 
 const UNIQUE_PROVISIONING_ID = 'UNIQUE_PROVISIONING_ID';
 
