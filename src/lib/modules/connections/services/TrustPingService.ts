@@ -1,6 +1,6 @@
 import { createOutboundMessage } from '../../../agent/helpers';
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
-import { ConnectionRecord } from '../../../storage/ConnectionRecord';
+import { ConnectionRecord } from '../repository/ConnectionRecord';
 import { TrustPingMessage, TrustPingResponseMessage } from '../messages';
 
 /**

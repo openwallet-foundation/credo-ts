@@ -3,7 +3,7 @@ import type { CredReqMetadata, WalletQuery, CredDef } from 'indy-sdk';
 import { Wallet } from '../../../wallet/Wallet';
 import { Repository } from '../../../storage/Repository';
 import { CredentialOfferTemplate, CredentialService, CredentialEventType } from '../services';
-import { CredentialRecord } from '../../../storage/CredentialRecord';
+import { CredentialRecord } from '../repository/CredentialRecord';
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
 import { CredentialState } from '../CredentialState';
 import { StubWallet } from './StubWallet';

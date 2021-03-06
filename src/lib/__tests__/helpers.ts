@@ -3,14 +3,18 @@ import type { SchemaId, Schema, CredDefId, CredDef, Did } from 'indy-sdk';
 import logger from '../logger';
 import path from 'path';
 import { Subject } from 'rxjs';
-import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { Agent, InboundTransporter, OutboundTransporter } from '..';
-import { ProofEventType, ProofState, ProofStateChangedEvent } from '../modules/proofs';
 import { OutboundPackage, WireMessage } from '../types';
-import { SchemaTemplate, CredDefTemplate } from '../modules/ledger/services/LedgerService';
-import { CredentialOfferTemplate, CredentialEventType, CredentialStateChangedEvent } from '../modules/credentials';
-import { CredentialRecord } from '../storage/CredentialRecord';
-import { ProofRecord } from '../storage/ProofRecord';
+import { ConnectionRecord } from '../modules/connections';
+import { ProofEventType, ProofState, ProofStateChangedEvent } from '../modules/proofs';
+import { SchemaTemplate, CredDefTemplate } from '../modules/ledger';
+import {
+  CredentialRecord,
+  CredentialOfferTemplate,
+  CredentialEventType,
+  CredentialStateChangedEvent,
+} from '../modules/credentials';
+import { ProofRecord } from '../modules/proofs';
 import { BasicMessage, BasicMessageEventType, BasicMessageReceivedEvent } from '../modules/basic-messages';
 import { CredentialState } from '../modules/credentials/CredentialState';
 

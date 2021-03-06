@@ -3,8 +3,8 @@ import { EventEmitter } from 'events';
 import { OutboundMessage } from '../../../types';
 import { createOutboundMessage } from '../../../agent/helpers';
 import { Repository } from '../../../storage/Repository';
-import { BasicMessageRecord } from '../../../storage/BasicMessageRecord';
-import { ConnectionRecord } from '../../../storage/ConnectionRecord';
+import { BasicMessageRecord } from '../repository/BasicMessageRecord';
+import { ConnectionRecord } from '../../connections/repository/ConnectionRecord';
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
 import { BasicMessage } from '../messages';
 

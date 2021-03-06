@@ -1,13 +1,13 @@
 import type { CredentialId } from 'indy-sdk';
 import { v4 as uuid } from 'uuid';
-import { BaseRecord, RecordType, Tags } from './BaseRecord';
+import { BaseRecord, RecordType, Tags } from '../../../storage/BaseRecord';
 import {
   ProposeCredentialMessage,
   IssueCredentialMessage,
   RequestCredentialMessage,
   OfferCredentialMessage,
-} from '../modules/credentials';
-import { CredentialState } from '../modules/credentials/CredentialState';
+} from '../messages';
+import { CredentialState } from '../CredentialState';
 
 export interface CredentialStorageProps {
   id?: string;

@@ -1,6 +1,6 @@
 import type { Verkey } from 'indy-sdk';
 import { Repository } from '../../../storage/Repository';
-import { ProvisioningRecord } from '../../../storage/ProvisioningRecord';
+import { ProvisioningRecord } from '../repository/ProvisioningRecord';
 import logger from '../../../logger';
 import { isIndyError } from '../../../utils/indyError';
 

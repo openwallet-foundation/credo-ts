@@ -8,8 +8,8 @@ import { AgentMessage } from '../../../agent/AgentMessage';
 import { LedgerService } from '../../ledger/services/LedgerService';
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment';
-import { ConnectionRecord } from '../../../storage/ConnectionRecord';
-import { ProofRecord } from '../../../storage/ProofRecord';
+import { ConnectionRecord, AckStatus } from '../../connections';
+import { ProofRecord } from '../repository/ProofRecord';
 import { Repository } from '../../../storage/Repository';
 import { JsonEncoder } from '../../../utils/JsonEncoder';
 import { JsonTransformer } from '../../../utils/JsonTransformer';
@@ -39,7 +39,6 @@ import {
 } from '../models';
 import { ProofState } from '../ProofState';
 import logger from '../../../logger';
-import { AckStatus } from '../../connections';
 
 export enum ProofEventType {
   StateChanged = 'stateChanged',

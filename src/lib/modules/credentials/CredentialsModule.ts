@@ -1,4 +1,4 @@
-import { CredentialRecord } from '../../storage/CredentialRecord';
+import { CredentialRecord } from './repository/CredentialRecord';
 import { createOutboundMessage } from '../../agent/helpers';
 import { MessageSender } from '../../agent/MessageSender';
 import { ConnectionService } from '../connections';

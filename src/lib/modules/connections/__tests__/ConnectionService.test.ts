@@ -3,7 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { IndyWallet } from '../../../wallet/IndyWallet';
 import { Wallet } from '../../../wallet/Wallet';
 import { ConnectionService } from '../services/ConnectionService';
-import { ConnectionRecord, ConnectionStorageProps } from '../../../storage/ConnectionRecord';
+import { ConnectionRecord, ConnectionStorageProps } from '../repository/ConnectionRecord';
 import { AgentConfig } from '../../../agent/AgentConfig';
 import { Connection, ConnectionState, ConnectionRole, DidDoc, IndyAgentService } from '../models';
 import { InitConfig } from '../../../types';

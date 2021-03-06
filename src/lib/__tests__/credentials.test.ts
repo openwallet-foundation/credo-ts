@@ -13,7 +13,7 @@ import {
   SubjectOutboundTransporter,
   waitForCredentialRecord,
 } from './helpers';
-import { CredentialRecord } from '../storage/CredentialRecord';
+import { CredentialRecord } from '../modules/credentials';
 import { CredentialPreview, CredentialPreviewAttribute } from '../modules/credentials';
 import { InitConfig } from '../types';
 import logger from '../logger';

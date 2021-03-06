@@ -1,4 +1,4 @@
-import { ConnectionRecord } from './storage/ConnectionRecord';
+import { ConnectionRecord } from './modules/connections';
 import { AgentMessage } from './agent/AgentMessage';
 import type { Did, WalletConfig, WalletCredentials, Verkey } from 'indy-sdk';
 

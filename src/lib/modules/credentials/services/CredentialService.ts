@@ -7,13 +7,12 @@ import { LedgerService } from '../../ledger/services/LedgerService';
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment';
 import logger from '../../../logger';
-import { ConnectionRecord } from '../../../storage/ConnectionRecord';
-import { CredentialRecord } from '../../../storage/CredentialRecord';
+import { ConnectionService, ConnectionRecord, AckStatus } from '../../connections';
+import { CredentialRecord } from '../repository/CredentialRecord';
 import { Repository } from '../../../storage/Repository';
 import { JsonEncoder } from '../../../utils/JsonEncoder';
 import { Wallet } from '../../../wallet/Wallet';
 import { JsonTransformer } from '../../../utils/JsonTransformer';
-import { ConnectionService } from '../../connections';
 
 import { CredentialState } from '../CredentialState';
 import { CredentialUtils } from '../CredentialUtils';
@@ -30,7 +29,6 @@ import {
   ProposeCredentialMessage,
   ProposeCredentialMessageOptions,
 } from '../messages';
-import { AckStatus } from '../../connections';
 
 export enum CredentialEventType {
   StateChanged = 'stateChanged',

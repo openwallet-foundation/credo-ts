@@ -26,7 +26,7 @@ import {
   AttributeFilter,
   ProofPredicateInfo,
 } from '../modules/proofs';
-import { ConnectionRecord } from '../storage/ConnectionRecord';
+import { ConnectionRecord } from '../modules/connections';
 import logger from '../logger';
 
 const faberConfig: InitConfig = {

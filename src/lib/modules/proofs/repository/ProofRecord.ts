@@ -1,11 +1,7 @@
 import { v4 as uuid } from 'uuid';
-import { BaseRecord, RecordType, Tags } from './BaseRecord';
-import {
-  ProofState,
-  ProposePresentationMessage,
-  RequestPresentationMessage,
-  PresentationMessage,
-} from '../modules/proofs';
+import { BaseRecord, RecordType, Tags } from '../../../storage/BaseRecord';
+import { ProposePresentationMessage, RequestPresentationMessage, PresentationMessage } from '../messages';
+import { ProofState } from '../ProofState';
 
 export interface ProofRecordProps {
   id?: string;

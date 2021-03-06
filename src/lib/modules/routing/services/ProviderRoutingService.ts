@@ -2,7 +2,7 @@ import type { Verkey } from 'indy-sdk';
 import { OutboundMessage } from '../../../types';
 import { createOutboundMessage } from '../../../agent/helpers';
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
-import { ConnectionRecord } from '../../../storage/ConnectionRecord';
+import { ConnectionRecord } from '../../connections';
 import { KeylistUpdateMessage, KeylistUpdateAction, ForwardMessage } from '../messages';
 
 export interface RoutingTable {

@@ -1,4 +1,4 @@
-import { ConnectionRecord } from '../storage/ConnectionRecord';
+import { ConnectionRecord } from '../modules/connections';
 import { AgentMessage } from './AgentMessage';
 import { OutboundMessage } from '../types';
 import { ConnectionInvitationMessage } from '../modules/connections';

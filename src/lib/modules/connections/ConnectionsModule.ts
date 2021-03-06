@@ -4,7 +4,7 @@ import { EventEmitter } from 'events';
 import { AgentConfig } from '../../agent/AgentConfig';
 import { ConnectionService, ConnectionEventType, ConnectionStateChangedEvent, TrustPingService } from './services';
 import { ConsumerRoutingService } from '../routing';
-import { ConnectionRecord } from '../../storage/ConnectionRecord';
+import { ConnectionRecord } from './repository/ConnectionRecord';
 import { ConnectionState } from './models/ConnectionState';
 import { MessageSender } from '../../agent/MessageSender';
 import { createOutboundMessage } from '../../agent/helpers';

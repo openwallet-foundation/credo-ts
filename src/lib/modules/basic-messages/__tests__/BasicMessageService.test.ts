@@ -4,11 +4,11 @@ import { Wallet } from '../../../wallet/Wallet';
 import { Repository } from '../../../storage/Repository';
 import { StorageService } from '../../../storage/StorageService';
 import { IndyStorageService } from '../../../storage/IndyStorageService';
-import { BasicMessageService, BasicMessageEventType } from '../services/BasicMessageService';
-import { BasicMessageRecord } from '../../../storage/BasicMessageRecord';
-import { BasicMessage } from '../messages/BasicMessage';
+import { BasicMessageService, BasicMessageEventType } from '../services';
+import { BasicMessageRecord } from '../repository/BasicMessageRecord';
+import { BasicMessage } from '../messages';
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
-import { ConnectionRecord } from '../../../storage/ConnectionRecord';
+import { ConnectionRecord } from '../../connections';
 
 describe('BasicMessageService', () => {
   const walletConfig = { id: 'test-wallet' + '-BasicMessageServiceTest' };

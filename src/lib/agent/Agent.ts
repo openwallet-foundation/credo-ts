@@ -4,37 +4,33 @@ import { InitConfig } from '../types';
 import { IndyWallet } from '../wallet/IndyWallet';
 import { MessageReceiver } from './MessageReceiver';
 import { EnvelopeService } from './EnvelopeService';
-import { ConnectionService, TrustPingService } from '../modules/connections';
-import { CredentialService } from '../modules/credentials';
-import { ProofService } from '../modules/proofs';
+import { ConnectionService, TrustPingService, ConnectionRecord } from '../modules/connections';
+import { CredentialService, CredentialRecord } from '../modules/credentials';
+import { ProofService, ProofRecord } from '../modules/proofs';
 import {
   ConsumerRoutingService,
   ProviderRoutingService,
   MessagePickupService,
   ProvisioningService,
+  ProvisioningRecord,
 } from '../modules/routing';
-import { BasicMessageService } from '../modules/basic-messages';
+import { BasicMessageService, BasicMessageRecord } from '../modules/basic-messages';
 import { LedgerService } from '../modules/ledger';
 import { Dispatcher } from './Dispatcher';
 import { MessageSender } from './MessageSender';
 import { InboundTransporter } from '../transport/InboundTransporter';
 import { OutboundTransporter } from '../transport/OutboundTransporter';
 import { MessageRepository } from '../storage/MessageRepository';
-import { BasicMessageRecord } from '../storage/BasicMessageRecord';
 import { Repository } from '../storage/Repository';
 import { IndyStorageService } from '../storage/IndyStorageService';
-import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { AgentConfig } from './AgentConfig';
 import { Wallet } from '../wallet/Wallet';
-import { ProvisioningRecord } from '../storage/ProvisioningRecord';
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule';
 import { CredentialsModule } from '../modules/credentials/CredentialsModule';
 import { ProofsModule } from '../modules/proofs/ProofsModule';
 import { RoutingModule } from '../modules/routing/RoutingModule';
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule';
 import { LedgerModule } from '../modules/ledger/LedgerModule';
-import { CredentialRecord } from '../storage/CredentialRecord';
-import { ProofRecord } from '../storage/ProofRecord';
 
 export class Agent {
   protected wallet: Wallet;

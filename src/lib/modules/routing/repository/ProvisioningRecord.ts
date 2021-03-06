@@ -1,6 +1,6 @@
 import type { Verkey } from 'indy-sdk';
 import { v4 as uuid } from 'uuid';
-import { BaseRecord, RecordType } from './BaseRecord';
+import { BaseRecord, RecordType } from '../../../storage/BaseRecord';
 
 interface ProvisioningRecordProps {
   id: string;

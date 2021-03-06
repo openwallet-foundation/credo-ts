@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 import { validateOrReject } from 'class-validator';
 
 import { AgentConfig } from '../../../agent/AgentConfig';
-import { ConnectionRecord, ConnectionTags } from '../../../storage/ConnectionRecord';
+import { ConnectionRecord, ConnectionTags } from '../repository/ConnectionRecord';
 import { Repository } from '../../../storage/Repository';
 import { Wallet } from '../../../wallet/Wallet';
 import {
