@@ -3,7 +3,7 @@ import { IsArray, IsEnum, IsInt, IsOptional, IsString, ValidateNested } from 'cl
 
 import { AttributeFilter } from './AttributeFilter';
 import { PredicateType } from './PredicateType';
-import { RevocationInterval } from './RevocationInterval';
+import { RevocationInterval } from '../../credentials';
 
 export class ProofPredicateInfo {
   public constructor(options: ProofPredicateInfo) {

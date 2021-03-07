@@ -10,4 +10,3 @@ export * from './RequestedAttribute';
 export * from './RequestedCredentials';
 export * from './RequestedPredicate';
 export * from './RequestedProof';
-export * from './RevocationInterval';
