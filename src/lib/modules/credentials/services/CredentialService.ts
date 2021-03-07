@@ -605,7 +605,7 @@ export class CredentialService extends EventEmitter {
   /**
    * Retrieve a credential record by id
    *
-   * @param proofRecordId The proof record id
+   * @param credentialRecordId The credential record id
    * @throws {Error} If no record is found
    * @return The credential record
    *
