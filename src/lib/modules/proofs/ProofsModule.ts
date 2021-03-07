@@ -9,10 +9,12 @@ import { EventEmitter } from 'events';
 import { PresentationPreview, ProposePresentationMessage } from './messages';
 import { RequestedCredentials } from './models';
 import { Dispatcher } from '../../agent/Dispatcher';
-import { ProposePresentationHandler } from './handlers/ProposePresentationHandler';
-import { RequestPresentationHandler } from './handlers/RequestPresentationHandler';
-import { PresentationHandler } from './handlers/PresentationHandler';
-import { PresentationAckHandler } from './handlers/PresentationAckHandler';
+import {
+  ProposePresentationHandler,
+  RequestPresentationHandler,
+  PresentationAckHandler,
+  PresentationHandler,
+} from './handlers';
 
 export class ProofsModule {
   private proofService: ProofService;

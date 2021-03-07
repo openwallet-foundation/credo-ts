@@ -8,11 +8,13 @@ import { ProposeCredentialMessage, ProposeCredentialMessageOptions } from './mes
 import { JsonTransformer } from '../../utils/JsonTransformer';
 import { CredentialInfo } from './models';
 import { Dispatcher } from '../../agent/Dispatcher';
-import { ProposeCredentialHandler } from './handlers/ProposeCredentialHandler';
-import { OfferCredentialHandler } from './handlers/OfferCredentialHandler';
-import { RequestCredentialHandler } from './handlers/RequestCredentialHandler';
-import { IssueCredentialHandler } from './handlers/IssueCredentialHandler';
-import { CredentialAckHandler } from './handlers/CredentialAckHandler';
+import {
+  ProposeCredentialHandler,
+  OfferCredentialHandler,
+  RequestCredentialHandler,
+  IssueCredentialHandler,
+  CredentialAckHandler,
+} from './handlers';
 
 export class CredentialsModule {
   private connectionService: ConnectionService;

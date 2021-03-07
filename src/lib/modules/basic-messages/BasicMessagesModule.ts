@@ -4,7 +4,7 @@ import { BasicMessageService } from './services';
 import { MessageSender } from '../../agent/MessageSender';
 import { ConnectionRecord } from '../connections';
 import { Dispatcher } from '../../agent/Dispatcher';
-import { BasicMessageHandler } from './handlers/BasicMessageHandler';
+import { BasicMessageHandler } from './handlers';
 
 export class BasicMessagesModule {
   private basicMessageService: BasicMessageService;

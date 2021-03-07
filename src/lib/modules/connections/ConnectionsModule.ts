@@ -2,19 +2,21 @@ import type { Verkey } from 'indy-sdk';
 import { EventEmitter } from 'events';
 
 import { AgentConfig } from '../../agent/AgentConfig';
+import { MessageSender } from '../../agent/MessageSender';
+import { createOutboundMessage } from '../../agent/helpers';
+import { Dispatcher } from '../../agent/Dispatcher';
 import { ConnectionService, ConnectionEventType, ConnectionStateChangedEvent, TrustPingService } from './services';
 import { ConsumerRoutingService } from '../routing';
 import { ConnectionRecord } from './repository/ConnectionRecord';
-import { ConnectionState } from './models/ConnectionState';
-import { MessageSender } from '../../agent/MessageSender';
-import { createOutboundMessage } from '../../agent/helpers';
+import { ConnectionState } from './models';
 import { ConnectionInvitationMessage } from './messages';
-import { Dispatcher } from '../../agent/Dispatcher';
-import { ConnectionRequestHandler } from './handlers/ConnectionRequestHandler';
-import { ConnectionResponseHandler } from './handlers/ConnectionResponseHandler';
-import { AckMessageHandler } from './handlers/AckMessageHandler';
-import { TrustPingMessageHandler } from './handlers/TrustPingMessageHandler';
-import { TrustPingResponseMessageHandler } from './handlers/TrustPingResponseMessageHandler';
+import {
+  ConnectionRequestHandler,
+  ConnectionResponseHandler,
+  AckMessageHandler,
+  TrustPingMessageHandler,
+  TrustPingResponseMessageHandler,
+} from './handlers';
 
 export class ConnectionsModule {
   private agentConfig: AgentConfig;

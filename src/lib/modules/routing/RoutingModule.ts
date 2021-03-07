@@ -12,9 +12,7 @@ import {
 import { BatchMessage } from './messages';
 import type { Verkey } from 'indy-sdk';
 import { Dispatcher } from '../../agent/Dispatcher';
-import { MessagePickupHandler } from './handlers/MessagePickupHandler';
-import { ForwardHandler } from './handlers/ForwardHandler';
-import { KeylistUpdateHandler } from './handlers/KeylistUpdateHandler';
+import { MessagePickupHandler, ForwardHandler, KeylistUpdateHandler } from './handlers';
 
 export class RoutingModule {
   private agentConfig: AgentConfig;
