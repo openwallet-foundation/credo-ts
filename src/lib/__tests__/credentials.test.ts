@@ -13,11 +13,14 @@ import {
   SubjectOutboundTransporter,
   waitForCredentialRecord,
 } from './helpers';
-import { CredentialRecord } from '../modules/credentials';
-import { CredentialPreview, CredentialPreviewAttribute } from '../modules/credentials';
+import {
+  CredentialRecord,
+  CredentialState,
+  CredentialPreview,
+  CredentialPreviewAttribute,
+} from '../modules/credentials';
 import { InitConfig } from '../types';
 import logger from '../logger';
-import { CredentialState } from '../modules/credentials/CredentialState';
 
 const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)

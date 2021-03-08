@@ -3,9 +3,9 @@ import { AgentConfig } from './AgentConfig';
 import { Dispatcher } from './Dispatcher';
 import { EnvelopeService } from './EnvelopeService';
 import { UnpackedMessageContext, UnpackedMessage } from '../types';
-import { RoutingMessageType as MessageType } from '../modules/routing/messages';
 import { InboundMessageContext } from './models/InboundMessageContext';
-import { ConnectionService } from '../modules/connections/services/ConnectionService';
+import { RoutingMessageType as MessageType } from '../modules/routing';
+import { ConnectionService } from '../modules/connections';
 import { AgentMessage } from './AgentMessage';
 import { JsonTransformer } from '../utils/JsonTransformer';
 

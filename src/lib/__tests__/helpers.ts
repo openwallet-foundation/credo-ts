@@ -6,17 +6,16 @@ import { Subject } from 'rxjs';
 import { Agent, InboundTransporter, OutboundTransporter } from '..';
 import { OutboundPackage, WireMessage } from '../types';
 import { ConnectionRecord } from '../modules/connections';
-import { ProofEventType, ProofState, ProofStateChangedEvent } from '../modules/proofs';
+import { ProofRecord, ProofState, ProofEventType, ProofStateChangedEvent } from '../modules/proofs';
 import { SchemaTemplate, CredDefTemplate } from '../modules/ledger';
 import {
   CredentialRecord,
   CredentialOfferTemplate,
   CredentialEventType,
   CredentialStateChangedEvent,
+  CredentialState,
 } from '../modules/credentials';
-import { ProofRecord } from '../modules/proofs';
 import { BasicMessage, BasicMessageEventType, BasicMessageReceivedEvent } from '../modules/basic-messages';
-import { CredentialState } from '../modules/credentials/CredentialState';
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
