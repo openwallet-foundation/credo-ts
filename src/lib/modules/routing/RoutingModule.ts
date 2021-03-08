@@ -23,6 +23,7 @@ export class RoutingModule {
   private messageSender: MessageSender;
 
   public constructor(
+    dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     providerRoutingService: ProviderRoutingService,
     provisioningService: ProvisioningService,
@@ -36,12 +37,7 @@ export class RoutingModule {
     this.messagePickupService = messagePickupService;
     this.connectionService = connectionService;
     this.messageSender = messageSender;
-  }
-
-  public registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new KeylistUpdateHandler(this.providerRoutingService));
-    dispatcher.registerHandler(new ForwardHandler(this.providerRoutingService));
-    dispatcher.registerHandler(new MessagePickupHandler(this.messagePickupService));
+    this.registerHandlers(dispatcher);
   }
 
   public async provision(mediatorConfiguration: MediatorConfiguration) {
@@ -110,6 +106,12 @@ export class RoutingModule {
 
   public getRoutingTable() {
     return this.providerRoutingService.getRoutes();
+  }
+
+  private registerHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerHandler(new KeylistUpdateHandler(this.providerRoutingService));
+    dispatcher.registerHandler(new ForwardHandler(this.providerRoutingService));
+    dispatcher.registerHandler(new MessagePickupHandler(this.messagePickupService));
   }
 }
 

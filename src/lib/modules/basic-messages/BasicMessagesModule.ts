@@ -10,9 +10,10 @@ export class BasicMessagesModule {
   private basicMessageService: BasicMessageService;
   private messageSender: MessageSender;
 
-  public constructor(basicMessageService: BasicMessageService, messageSender: MessageSender) {
+  public constructor(dispatcher: Dispatcher, basicMessageService: BasicMessageService, messageSender: MessageSender) {
     this.basicMessageService = basicMessageService;
     this.messageSender = messageSender;
+    this.registerHandlers(dispatcher);
   }
 
   /**
@@ -34,7 +35,7 @@ export class BasicMessagesModule {
     return this.basicMessageService.findAllByQuery(query);
   }
 
-  public registerHandlers(dispatcher: Dispatcher) {
+  private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new BasicMessageHandler(this.basicMessageService));
   }
 }

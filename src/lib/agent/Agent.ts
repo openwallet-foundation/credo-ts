@@ -153,21 +153,25 @@ export class Agent {
 
   protected registerModules() {
     this.connections = new ConnectionsModule(
+      this.dispatcher,
       this.agentConfig,
       this.connectionService,
       this.trustPingService,
       this.consumerRoutingService,
       this.messageSender
     );
-    this.connections.registerHandlers(this.dispatcher);
 
-    this.credentials = new CredentialsModule(this.connectionService, this.credentialService, this.messageSender);
-    this.credentials.registerHandlers(this.dispatcher);
+    this.credentials = new CredentialsModule(
+      this.dispatcher,
+      this.connectionService,
+      this.credentialService,
+      this.messageSender
+    );
 
-    this.proofs = new ProofsModule(this.proofService, this.connectionService, this.messageSender);
-    this.proofs.registerHandlers(this.dispatcher);
+    this.proofs = new ProofsModule(this.dispatcher, this.proofService, this.connectionService, this.messageSender);
 
     this.routing = new RoutingModule(
+      this.dispatcher,
       this.agentConfig,
       this.providerRoutingService,
       this.provisioningService,
@@ -175,10 +179,8 @@ export class Agent {
       this.connectionService,
       this.messageSender
     );
-    this.routing.registerHandlers(this.dispatcher);
 
-    this.basicMessages = new BasicMessagesModule(this.basicMessageService, this.messageSender);
-    this.basicMessages.registerHandlers(this.dispatcher);
+    this.basicMessages = new BasicMessagesModule(this.dispatcher, this.basicMessageService, this.messageSender);
 
     this.ledger = new LedgerModule(this.wallet, this.ledgerService);
   }

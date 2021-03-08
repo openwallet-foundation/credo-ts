@@ -22,6 +22,7 @@ export class CredentialsModule {
   private messageSender: MessageSender;
 
   public constructor(
+    dispatcher: Dispatcher,
     connectionService: ConnectionService,
     credentialService: CredentialService,
     messageSender: MessageSender
@@ -29,14 +30,7 @@ export class CredentialsModule {
     this.connectionService = connectionService;
     this.credentialService = credentialService;
     this.messageSender = messageSender;
-  }
-
-  public registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new ProposeCredentialHandler(this.credentialService));
-    dispatcher.registerHandler(new OfferCredentialHandler(this.credentialService));
-    dispatcher.registerHandler(new RequestCredentialHandler(this.credentialService));
-    dispatcher.registerHandler(new IssueCredentialHandler(this.credentialService));
-    dispatcher.registerHandler(new CredentialAckHandler(this.credentialService));
+    this.registerHandlers(dispatcher);
   }
 
   /**
@@ -241,5 +235,13 @@ export class CredentialsModule {
    */
   public async getIndyCredential(credentialId: string): Promise<CredentialInfo> {
     return this.credentialService.getIndyCredential(credentialId);
+  }
+
+  private registerHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerHandler(new ProposeCredentialHandler(this.credentialService));
+    dispatcher.registerHandler(new OfferCredentialHandler(this.credentialService));
+    dispatcher.registerHandler(new RequestCredentialHandler(this.credentialService));
+    dispatcher.registerHandler(new IssueCredentialHandler(this.credentialService));
+    dispatcher.registerHandler(new CredentialAckHandler(this.credentialService));
   }
 }

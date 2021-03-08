@@ -21,17 +21,16 @@ export class ProofsModule {
   private connectionService: ConnectionService;
   private messageSender: MessageSender;
 
-  public constructor(proofService: ProofService, connectionService: ConnectionService, messageSender: MessageSender) {
+  public constructor(
+    dispatcher: Dispatcher,
+    proofService: ProofService,
+    connectionService: ConnectionService,
+    messageSender: MessageSender
+  ) {
     this.proofService = proofService;
     this.connectionService = connectionService;
     this.messageSender = messageSender;
-  }
-
-  public registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new ProposePresentationHandler(this.proofService));
-    dispatcher.registerHandler(new RequestPresentationHandler(this.proofService));
-    dispatcher.registerHandler(new PresentationHandler(this.proofService));
-    dispatcher.registerHandler(new PresentationAckHandler(this.proofService));
+    this.registerHandlers(dispatcher);
   }
 
   /**
@@ -252,5 +251,12 @@ export class ProofsModule {
    */
   public async getByThreadId(threadId: string): Promise<ProofRecord> {
     return this.proofService.getByThreadId(threadId);
+  }
+
+  private registerHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerHandler(new ProposePresentationHandler(this.proofService));
+    dispatcher.registerHandler(new RequestPresentationHandler(this.proofService));
+    dispatcher.registerHandler(new PresentationHandler(this.proofService));
+    dispatcher.registerHandler(new PresentationAckHandler(this.proofService));
   }
 }

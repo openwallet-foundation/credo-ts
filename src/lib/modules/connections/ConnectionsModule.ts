@@ -26,6 +26,7 @@ export class ConnectionsModule {
   private trustPingService: TrustPingService;
 
   public constructor(
+    dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
     trustPingService: TrustPingService,
@@ -37,14 +38,7 @@ export class ConnectionsModule {
     this.trustPingService = trustPingService;
     this.consumerRoutingService = consumerRoutingService;
     this.messageSender = messageSender;
-  }
-
-  public registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new ConnectionRequestHandler(this.connectionService, this.agentConfig));
-    dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService, this.agentConfig));
-    dispatcher.registerHandler(new AckMessageHandler(this.connectionService));
-    dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService));
-    dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService));
+    this.registerHandlers(dispatcher);
   }
 
   /**
@@ -217,5 +211,13 @@ export class ConnectionsModule {
 
   public async findConnectionByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
     return this.connectionService.findByTheirKey(verkey);
+  }
+
+  private registerHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerHandler(new ConnectionRequestHandler(this.connectionService, this.agentConfig));
+    dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService, this.agentConfig));
+    dispatcher.registerHandler(new AckMessageHandler(this.connectionService));
+    dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService));
+    dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService));
   }
 }
