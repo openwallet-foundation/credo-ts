@@ -156,8 +156,8 @@ export class Agent {
     return this.inboundTransporter.start(this);
   }
 
-  public getPublicDid() {
-    return this.wallet.getPublicDid();
+  public get publicDid() {
+    return this.wallet.publicDid;
   }
 
   public getMediatorUrl() {

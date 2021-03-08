@@ -90,12 +90,12 @@ describe('credentials', () => {
       schema: ledgerSchema,
       tag: 'TAG',
       signatureType: 'CL',
-      config: { support_revocation: false },
+      config: { supportRevocation: false },
     };
     const [ledgerCredDefId] = await registerDefinition(faberAgent, definitionTemplate);
     credDefId = ledgerCredDefId;
 
-    const publicDid = faberAgent.getPublicDid()?.did;
+    const publicDid = faberAgent.publicDid?.did;
     await ensurePublicDidIsOnLedger(faberAgent, publicDid!);
     const { agentAConnection, agentBConnection } = await makeConnection(faberAgent, aliceAgent);
     faberConnection = agentAConnection;

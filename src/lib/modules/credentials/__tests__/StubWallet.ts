@@ -25,12 +25,15 @@ import type {
   WalletQuery,
   LedgerRequest,
 } from 'indy-sdk';
-import { Wallet, DidInfo } from '../../../wallet/Wallet';
+import { Wallet } from '../../../wallet/Wallet';
 import { UnpackedMessageContext } from '../../../types';
 
 export class StubWallet implements Wallet {
   public get walletHandle() {
     return 0;
+  }
+  public get publicDid() {
+    return undefined;
   }
   public init(): Promise<void> {
     return Promise.resolve();
@@ -57,9 +60,6 @@ export class StubWallet implements Wallet {
     throw new Error('Method not implemented.');
   }
   public initPublicDid(didConfig: DidConfig): Promise<void> {
-    throw new Error('Method not implemented.');
-  }
-  public getPublicDid(): DidInfo | undefined {
     throw new Error('Method not implemented.');
   }
   public createDid(didConfig?: DidConfig | undefined): Promise<[string, string]> {

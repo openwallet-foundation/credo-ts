@@ -16,18 +16,20 @@ export class LedgerModule {
   }
 
   public async registerPublicDid() {
-    // TODO: handle ping response message
+    throw new Error('registerPublicDid not implemented.');
   }
 
   public async getPublicDid(did: Did) {
     return this.ledgerService.getPublicDid(did);
   }
 
-  public async registerCredentialSchema(schema: SchemaTemplate) {
-    const did = this.wallet.getPublicDid()?.did;
+  public async registerSchema(schema: SchemaTemplate) {
+    const did = this.wallet.publicDid?.did;
+
     if (!did) {
       throw new Error('Agent has no public DID.');
     }
+
     return this.ledgerService.registerSchema(did, schema);
   }
 
@@ -36,10 +38,12 @@ export class LedgerModule {
   }
 
   public async registerCredentialDefinition(credentialDefinitionTemplate: CredDefTemplate) {
-    const did = this.wallet.getPublicDid()?.did;
+    const did = this.wallet.publicDid?.did;
+
     if (!did) {
       throw new Error('Agent has no public DID.');
     }
+
     return this.ledgerService.registerCredentialDefinition(did, credentialDefinitionTemplate);
   }
 

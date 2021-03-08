@@ -7,12 +7,20 @@ import { Wallet } from '../../wallet/Wallet';
 export class LedgerService {
   private wallet: Wallet;
   private indy: typeof Indy;
-  private poolHandle?: PoolHandle;
+  private _poolHandle?: PoolHandle;
   private authorAgreement?: AuthorAgreement | null;
 
   public constructor(wallet: Wallet, indy: typeof Indy) {
     this.wallet = wallet;
     this.indy = indy;
+  }
+
+  private get poolHandle() {
+    if (!this._poolHandle) {
+      throw new Error('Pool has not been initialized yet.');
+    }
+
+    return this._poolHandle;
   }
 
   public async connect(poolName: string, poolConfig: PoolConfig) {
@@ -31,13 +39,10 @@ export class LedgerService {
     await this.indy.setProtocolVersion(2);
 
     logger.log('Opening pool');
-    this.poolHandle = await this.indy.openPoolLedger(poolName);
+    this._poolHandle = await this.indy.openPoolLedger(poolName);
   }
 
   public async getPublicDid(did: Did) {
-    if (!this.poolHandle) {
-      throw new Error('Pool has not been initialized.');
-    }
     const request = await this.indy.buildGetNymRequest(null, did);
     logger.log('request', request);
 
@@ -51,9 +56,6 @@ export class LedgerService {
   }
 
   public async registerSchema(did: Did, schemaTemplate: SchemaTemplate): Promise<[SchemaId, Schema]> {
-    if (!this.poolHandle) {
-      throw new Error('Pool has not been initialized.');
-    }
     const { name, attributes, version } = schemaTemplate;
     const [schemaId, schema] = await this.indy.issuerCreateSchema(did, name, version, attributes);
     logger.log(`Register schema with ID = ${schemaId}:`, schema);
@@ -67,13 +69,15 @@ export class LedgerService {
     const response = await this.indy.submitRequest(this.poolHandle, signedRequest);
     logger.log('Register schema response', response);
 
+    const seqNo = response.result.txnMetadata?.seqNo;
+
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    schema.seqNo = seqNo!;
+
     return [schemaId, schema];
   }
 
   public async getCredentialSchema(schemaId: SchemaId) {
-    if (!this.poolHandle) {
-      throw new Error('Pool has not been initialized.');
-    }
     const request = await this.indy.buildGetSchemaRequest(null, schemaId);
     logger.log('Get schema request', request);
 
@@ -90,12 +94,11 @@ export class LedgerService {
     did: Did,
     credentialDefinitionTemplate: CredDefTemplate
   ): Promise<[CredDefId, CredDef]> {
-    if (!this.poolHandle) {
-      throw new Error('Pool has not been initialized.');
-    }
     const { schema, tag, signatureType, config } = credentialDefinitionTemplate;
 
-    const [credDefId, credDef] = await this.wallet.createCredentialDefinition(did, schema, tag, signatureType, config);
+    const [credDefId, credDef] = await this.wallet.createCredentialDefinition(did, schema, tag, signatureType, {
+      support_revocation: config.supportRevocation,
+    });
     logger.log(`Register credential definition with ID = ${credDefId}:`, credDef);
 
     const request = await this.indy.buildCredDefRequest(did, credDef);
@@ -111,9 +114,6 @@ export class LedgerService {
   }
 
   public async getCredentialDefinition(credDefId: CredDefId) {
-    if (!this.poolHandle) {
-      throw new Error('Pool has not been initialized.');
-    }
     const request = await this.indy.buildGetCredDefRequest(null, credDefId);
     logger.log('Get credential definition request:', request);
 
@@ -154,10 +154,6 @@ export class LedgerService {
       return this.authorAgreement;
     }
 
-    if (!this.poolHandle) {
-      throw new Error('Pool has not been initialized.');
-    }
-
     const taaRequest = await this.indy.buildGetTxnAuthorAgreementRequest(null);
     const taaResponse = await this.indy.submitRequest(this.poolHandle, taaRequest);
     const acceptanceMechanismRequest = await this.indy.buildGetAcceptanceMechanismsRequest(null);
@@ -195,7 +191,7 @@ export interface CredDefTemplate {
   schema: Schema;
   tag: string;
   signatureType: string;
-  config: { support_revocation: boolean };
+  config: { supportRevocation: boolean };
 }
 
 interface AuthorAgreement {

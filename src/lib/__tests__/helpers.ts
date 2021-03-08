@@ -154,7 +154,7 @@ export async function makeConnection(agentA: Agent, agentB: Agent) {
 }
 
 export async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<[SchemaId, Schema]> {
-  const [schemaId] = await agent.ledger.registerCredentialSchema(schemaTemplate);
+  const [schemaId] = await agent.ledger.registerSchema(schemaTemplate);
   const ledgerSchema = await agent.ledger.getSchema(schemaId);
   logger.logJson(`created schema with id ${schemaId}`, ledgerSchema);
   return [schemaId, ledgerSchema];

@@ -30,11 +30,12 @@ import type {
 import { UnpackedMessageContext } from '../types';
 
 export interface Wallet {
+  publicDid: DidInfo | undefined;
+
   init(): Promise<void>;
   close(): Promise<void>;
   delete(): Promise<void>;
   initPublicDid(didConfig: DidConfig): Promise<void>;
-  getPublicDid(): DidInfo | undefined;
   createDid(didConfig?: DidConfig): Promise<[Did, Verkey]>;
   createCredentialDefinition(
     issuerDid: Did,
