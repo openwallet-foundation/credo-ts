@@ -3,19 +3,18 @@ import type { SchemaId, Schema, CredDefId, CredDef, Did } from 'indy-sdk';
 import logger from '../logger';
 import path from 'path';
 import { Subject } from 'rxjs';
-import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { Agent, InboundTransporter, OutboundTransporter } from '..';
-import { ProofEventType, ProofState, ProofStateChangedEvent } from '../modules/proofs';
 import { OutboundPackage, WireMessage } from '../types';
-import { SchemaTemplate, CredDefTemplate } from '../modules/ledger/LedgerService';
+import { ConnectionRecord } from '../modules/connections';
+import { ProofRecord, ProofState, ProofEventType, ProofStateChangedEvent } from '../modules/proofs';
+import { SchemaTemplate, CredDefTemplate } from '../modules/ledger';
 import {
-  CredentialState,
+  CredentialRecord,
   CredentialOfferTemplate,
   CredentialEventType,
   CredentialStateChangedEvent,
+  CredentialState,
 } from '../modules/credentials';
-import { CredentialRecord } from '../storage/CredentialRecord';
-import { ProofRecord } from '../storage/ProofRecord';
 import { BasicMessage, BasicMessageEventType, BasicMessageReceivedEvent } from '../modules/basic-messages';
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
@@ -52,13 +51,13 @@ export async function waitForProofRecord(
       const stateMatches = state === undefined || event.proofRecord.state === state;
 
       if (previousStateMatches && threadIdMatches && stateMatches) {
-        agent.proof.events.removeListener(ProofEventType.StateChanged, listener);
+        agent.proofs.events.removeListener(ProofEventType.StateChanged, listener);
 
         resolve(event.proofRecord);
       }
     };
 
-    agent.proof.events.addListener(ProofEventType.StateChanged, listener);
+    agent.proofs.events.addListener(ProofEventType.StateChanged, listener);
   });
 }
 

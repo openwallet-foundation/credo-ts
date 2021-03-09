@@ -1,6 +1,6 @@
 import { Handler, HandlerInboundMessage } from '../../../handlers/Handler';
-import { ConnectionService } from '../ConnectionService';
-import { ConnectionRequestMessage } from '../messages/ConnectionRequestMessage';
+import { ConnectionService } from '../services/ConnectionService';
+import { ConnectionRequestMessage } from '../messages';
 import { AgentConfig } from '../../../agent/AgentConfig';
 import { createOutboundMessage } from '../../../agent/helpers';
 

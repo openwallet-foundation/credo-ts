@@ -1,6 +1,6 @@
 import { Handler, HandlerInboundMessage } from '../../../handlers/Handler';
-import { MessagePickupService } from '../MessagePickupService';
-import { BatchPickupMessage } from '../BatchPickupMessage';
+import { MessagePickupService } from '../services';
+import { BatchPickupMessage } from '../messages';
 
 export class MessagePickupHandler implements Handler {
   private messagePickupService: MessagePickupService;

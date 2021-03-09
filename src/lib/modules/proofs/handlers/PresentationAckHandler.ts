@@ -1,5 +1,5 @@
 import { Handler, HandlerInboundMessage } from '../../../handlers/Handler';
-import { ProofService } from '../ProofService';
+import { ProofService } from '../services';
 import { PresentationAckMessage } from '../messages';
 
 export class PresentationAckHandler implements Handler {

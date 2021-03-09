@@ -1,5 +1,5 @@
 import { Handler, HandlerInboundMessage } from '../../../handlers/Handler';
-import { CredentialService } from '../CredentialService';
+import { CredentialService } from '../services';
 import { RequestCredentialMessage } from '../messages';
 
 export class RequestCredentialHandler implements Handler {

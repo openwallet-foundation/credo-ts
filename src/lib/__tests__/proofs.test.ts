@@ -26,7 +26,7 @@ import {
   AttributeFilter,
   ProofPredicateInfo,
 } from '../modules/proofs';
-import { ConnectionRecord } from '../storage/ConnectionRecord';
+import { ConnectionRecord } from '../modules/connections';
 import logger from '../logger';
 
 const faberConfig: InitConfig = {
@@ -146,7 +146,7 @@ describe('Present Proof', () => {
 
   test('Alice starts with proof proposal to Faber', async () => {
     logger.log('Alice sends presentation proposal to Faber');
-    let aliceProofRecord = await aliceAgent.proof.proposeProof(aliceConnection.id, presentationPreview);
+    let aliceProofRecord = await aliceAgent.proofs.proposeProof(aliceConnection.id, presentationPreview);
 
     logger.log('Faber waits for presentation proposal from Alice');
     let faberProofRecord = await waitForProofRecord(faberAgent, {
@@ -155,7 +155,7 @@ describe('Present Proof', () => {
     });
 
     logger.log('Faber accepts presentation proposal from Alice');
-    faberProofRecord = await faberAgent.proof.acceptProposal(faberProofRecord.id);
+    faberProofRecord = await faberAgent.proofs.acceptProposal(faberProofRecord.id);
 
     logger.log('Alice waits for presentation request from Faber');
     aliceProofRecord = await waitForProofRecord(aliceAgent, {
@@ -165,11 +165,11 @@ describe('Present Proof', () => {
 
     logger.log('Alice accepts presentation request from Faber');
     const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest;
-    const requestedCredentials = await aliceAgent.proof.getRequestedCredentialsForProofRequest(
+    const requestedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
       indyProofRequest!,
       presentationPreview
     );
-    await aliceAgent.proof.acceptRequest(aliceProofRecord.id, requestedCredentials);
+    await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials);
 
     logger.log('Faber waits for presentation from Alice');
     faberProofRecord = await waitForProofRecord(faberAgent, {
@@ -181,7 +181,7 @@ describe('Present Proof', () => {
     expect(faberProofRecord.isVerified).toBe(true);
 
     // Faber accepts presentation
-    await faberAgent.proof.acceptPresentation(faberProofRecord.id);
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id);
 
     // Alice waits till it receives presentation ack
     aliceProofRecord = await waitForProofRecord(aliceAgent, {
@@ -217,7 +217,7 @@ describe('Present Proof', () => {
       }),
     };
 
-    let faberProofRecord = await faberAgent.proof.requestProof(faberConnection.id, {
+    let faberProofRecord = await faberAgent.proofs.requestProof(faberConnection.id, {
       name: 'test-proof-request',
       requestedAttributes: attributes,
       requestedPredicates: predicates,
@@ -231,11 +231,11 @@ describe('Present Proof', () => {
 
     logger.log('Alice accepts presentation request from Faber');
     const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest;
-    const requestedCredentials = await aliceAgent.proof.getRequestedCredentialsForProofRequest(
+    const requestedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
       indyProofRequest!,
       presentationPreview
     );
-    await aliceAgent.proof.acceptRequest(aliceProofRecord.id, requestedCredentials);
+    await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials);
 
     logger.log('Faber waits for presentation from Alice');
     faberProofRecord = await waitForProofRecord(faberAgent, {
@@ -247,7 +247,7 @@ describe('Present Proof', () => {
     expect(faberProofRecord.isVerified).toBe(true);
 
     // Faber accepts presentation
-    await faberAgent.proof.acceptPresentation(faberProofRecord.id);
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id);
 
     // Alice waits till it receives presentation ack
     aliceProofRecord = await waitForProofRecord(aliceAgent, {

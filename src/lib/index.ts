@@ -7,11 +7,7 @@ export { OutboundTransporter } from './transport/OutboundTransporter';
 export { encodeInvitationToUrl, decodeInvitationFromUrl } from './helpers';
 export { InitConfig, OutboundPackage } from './types';
 
-export { ConnectionRecord } from './storage/ConnectionRecord';
-export { BasicMessageRecord } from './storage/BasicMessageRecord';
-export { CredentialRecord } from './storage/CredentialRecord';
-export { ConnectionEventType } from './modules/connections/ConnectionService';
-export { BasicMessageEventType } from './modules/basic-messages/BasicMessageService';
+export * from './modules/basic-messages';
 export * from './modules/credentials';
 export * from './modules/proofs';
 export * from './modules/connections';

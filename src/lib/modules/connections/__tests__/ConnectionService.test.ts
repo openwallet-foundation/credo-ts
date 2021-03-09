@@ -2,25 +2,24 @@ import indy from 'indy-sdk';
 import { v4 as uuid } from 'uuid';
 import { IndyWallet } from '../../../wallet/IndyWallet';
 import { Wallet } from '../../../wallet/Wallet';
-import { ConnectionService } from '../ConnectionService';
-import { ConnectionRecord, ConnectionStorageProps } from '../../../storage/ConnectionRecord';
+import { ConnectionService } from '../services/ConnectionService';
+import { ConnectionRecord, ConnectionStorageProps } from '../repository/ConnectionRecord';
 import { AgentConfig } from '../../../agent/AgentConfig';
-import { ConnectionState } from '../domain/ConnectionState';
+import { Connection, ConnectionState, ConnectionRole, DidDoc, IndyAgentService } from '../models';
 import { InitConfig } from '../../../types';
-import { ConnectionRole } from '../domain/ConnectionRole';
-import { ConnectionInvitationMessage } from '../messages/ConnectionInvitationMessage';
+import {
+  ConnectionInvitationMessage,
+  ConnectionRequestMessage,
+  ConnectionResponseMessage,
+  TrustPingMessage,
+  AckMessage,
+  AckStatus,
+} from '../messages';
 import { Repository } from '../../../storage/Repository';
-import { Connection } from '../domain/Connection';
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils';
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
-import { ConnectionResponseMessage } from '../messages/ConnectionResponseMessage';
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator';
-import { ConnectionRequestMessage } from '../messages/ConnectionRequestMessage';
-import { TrustPingMessage } from '../messages/TrustPingMessage';
-import { AckMessage, AckStatus } from '../messages/AckMessage';
 import { JsonTransformer } from '../../../utils/JsonTransformer';
-import { DidDoc } from '../domain/did/DidDoc';
-import { IndyAgentService } from '../domain/did/service';
 
 jest.mock('./../../../storage/Repository');
 const ConnectionRepository = <jest.Mock<Repository<ConnectionRecord>>>(<unknown>Repository);

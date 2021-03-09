@@ -8,7 +8,7 @@ import {
 } from './helpers';
 import { InitConfig } from '../types';
 import indy from 'indy-sdk';
-import { ConnectionRecord } from '../storage/ConnectionRecord';
+import { ConnectionRecord } from '../modules/connections';
 
 expect.extend({ toBeConnectedWith });
 

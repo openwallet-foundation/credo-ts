@@ -1,5 +1,5 @@
 import type { CredDefId, Did, PoolConfig, SchemaId } from 'indy-sdk';
-import { LedgerService, SchemaTemplate, CredDefTemplate } from './LedgerService';
+import { LedgerService, SchemaTemplate, CredDefTemplate } from './services';
 import { Wallet } from '../../wallet/Wallet';
 
 export class LedgerModule {

@@ -1,7 +1,7 @@
 import { Handler, HandlerInboundMessage } from '../../../handlers/Handler';
 import { AgentConfig } from '../../../agent/AgentConfig';
 import { createOutboundMessage } from '../../../agent/helpers';
-import { ConnectionService } from '../ConnectionService';
+import { ConnectionService } from '../services/ConnectionService';
 import { ConnectionResponseMessage } from '../messages';
 
 export class ConnectionResponseHandler implements Handler {

@@ -1,12 +1,20 @@
-import { CredentialRecord } from '../../storage/CredentialRecord';
+import { CredentialRecord } from './repository/CredentialRecord';
 import { createOutboundMessage } from '../../agent/helpers';
 import { MessageSender } from '../../agent/MessageSender';
-import { ConnectionService } from '../connections/ConnectionService';
+import { ConnectionService } from '../connections';
 import { EventEmitter } from 'events';
-import { CredentialOfferTemplate, CredentialService } from './CredentialService';
+import { CredentialOfferTemplate, CredentialService } from './services';
 import { ProposeCredentialMessage, ProposeCredentialMessageOptions } from './messages';
 import { JsonTransformer } from '../../utils/JsonTransformer';
 import { CredentialInfo } from './models';
+import { Dispatcher } from '../../agent/Dispatcher';
+import {
+  ProposeCredentialHandler,
+  OfferCredentialHandler,
+  RequestCredentialHandler,
+  IssueCredentialHandler,
+  CredentialAckHandler,
+} from './handlers';
 
 export class CredentialsModule {
   private connectionService: ConnectionService;
@@ -14,6 +22,7 @@ export class CredentialsModule {
   private messageSender: MessageSender;
 
   public constructor(
+    dispatcher: Dispatcher,
     connectionService: ConnectionService,
     credentialService: CredentialService,
     messageSender: MessageSender
@@ -21,6 +30,7 @@ export class CredentialsModule {
     this.connectionService = connectionService;
     this.credentialService = credentialService;
     this.messageSender = messageSender;
+    this.registerHandlers(dispatcher);
   }
 
   /**
@@ -225,5 +235,13 @@ export class CredentialsModule {
    */
   public async getIndyCredential(credentialId: string): Promise<CredentialInfo> {
     return this.credentialService.getIndyCredential(credentialId);
+  }
+
+  private registerHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerHandler(new ProposeCredentialHandler(this.credentialService));
+    dispatcher.registerHandler(new OfferCredentialHandler(this.credentialService));
+    dispatcher.registerHandler(new RequestCredentialHandler(this.credentialService));
+    dispatcher.registerHandler(new IssueCredentialHandler(this.credentialService));
+    dispatcher.registerHandler(new CredentialAckHandler(this.credentialService));
   }
 }

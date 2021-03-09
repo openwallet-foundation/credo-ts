@@ -2,56 +2,35 @@ import type Indy from 'indy-sdk';
 import logger from '../logger';
 import { InitConfig } from '../types';
 import { IndyWallet } from '../wallet/IndyWallet';
-import { ConnectionService } from '../modules/connections/ConnectionService';
-import { ProofService } from '../modules/proofs/ProofService';
-import { ProviderRoutingService } from '../modules/routing/ProviderRoutingService';
-import { ConsumerRoutingService } from '../modules/routing/ConsumerRoutingService';
-import { BasicMessageService } from '../modules/basic-messages/BasicMessageService';
-import { TrustPingService } from '../modules/connections/TrustPingService';
-import { MessagePickupService } from '../modules/routing/MessagePickupService';
 import { MessageReceiver } from './MessageReceiver';
 import { EnvelopeService } from './EnvelopeService';
-import { LedgerService } from '../modules/ledger/LedgerService';
+import { ConnectionService, TrustPingService, ConnectionRecord } from '../modules/connections';
+import { CredentialService, CredentialRecord } from '../modules/credentials';
+import { ProofService, ProofRecord } from '../modules/proofs';
+import {
+  ConsumerRoutingService,
+  ProviderRoutingService,
+  MessagePickupService,
+  ProvisioningService,
+  ProvisioningRecord,
+} from '../modules/routing';
+import { BasicMessageService, BasicMessageRecord } from '../modules/basic-messages';
+import { LedgerService } from '../modules/ledger';
 import { Dispatcher } from './Dispatcher';
 import { MessageSender } from './MessageSender';
 import { InboundTransporter } from '../transport/InboundTransporter';
 import { OutboundTransporter } from '../transport/OutboundTransporter';
-import { ConnectionRequestHandler } from '../modules/connections/handlers/ConnectionRequestHandler';
-import { ConnectionResponseHandler } from '../modules/connections/handlers/ConnectionResponseHandler';
-import { AckMessageHandler } from '../modules/connections/handlers/AckMessageHandler';
-import { BasicMessageHandler } from '../modules/basic-messages/handlers/BasicMessageHandler';
-import { ForwardHandler } from '../modules/routing/handlers/ForwardHandler';
-import { TrustPingMessageHandler } from '../modules/connections/handlers/TrustPingMessageHandler';
-import { TrustPingResponseMessageHandler } from '../modules/connections/handlers/TrustPingResponseMessageHandler';
-import { MessagePickupHandler } from '../modules/routing/handlers/MessagePickupHandler';
-import { KeylistUpdateHandler } from '../modules/routing/handlers/KeylistUpdateHandler';
 import { MessageRepository } from '../storage/MessageRepository';
-import { BasicMessageRecord } from '../storage/BasicMessageRecord';
 import { Repository } from '../storage/Repository';
 import { IndyStorageService } from '../storage/IndyStorageService';
-import { ConnectionRecord } from '../storage/ConnectionRecord';
 import { AgentConfig } from './AgentConfig';
 import { Wallet } from '../wallet/Wallet';
-import { ProvisioningRecord } from '../storage/ProvisioningRecord';
-import { ProvisioningService } from './ProvisioningService';
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule';
+import { CredentialsModule } from '../modules/credentials/CredentialsModule';
+import { ProofsModule } from '../modules/proofs/ProofsModule';
 import { RoutingModule } from '../modules/routing/RoutingModule';
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule';
 import { LedgerModule } from '../modules/ledger/LedgerModule';
-import { CredentialsModule } from '../modules/credentials/CredentialsModule';
-import { ProofsModule } from '../modules/proofs/ProofsModule';
-import { CredentialService } from '../modules/credentials/CredentialService';
-import { CredentialRecord } from '../storage/CredentialRecord';
-import { OfferCredentialHandler } from '../modules/credentials/handlers/OfferCredentialHandler';
-import { RequestCredentialHandler } from '../modules/credentials/handlers/RequestCredentialHandler';
-import { IssueCredentialHandler } from '../modules/credentials/handlers/IssueCredentialHandler';
-import { CredentialAckHandler } from '../modules/credentials/handlers/CredentialAckHandler';
-import { RequestPresentationHandler } from '../modules/proofs/handlers/RequestPresentationHandler';
-import { ProofRecord } from '../storage/ProofRecord';
-import { ProposePresentationHandler } from '../modules/proofs/handlers/ProposePresentationHandler';
-import { PresentationAckHandler } from '../modules/proofs/handlers/PresentationAckHandler';
-import { PresentationHandler } from '../modules/proofs/handlers/PresentationHandler';
-import { ProposeCredentialHandler } from '../modules/credentials/handlers/ProposeCredentialHandler';
 
 export class Agent {
   protected wallet: Wallet;
@@ -79,7 +58,7 @@ export class Agent {
   public inboundTransporter: InboundTransporter;
 
   public connections!: ConnectionsModule;
-  public proof!: ProofsModule;
+  public proofs!: ProofsModule;
   public routing!: RoutingModule;
   public basicMessages!: BasicMessagesModule;
   public ledger!: LedgerModule;
@@ -132,7 +111,6 @@ export class Agent {
       this.dispatcher
     );
 
-    this.registerHandlers();
     this.registerModules();
   }
 
@@ -173,38 +151,27 @@ export class Agent {
     await this.wallet.delete();
   }
 
-  protected registerHandlers() {
-    this.dispatcher.registerHandler(new ConnectionRequestHandler(this.connectionService, this.agentConfig));
-    this.dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService, this.agentConfig));
-    this.dispatcher.registerHandler(new AckMessageHandler(this.connectionService));
-    this.dispatcher.registerHandler(new BasicMessageHandler(this.basicMessageService));
-    this.dispatcher.registerHandler(new KeylistUpdateHandler(this.providerRoutingService));
-    this.dispatcher.registerHandler(new ForwardHandler(this.providerRoutingService));
-    this.dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService));
-    this.dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService));
-    this.dispatcher.registerHandler(new MessagePickupHandler(this.messagePickupService));
-    this.dispatcher.registerHandler(new ProposeCredentialHandler(this.credentialService));
-    this.dispatcher.registerHandler(new OfferCredentialHandler(this.credentialService));
-    this.dispatcher.registerHandler(new RequestCredentialHandler(this.credentialService));
-    this.dispatcher.registerHandler(new IssueCredentialHandler(this.credentialService));
-    this.dispatcher.registerHandler(new CredentialAckHandler(this.credentialService));
-    this.dispatcher.registerHandler(new ProposePresentationHandler(this.proofService));
-    this.dispatcher.registerHandler(new RequestPresentationHandler(this.proofService));
-    this.dispatcher.registerHandler(new PresentationHandler(this.proofService));
-    this.dispatcher.registerHandler(new PresentationAckHandler(this.proofService));
-  }
-
   protected registerModules() {
     this.connections = new ConnectionsModule(
+      this.dispatcher,
       this.agentConfig,
       this.connectionService,
+      this.trustPingService,
       this.consumerRoutingService,
       this.messageSender
     );
 
-    this.proof = new ProofsModule(this.proofService, this.connectionService, this.messageSender);
+    this.credentials = new CredentialsModule(
+      this.dispatcher,
+      this.connectionService,
+      this.credentialService,
+      this.messageSender
+    );
+
+    this.proofs = new ProofsModule(this.dispatcher, this.proofService, this.connectionService, this.messageSender);
 
     this.routing = new RoutingModule(
+      this.dispatcher,
       this.agentConfig,
       this.providerRoutingService,
       this.provisioningService,
@@ -213,9 +180,8 @@ export class Agent {
       this.messageSender
     );
 
-    this.basicMessages = new BasicMessagesModule(this.basicMessageService, this.messageSender);
-    this.ledger = new LedgerModule(this.wallet, this.ledgerService);
+    this.basicMessages = new BasicMessagesModule(this.dispatcher, this.basicMessageService, this.messageSender);
 
-    this.credentials = new CredentialsModule(this.connectionService, this.credentialService, this.messageSender);
+    this.ledger = new LedgerModule(this.wallet, this.ledgerService);
   }
 }

@@ -1,6 +1,6 @@
 import logger from '../../logger';
 import { AgentConfig } from '../../agent/AgentConfig';
-import { ProvisioningService } from '../../agent/ProvisioningService';
+import { ProviderRoutingService, MessagePickupService, ProvisioningService } from './services';
 import { MessageSender } from '../../agent/MessageSender';
 import { createOutboundMessage } from '../../agent/helpers';
 import {
@@ -9,10 +9,10 @@ import {
   ConnectionInvitationMessage,
   ConnectionResponseMessage,
 } from '../connections';
-import { MessagePickupService } from './MessagePickupService';
-import { ProviderRoutingService } from './ProviderRoutingService';
-import { BatchMessage } from './BatchMessage';
+import { BatchMessage } from './messages';
 import type { Verkey } from 'indy-sdk';
+import { Dispatcher } from '../../agent/Dispatcher';
+import { MessagePickupHandler, ForwardHandler, KeylistUpdateHandler } from './handlers';
 
 export class RoutingModule {
   private agentConfig: AgentConfig;
@@ -23,6 +23,7 @@ export class RoutingModule {
   private messageSender: MessageSender;
 
   public constructor(
+    dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     providerRoutingService: ProviderRoutingService,
     provisioningService: ProvisioningService,
@@ -36,6 +37,7 @@ export class RoutingModule {
     this.messagePickupService = messagePickupService;
     this.connectionService = connectionService;
     this.messageSender = messageSender;
+    this.registerHandlers(dispatcher);
   }
 
   public async provision(mediatorConfiguration: MediatorConfiguration) {
@@ -104,6 +106,12 @@ export class RoutingModule {
 
   public getRoutingTable() {
     return this.providerRoutingService.getRoutes();
+  }
+
+  private registerHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerHandler(new KeylistUpdateHandler(this.providerRoutingService));
+    dispatcher.registerHandler(new ForwardHandler(this.providerRoutingService));
+    dispatcher.registerHandler(new MessagePickupHandler(this.messagePickupService));
   }
 }
 

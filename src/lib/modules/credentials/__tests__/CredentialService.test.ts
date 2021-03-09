@@ -2,8 +2,8 @@
 import type { CredReqMetadata, WalletQuery, CredDef } from 'indy-sdk';
 import { Wallet } from '../../../wallet/Wallet';
 import { Repository } from '../../../storage/Repository';
-import { CredentialOfferTemplate, CredentialService, CredentialEventType } from '../CredentialService';
-import { CredentialRecord } from '../../../storage/CredentialRecord';
+import { CredentialOfferTemplate, CredentialService, CredentialEventType } from '../services';
+import { CredentialRecord } from '../repository/CredentialRecord';
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
 import { CredentialState } from '../CredentialState';
 import { StubWallet } from './StubWallet';
@@ -21,13 +21,13 @@ import {
 import { JsonEncoder } from '../../../utils/JsonEncoder';
 import { credDef, credOffer, credReq } from './fixtures';
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment';
-import { LedgerService as LedgerServiceImpl } from '../../ledger/LedgerService';
+import { LedgerService as LedgerServiceImpl } from '../../ledger/services';
 import { ConnectionState } from '../../connections';
 import { getMockConnection } from '../../connections/__tests__/ConnectionService.test';
 import { AckStatus } from '../../connections';
 
 jest.mock('./../../../storage/Repository');
-jest.mock('./../../../modules/ledger/LedgerService');
+jest.mock('./../../../modules/ledger/services/LedgerService');
 
 const CredentialRepository = <jest.Mock<Repository<CredentialRecord>>>(<unknown>Repository);
 // const ConnectionService = <jest.Mock<ConnectionServiceImpl>>(<unknown>ConnectionServiceImpl);

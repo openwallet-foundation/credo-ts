@@ -2,31 +2,43 @@ import type { Verkey } from 'indy-sdk';
 import { EventEmitter } from 'events';
 
 import { AgentConfig } from '../../agent/AgentConfig';
-import { ConnectionService, ConnectionStateChangedEvent } from './ConnectionService';
-import { ConsumerRoutingService } from '../routing/ConsumerRoutingService';
-import { ConnectionRecord } from '../../storage/ConnectionRecord';
-import { ConnectionState } from './domain/ConnectionState';
 import { MessageSender } from '../../agent/MessageSender';
-import { ConnectionEventType } from './ConnectionService';
 import { createOutboundMessage } from '../../agent/helpers';
+import { Dispatcher } from '../../agent/Dispatcher';
+import { ConnectionService, ConnectionEventType, ConnectionStateChangedEvent, TrustPingService } from './services';
+import { ConsumerRoutingService } from '../routing';
+import { ConnectionRecord } from './repository/ConnectionRecord';
+import { ConnectionState } from './models';
 import { ConnectionInvitationMessage } from './messages';
+import {
+  ConnectionRequestHandler,
+  ConnectionResponseHandler,
+  AckMessageHandler,
+  TrustPingMessageHandler,
+  TrustPingResponseMessageHandler,
+} from './handlers';
 
 export class ConnectionsModule {
   private agentConfig: AgentConfig;
   private connectionService: ConnectionService;
   private consumerRoutingService: ConsumerRoutingService;
   private messageSender: MessageSender;
+  private trustPingService: TrustPingService;
 
   public constructor(
+    dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
+    trustPingService: TrustPingService,
     consumerRoutingService: ConsumerRoutingService,
     messageSender: MessageSender
   ) {
     this.agentConfig = agentConfig;
     this.connectionService = connectionService;
+    this.trustPingService = trustPingService;
     this.consumerRoutingService = consumerRoutingService;
     this.messageSender = messageSender;
+    this.registerHandlers(dispatcher);
   }
 
   /**
@@ -199,5 +211,13 @@ export class ConnectionsModule {
 
   public async findConnectionByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
     return this.connectionService.findByTheirKey(verkey);
+  }
+
+  private registerHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerHandler(new ConnectionRequestHandler(this.connectionService, this.agentConfig));
+    dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService, this.agentConfig));
+    dispatcher.registerHandler(new AckMessageHandler(this.connectionService));
+    dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService));
+    dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService));
   }
 }

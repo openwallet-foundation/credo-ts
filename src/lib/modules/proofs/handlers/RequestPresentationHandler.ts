@@ -1,6 +1,6 @@
 import { Handler, HandlerInboundMessage } from '../../../handlers/Handler';
 import { RequestPresentationMessage } from '../messages';
-import { ProofService } from '../ProofService';
+import { ProofService } from '../services';
 
 export class RequestPresentationHandler implements Handler {
   private proofService: ProofService;

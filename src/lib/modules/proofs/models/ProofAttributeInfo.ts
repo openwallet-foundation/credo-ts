@@ -2,7 +2,7 @@ import { Expose, Type } from 'class-transformer';
 import { IsString, IsOptional, IsArray, ValidateNested } from 'class-validator';
 
 import { AttributeFilter } from './AttributeFilter';
-import { RevocationInterval } from './RevocationInterval';
+import { RevocationInterval } from '../../credentials';
 
 export class ProofAttributeInfo {
   public constructor(options: ProofAttributeInfo) {

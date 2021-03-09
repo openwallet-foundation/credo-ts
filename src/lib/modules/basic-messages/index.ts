@@ -1,2 +1,3 @@
-export { BasicMessage } from './BasicMessage';
-export { BasicMessageService, BasicMessageEventType, BasicMessageReceivedEvent } from './BasicMessageService';
+export * from './messages';
+export * from './services';
+export * from './repository/BasicMessageRecord';

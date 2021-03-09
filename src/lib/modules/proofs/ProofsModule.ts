@@ -1,23 +1,36 @@
 import { createOutboundMessage } from '../../agent/helpers';
 import { MessageSender } from '../../agent/MessageSender';
 import { ConnectionService } from '../connections';
-import { ProofService } from './ProofService';
-import { ProofRecord } from '../../storage/ProofRecord';
+import { ProofService } from './services';
+import { ProofRecord } from './repository/ProofRecord';
 import { ProofRequest } from './models/ProofRequest';
 import { JsonTransformer } from '../../utils/JsonTransformer';
 import { EventEmitter } from 'events';
 import { PresentationPreview, ProposePresentationMessage } from './messages';
 import { RequestedCredentials } from './models';
+import { Dispatcher } from '../../agent/Dispatcher';
+import {
+  ProposePresentationHandler,
+  RequestPresentationHandler,
+  PresentationAckHandler,
+  PresentationHandler,
+} from './handlers';
 
 export class ProofsModule {
   private proofService: ProofService;
   private connectionService: ConnectionService;
   private messageSender: MessageSender;
 
-  public constructor(proofService: ProofService, connectionService: ConnectionService, messageSender: MessageSender) {
+  public constructor(
+    dispatcher: Dispatcher,
+    proofService: ProofService,
+    connectionService: ConnectionService,
+    messageSender: MessageSender
+  ) {
     this.proofService = proofService;
     this.connectionService = connectionService;
     this.messageSender = messageSender;
+    this.registerHandlers(dispatcher);
   }
 
   /**
@@ -238,5 +251,12 @@ export class ProofsModule {
    */
   public async getByThreadId(threadId: string): Promise<ProofRecord> {
     return this.proofService.getByThreadId(threadId);
+  }
+
+  private registerHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerHandler(new ProposePresentationHandler(this.proofService));
+    dispatcher.registerHandler(new RequestPresentationHandler(this.proofService));
+    dispatcher.registerHandler(new PresentationHandler(this.proofService));
+    dispatcher.registerHandler(new PresentationAckHandler(this.proofService));
   }
 }

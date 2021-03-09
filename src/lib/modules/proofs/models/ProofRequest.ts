@@ -2,7 +2,7 @@ import type { IndyProofRequest } from 'indy-sdk';
 import { IsString, ValidateNested, IsOptional, IsIn } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
 
-import { RevocationInterval } from './RevocationInterval';
+import { RevocationInterval } from '../../credentials';
 import { ProofAttributeInfo } from './ProofAttributeInfo';
 import { ProofPredicateInfo } from './ProofPredicateInfo';
 
