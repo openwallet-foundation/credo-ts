@@ -11,7 +11,7 @@ export enum LogLevel {
   off = 7,
 }
 
-export interface ILogger {
+export interface Logger {
   logLevel: LogLevel;
 
   test(message: string, data?: Record<string, any>): void;

@@ -28,7 +28,7 @@ import {
   ProposeCredentialMessage,
   ProposeCredentialMessageOptions,
 } from '../messages';
-import { ILogger } from '../../../logger';
+import { Logger } from '../../../logger';
 import { AgentConfig } from '../../../agent/AgentConfig';
 
 export enum CredentialEventType {
@@ -50,7 +50,7 @@ export class CredentialService extends EventEmitter {
   private credentialRepository: Repository<CredentialRecord>;
   private connectionService: ConnectionService;
   private ledgerService: LedgerService;
-  private logger: ILogger;
+  private logger: Logger;
 
   public constructor(
     wallet: Wallet,

@@ -1,14 +1,14 @@
 import type Indy from 'indy-sdk';
 import type { CredDef, CredDefId, Did, LedgerRequest, PoolConfig, PoolHandle, Schema, SchemaId } from 'indy-sdk';
 import { AgentConfig } from '../../../agent/AgentConfig';
-import { ILogger } from '../../../logger';
+import { Logger } from '../../../logger';
 import { isIndyError } from '../../../utils/indyError';
 import { Wallet } from '../../../wallet/Wallet';
 
 export class LedgerService {
   private wallet: Wallet;
   private indy: typeof Indy;
-  private logger: ILogger;
+  private logger: Logger;
   private _poolHandle?: PoolHandle;
   private authorAgreement?: AuthorAgreement | null;
 

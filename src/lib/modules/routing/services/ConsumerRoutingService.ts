@@ -3,11 +3,11 @@ import { createOutboundMessage } from '../../../agent/helpers';
 import { AgentConfig } from '../../../agent/AgentConfig';
 import { MessageSender } from '../../../agent/MessageSender';
 import { KeylistUpdateMessage, KeylistUpdate, KeylistUpdateAction } from '../messages';
-import { ILogger } from '../../../logger';
+import { Logger } from '../../../logger';
 
 class ConsumerRoutingService {
   private messageSender: MessageSender;
-  private logger: ILogger;
+  private logger: Logger;
   private agentConfig: AgentConfig;
 
   public constructor(messageSender: MessageSender, agentConfig: AgentConfig) {

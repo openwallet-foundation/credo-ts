@@ -1,4 +1,4 @@
-import { ILogger } from '../logger';
+import { Logger } from '../logger';
 import { InitConfig } from '../types';
 import { IndyWallet } from '../wallet/IndyWallet';
 import { MessageReceiver } from './MessageReceiver';
@@ -32,7 +32,7 @@ import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModu
 import { LedgerModule } from '../modules/ledger/LedgerModule';
 
 export class Agent {
-  protected logger: ILogger;
+  protected logger: Logger;
   protected wallet: Wallet;
   protected agentConfig: AgentConfig;
   protected messageReceiver: MessageReceiver;

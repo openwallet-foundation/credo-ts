@@ -12,7 +12,7 @@ import { BatchMessage } from './messages';
 import type { Verkey } from 'indy-sdk';
 import { Dispatcher } from '../../agent/Dispatcher';
 import { MessagePickupHandler, ForwardHandler, KeylistUpdateHandler } from './handlers';
-import { ILogger } from '../../logger';
+import { Logger } from '../../logger';
 export class RoutingModule {
   private agentConfig: AgentConfig;
   private providerRoutingService: ProviderRoutingService;
@@ -20,7 +20,7 @@ export class RoutingModule {
   private messagePickupService: MessagePickupService;
   private connectionService: ConnectionService;
   private messageSender: MessageSender;
-  private logger: ILogger;
+  private logger: Logger;
 
   public constructor(
     dispatcher: Dispatcher,

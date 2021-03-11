@@ -1,6 +1,6 @@
-import { ILogger, LogLevel } from './Logger';
+import { Logger, LogLevel } from './Logger';
 
-export abstract class BaseLogger implements ILogger {
+export abstract class BaseLogger implements Logger {
   public logLevel: LogLevel;
 
   public constructor(logLevel: LogLevel = LogLevel.off) {

@@ -3,13 +3,13 @@ import { Repository } from '../../../storage/Repository';
 import { ProvisioningRecord } from '../repository/ProvisioningRecord';
 import { isIndyError } from '../../../utils/indyError';
 import { AgentConfig } from '../../../agent/AgentConfig';
-import { ILogger } from '../../../logger';
+import { Logger } from '../../../logger';
 
 const UNIQUE_PROVISIONING_ID = 'UNIQUE_PROVISIONING_ID';
 
 export class ProvisioningService {
   private provisioningRepository: Repository<ProvisioningRecord>;
-  private logger: ILogger;
+  private logger: Logger;
 
   public constructor(provisioningRepository: Repository<ProvisioningRecord>, agentConfig: AgentConfig) {
     this.provisioningRepository = provisioningRepository;

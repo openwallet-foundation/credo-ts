@@ -7,14 +7,14 @@ import { RoutingMessageType as MessageType } from '../modules/routing';
 import { ConnectionService } from '../modules/connections';
 import { AgentMessage } from './AgentMessage';
 import { JsonTransformer } from '../utils/JsonTransformer';
-import { ILogger } from '../logger';
+import { Logger } from '../logger';
 
 class MessageReceiver {
   private config: AgentConfig;
   private envelopeService: EnvelopeService;
   private connectionService: ConnectionService;
   private dispatcher: Dispatcher;
-  private logger: ILogger;
+  private logger: Logger;
 
   public constructor(
     config: AgentConfig,

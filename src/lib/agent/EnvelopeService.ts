@@ -2,11 +2,11 @@ import { OutboundMessage, OutboundPackage, UnpackedMessageContext } from '../typ
 import { Wallet } from '../wallet/Wallet';
 import { ForwardMessage } from '../modules/routing/messages';
 import { AgentConfig } from './AgentConfig';
-import { ILogger } from '../logger';
+import { Logger } from '../logger';
 
 class EnvelopeService {
   private wallet: Wallet;
-  private logger: ILogger;
+  private logger: Logger;
 
   public constructor(wallet: Wallet, agentConfig: AgentConfig) {
     this.wallet = wallet;

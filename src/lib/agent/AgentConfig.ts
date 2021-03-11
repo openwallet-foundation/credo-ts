@@ -1,9 +1,9 @@
-import { ConsoleLogger, ILogger, LogLevel } from '../logger';
+import { ConsoleLogger, Logger, LogLevel } from '../logger';
 import { InitConfig, InboundConnection } from '../types';
 
 export class AgentConfig {
   private initConfig: InitConfig;
-  public logger: ILogger;
+  public logger: Logger;
   public inboundConnection?: InboundConnection;
 
   public constructor(initConfig: InitConfig) {

@@ -35,14 +35,14 @@ import { isIndyError } from '../utils/indyError';
 import { Wallet, DidInfo } from './Wallet';
 import { JsonEncoder } from '../utils/JsonEncoder';
 import { AgentConfig } from '../agent/AgentConfig';
-import { ILogger } from '../logger';
+import { Logger } from '../logger';
 
 export class IndyWallet implements Wallet {
   private _walletHandle?: number;
   private _masterSecretId?: string;
   private walletConfig: WalletConfig;
   private walletCredentials: WalletCredentials;
-  private logger: ILogger;
+  private logger: Logger;
   private publicDidInfo: DidInfo | undefined;
   private indy: typeof Indy;
 

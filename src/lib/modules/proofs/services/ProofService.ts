@@ -39,7 +39,7 @@ import {
 } from '../models';
 import { ProofState } from '../ProofState';
 import { AgentConfig } from '../../../agent/AgentConfig';
-import { ILogger } from '../../../logger';
+import { Logger } from '../../../logger';
 
 export enum ProofEventType {
   StateChanged = 'stateChanged',
@@ -65,7 +65,7 @@ export class ProofService extends EventEmitter {
   private ledgerService: LedgerService;
   private wallet: Wallet;
   private indy: typeof Indy;
-  private logger: ILogger;
+  private logger: Logger;
 
   public constructor(
     proofRepository: Repository<ProofRecord>,
