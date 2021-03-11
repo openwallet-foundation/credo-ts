@@ -21,7 +21,6 @@
     "prepack": "rm -rf build && yarn compile"
   },
   "dependencies": {
-    "await-poll": "^1.0.2",
     "bn.js": "^5.1.3",
     "buffer": "^6.0.2",
     "class-transformer": "0.3.2",
