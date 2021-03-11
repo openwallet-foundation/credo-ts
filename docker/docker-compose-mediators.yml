@@ -4,6 +4,7 @@ services:
   alice-mediator:
     build: ..
     image: aries-framework-javascript
+    container_name: alice-mediator
     command: ./scripts/run-mediator.sh alice
     networks:
       - hyperledger
@@ -13,6 +14,7 @@ services:
   bob-mediator:
     build: ..
     image: aries-framework-javascript
+    container_name: bob-mediator
     command: ./scripts/run-mediator.sh bob
     networks:
       - hyperledger

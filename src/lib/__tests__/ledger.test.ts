@@ -5,7 +5,7 @@ import path from 'path';
 import { DidInfo } from '../wallet/Wallet';
 import { DID_IDENTIFIER_REGEX, VERKEY_REGEX, isFullVerkey, isAbbreviatedVerkey } from '../utils/did';
 import { InitConfig } from '../types';
-import logger from '../logger';
+import testLogger from './logger';
 
 const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
@@ -18,6 +18,8 @@ const faberConfig: InitConfig = {
   publicDidSeed: process.env.TEST_AGENT_PUBLIC_DID_SEED,
   genesisPath,
   poolName: 'test-pool',
+  indy,
+  logger: testLogger,
 };
 
 describe('ledger', () => {
@@ -26,7 +28,7 @@ describe('ledger', () => {
   let faberAgentPublicDid: DidInfo | undefined;
 
   beforeAll(async () => {
-    faberAgent = new Agent(faberConfig, new DummyInboundTransporter(), new DummyOutboundTransporter(), indy);
+    faberAgent = new Agent(faberConfig, new DummyInboundTransporter(), new DummyOutboundTransporter());
     await faberAgent.init();
   });
 
@@ -36,7 +38,7 @@ describe('ledger', () => {
 
   test(`initialization of agent's public DID`, async () => {
     faberAgentPublicDid = faberAgent.publicDid;
-    logger.logJson('faberAgentPublicDid', faberAgentPublicDid!);
+    testLogger.test('faberAgentPublicDid', faberAgentPublicDid!);
 
     expect(faberAgentPublicDid).toEqual(
       expect.objectContaining({
@@ -136,12 +138,12 @@ describe('ledger', () => {
 
 class DummyInboundTransporter implements InboundTransporter {
   public start() {
-    logger.log('Starting agent...');
+    testLogger.test('Starting agent...');
   }
 }
 
 class DummyOutboundTransporter implements OutboundTransporter {
   public async sendMessage() {
-    logger.log('Sending message...');
+    testLogger.test('Sending message...');
   }
 }

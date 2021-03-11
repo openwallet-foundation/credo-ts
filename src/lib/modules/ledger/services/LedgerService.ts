@@ -1,18 +1,21 @@
 import type Indy from 'indy-sdk';
 import type { CredDef, CredDefId, Did, LedgerRequest, PoolConfig, PoolHandle, Schema, SchemaId } from 'indy-sdk';
-import logger from '../../../logger';
+import { AgentConfig } from '../../../agent/AgentConfig';
+import { Logger } from '../../../logger';
 import { isIndyError } from '../../../utils/indyError';
 import { Wallet } from '../../../wallet/Wallet';
 
 export class LedgerService {
   private wallet: Wallet;
   private indy: typeof Indy;
+  private logger: Logger;
   private _poolHandle?: PoolHandle;
   private authorAgreement?: AuthorAgreement | null;
 
-  public constructor(wallet: Wallet, indy: typeof Indy) {
+  public constructor(wallet: Wallet, agentConfig: AgentConfig) {
     this.wallet = wallet;
-    this.indy = indy;
+    this.indy = agentConfig.indy;
+    this.logger = agentConfig.logger;
   }
 
   private get poolHandle() {
@@ -24,106 +27,159 @@ export class LedgerService {
   }
 
   public async connect(poolName: string, poolConfig: PoolConfig) {
+    this.logger.debug(`Connecting to ledger pool '${poolName}'`, poolConfig);
     try {
-      logger.log(`Creating pool config with name "${poolName}".`);
+      this.logger.debug(`Creating pool '${poolName}'`);
       await this.indy.createPoolLedgerConfig(poolName, poolConfig);
     } catch (error) {
       if (isIndyError(error, 'PoolLedgerConfigAlreadyExistsError')) {
-        logger.log(error.indyName);
+        this.logger.debug(`Pool '${poolName}' already exists`, { indyError: 'PoolLedgerConfigAlreadyExistsError' });
       } else {
         throw error;
       }
     }
 
-    logger.log('Setting protocol version');
+    this.logger.debug('Setting ledger protocol version to 2');
     await this.indy.setProtocolVersion(2);
 
-    logger.log('Opening pool');
+    this.logger.debug(`Opening pool ${poolName}`);
     this._poolHandle = await this.indy.openPoolLedger(poolName);
   }
 
   public async getPublicDid(did: Did) {
+    this.logger.debug(`Get public did '${did}' from ledger`);
     const request = await this.indy.buildGetNymRequest(null, did);
-    logger.log('request', request);
 
+    this.logger.debug(`Submitting get did request for did '${did}' to ledger`);
     const response = await this.indy.submitRequest(this.poolHandle, request);
-    logger.log('response', response);
 
     const result = await this.indy.parseGetNymResponse(response);
-    logger.log('result', result);
+    this.logger.debug(`Retrieved did '${did}' from ledger`, result);
 
     return result;
   }
 
   public async registerSchema(did: Did, schemaTemplate: SchemaTemplate): Promise<[SchemaId, Schema]> {
-    const { name, attributes, version } = schemaTemplate;
-    const [schemaId, schema] = await this.indy.issuerCreateSchema(did, name, version, attributes);
-    logger.log(`Register schema with ID = ${schemaId}:`, schema);
+    try {
+      this.logger.debug(`Register schema on ledger with did '${did}'`, schemaTemplate);
+      const { name, attributes, version } = schemaTemplate;
+      const [schemaId, schema] = await this.indy.issuerCreateSchema(did, name, version, attributes);
 
-    const request = await this.indy.buildSchemaRequest(did, schema);
-    logger.log('Register schema request', request);
+      const request = await this.indy.buildSchemaRequest(did, schema);
 
-    const requestWithTaa = await this.appendTaa(request);
-    const signedRequest = await this.wallet.signRequest(did, requestWithTaa);
+      const requestWithTaa = await this.appendTaa(request);
+      const signedRequest = await this.wallet.signRequest(did, requestWithTaa);
 
-    const response = await this.indy.submitRequest(this.poolHandle, signedRequest);
-    logger.log('Register schema response', response);
+      const response = await this.indy.submitRequest(this.poolHandle, signedRequest);
+      this.logger.debug(`Registered schema '${schemaId}' on ledger`, { response, schema });
 
-    const seqNo = response.result.txnMetadata?.seqNo;
+      const seqNo = response.result.txnMetadata?.seqNo;
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    schema.seqNo = seqNo!;
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      schema.seqNo = seqNo!;
 
-    return [schemaId, schema];
+      return [schemaId, schema];
+    } catch (error) {
+      this.logger.error(`Error registering schema for did '${did}' on ledger`, {
+        error,
+        did,
+        poolHandle: this.poolHandle,
+        schemaTemplate,
+      });
+
+      throw error;
+    }
   }
 
-  public async getCredentialSchema(schemaId: SchemaId) {
-    const request = await this.indy.buildGetSchemaRequest(null, schemaId);
-    logger.log('Get schema request', request);
+  public async getSchema(schemaId: SchemaId) {
+    try {
+      this.logger.debug(`Get schema '${schemaId}' from ledger`);
 
-    const response = await this.indy.submitRequest(this.poolHandle, request);
-    logger.log('Get schema response', response);
+      const request = await this.indy.buildGetSchemaRequest(null, schemaId);
 
-    const [, schema] = await this.indy.parseGetSchemaResponse(response);
-    logger.log('Get schema result: ', schema);
+      this.logger.debug(`Submitting get schema request for schema '${schemaId}' to ledger`);
+      const response = await this.indy.submitRequest(this.poolHandle, request);
 
-    return schema;
+      const [, schema] = await this.indy.parseGetSchemaResponse(response);
+      this.logger.debug(`Got schema '${schemaId}' from ledger`, { response, schema });
+
+      return schema;
+    } catch (error) {
+      this.logger.error(`Error retrieving schema '${schemaId}' from ledger`, {
+        error,
+        schemaId,
+        poolHandle: this.poolHandle,
+      });
+
+      throw error;
+    }
   }
 
   public async registerCredentialDefinition(
     did: Did,
     credentialDefinitionTemplate: CredDefTemplate
   ): Promise<[CredDefId, CredDef]> {
-    const { schema, tag, signatureType, config } = credentialDefinitionTemplate;
+    try {
+      this.logger.debug(`Register credential definition on ledger with did '${did}'`, credentialDefinitionTemplate);
+      const { schema, tag, signatureType, config } = credentialDefinitionTemplate;
 
-    const [credDefId, credDef] = await this.wallet.createCredentialDefinition(did, schema, tag, signatureType, {
-      support_revocation: config.supportRevocation,
-    });
-    logger.log(`Register credential definition with ID = ${credDefId}:`, credDef);
+      const [credDefId, credDef] = await this.wallet.createCredentialDefinition(did, schema, tag, signatureType, {
+        support_revocation: config.supportRevocation,
+      });
 
-    const request = await this.indy.buildCredDefRequest(did, credDef);
-    logger.log('Register credential definition request:', request);
+      const request = await this.indy.buildCredDefRequest(did, credDef);
 
-    const requestWithTaa = await this.appendTaa(request);
-    const signedRequest = await this.wallet.signRequest(did, requestWithTaa);
+      const requestWithTaa = await this.appendTaa(request);
+      const signedRequest = await this.wallet.signRequest(did, requestWithTaa);
 
-    const response = await this.indy.submitRequest(this.poolHandle, signedRequest);
-    logger.log('Register credential definition response:', response);
+      const response = await this.indy.submitRequest(this.poolHandle, signedRequest);
+      this.logger.debug(`Registered credential definition '${credDefId}' on ledger`, {
+        response,
+        credentialDefinition: credDef,
+      });
 
-    return [credDefId, credDef];
+      return [credDefId, credDef];
+    } catch (error) {
+      this.logger.error(
+        `Error registering credential definition for schema '${credentialDefinitionTemplate.schema.id}' on ledger`,
+        {
+          error,
+          did,
+          poolHandle: this.poolHandle,
+          credentialDefinitionTemplate,
+        }
+      );
+
+      throw error;
+    }
   }
 
-  public async getCredentialDefinition(credDefId: CredDefId) {
-    const request = await this.indy.buildGetCredDefRequest(null, credDefId);
-    logger.log('Get credential definition request:', request);
+  public async getCredentialDefinition(credentialDefinitionId: CredDefId) {
+    try {
+      this.logger.debug(`Get credential definition '${credentialDefinitionId}' from ledger`);
 
-    const response = await this.indy.submitRequest(this.poolHandle, request);
-    logger.log('Get credential definition response:', response);
+      const request = await this.indy.buildGetCredDefRequest(null, credentialDefinitionId);
 
-    const [, credentialDefinition] = await this.indy.parseGetCredDefResponse(response);
-    logger.log('Get credential definition result: ', credentialDefinition);
+      this.logger.debug(
+        `Submitting get credential definition request for credential definition '${credentialDefinitionId}' to ledger`
+      );
+      const response = await this.indy.submitRequest(this.poolHandle, request);
 
-    return credentialDefinition;
+      const [, credentialDefinition] = await this.indy.parseGetCredDefResponse(response);
+      this.logger.debug(`Got credential definition '${credentialDefinitionId}' from ledger`, {
+        response,
+        credentialDefinition,
+      });
+
+      return credentialDefinition;
+    } catch (error) {
+      this.logger.error(`Error retrieving credential definition '${credentialDefinitionId}' from ledger`, {
+        error,
+        credentialDefinitionId: credentialDefinitionId,
+        poolHandle: this.poolHandle,
+      });
+      throw error;
+    }
   }
 
   private async appendTaa(request: LedgerRequest) {

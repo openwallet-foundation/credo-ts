@@ -34,7 +34,7 @@ export class LedgerModule {
   }
 
   public async getSchema(id: SchemaId) {
-    return this.ledgerService.getCredentialSchema(id);
+    return this.ledgerService.getSchema(id);
   }
 
   public async registerCredentialDefinition(credentialDefinitionTemplate: CredDefTemplate) {

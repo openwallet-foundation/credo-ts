@@ -4,6 +4,7 @@ import { IndyWallet } from '../wallet/IndyWallet';
 import { BaseRecord, RecordType } from './BaseRecord';
 import { v4 as uuid } from 'uuid';
 import indy from 'indy-sdk';
+import { AgentConfig } from '../agent/AgentConfig';
 
 interface TestRecordProps {
   id?: string;
@@ -30,7 +31,14 @@ describe('IndyStorageService', () => {
   let testRepository: Repository<TestRecord>;
 
   beforeEach(async () => {
-    wallet = new IndyWallet({ id: 'testWallet' }, { key: 'asbdabsd' }, indy);
+    wallet = new IndyWallet(
+      new AgentConfig({
+        indy,
+        label: 'test',
+        walletConfig: { id: 'testWallet' },
+        walletCredentials: { key: 'asbdabsd' },
+      })
+    );
     const storageService = new IndyStorageService(wallet);
     testRepository = new Repository<TestRecord>(TestRecord, storageService);
     await wallet.init();

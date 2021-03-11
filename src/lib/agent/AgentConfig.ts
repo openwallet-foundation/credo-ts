@@ -1,11 +1,18 @@
+import { ConsoleLogger, Logger, LogLevel } from '../logger';
 import { InitConfig, InboundConnection } from '../types';
 
 export class AgentConfig {
   private initConfig: InitConfig;
+  public logger: Logger;
   public inboundConnection?: InboundConnection;
 
   public constructor(initConfig: InitConfig) {
     this.initConfig = initConfig;
+    this.logger = initConfig.logger ?? new ConsoleLogger(LogLevel.off);
+  }
+
+  public get indy() {
+    return this.initConfig.indy;
   }
 
   public get label() {
@@ -30,6 +37,14 @@ export class AgentConfig {
 
   public get genesisPath() {
     return this.initConfig.genesisPath;
+  }
+
+  public get walletConfig() {
+    return this.initConfig.walletConfig;
+  }
+
+  public get walletCredentials() {
+    return this.initConfig.walletCredentials;
   }
 
   public establishInbound(inboundConnection: InboundConnection) {

@@ -1,6 +1,9 @@
+import type Indy from 'indy-sdk';
 import { getMockConnection } from '../../modules/connections/__tests__/ConnectionService.test';
 import { DidDoc, IndyAgentService } from '../../modules/connections';
 import { AgentConfig } from '../AgentConfig';
+
+const indy = {} as typeof Indy;
 
 describe('AgentConfig', () => {
   describe('getEndpoint', () => {
@@ -9,6 +12,7 @@ describe('AgentConfig', () => {
         label: 'test',
         walletConfig: { id: 'test' },
         walletCredentials: { key: 'test' },
+        indy,
       });
 
       const endpoint = 'https://mediator-url.com';
@@ -35,6 +39,7 @@ describe('AgentConfig', () => {
         label: 'test',
         walletConfig: { id: 'test' },
         walletCredentials: { key: 'test' },
+        indy,
       });
 
       expect(agentConfig.getEndpoint()).toBe(endpoint + '/msg');
@@ -48,6 +53,7 @@ describe('AgentConfig', () => {
         label: 'test',
         walletConfig: { id: 'test' },
         walletCredentials: { key: 'test' },
+        indy,
       });
 
       expect(agentConfig.getEndpoint()).toBe(host + '/msg');
@@ -63,6 +69,7 @@ describe('AgentConfig', () => {
         label: 'test',
         walletConfig: { id: 'test' },
         walletCredentials: { key: 'test' },
+        indy,
       });
 
       expect(agentConfig.getEndpoint()).toBe(`${host}:${port}/msg`);
@@ -79,6 +86,7 @@ describe('AgentConfig', () => {
         label: 'test',
         walletConfig: { id: 'test' },
         walletCredentials: { key: 'test' },
+        indy,
       });
 
       expect(agentConfig.getEndpoint()).toBe(`${endpoint}/msg`);
@@ -89,6 +97,7 @@ describe('AgentConfig', () => {
         label: 'test',
         walletConfig: { id: 'test' },
         walletCredentials: { key: 'test' },
+        indy,
       });
 
       expect(agentConfig.getEndpoint()).toBe('didcomm:transport/queue');

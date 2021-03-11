@@ -1,4 +1,3 @@
-import logger from '../logger';
 import { AgentConfig } from './AgentConfig';
 import { Dispatcher } from './Dispatcher';
 import { EnvelopeService } from './EnvelopeService';
@@ -8,12 +7,14 @@ import { RoutingMessageType as MessageType } from '../modules/routing';
 import { ConnectionService } from '../modules/connections';
 import { AgentMessage } from './AgentMessage';
 import { JsonTransformer } from '../utils/JsonTransformer';
+import { Logger } from '../logger';
 
 class MessageReceiver {
   private config: AgentConfig;
   private envelopeService: EnvelopeService;
   private connectionService: ConnectionService;
   private dispatcher: Dispatcher;
+  private logger: Logger;
 
   public constructor(
     config: AgentConfig,
@@ -25,11 +26,12 @@ class MessageReceiver {
     this.envelopeService = envelopeService;
     this.connectionService = connectionService;
     this.dispatcher = dispatcher;
+    this.logger = this.config.logger;
   }
 
   /**
    * Receive and handle an inbound DIDComm message. It will unpack the message, transform it
-   * to it's corresponding message class and finaly dispatch it to the dispatcher.
+   * to it's corresponding message class and finally dispatch it to the dispatcher.
    *
    * @param inboundPackedMessage the message to receive and handle
    */
@@ -38,11 +40,9 @@ class MessageReceiver {
       throw new Error('Invalid message received. Message should be object');
     }
 
-    logger.logJson(`Agent ${this.config.label} received message:`, inboundPackedMessage);
+    this.logger.debug(`Agent ${this.config.label} received message:`, inboundPackedMessage);
 
     const unpackedMessage = await this.unpackMessage(inboundPackedMessage as Record<string, unknown>);
-
-    logger.logJson('inboundMessage', unpackedMessage);
 
     const senderKey = unpackedMessage.sender_verkey;
     let connection = undefined;
@@ -60,6 +60,8 @@ class MessageReceiver {
         );
       }
     }
+
+    this.logger.info(`Received message with type '${unpackedMessage.message['@type']}'`, unpackedMessage.message);
 
     const message = await this.transformMessage(unpackedMessage);
     const messageContext = new InboundMessageContext(message, {
@@ -87,7 +89,7 @@ class MessageReceiver {
         // indy-sdk error. Eventually we should create a problem report message
         unpackedMessage = await this.envelopeService.unpackMessage(packedMessage);
       } catch (error) {
-        logger.log('error while unpacking message', error);
+        this.logger.error('error while unpacking message', error);
         throw error;
       }
 
@@ -95,7 +97,7 @@ class MessageReceiver {
       //  - forward message is intended for us (so unpack inner `msg` and pass that to dispatcher)
       //  - or that the message should be forwarded (pass unpacked forward message with packed `msg` to dispatcher)
       if (unpackedMessage.message['@type'] === MessageType.ForwardMessage) {
-        logger.logJson('Forwarded message', unpackedMessage);
+        this.logger.debug('unpacking forwarded message', unpackedMessage);
 
         try {
           unpackedMessage = await this.envelopeService.unpackMessage(unpackedMessage.message.msg as JsonWebKey);

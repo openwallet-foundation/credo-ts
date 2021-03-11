@@ -7,3 +7,5 @@ aries-framework-javascript-*.tgz
 src/lib/__tests__/genesis-von.txn
 coverage
 .DS_Store
+logs.txt
+logs/

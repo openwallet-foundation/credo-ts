@@ -104,15 +104,28 @@ import indy from 'indy-sdk';
 // for React Native
 import indy from 'rn-indy-sdk';
 
-// Pass indy to agent
-agent = new Agent(config, inboundTransport, outboundTransport, indy);
+const config = {
+  // ... other config properties ...
+  indy,
+};
+
+agent = new Agent(config, inboundTransport, outboundTransport);
 ```
 
 For an example react native app that makes use of the framework see [Aries Mobile Agent React Native](https://github.com/animo/aries-mobile-agent-react-native.git)
 
 ### Logs
 
-If you want the framework to show the logs while running, you can set the `DEBUG=aries-framework-javascript` debug environment variable. For running the sample mediator this means running `yarn prod:debug` instead of `yarn prod:start`
+To enable logging inside the framework a logger must be passed to the agent config. A simple `ConsoleLogger` can be imported from the framework, for more advanced use cases the `ILogger` interface can implemented. See [`TestLogger`](./src/lib/__tests__/logger.ts) for a more advanced example.
+
+```ts
+import { ILogger, ConsoleLogger, LogLevel } from 'aries-framework-javascript';
+
+const agentConfig = {
+  // ... other config properties ...
+  logger: new ConsoleLogger(LogLevel.debug),
+};
+```
 
 ## Architecture
 
@@ -226,7 +239,7 @@ docker run -it --rm aries-framework-javascript  yarn test -t "agents"
 
 # Run test with mediator agents and ledger pool
 docker-compose -f docker/docker-compose-mediators.yml up -d # Run alice-mediator and bob-mediator
-docker run --rm --network host --env TEST_AGENT_PUBLIC_DID_SEED=000000000000000000000000Trustee9 --env GENESIS_TXN_PATH=network/genesis/local-genesis.txn --env DEBUG=aries-framework-javascript aries-framework-javascript yarn test
+docker run --rm --network host --env TEST_AGENT_PUBLIC_DID_SEED=000000000000000000000000Trustee9 --env GENESIS_TXN_PATH=network/genesis/local-genesis.txn aries-framework-javascript yarn test
 ```
 
 ## Contributing

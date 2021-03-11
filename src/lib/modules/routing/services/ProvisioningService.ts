@@ -1,16 +1,19 @@
 import type { Verkey } from 'indy-sdk';
 import { Repository } from '../../../storage/Repository';
 import { ProvisioningRecord } from '../repository/ProvisioningRecord';
-import logger from '../../../logger';
 import { isIndyError } from '../../../utils/indyError';
+import { AgentConfig } from '../../../agent/AgentConfig';
+import { Logger } from '../../../logger';
 
 const UNIQUE_PROVISIONING_ID = 'UNIQUE_PROVISIONING_ID';
 
 export class ProvisioningService {
   private provisioningRepository: Repository<ProvisioningRecord>;
+  private logger: Logger;
 
-  public constructor(provisioningRepository: Repository<ProvisioningRecord>) {
+  public constructor(provisioningRepository: Repository<ProvisioningRecord>, agentConfig: AgentConfig) {
     this.provisioningRepository = provisioningRepository;
+    this.logger = agentConfig.logger;
   }
 
   public async find(): Promise<ProvisioningRecord | null> {
@@ -19,7 +22,9 @@ export class ProvisioningService {
       return provisioningRecord;
     } catch (error) {
       if (isIndyError(error, 'WalletItemNotFound')) {
-        logger.log('WalletItemNotFound');
+        this.logger.debug(`Provision record with id '${UNIQUE_PROVISIONING_ID}' not found.`, {
+          indyError: 'WalletItemNotFound',
+        });
         return null;
       } else {
         throw error;

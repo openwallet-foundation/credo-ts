@@ -1,10 +1,9 @@
 import express, { Express } from 'express';
 import cors from 'cors';
 import config from './config';
-import logger from '../lib/logger';
+import testLogger from '../lib/__tests__/logger';
 import { Agent, InboundTransporter, OutboundTransporter } from '../lib';
 import { OutboundPackage } from '../lib/types';
-import indy from 'indy-sdk';
 import { MessageRepository } from '../lib/storage/MessageRepository';
 import { InMemoryMessageRepository } from '../lib/storage/InMemoryMessageRepository';
 
@@ -48,7 +47,7 @@ class StorageOutboundTransporter implements OutboundTransporter {
       throw new Error('Trying to save message without theirKey!');
     }
 
-    logger.logJson('Storing message', { connection, payload });
+    testLogger.debug('Storing message', { connection, payload });
 
     this.messageRepository.save(connection.theirKey, payload);
   }
@@ -68,7 +67,7 @@ app.set('json spaces', 2);
 const messageRepository = new InMemoryMessageRepository();
 const messageSender = new StorageOutboundTransporter(messageRepository);
 const messageReceiver = new HttpInboundTransporter(app);
-const agent = new Agent(config, messageReceiver, messageSender, indy, messageRepository);
+const agent = new Agent(config, messageReceiver, messageSender, messageRepository);
 
 app.get('/', async (req, res) => {
   const agentDid = agent.publicDid;
@@ -109,5 +108,5 @@ app.get('/api/messages', async (req, res) => {
 app.listen(PORT, async () => {
   await agent.init();
   messageReceiver.start(agent);
-  logger.log(`Application started on port ${PORT}`);
+  testLogger.info(`Application started on port ${PORT}`);
 });

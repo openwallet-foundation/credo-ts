@@ -38,7 +38,8 @@ import {
   RequestedPredicate,
 } from '../models';
 import { ProofState } from '../ProofState';
-import logger from '../../../logger';
+import { AgentConfig } from '../../../agent/AgentConfig';
+import { Logger } from '../../../logger';
 
 export enum ProofEventType {
   StateChanged = 'stateChanged',
@@ -64,19 +65,21 @@ export class ProofService extends EventEmitter {
   private ledgerService: LedgerService;
   private wallet: Wallet;
   private indy: typeof Indy;
+  private logger: Logger;
 
   public constructor(
     proofRepository: Repository<ProofRecord>,
     ledgerService: LedgerService,
     wallet: Wallet,
-    indy: typeof Indy
+    agentConfig: AgentConfig
   ) {
     super();
 
     this.proofRepository = proofRepository;
     this.ledgerService = ledgerService;
     this.wallet = wallet;
-    this.indy = indy;
+    this.indy = agentConfig.indy;
+    this.logger = agentConfig.logger;
   }
 
   /**
@@ -324,7 +327,7 @@ export class ProofService extends EventEmitter {
     }
     await validateOrReject(proofRequest);
 
-    logger.logJson('received proof request', proofRequest);
+    this.logger.debug('received proof request', proofRequest);
 
     try {
       // Proof record already exists
@@ -585,7 +588,7 @@ export class ProofService extends EventEmitter {
       proofRequest.requestedAttributes[referent] = requestedAttribute;
     }
 
-    logger.logJson('proposal predicates', presentationProposal.predicates);
+    this.logger.debug('proposal predicates', presentationProposal.predicates);
     // Transform proposed predicates to requested predicates
     for (const proposedPredicate of presentationProposal.predicates) {
       const requestedPredicate = new ProofPredicateInfo({
@@ -888,7 +891,7 @@ export class ProofService extends EventEmitter {
     const schemas: { [key: string]: Schema } = {};
 
     for (const schemaId of schemaIds) {
-      const schema = await this.ledgerService.getCredentialSchema(schemaId);
+      const schema = await this.ledgerService.getSchema(schemaId);
       schemas[schemaId] = schema;
     }
 
