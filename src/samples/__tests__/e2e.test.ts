@@ -1,6 +1,3 @@
-// eslint-disable-next-line
-// @ts-ignore
-import { poll } from 'await-poll';
 import { Agent, InboundTransporter, OutboundTransporter } from '../../lib';
 import { OutboundPackage, InitConfig } from '../../lib/types';
 import { get, post } from '../http';
@@ -139,8 +136,10 @@ class PollingInboundTransporter implements InboundTransporter {
   }
 
   private pollDownloadMessages(agent: Agent) {
-    poll(
-      async () => {
+    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+    new Promise(async () => {
+      while (!this.stop) {
         const downloadedMessages = await agent.routing.downloadMessages();
         const messages = [...downloadedMessages];
         testLogger.test('downloaded messages', messages);
@@ -148,10 +147,10 @@ class PollingInboundTransporter implements InboundTransporter {
           const message = messages.shift();
           await agent.receiveMessage(message);
         }
-      },
-      () => !this.stop,
-      1000
-    );
+
+        await sleep(1000);
+      }
+    });
   }
 }
 
