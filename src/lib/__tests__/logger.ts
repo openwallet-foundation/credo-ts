@@ -30,6 +30,7 @@ export class TestLogger extends BaseLogger {
     closeSync(openSync('logs.txt', 'w'));
     this.logger = new Logger({
       minLevel: this.logLevel == LogLevel.off ? undefined : this.tsLogLevelMap[this.logLevel],
+      ignoreStackLevels: 5,
       attachedTransports: [
         {
           transportLogger: {
