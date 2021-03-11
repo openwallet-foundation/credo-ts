@@ -1,5 +1,4 @@
 import type { IndyProof, Schema, CredDef } from 'indy-sdk';
-import type Indy from 'indy-sdk';
 
 import { EventEmitter } from 'events';
 import { validateOrReject } from 'class-validator';
@@ -64,7 +63,6 @@ export class ProofService extends EventEmitter {
   private proofRepository: Repository<ProofRecord>;
   private ledgerService: LedgerService;
   private wallet: Wallet;
-  private indy: typeof Indy;
   private logger: Logger;
 
   public constructor(
@@ -78,7 +76,6 @@ export class ProofService extends EventEmitter {
     this.proofRepository = proofRepository;
     this.ledgerService = ledgerService;
     this.wallet = wallet;
-    this.indy = agentConfig.indy;
     this.logger = agentConfig.logger;
   }
 
@@ -609,27 +606,6 @@ export class ProofService extends EventEmitter {
   }
 
   /**
-   * Retrieve the credentials that are available for an attribute referent in the proof request.
-   *
-   * @param proofRequest The proof request to retrieve the credentials for
-   * @param attributeReferent An attribute referent from the proof request to retrieve the credentials for
-   * @returns List of credentials that are available for building a proof for the given proof request
-   *
-   */
-  public async getCredentialsForProofRequest(
-    proofRequest: ProofRequest,
-    attributeReferent: string
-  ): Promise<Credential[]> {
-    const searchHandle = await this.wallet.searchCredentialsForProofRequest(proofRequest.toJSON());
-
-    const credentialsJson = await this.indy.proverFetchCredentialsForProofReq(searchHandle, attributeReferent, 100);
-    // TODO: make the count, offset etc more flexible
-    await this.indy.proverCloseCredentialsSearchForProofReq(searchHandle);
-
-    return (JsonTransformer.fromJSON(credentialsJson, Credential) as unknown) as Credential[];
-  }
-
-  /**
    * Create a {@link RequestedCredentials} object. Given input proof request and presentation proposal,
    * use credentials in the wallet to build indy requested credentials object for input to proof creation.
    * If restrictions allow, self attested attributes will be used.
@@ -769,14 +745,7 @@ export class ProofService extends EventEmitter {
       new Set(proof.identifiers.map(i => i.credentialDefinitionId))
     );
 
-    return await this.indy.verifierVerifyProof(
-      proofRequest.toJSON(),
-      proofJson,
-      schemas,
-      credentialDefinitions,
-      {},
-      {}
-    );
+    return await this.wallet.verifyProof(proofRequest.toJSON(), proofJson, schemas, credentialDefinitions, {}, {});
   }
 
   /**
@@ -855,6 +824,14 @@ export class ProofService extends EventEmitter {
     );
 
     return proof;
+  }
+
+  private async getCredentialsForProofRequest(
+    proofRequest: ProofRequest,
+    attributeReferent: string
+  ): Promise<Credential[]> {
+    const credentialsJson = await this.wallet.getCredentialsForProofRequest(proofRequest.toJSON(), attributeReferent);
+    return (JsonTransformer.fromJSON(credentialsJson, Credential) as unknown) as Credential[];
   }
 
   /**
