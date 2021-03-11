@@ -2,7 +2,6 @@
 import indy from 'indy-sdk';
 import type { CredDefId } from 'indy-sdk';
 import { Subject } from 'rxjs';
-import path from 'path';
 import { Agent, ConnectionRecord } from '..';
 import {
   ensurePublicDidIsOnLedger,
@@ -12,6 +11,7 @@ import {
   SubjectInboundTransporter,
   SubjectOutboundTransporter,
   waitForCredentialRecord,
+  genesisPath,
 } from './helpers';
 import {
   CredentialRecord,
@@ -22,10 +22,6 @@ import {
 import { InitConfig } from '../types';
 
 import testLogger from './logger';
-
-const genesisPath = process.env.GENESIS_TXN_PATH
-  ? path.resolve(process.env.GENESIS_TXN_PATH)
-  : path.join(__dirname, '../../../network/genesis/local-genesis.txn');
 
 const faberConfig: InitConfig = {
   label: 'Faber',

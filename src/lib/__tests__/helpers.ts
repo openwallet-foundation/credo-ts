@@ -21,6 +21,8 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
   : path.join(__dirname, '../../../network/genesis/local-genesis.txn');
 
+export const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+
 // Custom matchers which can be used to extend Jest matchers via extend, e. g. `expect.extend({ toBeConnectedWith })`.
 
 export function toBeConnectedWith(received: ConnectionRecord, connection: ConnectionRecord) {
