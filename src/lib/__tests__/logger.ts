@@ -3,7 +3,7 @@
 import { ILogObject, Logger } from 'tslog';
 import { LogLevel } from '../logger';
 import { BaseLogger } from '../logger/BaseLogger';
-import { appendFileSync, openSync, closeSync } from 'fs';
+import { appendFileSync } from 'fs';
 
 function logToTransport(logObject: ILogObject) {
   appendFileSync('logs.txt', JSON.stringify(logObject) + '\n');
@@ -26,8 +26,6 @@ export class TestLogger extends BaseLogger {
   public constructor(logLevel: LogLevel) {
     super(logLevel);
 
-    // clear current log file
-    closeSync(openSync('logs.txt', 'w'));
     this.logger = new Logger({
       minLevel: this.logLevel == LogLevel.off ? undefined : this.tsLogLevelMap[this.logLevel],
       ignoreStackLevels: 5,
