@@ -26,6 +26,8 @@ import type {
   WalletQuery,
   WalletSearchOptions,
   LedgerRequest,
+  IndyCredential,
+  RevRegsDefs,
 } from 'indy-sdk';
 import { UnpackedMessageContext } from '../types';
 
@@ -58,6 +60,16 @@ export interface Wallet {
     credentialDefs: CredentialDefs,
     revStates: RevStates
   ): Promise<IndyProof>;
+  getCredentialsForProofRequest(proofRequest: IndyProofRequest, attributeReferent: string): Promise<IndyCredential[]>;
+  // TODO Method `verifyProof` does not have a dependency on `wallet`, we could eventually move it outside to another class.
+  verifyProof(
+    proofRequest: IndyProofRequest,
+    proof: IndyProof,
+    schemas: Schemas,
+    credentialDefs: CredentialDefs,
+    revRegsDefs: RevRegsDefs,
+    revRegs: RevStates
+  ): Promise<boolean>;
   storeCredential(
     credentialId: CredentialId,
     credReqMetadata: CredReqMetadata,
@@ -76,7 +88,6 @@ export interface Wallet {
   getWalletRecord(type: string, id: string, options: WalletRecordOptions): Promise<WalletRecord>;
   search(type: string, query: WalletQuery, options: WalletSearchOptions): Promise<AsyncIterable<WalletRecord>>;
   signRequest(myDid: Did, request: LedgerRequest): Promise<LedgerRequest>;
-  searchCredentialsForProofRequest(proofRequest: IndyProofRequest): Promise<number>;
   generateNonce(): Promise<string>;
 }
 

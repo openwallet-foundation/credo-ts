@@ -12,6 +12,7 @@ import type {
   CredValues,
   Did,
   DidConfig,
+  IndyCredential,
   IndyProofRequest,
   IndyRequestedCredentials,
   LedgerRequest,
@@ -150,8 +151,23 @@ export class IndyWallet implements Wallet {
     return this.indy.issuerCreateCredentialOffer(this.walletHandle, credDefId);
   }
 
-  public async getCredentialsForProofRequest(proof: IndyProofRequest): Promise<ProofCred> {
-    return await this.indy.proverGetCredentialsForProofReq(this.walletHandle, proof);
+  /**
+   * Retrieve the credentials that are available for an attribute referent in the proof request.
+   *
+   * @param proofRequest The proof request to retrieve the credentials for
+   * @param attributeReferent An attribute referent from the proof request to retrieve the credentials for
+   * @returns List of credentials that are available for building a proof for the given proof request
+   *
+   */
+  public async getCredentialsForProofRequest(
+    proofRequest: IndyProofRequest,
+    attributeReferent: string
+  ): Promise<IndyCredential[]> {
+    const searchHandle = await this.indy.proverSearchCredentialsForProofReq(this.walletHandle, proofRequest, {} as any);
+    const credentialsJson = await this.indy.proverFetchCredentialsForProofReq(searchHandle, attributeReferent, 100);
+    // TODO: make the count, offset etc more flexible
+    await this.indy.proverCloseCredentialsSearchForProofReq(searchHandle);
+    return credentialsJson;
   }
 
   public async createCredentialRequest(
@@ -208,6 +224,17 @@ export class IndyWallet implements Wallet {
       credentialDefs,
       revStates
     );
+  }
+
+  public verifyProof(
+    proofRequest: IndyProofRequest,
+    proof: Indy.IndyProof,
+    schemas: Schemas,
+    credentialDefs: CredentialDefs,
+    revRegsDefs: Indy.RevRegsDefs,
+    revRegs: RevStates
+  ): Promise<boolean> {
+    return this.indy.verifierVerifyProof(proofRequest, proof, schemas, credentialDefs, revRegsDefs, revRegs);
   }
 
   public async pack(payload: Record<string, unknown>, recipientKeys: Verkey[], senderVk: Verkey): Promise<JsonWebKey> {

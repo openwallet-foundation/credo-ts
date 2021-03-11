@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type {
+import {
   IndyProofRequest,
   IndyRequestedCredentials,
   Schemas,
@@ -24,6 +24,8 @@ import type {
   WalletRecord,
   WalletQuery,
   LedgerRequest,
+  IndyCredential,
+  RevRegsDefs,
 } from 'indy-sdk';
 import { Wallet } from '../../../wallet/Wallet';
 import { UnpackedMessageContext } from '../../../types';
@@ -48,6 +50,22 @@ export class StubWallet implements Wallet {
     credentialDefs: CredentialDefs,
     revStates: RevStates
   ): Promise<IndyProof> {
+    throw new Error('Method not implemented.');
+  }
+  public getCredentialsForProofRequest(
+    proofRequest: IndyProofRequest,
+    attributeReferent: string
+  ): Promise<IndyCredential[]> {
+    throw new Error('Method not implemented.');
+  }
+  public verifyProof(
+    proofRequest: IndyProofRequest,
+    proof: IndyProof,
+    schemas: Schemas,
+    credentialDefs: CredentialDefs,
+    revRegsDefs: RevRegsDefs,
+    revRegs: RevStates
+  ): Promise<boolean> {
     throw new Error('Method not implemented.');
   }
   public searchCredentialsForProofRequest(proofRequest: IndyProofRequest): Promise<number> {
