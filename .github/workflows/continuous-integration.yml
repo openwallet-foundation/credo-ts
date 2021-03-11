@@ -49,12 +49,13 @@ jobs:
           aries-framework-javascript 
           yarn test --coverage
 
-      - name: Export docker logs
+      - name: Export logs
         if: always()
         run: |
           mkdir logs
-          docker-compose -f docker/docker-compose-mediators.yml logs --no-color > logs/docker-mediator-agents.log
-          docker logs framework-jest-tests > logs/docker-framework-jest-tests.log
+          docker cp alice-mediator:/www/logs.txt ./logs/alice-mediator.txt
+          docker cp bob-mediator:/www/logs.txt ./logs/bob-mediator.txt
+          docker cp framework-jest-tests:/www/logs.txt ./logs/jest.txt
 
       - name: Upload docker logs
         uses: actions/upload-artifact@v1
