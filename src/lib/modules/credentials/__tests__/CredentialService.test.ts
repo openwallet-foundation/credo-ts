@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import type Indy from 'indy-sdk';
 import type { CredReqMetadata, WalletQuery, CredDef } from 'indy-sdk';
 import { Wallet } from '../../../wallet/Wallet';
 import { Repository } from '../../../storage/Repository';
@@ -25,9 +26,12 @@ import { LedgerService as LedgerServiceImpl } from '../../ledger/services';
 import { ConnectionState } from '../../connections';
 import { getMockConnection } from '../../connections/__tests__/ConnectionService.test';
 import { AckStatus } from '../../connections';
+import { AgentConfig } from '../../../agent/AgentConfig';
 
 jest.mock('./../../../storage/Repository');
 jest.mock('./../../../modules/ledger/services/LedgerService');
+
+const indy = {} as typeof Indy;
 
 const CredentialRepository = <jest.Mock<Repository<CredentialRecord>>>(<unknown>Repository);
 // const ConnectionService = <jest.Mock<ConnectionServiceImpl>>(<unknown>ConnectionServiceImpl);
@@ -136,7 +140,13 @@ describe('CredentialService', () => {
       wallet,
       credentialRepository,
       { getById: () => Promise.resolve(connection) } as any,
-      ledgerService
+      ledgerService,
+      new AgentConfig({
+        walletConfig: { id: 'test' },
+        walletCredentials: { key: 'test' },
+        indy,
+        label: 'test',
+      })
     );
 
     // make separate repositoryFindMock variable to get the correct jest mock typing

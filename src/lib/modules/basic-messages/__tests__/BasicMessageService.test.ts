@@ -9,6 +9,7 @@ import { BasicMessageRecord } from '../repository/BasicMessageRecord';
 import { BasicMessage } from '../messages';
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
 import { ConnectionRecord } from '../../connections';
+import { AgentConfig } from '../../../agent/AgentConfig';
 
 describe('BasicMessageService', () => {
   const walletConfig = { id: 'test-wallet' + '-BasicMessageServiceTest' };
@@ -25,7 +26,14 @@ describe('BasicMessageService', () => {
   let storageService: StorageService<BasicMessageRecord>;
 
   beforeAll(async () => {
-    wallet = new IndyWallet(walletConfig, walletCredentials, indy);
+    wallet = new IndyWallet(
+      new AgentConfig({
+        walletConfig,
+        walletCredentials,
+        indy,
+        label: 'test',
+      })
+    );
     await wallet.init();
     storageService = new IndyStorageService(wallet);
   });

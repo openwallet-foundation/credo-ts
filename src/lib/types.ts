@@ -1,6 +1,8 @@
+import type Indy from 'indy-sdk';
+import type { Did, WalletConfig, WalletCredentials, Verkey } from 'indy-sdk';
 import { ConnectionRecord } from './modules/connections';
 import { AgentMessage } from './agent/AgentMessage';
-import type { Did, WalletConfig, WalletCredentials, Verkey } from 'indy-sdk';
+import { ILogger } from './logger';
 
 type $FixMe = any;
 
@@ -19,6 +21,8 @@ export interface InitConfig {
   autoAcceptConnections?: boolean;
   genesisPath?: string;
   poolName?: string;
+  logger?: ILogger;
+  indy: typeof Indy;
 }
 
 export interface UnpackedMessage {

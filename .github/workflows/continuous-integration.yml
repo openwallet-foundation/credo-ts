@@ -46,7 +46,6 @@ jobs:
           --name framework-jest-tests 
           --env TEST_AGENT_PUBLIC_DID_SEED=${TEST_AGENT_PUBLIC_DID_SEED}
           --env GENESIS_TXN_PATH=${GENESIS_TXN_PATH}
-          --env DEBUG=aries-framework-javascript
           aries-framework-javascript 
           yarn test --coverage
 

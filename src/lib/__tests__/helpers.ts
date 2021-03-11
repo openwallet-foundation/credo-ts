@@ -1,6 +1,5 @@
 /* eslint-disable no-console */
 import type { SchemaId, Schema, CredDefId, CredDef, Did } from 'indy-sdk';
-import logger from '../logger';
 import path from 'path';
 import { Subject } from 'rxjs';
 import { Agent, InboundTransporter, OutboundTransporter } from '..';
@@ -16,6 +15,7 @@ import {
   CredentialState,
 } from '../modules/credentials';
 import { BasicMessage, BasicMessageEventType, BasicMessageReceivedEvent } from '../modules/basic-messages';
+import testLogger from './logger';
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
@@ -132,7 +132,7 @@ export class SubjectOutboundTransporter implements OutboundTransporter {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
-    logger.logJson(`Sending outbound message to connection ${outboundPackage.connection.id}`, outboundPackage.payload);
+    testLogger.test(`Sending outbound message to connection ${outboundPackage.connection.id}`);
     const { payload } = outboundPackage;
     this.subject.next(payload);
   }
@@ -155,7 +155,7 @@ export async function makeConnection(agentA: Agent, agentB: Agent) {
 export async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<[SchemaId, Schema]> {
   const [schemaId] = await agent.ledger.registerSchema(schemaTemplate);
   const ledgerSchema = await agent.ledger.getSchema(schemaId);
-  logger.logJson(`created schema with id ${schemaId}`, ledgerSchema);
+  testLogger.test(`created schema with id ${schemaId}`, ledgerSchema);
   return [schemaId, ledgerSchema];
 }
 
@@ -165,13 +165,13 @@ export async function registerDefinition(
 ): Promise<[CredDefId, CredDef]> {
   const [credDefId] = await agent.ledger.registerCredentialDefinition(definitionTemplate);
   const ledgerCredDef = await agent.ledger.getCredentialDefinition(credDefId);
-  logger.logJson(`created credential definition with id ${credDefId}`, ledgerCredDef);
+  testLogger.test(`created credential definition with id ${credDefId}`, ledgerCredDef);
   return [credDefId, ledgerCredDef];
 }
 
 export async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: Did) {
   try {
-    logger.log(`Ensure test DID ${publicDid} is written to ledger`);
+    testLogger.test(`Ensure test DID ${publicDid} is written to ledger`);
     await agent.ledger.getPublicDid(publicDid);
   } catch (error) {
     // Unfortunately, this won't prevent from the test suite running because of Jest runner runs all tests

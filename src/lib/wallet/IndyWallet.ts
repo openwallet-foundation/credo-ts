@@ -30,24 +30,27 @@ import type {
 } from 'indy-sdk';
 import type Indy from 'indy-sdk';
 
-import logger from '../logger';
 import { UnpackedMessageContext } from '../types';
 import { isIndyError } from '../utils/indyError';
 import { Wallet, DidInfo } from './Wallet';
 import { JsonEncoder } from '../utils/JsonEncoder';
+import { AgentConfig } from '../agent/AgentConfig';
+import { ILogger } from '../logger';
 
 export class IndyWallet implements Wallet {
   private _walletHandle?: number;
   private _masterSecretId?: string;
   private walletConfig: WalletConfig;
   private walletCredentials: WalletCredentials;
+  private logger: ILogger;
   private publicDidInfo: DidInfo | undefined;
   private indy: typeof Indy;
 
-  public constructor(walletConfig: WalletConfig, walletCredentials: WalletCredentials, indy: typeof Indy) {
-    this.walletConfig = walletConfig;
-    this.walletCredentials = walletCredentials;
-    this.indy = indy;
+  public constructor(agentConfig: AgentConfig) {
+    this.walletConfig = agentConfig.walletConfig;
+    this.walletCredentials = agentConfig.walletCredentials;
+    this.logger = agentConfig.logger;
+    this.indy = agentConfig.indy;
   }
 
   public get publicDid() {
@@ -72,13 +75,14 @@ export class IndyWallet implements Wallet {
   }
 
   public async init() {
+    this.logger.info(`Initializing wallet '${this.walletConfig.id}'`, this.walletConfig);
     try {
       await this.indy.createWallet(this.walletConfig, this.walletCredentials);
     } catch (error) {
-      logger.log('error', error);
       if (isIndyError(error, 'WalletAlreadyExistsError')) {
-        logger.log(error.indyName);
+        this.logger.debug(`Wallet '${this.walletConfig.id} already exists'`, { indyError: 'WalletAlreadyExistsError' });
       } else {
+        this.logger.error(`Error opening wallet ${this.walletConfig.id}`, { indyError: error.indyName, error });
         throw error;
       }
     }
@@ -86,21 +90,27 @@ export class IndyWallet implements Wallet {
     this._walletHandle = await this.indy.openWallet(this.walletConfig, this.walletCredentials);
 
     try {
-      logger.log(`Creating master secret...`);
+      this.logger.debug(`Creating master secret`);
       this._masterSecretId = await this.indy.proverCreateMasterSecret(this.walletHandle, this.walletConfig.id);
     } catch (error) {
-      logger.log('error', error);
       if (isIndyError(error, 'AnoncredsMasterSecretDuplicateNameError')) {
         // master secret id is the same as the master secret id passed in the create function
         // so if it already exists we can just assign it.
         this._masterSecretId = this.walletConfig.id;
-        logger.log(`master secret with id ${this.masterSecretId} already exists`, error.indyName);
+        this.logger.debug(`Master secret with id '${this.masterSecretId}' already exists`, {
+          indyError: 'AnoncredsMasterSecretDuplicateNameError',
+        });
       } else {
+        this.logger.error(`Error creating master secret with id ${this.walletConfig.id}`, {
+          indyError: error.indyName,
+          error,
+        });
+
         throw error;
       }
     }
 
-    logger.log(`Wallet opened with handle: ${this.walletHandle}`);
+    this.logger.debug(`Wallet opened with handle: '${this.walletHandle}'`);
   }
 
   public async initPublicDid(didConfig: DidConfig) {

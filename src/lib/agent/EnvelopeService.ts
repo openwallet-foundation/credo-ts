@@ -1,13 +1,16 @@
-import logger from '../logger';
 import { OutboundMessage, OutboundPackage, UnpackedMessageContext } from '../types';
 import { Wallet } from '../wallet/Wallet';
 import { ForwardMessage } from '../modules/routing/messages';
+import { AgentConfig } from './AgentConfig';
+import { ILogger } from '../logger';
 
 class EnvelopeService {
   private wallet: Wallet;
+  private logger: ILogger;
 
-  public constructor(wallet: Wallet) {
+  public constructor(wallet: Wallet, agentConfig: AgentConfig) {
     this.wallet = wallet;
+    this.logger = agentConfig.logger;
   }
 
   public async packMessage(outboundMessage: OutboundMessage): Promise<OutboundPackage> {
@@ -16,7 +19,7 @@ class EnvelopeService {
 
     const message = payload.toJSON();
 
-    logger.logJson('outboundMessage', { verkey, theirKey, routingKeys, endpoint, message });
+    this.logger.info('outboundMessage', { verkey, theirKey, routingKeys, endpoint, message });
     let outboundPackedMessage = await this.wallet.pack(message, recipientKeys, senderVk);
 
     if (routingKeys && routingKeys.length > 0) {
@@ -28,7 +31,7 @@ class EnvelopeService {
           message: outboundPackedMessage,
         });
 
-        logger.logJson('Forward message created', forwardMessage);
+        this.logger.debug('Forward message created', forwardMessage);
         outboundPackedMessage = await this.wallet.pack(forwardMessage.toJSON(), [routingKey], senderVk);
       }
     }

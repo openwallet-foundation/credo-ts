@@ -9,6 +9,7 @@ import {
 import { InitConfig } from '../types';
 import indy from 'indy-sdk';
 import { ConnectionRecord } from '../modules/connections';
+import testLogger from './logger';
 
 expect.extend({ toBeConnectedWith });
 
@@ -17,6 +18,8 @@ const aliceConfig: InitConfig = {
   walletConfig: { id: 'alice' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
   autoAcceptConnections: true,
+  logger: testLogger,
+  indy,
 };
 
 const bobConfig: InitConfig = {
@@ -24,6 +27,8 @@ const bobConfig: InitConfig = {
   walletConfig: { id: 'bob' },
   walletCredentials: { key: '00000000000000000000000000000Test02' },
   autoAcceptConnections: true,
+  logger: testLogger,
+  indy,
 };
 
 describe('agents', () => {
@@ -46,10 +51,10 @@ describe('agents', () => {
     const bobAgentInbound = new SubjectInboundTransporter(bobMessages);
     const bobAgentOutbound = new SubjectOutboundTransporter(aliceMessages);
 
-    aliceAgent = new Agent(aliceConfig, aliceAgentInbound, aliceAgentOutbound, indy);
+    aliceAgent = new Agent(aliceConfig, aliceAgentInbound, aliceAgentOutbound);
     await aliceAgent.init();
 
-    bobAgent = new Agent(bobConfig, bobAgentInbound, bobAgentOutbound, indy);
+    bobAgent = new Agent(bobConfig, bobAgentInbound, bobAgentOutbound);
     await bobAgent.init();
 
     const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection();

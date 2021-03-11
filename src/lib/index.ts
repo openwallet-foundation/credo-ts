@@ -12,3 +12,4 @@ export * from './modules/credentials';
 export * from './modules/proofs';
 export * from './modules/connections';
 export * from './utils/JsonTransformer';
+export * from './logger';

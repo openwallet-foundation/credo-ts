@@ -1,4 +1,3 @@
-import logger from '../../logger';
 import { AgentConfig } from '../../agent/AgentConfig';
 import { ProviderRoutingService, MessagePickupService, ProvisioningService } from './services';
 import { MessageSender } from '../../agent/MessageSender';
@@ -13,7 +12,7 @@ import { BatchMessage } from './messages';
 import type { Verkey } from 'indy-sdk';
 import { Dispatcher } from '../../agent/Dispatcher';
 import { MessagePickupHandler, ForwardHandler, KeylistUpdateHandler } from './handlers';
-
+import { ILogger } from '../../logger';
 export class RoutingModule {
   private agentConfig: AgentConfig;
   private providerRoutingService: ProviderRoutingService;
@@ -21,6 +20,7 @@ export class RoutingModule {
   private messagePickupService: MessagePickupService;
   private connectionService: ConnectionService;
   private messageSender: MessageSender;
+  private logger: ILogger;
 
   public constructor(
     dispatcher: Dispatcher,
@@ -37,6 +37,7 @@ export class RoutingModule {
     this.messagePickupService = messagePickupService;
     this.connectionService = connectionService;
     this.messageSender = messageSender;
+    this.logger = agentConfig.logger;
     this.registerHandlers(dispatcher);
   }
 
@@ -44,7 +45,7 @@ export class RoutingModule {
     let provisioningRecord = await this.provisioningService.find();
 
     if (!provisioningRecord) {
-      logger.log('There is no provisioning. Creating connection with mediator...');
+      this.logger.info('No provision record found. Creating connection with mediator.');
       const { verkey, invitationUrl, alias = 'Mediator' } = mediatorConfiguration;
       const mediatorInvitation = await ConnectionInvitationMessage.fromUrl(invitationUrl);
 
@@ -66,17 +67,17 @@ export class RoutingModule {
         mediatorPublicVerkey: verkey,
       };
       provisioningRecord = await this.provisioningService.create(provisioningProps);
-      logger.log('Provisioning record has been saved.');
+      this.logger.debug('Provisioning record has been saved.');
     }
 
-    logger.log('Provisioning record:', provisioningRecord);
+    this.logger.debug('Provisioning record:', provisioningRecord);
 
     const agentConnectionAtMediator = await this.connectionService.find(provisioningRecord.mediatorConnectionId);
 
     if (!agentConnectionAtMediator) {
       throw new Error('Connection not found!');
     }
-    logger.log('agentConnectionAtMediator', agentConnectionAtMediator);
+    this.logger.debug('agentConnectionAtMediator', agentConnectionAtMediator);
 
     agentConnectionAtMediator.assertState(ConnectionState.Complete);
 

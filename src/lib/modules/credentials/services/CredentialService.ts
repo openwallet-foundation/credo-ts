@@ -6,7 +6,6 @@ import { AgentMessage } from '../../../agent/AgentMessage';
 import { LedgerService } from '../../ledger/services/LedgerService';
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment';
-import logger from '../../../logger';
 import { ConnectionService, ConnectionRecord, AckStatus } from '../../connections';
 import { CredentialRecord } from '../repository/CredentialRecord';
 import { Repository } from '../../../storage/Repository';
@@ -29,6 +28,8 @@ import {
   ProposeCredentialMessage,
   ProposeCredentialMessageOptions,
 } from '../messages';
+import { ILogger } from '../../../logger';
+import { AgentConfig } from '../../../agent/AgentConfig';
 
 export enum CredentialEventType {
   StateChanged = 'stateChanged',
@@ -49,18 +50,21 @@ export class CredentialService extends EventEmitter {
   private credentialRepository: Repository<CredentialRecord>;
   private connectionService: ConnectionService;
   private ledgerService: LedgerService;
+  private logger: ILogger;
 
   public constructor(
     wallet: Wallet,
     credentialRepository: Repository<CredentialRecord>,
     connectionService: ConnectionService,
-    ledgerService: LedgerService
+    ledgerService: LedgerService,
+    agentConfig: AgentConfig
   ) {
     super();
     this.wallet = wallet;
     this.credentialRepository = credentialRepository;
     this.connectionService = connectionService;
     this.ledgerService = ledgerService;
+    this.logger = agentConfig.logger;
   }
 
   /**
@@ -409,7 +413,7 @@ export class CredentialService extends EventEmitter {
     credentialRecord.assertState(CredentialState.OfferSent);
     credentialRecord.assertConnection(connection.id);
 
-    logger.log('Credential record found when processing credential request', credentialRecord);
+    this.logger.debug('Credential record found when processing credential request', credentialRecord);
 
     credentialRecord.requestMessage = credentialRequestMessage;
     await this.updateState(credentialRecord, CredentialState.RequestReceived);

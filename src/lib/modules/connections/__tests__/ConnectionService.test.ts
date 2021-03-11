@@ -20,6 +20,7 @@ import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator';
 import { JsonTransformer } from '../../../utils/JsonTransformer';
+import testLogger from '../../../__tests__/logger';
 
 jest.mock('./../../../storage/Repository');
 const ConnectionRepository = <jest.Mock<Repository<ConnectionRecord>>>(<unknown>Repository);
@@ -77,6 +78,8 @@ describe('ConnectionService', () => {
     port: 8080,
     walletConfig,
     walletCredentials,
+    indy,
+    logger: testLogger,
   };
 
   let wallet: Wallet;
@@ -85,9 +88,9 @@ describe('ConnectionService', () => {
   let connectionService: ConnectionService;
 
   beforeAll(async () => {
-    wallet = new IndyWallet(walletConfig, walletCredentials, indy);
-    await wallet.init();
     agentConfig = new AgentConfig(initConfig);
+    wallet = new IndyWallet(agentConfig);
+    await wallet.init();
   });
 
   afterAll(async () => {

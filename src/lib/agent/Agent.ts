@@ -1,5 +1,4 @@
-import type Indy from 'indy-sdk';
-import logger from '../logger';
+import { ILogger } from '../logger';
 import { InitConfig } from '../types';
 import { IndyWallet } from '../wallet/IndyWallet';
 import { MessageReceiver } from './MessageReceiver';
@@ -33,6 +32,7 @@ import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModu
 import { LedgerModule } from '../modules/ledger/LedgerModule';
 
 export class Agent {
+  protected logger: ILogger;
   protected wallet: Wallet;
   protected agentConfig: AgentConfig;
   protected messageReceiver: MessageReceiver;
@@ -53,7 +53,6 @@ export class Agent {
   protected provisioningRepository: Repository<ProvisioningRecord>;
   protected credentialRepository: Repository<CredentialRecord>;
   protected proofRepository: Repository<ProofRecord>;
-  protected indy: typeof Indy;
 
   public inboundTransporter: InboundTransporter;
 
@@ -68,16 +67,21 @@ export class Agent {
     initialConfig: InitConfig,
     inboundTransporter: InboundTransporter,
     outboundTransporter: OutboundTransporter,
-    indy: typeof Indy,
     messageRepository?: MessageRepository
   ) {
-    logger.logJson('Creating agent with config', initialConfig);
-    this.wallet = new IndyWallet(initialConfig.walletConfig, initialConfig.walletCredentials, indy);
-    const envelopeService = new EnvelopeService(this.wallet);
-
-    this.indy = indy;
-
     this.agentConfig = new AgentConfig(initialConfig);
+    this.logger = this.agentConfig.logger;
+
+    this.logger.info('Creating agent with config', {
+      ...initialConfig,
+      // Prevent large object being logged.
+      // Will display true/false to indicate if value is present in config
+      indy: initialConfig.indy != undefined,
+      logger: initialConfig.logger != undefined,
+    });
+    this.wallet = new IndyWallet(this.agentConfig);
+    const envelopeService = new EnvelopeService(this.wallet, this.agentConfig);
+
     this.messageSender = new MessageSender(envelopeService, outboundTransporter);
     this.dispatcher = new Dispatcher(this.messageSender);
     this.inboundTransporter = inboundTransporter;
@@ -88,21 +92,22 @@ export class Agent {
     this.provisioningRepository = new Repository<ProvisioningRecord>(ProvisioningRecord, storageService);
     this.credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService);
     this.proofRepository = new Repository<ProofRecord>(ProofRecord, storageService);
-    this.provisioningService = new ProvisioningService(this.provisioningRepository);
+    this.provisioningService = new ProvisioningService(this.provisioningRepository, this.agentConfig);
     this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository);
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository);
     this.providerRoutingService = new ProviderRoutingService();
     this.consumerRoutingService = new ConsumerRoutingService(this.messageSender, this.agentConfig);
     this.trustPingService = new TrustPingService();
     this.messagePickupService = new MessagePickupService(messageRepository);
-    this.ledgerService = new LedgerService(this.wallet, indy);
+    this.ledgerService = new LedgerService(this.wallet, this.agentConfig);
     this.credentialService = new CredentialService(
       this.wallet,
       this.credentialRepository,
       this.connectionService,
-      this.ledgerService
+      this.ledgerService,
+      this.agentConfig
     );
-    this.proofService = new ProofService(this.proofRepository, this.ledgerService, this.wallet, indy);
+    this.proofService = new ProofService(this.proofRepository, this.ledgerService, this.wallet, this.agentConfig);
 
     this.messageReceiver = new MessageReceiver(
       this.agentConfig,

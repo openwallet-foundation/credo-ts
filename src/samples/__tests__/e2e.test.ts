@@ -6,7 +6,7 @@ import { OutboundPackage, InitConfig } from '../../lib/types';
 import { get, post } from '../http';
 import { toBeConnectedWith, waitForBasicMessage } from '../../lib/__tests__/helpers';
 import indy from 'indy-sdk';
-import logger from '../../lib/logger';
+import testLogger from '../../lib/__tests__/logger';
 
 expect.extend({ toBeConnectedWith });
 
@@ -16,6 +16,8 @@ const aliceConfig: InitConfig = {
   walletConfig: { id: 'e2e-alice' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
   autoAcceptConnections: true,
+  logger: testLogger,
+  indy,
 };
 
 const bobConfig: InitConfig = {
@@ -24,6 +26,8 @@ const bobConfig: InitConfig = {
   walletConfig: { id: 'e2e-bob' },
   walletCredentials: { key: '00000000000000000000000000000Test02' },
   autoAcceptConnections: true,
+  logger: testLogger,
+  indy,
 };
 
 describe('with mediator', () => {
@@ -48,21 +52,21 @@ describe('with mediator', () => {
     const bobAgentSender = new HttpOutboundTransporter();
     const bobAgentReceiver = new PollingInboundTransporter();
 
-    aliceAgent = new Agent(aliceConfig, aliceAgentReceiver, aliceAgentSender, indy);
+    aliceAgent = new Agent(aliceConfig, aliceAgentReceiver, aliceAgentSender);
     await aliceAgent.init();
 
-    bobAgent = new Agent(bobConfig, bobAgentReceiver, bobAgentSender, indy);
+    bobAgent = new Agent(bobConfig, bobAgentReceiver, bobAgentSender);
     await bobAgent.init();
 
     const aliceInbound = aliceAgent.routing.getInboundConnection();
     const aliceInboundConnection = aliceInbound?.connection;
     const aliceKeyAtAliceMediator = aliceInboundConnection?.verkey;
-    logger.logJson('aliceInboundConnection', aliceInboundConnection);
+    testLogger.test('aliceInboundConnection', aliceInboundConnection);
 
     const bobInbound = bobAgent.routing.getInboundConnection();
     const bobInboundConnection = bobInbound?.connection;
     const bobKeyAtBobMediator = bobInboundConnection?.verkey;
-    logger.logJson('bobInboundConnection', bobInboundConnection);
+    testLogger.test('bobInboundConnection', bobInboundConnection);
 
     // TODO This endpoint currently exists at mediator only for the testing purpose. It returns mediator's part of the pairwise connection.
     const mediatorConnectionAtAliceMediator = JSON.parse(
@@ -72,8 +76,8 @@ describe('with mediator', () => {
       await get(`${bobAgent.getMediatorUrl()}/api/connections/${bobKeyAtBobMediator}`)
     );
 
-    logger.logJson('mediatorConnectionAtAliceMediator', mediatorConnectionAtAliceMediator);
-    logger.logJson('mediatorConnectionAtBobMediator', mediatorConnectionAtBobMediator);
+    testLogger.test('mediatorConnectionAtAliceMediator', mediatorConnectionAtAliceMediator);
+    testLogger.test('mediatorConnectionAtBobMediator', mediatorConnectionAtBobMediator);
 
     expect(aliceInboundConnection).toBeConnectedWith(mediatorConnectionAtAliceMediator);
     expect(bobInboundConnection).toBeConnectedWith(mediatorConnectionAtBobMediator);
@@ -103,7 +107,7 @@ describe('with mediator', () => {
       throw new Error(`There is no connection for id ${aliceAtAliceBobId}`);
     }
 
-    logger.logJson('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob);
+    testLogger.test('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob);
 
     const message = 'hello, world';
     await aliceAgent.basicMessages.sendMessage(aliceConnectionAtAliceBob, message);
@@ -139,7 +143,7 @@ class PollingInboundTransporter implements InboundTransporter {
       async () => {
         const downloadedMessages = await agent.routing.downloadMessages();
         const messages = [...downloadedMessages];
-        logger.logJson('downloaded messages', messages);
+        testLogger.test('downloaded messages', messages);
         while (messages && messages.length > 0) {
           const message = messages.shift();
           await agent.receiveMessage(message);
@@ -159,12 +163,12 @@ class HttpOutboundTransporter implements OutboundTransporter {
       throw new Error(`Missing endpoint. I don't know how and where to send the message.`);
     }
 
-    logger.logJson(`Sending outbound message to connection ${outboundPackage.connection.id}`, outboundPackage.payload);
+    testLogger.test(`Sending outbound message to connection ${outboundPackage.connection.id}`, outboundPackage.payload);
 
     if (receiveReply) {
       const response = await post(`${endpoint}`, JSON.stringify(payload));
       const wireMessage = JSON.parse(response);
-      logger.logJson('received response', wireMessage);
+      testLogger.test('received response', wireMessage);
       return wireMessage;
     } else {
       await post(`${endpoint}`, JSON.stringify(payload));
