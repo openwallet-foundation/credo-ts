@@ -1,4 +1,6 @@
-import { ILogLevel, ILogObject, Logger } from 'tslog';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+import { ILogObject, Logger } from 'tslog';
 import { LogLevel } from '../logger';
 import { BaseLogger } from '../logger/BaseLogger';
 import { appendFileSync, openSync, closeSync } from 'fs';
@@ -10,7 +12,8 @@ function logToTransport(logObject: ILogObject) {
 export class TestLogger extends BaseLogger {
   private logger: Logger;
 
-  private tsLogLevelMap: any = {
+  // Map our log levels to tslog levels
+  private tsLogLevelMap = {
     [LogLevel.test]: 'silly',
     [LogLevel.trace]: 'trace',
     [LogLevel.debug]: 'debug',
@@ -18,7 +21,7 @@ export class TestLogger extends BaseLogger {
     [LogLevel.warn]: 'warn',
     [LogLevel.error]: 'error',
     [LogLevel.fatal]: 'fatal',
-  };
+  } as const;
 
   public constructor(logLevel: LogLevel) {
     super(logLevel);
@@ -26,7 +29,7 @@ export class TestLogger extends BaseLogger {
     // clear current log file
     closeSync(openSync('logs.txt', 'w'));
     this.logger = new Logger({
-      minLevel: this.tsLogLevelMap[this.logLevel],
+      minLevel: this.logLevel == LogLevel.off ? undefined : this.tsLogLevelMap[this.logLevel],
       attachedTransports: [
         {
           transportLogger: {
@@ -45,40 +48,42 @@ export class TestLogger extends BaseLogger {
     });
   }
 
-  private log(level: ILogLevel[keyof ILogLevel], message: string, data?: Record<string, any>): void {
+  private log(level: Exclude<LogLevel, LogLevel.off>, message: string, data?: Record<string, any>): void {
+    const tsLogLevel = this.tsLogLevelMap[level];
+
     if (data) {
-      this.logger[level](message, data);
+      this.logger[tsLogLevel](message, data);
     } else {
-      this.logger[level](message);
+      this.logger[tsLogLevel](message);
     }
   }
 
   public test(message: string, data?: Record<string, any>): void {
-    this.log('silly', message, data);
+    this.log(LogLevel.test, message, data);
   }
 
   public trace(message: string, data?: Record<string, any>): void {
-    this.log('trace', message, data);
+    this.log(LogLevel.trace, message, data);
   }
 
   public debug(message: string, data?: Record<string, any>): void {
-    this.log('debug', message, data);
+    this.log(LogLevel.debug, message, data);
   }
 
   public info(message: string, data?: Record<string, any>): void {
-    this.log('info', message, data);
+    this.log(LogLevel.info, message, data);
   }
 
   public warn(message: string, data?: Record<string, any>): void {
-    this.log('warn', message, data);
+    this.log(LogLevel.warn, message, data);
   }
 
   public error(message: string, data?: Record<string, any>): void {
-    this.log('error', message, data);
+    this.log(LogLevel.error, message, data);
   }
 
   public fatal(message: string, data?: Record<string, any>): void {
-    this.log('fatal', message, data);
+    this.log(LogLevel.fatal, message, data);
   }
 }
 
