@@ -1,5 +1,16 @@
 import type Indy from 'indy-sdk';
-import type { CredDef, CredDefId, Did, LedgerRequest, PoolConfig, PoolHandle, Schema, SchemaId } from 'indy-sdk';
+import type {
+  CredDef,
+  CredDefId,
+  Did,
+  LedgerRequest,
+  PoolConfig,
+  PoolHandle,
+  Schema,
+  SchemaId,
+  LedgerReadReplyResponse,
+  LedgerWriteReplyResponse,
+} from 'indy-sdk';
 import { AgentConfig } from '../../../agent/AgentConfig';
 import { Logger } from '../../../logger';
 import { isIndyError } from '../../../utils/indyError';
@@ -67,16 +78,10 @@ export class LedgerService {
 
       const request = await this.indy.buildSchemaRequest(did, schema);
 
-      const requestWithTaa = await this.appendTaa(request);
-      const signedRequest = await this.wallet.signRequest(did, requestWithTaa);
-
-      const response = await this.indy.submitRequest(this.poolHandle, signedRequest);
+      const response = await this.submitWriteRequest(request, did);
       this.logger.debug(`Registered schema '${schemaId}' on ledger`, { response, schema });
 
-      const seqNo = response.result.txnMetadata?.seqNo;
-
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      schema.seqNo = seqNo!;
+      schema.seqNo = response.result.txnMetadata.seqNo;
 
       return [schemaId, schema];
     } catch (error) {
@@ -98,7 +103,7 @@ export class LedgerService {
       const request = await this.indy.buildGetSchemaRequest(null, schemaId);
 
       this.logger.debug(`Submitting get schema request for schema '${schemaId}' to ledger`);
-      const response = await this.indy.submitRequest(this.poolHandle, request);
+      const response = await this.submitReadRequest(request);
 
       const [, schema] = await this.indy.parseGetSchemaResponse(response);
       this.logger.debug(`Got schema '${schemaId}' from ledger`, { response, schema });
@@ -129,10 +134,8 @@ export class LedgerService {
 
       const request = await this.indy.buildCredDefRequest(did, credDef);
 
-      const requestWithTaa = await this.appendTaa(request);
-      const signedRequest = await this.wallet.signRequest(did, requestWithTaa);
+      const response = await this.submitWriteRequest(request, did);
 
-      const response = await this.indy.submitRequest(this.poolHandle, signedRequest);
       this.logger.debug(`Registered credential definition '${credDefId}' on ledger`, {
         response,
         credentialDefinition: credDef,
@@ -163,7 +166,7 @@ export class LedgerService {
       this.logger.debug(
         `Submitting get credential definition request for credential definition '${credentialDefinitionId}' to ledger`
       );
-      const response = await this.indy.submitRequest(this.poolHandle, request);
+      const response = await this.submitReadRequest(request);
 
       const [, credentialDefinition] = await this.indy.parseGetCredDefResponse(response);
       this.logger.debug(`Got credential definition '${credentialDefinitionId}' from ledger`, {
@@ -180,6 +183,29 @@ export class LedgerService {
       });
       throw error;
     }
+  }
+
+  private async submitWriteRequest(request: LedgerRequest, signDid: string): Promise<LedgerWriteReplyResponse> {
+    const requestWithTaa = await this.appendTaa(request);
+    const signedRequestWithTaa = await this.wallet.signRequest(signDid, requestWithTaa);
+
+    const response = await this.indy.submitRequest(this.poolHandle, signedRequestWithTaa);
+
+    if (response.op === 'REJECT') {
+      throw Error(`Ledger rejected transaction request: ${response.reason}`);
+    }
+
+    return response as LedgerWriteReplyResponse;
+  }
+
+  private async submitReadRequest(request: LedgerRequest): Promise<LedgerReadReplyResponse> {
+    const response = await this.indy.submitRequest(this.poolHandle, request);
+
+    if (response.op === 'REJECT') {
+      throw Error(`Ledger rejected transaction request: ${response.reason}`);
+    }
+
+    return response as LedgerReadReplyResponse;
   }
 
   private async appendTaa(request: LedgerRequest) {
@@ -211,9 +237,9 @@ export class LedgerService {
     }
 
     const taaRequest = await this.indy.buildGetTxnAuthorAgreementRequest(null);
-    const taaResponse = await this.indy.submitRequest(this.poolHandle, taaRequest);
+    const taaResponse = await this.submitReadRequest(taaRequest);
     const acceptanceMechanismRequest = await this.indy.buildGetAcceptanceMechanismsRequest(null);
-    const acceptanceMechanismResponse = await this.indy.submitRequest(this.poolHandle, acceptanceMechanismRequest);
+    const acceptanceMechanismResponse = await this.submitReadRequest(acceptanceMechanismRequest);
 
     // TAA can be null
     if (taaResponse.result.data == null) {

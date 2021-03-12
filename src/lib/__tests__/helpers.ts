@@ -21,6 +21,8 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
   : path.join(__dirname, '../../../network/genesis/local-genesis.txn');
 
+export const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+
 // Custom matchers which can be used to extend Jest matchers via extend, e. g. `expect.extend({ toBeConnectedWith })`.
 
 export function toBeConnectedWith(received: ConnectionRecord, connection: ConnectionRecord) {
@@ -153,8 +155,7 @@ export async function makeConnection(agentA: Agent, agentB: Agent) {
 }
 
 export async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<[SchemaId, Schema]> {
-  const [schemaId] = await agent.ledger.registerSchema(schemaTemplate);
-  const ledgerSchema = await agent.ledger.getSchema(schemaId);
+  const [schemaId, ledgerSchema] = await agent.ledger.registerSchema(schemaTemplate);
   testLogger.test(`created schema with id ${schemaId}`, ledgerSchema);
   return [schemaId, ledgerSchema];
 }
@@ -163,8 +164,7 @@ export async function registerDefinition(
   agent: Agent,
   definitionTemplate: CredDefTemplate
 ): Promise<[CredDefId, CredDef]> {
-  const [credDefId] = await agent.ledger.registerCredentialDefinition(definitionTemplate);
-  const ledgerCredDef = await agent.ledger.getCredentialDefinition(credDefId);
+  const [credDefId, ledgerCredDef] = await agent.ledger.registerCredentialDefinition(definitionTemplate);
   testLogger.test(`created credential definition with id ${credDefId}`, ledgerCredDef);
   return [credDefId, ledgerCredDef];
 }

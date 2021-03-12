@@ -1,10 +1,7 @@
-// eslint-disable-next-line
-// @ts-ignore
-import { poll } from 'await-poll';
 import { Agent, InboundTransporter, OutboundTransporter } from '../../lib';
 import { OutboundPackage, InitConfig } from '../../lib/types';
 import { get, post } from '../http';
-import { toBeConnectedWith, waitForBasicMessage } from '../../lib/__tests__/helpers';
+import { sleep, toBeConnectedWith, waitForBasicMessage } from '../../lib/__tests__/helpers';
 import indy from 'indy-sdk';
 import testLogger from '../../lib/__tests__/logger';
 
@@ -139,8 +136,8 @@ class PollingInboundTransporter implements InboundTransporter {
   }
 
   private pollDownloadMessages(agent: Agent) {
-    poll(
-      async () => {
+    new Promise(async () => {
+      while (!this.stop) {
         const downloadedMessages = await agent.routing.downloadMessages();
         const messages = [...downloadedMessages];
         testLogger.test('downloaded messages', messages);
@@ -148,10 +145,10 @@ class PollingInboundTransporter implements InboundTransporter {
           const message = messages.shift();
           await agent.receiveMessage(message);
         }
-      },
-      () => !this.stop,
-      1000
-    );
+
+        await sleep(1000);
+      }
+    });
   }
 }
 
