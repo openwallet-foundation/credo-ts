@@ -186,10 +186,10 @@ export class LedgerService {
   }
 
   private async submitWriteRequest(request: LedgerRequest, signDid: string): Promise<LedgerWriteReplyResponse> {
-    request = await this.appendTaa(request);
-    request = await this.wallet.signRequest(signDid, request);
+    const requestWithTaa = await this.appendTaa(request);
+    const signedRequestWithTaa = await this.wallet.signRequest(signDid, requestWithTaa);
 
-    const response = await this.indy.submitRequest(this.poolHandle, request);
+    const response = await this.indy.submitRequest(this.poolHandle, signedRequestWithTaa);
 
     if (response.op === 'REJECT') {
       throw Error(`Ledger rejected transaction request: ${response.reason}`);
