@@ -1,4 +1,4 @@
-import { Handler, HandlerInboundMessage } from '../../../handlers/Handler';
+import { Handler, HandlerInboundMessage } from '../../../agent/Handler';
 import { ProviderRoutingService } from '../services';
 import { KeylistUpdateMessage } from '../messages';
 

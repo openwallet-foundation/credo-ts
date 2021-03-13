@@ -1,4 +1,4 @@
-import { Handler, HandlerInboundMessage } from '../../../handlers/Handler';
+import { Handler, HandlerInboundMessage } from '../../../agent/Handler';
 import { TrustPingService } from '../services/TrustPingService';
 import { ConnectionService } from '../services/ConnectionService';
 import { ConnectionState } from '../models';
