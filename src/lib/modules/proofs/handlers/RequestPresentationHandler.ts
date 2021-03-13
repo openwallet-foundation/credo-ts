@@ -1,4 +1,4 @@
-import { Handler, HandlerInboundMessage } from '../../../handlers/Handler';
+import { Handler, HandlerInboundMessage } from '../../../agent/Handler';
 import { RequestPresentationMessage } from '../messages';
 import { ProofService } from '../services';
 

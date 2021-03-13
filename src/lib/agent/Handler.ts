@@ -1,6 +1,6 @@
 import { OutboundMessage } from '../types';
-import { AgentMessage } from '../agent/AgentMessage';
-import { InboundMessageContext } from '../agent/models/InboundMessageContext';
+import { AgentMessage } from './AgentMessage';
+import { InboundMessageContext } from './models/InboundMessageContext';
 
 export interface Handler<T extends typeof AgentMessage = typeof AgentMessage> {
   readonly supportedMessages: readonly T[];

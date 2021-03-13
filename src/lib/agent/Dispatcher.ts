@@ -1,5 +1,5 @@
 import { OutboundMessage, OutboundPackage } from '../types';
-import { Handler } from '../handlers/Handler';
+import { Handler } from './Handler';
 import { MessageSender } from './MessageSender';
 import { AgentMessage } from './AgentMessage';
 import { InboundMessageContext } from './models/InboundMessageContext';

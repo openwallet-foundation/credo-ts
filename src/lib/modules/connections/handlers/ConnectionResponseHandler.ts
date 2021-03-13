@@ -1,4 +1,4 @@
-import { Handler, HandlerInboundMessage } from '../../../handlers/Handler';
+import { Handler, HandlerInboundMessage } from '../../../agent/Handler';
 import { AgentConfig } from '../../../agent/AgentConfig';
 import { createOutboundMessage } from '../../../agent/helpers';
 import { ConnectionService } from '../services/ConnectionService';

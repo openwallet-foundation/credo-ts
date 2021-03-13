@@ -1,4 +1,4 @@
-import { Handler, HandlerInboundMessage } from '../../../handlers/Handler';
+import { Handler, HandlerInboundMessage } from '../../../agent/Handler';
 import { MessagePickupService } from '../services';
 import { BatchPickupMessage } from '../messages';
 
