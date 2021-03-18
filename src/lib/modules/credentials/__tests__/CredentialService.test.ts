@@ -19,13 +19,13 @@ import {
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_ATTACHMENT_ID,
 } from '../messages';
+import { AckStatus } from '../../common';
 import { JsonEncoder } from '../../../utils/JsonEncoder';
 import { credDef, credOffer, credReq } from './fixtures';
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment';
 import { LedgerService as LedgerServiceImpl } from '../../ledger/services';
 import { ConnectionState } from '../../connections';
 import { getMockConnection } from '../../connections/__tests__/ConnectionService.test';
-import { AckStatus } from '../../connections';
 import { AgentConfig } from '../../../agent/AgentConfig';
 
 jest.mock('./../../../storage/Repository');

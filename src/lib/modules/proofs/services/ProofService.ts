@@ -7,7 +7,7 @@ import { AgentMessage } from '../../../agent/AgentMessage';
 import { LedgerService } from '../../ledger/services/LedgerService';
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment';
-import { ConnectionRecord, AckStatus } from '../../connections';
+import { ConnectionRecord } from '../../connections';
 import { ProofRecord } from '../repository/ProofRecord';
 import { Repository } from '../../../storage/Repository';
 import { JsonEncoder } from '../../../utils/JsonEncoder';
@@ -26,6 +26,7 @@ import {
   INDY_PROOF_REQUEST_ATTACHMENT_ID,
   INDY_PROOF_ATTACHMENT_ID,
 } from '../messages';
+import { AckStatus } from '../../common';
 import {
   PartialProof,
   ProofAttributeInfo,
