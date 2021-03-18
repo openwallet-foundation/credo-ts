@@ -10,9 +10,9 @@ import {
   ConnectionInvitationMessage,
   ConnectionRequestMessage,
   ConnectionResponseMessage,
-  AckMessage,
   TrustPingMessage,
 } from '../messages';
+import { AckMessage } from '../../common';
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils';
 import {
   Connection,

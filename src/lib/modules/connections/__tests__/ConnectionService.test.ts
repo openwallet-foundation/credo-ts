@@ -12,9 +12,8 @@ import {
   ConnectionRequestMessage,
   ConnectionResponseMessage,
   TrustPingMessage,
-  AckMessage,
-  AckStatus,
 } from '../messages';
+import { AckMessage, AckStatus } from '../../common';
 import { Repository } from '../../../storage/Repository';
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils';
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
