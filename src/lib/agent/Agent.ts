@@ -10,8 +10,8 @@ import {
   ConsumerRoutingService,
   ProviderRoutingService,
   MessagePickupService,
-  ProvisioningService,
-  ProvisioningRecord,
+  MediationRecipientService,
+  MediationRecipientRecord,
 } from '../modules/routing';
 import { BasicMessageService, BasicMessageRecord } from '../modules/basic-messages';
 import { LedgerService } from '../modules/ledger';
@@ -45,12 +45,12 @@ export class Agent {
   protected consumerRoutingService: ConsumerRoutingService;
   protected trustPingService: TrustPingService;
   protected messagePickupService: MessagePickupService;
-  protected provisioningService: ProvisioningService;
+  protected mediationRecipientService: MediationRecipientService;
   protected ledgerService: LedgerService;
   protected credentialService: CredentialService;
   protected basicMessageRepository: Repository<BasicMessageRecord>;
   protected connectionRepository: Repository<ConnectionRecord>;
-  protected provisioningRepository: Repository<ProvisioningRecord>;
+  protected mediationRecipientRepository: Repository<MediationRecipientRecord>;
   protected credentialRepository: Repository<CredentialRecord>;
   protected proofRepository: Repository<ProofRecord>;
 
@@ -89,10 +89,10 @@ export class Agent {
     const storageService = new IndyStorageService(this.wallet);
     this.basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService);
     this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService);
-    this.provisioningRepository = new Repository<ProvisioningRecord>(ProvisioningRecord, storageService);
+    this.mediationRecipientRepository = new Repository<ProvisioningRecord>(ProvisioningRecord, storageService);
     this.credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService);
     this.proofRepository = new Repository<ProofRecord>(ProofRecord, storageService);
-    this.provisioningService = new ProvisioningService(this.provisioningRepository, this.agentConfig);
+    this.mediationRecipientService = new MediationRecipientService(this.agentConfig, this.mediationRecipientRepository);
     this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository);
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository);
     this.providerRoutingService = new ProviderRoutingService();
