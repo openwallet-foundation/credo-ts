@@ -11,7 +11,7 @@ describe('JsonTransformer', () => {
       });
 
       const json = {
-        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation',
+        '@type': 'https://didcomm.org/connections/1.0/invitation',
         '@id': 'afe2867e-58c3-4a8d-85b2-23370dd9c9f0',
         label: 'test-label',
         did: 'did:sov:test1234',
@@ -24,7 +24,7 @@ describe('JsonTransformer', () => {
   describe('fromJSON', () => {
     it('transforms JSON object to class instance', () => {
       const json = {
-        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation',
+        '@type': 'https://didcomm.org/connections/1.0/invitation',
         '@id': 'afe2867e-58c3-4a8d-85b2-23370dd9c9f0',
         label: 'test-label',
         did: 'did:sov:test1234',
@@ -49,7 +49,7 @@ describe('JsonTransformer', () => {
       });
 
       const jsonString =
-        '{"@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation","@id":"afe2867e-58c3-4a8d-85b2-23370dd9c9f0","label":"test-label","did":"did:sov:test1234"}';
+        '{"@type":"https://didcomm.org/connections/1.0/invitation","@id":"afe2867e-58c3-4a8d-85b2-23370dd9c9f0","label":"test-label","did":"did:sov:test1234"}';
 
       expect(JsonTransformer.serialize(invitation)).toEqual(jsonString);
     });
@@ -58,7 +58,7 @@ describe('JsonTransformer', () => {
   describe('deserialize', () => {
     it('transforms JSON string to class instance', () => {
       const jsonString =
-        '{"@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation","@id":"afe2867e-58c3-4a8d-85b2-23370dd9c9f0","label":"test-label","did":"did:sov:test1234"}';
+        '{"@type":"https://didcomm.org/connections/1.0/invitation","@id":"afe2867e-58c3-4a8d-85b2-23370dd9c9f0","label":"test-label","did":"did:sov:test1234"}';
 
       const invitation = new ConnectionInvitationMessage({
         did: 'did:sov:test1234',

@@ -145,10 +145,10 @@ describe('credentials', () => {
       id: expect.any(String),
       offerMessage: {
         '@id': expect.any(String),
-        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential',
+        '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
         comment: 'some comment about credential',
         credential_preview: {
-          '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/credential-preview',
+          '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
           attributes: [
             {
               name: 'name',
@@ -248,10 +248,10 @@ describe('credentials', () => {
       id: expect.any(String),
       offerMessage: {
         '@id': expect.any(String),
-        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential',
+        '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
         comment: 'some comment about credential',
         credential_preview: {
-          '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/credential-preview',
+          '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
           attributes: [
             {
               name: 'name',

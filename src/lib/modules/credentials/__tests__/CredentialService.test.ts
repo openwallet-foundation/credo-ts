@@ -214,10 +214,10 @@ describe('CredentialService', () => {
 
       expect(credentialOffer.toJSON()).toMatchObject({
         '@id': expect.any(String),
-        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential',
+        '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
         comment: 'some comment',
         credential_preview: {
-          '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/credential-preview',
+          '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
           attributes: [
             {
               name: 'name',
@@ -353,7 +353,7 @@ describe('CredentialService', () => {
       // then
       expect(credentialRequest.toJSON()).toMatchObject({
         '@id': expect.any(String),
-        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/request-credential',
+        '@type': 'https://didcomm.org/issue-credential/1.0/request-credential',
         '~thread': {
           thid: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
         },
@@ -511,7 +511,7 @@ describe('CredentialService', () => {
       // then
       expect(credentialResponse.toJSON()).toMatchObject({
         '@id': expect.any(String),
-        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/issue-credential',
+        '@type': 'https://didcomm.org/issue-credential/1.0/issue-credential',
         '~thread': {
           thid: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
         },
@@ -735,7 +735,7 @@ describe('CredentialService', () => {
       // then
       expect(ackMessage.toJSON()).toMatchObject({
         '@id': expect.any(String),
-        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/ack',
+        '@type': 'https://didcomm.org/issue-credential/1.0/ack',
         '~thread': {
           thid: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
         },

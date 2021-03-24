@@ -1,3 +1,3 @@
 export enum MessageType {
-  BasicMessage = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/basicmessage/1.0/message',
+  BasicMessage = 'https://didcomm.org/basicmessage/1.0/message',
 }
