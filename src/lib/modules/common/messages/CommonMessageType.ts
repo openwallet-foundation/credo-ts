@@ -1,3 +1,3 @@
 export enum CommonMessageType {
-  Ack = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/notification/1.0/ack',
+  Ack = 'https://didcomm.org/notification/1.0/ack',
 }

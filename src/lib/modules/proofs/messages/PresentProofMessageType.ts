@@ -1,7 +1,7 @@
 export enum PresentProofMessageType {
-  ProposePresentation = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/propose-presentation',
-  RequestPresentation = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/request-presentation',
-  Presentation = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation',
-  PresentationPreview = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation-preview',
-  PresentationAck = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/ack',
+  ProposePresentation = 'https://didcomm.org/present-proof/1.0/propose-presentation',
+  RequestPresentation = 'https://didcomm.org/present-proof/1.0/request-presentation',
+  Presentation = 'https://didcomm.org/present-proof/1.0/presentation',
+  PresentationPreview = 'https://didcomm.org/present-proof/1.0/presentation-preview',
+  PresentationAck = 'https://didcomm.org/present-proof/1.0/ack',
 }

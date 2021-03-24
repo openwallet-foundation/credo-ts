@@ -49,7 +49,7 @@ export async function signData(data: unknown, wallet: Wallet, signerKey: Verkey)
   const signatureBuffer = await wallet.sign(dataBuffer, signerKey);
 
   const signatureDecorator = new SignatureDecorator({
-    signatureType: 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/signature/1.0/ed25519Sha512_single',
+    signatureType: 'https://didcomm.org/signature/1.0/ed25519Sha512_single',
     signature: BufferEncoder.toBase64URL(signatureBuffer),
     signatureData: BufferEncoder.toBase64URL(dataBuffer),
     signer: signerKey,
