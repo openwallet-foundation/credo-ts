@@ -3,7 +3,7 @@
 // @see https://www.npmjs.com/package/jest-runner-groups
 module.exports = {
   preset: 'ts-jest',
-  roots: ['<rootDir>/src'],
+  roots: ['<rootDir>/src', '<rootDir>/samples'],
   testEnvironment: 'node',
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
   testPathIgnorePatterns: ['/node_modules/'],
