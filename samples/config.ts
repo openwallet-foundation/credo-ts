@@ -1,8 +1,8 @@
 import indy from 'indy-sdk';
 import * as dotenv from 'dotenv';
-import { InitConfig } from '../lib/types';
-import { TestLogger } from '../lib/__tests__/logger';
-import { LogLevel } from '../lib/logger';
+import { InitConfig } from '../src/types';
+import { TestLogger } from '../src/__tests__/logger';
+import { LogLevel } from '../src/logger';
 dotenv.config();
 
 const agentConfig: InitConfig = {

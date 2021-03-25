@@ -1,9 +1,9 @@
-import { Agent, InboundTransporter, OutboundTransporter } from '../../lib';
-import { OutboundPackage, InitConfig } from '../../lib/types';
+import { Agent, InboundTransporter, OutboundTransporter } from '../../src';
+import { OutboundPackage, InitConfig } from '../../src/types';
 import { get, post } from '../http';
-import { sleep, toBeConnectedWith, waitForBasicMessage } from '../../lib/__tests__/helpers';
+import { sleep, toBeConnectedWith, waitForBasicMessage } from '../../src/__tests__/helpers';
 import indy from 'indy-sdk';
-import testLogger from '../../lib/__tests__/logger';
+import testLogger from '../../src/__tests__/logger';
 
 expect.extend({ toBeConnectedWith });
 

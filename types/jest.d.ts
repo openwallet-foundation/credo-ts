@@ -1,5 +1,5 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { ConnectionRecord } from '../src/lib/modules/connections/repository/ConnectionRecord';
+import { ConnectionRecord } from '../src/modules/connections/repository/ConnectionRecord';
 
 declare global {
   namespace jest {
