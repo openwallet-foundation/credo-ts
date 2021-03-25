@@ -81,7 +81,7 @@ yarn add file:PATH_TO_REPOSITORY_FOLDER/aries-framework-javascript/aries-framewo
 
 ### Using the framework
 
-While the framework is still in early development the best way to know what API the framework exposes is by looking at the [tests](src/lib/__tests__), the [source code](src/lib) or the [samples](./src/samples). As the framework reaches a more mature state, documentation on the usage of the framework will be added.
+While the framework is still in early development the best way to know what API the framework exposes is by looking at the [tests](src/__tests__), the [source code](src) or the [samples](samples). As the framework reaches a more mature state, documentation on the usage of the framework will be added.
 
 ### Usage in React Native
 
@@ -116,7 +116,7 @@ For an example react native app that makes use of the framework see [Aries Mobil
 
 ### Logs
 
-To enable logging inside the framework a logger must be passed to the agent config. A simple `ConsoleLogger` can be imported from the framework, for more advanced use cases the `ILogger` interface can implemented. See [`TestLogger`](./src/lib/__tests__/logger.ts) for a more advanced example.
+To enable logging inside the framework a logger must be passed to the agent config. A simple `ConsoleLogger` can be imported from the framework, for more advanced use cases the `ILogger` interface can implemented. See [`TestLogger`](./src/__tests__/logger.ts) for a more advanced example.
 
 ```ts
 import { ILogger, ConsoleLogger, LogLevel } from 'aries-framework-javascript';

@@ -2,10 +2,10 @@
   "name": "aries-framework-javascript",
   "version": "1.0.0",
   "license": "Apache-2.0",
-  "main": "build/lib/index.js",
-  "types": "build/lib/index.d.ts",
+  "main": "build/src/index.js",
+  "types": "build/src/index.d.ts",
   "files": [
-    "build/lib"
+    "build/src"
   ],
   "scripts": {
     "compile": "tsc",

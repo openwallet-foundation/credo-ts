@@ -1,6 +1,6 @@
 import { Equals } from 'class-validator';
 
-import { AckMessage, AckMessageOptions } from '../../../modules/common';
+import { AckMessage, AckMessageOptions } from '../../common';
 import { PresentProofMessageType } from './PresentProofMessageType';
 
 export type PresentationAckMessageOptions = AckMessageOptions;

@@ -1,11 +1,11 @@
 import express, { Express } from 'express';
 import cors from 'cors';
 import config from './config';
-import testLogger from '../lib/__tests__/logger';
-import { Agent, InboundTransporter, OutboundTransporter } from '../lib';
-import { OutboundPackage } from '../lib/types';
-import { MessageRepository } from '../lib/storage/MessageRepository';
-import { InMemoryMessageRepository } from '../lib/storage/InMemoryMessageRepository';
+import testLogger from '../src/__tests__/logger';
+import { Agent, InboundTransporter, OutboundTransporter } from '../src';
+import { OutboundPackage } from '../src/types';
+import { MessageRepository } from '../src/storage/MessageRepository';
+import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository';
 
 class HttpInboundTransporter implements InboundTransporter {
   private app: Express;
