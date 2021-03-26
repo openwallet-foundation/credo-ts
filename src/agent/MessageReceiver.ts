@@ -8,7 +8,7 @@ import { ConnectionService } from '../modules/connections';
 import { AgentMessage } from './AgentMessage';
 import { JsonTransformer } from '../utils/JsonTransformer';
 import { Logger } from '../logger';
-import { replaceLegacyDidSovPrefix } from '../utils/messageType';
+import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType';
 
 class MessageReceiver {
   private config: AgentConfig;
@@ -133,7 +133,7 @@ class MessageReceiver {
    */
   private async transformMessage(unpackedMessage: UnpackedMessageContext): Promise<AgentMessage> {
     // replace did:sov:BzCbsNYhMrjHiqZDTUASHg;spec prefix for message type with https://didcomm.org
-    replaceLegacyDidSovPrefix(unpackedMessage.message);
+    replaceLegacyDidSovPrefixOnMessage(unpackedMessage.message);
 
     const messageType = unpackedMessage.message['@type'];
     const MessageClass = this.dispatcher.getMessageClassForType(messageType);
