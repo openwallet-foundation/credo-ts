@@ -1,7 +1,9 @@
+import { Transform } from 'class-transformer';
 import { Equals, IsString, ValidateIf, IsArray, IsOptional } from 'class-validator';
 
 import { AgentMessage } from '../../../agent/AgentMessage';
 import { decodeInvitationFromUrl, encodeInvitationToUrl } from '../../../helpers';
+import { replaceLegacyDidSovPrefix } from '../../../utils/messageType';
 import { ConnectionMessageType } from './ConnectionMessageType';
 
 // TODO: improve typing of `DIDInvitationData` and `InlineInvitationData` so properties can't be mixed
@@ -49,6 +51,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
   }
 
   @Equals(ConnectionInvitationMessage.type)
+  @Transform(({ value }) => replaceLegacyDidSovPrefix(value), { toClassOnly: true })
   public readonly type = ConnectionInvitationMessage.type;
   public static readonly type = ConnectionMessageType.ConnectionInvitation;
 
