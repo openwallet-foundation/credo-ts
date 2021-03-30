@@ -11,7 +11,7 @@ import {
 import { BatchMessage } from './messages';
 import type { Verkey } from 'indy-sdk';
 import { Dispatcher } from '../../agent/Dispatcher';
-import { TransportService, Transport } from '../../agent/TransportService';
+import { TransportService, Transport, WebSocketTransport } from '../../agent/TransportService';
 import { MessagePickupHandler, ForwardHandler, KeylistUpdateHandler } from './handlers';
 import { Logger } from '../../logger';
 
@@ -57,7 +57,7 @@ export class RoutingModule {
       const connection = await this.connectionService.processInvitation(mediatorInvitation, { alias });
 
       const { transport } = mediatorConfiguration;
-      if (transport && transport.socket) {
+      if (transport instanceof WebSocketTransport) {
         this.transportService.saveTransport(connection.id, transport);
       }
 

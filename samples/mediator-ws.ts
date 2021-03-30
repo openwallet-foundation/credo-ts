@@ -9,7 +9,7 @@ import { Agent, ConnectionRecord, InboundTransporter, OutboundTransporter } from
 import { OutboundPackage, WireMessage } from '../src/types';
 import { MessageRepository } from '../src/storage/MessageRepository';
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository';
-import { Transport } from '../src/agent/TransportService';
+import { WebSocketTransport } from '../src/agent/TransportService';
 
 const logger = new ConsoleLogger(LogLevel.trace);
 
@@ -29,10 +29,7 @@ class WsInboundTransporter implements InboundTransporter {
 
       socket.on('agentMessage', async (payload: any, callback: (args: any) => any) => {
         logger.debug('on agentMessage', payload);
-        const transport = {
-          type: 'ws',
-          socket,
-        } as const;
+        const transport = new WebSocketTransport(socket);
         const outboundMessage = await agent.receiveMessage(payload, transport);
         if (outboundMessage) {
           callback(outboundMessage.payload);
@@ -67,23 +64,20 @@ class WsOutboundTransporter implements OutboundTransporter {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage, receiveReply: boolean) {
+    logger.debug('WsOutboundTransporter sendMessage');
     const { connection, payload, transport } = outboundPackage;
-    logger.debug('WsOutboundTransporter sendMessage', {
-      connection,
-      payload,
-      transport: { type: transport?.type, socketId: transport?.socket?.id },
-    });
 
-    if (transport?.socket?.connected) {
+    // TODO Replace this logic with multiple transporters
+    if (transport instanceof WebSocketTransport && transport?.socket?.connected) {
       return this.sendViaWebSocket(transport, payload, receiveReply);
     } else {
       return this.storeMessageForPickup(connection, payload);
     }
   }
 
-  private async sendViaWebSocket(transport: Transport, payload: WireMessage, receiveReply: boolean) {
-    logger.debug('Sending message over ws...');
+  private async sendViaWebSocket(transport: WebSocketTransport, payload: WireMessage, receiveReply: boolean) {
     const { socket } = transport;
+    logger.debug('Sending message over ws...', { transport: { type: transport?.type, socketId: socket?.id } });
 
     if (!socket?.connected) {
       throw new Error('Socket is not available or connected.');
@@ -110,6 +104,8 @@ class WsOutboundTransporter implements OutboundTransporter {
   }
 
   private storeMessageForPickup(connection: ConnectionRecord, payload: WireMessage) {
+    logger.debug('Saving message for batch download...');
+
     if (!connection) {
       throw new Error(`Missing connection. I don't know where to send the message.`);
     }
@@ -118,7 +114,6 @@ class WsOutboundTransporter implements OutboundTransporter {
       throw new Error('Trying to save message without theirKey!');
     }
 
-    logger.debug('No socket connected. Saving message for batch download...');
     this.messageRepository.save(connection.theirKey, payload);
   }
 }

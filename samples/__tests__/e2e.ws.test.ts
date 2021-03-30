@@ -9,7 +9,7 @@ import indy from 'indy-sdk';
 // import logger from '../../src/__tests__/logger';
 import { ConsoleLogger, LogLevel } from '../../src/logger';
 import { Socket } from 'socket.io';
-import { Transport } from '../../src/agent/TransportService';
+import { HttpTransport, WebSocketTransport } from '../../src/agent/TransportService';
 
 const logger = new ConsoleLogger(LogLevel.test);
 
@@ -160,12 +160,7 @@ class WsInboundTransporter implements InboundTransporter {
     const mediatorInvitationUrl = await get(`${mediatorUrl}/invitation`);
     const { verkey: mediatorVerkey } = JSON.parse(await get(`${mediatorUrl}/`));
 
-    // TODO introduce WebSocketTransport and HttpTransport classes
-    const transport = {
-      type: 'ws',
-      socket: this.socket,
-    } as const;
-
+    const transport = new WebSocketTransport(this.socket);
     await agent.routing.provision({
       verkey: mediatorVerkey,
       invitationUrl: mediatorInvitationUrl,
@@ -185,24 +180,22 @@ class WsInboundTransporter implements InboundTransporter {
 
 class WsOutboundTransporter implements OutboundTransporter {
   public async sendMessage(outboundPackage: OutboundPackage, receiveReply: boolean) {
-    const { payload, endpoint, transport } = outboundPackage;
+    logger.debug('WsOutboundTransporter sendMessage');
+    const { payload, transport } = outboundPackage;
 
-    logger.debug('WsOutboundTransporter sendMessage', {
-      endpoint,
-      payload,
-      transport: { type: transport?.type, socketId: transport?.socket?.id },
-    });
-
-    if (transport?.socket?.connected) {
+    // TODO Replace this logic with multiple transporters
+    if (transport instanceof WebSocketTransport && transport?.socket?.connected) {
       return this.sendViaWebSocket(transport, payload, receiveReply);
+    } else if (transport instanceof HttpTransport) {
+      return this.sendViaHttp(transport, payload, receiveReply);
     } else {
-      return this.sendViaHttp(endpoint, payload, receiveReply);
+      throw new Error(`Unhandled transport ${transport}.`);
     }
   }
 
-  private async sendViaWebSocket(transport: Transport, payload: WireMessage, receiveReply: boolean) {
-    logger.debug('Sending message over ws...');
+  private async sendViaWebSocket(transport: WebSocketTransport, payload: WireMessage, receiveReply: boolean) {
     const { socket } = transport;
+    logger.debug('Sending message over ws...', { transport: { type: transport?.type, socketId: socket?.id } });
 
     if (!socket?.connected) {
       throw new Error('Socket is not available or connected.');
@@ -228,12 +221,13 @@ class WsOutboundTransporter implements OutboundTransporter {
     });
   }
 
-  private async sendViaHttp(endpoint: string | undefined, payload: WireMessage, receiveReply: boolean) {
+  private async sendViaHttp(transport: HttpTransport, payload: WireMessage, receiveReply: boolean) {
+    const { endpoint } = transport;
+    logger.debug('Sending message over http...', { transport: { type: transport?.type, endpoint } });
+
     if (!endpoint) {
       throw new Error(`Missing endpoint. I don't know how and where to send the message.`);
     }
-
-    logger.debug('Sending message over http...');
 
     if (receiveReply) {
       const response = await post(`${endpoint}`, JSON.stringify(payload));

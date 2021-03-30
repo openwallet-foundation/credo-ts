@@ -6,7 +6,7 @@ import { AgentMessage } from './AgentMessage';
 import { Constructor } from '../utils/mixins';
 import { InboundMessageContext } from './models/InboundMessageContext';
 import { JsonTransformer } from '../utils/JsonTransformer';
-import { TransportService } from './TransportService';
+import { HttpTransport, TransportService } from './TransportService';
 
 class MessageSender {
   private envelopeService: EnvelopeService;
@@ -32,6 +32,8 @@ class MessageSender {
     const transport = this.transportService.getTransport(outboundMessage.connection.id);
     if (transport) {
       outboundPackage.transport = transport;
+    } else {
+      outboundPackage.transport = new HttpTransport(outboundMessage.endpoint);
     }
     await this.outboundTransporter.sendMessage(outboundPackage, false);
   }
@@ -46,6 +48,8 @@ class MessageSender {
     const transport = this.transportService.getTransport(outboundMessage.connection.id);
     if (transport) {
       outboundPackage.transport = transport;
+    } else {
+      outboundPackage.transport = new HttpTransport(outboundMessage.endpoint);
     }
     const inboundPackedMessage = await this.outboundTransporter.sendMessage(outboundPackage, true);
     const inboundUnpackedMessage = await this.envelopeService.unpackMessage(inboundPackedMessage);

@@ -16,7 +16,26 @@ interface TransportTable {
   [connectionRecordId: string]: Transport;
 }
 
+type TransportType = 'ws' | 'http';
+
 export interface Transport {
-  type: 'ws' | 'http';
-  socket?: Socket;
+  type: TransportType;
+}
+
+export class WebSocketTransport implements Transport {
+  public type: TransportType = 'ws';
+  public socket: Socket;
+
+  public constructor(socket: Socket) {
+    this.socket = socket;
+  }
+}
+
+export class HttpTransport {
+  public type: TransportType = 'http';
+  public endpoint?: string;
+
+  public constructor(endpoint?: string) {
+    this.endpoint = endpoint;
+  }
 }
