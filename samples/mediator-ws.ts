@@ -3,15 +3,12 @@ import Server, { Socket } from 'socket.io';
 import express, { Express } from 'express';
 import cors from 'cors';
 import config from './config';
-// import logger from '../../src/__tests__/logger';
-import { ConsoleLogger, LogLevel } from '../src/logger';
+import logger from '../src/__tests__/logger';
 import { Agent, ConnectionRecord, InboundTransporter, OutboundTransporter } from '../src';
 import { OutboundPackage, WireMessage } from '../src/types';
 import { MessageRepository } from '../src/storage/MessageRepository';
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository';
 import { WebSocketTransport } from '../src/agent/TransportService';
-
-const logger = new ConsoleLogger(LogLevel.trace);
 
 class WsInboundTransporter implements InboundTransporter {
   private io: any;

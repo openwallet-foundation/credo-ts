@@ -6,12 +6,9 @@ import { OutboundPackage, InitConfig, WireMessage } from '../../src/types';
 import { get, post } from '../http';
 import { toBeConnectedWith, waitForBasicMessage } from '../../src/__tests__/helpers';
 import indy from 'indy-sdk';
-// import logger from '../../src/__tests__/logger';
-import { ConsoleLogger, LogLevel } from '../../src/logger';
+import logger from '../../src/__tests__/logger';
 import { Socket } from 'socket.io';
 import { HttpTransport, WebSocketTransport } from '../../src/agent/TransportService';
-
-const logger = new ConsoleLogger(LogLevel.test);
 
 expect.extend({ toBeConnectedWith });
 
