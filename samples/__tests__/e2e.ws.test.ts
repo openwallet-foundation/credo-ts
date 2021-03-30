@@ -155,7 +155,15 @@ class WsInboundTransporter implements InboundTransporter {
   }
 
   public async start(agent: Agent) {
-    // TODO align edge agent inbound tranporters
+    await this.registerMediator(agent);
+    this.listenOnWebSocketMessages(agent);
+  }
+
+  public stop() {
+    this.socket.close();
+  }
+
+  private async registerMediator(agent: Agent) {
     const mediatorUrl = agent.getMediatorUrl() || '';
     const mediatorInvitationUrl = await get(`${mediatorUrl}/invitation`);
     const { verkey: mediatorVerkey } = JSON.parse(await get(`${mediatorUrl}/`));
@@ -166,15 +174,13 @@ class WsInboundTransporter implements InboundTransporter {
       invitationUrl: mediatorInvitationUrl,
       transport,
     });
+  }
 
+  private listenOnWebSocketMessages(agent: Agent) {
     this.socket.on('agentMessage', (payload: any) => {
       console.log('on agentMessage', payload);
       agent.receiveMessage(payload);
     });
-  }
-
-  public stop() {
-    this.socket.close();
   }
 }
 

@@ -124,16 +124,15 @@ class PollingInboundTransporter implements InboundTransporter {
     this.stop = false;
   }
   public async start(agent: Agent) {
-    // TODO align edge agent inbound tranporters
     await this.registerMediator(agent);
+    this.pollDownloadMessages(agent);
   }
 
-  public async registerMediator(agent: Agent) {
+  private async registerMediator(agent: Agent) {
     const mediatorUrl = agent.getMediatorUrl() || '';
     const mediatorInvitationUrl = await get(`${mediatorUrl}/invitation`);
     const { verkey: mediatorVerkey } = JSON.parse(await get(`${mediatorUrl}/`));
     await agent.routing.provision({ verkey: mediatorVerkey, invitationUrl: mediatorInvitationUrl });
-    this.pollDownloadMessages(agent);
   }
 
   private pollDownloadMessages(agent: Agent) {
