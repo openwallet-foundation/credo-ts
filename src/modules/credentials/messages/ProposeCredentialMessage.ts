@@ -1,20 +1,20 @@
-import { Expose, Type } from 'class-transformer';
-import { Equals, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { Expose, Type } from 'class-transformer'
+import { Equals, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage';
-import { CredentialPreview } from './CredentialPreview';
-import { IssueCredentialMessageType } from './IssueCredentialMessageType';
+import { AgentMessage } from '../../../agent/AgentMessage'
+import { CredentialPreview } from './CredentialPreview'
+import { IssueCredentialMessageType } from './IssueCredentialMessageType'
 
 export interface ProposeCredentialMessageOptions {
-  id?: string;
-  comment?: string;
-  credentialProposal?: CredentialPreview;
-  schemaIssuerDid?: string;
-  schemaId?: string;
-  schemaName?: string;
-  schemaVersion?: string;
-  credentialDefinitionId?: string;
-  issuerDid?: string;
+  id?: string
+  comment?: string
+  credentialProposal?: CredentialPreview
+  schemaIssuerDid?: string
+  schemaId?: string
+  schemaName?: string
+  schemaVersion?: string
+  credentialDefinitionId?: string
+  issuerDid?: string
 }
 
 /**
@@ -24,24 +24,24 @@ export interface ProposeCredentialMessageOptions {
  */
 export class ProposeCredentialMessage extends AgentMessage {
   public constructor(options: ProposeCredentialMessageOptions) {
-    super();
+    super()
 
     if (options) {
-      this.id = options.id ?? this.generateId();
-      this.comment = options.comment;
-      this.credentialProposal = options.credentialProposal;
-      this.schemaIssuerDid = options.schemaIssuerDid;
-      this.schemaId = options.schemaId;
-      this.schemaName = options.schemaName;
-      this.schemaVersion = options.schemaVersion;
-      this.credentialDefinitionId = options.credentialDefinitionId;
-      this.issuerDid = options.issuerDid;
+      this.id = options.id ?? this.generateId()
+      this.comment = options.comment
+      this.credentialProposal = options.credentialProposal
+      this.schemaIssuerDid = options.schemaIssuerDid
+      this.schemaId = options.schemaId
+      this.schemaName = options.schemaName
+      this.schemaVersion = options.schemaVersion
+      this.credentialDefinitionId = options.credentialDefinitionId
+      this.issuerDid = options.issuerDid
     }
   }
 
   @Equals(ProposeCredentialMessage.type)
-  public readonly type = ProposeCredentialMessage.type;
-  public static readonly type = IssueCredentialMessageType.ProposeCredential;
+  public readonly type = ProposeCredentialMessage.type
+  public static readonly type = IssueCredentialMessageType.ProposeCredential
 
   /**
    * Human readable information about this Credential Proposal,
@@ -49,7 +49,7 @@ export class ProposeCredentialMessage extends AgentMessage {
    */
   @IsOptional()
   @IsString()
-  public comment?: string;
+  public comment?: string
 
   /**
    * Represents the credential data that Prover wants to receive.
@@ -57,7 +57,7 @@ export class ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'credential_proposal' })
   @Type(() => CredentialPreview)
   @ValidateNested()
-  public credentialProposal?: CredentialPreview;
+  public credentialProposal?: CredentialPreview
 
   /**
    * Filter to request credential based on a particular Schema issuer DID.
@@ -65,7 +65,7 @@ export class ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'schema_issuer_did' })
   @IsString()
   @IsOptional()
-  public schemaIssuerDid?: string;
+  public schemaIssuerDid?: string
 
   /**
    * Filter to request credential based on a particular Schema.
@@ -73,7 +73,7 @@ export class ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'schema_id' })
   @IsString()
   @IsOptional()
-  public schemaId?: string;
+  public schemaId?: string
 
   /**
    * Filter to request credential based on a schema name.
@@ -81,7 +81,7 @@ export class ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'schema_name' })
   @IsString()
   @IsOptional()
-  public schemaName?: string;
+  public schemaName?: string
 
   /**
    * Filter  to request credential based on a schema version.
@@ -89,7 +89,7 @@ export class ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'schema_version' })
   @IsString()
   @IsOptional()
-  public schemaVersion?: string;
+  public schemaVersion?: string
 
   /**
    * Filter to request credential based on a particular Credential Definition.
@@ -97,7 +97,7 @@ export class ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'cred_def_id' })
   @IsString()
   @IsOptional()
-  public credentialDefinitionId?: string;
+  public credentialDefinitionId?: string
 
   /**
    * Filter to request a credential issued by the owner of a particular DID.
@@ -105,5 +105,5 @@ export class ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'issuer_did' })
   @IsString()
   @IsOptional()
-  public issuerDid?: string;
+  public issuerDid?: string
 }

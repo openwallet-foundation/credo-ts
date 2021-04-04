@@ -1,7 +1,7 @@
-import { createOutboundMessage } from '../../../agent/helpers';
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
-import { ConnectionRecord } from '../repository/ConnectionRecord';
-import { TrustPingMessage, TrustPingResponseMessage } from '../messages';
+import { createOutboundMessage } from '../../../agent/helpers'
+import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import { ConnectionRecord } from '../repository/ConnectionRecord'
+import { TrustPingMessage, TrustPingResponseMessage } from '../messages'
 
 /**
  * @todo use connection from message context
@@ -11,9 +11,9 @@ export class TrustPingService {
     if (message.responseRequested) {
       const response = new TrustPingResponseMessage({
         threadId: message.id,
-      });
+      })
 
-      return createOutboundMessage(connection, response);
+      return createOutboundMessage(connection, response)
     }
   }
 

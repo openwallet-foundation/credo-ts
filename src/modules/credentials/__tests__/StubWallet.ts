@@ -26,22 +26,22 @@ import {
   LedgerRequest,
   IndyCredential,
   RevRegsDefs,
-} from 'indy-sdk';
-import { Wallet } from '../../../wallet/Wallet';
-import { UnpackedMessageContext } from '../../../types';
+} from 'indy-sdk'
+import { Wallet } from '../../../wallet/Wallet'
+import { UnpackedMessageContext } from '../../../types'
 
 export class StubWallet implements Wallet {
   public get walletHandle() {
-    return 0;
+    return 0
   }
   public get publicDid() {
-    return undefined;
+    return undefined
   }
   public init(): Promise<void> {
-    return Promise.resolve();
+    return Promise.resolve()
   }
   public close(): Promise<void> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public createProof(
     proofRequest: IndyProofRequest,
@@ -50,13 +50,13 @@ export class StubWallet implements Wallet {
     credentialDefs: CredentialDefs,
     revStates: RevStates
   ): Promise<IndyProof> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public getCredentialsForProofRequest(
     proofRequest: IndyProofRequest,
     attributeReferent: string
   ): Promise<IndyCredential[]> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public verifyProof(
     proofRequest: IndyProofRequest,
@@ -66,22 +66,22 @@ export class StubWallet implements Wallet {
     revRegsDefs: RevRegsDefs,
     revRegs: RevStates
   ): Promise<boolean> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public searchCredentialsForProofRequest(proofRequest: IndyProofRequest): Promise<number> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public getCredential(credentialId: string): Promise<IndyCredentialInfo> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public delete(): Promise<void> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public initPublicDid(didConfig: DidConfig): Promise<void> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public createDid(didConfig?: DidConfig | undefined): Promise<[string, string]> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public createCredentialDefinition(
     issuerDid: string,
@@ -90,7 +90,7 @@ export class StubWallet implements Wallet {
     signatureType: string,
     config: CredDefConfig
   ): Promise<[string, CredDef]> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public createCredentialOffer(credDefId: string): Promise<CredOffer> {
     return Promise.resolve({
@@ -99,10 +99,10 @@ export class StubWallet implements Wallet {
       // Fields below can depend on Cred Def type
       nonce: 'nonce',
       key_correctness_proof: {},
-    });
+    })
   }
   public getCredentialsForProofReq(proof: string): Promise<ProofCred> {
-    throw new Error('Method not implemented');
+    throw new Error('Method not implemented')
   }
   public createCredentialRequest(
     proverDid: string,
@@ -118,7 +118,7 @@ export class StubWallet implements Wallet {
         nonce: 'nonce',
       },
       { cred_req: 'meta-data' },
-    ]);
+    ])
   }
   public createCredential(
     credOffer: CredOffer,
@@ -136,46 +136,46 @@ export class StubWallet implements Wallet {
       },
       '1',
       {},
-    ]);
+    ])
   }
   public storeCredential(credentialId: CredentialId): Promise<string> {
-    return Promise.resolve(credentialId);
+    return Promise.resolve(credentialId)
   }
   public pack(payload: Record<string, unknown>, recipientKeys: string[], senderVk: string | null): Promise<JsonWebKey> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public unpack(messagePackage: JsonWebKey): Promise<UnpackedMessageContext> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public sign(data: Buffer, verkey: string): Promise<Buffer> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public verify(signerVerkey: string, data: Buffer, signature: Buffer): Promise<boolean> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public addWalletRecord(type: string, id: string, value: string, tags: Record<string, string>): Promise<void> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public updateWalletRecordValue(type: string, id: string, value: string): Promise<void> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public updateWalletRecordTags(type: string, id: string, tags: Record<string, string>): Promise<void> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public deleteWalletRecord(type: string, id: string): Promise<void> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public getWalletRecord(type: string, id: string, options: WalletRecordOptions): Promise<WalletRecord> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public search(type: string, query: WalletQuery, options: WalletRecordOptions): Promise<AsyncIterable<WalletRecord>> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
   public signRequest(myDid: string, request: LedgerRequest): Promise<LedgerRequest> {
-    throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.')
   }
 
   public async generateNonce(): Promise<string> {
-    throw new Error('Method not implemented');
+    throw new Error('Method not implemented')
   }
 }

@@ -1,1 +1,1 @@
-export * from './BasicMessageService';
+export * from './BasicMessageService'

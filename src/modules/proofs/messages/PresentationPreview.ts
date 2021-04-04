@@ -1,13 +1,13 @@
-import { Equals, IsEnum, IsInt, IsString, ValidateIf, ValidateNested } from 'class-validator';
-import { Expose, Type } from 'class-transformer';
+import { Equals, IsEnum, IsInt, IsString, ValidateIf, ValidateNested } from 'class-validator'
+import { Expose, Type } from 'class-transformer'
 
-import { PresentProofMessageType } from './PresentProofMessageType';
-import { JsonTransformer } from '../../../utils/JsonTransformer';
-import { PredicateType } from '../models/PredicateType';
+import { PresentProofMessageType } from './PresentProofMessageType'
+import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { PredicateType } from '../models/PredicateType'
 
 export interface PresentationPreviewOptions {
-  attributes?: PresentationPreviewAttribute[];
-  predicates?: PresentationPreviewPredicate[];
+  attributes?: PresentationPreviewAttribute[]
+  predicates?: PresentationPreviewPredicate[]
 }
 
 /**
@@ -20,97 +20,97 @@ export interface PresentationPreviewOptions {
 export class PresentationPreview {
   public constructor(options: PresentationPreviewOptions) {
     if (options) {
-      this.attributes = options.attributes ?? [];
-      this.predicates = options.predicates ?? [];
+      this.attributes = options.attributes ?? []
+      this.predicates = options.predicates ?? []
     }
   }
 
   @Expose({ name: '@type' })
   @Equals(PresentationPreview.type)
-  public readonly type = PresentationPreview.type;
-  public static readonly type = PresentProofMessageType.PresentationPreview;
+  public readonly type = PresentationPreview.type
+  public static readonly type = PresentProofMessageType.PresentationPreview
 
   @Type(() => PresentationPreviewAttribute)
   @ValidateNested({ each: true })
-  public attributes!: PresentationPreviewAttribute[];
+  public attributes!: PresentationPreviewAttribute[]
 
   @Type(() => PresentationPreviewPredicate)
   @ValidateNested({ each: true })
-  public predicates!: PresentationPreviewPredicate[];
+  public predicates!: PresentationPreviewPredicate[]
 
   public toJSON(): Record<string, unknown> {
-    return JsonTransformer.toJSON(this);
+    return JsonTransformer.toJSON(this)
   }
 }
 
 export interface PresentationPreviewAttributeOptions {
-  name: string;
-  credentialDefinitionId?: string;
-  mimeType?: string;
-  value?: string;
-  referent?: string;
+  name: string
+  credentialDefinitionId?: string
+  mimeType?: string
+  value?: string
+  referent?: string
 }
 
 export class PresentationPreviewAttribute {
   public constructor(options: PresentationPreviewAttributeOptions) {
     if (options) {
-      this.name = options.name;
-      this.credentialDefinitionId = options.credentialDefinitionId;
-      this.mimeType = options.mimeType;
-      this.value = options.value;
-      this.referent = options.referent;
+      this.name = options.name
+      this.credentialDefinitionId = options.credentialDefinitionId
+      this.mimeType = options.mimeType
+      this.value = options.value
+      this.referent = options.referent
     }
   }
 
-  public name!: string;
+  public name!: string
 
   @Expose({ name: 'cred_def_id' })
   @IsString()
   @ValidateIf((o: PresentationPreviewAttribute) => o.referent !== undefined)
-  public credentialDefinitionId?: string;
+  public credentialDefinitionId?: string
 
   @Expose({ name: 'mime-type' })
-  public mimeType?: string;
+  public mimeType?: string
 
-  public value?: string;
+  public value?: string
 
-  public referent?: string;
+  public referent?: string
 
   public toJSON(): Record<string, unknown> {
-    return JsonTransformer.toJSON(this);
+    return JsonTransformer.toJSON(this)
   }
 }
 
 export interface PresentationPreviewPredicateOptions {
-  name: string;
-  credentialDefinitionId: string;
-  predicate: PredicateType;
-  threshold: number;
+  name: string
+  credentialDefinitionId: string
+  predicate: PredicateType
+  threshold: number
 }
 
 export class PresentationPreviewPredicate {
   public constructor(options: PresentationPreviewPredicateOptions) {
     if (options) {
-      this.name = options.name;
-      this.credentialDefinitionId = options.credentialDefinitionId;
-      this.predicate = options.predicate;
-      this.threshold = options.threshold;
+      this.name = options.name
+      this.credentialDefinitionId = options.credentialDefinitionId
+      this.predicate = options.predicate
+      this.threshold = options.threshold
     }
   }
 
-  public name!: string;
+  public name!: string
 
   @Expose({ name: 'cred_def_id' })
   @IsString()
-  public credentialDefinitionId!: string;
+  public credentialDefinitionId!: string
 
   @IsEnum(PredicateType)
-  public predicate!: PredicateType;
+  public predicate!: PredicateType
 
   @IsInt()
-  public threshold!: number;
+  public threshold!: number
 
   public toJSON(): Record<string, unknown> {
-    return JsonTransformer.toJSON(this);
+    return JsonTransformer.toJSON(this)
   }
 }

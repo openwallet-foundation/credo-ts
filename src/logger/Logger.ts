@@ -12,13 +12,13 @@ export enum LogLevel {
 }
 
 export interface Logger {
-  logLevel: LogLevel;
+  logLevel: LogLevel
 
-  test(message: string, data?: Record<string, any>): void;
-  trace(message: string, data?: Record<string, any>): void;
-  debug(message: string, data?: Record<string, any>): void;
-  info(message: string, data?: Record<string, any>): void;
-  warn(message: string, data?: Record<string, any>): void;
-  error(message: string, data?: Record<string, any>): void;
-  fatal(message: string, data?: Record<string, any>): void;
+  test(message: string, data?: Record<string, any>): void
+  trace(message: string, data?: Record<string, any>): void
+  debug(message: string, data?: Record<string, any>): void
+  info(message: string, data?: Record<string, any>): void
+  warn(message: string, data?: Record<string, any>): void
+  error(message: string, data?: Record<string, any>): void
+  fatal(message: string, data?: Record<string, any>): void
 }

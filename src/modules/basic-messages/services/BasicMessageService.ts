@@ -1,44 +1,44 @@
-import type { Verkey, WalletQuery } from 'indy-sdk';
-import { EventEmitter } from 'events';
-import { OutboundMessage } from '../../../types';
-import { createOutboundMessage } from '../../../agent/helpers';
-import { Repository } from '../../../storage/Repository';
-import { BasicMessageRecord } from '../repository/BasicMessageRecord';
-import { ConnectionRecord } from '../../connections/repository/ConnectionRecord';
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
-import { BasicMessage } from '../messages';
+import type { Verkey, WalletQuery } from 'indy-sdk'
+import { EventEmitter } from 'events'
+import { OutboundMessage } from '../../../types'
+import { createOutboundMessage } from '../../../agent/helpers'
+import { Repository } from '../../../storage/Repository'
+import { BasicMessageRecord } from '../repository/BasicMessageRecord'
+import { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
+import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import { BasicMessage } from '../messages'
 
 export enum BasicMessageEventType {
   MessageReceived = 'messageReceived',
 }
 
 export interface BasicMessageReceivedEvent {
-  message: BasicMessage;
-  verkey: Verkey;
+  message: BasicMessage
+  verkey: Verkey
 }
 
 export class BasicMessageService extends EventEmitter {
-  private basicMessageRepository: Repository<BasicMessageRecord>;
+  private basicMessageRepository: Repository<BasicMessageRecord>
 
   public constructor(basicMessageRepository: Repository<BasicMessageRecord>) {
-    super();
-    this.basicMessageRepository = basicMessageRepository;
+    super()
+    this.basicMessageRepository = basicMessageRepository
   }
 
   public async send(message: string, connection: ConnectionRecord): Promise<OutboundMessage<BasicMessage>> {
     const basicMessage = new BasicMessage({
       content: message,
-    });
+    })
 
     const basicMessageRecord = new BasicMessageRecord({
       id: basicMessage.id,
       sentTime: basicMessage.sentTime.toISOString(),
       content: basicMessage.content,
       tags: { from: connection.did || '', to: connection.theirDid || '' },
-    });
+    })
 
-    await this.basicMessageRepository.save(basicMessageRecord);
-    return createOutboundMessage(connection, basicMessage);
+    await this.basicMessageRepository.save(basicMessageRecord)
+    return createOutboundMessage(connection, basicMessage)
   }
 
   /**
@@ -50,17 +50,17 @@ export class BasicMessageService extends EventEmitter {
       sentTime: message.sentTime.toISOString(),
       content: message.content,
       tags: { from: connection.theirDid || '', to: connection.did || '' },
-    });
+    })
 
-    await this.basicMessageRepository.save(basicMessageRecord);
+    await this.basicMessageRepository.save(basicMessageRecord)
     const event: BasicMessageReceivedEvent = {
       message,
       verkey: connection.verkey,
-    };
-    this.emit(BasicMessageEventType.MessageReceived, event);
+    }
+    this.emit(BasicMessageEventType.MessageReceived, event)
   }
 
   public async findAllByQuery(query: WalletQuery) {
-    return this.basicMessageRepository.findByQuery(query);
+    return this.basicMessageRepository.findByQuery(query)
   }
 }

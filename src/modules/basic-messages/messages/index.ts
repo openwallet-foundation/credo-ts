@@ -1,2 +1,2 @@
-export * from './BasicMessage';
-export * from './BasicMessageMessageType';
+export * from './BasicMessage'
+export * from './BasicMessageMessageType'

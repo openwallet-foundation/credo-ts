@@ -1,5 +1,5 @@
-import { CredentialUtils } from '../CredentialUtils';
-import { CredentialPreview, CredentialPreviewAttribute } from '../messages/CredentialPreview';
+import { CredentialUtils } from '../CredentialUtils'
+import { CredentialPreview, CredentialPreviewAttribute } from '../messages/CredentialPreview'
 
 /**
  * Sample test cases for encoding/decoding of verifiable credential claims - Aries RFCs 0036 and 0037
@@ -86,7 +86,7 @@ const testEncodings: { [key: string]: { raw: any; encoded: string } } = {
     raw: String.fromCharCode(2),
     encoded: '99398763056634537812744552006896172984671876672520535998211840060697129507206',
   },
-};
+}
 
 describe('CredentialUtils', () => {
   describe('convertPreviewToValues', () => {
@@ -104,7 +104,7 @@ describe('CredentialUtils', () => {
             value: '1234',
           }),
         ],
-      });
+      })
 
       expect(CredentialUtils.convertPreviewToValues(credentialPreview)).toEqual({
         name: {
@@ -112,16 +112,16 @@ describe('CredentialUtils', () => {
           encoded: '68086943237164982734333428280784300550565381723532936263016368251445461241953',
         },
         age: { raw: '1234', encoded: '1234' },
-      });
-    });
-  });
+      })
+    })
+  })
 
   describe('checkValidEncoding', () => {
     // Formatted for test.each
-    const testEntries = Object.entries(testEncodings).map(([name, { raw, encoded }]) => [name, raw, encoded]);
+    const testEntries = Object.entries(testEncodings).map(([name, { raw, encoded }]) => [name, raw, encoded])
 
     test.each(testEntries)('returns true for valid encoding %s', (_, raw, encoded) => {
-      expect(CredentialUtils.checkValidEncoding(raw, encoded)).toEqual(true);
-    });
-  });
-});
+      expect(CredentialUtils.checkValidEncoding(raw, encoded)).toEqual(true)
+    })
+  })
+})

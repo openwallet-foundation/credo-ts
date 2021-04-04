@@ -1,7 +1,7 @@
-import { Equals, IsEnum } from 'class-validator';
+import { Equals, IsEnum } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage';
-import { CommonMessageType } from './CommonMessageType';
+import { AgentMessage } from '../../../agent/AgentMessage'
+import { CommonMessageType } from './CommonMessageType'
 
 /**
  * Ack message status types
@@ -13,9 +13,9 @@ export enum AckStatus {
 }
 
 export interface AckMessageOptions {
-  id?: string;
-  threadId: string;
-  status: AckStatus;
+  id?: string
+  threadId: string
+  status: AckStatus
 }
 
 /**
@@ -27,22 +27,22 @@ export class AckMessage extends AgentMessage {
    * @param options
    */
   public constructor(options: AckMessageOptions) {
-    super();
+    super()
 
     if (options) {
-      this.id = options.id || this.generateId();
-      this.status = options.status;
+      this.id = options.id || this.generateId()
+      this.status = options.status
 
       this.setThread({
         threadId: options.threadId,
-      });
+      })
     }
   }
 
   @Equals(AckMessage.type)
-  public readonly type: string = AckMessage.type;
-  public static readonly type: string = CommonMessageType.Ack;
+  public readonly type: string = AckMessage.type
+  public static readonly type: string = CommonMessageType.Ack
 
   @IsEnum(AckStatus)
-  public status!: AckStatus;
+  public status!: AckStatus
 }

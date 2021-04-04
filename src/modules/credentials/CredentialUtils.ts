@@ -1,8 +1,8 @@
-import type { CredValues } from 'indy-sdk';
-import { sha256 } from 'js-sha256';
-import BigNumber from 'bn.js';
+import type { CredValues } from 'indy-sdk'
+import { sha256 } from 'js-sha256'
+import BigNumber from 'bn.js'
 
-import { CredentialPreview } from './messages/CredentialPreview';
+import { CredentialPreview } from './messages/CredentialPreview'
 
 export class CredentialUtils {
   /**
@@ -23,8 +23,8 @@ export class CredentialUtils {
           encoded: CredentialUtils.encode(attribute.value),
         },
         ...credentialValues,
-      };
-    }, {});
+      }
+    }, {})
   }
 
   /**
@@ -39,7 +39,7 @@ export class CredentialUtils {
    * @see https://github.com/hyperledger/aries-rfcs/blob/be4ad0a6fb2823bb1fc109364c96f077d5d8dffa/features/0037-present-proof/README.md#verifying-claims-of-indy-based-verifiable-credentials
    */
   public static checkValidEncoding(raw: any, encoded: string) {
-    return encoded === CredentialUtils.encode(raw);
+    return encoded === CredentialUtils.encode(raw)
   }
 
   /**
@@ -53,43 +53,43 @@ export class CredentialUtils {
    * @see https://github.com/hyperledger/aries-rfcs/blob/be4ad0a6fb2823bb1fc109364c96f077d5d8dffa/features/0036-issue-credential/README.md#encoding-claims-for-indy-based-verifiable-credentials
    */
   public static encode(value: any) {
-    const isString = typeof value === 'string';
-    const isEmpty = isString && value === '';
-    const isNumber = typeof value === 'number';
-    const isBoolean = typeof value === 'boolean';
+    const isString = typeof value === 'string'
+    const isEmpty = isString && value === ''
+    const isNumber = typeof value === 'number'
+    const isBoolean = typeof value === 'boolean'
 
     // If bool return bool as number string
     if (isBoolean) {
-      return Number(value).toString();
+      return Number(value).toString()
     }
 
     // If value is int32 return as number string
     if (isNumber && this.isInt32(value)) {
-      return value.toString();
+      return value.toString()
     }
 
     // If value is an int32 number string return as number string
     if (isString && !isEmpty && !isNaN(Number(value)) && this.isInt32(Number(value))) {
-      return value;
+      return value
     }
 
     if (isNumber) {
-      value = value.toString();
+      value = value.toString()
     }
 
     // If value is null we must use the string value 'None'
     if (value === null || value === undefined) {
-      value = 'None';
+      value = 'None'
     }
 
-    return new BigNumber(sha256.array(value)).toString();
+    return new BigNumber(sha256.array(value)).toString()
   }
 
   private static isInt32(number: number) {
-    const minI32 = -2147483648;
-    const maxI32 = 2147483647;
+    const minI32 = -2147483648
+    const maxI32 = 2147483647
 
     // Check if number is integer and in range of int32
-    return Number.isInteger(number) && number >= minI32 && number <= maxI32;
+    return Number.isInteger(number) && number >= minI32 && number <= maxI32
   }
 }
