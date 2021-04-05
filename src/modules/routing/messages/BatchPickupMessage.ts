@@ -1,12 +1,12 @@
-import { Equals, IsNumber } from 'class-validator';
-import { Expose } from 'class-transformer';
+import { Equals, IsNumber } from 'class-validator'
+import { Expose } from 'class-transformer'
 
-import { AgentMessage } from '../../../agent/AgentMessage';
-import { RoutingMessageType as MessageType } from './RoutingMessageType';
+import { AgentMessage } from '../../../agent/AgentMessage'
+import { RoutingMessageType as MessageType } from './RoutingMessageType'
 
 export interface BatchPickupMessageOptions {
-  id?: string;
-  batchSize: number;
+  id?: string
+  batchSize: number
 }
 
 /**
@@ -21,19 +21,19 @@ export class BatchPickupMessage extends AgentMessage {
    * @param options
    */
   public constructor(options: BatchPickupMessageOptions) {
-    super();
+    super()
 
     if (options) {
-      this.id = options.id || this.generateId();
-      this.batchSize = options.batchSize;
+      this.id = options.id || this.generateId()
+      this.batchSize = options.batchSize
     }
   }
 
   @Equals(BatchPickupMessage.type)
-  public readonly type = BatchPickupMessage.type;
-  public static readonly type = MessageType.BatchPickup;
+  public readonly type = BatchPickupMessage.type
+  public static readonly type = MessageType.BatchPickup
 
   @IsNumber()
   @Expose({ name: 'batch_size' })
-  public batchSize!: number;
+  public batchSize!: number
 }

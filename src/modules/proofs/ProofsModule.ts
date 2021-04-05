@@ -1,25 +1,25 @@
-import { createOutboundMessage } from '../../agent/helpers';
-import { MessageSender } from '../../agent/MessageSender';
-import { ConnectionService } from '../connections';
-import { ProofService } from './services';
-import { ProofRecord } from './repository/ProofRecord';
-import { ProofRequest } from './models/ProofRequest';
-import { JsonTransformer } from '../../utils/JsonTransformer';
-import { EventEmitter } from 'events';
-import { PresentationPreview, ProposePresentationMessage } from './messages';
-import { RequestedCredentials } from './models';
-import { Dispatcher } from '../../agent/Dispatcher';
+import { createOutboundMessage } from '../../agent/helpers'
+import { MessageSender } from '../../agent/MessageSender'
+import { ConnectionService } from '../connections'
+import { ProofService } from './services'
+import { ProofRecord } from './repository/ProofRecord'
+import { ProofRequest } from './models/ProofRequest'
+import { JsonTransformer } from '../../utils/JsonTransformer'
+import { EventEmitter } from 'events'
+import { PresentationPreview, ProposePresentationMessage } from './messages'
+import { RequestedCredentials } from './models'
+import { Dispatcher } from '../../agent/Dispatcher'
 import {
   ProposePresentationHandler,
   RequestPresentationHandler,
   PresentationAckHandler,
   PresentationHandler,
-} from './handlers';
+} from './handlers'
 
 export class ProofsModule {
-  private proofService: ProofService;
-  private connectionService: ConnectionService;
-  private messageSender: MessageSender;
+  private proofService: ProofService
+  private connectionService: ConnectionService
+  private messageSender: MessageSender
 
   public constructor(
     dispatcher: Dispatcher,
@@ -27,10 +27,10 @@ export class ProofsModule {
     connectionService: ConnectionService,
     messageSender: MessageSender
   ) {
-    this.proofService = proofService;
-    this.connectionService = connectionService;
-    this.messageSender = messageSender;
-    this.registerHandlers(dispatcher);
+    this.proofService = proofService
+    this.connectionService = connectionService
+    this.messageSender = messageSender
+    this.registerHandlers(dispatcher)
   }
 
   /**
@@ -40,7 +40,7 @@ export class ProofsModule {
    * @returns event emitter for proof related actions
    */
   public get events(): EventEmitter {
-    return this.proofService;
+    return this.proofService
   }
 
   /**
@@ -57,17 +57,17 @@ export class ProofsModule {
     connectionId: string,
     presentationProposal: PresentationPreview,
     config?: {
-      comment?: string;
+      comment?: string
     }
   ): Promise<ProofRecord> {
-    const connection = await this.connectionService.getById(connectionId);
+    const connection = await this.connectionService.getById(connectionId)
 
-    const { message, proofRecord } = await this.proofService.createProposal(connection, presentationProposal, config);
+    const { message, proofRecord } = await this.proofService.createProposal(connection, presentationProposal, config)
 
-    const outbound = createOutboundMessage(connection, message);
-    await this.messageSender.sendMessage(outbound);
+    const outbound = createOutboundMessage(connection, message)
+    await this.messageSender.sendMessage(outbound)
 
-    return proofRecord;
+    return proofRecord
   }
 
   /**
@@ -83,38 +83,38 @@ export class ProofsModule {
     proofRecordId: string,
     config?: {
       request?: {
-        name?: string;
-        version?: string;
-        nonce?: string;
-      };
-      comment?: string;
+        name?: string
+        version?: string
+        nonce?: string
+      }
+      comment?: string
     }
   ): Promise<ProofRecord> {
-    const proofRecord = await this.proofService.getById(proofRecordId);
-    const connection = await this.connectionService.getById(proofRecord.connectionId);
+    const proofRecord = await this.proofService.getById(proofRecordId)
+    const connection = await this.connectionService.getById(proofRecord.connectionId)
 
     // FIXME: transformation should be handled by record class
     const presentationProposal = JsonTransformer.fromJSON(proofRecord.proposalMessage, ProposePresentationMessage)
-      .presentationProposal;
+      .presentationProposal
 
     if (!presentationProposal) {
-      throw new Error(`Proof record with id ${proofRecordId} is missing required presentation proposal`);
+      throw new Error(`Proof record with id ${proofRecordId} is missing required presentation proposal`)
     }
 
     const proofRequest = await this.proofService.createProofRequestFromProposal(presentationProposal, {
       name: config?.request?.name ?? 'proof-request',
       version: config?.request?.version ?? '1.0',
       nonce: config?.request?.nonce,
-    });
+    })
 
     const { message } = await this.proofService.createRequestAsResponse(proofRecord, proofRequest, {
       comment: config?.comment,
-    });
+    })
 
-    const outboundMessage = createOutboundMessage(connection, message);
-    await this.messageSender.sendMessage(outboundMessage);
+    const outboundMessage = createOutboundMessage(connection, message)
+    await this.messageSender.sendMessage(outboundMessage)
 
-    return proofRecord;
+    return proofRecord
   }
 
   /**
@@ -131,12 +131,12 @@ export class ProofsModule {
     connectionId: string,
     proofRequestOptions: Partial<Pick<ProofRequest, 'name' | 'nonce' | 'requestedAttributes' | 'requestedPredicates'>>,
     config?: {
-      comment?: string;
+      comment?: string
     }
   ): Promise<ProofRecord> {
-    const connection = await this.connectionService.getById(connectionId);
+    const connection = await this.connectionService.getById(connectionId)
 
-    const nonce = proofRequestOptions.nonce ?? (await this.proofService.generateProofRequestNonce());
+    const nonce = proofRequestOptions.nonce ?? (await this.proofService.generateProofRequestNonce())
 
     const proofRequest = new ProofRequest({
       name: proofRequestOptions.name ?? 'proof-request',
@@ -144,14 +144,14 @@ export class ProofsModule {
       nonce,
       requestedAttributes: proofRequestOptions.requestedAttributes,
       requestedPredicates: proofRequestOptions.requestedPredicates,
-    });
+    })
 
-    const { message, proofRecord } = await this.proofService.createRequest(connection, proofRequest, config);
+    const { message, proofRecord } = await this.proofService.createRequest(connection, proofRequest, config)
 
-    const outboundMessage = createOutboundMessage(connection, message);
-    await this.messageSender.sendMessage(outboundMessage);
+    const outboundMessage = createOutboundMessage(connection, message)
+    await this.messageSender.sendMessage(outboundMessage)
 
-    return proofRecord;
+    return proofRecord
   }
 
   /**
@@ -168,18 +168,18 @@ export class ProofsModule {
     proofRecordId: string,
     requestedCredentials: RequestedCredentials,
     config?: {
-      comment?: string;
+      comment?: string
     }
   ): Promise<ProofRecord> {
-    const proofRecord = await this.proofService.getById(proofRecordId);
-    const connection = await this.connectionService.getById(proofRecord.connectionId);
+    const proofRecord = await this.proofService.getById(proofRecordId)
+    const connection = await this.connectionService.getById(proofRecord.connectionId)
 
-    const { message } = await this.proofService.createPresentation(proofRecord, requestedCredentials, config);
+    const { message } = await this.proofService.createPresentation(proofRecord, requestedCredentials, config)
 
-    const outboundMessage = createOutboundMessage(connection, message);
-    await this.messageSender.sendMessage(outboundMessage);
+    const outboundMessage = createOutboundMessage(connection, message)
+    await this.messageSender.sendMessage(outboundMessage)
 
-    return proofRecord;
+    return proofRecord
   }
 
   /**
@@ -191,14 +191,14 @@ export class ProofsModule {
    *
    */
   public async acceptPresentation(proofRecordId: string): Promise<ProofRecord> {
-    const proofRecord = await this.proofService.getById(proofRecordId);
-    const connection = await this.connectionService.getById(proofRecord.connectionId);
+    const proofRecord = await this.proofService.getById(proofRecordId)
+    const connection = await this.connectionService.getById(proofRecord.connectionId)
 
-    const { message } = await this.proofService.createAck(proofRecord);
-    const outboundMessage = createOutboundMessage(connection, message);
-    await this.messageSender.sendMessage(outboundMessage);
+    const { message } = await this.proofService.createAck(proofRecord)
+    const outboundMessage = createOutboundMessage(connection, message)
+    await this.messageSender.sendMessage(outboundMessage)
 
-    return proofRecord;
+    return proofRecord
   }
 
   /**
@@ -217,7 +217,7 @@ export class ProofsModule {
     proofRequest: ProofRequest,
     presentationProposal?: PresentationPreview
   ) {
-    return this.proofService.getRequestedCredentialsForProofRequest(proofRequest, presentationProposal);
+    return this.proofService.getRequestedCredentialsForProofRequest(proofRequest, presentationProposal)
   }
 
   /**
@@ -226,7 +226,7 @@ export class ProofsModule {
    * @returns List containing all proof records
    */
   public async getAll(): Promise<ProofRecord[]> {
-    return this.proofService.getAll();
+    return this.proofService.getAll()
   }
 
   /**
@@ -238,7 +238,7 @@ export class ProofsModule {
    *
    */
   public async getById(proofRecordId: string): Promise<ProofRecord> {
-    return this.proofService.getById(proofRecordId);
+    return this.proofService.getById(proofRecordId)
   }
 
   /**
@@ -250,13 +250,13 @@ export class ProofsModule {
    * @returns The proof record
    */
   public async getByThreadId(threadId: string): Promise<ProofRecord> {
-    return this.proofService.getByThreadId(threadId);
+    return this.proofService.getByThreadId(threadId)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new ProposePresentationHandler(this.proofService));
-    dispatcher.registerHandler(new RequestPresentationHandler(this.proofService));
-    dispatcher.registerHandler(new PresentationHandler(this.proofService));
-    dispatcher.registerHandler(new PresentationAckHandler(this.proofService));
+    dispatcher.registerHandler(new ProposePresentationHandler(this.proofService))
+    dispatcher.registerHandler(new RequestPresentationHandler(this.proofService))
+    dispatcher.registerHandler(new PresentationHandler(this.proofService))
+    dispatcher.registerHandler(new PresentationAckHandler(this.proofService))
   }
 }

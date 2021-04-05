@@ -1,25 +1,25 @@
-import { CredentialRecord } from './repository/CredentialRecord';
-import { createOutboundMessage } from '../../agent/helpers';
-import { MessageSender } from '../../agent/MessageSender';
-import { ConnectionService } from '../connections';
-import { EventEmitter } from 'events';
-import { CredentialOfferTemplate, CredentialService } from './services';
-import { ProposeCredentialMessage, ProposeCredentialMessageOptions } from './messages';
-import { JsonTransformer } from '../../utils/JsonTransformer';
-import { CredentialInfo } from './models';
-import { Dispatcher } from '../../agent/Dispatcher';
+import { CredentialRecord } from './repository/CredentialRecord'
+import { createOutboundMessage } from '../../agent/helpers'
+import { MessageSender } from '../../agent/MessageSender'
+import { ConnectionService } from '../connections'
+import { EventEmitter } from 'events'
+import { CredentialOfferTemplate, CredentialService } from './services'
+import { ProposeCredentialMessage, ProposeCredentialMessageOptions } from './messages'
+import { JsonTransformer } from '../../utils/JsonTransformer'
+import { CredentialInfo } from './models'
+import { Dispatcher } from '../../agent/Dispatcher'
 import {
   ProposeCredentialHandler,
   OfferCredentialHandler,
   RequestCredentialHandler,
   IssueCredentialHandler,
   CredentialAckHandler,
-} from './handlers';
+} from './handlers'
 
 export class CredentialsModule {
-  private connectionService: ConnectionService;
-  private credentialService: CredentialService;
-  private messageSender: MessageSender;
+  private connectionService: ConnectionService
+  private credentialService: CredentialService
+  private messageSender: MessageSender
 
   public constructor(
     dispatcher: Dispatcher,
@@ -27,10 +27,10 @@ export class CredentialsModule {
     credentialService: CredentialService,
     messageSender: MessageSender
   ) {
-    this.connectionService = connectionService;
-    this.credentialService = credentialService;
-    this.messageSender = messageSender;
-    this.registerHandlers(dispatcher);
+    this.connectionService = connectionService
+    this.credentialService = credentialService
+    this.messageSender = messageSender
+    this.registerHandlers(dispatcher)
   }
 
   /**
@@ -40,7 +40,7 @@ export class CredentialsModule {
    * @returns event emitter for credential related state changes
    */
   public get events(): EventEmitter {
-    return this.credentialService;
+    return this.credentialService
   }
 
   /**
@@ -52,14 +52,14 @@ export class CredentialsModule {
    * @returns Credential record associated with the sent proposal message
    */
   public async proposeCredential(connectionId: string, config?: Omit<ProposeCredentialMessageOptions, 'id'>) {
-    const connection = await this.connectionService.getById(connectionId);
+    const connection = await this.connectionService.getById(connectionId)
 
-    const { message, credentialRecord } = await this.credentialService.createProposal(connection, config);
+    const { message, credentialRecord } = await this.credentialService.createProposal(connection, config)
 
-    const outbound = createOutboundMessage(connection, message);
-    await this.messageSender.sendMessage(outbound);
+    const outbound = createOutboundMessage(connection, message)
+    await this.messageSender.sendMessage(outbound)
 
-    return credentialRecord;
+    return credentialRecord
   }
 
   /**
@@ -74,29 +74,29 @@ export class CredentialsModule {
   public async acceptProposal(
     credentialRecordId: string,
     config?: {
-      comment?: string;
-      credentialDefinitionId?: string;
+      comment?: string
+      credentialDefinitionId?: string
     }
   ) {
-    const credentialRecord = await this.credentialService.getById(credentialRecordId);
-    const connection = await this.connectionService.getById(credentialRecord.connectionId);
+    const credentialRecord = await this.credentialService.getById(credentialRecordId)
+    const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
     // FIXME: transformation should be handled by record class
     const credentialProposalMessage = JsonTransformer.fromJSON(
       credentialRecord.proposalMessage,
       ProposeCredentialMessage
-    );
+    )
 
     if (!credentialProposalMessage.credentialProposal) {
-      throw new Error(`Credential record with id ${credentialRecordId} is missing required credential proposal`);
+      throw new Error(`Credential record with id ${credentialRecordId} is missing required credential proposal`)
     }
 
-    const credentialDefinitionId = config?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId;
+    const credentialDefinitionId = config?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
 
     if (!credentialDefinitionId) {
       throw new Error(
         'Missing required credential definition id. If credential proposal message contains no credential definition id it must be passed to config.'
-      );
+      )
     }
 
     // TODO: check if it is possible to issue credential based on proposal filters
@@ -104,12 +104,12 @@ export class CredentialsModule {
       preview: credentialProposalMessage.credentialProposal,
       credentialDefinitionId,
       comment: config?.comment,
-    });
+    })
 
-    const outboundMessage = createOutboundMessage(connection, message);
-    await this.messageSender.sendMessage(outboundMessage);
+    const outboundMessage = createOutboundMessage(connection, message)
+    await this.messageSender.sendMessage(outboundMessage)
 
-    return credentialRecord;
+    return credentialRecord
   }
 
   /**
@@ -124,14 +124,14 @@ export class CredentialsModule {
     connectionId: string,
     credentialTemplate: CredentialOfferTemplate
   ): Promise<CredentialRecord> {
-    const connection = await this.connectionService.getById(connectionId);
+    const connection = await this.connectionService.getById(connectionId)
 
-    const { message, credentialRecord } = await this.credentialService.createOffer(connection, credentialTemplate);
+    const { message, credentialRecord } = await this.credentialService.createOffer(connection, credentialTemplate)
 
-    const outboundMessage = createOutboundMessage(connection, message);
-    await this.messageSender.sendMessage(outboundMessage);
+    const outboundMessage = createOutboundMessage(connection, message)
+    await this.messageSender.sendMessage(outboundMessage)
 
-    return credentialRecord;
+    return credentialRecord
   }
 
   /**
@@ -144,15 +144,15 @@ export class CredentialsModule {
    *
    */
   public async acceptOffer(credentialRecordId: string, config?: { comment?: string }) {
-    const credentialRecord = await this.credentialService.getById(credentialRecordId);
-    const connection = await this.connectionService.getById(credentialRecord.connectionId);
+    const credentialRecord = await this.credentialService.getById(credentialRecordId)
+    const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
-    const { message } = await this.credentialService.createRequest(credentialRecord, config);
+    const { message } = await this.credentialService.createRequest(credentialRecord, config)
 
-    const outboundMessage = createOutboundMessage(connection, message);
-    await this.messageSender.sendMessage(outboundMessage);
+    const outboundMessage = createOutboundMessage(connection, message)
+    await this.messageSender.sendMessage(outboundMessage)
 
-    return credentialRecord;
+    return credentialRecord
   }
 
   /**
@@ -165,14 +165,14 @@ export class CredentialsModule {
    *
    */
   public async acceptRequest(credentialRecordId: string, config?: { comment?: string }) {
-    const credentialRecord = await this.credentialService.getById(credentialRecordId);
-    const connection = await this.connectionService.getById(credentialRecord.connectionId);
+    const credentialRecord = await this.credentialService.getById(credentialRecordId)
+    const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
-    const { message } = await this.credentialService.createCredential(credentialRecord, config);
-    const outboundMessage = createOutboundMessage(connection, message);
-    await this.messageSender.sendMessage(outboundMessage);
+    const { message } = await this.credentialService.createCredential(credentialRecord, config)
+    const outboundMessage = createOutboundMessage(connection, message)
+    await this.messageSender.sendMessage(outboundMessage)
 
-    return credentialRecord;
+    return credentialRecord
   }
 
   /**
@@ -184,14 +184,14 @@ export class CredentialsModule {
    *
    */
   public async acceptCredential(credentialRecordId: string) {
-    const credentialRecord = await this.credentialService.getById(credentialRecordId);
-    const connection = await this.connectionService.getById(credentialRecord.connectionId);
+    const credentialRecord = await this.credentialService.getById(credentialRecordId)
+    const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
-    const { message } = await this.credentialService.createAck(credentialRecord);
-    const outboundMessage = createOutboundMessage(connection, message);
-    await this.messageSender.sendMessage(outboundMessage);
+    const { message } = await this.credentialService.createAck(credentialRecord)
+    const outboundMessage = createOutboundMessage(connection, message)
+    await this.messageSender.sendMessage(outboundMessage)
 
-    return credentialRecord;
+    return credentialRecord
   }
 
   /**
@@ -200,7 +200,7 @@ export class CredentialsModule {
    * @returns List containing all credential records
    */
   public async getAll(): Promise<CredentialRecord[]> {
-    return this.credentialService.getAll();
+    return this.credentialService.getAll()
   }
 
   /**
@@ -212,7 +212,7 @@ export class CredentialsModule {
    *
    */
   public async getById(credentialRecordId: string) {
-    return this.credentialService.getById(credentialRecordId);
+    return this.credentialService.getById(credentialRecordId)
   }
 
   /**
@@ -224,7 +224,7 @@ export class CredentialsModule {
    * @returns The credential record
    */
   public async getByThreadId(threadId: string): Promise<CredentialRecord> {
-    return this.credentialService.getByThreadId(threadId);
+    return this.credentialService.getByThreadId(threadId)
   }
 
   /**
@@ -234,14 +234,14 @@ export class CredentialsModule {
    * @returns Indy credential info object
    */
   public async getIndyCredential(credentialId: string): Promise<CredentialInfo> {
-    return this.credentialService.getIndyCredential(credentialId);
+    return this.credentialService.getIndyCredential(credentialId)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new ProposeCredentialHandler(this.credentialService));
-    dispatcher.registerHandler(new OfferCredentialHandler(this.credentialService));
-    dispatcher.registerHandler(new RequestCredentialHandler(this.credentialService));
-    dispatcher.registerHandler(new IssueCredentialHandler(this.credentialService));
-    dispatcher.registerHandler(new CredentialAckHandler(this.credentialService));
+    dispatcher.registerHandler(new ProposeCredentialHandler(this.credentialService))
+    dispatcher.registerHandler(new OfferCredentialHandler(this.credentialService))
+    dispatcher.registerHandler(new RequestCredentialHandler(this.credentialService))
+    dispatcher.registerHandler(new IssueCredentialHandler(this.credentialService))
+    dispatcher.registerHandler(new CredentialAckHandler(this.credentialService))
   }
 }

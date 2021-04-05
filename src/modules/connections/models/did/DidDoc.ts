@@ -1,41 +1,41 @@
-import { Expose } from 'class-transformer';
-import { Equals, IsArray, IsString, ValidateNested } from 'class-validator';
+import { Expose } from 'class-transformer'
+import { Equals, IsArray, IsString, ValidateNested } from 'class-validator'
 
-import { AuthenticationTransformer, Authentication } from './authentication';
-import { PublicKey, PublicKeyTransformer } from './publicKey';
-import { Service, ServiceTransformer } from './service';
+import { AuthenticationTransformer, Authentication } from './authentication'
+import { PublicKey, PublicKeyTransformer } from './publicKey'
+import { Service, ServiceTransformer } from './service'
 
-type DidDocOptions = Pick<DidDoc, 'id' | 'publicKey' | 'service' | 'authentication'>;
+type DidDocOptions = Pick<DidDoc, 'id' | 'publicKey' | 'service' | 'authentication'>
 
 export class DidDoc {
   @Expose({ name: '@context' })
   @Equals('https://w3id.org/did/v1')
-  public context = 'https://w3id.org/did/v1';
+  public context = 'https://w3id.org/did/v1'
 
   @IsString()
-  public id!: string;
+  public id!: string
 
   @IsArray()
   @ValidateNested()
   @PublicKeyTransformer()
-  public publicKey: PublicKey[] = [];
+  public publicKey: PublicKey[] = []
 
   @IsArray()
   @ValidateNested()
   @ServiceTransformer()
-  public service: Service[] = [];
+  public service: Service[] = []
 
   @IsArray()
   @ValidateNested()
   @AuthenticationTransformer()
-  public authentication: Authentication[] = [];
+  public authentication: Authentication[] = []
 
   public constructor(options: DidDocOptions) {
     if (options) {
-      this.id = options.id;
-      this.publicKey = options.publicKey;
-      this.service = options.service;
-      this.authentication = options.authentication;
+      this.id = options.id
+      this.publicKey = options.publicKey
+      this.service = options.service
+      this.authentication = options.authentication
     }
   }
 
@@ -45,7 +45,7 @@ export class DidDoc {
    * @param id fully qualified key id
    */
   public getPublicKey(id: string): PublicKey | undefined {
-    return this.publicKey.find(item => item.id === id);
+    return this.publicKey.find((item) => item.id === id)
   }
 
   /**
@@ -54,7 +54,7 @@ export class DidDoc {
    * @param type The type of service(s) to query.
    */
   public getServicesByType<S extends Service = Service>(type: string): S[] {
-    return this.service.filter(service => service.type === type) as S[];
+    return this.service.filter((service) => service.type === type) as S[]
   }
 
   /**
@@ -63,6 +63,6 @@ export class DidDoc {
    * @param classType The class to query services.
    */
   public getServicesByClassType<S extends Service = Service>(classType: new (...args: never[]) => S): S[] {
-    return this.service.filter(service => service instanceof classType) as S[];
+    return this.service.filter((service) => service instanceof classType) as S[]
   }
 }

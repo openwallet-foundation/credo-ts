@@ -1,8 +1,8 @@
-import { ConnectionRecord } from '../modules/connections';
-import { AgentMessage } from './AgentMessage';
-import { OutboundMessage } from '../types';
-import { ConnectionInvitationMessage } from '../modules/connections';
-import { IndyAgentService } from '../modules/connections';
+import { ConnectionRecord } from '../modules/connections'
+import { AgentMessage } from './AgentMessage'
+import { OutboundMessage } from '../types'
+import { ConnectionInvitationMessage } from '../modules/connections'
+import { IndyAgentService } from '../modules/connections'
 
 export function createOutboundMessage<T extends AgentMessage = AgentMessage>(
   connection: ConnectionRecord,
@@ -19,16 +19,16 @@ export function createOutboundMessage<T extends AgentMessage = AgentMessage>(
       recipientKeys: invitation.recipientKeys || [],
       routingKeys: invitation.routingKeys || [],
       senderVk: connection.verkey,
-    };
+    }
   }
 
-  const { theirDidDoc } = connection;
+  const { theirDidDoc } = connection
 
   if (!theirDidDoc) {
-    throw new Error(`DidDoc for connection with verkey ${connection.verkey} not found!`);
+    throw new Error(`DidDoc for connection with verkey ${connection.verkey} not found!`)
   }
 
-  const [service] = theirDidDoc.getServicesByClassType(IndyAgentService);
+  const [service] = theirDidDoc.getServicesByClassType(IndyAgentService)
 
   return {
     connection,
@@ -37,5 +37,5 @@ export function createOutboundMessage<T extends AgentMessage = AgentMessage>(
     recipientKeys: service.recipientKeys,
     routingKeys: service.routingKeys ?? [],
     senderVk: connection.verkey,
-  };
+  }
 }

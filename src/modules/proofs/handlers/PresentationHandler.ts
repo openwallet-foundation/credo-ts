@@ -1,16 +1,16 @@
-import { Handler, HandlerInboundMessage } from '../../../agent/Handler';
-import { PresentationMessage } from '../messages';
-import { ProofService } from '../services';
+import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import { PresentationMessage } from '../messages'
+import { ProofService } from '../services'
 
 export class PresentationHandler implements Handler {
-  private proofService: ProofService;
-  public supportedMessages = [PresentationMessage];
+  private proofService: ProofService
+  public supportedMessages = [PresentationMessage]
 
   public constructor(proofService: ProofService) {
-    this.proofService = proofService;
+    this.proofService = proofService
   }
 
   public async handle(messageContext: HandlerInboundMessage<PresentationHandler>) {
-    await this.proofService.processPresentation(messageContext);
+    await this.proofService.processPresentation(messageContext)
   }
 }

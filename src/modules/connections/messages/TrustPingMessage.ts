@@ -1,15 +1,15 @@
-import { Equals, IsString, IsBoolean } from 'class-validator';
-import { Expose } from 'class-transformer';
+import { Equals, IsString, IsBoolean } from 'class-validator'
+import { Expose } from 'class-transformer'
 
-import { AgentMessage } from '../../../agent/AgentMessage';
-import { ConnectionMessageType } from './ConnectionMessageType';
-import { TimingDecorator } from '../../../decorators/timing/TimingDecorator';
+import { AgentMessage } from '../../../agent/AgentMessage'
+import { ConnectionMessageType } from './ConnectionMessageType'
+import { TimingDecorator } from '../../../decorators/timing/TimingDecorator'
 
 export interface TrustPingMessageOptions {
-  comment?: string;
-  id?: string;
-  responseRequested?: boolean;
-  timing?: Pick<TimingDecorator, 'outTime' | 'expiresTime' | 'delayMilli'>;
+  comment?: string
+  id?: string
+  responseRequested?: boolean
+  timing?: Pick<TimingDecorator, 'outTime' | 'expiresTime' | 'delayMilli'>
 }
 
 /**
@@ -24,31 +24,31 @@ export class TrustPingMessage extends AgentMessage {
    * @param options
    */
   public constructor(options?: TrustPingMessageOptions) {
-    super();
+    super()
 
     if (options) {
-      this.id = options.id || this.generateId();
-      this.comment = options.comment;
-      this.responseRequested = options.responseRequested !== undefined ? options.responseRequested : true;
+      this.id = options.id || this.generateId()
+      this.comment = options.comment
+      this.responseRequested = options.responseRequested !== undefined ? options.responseRequested : true
 
       if (options.timing) {
         this.setTiming({
           outTime: options.timing.outTime,
           expiresTime: options.timing.expiresTime,
           delayMilli: options.timing.delayMilli,
-        });
+        })
       }
     }
   }
 
   @Equals(TrustPingMessage.type)
-  public readonly type = TrustPingMessage.type;
-  public static readonly type = ConnectionMessageType.TrustPingMessage;
+  public readonly type = TrustPingMessage.type
+  public static readonly type = ConnectionMessageType.TrustPingMessage
 
   @IsString()
-  public comment?: string;
+  public comment?: string
 
   @IsBoolean()
   @Expose({ name: 'response_requested' })
-  public responseRequested = true;
+  public responseRequested = true
 }

@@ -1,16 +1,16 @@
-import { Handler, HandlerInboundMessage } from '../../../agent/Handler';
-import { CredentialService } from '../services';
-import { RequestCredentialMessage } from '../messages';
+import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import { CredentialService } from '../services'
+import { RequestCredentialMessage } from '../messages'
 
 export class RequestCredentialHandler implements Handler {
-  private credentialService: CredentialService;
-  public supportedMessages = [RequestCredentialMessage];
+  private credentialService: CredentialService
+  public supportedMessages = [RequestCredentialMessage]
 
   public constructor(credentialService: CredentialService) {
-    this.credentialService = credentialService;
+    this.credentialService = credentialService
   }
 
   public async handle(messageContext: HandlerInboundMessage<RequestCredentialHandler>) {
-    this.credentialService.processRequest(messageContext);
+    await this.credentialService.processRequest(messageContext)
   }
 }

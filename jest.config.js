@@ -14,4 +14,4 @@ module.exports = {
   collectCoverageFrom: ['src/**/*.{js,jsx,tsx,ts}'],
   coveragePathIgnorePatterns: ['/node_modules/', '/__tests__/'],
   testTimeout: 60000,
-};
+}

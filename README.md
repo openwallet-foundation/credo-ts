@@ -99,17 +99,17 @@ The when initializing the agent you can pass the specific Indy API as an input p
 
 ```typescript
 // for NodeJS
-import indy from 'indy-sdk';
+import indy from 'indy-sdk'
 
 // for React Native
-import indy from 'rn-indy-sdk';
+import indy from 'rn-indy-sdk'
 
 const config = {
   // ... other config properties ...
   indy,
-};
+}
 
-agent = new Agent(config, inboundTransport, outboundTransport);
+agent = new Agent(config, inboundTransport, outboundTransport)
 ```
 
 For an example react native app that makes use of the framework see [Aries Mobile Agent React Native](https://github.com/animo/aries-mobile-agent-react-native.git)
@@ -119,12 +119,12 @@ For an example react native app that makes use of the framework see [Aries Mobil
 To enable logging inside the framework a logger must be passed to the agent config. A simple `ConsoleLogger` can be imported from the framework, for more advanced use cases the `ILogger` interface can implemented. See [`TestLogger`](./src/__tests__/logger.ts) for a more advanced example.
 
 ```ts
-import { ILogger, ConsoleLogger, LogLevel } from 'aries-framework-javascript';
+import { ILogger, ConsoleLogger, LogLevel } from 'aries-framework-javascript'
 
 const agentConfig = {
   // ... other config properties ...
   logger: new ConsoleLogger(LogLevel.debug),
-};
+}
 ```
 
 ## Architecture

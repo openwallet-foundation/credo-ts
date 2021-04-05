@@ -1,14 +1,14 @@
-import { Equals, ValidateNested } from 'class-validator';
-import { Type, Expose } from 'class-transformer';
+import { Equals, ValidateNested } from 'class-validator'
+import { Type, Expose } from 'class-transformer'
 
-import { AgentMessage } from '../../../agent/AgentMessage';
-import { ConnectionMessageType } from './ConnectionMessageType';
-import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator';
+import { AgentMessage } from '../../../agent/AgentMessage'
+import { ConnectionMessageType } from './ConnectionMessageType'
+import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
 
 export interface ConnectionResponseMessageOptions {
-  id?: string;
-  threadId: string;
-  connectionSig: SignatureDecorator;
+  id?: string
+  threadId: string
+  connectionSig: SignatureDecorator
 }
 
 /**
@@ -22,22 +22,22 @@ export class ConnectionResponseMessage extends AgentMessage {
    * @param options
    */
   public constructor(options: ConnectionResponseMessageOptions) {
-    super();
+    super()
 
     if (options) {
-      this.id = options.id || this.generateId();
-      this.connectionSig = options.connectionSig;
+      this.id = options.id || this.generateId()
+      this.connectionSig = options.connectionSig
 
-      this.setThread({ threadId: options.threadId });
+      this.setThread({ threadId: options.threadId })
     }
   }
 
   @Equals(ConnectionResponseMessage.type)
-  public readonly type = ConnectionResponseMessage.type;
-  public static readonly type = ConnectionMessageType.ConnectionResponse;
+  public readonly type = ConnectionResponseMessage.type
+  public static readonly type = ConnectionMessageType.ConnectionResponse
 
   @Type(() => SignatureDecorator)
   @ValidateNested()
   @Expose({ name: 'connection~sig' })
-  public connectionSig!: SignatureDecorator;
+  public connectionSig!: SignatureDecorator
 }
