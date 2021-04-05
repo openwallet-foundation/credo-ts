@@ -11,14 +11,6 @@ env:
   GENESIS_TXN_PATH: network/genesis/local-genesis.txn
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    container: ghcr.io/todogroup/repolinter:v0.10.1
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
-      - name: Lint Repo
-        run: bundle exec /app/bin/repolinter.js --rulesetFile repolint.json
   integration-test:
     runs-on: ubuntu-18.04
     name: Integration Tests
