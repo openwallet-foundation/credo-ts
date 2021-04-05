@@ -1,8 +1,8 @@
-import { Equals, IsDate, IsString } from 'class-validator';
-import { Expose, Type } from 'class-transformer';
+import { Equals, IsDate, IsString } from 'class-validator'
+import { Expose, Type } from 'class-transformer'
 
-import { AgentMessage } from '../../../agent/AgentMessage';
-import { MessageType } from './BasicMessageMessageType';
+import { AgentMessage } from '../../../agent/AgentMessage'
+import { MessageType } from './BasicMessageMessageType'
 
 export class BasicMessage extends AgentMessage {
   /**
@@ -11,26 +11,26 @@ export class BasicMessage extends AgentMessage {
    * @param options
    */
   public constructor(options: { content: string; sentTime?: Date; id?: string; locale?: string }) {
-    super();
+    super()
 
     if (options) {
-      this.id = options.id || this.generateId();
-      this.sentTime = options.sentTime || new Date();
-      this.content = options.content;
-      this.addLocale(options.locale || 'en');
+      this.id = options.id || this.generateId()
+      this.sentTime = options.sentTime || new Date()
+      this.content = options.content
+      this.addLocale(options.locale || 'en')
     }
   }
 
   @Equals(BasicMessage.type)
-  public readonly type = BasicMessage.type;
-  public static readonly type = MessageType.BasicMessage;
+  public readonly type = BasicMessage.type
+  public static readonly type = MessageType.BasicMessage
 
   @Expose({ name: 'sent_time' })
   @Type(() => Date)
   @IsDate()
-  public sentTime!: Date;
+  public sentTime!: Date
 
   @Expose({ name: 'content' })
   @IsString()
-  public content!: string;
+  public content!: string
 }

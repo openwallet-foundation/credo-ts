@@ -1,20 +1,20 @@
-import type { IndyProof, Schema, CredDef } from 'indy-sdk';
+import type { IndyProof, Schema, CredDef } from 'indy-sdk'
 
-import { EventEmitter } from 'events';
-import { validateOrReject } from 'class-validator';
+import { EventEmitter } from 'events'
+import { validateOrReject } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage';
-import { LedgerService } from '../../ledger/services/LedgerService';
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
-import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment';
-import { ConnectionRecord } from '../../connections';
-import { ProofRecord } from '../repository/ProofRecord';
-import { Repository } from '../../../storage/Repository';
-import { JsonEncoder } from '../../../utils/JsonEncoder';
-import { JsonTransformer } from '../../../utils/JsonTransformer';
-import { uuid } from '../../../utils/uuid';
-import { Wallet } from '../../../wallet/Wallet';
-import { CredentialUtils, Credential, CredentialInfo } from '../../credentials';
+import { AgentMessage } from '../../../agent/AgentMessage'
+import { LedgerService } from '../../ledger/services/LedgerService'
+import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
+import { ConnectionRecord } from '../../connections'
+import { ProofRecord } from '../repository/ProofRecord'
+import { Repository } from '../../../storage/Repository'
+import { JsonEncoder } from '../../../utils/JsonEncoder'
+import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { uuid } from '../../../utils/uuid'
+import { Wallet } from '../../../wallet/Wallet'
+import { CredentialUtils, Credential, CredentialInfo } from '../../credentials'
 
 import {
   PresentationMessage,
@@ -25,8 +25,8 @@ import {
   PresentationAckMessage,
   INDY_PROOF_REQUEST_ATTACHMENT_ID,
   INDY_PROOF_ATTACHMENT_ID,
-} from '../messages';
-import { AckStatus } from '../../common';
+} from '../messages'
+import { AckStatus } from '../../common'
 import {
   PartialProof,
   ProofAttributeInfo,
@@ -36,23 +36,23 @@ import {
   RequestedCredentials,
   RequestedAttribute,
   RequestedPredicate,
-} from '../models';
-import { ProofState } from '../ProofState';
-import { AgentConfig } from '../../../agent/AgentConfig';
-import { Logger } from '../../../logger';
+} from '../models'
+import { ProofState } from '../ProofState'
+import { AgentConfig } from '../../../agent/AgentConfig'
+import { Logger } from '../../../logger'
 
 export enum ProofEventType {
   StateChanged = 'stateChanged',
 }
 
 export interface ProofStateChangedEvent {
-  proofRecord: ProofRecord;
-  previousState: ProofState;
+  proofRecord: ProofRecord
+  previousState: ProofState
 }
 
 export interface ProofProtocolMsgReturnType<MessageType extends AgentMessage> {
-  message: MessageType;
-  proofRecord: ProofRecord;
+  message: MessageType
+  proofRecord: ProofRecord
 }
 
 /**
@@ -61,10 +61,10 @@ export interface ProofProtocolMsgReturnType<MessageType extends AgentMessage> {
  * @todo validate attachments / messages
  */
 export class ProofService extends EventEmitter {
-  private proofRepository: Repository<ProofRecord>;
-  private ledgerService: LedgerService;
-  private wallet: Wallet;
-  private logger: Logger;
+  private proofRepository: Repository<ProofRecord>
+  private ledgerService: LedgerService
+  private wallet: Wallet
+  private logger: Logger
 
   public constructor(
     proofRepository: Repository<ProofRecord>,
@@ -72,12 +72,12 @@ export class ProofService extends EventEmitter {
     wallet: Wallet,
     agentConfig: AgentConfig
   ) {
-    super();
+    super()
 
-    this.proofRepository = proofRepository;
-    this.ledgerService = ledgerService;
-    this.wallet = wallet;
-    this.logger = agentConfig.logger;
+    this.proofRepository = proofRepository
+    this.ledgerService = ledgerService
+    this.wallet = wallet
+    this.logger = agentConfig.logger
   }
 
   /**
@@ -94,17 +94,17 @@ export class ProofService extends EventEmitter {
     connectionRecord: ConnectionRecord,
     presentationProposal: PresentationPreview,
     config?: {
-      comment?: string;
+      comment?: string
     }
   ): Promise<ProofProtocolMsgReturnType<ProposePresentationMessage>> {
     // Assert
-    connectionRecord.assertReady();
+    connectionRecord.assertReady()
 
     // Create message
     const proposalMessage = new ProposePresentationMessage({
       comment: config?.comment,
       presentationProposal,
-    });
+    })
 
     // Create record
     const proofRecord = new ProofRecord({
@@ -112,11 +112,11 @@ export class ProofService extends EventEmitter {
       state: ProofState.ProposalSent,
       proposalMessage,
       tags: { threadId: proposalMessage.threadId },
-    });
-    await this.proofRepository.save(proofRecord);
-    this.emit(ProofEventType.StateChanged, { proofRecord, previousState: null });
+    })
+    await this.proofRepository.save(proofRecord)
+    this.emit(ProofEventType.StateChanged, { proofRecord, previousState: null })
 
-    return { message: proposalMessage, proofRecord };
+    return { message: proposalMessage, proofRecord }
   }
 
   /**
@@ -133,24 +133,24 @@ export class ProofService extends EventEmitter {
     proofRecord: ProofRecord,
     presentationProposal: PresentationPreview,
     config?: {
-      comment?: string;
+      comment?: string
     }
   ): Promise<ProofProtocolMsgReturnType<ProposePresentationMessage>> {
     // Assert
-    proofRecord.assertState(ProofState.RequestReceived);
+    proofRecord.assertState(ProofState.RequestReceived)
 
     // Create message
     const proposalMessage = new ProposePresentationMessage({
       comment: config?.comment,
       presentationProposal,
-    });
-    proposalMessage.setThread({ threadId: proofRecord.tags.threadId });
+    })
+    proposalMessage.setThread({ threadId: proofRecord.tags.threadId })
 
     // Update record
-    proofRecord.proposalMessage = proposalMessage;
-    this.updateState(proofRecord, ProofState.ProposalSent);
+    proofRecord.proposalMessage = proposalMessage
+    this.updateState(proofRecord, ProofState.ProposalSent)
 
-    return { message: proposalMessage, proofRecord };
+    return { message: proposalMessage, proofRecord }
   }
 
   /**
@@ -166,28 +166,28 @@ export class ProofService extends EventEmitter {
   public async processProposal(
     messageContext: InboundMessageContext<ProposePresentationMessage>
   ): Promise<ProofRecord> {
-    let proofRecord: ProofRecord;
-    const { message: proposalMessage, connection } = messageContext;
+    let proofRecord: ProofRecord
+    const { message: proposalMessage, connection } = messageContext
 
     // Assert connection
-    connection?.assertReady();
+    connection?.assertReady()
     if (!connection) {
       throw new Error(
         `No connection associated with incoming presentation proposal message with thread id ${proposalMessage.threadId}`
-      );
+      )
     }
 
     try {
       // Proof record already exists
-      proofRecord = await this.getByThreadId(proposalMessage.threadId);
+      proofRecord = await this.getByThreadId(proposalMessage.threadId)
 
       // Assert
-      proofRecord.assertState(ProofState.RequestSent);
-      proofRecord.assertConnection(connection.id);
+      proofRecord.assertState(ProofState.RequestSent)
+      proofRecord.assertConnection(connection.id)
 
       // Update record
-      proofRecord.proposalMessage = proposalMessage;
-      await this.updateState(proofRecord, ProofState.ProposalReceived);
+      proofRecord.proposalMessage = proposalMessage
+      await this.updateState(proofRecord, ProofState.ProposalReceived)
     } catch {
       // No proof record exists with thread id
       proofRecord = new ProofRecord({
@@ -195,14 +195,17 @@ export class ProofService extends EventEmitter {
         proposalMessage,
         state: ProofState.ProposalReceived,
         tags: { threadId: proposalMessage.threadId },
-      });
+      })
 
       // Save record
-      await this.proofRepository.save(proofRecord);
-      this.emit(ProofEventType.StateChanged, { proofRecord, previousState: null });
+      await this.proofRepository.save(proofRecord)
+      this.emit(ProofEventType.StateChanged, {
+        proofRecord,
+        previousState: null,
+      })
     }
 
-    return proofRecord;
+    return proofRecord
   }
 
   /**
@@ -219,11 +222,11 @@ export class ProofService extends EventEmitter {
     proofRecord: ProofRecord,
     proofRequest: ProofRequest,
     config?: {
-      comment?: string;
+      comment?: string
     }
   ): Promise<ProofProtocolMsgReturnType<RequestPresentationMessage>> {
     // Assert
-    proofRecord.assertState(ProofState.ProposalReceived);
+    proofRecord.assertState(ProofState.ProposalReceived)
 
     // Create message
     const attachment = new Attachment({
@@ -232,18 +235,20 @@ export class ProofService extends EventEmitter {
       data: new AttachmentData({
         base64: JsonEncoder.toBase64(proofRequest),
       }),
-    });
+    })
     const requestPresentationMessage = new RequestPresentationMessage({
       comment: config?.comment,
       attachments: [attachment],
-    });
-    requestPresentationMessage.setThread({ threadId: proofRecord.tags.threadId });
+    })
+    requestPresentationMessage.setThread({
+      threadId: proofRecord.tags.threadId,
+    })
 
     // Update record
-    proofRecord.requestMessage = requestPresentationMessage;
-    await this.updateState(proofRecord, ProofState.RequestSent);
+    proofRecord.requestMessage = requestPresentationMessage
+    await this.updateState(proofRecord, ProofState.RequestSent)
 
-    return { message: requestPresentationMessage, proofRecord };
+    return { message: requestPresentationMessage, proofRecord }
   }
 
   /**
@@ -260,11 +265,11 @@ export class ProofService extends EventEmitter {
     connectionRecord: ConnectionRecord,
     proofRequest: ProofRequest,
     config?: {
-      comment?: string;
+      comment?: string
     }
   ): Promise<ProofProtocolMsgReturnType<RequestPresentationMessage>> {
     // Assert
-    connectionRecord.assertReady();
+    connectionRecord.assertReady()
 
     // Create message
     const attachment = new Attachment({
@@ -273,11 +278,11 @@ export class ProofService extends EventEmitter {
       data: new AttachmentData({
         base64: JsonEncoder.toBase64(proofRequest),
       }),
-    });
+    })
     const requestPresentationMessage = new RequestPresentationMessage({
       comment: config?.comment,
       attachments: [attachment],
-    });
+    })
 
     // Create record
     const proofRecord = new ProofRecord({
@@ -285,12 +290,12 @@ export class ProofService extends EventEmitter {
       requestMessage: requestPresentationMessage,
       state: ProofState.RequestSent,
       tags: { threadId: requestPresentationMessage.threadId },
-    });
+    })
 
-    await this.proofRepository.save(proofRecord);
-    this.emit(ProofEventType.StateChanged, { proofRecord, previousState: null });
+    await this.proofRepository.save(proofRecord)
+    this.emit(ProofEventType.StateChanged, { proofRecord, previousState: null })
 
-    return { message: requestPresentationMessage, proofRecord };
+    return { message: requestPresentationMessage, proofRecord }
   }
 
   /**
@@ -304,40 +309,40 @@ export class ProofService extends EventEmitter {
    *
    */
   public async processRequest(messageContext: InboundMessageContext<RequestPresentationMessage>): Promise<ProofRecord> {
-    let proofRecord: ProofRecord;
-    const { message: proofRequestMessage, connection } = messageContext;
+    let proofRecord: ProofRecord
+    const { message: proofRequestMessage, connection } = messageContext
 
     // Assert connection
-    connection?.assertReady();
+    connection?.assertReady()
     if (!connection) {
       throw new Error(
         `No connection associated with incoming presentation request message with thread id ${proofRequestMessage.threadId}`
-      );
+      )
     }
 
-    const proofRequest = proofRequestMessage.indyProofRequest;
+    const proofRequest = proofRequestMessage.indyProofRequest
 
     // Assert attachment
     if (!proofRequest) {
       throw new Error(
         `Missing required base64 encoded attachment data for presentation request with thread id ${proofRequestMessage.threadId}`
-      );
+      )
     }
-    await validateOrReject(proofRequest);
+    await validateOrReject(proofRequest)
 
-    this.logger.debug('received proof request', proofRequest);
+    this.logger.debug('received proof request', proofRequest)
 
     try {
       // Proof record already exists
-      proofRecord = await this.getByThreadId(proofRequestMessage.threadId);
+      proofRecord = await this.getByThreadId(proofRequestMessage.threadId)
 
       // Assert
-      proofRecord.assertState(ProofState.ProposalSent);
-      proofRecord.assertConnection(connection.id);
+      proofRecord.assertState(ProofState.ProposalSent)
+      proofRecord.assertConnection(connection.id)
 
       // Update record
-      proofRecord.requestMessage = proofRequestMessage;
-      await this.updateState(proofRecord, ProofState.RequestReceived);
+      proofRecord.requestMessage = proofRequestMessage
+      await this.updateState(proofRecord, ProofState.RequestReceived)
     } catch {
       // No proof record exists with thread id
       proofRecord = new ProofRecord({
@@ -345,14 +350,17 @@ export class ProofService extends EventEmitter {
         requestMessage: proofRequestMessage,
         state: ProofState.RequestReceived,
         tags: { threadId: proofRequestMessage.threadId },
-      });
+      })
 
       // Save in repository
-      await this.proofRepository.save(proofRecord);
-      this.emit(ProofEventType.StateChanged, { proofRecord, previousState: null });
+      await this.proofRepository.save(proofRecord)
+      this.emit(ProofEventType.StateChanged, {
+        proofRecord,
+        previousState: null,
+      })
     }
 
-    return proofRecord;
+    return proofRecord
   }
 
   /**
@@ -368,28 +376,28 @@ export class ProofService extends EventEmitter {
     proofRecord: ProofRecord,
     requestedCredentials: RequestedCredentials,
     config?: {
-      comment?: string;
+      comment?: string
     }
   ): Promise<ProofProtocolMsgReturnType<PresentationMessage>> {
     // Assert
-    proofRecord.assertState(ProofState.RequestReceived);
+    proofRecord.assertState(ProofState.RequestReceived)
 
     // Transform proof request to class instance if this is not already the case
     // FIXME: proof record should handle transformation
     const requestMessage =
       proofRecord.requestMessage instanceof RequestPresentationMessage
         ? proofRecord.requestMessage
-        : JsonTransformer.fromJSON(proofRecord.requestMessage, RequestPresentationMessage);
+        : JsonTransformer.fromJSON(proofRecord.requestMessage, RequestPresentationMessage)
 
-    const indyProofRequest = requestMessage.indyProofRequest;
+    const indyProofRequest = requestMessage.indyProofRequest
     if (!indyProofRequest) {
       throw new Error(
         `Missing required base64 encoded attachment data for presentation with thread id ${proofRecord.tags.threadId}`
-      );
+      )
     }
 
     // Create proof
-    const proof = await this.createProof(indyProofRequest, requestedCredentials);
+    const proof = await this.createProof(indyProofRequest, requestedCredentials)
 
     // Create message
     const attachment = new Attachment({
@@ -398,18 +406,18 @@ export class ProofService extends EventEmitter {
       data: new AttachmentData({
         base64: JsonEncoder.toBase64(proof),
       }),
-    });
+    })
     const presentationMessage = new PresentationMessage({
       comment: config?.comment,
       attachments: [attachment],
-    });
-    presentationMessage.setThread({ threadId: proofRecord.tags.threadId });
+    })
+    presentationMessage.setThread({ threadId: proofRecord.tags.threadId })
 
     // Update record
-    proofRecord.presentationMessage = presentationMessage;
-    await this.updateState(proofRecord, ProofState.PresentationSent);
+    proofRecord.presentationMessage = presentationMessage
+    await this.updateState(proofRecord, ProofState.PresentationSent)
 
-    return { message: presentationMessage, proofRecord };
+    return { message: presentationMessage, proofRecord }
   }
 
   /**
@@ -423,46 +431,46 @@ export class ProofService extends EventEmitter {
    *
    */
   public async processPresentation(messageContext: InboundMessageContext<PresentationMessage>): Promise<ProofRecord> {
-    const { message: presentationMessage, connection } = messageContext;
+    const { message: presentationMessage, connection } = messageContext
 
     // Assert connection
-    connection?.assertReady();
+    connection?.assertReady()
     if (!connection) {
       throw new Error(
         `No connection associated with incoming presentation message with thread id ${presentationMessage.threadId}`
-      );
+      )
     }
 
     // Assert proof record
-    const proofRecord = await this.getByThreadId(presentationMessage.threadId);
-    proofRecord.assertState(ProofState.RequestSent);
+    const proofRecord = await this.getByThreadId(presentationMessage.threadId)
+    proofRecord.assertState(ProofState.RequestSent)
 
     // TODO: add proof class with validator
-    const indyProofJson = presentationMessage.indyProof;
+    const indyProofJson = presentationMessage.indyProof
     // FIXME: Transformation should be handled by record class
     const indyProofRequest = JsonTransformer.fromJSON(proofRecord.requestMessage, RequestPresentationMessage)
-      .indyProofRequest;
+      .indyProofRequest
 
     if (!indyProofJson) {
       throw new Error(
         `Missing required base64 encoded attachment data for presentation with thread id ${presentationMessage.threadId}`
-      );
+      )
     }
 
     if (!indyProofRequest) {
       throw new Error(
         `Missing required base64 encoded attachment data for presentation request with thread id ${presentationMessage.threadId}`
-      );
+      )
     }
 
-    const isValid = await this.verifyProof(indyProofJson, indyProofRequest);
+    const isValid = await this.verifyProof(indyProofJson, indyProofRequest)
 
     // Update record
-    proofRecord.isVerified = isValid;
-    proofRecord.presentationMessage = presentationMessage;
-    await this.updateState(proofRecord, ProofState.PresentationReceived);
+    proofRecord.isVerified = isValid
+    proofRecord.presentationMessage = presentationMessage
+    await this.updateState(proofRecord, ProofState.PresentationReceived)
 
-    return proofRecord;
+    return proofRecord
   }
 
   /**
@@ -474,18 +482,18 @@ export class ProofService extends EventEmitter {
    */
   public async createAck(proofRecord: ProofRecord): Promise<ProofProtocolMsgReturnType<PresentationAckMessage>> {
     // Assert
-    proofRecord.assertState(ProofState.PresentationReceived);
+    proofRecord.assertState(ProofState.PresentationReceived)
 
     // Create message
     const ackMessage = new PresentationAckMessage({
       status: AckStatus.OK,
       threadId: proofRecord.tags.threadId!,
-    });
+    })
 
     // Update record
-    await this.updateState(proofRecord, ProofState.Done);
+    await this.updateState(proofRecord, ProofState.Done)
 
-    return { message: ackMessage, proofRecord };
+    return { message: ackMessage, proofRecord }
   }
 
   /**
@@ -496,28 +504,28 @@ export class ProofService extends EventEmitter {
    *
    */
   public async processAck(messageContext: InboundMessageContext<PresentationAckMessage>): Promise<ProofRecord> {
-    const { message: presentationAckMessage, connection } = messageContext;
+    const { message: presentationAckMessage, connection } = messageContext
 
     // Assert connection
-    connection?.assertReady();
+    connection?.assertReady()
     if (!connection) {
       throw new Error(
         `No connection associated with incoming presentation acknowledgement message with thread id ${presentationAckMessage.threadId}`
-      );
+      )
     }
 
     // Assert proof record
-    const proofRecord = await this.getByThreadId(presentationAckMessage.threadId);
-    proofRecord.assertState(ProofState.PresentationSent);
+    const proofRecord = await this.getByThreadId(presentationAckMessage.threadId)
+    proofRecord.assertState(ProofState.PresentationSent)
 
     // Update record
-    await this.updateState(proofRecord, ProofState.Done);
+    await this.updateState(proofRecord, ProofState.Done)
 
-    return proofRecord;
+    return proofRecord
   }
 
   public async generateProofRequestNonce() {
-    return this.wallet.generateNonce();
+    return this.wallet.generateNonce()
   }
 
   /**
@@ -533,13 +541,13 @@ export class ProofService extends EventEmitter {
     presentationProposal: PresentationPreview,
     config: { name: string; version: string; nonce?: string }
   ): Promise<ProofRequest> {
-    const nonce = config.nonce ?? (await this.generateProofRequestNonce());
+    const nonce = config.nonce ?? (await this.generateProofRequestNonce())
 
     const proofRequest = new ProofRequest({
       name: config.name,
       version: config.version,
       nonce,
-    });
+    })
 
     /**
      * Create mapping of attributes by referent. This required the
@@ -551,27 +559,27 @@ export class ProofService extends EventEmitter {
      *  "referent2": [Attribute3]
      * }
      */
-    const attributesByReferent: Record<string, PresentationPreviewAttribute[]> = {};
+    const attributesByReferent: Record<string, PresentationPreviewAttribute[]> = {}
     for (const proposedAttributes of presentationProposal.attributes) {
-      if (!proposedAttributes.referent) proposedAttributes.referent = uuid();
+      if (!proposedAttributes.referent) proposedAttributes.referent = uuid()
 
-      const referentAttributes = attributesByReferent[proposedAttributes.referent];
+      const referentAttributes = attributesByReferent[proposedAttributes.referent]
 
       // Referent key already exist, add to list
       if (referentAttributes) {
-        referentAttributes.push(proposedAttributes);
+        referentAttributes.push(proposedAttributes)
       }
       // Referent key does not exist yet, create new entry
       else {
-        attributesByReferent[proposedAttributes.referent] = [proposedAttributes];
+        attributesByReferent[proposedAttributes.referent] = [proposedAttributes]
       }
     }
 
     // Transform attributes by referent to requested attributes
     for (const [referent, proposedAttributes] of Object.entries(attributesByReferent)) {
       // Either attributeName or attributeNames will be undefined
-      const attributeName = proposedAttributes.length == 1 ? proposedAttributes[0].name : undefined;
-      const attributeNames = proposedAttributes.length > 1 ? proposedAttributes.map(a => a.name) : undefined;
+      const attributeName = proposedAttributes.length == 1 ? proposedAttributes[0].name : undefined
+      const attributeNames = proposedAttributes.length > 1 ? proposedAttributes.map((a) => a.name) : undefined
 
       const requestedAttribute = new ProofAttributeInfo({
         name: attributeName,
@@ -581,12 +589,12 @@ export class ProofService extends EventEmitter {
             credentialDefinitionId: proposedAttributes[0].credentialDefinitionId,
           }),
         ],
-      });
+      })
 
-      proofRequest.requestedAttributes[referent] = requestedAttribute;
+      proofRequest.requestedAttributes[referent] = requestedAttribute
     }
 
-    this.logger.debug('proposal predicates', presentationProposal.predicates);
+    this.logger.debug('proposal predicates', presentationProposal.predicates)
     // Transform proposed predicates to requested predicates
     for (const proposedPredicate of presentationProposal.predicates) {
       const requestedPredicate = new ProofPredicateInfo({
@@ -598,12 +606,12 @@ export class ProofService extends EventEmitter {
             credentialDefinitionId: proposedPredicate.credentialDefinitionId,
           }),
         ],
-      });
+      })
 
-      proofRequest.requestedPredicates[uuid()] = requestedPredicate;
+      proofRequest.requestedPredicates[uuid()] = requestedPredicate
     }
 
-    return proofRequest;
+    return proofRequest
   }
 
   /**
@@ -622,51 +630,51 @@ export class ProofService extends EventEmitter {
     proofRequest: ProofRequest,
     presentationProposal?: PresentationPreview
   ): Promise<RequestedCredentials> {
-    const requestedCredentials = new RequestedCredentials({});
+    const requestedCredentials = new RequestedCredentials({})
 
     for (const [referent, requestedAttribute] of Object.entries(proofRequest.requestedAttributes)) {
-      let credentialMatch: Credential | null = null;
-      const credentials = await this.getCredentialsForProofRequest(proofRequest, referent);
+      let credentialMatch: Credential | null = null
+      const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
       // Can't construct without matching credentials
       if (credentials.length === 0) {
         throw new Error(
           `Could not automatically construct requested credentials for proof request '${proofRequest.name}'`
-        );
+        )
       }
       // If we have exactly one credential, or no proposal to pick preferences
       // on the credential to use, we will use the first one
       else if (credentials.length === 1 || !presentationProposal) {
-        credentialMatch = credentials[0];
+        credentialMatch = credentials[0]
       }
       // If we have a proposal we will use that to determine the credential to use
       else {
-        const names = requestedAttribute.names ?? [requestedAttribute.name];
+        const names = requestedAttribute.names ?? [requestedAttribute.name]
 
         // Find credential that matches all parameters from the proposal
         for (const credential of credentials) {
-          const { attributes, credentialDefinitionId } = credential.credentialInfo;
+          const { attributes, credentialDefinitionId } = credential.credentialInfo
 
           // Check if credential matches all parameters from proposal
-          const isMatch = names.every(name =>
+          const isMatch = names.every((name) =>
             presentationProposal.attributes.find(
-              a =>
+              (a) =>
                 a.name === name &&
                 a.credentialDefinitionId === credentialDefinitionId &&
                 (!a.value || a.value === attributes[name])
             )
-          );
+          )
 
           if (isMatch) {
-            credentialMatch = credential;
-            break;
+            credentialMatch = credential
+            break
           }
         }
 
         if (!credentialMatch) {
           throw new Error(
             `Could not automatically construct requested credentials for proof request '${proofRequest.name}'`
-          );
+          )
         }
       }
 
@@ -674,45 +682,45 @@ export class ProofService extends EventEmitter {
         requestedCredentials.requestedAttributes[referent] = new RequestedAttribute({
           credentialId: credentialMatch.credentialInfo.referent,
           revealed: true,
-        });
+        })
       }
       // If there are no restrictions we can self attest the attribute
       else {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const value = credentialMatch.credentialInfo.attributes[requestedAttribute.name!];
+        const value = credentialMatch.credentialInfo.attributes[requestedAttribute.name!]
 
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        requestedCredentials.selfAttestedAttributes[referent] = value!;
+        requestedCredentials.selfAttestedAttributes[referent] = value!
       }
     }
 
     for (const [referent, requestedPredicate] of Object.entries(proofRequest.requestedPredicates)) {
-      const credentials = await this.getCredentialsForProofRequest(proofRequest, referent);
+      const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
       // Can't create requestedPredicates without matching credentials
       if (credentials.length === 0) {
         throw new Error(
           `Could not automatically construct requested credentials for proof request '${proofRequest.name}'`
-        );
+        )
       }
 
-      const credentialMatch = credentials[0];
+      const credentialMatch = credentials[0]
       if (requestedPredicate.restrictions) {
         requestedCredentials.requestedPredicates[referent] = new RequestedPredicate({
           credentialId: credentialMatch.credentialInfo.referent,
-        });
+        })
       }
       // If there are no restrictions we can self attest the attribute
       else {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const value = credentialMatch.credentialInfo.attributes[requestedPredicate.name!];
+        const value = credentialMatch.credentialInfo.attributes[requestedPredicate.name!]
 
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        requestedCredentials.selfAttestedAttributes[referent] = value!;
+        requestedCredentials.selfAttestedAttributes[referent] = value!
       }
     }
 
-    return requestedCredentials;
+    return requestedCredentials
   }
 
   /**
@@ -725,7 +733,7 @@ export class ProofService extends EventEmitter {
    *
    */
   public async verifyProof(proofJson: IndyProof, proofRequest: ProofRequest): Promise<boolean> {
-    const proof = JsonTransformer.fromJSON(proofJson, PartialProof);
+    const proof = JsonTransformer.fromJSON(proofJson, PartialProof)
 
     for (const [referent, attribute] of proof.requestedProof.revealedAttributes.entries()) {
       if (!CredentialUtils.checkValidEncoding(attribute.raw, attribute.encoded)) {
@@ -733,7 +741,7 @@ export class ProofService extends EventEmitter {
           `The encoded value for '${referent}' is invalid. ` +
             `Expected '${CredentialUtils.encode(attribute.raw)}'. ` +
             `Actual '${attribute.encoded}'`
-        );
+        )
       }
     }
 
@@ -741,12 +749,12 @@ export class ProofService extends EventEmitter {
     // I'm not 100% sure how much indy does. Also if it checks whether the proof requests matches the proof
     // @see https://github.com/hyperledger/aries-cloudagent-python/blob/master/aries_cloudagent/indy/sdk/verifier.py#L79-L164
 
-    const schemas = await this.getSchemas(new Set(proof.identifiers.map(i => i.schemaId)));
+    const schemas = await this.getSchemas(new Set(proof.identifiers.map((i) => i.schemaId)))
     const credentialDefinitions = await this.getCredentialDefinitions(
-      new Set(proof.identifiers.map(i => i.credentialDefinitionId))
-    );
+      new Set(proof.identifiers.map((i) => i.credentialDefinitionId))
+    )
 
-    return await this.wallet.verifyProof(proofRequest.toJSON(), proofJson, schemas, credentialDefinitions, {}, {});
+    return await this.wallet.verifyProof(proofRequest.toJSON(), proofJson, schemas, credentialDefinitions, {}, {})
   }
 
   /**
@@ -755,7 +763,7 @@ export class ProofService extends EventEmitter {
    * @returns List containing all proof records
    */
   public async getAll(): Promise<ProofRecord[]> {
-    return this.proofRepository.findAll();
+    return this.proofRepository.findAll()
   }
 
   /**
@@ -767,7 +775,7 @@ export class ProofService extends EventEmitter {
    *
    */
   public async getById(proofRecordId: string): Promise<ProofRecord> {
-    return this.proofRepository.find(proofRecordId);
+    return this.proofRepository.find(proofRecordId)
   }
 
   /**
@@ -779,17 +787,17 @@ export class ProofService extends EventEmitter {
    * @returns The proof record
    */
   public async getByThreadId(threadId: string): Promise<ProofRecord> {
-    const proofRecords = await this.proofRepository.findByQuery({ threadId });
+    const proofRecords = await this.proofRepository.findByQuery({ threadId })
 
     if (proofRecords.length === 0) {
-      throw new Error(`Proof record not found by thread id ${threadId}`);
+      throw new Error(`Proof record not found by thread id ${threadId}`)
     }
 
     if (proofRecords.length > 1) {
-      throw new Error(`Multiple proof records found by thread id ${threadId}`);
+      throw new Error(`Multiple proof records found by thread id ${threadId}`)
     }
 
-    return proofRecords[0];
+    return proofRecords[0]
   }
 
   /**
@@ -803,18 +811,18 @@ export class ProofService extends EventEmitter {
     proofRequest: ProofRequest,
     requestedCredentials: RequestedCredentials
   ): Promise<IndyProof> {
-    const credentialObjects: CredentialInfo[] = [];
+    const credentialObjects: CredentialInfo[] = []
 
     for (const credentialId of requestedCredentials.getCredentialIdentifiers()) {
-      const credentialInfo = JsonTransformer.fromJSON(await this.wallet.getCredential(credentialId), CredentialInfo);
+      const credentialInfo = JsonTransformer.fromJSON(await this.wallet.getCredential(credentialId), CredentialInfo)
 
-      credentialObjects.push(credentialInfo);
+      credentialObjects.push(credentialInfo)
     }
 
-    const schemas = await this.getSchemas(new Set(credentialObjects.map(c => c.schemaId)));
+    const schemas = await this.getSchemas(new Set(credentialObjects.map((c) => c.schemaId)))
     const credentialDefinitions = await this.getCredentialDefinitions(
-      new Set(credentialObjects.map(c => c.credentialDefinitionId))
-    );
+      new Set(credentialObjects.map((c) => c.credentialDefinitionId))
+    )
 
     const proof = await this.wallet.createProof(
       proofRequest.toJSON(),
@@ -822,17 +830,17 @@ export class ProofService extends EventEmitter {
       schemas,
       credentialDefinitions,
       {}
-    );
+    )
 
-    return proof;
+    return proof
   }
 
   private async getCredentialsForProofRequest(
     proofRequest: ProofRequest,
     attributeReferent: string
   ): Promise<Credential[]> {
-    const credentialsJson = await this.wallet.getCredentialsForProofRequest(proofRequest.toJSON(), attributeReferent);
-    return (JsonTransformer.fromJSON(credentialsJson, Credential) as unknown) as Credential[];
+    const credentialsJson = await this.wallet.getCredentialsForProofRequest(proofRequest.toJSON(), attributeReferent)
+    return (JsonTransformer.fromJSON(credentialsJson, Credential) as unknown) as Credential[]
   }
 
   /**
@@ -844,16 +852,16 @@ export class ProofService extends EventEmitter {
    *
    */
   private async updateState(proofRecord: ProofRecord, newState: ProofState) {
-    const previousState = proofRecord.state;
-    proofRecord.state = newState;
-    await this.proofRepository.update(proofRecord);
+    const previousState = proofRecord.state
+    proofRecord.state = newState
+    await this.proofRepository.update(proofRecord)
 
     const event: ProofStateChangedEvent = {
       proofRecord,
       previousState: previousState,
-    };
+    }
 
-    this.emit(ProofEventType.StateChanged, event);
+    this.emit(ProofEventType.StateChanged, event)
   }
 
   /**
@@ -866,14 +874,14 @@ export class ProofService extends EventEmitter {
    *
    */
   private async getSchemas(schemaIds: Set<string>) {
-    const schemas: { [key: string]: Schema } = {};
+    const schemas: { [key: string]: Schema } = {}
 
     for (const schemaId of schemaIds) {
-      const schema = await this.ledgerService.getSchema(schemaId);
-      schemas[schemaId] = schema;
+      const schema = await this.ledgerService.getSchema(schemaId)
+      schemas[schemaId] = schema
     }
 
-    return schemas;
+    return schemas
   }
 
   /**
@@ -886,13 +894,13 @@ export class ProofService extends EventEmitter {
    *
    */
   private async getCredentialDefinitions(credentialDefinitionIds: Set<string>) {
-    const credentialDefinitions: { [key: string]: CredDef } = {};
+    const credentialDefinitions: { [key: string]: CredDef } = {}
 
     for (const credDefId of credentialDefinitionIds) {
-      const credDef = await this.ledgerService.getCredentialDefinition(credDefId);
-      credentialDefinitions[credDefId] = credDef;
+      const credDef = await this.ledgerService.getCredentialDefinition(credDefId)
+      credentialDefinitions[credDefId] = credDef
     }
 
-    return credentialDefinitions;
+    return credentialDefinitions
   }
 }

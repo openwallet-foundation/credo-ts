@@ -1,11 +1,11 @@
-import { OutboundMessage } from '../types';
-import { AgentMessage } from './AgentMessage';
-import { InboundMessageContext } from './models/InboundMessageContext';
+import { OutboundMessage } from '../types'
+import { AgentMessage } from './AgentMessage'
+import { InboundMessageContext } from './models/InboundMessageContext'
 
 export interface Handler<T extends typeof AgentMessage = typeof AgentMessage> {
-  readonly supportedMessages: readonly T[];
+  readonly supportedMessages: readonly T[]
 
-  handle(messageContext: InboundMessageContext): Promise<OutboundMessage | void>;
+  handle(messageContext: InboundMessageContext): Promise<OutboundMessage | void>
 }
 
 /**
@@ -17,4 +17,4 @@ export interface Handler<T extends typeof AgentMessage = typeof AgentMessage> {
  */
 export type HandlerInboundMessage<H extends Handler> = InboundMessageContext<
   InstanceType<H['supportedMessages'][number]>
->;
+>

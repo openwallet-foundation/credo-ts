@@ -1,5 +1,5 @@
-import { Transform, TransformationType } from 'class-transformer';
-import { JsonTransformer } from './JsonTransformer';
+import { Transform, TransformationType } from 'class-transformer'
+import { JsonTransformer } from './JsonTransformer'
 
 /**
  * Decorator that transforms json to and from corresponding record.
@@ -15,18 +15,24 @@ export function RecordTransformer<T>(Class: { new (...args: any[]): T }) {
     switch (type) {
       case TransformationType.CLASS_TO_PLAIN:
         return Object.entries(value).reduce(
-          (accumulator, [key, attribute]) => ({ ...accumulator, [key]: JsonTransformer.toJSON(attribute) }),
+          (accumulator, [key, attribute]) => ({
+            ...accumulator,
+            [key]: JsonTransformer.toJSON(attribute),
+          }),
           {}
-        );
+        )
 
       case TransformationType.PLAIN_TO_CLASS:
         return Object.entries(value).reduce(
-          (accumulator, [key, attribute]) => ({ ...accumulator, [key]: JsonTransformer.fromJSON(attribute, Class) }),
+          (accumulator, [key, attribute]) => ({
+            ...accumulator,
+            [key]: JsonTransformer.fromJSON(attribute, Class),
+          }),
           {}
-        );
+        )
 
       default:
-        return value;
+        return value
     }
-  });
+  })
 }

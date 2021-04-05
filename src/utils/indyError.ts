@@ -56,15 +56,15 @@ export const indyErrors: { [key: number]: string } = {
   704: 'PaymentOperationNotSupportedError',
   705: 'PaymentExtraFundsError',
   706: 'TransactionNotAllowedError',
-};
+}
 
 export function isIndyError(error: any, errorName?: string) {
-  const indyError = error.name === 'IndyError';
+  const indyError = error.name === 'IndyError'
 
   // if no specific indy error name is passed
   // or the error is no indy error
   // we can already return
-  if (!indyError || !errorName) return indyError;
+  if (!indyError || !errorName) return indyError
 
   // NodeJS Wrapper is missing some type names. When a type is missing it will
   // only have the error code as string in the message field
@@ -72,13 +72,13 @@ export function isIndyError(error: any, errorName?: string) {
   // See: https://github.com/AbsaOSS/rn-indy-sdk/pull/24
   // See: https://github.com/hyperledger/indy-sdk/pull/2283
   if (!error.indyName) {
-    const errorCode = Number(error.message);
-    if (!isNaN(errorCode) && indyErrors.hasOwnProperty(errorCode)) {
-      return errorName === indyErrors[errorCode];
+    const errorCode = Number(error.message)
+    if (!isNaN(errorCode) && Object.prototype.hasOwnProperty.call(indyErrors, errorCode)) {
+      return errorName === indyErrors[errorCode]
     }
 
-    throw new Error(`Could not determine errorName of indyError ${error.message}`);
+    throw new Error(`Could not determine errorName of indyError ${error.message}`)
   }
 
-  return error.indyName === errorName;
+  return error.indyName === errorName
 }

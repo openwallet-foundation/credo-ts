@@ -1,5 +1,5 @@
-import { Expose, Type } from 'class-transformer';
-import { IsDate, IsNumber } from 'class-validator';
+import { Expose, Type } from 'class-transformer'
+import { IsDate, IsNumber } from 'class-validator'
 
 /**
  * Represents `~timing` decorator
@@ -7,12 +7,12 @@ import { IsDate, IsNumber } from 'class-validator';
  */
 export class TimingDecorator {
   public constructor(partial?: Partial<TimingDecorator>) {
-    this.inTime = partial?.inTime;
-    this.outTime = partial?.outTime;
-    this.staleTime = partial?.staleTime;
-    this.expiresTime = partial?.expiresTime;
-    this.delayMilli = partial?.delayMilli;
-    this.waitUntilTime = partial?.waitUntilTime;
+    this.inTime = partial?.inTime
+    this.outTime = partial?.outTime
+    this.staleTime = partial?.staleTime
+    this.expiresTime = partial?.expiresTime
+    this.delayMilli = partial?.delayMilli
+    this.waitUntilTime = partial?.waitUntilTime
   }
 
   /**
@@ -22,7 +22,7 @@ export class TimingDecorator {
   @Expose({ name: 'in_time' })
   @Type(() => Date)
   @IsDate()
-  public inTime?: Date;
+  public inTime?: Date
 
   /**
    * The timestamp when the message was emitted. At least millisecond precision is preferred, though second precision is acceptable.
@@ -30,7 +30,7 @@ export class TimingDecorator {
   @Expose({ name: 'out_time' })
   @Type(() => Date)
   @IsDate()
-  public outTime?: Date;
+  public outTime?: Date
 
   /**
    * Ideally, the decorated message should be processed by the the specified timestamp. After that, the message may become irrelevant or less meaningful than intended.
@@ -39,7 +39,7 @@ export class TimingDecorator {
   @Expose({ name: 'stale_time' })
   @Type(() => Date)
   @IsDate()
-  public staleTime?: Date;
+  public staleTime?: Date
 
   /**
    * The decorated message should be considered invalid or expired if encountered after the specified timestamp.
@@ -51,7 +51,7 @@ export class TimingDecorator {
   @Expose({ name: 'expires_time' })
   @Type(() => Date)
   @IsDate()
-  public expiresTime?: Date;
+  public expiresTime?: Date
 
   /**
    * Wait at least this many milliseconds before processing the message. This may be useful to defeat temporal correlation.
@@ -59,7 +59,7 @@ export class TimingDecorator {
    */
   @Expose({ name: 'delay_milli' })
   @IsNumber()
-  public delayMilli?: number;
+  public delayMilli?: number
 
   /**
    * Wait until this time before processing the message.
@@ -67,5 +67,5 @@ export class TimingDecorator {
   @Expose({ name: 'wait_until_time' })
   @Type(() => Date)
   @IsDate()
-  public waitUntilTime?: Date;
+  public waitUntilTime?: Date
 }

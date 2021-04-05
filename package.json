@@ -9,8 +9,8 @@
   ],
   "scripts": {
     "compile": "tsc",
-    "lint": "eslint --ignore-path .gitignore '**/*.+(js|ts)'",
-    "prettier": "prettier --ignore-path .gitignore '**/*.+(js|json|ts)'",
+    "lint": "eslint --ignore-path .gitignore .",
+    "prettier": "prettier --ignore-path .gitignore '**/*.+(js|json|ts|md|yml|yaml)'",
     "format": "yarn prettier --write",
     "check-format": "yarn prettier --list-different",
     "test": "jest --verbose",

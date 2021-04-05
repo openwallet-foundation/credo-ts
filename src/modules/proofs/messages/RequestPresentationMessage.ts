@@ -1,20 +1,20 @@
-import { Equals, IsArray, IsString, ValidateNested, IsOptional } from 'class-validator';
-import { Expose, Type } from 'class-transformer';
+import { Equals, IsArray, IsString, ValidateNested, IsOptional } from 'class-validator'
+import { Expose, Type } from 'class-transformer'
 
-import { AgentMessage } from '../../../agent/AgentMessage';
-import { Attachment } from '../../../decorators/attachment/Attachment';
-import { JsonEncoder } from '../../../utils/JsonEncoder';
-import { JsonTransformer } from '../../../utils/JsonTransformer';
-import { ProofRequest } from '../models';
-import { PresentProofMessageType } from './PresentProofMessageType';
+import { AgentMessage } from '../../../agent/AgentMessage'
+import { Attachment } from '../../../decorators/attachment/Attachment'
+import { JsonEncoder } from '../../../utils/JsonEncoder'
+import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { ProofRequest } from '../models'
+import { PresentProofMessageType } from './PresentProofMessageType'
 
 export interface RequestPresentationOptions {
-  id?: string;
-  comment?: string;
-  attachments: Attachment[];
+  id?: string
+  comment?: string
+  attachments: Attachment[]
 }
 
-export const INDY_PROOF_REQUEST_ATTACHMENT_ID = 'libindy-request-presentation-0';
+export const INDY_PROOF_REQUEST_ATTACHMENT_ID = 'libindy-request-presentation-0'
 
 /**
  * Request Presentation Message part of Present Proof Protocol used to initiate request from verifier to prover.
@@ -23,25 +23,25 @@ export const INDY_PROOF_REQUEST_ATTACHMENT_ID = 'libindy-request-presentation-0'
  */
 export class RequestPresentationMessage extends AgentMessage {
   public constructor(options: RequestPresentationOptions) {
-    super();
+    super()
 
     if (options) {
-      this.id = options.id ?? this.generateId();
-      this.comment = options.comment;
-      this.attachments = options.attachments;
+      this.id = options.id ?? this.generateId()
+      this.comment = options.comment
+      this.attachments = options.attachments
     }
   }
 
   @Equals(RequestPresentationMessage.type)
-  public readonly type = RequestPresentationMessage.type;
-  public static readonly type = PresentProofMessageType.RequestPresentation;
+  public readonly type = RequestPresentationMessage.type
+  public static readonly type = PresentProofMessageType.RequestPresentation
 
   /**
    *  Provides some human readable information about this request for a presentation.
    */
   @IsOptional()
   @IsString()
-  public comment?: string;
+  public comment?: string
 
   /**
    * An array of attachments defining the acceptable formats for the presentation.
@@ -52,20 +52,20 @@ export class RequestPresentationMessage extends AgentMessage {
   @ValidateNested({
     each: true,
   })
-  public attachments!: Attachment[];
+  public attachments!: Attachment[]
 
   public get indyProofRequest(): ProofRequest | null {
-    const attachment = this.attachments.find(attachment => attachment.id === INDY_PROOF_REQUEST_ATTACHMENT_ID);
+    const attachment = this.attachments.find((attachment) => attachment.id === INDY_PROOF_REQUEST_ATTACHMENT_ID)
 
     // Return null if attachment is not found
     if (!attachment?.data?.base64) {
-      return null;
+      return null
     }
 
     // Extract proof request from attachment
-    const proofRequestJson = JsonEncoder.fromBase64(attachment.data.base64);
-    const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest);
+    const proofRequestJson = JsonEncoder.fromBase64(attachment.data.base64)
+    const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
 
-    return proofRequest;
+    return proofRequest
   }
 }
