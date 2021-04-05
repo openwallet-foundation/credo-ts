@@ -98,21 +98,18 @@ export function AttributeFilterTransformer() {
   return Transform(({ value: attributeFilter, type: transformationType }) => {
     switch (transformationType) {
       case TransformationType.CLASS_TO_PLAIN:
-        const attributeValue = attributeFilter.attributeValue
-        if (attributeValue) {
+        if (attributeFilter.attributeValue) {
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          attributeFilter[`attr::${attributeValue.name}::value`] = attributeValue.value
+          attributeFilter[`attr::${attributeFilter.attributeValue.name}::value`] = attributeFilter.attributeValue.value
           delete attributeFilter.attributeValue
         }
 
         return attributeFilter
 
       case TransformationType.PLAIN_TO_CLASS:
-        const regex = new RegExp('^attr::([^:]+)::(value)$')
-
         for (const [key, value] of Object.entries(attributeFilter)) {
-          const match = regex.exec(key)
+          const match = new RegExp('^attr::([^:]+)::(value)$').exec(key)
 
           if (match) {
             const attributeValue = new AttributeValue({

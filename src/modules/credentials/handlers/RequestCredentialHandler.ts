@@ -11,6 +11,6 @@ export class RequestCredentialHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<RequestCredentialHandler>) {
-    this.credentialService.processRequest(messageContext)
+    await this.credentialService.processRequest(messageContext)
   }
 }

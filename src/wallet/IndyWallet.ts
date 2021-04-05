@@ -16,7 +16,6 @@ import type {
   IndyProofRequest,
   IndyRequestedCredentials,
   LedgerRequest,
-  ProofCred,
   RevocRegDelta,
   RevStates,
   Schema,
@@ -302,7 +301,6 @@ export class IndyWallet implements Wallet {
         // pass
       } finally {
         await indy.closeWalletSearch(sh)
-        return
       }
     }
 

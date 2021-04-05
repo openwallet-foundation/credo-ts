@@ -139,7 +139,7 @@ class PollingInboundTransporter implements InboundTransporter {
   }
 
   private pollDownloadMessages(agent: Agent) {
-    new Promise(async () => {
+    const loop = async () => {
       while (!this.stop) {
         const downloadedMessages = await agent.routing.downloadMessages()
         const messages = [...downloadedMessages]
@@ -151,6 +151,9 @@ class PollingInboundTransporter implements InboundTransporter {
 
         await sleep(1000)
       }
+    }
+    new Promise(() => {
+      loop()
     })
   }
 }

@@ -73,7 +73,7 @@ export function isIndyError(error: any, errorName?: string) {
   // See: https://github.com/hyperledger/indy-sdk/pull/2283
   if (!error.indyName) {
     const errorCode = Number(error.message)
-    if (!isNaN(errorCode) && indyErrors.hasOwnProperty(errorCode)) {
+    if (!isNaN(errorCode) && Object.prototype.hasOwnProperty.call(indyErrors, errorCode)) {
       return errorName === indyErrors[errorCode]
     }
 
