@@ -11,7 +11,7 @@ import {
   ProviderRoutingService,
   MessagePickupService,
   ProvisioningService,
-  ProvisioningRecord,
+  MediationRecord,
 } from '../modules/routing';
 import { BasicMessageService, BasicMessageRecord } from '../modules/basic-messages';
 import { LedgerService } from '../modules/ledger';
@@ -27,7 +27,7 @@ import { Wallet } from '../wallet/Wallet';
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule';
 import { CredentialsModule } from '../modules/credentials/CredentialsModule';
 import { ProofsModule } from '../modules/proofs/ProofsModule';
-import { RoutingModule } from '../modules/routing/RoutingModule';
+import { MediationConsumerModule } from '../modules/routing/MediationConsumerModule';
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule';
 import { LedgerModule } from '../modules/ledger/LedgerModule';
 
@@ -50,7 +50,7 @@ export class Agent {
   protected credentialService: CredentialService;
   protected basicMessageRepository: Repository<BasicMessageRecord>;
   protected connectionRepository: Repository<ConnectionRecord>;
-  protected provisioningRepository: Repository<ProvisioningRecord>;
+  protected mediationRepository: Repository<MediationRecord>;
   protected credentialRepository: Repository<CredentialRecord>;
   protected proofRepository: Repository<ProofRecord>;
 
@@ -89,10 +89,10 @@ export class Agent {
     const storageService = new IndyStorageService(this.wallet);
     this.basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService);
     this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService);
-    this.provisioningRepository = new Repository<ProvisioningRecord>(ProvisioningRecord, storageService);
+    this.mediationRepository = new Repository<MediationRecord>(MediationRecord, storageService);
     this.credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService);
     this.proofRepository = new Repository<ProofRecord>(ProofRecord, storageService);
-    this.provisioningService = new ProvisioningService(this.provisioningRepository, this.agentConfig);
+    this.mediationService = new ProvisioningService(this.mediationRepository, this.agentConfig);
     this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository);
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository);
     this.providerRoutingService = new ProviderRoutingService();
@@ -175,7 +175,7 @@ export class Agent {
 
     this.proofs = new ProofsModule(this.dispatcher, this.proofService, this.connectionService, this.messageSender);
 
-    this.routing = new RoutingModule(
+    this.routing = new MediationConsumerModule(
       this.dispatcher,
       this.agentConfig,
       this.providerRoutingService,

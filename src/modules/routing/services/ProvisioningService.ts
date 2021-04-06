@@ -1,6 +1,6 @@
 import type { Verkey } from 'indy-sdk';
 import { Repository } from '../../../storage/Repository';
-import { ProvisioningRecord } from '../repository/ProvisioningRecord';
+import { MediatonRecord } from '../repository/MediationRecord';
 import { isIndyError } from '../../../utils/indyError';
 import { AgentConfig } from '../../../agent/AgentConfig';
 import { Logger } from '../../../logger';

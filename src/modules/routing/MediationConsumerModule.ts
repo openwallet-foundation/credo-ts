@@ -13,7 +13,8 @@ import type { Verkey } from 'indy-sdk';
 import { Dispatcher } from '../../agent/Dispatcher';
 import { MessagePickupHandler, ForwardHandler, KeylistUpdateHandler } from './handlers';
 import { Logger } from '../../logger';
-export class RoutingModule {
+
+export class MediationConsumerModule {
   private agentConfig: AgentConfig;
   private providerRoutingService: ProviderRoutingService;
   private provisioningService: ProvisioningService;
@@ -87,26 +88,6 @@ export class RoutingModule {
     });
 
     return agentConnectionAtMediator;
-  }
-
-  public async downloadMessages() {
-    const inboundConnection = this.getInboundConnection();
-    if (inboundConnection) {
-      const outboundMessage = await this.messagePickupService.batchPickup(inboundConnection);
-      const batchResponse = await this.messageSender.sendAndReceiveMessage(outboundMessage, BatchMessage);
-
-      // TODO: do something about the different types of message variable all having a different purpose
-      return batchResponse.message.messages.map(msg => msg.message);
-    }
-    return [];
-  }
-
-  public getInboundConnection() {
-    return this.agentConfig.inboundConnection;
-  }
-
-  public getRoutingTable() {
-    return this.providerRoutingService.getRoutes();
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
