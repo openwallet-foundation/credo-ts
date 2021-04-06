@@ -1,4 +1,4 @@
-import { Equals, IsArray, ValidateNested, IsString, IsEnum } from 'class-validator';
+import { Equals, IsArray, ValidateNested, IsString, IsEnum, IsNotEmpty, isNotEmptyObject } from 'class-validator';
 import { Type } from 'class-transformer';
 
 import { AgentMessage } from '../../../agent/AgentMessage';
@@ -8,7 +8,7 @@ import { Verkey } from 'indy-sdk';
 export interface MediationGrantedMessageOptions {
     id: string;
     endpoint: string;
-    rountingKeys: [Verkey]
+    routingKeys: [Verkey]
 }
 
 /**
@@ -17,14 +17,18 @@ export interface MediationGrantedMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/tree/master/features/0211-route-coordination
  */
 export class MediationGrantedMessage extends AgentMessage {
+
   public constructor(options: MediationGrantedMessageOptions) {
     super();
     this.id = options.id;
-
+    this.routingKeys = options.routingKeys
+    this.endpoint = options.endpoint
   }
 
-//   Add validation (make sure that these are valid . At least not null. See if you can pull. Check if it's not null and not an empty string.)
-//  Routing key - at least one and has to be. 
+  @IsNotEmpty()
+  public routingKeys: [Verkey]
+  public endpoint: string
+  public id: string
 
   @Equals(MediationGrantedMessage.type)
   public readonly type = MediationGrantedMessage.type;

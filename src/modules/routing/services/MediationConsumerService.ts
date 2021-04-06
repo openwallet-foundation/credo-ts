@@ -2,8 +2,9 @@ import type { Verkey } from 'indy-sdk';
 import { createOutboundMessage } from '../../../agent/helpers';
 import { AgentConfig } from '../../../agent/AgentConfig';
 import { MessageSender } from '../../../agent/MessageSender';
-import { KeylistUpdateMessage, KeylistUpdate, KeylistUpdateAction } from '../messages';
+import { RequestMediationMessage, MediationGrantedMessage, , MediationDeniedMessage } from '../messages';
 import { Logger } from '../../../logger';
+import { ConnectionRecord } from '../../connections';
 
 class MediationConsumerService {
   private messageSender: MessageSender;
@@ -16,7 +17,12 @@ class MediationConsumerService {
     this.logger = agentConfig.logger;
   }
 
-  public async reqeustMediation(verkey: Verkey) {
+  public async createMediationRequestMessage(connectionId: string) :   {
+    this.logger.debug('Requesting mediation');
+    const message = new RequestMediationMessage({})
+  }
+
+  public async reqeustMediation(connection: Verkey) {
     this.logger.debug(`Registering route for verkey '${verkey}' at mediator`);
 
     if (!this.agentConfig.inboundConnection) {
@@ -37,6 +43,15 @@ class MediationConsumerService {
       await this.messageSender.sendMessage(outboundMessage);
     }
   }
+
+  public async handleResponse(){
+    // Handle the response
+    // Cases - granted, denied, error
+    // Granted: save mediator to the Repoistory, return record for immediate use.
+  }
+
+  public async 
+
 }
 
 export { MediationConsumerService };

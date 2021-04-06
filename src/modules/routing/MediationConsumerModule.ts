@@ -11,13 +11,17 @@ import {
 import { BatchMessage } from './messages';
 import type { Verkey } from 'indy-sdk';
 import { Dispatcher } from '../../agent/Dispatcher';
-import { MessagePickupHandler, ForwardHandler, KeylistUpdateHandler } from './handlers';
+import { MessagePickupHandler, ForwardHandler, KeylistUpdateHandler, MediationGrantedHandler, MediationDeniedHandler } from './handlers';
 import { Logger } from '../../logger';
+import { ConnectionRecord } from '../connections'
+import { MediationConsumerService } from './services/MediationConsumerService';
+import agentConfig from '../../../samples/config';
 
 export class MediationConsumerModule {
   private agentConfig: AgentConfig;
   private providerRoutingService: ProviderRoutingService;
   private provisioningService: ProvisioningService;
+  private mediationConsumerService: MediationConsumerService;
   private messagePickupService: MessagePickupService;
   private connectionService: ConnectionService;
   private messageSender: MessageSender;
@@ -27,6 +31,7 @@ export class MediationConsumerModule {
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     providerRoutingService: ProviderRoutingService,
+    mediationConsumerService: MediationConsumerService,
     provisioningService: ProvisioningService,
     messagePickupService: MessagePickupService,
     connectionService: ConnectionService,
@@ -37,63 +42,23 @@ export class MediationConsumerModule {
     this.provisioningService = provisioningService;
     this.messagePickupService = messagePickupService;
     this.connectionService = connectionService;
+    this.mediationConsumerService = mediationConsumerService;
     this.messageSender = messageSender;
     this.logger = agentConfig.logger;
     this.registerHandlers(dispatcher);
   }
 
-  public async provision(mediatorConfiguration: MediatorConfiguration) {
-    let provisioningRecord = await this.provisioningService.find();
+  public async requestMediation(connectionReord: ConnectionRecord) {
+    let mediatorRecord = await this.mediationConsumerService.createMediationRequest(connectionReord);
 
-    if (!provisioningRecord) {
-      this.logger.info('No provision record found. Creating connection with mediator.');
-      const { verkey, invitationUrl, alias = 'Mediator' } = mediatorConfiguration;
-      const mediatorInvitation = await ConnectionInvitationMessage.fromUrl(invitationUrl);
-
-      const connection = await this.connectionService.processInvitation(mediatorInvitation, { alias });
-      const {
-        message: connectionRequest,
-        connectionRecord: connectionRecord,
-      } = await this.connectionService.createRequest(connection.id);
-      const connectionResponse = await this.messageSender.sendAndReceiveMessage(
-        createOutboundMessage(connectionRecord, connectionRequest, connectionRecord.invitation),
-        ConnectionResponseMessage
-      );
-      await this.connectionService.processResponse(connectionResponse);
-      const { message: trustPing } = await this.connectionService.createTrustPing(connectionRecord.id);
-      await this.messageSender.sendMessage(createOutboundMessage(connectionRecord, trustPing));
-
-      const provisioningProps = {
-        mediatorConnectionId: connectionRecord.id,
-        mediatorPublicVerkey: verkey,
-      };
-      provisioningRecord = await this.provisioningService.create(provisioningProps);
-      this.logger.debug('Provisioning record has been saved.');
-    }
-
-    this.logger.debug('Provisioning record:', provisioningRecord);
-
-    const agentConnectionAtMediator = await this.connectionService.find(provisioningRecord.mediatorConnectionId);
-
-    if (!agentConnectionAtMediator) {
-      throw new Error('Connection not found!');
-    }
-    this.logger.debug('agentConnectionAtMediator', agentConnectionAtMediator);
-
-    agentConnectionAtMediator.assertState(ConnectionState.Complete);
-
-    this.agentConfig.establishInbound({
-      verkey: provisioningRecord.mediatorPublicVerkey,
-      connection: agentConnectionAtMediator,
-    });
-
-    return agentConnectionAtMediator;
+    
   }
-
+// Register handlers for the several messages for the mediator. 
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new KeylistUpdateHandler(this.providerRoutingService));
-    dispatcher.registerHandler(new ForwardHandler(this.providerRoutingService));
     dispatcher.registerHandler(new MessagePickupHandler(this.messagePickupService));
+    dispatcher.registerHandler(new MediationGrantedHandler(this.mediationConsumerService));
+    dispatcher.registerHandler(new MediationDeniedHandler(this.mediationConsumerService));
   }
 }
 

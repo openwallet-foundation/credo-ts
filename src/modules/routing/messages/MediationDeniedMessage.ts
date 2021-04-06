@@ -1,4 +1,4 @@
-import { Equals, IsArray, ValidateNested, IsString, IsEnum } from 'class-validator';
+import { Equals, IsArray, ValidateNested, IsString, IsEnum, IsNotEmpty } from 'class-validator';
 import { Type } from 'class-transformer';
 
 import { AgentMessage } from '../../../agent/AgentMessage';
