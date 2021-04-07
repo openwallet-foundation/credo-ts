@@ -1,6 +1,6 @@
 import type { Verkey } from 'indy-sdk';
 import { Equals, IsArray, ValidateNested, IsString, IsEnum } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 
 import { AgentMessage } from '../../../agent/AgentMessage';
 import { RoutingMessageType as MessageType } from './RoutingMessageType';
@@ -49,6 +49,7 @@ export class KeylistUpdate {
   }
 
   @IsString()
+  @Expose({ name: 'recipient_key' })
   public recipientKey!: Verkey;
 
   @IsEnum(KeylistUpdateAction)

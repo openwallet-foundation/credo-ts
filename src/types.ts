@@ -16,6 +16,7 @@ export interface InitConfig {
   publicDid?: Did;
   publicDidSeed?: string;
   mediatorUrl?: string;
+  mediatorRecordId?: string;
   walletConfig: WalletConfig;
   walletCredentials: WalletCredentials;
   autoAcceptConnections?: boolean;

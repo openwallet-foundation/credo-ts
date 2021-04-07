@@ -31,6 +31,10 @@ export class AgentConfig {
     return this.initConfig.mediatorUrl;
   }
 
+  public get mediatorRecordId() {
+    return this.initConfig.mediatorRecordId;
+  }
+
   public get poolName() {
     return this.initConfig.poolName ?? 'default-pool';
   }

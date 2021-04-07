@@ -1,0 +1,214 @@
+import express, { Express } from 'express';
+import fetch from 'node-fetch';
+import cors from 'cors';
+import {
+  Agent,
+  InboundTransporter,
+  OutboundTransporter,
+  OutboundPackage,
+  InitConfig,
+  ConnectionEventType,
+  ConnectionStateChangedEvent,
+  LogLevel,
+  ConnectionState,
+} from '../src';
+import testLogger, { TestLogger } from '../src/__tests__/logger';
+import indy from 'indy-sdk';
+import { resolve } from 'path';
+import { MediationEventType, MediationStateChangedEvent } from '../src/modules/routing/services/MediationService';
+import { MediationState } from '../src/modules/routing/models/MediationState';
+
+class HttpInboundTransporter implements InboundTransporter {
+  private app: Express;
+
+  public constructor(app: Express) {
+    this.app = app;
+  }
+
+  public start(agent: Agent) {
+    this.app.post('/msg', async (req, res) => {
+      const message = req.body;
+      const packedMessage = JSON.parse(message);
+
+      try {
+        const outboundMessage = await agent.receiveMessage(packedMessage);
+        if (outboundMessage) {
+          res.status(200).json(outboundMessage.payload).end();
+        } else {
+          res.status(200).end();
+        }
+      } catch (e) {
+        testLogger.debug('Error: ' + e);
+        res.status(200).end();
+      }
+    });
+  }
+}
+
+class HttpOutboundTransporter implements OutboundTransporter {
+  public async sendMessage(outboundPackage: OutboundPackage, receiveReply: boolean) {
+    const { payload, endpoint } = outboundPackage;
+
+    if (!endpoint) {
+      throw new Error(`Missing endpoint. I don't know how and where to send the message.`);
+    }
+
+    try {
+      if (receiveReply) {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/ssi-agent-wire',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await response.text();
+        const wireMessage = JSON.parse(data);
+        return wireMessage;
+      } else {
+        const rsp = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/ssi-agent-wire',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        testLogger.debug('rsp: ' + rsp.status);
+      }
+    } catch (e) {
+      testLogger.debug('error sending message', e);
+      throw e;
+    }
+  }
+}
+
+const agentConfig: InitConfig = {
+  host: process.env.AGENT_HOST,
+  port: process.env.AGENT_PORT || 3001,
+  poolName: 'local-js',
+  genesisPath: resolve(process.env.GENESIS_TXN_PATH!),
+  endpoint: process.env.AGENT_ENDPOINT,
+  label: process.env.AGENT_LABEL || '',
+  walletConfig: { id: process.env.WALLET_NAME || '' },
+  walletCredentials: { key: process.env.WALLET_KEY || '' },
+  publicDid: process.env.PUBLIC_DID || '',
+  publicDidSeed: process.env.PUBLIC_DID_SEED || '',
+  mediatorRecordId: process.env.MEDIATOR_RECORD_ID || '',
+  autoAcceptConnections: true,
+  logger: new TestLogger(LogLevel.debug),
+  indy: indy,
+};
+
+const PORT = Number(agentConfig.port);
+const app = express();
+
+app.use(cors());
+app.use(
+  express.text({
+    type: ['application/ssi-agent-wire', 'text/plain'],
+  })
+);
+app.set('json spaces', 2);
+
+const messageSender = new HttpOutboundTransporter();
+const messageReceiver = new HttpInboundTransporter(app);
+
+const agent = new Agent(agentConfig, messageReceiver, messageSender);
+
+agent.connections.events.on(ConnectionEventType.StateChanged, async (event: ConnectionStateChangedEvent) => {
+  testLogger.debug('Connection state changed for ' + event.connectionRecord.id);
+  testLogger.debug('Previous state: ' + event.previousState + ' New state: ' + event.connectionRecord.state);
+
+  if (event.connectionRecord.alias == 'mediator' && event.connectionRecord.state == ConnectionState.Complete) {
+    testLogger.debug('Mediator connection completed. Requesting mediation...');
+    // Request mediation
+    const result = await agent.routing.requestMediation(event.connectionRecord);
+    testLogger.debug('Mediation Request sent');
+  }
+});
+
+
+agent.routing.mediationEvents.on(MediationEventType.StateChanged, async (event: MediationStateChangedEvent) => {
+  testLogger.debug('Mediation state changed for ' + event.mediationRecord.id);
+  testLogger.debug('Previous state: ' + event.previousState + ' New state: ' + event.mediationRecord.state);
+
+  if (event.mediationRecord.state == MediationState.Granted) {
+    const connectionRecord = await agent.connections.getById(event.mediationRecord.connectionId);
+    if (connectionRecord) {
+      agent.setInboundConnection({
+        connection: connectionRecord,
+        verkey: event.mediationRecord.routingKeys[0],
+      });
+    }
+  }
+});
+
+// Create new invitation as inviter to invitee
+app.get('/invitation', async (req, res) => {
+  const { invitation } = await agent.connections.createConnection();
+  res.send(invitation.toJSON());
+});
+
+// Receive invitation and assign an alias
+app.post('/receive-invitation', async (req, res) => {
+  try {
+    const invitation = req.body.invitation;
+    const alias = req.body.alias;
+
+    if (!alias || !invitation) {
+      throw new Error('Missing parameter in body. Format: {"alias": ..., "invitation": ... }');
+    }
+
+    const result = await agent.connections.receiveInvitation(invitation, { autoAcceptConnection: true, alias: alias });
+
+    res.send(result);
+  } catch (e) {
+    res.status(500);
+    testLogger.debug('Error: ' + e);
+    res.send('Error: ' + e);
+  }
+});
+
+app.get('/connections', async (req, res) => {
+  const connections = await agent.connections.getAll();
+  res.json(connections);
+});
+
+app.get('/credentials', async (req, res) => {
+  const credentials = await agent.credentials.getAll();
+  res.json(credentials);
+});
+
+app.get('/register-mediator', async (req, res) => {
+  const response = await fetch(process.env.MEDIATOR_INVITATION_ENDPOINT || 'http://localhost:3000/invitation', {
+    method: 'GET',
+  });
+
+  const data = await response.text();
+  const invitation = JSON.parse(data);
+  testLogger.info(data);
+
+  try {
+    const alias = 'mediator';
+
+    if (!alias || !invitation) {
+      throw new Error('Missing parameter');
+    }
+
+    const result = await agent.connections.receiveInvitation(invitation, { autoAcceptConnection: true, alias: alias });
+
+    res.send(result);
+  } catch (e) {
+    res.status(500);
+    testLogger.debug('Error: ' + e);
+    res.send('Error: ' + e);
+  }
+});
+
+app.listen(PORT, '0.0.0.0', 0, async () => {
+  await agent.init();
+  messageReceiver.start(agent);
+  testLogger.debug(`JavaScript Edge Agent started on port ${PORT}`);
+});
