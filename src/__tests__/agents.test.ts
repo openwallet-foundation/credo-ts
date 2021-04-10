@@ -46,15 +46,15 @@ describe('agents', () => {
     const aliceMessages = new Subject()
     const bobMessages = new Subject()
 
-    const aliceAgentInbound = new SubjectInboundTransporter(aliceMessages)
-    const aliceAgentOutbound = new SubjectOutboundTransporter(bobMessages)
-    const bobAgentInbound = new SubjectInboundTransporter(bobMessages)
-    const bobAgentOutbound = new SubjectOutboundTransporter(aliceMessages)
+    const aliceAgentInbound = new SubjectInboundTransporter(aliceMessages, bobMessages)
+    const bobAgentInbound = new SubjectInboundTransporter(bobMessages, aliceMessages)
 
-    aliceAgent = new Agent(aliceConfig, aliceAgentInbound, aliceAgentOutbound)
+    aliceAgent = new Agent(aliceConfig, aliceAgentInbound)
+    aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(bobMessages))
     await aliceAgent.init()
 
-    bobAgent = new Agent(bobConfig, bobAgentInbound, bobAgentOutbound)
+    bobAgent = new Agent(bobConfig, bobAgentInbound)
+    bobAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages))
     await bobAgent.init()
 
     const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection()

@@ -3,7 +3,13 @@ import { OutboundMessage } from '../../../types'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { ConnectionRecord } from '../../connections'
-import { KeylistUpdateMessage, KeylistUpdateAction, ForwardMessage } from '../messages'
+import {
+  KeylistUpdateMessage,
+  KeylistUpdateAction,
+  ForwardMessage,
+  KeylistUpdated,
+  KeylistUpdateResponseMessage,
+} from '../messages'
 
 export interface RoutingTable {
   [recipientKey: string]: ConnectionRecord | undefined
@@ -12,11 +18,15 @@ export interface RoutingTable {
 class ProviderRoutingService {
   private routingTable: RoutingTable = {}
 
-  /**
-   * @todo use connection from message context
-   */
-  public updateRoutes(messageContext: InboundMessageContext<KeylistUpdateMessage>, connection: ConnectionRecord) {
-    const { message } = messageContext
+  public updateRoutes(messageContext: InboundMessageContext<KeylistUpdateMessage>): KeylistUpdateResponseMessage {
+    const { connection, message } = messageContext
+
+    if (!connection) {
+      // TODO We could eventually remove this check if we do it at some higher level where we create messageContext that must have a connection.
+      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+    }
+
+    const updated = []
 
     for (const update of message.updates) {
       switch (update.action) {
@@ -27,7 +37,16 @@ class ProviderRoutingService {
           this.removeRoute(update.recipientKey, connection)
           break
       }
+
+      updated.push(
+        new KeylistUpdated({
+          action: update.action,
+          recipientKey: update.recipientKey,
+        })
+      )
     }
+
+    return new KeylistUpdateResponseMessage({ updated })
   }
 
   public forward(messageContext: InboundMessageContext<ForwardMessage>): OutboundMessage<ForwardMessage> {

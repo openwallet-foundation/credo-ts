@@ -66,7 +66,6 @@ export class Agent {
   public constructor(
     initialConfig: InitConfig,
     inboundTransporter: InboundTransporter,
-    outboundTransporter: OutboundTransporter,
     messageRepository?: MessageRepository
   ) {
     this.agentConfig = new AgentConfig(initialConfig)
@@ -82,7 +81,7 @@ export class Agent {
     this.wallet = new IndyWallet(this.agentConfig)
     const envelopeService = new EnvelopeService(this.wallet, this.agentConfig)
 
-    this.messageSender = new MessageSender(envelopeService, outboundTransporter)
+    this.messageSender = new MessageSender(envelopeService)
     this.dispatcher = new Dispatcher(this.messageSender)
     this.inboundTransporter = inboundTransporter
 
@@ -117,6 +116,10 @@ export class Agent {
     )
 
     this.registerModules()
+  }
+
+  public setOutboundTransporter(outboundTransporter: OutboundTransporter) {
+    this.messageSender.setOutboundTransporter(outboundTransporter)
   }
 
   public async init() {

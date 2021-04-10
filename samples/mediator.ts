@@ -51,6 +51,10 @@ class StorageOutboundTransporter implements OutboundTransporter {
 
     this.messageRepository.save(connection.theirKey, payload)
   }
+
+  public sendAndReceiveMessage(outboundPackage: OutboundPackage): Promise<any> {
+    throw new Error('Method not implemented.')
+  }
 }
 
 const PORT = config.port
@@ -67,7 +71,8 @@ app.set('json spaces', 2)
 const messageRepository = new InMemoryMessageRepository()
 const messageSender = new StorageOutboundTransporter(messageRepository)
 const messageReceiver = new HttpInboundTransporter(app)
-const agent = new Agent(config, messageReceiver, messageSender, messageRepository)
+const agent = new Agent(config, messageReceiver, messageRepository)
+agent.setOutboundTransporter(messageSender)
 
 app.get('/', async (req, res) => {
   const agentDid = agent.publicDid

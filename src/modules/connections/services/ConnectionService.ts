@@ -459,4 +459,24 @@ export class ConnectionService extends EventEmitter {
 
     return connectionRecords[0]
   }
+
+  public async returnWhenIsConnected(connectionId: string): Promise<ConnectionRecord> {
+    const isConnected = (connection: ConnectionRecord) => {
+      return connection.id === connectionId && connection.state === ConnectionState.Complete
+    }
+
+    const connection = await this.find(connectionId)
+    if (connection && isConnected(connection)) return connection
+
+    return new Promise((resolve) => {
+      const listener = ({ connectionRecord: connectionRecord }: ConnectionStateChangedEvent) => {
+        if (isConnected(connectionRecord)) {
+          this.off(ConnectionEventType.StateChanged, listener)
+          resolve(connectionRecord)
+        }
+      }
+
+      this.on(ConnectionEventType.StateChanged, listener)
+    })
+  }
 }

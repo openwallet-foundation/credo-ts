@@ -2,17 +2,14 @@ import { AgentConfig } from '../../agent/AgentConfig'
 import { ProviderRoutingService, MessagePickupService, ProvisioningService } from './services'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import {
-  ConnectionService,
-  ConnectionState,
-  ConnectionInvitationMessage,
-  ConnectionResponseMessage,
-} from '../connections'
+import { ConnectionService, ConnectionState, ConnectionInvitationMessage } from '../connections'
 import { BatchMessage } from './messages'
 import type { Verkey } from 'indy-sdk'
 import { Dispatcher } from '../../agent/Dispatcher'
-import { MessagePickupHandler, ForwardHandler, KeylistUpdateHandler } from './handlers'
+import { MessagePickupHandler, ForwardHandler, KeylistUpdateHandler, KeylistUpdateResponseHandler } from './handlers'
 import { Logger } from '../../logger'
+import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
+
 export class RoutingModule {
   private agentConfig: AgentConfig
   private providerRoutingService: ProviderRoutingService
@@ -49,18 +46,14 @@ export class RoutingModule {
       const { verkey, invitationUrl, alias = 'Mediator' } = mediatorConfiguration
       const mediatorInvitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
 
-      const connection = await this.connectionService.processInvitation(mediatorInvitation, { alias })
-      const {
-        message: connectionRequest,
-        connectionRecord: connectionRecord,
-      } = await this.connectionService.createRequest(connection.id)
-      const connectionResponse = await this.messageSender.sendAndReceiveMessage(
-        createOutboundMessage(connectionRecord, connectionRequest, connectionRecord.invitation),
-        ConnectionResponseMessage
-      )
-      await this.connectionService.processResponse(connectionResponse)
-      const { message: trustPing } = await this.connectionService.createTrustPing(connectionRecord.id)
-      await this.messageSender.sendMessage(createOutboundMessage(connectionRecord, trustPing))
+      const connectionRecord = await this.connectionService.processInvitation(mediatorInvitation, { alias })
+      const { message: connectionRequest } = await this.connectionService.createRequest(connectionRecord.id)
+
+      const outboundMessage = createOutboundMessage(connectionRecord, connectionRequest, connectionRecord.invitation)
+      outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
+
+      await this.messageSender.sendMessage(outboundMessage)
+      await this.connectionService.returnWhenIsConnected(connectionRecord.id)
 
       const provisioningProps = {
         mediatorConnectionId: connectionRecord.id,
@@ -111,6 +104,7 @@ export class RoutingModule {
 
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new KeylistUpdateHandler(this.providerRoutingService))
+    dispatcher.registerHandler(new KeylistUpdateResponseHandler())
     dispatcher.registerHandler(new ForwardHandler(this.providerRoutingService))
     dispatcher.registerHandler(new MessagePickupHandler(this.messagePickupService))
   }
