@@ -118,7 +118,7 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
   }
 
   public get myKey() {
-    const [service] = this.didDoc?.getServicesByClassType(IndyAgentService) ?? []
+    const [service] = this.didDoc?.didCommServices ?? []
 
     if (!service) {
       return null
@@ -128,7 +128,7 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
   }
 
   public get theirKey() {
-    const [service] = this.theirDidDoc?.getServicesByClassType(IndyAgentService) ?? []
+    const [service] = this.theirDidDoc?.didCommServices ?? []
 
     if (!service) {
       return null

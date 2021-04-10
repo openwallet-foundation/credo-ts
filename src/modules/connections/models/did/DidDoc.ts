@@ -3,7 +3,7 @@ import { Equals, IsArray, IsString, ValidateNested } from 'class-validator'
 
 import { AuthenticationTransformer, Authentication } from './authentication'
 import { PublicKey, PublicKeyTransformer } from './publicKey'
-import { Service, ServiceTransformer } from './service'
+import { DIDCommService, IndyAgentService, Service, ServiceTransformer } from './service'
 
 type DidDocOptions = Pick<DidDoc, 'id' | 'publicKey' | 'service' | 'authentication'>
 
@@ -64,5 +64,19 @@ export class DidDoc {
    */
   public getServicesByClassType<S extends Service = Service>(classType: new (...args: never[]) => S): S[] {
     return this.service.filter((service) => service instanceof classType) as S[]
+  }
+
+  /**
+   * Get all DIDComm services ordered by priority descending. This means the highest
+   * priority will be the first entry.
+   */
+  public get didCommServices(): Array<IndyAgentService | DIDCommService> {
+    const didCommServiceClasses = [IndyAgentService.type, DIDCommService.type]
+    const services = this.service.filter((service) => didCommServiceClasses.includes(service.type)) as Array<
+      IndyAgentService | DIDCommService
+    >
+
+    // Sort services based on indicated priority
+    return services.sort((a, b) => b.priority - a.priority)
   }
 }
