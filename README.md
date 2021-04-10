@@ -1,5 +1,5 @@
 <p align="center">
-  <img alt="Hyperledger Aries logo" src="images/aries-logo.png" width="100px" />
+  <img alt="Hyperledger Aries logo" src="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/aa31131825e3331dc93694bc58414d955dcb1129/images/aries-logo.png" width="100px" />
   <h1 align="center">Aries Framework JavaScript</h1>
   <p align="center"><font size="+1">Built using TypeScript</font></p>
   <p align="center">
