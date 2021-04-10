@@ -7,7 +7,7 @@
     <a href="https://lgtm.com/projects/g/hyperledger/aries-framework-javascript/context:javascript"><img alt="Language grade: JavaScript" src="https://img.shields.io/lgtm/grade/javascript/g/hyperledger/aries-framework-javascript.svg?logo=lgtm&logoWidth=18"/></a>
     <a href="https://codecov.io/gh/hyperledger/aries-framework-javascript/"><img alt="Codecov Coverage" src="https://img.shields.io/codecov/c/github/hyperledger/aries-framework-javascript/coverage.svg?style=flat-square"/></a>
     <a href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"/></a>
-    <a href="https://npmjs.com/package/aries-framework-javascript"><img alt="aries-framework-javascript npm version" src="https://img.shields.io/npm/v/aries-framework-javascript"></a>
+    <a href="https://npmjs.com/package/aries-framework"><img alt="aries-framework-javascript npm version" src="https://img.shields.io/npm/v/aries-framework"></a>
 </p>
 </p>
 
@@ -69,10 +69,10 @@ If you don't want to install the dependencies yourself, the [Dockerfile](./Docke
 Add the framework as a dependency to your project:
 
 ```sh
-npm install aries-framework-javascript
+npm install aries-framework
 
 # Or using Yarn
-yarn add aries-framework-javascript
+yarn add aries-framework
 ```
 
 Then make sure to install the correct Indy implementation for your platform.
