@@ -171,13 +171,17 @@ class HttpOutboundTransporter implements OutboundTransporter {
       throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
     }
 
-    logger.test(`Sending outbound message to connection ${outboundPackage.connection.id}`, outboundPackage.payload)
+    logger.debug(`Sending outbound message to connection ${outboundPackage.connection.id}`, outboundPackage.payload)
 
     if (receiveReply) {
       const response = await post(`${endpoint}`, JSON.stringify(payload))
-      logger.test(`received response:\n ${response}`)
-      const wireMessage = JSON.parse(response)
-      this.agent.receiveMessage(wireMessage)
+      if (response) {
+        logger.debug(`Response received:\n ${response}`)
+        const wireMessage = JSON.parse(response)
+        this.agent.receiveMessage(wireMessage)
+      } else {
+        logger.debug(`No response received.`)
+      }
     } else {
       await post(`${endpoint}`, JSON.stringify(payload))
     }
@@ -190,11 +194,12 @@ class HttpOutboundTransporter implements OutboundTransporter {
       throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
     }
 
-    logger.test(`Sending outbound message to connection ${outboundPackage.connection.id}`, outboundPackage.payload)
+    logger.debug(`Sending outbound message to connection ${outboundPackage.connection.id}`, outboundPackage.payload)
 
     const response = await post(`${endpoint}`, JSON.stringify(payload))
+
+    logger.debug(`Response received:\n ${response}`)
     const wireMessage = JSON.parse(response)
-    logger.test('received response', wireMessage)
     return wireMessage
   }
 }
