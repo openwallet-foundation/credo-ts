@@ -1,6 +1,6 @@
 import type { Verkey } from 'indy-sdk'
 import { Equals, IsArray, ValidateNested, IsString, IsEnum } from 'class-validator'
-import { Type } from 'class-transformer'
+import { Expose, Type } from 'class-transformer'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { RoutingMessageType as MessageType } from './RoutingMessageType'
@@ -12,9 +12,9 @@ export interface KeylistUpdateResponseMessageOptions {
 }
 
 /**
- * Used to notify the mediator of keys in use by the recipient.
+ * Used to notify an edge agent with the result of updating the routing keys in the mediator.
  *
- * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#keylist-update
+ * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#keylist-update-response
  */
 export class KeylistUpdateResponseMessage extends AgentMessage {
   public constructor(options: KeylistUpdateResponseMessageOptions) {
@@ -37,14 +37,14 @@ export class KeylistUpdateResponseMessage extends AgentMessage {
 }
 
 export enum KeylistUpdateResult {
-  client_error = 'client_error',
-  server_error = 'server_error',
-  no_change = 'no_change',
-  success = 'success',
+  ClientError = 'client_error',
+  ServerError = 'server_error',
+  NoChange = 'no_change',
+  Success = 'success',
 }
 
 export class KeylistUpdated {
-  public constructor(options: { recipientKey: Verkey; action: KeylistUpdateAction }) {
+  public constructor(options: { recipientKey: Verkey; action: KeylistUpdateAction; result: KeylistUpdateResult }) {
     if (options) {
       this.recipientKey = options.recipientKey
       this.action = options.action
@@ -52,6 +52,7 @@ export class KeylistUpdated {
   }
 
   @IsString()
+  @Expose({ name: 'recipient_key' })
   public recipientKey!: Verkey
 
   @IsEnum(KeylistUpdateAction)

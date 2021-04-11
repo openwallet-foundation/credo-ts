@@ -9,6 +9,7 @@ import {
   ForwardMessage,
   KeylistUpdated,
   KeylistUpdateResponseMessage,
+  KeylistUpdateResult,
 } from '../messages'
 
 export interface RoutingTable {
@@ -42,6 +43,7 @@ class ProviderRoutingService {
         new KeylistUpdated({
           action: update.action,
           recipientKey: update.recipientKey,
+          result: KeylistUpdateResult.Success,
         })
       )
     }
