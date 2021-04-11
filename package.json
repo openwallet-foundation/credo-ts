@@ -1,6 +1,6 @@
 {
   "name": "aries-framework",
-  "version": "0.0.1-beta.1",
+  "version": "0.0.0",
   "license": "Apache-2.0",
   "main": "build/src/index.js",
   "types": "build/src/index.d.ts",
@@ -19,6 +19,7 @@
     "prod:build": "rm -rf build && yarn compile",
     "validate": "npm-run-all --parallel lint compile",
     "prepack": "rm -rf build && yarn compile",
+    "release": "release-it",
     "prepare": "husky install"
   },
   "dependencies": {
@@ -52,6 +53,7 @@
     "node-fetch": "^2.6.1",
     "npm-run-all": "^4.1.5",
     "prettier": "^2.2.1",
+    "release-it": "^14.6.1",
     "rxjs": "^6.6.6",
     "ts-jest": "^26.5.3",
     "ts-node-dev": "^1.1.6",
@@ -60,5 +62,14 @@
   },
   "optionalDependencies": {
     "indy-sdk": "^1.16.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "release-it": {
+    "github": {
+      "release": true
+    }
   }
 }
