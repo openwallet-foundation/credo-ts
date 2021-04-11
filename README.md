@@ -60,7 +60,7 @@ Follow the instructions [here](https://github.com/hyperledger/indy-sdk/#installi
 
 If you don't want to install the dependencies yourself, the [Dockerfile](./Dockerfile) contains everything needed to get started with the framework. See [Usage with Docker](#usage-with-docker) for more information.
 
-> If you're having trouble running this project, please the the [troubleshooting](./TROUBLESHOOTING.md) section. It contains the most common errors that arise when first installing libindy.
+> If you're having trouble running this project, please read the [troubleshooting](./TROUBLESHOOTING.md) section. It contains the most common errors that arise when first installing libindy.
 
 > NOTE: The package is not tested in multiple versions of Node at the moment. If you're having trouble installing dependencies or running the framework know that at least **Node v12 DOES WORK** and **Node v14 DOES NOT WORk**.
 
