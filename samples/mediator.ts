@@ -51,10 +51,6 @@ class StorageOutboundTransporter implements OutboundTransporter {
 
     this.messageRepository.save(connection.theirKey, payload)
   }
-
-  public sendAndReceiveMessage(outboundPackage: OutboundPackage): Promise<any> {
-    throw new Error('Method not implemented.')
-  }
 }
 
 const PORT = config.port

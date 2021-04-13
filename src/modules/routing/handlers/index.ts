@@ -1,4 +1,5 @@
 export * from './ForwardHandler'
 export * from './KeylistUpdateHandler'
 export * from './KeylistUpdateResponseHandler'
-export * from './MessagePickupHandler'
+export * from './BatchPickupHandler'
+export * from './BatchHandler'

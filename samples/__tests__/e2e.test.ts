@@ -141,14 +141,7 @@ class PollingInboundTransporter implements InboundTransporter {
   private pollDownloadMessages(agent: Agent) {
     const loop = async () => {
       while (!this.stop) {
-        const downloadedMessages = await agent.routing.downloadMessages()
-        const messages = [...downloadedMessages]
-        logger.test('downloaded messages', messages)
-        while (messages && messages.length > 0) {
-          const message = messages.shift()
-          await agent.receiveMessage(message)
-        }
-
+        await agent.routing.downloadMessages()
         await sleep(1000)
       }
     }
@@ -185,21 +178,5 @@ class HttpOutboundTransporter implements OutboundTransporter {
     } else {
       await post(`${endpoint}`, JSON.stringify(payload))
     }
-  }
-
-  public async sendAndReceiveMessage(outboundPackage: OutboundPackage) {
-    const { payload, endpoint } = outboundPackage
-
-    if (!endpoint) {
-      throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
-    }
-
-    logger.debug(`Sending outbound message to connection ${outboundPackage.connection.id}`, outboundPackage.payload)
-
-    const response = await post(`${endpoint}`, JSON.stringify(payload))
-
-    logger.debug(`Response received:\n ${response}`)
-    const wireMessage = JSON.parse(response)
-    return wireMessage
   }
 }

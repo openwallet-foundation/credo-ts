@@ -157,10 +157,6 @@ export class SubjectOutboundTransporter implements OutboundTransporter {
     const { payload } = outboundPackage
     this.subject.next(payload)
   }
-
-  public sendAndReceiveMessage(outboundPackage: OutboundPackage): Promise<any> {
-    throw new Error('Method not implemented.')
-  }
 }
 
 export async function makeConnection(agentA: Agent, agentB: Agent) {

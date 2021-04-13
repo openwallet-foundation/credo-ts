@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events'
 import { Logger } from '../logger'
 import { InitConfig } from '../types'
 import { IndyWallet } from '../wallet/IndyWallet'
@@ -33,6 +34,7 @@ import { LedgerModule } from '../modules/ledger/LedgerModule'
 
 export class Agent {
   protected logger: Logger
+  protected eventEmitter: EventEmitter
   protected wallet: Wallet
   protected agentConfig: AgentConfig
   protected messageReceiver: MessageReceiver
@@ -78,6 +80,12 @@ export class Agent {
       indy: initialConfig.indy != undefined,
       logger: initialConfig.logger != undefined,
     })
+
+    this.eventEmitter = new EventEmitter()
+    this.eventEmitter.addListener('agentMessage', async (payload) => {
+      await this.receiveMessage(payload)
+    })
+
     this.wallet = new IndyWallet(this.agentConfig)
     const envelopeService = new EnvelopeService(this.wallet, this.agentConfig)
 
@@ -185,7 +193,8 @@ export class Agent {
       this.provisioningService,
       this.messagePickupService,
       this.connectionService,
-      this.messageSender
+      this.messageSender,
+      this.eventEmitter
     )
 
     this.basicMessages = new BasicMessagesModule(this.dispatcher, this.basicMessageService, this.messageSender)
