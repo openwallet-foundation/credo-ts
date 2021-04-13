@@ -3,6 +3,7 @@ import { Handler } from './Handler'
 import { MessageSender } from './MessageSender'
 import { AgentMessage } from './AgentMessage'
 import { InboundMessageContext } from './models/InboundMessageContext'
+import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 
 class Dispatcher {
   private handlers: Handler[] = []
@@ -29,6 +30,10 @@ class Dispatcher {
     if (outboundMessage) {
       const threadId = outboundMessage.payload.threadId
 
+      if (!outboundMessage.connection.hasInboundEndpoint()) {
+        outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
+      }
+
       // check for return routing, with thread id
       if (message.hasReturnRouting(threadId)) {
         return await this.messageSender.packMessage(outboundMessage)
@@ -36,8 +41,6 @@ class Dispatcher {
 
       await this.messageSender.sendMessage(outboundMessage)
     }
-
-    return outboundMessage || undefined
   }
 
   private getHandlerForType(messageType: string): Handler | undefined {

@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events'
 import { Logger } from '../logger'
 import { InboundConnection, InitConfig } from '../types'
 import { IndyWallet } from '../wallet/IndyWallet'
@@ -36,6 +37,7 @@ import { MediationRecord } from '../modules/routing/repository/MediationRecord'
 
 export class Agent {
   protected logger: Logger
+  protected eventEmitter: EventEmitter
   protected wallet: Wallet
   protected agentConfig: AgentConfig
   protected messageReceiver: MessageReceiver
@@ -71,7 +73,6 @@ export class Agent {
   public constructor(
     initialConfig: InitConfig,
     inboundTransporter: InboundTransporter,
-    outboundTransporter: OutboundTransporter,
     messageRepository?: MessageRepository
   ) {
     this.agentConfig = new AgentConfig(initialConfig)
@@ -84,10 +85,16 @@ export class Agent {
       indy: initialConfig.indy != undefined,
       logger: initialConfig.logger != undefined,
     })
+
+    this.eventEmitter = new EventEmitter()
+    this.eventEmitter.addListener('agentMessage', async (payload) => {
+      await this.receiveMessage(payload)
+    })
+
     this.wallet = new IndyWallet(this.agentConfig)
     const envelopeService = new EnvelopeService(this.wallet, this.agentConfig)
 
-    this.messageSender = new MessageSender(envelopeService, outboundTransporter)
+    this.messageSender = new MessageSender(envelopeService)
     this.dispatcher = new Dispatcher(this.messageSender)
     this.inboundTransporter = inboundTransporter
 
@@ -124,6 +131,10 @@ export class Agent {
     )
 
     this.registerModules()
+  }
+
+  public setOutboundTransporter(outboundTransporter: OutboundTransporter) {
+    this.messageSender.setOutboundTransporter(outboundTransporter)
   }
 
   public async init() {
@@ -219,7 +230,8 @@ export class Agent {
       this.provisioningService,
       this.messagePickupService,
       this.connectionService,
-      this.messageSender
+      this.messageSender,
+      this.eventEmitter
     )
 
     this.basicMessages = new BasicMessagesModule(this.dispatcher, this.basicMessageService, this.messageSender)

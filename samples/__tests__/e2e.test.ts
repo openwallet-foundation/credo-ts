@@ -3,7 +3,7 @@ import { OutboundPackage, InitConfig } from '../../src/types'
 import { get, post } from '../http'
 import { sleep, toBeConnectedWith, waitForBasicMessage } from '../../src/__tests__/helpers'
 import indy from 'indy-sdk'
-import testLogger from '../../src/__tests__/logger'
+import logger from '../../src/__tests__/logger'
 
 expect.extend({ toBeConnectedWith })
 
@@ -13,7 +13,7 @@ const aliceConfig: InitConfig = {
   walletConfig: { id: 'e2e-alice' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
   autoAcceptConnections: true,
-  logger: testLogger,
+  logger: logger,
   indy,
 }
 
@@ -23,7 +23,7 @@ const bobConfig: InitConfig = {
   walletConfig: { id: 'e2e-bob' },
   walletCredentials: { key: '00000000000000000000000000000Test02' },
   autoAcceptConnections: true,
-  logger: testLogger,
+  logger: logger,
   indy,
 }
 
@@ -44,26 +44,26 @@ describe('with mediator', () => {
   })
 
   test('Alice and Bob make a connection with mediator', async () => {
-    const aliceAgentSender = new HttpOutboundTransporter()
     const aliceAgentReceiver = new PollingInboundTransporter()
-    const bobAgentSender = new HttpOutboundTransporter()
     const bobAgentReceiver = new PollingInboundTransporter()
 
-    aliceAgent = new Agent(aliceConfig, aliceAgentReceiver, aliceAgentSender)
+    aliceAgent = new Agent(aliceConfig, aliceAgentReceiver)
+    aliceAgent.setOutboundTransporter(new HttpOutboundTransporter(aliceAgent))
     await aliceAgent.init()
 
-    bobAgent = new Agent(bobConfig, bobAgentReceiver, bobAgentSender)
+    bobAgent = new Agent(bobConfig, bobAgentReceiver)
+    bobAgent.setOutboundTransporter(new HttpOutboundTransporter(bobAgent))
     await bobAgent.init()
 
     const aliceInbound = aliceAgent.routing.getInboundConnection()
     const aliceInboundConnection = aliceInbound?.connection
     const aliceKeyAtAliceMediator = aliceInboundConnection?.verkey
-    testLogger.test('aliceInboundConnection', aliceInboundConnection)
+    logger.test('aliceInboundConnection', aliceInboundConnection)
 
     const bobInbound = bobAgent.routing.getInboundConnection()
     const bobInboundConnection = bobInbound?.connection
     const bobKeyAtBobMediator = bobInboundConnection?.verkey
-    testLogger.test('bobInboundConnection', bobInboundConnection)
+    logger.test('bobInboundConnection', bobInboundConnection)
 
     // TODO This endpoint currently exists at mediator only for the testing purpose. It returns mediator's part of the pairwise connection.
     const mediatorConnectionAtAliceMediator = JSON.parse(
@@ -73,8 +73,8 @@ describe('with mediator', () => {
       await get(`${bobAgent.getMediatorUrl()}/api/connections/${bobKeyAtBobMediator}`)
     )
 
-    testLogger.test('mediatorConnectionAtAliceMediator', mediatorConnectionAtAliceMediator)
-    testLogger.test('mediatorConnectionAtBobMediator', mediatorConnectionAtBobMediator)
+    logger.test('mediatorConnectionAtAliceMediator', mediatorConnectionAtAliceMediator)
+    logger.test('mediatorConnectionAtBobMediator', mediatorConnectionAtBobMediator)
 
     expect(aliceInboundConnection).toBeConnectedWith(mediatorConnectionAtAliceMediator)
     expect(bobInboundConnection).toBeConnectedWith(mediatorConnectionAtBobMediator)
@@ -104,7 +104,7 @@ describe('with mediator', () => {
       throw new Error(`There is no connection for id ${aliceAtAliceBobId}`)
     }
 
-    testLogger.test('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob)
+    logger.test('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob)
 
     const message = 'hello, world'
     await aliceAgent.basicMessages.sendMessage(aliceConnectionAtAliceBob, message)
@@ -141,14 +141,7 @@ class PollingInboundTransporter implements InboundTransporter {
   private pollDownloadMessages(agent: Agent) {
     const loop = async () => {
       while (!this.stop) {
-        const downloadedMessages = await agent.routing.downloadMessages()
-        const messages = [...downloadedMessages]
-        testLogger.test('downloaded messages', messages)
-        while (messages && messages.length > 0) {
-          const message = messages.shift()
-          await agent.receiveMessage(message)
-        }
-
+        await agent.routing.downloadMessages()
         await sleep(1000)
       }
     }
@@ -159,6 +152,11 @@ class PollingInboundTransporter implements InboundTransporter {
 }
 
 class HttpOutboundTransporter implements OutboundTransporter {
+  private agent: Agent
+
+  public constructor(agent: Agent) {
+    this.agent = agent
+  }
   public async sendMessage(outboundPackage: OutboundPackage, receiveReply: boolean) {
     const { payload, endpoint } = outboundPackage
 
@@ -166,13 +164,17 @@ class HttpOutboundTransporter implements OutboundTransporter {
       throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
     }
 
-    testLogger.test(`Sending outbound message to connection ${outboundPackage.connection.id}`, outboundPackage.payload)
+    logger.debug(`Sending outbound message to connection ${outboundPackage.connection.id}`, outboundPackage.payload)
 
     if (receiveReply) {
       const response = await post(`${endpoint}`, JSON.stringify(payload))
-      const wireMessage = JSON.parse(response)
-      testLogger.test('received response', wireMessage)
-      return wireMessage
+      if (response) {
+        logger.debug(`Response received:\n ${response}`)
+        const wireMessage = JSON.parse(response)
+        this.agent.receiveMessage(wireMessage)
+      } else {
+        logger.debug(`No response received.`)
+      }
     } else {
       await post(`${endpoint}`, JSON.stringify(payload))
     }

@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events'
 import { AgentConfig } from '../../agent/AgentConfig'
 import { ProviderRoutingService, MessagePickupService, ProvisioningService } from './services'
 import { MessageSender } from '../../agent/MessageSender'
@@ -12,14 +13,20 @@ import {
 import { BatchMessage } from './messages'
 import type { Verkey } from 'indy-sdk'
 import { Dispatcher } from '../../agent/Dispatcher'
-import { MessagePickupHandler, ForwardHandler, KeylistUpdateHandler } from './handlers'
+import {
+  BatchHandler,
+  BatchPickupHandler,
+  ForwardHandler,
+  KeylistUpdateHandler,
+  KeylistUpdateResponseHandler,
+} from './handlers'
 import { Logger } from '../../logger'
 import { MediationService } from './services/MediationService'
-import { EventEmitter } from 'events'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
 import { MediationRequestHandler } from './handlers/MediationRequestHandler'
 import { MediationRecord } from './repository/MediationRecord'
 import { MediationDenyHandler } from './handlers/MediationDenyHandler'
+import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 export class RoutingModule {
   private agentConfig: AgentConfig
   private mediationService: MediationService
@@ -28,6 +35,7 @@ export class RoutingModule {
   private messagePickupService: MessagePickupService
   private connectionService: ConnectionService
   private messageSender: MessageSender
+  private eventEmitter: EventEmitter
   private logger: Logger
 
   public constructor(
@@ -38,7 +46,8 @@ export class RoutingModule {
     provisioningService: ProvisioningService,
     messagePickupService: MessagePickupService,
     connectionService: ConnectionService,
-    messageSender: MessageSender
+    messageSender: MessageSender,
+    eventEmitter: EventEmitter
   ) {
     this.agentConfig = agentConfig
     this.mediationService = mediationService
@@ -47,6 +56,7 @@ export class RoutingModule {
     this.messagePickupService = messagePickupService
     this.connectionService = connectionService
     this.messageSender = messageSender
+    this.eventEmitter = eventEmitter
     this.logger = agentConfig.logger
     this.registerHandlers(dispatcher)
   }
@@ -81,18 +91,14 @@ export class RoutingModule {
       const { verkey, invitationUrl, alias = 'Mediator' } = mediatorConfiguration
       const mediatorInvitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
 
-      const connection = await this.connectionService.processInvitation(mediatorInvitation, { alias })
-      const {
-        message: connectionRequest,
-        connectionRecord: connectionRecord,
-      } = await this.connectionService.createRequest(connection.id)
-      const connectionResponse = await this.messageSender.sendAndReceiveMessage(
-        createOutboundMessage(connectionRecord, connectionRequest, connectionRecord.invitation),
-        ConnectionResponseMessage
-      )
-      await this.connectionService.processResponse(connectionResponse)
-      const { message: trustPing } = await this.connectionService.createTrustPing(connectionRecord.id)
-      await this.messageSender.sendMessage(createOutboundMessage(connectionRecord, trustPing))
+      const connectionRecord = await this.connectionService.processInvitation(mediatorInvitation, { alias })
+      const { message: connectionRequest } = await this.connectionService.createRequest(connectionRecord.id)
+
+      const outboundMessage = createOutboundMessage(connectionRecord, connectionRequest, connectionRecord.invitation)
+      outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
+
+      await this.messageSender.sendMessage(outboundMessage)
+      await this.connectionService.returnWhenIsConnected(connectionRecord.id)
 
       const provisioningProps = {
         mediatorConnectionId: connectionRecord.id,
@@ -128,12 +134,9 @@ export class RoutingModule {
 
     if (inboundConnection) {
       const outboundMessage = await this.messagePickupService.batchPickup(inboundConnection)
-      const batchResponse = await this.messageSender.sendAndReceiveMessage(outboundMessage, BatchMessage)
-
-      // TODO: do something about the different types of message variable all having a different purpose
-      return batchResponse.message.messages.map((msg) => msg.message)
+      outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
+      await this.messageSender.sendMessage(outboundMessage)
     }
-    return []
   }
 
   public getInboundConnection() {
@@ -145,12 +148,11 @@ export class RoutingModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new KeylistUpdateHandler(this.providerRoutingService));
-    dispatcher.registerHandler(new ForwardHandler(this.providerRoutingService));
-    dispatcher.registerHandler(new MessagePickupHandler(this.messagePickupService));
-    dispatcher.registerHandler(new MediationGrantHandler(this.mediationService));
-    dispatcher.registerHandler(new MediationDenyHandler(this.mediationService));
-    dispatcher.registerHandler(new MediationRequestHandler(this.mediationService));
+    dispatcher.registerHandler(new KeylistUpdateHandler(this.providerRoutingService))
+    dispatcher.registerHandler(new KeylistUpdateResponseHandler())
+    dispatcher.registerHandler(new ForwardHandler(this.providerRoutingService))
+    dispatcher.registerHandler(new BatchPickupHandler(this.messagePickupService))
+    dispatcher.registerHandler(new BatchHandler(this.eventEmitter))
   }
 }
 
