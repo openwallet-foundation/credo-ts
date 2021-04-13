@@ -5,10 +5,9 @@ import { AgentConfig } from '../../agent/AgentConfig'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { Dispatcher } from '../../agent/Dispatcher'
-import { ConnectionService, ConnectionEventType, ConnectionStateChangedEvent, TrustPingService } from './services'
+import { ConnectionService, TrustPingService } from './services'
 import { ConsumerRoutingService } from '../routing'
 import { ConnectionRecord } from './repository/ConnectionRecord'
-import { ConnectionState } from './models'
 import { ConnectionInvitationMessage } from './messages'
 import {
   ConnectionRequestHandler,
@@ -177,23 +176,7 @@ export class ConnectionsModule {
   }
 
   public async returnWhenIsConnected(connectionId: string): Promise<ConnectionRecord> {
-    const isConnected = (connection: ConnectionRecord) => {
-      return connection.id === connectionId && connection.state === ConnectionState.Complete
-    }
-
-    const connection = await this.connectionService.find(connectionId)
-    if (connection && isConnected(connection)) return connection
-
-    return new Promise((resolve) => {
-      const listener = ({ connectionRecord: connectionRecord }: ConnectionStateChangedEvent) => {
-        if (isConnected(connectionRecord)) {
-          this.events.off(ConnectionEventType.StateChanged, listener)
-          resolve(connectionRecord)
-        }
-      }
-
-      this.events.on(ConnectionEventType.StateChanged, listener)
-    })
+    return this.connectionService.returnWhenIsConnected(connectionId)
   }
 
   public async getAll() {

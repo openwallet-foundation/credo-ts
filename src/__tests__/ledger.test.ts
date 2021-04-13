@@ -1,6 +1,6 @@
 import indy from 'indy-sdk'
 import type { SchemaId } from 'indy-sdk'
-import { Agent, InboundTransporter, OutboundTransporter } from '..'
+import { Agent, InboundTransporter } from '..'
 import { DID_IDENTIFIER_REGEX, VERKEY_REGEX, isFullVerkey, isAbbreviatedVerkey } from '../utils/did'
 import { genesisPath, sleep } from './helpers'
 import { InitConfig } from '../types'
@@ -22,7 +22,7 @@ describe('ledger', () => {
   let schemaId: SchemaId
 
   beforeAll(async () => {
-    faberAgent = new Agent(faberConfig, new DummyInboundTransporter(), new DummyOutboundTransporter())
+    faberAgent = new Agent(faberConfig, new DummyInboundTransporter())
     await faberAgent.init()
   })
 
@@ -138,11 +138,5 @@ describe('ledger', () => {
 class DummyInboundTransporter implements InboundTransporter {
   public start() {
     testLogger.test('Starting agent...')
-  }
-}
-
-class DummyOutboundTransporter implements OutboundTransporter {
-  public async sendMessage() {
-    testLogger.test('Sending message...')
   }
 }

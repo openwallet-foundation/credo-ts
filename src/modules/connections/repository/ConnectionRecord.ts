@@ -166,4 +166,8 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
       throw new Error(`Connection record has invalid role ${this.role}. Expected role ${expectedRole}.`)
     }
   }
+
+  public hasInboundEndpoint() {
+    return this.didDoc.service.find((s) => s.serviceEndpoint !== 'didcomm:transport/queue')
+  }
 }

@@ -67,7 +67,8 @@ app.set('json spaces', 2)
 const messageRepository = new InMemoryMessageRepository()
 const messageSender = new StorageOutboundTransporter(messageRepository)
 const messageReceiver = new HttpInboundTransporter(app)
-const agent = new Agent(config, messageReceiver, messageSender, messageRepository)
+const agent = new Agent(config, messageReceiver, messageRepository)
+agent.setOutboundTransporter(messageSender)
 
 app.get('/', async (req, res) => {
   const agentDid = agent.publicDid

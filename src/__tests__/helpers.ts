@@ -122,18 +122,25 @@ export async function waitForBasicMessage(
 
 export class SubjectInboundTransporter implements InboundTransporter {
   private subject: Subject<WireMessage>
+  private theirSubject: Subject<WireMessage>
 
-  public constructor(subject: Subject<WireMessage>) {
+  public constructor(subject: Subject<WireMessage>, theirSubject: Subject<WireMessage>) {
     this.subject = subject
+    this.theirSubject = theirSubject
   }
 
   public start(agent: Agent) {
-    this.subscribe(agent, this.subject)
+    this.subscribe(agent)
   }
 
-  private subscribe(agent: Agent, subject: Subject<WireMessage>) {
-    subject.subscribe({
-      next: (message: WireMessage) => agent.receiveMessage(message),
+  private subscribe(agent: Agent) {
+    this.subject.subscribe({
+      next: async (message: WireMessage) => {
+        const outboundMessage = await agent.receiveMessage(message)
+        if (outboundMessage) {
+          this.theirSubject.next(outboundMessage.payload)
+        }
+      },
     })
   }
 }

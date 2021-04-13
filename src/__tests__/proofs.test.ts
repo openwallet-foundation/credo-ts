@@ -79,13 +79,13 @@ describe('Present Proof', () => {
     const faberMessages = new Subject()
     const aliceMessages = new Subject()
 
-    const faberAgentInbound = new SubjectInboundTransporter(faberMessages)
-    const faberAgentOutbound = new SubjectOutboundTransporter(aliceMessages)
-    const aliceAgentInbound = new SubjectInboundTransporter(aliceMessages)
-    const aliceAgentOutbound = new SubjectOutboundTransporter(faberMessages)
+    const faberAgentInbound = new SubjectInboundTransporter(faberMessages, aliceMessages)
+    const aliceAgentInbound = new SubjectInboundTransporter(aliceMessages, faberMessages)
 
-    faberAgent = new Agent(faberConfig, faberAgentInbound, faberAgentOutbound)
-    aliceAgent = new Agent(aliceConfig, aliceAgentInbound, aliceAgentOutbound)
+    faberAgent = new Agent(faberConfig, faberAgentInbound)
+    aliceAgent = new Agent(aliceConfig, aliceAgentInbound)
+    faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages))
+    aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages))
     await faberAgent.init()
     await aliceAgent.init()
 
