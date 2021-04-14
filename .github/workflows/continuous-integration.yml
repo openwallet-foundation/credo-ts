@@ -5,6 +5,12 @@ on:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      releaseType:
+        description: The type of release. Should be one of "major", "minor", "patch"
+        required: true
+        default: 'patch'
 
 env:
   TEST_AGENT_PUBLIC_DID_SEED: 000000000000000000000000Trustee9
@@ -69,3 +75,65 @@ jobs:
         run: docker cp framework-jest-tests:/www/coverage ./
       - uses: codecov/codecov-action@v1
         if: always()
+
+  unstable-release:
+    runs-on: ubuntu-18.04
+    name: Unstable Release
+    needs: [integration-test]
+    # Only run on push to main branch
+    if: ${{ github.ref == 'refs/heads/main' && github.event == 'push' }}
+    steps:
+      - name: Checkout aries-framework-javascript
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: git config
+        run: |
+          git config user.name "@github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '12.x'
+
+      - name: Install dependencies
+        run: yarn install --ignore-optional
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: yarn release patch --preRelease=unstable
+
+  stable-release:
+    runs-on: ubuntu-18.04
+    name: Stable Release
+    needs: [integration-test]
+    # Only run on workflow dispatch on main branch
+    if: ${{ github.ref == 'refs/heads/main' && github.event == 'workflow_dispatch' }}
+    steps:
+      - name: Checkout aries-framework-javascript
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: git config
+        run: |
+          git config user.name "@github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '12.x'
+
+      - name: Install dependencies
+        run: yarn install --ignore-optional
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: yarn release ${{ github.event.inputs.releaseType }}
