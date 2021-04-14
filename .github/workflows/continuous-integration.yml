@@ -24,9 +24,6 @@ jobs:
       - name: Checkout aries-framework-javascript
         uses: actions/checkout@v2
 
-      - name: Get docker cache
-        uses: satackey/action-docker-layer-caching@v0.0.11
-
       - name: Start indy pool
         run: |
           docker build -f network/indy-pool.dockerfile -t indy-pool .
