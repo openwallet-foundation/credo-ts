@@ -76,12 +76,12 @@ jobs:
       - uses: codecov/codecov-action@v1
         if: always()
 
-  unstable-release:
+  release:
     runs-on: ubuntu-18.04
-    name: Unstable Release
+    name: Release
     needs: [integration-test]
-    # Only run on push to main branch
-    if: ${{ github.ref == 'refs/heads/main' && github.event == 'push' }}
+    # Only run on push or workflow dispatch to main branch
+    if: (github.ref == 'refs/heads/main') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     steps:
       - name: Checkout aries-framework-javascript
         uses: actions/checkout@v2
@@ -101,38 +101,17 @@ jobs:
       - name: Install dependencies
         run: yarn install --ignore-optional
 
-      - name: Release
+      # On push to master, release unstable version
+      - name: Release Unstable
+        if: github.event_name == 'push'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: yarn release patch --preRelease=unstable
 
-  stable-release:
-    runs-on: ubuntu-18.04
-    name: Stable Release
-    needs: [integration-test]
-    # Only run on workflow dispatch on main branch
-    if: ${{ github.ref == 'refs/heads/main' && github.event == 'workflow_dispatch' }}
-    steps:
-      - name: Checkout aries-framework-javascript
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: git config
-        run: |
-          git config user.name "@github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Setup node
-        uses: actions/setup-node@v2
-        with:
-          node-version: '12.x'
-
-      - name: Install dependencies
-        run: yarn install --ignore-optional
-
-      - name: Release
+      # On manual workflow dispatch release stable version
+      - name: Release Stable
+        if: github.event_name == 'workflow_dispatch'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
