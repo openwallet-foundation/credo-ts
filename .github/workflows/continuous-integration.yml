@@ -102,6 +102,12 @@ jobs:
       - name: Prepend Node path
         run: npm config set scripts-prepend-node-path true
 
+      - name: Set NPM config
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{secrets.NPM_TOKEN}}" >> .npmrc
+          echo "registry=https://registry.npmjs.org/" >> .npmrc
+          echo "always-auth=true" >> .npmrc
+
       - name: Install dependencies
         run: yarn install --ignore-optional --frozen-lockfile
 
@@ -110,7 +116,6 @@ jobs:
         if: github.event_name == 'push'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: yarn release patch --preRelease=unstable
 
       # On manual workflow dispatch release stable version
@@ -118,5 +123,4 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: yarn release ${{ github.event.inputs.releaseType }}
