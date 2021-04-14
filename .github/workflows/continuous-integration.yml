@@ -18,7 +18,7 @@ env:
 
 jobs:
   integration-test:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     name: Integration Tests
     steps:
       - name: Checkout aries-framework-javascript
@@ -47,12 +47,12 @@ jobs:
 
       - name: Run tests
         run: >-
-          docker run 
+          docker run
           --network host
-          --name framework-jest-tests 
+          --name framework-jest-tests
           --env TEST_AGENT_PUBLIC_DID_SEED=${TEST_AGENT_PUBLIC_DID_SEED}
           --env GENESIS_TXN_PATH=${GENESIS_TXN_PATH}
-          aries-framework-javascript 
+          aries-framework-javascript
           yarn test --coverage
 
       - name: Export logs
@@ -77,7 +77,7 @@ jobs:
         if: always()
 
   release:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     name: Release
     needs: [integration-test]
     # Only run on push or workflow dispatch to main branch
@@ -98,8 +98,12 @@ jobs:
         with:
           node-version: '12.x'
 
+      # https://github.com/yarnpkg/yarn/issues/6617#issuecomment-436222106
+      - name: Prepend Node path
+        run: npm config set scripts-prepend-node-path true
+
       - name: Install dependencies
-        run: yarn install --ignore-optional
+        run: yarn install --ignore-optional --frozen-lockfile
 
       # On push to master, release unstable version
       - name: Release Unstable
