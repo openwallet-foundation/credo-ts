@@ -62,7 +62,7 @@ export class MediationRecipientService extends EventEmitter {
   }
 
   public fetchMediatorById(mediatorId: string): string {
-    const mediator: string = 'DummyMediator';
+    const mediator = 'DummyMediator';
     return mediator;
   }
 }

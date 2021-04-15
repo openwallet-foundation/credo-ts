@@ -7,8 +7,8 @@ interface MediationRecipientRecordProps {
   createdAt?: number;
   tags?: { [keys: string]: string };
   mediatorConnectionId: string;
-  routingKeys: [Verkey]
-  endPoint: string
+  routingKeys: [Verkey];
+  endPoint: string;
 }
 
 export class MediationRecipientRecord extends BaseRecord {

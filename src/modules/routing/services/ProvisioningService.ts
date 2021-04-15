@@ -10,7 +10,7 @@ const UNIQUE_PROVISIONING_ID = 'UNIQUE_PROVISIONING_ID';
 export class ProvisioningService {
   private provisioningRepository: Repository<ProvisioningRecord>;
   private logger: Logger;
-  private endpoint: String;
+  private endpoint: string;
   private routingKeys: [Verkey];
 
   public constructor(provisioningRepository: Repository<ProvisioningRecord>, agentConfig: AgentConfig) {

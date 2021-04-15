@@ -55,7 +55,7 @@ export class MediationConsumerModule {
   }
 
   public async requestMediation(connectionReord: ConnectionRecord) {
-    let mediatorRecord = await this.mediationConsumerService.createMediationRequest(connectionReord);
+    const mediatorRecord = await this.mediationConsumerService.createMediationRequest(connectionReord);
   }
   // Register handlers for the several messages for the mediator.
   private registerHandlers(dispatcher: Dispatcher) {
