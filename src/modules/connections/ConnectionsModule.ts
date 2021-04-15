@@ -6,7 +6,7 @@ import { MessageSender } from '../../agent/MessageSender';
 import { createOutboundMessage } from '../../agent/helpers';
 import { Dispatcher } from '../../agent/Dispatcher';
 import { ConnectionService, ConnectionEventType, ConnectionStateChangedEvent, TrustPingService } from './services';
-import { RoutingService } from '../routing';
+import { ConsumerRoutingService } from '../routing';
 import { ConnectionRecord } from './repository/ConnectionRecord';
 import { ConnectionState } from './models';
 import { ConnectionInvitationMessage } from './messages';
@@ -21,7 +21,7 @@ import {
 export class ConnectionsModule {
   private agentConfig: AgentConfig;
   private connectionService: ConnectionService;
-  private RoutingService: RoutingService;
+  private RoutingService: ConsumerRoutingService;
   private messageSender: MessageSender;
   private trustPingService: TrustPingService;
 
@@ -30,7 +30,7 @@ export class ConnectionsModule {
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
     trustPingService: TrustPingService,
-    RoutingService: RoutingService,
+    RoutingService: ConsumerRoutingService,
     messageSender: MessageSender
   ) {
     this.agentConfig = agentConfig;

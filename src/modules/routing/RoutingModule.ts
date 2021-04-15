@@ -1,5 +1,5 @@
 import { AgentConfig } from '../../agent/AgentConfig';
-import { ProviderRoutingService, MessagePickupService, ProvisioningService } from './services';
+import { ProviderRoutingService, MessagePickupService, MediationRecipientService } from './services';
 import { MessageSender } from '../../agent/MessageSender';
 import { createOutboundMessage } from '../../agent/helpers';
 import {
@@ -13,10 +13,11 @@ import type { Verkey } from 'indy-sdk';
 import { Dispatcher } from '../../agent/Dispatcher';
 import { MessagePickupHandler, ForwardHandler, KeylistUpdateHandler } from './handlers';
 import { Logger } from '../../logger';
+import { MediationService } from './services/MediationService';
 export class RoutingModule {
   private agentConfig: AgentConfig;
   private providerRoutingService: ProviderRoutingService;
-  private provisioningService: ProvisioningService;
+  private mediationService: MediationService;
   private messagePickupService: MessagePickupService;
   private connectionService: ConnectionService;
   private messageSender: MessageSender;
@@ -26,14 +27,14 @@ export class RoutingModule {
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     providerRoutingService: ProviderRoutingService,
-    provisioningService: ProvisioningService,
+    mediationService: MediationService,
     messagePickupService: MessagePickupService,
     connectionService: ConnectionService,
     messageSender: MessageSender
   ) {
     this.agentConfig = agentConfig;
     this.providerRoutingService = providerRoutingService;
-    this.provisioningService = provisioningService;
+    this.mediationService = mediationService;
     this.messagePickupService = messagePickupService;
     this.connectionService = connectionService;
     this.messageSender = messageSender;
@@ -42,9 +43,10 @@ export class RoutingModule {
   }
 
   public async provision(mediatorConfiguration: MediatorConfiguration) {
-    let provisioningRecord = await this.provisioningService.find();
+    // let mediationRecord = await this.mediationService.find(mediatorConfiguration.);
+    let mediationRecord = null;
 
-    if (!provisioningRecord) {
+    if (!mediationRecord) {
       this.logger.info('No provision record found. Creating connection with mediator.');
       const { verkey, invitationUrl, alias = 'Mediator' } = mediatorConfiguration;
       const mediatorInvitation = await ConnectionInvitationMessage.fromUrl(invitationUrl);
@@ -63,16 +65,16 @@ export class RoutingModule {
       await this.messageSender.sendMessage(createOutboundMessage(connectionRecord, trustPing));
 
       const provisioningProps = {
-        mediatorConnectionId: connectionRecord.id,
-        mediatorPublicVerkey: verkey,
+        connectionId: connectionRecord.id,
+        recipientKey: verkey,
       };
-      provisioningRecord = await this.provisioningService.create(provisioningProps);
+      mediationRecord = await this.mediationService.create(provisioningProps);
       this.logger.debug('Provisioning record has been saved.');
     }
 
-    this.logger.debug('Provisioning record:', provisioningRecord);
+    this.logger.debug('Provisioning record:', mediationRecord);
 
-    const agentConnectionAtMediator = await this.connectionService.find(provisioningRecord.mediatorConnectionId);
+    const agentConnectionAtMediator = await this.connectionService.find(mediationRecord.mediatorConnectionId);
 
     if (!agentConnectionAtMediator) {
       throw new Error('Connection not found!');
@@ -82,7 +84,7 @@ export class RoutingModule {
     agentConnectionAtMediator.assertState(ConnectionState.Complete);
 
     this.agentConfig.establishInbound({
-      verkey: provisioningRecord.mediatorPublicVerkey,
+      verkey: mediationRecord.mediatorPublicVerkey,
       connection: agentConnectionAtMediator,
     });
 

@@ -7,23 +7,46 @@ interface MediationRecipientRecordProps {
   createdAt?: number;
   tags?: { [keys: string]: string };
   mediatorConnectionId: string;
-  routingKeys: [Verkey];
+  recipientKeys: [Verkey];
   endPoint: string;
+}
+
+export interface MediationRecordProps {
+  id?: string;
+  createdAt?: number;
+  tags?: { [keys: string]: string };
+  connectionId: string;
+  recipientKey: Verkey;
 }
 
 export class MediationRecipientRecord extends BaseRecord {
   public mediatorConnectionId: string;
   public endPoint: string;
-  public routingKeys: [Verkey];
+  public recipientKeys: [Verkey];
 
-  public static readonly type: RecordType = RecordType.ProvisioningRecord;
+  public static readonly type: RecordType = RecordType.MediationRecipientRecord;
   public readonly type = MediationRecipientRecord.type;
 
   public constructor(props: MediationRecipientRecordProps) {
     super(props.id ?? uuid(), props.createdAt ?? Date.now());
     this.mediatorConnectionId = props.mediatorConnectionId;
     this.endPoint = props.endPoint;
-    this.routingKeys = props.routingKeys;
+    this.recipientKeys = props.recipientKeys;
+    this.tags = props.tags || {};
+  }
+}
+
+export class MediationRecord extends BaseRecord {
+  public mediatorConnectionId: string;
+  public routingKeys: [Verkey];
+
+  public static readonly type: RecordType = RecordType.MediationRecord;
+  public readonly type = MediationRecord.type;
+
+  public constructor(props: MediationRecordProps) {
+    super(props.id ?? uuid(), props.createdAt ?? Date.now());
+    this.mediatorConnectionId = props.connectionId;
+    this.routingKeys = [props.recipientKey];
     this.tags = props.tags || {};
   }
 }

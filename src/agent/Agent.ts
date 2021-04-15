@@ -10,9 +10,9 @@ import {
   ConsumerRoutingService,
   ProviderRoutingService,
   MessagePickupService,
-  ProvisioningService,
   MediationRecipientService,
   MediationRecipientRecord,
+  MediationRecord,
 } from '../modules/routing';
 import { BasicMessageService, BasicMessageRecord } from '../modules/basic-messages';
 import { LedgerService } from '../modules/ledger';
@@ -28,10 +28,9 @@ import { Wallet } from '../wallet/Wallet';
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule';
 import { CredentialsModule } from '../modules/credentials/CredentialsModule';
 import { ProofsModule } from '../modules/proofs/ProofsModule';
-import { MediationConsumerModule } from '../modules/routing/MediationConsumerModule';
+import { MediationRecipientModule } from '../modules/routing/MediationRecipientModule';
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule';
 import { LedgerModule } from '../modules/ledger/LedgerModule';
-import { MediationConsumerService } from '../modules/routing/services/MediationConsumerService';
 import { RoutingModule } from '../modules/routing/RoutingModule';
 
 export class Agent {
@@ -53,7 +52,7 @@ export class Agent {
   protected credentialService: CredentialService;
   protected basicMessageRepository: Repository<BasicMessageRecord>;
   protected connectionRepository: Repository<ConnectionRecord>;
-  protected mediationRecipientRepository: Repository<MediationRecipientRecord>;
+  protected mediationRepository: Repository<MediationRecord>;
   protected credentialRepository: Repository<CredentialRecord>;
   protected proofRepository: Repository<ProofRecord>;
 
@@ -65,7 +64,7 @@ export class Agent {
   public basicMessages!: BasicMessagesModule;
   public ledger!: LedgerModule;
   public credentials!: CredentialsModule;
-  public consumerMediation!: MediationConsumerModule;
+  public mediationRecipient!: MediationRecipientModule;
 
   public constructor(
     initialConfig: InitConfig,
@@ -89,12 +88,12 @@ export class Agent {
     this.messageSender = new MessageSender(envelopeService, outboundTransporter);
     this.dispatcher = new Dispatcher(this.messageSender);
     this.inboundTransporter = inboundTransporter;
-    this.mediationConsumerService = new MediationConsumerService(this.messageSender, this.agentConfig);
+    this.mediationRecipientService = new MediationRecipientService(this.messageSender, this.agentConfig);
 
     const storageService = new IndyStorageService(this.wallet);
     this.basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService);
     this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService);
-    this.mediationRecipientRepository = new Repository<ProvisioningRecord>(ProvisioningRecord, storageService);
+    this.mediationRepository = new Repository<MediationRecord>(MediationRecord, storageService);
     this.credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService);
     this.proofRepository = new Repository<ProofRecord>(ProofRecord, storageService);
     this.mediationRecipientService = new MediationRecipientService(this.agentConfig, this.mediationRecipientRepository);
@@ -171,11 +170,11 @@ export class Agent {
       this.messageSender
     );
 
-    this.consumerMediation = new MediationConsumerModule(
+    this.mediationRecipient = new MediationRecipientModule(
+      this.dispatcher,
       this.agentConfig,
       this.providerRoutingService,
-      this.provisioningService,
-      this.mediationConsumerService,
+      this.mediationRecipientService,
       this.messagePickupService,
       this.connectionService,
       this.messageSender,
@@ -191,16 +190,15 @@ export class Agent {
 
     this.proofs = new ProofsModule(this.dispatcher, this.proofService, this.connectionService, this.messageSender);
 
-    this.routing = new MediationConsumerModule(
-      this.dispatcher,
-      this.agentConfig,
-      this.providerRoutingService,
-      this.mediationConsumerService,
-      this.provisioningService,
-      this.messagePickupService,
-      this.connectionService,
-      this.messageSender
-    );
+    // this.routing = new RoutingModule(
+    //   this.dispatcher,
+    //   this.agentConfig,
+    //   this.providerRoutingService,
+    //   this.mediationRecipientService,
+    //   this.messagePickupService,
+    //   this.connectionService,
+    //   this.messageSender
+    // );
 
     this.basicMessages = new BasicMessagesModule(this.dispatcher, this.basicMessageService, this.messageSender);
 
