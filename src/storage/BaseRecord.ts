@@ -2,7 +2,7 @@ export enum RecordType {
   BaseRecord = 'BaseRecord',
   ConnectionRecord = 'ConnectionRecord',
   BasicMessageRecord = 'BasicMessageRecord',
-  ProvisioningRecord = 'ProvisioningRecord',
+  MediationRecipientRecord = 'MediationRecipientRecord',
   CredentialRecord = 'CredentialRecord',
   ProofRecord = 'PresentationRecord',
 }
