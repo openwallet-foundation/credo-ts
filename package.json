@@ -74,7 +74,13 @@
       "release": true
     },
     "npm": {
-      "skipChecks": true
+      "skipChecks": true,
+      "ignoreVersion": true
+    },
+    "git": {
+      "requireBranch": "main",
+      "push": false,
+      "commit": false
     }
   }
 }
