@@ -14,7 +14,7 @@ class HttpInboundTransporter implements InboundTransporter {
     this.app = app
   }
 
-  public start(agent: Agent) {
+  public async start(agent: Agent) {
     this.app.post('/msg', async (req, res) => {
       const message = req.body
       const packedMessage = JSON.parse(message)
@@ -67,7 +67,8 @@ app.set('json spaces', 2)
 const messageRepository = new InMemoryMessageRepository()
 const messageSender = new StorageOutboundTransporter(messageRepository)
 const messageReceiver = new HttpInboundTransporter(app)
-const agent = new Agent(config, messageReceiver, messageRepository)
+const agent = new Agent(config, messageRepository)
+agent.setInboundTransporter(messageReceiver)
 agent.setOutboundTransporter(messageSender)
 
 app.get('/', async (req, res) => {
