@@ -43,6 +43,8 @@ export class Agent {
   protected messageReceiver: MessageReceiver
   protected dispatcher: Dispatcher
   protected messageSender: MessageSender
+  public inboundTransporter?: InboundTransporter
+
   protected connectionService: ConnectionService
   protected proofService: ProofService
   protected basicMessageService: BasicMessageService
@@ -61,8 +63,6 @@ export class Agent {
   protected credentialRepository: Repository<CredentialRecord>
   protected proofRepository: Repository<ProofRecord>
 
-  public inboundTransporter: InboundTransporter
-
   public connections!: ConnectionsModule
   public proofs!: ProofsModule
   public routing!: RoutingModule
@@ -70,11 +70,7 @@ export class Agent {
   public ledger!: LedgerModule
   public credentials!: CredentialsModule
 
-  public constructor(
-    initialConfig: InitConfig,
-    inboundTransporter: InboundTransporter,
-    messageRepository?: MessageRepository
-  ) {
+  public constructor(initialConfig: InitConfig, messageRepository?: MessageRepository) {
     this.agentConfig = new AgentConfig(initialConfig)
     this.logger = this.agentConfig.logger
 
@@ -96,7 +92,6 @@ export class Agent {
 
     this.messageSender = new MessageSender(envelopeService)
     this.dispatcher = new Dispatcher(this.messageSender)
-    this.inboundTransporter = inboundTransporter
 
     const storageService = new IndyStorageService(this.wallet)
     this.basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService)
@@ -131,6 +126,10 @@ export class Agent {
     )
 
     this.registerModules()
+  }
+
+  public setInboundTransporter(inboundTransporter: InboundTransporter) {
+    this.inboundTransporter = inboundTransporter
   }
 
   public setOutboundTransporter(outboundTransporter: OutboundTransporter) {

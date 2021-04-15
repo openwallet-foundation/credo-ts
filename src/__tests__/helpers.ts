@@ -129,7 +129,7 @@ export class SubjectInboundTransporter implements InboundTransporter {
     this.theirSubject = theirSubject
   }
 
-  public start(agent: Agent) {
+  public async start(agent: Agent) {
     this.subscribe(agent)
   }
 

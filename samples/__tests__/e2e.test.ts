@@ -44,14 +44,13 @@ describe('with mediator', () => {
   })
 
   test('Alice and Bob make a connection with mediator', async () => {
-    const aliceAgentReceiver = new PollingInboundTransporter()
-    const bobAgentReceiver = new PollingInboundTransporter()
-
-    aliceAgent = new Agent(aliceConfig, aliceAgentReceiver)
+    aliceAgent = new Agent(aliceConfig)
+    aliceAgent.setInboundTransporter(new PollingInboundTransporter())
     aliceAgent.setOutboundTransporter(new HttpOutboundTransporter(aliceAgent))
     await aliceAgent.init()
 
-    bobAgent = new Agent(bobConfig, bobAgentReceiver)
+    bobAgent = new Agent(bobConfig)
+    bobAgent.setInboundTransporter(new PollingInboundTransporter())
     bobAgent.setOutboundTransporter(new HttpOutboundTransporter(bobAgent))
     await bobAgent.init()
 
