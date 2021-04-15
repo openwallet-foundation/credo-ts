@@ -22,7 +22,7 @@ describe('ledger', () => {
   let schemaId: SchemaId
 
   beforeAll(async () => {
-    faberAgent = new Agent(faberConfig, new DummyInboundTransporter())
+    faberAgent = new Agent(faberConfig)
     await faberAgent.init()
   })
 
@@ -134,9 +134,3 @@ describe('ledger', () => {
     )
   })
 })
-
-class DummyInboundTransporter implements InboundTransporter {
-  public start() {
-    testLogger.test('Starting agent...')
-  }
-}
