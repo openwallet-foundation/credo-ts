@@ -40,7 +40,7 @@ export class Agent {
   protected messageReceiver: MessageReceiver
   protected dispatcher: Dispatcher
   protected messageSender: MessageSender
-  public inboundTransporter?: InboundTransporter
+  public readonly inboundTransporter?: InboundTransporter
 
   protected connectionService: ConnectionService
   protected proofService: ProofService
