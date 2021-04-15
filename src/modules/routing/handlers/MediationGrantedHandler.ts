@@ -23,7 +23,7 @@ export class MediationGrantedHandler implements Handler {
     }
 
     //  Do validation here. Does the message match. 
-    if (messageContext.connection.type !=== MeediationConsumerMessage.type)
+    // if (messageContext.connection.type !=== MeediationConsumerMessage.type)
 
     await this.mediationService.processResponse(messageContext);
 

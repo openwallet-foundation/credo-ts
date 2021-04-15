@@ -31,6 +31,7 @@ import { MediationConsumerModule } from '../modules/routing/MediationConsumerMod
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule';
 import { LedgerModule } from '../modules/ledger/LedgerModule';
 import { MediationConsumerService } from '../modules/routing/services/MediationConsumerService';
+import { RoutingModule } from '../modules/routing/RoutingModule';
 
 export class Agent {
   protected logger: Logger;
@@ -63,7 +64,7 @@ export class Agent {
   public basicMessages!: BasicMessagesModule;
   public ledger!: LedgerModule;
   public credentials!: CredentialsModule;
-  public consumerMediation: MediationConsumerModule;
+  public consumerMediation!: MediationConsumerModule;
 
   public constructor(
     initialConfig: InitConfig,
