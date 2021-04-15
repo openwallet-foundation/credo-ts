@@ -1,27 +1,36 @@
-import { Equals, IsArray, ValidateNested, IsString, IsEnum } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Equals, IsDate, IsString } from 'class-validator';
+import { Expose, Type } from 'class-transformer';
 
 import { AgentMessage } from '../../../agent/AgentMessage';
-import { RoutingMessageType as MessageType } from './RoutingMessageType';
+import { MessageType } from './RequestMediationType';
 
-export interface RequestMediationMessageOptions {
-    id: string;
-    // Maybe add support for mediator_terms, recipient_terms
-}
-
-/**
- * Used to notify the mediator of keys in use by the recipient.
- *
- * @see https://github.com/hyperledger/aries-rfcs/tree/master/features/0211-route-coordination
- */
 export class RequestMediationMessage extends AgentMessage {
-  public constructor(options: RequestMediationMessageOptions) {
+  /**
+   * Create new BasicMessage instance.
+   * sentTime will be assigned to new Date if not passed, id will be assigned to uuid/v4 if not passed
+   * @param options
+   */
+  public constructor(options: { content: string; sentTime?: Date; id?: string; locale?: string }) {
     super();
-    this.id = options.id;
 
+    if (options) {
+      this.id = options.id || this.generateId();
+      this.sentTime = options.sentTime || new Date();
+      this.content = options.content;
+      this.addLocale(options.locale || 'en');
+    }
   }
 
   @Equals(RequestMediationMessage.type)
   public readonly type = RequestMediationMessage.type;
-  public static readonly type = MessageType.RequestMediation;
+  public static readonly type = MessageType.RequestMediationMessage;
+
+  @Expose({ name: 'sent_time' })
+  @Type(() => Date)
+  @IsDate()
+  public sentTime!: Date;
+
+  @Expose({ name: 'content' })
+  @IsString()
+  public content!: string;
 }
