@@ -11,9 +11,15 @@ import {
 import { BatchMessage } from './messages';
 import type { Verkey } from 'indy-sdk';
 import { Dispatcher } from '../../agent/Dispatcher';
-import { MessagePickupHandler, ForwardHandler, KeylistUpdateHandler, MediationGrantedHandler, MediationDeniedHandler } from './handlers';
+import {
+  MessagePickupHandler,
+  ForwardHandler,
+  KeylistUpdateHandler,
+  MediationGrantedHandler,
+  MediationDeniedHandler,
+} from './handlers';
 import { Logger } from '../../logger';
-import { ConnectionRecord } from '../connections'
+import { ConnectionRecord } from '../connections';
 import { MediationConsumerService } from './services/MediationConsumerService';
 import agentConfig from '../../../samples/config';
 
@@ -50,10 +56,8 @@ export class MediationConsumerModule {
 
   public async requestMediation(connectionReord: ConnectionRecord) {
     let mediatorRecord = await this.mediationConsumerService.createMediationRequest(connectionReord);
-
-    
   }
-// Register handlers for the several messages for the mediator. 
+  // Register handlers for the several messages for the mediator.
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new KeylistUpdateHandler(this.providerRoutingService));
     dispatcher.registerHandler(new MessagePickupHandler(this.messagePickupService));

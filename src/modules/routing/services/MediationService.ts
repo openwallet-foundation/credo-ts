@@ -12,10 +12,6 @@ export interface RoutingTable {
 export class MediationService {
   private routingTable: RoutingTable = {};
 
-
-    
-
-
   /**
    * @todo use connection from message context
    */

@@ -50,8 +50,7 @@ class MediationConsumerService {
   //   // Granted: save mediator to the Repoistory, return record for immediate use.
   // }
 
-  // public async 
-
+  // public async
 }
 
 export { MediationConsumerService };

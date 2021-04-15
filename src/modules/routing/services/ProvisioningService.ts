@@ -11,7 +11,7 @@ export class ProvisioningService {
   private provisioningRepository: Repository<ProvisioningRecord>;
   private logger: Logger;
   private endpoint: String;
-  private routingKeys: [Verkey]
+  private routingKeys: [Verkey];
 
   public constructor(provisioningRepository: Repository<ProvisioningRecord>, agentConfig: AgentConfig) {
     this.provisioningRepository = provisioningRepository;

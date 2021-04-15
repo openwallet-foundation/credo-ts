@@ -8,8 +8,8 @@ import { Dispatcher } from '../../agent/Dispatcher';
 import { ConnectionRecord } from './repository/ConnectionRecord';
 import { ConnectionState } from './models';
 import { RequestMediationMessage } from './messages';
-import { MediationDenyHandler} from './handlers/MediationDeniedHandler';
-import { MediationGrantHandler} from './handlers/MediationGrantedHandler';
+import { MediationDenyHandler } from './handlers/MediationDeniedHandler';
+import { MediationGrantHandler } from './handlers/MediationGrantedHandler';
 import { RequestMediationType } from './messages/RequestMediationType';
 import { RequestMediationMessage } from './messages/RequestMediationMessage';
 import { MediationService } from './services/MediationService';
@@ -18,11 +18,7 @@ export class MediationModule {
   private agentConfig: AgentConfig;
   private mediationService: MediationService;
 
-  public constructor(
-    dispatcher: Dispatcher,
-    agentConfig: AgentConfig,
-    mediationService: MediationService,
-  ) {
+  public constructor(dispatcher: Dispatcher, agentConfig: AgentConfig, mediationService: MediationService) {
     this.agentConfig = agentConfig;
     this.mediationService = mediationService;
     this.registerHandlers(dispatcher);
@@ -32,7 +28,7 @@ export class MediationModule {
     return this.mediationService;
   }
 
-// Pass in a connectionRecord, recieve back the connectionRecord and a message
+  // Pass in a connectionRecord, recieve back the connectionRecord and a message
   public async requestMediation(config?: {
     autoAcceptConnection?: boolean;
     alias?: string;
@@ -71,7 +67,6 @@ export class MediationModule {
     return connection;
   }
 
-  
   public async acceptRequest(connectionId: string): Promise<ConnectionRecord> {
     const { message, connectionRecord: connectionRecord } = await this.connectionService.createResponse(connectionId);
 
@@ -117,15 +112,14 @@ export class MediationModule {
     });
   }
 
-
-//   Need to fill this out with the keylist methods 
+  //   Need to fill this out with the keylist methods
 
   public async getMediators() {
-    //   TODO - fetch mediators from wallet. I'm guessing that this would have to poll all mediators and get their statuses? 
+    //   TODO - fetch mediators from wallet. I'm guessing that this would have to poll all mediators and get their statuses?
     // return this.mediationService.getMediators();
   }
 
-//   I removed all but these two 
+  //   I removed all but these two
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new MediationDenyHandler(this.connectionService, this.agentConfig));
     dispatcher.registerHandler(new MediationGrantHandler(this.connectionService, this.agentConfig));

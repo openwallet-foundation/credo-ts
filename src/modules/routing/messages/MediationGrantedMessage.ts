@@ -6,9 +6,9 @@ import { RoutingMessageType as MessageType } from './RoutingMessageType';
 import { Verkey } from 'indy-sdk';
 
 export interface MediationGrantedMessageOptions {
-    id: string;
-    endpoint: string;
-    routingKeys: [Verkey]
+  id: string;
+  endpoint: string;
+  routingKeys: [Verkey];
 }
 
 /**
@@ -17,18 +17,17 @@ export interface MediationGrantedMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/tree/master/features/0211-route-coordination
  */
 export class MediationGrantedMessage extends AgentMessage {
-
   public constructor(options: MediationGrantedMessageOptions) {
     super();
     this.id = options.id;
-    this.routingKeys = options.routingKeys
-    this.endpoint = options.endpoint
+    this.routingKeys = options.routingKeys;
+    this.endpoint = options.endpoint;
   }
 
   @IsNotEmpty()
-  public routingKeys: [Verkey]
-  public endpoint: string
-  public id: string
+  public routingKeys: [Verkey];
+  public endpoint: string;
+  public id: string;
 
   @Equals(MediationGrantedMessage.type)
   public readonly type = MediationGrantedMessage.type;

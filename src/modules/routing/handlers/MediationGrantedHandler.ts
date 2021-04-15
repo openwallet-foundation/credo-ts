@@ -5,7 +5,7 @@ import { MediationService } from '../services/MediationService';
 import { RequestMediationMessage } from '../messages';
 
 // Handle mediation granted. Should this be called by the service or the module?
-// I'll have to look at other modules to see how they're connected to their handlers. 
+// I'll have to look at other modules to see how they're connected to their handlers.
 
 export class MediationGrantedHandler implements Handler {
   private mediationService: MediationService;

@@ -5,7 +5,7 @@ import { AgentMessage } from '../../../agent/AgentMessage';
 import { RoutingMessageType as MessageType } from './RoutingMessageType';
 
 export interface MediationDeniedMessageOptions {
-    id: string;
+  id: string;
 }
 
 /**
@@ -17,7 +17,6 @@ export class MediationDeniedMessage extends AgentMessage {
   public constructor(options: MediationDeniedMessageOptions) {
     super();
     this.id = options.id;
-
   }
 
   @Equals(MediationDeniedMessage.type)

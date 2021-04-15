@@ -5,7 +5,7 @@ import { MediationService } from '../services/MediationService';
 import { RequestMediationMessage } from '../messages';
 
 // Handles the mediation denied state.
-// I need to look up the RFC and make sure I'm handling this correctly. 
+// I need to look up the RFC and make sure I'm handling this correctly.
 
 export class MediationDeniedHandler implements Handler {
   private mediationService: MediationService;

@@ -5,10 +5,10 @@
  *
  * @see TODO - Add URL to RFC
  */
- export enum MediationState {
-    Init = 'init',
-    Invited = 'invited',
-    Requested = 'requested',
-    Responded = 'responded',
-    Complete = 'complete',
-  }
+export enum MediationState {
+  Init = 'init',
+  Invited = 'invited',
+  Requested = 'requested',
+  Responded = 'responded',
+  Complete = 'complete',
+}

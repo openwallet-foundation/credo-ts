@@ -89,7 +89,7 @@ export class Agent {
     this.messageSender = new MessageSender(envelopeService, outboundTransporter);
     this.dispatcher = new Dispatcher(this.messageSender);
     this.inboundTransporter = inboundTransporter;
-    this.mediationConsumerService = new MediationConsumerService(this.messageSender, this.agentConfig)
+    this.mediationConsumerService = new MediationConsumerService(this.messageSender, this.agentConfig);
 
     const storageService = new IndyStorageService(this.wallet);
     this.basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService);
@@ -172,14 +172,14 @@ export class Agent {
     );
 
     this.consumerMediation = new MediationConsumerModule(
-      this.agentConfig, 
-      this.providerRoutingService, 
+      this.agentConfig,
+      this.providerRoutingService,
       this.provisioningService,
       this.mediationConsumerService,
       this.messagePickupService,
       this.connectionService,
       this.messageSender,
-      this.logger,
+      this.logger
     );
 
     this.credentials = new CredentialsModule(
@@ -199,7 +199,7 @@ export class Agent {
       this.provisioningService,
       this.messagePickupService,
       this.connectionService,
-      this.messageSender,
+      this.messageSender
     );
 
     this.basicMessages = new BasicMessagesModule(this.dispatcher, this.basicMessageService, this.messageSender);
