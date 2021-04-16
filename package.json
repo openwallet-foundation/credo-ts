@@ -80,5 +80,8 @@
       "push": false,
       "commit": false
     }
+  },
+  "engines": {
+    "node": "^12"
   }
 }
