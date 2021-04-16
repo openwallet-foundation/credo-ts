@@ -27,6 +27,7 @@ export class AgentConfig {
     return this.initConfig.publicDidSeed
   }
 
+  // TODO - Possibly unneeded.
   public get mediatorUrl() {
     return this.initConfig.mediatorUrl
   }

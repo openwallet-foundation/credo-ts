@@ -30,7 +30,7 @@ export class RoutingModule {
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     providerRoutingService: ProviderRoutingService,
-    provisioningService: ProvisioningService,
+    mediationService: MediationService,
     messagePickupService: MessagePickupService,
     connectionService: ConnectionService,
     messageSender: MessageSender,
@@ -84,7 +84,7 @@ export class RoutingModule {
     agentConnectionAtMediator.assertState(ConnectionState.Complete)
 
     this.agentConfig.establishInbound({
-      verkey: provisioningRecord.mediatorPublicVerkey,
+      verkey: mediationRecord.mediatorPublicVerkey,
       connection: agentConnectionAtMediator,
     })
 

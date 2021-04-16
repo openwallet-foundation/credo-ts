@@ -1,4 +1,5 @@
 export * from './ConsumerRoutingService'
 export * from './MessagePickupService'
 export * from './ProviderRoutingService'
-export * from './ProvisioningService'
+export * from './MediationRecipientService'
+export * from './MediationService'
