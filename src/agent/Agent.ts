@@ -7,7 +7,6 @@ import { ConnectionService, TrustPingService, ConnectionRecord } from '../module
 import { CredentialService, CredentialRecord } from '../modules/credentials';
 import { ProofService, ProofRecord } from '../modules/proofs';
 import {
-  ConsumerRoutingService,
   ProviderRoutingService,
   MessagePickupService,
   MediationRecipientService,
@@ -45,7 +44,6 @@ export class Agent {
   protected proofService: ProofService;
   protected basicMessageService: BasicMessageService;
   protected providerRoutingService: ProviderRoutingService;
-  protected consumerRoutingService: ConsumerRoutingService;
   protected trustPingService: TrustPingService;
   protected messagePickupService: MessagePickupService;
   protected mediationRecipientService: MediationRecipientService;
@@ -104,7 +102,6 @@ export class Agent {
     this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository);
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository);
     this.providerRoutingService = new ProviderRoutingService();
-    this.consumerRoutingService = new ConsumerRoutingService(this.messageSender, this.agentConfig);
     this.trustPingService = new TrustPingService();
     this.messagePickupService = new MessagePickupService(messageRepository);
     this.ledgerService = new LedgerService(this.wallet, this.agentConfig);
@@ -177,7 +174,6 @@ export class Agent {
       this.agentConfig,
       this.connectionService,
       this.trustPingService,
-      this.consumerRoutingService,
       this.messageSender
     );
 
