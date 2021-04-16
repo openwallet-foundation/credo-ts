@@ -12,18 +12,30 @@ import { RoutingTable } from './ProviderRoutingService';
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
 import { OutboundMessage } from '../../../types';
 
+export enum MediationEventType {
+  Granted = 'GRANTED',
+  Denied = 'DENIED',
+  KeylistUpdated = 'KEYLIST_UPDATED',
+}
+
 export class MediationRecipientService extends EventEmitter {
   // TODO: Review this, placeholder
   private logger: Logger;
   private agentConfig: AgentConfig;
   private mediationRecipientRepository: Repository<MediationRecipientRecord>;
+  private messageSender: MessageSender;
 
   // TODO: Review this, placeholder
-  public constructor(agentConfig: AgentConfig, mediationRecipientRepository: Repository<MediationRecipientRecord>) {
+  public constructor(
+    agentConfig: AgentConfig,
+    mediationRecipientRepository: Repository<MediationRecipientRecord>,
+    messageSender: MessageSender
+  ) {
     super();
     this.agentConfig = agentConfig;
     this.logger = agentConfig.logger;
     this.mediationRecipientRepository = mediationRecipientRepository;
+    this.messageSender = messageSender;
   }
 
   // // TODO: Review this, placeholder
@@ -36,13 +48,11 @@ export class MediationRecipientService extends EventEmitter {
 
   // recieve and handle the "granted" response from the mediator
   public handleGranted() {
-
     this.emit(MediationEventType.Granted);
   }
 
   // recieve and handle the "denied" response from the mediator.
   public handleDenied() {
-
     this.emit(MediationEventType.Denied);
   }
 
@@ -54,8 +64,8 @@ export class MediationRecipientService extends EventEmitter {
 
       return connection;
     } catch {
-        return 'No mediator found for ID'
-//  TODO - Make this better
+      return 'No mediator found for ID';
+      //  TODO - Make this better
     }
   }
 
@@ -64,7 +74,7 @@ export class MediationRecipientService extends EventEmitter {
     return mediator;
   }
 
-// Copied from old Service
+  // Copied from old Service
 
   private routingTable: RoutingTable = {};
 
@@ -145,10 +155,4 @@ export class MediationRecipientService extends EventEmitter {
 
     delete this.routingTable[recipientKey];
   }
-}
-
-export enum MediationEventType {
-  Granted = 'GRANTED',
-  Denied = 'DENIED',
-  KeylistUpdated = 'KEYLIST_UPDATED',
 }

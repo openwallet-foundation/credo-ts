@@ -32,6 +32,7 @@ import { MediationRecipientModule } from '../modules/routing/MediationRecipientM
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule';
 import { LedgerModule } from '../modules/ledger/LedgerModule';
 import { RoutingModule } from '../modules/routing/RoutingModule';
+import { MediationService } from '../modules/routing/services/MediationService';
 
 export class Agent {
   protected logger: Logger;
@@ -48,11 +49,13 @@ export class Agent {
   protected trustPingService: TrustPingService;
   protected messagePickupService: MessagePickupService;
   protected mediationRecipientService: MediationRecipientService;
+  protected mediationService: MediationService;
   protected ledgerService: LedgerService;
   protected credentialService: CredentialService;
   protected basicMessageRepository: Repository<BasicMessageRecord>;
   protected connectionRepository: Repository<ConnectionRecord>;
   protected mediationRepository: Repository<MediationRecord>;
+  protected mediationRecipientRepository: Repository<MediationRecipientRecord>;
   protected credentialRepository: Repository<CredentialRecord>;
   protected proofRepository: Repository<ProofRecord>;
 
@@ -88,15 +91,16 @@ export class Agent {
     this.messageSender = new MessageSender(envelopeService, outboundTransporter);
     this.dispatcher = new Dispatcher(this.messageSender);
     this.inboundTransporter = inboundTransporter;
-    this.mediationRecipientService = new MediationRecipientService(this.messageSender, this.agentConfig);
-
     const storageService = new IndyStorageService(this.wallet);
     this.basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService);
     this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService);
     this.mediationRepository = new Repository<MediationRecord>(MediationRecord, storageService);
+    this.mediationRecipientRepository = new Repository<MediationRecipientRecord>(
+      MediationRecipientRecord,
+      storageService
+    );
     this.credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService);
     this.proofRepository = new Repository<ProofRecord>(ProofRecord, storageService);
-    this.mediationRecipientService = new MediationRecipientService(this.agentConfig, this.mediationRecipientRepository);
     this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository);
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository);
     this.providerRoutingService = new ProviderRoutingService();
@@ -104,6 +108,12 @@ export class Agent {
     this.trustPingService = new TrustPingService();
     this.messagePickupService = new MessagePickupService(messageRepository);
     this.ledgerService = new LedgerService(this.wallet, this.agentConfig);
+    this.mediationService = new MediationService(this.agentConfig, this.mediationRepository, this.messageSender);
+    this.mediationRecipientService = new MediationRecipientService(
+      this.agentConfig,
+      this.mediationRecipientRepository,
+      this.messageSender
+    );
     this.credentialService = new CredentialService(
       this.wallet,
       this.credentialRepository,
@@ -147,6 +157,7 @@ export class Agent {
     return this.wallet.publicDid;
   }
 
+  // TODO - Possibly unneeded. Update to use mediation recipient repository.
   public getMediatorUrl() {
     return this.agentConfig.mediatorUrl;
   }

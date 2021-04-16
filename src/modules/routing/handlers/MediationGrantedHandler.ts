@@ -11,7 +11,6 @@ export class MediationGrantedHandler implements Handler {
   private mediationService: MediationRecipientService;
   public supportedMessages = [RequestMediationMessage];
 
-
   public constructor(mediationService: MediationRecipientService) {
     this.mediationService = mediationService;
   }
