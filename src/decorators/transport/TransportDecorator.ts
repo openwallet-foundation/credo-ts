@@ -1,7 +1,7 @@
-import { Expose } from 'class-transformer';
-import { IsEnum, ValidateIf, Matches } from 'class-validator';
+import { Expose } from 'class-transformer'
+import { IsEnum, ValidateIf, Matches } from 'class-validator'
 
-import { MessageIdRegExp } from '../../agent/BaseMessage';
+import { MessageIdRegExp } from '../../agent/BaseMessage'
 
 /**
  * Return route types.
@@ -21,16 +21,16 @@ export enum ReturnRouteTypes {
  */
 export class TransportDecorator {
   public constructor(partial?: Partial<TransportDecorator>) {
-    this.returnRoute = partial?.returnRoute;
-    this.returnRouteThread = partial?.returnRouteThread;
+    this.returnRoute = partial?.returnRoute
+    this.returnRouteThread = partial?.returnRouteThread
   }
 
   @Expose({ name: 'return_route' })
   @IsEnum(ReturnRouteTypes)
-  public returnRoute?: ReturnRouteTypes;
+  public returnRoute?: ReturnRouteTypes
 
   @Expose({ name: 'return_route_thread' })
   @ValidateIf((o: TransportDecorator) => o.returnRoute === ReturnRouteTypes.thread)
   @Matches(MessageIdRegExp)
-  public returnRouteThread?: string;
+  public returnRouteThread?: string
 }

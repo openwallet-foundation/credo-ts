@@ -1,13 +1,13 @@
-import { Equals, IsString } from 'class-validator';
-import { Expose } from 'class-transformer';
+import { Equals, IsString } from 'class-validator'
+import { Expose } from 'class-transformer'
 
-import { AgentMessage } from '../../../agent/AgentMessage';
-import { RoutingMessageType as MessageType } from './RoutingMessageType';
+import { AgentMessage } from '../../../agent/AgentMessage'
+import { RoutingMessageType as MessageType } from './RoutingMessageType'
 
 export interface ForwardMessageOptions {
-  id?: string;
-  to: string;
-  message: JsonWebKey;
+  id?: string
+  to: string
+  message: JsonWebKey
 }
 
 /**
@@ -20,22 +20,22 @@ export class ForwardMessage extends AgentMessage {
    * @param options
    */
   public constructor(options: ForwardMessageOptions) {
-    super();
+    super()
 
     if (options) {
-      this.id = options.id || this.generateId();
-      this.to = options.to;
-      this.message = options.message;
+      this.id = options.id || this.generateId()
+      this.to = options.to
+      this.message = options.message
     }
   }
 
   @Equals(ForwardMessage.type)
-  public readonly type = ForwardMessage.type;
-  public static readonly type = MessageType.ForwardMessage;
+  public readonly type = ForwardMessage.type
+  public static readonly type = MessageType.ForwardMessage
 
   @IsString()
-  public to!: string;
+  public to!: string
 
   @Expose({ name: 'msg' })
-  public message!: JsonWebKey;
+  public message!: JsonWebKey
 }

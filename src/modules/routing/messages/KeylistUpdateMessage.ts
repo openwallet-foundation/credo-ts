@@ -1,13 +1,13 @@
-import type { Verkey } from 'indy-sdk';
-import { Equals, IsArray, ValidateNested, IsString, IsEnum } from 'class-validator';
-import { Type } from 'class-transformer';
+import type { Verkey } from 'indy-sdk'
+import { Equals, IsArray, ValidateNested, IsString, IsEnum } from 'class-validator'
+import { Expose, Type } from 'class-transformer'
 
-import { AgentMessage } from '../../../agent/AgentMessage';
-import { RoutingMessageType as MessageType } from './RoutingMessageType';
+import { AgentMessage } from '../../../agent/AgentMessage'
+import { RoutingMessageType as MessageType } from './RoutingMessageType'
 
 export interface KeylistUpdateMessageOptions {
-  id?: string;
-  updates: KeylistUpdate[];
+  id?: string
+  updates: KeylistUpdate[]
 }
 
 /**
@@ -17,22 +17,22 @@ export interface KeylistUpdateMessageOptions {
  */
 export class KeylistUpdateMessage extends AgentMessage {
   public constructor(options: KeylistUpdateMessageOptions) {
-    super();
+    super()
 
     if (options) {
-      this.id = options.id || this.generateId();
-      this.updates = options.updates;
+      this.id = options.id || this.generateId()
+      this.updates = options.updates
     }
   }
 
   @Equals(KeylistUpdateMessage.type)
-  public readonly type = KeylistUpdateMessage.type;
-  public static readonly type = MessageType.KeylistUpdate;
+  public readonly type = KeylistUpdateMessage.type
+  public static readonly type = MessageType.KeylistUpdate
 
   @Type(() => KeylistUpdate)
   @IsArray()
   @ValidateNested()
-  public updates!: KeylistUpdate[];
+  public updates!: KeylistUpdate[]
 }
 
 export enum KeylistUpdateAction {
@@ -43,14 +43,15 @@ export enum KeylistUpdateAction {
 export class KeylistUpdate {
   public constructor(options: { recipientKey: Verkey; action: KeylistUpdateAction }) {
     if (options) {
-      this.recipientKey = options.recipientKey;
-      this.action = options.action;
+      this.recipientKey = options.recipientKey
+      this.action = options.action
     }
   }
 
   @IsString()
-  public recipientKey!: Verkey;
+  @Expose({ name: 'recipient_key' })
+  public recipientKey!: Verkey
 
   @IsEnum(KeylistUpdateAction)
-  public action!: KeylistUpdateAction;
+  public action!: KeylistUpdateAction
 }

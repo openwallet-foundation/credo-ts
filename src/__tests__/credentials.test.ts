@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
-import indy from 'indy-sdk';
-import type { CredDefId } from 'indy-sdk';
-import { Subject } from 'rxjs';
-import { Agent, ConnectionRecord } from '..';
+import indy from 'indy-sdk'
+import type { CredDefId } from 'indy-sdk'
+import { Subject } from 'rxjs'
+import { Agent, ConnectionRecord } from '..'
 import {
   ensurePublicDidIsOnLedger,
   makeConnection,
@@ -12,16 +12,16 @@ import {
   SubjectOutboundTransporter,
   waitForCredentialRecord,
   genesisPath,
-} from './helpers';
+} from './helpers'
 import {
   CredentialRecord,
   CredentialState,
   CredentialPreview,
   CredentialPreviewAttribute,
-} from '../modules/credentials';
-import { InitConfig } from '../types';
+} from '../modules/credentials'
+import { InitConfig } from '../types'
 
-import testLogger from './logger';
+import testLogger from './logger'
 
 const faberConfig: InitConfig = {
   label: 'Faber',
@@ -33,7 +33,7 @@ const faberConfig: InitConfig = {
   poolName: 'credentials-test-faber-pool',
   indy,
   logger: testLogger,
-};
+}
 
 const aliceConfig: InitConfig = {
   label: 'Alice',
@@ -44,7 +44,7 @@ const aliceConfig: InitConfig = {
   poolName: 'credentials-test-alice-pool',
   indy,
   logger: testLogger,
-};
+}
 
 const credentialPreview = new CredentialPreview({
   attributes: [
@@ -59,86 +59,86 @@ const credentialPreview = new CredentialPreview({
       value: '99',
     }),
   ],
-});
+})
 
 describe('credentials', () => {
-  let faberAgent: Agent;
-  let aliceAgent: Agent;
-  let credDefId: CredDefId;
-  let faberConnection: ConnectionRecord;
-  let aliceConnection: ConnectionRecord;
-  let faberCredentialRecord: CredentialRecord;
-  let aliceCredentialRecord: CredentialRecord;
+  let faberAgent: Agent
+  let aliceAgent: Agent
+  let credDefId: CredDefId
+  let faberConnection: ConnectionRecord
+  let aliceConnection: ConnectionRecord
+  let faberCredentialRecord: CredentialRecord
+  let aliceCredentialRecord: CredentialRecord
 
   beforeAll(async () => {
-    const faberMessages = new Subject();
-    const aliceMessages = new Subject();
+    const faberMessages = new Subject()
+    const aliceMessages = new Subject()
 
-    const faberAgentInbound = new SubjectInboundTransporter(faberMessages);
-    const faberAgentOutbound = new SubjectOutboundTransporter(aliceMessages);
-    const aliceAgentInbound = new SubjectInboundTransporter(aliceMessages);
-    const aliceAgentOutbound = new SubjectOutboundTransporter(faberMessages);
+    faberAgent = new Agent(faberConfig)
+    faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages, aliceMessages))
+    faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages))
+    await faberAgent.init()
 
-    faberAgent = new Agent(faberConfig, faberAgentInbound, faberAgentOutbound);
-    aliceAgent = new Agent(aliceConfig, aliceAgentInbound, aliceAgentOutbound);
-    await faberAgent.init();
-    await aliceAgent.init();
+    aliceAgent = new Agent(aliceConfig)
+    aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages, faberMessages))
+    aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages))
+    await aliceAgent.init()
 
     const schemaTemplate = {
       name: `test-schema-${Date.now()}`,
       attributes: ['name', 'age'],
       version: '1.0',
-    };
-    const [, ledgerSchema] = await registerSchema(faberAgent, schemaTemplate);
+    }
+    const [, ledgerSchema] = await registerSchema(faberAgent, schemaTemplate)
 
     const definitionTemplate = {
       schema: ledgerSchema,
       tag: 'TAG',
       signatureType: 'CL',
       config: { supportRevocation: false },
-    };
-    const [ledgerCredDefId] = await registerDefinition(faberAgent, definitionTemplate);
-    credDefId = ledgerCredDefId;
+    }
+    const [ledgerCredDefId] = await registerDefinition(faberAgent, definitionTemplate)
+    credDefId = ledgerCredDefId
 
-    const publicDid = faberAgent.publicDid?.did;
-    await ensurePublicDidIsOnLedger(faberAgent, publicDid!);
-    const { agentAConnection, agentBConnection } = await makeConnection(faberAgent, aliceAgent);
-    faberConnection = agentAConnection;
-    aliceConnection = agentBConnection;
-  });
+    const publicDid = faberAgent.publicDid?.did
+    await ensurePublicDidIsOnLedger(faberAgent, publicDid!)
+    const { agentAConnection, agentBConnection } = await makeConnection(faberAgent, aliceAgent)
+    faberConnection = agentAConnection
+    aliceConnection = agentBConnection
+  })
 
   afterAll(async () => {
-    await faberAgent.closeAndDeleteWallet();
-    await aliceAgent.closeAndDeleteWallet();
-  });
+    await faberAgent.closeAndDeleteWallet()
+    await aliceAgent.closeAndDeleteWallet()
+  })
 
   test('Alice starts with credential proposal to Faber', async () => {
-    testLogger.test('Alice sends credential proposal to Faber');
+    testLogger.test('Alice sends credential proposal to Faber')
     let aliceCredentialRecord = await aliceAgent.credentials.proposeCredential(aliceConnection.id, {
       credentialProposal: credentialPreview,
       credentialDefinitionId: credDefId,
-    });
+    })
 
-    testLogger.test('Faber waits for credential proposal from Alice');
+    testLogger.test('Faber waits for credential proposal from Alice')
     let faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
       threadId: aliceCredentialRecord.tags.threadId,
       state: CredentialState.ProposalReceived,
-    });
+    })
 
-    testLogger.test('Faber sends credential offer to Alice');
+    testLogger.test('Faber sends credential offer to Alice')
     faberCredentialRecord = await faberAgent.credentials.acceptProposal(faberCredentialRecord.id, {
       comment: 'some comment about credential',
-    });
+    })
 
-    testLogger.test('Alice waits for credential offer from Faber');
+    testLogger.test('Alice waits for credential offer from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
       threadId: faberCredentialRecord.tags.threadId,
       state: CredentialState.OfferReceived,
-    });
+    })
 
     // FIXME: expect below expects json, so we do a refetch because the current
     // returns class instance
-    aliceCredentialRecord = await aliceAgent.credentials.getById(aliceCredentialRecord.id);
+    aliceCredentialRecord = await aliceAgent.credentials.getById(aliceCredentialRecord.id)
 
     expect(aliceCredentialRecord).toMatchObject({
       createdAt: expect.any(Number),
@@ -167,34 +167,34 @@ describe('credentials', () => {
       tags: { threadId: faberCredentialRecord.tags.threadId },
       type: CredentialRecord.name,
       state: CredentialState.OfferReceived,
-    });
+    })
 
-    testLogger.test('Alice sends credential request to Faber');
-    aliceCredentialRecord = await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id);
+    testLogger.test('Alice sends credential request to Faber')
+    aliceCredentialRecord = await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id)
 
-    testLogger.test('Faber waits for credential request from Alice');
+    testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
       threadId: aliceCredentialRecord.tags.threadId,
       state: CredentialState.RequestReceived,
-    });
+    })
 
-    testLogger.test('Faber sends credential to Alice');
-    faberCredentialRecord = await faberAgent.credentials.acceptRequest(faberCredentialRecord.id);
+    testLogger.test('Faber sends credential to Alice')
+    faberCredentialRecord = await faberAgent.credentials.acceptRequest(faberCredentialRecord.id)
 
-    testLogger.test('Alice waits for credential from Faber');
+    testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
       threadId: faberCredentialRecord.tags.threadId,
       state: CredentialState.CredentialReceived,
-    });
+    })
 
-    testLogger.test('Alice sends credential ack to Faber');
-    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id);
+    testLogger.test('Alice sends credential ack to Faber')
+    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
 
-    testLogger.test('Faber waits for credential ack from Alice');
+    testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
       threadId: faberCredentialRecord.tags.threadId,
       state: CredentialState.Done,
-    });
+    })
 
     expect(aliceCredentialRecord).toMatchObject({
       type: CredentialRecord.name,
@@ -208,7 +208,7 @@ describe('credentials', () => {
       requestMetadata: expect.any(Object),
       credentialId: expect.any(String),
       state: CredentialState.Done,
-    });
+    })
 
     expect(faberCredentialRecord).toMatchObject({
       type: CredentialRecord.name,
@@ -222,26 +222,26 @@ describe('credentials', () => {
       requestMetadata: undefined,
       credentialId: undefined,
       state: CredentialState.Done,
-    });
-  });
+    })
+  })
 
   test('Faber starts with credential offer to Alice', async () => {
-    testLogger.test('Faber sends credential offer to Alice');
+    testLogger.test('Faber sends credential offer to Alice')
     faberCredentialRecord = await faberAgent.credentials.offerCredential(faberConnection.id, {
       preview: credentialPreview,
       credentialDefinitionId: credDefId,
       comment: 'some comment about credential',
-    });
+    })
 
-    testLogger.test('Alice waits for credential offer from Faber');
+    testLogger.test('Alice waits for credential offer from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
       threadId: faberCredentialRecord.tags.threadId,
       state: CredentialState.OfferReceived,
-    });
+    })
 
     // FIXME: expect below expects json, so we do a refetch because the current
     // returns class instance
-    aliceCredentialRecord = await aliceAgent.credentials.getById(aliceCredentialRecord.id);
+    aliceCredentialRecord = await aliceAgent.credentials.getById(aliceCredentialRecord.id)
 
     expect(aliceCredentialRecord).toMatchObject({
       createdAt: expect.any(Number),
@@ -270,34 +270,34 @@ describe('credentials', () => {
       tags: { threadId: faberCredentialRecord.tags.threadId },
       type: CredentialRecord.name,
       state: CredentialState.OfferReceived,
-    });
+    })
 
-    testLogger.test('Alice sends credential request to Faber');
-    aliceCredentialRecord = await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id);
+    testLogger.test('Alice sends credential request to Faber')
+    aliceCredentialRecord = await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id)
 
-    testLogger.test('Faber waits for credential request from Alice');
+    testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
       threadId: aliceCredentialRecord.tags.threadId,
       state: CredentialState.RequestReceived,
-    });
+    })
 
-    testLogger.test('Faber sends credential to Alice');
-    faberCredentialRecord = await faberAgent.credentials.acceptRequest(faberCredentialRecord.id);
+    testLogger.test('Faber sends credential to Alice')
+    faberCredentialRecord = await faberAgent.credentials.acceptRequest(faberCredentialRecord.id)
 
-    testLogger.test('Alice waits for credential from Faber');
+    testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
       threadId: faberCredentialRecord.tags.threadId,
       state: CredentialState.CredentialReceived,
-    });
+    })
 
-    testLogger.test('Alice sends credential ack to Faber');
-    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id);
+    testLogger.test('Alice sends credential ack to Faber')
+    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
 
-    testLogger.test('Faber waits for credential ack from Alice');
+    testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
       threadId: faberCredentialRecord.tags.threadId,
       state: CredentialState.Done,
-    });
+    })
 
     expect(aliceCredentialRecord).toMatchObject({
       type: CredentialRecord.name,
@@ -311,7 +311,7 @@ describe('credentials', () => {
       requestMetadata: expect.any(Object),
       credentialId: expect.any(String),
       state: CredentialState.Done,
-    });
+    })
 
     expect(faberCredentialRecord).toMatchObject({
       type: CredentialRecord.name,
@@ -325,6 +325,6 @@ describe('credentials', () => {
       requestMetadata: undefined,
       credentialId: undefined,
       state: CredentialState.Done,
-    });
-  });
-});
+    })
+  })
+})

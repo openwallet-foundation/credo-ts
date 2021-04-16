@@ -1,14 +1,14 @@
-import { Equals, IsString } from 'class-validator';
+import { Equals, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage';
-import { ConnectionMessageType } from './ConnectionMessageType';
-import { TimingDecorator } from '../../../decorators/timing/TimingDecorator';
+import { AgentMessage } from '../../../agent/AgentMessage'
+import { ConnectionMessageType } from './ConnectionMessageType'
+import { TimingDecorator } from '../../../decorators/timing/TimingDecorator'
 
 export interface TrustPingResponseMessageOptions {
-  comment?: string;
-  id?: string;
-  threadId: string;
-  timing?: Pick<TimingDecorator, 'inTime' | 'outTime'>;
+  comment?: string
+  id?: string
+  threadId: string
+  timing?: Pick<TimingDecorator, 'inTime' | 'outTime'>
 }
 
 /**
@@ -23,29 +23,29 @@ export class TrustPingResponseMessage extends AgentMessage {
    * @param options
    */
   public constructor(options: TrustPingResponseMessageOptions) {
-    super();
+    super()
 
     if (options) {
-      this.id = options.id || this.generateId();
-      this.comment = options.comment;
+      this.id = options.id || this.generateId()
+      this.comment = options.comment
 
       this.setThread({
         threadId: options.threadId,
-      });
+      })
 
       if (options.timing) {
         this.setTiming({
           inTime: options.timing.inTime,
           outTime: options.timing.outTime,
-        });
+        })
       }
     }
   }
 
   @Equals(TrustPingResponseMessage.type)
-  public static readonly type = ConnectionMessageType.TrustPingResponseMessage;
-  public readonly type = TrustPingResponseMessage.type;
+  public static readonly type = ConnectionMessageType.TrustPingResponseMessage
+  public readonly type = TrustPingResponseMessage.type
 
   @IsString()
-  public comment?: string;
+  public comment?: string
 }

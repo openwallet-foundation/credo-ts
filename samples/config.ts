@@ -1,9 +1,9 @@
-import indy from 'indy-sdk';
-import * as dotenv from 'dotenv';
-import { InitConfig } from '../src/types';
-import { TestLogger } from '../src/__tests__/logger';
-import { LogLevel } from '../src/logger';
-dotenv.config();
+import indy from 'indy-sdk'
+import * as dotenv from 'dotenv'
+import { InitConfig } from '../src/types'
+import { TestLogger } from '../src/__tests__/logger'
+import { LogLevel } from '../src/logger'
+dotenv.config()
 
 const agentConfig: InitConfig = {
   host: process.env.AGENT_HOST,
@@ -17,6 +17,6 @@ const agentConfig: InitConfig = {
   autoAcceptConnections: true,
   logger: new TestLogger(LogLevel.debug),
   indy,
-};
+}
 
-export default agentConfig;
+export default agentConfig

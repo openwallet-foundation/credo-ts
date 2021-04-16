@@ -1,15 +1,15 @@
-import { Type } from 'class-transformer';
-import { Equals, IsString, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer'
+import { Equals, IsString, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage';
-import { ConnectionMessageType } from './ConnectionMessageType';
-import { Connection, DidDoc } from '../models';
+import { AgentMessage } from '../../../agent/AgentMessage'
+import { ConnectionMessageType } from './ConnectionMessageType'
+import { Connection, DidDoc } from '../models'
 
 export interface ConnectionRequestMessageOptions {
-  id?: string;
-  label: string;
-  did: string;
-  didDoc?: DidDoc;
+  id?: string
+  label: string
+  did: string
+  didDoc?: DidDoc
 }
 
 /**
@@ -23,27 +23,27 @@ export class ConnectionRequestMessage extends AgentMessage {
    * @param options
    */
   public constructor(options: ConnectionRequestMessageOptions) {
-    super();
+    super()
 
     if (options) {
-      this.id = options.id || this.generateId();
-      this.label = options.label;
+      this.id = options.id || this.generateId()
+      this.label = options.label
 
       this.connection = new Connection({
         did: options.did,
         didDoc: options.didDoc,
-      });
+      })
     }
   }
 
   @Equals(ConnectionRequestMessage.type)
-  public readonly type = ConnectionRequestMessage.type;
-  public static readonly type = ConnectionMessageType.ConnectionRequest;
+  public readonly type = ConnectionRequestMessage.type
+  public static readonly type = ConnectionMessageType.ConnectionRequest
 
   @IsString()
-  public label!: string;
+  public label!: string
 
   @Type(() => Connection)
   @ValidateNested()
-  public connection!: Connection;
+  public connection!: Connection
 }

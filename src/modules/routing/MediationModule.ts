@@ -5,67 +5,86 @@ import { AgentConfig } from '../../agent/AgentConfig';
 import { MessageSender } from '../../agent/MessageSender';
 import { createOutboundMessage } from '../../agent/helpers';
 import { Dispatcher } from '../../agent/Dispatcher';
-import { ConnectionRecord } from './repository/ConnectionRecord';
-import { ConnectionState } from './models';
+import { ConnectionRecord } from '../connections/repository/ConnectionRecord';
+import { ConnectionState } from '../connections/models';
 import { RequestMediationMessage } from './messages';
-import { MediationDenyHandler } from './handlers/MediationDeniedHandler';
-import { MediationGrantHandler } from './handlers/MediationGrantedHandler';
+import { MediationDeniedHandler } from './handlers/MediationDeniedHandler';
+import { MediationGrantedHandler } from './handlers/MediationGrantedHandler';
 import { RequestMediationType } from './messages/RequestMediationType';
-import { RequestMediationMessage } from './messages/RequestMediationMessage';
 import { MediationService } from './services/MediationService';
+import { MessagePickupService } from './services/MessagePickupService';
+import { ConnectionService } from '../connections';
 
 export class MediationModule {
   private agentConfig: AgentConfig;
   private mediationService: MediationService;
+  private messagePickupService: MessagePickupService;
+  private connectionService: ConnectionService;
+  private messageSender: MessageSender;
+  private eventEmitter: EventEmitter;
 
-  public constructor(dispatcher: Dispatcher, agentConfig: AgentConfig, mediationService: MediationService) {
+  public constructor(
+    dispatcher: Dispatcher,
+    agentConfig: AgentConfig,
+    mediationService: MediationService,
+    messagePickupService: MessagePickupService,
+    connectionService: ConnectionService,
+    messageSender: MessageSender,
+    eventEmitter: EventEmitter
+  ) {
     this.agentConfig = agentConfig;
     this.mediationService = mediationService;
+    this.messagePickupService = messagePickupService;
+    this.mediationService = mediationService;
+    this.connectionService = connectionService;
+    this.messageSender = messageSender;
+    this.eventEmitter = eventEmitter;
     this.registerHandlers(dispatcher);
   }
 
-  public get events(): EventEmitter {
-    return this.mediationService;
-  }
+  // public get events(): EventEmitter {
+  //   return this.mediationService;
+  // }
 
   // Pass in a connectionRecord, recieve back the connectionRecord and a message
-  public async requestMediation(config?: {
-    autoAcceptConnection?: boolean;
-    alias?: string;
-  }): Promise<{ invitation: RequestMediationMessage; connectionRecord: ConnectionRecord }> {
-    const { connectionRecord: connectionRecord, message: invitation } = await this.connectionService.createInvitation({
-      autoAcceptConnection: config?.autoAcceptConnection,
-      alias: config?.alias,
-    });
+  // public async requestMediation(config?: {
+  //   autoAcceptConnection?: boolean;
+  //   alias?: string;
+  // }): Promise<{ invitation: RequestMediationMessage; connectionRecord: ConnectionRecord }> {
+  //   const { connectionRecord: connectionRecord, message: invitation } = await this.connectionService.createInvitation({
+  //     autoAcceptConnection: config?.autoAcceptConnection,
+  //     alias: config?.alias,
+  //   });
 
-    // How does this fit in with mediation?
-    if (this.agentConfig.inboundConnection) {
-      this.mediationService.createRoute(connectionRecord.verkey);
-    }
+  //   // How does this fit in with mediation?
+  //   if (this.agentConfig.inboundConnection) {
+  //     this.mediationService.createRoute(connectionRecord.verkey);
+  //   }
 
-    return { connectionRecord, invitation };
-  }
+  //   return { connectionRecord, invitation };
+  // }
 
-  public async receiveMediation(
-    invitation: ConnectionInvitationMessage,
-    config?: {
-      autoAcceptConnection?: boolean;
-      alias?: string;
-    }
-  ): Promise<ConnectionRecord> {
-    let connection = await this.connectionService.processInvitation(invitation, {
-      autoAcceptConnection: config?.autoAcceptConnection,
-      alias: config?.alias,
-    });
+  // TODO - Belongs in connections.
+  // public async receiveMediation(
+  //   invitation: ConnectionInvitationMessage,
+  //   config?: {
+  //     autoAcceptConnection?: boolean;
+  //     alias?: string;
+  //   }
+  // ): Promise<ConnectionRecord> {
+  //   let connection = await this.connectionService.processInvitation(invitation, {
+  //     autoAcceptConnection: config?.autoAcceptConnection,
+  //     alias: config?.alias,
+  //   });
 
-    // if auto accept is enabled (either on the record or the global agent config)
-    // we directly send a connection request
-    if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      connection = await this.acceptInvitation(connection.id);
-    }
+  //   // if auto accept is enabled (either on the record or the global agent config)
+  //   // we directly send a connection request
+  //   if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
+  //     connection = await this.acceptInvitation(connection.id);
+  //   }
 
-    return connection;
-  }
+  //   return connection;
+  // }
 
   public async acceptRequest(connectionId: string): Promise<ConnectionRecord> {
     const { message, connectionRecord: connectionRecord } = await this.connectionService.createResponse(connectionId);

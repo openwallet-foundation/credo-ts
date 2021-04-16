@@ -1,14 +1,14 @@
-import type { IndyProofRequest } from 'indy-sdk';
-import { IsString, ValidateNested, IsOptional, IsIn } from 'class-validator';
-import { Expose, Type } from 'class-transformer';
+import type { IndyProofRequest } from 'indy-sdk'
+import { IsString, ValidateNested, IsOptional, IsIn } from 'class-validator'
+import { Expose, Type } from 'class-transformer'
 
-import { RevocationInterval } from '../../credentials';
-import { ProofAttributeInfo } from './ProofAttributeInfo';
-import { ProofPredicateInfo } from './ProofPredicateInfo';
+import { RevocationInterval } from '../../credentials'
+import { ProofAttributeInfo } from './ProofAttributeInfo'
+import { ProofPredicateInfo } from './ProofPredicateInfo'
 
-import { JsonTransformer } from '../../../utils/JsonTransformer';
-import { Optional } from '../../../utils/type';
-import { RecordTransformer } from '../../../utils/transformers';
+import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { Optional } from '../../../utils/type'
+import { RecordTransformer } from '../../../utils/transformers'
 
 /**
  * Proof Request for Indy based proof format
@@ -18,47 +18,47 @@ import { RecordTransformer } from '../../../utils/transformers';
 export class ProofRequest {
   public constructor(options: Optional<Omit<ProofRequest, 'toJSON'>, 'requestedAttributes' | 'requestedPredicates'>) {
     if (options) {
-      this.name = options.name;
-      this.version = options.version;
-      this.nonce = options.nonce;
-      this.requestedAttributes = options.requestedAttributes ?? {};
-      this.requestedPredicates = options.requestedPredicates ?? {};
-      this.nonRevoked = options.nonRevoked;
-      this.ver = options.ver;
+      this.name = options.name
+      this.version = options.version
+      this.nonce = options.nonce
+      this.requestedAttributes = options.requestedAttributes ?? {}
+      this.requestedPredicates = options.requestedPredicates ?? {}
+      this.nonRevoked = options.nonRevoked
+      this.ver = options.ver
     }
   }
 
   @IsString()
-  public name!: string;
+  public name!: string
 
   @IsString()
-  public version!: string;
+  public version!: string
 
   @IsString()
-  public nonce!: string;
+  public nonce!: string
 
   @Expose({ name: 'requested_attributes' })
   @ValidateNested({ each: true })
   @RecordTransformer(ProofAttributeInfo)
-  public requestedAttributes!: Record<string, ProofAttributeInfo>;
+  public requestedAttributes!: Record<string, ProofAttributeInfo>
 
   @Expose({ name: 'requested_predicates' })
   @ValidateNested({ each: true })
   @RecordTransformer(ProofPredicateInfo)
-  public requestedPredicates!: Record<string, ProofPredicateInfo>;
+  public requestedPredicates!: Record<string, ProofPredicateInfo>
 
   @Expose({ name: 'non_revoked' })
   @ValidateNested()
   @Type(() => RevocationInterval)
   @IsOptional()
-  public nonRevoked?: RevocationInterval;
+  public nonRevoked?: RevocationInterval
 
   @IsIn(['1.0', '2.0'])
   @IsOptional()
-  public ver?: '1.0' | '2.0';
+  public ver?: '1.0' | '2.0'
 
   public toJSON() {
     // IndyProofRequest is indy-sdk json type
-    return (JsonTransformer.toJSON(this) as unknown) as IndyProofRequest;
+    return (JsonTransformer.toJSON(this) as unknown) as IndyProofRequest
   }
 }

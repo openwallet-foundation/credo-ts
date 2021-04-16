@@ -1,11 +1,11 @@
-import { Equals, IsArray, ValidateNested, IsString, IsEnum, IsNotEmpty } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Equals, IsArray, ValidateNested, IsString, IsEnum, IsNotEmpty } from 'class-validator'
+import { Type } from 'class-transformer'
 
-import { AgentMessage } from '../../../agent/AgentMessage';
-import { RoutingMessageType as MessageType } from './RoutingMessageType';
+import { AgentMessage } from '../../../agent/AgentMessage'
+import { RoutingMessageType as MessageType } from './RoutingMessageType'
 
 export interface MediationDeniedMessageOptions {
-  id: string;
+  id: string
 }
 
 /**
@@ -15,11 +15,11 @@ export interface MediationDeniedMessageOptions {
  */
 export class MediationDeniedMessage extends AgentMessage {
   public constructor(options: MediationDeniedMessageOptions) {
-    super();
-    this.id = options.id;
+    super()
+    this.id = options.id
   }
 
   @Equals(MediationDeniedMessage.type)
-  public readonly type = MediationDeniedMessage.type;
-  public static readonly type = MessageType.MediationDeny;
+  public readonly type = MediationDeniedMessage.type
+  public static readonly type = MessageType.MediationDeny
 }

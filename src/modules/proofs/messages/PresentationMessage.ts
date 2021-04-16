@@ -1,18 +1,18 @@
-import type { IndyProof } from 'indy-sdk';
-import { Equals, IsArray, IsString, ValidateNested, IsOptional } from 'class-validator';
-import { Expose, Type } from 'class-transformer';
+import type { IndyProof } from 'indy-sdk'
+import { Equals, IsArray, IsString, ValidateNested, IsOptional } from 'class-validator'
+import { Expose, Type } from 'class-transformer'
 
-import { AgentMessage } from '../../../agent/AgentMessage';
-import { Attachment } from '../../../decorators/attachment/Attachment';
-import { JsonEncoder } from '../../../utils/JsonEncoder';
-import { PresentProofMessageType } from './PresentProofMessageType';
+import { AgentMessage } from '../../../agent/AgentMessage'
+import { Attachment } from '../../../decorators/attachment/Attachment'
+import { JsonEncoder } from '../../../utils/JsonEncoder'
+import { PresentProofMessageType } from './PresentProofMessageType'
 
-export const INDY_PROOF_ATTACHMENT_ID = 'libindy-presentation-0';
+export const INDY_PROOF_ATTACHMENT_ID = 'libindy-presentation-0'
 
 export interface PresentationOptions {
-  id?: string;
-  comment?: string;
-  attachments: Attachment[];
+  id?: string
+  comment?: string
+  attachments: Attachment[]
 }
 
 /**
@@ -23,25 +23,25 @@ export interface PresentationOptions {
  */
 export class PresentationMessage extends AgentMessage {
   public constructor(options: PresentationOptions) {
-    super();
+    super()
 
     if (options) {
-      this.id = options.id ?? this.generateId();
-      this.comment = options.comment;
-      this.attachments = options.attachments;
+      this.id = options.id ?? this.generateId()
+      this.comment = options.comment
+      this.attachments = options.attachments
     }
   }
 
   @Equals(PresentationMessage.type)
-  public readonly type = PresentationMessage.type;
-  public static readonly type = PresentProofMessageType.Presentation;
+  public readonly type = PresentationMessage.type
+  public static readonly type = PresentProofMessageType.Presentation
 
   /**
    *  Provides some human readable information about this request for a presentation.
    */
   @IsOptional()
   @IsString()
-  public comment?: string;
+  public comment?: string
 
   /**
    * An array of attachments containing the presentation in the requested format(s).
@@ -52,18 +52,18 @@ export class PresentationMessage extends AgentMessage {
   @ValidateNested({
     each: true,
   })
-  public attachments!: Attachment[];
+  public attachments!: Attachment[]
 
   public get indyProof(): IndyProof | null {
-    const attachment = this.attachments.find(attachment => attachment.id === INDY_PROOF_ATTACHMENT_ID);
+    const attachment = this.attachments.find((attachment) => attachment.id === INDY_PROOF_ATTACHMENT_ID)
 
     // Return null if attachment is not found
     if (!attachment?.data?.base64) {
-      return null;
+      return null
     }
 
-    const proofJson = JsonEncoder.fromBase64(attachment.data.base64);
+    const proofJson = JsonEncoder.fromBase64(attachment.data.base64)
 
-    return proofJson;
+    return proofJson
   }
 }

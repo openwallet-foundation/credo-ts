@@ -11,43 +11,35 @@ import {
 import { BatchMessage } from './messages';
 import type { Verkey } from 'indy-sdk';
 import { Dispatcher } from '../../agent/Dispatcher';
-import {
-  MessagePickupHandler,
-  ForwardHandler,
-  KeylistUpdateHandler,
-  MediationGrantedHandler,
-  MediationDeniedHandler,
-} from './handlers';
-import { Logger } from '../../logger';
+import { KeylistUpdateHandler, MediationGrantedHandler, MediationDeniedHandler } from './handlers';
 import { ConnectionRecord } from '../connections';
 import agentConfig from '../../../samples/config';
+import { EventEmitter } from 'events';
+import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler';
 
 export class MediationRecipientModule {
   private agentConfig: AgentConfig;
-  private providerRoutingService: ProviderRoutingService;
   private mediationRecipientService: MediationRecipientService;
   private messagePickupService: MessagePickupService;
   private connectionService: ConnectionService;
   private messageSender: MessageSender;
-  private logger: Logger;
+  private eventEmitter: EventEmitter;
 
   public constructor(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
-    providerRoutingService: ProviderRoutingService,
     mediationRecipientService: MediationRecipientService,
     messagePickupService: MessagePickupService,
     connectionService: ConnectionService,
     messageSender: MessageSender,
-    logger: Logger
+    eventEmitter: EventEmitter
   ) {
     this.agentConfig = agentConfig;
-    this.providerRoutingService = providerRoutingService;
     this.messagePickupService = messagePickupService;
     this.connectionService = connectionService;
     this.mediationRecipientService = mediationRecipientService;
     this.messageSender = messageSender;
-    this.logger = agentConfig.logger;
+    this.eventEmitter = eventEmitter;
     this.registerHandlers(dispatcher);
   }
 
@@ -56,8 +48,7 @@ export class MediationRecipientModule {
   }
   // Register handlers for the several messages for the mediator.
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new KeylistUpdateHandler(this.providerRoutingService));
-    dispatcher.registerHandler(new MessagePickupHandler(this.messagePickupService));
+    dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService));
     dispatcher.registerHandler(new MediationGrantedHandler(this.mediationRecipientService));
     dispatcher.registerHandler(new MediationDeniedHandler(this.mediationRecipientService));
   }

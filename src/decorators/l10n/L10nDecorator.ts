@@ -3,8 +3,8 @@
  */
 export class L10nDecorator {
   public constructor(partial?: Partial<L10nDecorator>) {
-    this.locale = partial?.locale;
+    this.locale = partial?.locale
   }
 
-  public locale?: string;
+  public locale?: string
 }

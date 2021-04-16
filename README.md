@@ -1,5 +1,5 @@
 <p align="center">
-  <img alt="Hyperledger Aries logo" src="images/aries-logo.png" width="100px" />
+  <img alt="Hyperledger Aries logo" src="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/aa31131825e3331dc93694bc58414d955dcb1129/images/aries-logo.png" width="100px" />
   <h1 align="center">Aries Framework JavaScript</h1>
   <p align="center"><font size="+1">Built using TypeScript</font></p>
   <p align="center">
@@ -7,7 +7,7 @@
     <a href="https://lgtm.com/projects/g/hyperledger/aries-framework-javascript/context:javascript"><img alt="Language grade: JavaScript" src="https://img.shields.io/lgtm/grade/javascript/g/hyperledger/aries-framework-javascript.svg?logo=lgtm&logoWidth=18"/></a>
     <a href="https://codecov.io/gh/hyperledger/aries-framework-javascript/"><img alt="Codecov Coverage" src="https://img.shields.io/codecov/c/github/hyperledger/aries-framework-javascript/coverage.svg?style=flat-square"/></a>
     <a href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"/></a>
-    <a href="https://npmjs.com/package/aries-framework-javascript"><img alt="aries-framework-javascript npm version" src="https://img.shields.io/npm/v/aries-framework-javascript"></a>
+    <a href="https://npmjs.com/package/aries-framework"><img alt="aries-framework-javascript npm version" src="https://img.shields.io/npm/v/aries-framework"></a>
 </p>
 </p>
 
@@ -18,6 +18,7 @@ Aries Framework JavaScript is a framework for building SSI Agents and DIDComm se
 - [Goals](#goals)
 - [Usage](#usage)
   - [Prerequisites](#prerequisites)
+    - [NodeJS](#nodejs)
   - [Installing](#installing)
   - [Using the framework](#using-the-framework)
   - [Usage in React Native](#usage-in-react-native)
@@ -51,32 +52,37 @@ See the [Roadmap](https://github.com/hyperledger/aries-framework-javascript/issu
 
 ### Prerequisites
 
-Aries Framework JavaScript depends on the indy-sdk which has some manual installation requirements. Before installing dependencies make sure to [install](https://github.com/hyperledger/indy-sdk/#installing-the-sdk) `libindy` and have the right tools installed for the [NodeJS wrapper](https://github.com/hyperledger/indy-sdk/tree/master/wrappers/nodejs#installing). The NodeJS wrapper link also contains some common troubleshooting steps. The [Dockerfile](./Dockerfile) contains everything needed to get started with the framework. See [Usage with Docker](#usage-with-docker) for more information.
+Aries Framework JavaScript depends on the indy-sdk which has some manual installation requirements.
 
-> If you're having trouble running this project, please the the [troubleshooting](./TROUBLESHOOTING.md) section. It contains the most common errors that arise when first installing libindy.
+#### NodeJS
 
-### Installing
+Follow the instructions [here](https://github.com/hyperledger/indy-sdk/#installing-the-sdk) to install `libindy`. Also make sure to have the right tools installed for the [NodeJS wrapper](https://github.com/hyperledger/indy-sdk/tree/master/wrappers/nodejs#installing). The NodeJS wrapper link also contains some common troubleshooting steps.
+
+If you don't want to install the dependencies yourself, the [Dockerfile](./Dockerfile) contains everything needed to get started with the framework. See [Usage with Docker](#usage-with-docker) for more information.
+
+> If you're having trouble running this project, please read the [troubleshooting](./TROUBLESHOOTING.md) section. It contains the most common errors that arise when first installing libindy.
 
 > NOTE: The package is not tested in multiple versions of Node at the moment. If you're having trouble installing dependencies or running the framework know that at least **Node v12 DOES WORK** and **Node v14 DOES NOT WORk**.
 
-Currently the framework is working towards the first release of the package, until then the framework won't be available on NPM. However you can use the framework by packaging and adding it as a file to your project.
+### Installing
+
+Add the framework as a dependency to your project:
 
 ```sh
-# Clone the repo
-git clone https://github.com/hyperledger/aries-framework-javascript.git
-cd aries-framework-javascript
+npm install aries-framework
 
-# Install dependencies
-yarn install
-
-# Pack the framework
-yarn pack
+# Or using Yarn
+yarn add aries-framework
 ```
 
-In a project, where you want to use this library as dependency, run:
+Then make sure to install the correct Indy implementation for your platform.
 
-```
-yarn add file:PATH_TO_REPOSITORY_FOLDER/aries-framework-javascript/aries-framework-javascript-v1.0.0.tgz
+```sh
+# for NodeJS
+yarn install indy-sdk
+
+# for React Native
+yarn install rn-indy-sdk
 ```
 
 ### Using the framework
@@ -87,29 +93,21 @@ While the framework is still in early development the best way to know what API 
 
 The framework is designed to be usable in multiple environments. The indy-sdk is the only dependency that needs special handling and is therefore an parameter when initializing the agent. Alongside Aries Framework JavaScript you need to install the indy-sdk for the environment you're using.
 
-```sh
-# for NodeJS
-yarn install indy-sdk
-
-# for React Native
-yarn install rn-indy-sdk
-```
-
 The when initializing the agent you can pass the specific Indy API as an input parameter:
 
 ```typescript
 // for NodeJS
-import indy from 'indy-sdk';
+import indy from 'indy-sdk'
 
 // for React Native
-import indy from 'rn-indy-sdk';
+import indy from 'rn-indy-sdk'
 
 const config = {
   // ... other config properties ...
   indy,
-};
+}
 
-agent = new Agent(config, inboundTransport, outboundTransport);
+agent = new Agent(config, inboundTransport, outboundTransport)
 ```
 
 For an example react native app that makes use of the framework see [Aries Mobile Agent React Native](https://github.com/animo/aries-mobile-agent-react-native.git)
@@ -119,12 +117,12 @@ For an example react native app that makes use of the framework see [Aries Mobil
 To enable logging inside the framework a logger must be passed to the agent config. A simple `ConsoleLogger` can be imported from the framework, for more advanced use cases the `ILogger` interface can implemented. See [`TestLogger`](./src/__tests__/logger.ts) for a more advanced example.
 
 ```ts
-import { ILogger, ConsoleLogger, LogLevel } from 'aries-framework-javascript';
+import { ILogger, ConsoleLogger, LogLevel } from 'aries-framework-javascript'
 
 const agentConfig = {
   // ... other config properties ...
   logger: new ConsoleLogger(LogLevel.debug),
-};
+}
 ```
 
 ## Architecture

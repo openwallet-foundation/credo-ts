@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import type { Verkey } from 'indy-sdk';
 import { EventEmitter } from 'events';
 
@@ -9,19 +10,40 @@ import { ConnectionService, ConnectionEventType, ConnectionStateChangedEvent, Tr
 import { ConnectionRecord } from './repository/ConnectionRecord';
 import { ConnectionState } from './models';
 import { ConnectionInvitationMessage } from './messages';
+=======
+import type { Verkey } from 'indy-sdk'
+import { EventEmitter } from 'events'
+
+import { AgentConfig } from '../../agent/AgentConfig'
+import { MessageSender } from '../../agent/MessageSender'
+import { createOutboundMessage } from '../../agent/helpers'
+import { Dispatcher } from '../../agent/Dispatcher'
+import { ConnectionService, TrustPingService } from './services'
+import { ConsumerRoutingService } from '../routing'
+import { ConnectionRecord } from './repository/ConnectionRecord'
+import { ConnectionInvitationMessage } from './messages'
+>>>>>>> ce48d4225f1d3eb2ecb5e2ca1abb080d6c1c96f9
 import {
   ConnectionRequestHandler,
   ConnectionResponseHandler,
   AckMessageHandler,
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
-} from './handlers';
+} from './handlers'
 
 export class ConnectionsModule {
+<<<<<<< HEAD
   private agentConfig: AgentConfig;
   private connectionService: ConnectionService;
   private messageSender: MessageSender;
   private trustPingService: TrustPingService;
+=======
+  private agentConfig: AgentConfig
+  private connectionService: ConnectionService
+  private consumerRoutingService: ConsumerRoutingService
+  private messageSender: MessageSender
+  private trustPingService: TrustPingService
+>>>>>>> ce48d4225f1d3eb2ecb5e2ca1abb080d6c1c96f9
 
   public constructor(
     dispatcher: Dispatcher,
@@ -30,11 +52,20 @@ export class ConnectionsModule {
     trustPingService: TrustPingService,
     messageSender: MessageSender
   ) {
+<<<<<<< HEAD
     this.agentConfig = agentConfig;
     this.connectionService = connectionService;
     this.trustPingService = trustPingService;
     this.messageSender = messageSender;
     this.registerHandlers(dispatcher);
+=======
+    this.agentConfig = agentConfig
+    this.connectionService = connectionService
+    this.trustPingService = trustPingService
+    this.consumerRoutingService = consumerRoutingService
+    this.messageSender = messageSender
+    this.registerHandlers(dispatcher)
+>>>>>>> ce48d4225f1d3eb2ecb5e2ca1abb080d6c1c96f9
   }
 
   /**
@@ -44,25 +75,34 @@ export class ConnectionsModule {
    * @returns event emitter for connection related state changes
    */
   public get events(): EventEmitter {
-    return this.connectionService;
+    return this.connectionService
   }
 
   public async createConnection(config?: {
-    autoAcceptConnection?: boolean;
-    alias?: string;
-  }): Promise<{ invitation: ConnectionInvitationMessage; connectionRecord: ConnectionRecord }> {
+    autoAcceptConnection?: boolean
+    alias?: string
+  }): Promise<{
+    invitation: ConnectionInvitationMessage
+    connectionRecord: ConnectionRecord
+  }> {
     const { connectionRecord: connectionRecord, message: invitation } = await this.connectionService.createInvitation({
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
-    });
+    })
 
     // If agent has inbound connection, which means it's using a mediator, we need to create a route for newly created
     // connection verkey at mediator.
+<<<<<<< HEAD
     // if (this.agentConfig.inboundConnection) {
     //   this.RoutingService.createRoute(connectionRecord.verkey);
     // }
+=======
+    if (this.agentConfig.inboundConnection) {
+      this.consumerRoutingService.createRoute(connectionRecord.verkey)
+    }
+>>>>>>> ce48d4225f1d3eb2ecb5e2ca1abb080d6c1c96f9
 
-    return { connectionRecord, invitation };
+    return { connectionRecord, invitation }
   }
 
   /**
@@ -77,22 +117,22 @@ export class ConnectionsModule {
   public async receiveInvitation(
     invitation: ConnectionInvitationMessage,
     config?: {
-      autoAcceptConnection?: boolean;
-      alias?: string;
+      autoAcceptConnection?: boolean
+      alias?: string
     }
   ): Promise<ConnectionRecord> {
     let connection = await this.connectionService.processInvitation(invitation, {
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
-    });
+    })
 
     // if auto accept is enabled (either on the record or the global agent config)
     // we directly send a connection request
     if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      connection = await this.acceptInvitation(connection.id);
+      connection = await this.acceptInvitation(connection.id)
     }
 
-    return connection;
+    return connection
   }
 
   /**
@@ -107,12 +147,12 @@ export class ConnectionsModule {
   public async receiveInvitationFromUrl(
     invitationUrl: string,
     config?: {
-      autoAcceptConnection?: boolean;
-      alias?: string;
+      autoAcceptConnection?: boolean
+      alias?: string
     }
   ): Promise<ConnectionRecord> {
-    const invitation = await ConnectionInvitationMessage.fromUrl(invitationUrl);
-    return this.receiveInvitation(invitation, config);
+    const invitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
+    return this.receiveInvitation(invitation, config)
   }
 
   /**
@@ -123,18 +163,24 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptInvitation(connectionId: string): Promise<ConnectionRecord> {
-    const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(connectionId);
+    const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(connectionId)
 
     // If agent has inbound connection, which means it's using a mediator,
     // we need to create a route for newly created connection verkey at mediator.
+<<<<<<< HEAD
     // if (this.agentConfig.inboundConnection) {
     //   await this.RoutingService.createRoute(connectionRecord.verkey);
     // }
+=======
+    if (this.agentConfig.inboundConnection) {
+      await this.consumerRoutingService.createRoute(connectionRecord.verkey)
+    }
+>>>>>>> ce48d4225f1d3eb2ecb5e2ca1abb080d6c1c96f9
 
-    const outbound = createOutboundMessage(connectionRecord, message, connectionRecord.invitation);
-    await this.messageSender.sendMessage(outbound);
+    const outbound = createOutboundMessage(connectionRecord, message, connectionRecord.invitation)
+    await this.messageSender.sendMessage(outbound)
 
-    return connectionRecord;
+    return connectionRecord
   }
 
   /**
@@ -145,12 +191,12 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptRequest(connectionId: string): Promise<ConnectionRecord> {
-    const { message, connectionRecord: connectionRecord } = await this.connectionService.createResponse(connectionId);
+    const { message, connectionRecord: connectionRecord } = await this.connectionService.createResponse(connectionId)
 
-    const outbound = createOutboundMessage(connectionRecord, message);
-    await this.messageSender.sendMessage(outbound);
+    const outbound = createOutboundMessage(connectionRecord, message)
+    await this.messageSender.sendMessage(outbound)
 
-    return connectionRecord;
+    return connectionRecord
   }
 
   /**
@@ -161,59 +207,43 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
-    const { message, connectionRecord: connectionRecord } = await this.connectionService.createTrustPing(connectionId);
+    const { message, connectionRecord: connectionRecord } = await this.connectionService.createTrustPing(connectionId)
 
-    const outbound = createOutboundMessage(connectionRecord, message);
-    await this.messageSender.sendMessage(outbound);
+    const outbound = createOutboundMessage(connectionRecord, message)
+    await this.messageSender.sendMessage(outbound)
 
-    return connectionRecord;
+    return connectionRecord
   }
 
   public async returnWhenIsConnected(connectionId: string): Promise<ConnectionRecord> {
-    const isConnected = (connection: ConnectionRecord) => {
-      return connection.id === connectionId && connection.state === ConnectionState.Complete;
-    };
-
-    const connection = await this.connectionService.find(connectionId);
-    if (connection && isConnected(connection)) return connection;
-
-    return new Promise(resolve => {
-      const listener = ({ connectionRecord: connectionRecord }: ConnectionStateChangedEvent) => {
-        if (isConnected(connectionRecord)) {
-          this.events.off(ConnectionEventType.StateChanged, listener);
-          resolve(connectionRecord);
-        }
-      };
-
-      this.events.on(ConnectionEventType.StateChanged, listener);
-    });
+    return this.connectionService.returnWhenIsConnected(connectionId)
   }
 
   public async getAll() {
-    return this.connectionService.getConnections();
+    return this.connectionService.getConnections()
   }
 
   public async find(connectionId: string): Promise<ConnectionRecord | null> {
-    return this.connectionService.find(connectionId);
+    return this.connectionService.find(connectionId)
   }
 
   public async getById(connectionId: string): Promise<ConnectionRecord> {
-    return this.connectionService.getById(connectionId);
+    return this.connectionService.getById(connectionId)
   }
 
   public async findConnectionByVerkey(verkey: Verkey): Promise<ConnectionRecord | null> {
-    return this.connectionService.findByVerkey(verkey);
+    return this.connectionService.findByVerkey(verkey)
   }
 
   public async findConnectionByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
-    return this.connectionService.findByTheirKey(verkey);
+    return this.connectionService.findByTheirKey(verkey)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new ConnectionRequestHandler(this.connectionService, this.agentConfig));
-    dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService, this.agentConfig));
-    dispatcher.registerHandler(new AckMessageHandler(this.connectionService));
-    dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService));
-    dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService));
+    dispatcher.registerHandler(new ConnectionRequestHandler(this.connectionService, this.agentConfig))
+    dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService, this.agentConfig))
+    dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
+    dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
+    dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService))
   }
 }

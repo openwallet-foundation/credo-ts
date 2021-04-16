@@ -1,8 +1,8 @@
-import { validateOrReject } from 'class-validator';
+import { validateOrReject } from 'class-validator'
 
-import { ConnectionInvitationMessage } from './modules/connections';
-import { JsonEncoder } from './utils/JsonEncoder';
-import { JsonTransformer } from './utils/JsonTransformer';
+import { ConnectionInvitationMessage } from './modules/connections'
+import { JsonEncoder } from './utils/JsonEncoder'
+import { JsonTransformer } from './utils/JsonTransformer'
 
 /**
  * Create a `ConnectionInvitationMessage` instance from the `c_i` parameter of an URL
@@ -13,15 +13,15 @@ import { JsonTransformer } from './utils/JsonTransformer';
  */
 export async function decodeInvitationFromUrl(invitationUrl: string): Promise<ConnectionInvitationMessage> {
   // TODO: properly extract c_i param from invitation URL
-  const [, encodedInvitation] = invitationUrl.split('c_i=');
-  const invitationJson = JsonEncoder.fromBase64(encodedInvitation);
+  const [, encodedInvitation] = invitationUrl.split('c_i=')
+  const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
 
-  const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage);
+  const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
 
   // TODO: should validation happen here?
-  await validateOrReject(invitation);
+  await validateOrReject(invitation)
 
-  return invitation;
+  return invitation
 }
 
 /**
@@ -34,9 +34,9 @@ export function encodeInvitationToUrl(
   invitation: ConnectionInvitationMessage,
   domain = 'https://example.com/ssi'
 ): string {
-  const invitationJson = JsonTransformer.toJSON(invitation);
-  const encodedInvitation = JsonEncoder.toBase64URL(invitationJson);
-  const invitationUrl = `${domain}?c_i=${encodedInvitation}`;
+  const invitationJson = JsonTransformer.toJSON(invitation)
+  const encodedInvitation = JsonEncoder.toBase64URL(invitationJson)
+  const invitationUrl = `${domain}?c_i=${encodedInvitation}`
 
-  return invitationUrl;
+  return invitationUrl
 }

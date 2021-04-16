@@ -1,1 +1,1 @@
-export * from './ProofService';
+export * from './ProofService'

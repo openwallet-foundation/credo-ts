@@ -1,5 +1,5 @@
-import { base64ToBase64URL } from './base64';
-import { Buffer } from './buffer';
+import { base64ToBase64URL } from './base64'
+import { Buffer } from './buffer'
 
 export class JsonEncoder {
   /**
@@ -8,7 +8,7 @@ export class JsonEncoder {
    * @param json the json object to encode into base64 string
    */
   public static toBase64(json: unknown) {
-    return JsonEncoder.toBuffer(json).toString('base64');
+    return JsonEncoder.toBuffer(json).toString('base64')
   }
 
   /**
@@ -17,7 +17,7 @@ export class JsonEncoder {
    * @param json the json object to encode into base64url string
    */
   public static toBase64URL(json: unknown) {
-    return base64ToBase64URL(JsonEncoder.toBase64(json));
+    return base64ToBase64URL(JsonEncoder.toBase64(json))
   }
 
   /**
@@ -26,7 +26,7 @@ export class JsonEncoder {
    * @param base64 the base64 or base64url string to decode into json
    */
   public static fromBase64(base64: string) {
-    return JsonEncoder.fromBuffer(Buffer.from(base64, 'base64'));
+    return JsonEncoder.fromBuffer(Buffer.from(base64, 'base64'))
   }
 
   /**
@@ -35,7 +35,7 @@ export class JsonEncoder {
    * @param json the json object to encode into string
    */
   public static toString(json: unknown) {
-    return JSON.stringify(json);
+    return JSON.stringify(json)
   }
 
   /**
@@ -44,7 +44,7 @@ export class JsonEncoder {
    * @param string the string to decode into json
    */
   public static fromString(string: string) {
-    return JSON.parse(string);
+    return JSON.parse(string)
   }
 
   /**
@@ -53,7 +53,7 @@ export class JsonEncoder {
    * @param json the json object to encode into buffer format
    */
   public static toBuffer(json: unknown) {
-    return Buffer.from(JsonEncoder.toString(json));
+    return Buffer.from(JsonEncoder.toString(json))
   }
 
   /**
@@ -62,6 +62,6 @@ export class JsonEncoder {
    * @param buffer the buffer to decode into json
    */
   public static fromBuffer(buffer: Buffer) {
-    return JsonEncoder.fromString(buffer.toString('utf-8'));
+    return JsonEncoder.fromString(buffer.toString('utf-8'))
   }
 }

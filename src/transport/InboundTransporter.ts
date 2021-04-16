@@ -1,5 +1,5 @@
-import { Agent } from '../agent/Agent';
+import { Agent } from '../agent/Agent'
 
 export interface InboundTransporter {
-  start(agent: Agent): void;
+  start(agent: Agent): Promise<void>
 }

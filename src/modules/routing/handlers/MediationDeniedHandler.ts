@@ -1,18 +1,18 @@
-import { Handler, HandlerInboundMessage } from '../../../agent/Handler';
-import { AgentConfig } from '../../../agent/AgentConfig';
-import { createOutboundMessage } from '../../../agent/helpers';
-import { RequestMediationMessage } from '../messages';
-import { MediationRecipientService } from '../services/MediationRecipientService';
+import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import { AgentConfig } from '../../../agent/AgentConfig'
+import { createOutboundMessage } from '../../../agent/helpers'
+import { RequestMediationMessage } from '../messages'
+import { MediationRecipientService } from '../services/MediationRecipientService'
 
 // Handles the mediation denied state.
 // I need to look up the RFC and make sure I'm handling this correctly.
 
 export class MediationDeniedHandler implements Handler {
-  private mediationRecipientService: MediationRecipientService;
-  public supportedMessages = [RequestMediationMessage];
+  private mediationRecipientService: MediationRecipientService
+  public supportedMessages = [RequestMediationMessage]
 
   public constructor(mediationService: MediationRecipientService) {
-    this.mediationRecipientService = mediationService;
+    this.mediationRecipientService = mediationService
   }
 
   public async handle(messageContext: HandlerInboundMessage<MediationDeniedHandler>) {

@@ -5,6 +5,12 @@ on:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      releaseType:
+        description: The type of release. Should be one of "major", "minor", "patch"
+        required: true
+        default: 'patch'
 
 env:
   TEST_AGENT_PUBLIC_DID_SEED: 000000000000000000000000Trustee9
@@ -12,14 +18,11 @@ env:
 
 jobs:
   integration-test:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     name: Integration Tests
     steps:
       - name: Checkout aries-framework-javascript
         uses: actions/checkout@v2
-
-      - name: Get docker cache
-        uses: satackey/action-docker-layer-caching@v0.0.11
 
       - name: Start indy pool
         run: |
@@ -41,12 +44,12 @@ jobs:
 
       - name: Run tests
         run: >-
-          docker run 
+          docker run
           --network host
-          --name framework-jest-tests 
+          --name framework-jest-tests
           --env TEST_AGENT_PUBLIC_DID_SEED=${TEST_AGENT_PUBLIC_DID_SEED}
           --env GENESIS_TXN_PATH=${GENESIS_TXN_PATH}
-          aries-framework-javascript 
+          aries-framework-javascript
           yarn test --coverage
 
       - name: Export logs
@@ -69,3 +72,52 @@ jobs:
         run: docker cp framework-jest-tests:/www/coverage ./
       - uses: codecov/codecov-action@v1
         if: always()
+
+  release:
+    runs-on: ubuntu-20.04
+    name: Release
+    needs: [integration-test]
+    # Only run on push or workflow dispatch to main branch
+    if: (github.ref == 'refs/heads/main') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    steps:
+      - name: Checkout aries-framework-javascript
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: git config
+        run: |
+          git config user.name "@github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '12.x'
+
+      # https://github.com/yarnpkg/yarn/issues/6617#issuecomment-436222106
+      - name: Prepend Node path
+        run: npm config set scripts-prepend-node-path true
+
+      - name: Set NPM config
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{secrets.NPM_TOKEN}}" >> .npmrc
+          echo "registry=https://registry.npmjs.org/" >> .npmrc
+          echo "always-auth=true" >> .npmrc
+
+      - name: Install dependencies
+        run: yarn install --ignore-optional --frozen-lockfile
+
+      # On push to master, release unstable version
+      - name: Release Unstable
+        if: github.event_name == 'push'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: yarn release patch --preRelease=unstable
+
+      # On manual workflow dispatch release stable version
+      - name: Release Stable
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: yarn release ${{ github.event.inputs.releaseType }}

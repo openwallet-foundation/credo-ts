@@ -1,20 +1,20 @@
-import { IsString } from 'class-validator';
+import { IsString } from 'class-validator'
 
 export class Service {
   public constructor(options: { id: string; serviceEndpoint: string; type: string }) {
     if (options) {
-      this.id = options.id;
-      this.serviceEndpoint = options.serviceEndpoint;
-      this.type = options.type;
+      this.id = options.id
+      this.serviceEndpoint = options.serviceEndpoint
+      this.type = options.type
     }
   }
 
   @IsString()
-  public id!: string;
+  public id!: string
 
   @IsString()
-  public serviceEndpoint!: string;
+  public serviceEndpoint!: string
 
   @IsString()
-  public type!: string;
+  public type!: string
 }

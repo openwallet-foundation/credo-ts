@@ -15,11 +15,11 @@
  *  https://github.com/hyperledger/aries-framework-dotnet/blob/f90eaf9db8548f6fc831abea917e906201755763/src/Hyperledger.Aries/Ledger/DefaultLedgerService.cs#L139-L147
  */
 
-export const FULL_VERKEY_REGEX = /^[1-9A-HJ-NP-Za-km-z]{43,44}$/;
-export const ABBREVIATED_VERKEY_REGEX = /^~[1-9A-HJ-NP-Za-km-z]{21,22}$/;
-export const VERKEY_REGEX = new RegExp(`${FULL_VERKEY_REGEX.source}|${ABBREVIATED_VERKEY_REGEX.source}`);
-export const DID_REGEX = /^did:([a-z]+):([a-zA-z\d]+)/;
-export const DID_IDENTIFIER_REGEX = /^[a-zA-z\d-]+$/;
+export const FULL_VERKEY_REGEX = /^[1-9A-HJ-NP-Za-km-z]{43,44}$/
+export const ABBREVIATED_VERKEY_REGEX = /^~[1-9A-HJ-NP-Za-km-z]{21,22}$/
+export const VERKEY_REGEX = new RegExp(`${FULL_VERKEY_REGEX.source}|${ABBREVIATED_VERKEY_REGEX.source}`)
+export const DID_REGEX = /^did:([a-z]+):([a-zA-z\d]+)/
+export const DID_IDENTIFIER_REGEX = /^[a-zA-z\d-]+$/
 
 /**
  * Check a base58 encoded string against a regex expression to determine if it is a full valid verkey
@@ -27,7 +27,7 @@ export const DID_IDENTIFIER_REGEX = /^[a-zA-z\d-]+$/;
  * @return Boolean indicating if the string is a valid verkey
  */
 export function isFullVerkey(verkey: string): boolean {
-  return FULL_VERKEY_REGEX.test(verkey);
+  return FULL_VERKEY_REGEX.test(verkey)
 }
 
 /**
@@ -36,7 +36,7 @@ export function isFullVerkey(verkey: string): boolean {
  * @returns Boolean indicating if the string is a valid abbreviated verkey
  */
 export function isAbbreviatedVerkey(verkey: string): boolean {
-  return ABBREVIATED_VERKEY_REGEX.test(verkey);
+  return ABBREVIATED_VERKEY_REGEX.test(verkey)
 }
 
 /**
@@ -45,7 +45,7 @@ export function isAbbreviatedVerkey(verkey: string): boolean {
  * @returns Boolean indicating if the string is a valid verkey
  */
 export function isVerkey(verkey: string): boolean {
-  return VERKEY_REGEX.test(verkey);
+  return VERKEY_REGEX.test(verkey)
 }
 
 /**
@@ -54,7 +54,7 @@ export function isVerkey(verkey: string): boolean {
  * @return Boolean indicating if the string is a valid did
  */
 export function isDid(did: string): boolean {
-  return DID_REGEX.test(did);
+  return DID_REGEX.test(did)
 }
 
 /**
@@ -63,5 +63,5 @@ export function isDid(did: string): boolean {
  * @return Boolean indicating if the string is a valid did identifier
  */
 export function isDidIdentifier(identifier: string): boolean {
-  return DID_IDENTIFIER_REGEX.test(identifier);
+  return DID_IDENTIFIER_REGEX.test(identifier)
 }

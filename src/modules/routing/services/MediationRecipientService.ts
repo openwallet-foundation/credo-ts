@@ -1,16 +1,16 @@
-import type { Verkey } from 'indy-sdk';
-import { createOutboundMessage } from '../../../agent/helpers';
-import { AgentConfig } from '../../../agent/AgentConfig';
-import { MessageSender } from '../../../agent/MessageSender';
-import { KeylistUpdateMessage, KeylistUpdate, KeylistUpdateAction, ForwardMessage } from '../messages';
-import { Logger } from '../../../logger';
-import { EventEmitter } from 'events';
-import { MediationRecipientRecord } from '../repository/MediationRecipientRecord';
-import { Repository } from '../../../storage/Repository';
-import { ConnectionInvitationMessage, ConnectionRecord } from '../../connections';
-import { RoutingTable } from './ProviderRoutingService';
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
-import { OutboundMessage } from '../../../types';
+import type { Verkey } from 'indy-sdk'
+import { createOutboundMessage } from '../../../agent/helpers'
+import { AgentConfig } from '../../../agent/AgentConfig'
+import { MessageSender } from '../../../agent/MessageSender'
+import { KeylistUpdateMessage, KeylistUpdate, KeylistUpdateAction, ForwardMessage } from '../messages'
+import { Logger } from '../../../logger'
+import { EventEmitter } from 'events'
+import { MediationRecipientRecord } from '../repository/MediationRecipientRecord'
+import { Repository } from '../../../storage/Repository'
+import { ConnectionInvitationMessage, ConnectionRecord } from '../../connections'
+import { RoutingTable } from './ProviderRoutingService'
+import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import { OutboundMessage } from '../../../types'
 
 export enum MediationEventType {
   Granted = 'GRANTED',
@@ -20,10 +20,10 @@ export enum MediationEventType {
 
 export class MediationRecipientService extends EventEmitter {
   // TODO: Review this, placeholder
-  private logger: Logger;
-  private agentConfig: AgentConfig;
-  private mediationRecipientRepository: Repository<MediationRecipientRecord>;
-  private messageSender: MessageSender;
+  private logger: Logger
+  private agentConfig: AgentConfig
+  private mediationRecipientRepository: Repository<MediationRecipientRecord>
+  private messageSender: MessageSender
 
   // TODO: Review this, placeholder
   public constructor(
@@ -31,11 +31,11 @@ export class MediationRecipientService extends EventEmitter {
     mediationRecipientRepository: Repository<MediationRecipientRecord>,
     messageSender: MessageSender
   ) {
-    super();
-    this.agentConfig = agentConfig;
-    this.logger = agentConfig.logger;
-    this.mediationRecipientRepository = mediationRecipientRepository;
-    this.messageSender = messageSender;
+    super()
+    this.agentConfig = agentConfig
+    this.logger = agentConfig.logger
+    this.mediationRecipientRepository = mediationRecipientRepository
+    this.messageSender = messageSender
   }
 
   // // TODO: Review this, placeholder
@@ -48,111 +48,111 @@ export class MediationRecipientService extends EventEmitter {
 
   // recieve and handle the "granted" response from the mediator
   public handleGranted() {
-    this.emit(MediationEventType.Granted);
+    this.emit(MediationEventType.Granted)
   }
 
   // recieve and handle the "denied" response from the mediator.
   public handleDenied() {
-    this.emit(MediationEventType.Denied);
+    this.emit(MediationEventType.Denied)
   }
 
   // Do we want to create a Mediator type?
 
   public async find(mediatorId: string): Promise<string | MediationRecipientRecord> {
     try {
-      const connection = await this.mediationRecipientRepository.find(mediatorId);
+      const connection = await this.mediationRecipientRepository.find(mediatorId)
 
-      return connection;
+      return connection
     } catch {
-      return 'No mediator found for ID';
+      return 'No mediator found for ID'
       //  TODO - Make this better
     }
   }
 
   public fetchMediatorById(mediatorId: string): string {
-    const mediator = 'DummyMediator';
-    return mediator;
+    const mediator = 'DummyMediator'
+    return mediator
   }
 
   // Copied from old Service
 
-  private routingTable: RoutingTable = {};
+  private routingTable: RoutingTable = {}
 
   /**
    * @todo use connection from message context
    */
   public updateRoutes(messageContext: InboundMessageContext<KeylistUpdateMessage>, connection: ConnectionRecord) {
-    const { message } = messageContext;
+    const { message } = messageContext
 
     for (const update of message.updates) {
       switch (update.action) {
         case KeylistUpdateAction.add:
-          this.saveRoute(update.recipientKey, connection);
-          break;
+          this.saveRoute(update.recipientKey, connection)
+          break
         case KeylistUpdateAction.remove:
-          this.removeRoute(update.recipientKey, connection);
-          break;
+          this.removeRoute(update.recipientKey, connection)
+          break
       }
     }
   }
 
   public forward(messageContext: InboundMessageContext<ForwardMessage>): OutboundMessage<ForwardMessage> {
-    const { message, recipientVerkey } = messageContext;
+    const { message, recipientVerkey } = messageContext
 
     // TODO: update to class-validator validation
     if (!message.to) {
-      throw new Error('Invalid Message: Missing required attribute "to"');
+      throw new Error('Invalid Message: Missing required attribute "to"')
     }
 
-    const connection = this.findRecipient(message.to);
+    const connection = this.findRecipient(message.to)
 
     if (!connection) {
-      throw new Error(`Connection for verkey ${recipientVerkey} not found!`);
+      throw new Error(`Connection for verkey ${recipientVerkey} not found!`)
     }
 
     if (!connection.theirKey) {
-      throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`);
+      throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`)
     }
 
-    return createOutboundMessage(connection, message);
+    return createOutboundMessage(connection, message)
   }
 
   public getRoutes() {
-    return this.routingTable;
+    return this.routingTable
   }
 
   public findRecipient(recipientKey: Verkey) {
-    const connection = this.routingTable[recipientKey];
+    const connection = this.routingTable[recipientKey]
 
     // TODO: function with find in name should now throw error when not found.
     // It should either be called getRecipient and throw error
     // or findRecipient and return null
     if (!connection) {
-      throw new Error(`Routing entry for recipientKey ${recipientKey} does not exists.`);
+      throw new Error(`Routing entry for recipientKey ${recipientKey} does not exists.`)
     }
 
-    return connection;
+    return connection
   }
 
   public saveRoute(recipientKey: Verkey, connection: ConnectionRecord) {
     if (this.routingTable[recipientKey]) {
-      throw new Error(`Routing entry for recipientKey ${recipientKey} already exists.`);
+      throw new Error(`Routing entry for recipientKey ${recipientKey} already exists.`)
     }
 
-    this.routingTable[recipientKey] = connection;
+    this.routingTable[recipientKey] = connection
   }
 
   public removeRoute(recipientKey: Verkey, connection: ConnectionRecord) {
-    const storedConnection = this.routingTable[recipientKey];
+    const storedConnection = this.routingTable[recipientKey]
 
     if (!storedConnection) {
-      throw new Error('Cannot remove non-existing routing entry');
+      throw new Error('Cannot remove non-existing routing entry')
     }
 
     if (storedConnection.id !== connection.id) {
-      throw new Error('Cannot remove routing entry for another connection');
+      throw new Error('Cannot remove routing entry for another connection')
     }
 
-    delete this.routingTable[recipientKey];
+    delete this.routingTable[recipientKey]
   }
 }

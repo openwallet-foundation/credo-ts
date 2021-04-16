@@ -1,8 +1,8 @@
-import { Expose, Type } from 'class-transformer';
-import { ValidateNested } from 'class-validator';
+import { Expose, Type } from 'class-transformer'
+import { ValidateNested } from 'class-validator'
 
-import { BaseMessageConstructor } from '../../agent/BaseMessage';
-import { ThreadDecorator } from './ThreadDecorator';
+import { BaseMessageConstructor } from '../../agent/BaseMessage'
+import { ThreadDecorator } from './ThreadDecorator'
 
 export function ThreadDecorated<T extends BaseMessageConstructor>(Base: T) {
   class ThreadDecoratorExtension extends Base {
@@ -12,16 +12,16 @@ export function ThreadDecorated<T extends BaseMessageConstructor>(Base: T) {
     @Expose({ name: '~thread' })
     @Type(() => ThreadDecorator)
     @ValidateNested()
-    public thread?: ThreadDecorator;
+    public thread?: ThreadDecorator
 
     public get threadId(): string {
-      return this.thread?.threadId ?? this.id;
+      return this.thread?.threadId ?? this.id
     }
 
     public setThread(options: Partial<ThreadDecorator>) {
-      this.thread = new ThreadDecorator(options);
+      this.thread = new ThreadDecorator(options)
     }
   }
 
-  return ThreadDecoratorExtension;
+  return ThreadDecoratorExtension
 }

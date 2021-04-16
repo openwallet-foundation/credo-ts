@@ -1,66 +1,66 @@
-import { Expose, Transform, TransformationType, Type } from 'class-transformer';
-import { IsOptional, IsString, ValidateNested } from 'class-validator';
+import { Expose, Transform, TransformationType, Type } from 'class-transformer'
+import { IsOptional, IsString, ValidateNested } from 'class-validator'
 
 export class AttributeValue {
   public constructor(options: AttributeValue) {
-    this.name = options.name;
-    this.value = options.value;
+    this.name = options.name
+    this.value = options.value
   }
 
   @IsString()
-  public name: string;
+  public name: string
 
   @IsString()
-  public value: string;
+  public value: string
 }
 
 export class AttributeFilter {
   public constructor(options: AttributeFilter) {
     if (options) {
-      this.schemaId = options.schemaId;
-      this.schemaIssuerDid = options.schemaIssuerDid;
-      this.schemaName = options.schemaName;
-      this.schemaVersion = options.schemaVersion;
-      this.issuerDid = options.issuerDid;
-      this.credentialDefinitionId = options.credentialDefinitionId;
-      this.attributeValue = options.attributeValue;
+      this.schemaId = options.schemaId
+      this.schemaIssuerDid = options.schemaIssuerDid
+      this.schemaName = options.schemaName
+      this.schemaVersion = options.schemaVersion
+      this.issuerDid = options.issuerDid
+      this.credentialDefinitionId = options.credentialDefinitionId
+      this.attributeValue = options.attributeValue
     }
   }
 
   @Expose({ name: 'schema_id' })
   @IsOptional()
   @IsString()
-  public schemaId?: string;
+  public schemaId?: string
 
   @Expose({ name: 'schema_issuer_did' })
   @IsOptional()
   @IsString()
-  public schemaIssuerDid?: string;
+  public schemaIssuerDid?: string
 
   @Expose({ name: 'schema_name' })
   @IsOptional()
   @IsString()
-  public schemaName?: string;
+  public schemaName?: string
 
   @Expose({ name: 'schema_version' })
   @IsOptional()
   @IsString()
-  public schemaVersion?: string;
+  public schemaVersion?: string
 
   @Expose({ name: 'issuer_did' })
   @IsOptional()
   @IsString()
-  public issuerDid?: string;
+  public issuerDid?: string
 
   @Expose({ name: 'cred_def_id' })
   @IsOptional()
   @IsString()
-  public credentialDefinitionId?: string;
+  public credentialDefinitionId?: string
 
   @IsOptional()
   @Type(() => AttributeValue)
   @ValidateNested()
-  public attributeValue?: AttributeValue;
+  public attributeValue?: AttributeValue
 }
 
 /**
@@ -98,39 +98,36 @@ export function AttributeFilterTransformer() {
   return Transform(({ value: attributeFilter, type: transformationType }) => {
     switch (transformationType) {
       case TransformationType.CLASS_TO_PLAIN:
-        const attributeValue = attributeFilter.attributeValue;
-        if (attributeValue) {
+        if (attributeFilter.attributeValue) {
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          attributeFilter[`attr::${attributeValue.name}::value`] = attributeValue.value;
-          delete attributeFilter.attributeValue;
+          attributeFilter[`attr::${attributeFilter.attributeValue.name}::value`] = attributeFilter.attributeValue.value
+          delete attributeFilter.attributeValue
         }
 
-        return attributeFilter;
+        return attributeFilter
 
       case TransformationType.PLAIN_TO_CLASS:
-        const regex = new RegExp('^attr::([^:]+)::(value)$');
-
         for (const [key, value] of Object.entries(attributeFilter)) {
-          const match = regex.exec(key);
+          const match = new RegExp('^attr::([^:]+)::(value)$').exec(key)
 
           if (match) {
             const attributeValue = new AttributeValue({
               name: match[1],
               value: value as string,
-            });
+            })
 
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
-            delete attributeFilter[key];
-            attributeFilter.attributeValue = attributeValue;
+            delete attributeFilter[key]
+            attributeFilter.attributeValue = attributeValue
 
-            return attributeFilter;
+            return attributeFilter
           }
         }
-        return attributeFilter;
+        return attributeFilter
       default:
-        return attributeFilter;
+        return attributeFilter
     }
-  });
+  })
 }

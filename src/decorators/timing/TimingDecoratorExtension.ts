@@ -1,8 +1,8 @@
-import { Expose, Type } from 'class-transformer';
-import { ValidateNested } from 'class-validator';
+import { Expose, Type } from 'class-transformer'
+import { ValidateNested } from 'class-validator'
 
-import { BaseMessageConstructor } from '../../agent/BaseMessage';
-import { TimingDecorator } from './TimingDecorator';
+import { BaseMessageConstructor } from '../../agent/BaseMessage'
+import { TimingDecorator } from './TimingDecorator'
 
 export function TimingDecorated<T extends BaseMessageConstructor>(Base: T) {
   class TimingDecoratorExtension extends Base {
@@ -12,12 +12,12 @@ export function TimingDecorated<T extends BaseMessageConstructor>(Base: T) {
     @Expose({ name: '~timing' })
     @Type(() => TimingDecorator)
     @ValidateNested()
-    public timing?: TimingDecorator;
+    public timing?: TimingDecorator
 
     public setTiming(options: Partial<TimingDecorator>) {
-      this.timing = new TimingDecorator(options);
+      this.timing = new TimingDecorator(options)
     }
   }
 
-  return TimingDecoratorExtension;
+  return TimingDecoratorExtension
 }

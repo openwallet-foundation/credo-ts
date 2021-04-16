@@ -1,14 +1,14 @@
-import { Equals, IsOptional, IsString, ValidateNested } from 'class-validator';
-import { Expose, Type } from 'class-transformer';
+import { Equals, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { Expose, Type } from 'class-transformer'
 
-import { AgentMessage } from '../../../agent/AgentMessage';
-import { PresentProofMessageType } from './PresentProofMessageType';
-import { PresentationPreview } from './PresentationPreview';
+import { AgentMessage } from '../../../agent/AgentMessage'
+import { PresentProofMessageType } from './PresentProofMessageType'
+import { PresentationPreview } from './PresentationPreview'
 
 export interface ProposePresentationMessageOptions {
-  id?: string;
-  comment?: string;
-  presentationProposal: PresentationPreview;
+  id?: string
+  comment?: string
+  presentationProposal: PresentationPreview
 }
 
 /**
@@ -18,25 +18,25 @@ export interface ProposePresentationMessageOptions {
  */
 export class ProposePresentationMessage extends AgentMessage {
   public constructor(options: ProposePresentationMessageOptions) {
-    super();
+    super()
 
     if (options) {
-      this.id = options.id ?? this.generateId();
-      this.comment = options.comment;
-      this.presentationProposal = options.presentationProposal;
+      this.id = options.id ?? this.generateId()
+      this.comment = options.comment
+      this.presentationProposal = options.presentationProposal
     }
   }
 
   @Equals(ProposePresentationMessage.type)
-  public readonly type = ProposePresentationMessage.type;
-  public static readonly type = PresentProofMessageType.ProposePresentation;
+  public readonly type = ProposePresentationMessage.type
+  public static readonly type = PresentProofMessageType.ProposePresentation
 
   /**
    * Provides some human readable information about the proposed presentation.
    */
   @IsString()
   @IsOptional()
-  public comment?: string;
+  public comment?: string
 
   /**
    * Represents the presentation example that prover wants to provide.
@@ -44,5 +44,5 @@ export class ProposePresentationMessage extends AgentMessage {
   @Expose({ name: 'presentation_proposal' })
   @Type(() => PresentationPreview)
   @ValidateNested()
-  public presentationProposal!: PresentationPreview;
+  public presentationProposal!: PresentationPreview
 }
