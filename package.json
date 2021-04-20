@@ -23,6 +23,7 @@
     "prepare": "husky install"
   },
   "dependencies": {
+    "aries-framework": "^0.0.1-unstable.0",
     "bn.js": "^5.2.0",
     "buffer": "^6.0.3",
     "class-transformer": "^0.4.0",
@@ -62,7 +63,7 @@
     "typescript": "^4.2.3"
   },
   "optionalDependencies": {
-    "indy-sdk": "^1.16.0"
+    "indy-sdk": "^1.15.0-dev-1628"
   },
   "publishConfig": {
     "access": "public",

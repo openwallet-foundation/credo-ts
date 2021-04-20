@@ -8,11 +8,10 @@ import { EventEmitter } from 'events'
 import { MediationRecipientRecord } from '../repository/MediationRecipientRecord'
 import { Repository } from '../../../storage/Repository'
 import { ConnectionInvitationMessage, ConnectionRecord } from '../../connections'
-import { RoutingTable } from './ProviderRoutingService'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { OutboundMessage } from '../../../types'
 
-export enum MediationEventType {
+export enum MediationRecipientEventType {
   Granted = 'GRANTED',
   Denied = 'DENIED',
   KeylistUpdated = 'KEYLIST_UPDATED',
@@ -38,6 +37,28 @@ export class MediationRecipientService extends EventEmitter {
     this.messageSender = messageSender
   }
 
+  public async createRoute(verkey: Verkey) {
+    this.logger.debug(`Registering route for verkey '${verkey}' at mediator`)
+
+    if (!this.agentConfig.inboundConnection) {
+      this.logger.debug(`There is no mediator. Creating route for verkey '${verkey}' skipped.`)
+    } else {
+      const routingConnection = this.agentConfig.inboundConnection.connection
+
+      const keylistUpdateMessage = new KeylistUpdateMessage({
+        updates: [
+          new KeylistUpdate({
+            action: KeylistUpdateAction.add,
+            recipientKey: verkey,
+          }),
+        ],
+      })
+
+      const outboundMessage = createOutboundMessage(routingConnection, keylistUpdateMessage)
+      await this.messageSender.sendMessage(outboundMessage)
+    }
+  }
+
   // // TODO: Review this, placeholder
   // public async requestMediation(connectionRecord: ConnectionRecord): Promise<MediationRecipientRecord> {
   //   // Ensure that the connection is complete (check state) (validate, assert state)
@@ -48,12 +69,12 @@ export class MediationRecipientService extends EventEmitter {
 
   // recieve and handle the "granted" response from the mediator
   public handleGranted() {
-    this.emit(MediationEventType.Granted)
+    this.emit(MediationRecipientEventType.Granted)
   }
 
   // recieve and handle the "denied" response from the mediator.
   public handleDenied() {
-    this.emit(MediationEventType.Denied)
+    this.emit(MediationRecipientEventType.Denied)
   }
 
   // Do we want to create a Mediator type?

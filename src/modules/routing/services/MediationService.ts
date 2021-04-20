@@ -1,37 +1,45 @@
-import { Verkey } from 'indy-sdk'
-import EventEmitter from 'node:events'
-import { Logger } from 'tslog'
-import { RoutingTable } from '.'
-import { MediationRecord, KeylistUpdateMessage, KeylistUpdateAction, ForwardMessage } from '..'
-import { AgentConfig } from '../../../agent/AgentConfig'
+import type { Verkey } from 'indy-sdk'
 import { createOutboundMessage } from '../../../agent/helpers'
+import { AgentConfig } from '../../../agent/AgentConfig'
 import { MessageSender } from '../../../agent/MessageSender'
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import { KeylistUpdateMessage, KeylistUpdate, KeylistUpdateAction, ForwardMessage, KeylistUpdateResponseMessage } from '../messages'
+import { Logger } from '../../../logger'
+import { EventEmitter } from 'events'
+import { RoutingTable } from '../services'
+import { MediationRecord } from '../repository'
 import { Repository } from '../../../storage/Repository'
+import { ConnectionRecord } from 'aries-framework'
+import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { OutboundMessage } from '../../../types'
-import { ConnectionRecord } from '../../connections'
-import { MediationRecordProps } from '../repository/MediationRecipientRecord'
 
-export class MediationService {
+export enum MediationEventType {
+  Grant = 'GRANT',
+  Deny = 'DENY',
+  KeylistUpdate = 'KEYLIST_UPDATE',
+}
+
+export class MediationService extends EventEmitter {
+  private messageSender: MessageSender
+  private logger: Logger
   private agentConfig: AgentConfig
   private mediationRepository: Repository<MediationRecord>
-  private messageSender: MessageSender
-  // Mediation record is a mapping of connection id to recipient keylist
-  // This implies that there's a single mediation record per connection
 
-  // TODO: Review this, placeholder
-  public constructor(
-    agentConfig: AgentConfig,
-    mediationRepository: Repository<MediationRecord>,
-    messageSender: MessageSender
-  ) {
-    this.agentConfig = agentConfig
-    this.mediationRepository = mediationRepository
+
+  public constructor(messageSender: MessageSender, mediationRepository: Repository<MediationRecord>, agentConfig: AgentConfig) {
+    super()
     this.messageSender = messageSender
+    this.mediationRepository = mediationRepository
+    this.logger = agentConfig.logger
+    this.agentConfig = agentConfig
   }
-
-  public create(_provisioningProps: { connectionId: string; recipientKey: string }): string {
-    return 'Method not implemented.'
+  
+  public async create({ connectionId, recipientKey }: MediationProps): Promise<MediationRecord> {
+    const mediationRecord = new MediationRecord({
+      connectionId,
+      recipientKey,
+    })
+    await this.mediationRepository.save(mediationRecord)
+    return mediationRecord
   }
 
   public async find(mediatorId: string): Promise<string | MediationRecord> {
@@ -45,32 +53,73 @@ export class MediationService {
     }
   }
 
+
   public fetchMediatorById(mediatorId: string): string {
     const mediator = 'DummyMediator'
     return mediator
   }
-
   // Copied from old Service
 
   private routingTable: RoutingTable = {}
+  
+  public getRoutes() {
+    return this.routingTable
+  }
 
   /**
    * @todo use connection from message context
    */
-  public updateRoutes(messageContext: InboundMessageContext<KeylistUpdateMessage>, connection: ConnectionRecord) {
-    const { message } = messageContext
+   public updateRoutes(messageContext: InboundMessageContext<KeylistUpdateMessage>): KeylistUpdateResponseMessage {
+    const { connection, message } = messageContext
+
+    if (!connection) {
+      // TODO We could eventually remove this check if we do it at some higher level where we create messageContext that must have a connection.
+      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+    }
+
+    const updated = []
 
     for (const update of message.updates) {
       switch (update.action) {
         case KeylistUpdateAction.add:
-          const record = new MediationRecord({ connectionId: connection.id, recipientKey: update.recipientKey })
-          //   Add save
+          this.saveRoute(update.recipientKey, connection)
           break
         case KeylistUpdateAction.remove:
-          //   TODO - Remove from registry
+          this.removeRoute(update.recipientKey, connection)
           break
       }
+
+      updated.push(
+        new KeylistUpdated({
+          action: update.action,
+          recipientKey: update.recipientKey,
+          result: KeylistUpdateResult.Success,
+        })
+      )
     }
+
+    return new KeylistUpdateResponseMessage({ updated })
+  }
+  
+  public saveRoute(recipientKey: Verkey, connection: ConnectionRecord) {
+    if (this.routingTable[recipientKey]) {
+      throw new Error(`Routing entry for recipientKey ${recipientKey} already exists.`)
+    }
+    this.routingTable[recipientKey] = connection
+  }
+
+  public removeRoute(recipientKey: Verkey, connection: ConnectionRecord) {
+    const storedConnection = this.routingTable[recipientKey]
+
+    if (!storedConnection) {
+      throw new Error('Cannot remove non-existing routing entry')
+    }
+
+    if (storedConnection.id !== connection.id) {
+      throw new Error('Cannot remove routing entry for another connection')
+    }
+
+    delete this.routingTable[recipientKey]
   }
 
   public forward(messageContext: InboundMessageContext<ForwardMessage>): OutboundMessage<ForwardMessage> {
@@ -106,9 +155,10 @@ export class MediationService {
 
     return connection
   }
+
 }
 
 export interface MediationProps {
-  conectionId: string
+  connectionId: string
   recipientKey: string
 }

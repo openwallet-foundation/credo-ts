@@ -2,7 +2,7 @@ import { Equals, IsDate, IsString } from 'class-validator'
 import { Expose, Type } from 'class-transformer'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { MessageType } from './RequestMediationType'
+import { RoutingMessageType } from './RoutingMessageType'
 
 export class RequestMediationMessage extends AgentMessage {
   /**
@@ -23,7 +23,7 @@ export class RequestMediationMessage extends AgentMessage {
 
   @Equals(RequestMediationMessage.type)
   public readonly type = RequestMediationMessage.type
-  public static readonly type = MessageType.RequestMediationMessage
+  public static readonly type = RoutingMessageType.RequestMediation
 
   @Expose({ name: 'sent_time' })
   @Type(() => Date)

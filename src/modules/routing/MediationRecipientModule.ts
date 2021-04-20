@@ -1,5 +1,5 @@
 import { AgentConfig } from '../../agent/AgentConfig';
-import { ProviderRoutingService, MessagePickupService, MediationRecipientService } from './services';
+import { MessagePickupService, MediationRecipientService } from './services';
 import { MessageSender } from '../../agent/MessageSender';
 import { createOutboundMessage } from '../../agent/helpers';
 import {
@@ -16,6 +16,7 @@ import { ConnectionRecord } from '../connections';
 import agentConfig from '../../../samples/config';
 import { EventEmitter } from 'events';
 import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler';
+import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator';
 
 export class MediationRecipientModule {
   private agentConfig: AgentConfig;
@@ -43,6 +44,24 @@ export class MediationRecipientModule {
     this.registerHandlers(dispatcher);
   }
 
+  public async downloadMessages() {
+    const inboundConnection = this.getInboundConnection()
+    if (inboundConnection) {
+      const outboundMessage = await this.messagePickupService.batchPickup(inboundConnection)
+      outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
+      await this.messageSender.sendMessage(outboundMessage)
+    }
+  }
+
+  public getInboundConnection() {
+    return this.agentConfig.inboundConnection
+  }
+
+  public async getMediators() {
+    //   TODO - fetch mediators from wallet. I'm guessing that this would have to poll all mediators and get their statuses?
+    // return this.mediationService.getMediators();
+  }
+  
   public async requestMediation(connectionReord: ConnectionRecord) {
     // const mediatorRecord = await this.mediationRecipientService.createMediationRequest(connectionReord);
   }
