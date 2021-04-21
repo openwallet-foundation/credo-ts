@@ -14,10 +14,12 @@ import type { Verkey } from 'indy-sdk';
 import { Dispatcher } from '../../agent/Dispatcher';
 import { MessagePickupHandler, ForwardHandler, KeylistUpdateHandler } from './handlers';
 import { Logger } from '../../logger';
-import { MediationRequestMessage } from './messages/MediationRequestMessage';
 import { MediationService } from './services/MediationService';
 import { EventEmitter } from 'events';
 import { MediationGrantHandler } from './handlers/MediationGrantHandler';
+import { MediationRequestHandler } from './handlers/MediationRequestHandler';
+import { MediationRecord } from './repository/MediationRecord';
+import { MediationDenyHandler } from './handlers/MediationDenyHandler';
 
 export class RoutingModule {
   private agentConfig: AgentConfig;
@@ -37,7 +39,7 @@ export class RoutingModule {
     provisioningService: ProvisioningService,
     messagePickupService: MessagePickupService,
     connectionService: ConnectionService,
-    messageSender: MessageSender,
+    messageSender: MessageSender
   ) {
     this.agentConfig = agentConfig;
     this.mediationService = mediationService;
@@ -62,9 +64,14 @@ export class RoutingModule {
 
   public async requestMediation(connection: ConnectionRecord) {
     const outboundMessage = await this.mediationService.requestMediation(connection);
-    
-    const response = await this.messageSender.sendAndReceiveMessage(outboundMessage, MediationRequestMessage);
-    return response.message;
+    const response = await this.messageSender.sendMessage(outboundMessage);
+    return response;
+  }
+
+  public async grantMediation(connection: ConnectionRecord, mediation: MediationRecord) {
+    const outboundMessage = await this.mediationService.grantMediation(connection, mediation);
+    const response = await this.messageSender.sendMessage(outboundMessage);
+    return response;
   }
 
   public async provision(mediatorConfiguration: MediatorConfiguration) {
@@ -115,8 +122,11 @@ export class RoutingModule {
     return agentConnectionAtMediator;
   }
 
-  public async downloadMessages() {
-    const inboundConnection = this.getInboundConnection();
+  public async downloadMessages(mediatorConnection?: ConnectionRecord) {
+    const inboundConnection = mediatorConnection
+      ? { verkey: mediatorConnection.theirKey!, connection: mediatorConnection }
+      : this.getInboundConnection();
+
     if (inboundConnection) {
       const outboundMessage = await this.messagePickupService.batchPickup(inboundConnection);
       const batchResponse = await this.messageSender.sendAndReceiveMessage(outboundMessage, BatchMessage);
@@ -140,6 +150,8 @@ export class RoutingModule {
     dispatcher.registerHandler(new ForwardHandler(this.providerRoutingService));
     dispatcher.registerHandler(new MessagePickupHandler(this.messagePickupService));
     dispatcher.registerHandler(new MediationGrantHandler(this.mediationService));
+    dispatcher.registerHandler(new MediationDenyHandler(this.mediationService));
+    dispatcher.registerHandler(new MediationRequestHandler(this.mediationService));
   }
 }
 

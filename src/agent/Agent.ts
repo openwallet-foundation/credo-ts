@@ -102,7 +102,7 @@ export class Agent {
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository);
     this.providerRoutingService = new ProviderRoutingService();
     this.consumerRoutingService = new ConsumerRoutingService(this.messageSender, this.agentConfig);
-    this.mediationService = new MediationService(this.mediationRepository);
+    this.mediationService = new MediationService(this.mediationRepository, this.agentConfig);
     this.trustPingService = new TrustPingService();
     this.messagePickupService = new MessagePickupService(messageRepository);
     this.ledgerService = new LedgerService(this.wallet, this.agentConfig);
@@ -132,6 +132,11 @@ export class Agent {
     if (publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
       await this.wallet.initPublicDid({ seed: publicDidSeed });
+
+      // Init routing key for mediation service (server role)
+      if (this.wallet.publicDid) {
+        this.mediationService.setRoutingKey(this.wallet.publicDid.verkey);
+      }
     }
 
     // If the genesisPath is provided in the config, we will automatically handle ledger connection
@@ -142,7 +147,7 @@ export class Agent {
       });
     }
 
-    // If mediator record Id is provided, search for it and (if record exists) update other properties 
+    // If mediator record Id is provided, search for it and (if record exists) update other properties
     // accordingly, overriding them if needed
     if (mediatorRecordId) {
       const mediationRecord = await this.mediationService.findById(mediatorRecordId);

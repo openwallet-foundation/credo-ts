@@ -60,5 +60,5 @@ export class MediationRecord extends BaseRecord {
         `Proof record is associated with connection '${this.connectionId}'. Current connection is '${currentConnectionId}'`
       );
     }
-  }  
+  }
 }

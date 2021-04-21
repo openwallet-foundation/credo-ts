@@ -1,19 +1,20 @@
 import { Handler, HandlerInboundMessage } from '../../../agent/Handler';
-import { MediationDenyMessage } from '../messages';
+import { MediationRequestMessage } from '../messages';
 import { MediationService } from '../services/MediationService';
 
-export class MediationDenyHandler implements Handler {
+export class MediationRequestHandler implements Handler {
   private routingService: MediationService;
-  public supportedMessages = [MediationDenyMessage];
+  public supportedMessages = [MediationRequestMessage];
 
   public constructor(routingService: MediationService) {
     this.routingService = routingService;
   }
 
-  public async handle(messageContext: HandlerInboundMessage<MediationDenyHandler>) {
+  public async handle(messageContext: HandlerInboundMessage<MediationRequestHandler>) {
     if (!messageContext.connection) {
       throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`);
     }
-    this.routingService.processMediationDeny(messageContext);
+
+    return this.routingService.processMediationRequest(messageContext);
   }
 }

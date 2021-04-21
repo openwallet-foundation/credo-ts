@@ -9,7 +9,7 @@ import { ConnectionService, ConnectionEventType, ConnectionStateChangedEvent, Tr
 import { ConsumerRoutingService } from '../routing';
 import { ConnectionRecord } from './repository/ConnectionRecord';
 import { ConnectionState } from './models';
-import { ConnectionInvitationMessage } from './messages';
+import { ConnectionInvitationMessage, ConnectionResponseMessage, TrustPingResponseMessage } from './messages';
 import {
   ConnectionRequestHandler,
   ConnectionResponseHandler,
@@ -90,10 +90,29 @@ export class ConnectionsModule {
       alias: config?.alias,
     });
 
-    // if auto accept is enabled (either on the record or the global agent config)
-    // we directly send a connection request
-    if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      connection = await this.acceptInvitation(connection.id);
+    if (this.agentConfig.getEndpoint() == 'didcomm:transport/queue') {
+      const {
+        message: connectionRequest,
+        connectionRecord: connectionRecord,
+      } = await this.connectionService.createRequest(connection.id);
+
+      const connectionResponse = await this.messageSender.sendAndReceiveMessage(
+        createOutboundMessage(connectionRecord, connectionRequest, connectionRecord.invitation),
+        ConnectionResponseMessage
+      );
+      await this.connectionService.processResponse(connectionResponse);
+
+      const { message: trustPing } = await this.connectionService.createTrustPing(connectionRecord.id);
+      await this.messageSender.sendAndReceiveMessage(
+        createOutboundMessage(connectionRecord, trustPing),
+        TrustPingResponseMessage
+      );
+    } else {
+      // if auto accept is enabled (either on the record or the global agent config)
+      // we directly send a connection request
+      if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
+        connection = await this.acceptInvitation(connection.id);
+      }
     }
 
     return connection;

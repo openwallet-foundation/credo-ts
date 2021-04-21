@@ -7,12 +7,12 @@ import { Term } from '../models/Term';
 
 export interface MediationRequestMessageOptions {
   id?: string;
-  mediator_terms: Term[],
-  recipient_terms: Term[]
+  mediator_terms: Term[];
+  recipient_terms: Term[];
 }
 
 /**
- * This message serves as a request from the recipient to the mediator, asking for the permission (and routing information) 
+ * This message serves as a request from the recipient to the mediator, asking for the permission (and routing information)
  * to publish the endpoint as a mediator.
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#mediation-grant
@@ -41,5 +41,4 @@ export class MediationRequestMessage extends AgentMessage {
   @IsArray()
   @ValidateNested()
   public recipient_terms!: Term[];
-
 }

@@ -11,21 +11,27 @@ import {
   ConnectionStateChangedEvent,
   LogLevel,
   ConnectionState,
+  BasicMessageEventType,
+  BasicMessageReceivedEvent,
+  ConnectionRecord,
 } from '../src';
 import testLogger, { TestLogger } from '../src/__tests__/logger';
 import indy from 'indy-sdk';
 import { resolve } from 'path';
 import { MediationEventType, MediationStateChangedEvent } from '../src/modules/routing/services/MediationService';
 import { MediationState } from '../src/modules/routing/models/MediationState';
+import { sleep } from '../src/__tests__/helpers';
 
 class HttpInboundTransporter implements InboundTransporter {
   private app: Express;
+  public stop: boolean;
 
   public constructor(app: Express) {
     this.app = app;
+    this.stop = false;
   }
 
-  public start(agent: Agent) {
+  public start(agent: Agent, mediatorConnection?: ConnectionRecord) {
     this.app.post('/msg', async (req, res) => {
       const message = req.body;
       const packedMessage = JSON.parse(message);
@@ -40,6 +46,28 @@ class HttpInboundTransporter implements InboundTransporter {
       } catch (e) {
         testLogger.debug('Error: ' + e);
         res.status(200).end();
+      }
+    });
+
+    this.stop = false;
+
+    if (mediatorConnection) {
+      this.pollDownloadMessages(agent, mediatorConnection);
+    }
+  }
+
+  private pollDownloadMessages(agent: Agent, mediatorConnection: ConnectionRecord) {
+    new Promise(async () => {
+      while (!this.stop) {
+        const downloadedMessages = await agent.routing.downloadMessages(mediatorConnection);
+        const messages = [...downloadedMessages];
+        testLogger.test('downloaded messages', messages);
+        while (messages && messages.length > 0) {
+          const message = messages.shift();
+          await agent.receiveMessage(message);
+        }
+
+        await sleep(3000);
       }
     });
   }
@@ -105,6 +133,7 @@ const PORT = Number(agentConfig.port);
 const app = express();
 
 app.use(cors());
+app.use(express.json());
 app.use(
   express.text({
     type: ['application/ssi-agent-wire', 'text/plain'],
@@ -118,20 +147,23 @@ const messageReceiver = new HttpInboundTransporter(app);
 const agent = new Agent(agentConfig, messageReceiver, messageSender);
 
 agent.connections.events.on(ConnectionEventType.StateChanged, async (event: ConnectionStateChangedEvent) => {
-  testLogger.debug('Connection state changed for ' + event.connectionRecord.id);
+  testLogger.info('Connection state changed for ' + event.connectionRecord.id);
   testLogger.debug('Previous state: ' + event.previousState + ' New state: ' + event.connectionRecord.state);
 
   if (event.connectionRecord.alias == 'mediator' && event.connectionRecord.state == ConnectionState.Complete) {
-    testLogger.debug('Mediator connection completed. Requesting mediation...');
+    testLogger.info('Mediator connection completed. Requesting mediation...');
+
+    // Start polling responses from this connection
+    messageReceiver.stop = true;
+    messageReceiver.start(agent, event.connectionRecord);
+
     // Request mediation
-    const result = await agent.routing.requestMediation(event.connectionRecord);
-    testLogger.debug('Mediation Request sent');
+    testLogger.info('Mediation Request sent');
   }
 });
 
-
 agent.routing.mediationEvents.on(MediationEventType.StateChanged, async (event: MediationStateChangedEvent) => {
-  testLogger.debug('Mediation state changed for ' + event.mediationRecord.id);
+  testLogger.info('Mediation state changed for ' + event.mediationRecord.id);
   testLogger.debug('Previous state: ' + event.previousState + ' New state: ' + event.mediationRecord.state);
 
   if (event.mediationRecord.state == MediationState.Granted) {
@@ -142,6 +174,33 @@ agent.routing.mediationEvents.on(MediationEventType.StateChanged, async (event: 
         verkey: event.mediationRecord.routingKeys[0],
       });
     }
+  }
+});
+
+agent.basicMessages.events.on(BasicMessageEventType.MessageReceived, async (event: BasicMessageReceivedEvent) => {
+  testLogger.info('Message received: ' + event.message.content);
+});
+
+app.post('/basic-message', async (req, res) => {
+  try {
+    const connectionId = req.body.connection_id;
+    const message = req.body.message;
+
+    if (!connectionId || !message) {
+      throw new Error('Missing parameter in body. Format: {"connection_id": ..., "content": ... }');
+    }
+
+    const connectionRecord = await agent.connections.getById(connectionId);
+    if (connectionRecord) {
+      const result = await agent.basicMessages.sendMessage(connectionRecord, message);
+      res.send(result);
+    } else {
+      throw Error('Connection not found');
+    }
+  } catch (e) {
+    res.status(500);
+    testLogger.debug('Error: ' + e);
+    res.send('Error: ' + e);
   }
 });
 

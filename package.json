@@ -16,6 +16,8 @@
     "test": "jest --verbose",
     "dev": "ts-node-dev --respawn --transpile-only ./src/samples/mediator.ts",
     "prod:start": "node ./build/samples/mediator.js",
+    "prod:start-mediation-client": "node ./build/samples/mediation-client.js",
+    "prod:start-mediation-server": "node ./build/samples/mediation-server.js",
     "prod:build": "rm -rf build && yarn compile",
     "validate": "npm-run-all --parallel lint compile",
     "prepack": "rm -rf build && yarn compile",

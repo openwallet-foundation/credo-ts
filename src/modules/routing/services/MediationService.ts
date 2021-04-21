@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import { Verkey } from 'indy-sdk';
+import { AgentConfig } from '../../../agent/AgentConfig';
 import { createOutboundMessage } from '../../../agent/helpers';
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext';
 import { Repository } from '../../../storage/Repository';
@@ -28,10 +29,17 @@ export interface MediationGrantedEvent {
 
 export class MediationService extends EventEmitter {
   private mediationRepository: Repository<MediationRecord>;
+  private agentConfig: AgentConfig;
+  private routingKey?: Verkey;
 
-  public constructor(mediationRepository: Repository<MediationRecord>) {
+  public constructor(mediationRepository: Repository<MediationRecord>, agentConfig: AgentConfig) {
     super();
     this.mediationRepository = mediationRepository;
+    this.agentConfig = agentConfig;
+  }
+
+  public setRoutingKey(verkey: Verkey) {
+    this.routingKey = verkey;
   }
 
   public async requestMediation(connection: ConnectionRecord) {
@@ -49,6 +57,38 @@ export class MediationService extends EventEmitter {
     });
 
     return createOutboundMessage(connection, mediationRequestMessage);
+  }
+
+  public async grantMediation(connection: ConnectionRecord, mediation: MediationRecord) {
+    mediation.routingKeys = this.routingKey ? [this.routingKey] : [];
+
+    const grantMediationMessage = new MediationGrantMessage({
+      endpoint: this.agentConfig.getEndpoint(),
+      routing_keys: mediation.routingKeys,
+    });
+
+    return createOutboundMessage(connection, grantMediationMessage);
+  }
+
+  public async processMediationRequest(messageContext: InboundMessageContext<MediationRequestMessage>) {
+    const connection = messageContext.connection;
+
+    // Assert connection
+    connection?.assertReady();
+    if (!connection) {
+      throw new Error('No connection associated with incoming mediation grant message');
+    }
+
+    const mediationRecord = await this.create({
+      connectionId: connection.id,
+      mediatorTerms: messageContext.message.mediator_terms,
+      recipientTerms: messageContext.message.recipient_terms,
+      role: MediationRole.Mediator,
+      state: MediationState.Init,
+    });
+
+    // Mediation can be either granted or denied. Let business logic decide that
+    await this.updateState(mediationRecord, MediationState.Requested);
   }
 
   public async processMediationGrant(messageContext: InboundMessageContext<MediationGrantMessage>) {
@@ -85,7 +125,7 @@ export class MediationService extends EventEmitter {
     // Assert connection
     connection?.assertReady();
     if (!connection) {
-      throw new Error('No connection associated with incoming mediation grant message');
+      throw new Error('No connection associated with incoming mediation deny message');
     }
 
     // Mediation record already exists
@@ -115,7 +155,7 @@ export class MediationService extends EventEmitter {
 
   public async findById(id: string): Promise<MediationRecord | null> {
     return await this.mediationRepository.find(id);
-  }  
+  }
 
   public async findByConnectionId(id: string): Promise<MediationRecord | null> {
     /*const mediationRecords = await this.mediationRepository.findByQuery({ connectionId: id });
@@ -143,7 +183,6 @@ export class MediationService extends EventEmitter {
     return await this.mediationRepository.findAll();
   }
 
-
   /**
    * Update the record to a new state and emit an state changed event. Also updates the record
    * in storage.
@@ -154,11 +193,11 @@ export class MediationService extends EventEmitter {
    */
   private async updateState(mediationRecord: MediationRecord, newState: MediationState) {
     const previousState = mediationRecord.state;
-    
+
     mediationRecord.state = newState;
-    
+
     await this.mediationRepository.update(mediationRecord);
-    
+
     const event: MediationStateChangedEvent = {
       mediationRecord,
       previousState: previousState,
