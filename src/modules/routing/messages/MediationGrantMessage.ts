@@ -11,9 +11,10 @@ export interface MediationGrantMessageOptions {
 }
 
 /**
- * Used to notify the mediator of keys in use by the recipient.
+ * A route grant message is a signal from the mediator to the recipient that permission is given to distribute the
+ * included information as an inbound route.
  *
- * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#keylist-update
+ * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#mediation-grant
  */
 export class MediationGrantMessage extends AgentMessage {
   public constructor(options: MediationGrantMessageOptions) {
