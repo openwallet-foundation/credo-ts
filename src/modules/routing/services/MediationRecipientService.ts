@@ -2,7 +2,14 @@ import type { Verkey } from 'indy-sdk'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { MessageSender } from '../../../agent/MessageSender'
-import { KeylistUpdateMessage, KeylistUpdate, KeylistUpdateAction, ForwardMessage, MediationGrantedMessage, MediationDeniedMessage } from '../messages'
+import {
+  KeylistUpdateMessage,
+  KeylistUpdate,
+  KeylistUpdateAction,
+  ForwardMessage,
+  MediationGrantedMessage,
+  MediationDeniedMessage,
+} from '../messages'
 import { Logger } from '../../../logger'
 import { EventEmitter } from 'events'
 import { Repository } from '../../../storage/Repository'
@@ -11,7 +18,7 @@ import { RoutingTable } from './MediationService'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { OutboundMessage } from '../../../types'
 import { isIndyError } from '../../../utils/indyError'
-import { MediationProps, MediationRecord } from '..'
+import { DefaultMediationRecord, MediationProps, MediationRecord } from '..'
 
 export enum MediationEventType {
   Granted = 'GRANTED',
@@ -23,19 +30,20 @@ export class MediationRecipientService extends EventEmitter {
   // TODO: Review this, placeholder
   private logger: Logger
   private agentConfig: AgentConfig
-  private mediationRecipientRepository: Repository<MediationRecord>
+  private mediatorRepository: Repository<MediationRecord>
   private messageSender: MessageSender
+  private defaultMediatorId?: string
 
   // TODO: Review this, placeholder
   public constructor(
     agentConfig: AgentConfig,
-    mediationRecipientRepository: Repository<MediationRecord>,
+    mediatorRepository: Repository<MediationRecord>,
     messageSender: MessageSender
   ) {
     super()
     this.agentConfig = agentConfig
     this.logger = agentConfig.logger
-    this.mediationRecipientRepository = mediationRecipientRepository
+    this.mediatorRepository = mediatorRepository
     this.messageSender = messageSender
     this.provision()
   }
@@ -109,7 +117,7 @@ export class MediationRecipientService extends EventEmitter {
   public storeKeylistUpdateResults() {
     // Method here
   }
-  public prepareKeylistQuery(filter: map, paginateLimit: int = -1, paginateOffset: int = 0){
+  public prepareKeylistQuery(filter: Map<string, string>, paginateLimit = -1, paginateOffset = 0) {
     // Method here
   }
 
@@ -128,67 +136,9 @@ export class MediationRecipientService extends EventEmitter {
   public getDefaultMediatorById(mediatorId: string) {
     // The default mediator
   }
-  // Copied from old Service
 
-  private routingTable: RoutingTable = {}
-
-  /**
-   * @todo use connection from message context
-   */
-  public updateRoutes(messageContext: InboundMessageContext<KeylistUpdateMessage>, connection: ConnectionRecord) {
-    const { message } = messageContext
-
-    for (const update of message.updates) {
-      switch (update.action) {
-        case KeylistUpdateAction.add:
-          this.saveRoute(update.recipientKey, connection)
-          break
-        case KeylistUpdateAction.remove:
-          this.removeRoute(update.recipientKey, connection)
-          break
-      }
-    }
-  }
-
-  public forward(messageContext: InboundMessageContext<ForwardMessage>): OutboundMessage<ForwardMessage> {
-    const { message, recipientVerkey } = messageContext
-
-    // TODO: update to class-validator validation
-    if (!message.to) {
-      throw new Error('Invalid Message: Missing required attribute "to"')
-    }
-
-    const connection = this.findRecipient(message.to)
-
-    if (!connection) {
-      throw new Error(`Connection for verkey ${recipientVerkey} not found!`)
-    }
-
-    if (!connection.theirKey) {
-      throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`)
-    }
-
-    return createOutboundMessage(connection, message)
-  }
-
-  public getRoutes() {
-    return this.routingTable
-  }
-
-  public findRecipient(recipientKey: Verkey) {
-    const connection = this.routingTable[recipientKey]
-
-    // TODO: function with find in name should now throw error when not found.
-    // It should either be called getRecipient and throw error
-    // or findRecipient and return null
-    if (!connection) {
-      throw new Error(`Routing entry for recipientKey ${recipientKey} does not exists.`)
-    }
-
-    return connection
-  }
   // Taken from Provisioning Service
-  public async create(connectionRecord: ConnectionRecord): Promise<MediationRecord> {
+  public async registerMediator(connectionRecord: ConnectionRecord): Promise<MediationRecord> {
     const mediationRecord = new MediationRecord({
       connectionRecord,
     })
@@ -197,7 +147,7 @@ export class MediationRecipientService extends EventEmitter {
   }
 
   //  Taken from ConsumerRoutingService
-  public async createRoute(verkey: Verkey) {
+  public async sendAddKeylistUpdate(verkey: Verkey) {
     this.logger.debug(`Registering route for verkey '${verkey}' at mediator`)
 
     if (!this.agentConfig.inboundConnection) {
@@ -217,28 +167,6 @@ export class MediationRecipientService extends EventEmitter {
       const outboundMessage = createOutboundMessage(routingConnection, keylistUpdateMessage)
       await this.messageSender.sendMessage(outboundMessage)
     }
-  }
-
-  public saveRoute(recipientKey: Verkey, connection: ConnectionRecord) {
-    if (this.routingTable[recipientKey]) {
-      throw new Error(`Routing entry for recipientKey ${recipientKey} already exists.`)
-    }
-
-    this.routingTable[recipientKey] = connection
-  }
-
-  public removeRoute(recipientKey: Verkey, connection: ConnectionRecord) {
-    const storedConnection = this.routingTable[recipientKey]
-
-    if (!storedConnection) {
-      throw new Error('Cannot remove non-existing routing entry')
-    }
-
-    if (storedConnection.id !== connection.id) {
-      throw new Error('Cannot remove routing entry for another connection')
-    }
-
-    delete this.routingTable[recipientKey]
   }
 }
 
