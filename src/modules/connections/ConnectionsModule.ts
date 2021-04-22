@@ -1,16 +1,3 @@
-<<<<<<< HEAD
-import type { Verkey } from 'indy-sdk';
-import { EventEmitter } from 'events';
-
-import { AgentConfig } from '../../agent/AgentConfig';
-import { MessageSender } from '../../agent/MessageSender';
-import { createOutboundMessage } from '../../agent/helpers';
-import { Dispatcher } from '../../agent/Dispatcher';
-import { ConnectionService, ConnectionEventType, ConnectionStateChangedEvent, TrustPingService } from './services';
-import { ConnectionRecord } from './repository/ConnectionRecord';
-import { ConnectionState } from './models';
-import { ConnectionInvitationMessage } from './messages';
-=======
 import type { Verkey } from 'indy-sdk'
 import { EventEmitter } from 'events'
 
@@ -18,11 +5,10 @@ import { AgentConfig } from '../../agent/AgentConfig'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { Dispatcher } from '../../agent/Dispatcher'
-import { ConnectionService, TrustPingService } from './services'
-import { ConsumerRoutingService } from '../routing'
+import { ConnectionService, ConnectionEventType, ConnectionStateChangedEvent, TrustPingService } from './services'
 import { ConnectionRecord } from './repository/ConnectionRecord'
+import { ConnectionState } from './models'
 import { ConnectionInvitationMessage } from './messages'
->>>>>>> ce48d4225f1d3eb2ecb5e2ca1abb080d6c1c96f9
 import {
   ConnectionRequestHandler,
   ConnectionResponseHandler,
@@ -30,42 +16,29 @@ import {
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
 } from './handlers'
+import { MediationService } from '../routing'
 
 export class ConnectionsModule {
-<<<<<<< HEAD
-  private agentConfig: AgentConfig;
-  private connectionService: ConnectionService;
-  private messageSender: MessageSender;
-  private trustPingService: TrustPingService;
-=======
   private agentConfig: AgentConfig
   private connectionService: ConnectionService
-  private consumerRoutingService: ConsumerRoutingService
+  private mediationService: MediationService
   private messageSender: MessageSender
   private trustPingService: TrustPingService
->>>>>>> ce48d4225f1d3eb2ecb5e2ca1abb080d6c1c96f9
 
   public constructor(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
     trustPingService: TrustPingService,
-    messageSender: MessageSender
+    messageSender: MessageSender,
+    mediationService: MediationService
   ) {
-<<<<<<< HEAD
-    this.agentConfig = agentConfig;
-    this.connectionService = connectionService;
-    this.trustPingService = trustPingService;
-    this.messageSender = messageSender;
-    this.registerHandlers(dispatcher);
-=======
     this.agentConfig = agentConfig
     this.connectionService = connectionService
     this.trustPingService = trustPingService
-    this.consumerRoutingService = consumerRoutingService
+    this.mediationService = mediationService
     this.messageSender = messageSender
     this.registerHandlers(dispatcher)
->>>>>>> ce48d4225f1d3eb2ecb5e2ca1abb080d6c1c96f9
   }
 
   /**
@@ -92,15 +65,9 @@ export class ConnectionsModule {
 
     // If agent has inbound connection, which means it's using a mediator, we need to create a route for newly created
     // connection verkey at mediator.
-<<<<<<< HEAD
     // if (this.agentConfig.inboundConnection) {
-    //   this.RoutingService.createRoute(connectionRecord.verkey);
+    //   this.mediationService.createRoute(mediationRecord.verkey)
     // }
-=======
-    if (this.agentConfig.inboundConnection) {
-      this.consumerRoutingService.createRoute(connectionRecord.verkey)
-    }
->>>>>>> ce48d4225f1d3eb2ecb5e2ca1abb080d6c1c96f9
 
     return { connectionRecord, invitation }
   }
@@ -167,15 +134,9 @@ export class ConnectionsModule {
 
     // If agent has inbound connection, which means it's using a mediator,
     // we need to create a route for newly created connection verkey at mediator.
-<<<<<<< HEAD
     // if (this.agentConfig.inboundConnection) {
-    //   await this.RoutingService.createRoute(connectionRecord.verkey);
+    //   await this.mediationService.createRoute(connectionRecord.verkey)
     // }
-=======
-    if (this.agentConfig.inboundConnection) {
-      await this.consumerRoutingService.createRoute(connectionRecord.verkey)
-    }
->>>>>>> ce48d4225f1d3eb2ecb5e2ca1abb080d6c1c96f9
 
     const outbound = createOutboundMessage(connectionRecord, message, connectionRecord.invitation)
     await this.messageSender.sendMessage(outbound)

@@ -1,8 +1,15 @@
 import { Verkey } from 'indy-sdk'
 import EventEmitter from 'node:events'
 import { Logger } from 'tslog'
-import { RoutingTable } from '.'
-import { MediationRecord, KeylistUpdateMessage, KeylistUpdateAction, ForwardMessage } from '..'
+import {
+  MediationRecord,
+  KeylistUpdateMessage,
+  KeylistUpdateAction,
+  ForwardMessage,
+  KeylistUpdateResponseMessage,
+  KeylistUpdateResult,
+  KeylistUpdated,
+} from '..'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { MessageSender } from '../../../agent/MessageSender'
@@ -10,7 +17,10 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { Repository } from '../../../storage/Repository'
 import { OutboundMessage } from '../../../types'
 import { ConnectionRecord } from '../../connections'
-import { MediationRecordProps } from '../repository/MediationRecipientRecord'
+
+export interface RoutingTable {
+  [recipientKey: string]: ConnectionRecord | undefined
+}
 
 export class MediationService {
   private agentConfig: AgentConfig
@@ -59,18 +69,27 @@ export class MediationService {
    */
   public updateRoutes(messageContext: InboundMessageContext<KeylistUpdateMessage>, connection: ConnectionRecord) {
     const { message } = messageContext
+    const updated = []
 
     for (const update of message.updates) {
       switch (update.action) {
         case KeylistUpdateAction.add:
-          const record = new MediationRecord({ connectionId: connection.id, recipientKey: update.recipientKey })
-          //   Add save
+          this.saveRoute(update.recipientKey, connection)
           break
         case KeylistUpdateAction.remove:
-          //   TODO - Remove from registry
+          this.removeRoute(update.recipientKey, connection)
           break
       }
+
+      updated.push(
+        new KeylistUpdated({
+          action: update.action,
+          recipientKey: update.recipientKey,
+          result: KeylistUpdateResult.Success,
+        })
+      )
     }
+    return new KeylistUpdateResponseMessage({ updated })
   }
 
   public forward(messageContext: InboundMessageContext<ForwardMessage>): OutboundMessage<ForwardMessage> {
@@ -94,6 +113,10 @@ export class MediationService {
     return createOutboundMessage(connection, message)
   }
 
+  public getRoutes() {
+    return this.routingTable
+  }
+
   public findRecipient(recipientKey: Verkey) {
     const connection = this.routingTable[recipientKey]
 
@@ -106,9 +129,30 @@ export class MediationService {
 
     return connection
   }
+
+  public saveRoute(recipientKey: Verkey, connection: ConnectionRecord) {
+    if (this.routingTable[recipientKey]) {
+      throw new Error(`Routing entry for recipientKey ${recipientKey} already exists.`)
+    }
+
+    this.routingTable[recipientKey] = connection
+  }
+
+  public removeRoute(recipientKey: Verkey, connection: ConnectionRecord) {
+    const storedConnection = this.routingTable[recipientKey]
+
+    if (!storedConnection) {
+      throw new Error('Cannot remove non-existing routing entry')
+    }
+
+    if (storedConnection.id !== connection.id) {
+      throw new Error('Cannot remove routing entry for another connection')
+    }
+
+    delete this.routingTable[recipientKey]
+  }
 }
 
 export interface MediationProps {
-  conectionId: string
-  recipientKey: string
+  connectionRecord: ConnectionRecord
 }
