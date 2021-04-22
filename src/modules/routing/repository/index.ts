@@ -1,2 +1,2 @@
-export * from './MediationRecipientRecord'
+export * from './DefaultMediationRecord'
 export * from './MediationRecord'
