@@ -75,7 +75,8 @@
     },
     "npm": {
       "skipChecks": true,
-      "ignoreVersion": true
+      "ignoreVersion": true,
+      "tag": "latest"
     },
     "git": {
       "requireBranch": "main",

@@ -6,6 +6,7 @@ export enum RecordType {
   CredentialRecord = 'CredentialRecord',
   ProofRecord = 'PresentationRecord',
   MediationRecord = 'MediationRecord',
+  DefaultMediationRecord = 'DefaultMediationRecord',
 }
 
 export type Tags = Record<string, string | undefined>

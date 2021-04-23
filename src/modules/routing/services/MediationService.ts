@@ -1,16 +1,27 @@
-import type { Verkey } from 'indy-sdk'
-import { createOutboundMessage } from '../../../agent/helpers'
+import { Verkey } from 'indy-sdk'
+import {
+  MediationRecord,
+  KeylistUpdateMessage,
+  KeylistUpdateAction,
+  ForwardMessage,
+  KeylistUpdateResponseMessage,
+  KeylistUpdateResult,
+  KeylistUpdated,
+  MediationRecordProps,
+} from '..'
 import { AgentConfig } from '../../../agent/AgentConfig'
+import { createOutboundMessage } from '../../../agent/helpers'
 import { MessageSender } from '../../../agent/MessageSender'
-import { KeylistUpdateMessage, KeylistUpdate, KeylistUpdateAction, ForwardMessage, KeylistUpdateResponseMessage } from '../messages'
 import { Logger } from '../../../logger'
 import { EventEmitter } from 'events'
-import { RoutingTable } from '../services'
-import { MediationRecord } from '../repository'
 import { Repository } from '../../../storage/Repository'
-import { ConnectionRecord } from 'aries-framework'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { OutboundMessage } from '../../../types'
+import { ConnectionRecord } from '../../connections'
+
+export interface RoutingTable {
+  [recipientKey: string]: ConnectionRecord | undefined
+}
 
 export enum MediationEventType {
   Grant = 'GRANT',
@@ -33,10 +44,10 @@ export class MediationService extends EventEmitter {
     this.agentConfig = agentConfig
   }
   
-  public async create({ connectionId, recipientKey }: MediationProps): Promise<MediationRecord> {
+  public async create({ connectionId, recipientKeys }: MediationRecordProps): Promise<MediationRecord> {
     const mediationRecord = new MediationRecord({
       connectionId,
-      recipientKey,
+      recipientKeys,
     })
     await this.mediationRepository.save(mediationRecord)
     return mediationRecord
@@ -53,11 +64,6 @@ export class MediationService extends EventEmitter {
     }
   }
 
-
-  public fetchMediatorById(mediatorId: string): string {
-    const mediator = 'DummyMediator'
-    return mediator
-  }
   // Copied from old Service
 
   private routingTable: RoutingTable = {}
@@ -69,14 +75,8 @@ export class MediationService extends EventEmitter {
   /**
    * @todo use connection from message context
    */
-   public updateRoutes(messageContext: InboundMessageContext<KeylistUpdateMessage>): KeylistUpdateResponseMessage {
-    const { connection, message } = messageContext
-
-    if (!connection) {
-      // TODO We could eventually remove this check if we do it at some higher level where we create messageContext that must have a connection.
-      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
-    }
-
+  public updateRoutes(messageContext: InboundMessageContext<KeylistUpdateMessage>, connection: ConnectionRecord) {
+    const { message } = messageContext
     const updated = []
 
     for (const update of message.updates) {
@@ -155,10 +155,4 @@ export class MediationService extends EventEmitter {
 
     return connection
   }
-
-}
-
-export interface MediationProps {
-  connectionId: string
-  recipientKey: string
 }
