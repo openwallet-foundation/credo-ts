@@ -35,15 +35,18 @@ export class MediationService extends EventEmitter {
   private agentConfig: AgentConfig
   private mediationRepository: Repository<MediationRecord>
 
-
-  public constructor(messageSender: MessageSender, mediationRepository: Repository<MediationRecord>, agentConfig: AgentConfig) {
+  public constructor(
+    messageSender: MessageSender,
+    mediationRepository: Repository<MediationRecord>,
+    agentConfig: AgentConfig
+  ) {
     super()
     this.messageSender = messageSender
     this.mediationRepository = mediationRepository
     this.logger = agentConfig.logger
     this.agentConfig = agentConfig
   }
-  
+
   public async create({ connectionId, recipientKeys }: MediationRecordProps): Promise<MediationRecord> {
     const mediationRecord = new MediationRecord({
       connectionId,
@@ -67,7 +70,7 @@ export class MediationService extends EventEmitter {
   // Copied from old Service
 
   private routingTable: RoutingTable = {}
-  
+
   public getRoutes() {
     return this.routingTable
   }
@@ -100,7 +103,7 @@ export class MediationService extends EventEmitter {
 
     return new KeylistUpdateResponseMessage({ updated })
   }
-  
+
   public saveRoute(recipientKey: Verkey, connection: ConnectionRecord) {
     if (this.routingTable[recipientKey]) {
       throw new Error(`Routing entry for recipientKey ${recipientKey} already exists.`)

@@ -115,8 +115,12 @@ export class MediationRecipientService extends EventEmitter {
 
   // Adding empty methods
   public getDefaultMediatorId(): string | undefined {
-    return this.defaultMediator.mediationId
+    if (this.defaultMediator !== undefined) {
+      return this.defaultMediator.mediationId
+    }
+    return undefined
   }
+
   public getDefaultMediator() {
     return this.defaultMediator
   }
