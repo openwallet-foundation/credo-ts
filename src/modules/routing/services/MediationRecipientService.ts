@@ -18,7 +18,7 @@ import { RoutingTable } from './MediationService'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { OutboundMessage } from '../../../types'
 import { isIndyError } from '../../../utils/indyError'
-import { MediationRecord } from '..'
+import { DefaultMediationRecord, MediationRecord } from '..'
 
 export enum MediationRecipientEventType {
   Granted = 'GRANTED',
@@ -32,7 +32,7 @@ export class MediationRecipientService extends EventEmitter {
   private agentConfig: AgentConfig
   private mediatorRepository: Repository<MediationRecord>
   private messageSender: MessageSender
-  private defaultMediatorId?: string
+  private defaultMediator?: DefaultMediationRecord
 
   // TODO: Review this, placeholder
   public constructor(
@@ -109,24 +109,24 @@ export class MediationRecipientService extends EventEmitter {
       }
     }
   }
-  public getMediators() {
-    return this.mediatorRepository.findAll()
+  public async getMediators() {
+    return await this.mediatorRepository.findAll()
   }
 
   // Adding empty methods
-  public getDefaultMediatorId() {
-    // The default mediator id
+  public getDefaultMediatorId(): string | undefined {
+    return this.defaultMediator.mediationId
   }
   public getDefaultMediator() {
-    // The default mediator
+    return this.defaultMediator
   }
 
-  public setDefaultMediator(mediatorId: string) {
-    // The default mediator
+  public setDefaultMediator(mediator: DefaultMediationRecord) {
+    this.defaultMediator = mediator
   }
 
   public clearDefaultMediator() {
-    // The default mediator
+    delete this.defaultMediator
   }
 
   public prepareKeylistUpdateMessage(
@@ -153,10 +153,6 @@ export class MediationRecipientService extends EventEmitter {
   }
 
   public reqeustDenied(mediationRecord: MediationRecord, deny: MediationDeniedMessage) {
-    // The default mediator
-  }
-
-  public getDefaultMediatorById(mediatorId: string) {
     // The default mediator
   }
 

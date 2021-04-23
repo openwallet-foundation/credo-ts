@@ -58,12 +58,34 @@ export class MediationRecipientModule {
   }
 
   public async listMediators() {
-    return this.mediationRecipientService.getMediators();
+    return await this.mediationRecipientService.getMediators();
   }
   
-  public async requestMediation(connectionReord: ConnectionRecord) {
-    // const mediatorRecord = await this.mediationRecipientService.createMediationRequest(connectionReord);
+  public async getDefaultMediatorId() {
+    return this.mediationRecipientService.getDefaultMediatorId()
   }
+
+  public async getDefaultMediator(){
+    const mediatorId: string | undefined = this.mediationRecipientService.getDefaultMediatorId()
+    if(mediatorId === undefined ){
+      return this.mediationRecipientService.fetchMediatorById(mediatorId)
+    }
+
+  }
+  public async requestMediation(connectionReord: ConnectionRecord) {
+    const mediationRequest = await this.mediationRecipientService.prepareRequest(connectionReord.id)
+    await this.messageSender.sendMessage(mediationRequest)
+  }
+
+  
+  public async keylistUpdate(){
+
+  }
+
+  public async keylistquery(){
+
+  }
+
   // Register handlers for the several messages for the mediator.
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService));
