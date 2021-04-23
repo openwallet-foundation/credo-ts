@@ -109,6 +109,9 @@ export class MediationRecipientService extends EventEmitter {
       }
     }
   }
+  public getMediators() {
+    return this.mediatorRepository.findAll()
+  }
 
   // Adding empty methods
   public getDefaultMediatorId() {
@@ -141,7 +144,7 @@ export class MediationRecipientService extends EventEmitter {
     // Method here
   }
 
-  public prepareRequest(connectionId: string, mediatorTerms: [string], recipientTerms: [string]) {
+  public prepareRequest(connectionId: string):OutboundMessage {
     // The default mediator
   }
 

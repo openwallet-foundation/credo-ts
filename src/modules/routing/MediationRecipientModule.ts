@@ -57,9 +57,8 @@ export class MediationRecipientModule {
     return this.agentConfig.inboundConnection
   }
 
-  public async getMediators() {
-    //   TODO - fetch mediators from wallet. I'm guessing that this would have to poll all mediators and get their statuses?
-    // return this.mediationService.getMediators();
+  public async listMediators() {
+    return this.mediationRecipientService.getMediators();
   }
   
   public async requestMediation(connectionReord: ConnectionRecord) {
