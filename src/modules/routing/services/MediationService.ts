@@ -10,18 +10,18 @@ import {
   MediationRecordProps,
   MediationRole,
   MediationState,
+  MediationRequestMessage,
   MediationDenyMessage,
   MediationGrantMessage,
 } from '..'
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { createOutboundMessage } from '../../../agent/helpers'
 import { MessageSender } from '../../../agent/MessageSender'
 import { Logger } from '../../../logger'
 import { EventEmitter } from 'events'
 import { Repository } from '../../../storage/Repository'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import { OutboundMessage } from '../../../types'
 import { ConnectionRecord } from '../../connections'
+import { BaseMessage } from '../../../agent/BaseMessage'
 
 export interface RoutingTable {
   [recipientKey: string]: ConnectionRecord | undefined
@@ -51,150 +51,113 @@ export class MediationService extends EventEmitter {
     this.agentConfig = agentConfig
   }
 
-  public async create({ connectionId, recipientKeys }: MediationRecordProps): Promise<MediationRecord> {
+  public async create({ state, role, connectionId, recipientKeys }: MediationRecordProps): Promise<MediationRecord> {
     const mediationRecord = new MediationRecord({
+      state,
+      role,
       connectionId,
       recipientKeys,
+      tags: {
+        state,
+        role,
+        connectionId,
+      },
     })
     await this.mediationRepository.save(mediationRecord)
     return mediationRecord
   }
 
-  public async find(mediatorId: string): Promise<string | MediationRecord> {
-    try {
-      const connection = await this.mediationRepository.find(mediatorId)
-
-      return connection
-    } catch {
-      return 'No mediator found for ID'
-      //  TODO - Make this better
-    }
-  }
-
-  // Copied from old Service
-
-  private routingTable: RoutingTable = {}
-
-  public getRoutes() {
-    return this.routingTable
-  }
-
-  /**
-   * @todo use connection from message context
-   */
-  public updateRoutes(messageContext: InboundMessageContext<KeylistUpdateMessage>, connection: ConnectionRecord) {
-    const { message } = messageContext
-    const updated = []
-
-    for (const update of message.updates) {
-      switch (update.action) {
-        case KeylistUpdateAction.add:
-          this.saveRoute(update.recipientKey, connection)
-          break
-        case KeylistUpdateAction.remove:
-          this.removeRoute(update.recipientKey, connection)
-          break
-      }
-
-      updated.push(
-        new KeylistUpdated({
-          action: update.action,
-          recipientKey: update.recipientKey,
-          result: KeylistUpdateResult.Success,
-        })
-      )
-    }
-
-    return new KeylistUpdateResponseMessage({ updated })
-  }
-
-  public saveRoute(recipientKey: Verkey, connection: ConnectionRecord) {
-    if (this.routingTable[recipientKey]) {
-      throw new Error(`Routing entry for recipientKey ${recipientKey} already exists.`)
-    }
-    this.routingTable[recipientKey] = connection
-  }
-
-  public removeRoute(recipientKey: Verkey, connection: ConnectionRecord) {
-    const storedConnection = this.routingTable[recipientKey]
-
-    if (!storedConnection) {
-      throw new Error('Cannot remove non-existing routing entry')
-    }
-
-    if (storedConnection.id !== connection.id) {
-      throw new Error('Cannot remove routing entry for another connection')
-    }
-
-    delete this.routingTable[recipientKey]
-  }
-
-  public forward(messageContext: InboundMessageContext<ForwardMessage>): OutboundMessage<ForwardMessage> {
-    const { message, recipientVerkey } = messageContext
-
-    // TODO: update to class-validator validation
-    if (!message.to) {
-      throw new Error('Invalid Message: Missing required attribute "to"')
-    }
-
-    const connection = this.findRecipient(message.to)
-
-    if (!connection) {
-      throw new Error(`Connection for verkey ${recipientVerkey} not found!`)
-    }
-
-    if (!connection.theirKey) {
-      throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`)
-    }
-
-    return createOutboundMessage(connection, message)
-  }
-
-  public findRecipient(recipientKey: Verkey) {
-    const connection = this.routingTable[recipientKey]
-
-    // TODO: function with find in name should now throw error when not found.
-    // It should either be called getRecipient and throw error
-    // or findRecipient and return null
-    if (!connection) {
-      throw new Error(`Routing entry for recipientKey ${recipientKey} does not exists.`)
-    }
-
+  private _assertConnection(connection: ConnectionRecord | undefined, msgType: BaseMessage): ConnectionRecord{
+    if (!connection) throw Error("in bound connection is required for ${msgType.name}!")
+    connection?.assertReady()
     return connection
   }
 
-  public setRoutingKey(verkey: Verkey) {
-    this.routingKey = verkey
+  public async processKeylistUpdateRequest(messageContext: InboundMessageContext<KeylistUpdateMessage>) {
+    const {message} = messageContext
+    const connection = this._assertConnection(messageContext.connection,ForwardMessage)
+    const updated = []
+    for (const update of message.updates) {
+      const mediationRecord = await this.findRecipientByConnectionId(connection.id)
+      let update_
+      update_ = new KeylistUpdated({
+        action: update.action,
+        recipientKey: update.recipientKey,
+        result: KeylistUpdateResult.NoChange,
+      })
+      if (update.action === KeylistUpdateAction.add) {
+        update_.result = await this.saveRoute(update.recipientKey,mediationRecord)
+        updated.push(update_)
+      } else if (update.action === KeylistUpdateAction.remove) {
+        update_.result = await this.removeRoute(update.recipientKey,mediationRecord)
+        updated.push(update_)
+      }
+    }
+    return new KeylistUpdateResponseMessage({ updated })
   }
 
-  public async grantMediation(connection: ConnectionRecord, mediation: MediationRecord) {
-    mediation.routingKeys = this.routingKey ? [this.routingKey] : []
+  public async saveRoute(recipientKey: Verkey, mediationRecord: MediationRecord | null): Promise<KeylistUpdateResult> {
+    if (mediationRecord) {
+      mediationRecord.recipientKeys.push(recipientKey)
+      this.mediationRepository.update(mediationRecord)
+      return KeylistUpdateResult.Success
+    }
+    return KeylistUpdateResult.ServerError
+  }
 
-    const grantMediationMessage = new MediationGrantMessage({
+  public async removeRoute(recipientKey: Verkey, mediationRecord: MediationRecord | null) {
+    if (mediationRecord) {
+      const index = mediationRecord.recipientKeys.indexOf(recipientKey, 0)
+      if (index > -1) {
+        mediationRecord.recipientKeys.splice(index, 1)
+      }
+      this.mediationRepository.update(mediationRecord)
+      return KeylistUpdateResult.Success
+    }
+    return KeylistUpdateResult.ServerError
+  }
+
+  public async findRecipient(recipientKey: Verkey): Promise<string | null> {
+    const records = await this.findAll()
+    for (const record of records) {
+      for (const key in record.recipientKeys) {
+        if (recipientKey == key) {
+          return record.connectionId
+        }
+      }
+    }
+    return null
+  }
+
+  public async findRecipientByConnectionId(connectionId: string): Promise<MediationRecord | null> {
+    let records
+    records = await this.mediationRepository.findByQuery({ connectionId })
+    return records[0]
+  }
+
+
+  public async prepareGrantMediationMessage(mediation: MediationRecord) {
+    mediation.state = MediationState.Granted
+    await this.mediationRepository.update(mediation)
+    return new MediationGrantMessage({
       endpoint: this.agentConfig.getEndpoint(),
-      routing_keys: mediation.routingKeys,
+      routing_keys: mediation.recipientKeys, // TODO: should this be empty?
     })
-
-    return createOutboundMessage(connection, grantMediationMessage)
   }
 
   public async processMediationRequest(messageContext: InboundMessageContext<MediationRequestMessage>) {
-    const connection = messageContext.connection
-
+    const {message} = messageContext
     // Assert connection
-    connection?.assertReady()
-    if (!connection) {
-      throw new Error('No connection associated with incoming mediation grant message')
-    }
+    const connection = this._assertConnection(messageContext.connection,ForwardMessage)
 
     const mediationRecord = await this.create({
       connectionId: connection.id,
       role: MediationRole.Mediator,
       state: MediationState.Init,
     })
-
-    // Mediation can be either granted or denied. Let business logic decide that
-    await this.updateState(mediationRecord, MediationState.Requested)
+    this.mediationRepository.save(mediationRecord)
+    // Mediation can be either granted or denied. Someday, let business logic decide that
+    return this.prepareGrantMediationMessage(mediationRecord)
   }
 
   public async findByConnectionId(id: string): Promise<MediationRecord | null> {
@@ -209,31 +172,8 @@ export class MediationService extends EventEmitter {
     return null
   }
 
-  public async findAll(): Promise<MediationRecord[] | null> {
+  public async findAll(): Promise<MediationRecord[]> {
     return await this.mediationRepository.findAll()
-  }
-
-  /**
-   * Update the record to a new state and emit an state changed event. Also updates the record
-   * in storage.
-   *
-   * @param proofRecord The proof record to update the state for
-   * @param newState The state to update to
-   *
-   */
-  private async updateState(mediationRecord: MediationRecord, newState: MediationState) {
-    const previousState = mediationRecord.state
-
-    mediationRecord.state = newState
-
-    await this.mediationRepository.update(mediationRecord)
-
-    const event: MediationStateChangedEvent = {
-      mediationRecord,
-      previousState: previousState,
-    }
-
-    this.emit(MediationEventType.StateChanged, event)
   }
 }
 

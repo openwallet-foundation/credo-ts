@@ -19,7 +19,7 @@ import { MediationEventType, MediationStateChangedEvent, RoutingTable } from './
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { OutboundMessage } from '../../../types'
 import { isIndyError } from '../../../utils/indyError'
-import { DefaultMediationRecord, MediationRecord, MediationRecordProps, MediationRole, MediationState } from '..'
+import { DefaultMediationRecord, MediationRecord, MediationRecordProps, MediationRole, MediationState, MediationStorageProps } from '..'
 
 export enum MediationRecipientEventType {
   Granted = 'GRANTED',
@@ -142,7 +142,7 @@ export class MediationRecipientService extends EventEmitter {
     return mediationRecord
   }
 
-  public async create(options: MediationRecordProps): Promise<MediationRecord> {
+  public async create(options: MediationStorageProps): Promise<MediationRecord> {
     const mediationRecord = new MediationRecord(options)
     await this.mediatorRepository.save(mediationRecord)
     return mediationRecord

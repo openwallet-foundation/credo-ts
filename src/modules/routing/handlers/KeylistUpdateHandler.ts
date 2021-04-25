@@ -1,15 +1,12 @@
 import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import { ProviderRoutingService } from '../services'
-import { KeylistUpdateMessage } from '../messages'
+import { MediationService, KeylistUpdateMessage } from '..'
 import { createOutboundMessage } from '../../../agent/helpers'
 
 export class KeylistUpdateHandler implements Handler {
-  private routingService: ProviderRoutingService
+  private mediationService: MediationService
   public supportedMessages = [KeylistUpdateMessage]
 
-  public constructor(routingService: ProviderRoutingService) {
-    this.routingService = routingService
-  }
+  public constructor(mediationService: MediationService) {}
 
   public async handle(messageContext: HandlerInboundMessage<KeylistUpdateHandler>) {
     if (!messageContext.connection) {

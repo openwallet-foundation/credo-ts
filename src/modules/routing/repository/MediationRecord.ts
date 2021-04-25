@@ -9,13 +9,13 @@ export interface MediationRecordProps {
   role: MediationRole
   createdAt?: number
   connectionId: string
-  endpoint: string
-  recipientKeys: [Verkey]
+  endpoint?: string
+  recipientKeys?: [Verkey]
 }
 
 export interface MediationTags extends Tags {
-  state: string
-  role: string
+  state: MediationState
+  role: MediationRole
   connectionId: string
 }
 
