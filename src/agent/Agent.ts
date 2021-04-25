@@ -132,15 +132,10 @@ export class Agent {
   public async init() {
     await this.wallet.init()
 
-    const { publicDidSeed, genesisPath, poolName, mediatorRecordId } = this.agentConfig
+    const { publicDidSeed, genesisPath, poolName } = this.agentConfig
     if (publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
       await this.wallet.initPublicDid({ seed: publicDidSeed })
-
-      // Init routing key for mediation service (server role)
-      if (this.wallet.publicDid) {
-        this.mediationService.setRoutingKey(this.wallet.publicDid.verkey)
-      }
     }
 
     // If the genesisPath is provided in the config, we will automatically handle ledger connection
@@ -149,21 +144,6 @@ export class Agent {
       await this.ledger.connect(poolName, {
         genesis_txn: genesisPath,
       })
-    }
-
-    // If mediator record Id is provided, search for it and (if record exists) update other properties
-    // accordingly, overriding them if needed
-    if (mediatorRecordId) {
-      const mediationRecord = await this.mediationRecipientService.findById(mediatorRecordId)
-      if (mediationRecord) {
-        const connectionRecord = await this.connections.getById(mediationRecord.connectionId)
-        if (connectionRecord) {
-          this.setInboundConnection({
-            connection: connectionRecord,
-            verkey: mediationRecord.recipientKeys[0],
-          })
-        }
-      }
     }
 
     if (this.inboundTransporter) {
