@@ -10,7 +10,7 @@ export interface MediationRecordProps {
   createdAt?: number
   connectionId: string
   endpoint?: string
-  recipientKeys?: [Verkey]
+  recipientKeys?: Verkey[]
 }
 
 export interface MediationTags extends Tags {
@@ -29,7 +29,7 @@ export class MediationRecord extends BaseRecord implements MediationStorageProps
   public tags: MediationTags
   public connectionId: string
   public endpoint: string
-  public recipientKeys: [Verkey]
+  public recipientKeys: Verkey[]
 
   public static readonly type: RecordType = RecordType.MediationRecord
   public readonly type = MediationRecord.type
