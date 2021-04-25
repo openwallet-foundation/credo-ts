@@ -32,7 +32,7 @@ export class AgentConfig {
   }
 
   public get mediatorRecordId() {
-    return this.initConfig.mediatorRecordId;
+    return this.initConfig.mediatorRecordId
   }
 
   public get poolName() {

@@ -15,7 +15,7 @@ export interface MediationRequestMessageOptions {
  */
 export class MediationRequestMessage extends AgentMessage {
   public constructor(options: MediationRequestMessageOptions) {
-    super();
+    super()
 
     if (options) {
       this.id = options.id || this.generateId()

@@ -22,8 +22,8 @@ export class MediationRecord extends BaseRecord {
   public state: MediationState
   public role: MediationRole
 
-  public static readonly type: RecordType = RecordType.MediationRecord;
-  public readonly type = MediationRecord.type;
+  public static readonly type: RecordType = RecordType.MediationRecord
+  public readonly type = MediationRecord.type
 
   public constructor(props: MediationRecordProps) {
     super(props.id ?? uuid(), props.createdAt ?? Date.now())
@@ -37,13 +37,11 @@ export class MediationRecord extends BaseRecord {
 
   public assertState(expectedStates: MediationState | MediationState[]) {
     if (!Array.isArray(expectedStates)) {
-      expectedStates = [expectedStates];
+      expectedStates = [expectedStates]
     }
 
     if (!expectedStates.includes(this.state)) {
-      throw new Error(
-        `Proof record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`
-      );
+      throw new Error(`Proof record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`)
     }
   }
 
@@ -51,7 +49,7 @@ export class MediationRecord extends BaseRecord {
     if (this.connectionId !== currentConnectionId) {
       throw new Error(
         `Proof record is associated with connection '${this.connectionId}'. Current connection is '${currentConnectionId}'`
-      );
+      )
     }
   }
 }

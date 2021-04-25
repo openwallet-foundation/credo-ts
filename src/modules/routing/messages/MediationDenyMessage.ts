@@ -14,7 +14,7 @@ export interface MediationDenyMessageOptions {
  */
 export class MediationDenyMessage extends AgentMessage {
   public constructor(options: MediationDenyMessageOptions) {
-    super();
+    super()
 
     if (options) {
       this.id = options.id || this.generateId()

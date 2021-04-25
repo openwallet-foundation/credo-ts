@@ -8,8 +8,7 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { ConnectionService, TrustPingService } from './services'
 import { ConsumerRoutingService } from '../routing'
 import { ConnectionRecord } from './repository/ConnectionRecord'
-import { ConnectionState } from './models'
-import { ConnectionInvitationMessage, ConnectionResponseMessage, TrustPingResponseMessage } from './messages'
+import { ConnectionInvitationMessage } from './messages'
 import {
   ConnectionRequestHandler,
   ConnectionResponseHandler,
@@ -17,6 +16,7 @@ import {
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
 } from './handlers'
+import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 
 export class ConnectionsModule {
   private agentConfig: AgentConfig
@@ -99,17 +99,11 @@ export class ConnectionsModule {
         connectionRecord: connectionRecord,
       } = await this.connectionService.createRequest(connection.id)
 
-      const connectionResponse = await this.messageSender.sendAndReceiveMessage(
-        createOutboundMessage(connectionRecord, connectionRequest, connectionRecord.invitation),
-        ConnectionResponseMessage
-      );
-      await this.connectionService.processResponse(connectionResponse)
+      const outboundMessage = createOutboundMessage(connectionRecord, connectionRequest, connectionRecord.invitation)
+      outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
 
-      const { message: trustPing } = await this.connectionService.createTrustPing(connectionRecord.id)
-      await this.messageSender.sendAndReceiveMessage(
-        createOutboundMessage(connectionRecord, trustPing),
-        TrustPingResponseMessage
-      );
+      await this.messageSender.sendMessage(outboundMessage)
+      await this.connectionService.returnWhenIsConnected(connectionRecord.id)
     } else {
       // if auto accept is enabled (either on the record or the global agent config)
       // we directly send a connection request

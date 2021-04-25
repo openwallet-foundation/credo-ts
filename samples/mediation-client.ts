@@ -1,6 +1,6 @@
-import express, { Express } from 'express';
-import fetch from 'node-fetch';
-import cors from 'cors';
+import express, { Express } from 'express'
+import fetch from 'node-fetch'
+import cors from 'cors'
 import {
   Agent,
   InboundTransporter,
@@ -14,74 +14,86 @@ import {
   BasicMessageEventType,
   BasicMessageReceivedEvent,
   ConnectionRecord,
-} from '../src';
-import testLogger, { TestLogger } from '../src/__tests__/logger';
-import indy from 'indy-sdk';
-import { resolve } from 'path';
-import { MediationEventType, MediationStateChangedEvent } from '../src/modules/routing/services/MediationService';
-import { MediationState } from '../src/modules/routing/models/MediationState';
-import { sleep } from '../src/__tests__/helpers';
+} from '../src'
+import testLogger, { TestLogger } from '../src/__tests__/logger'
+import indy from 'indy-sdk'
+import { resolve } from 'path'
+import { MediationEventType, MediationStateChangedEvent } from '../src/modules/routing/services/MediationService'
+import { MediationState } from '../src/modules/routing/models/MediationState'
+import { sleep } from '../src/__tests__/helpers'
+import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
 
 class HttpInboundTransporter implements InboundTransporter {
-  private app: Express;
-  public stop: boolean;
+  private app: Express
+  public stop: boolean
 
   public constructor(app: Express) {
-    this.app = app;
-    this.stop = false;
+    this.app = app
+    this.stop = false
   }
 
-  public start(agent: Agent, mediatorConnection?: ConnectionRecord) {
+  public async start(agent: Agent, mediatorConnection?: ConnectionRecord) {
     this.app.post('/msg', async (req, res) => {
-      const message = req.body;
-      const packedMessage = JSON.parse(message);
+      const message = req.body
+      const packedMessage = JSON.parse(message)
 
+      testLogger.debug('Received message: ' + JSON.stringify(packedMessage))
       try {
-        const outboundMessage = await agent.receiveMessage(packedMessage);
+        const outboundMessage = await agent.receiveMessage(packedMessage)
         if (outboundMessage) {
-          res.status(200).json(outboundMessage.payload).end();
+          res.status(200).json(outboundMessage.payload).end()
         } else {
-          res.status(200).end();
+          res.status(200).end()
         }
       } catch (e) {
-        testLogger.debug('Error: ' + e);
-        res.status(200).end();
+        testLogger.debug('Error: ' + e)
+        res.status(200).end()
       }
-    });
+    })
 
-    this.stop = false;
+    this.stop = false
 
     if (mediatorConnection) {
-      this.pollDownloadMessages(agent, mediatorConnection);
+      this.pollDownloadMessages(agent, mediatorConnection)
     }
   }
 
   private pollDownloadMessages(agent: Agent, mediatorConnection: ConnectionRecord) {
-    new Promise(async () => {
+    const loop = async () => {
       while (!this.stop) {
-        const downloadedMessages = await agent.routing.downloadMessages(mediatorConnection);
-        const messages = [...downloadedMessages];
-        testLogger.test('downloaded messages', messages);
-        while (messages && messages.length > 0) {
-          const message = messages.shift();
-          await agent.receiveMessage(message);
-        }
-
-        await sleep(3000);
+        await agent.routing.downloadMessages(mediatorConnection)
+        await sleep(5000)
       }
-    });
+    }
+    new Promise(() => {
+      loop()
+    })
   }
 }
 
 class HttpOutboundTransporter implements OutboundTransporter {
+  private agent: Agent
+  private messageRepository?: InMemoryMessageRepository
+
+  public constructor(agent: Agent, messageRepository?: InMemoryMessageRepository) {
+    this.agent = agent
+    this.messageRepository = messageRepository
+  }
+
   public async sendMessage(outboundPackage: OutboundPackage, receiveReply: boolean) {
-    const { payload, endpoint } = outboundPackage;
+    const { connection, payload, endpoint } = outboundPackage
 
     if (!endpoint) {
-      throw new Error(`Missing endpoint. I don't know how and where to send the message.`);
+      throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
     }
 
     try {
+      if (endpoint == 'didcomm:transport/queue' && this.messageRepository) {
+        testLogger.debug('Storing message for queue: ', { connection, payload })
+        this.messageRepository.save(connection.theirKey!, payload)
+        return
+      }
+
       if (receiveReply) {
         const response = await fetch(endpoint, {
           method: 'POST',
@@ -89,11 +101,16 @@ class HttpOutboundTransporter implements OutboundTransporter {
             'Content-Type': 'application/ssi-agent-wire',
           },
           body: JSON.stringify(payload),
-        });
+        })
 
-        const data = await response.text();
-        const wireMessage = JSON.parse(data);
-        return wireMessage;
+        const data = await response.text()
+        if (data) {
+          testLogger.debug(`Response received:\n ${response}`)
+          const wireMessage = JSON.parse(data)
+          this.agent.receiveMessage(wireMessage)
+        } else {
+          testLogger.debug(`No response received.`)
+        }
       } else {
         const rsp = await fetch(endpoint, {
           method: 'POST',
@@ -101,13 +118,12 @@ class HttpOutboundTransporter implements OutboundTransporter {
             'Content-Type': 'application/ssi-agent-wire',
           },
           body: JSON.stringify(payload),
-        });
-
-        testLogger.debug('rsp: ' + rsp.status);
+        })
+        testLogger.debug('rsp status: ' + rsp.status)
       }
     } catch (e) {
-      testLogger.debug('error sending message', e);
-      throw e;
+      testLogger.debug('error sending message', e)
+      throw e
     }
   }
 }
@@ -127,144 +143,149 @@ const agentConfig: InitConfig = {
   autoAcceptConnections: true,
   logger: new TestLogger(LogLevel.debug),
   indy: indy,
-};
+}
 
-const PORT = Number(agentConfig.port);
-const app = express();
+const PORT = Number(agentConfig.port)
+const app = express()
 
-app.use(cors());
-app.use(express.json());
+app.use(cors())
+app.use(express.json())
 app.use(
   express.text({
     type: ['application/ssi-agent-wire', 'text/plain'],
   })
-);
-app.set('json spaces', 2);
+)
+app.set('json spaces', 2)
 
-const messageSender = new HttpOutboundTransporter();
-const messageReceiver = new HttpInboundTransporter(app);
+const agent = new Agent(agentConfig)
 
-const agent = new Agent(agentConfig, messageReceiver, messageSender);
+const messageSender = new HttpOutboundTransporter(agent)
+const messageReceiver = new HttpInboundTransporter(app)
+
+agent.setInboundTransporter(messageReceiver)
+agent.setOutboundTransporter(messageSender)
 
 agent.connections.events.on(ConnectionEventType.StateChanged, async (event: ConnectionStateChangedEvent) => {
-  testLogger.info('Connection state changed for ' + event.connectionRecord.id);
-  testLogger.debug('Previous state: ' + event.previousState + ' New state: ' + event.connectionRecord.state);
+  testLogger.info('Connection state changed for ' + event.connectionRecord.id)
+  testLogger.debug('Previous state: ' + event.previousState + ' New state: ' + event.connectionRecord.state)
 
   if (event.connectionRecord.alias == 'mediator' && event.connectionRecord.state == ConnectionState.Complete) {
-    testLogger.info('Mediator connection completed. Requesting mediation...');
+    testLogger.info('Mediator connection completed. Requesting mediation...')
+
+    await agent.routing.requestMediation(event.connectionRecord)
 
     // Start polling responses from this connection
-    messageReceiver.stop = true;
-    messageReceiver.start(agent, event.connectionRecord);
+    messageReceiver.stop = true
+    messageReceiver.start(agent, event.connectionRecord)
 
     // Request mediation
-    testLogger.info('Mediation Request sent');
+    testLogger.info('Mediation Request sent')
   }
-});
+})
 
 agent.routing.mediationEvents.on(MediationEventType.StateChanged, async (event: MediationStateChangedEvent) => {
-  testLogger.info('Mediation state changed for ' + event.mediationRecord.id);
-  testLogger.debug('Previous state: ' + event.previousState + ' New state: ' + event.mediationRecord.state);
+  testLogger.info('Mediation state changed for ' + event.mediationRecord.id)
+  testLogger.debug('Previous state: ' + event.previousState + ' New state: ' + event.mediationRecord.state)
 
   if (event.mediationRecord.state == MediationState.Granted) {
-    const connectionRecord = await agent.connections.getById(event.mediationRecord.connectionId);
+    const connectionRecord = await agent.connections.getById(event.mediationRecord.connectionId)
     if (connectionRecord) {
       agent.setInboundConnection({
         connection: connectionRecord,
         verkey: event.mediationRecord.routingKeys[0],
-      });
+      })
     }
   }
-});
+})
 
 agent.basicMessages.events.on(BasicMessageEventType.MessageReceived, async (event: BasicMessageReceivedEvent) => {
-  testLogger.info('Message received: ' + event.message.content);
-});
+  testLogger.info('Message received: ' + event.message.content)
+})
 
 app.post('/basic-message', async (req, res) => {
   try {
-    const connectionId = req.body.connection_id;
-    const message = req.body.message;
+    const connectionId = req.body.connection_id
+    const message = req.body.message
 
     if (!connectionId || !message) {
-      throw new Error('Missing parameter in body. Format: {"connection_id": ..., "content": ... }');
+      throw new Error('Missing parameter in body. Format: {"connection_id": ..., "content": ... }')
     }
 
-    const connectionRecord = await agent.connections.getById(connectionId);
+    const connectionRecord = await agent.connections.getById(connectionId)
     if (connectionRecord) {
-      const result = await agent.basicMessages.sendMessage(connectionRecord, message);
-      res.send(result);
+      const result = await agent.basicMessages.sendMessage(connectionRecord, message)
+      res.send(result)
     } else {
-      throw Error('Connection not found');
+      throw Error('Connection not found')
     }
   } catch (e) {
-    res.status(500);
-    testLogger.debug('Error: ' + e);
-    res.send('Error: ' + e);
+    res.status(500)
+    testLogger.debug('Error: ' + e)
+    res.send('Error: ' + e)
   }
-});
+})
 
 // Create new invitation as inviter to invitee
 app.get('/invitation', async (req, res) => {
-  const { invitation } = await agent.connections.createConnection();
-  res.send(invitation.toJSON());
-});
+  const { invitation } = await agent.connections.createConnection()
+  res.send(invitation.toJSON())
+})
 
 // Receive invitation and assign an alias
 app.post('/receive-invitation', async (req, res) => {
   try {
-    const invitation = req.body.invitation;
-    const alias = req.body.alias;
+    const invitation = req.body.invitation
+    const alias = req.body.alias
 
     if (!alias || !invitation) {
-      throw new Error('Missing parameter in body. Format: {"alias": ..., "invitation": ... }');
+      throw new Error('Missing parameter in body. Format: {"alias": ..., "invitation": ... }')
     }
 
-    const result = await agent.connections.receiveInvitation(invitation, { autoAcceptConnection: true, alias: alias });
+    const result = await agent.connections.receiveInvitation(invitation, { autoAcceptConnection: true, alias: alias })
 
-    res.send(result);
+    res.send(result)
   } catch (e) {
-    res.status(500);
-    testLogger.debug('Error: ' + e);
-    res.send('Error: ' + e);
+    res.status(500)
+    testLogger.debug('Error: ' + e)
+    res.send('Error: ' + e)
   }
-});
+})
 
 app.get('/connections', async (req, res) => {
-  const connections = await agent.connections.getAll();
-  res.json(connections);
-});
+  const connections = await agent.connections.getAll()
+  res.json(connections)
+})
 
 app.get('/credentials', async (req, res) => {
-  const credentials = await agent.credentials.getAll();
-  res.json(credentials);
-});
+  const credentials = await agent.credentials.getAll()
+  res.json(credentials)
+})
 
 app.get('/register-mediator', async (req, res) => {
   const response = await fetch(process.env.MEDIATOR_INVITATION_ENDPOINT || 'http://localhost:3000/invitation', {
     method: 'GET',
-  });
+  })
 
-  const data = await response.text();
-  const invitation = JSON.parse(data);
-  testLogger.info(data);
+  const data = await response.text()
+  const invitation = JSON.parse(data)
+  testLogger.info(data)
 
   try {
-    const alias = 'mediator';
+    const alias = 'mediator'
 
     if (!alias || !invitation) {
-      throw new Error('Missing parameter');
+      throw new Error('Missing parameter')
     }
 
-    const result = await agent.connections.receiveInvitation(invitation, { autoAcceptConnection: true, alias: alias });
+    const result = await agent.connections.receiveInvitation(invitation, { autoAcceptConnection: true, alias: alias })
 
-    res.send(result);
+    res.send(result)
   } catch (e) {
-    res.status(500);
-    testLogger.debug('Error: ' + e);
-    res.send('Error: ' + e);
+    res.status(500)
+    testLogger.debug('Error: ' + e)
+    res.send('Error: ' + e)
   }
-});
+})
 
 app.listen(PORT, '0.0.0.0', 0, async () => {
   await agent.init()

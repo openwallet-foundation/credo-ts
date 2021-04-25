@@ -3,16 +3,9 @@ import { AgentConfig } from '../../agent/AgentConfig'
 import { ProviderRoutingService, MessagePickupService, ProvisioningService } from './services'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import {
-  ConnectionService,
-  ConnectionState,
-  ConnectionInvitationMessage,
-  ConnectionResponseMessage,
-  ConnectionRecord,
-} from '../connections'
-import { BatchMessage } from './messages'
 import type { Verkey } from 'indy-sdk'
 import { Dispatcher } from '../../agent/Dispatcher'
+import { ConnectionService, ConnectionState, ConnectionInvitationMessage, ConnectionRecord } from '../connections'
 import {
   BatchHandler,
   BatchPickupHandler,
@@ -21,12 +14,12 @@ import {
   KeylistUpdateResponseHandler,
 } from './handlers'
 import { Logger } from '../../logger'
+import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { MediationService } from './services/MediationService'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
 import { MediationRequestHandler } from './handlers/MediationRequestHandler'
 import { MediationRecord } from './repository/MediationRecord'
 import { MediationDenyHandler } from './handlers/MediationDenyHandler'
-import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 export class RoutingModule {
   private agentConfig: AgentConfig
   private mediationService: MediationService
@@ -68,19 +61,19 @@ export class RoutingModule {
    * @returns event emitter for mediation-related received messages
    */
   public get mediationEvents(): EventEmitter {
-    return this.mediationService;
+    return this.mediationService
   }
 
   public async requestMediation(connection: ConnectionRecord) {
-    const outboundMessage = await this.mediationService.requestMediation(connection);
-    const response = await this.messageSender.sendMessage(outboundMessage);
-    return response;
+    const outboundMessage = await this.mediationService.requestMediation(connection)
+    const response = await this.messageSender.sendMessage(outboundMessage)
+    return response
   }
 
   public async grantMediation(connection: ConnectionRecord, mediation: MediationRecord) {
-    const outboundMessage = await this.mediationService.grantMediation(connection, mediation);
-    const response = await this.messageSender.sendMessage(outboundMessage);
-    return response;
+    const outboundMessage = await this.mediationService.grantMediation(connection, mediation)
+    const response = await this.messageSender.sendMessage(outboundMessage)
+    return response
   }
 
   public async provision(mediatorConfiguration: MediatorConfiguration) {
@@ -153,6 +146,9 @@ export class RoutingModule {
     dispatcher.registerHandler(new ForwardHandler(this.providerRoutingService))
     dispatcher.registerHandler(new BatchPickupHandler(this.messagePickupService))
     dispatcher.registerHandler(new BatchHandler(this.eventEmitter))
+    dispatcher.registerHandler(new MediationGrantHandler(this.mediationService))
+    dispatcher.registerHandler(new MediationDenyHandler(this.mediationService))
+    dispatcher.registerHandler(new MediationRequestHandler(this.mediationService))
   }
 }
 

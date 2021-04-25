@@ -1,13 +1,13 @@
-import type { Verkey } from 'indy-sdk';
-import { Equals, IsArray, IsString } from 'class-validator';
+import type { Verkey } from 'indy-sdk'
+import { Equals, IsArray, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage';
-import { RoutingMessageType as MessageType } from './RoutingMessageType';
+import { AgentMessage } from '../../../agent/AgentMessage'
+import { RoutingMessageType as MessageType } from './RoutingMessageType'
 
 export interface MediationGrantMessageOptions {
-  id?: string;
-  endpoint: string;
-  routing_keys: Verkey[];
+  id?: string
+  endpoint: string
+  routing_keys: Verkey[]
 }
 
 /**
@@ -18,22 +18,22 @@ export interface MediationGrantMessageOptions {
  */
 export class MediationGrantMessage extends AgentMessage {
   public constructor(options: MediationGrantMessageOptions) {
-    super();
+    super()
 
     if (options) {
-      this.id = options.id || this.generateId();
-      this.endpoint = options.endpoint;
-      this.routing_keys = options.routing_keys;
+      this.id = options.id || this.generateId()
+      this.endpoint = options.endpoint
+      this.routing_keys = options.routing_keys
     }
   }
 
   @Equals(MediationGrantMessage.type)
-  public readonly type = MediationGrantMessage.type;
-  public static readonly type = MessageType.MediationGrant;
+  public readonly type = MediationGrantMessage.type
+  public static readonly type = MessageType.MediationGrant
 
   @IsArray()
-  public routing_keys!: Verkey[];
+  public routing_keys!: Verkey[]
 
   @IsString()
-  public endpoint!: string;
+  public endpoint!: string
 }

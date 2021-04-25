@@ -32,7 +32,7 @@ export class MediationService extends EventEmitter {
   private routingKey?: Verkey
 
   public constructor(mediationRepository: Repository<MediationRecord>, agentConfig: AgentConfig) {
-    super();
+    super()
     this.mediationRepository = mediationRepository
     this.agentConfig = agentConfig
   }
@@ -46,7 +46,7 @@ export class MediationService extends EventEmitter {
       connectionId: connection.id,
       role: MediationRole.Recipient,
       state: MediationState.Requested,
-    });
+    })
 
     const mediationRequestMessage = new MediationRequestMessage({})
 
@@ -59,7 +59,7 @@ export class MediationService extends EventEmitter {
     const grantMediationMessage = new MediationGrantMessage({
       endpoint: this.agentConfig.getEndpoint(),
       routing_keys: mediation.routingKeys,
-    });
+    })
 
     return createOutboundMessage(connection, grantMediationMessage)
   }
@@ -77,7 +77,7 @@ export class MediationService extends EventEmitter {
       connectionId: connection.id,
       role: MediationRole.Mediator,
       state: MediationState.Init,
-    });
+    })
 
     // Mediation can be either granted or denied. Let business logic decide that
     await this.updateState(mediationRecord, MediationState.Requested)
@@ -100,7 +100,7 @@ export class MediationService extends EventEmitter {
     }
 
     // Assert
-    mediationRecord.assertState(MediationState.Requested);
+    mediationRecord.assertState(MediationState.Requested)
     mediationRecord.assertConnection(connection.id)
 
     // Update record
@@ -108,7 +108,7 @@ export class MediationService extends EventEmitter {
     mediationRecord.routingKeys = messageContext.message.routing_keys
     await this.updateState(mediationRecord, MediationState.Granted)
 
-    return mediationRecord;
+    return mediationRecord
   }
 
   public async processMediationDeny(messageContext: InboundMessageContext<MediationDenyMessage>) {
@@ -134,7 +134,7 @@ export class MediationService extends EventEmitter {
     // Update record
     await this.updateState(mediationRecord, MediationState.Denied)
 
-    return mediationRecord;
+    return mediationRecord
   }
 
   public async create(options: MediationRecordProps): Promise<MediationRecord> {
@@ -153,14 +153,14 @@ export class MediationService extends EventEmitter {
 
     for (const record of mediationRecords) {
       if (record.connectionId == id) {
-        return record;
+        return record
       }
     }
-    return null;
+    return null
   }
 
   public async findAll(): Promise<MediationRecord[] | null> {
-    return await this.mediationRepository.findAll();
+    return await this.mediationRepository.findAll()
   }
 
   /**
@@ -172,11 +172,11 @@ export class MediationService extends EventEmitter {
    *
    */
   private async updateState(mediationRecord: MediationRecord, newState: MediationState) {
-    const previousState = mediationRecord.state;
+    const previousState = mediationRecord.state
 
-    mediationRecord.state = newState;
+    mediationRecord.state = newState
 
-    await this.mediationRepository.update(mediationRecord);
+    await this.mediationRepository.update(mediationRecord)
 
     const event: MediationStateChangedEvent = {
       mediationRecord,

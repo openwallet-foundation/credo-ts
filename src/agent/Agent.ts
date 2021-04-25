@@ -1,10 +1,9 @@
-import { EventEmitter } from 'events'
 import { Logger } from '../logger'
 import { InboundConnection, InitConfig } from '../types'
 import { IndyWallet } from '../wallet/IndyWallet'
 import { MessageReceiver } from './MessageReceiver'
 import { EnvelopeService } from './EnvelopeService'
-import { ConnectionService, TrustPingService, ConnectionRecord, ConnectionState  } from '../modules/connections'
+import { ConnectionService, TrustPingService, ConnectionRecord, ConnectionState } from '../modules/connections'
 import { CredentialService, CredentialRecord } from '../modules/credentials'
 import { ProofService, ProofRecord } from '../modules/proofs'
 import {
@@ -33,7 +32,7 @@ import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModu
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { MediationService } from '../modules/routing/services/MediationService'
 import { MediationRecord } from '../modules/routing/repository/MediationRecord'
-
+import EventEmitter from 'events'
 
 export class Agent {
   protected logger: Logger
@@ -59,9 +58,9 @@ export class Agent {
   protected basicMessageRepository: Repository<BasicMessageRecord>
   protected connectionRepository: Repository<ConnectionRecord>
   protected provisioningRepository: Repository<ProvisioningRecord>
-  protected mediationRepository: Repository<MediationRecord>
   protected credentialRepository: Repository<CredentialRecord>
   protected proofRepository: Repository<ProofRecord>
+  protected mediationRepository: Repository<MediationRecord>
 
   public connections!: ConnectionsModule
   public proofs!: ProofsModule
@@ -139,7 +138,7 @@ export class Agent {
   public async init() {
     await this.wallet.init()
 
-    const { publicDidSeed, genesisPath, poolName, mediatorRecordId } = this.agentConfig;
+    const { publicDidSeed, genesisPath, poolName, mediatorRecordId } = this.agentConfig
     if (publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
       await this.wallet.initPublicDid({ seed: publicDidSeed })
@@ -161,7 +160,7 @@ export class Agent {
     // If mediator record Id is provided, search for it and (if record exists) update other properties
     // accordingly, overriding them if needed
     if (mediatorRecordId) {
-      const mediationRecord = await this.mediationService.findById(mediatorRecordId);
+      const mediationRecord = await this.mediationService.findById(mediatorRecordId)
       if (mediationRecord) {
         const connectionRecord = await this.connections.getById(mediationRecord.connectionId)
         if (connectionRecord) {
@@ -173,7 +172,9 @@ export class Agent {
       }
     }
 
-    return this.inboundTransporter.start(this)
+    if (this.inboundTransporter) {
+      await this.inboundTransporter.start(this)
+    }
   }
 
   public get publicDid() {
@@ -185,12 +186,12 @@ export class Agent {
   }
 
   public async setInboundConnection(inbound: InboundConnection) {
-    inbound.connection.assertState(ConnectionState.Complete);
+    inbound.connection.assertState(ConnectionState.Complete)
 
     this.agentConfig.establishInbound({
       verkey: inbound.verkey,
       connection: inbound.connection,
-    });
+    })
   }
 
   public async receiveMessage(inboundPackedMessage: unknown) {
