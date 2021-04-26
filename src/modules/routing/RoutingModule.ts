@@ -5,7 +5,7 @@ import { AgentConfig } from '../../agent/AgentConfig'
 import { ProviderRoutingService, MessagePickupService, ProvisioningService } from './services'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import { ConnectionService, ConnectionState, ConnectionInvitationMessage } from '../connections'
+import { ConnectionService, ConnectionState, ConnectionInvitationMessage, ConnectionRecord } from '../connections'
 import { Dispatcher } from '../../agent/Dispatcher'
 import {
   BatchHandler,
@@ -17,11 +17,17 @@ import {
 import { Logger } from '../../logger'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { EventEmitter } from '../../agent/EventEmitter'
-import { AriesFrameworkError } from '../../error'
+
+import { MediationService } from './services/MediationService'
+import { MediationGrantHandler } from './handlers/MediationGrantHandler'
+import { MediationRequestHandler } from './handlers/MediationRequestHandler'
+import { MediationRecord } from './repository/MediationRecord'
+import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 
 @scoped(Lifecycle.ContainerScoped)
 export class RoutingModule {
   private agentConfig: AgentConfig
+  private mediationService: MediationService
   private providerRoutingService: ProviderRoutingService
   private provisioningService: ProvisioningService
   private messagePickupService: MessagePickupService
@@ -33,6 +39,7 @@ export class RoutingModule {
   public constructor(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
+    mediationService: MediationService,
     providerRoutingService: ProviderRoutingService,
     provisioningService: ProvisioningService,
     messagePickupService: MessagePickupService,
@@ -41,6 +48,7 @@ export class RoutingModule {
     eventEmitter: EventEmitter
   ) {
     this.agentConfig = agentConfig
+    this.mediationService = mediationService
     this.providerRoutingService = providerRoutingService
     this.provisioningService = provisioningService
     this.messagePickupService = messagePickupService
@@ -49,6 +57,18 @@ export class RoutingModule {
     this.eventEmitter = eventEmitter
     this.logger = agentConfig.logger
     this.registerHandlers(dispatcher)
+  }
+
+  public async requestMediation(connection: ConnectionRecord) {
+    const outboundMessage = await this.mediationService.requestMediation(connection)
+    const response = await this.messageSender.sendMessage(outboundMessage)
+    return response
+  }
+
+  public async grantMediation(connection: ConnectionRecord, mediation: MediationRecord) {
+    const outboundMessage = await this.mediationService.grantMediation(connection, mediation)
+    const response = await this.messageSender.sendMessage(outboundMessage)
+    return response
   }
 
   public async provision(mediatorConfiguration: MediatorConfiguration) {
@@ -92,8 +112,11 @@ export class RoutingModule {
     return agentConnectionAtMediator
   }
 
-  public async downloadMessages() {
-    const inboundConnection = this.getInboundConnection()
+  public async downloadMessages(mediatorConnection?: ConnectionRecord) {
+    const inboundConnection = mediatorConnection
+      ? { verkey: mediatorConnection.theirKey!, connection: mediatorConnection }
+      : this.getInboundConnection()
+
     if (inboundConnection) {
       const outboundMessage = await this.messagePickupService.batchPickup(inboundConnection)
       outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
@@ -115,6 +138,9 @@ export class RoutingModule {
     dispatcher.registerHandler(new ForwardHandler(this.providerRoutingService))
     dispatcher.registerHandler(new BatchPickupHandler(this.messagePickupService))
     dispatcher.registerHandler(new BatchHandler(this.eventEmitter))
+    dispatcher.registerHandler(new MediationGrantHandler(this.mediationService))
+    dispatcher.registerHandler(new MediationDenyHandler(this.mediationService))
+    dispatcher.registerHandler(new MediationRequestHandler(this.mediationService))
   }
 }
 

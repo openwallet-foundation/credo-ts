@@ -25,6 +25,9 @@ import {
 import { BasicMessage, BasicMessageEventTypes, BasicMessageReceivedEvent } from '../modules/basic-messages'
 import testLogger from './logger'
 import { NodeFileSystem } from '../storage/fs/NodeFileSystem'
+import { MediationState } from '../modules/routing/models/MediationState'
+import { RoutingEventTypes, MediationStateChangedEvent } from '../modules/routing'
+import { MediationRecord } from '../modules/routing/repository/MediationRecord'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
@@ -125,6 +128,35 @@ export async function waitForCredentialRecord(
     }
 
     agent.events.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, listener)
+  })
+}
+
+export async function waitForMediationRecord(
+  agent: Agent,
+  {
+    id,
+    state,
+    previousState,
+  }: {
+    id?: string
+    state?: MediationState
+    previousState?: MediationState | null
+  }
+): Promise<MediationRecord> {
+  return new Promise((resolve) => {
+    const listener = (event: MediationStateChangedEvent) => {
+      const previousStateMatches = previousState === undefined || event.payload.previousState === previousState
+      const mediationIdMatches = id === undefined || event.payload.mediationRecord.id === id
+      const stateMatches = state === undefined || event.payload.mediationRecord.state === state
+
+      if (previousStateMatches && mediationIdMatches && stateMatches) {
+        agent.events.off<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
+
+        resolve(event.payload.mediationRecord)
+      }
+    }
+
+    agent.events.on<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
   })
 }
 
