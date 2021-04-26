@@ -1,5 +1,5 @@
 import type { Verkey } from 'indy-sdk'
-import { Equals, IsArray, IsString } from 'class-validator'
+import { Equals, IsArray, IsNotEmpty, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { RoutingMessageType as MessageType } from './RoutingMessageType'
@@ -26,14 +26,16 @@ export class MediationGrantMessage extends AgentMessage {
       this.routing_keys = options.routing_keys
     }
   }
-
+  
   @Equals(MediationGrantMessage.type)
   public readonly type = MediationGrantMessage.type
   public static readonly type = MessageType.MediationGrant
 
+  @IsNotEmpty()
   @IsArray()
   public routing_keys!: Verkey[]
 
+  @IsNotEmpty()
   @IsString()
   public endpoint!: string
 }

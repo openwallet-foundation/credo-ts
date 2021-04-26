@@ -13,7 +13,7 @@ export class KeylistUpdateHandler implements Handler {
       throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
 
-    const message = this.routingService.updateRoutes(messageContext)
+    const message = this.mediationService.processKeylistUpdateRequest(messageContext.connection, messageContext.recipientVerkey, messages)
     return createOutboundMessage(messageContext.connection, message)
   }
 }

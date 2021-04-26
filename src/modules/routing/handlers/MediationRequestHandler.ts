@@ -1,6 +1,5 @@
 import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import { MediationRequestMessage } from '../messages'
-import { MediationService } from '../services/MediationService'
+import { MediationRequestMessage, MediationService } from '..'
 
 export class MediationRequestHandler implements Handler {
   private routingService: MediationService

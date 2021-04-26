@@ -152,6 +152,7 @@ export class MediationModule {
     dispatcher.registerHandler(new BatchPickupHandler(this.messagePickupService))
     dispatcher.registerHandler(new BatchHandler(this.eventEmitter))
     dispatcher.registerHandler(new MediationRequestHandler(this.mediationService))
+    dispatcher.registerHandler(new RequestMediationMessage(this.mediationService))
 
   }
 }
