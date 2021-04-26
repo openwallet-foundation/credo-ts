@@ -67,29 +67,28 @@ export class MediationService extends EventEmitter {
     return mediationRecord
   }
 
-  private _assertConnection(connection: ConnectionRecord | undefined, msgType: BaseMessage): ConnectionRecord{
-    if (!connection) throw Error("in bound connection is required for ${msgType.name}!")
+  private _assertConnection(connection: ConnectionRecord | undefined, msgType: BaseMessage): ConnectionRecord {
+    if (!connection) throw Error('in bound connection is required for ${msgType.name}!')
     connection?.assertReady()
     return connection
   }
 
   public async processKeylistUpdateRequest(messageContext: InboundMessageContext<KeylistUpdateMessage>) {
-    const {message} = messageContext
-    const connection = this._assertConnection(messageContext.connection,ForwardMessage)
+    const { message } = messageContext
+    const connection = this._assertConnection(messageContext.connection, ForwardMessage)
     const updated = []
     for (const update of message.updates) {
       const mediationRecord = await this.findRecipientByConnectionId(connection.id)
-      let update_
-      update_ = new KeylistUpdated({
+      const update_ = new KeylistUpdated({
         action: update.action,
         recipientKey: update.recipientKey,
         result: KeylistUpdateResult.NoChange,
       })
       if (update.action === KeylistUpdateAction.add) {
-        update_.result = await this.saveRoute(update.recipientKey,mediationRecord)
+        update_.result = await this.saveRoute(update.recipientKey, mediationRecord)
         updated.push(update_)
       } else if (update.action === KeylistUpdateAction.remove) {
-        update_.result = await this.removeRoute(update.recipientKey,mediationRecord)
+        update_.result = await this.removeRoute(update.recipientKey, mediationRecord)
         updated.push(update_)
       }
     }
@@ -130,25 +129,24 @@ export class MediationService extends EventEmitter {
   }
 
   public async findRecipientByConnectionId(connectionId: string): Promise<MediationRecord | null> {
-    let records
-    records = await this.mediationRepository.findByQuery({ connectionId })
+    const records = await this.mediationRepository.findByQuery({ connectionId })
     return records[0]
   }
-
 
   public async prepareGrantMediationMessage(mediation: MediationRecord) {
     mediation.state = MediationState.Granted
     await this.mediationRepository.update(mediation)
+    //  Create new routing DID, use same routing DID for all mediation.
     return new MediationGrantMessage({
       endpoint: this.agentConfig.getEndpoint(),
-      routing_keys: mediation.recipientKeys, // TODO: should this be empty?
+      routing_keys: mediation.recipientKeys, // TODO: this should be the routing DID
     })
   }
 
   public async processMediationRequest(messageContext: InboundMessageContext<MediationRequestMessage>) {
-    const {message} = messageContext
+    const { message } = messageContext
     // Assert connection
-    const connection = this._assertConnection(messageContext.connection,ForwardMessage)
+    const connection = this._assertConnection(messageContext.connection, ForwardMessage)
 
     const mediationRecord = await this.create({
       connectionId: connection.id,

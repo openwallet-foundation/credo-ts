@@ -5,7 +5,6 @@ import { AgentMessage } from '../../../agent/AgentMessage'
 import { RoutingMessageType } from './RoutingMessageType'
 
 export interface MediationRequestMessageOptions {
-  content: string
   sentTime?: Date
   id?: string
   locale?: string
@@ -29,7 +28,6 @@ export class RequestMediationMessage extends AgentMessage {
     if (options) {
       this.id = options.id || this.generateId()
       this.sentTime = options.sentTime || new Date()
-      this.content = options.content
       this.addLocale(options.locale || 'en')
     }
   }
@@ -42,8 +40,4 @@ export class RequestMediationMessage extends AgentMessage {
   @Type(() => Date)
   @IsDate()
   public sentTime!: Date
-
-  @Expose({ name: 'content' })
-  @IsString()
-  public content!: string
 }

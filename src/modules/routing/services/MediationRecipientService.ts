@@ -7,9 +7,9 @@ import {
   KeylistUpdate,
   KeylistUpdateAction,
   ForwardMessage,
-  MediationGrantedMessage,
-  MediationDeniedMessage,
-  MediationRequestMessage,
+  MediationGrantMessage,
+  MediationDenyMessage,
+  RequestMediationMessage,
 } from '../messages'
 import { Logger } from '../../../logger'
 import { EventEmitter } from 'events'
@@ -20,6 +20,7 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { OutboundMessage } from '../../../types'
 import { isIndyError } from '../../../utils/indyError'
 import { DefaultMediationRecord, MediationRecord, MediationRecordProps, MediationRole, MediationState, MediationStorageProps } from '..'
+import { Wallet } from '../../../wallet/Wallet'
 
 export enum MediationRecipientEventType {
   Granted = 'GRANTED',
@@ -34,46 +35,57 @@ export class MediationRecipientService extends EventEmitter {
   private mediatorRepository: Repository<MediationRecord>
   private messageSender: MessageSender
   private defaultMediator?: DefaultMediationRecord
+  private wallet: Wallet
 
   // TODO: Review this, placeholder
   public constructor(
     agentConfig: AgentConfig,
     mediatorRepository: Repository<MediationRecord>,
-    messageSender: MessageSender
+    messageSender: MessageSender,
+    wallet: Wallet
   ) {
     super()
     this.agentConfig = agentConfig
     this.logger = agentConfig.logger
     this.mediatorRepository = mediatorRepository
     this.messageSender = messageSender
+    this.wallet = wallet
     this.provision()
   }
+
   private provision() {
     // Using agent config, establish connection with mediator.
     // Send mediation request.
     // Upon granting, set as default mediator.
   }
 
+  public async create({ state, role, connectionId, recipientKeys }: MediationRecordProps): Promise<MediationRecord> {
+    const mediationRecord = new MediationRecord({
+      state,
+      role,
+      connectionId,
+      recipientKeys,
+      tags: {
+        state,
+        role,
+        connectionId,
+      },
+    })
+    await this.mediatorRepository.save(mediationRecord)
+    return mediationRecord
+  }
+
   public async requestMediation(connection: ConnectionRecord) {
     await this.create({
       connectionId: connection.id,
-      role: MediationRole.Recipient,
+      role: MediationRole.Mediator,
       state: MediationState.Requested,
     })
-
-    const mediationRequestMessage = new MediationRequestMessage({})
-
-    return createOutboundMessage(connection, mediationRequestMessage)
+    return new RequestMediationMessage({})
   }
 
-  public async createRoute(verkey: Verkey) {
-    this.logger.debug(`Registering route for verkey '${verkey}' at mediator`)
-
-    if (!this.agentConfig.inboundConnection) {
-      this.logger.debug(`There is no mediator. Creating route for verkey '${verkey}' skipped.`)
-    } else {
-      const routingConnection = this.agentConfig.inboundConnection.connection
-
+  public async prepareKeylistUpdateMessage() {
+    const [did, verkey] = await this.wallet.createDid()
       const keylistUpdateMessage = new KeylistUpdateMessage({
         updates: [
           new KeylistUpdate({
@@ -83,9 +95,7 @@ export class MediationRecipientService extends EventEmitter {
         ],
       })
 
-      const outboundMessage = createOutboundMessage(routingConnection, keylistUpdateMessage)
-      await this.messageSender.sendMessage(outboundMessage)
-    }
+      return keylistUpdateMessage
   }
 
   public async processMediationGrant(messageContext: InboundMessageContext<MediationGrantMessage>) {
@@ -142,11 +152,7 @@ export class MediationRecipientService extends EventEmitter {
     return mediationRecord
   }
 
-  public async create(options: MediationStorageProps): Promise<MediationRecord> {
-    const mediationRecord = new MediationRecord(options)
-    await this.mediatorRepository.save(mediationRecord)
-    return mediationRecord
-  }
+  
 
     /**
    * Update the record to a new state and emit an state changed event. Also updates the record
@@ -229,14 +235,6 @@ export class MediationRecipientService extends EventEmitter {
 
   public clearDefaultMediator() {
     delete this.defaultMediator
-  }
-
-  public prepareKeylistUpdateMessage(
-    action: KeylistUpdateAction,
-    recipientKey: Verkey,
-    message?: KeylistUpdateMessage
-  ) {
-    // The default mediator
   }
 
   public storeKeylistUpdateResults() {
