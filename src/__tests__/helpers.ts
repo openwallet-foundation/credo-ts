@@ -16,6 +16,9 @@ import {
 } from '../modules/credentials'
 import { BasicMessage, BasicMessageEventType, BasicMessageReceivedEvent } from '../modules/basic-messages'
 import testLogger from './logger'
+import { MediationState } from '../modules/routing/models/MediationState'
+import { MediationEventType, MediationStateChangedEvent } from '../modules/routing/services/MediationService'
+import { MediationRecord } from '../modules/routing/repository/MediationRecord'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
@@ -97,6 +100,35 @@ export async function waitForCredentialRecord(
     }
 
     agent.credentials.events.addListener(CredentialEventType.StateChanged, listener)
+  })
+}
+
+export async function waitForMediationRecord(
+  agent: Agent,
+  {
+    id,
+    state,
+    previousState,
+  }: {
+    id?: string
+    state?: MediationState
+    previousState?: MediationState | null
+  }
+): Promise<MediationRecord> {
+  return new Promise((resolve) => {
+    const listener = (event: MediationStateChangedEvent) => {
+      const previousStateMatches = previousState === undefined || event.previousState === previousState
+      const mediationIdMatches = id === undefined || event.mediationRecord.id === id
+      const stateMatches = state === undefined || event.mediationRecord.state === state
+
+      if (previousStateMatches && mediationIdMatches && stateMatches) {
+        agent.routing.mediationEvents.removeListener(MediationEventType.StateChanged, listener)
+
+        resolve(event.mediationRecord)
+      }
+    }
+
+    agent.routing.mediationEvents.addListener(MediationEventType.StateChanged, listener)
   })
 }
 
