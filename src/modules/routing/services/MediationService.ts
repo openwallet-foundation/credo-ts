@@ -135,7 +135,7 @@ export class MediationService extends EventEmitter {
 
   public async prepareGrantMediationMessage(mediation: MediationRecord) {
     // check if did for routing exists
-    this.wallet.getWalletRecord()
+    const routingDid = this.wallet.getWalletRecord({"did",})
     // create if it doesn't'
     mediation.state = MediationState.Granted
     await this.mediationRepository.update(mediation)
