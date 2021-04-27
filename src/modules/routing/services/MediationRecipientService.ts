@@ -29,15 +29,12 @@ export enum MediationRecipientEventType {
 }
 
 export class MediationRecipientService extends EventEmitter {
-  // TODO: Review this, placeholder
-  private logger: Logger
   private agentConfig: AgentConfig
   private mediatorRepository: Repository<MediationRecord>
   private messageSender: MessageSender
   private defaultMediator?: DefaultMediationRecord
   private wallet: Wallet
 
-  // TODO: Review this, placeholder
   public constructor(
     agentConfig: AgentConfig,
     mediatorRepository: Repository<MediationRecord>,
@@ -46,7 +43,6 @@ export class MediationRecipientService extends EventEmitter {
   ) {
     super()
     this.agentConfig = agentConfig
-    this.logger = agentConfig.logger
     this.mediatorRepository = mediatorRepository
     this.messageSender = messageSender
     this.wallet = wallet
@@ -54,9 +50,30 @@ export class MediationRecipientService extends EventEmitter {
   }
 
   private provision() {
-    // Using agent config, establish connection with mediator.
-    // Send mediation request.
-    // Upon granting, set as default mediator.
+    /* TODO: handle config flag behaviors.
+    openMediation
+                "Enables didcomm mediation. After establishing a connection, "
+                "if enabled, an agent may request message mediation, which will "
+                "allow the mediator to forward messages on behalf of the recipient. "
+                "See aries-rfc:0211."
+    mediatorInvitation
+                "Connect to mediator through provided invitation "
+                "and send mediation request and set as default mediator."
+    //mediatorConnectionsInvite
+                //--"Connect to mediator through a connection invitation. "
+                //"If not specified, connect using an OOB invitation. "
+                //"Default: false."--
+    defaultMediatorId
+                "Set the default mediator by ID"
+    clearDefaultMediator
+                "Clear the stored default mediator."
+    */
+    // check for default mediation id record
+      // set this.defaultMediator
+    // else if mediation invitation in config
+      // Use agent config to establish connection with mediator
+      // request mediation record
+      // Upon granting, set this.defaultMediator
   }
 
   public async create({ state, role, connectionId, recipientKeys }: MediationRecordProps): Promise<MediationRecord> {
@@ -75,7 +92,7 @@ export class MediationRecipientService extends EventEmitter {
     return mediationRecord
   }
 
-  public async requestMediation(connection: ConnectionRecord) {
+  public async prepareRequestMediation(connection: ConnectionRecord) {
     await this.create({
       connectionId: connection.id,
       role: MediationRole.Mediator,
@@ -83,21 +100,30 @@ export class MediationRecipientService extends EventEmitter {
     })
     return new RequestMediationMessage({})
   }
+  
+  public prepareKeylistQuery(filter: Map<string, string>, paginateLimit = -1, paginateOffset = 0) {
+    // Method here
+  }
 
   public async prepareKeylistUpdateMessage() {
     const [did, verkey] = await this.wallet.createDid()
-      const keylistUpdateMessage = new KeylistUpdateMessage({
-        updates: [
-          new KeylistUpdate({
-            action: KeylistUpdateAction.add,
-            recipientKey: verkey,
-          }),
-        ],
-      })
-
-      return keylistUpdateMessage
+    const keylistUpdateMessage = new KeylistUpdateMessage({
+      updates: [
+        new KeylistUpdate({
+          action: KeylistUpdateAction.add,
+          recipientKey: verkey,
+        }),
+      ],
+    })
+    
+    return keylistUpdateMessage
   }
 
+  public processKeylistUpdateResults() {
+    // Method here
+  }
+
+  
   public async processMediationGrant(messageContext: InboundMessageContext<MediationGrantMessage>) {
     const connection = messageContext.connection
 
@@ -152,47 +178,27 @@ export class MediationRecipientService extends EventEmitter {
     return mediationRecord
   }
 
-  
+  /**
+  * Update the record to a new state and emit an state changed event. Also updates the record
+  * in storage.
+  *
+  * @param MediationRecord The proof record to update the state for
+  * @param newState The state to update to
+  *
+  */
+  private async updateState(mediationRecord: MediationRecord, newState: MediationState) {
+    const previousState = mediationRecord.state
 
-    /**
-   * Update the record to a new state and emit an state changed event. Also updates the record
-   * in storage.
-   *
-   * @param proofRecord The proof record to update the state for
-   * @param newState The state to update to
-   *
-   */
-     private async updateState(mediationRecord: MediationRecord, newState: MediationState) {
-      const previousState = mediationRecord.state
-  
-      mediationRecord.state = newState
-  
-      await this.mediatorRepository.update(mediationRecord)
-  
-      const event: MediationStateChangedEvent = {
-        mediationRecord,
-        previousState: previousState,
-      }
-  
-      this.emit(MediationEventType.StateChanged, event)
+    mediationRecord.state = newState
+
+    await this.mediatorRepository.update(mediationRecord)
+
+    const event: MediationStateChangedEvent = {
+      mediationRecord,
+      previousState: previousState,
     }
 
-  // // TODO: Review this, placeholder
-  // public async requestMediation(connectionRecord: ConnectionRecord): Promise<MediationRecipientRecord> {
-  //   // Ensure that the connection is complete (check state) (validate, assert state)
-  //   // Send mediation request message
-  //   // create mediation recipient record and then return it.
-  //   return new MediationRecipientRecord();
-  // }
-
-  // recieve and handle the "granted" response from the mediator
-  public handleGranted() {
-    this.emit(MediationRecipientEventType.Granted)
-  }
-
-  // recieve and handle the "denied" response from the mediator.
-  public handleDenied() {
-    this.emit(MediationRecipientEventType.Denied)
+    this.emit(MediationEventType.StateChanged, event)
   }
 
   public async findById(mediatorId: string): Promise< MediationRecord> {
@@ -217,7 +223,6 @@ export class MediationRecipientService extends EventEmitter {
     return await this.mediatorRepository.findAll()
   }
 
-  // Adding empty methods
   public getDefaultMediatorId(): string | undefined {
     if (this.defaultMediator !== undefined) {
       return this.defaultMediator.mediationId
@@ -235,57 +240,6 @@ export class MediationRecipientService extends EventEmitter {
 
   public clearDefaultMediator() {
     delete this.defaultMediator
-  }
-
-  public storeKeylistUpdateResults() {
-    // Method here
-  }
-  public prepareKeylistQuery(filter: Map<string, string>, paginateLimit = -1, paginateOffset = 0) {
-    // Method here
-  }
-
-  public prepareRequest(connectionId: string):OutboundMessage {
-    // The default mediator
-  }
-
-  public reqeustGranted(mediationRecord: MediationRecord, grant: MediationGrantedMessage) {
-    // The default mediator
-  }
-
-  public reqeustDenied(mediationRecord: MediationRecord, deny: MediationDeniedMessage) {
-    // The default mediator
-  }
-
-  // Taken from Provisioning Service
-  public async registerMediator(connectionRecord: ConnectionRecord): Promise<MediationRecord> {
-    const mediationRecord = new MediationRecord({
-      connectionRecord.id
-    })
-    await this.mediatorRepository.save(mediationRecord)
-    return mediationRecord
-  }
-
-  //  Taken from ConsumerRoutingService
-  public async sendAddKeylistUpdate(verkey: Verkey) {
-    this.logger.debug(`Registering route for verkey '${verkey}' at mediator`)
-
-    if (!this.agentConfig.inboundConnection) {
-      this.logger.debug(`There is no mediator. Creating route for verkey '${verkey}' skipped.`)
-    } else {
-      const routingConnection = this.agentConfig.inboundConnection.connection
-
-      const keylistUpdateMessage = new KeylistUpdateMessage({
-        updates: [
-          new KeylistUpdate({
-            action: KeylistUpdateAction.add,
-            recipientKey: verkey,
-          }),
-        ],
-      })
-
-      const outboundMessage = createOutboundMessage(routingConnection, keylistUpdateMessage)
-      await this.messageSender.sendMessage(outboundMessage)
-    }
   }
 }
 

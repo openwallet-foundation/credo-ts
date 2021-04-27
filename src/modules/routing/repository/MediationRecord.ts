@@ -11,6 +11,7 @@ export interface MediationRecordProps {
   connectionId: string
   endpoint?: string
   recipientKeys?: Verkey[]
+  routingKeys?: Verkey[]
 }
 
 export interface MediationTags extends Tags {
@@ -30,6 +31,7 @@ export class MediationRecord extends BaseRecord implements MediationStorageProps
   public connectionId: string
   public endpoint: string
   public recipientKeys: Verkey[]
+  public routingKeys: Verkey[]
 
   public static readonly type: RecordType = RecordType.MediationRecord
   public readonly type = MediationRecord.type
@@ -38,6 +40,7 @@ export class MediationRecord extends BaseRecord implements MediationStorageProps
     super(props.id ?? uuid(), Date.now())
     this.connectionId = props.connectionId
     this.recipientKeys = props.recipientKeys || []
+    this.routingKeys = props.routingKeys || []
     this.tags = props.tags || {}
     this.state = props.state || MediationState.Init
     this.role = props.role

@@ -135,18 +135,18 @@ export class MediationService extends EventEmitter {
 
   public async prepareGrantMediationMessage(mediation: MediationRecord) {
     // check if did for routing exists
-    const routingDid = this.wallet.getWalletRecord({"did",})
+    //const routingDid = this.wallet.search({"did",})
     // create if it doesn't'
     mediation.state = MediationState.Granted
     await this.mediationRepository.update(mediation)
     //  Create new routing DID, use same routing DID for all mediation.
-    return new MediationGrantMessage({
-      endpoint: this.agentConfig.getEndpoint(),
-      routing_keys: ,
-    })
+    //return new MediationGrantMessage({
+    //  endpoint: this.agentConfig.getEndpoint(),
+    //  routing_keys: ,
+    //})
   }
 
-  public async processMediationRequest(messageContext: InboundMessageContext<MediationRequestMessage>) {
+  public async processMediationRequest(messageContext: InboundMessageContext<RequestMediationMessage>) {
     const { message } = messageContext
     // Assert connection
     const connection = this._assertConnection(messageContext.connection, ForwardMessage)

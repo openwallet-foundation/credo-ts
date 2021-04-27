@@ -27,6 +27,7 @@ import {
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { MediationService } from '../../..'
 
 export enum ConnectionEventType {
   StateChanged = 'stateChanged',
@@ -46,12 +47,14 @@ export class ConnectionService extends EventEmitter {
   private wallet: Wallet
   private config: AgentConfig
   private connectionRepository: Repository<ConnectionRecord>
+  private mediationService: MediationService
 
-  public constructor(wallet: Wallet, config: AgentConfig, connectionRepository: Repository<ConnectionRecord>) {
+  public constructor(wallet: Wallet, config: AgentConfig, connectionRepository: Repository<ConnectionRecord>,mediationService: MediationService) {
     super()
     this.wallet = wallet
     this.config = config
     this.connectionRepository = connectionRepository
+    this.mediationService = mediationService
   }
 
   /**
@@ -368,7 +371,7 @@ export class ConnectionService extends EventEmitter {
       id: `${did};indy`,
       serviceEndpoint: this.config.getEndpoint(),
       recipientKeys: [verkey],
-      routingKeys: this.config.getRoutingKeys(),
+      routingKeys: this.mediationService.getRoutingKeys(),
     })
 
     // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
