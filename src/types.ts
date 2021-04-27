@@ -1,6 +1,6 @@
 import type Indy from 'indy-sdk'
 import type { Did, WalletConfig, WalletCredentials, Verkey } from 'indy-sdk'
-import { ConnectionRecord } from './modules/connections'
+import { ConnectionInvitationMessage, ConnectionRecord } from './modules/connections'
 import { AgentMessage } from './agent/AgentMessage'
 import { Logger } from './logger'
 
@@ -24,6 +24,11 @@ export interface InitConfig {
   poolName?: string
   logger?: Logger
   indy: typeof Indy
+  openMediation?: Boolean
+  mediatorInvitation?: ConnectionInvitationMessage
+  //mediatorConnectionsInvite?: ConnectionInvitationMessage
+  defaultMediatorId?: string
+  clearDefaultMediator?: boolean
 }
 
 export interface UnpackedMessage {

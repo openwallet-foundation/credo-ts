@@ -10,7 +10,7 @@ import {
   MediationRecordProps,
   MediationRole,
   MediationState,
-  MediationRequestMessage,
+  RequestMediationMessage,
   MediationDenyMessage,
   MediationGrantMessage,
 } from '..'
@@ -22,7 +22,7 @@ import { Repository } from '../../../storage/Repository'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { ConnectionRecord } from '../../connections'
 import { BaseMessage } from '../../../agent/BaseMessage'
-
+import { Wallet } from '../../../wallet/Wallet'
 export interface RoutingTable {
   [recipientKey: string]: ConnectionRecord | undefined
 }
@@ -35,20 +35,20 @@ export enum MediationEventType {
 
 export class MediationService extends EventEmitter {
   private messageSender: MessageSender
-  private logger: Logger
   private agentConfig: AgentConfig
   private mediationRepository: Repository<MediationRecord>
-
+  private wallet: Wallet
   public constructor(
     messageSender: MessageSender,
     mediationRepository: Repository<MediationRecord>,
-    agentConfig: AgentConfig
+    agentConfig: AgentConfig,
+    wallet: Wallet
   ) {
     super()
     this.messageSender = messageSender
     this.mediationRepository = mediationRepository
-    this.logger = agentConfig.logger
     this.agentConfig = agentConfig
+    this.wallet = wallet
   }
 
   public async create({ state, role, connectionId, recipientKeys }: MediationRecordProps): Promise<MediationRecord> {
@@ -134,12 +134,15 @@ export class MediationService extends EventEmitter {
   }
 
   public async prepareGrantMediationMessage(mediation: MediationRecord) {
+    // check if did for routing exists
+    this.wallet.getWalletRecord()
+    // create if it doesn't'
     mediation.state = MediationState.Granted
     await this.mediationRepository.update(mediation)
     //  Create new routing DID, use same routing DID for all mediation.
     return new MediationGrantMessage({
       endpoint: this.agentConfig.getEndpoint(),
-      routing_keys: mediation.recipientKeys, // TODO: this should be the routing DID
+      routing_keys: ,
     })
   }
 
