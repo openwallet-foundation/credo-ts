@@ -18,6 +18,7 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { ConnectionRecord } from '../connections'
 import agentConfig from '../../../samples/config'
 import { EventEmitter } from 'events'
+import { MediationRecord } from '.'
 
 export class MediationRecipientModule {
   private agentConfig: AgentConfig
@@ -126,11 +127,16 @@ export class MediationRecipientModule {
     return this.mediationRecipientService.getDefaultMediatorId()
   }
 
-  public async getDefaultMediator() {
+  public async getDefaultMediator(): Promise< MediationRecord | undefined> {
     const mediatorId: string | undefined = this.mediationRecipientService.getDefaultMediatorId()
     if (mediatorId !== undefined) {
       return this.mediationRecipientService.findById(mediatorId)
     }
+    return undefined
+  }
+  public async getDefaultMediatorConnection(): Promise<ConnectionRecord | undefined> {
+    const mediatorRecord = await this.getDefaultMediator()
+    if (mediatorRecord) {return await this.connectionService.getById(mediatorRecord.connectionId)}
     return undefined
   }
 

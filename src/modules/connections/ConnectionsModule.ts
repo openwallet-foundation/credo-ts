@@ -64,12 +64,6 @@ export class ConnectionsModule {
       alias: config?.alias,
     })
 
-    // If agent has inbound connection, which means it's using a mediator, we need to create a route for newly created
-    // connection verkey at mediator.
-    if (this.agentConfig.inboundConnection) {
-      //this.mediationService.create(connectionRecord.verkey)
-    }
-
     return { connectionRecord, invitation }
   }
 
@@ -145,12 +139,6 @@ export class ConnectionsModule {
    */
   public async acceptInvitation(connectionId: string): Promise<ConnectionRecord> {
     const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(connectionId)
-
-    // If agent has inbound connection, which means it's using a mediator,
-    // we need to create a route for newly created connection verkey at mediator.
-    if (this.agentConfig.inboundConnection) {
-      //await this.mediationService.create(connectionRecord.verkey)
-    }
 
     const outbound = createOutboundMessage(connectionRecord, message, connectionRecord.invitation)
     await this.messageSender.sendMessage(outbound)

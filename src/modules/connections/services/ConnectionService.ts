@@ -365,11 +365,12 @@ export class ConnectionService extends EventEmitter {
     // TODO: put in helper method -------
     let mediationRecord : MediationRecord | null = null
     let endpoint, routingKeys: Verkey[]
+    const defaultMediator = await this.mediationRecipientService.getDefaultMediator()
     if(options.mediationId){
       mediationRecord = await this.mediationRecipientService.findById(options.mediationId)
     }
-    else if( await this.mediationRecipientService.getDefaultMediator()){ 
-      mediationRecord = await this.mediationRecipientService.getDefaultMediator()
+    else if( defaultMediator){ 
+      mediationRecord = defaultMediator
     }
     if(mediationRecord){
       endpoint = mediationRecord.endpoint

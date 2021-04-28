@@ -4,7 +4,7 @@ import { get, post } from '../http'
 import { sleep, toBeConnectedWith, waitForBasicMessage, waitForMediationRecord } from '../../src/__tests__/helpers'
 import indy from 'indy-sdk'
 import logger from '../../src/__tests__/logger'
-import { MediationState } from '../../src/modules/routing/models/MediationState'
+import { MediationState } from '../../src'
 
 expect.extend({ toBeConnectedWith })
 
@@ -75,7 +75,7 @@ describe('with mediator', () => {
     bobMediatorConnection = await bobAgent.connections.returnWhenIsConnected(bobMediatorConnection.id)
 
     // Once mediator is connected, mediation request can be sent
-    await aliceAgent.routing.requestMediation(aliceMediatorConnection)
+    await aliceAgent.mediationRecipient.requestMediation(aliceMediatorConnection)
 
     // Start polling responses from this connection and wait for mediation granted
     aliceInboundTransporter.stop = true
@@ -85,7 +85,7 @@ describe('with mediator', () => {
       state: MediationState.Granted,
     })
 
-    await bobAgent.routing.requestMediation(bobMediatorConnection)
+    await bobAgent.mediationRecipient.requestMediation(bobMediatorConnection)
 
     bobInboundTransporter.stop = true
     bobInboundTransporter.start(bobAgent, bobMediatorConnection)
@@ -94,24 +94,16 @@ describe('with mediator', () => {
       state: MediationState.Granted,
     })
 
-    // Now that mediations were granted, set as inbound connections
     aliceMediatorConnection = await aliceAgent.connections.getById(aliceMediationRecord.connectionId)
-    aliceAgent.setInboundConnection({
-      connection: aliceMediatorConnection,
-      verkey: aliceMediationRecord.routingKeys[0],
-    })
 
-    const aliceInboundConnection = aliceAgent.routing.getInboundConnection()?.connection
+
+    const aliceInboundConnection = await aliceAgent.mediationRecipient.getDefaultMediatorConnection()
     const aliceKeyAtAliceMediator = aliceInboundConnection?.verkey
     logger.test('aliceInboundConnection', aliceInboundConnection)
 
     bobMediatorConnection = await bobAgent.connections.getById(bobMediationRecord.connectionId)
-    bobAgent.setInboundConnection({
-      connection: bobMediatorConnection,
-      verkey: bobMediationRecord.routingKeys[0],
-    })
 
-    const bobInboundConnection = bobAgent.routing.getInboundConnection()?.connection
+    const bobInboundConnection = await bobAgent.mediationRecipient.getDefaultMediatorConnection()
     const bobKeyAtBobMediator = bobInboundConnection?.verkey
     console.log('bobKeyAtBobMediator: ' + bobKeyAtBobMediator)
     logger.test('bobInboundConnection', bobInboundConnection)
@@ -183,7 +175,7 @@ class PollingInboundTransporter implements InboundTransporter {
   private pollDownloadMessages(agent: Agent, mediatorConnection: ConnectionRecord) {
     const loop = async () => {
       while (!this.stop) {
-        await agent.routing.downloadMessages(mediatorConnection)
+        await agent.mediationRecipient.downloadMessages(mediatorConnection)
         await sleep(1000)
       }
     }

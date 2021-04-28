@@ -12,27 +12,11 @@ describe('AgentConfig', () => {
         label: 'test',
         walletConfig: { id: 'test' },
         walletCredentials: { key: 'test' },
+        endpoint: 'https://mediator-url.com',
         indy,
       })
 
-      const endpoint = 'https://mediator-url.com'
-      agentConfig.establishInbound({
-        verkey: 'test',
-        connection: getMockConnection({
-          theirDidDoc: new DidDoc({
-            id: 'test',
-            publicKey: [],
-            authentication: [],
-            service: [
-              new IndyAgentService({
-                id: `test;indy`,
-                serviceEndpoint: endpoint,
-                recipientKeys: [],
-              }),
-            ],
-          }),
-        }),
-      })
+      const endpoint = 'https://mediator-url.com/msg'
 
       expect(agentConfig.getEndpoint()).toBe(endpoint)
     })

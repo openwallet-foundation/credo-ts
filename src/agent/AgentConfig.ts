@@ -1,5 +1,5 @@
 import { ConsoleLogger, Logger, LogLevel } from '../logger'
-import { InitConfig, InboundConnection } from '../types'
+import { InitConfig } from '../types'
 
 export class AgentConfig {
   private initConfig: InitConfig

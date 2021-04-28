@@ -19,7 +19,7 @@ import testLogger, { TestLogger } from '../src/__tests__/logger'
 import indy from 'indy-sdk'
 import { resolve } from 'path'
 import { MediationEventType, MediationStateChangedEvent } from '../src/modules/routing/services/MediationService'
-import { MediationState } from '../src/modules/routing/models/MediationState'
+import { MediationState } from '../src/'
 import { sleep } from '../src/__tests__/helpers'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
 
@@ -61,7 +61,7 @@ class HttpInboundTransporter implements InboundTransporter {
   private pollDownloadMessages(agent: Agent, mediatorConnection: ConnectionRecord) {
     const loop = async () => {
       while (!this.stop) {
-        await agent.routing.downloadMessages(mediatorConnection)
+        await agent.mediationRecipient.downloadMessages(mediatorConnection)
         await sleep(5000)
       }
     }
@@ -172,7 +172,7 @@ agent.connections.events.on(ConnectionEventType.StateChanged, async (event: Conn
   if (event.connectionRecord.alias == 'mediator' && event.connectionRecord.state == ConnectionState.Complete) {
     testLogger.info('Mediator connection completed. Requesting mediation...')
 
-    await agent.routing.requestMediation(event.connectionRecord)
+    await agent.mediationRecipient.requestMediation(event.connectionRecord)
 
     // Start polling responses from this connection
     messageReceiver.stop = true
@@ -183,17 +183,17 @@ agent.connections.events.on(ConnectionEventType.StateChanged, async (event: Conn
   }
 })
 
-agent.routing.mediationEvents.on(MediationEventType.StateChanged, async (event: MediationStateChangedEvent) => {
+agent.mediationRecipient.events.on(MediationEventType.StateChanged, async (event: MediationStateChangedEvent) => {
   testLogger.info('Mediation state changed for ' + event.mediationRecord.id)
   testLogger.debug('Previous state: ' + event.previousState + ' New state: ' + event.mediationRecord.state)
 
   if (event.mediationRecord.state == MediationState.Granted) {
     const connectionRecord = await agent.connections.getById(event.mediationRecord.connectionId)
     if (connectionRecord) {
-      agent.setInboundConnection({
+      /*agent.setInboundConnection({
         connection: connectionRecord,
         verkey: event.mediationRecord.routingKeys[0],
-      })
+      })*/
     }
   }
 })
@@ -287,8 +287,15 @@ app.get('/register-mediator', async (req, res) => {
   }
 })
 
+function _assertConnection(connection: ConnectionRecord | undefined): ConnectionRecord {
+  if (!connection) throw Error('')
+  connection?.assertReady()
+  return connection
+}
 app.listen(PORT, '0.0.0.0', 0, async () => {
   await agent.init()
-  messageReceiver.start(agent, agent.routing.getInboundConnection()?.connection)
+  let connection = await agent.mediationRecipient.getDefaultMediatorConnection()
+  connection = _assertConnection(connection)
+  messageReceiver.start(agent, connection)
   testLogger.debug(`JavaScript Edge Agent started on port ${PORT}`)
 })
