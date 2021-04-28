@@ -2,11 +2,11 @@ import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import { RequestMediationMessage, MediationService } from '..'
 
 export class MediationRequestHandler implements Handler {
-  private routingService: MediationService
+  private mediatorService: MediationService
   public supportedMessages = [RequestMediationMessage]
 
-  public constructor(routingService: MediationService) {
-    this.routingService = routingService
+  public constructor(mediatorService: MediationService) {
+    this.mediatorService = mediatorService
   }
 
   public async handle(messageContext: HandlerInboundMessage<MediationRequestHandler>) {
@@ -14,6 +14,6 @@ export class MediationRequestHandler implements Handler {
       throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
 
-    return this.routingService.processMediationRequest(messageContext)
+    await this.mediatorService.processMediationRequest(messageContext)
   }
 }

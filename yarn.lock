@@ -1141,10 +1141,10 @@ argparse@^1.0.7:
   dependencies:
     sprintf-js "~1.0.2"
 
-aries-framework@^0.0.1-unstable.0:
-  version "0.0.1-unstable.0"
-  resolved "https://registry.yarnpkg.com/aries-framework/-/aries-framework-0.0.1-unstable.0.tgz#92c4300b722a25a5cf746215c7e3342defb776dd"
-  integrity sha512-h/7qFXjealSdy0YFM13b3/GjReGJarFUZVNOTHgjYCp1Tbsud8ER9T94VCdY9lRbKZVkrhm0qWD1FdeTX5nHnw==
+aries-framework@^0.0.5-unstable.0:
+  version "0.0.5-unstable.0"
+  resolved "https://registry.yarnpkg.com/aries-framework/-/aries-framework-0.0.5-unstable.0.tgz#b98536c21d05b1145208b5e7b0e7c09c53db6e36"
+  integrity sha512-jOcbY0sJTdXjhhOaq72ouEHi4JcWMlM/wIkJfgCJgqQaRZpnRUH+FeN/5cjLw25Ay4dvDLNW3BLeXhPZTWwxmA==
   dependencies:
     bn.js "^5.2.0"
     buffer "^6.0.3"
@@ -6410,16 +6410,6 @@ typescript@^4.2.3:
   version "4.2.4"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.2.4.tgz#8610b59747de028fda898a8aef0e103f156d0961"
   integrity sha512-V+evlYHZnQkaz8TRBuxTA92yZBPotr5H+WhQ7bD3hZUndx5tGOa1fuCgeSjxAzM1RiN5IzvadIXTVefuuwZCRg==
-
-unbox-primitive@^1.0.0:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/unbox-primitive/-/unbox-primitive-1.0.1.tgz#085e215625ec3162574dc8859abee78a59b14471"
-  integrity sha512-tZU/3NqK3dA5gpE1KtyiJUrEB0lxnGkMFHptJ7q6ewdZ8s12QrODwNbhIJStmJkd1QDXa1NRA8aF2A1zk/Ypyw==
-  dependencies:
-    function-bind "^1.1.1"
-    has-bigints "^1.0.1"
-    has-symbols "^1.0.2"
-    which-boxed-primitive "^1.0.2"
 
 unbox-primitive@^1.0.0:
   version "1.0.1"

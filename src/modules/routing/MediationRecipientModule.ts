@@ -1,5 +1,9 @@
 import { AgentConfig } from '../../agent/AgentConfig'
 import { MessagePickupService, MediationRecipientService } from './services'
+import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
+import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
+import { MediationGrantHandler } from './handlers/MediationGrantHandler'
+import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import {
@@ -11,14 +15,9 @@ import {
 import { BatchMessage } from './messages'
 import type { Verkey } from 'indy-sdk'
 import { Dispatcher } from '../../agent/Dispatcher'
-import { KeylistUpdateHandler, MediationGrantedHandler, MediationDeniedHandler } from './handlers'
 import { ConnectionRecord } from '../connections'
 import agentConfig from '../../../samples/config'
 import { EventEmitter } from 'events'
-import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
-import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { MediationGrantHandler } from './handlers/MediationGrantHandler'
-import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 
 export class MediationRecipientModule {
   private agentConfig: AgentConfig
@@ -44,6 +43,16 @@ export class MediationRecipientModule {
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.registerHandlers(dispatcher)
+  }
+
+  /**
+   * Get the event emitter for the mediation service. Will emit events
+   * when related messages are received.
+   *
+   * @returns event emitter for mediation recipient related received messages
+   */
+   public get events(): EventEmitter {
+    return this.mediationRecipientService
   }
 
   // public async provision(mediatorConfiguration: MediatorConfiguration) {
@@ -103,13 +112,10 @@ export class MediationRecipientModule {
   }
 
   public async requestMediation(connection: ConnectionRecord) {
-    const outboundMessage = await this.mediationRecipientService.requestMediation(connection)
+    const message = await this.mediationRecipientService.prepareRequestMediation(connection)
+    const outboundMessage = createOutboundMessage(connection, message)
     const response = await this.messageSender.sendMessage(outboundMessage)
     return response
-  }
-
-  public getInboundConnection() {
-    return this.agentConfig.inboundConnection
   }
 
   public async listMediators() {
@@ -123,7 +129,7 @@ export class MediationRecipientModule {
   public async getDefaultMediator() {
     const mediatorId: string | undefined = this.mediationRecipientService.getDefaultMediatorId()
     if (mediatorId !== undefined) {
-      return this.mediationRecipientService.fetchMediatorById(mediatorId)
+      return this.mediationRecipientService.findById(mediatorId)
     }
     return undefined
   }
@@ -135,8 +141,8 @@ export class MediationRecipientModule {
   // Register handlers for the several messages for the mediator.
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MediationGrantedHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MediationDeniedHandler(this.mediationRecipientService))
+    dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
+    dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
   }

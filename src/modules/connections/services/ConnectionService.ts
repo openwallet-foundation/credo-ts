@@ -27,7 +27,7 @@ import {
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { MediationService } from '../../..'
+import { MediationRecipientService, MediationRecord } from '../../..'
 
 export enum ConnectionEventType {
   StateChanged = 'stateChanged',
@@ -47,14 +47,14 @@ export class ConnectionService extends EventEmitter {
   private wallet: Wallet
   private config: AgentConfig
   private connectionRepository: Repository<ConnectionRecord>
-  private mediationService: MediationService
+  private mediationRecipientService: MediationRecipientService
 
-  public constructor(wallet: Wallet, config: AgentConfig, connectionRepository: Repository<ConnectionRecord>,mediationService: MediationService) {
+  public constructor(wallet: Wallet, config: AgentConfig, connectionRepository: Repository<ConnectionRecord>,mediationRecipientService: MediationRecipientService) {
     super()
     this.wallet = wallet
     this.config = config
     this.connectionRepository = connectionRepository
-    this.mediationService = mediationService
+    this.mediationRecipientService = mediationRecipientService
   }
 
   /**
@@ -356,11 +356,32 @@ export class ConnectionService extends EventEmitter {
     state: ConnectionState
     invitation?: ConnectionInvitationMessage
     alias?: string
+    routingkeys?: Verkey[]
+    recipientKeys?: Verkey[]
+    mediationId?: string
     autoAcceptConnection?: boolean
     tags?: ConnectionTags
   }): Promise<ConnectionRecord> {
-    const [did, verkey] = await this.wallet.createDid()
-
+    // TODO: put in helper method -------
+    let mediationRecord : MediationRecord | null = null
+    let endpoint, routingKeys: Verkey[]
+    if(options.mediationId){
+      mediationRecord = await this.mediationRecipientService.findById(options.mediationId)
+    }
+    else if( await this.mediationRecipientService.getDefaultMediator()){ 
+      mediationRecord = await this.mediationRecipientService.getDefaultMediator()
+    }
+    if(mediationRecord){
+      endpoint = mediationRecord.endpoint
+      routingKeys = mediationRecord.routingKeys
+    }else{
+      endpoint = this.config.getEndpoint()
+      routingKeys = []
+    }
+    const [did, verkey] = await this.wallet.createDid() // move into prepareKeylistUpdateMessage...
+    // await this.mediationRecipientService.prepareKeylistUpdateMessage()
+    // send and await message to mediator
+    // --------
     const publicKey = new Ed25119Sig2018({
       id: `${did}#1`,
       controller: did,
@@ -369,15 +390,15 @@ export class ConnectionService extends EventEmitter {
 
     const service = new IndyAgentService({
       id: `${did};indy`,
-      serviceEndpoint: this.config.getEndpoint(),
+      serviceEndpoint: endpoint,
       recipientKeys: [verkey],
-      routingKeys: this.mediationService.getRoutingKeys(),
+      routingKeys: routingKeys,
     })
-
+    
     // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
     // inferred from the publicKey class instance
     const auth = new ReferencedAuthentication(publicKey, authenticationTypes[publicKey.type])
-
+    
     const didDoc = new DidDoc({
       id: did,
       authentication: [auth],

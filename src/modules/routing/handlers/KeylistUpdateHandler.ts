@@ -6,14 +6,15 @@ export class KeylistUpdateHandler implements Handler {
   private mediationService: MediationService
   public supportedMessages = [KeylistUpdateMessage]
 
-  public constructor(mediationService: MediationService) {}
+  public constructor(mediationService: MediationService) {
+    this.mediationService = mediationService
+  }
 
   public async handle(messageContext: HandlerInboundMessage<KeylistUpdateHandler>) {
     if (!messageContext.connection) {
       throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
 
-    const message = this.mediationService.processKeylistUpdateRequest(messageContext.connection, messageContext.recipientVerkey, messages)
-    return createOutboundMessage(messageContext.connection, message)
+    await this.mediationService.processKeylistUpdateRequest(messageContext)
   }
 }

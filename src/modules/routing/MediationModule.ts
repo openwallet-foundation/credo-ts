@@ -7,7 +7,6 @@ import { createOutboundMessage } from '../../agent/helpers'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { ConnectionRecord } from '../connections/repository/ConnectionRecord'
 import { ConnectionState } from '../connections/models'
-import { RequestMediationMessage } from './messages'
 import { KeylistUpdateHandler, ForwardHandler, BatchPickupHandler, BatchHandler } from './handlers'
 import { MediationService } from './services/MediationService'
 import { MessagePickupService } from './services/MessagePickupService'
@@ -53,12 +52,13 @@ export class MediationModule {
    *
    * @returns event emitter for mediation-related received messages
    */
-  public get mediationEvents(): EventEmitter {
+  public get events(): EventEmitter {
     return this.mediationService
   }
 
-  public async grantMediation(connection: ConnectionRecord, mediation: MediationRecord) {
-    const outboundMessage = await this.mediationService.grantMediation(connection, mediation)
+  public async grantRequestedMediation(connection: ConnectionRecord, mediation: MediationRecord) {
+    const grantMessage = await this.mediationService.prepareGrantMediationMessage(mediation)
+    const outboundMessage = createOutboundMessage(connection, grantMessage)
     const response = await this.messageSender.sendMessage(outboundMessage)
     return response
   }
@@ -134,26 +134,12 @@ export class MediationModule {
     })
   }
 
-  public getRoutingTable() {
-    return this.mediationService.getRoutes()
-  }
-
-  public addRoute(route: string) {
-    //return this.mediationService.create({connectionId})
-  }
-
-  public getInboundConnection() {
-    return this.agentConfig.inboundConnection
-  }
-
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new KeylistUpdateHandler(this.mediationService))
     dispatcher.registerHandler(new ForwardHandler(this.mediationService))
     dispatcher.registerHandler(new BatchPickupHandler(this.messagePickupService))
     dispatcher.registerHandler(new BatchHandler(this.eventEmitter))
     dispatcher.registerHandler(new MediationRequestHandler(this.mediationService))
-    dispatcher.registerHandler(new RequestMediationMessage(this.mediationService))
-
   }
 }
 

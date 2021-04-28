@@ -10,12 +10,13 @@ import {
   MediationGrantMessage,
   MediationDenyMessage,
   RequestMediationMessage,
+  KeylistUpdateResponseMessage,
 } from '../messages'
 import { Logger } from '../../../logger'
 import { EventEmitter } from 'events'
 import { Repository } from '../../../storage/Repository'
 import { ConnectionInvitationMessage, ConnectionRecord } from '../../connections'
-import { MediationEventType, MediationStateChangedEvent, RoutingTable } from './MediationService'
+import { MediationEventType, MediationKeylistEvent, MediationStateChangedEvent } from './MediationService'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { OutboundMessage } from '../../../types'
 import { isIndyError } from '../../../utils/indyError'
@@ -119,11 +120,25 @@ export class MediationRecipientService extends EventEmitter {
     return keylistUpdateMessage
   }
 
-  public processKeylistUpdateResults() {
-    // Method here
+  public async processKeylistUpdateResults(messageContext: InboundMessageContext<KeylistUpdateResponseMessage>) {
+    if (!messageContext.connection) {
+      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+    }
+    const mediationRecord = await this.findByConnectionId(messageContext.connection.id)
+    if (!mediationRecord) {
+      throw new Error(`mediation record for  ${messageContext.connection.id} not found!`)
+    }   
+    const keylist = messageContext.message.updated
+    // TODO: update keylist in mediationRecord...
+    // for ...
+    // await this.mediatorRepository.update(mediationRecord)
+    const event: MediationKeylistEvent = {
+      mediationRecord,
+      keylist
+    }
+    this.emit(MediationEventType.KeylistUpdate, event)
   }
 
-  
   public async processMediationGrant(messageContext: InboundMessageContext<MediationGrantMessage>) {
     const connection = messageContext.connection
 
@@ -231,7 +246,7 @@ export class MediationRecipientService extends EventEmitter {
   }
 
   public getDefaultMediator() {
-    return this.defaultMediator
+    return this.findById( this.defaultMediator?.mediationId ?? "")
   }
 
   public setDefaultMediator(mediator: DefaultMediationRecord) {

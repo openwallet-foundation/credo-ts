@@ -16,7 +16,7 @@ import {
 } from '../modules/credentials'
 import { BasicMessage, BasicMessageEventType, BasicMessageReceivedEvent } from '../modules/basic-messages'
 import testLogger from './logger'
-import { MediationState } from '../modules/routing/models/MediationState'
+import { MediationState } from '../modules/routing'
 import { MediationEventType, MediationStateChangedEvent } from '../modules/routing/services/MediationService'
 import { MediationRecord } from '../modules/routing/repository/MediationRecord'
 
@@ -122,13 +122,13 @@ export async function waitForMediationRecord(
       const stateMatches = state === undefined || event.mediationRecord.state === state
 
       if (previousStateMatches && mediationIdMatches && stateMatches) {
-        agent.routing.mediationEvents.removeListener(MediationEventType.StateChanged, listener)
+        agent.mediator.events.removeListener(MediationEventType.StateChanged, listener)
 
         resolve(event.mediationRecord)
       }
     }
 
-    agent.routing.mediationEvents.addListener(MediationEventType.StateChanged, listener)
+    agent.mediator.events.addListener(MediationEventType.StateChanged, listener)
   })
 }
 

@@ -85,23 +85,26 @@ export class Agent {
     this.dispatcher = new Dispatcher(this.messageSender)
 
     const storageService = new IndyStorageService(this.wallet)
+    // ---------------------- Repositories ----------------------
     this.mediationRepository = new Repository<MediationRecord>(MediationRecord, storageService)
     this.mediationRecipientRepository = new Repository<MediationRecord>(MediationRecord, storageService)
     this.basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService)
     this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService)
     this.credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService)
     this.proofRepository = new Repository<ProofRecord>(ProofRecord, storageService)
-    this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository)
+    // ---------------------- Services ----------------------
+    this.mediationService = new MediationService(this.messageSender, this.mediationRepository, this.agentConfig,this.wallet)
+    this.mediationRecipientService = new MediationRecipientService(
+      this.agentConfig,
+      this.mediationRecipientRepository,
+      this.messageSender,
+      this.wallet
+    )
+    this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository, this.mediationService)
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository)
     this.trustPingService = new TrustPingService()
     this.messagePickupService = new MessagePickupService(messageRepository)
     this.ledgerService = new LedgerService(this.wallet, this.agentConfig)
-    this.mediationService = new MediationService(this.messageSender, this.mediationRepository, this.agentConfig)
-    this.mediationRecipientService = new MediationRecipientService(
-      this.agentConfig,
-      this.mediationRecipientRepository,
-      this.messageSender
-    )
     this.credentialService = new CredentialService(
       this.wallet,
       this.credentialRepository,
@@ -153,20 +156,6 @@ export class Agent {
 
   public get publicDid() {
     return this.wallet.publicDid
-  }
-
-  // TODO - Possibly unneeded. Update to use mediation recipient repository.
-  public getMediatorUrl() {
-    return this.agentConfig.mediatorUrl
-  }
-
-  public async setInboundConnection(inbound: InboundConnection) {
-    inbound.connection.assertState(ConnectionState.Complete)
-
-    this.agentConfig.establishInbound({
-      verkey: inbound.verkey,
-      connection: inbound.connection,
-    })
   }
 
   public async receiveMessage(inboundPackedMessage: unknown) {
