@@ -100,7 +100,7 @@ export class MediationRecipientModule {
   // }
 
   public async downloadMessages(mediatorConnection?: ConnectionRecord) {
-    const inboundConnection = mediatorConnection
+    /*const inboundConnection = mediatorConnection
       ? { verkey: mediatorConnection.theirKey!, connection: mediatorConnection }
       : this.getInboundConnection()
 
@@ -108,7 +108,7 @@ export class MediationRecipientModule {
       const outboundMessage = await this.messagePickupService.batchPickup(inboundConnection)
       outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
       await this.messageSender.sendMessage(outboundMessage)
-    }
+    }*/
   }
 
   public async requestMediation(connection: ConnectionRecord) {

@@ -20,9 +20,12 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import testLogger from '../../../__tests__/logger'
+import { MediationRecipientService, MediationRecipientService, MediationRecord, MediationService } from '../../routing'
+import { MessageSender } from '../../../agent/MessageSender'
 
 jest.mock('./../../../storage/Repository')
 const ConnectionRepository = <jest.Mock<Repository<ConnectionRecord>>>(<unknown>Repository)
+const MediationRepository = <jest.Mock<Repository<MediationRecord>>>(<unknown>Repository)
 
 export function getMockConnection({
   state = ConnectionState.Invited,
@@ -92,7 +95,9 @@ describe('ConnectionService', () => {
   let wallet: Wallet
   let agentConfig: AgentConfig
   let connectionRepository: Repository<ConnectionRecord>
+  let mediationRepository: Repository<MediationRecord>
   let connectionService: ConnectionService
+  let messageSender: MessageSender
 
   beforeAll(async () => {
     agentConfig = new AgentConfig(initConfig)
@@ -108,9 +113,11 @@ describe('ConnectionService', () => {
   beforeEach(() => {
     // Clear all instances and calls to constructor and all methods:
     ConnectionRepository.mockClear()
-
+    MediationRepository.mockClear()
     connectionRepository = new ConnectionRepository()
-    connectionService = new ConnectionService(wallet, agentConfig, connectionRepository)
+    mediationRepository = new MediationRepository()
+    mediationRecipientService = new MediationRecipientService(agentConfig, mediationRepository, messageSender, wallet)
+    connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, mediationRepository)
   })
 
   describe('createConnectionWithInvitation', () => {
