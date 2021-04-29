@@ -1,5 +1,5 @@
 import indy from 'indy-sdk'
-import { v4 as uuid } from 'uuid'
+import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { Wallet } from '../../../wallet/Wallet'
 import { ConnectionService } from '../services/ConnectionService'

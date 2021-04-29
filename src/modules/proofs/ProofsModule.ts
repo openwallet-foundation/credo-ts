@@ -93,10 +93,7 @@ export class ProofsModule {
     const proofRecord = await this.proofService.getById(proofRecordId)
     const connection = await this.connectionService.getById(proofRecord.connectionId)
 
-    // FIXME: transformation should be handled by record class
-    const presentationProposal = JsonTransformer.fromJSON(proofRecord.proposalMessage, ProposePresentationMessage)
-      .presentationProposal
-
+    const presentationProposal = proofRecord.proposalMessage?.presentationProposal
     if (!presentationProposal) {
       throw new Error(`Proof record with id ${proofRecordId} is missing required presentation proposal`)
     }

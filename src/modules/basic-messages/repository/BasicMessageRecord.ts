@@ -1,9 +1,9 @@
-import { v4 as uuid } from 'uuid'
-import { BaseRecord, RecordType, Tags } from '../../../storage/BaseRecord'
+import { uuid } from '../../../utils/uuid'
+import { BaseRecord, Tags } from '../../../storage/BaseRecord'
 
 export interface BasicMessageStorageProps {
   id?: string
-  createdAt?: number
+  createdAt?: Date
   tags: Tags
 
   content: string
@@ -11,16 +11,21 @@ export interface BasicMessageStorageProps {
 }
 
 export class BasicMessageRecord extends BaseRecord implements BasicMessageStorageProps {
-  public content: string
-  public sentTime: string
+  public content!: string
+  public sentTime!: string
 
-  public static readonly type: RecordType = RecordType.BasicMessageRecord
+  public static readonly type = 'BasicMessageRecord'
   public readonly type = BasicMessageRecord.type
 
   public constructor(props: BasicMessageStorageProps) {
-    super(props.id ?? uuid(), props.createdAt ?? Date.now())
-    this.content = props.content
-    this.sentTime = props.sentTime
-    this.tags = props.tags
+    super()
+
+    if (props) {
+      this.id = props.id ?? uuid()
+      this.createdAt = props.createdAt ?? new Date()
+      this.content = props.content
+      this.sentTime = props.sentTime
+      this.tags = props.tags
+    }
   }
 }

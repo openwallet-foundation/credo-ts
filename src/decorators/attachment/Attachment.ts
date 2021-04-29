@@ -1,6 +1,6 @@
 import { Expose, Type } from 'class-transformer'
 import { IsBase64, IsDate, IsHash, IsInt, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
-import { v4 as uuid } from 'uuid'
+import { uuid } from '../../utils/uuid'
 
 export interface AttachmentOptions {
   id?: string

@@ -1,7 +1,7 @@
 import type { CredDefId } from 'indy-sdk'
-import { v4 as uuid } from 'uuid'
 import { EventEmitter } from 'events'
 
+import { uuid } from '../../../utils/uuid'
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { LedgerService } from '../../ledger/services/LedgerService'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
@@ -353,13 +353,7 @@ export class CredentialService extends EventEmitter {
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
     const proverDid = connection.did
 
-    // FIXME: transformation should be handled by credential record
-    const offer =
-      credentialRecord.offerMessage instanceof OfferCredentialMessage
-        ? credentialRecord.offerMessage
-        : JsonTransformer.fromJSON(credentialRecord.offerMessage, OfferCredentialMessage)
-
-    const credOffer = offer?.indyCredentialOffer
+    const credOffer = credentialRecord.offerMessage?.indyCredentialOffer
 
     if (!credOffer) {
       throw new Error(
@@ -454,18 +448,14 @@ export class CredentialService extends EventEmitter {
     // Assert
     credentialRecord.assertState(CredentialState.RequestReceived)
 
-    // Transform credential request to class instance if this is not already the case
-    // FIXME: credential record should handle transformation
-    const requestMessage =
-      credentialRecord.requestMessage instanceof RequestCredentialMessage
-        ? credentialRecord.requestMessage
-        : JsonTransformer.fromJSON(credentialRecord.requestMessage, RequestCredentialMessage)
+    const requestMessage = credentialRecord.requestMessage
+    const offerMessage = credentialRecord.offerMessage
 
-    // FIXME: transformation should be handled by credential record
-    const offerMessage =
-      credentialRecord.offerMessage instanceof OfferCredentialMessage
-        ? credentialRecord.offerMessage
-        : JsonTransformer.fromJSON(credentialRecord.offerMessage, OfferCredentialMessage)
+    if (!offerMessage) {
+      throw new Error(
+        `Missing credential offer for credential exchange with thread id ${credentialRecord.tags.threadId}`
+      )
+    }
 
     const indyCredentialOffer = offerMessage?.indyCredentialOffer
     const indyCredentialRequest = requestMessage?.indyCredentialRequest

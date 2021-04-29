@@ -89,11 +89,23 @@ export class Agent {
     this.dispatcher = new Dispatcher(this.messageSender)
 
     const storageService = new IndyStorageService(this.wallet)
-    this.basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService)
-    this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService)
-    this.provisioningRepository = new Repository<ProvisioningRecord>(ProvisioningRecord, storageService)
-    this.credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService)
-    this.proofRepository = new Repository<ProofRecord>(ProofRecord, storageService)
+    this.basicMessageRepository = new Repository<BasicMessageRecord>(
+      BasicMessageRecord,
+      storageService as IndyStorageService<BasicMessageRecord>
+    )
+    this.connectionRepository = new Repository<ConnectionRecord>(
+      ConnectionRecord,
+      storageService as IndyStorageService<ConnectionRecord>
+    )
+    this.provisioningRepository = new Repository<ProvisioningRecord>(
+      ProvisioningRecord,
+      storageService as IndyStorageService<ProvisioningRecord>
+    )
+    this.credentialRepository = new Repository<CredentialRecord>(
+      CredentialRecord,
+      storageService as IndyStorageService<CredentialRecord>
+    )
+    this.proofRepository = new Repository<ProofRecord>(ProofRecord, storageService as IndyStorageService<ProofRecord>)
     this.provisioningService = new ProvisioningService(this.provisioningRepository, this.agentConfig)
     this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository)
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository)
