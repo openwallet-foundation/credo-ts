@@ -132,8 +132,8 @@ export class Agent {
     return this.agentConfig.mediatorUrl
   }
 
-  public async receiveMessage(inboundPackedMessage: unknown) {
-    return await this.messageReceiver.receiveMessage(inboundPackedMessage)
+  public async receiveMessage(inboundPackedMessage: unknown, transport?: Transport) {
+    return await this.messageReceiver.receiveMessage(inboundPackedMessage, transport)
   }
 
   public async closeAndDeleteWallet() {

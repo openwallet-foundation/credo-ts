@@ -3,14 +3,18 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { OutboundMessage, OutboundPackage } from '../types'
 import { OutboundTransporter } from '../transport/OutboundTransporter'
 import { EnvelopeService } from './EnvelopeService'
+import { HttpTransport, TransportService, WebSocketTransport } from './TransportService'
+import { ConnectionRecord } from '../modules/connections'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MessageSender {
   private envelopeService: EnvelopeService
+  private transportService: TransportService
   private outboundTransporter?: OutboundTransporter
 
-  public constructor(envelopeService: EnvelopeService) {
+  public constructor(envelopeService: EnvelopeService, transportService: TransportService) {
     this.envelopeService = envelopeService
+    this.transportService = transportService
   }
 
   public setOutboundTransporter(outboundTransporter: OutboundTransporter) {

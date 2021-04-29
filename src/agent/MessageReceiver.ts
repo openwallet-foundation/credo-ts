@@ -11,11 +11,13 @@ import { AgentMessage } from './AgentMessage'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { Logger } from '../logger'
 import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
+import { Transport, TransportService } from './TransportService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MessageReceiver {
   private config: AgentConfig
   private envelopeService: EnvelopeService
+  private transportService: TransportService
   private connectionService: ConnectionService
   private dispatcher: Dispatcher
   private logger: Logger
@@ -23,11 +25,13 @@ export class MessageReceiver {
   public constructor(
     config: AgentConfig,
     envelopeService: EnvelopeService,
+    transportService: TransportService,
     connectionService: ConnectionService,
     dispatcher: Dispatcher
   ) {
     this.config = config
     this.envelopeService = envelopeService
+    this.transportService = transportService
     this.connectionService = connectionService
     this.dispatcher = dispatcher
     this.logger = this.config.logger
@@ -39,7 +43,7 @@ export class MessageReceiver {
    *
    * @param inboundPackedMessage the message to receive and handle
    */
-  public async receiveMessage(inboundPackedMessage: unknown) {
+  public async receiveMessage(inboundPackedMessage: unknown, transport?: Transport) {
     if (typeof inboundPackedMessage !== 'object' || inboundPackedMessage == null) {
       throw new Error('Invalid message received. Message should be object')
     }
@@ -63,6 +67,10 @@ export class MessageReceiver {
           `Inbound message 'sender_key' ${senderKey} is different from connection.theirKey ${connection.theirKey}`
         )
       }
+    }
+
+    if (connection && transport) {
+      this.transportService.saveTransport(connection.id, transport)
     }
 
     this.logger.info(`Received message with type '${unpackedMessage.message['@type']}'`, unpackedMessage.message)
