@@ -28,20 +28,34 @@ const bobConfig: InitConfig = {
   indy,
 }
 
+const mediatorConfig: InitConfig = {
+  label: 'e2e ned',
+  mediatorUrl: 'http://localhost:4003',
+  walletConfig: { id: 'e2e-ned' },
+  walletCredentials: { key: '00000000000000000000000000000Test03' },
+  autoAcceptConnections: true,
+  logger: logger,
+  indy,
+}
+
+
 describe('with mediator', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
+  let mediator: Agent
   let aliceAtAliceBobId: string
 
   afterAll(async () => {
     ;(aliceAgent.inboundTransporter as PollingInboundTransporter).stop = true
     ;(bobAgent.inboundTransporter as PollingInboundTransporter).stop = true
+    ;(mediator.inboundTransporter as PollingInboundTransporter).stop = true
 
     // Wait for messages to flush out
     await new Promise((r) => setTimeout(r, 1000))
 
     await aliceAgent.closeAndDeleteWallet()
     await bobAgent.closeAndDeleteWallet()
+    await mediator.closeAndDeleteWallet()
   })
 
   test('Alice and Bob make a connection with mediator', async () => {
@@ -57,8 +71,15 @@ describe('with mediator', () => {
     bobAgent.setOutboundTransporter(new HttpOutboundTransporter(bobAgent))
     await bobAgent.init()
 
+    mediator = new Agent(mediatorConfig)
+    const mediatorInBoundTransporter = new PollingInboundTransporter()
+    mediator.setInboundTransporter(mediatorInBoundTransporter)
+    mediator.setOutboundTransporter(new HttpOutboundTransporter(mediator))
+    await mediator.init()
+
     // Connect agents with their mediators
-    const aliceMediatorResponse = await get(`${aliceAgent.getMediatorUrl()}/invitation`)
+    const aliceMediatorUrl = await aliceAgent.getMediatorUrl()
+    const aliceMediatorResponse = await get(`${'http://localhost:4003'}/invitation`)
     let aliceMediatorConnection = await aliceAgent.connections.receiveInvitation(JSON.parse(aliceMediatorResponse), {
       autoAcceptConnection: true,
       alias: 'mediator',
@@ -66,7 +87,8 @@ describe('with mediator', () => {
     aliceMediatorConnection = await aliceAgent.connections.returnWhenIsConnected(aliceMediatorConnection.id)
 
     // Connect agents with their mediators
-    const bobMediatorResponse = await get(`${bobAgent.getMediatorUrl()}/invitation`)
+    const bobMediatorUrl = await bobAgent.getMediatorUrl()
+    const bobMediatorResponse = await get(`${'http://localhost:4003'}/invitation`)
     let bobMediatorConnection = await bobAgent.connections.receiveInvitation(JSON.parse(bobMediatorResponse), {
       autoAcceptConnection: true,
       alias: 'mediator',

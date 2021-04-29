@@ -11,6 +11,6 @@ export class ForwardHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<ForwardHandler>) {
-    return this.routingService.processForwardMessage(messageContext)
+    await this.routingService.processForwardMessage(messageContext)
   }
 }

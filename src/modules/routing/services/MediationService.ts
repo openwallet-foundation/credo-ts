@@ -79,7 +79,7 @@ export class MediationService extends EventEmitter {
       return connection
     }
     
-    processForwardMessage(messageContext: HandlerInboundMessage<ForwardHandler>) {
+    public async processForwardMessage(messageContext: HandlerInboundMessage<ForwardHandler>) {
       throw new Error('Method not implemented.')
     }
     public async processKeylistUpdateRequest(messageContext: InboundMessageContext<KeylistUpdateMessage>) {
