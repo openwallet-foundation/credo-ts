@@ -8,6 +8,10 @@ import {
   KeylistUpdateResult,
   KeylistUpdated,
   MediationRecordProps,
+  MediationRole,
+  MediationState,
+  MediationDenyMessage,
+  MediationGrantMessage,
 } from '..'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { createOutboundMessage } from '../../../agent/helpers'
@@ -158,4 +162,92 @@ export class MediationService extends EventEmitter {
 
     return connection
   }
+
+  public setRoutingKey(verkey: Verkey) {
+    this.routingKey = verkey
+  }
+
+  public async grantMediation(connection: ConnectionRecord, mediation: MediationRecord) {
+    mediation.routingKeys = this.routingKey ? [this.routingKey] : []
+
+    const grantMediationMessage = new MediationGrantMessage({
+      endpoint: this.agentConfig.getEndpoint(),
+      routing_keys: mediation.routingKeys,
+    })
+
+    return createOutboundMessage(connection, grantMediationMessage)
+  }
+
+  public async processMediationRequest(messageContext: InboundMessageContext<MediationRequestMessage>) {
+    const connection = messageContext.connection
+
+    // Assert connection
+    connection?.assertReady()
+    if (!connection) {
+      throw new Error('No connection associated with incoming mediation grant message')
+    }
+
+    const mediationRecord = await this.create({
+      connectionId: connection.id,
+      role: MediationRole.Mediator,
+      state: MediationState.Init,
+    })
+
+    // Mediation can be either granted or denied. Let business logic decide that
+    await this.updateState(mediationRecord, MediationState.Requested)
+  }
+
+  public async findByConnectionId(id: string): Promise<MediationRecord | null> {
+    // TODO: Use findByQuery (connectionId as tag)
+    const mediationRecords = await this.mediationRepository.findAll()
+
+    for (const record of mediationRecords) {
+      if (record.connectionId == id) {
+        return record
+      }
+    }
+    return null
+  }
+
+  public async findAll(): Promise<MediationRecord[] | null> {
+    return await this.mediationRepository.findAll()
+  }
+
+  /**
+   * Update the record to a new state and emit an state changed event. Also updates the record
+   * in storage.
+   *
+   * @param proofRecord The proof record to update the state for
+   * @param newState The state to update to
+   *
+   */
+  private async updateState(mediationRecord: MediationRecord, newState: MediationState) {
+    const previousState = mediationRecord.state
+
+    mediationRecord.state = newState
+
+    await this.mediationRepository.update(mediationRecord)
+
+    const event: MediationStateChangedEvent = {
+      mediationRecord,
+      previousState: previousState,
+    }
+
+    this.emit(MediationEventType.StateChanged, event)
+  }
+}
+
+export enum MediationEventType {
+  StateChanged = 'stateChanged',
+}
+
+export interface MediationStateChangedEvent {
+  mediationRecord: MediationRecord
+  previousState: MediationState
+}
+
+export interface MediationGrantedEvent {
+  connectionRecord: ConnectionRecord
+  endpoint: string
+  routingKeys: Verkey[]
 }

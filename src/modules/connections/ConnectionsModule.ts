@@ -17,6 +17,7 @@ import {
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
 } from './handlers'
+import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 
 export class ConnectionsModule {
   private agentConfig: AgentConfig
@@ -93,10 +94,23 @@ export class ConnectionsModule {
       alias: config?.alias,
     })
 
-    // if auto accept is enabled (either on the record or the global agent config)
-    // we directly send a connection request
-    if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      connection = await this.acceptInvitation(connection.id)
+    if (this.agentConfig.getEndpoint() == 'didcomm:transport/queue') {
+      const {
+        message: connectionRequest,
+        connectionRecord: connectionRecord,
+      } = await this.connectionService.createRequest(connection.id)
+
+      const outboundMessage = createOutboundMessage(connectionRecord, connectionRequest, connectionRecord.invitation)
+      outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
+
+      await this.messageSender.sendMessage(outboundMessage)
+      await this.connectionService.returnWhenIsConnected(connectionRecord.id)
+    } else {
+      // if auto accept is enabled (either on the record or the global agent config)
+      // we directly send a connection request
+      if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
+        connection = await this.acceptInvitation(connection.id)
+      }
     }
 
     return connection

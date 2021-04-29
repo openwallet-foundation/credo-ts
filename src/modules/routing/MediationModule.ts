@@ -8,10 +8,17 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { ConnectionRecord } from '../connections/repository/ConnectionRecord'
 import { ConnectionState } from '../connections/models'
 import { RequestMediationMessage } from './messages'
-import { KeylistUpdateHandler,ForwardHandler,BatchPickupHandler,BatchHandler } from './handlers'
+import { KeylistUpdateHandler, ForwardHandler, BatchPickupHandler, BatchHandler } from './handlers'
 import { MediationService } from './services/MediationService'
 import { MessagePickupService } from './services/MessagePickupService'
-import { ConnectionEventType, ConnectionInvitationMessage, ConnectionService, ConnectionStateChangedEvent } from '../connections'
+import {
+  ConnectionEventType,
+  ConnectionInvitationMessage,
+  ConnectionService,
+  ConnectionStateChangedEvent,
+} from '../connections'
+import { MediationRecord } from '.'
+import { MediationRequestHandler } from './handlers/MediationRequestHandler'
 
 export class MediationModule {
   private agentConfig: AgentConfig
@@ -39,92 +46,44 @@ export class MediationModule {
     this.eventEmitter = eventEmitter
     this.registerHandlers(dispatcher)
   }
-/*   public async provision(mediatorConfiguration: MediatorConfiguration) {
-    let mediationService = await this.mediationService.find()
 
-    if (!provisioningRecord) {
-      this.logger.info('No provision record found. Creating connection with mediator.')
-      const { verkey, invitationUrl, alias = 'Mediator' } = mediatorConfiguration
-      const mediatorInvitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
-
-      const connectionRecord = await this.connectionService.processInvitation(mediatorInvitation, { alias })
-      const { message: connectionRequest } = await this.connectionService.createRequest(connectionRecord.id)
-
-      const outboundMessage = createOutboundMessage(connectionRecord, connectionRequest, connectionRecord.invitation)
-      outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
-
-      await this.messageSender.sendMessage(outboundMessage)
-      await this.connectionService.returnWhenIsConnected(connectionRecord.id)
-
-      const provisioningProps = {
-        mediatorConnectionId: connectionRecord.id,
-        mediatorPublicVerkey: verkey,
-      }
-      provisioningRecord = await this.provisioningService.create(provisioningProps)
-      this.logger.debug('Provisioning record has been saved.')
-    }
-
-    this.logger.debug('Provisioning record:', provisioningRecord)
-
-    const agentConnectionAtMediator = await this.connectionService.find(provisioningRecord.mediatorConnectionId)
-
-    if (!agentConnectionAtMediator) {
-      throw new Error('Connection not found!')
-    }
-    this.logger.debug('agentConnectionAtMediator', agentConnectionAtMediator)
-
-    agentConnectionAtMediator.assertState(ConnectionState.Complete)
-
-    this.agentConfig.establishInbound({
-      verkey: mediationRecord.mediatorPublicVerkey,
-      connection: agentConnectionAtMediator,
-    })
-
-    return agentConnectionAtMediator*/
-  
-  public get events(): EventEmitter {
+  /**
+   * Get the event emitter for the mediation service. Will emit events
+   * when related messages are received.
+   *
+   * @returns event emitter for mediation-related received messages
+   */
+  public get mediationEvents(): EventEmitter {
     return this.mediationService
   }
 
-  // Pass in a connectionRecord, recieve back the connectionRecord and a message
-  public async requestMediation(config?: {
-    autoAcceptConnection?: boolean
-    alias?: string
-  }): Promise<{ invitation: RequestMediationMessage; connectionRecord: ConnectionRecord }> {
-    const { connectionRecord: connectionRecord, message: invitation } = await this.connectionService.createInvitation({
+  public async grantMediation(connection: ConnectionRecord, mediation: MediationRecord) {
+    const outboundMessage = await this.mediationService.grantMediation(connection, mediation)
+    const response = await this.messageSender.sendMessage(outboundMessage)
+    return response
+  }
+
+  // TODO - Belongs in connections.
+  public async receiveMediation(
+    invitation: ConnectionInvitationMessage,
+    config?: {
+      autoAcceptConnection?: boolean
+      alias?: string
+    }
+  ): Promise<ConnectionRecord> {
+    let connection = await this.connectionService.processInvitation(invitation, {
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
     })
 
-    // How does this fit in with mediation?
-    if (this.agentConfig.inboundConnection) {
-      this.mediationService.createRoute(connectionRecord.verkey)
+    // if auto accept is enabled (either on the record or the global agent config)
+    // we directly send a connection request
+    if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
+      connection = await this.acceptInvitation(connection.id)
     }
 
-    return { connectionRecord, invitation }
+    return connection
   }
-
-  // TODO - Belongs in connections.
-   public async receiveMediation(
-     invitation: ConnectionInvitationMessage,
-     config?: {
-       autoAcceptConnection?: boolean;
-       alias?: string;
-     }
-   ): Promise<ConnectionRecord> {
-     let connection = await this.connectionService.processInvitation(invitation, {
-       autoAcceptConnection: config?.autoAcceptConnection,
-       alias: config?.alias,
-     });
-
-     // if auto accept is enabled (either on the record or the global agent config)
-     // we directly send a connection request
-     if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-       connection = await this.acceptInvitation(connection.id);
-     }
-
-     return connection;
-   }
 
   acceptInvitation(id: string): ConnectionRecord | PromiseLike<ConnectionRecord> {
     throw new Error('Method not implemented.')
@@ -175,7 +134,6 @@ export class MediationModule {
     })
   }
 
-
   public getRoutingTable() {
     return this.mediationService.getRoutes()
   }
@@ -190,11 +148,11 @@ export class MediationModule {
 
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new KeylistUpdateHandler(this.mediationService))
-    //dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new ForwardHandler(this.mediationService))
-    // TODO: separate recipient handler for batch.
     dispatcher.registerHandler(new BatchPickupHandler(this.messagePickupService))
     dispatcher.registerHandler(new BatchHandler(this.eventEmitter))
+    dispatcher.registerHandler(new MediationRequestHandler(this.mediationService))
+
   }
 }
 

@@ -1,20 +1,12 @@
-import { EventEmitter } from 'events'
 import { Logger } from '../logger'
-import { InitConfig } from '../types'
+import { InboundConnection, InitConfig } from '../types'
 import { IndyWallet } from '../wallet/IndyWallet'
 import { MessageReceiver } from './MessageReceiver'
 import { EnvelopeService } from './EnvelopeService'
-import { ConnectionService, TrustPingService, ConnectionRecord } from '../modules/connections'
+import { ConnectionService, TrustPingService, ConnectionRecord, ConnectionState } from '../modules/connections'
 import { CredentialService, CredentialRecord } from '../modules/credentials'
 import { ProofService, ProofRecord } from '../modules/proofs'
-import {
-  ProviderRoutingService,
-  MessagePickupService,
-  MediationRecipientService,
-  MediationRecipientRecord,
-  MediationRecord,
-  MediationService,
-} from '../modules/routing'
+import { MessagePickupService, MediationRecipientService, MediationRecord, MediationService } from '../modules/routing'
 import { BasicMessageService, BasicMessageRecord } from '../modules/basic-messages'
 import { LedgerService } from '../modules/ledger'
 import { Dispatcher } from './Dispatcher'
@@ -29,9 +21,9 @@ import { Wallet } from '../wallet/Wallet'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
-import { RoutingModule } from '../modules/routing/RoutingModule'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
+import EventEmitter from 'events'
 import { MediationRecipientModule } from '../modules/routing/MediationRecipientModule'
 import { MediationModule } from '../modules/routing/MediationModule'
 
@@ -48,7 +40,6 @@ export class Agent {
   protected connectionService: ConnectionService
   protected proofService: ProofService
   protected basicMessageService: BasicMessageService
-  protected providerRoutingService: ProviderRoutingService
   protected trustPingService: TrustPingService
   protected messagePickupService: MessagePickupService
   protected ledgerService: LedgerService
@@ -60,11 +51,10 @@ export class Agent {
   protected credentialRepository: Repository<CredentialRecord>
   protected proofRepository: Repository<ProofRecord>
   protected mediationRepository: Repository<MediationRecord>
-  protected mediationRecipientRepository: Repository<MediationRecipientRecord>
+  protected mediationRecipientRepository: Repository<MediationRecord>
 
   public connections!: ConnectionsModule
   public proofs!: ProofsModule
-  public routing!: RoutingModule
   public basicMessages!: BasicMessagesModule
   public ledger!: LedgerModule
   public credentials!: CredentialsModule
@@ -96,21 +86,17 @@ export class Agent {
 
     const storageService = new IndyStorageService(this.wallet)
     this.mediationRepository = new Repository<MediationRecord>(MediationRecord, storageService)
-    this.mediationRecipientRepository = new Repository<MediationRecipientRecord>(
-      MediationRecipientRecord,
-      storageService
-    )
+    this.mediationRecipientRepository = new Repository<MediationRecord>(MediationRecord, storageService)
     this.basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService)
     this.connectionRepository = new Repository<ConnectionRecord>(ConnectionRecord, storageService)
     this.credentialRepository = new Repository<CredentialRecord>(CredentialRecord, storageService)
     this.proofRepository = new Repository<ProofRecord>(ProofRecord, storageService)
     this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository)
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository)
-    this.providerRoutingService = new ProviderRoutingService()
     this.trustPingService = new TrustPingService()
     this.messagePickupService = new MessagePickupService(messageRepository)
     this.ledgerService = new LedgerService(this.wallet, this.agentConfig)
-    this.mediationService = new MediationService(this.agentConfig, this.mediationRepository, this.messageSender)
+    this.mediationService = new MediationService(this.messageSender, this.mediationRepository, this.agentConfig)
     this.mediationRecipientService = new MediationRecipientService(
       this.agentConfig,
       this.mediationRecipientRepository,
@@ -146,10 +132,15 @@ export class Agent {
   public async init() {
     await this.wallet.init()
 
-    const { publicDidSeed, genesisPath, poolName } = this.agentConfig
+    const { publicDidSeed, genesisPath, poolName, mediatorRecordId } = this.agentConfig
     if (publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
       await this.wallet.initPublicDid({ seed: publicDidSeed })
+
+      // Init routing key for mediation service (server role)
+      if (this.wallet.publicDid) {
+        this.mediationService.setRoutingKey(this.wallet.publicDid.verkey)
+      }
     }
 
     // If the genesisPath is provided in the config, we will automatically handle ledger connection
@@ -158,6 +149,21 @@ export class Agent {
       await this.ledger.connect(poolName, {
         genesis_txn: genesisPath,
       })
+    }
+
+    // If mediator record Id is provided, search for it and (if record exists) update other properties
+    // accordingly, overriding them if needed
+    if (mediatorRecordId) {
+      const mediationRecord = await this.mediationRecipientService.findById(mediatorRecordId)
+      if (mediationRecord) {
+        const connectionRecord = await this.connections.getById(mediationRecord.connectionId)
+        if (connectionRecord) {
+          this.setInboundConnection({
+            connection: connectionRecord,
+            verkey: mediationRecord.recipientKeys[0],
+          })
+        }
+      }
     }
 
     if (this.inboundTransporter) {
@@ -174,6 +180,15 @@ export class Agent {
     return this.agentConfig.mediatorUrl
   }
 
+  public async setInboundConnection(inbound: InboundConnection) {
+    inbound.connection.assertState(ConnectionState.Complete)
+
+    this.agentConfig.establishInbound({
+      verkey: inbound.verkey,
+      connection: inbound.connection,
+    })
+  }
+
   public async receiveMessage(inboundPackedMessage: unknown) {
     return await this.messageReceiver.receiveMessage(inboundPackedMessage)
   }
@@ -188,9 +203,9 @@ export class Agent {
       this.dispatcher,
       this.agentConfig,
       this.connectionService,
+      this.mediationService,
       this.trustPingService,
-      this.messageSender,
-      this.mediationService
+      this.messageSender
     )
 
     this.mediator = new MediationModule(

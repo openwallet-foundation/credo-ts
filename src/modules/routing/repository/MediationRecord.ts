@@ -1,12 +1,12 @@
 import type { Verkey } from 'indy-sdk'
 import { v4 as uuid } from 'uuid'
 import { BaseRecord, RecordType, Tags } from '../../../storage/BaseRecord'
-import { MediationRole, MediationState } from '../models/MediationStates'
+import { MediationRole, MediationState } from '..'
 
 export interface MediationRecordProps {
   id?: string
   state: MediationState
-  role: string
+  role: MediationRole
   createdAt?: number
   connectionId: string
   endpoint: string
@@ -25,7 +25,7 @@ export interface MediationStorageProps extends MediationRecordProps {
 
 export class MediationRecord extends BaseRecord implements MediationStorageProps {
   public state: MediationState
-  public role: string
+  public role: MediationRole
   public tags: MediationTags
   public connectionId: string
   public endpoint: string
@@ -37,12 +37,12 @@ export class MediationRecord extends BaseRecord implements MediationStorageProps
   public constructor(props: MediationStorageProps) {
     super(props.id ?? uuid(), Date.now())
     this.connectionId = props.connectionId
-    this.recipientKeys = props.recipientKeys
-    this.tags = props.tags
-    this.state = props.state
+    this.recipientKeys = props.recipientKeys || []
+    this.tags = props.tags || {}
+    this.state = props.state || MediationState.Init
     this.role = props.role
     this.connectionId = props.connectionId
-    this.endpoint = props.endpoint
+    this.endpoint = props.endpoint || ''
   }
 
   public assertState(expectedStates: MediationState | MediationState[]) {
@@ -60,6 +60,14 @@ export class MediationRecord extends BaseRecord implements MediationStorageProps
   public assertRole(expectedRole: MediationRole) {
     if (this.role !== expectedRole) {
       throw new Error(`Mediation record has invalid role ${this.role}. Expected role ${expectedRole}.`)
+    }
+  }
+
+  public assertConnection(currentConnectionId: string) {
+    if (this.connectionId !== currentConnectionId) {
+      throw new Error(
+        `Proof record is associated with connection '${this.connectionId}'. Current connection is '${currentConnectionId}'`
+      )
     }
   }
 }

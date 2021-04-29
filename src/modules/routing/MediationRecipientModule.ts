@@ -17,6 +17,8 @@ import agentConfig from '../../../samples/config'
 import { EventEmitter } from 'events'
 import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
+import { MediationGrantHandler } from './handlers/MediationGrantHandler'
+import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 
 export class MediationRecipientModule {
   private agentConfig: AgentConfig
@@ -44,13 +46,66 @@ export class MediationRecipientModule {
     this.registerHandlers(dispatcher)
   }
 
-  public async downloadMessages() {
-    const inboundConnection = this.getInboundConnection()
+  // public async provision(mediatorConfiguration: MediatorConfiguration) {
+  //   let provisioningRecord = await this.mediationRecipientService.find()
+
+  //   if (!provisioningRecord) {
+  //     this.logger.info('No provision record found. Creating connection with mediator.')
+  //     const { verkey, invitationUrl, alias = 'Mediator' } = mediatorConfiguration
+  //     const mediatorInvitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
+
+  //     const connectionRecord = await this.connectionService.processInvitation(mediatorInvitation, { alias })
+  //     const { message: connectionRequest } = await this.connectionService.createRequest(connectionRecord.id)
+
+  //     const outboundMessage = createOutboundMessage(connectionRecord, connectionRequest, connectionRecord.invitation)
+  //     outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
+
+  //     await this.messageSender.sendMessage(outboundMessage)
+  //     await this.connectionService.returnWhenIsConnected(connectionRecord.id)
+
+  //     const provisioningProps = {
+  //       mediatorConnectionId: connectionRecord.id,
+  //       mediatorPublicVerkey: verkey,
+  //     }
+  //     provisioningRecord = await this.provisioningService.create(provisioningProps)
+  //     this.logger.debug('Provisioning record has been saved.')
+  //   }
+
+  //   this.logger.debug('Provisioning record:', provisioningRecord)
+
+  //   const agentConnectionAtMediator = await this.connectionService.find(provisioningRecord.mediatorConnectionId)
+
+  //   if (!agentConnectionAtMediator) {
+  //     throw new Error('Connection not found!')
+  //   }
+  //   this.logger.debug('agentConnectionAtMediator', agentConnectionAtMediator)
+
+  //   agentConnectionAtMediator.assertState(ConnectionState.Complete)
+
+  //   this.agentConfig.establishInbound({
+  //     verkey: provisioningRecord.mediatorPublicVerkey,
+  //     connection: agentConnectionAtMediator,
+  //   })
+
+  //   return agentConnectionAtMediator
+  // }
+
+  public async downloadMessages(mediatorConnection?: ConnectionRecord) {
+    const inboundConnection = mediatorConnection
+      ? { verkey: mediatorConnection.theirKey!, connection: mediatorConnection }
+      : this.getInboundConnection()
+
     if (inboundConnection) {
       const outboundMessage = await this.messagePickupService.batchPickup(inboundConnection)
       outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
       await this.messageSender.sendMessage(outboundMessage)
     }
+  }
+
+  public async requestMediation(connection: ConnectionRecord) {
+    const outboundMessage = await this.mediationRecipientService.requestMediation(connection)
+    const response = await this.messageSender.sendMessage(outboundMessage)
+    return response
   }
 
   public getInboundConnection() {
@@ -72,10 +127,6 @@ export class MediationRecipientModule {
     }
     return undefined
   }
-  public async requestMediation(connectionReord: ConnectionRecord) {
-    const mediationRequest = await this.mediationRecipientService.prepareRequest(connectionReord.id)
-    await this.messageSender.sendMessage(mediationRequest)
-  }
 
   public async keylistUpdate() {}
 
@@ -86,6 +137,8 @@ export class MediationRecipientModule {
     dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new MediationGrantedHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new MediationDeniedHandler(this.mediationRecipientService))
+    dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
+    dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
   }
 }
 
