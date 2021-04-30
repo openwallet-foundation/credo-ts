@@ -27,10 +27,18 @@ import {
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { MediationRecipientService, MediationRecord } from '../../..'
-
+import { KeylistUpdate, KeylistUpdated, MediationRecipientService, MediationRecord } from '../../../modules/routing'
+import { MediationStateChangedEvent, MediationKeylistEvent} from '../../routing/services/MediationService'
+import { KeylistState } from '../../routing'
+import {waitForEventWithTimeout} from '../../../utils/promiseWithTimeOut'
 export enum ConnectionEventType {
   StateChanged = 'stateChanged',
+}
+
+export interface keylistUpdateEvent {
+  mediationRecord: MediationRecord
+  keylist: KeylistUpdate
+  threadId: string
 }
 
 export interface ConnectionStateChangedEvent {
@@ -57,6 +65,38 @@ export class ConnectionService extends EventEmitter {
     this.mediationRecipientService = mediationRecipientService
   }
 
+  public async createRouting(mediationId: string | null) {
+    let mediationRecord : MediationRecord | null = null
+    let endpoint, routingKeys: Verkey[]
+    const defaultMediator = await this.mediationRecipientService.getDefaultMediator()
+    if(mediationId){
+      mediationRecord = await this.mediationRecipientService.findById(mediationId)
+    }
+    else if( defaultMediator){ 
+      mediationRecord = defaultMediator
+    }
+    const [did, verkey] = await this.wallet.createDid()
+    if(mediationRecord){
+      endpoint = mediationRecord.endpoint
+      const message = await this.mediationRecipientService.prepareKeylistUpdateMessage(verkey)
+      routingKeys = mediationRecord.routingKeys
+      // assumption, UpdateMessage will only ever have one keylistupdate
+      const event: keylistUpdateEvent = {
+        mediationRecord,
+        keylist: message.updates[0],
+        threadId: message.threadId
+      }
+      this.emit( KeylistState.Update, event)
+      //TODO: catch this event in module and send and update message to mediator
+      //TODO: emit KeylistState.updated event on this listener from mediationservice handler
+      await waitForEventWithTimeout(this, KeylistState.Updated , message, 2000)
+    }else{ // no mediation
+      endpoint = this.config.getEndpoint()
+      routingKeys = [verkey]
+    }
+    return [mediationRecord, endpoint, routingKeys]
+  }
+  
   /**
    * Create a new connection record containing a connection invitation message
    *
@@ -362,27 +402,7 @@ export class ConnectionService extends EventEmitter {
     autoAcceptConnection?: boolean
     tags?: ConnectionTags
   }): Promise<ConnectionRecord> {
-    // TODO: put in helper method -------
-    let mediationRecord : MediationRecord | null = null
-    let endpoint, routingKeys: Verkey[]
-    const defaultMediator = await this.mediationRecipientService.getDefaultMediator()
-    if(options.mediationId){
-      mediationRecord = await this.mediationRecipientService.findById(options.mediationId)
-    }
-    else if( defaultMediator){ 
-      mediationRecord = defaultMediator
-    }
-    if(mediationRecord){
-      endpoint = mediationRecord.endpoint
-      routingKeys = mediationRecord.routingKeys
-    }else{
-      endpoint = this.config.getEndpoint()
-      routingKeys = []
-    }
-    const [did, verkey] = await this.wallet.createDid() // move into prepareKeylistUpdateMessage...
-    // await this.mediationRecipientService.prepareKeylistUpdateMessage()
-    // send and await message to mediator
-    // --------
+    determineRou
     const publicKey = new Ed25119Sig2018({
       id: `${did}#1`,
       controller: did,

@@ -106,8 +106,11 @@ export class MediationRecipientService extends EventEmitter {
     // Method here
   }
 
-  public async prepareKeylistUpdateMessage() {
-    const [did, verkey] = await this.wallet.createDid()
+  public async prepareKeylistUpdateMessage(verkey?: Verkey): Promise<KeylistUpdateMessage> {
+    if (!verkey){
+      let did 
+      [did, verkey] = await this.wallet.createDid()
+    }
     const keylistUpdateMessage = new KeylistUpdateMessage({
       updates: [
         new KeylistUpdate({
@@ -116,7 +119,6 @@ export class MediationRecipientService extends EventEmitter {
         }),
       ],
     })
-    
     return keylistUpdateMessage
   }
 
