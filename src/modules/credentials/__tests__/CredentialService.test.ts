@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import type Indy from 'indy-sdk'
-import type { CredReqMetadata, WalletQuery, CredDef } from 'indy-sdk'
+import type { WalletQuery, CredDef } from 'indy-sdk'
 import { Wallet } from '../../../wallet/Wallet'
 import { Repository } from '../../../storage/Repository'
 import { CredentialOfferTemplate, CredentialService, CredentialEventType } from '../services'
@@ -27,6 +27,7 @@ import { LedgerService as LedgerServiceImpl } from '../../ledger/services'
 import { ConnectionState } from '../../connections'
 import { getMockConnection } from '../../connections/__tests__/ConnectionService.test'
 import { AgentConfig } from '../../../agent/AgentConfig'
+import { CredentialUtils } from '../CredentialUtils'
 
 jest.mock('./../../../storage/Repository')
 jest.mock('./../../../modules/ledger/services/LedgerService')
@@ -34,7 +35,6 @@ jest.mock('./../../../modules/ledger/services/LedgerService')
 const indy = {} as typeof Indy
 
 const CredentialRepository = <jest.Mock<Repository<CredentialRecord>>>(<unknown>Repository)
-// const ConnectionService = <jest.Mock<ConnectionServiceImpl>>(<unknown>ConnectionServiceImpl);
 const LedgerService = <jest.Mock<LedgerServiceImpl>>(<unknown>LedgerServiceImpl)
 
 const connection = getMockConnection({
@@ -74,12 +74,13 @@ const requestAttachment = new Attachment({
   }),
 })
 
-// TODO: replace attachment with credential fixture
 const credentialAttachment = new Attachment({
   id: INDY_CREDENTIAL_ATTACHMENT_ID,
   mimeType: 'application/json',
   data: new AttachmentData({
-    base64: JsonEncoder.toBase64(credReq),
+    base64: JsonEncoder.toBase64({
+      values: CredentialUtils.convertAttributesToValues(credentialPreview.attributes),
+    }),
   }),
 })
 
@@ -91,12 +92,14 @@ const mockCredentialRecord = ({
   metadata,
   tags,
   id,
+  credentialAttributesValues,
 }: {
   state: CredentialState
   requestMessage?: RequestCredentialMessage
   metadata?: CredentialRecordMetadata
   tags?: CredentialRecordTags
   id?: string
+  credentialAttributesValues?: CredentialPreviewAttribute[]
 }) =>
   new CredentialRecord({
     offerMessage: new OfferCredentialMessage({
@@ -105,6 +108,7 @@ const mockCredentialRecord = ({
       attachments: [offerAttachment],
     }),
     id,
+    credentialAttributesValues: credentialAttributesValues || credentialPreview.attributes,
     requestMessage,
     metadata,
     state: state || CredentialState.OfferSent,
@@ -320,7 +324,7 @@ describe('CredentialService', () => {
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
       expect(updatedCredentialRecord).toMatchObject({
-        requestMetadata: { cred_req: 'meta-data' },
+        metadata: { requestMetadata: { cred_req: 'meta-data' } },
         state: CredentialState.RequestSent,
       })
     })
@@ -682,6 +686,21 @@ describe('CredentialService', () => {
       await expect(credentialService.processCredential(messageContext)).rejects.toThrowError(
         `Missing required request metadata for credential with id id`
       )
+    })
+
+    test('throws error when credential attribute values does not match received credential values', async () => {
+      repositoryFindByQueryMock.mockReturnValue(
+        Promise.resolve([
+          mockCredentialRecord({
+            state: CredentialState.RequestSent,
+            id: 'id',
+            // Take only first value from credential
+            credentialAttributesValues: [credentialPreview.attributes[0]],
+          }),
+        ])
+      )
+
+      await expect(credentialService.processCredential(messageContext)).rejects.toThrowError()
     })
 
     const validState = CredentialState.RequestSent
