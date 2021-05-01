@@ -1,5 +1,5 @@
 import { classToPlain, plainToClass } from 'class-transformer'
-import { Service, ServiceTransformer, serviceTypes, IndyAgentService, DIDCommService } from '../service'
+import { Service, ServiceTransformer, serviceTypes, IndyAgentService, DidCommService } from '../service'
 
 describe('Did | Service', () => {
   it('should correctly transform Json to Service class', async () => {
@@ -85,8 +85,8 @@ describe('Did | Service', () => {
     })
   })
 
-  describe('DIDCommService', () => {
-    it('should correctly transform Json to DIDCommService class', async () => {
+  describe('DidCommService', () => {
+    it('should correctly transform Json to DidCommService class', async () => {
       const json = {
         id: 'test-id',
         type: 'did-communication',
@@ -96,12 +96,12 @@ describe('Did | Service', () => {
         priority: 10,
         serviceEndpoint: 'https://example.com',
       }
-      const service = plainToClass(DIDCommService, json)
+      const service = plainToClass(DidCommService, json)
 
       expect(service).toMatchObject(json)
     })
 
-    it('should correctly transform DIDCommService class to Json', async () => {
+    it('should correctly transform DidCommService class to Json', async () => {
       const json = {
         id: 'test-id',
         type: 'did-communication',
@@ -112,7 +112,7 @@ describe('Did | Service', () => {
         serviceEndpoint: 'https://example.com',
       }
 
-      const service = new DIDCommService({
+      const service = new DidCommService({
         ...json,
       })
 
@@ -131,8 +131,8 @@ describe('Did | Service', () => {
         serviceEndpoint: 'https://example.com',
       }
 
-      const transformService = plainToClass(DIDCommService, json)
-      const constructorService = new DIDCommService({ ...json })
+      const transformService = plainToClass(DidCommService, json)
+      const constructorService = new DidCommService({ ...json })
 
       expect(transformService.priority).toBe(0)
       expect(constructorService.priority).toBe(0)

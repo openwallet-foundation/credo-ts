@@ -3,7 +3,7 @@ import { Equals, IsArray, IsString, ValidateNested } from 'class-validator'
 
 import { AuthenticationTransformer, Authentication } from './authentication'
 import { PublicKey, PublicKeyTransformer } from './publicKey'
-import { DIDCommService, IndyAgentService, Service, ServiceTransformer } from './service'
+import { DidCommService, IndyAgentService, Service, ServiceTransformer } from './service'
 
 type DidDocOptions = Pick<DidDoc, 'id' | 'publicKey' | 'service' | 'authentication'>
 

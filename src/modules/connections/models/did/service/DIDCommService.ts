@@ -1,7 +1,7 @@
 import { ArrayNotEmpty, IsOptional, IsString } from 'class-validator'
 import { Service } from './Service'
 
-export class DIDCommService extends Service {
+export class DidCommService extends Service {
   public constructor(options: {
     id: string
     serviceEndpoint: string
@@ -10,7 +10,7 @@ export class DIDCommService extends Service {
     accept?: string[]
     priority?: number
   }) {
-    super({ ...options, type: DIDCommService.type })
+    super({ ...options, type: DidCommService.type })
 
     if (options) {
       this.recipientKeys = options.recipientKeys

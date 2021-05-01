@@ -3,7 +3,7 @@ import { classToPlain, plainToClass } from 'class-transformer'
 import { ReferencedAuthentication, EmbeddedAuthentication } from '../authentication'
 import { DidDoc } from '../DidDoc'
 import { Ed25119Sig2018, EddsaSaSigSecp256k1, RsaSig2018 } from '../publicKey'
-import { Service, IndyAgentService, DIDCommService } from '../service'
+import { Service, IndyAgentService, DidCommService } from '../service'
 
 import diddoc from './diddoc.json'
 
@@ -56,7 +56,7 @@ const didDoc = new DidDoc({
       routingKeys: ['Q4zqM7aXqm7gDQkUVLng9h'],
       priority: 5,
     }),
-    new DIDCommService({
+    new DidCommService({
       id: '7',
       serviceEndpoint: 'https://agent.com/did-comm',
       recipientKeys: ['DADEajsDSaksLng9h'],
@@ -89,7 +89,7 @@ describe('Did | DidDoc', () => {
     // Check Service
     expect(didDoc.service[0]).toBeInstanceOf(Service)
     expect(didDoc.service[1]).toBeInstanceOf(IndyAgentService)
-    expect(didDoc.service[2]).toBeInstanceOf(DIDCommService)
+    expect(didDoc.service[2]).toBeInstanceOf(DidCommService)
 
     // Check Authentication
     expect(didDoc.authentication[0]).toBeInstanceOf(ReferencedAuthentication)
@@ -187,11 +187,11 @@ describe('Did | DidDoc', () => {
   })
 
   describe('didCommServices', () => {
-    it('returns all IndyAgentService and DIDCommService instances', async () => {
+    it('returns all IndyAgentService and DidCommService instances', async () => {
       expect(didDoc.didCommServices).toEqual(expect.arrayContaining([didDoc.service[1], didDoc.service[2]]))
     })
 
-    it('returns all IndyAgentService and DIDCommService instances sorted by priority', async () => {
+    it('returns all IndyAgentService and DidCommService instances sorted by priority', async () => {
       expect(didDoc.didCommServices).toEqual([didDoc.service[2], didDoc.service[1]])
     })
   })

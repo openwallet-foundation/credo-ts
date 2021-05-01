@@ -22,7 +22,7 @@ import {
   Ed25119Sig2018,
   authenticationTypes,
   ReferencedAuthentication,
-  DIDCommService,
+  DidCommService,
   IndyAgentService,
 } from '../models'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
@@ -366,7 +366,7 @@ export class ConnectionService extends EventEmitter {
     })
 
     // IndyAgentService is old service type
-    // DIDCommService is new service type
+    // DidCommService is new service type
     // Include both for better interoperability
     const indyAgentService = new IndyAgentService({
       id: `${did}#IndyAgentService`,
@@ -374,12 +374,12 @@ export class ConnectionService extends EventEmitter {
       recipientKeys: [verkey],
       routingKeys: this.config.getRoutingKeys(),
     })
-    const didCommService = new DIDCommService({
+    const didCommService = new DidCommService({
       id: `${did}#did-communication`,
       serviceEndpoint: this.config.getEndpoint(),
       recipientKeys: [verkey],
       routingKeys: this.config.getRoutingKeys(),
-      // Prefer DIDCommService over IndyAgentService
+      // Prefer DidCommService over IndyAgentService
       priority: 1,
     })
 
