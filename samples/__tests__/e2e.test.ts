@@ -1,6 +1,6 @@
-import { Agent, InboundTransporter, OutboundTransporter } from '../../src'
-import { OutboundPackage, InitConfig } from '../../src/types'
-import { get, post } from '../http'
+import { Agent, HttpOutboundTransporter, InboundTransporter } from '../../src'
+import { InitConfig } from '../../src/types'
+import { get } from '../http'
 import { sleep, toBeConnectedWith, waitForBasicMessage } from '../../src/__tests__/helpers'
 import indy from 'indy-sdk'
 import logger from '../../src/__tests__/logger'
@@ -147,35 +147,5 @@ class PollingInboundTransporter implements InboundTransporter {
     new Promise(() => {
       loop()
     })
-  }
-}
-
-class HttpOutboundTransporter implements OutboundTransporter {
-  private agent: Agent
-
-  public constructor(agent: Agent) {
-    this.agent = agent
-  }
-  public async sendMessage(outboundPackage: OutboundPackage, receiveReply: boolean) {
-    const { payload, endpoint } = outboundPackage
-
-    if (!endpoint) {
-      throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
-    }
-
-    logger.debug(`Sending outbound message to connection ${outboundPackage.connection.id}`, outboundPackage.payload)
-
-    if (receiveReply) {
-      const response = await post(`${endpoint}`, JSON.stringify(payload))
-      if (response) {
-        logger.debug(`Response received:\n ${response}`)
-        const wireMessage = JSON.parse(response)
-        this.agent.receiveMessage(wireMessage)
-      } else {
-        logger.debug(`No response received.`)
-      }
-    } else {
-      await post(`${endpoint}`, JSON.stringify(payload))
-    }
   }
 }

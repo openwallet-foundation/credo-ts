@@ -1,5 +1,5 @@
 import { ConsoleLogger, Logger, LogLevel } from '../logger'
-import { InitConfig, InboundConnection } from '../types'
+import { InitConfig, InboundConnection, DidCommMimeType } from '../types'
 
 export class AgentConfig {
   private initConfig: InitConfig
@@ -53,6 +53,10 @@ export class AgentConfig {
 
   public get autoAcceptConnections() {
     return this.initConfig.autoAcceptConnections ?? false
+  }
+
+  public get didCommMimeType() {
+    return this.initConfig.didCommMimeType ?? DidCommMimeType.V0
   }
 
   public getEndpoint() {

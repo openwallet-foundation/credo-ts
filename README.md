@@ -107,7 +107,7 @@ const config = {
   indy,
 }
 
-agent = new Agent(config, inboundTransport, outboundTransport)
+const agent = new Agent(config)
 ```
 
 For an example react native app that makes use of the framework see [Aries Mobile Agent React Native](https://github.com/animo/aries-mobile-agent-react-native.git)

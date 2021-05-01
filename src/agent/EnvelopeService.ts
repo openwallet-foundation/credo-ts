@@ -17,6 +17,7 @@ class EnvelopeService {
     const { connection, routingKeys, recipientKeys, senderVk, payload, endpoint } = outboundMessage
     const { verkey, theirKey } = connection
 
+    const returnRoute = outboundMessage.payload.hasReturnRouting()
     const message = payload.toJSON()
 
     this.logger.info('outboundMessage', {
@@ -41,7 +42,7 @@ class EnvelopeService {
         outboundPackedMessage = await this.wallet.pack(forwardMessage.toJSON(), [routingKey], senderVk)
       }
     }
-    return { connection, payload: outboundPackedMessage, endpoint }
+    return { connection, payload: outboundPackedMessage, endpoint, responseRequested: returnRoute }
   }
 
   public async unpackMessage(packedMessage: JsonWebKey): Promise<UnpackedMessageContext> {
