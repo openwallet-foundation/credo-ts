@@ -1,6 +1,9 @@
+import testLogger from '../../__tests__/logger'
 import { ConnectionInvitationMessage, ConnectionRole, DidDoc, IndyAgentService } from '../../modules/connections'
 import { getMockConnection } from '../../modules/connections/__tests__/ConnectionService.test'
 import { TransportService, HttpTransport, WebSocketTransport, DidCommQueueTransport } from '../TransportService'
+
+const logger = testLogger
 
 describe('TransportService', () => {
   describe('resolveTransport', () => {
@@ -21,7 +24,7 @@ describe('TransportService', () => {
         ],
       })
 
-      transportService = new TransportService()
+      transportService = new TransportService(logger)
     })
 
     test('throws error when no transport is resolved for a given connection ID', () => {

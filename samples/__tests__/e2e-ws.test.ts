@@ -31,7 +31,7 @@ const bobConfig: InitConfig = {
   indy,
 }
 
-describe('websockets with mediator', () => {
+describe.skip('websockets with mediator', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
   let aliceAtAliceBobId: string

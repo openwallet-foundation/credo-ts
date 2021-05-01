@@ -1,11 +1,15 @@
-import { ConsoleLogger, LogLevel } from '../logger'
+import { Logger } from '../logger'
 import { ConnectionRecord, ConnectionRole } from '../modules/connections'
 
-const logger = new ConsoleLogger(LogLevel.debug)
 const DID_COMM_TRANSPORT_QUEUE = 'didcomm:transport/queue'
 
 export class TransportService {
   private transportTable: TransportTable = {}
+  private logger: Logger
+
+  public constructor(logger: Logger) {
+    this.logger = logger
+  }
 
   public saveTransport(connectionId: string, transport: Transport) {
     this.transportTable[connectionId] = transport
@@ -38,7 +42,7 @@ export class TransportService {
     if (connection.theirDidDoc) {
       const endpoint = connection.theirDidDoc.service[0].serviceEndpoint
       if (endpoint) {
-        logger.debug('Taking service endpoint from their DidDoc')
+        this.logger.debug('Taking service endpoint from their DidDoc')
         return endpoint
       }
     }
@@ -46,7 +50,7 @@ export class TransportService {
     if (connection.role === ConnectionRole.Invitee && connection.invitation) {
       const endpoint = connection.invitation.serviceEndpoint
       if (endpoint) {
-        logger.debug('Taking service endpoint from invitation')
+        this.logger.debug('Taking service endpoint from invitation')
         return endpoint
       }
     }

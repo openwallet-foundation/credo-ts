@@ -29,7 +29,7 @@ const bobConfig: InitConfig = {
   indy,
 }
 
-describe.skip('with mediator', () => {
+describe('with mediator', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
   let aliceAtAliceBobId: string
