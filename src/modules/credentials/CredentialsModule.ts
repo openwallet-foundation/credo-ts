@@ -5,7 +5,7 @@ import { ConnectionService } from '../connections'
 import { EventEmitter } from 'events'
 import { CredentialOfferTemplate, CredentialService } from './services'
 import { ProposeCredentialMessageOptions } from './messages'
-import { CredentialInfo } from './models'
+import { IndyCredentialInfo } from './models'
 import { Dispatcher } from '../../agent/Dispatcher'
 import {
   ProposeCredentialHandler,
@@ -228,7 +228,7 @@ export class CredentialsModule {
    * @param credentialId the id (referent) of the indy credential
    * @returns Indy credential info object
    */
-  public async getIndyCredential(credentialId: string): Promise<CredentialInfo> {
+  public async getIndyCredential(credentialId: string): Promise<IndyCredentialInfo> {
     return this.credentialService.getIndyCredential(credentialId)
   }
 

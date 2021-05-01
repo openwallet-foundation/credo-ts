@@ -14,7 +14,7 @@ import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { Wallet } from '../../../wallet/Wallet'
-import { CredentialUtils, Credential, CredentialInfo } from '../../credentials'
+import { CredentialUtils, Credential, IndyCredentialInfo } from '../../credentials'
 
 import {
   PresentationMessage,
@@ -802,10 +802,10 @@ export class ProofService extends EventEmitter {
     proofRequest: ProofRequest,
     requestedCredentials: RequestedCredentials
   ): Promise<IndyProof> {
-    const credentialObjects: CredentialInfo[] = []
+    const credentialObjects: IndyCredentialInfo[] = []
 
     for (const credentialId of requestedCredentials.getCredentialIdentifiers()) {
-      const credentialInfo = JsonTransformer.fromJSON(await this.wallet.getCredential(credentialId), CredentialInfo)
+      const credentialInfo = JsonTransformer.fromJSON(await this.wallet.getCredential(credentialId), IndyCredentialInfo)
 
       credentialObjects.push(credentialInfo)
     }

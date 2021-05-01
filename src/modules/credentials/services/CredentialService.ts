@@ -15,7 +15,7 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
-import { CredentialInfo } from '../models'
+import { IndyCredentialInfo } from '../models'
 import {
   OfferCredentialMessage,
   CredentialPreview,
@@ -661,10 +661,10 @@ export class CredentialService extends EventEmitter {
    * @param credentialId the id (referent) of the indy credential
    * @returns Indy credential info object
    */
-  public async getIndyCredential(credentialId: string): Promise<CredentialInfo> {
+  public async getIndyCredential(credentialId: string): Promise<IndyCredentialInfo> {
     const indyCredential = await this.wallet.getCredential(credentialId)
 
-    return JsonTransformer.fromJSON(indyCredential, CredentialInfo)
+    return JsonTransformer.fromJSON(indyCredential, IndyCredentialInfo)
   }
 
   /**

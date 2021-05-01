@@ -1,11 +1,11 @@
-import type { IndyCredentialInfo } from 'indy-sdk'
+import type { IndyCredentialInfo as IndySDKCredentialInfo } from 'indy-sdk'
 import { Expose } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 
-export class CredentialInfo {
-  public constructor(options: CredentialInfo) {
+export class IndyCredentialInfo {
+  public constructor(options: IndyCredentialInfo) {
     if (options) {
       this.referent = options.referent
       this.attributes = options.attributes
@@ -44,7 +44,7 @@ export class CredentialInfo {
   @IsOptional()
   public credentialRevocationId?: string
 
-  public toJSON(): IndyCredentialInfo {
-    return (JsonTransformer.toJSON(this) as unknown) as IndyCredentialInfo
+  public toJSON(): IndySDKCredentialInfo {
+    return (JsonTransformer.toJSON(this) as unknown) as IndySDKCredentialInfo
   }
 }

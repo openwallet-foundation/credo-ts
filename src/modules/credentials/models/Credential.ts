@@ -3,7 +3,7 @@ import { Expose, Type } from 'class-transformer'
 import { IsOptional, ValidateNested } from 'class-validator'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 
-import { CredentialInfo } from './CredentialInfo'
+import { IndyCredentialInfo } from './IndyCredentialInfo'
 import { RevocationInterval } from './RevocationInterval'
 
 export class Credential {
@@ -15,9 +15,9 @@ export class Credential {
   }
 
   @Expose({ name: 'cred_info' })
-  @Type(() => CredentialInfo)
+  @Type(() => IndyCredentialInfo)
   @ValidateNested()
-  public credentialInfo!: CredentialInfo
+  public credentialInfo!: IndyCredentialInfo
 
   @IsOptional()
   @Type(() => RevocationInterval)
