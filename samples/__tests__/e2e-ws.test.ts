@@ -1,11 +1,11 @@
 import WebSocket from 'ws'
-import { Agent, ConnectionRecord, ConsoleLogger, InboundTransporter, LogLevel, OutboundTransporter } from '../../src'
+import { Agent, ConnectionRecord, InboundTransporter, OutboundTransporter } from '../../src'
 import { OutboundPackage, InitConfig } from '../../src/types'
 import { get } from '../http'
 import { toBeConnectedWith, waitForBasicMessage } from '../../src/__tests__/helpers'
 import indy from 'indy-sdk'
 import testLogger from '../../src/__tests__/logger'
-import { WebSocketTransport, Transport } from '../../src/agent/TransportService'
+import { WebSocketTransport } from '../../src/agent/TransportService'
 
 const logger = testLogger
 
