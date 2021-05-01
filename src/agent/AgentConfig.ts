@@ -57,8 +57,8 @@ export class AgentConfig {
 
   public getEndpoint() {
     // If a mediator is used, always return that as endpoint
-    const mediatorEndpoint = this.inboundConnection?.connection?.theirDidDoc?.service[0].serviceEndpoint
-    if (mediatorEndpoint) return mediatorEndpoint
+    const didCommServices = this.inboundConnection?.connection?.theirDidDoc?.didCommServices
+    if (didCommServices && didCommServices?.length > 0) return didCommServices[0].serviceEndpoint
 
     // Otherwise we check if an endpoint is set
     if (this.initConfig.endpoint) return `${this.initConfig.endpoint}/msg`

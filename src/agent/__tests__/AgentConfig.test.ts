@@ -1,6 +1,6 @@
 import type Indy from 'indy-sdk'
 import { getMockConnection } from '../../modules/connections/__tests__/ConnectionService.test'
-import { DidDoc, IndyAgentService } from '../../modules/connections'
+import { DidCommService, DidDoc } from '../../modules/connections'
 import { AgentConfig } from '../AgentConfig'
 
 const indy = {} as typeof Indy
@@ -24,7 +24,7 @@ describe('AgentConfig', () => {
             publicKey: [],
             authentication: [],
             service: [
-              new IndyAgentService({
+              new DidCommService({
                 id: `test;indy`,
                 serviceEndpoint: endpoint,
                 recipientKeys: [],
