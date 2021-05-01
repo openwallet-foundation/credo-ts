@@ -70,10 +70,10 @@ export class DidDoc {
    * Get all DIDComm services ordered by priority descending. This means the highest
    * priority will be the first entry.
    */
-  public get didCommServices(): Array<IndyAgentService | DIDCommService> {
-    const didCommServiceClasses = [IndyAgentService.type, DIDCommService.type]
-    const services = this.service.filter((service) => didCommServiceClasses.includes(service.type)) as Array<
-      IndyAgentService | DIDCommService
+  public get didCommServices(): Array<IndyAgentService | DidCommService> {
+    const didCommServiceTypes = [IndyAgentService.type, DidCommService.type]
+    const services = this.service.filter((service) => didCommServiceTypes.includes(service.type)) as Array<
+      IndyAgentService | DidCommService
     >
 
     // Sort services based on indicated priority
