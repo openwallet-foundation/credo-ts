@@ -6,21 +6,31 @@ import {
   IssueCredentialMessage,
   RequestCredentialMessage,
   OfferCredentialMessage,
+  CredentialPreviewAttribute,
 } from '../messages'
 import { CredentialState } from '../CredentialState'
+import { CredentialInfo } from '../models/CredentialInfo'
+
+export interface CredentialRecordMetadata {
+  requestMetadata?: Record<string, unknown>
+  credentialDefinitionId?: string
+  schemaId?: string
+}
 
 export interface CredentialStorageProps {
   id?: string
   createdAt?: Date
   state: CredentialState
   connectionId: string
-  requestMetadata?: Record<string, unknown>
+
   credentialId?: string
-  tags: CredentialRecordTags
+  metadata?: CredentialRecordMetadata
+  tags?: CredentialRecordTags
   proposalMessage?: ProposeCredentialMessage
   offerMessage?: OfferCredentialMessage
   requestMessage?: RequestCredentialMessage
   credentialMessage?: IssueCredentialMessage
+  credentialAttributesValues?: CredentialPreviewAttribute[]
 }
 
 export interface CredentialRecordTags extends Tags {
@@ -30,9 +40,9 @@ export interface CredentialRecordTags extends Tags {
 export class CredentialRecord extends BaseRecord implements CredentialStorageProps {
   public connectionId!: string
   public credentialId?: string
-  public requestMetadata?: Record<string, unknown>
   public tags!: CredentialRecordTags
   public state!: CredentialState
+  public metadata!: CredentialRecordMetadata
 
   // message data
   @Type(() => ProposeCredentialMessage)
@@ -43,6 +53,9 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
   public requestMessage?: RequestCredentialMessage
   @Type(() => IssueCredentialMessage)
   public credentialMessage?: IssueCredentialMessage
+
+  @Type(() => CredentialPreviewAttribute)
+  public credentialAttributesValues?: CredentialPreviewAttribute[]
 
   public static readonly type = 'CredentialRecord'
   public readonly type = CredentialRecord.type
@@ -55,15 +68,36 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
       this.createdAt = props.createdAt ?? new Date()
       this.state = props.state
       this.connectionId = props.connectionId
-      this.requestMetadata = props.requestMetadata
+      this.metadata = props.metadata ?? {}
       this.credentialId = props.credentialId
-      this.tags = props.tags as { [keys: string]: string }
+      this.tags = (props.tags as { [keys: string]: string }) ?? {}
 
       this.proposalMessage = props.proposalMessage
       this.offerMessage = props.offerMessage
       this.requestMessage = props.requestMessage
       this.credentialMessage = props.credentialMessage
+      this.credentialAttributesValues = props.credentialAttributesValues
     }
+  }
+
+  public getCredentialInfo(): CredentialInfo | null {
+    if (!this.credentialAttributesValues) return null
+
+    const claims = this.credentialAttributesValues.reduce(
+      (accumulator, current) => ({
+        ...accumulator,
+        [current.name]: current.value,
+      }),
+      {}
+    )
+
+    return new CredentialInfo({
+      claims,
+      metadata: {
+        credentialDefinitionId: this.metadata.credentialDefinitionId,
+        schemaId: this.metadata.schemaId,
+      },
+    })
   }
 
   public assertState(expectedStates: CredentialState | CredentialState[]) {

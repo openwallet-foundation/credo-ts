@@ -1,6 +1,5 @@
 /* eslint-disable no-console */
 import indy from 'indy-sdk'
-import type { CredDefId } from 'indy-sdk'
 import { Subject } from 'rxjs'
 import { Agent, ConnectionRecord } from '..'
 import {
@@ -65,7 +64,8 @@ const credentialPreview = new CredentialPreview({
 describe('credentials', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
-  let credDefId: CredDefId
+  let credDefId: string
+  let schemaId: string
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
   let faberCredentialRecord: CredentialRecord
@@ -90,7 +90,8 @@ describe('credentials', () => {
       attributes: ['name', 'age'],
       version: '1.0',
     }
-    const [, ledgerSchema] = await registerSchema(faberAgent, schemaTemplate)
+    const [ledgerSchemaId, ledgerSchema] = await registerSchema(faberAgent, schemaTemplate)
+    schemaId = ledgerSchemaId
 
     const definitionTemplate = {
       schema: ledgerSchema,
@@ -204,7 +205,11 @@ describe('credentials', () => {
       },
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
-      requestMetadata: expect.any(Object),
+      metadata: {
+        requestMetadata: expect.any(Object),
+        schemaId,
+        credentialDefinitionId: credDefId,
+      },
       credentialId: expect.any(String),
       state: CredentialState.Done,
     })
@@ -215,6 +220,10 @@ describe('credentials', () => {
       createdAt: expect.any(Date),
       tags: {
         threadId: expect.any(String),
+      },
+      metadata: {
+        schemaId,
+        credentialDefinitionId: credDefId,
       },
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
@@ -303,7 +312,7 @@ describe('credentials', () => {
       },
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
-      requestMetadata: expect.any(Object),
+      metadata: { requestMetadata: expect.any(Object) },
       credentialId: expect.any(String),
       state: CredentialState.Done,
     })

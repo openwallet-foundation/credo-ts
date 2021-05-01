@@ -1,5 +1,5 @@
 import { CredentialUtils } from '../CredentialUtils'
-import { CredentialPreview, CredentialPreviewAttribute } from '../messages/CredentialPreview'
+import { CredentialPreviewAttribute } from '../messages/CredentialPreview'
 
 /**
  * Sample test cases for encoding/decoding of verifiable credential claims - Aries RFCs 0036 and 0037
@@ -89,30 +89,113 @@ const testEncodings: { [key: string]: { raw: any; encoded: string } } = {
 }
 
 describe('CredentialUtils', () => {
-  describe('convertPreviewToValues', () => {
+  describe('convertAttributesToValues', () => {
     test('returns object with raw and encoded attributes', () => {
-      const credentialPreview = new CredentialPreview({
-        attributes: [
-          new CredentialPreviewAttribute({
-            name: 'name',
-            mimeType: 'text/plain',
-            value: '101 Wilson Lane',
-          }),
-          new CredentialPreviewAttribute({
-            name: 'age',
-            mimeType: 'text/plain',
-            value: '1234',
-          }),
-        ],
-      })
+      const attributes = [
+        new CredentialPreviewAttribute({
+          name: 'name',
+          mimeType: 'text/plain',
+          value: '101 Wilson Lane',
+        }),
+        new CredentialPreviewAttribute({
+          name: 'age',
+          mimeType: 'text/plain',
+          value: '1234',
+        }),
+      ]
 
-      expect(CredentialUtils.convertPreviewToValues(credentialPreview)).toEqual({
+      expect(CredentialUtils.convertAttributesToValues(attributes)).toEqual({
         name: {
           raw: '101 Wilson Lane',
           encoded: '68086943237164982734333428280784300550565381723532936263016368251445461241953',
         },
         age: { raw: '1234', encoded: '1234' },
       })
+    })
+  })
+
+  describe('assertValuesMatch', () => {
+    test('does not throw if attributes match', () => {
+      const firstValues = {
+        name: {
+          raw: '101 Wilson Lane',
+          encoded: '68086943237164982734333428280784300550565381723532936263016368251445461241953',
+        },
+        age: { raw: '1234', encoded: '1234' },
+      }
+      const secondValues = {
+        name: {
+          raw: '101 Wilson Lane',
+          encoded: '68086943237164982734333428280784300550565381723532936263016368251445461241953',
+        },
+        age: { raw: '1234', encoded: '1234' },
+      }
+
+      expect(() => CredentialUtils.assertValuesMatch(firstValues, secondValues)).not.toThrow()
+    })
+
+    test('throws if number of values in the entries do not match', () => {
+      const firstValues = {
+        age: { raw: '1234', encoded: '1234' },
+      }
+      const secondValues = {
+        name: {
+          raw: '101 Wilson Lane',
+          encoded: '68086943237164982734333428280784300550565381723532936263016368251445461241953',
+        },
+        age: { raw: '1234', encoded: '1234' },
+      }
+
+      expect(() => CredentialUtils.assertValuesMatch(firstValues, secondValues)).toThrow(
+        'Number of values in first entry (1) does not match number of values in second entry (2)'
+      )
+    })
+
+    test('throws if second value does not contain key from first value', () => {
+      const firstValues = {
+        name: {
+          raw: '101 Wilson Lane',
+          encoded: '68086943237164982734333428280784300550565381723532936263016368251445461241953',
+        },
+        age: { raw: '1234', encoded: '1234' },
+      }
+      const secondValues = {
+        anotherName: {
+          raw: '101 Wilson Lane',
+          encoded: '68086943237164982734333428280784300550565381723532936263016368251445461241953',
+        },
+        age: { raw: '1234', encoded: '1234' },
+      }
+
+      expect(() => CredentialUtils.assertValuesMatch(firstValues, secondValues)).toThrow(
+        "Second cred values object has not value for key 'name'"
+      )
+    })
+
+    test('throws if encoded values do not match', () => {
+      const firstValues = {
+        age: { raw: '1234', encoded: '1234' },
+      }
+      const secondValues = {
+        age: { raw: '1234', encoded: '12345' },
+      }
+
+      expect(() => CredentialUtils.assertValuesMatch(firstValues, secondValues)).toThrow(
+        "Encoded credential values for key 'age' do not match"
+      )
+    })
+
+    test('throws if raw values do not match', () => {
+      const firstValues = {
+        age: { raw: '1234', encoded: '1234' },
+      }
+      const secondValues = {
+        age: { raw: '12345', encoded: '1234' },
+      }
+
+      expect(() => CredentialUtils.assertValuesMatch(firstValues, secondValues)).toThrow(
+        "Raw credential values for key 'age' do not match"
+      )
     })
   })
 

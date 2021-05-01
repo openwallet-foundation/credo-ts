@@ -4,7 +4,7 @@ import type { CredReqMetadata, WalletQuery, CredDef } from 'indy-sdk'
 import { Wallet } from '../../../wallet/Wallet'
 import { Repository } from '../../../storage/Repository'
 import { CredentialOfferTemplate, CredentialService, CredentialEventType } from '../services'
-import { CredentialRecord } from '../repository/CredentialRecord'
+import { CredentialRecord, CredentialRecordMetadata, CredentialRecordTags } from '../repository/CredentialRecord'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { CredentialState } from '../CredentialState'
 import { StubWallet } from './StubWallet'
@@ -88,14 +88,14 @@ const credentialAttachment = new Attachment({
 const mockCredentialRecord = ({
   state,
   requestMessage,
-  requestMetadata,
+  metadata,
   tags,
   id,
 }: {
   state: CredentialState
   requestMessage?: RequestCredentialMessage
-  requestMetadata?: CredReqMetadata
-  tags?: Record<string, unknown>
+  metadata?: CredentialRecordMetadata
+  tags?: CredentialRecordTags
   id?: string
 }) =>
   new CredentialRecord({
@@ -106,11 +106,11 @@ const mockCredentialRecord = ({
     }),
     id,
     requestMessage,
-    requestMetadata: requestMetadata,
+    metadata,
     state: state || CredentialState.OfferSent,
     tags: tags || {},
     connectionId: '123',
-  } as any)
+  })
 
 describe('CredentialService', () => {
   let wallet: Wallet
@@ -587,7 +587,7 @@ describe('CredentialService', () => {
         requestMessage: new RequestCredentialMessage({
           attachments: [requestAttachment],
         }),
-        requestMetadata: { cred_req: 'meta-data' },
+        metadata: { requestMetadata: { cred_req: 'meta-data' } },
       })
 
       const credentialResponse = new IssueCredentialMessage({
@@ -693,7 +693,7 @@ describe('CredentialService', () => {
             Promise.resolve([
               mockCredentialRecord({
                 state,
-                requestMetadata: { cred_req: 'meta-data' },
+                metadata: { requestMetadata: { cred_req: 'meta-data' } },
               }),
             ])
           )

@@ -2,7 +2,7 @@ import type { CredValues } from 'indy-sdk'
 import { sha256 } from 'js-sha256'
 import BigNumber from 'bn.js'
 
-import { CredentialPreview } from './messages/CredentialPreview'
+import { CredentialPreviewAttribute } from './messages/CredentialPreview'
 
 export class CredentialUtils {
   /**
@@ -11,12 +11,12 @@ export class CredentialUtils {
    * - hash with sha256,
    * - convert to byte array and reverse it
    * - convert it to BigInteger and return as a string
-   * @param credentialPreview
+   * @param attributes
    *
    * @returns CredValues
    */
-  public static convertPreviewToValues(credentialPreview: CredentialPreview): CredValues {
-    return credentialPreview.attributes.reduce((credentialValues, attribute) => {
+  public static convertAttributesToValues(attributes: CredentialPreviewAttribute[]): CredValues {
+    return attributes.reduce((credentialValues, attribute) => {
       return {
         [attribute.name]: {
           raw: attribute.value,
@@ -25,6 +25,42 @@ export class CredentialUtils {
         ...credentialValues,
       }
     }, {})
+  }
+
+  /**
+   * Assert two credential values objects match.
+   *
+   * @param firstValues The first values object
+   * @param secondValues The second values object
+   *
+   * @throws If not all values match
+   */
+  public static assertValuesMatch(firstValues: CredValues, secondValues: CredValues) {
+    const firstValuesKeys = Object.keys(firstValues)
+    const secondValuesKeys = Object.keys(secondValues)
+
+    if (firstValuesKeys.length !== secondValuesKeys.length) {
+      throw new Error(
+        `Number of values in first entry (${firstValuesKeys.length}) does not match number of values in second entry (${secondValuesKeys.length})`
+      )
+    }
+
+    for (const key of firstValuesKeys) {
+      const firstValue = firstValues[key]
+      const secondValue = secondValues[key]
+
+      if (!secondValue) {
+        throw new Error(`Second cred values object has not value for key '${key}'`)
+      }
+
+      if (firstValue.encoded !== secondValue.encoded) {
+        throw new Error(`Encoded credential values for key '${key}' do not match`)
+      }
+
+      if (firstValue.raw !== secondValue.raw) {
+        throw new Error(`Raw credential values for key '${key}' do not match`)
+      }
+    }
   }
 
   /**
