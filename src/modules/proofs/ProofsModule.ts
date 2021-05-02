@@ -1,12 +1,13 @@
+import { Lifecycle, scoped } from 'tsyringe'
+import { EventEmitter } from 'events'
+
 import { createOutboundMessage } from '../../agent/helpers'
 import { MessageSender } from '../../agent/MessageSender'
 import { ConnectionService } from '../connections'
 import { ProofService } from './services'
 import { ProofRecord } from './repository/ProofRecord'
 import { ProofRequest } from './models/ProofRequest'
-import { JsonTransformer } from '../../utils/JsonTransformer'
-import { EventEmitter } from 'events'
-import { PresentationPreview, ProposePresentationMessage } from './messages'
+import { PresentationPreview } from './messages'
 import { RequestedCredentials } from './models'
 import { Dispatcher } from '../../agent/Dispatcher'
 import {
@@ -16,6 +17,7 @@ import {
   PresentationHandler,
 } from './handlers'
 
+@scoped(Lifecycle.ContainerScoped)
 export class ProofsModule {
   private proofService: ProofService
   private connectionService: ConnectionService

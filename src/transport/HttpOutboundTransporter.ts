@@ -11,8 +11,11 @@ export class HttpOutboundTransporter implements OutboundTransporter {
   public supportedSchemes = ['http', 'https']
 
   public constructor(agent: Agent) {
+    // TODO: maybe we can let the transport constructed using
+    // the dependency injection container. For now just
+    // just resolve the dependency from the agent
+
     this.agent = agent
-    this.logger = agent.logger
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {

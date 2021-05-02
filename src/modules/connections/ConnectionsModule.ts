@@ -1,5 +1,6 @@
 import type { Verkey } from 'indy-sdk'
 import { EventEmitter } from 'events'
+import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { MessageSender } from '../../agent/MessageSender'
@@ -17,6 +18,7 @@ import {
   TrustPingResponseMessageHandler,
 } from './handlers'
 
+@scoped(Lifecycle.ContainerScoped)
 export class ConnectionsModule {
   private agentConfig: AgentConfig
   private connectionService: ConnectionService

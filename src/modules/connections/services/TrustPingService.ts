@@ -1,11 +1,11 @@
+import { Lifecycle, scoped } from 'tsyringe'
+
 import { createOutboundMessage } from '../../../agent/helpers'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { TrustPingMessage, TrustPingResponseMessage } from '../messages'
 
-/**
- * @todo use connection from message context
- */
+@scoped(Lifecycle.ContainerScoped)
 export class TrustPingService {
   public processPing({ message }: InboundMessageContext<TrustPingMessage>, connection: ConnectionRecord) {
     if (message.responseRequested) {

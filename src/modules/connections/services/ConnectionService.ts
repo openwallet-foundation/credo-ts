@@ -1,10 +1,11 @@
 import type { Verkey } from 'indy-sdk'
 import { EventEmitter } from 'events'
 import { validateOrReject } from 'class-validator'
+import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { ConnectionRecord, ConnectionTags } from '../repository/ConnectionRecord'
-import { Repository } from '../../../storage/Repository'
+import { ConnectionRepository } from '../repository'
 import { Wallet } from '../../../wallet/Wallet'
 import {
   ConnectionInvitationMessage,
@@ -43,12 +44,17 @@ export interface ConnectionProtocolMsgReturnType<MessageType extends AgentMessag
   connectionRecord: ConnectionRecord
 }
 
+@scoped(Lifecycle.ContainerScoped)
 export class ConnectionService extends EventEmitter {
   private wallet: Wallet
   private config: AgentConfig
-  private connectionRepository: Repository<ConnectionRecord>
+  private connectionRepository: ConnectionRepository
 
-  public constructor(wallet: Wallet, config: AgentConfig, connectionRepository: Repository<ConnectionRecord>) {
+  public constructor(
+    @inject('Wallet') wallet: Wallet,
+    config: AgentConfig,
+    connectionRepository: ConnectionRepository
+  ) {
     super()
     this.wallet = wallet
     this.config = config

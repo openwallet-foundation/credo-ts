@@ -1,3 +1,4 @@
+import { Lifecycle, scoped } from 'tsyringe'
 import type {
   Cred,
   CredDef,
@@ -37,6 +38,7 @@ import { JsonEncoder } from '../utils/JsonEncoder'
 import { AgentConfig } from '../agent/AgentConfig'
 import { Logger } from '../logger'
 
+@scoped(Lifecycle.ContainerScoped)
 export class IndyWallet implements Wallet {
   private _walletHandle?: number
   private _masterSecretId?: string

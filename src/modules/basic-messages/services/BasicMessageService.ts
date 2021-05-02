@@ -1,12 +1,14 @@
 import type { Verkey, WalletQuery } from 'indy-sdk'
 import { EventEmitter } from 'events'
+import { Lifecycle, scoped } from 'tsyringe'
+
 import { OutboundMessage } from '../../../types'
 import { createOutboundMessage } from '../../../agent/helpers'
-import { Repository } from '../../../storage/Repository'
 import { BasicMessageRecord } from '../repository/BasicMessageRecord'
 import { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { BasicMessage } from '../messages'
+import { BasicMessageRepository } from '../repository'
 
 export enum BasicMessageEventType {
   MessageReceived = 'messageReceived',
@@ -17,10 +19,11 @@ export interface BasicMessageReceivedEvent {
   verkey: Verkey
 }
 
+@scoped(Lifecycle.ContainerScoped)
 export class BasicMessageService extends EventEmitter {
-  private basicMessageRepository: Repository<BasicMessageRecord>
+  private basicMessageRepository: BasicMessageRepository
 
-  public constructor(basicMessageRepository: Repository<BasicMessageRecord>) {
+  public constructor(basicMessageRepository: BasicMessageRepository) {
     super()
     this.basicMessageRepository = basicMessageRepository
   }

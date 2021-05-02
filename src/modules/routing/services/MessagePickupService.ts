@@ -1,13 +1,16 @@
+import { inject, scoped, Lifecycle } from 'tsyringe'
+
 import { InboundConnection } from '../../../types'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { MessageRepository } from '../../../storage/MessageRepository'
 import { ConnectionRecord } from '../../connections'
 import { BatchMessage, BatchMessageMessage, BatchPickupMessage } from '../messages'
 
+@scoped(Lifecycle.ContainerScoped)
 export class MessagePickupService {
-  private messageRepository?: MessageRepository
+  private messageRepository: MessageRepository
 
-  public constructor(messageRepository?: MessageRepository) {
+  public constructor(@inject('MessageRepository') messageRepository: MessageRepository) {
     this.messageRepository = messageRepository
   }
 

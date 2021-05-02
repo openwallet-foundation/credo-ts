@@ -1,12 +1,15 @@
 import type { CredDefId, Did, PoolConfig, SchemaId } from 'indy-sdk'
+import { inject, scoped, Lifecycle } from 'tsyringe'
+
 import { LedgerService, SchemaTemplate, CredDefTemplate } from './services'
 import { Wallet } from '../../wallet/Wallet'
 
+@scoped(Lifecycle.ContainerScoped)
 export class LedgerModule {
   private ledgerService: LedgerService
   private wallet: Wallet
 
-  public constructor(wallet: Wallet, ledgerService: LedgerService) {
+  public constructor(@inject('Wallet') wallet: Wallet, ledgerService: LedgerService) {
     this.ledgerService = ledgerService
     this.wallet = wallet
   }

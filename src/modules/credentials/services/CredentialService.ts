@@ -1,3 +1,4 @@
+import { inject, scoped, Lifecycle } from 'tsyringe'
 import type { CredDefId } from 'indy-sdk'
 import { EventEmitter } from 'events'
 
@@ -8,7 +9,6 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { ConnectionService, ConnectionRecord } from '../../connections'
 import { CredentialRecord } from '../repository/CredentialRecord'
-import { Repository } from '../../../storage/Repository'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { Wallet } from '../../../wallet/Wallet'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
@@ -31,6 +31,7 @@ import {
 import { AckStatus } from '../../common'
 import { Logger } from '../../../logger'
 import { AgentConfig } from '../../../agent/AgentConfig'
+import { CredentialRepository } from '../repository'
 
 export enum CredentialEventType {
   StateChanged = 'stateChanged',
@@ -46,16 +47,17 @@ export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessag
   credentialRecord: CredentialRecord
 }
 
+@scoped(Lifecycle.ContainerScoped)
 export class CredentialService extends EventEmitter {
   private wallet: Wallet
-  private credentialRepository: Repository<CredentialRecord>
+  private credentialRepository: CredentialRepository
   private connectionService: ConnectionService
   private ledgerService: LedgerService
   private logger: Logger
 
   public constructor(
-    wallet: Wallet,
-    credentialRepository: Repository<CredentialRecord>,
+    @inject('Wallet') wallet: Wallet,
+    credentialRepository: CredentialRepository,
     connectionService: ConnectionService,
     ledgerService: LedgerService,
     agentConfig: AgentConfig

@@ -1,10 +1,12 @@
 import { EventEmitter } from 'events'
+import { Lifecycle, scoped } from 'tsyringe'
+import type { Verkey } from 'indy-sdk'
+
 import { AgentConfig } from '../../agent/AgentConfig'
 import { ProviderRoutingService, MessagePickupService, ProvisioningService } from './services'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { ConnectionService, ConnectionState, ConnectionInvitationMessage } from '../connections'
-import type { Verkey } from 'indy-sdk'
 import { Dispatcher } from '../../agent/Dispatcher'
 import {
   BatchHandler,
@@ -16,6 +18,7 @@ import {
 import { Logger } from '../../logger'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 
+@scoped(Lifecycle.ContainerScoped)
 export class RoutingModule {
   private agentConfig: AgentConfig
   private providerRoutingService: ProviderRoutingService

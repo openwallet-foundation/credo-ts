@@ -1,3 +1,4 @@
+import { inject, scoped, Lifecycle } from 'tsyringe'
 import type Indy from 'indy-sdk'
 import type {
   CredDef,
@@ -16,6 +17,7 @@ import { Logger } from '../../../logger'
 import { isIndyError } from '../../../utils/indyError'
 import { Wallet } from '../../../wallet/Wallet'
 
+@scoped(Lifecycle.ContainerScoped)
 export class LedgerService {
   private wallet: Wallet
   private indy: typeof Indy
@@ -23,7 +25,7 @@ export class LedgerService {
   private _poolHandle?: PoolHandle
   private authorAgreement?: AuthorAgreement | null
 
-  public constructor(wallet: Wallet, agentConfig: AgentConfig) {
+  public constructor(@inject('Wallet') wallet: Wallet, agentConfig: AgentConfig) {
     this.wallet = wallet
     this.indy = agentConfig.indy
     this.logger = agentConfig.logger

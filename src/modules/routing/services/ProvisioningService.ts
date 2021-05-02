@@ -1,19 +1,21 @@
 import type { Verkey } from 'indy-sdk'
-import { Repository } from '../../../storage/Repository'
+import { inject, scoped, Lifecycle } from 'tsyringe'
+
 import { ProvisioningRecord } from '../repository/ProvisioningRecord'
 import { isIndyError } from '../../../utils/indyError'
-import { AgentConfig } from '../../../agent/AgentConfig'
 import { Logger } from '../../../logger'
+import { ProvisioningRepository } from '../repository'
 
 const UNIQUE_PROVISIONING_ID = 'UNIQUE_PROVISIONING_ID'
 
+@scoped(Lifecycle.ContainerScoped)
 export class ProvisioningService {
-  private provisioningRepository: Repository<ProvisioningRecord>
+  private provisioningRepository: ProvisioningRepository
   private logger: Logger
 
-  public constructor(provisioningRepository: Repository<ProvisioningRecord>, agentConfig: AgentConfig) {
+  public constructor(provisioningRepository: ProvisioningRepository, @inject('Logger') logger: Logger) {
     this.provisioningRepository = provisioningRepository
-    this.logger = agentConfig.logger
+    this.logger = logger
   }
 
   public async find(): Promise<ProvisioningRecord | null> {
