@@ -19,6 +19,7 @@ import { RoutingModule } from '../modules/routing/RoutingModule'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
+import { Symbols } from '../symbols'
 
 export class Agent {
   public readonly agentConfig: AgentConfig
@@ -45,23 +46,21 @@ export class Agent {
     this.logger = this.agentConfig.logger
     this.eventEmitter = new EventEmitter()
 
+    // Bind class based instances
     this.container.registerInstance(AgentConfig, this.agentConfig)
-
-    // FIXME: we can't use an interface to register an instance. Maybe use symbol?
-    // Or should we just access this from the agent config?
-    this.container.registerInstance('Logger', this.logger)
-    this.container.registerInstance('Indy', this.agentConfig.indy)
+    this.container.registerInstance(EventEmitter, this.eventEmitter)
 
     // Based on interfaces. Need to register which class to use
-    this.container.registerSingleton('Wallet', IndyWallet)
-    this.container.registerSingleton('StorageService', IndyStorageService)
-    this.container.registerInstance(EventEmitter, this.eventEmitter)
+    this.container.registerInstance(Symbols.Logger, this.logger)
+    this.container.registerInstance(Symbols.Indy, this.agentConfig.indy)
+    this.container.registerSingleton(Symbols.Wallet, IndyWallet)
+    this.container.registerSingleton(Symbols.StorageService, IndyStorageService)
 
     // TODO: do not make messageRepository input parameter
     if (messageRepository) {
-      this.container.registerInstance('MessageRepository', messageRepository)
+      this.container.registerInstance(Symbols.MessageRepository, messageRepository)
     } else {
-      this.container.registerSingleton('MessageRepository', InMemoryMessageRepository)
+      this.container.registerSingleton(Symbols.MessageRepository, InMemoryMessageRepository)
     }
 
     this.logger.info('Creating agent with config', {
@@ -72,10 +71,10 @@ export class Agent {
       logger: initialConfig.logger != undefined,
     })
 
-    // NOTE: we do not want to resolve until everything is registered
+    // Resolve instances after everything is registered
     this.messageSender = this.container.resolve(MessageSender)
     this.messageReceiver = this.container.resolve(MessageReceiver)
-    this.wallet = this.container.resolve('Wallet')
+    this.wallet = this.container.resolve(Symbols.Wallet)
 
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.container.resolve(ConnectionsModule)

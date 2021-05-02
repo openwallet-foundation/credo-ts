@@ -3,13 +3,14 @@ import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { LedgerService, SchemaTemplate, CredDefTemplate } from './services'
 import { Wallet } from '../../wallet/Wallet'
+import { Symbols } from '../../symbols'
 
 @scoped(Lifecycle.ContainerScoped)
 export class LedgerModule {
   private ledgerService: LedgerService
   private wallet: Wallet
 
-  public constructor(@inject('Wallet') wallet: Wallet, ledgerService: LedgerService) {
+  public constructor(@inject(Symbols.Wallet) wallet: Wallet, ledgerService: LedgerService) {
     this.ledgerService = ledgerService
     this.wallet = wallet
   }

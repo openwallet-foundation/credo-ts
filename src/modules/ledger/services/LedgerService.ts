@@ -16,6 +16,7 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { Logger } from '../../../logger'
 import { isIndyError } from '../../../utils/indyError'
 import { Wallet } from '../../../wallet/Wallet'
+import { Symbols } from '../../../symbols'
 
 @scoped(Lifecycle.ContainerScoped)
 export class LedgerService {
@@ -25,7 +26,7 @@ export class LedgerService {
   private _poolHandle?: PoolHandle
   private authorAgreement?: AuthorAgreement | null
 
-  public constructor(@inject('Wallet') wallet: Wallet, agentConfig: AgentConfig) {
+  public constructor(@inject(Symbols.Wallet) wallet: Wallet, agentConfig: AgentConfig) {
     this.wallet = wallet
     this.indy = agentConfig.indy
     this.logger = agentConfig.logger

@@ -5,6 +5,7 @@ import { ProvisioningRecord } from '../repository/ProvisioningRecord'
 import { isIndyError } from '../../../utils/indyError'
 import { Logger } from '../../../logger'
 import { ProvisioningRepository } from '../repository'
+import { Symbols } from '../../../symbols'
 
 const UNIQUE_PROVISIONING_ID = 'UNIQUE_PROVISIONING_ID'
 
@@ -13,7 +14,7 @@ export class ProvisioningService {
   private provisioningRepository: ProvisioningRepository
   private logger: Logger
 
-  public constructor(provisioningRepository: ProvisioningRepository, @inject('Logger') logger: Logger) {
+  public constructor(provisioningRepository: ProvisioningRepository, @inject(Symbols.Logger) logger: Logger) {
     this.provisioningRepository = provisioningRepository
     this.logger = logger
   }

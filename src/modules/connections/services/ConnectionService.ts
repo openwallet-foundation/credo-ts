@@ -29,6 +29,7 @@ import {
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { Symbols } from '../../../symbols'
 
 export enum ConnectionEventType {
   StateChanged = 'stateChanged',
@@ -51,7 +52,7 @@ export class ConnectionService extends EventEmitter {
   private connectionRepository: ConnectionRepository
 
   public constructor(
-    @inject('Wallet') wallet: Wallet,
+    @inject(Symbols.Wallet) wallet: Wallet,
     config: AgentConfig,
     connectionRepository: ConnectionRepository
   ) {

@@ -5,12 +5,13 @@ import { createOutboundMessage } from '../../../agent/helpers'
 import { MessageRepository } from '../../../storage/MessageRepository'
 import { ConnectionRecord } from '../../connections'
 import { BatchMessage, BatchMessageMessage, BatchPickupMessage } from '../messages'
+import { Symbols } from '../../../symbols'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MessagePickupService {
   private messageRepository: MessageRepository
 
-  public constructor(@inject('MessageRepository') messageRepository: MessageRepository) {
+  public constructor(@inject(Symbols.StorageService) messageRepository: MessageRepository) {
     this.messageRepository = messageRepository
   }
 

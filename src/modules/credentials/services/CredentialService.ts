@@ -32,6 +32,7 @@ import { AckStatus } from '../../common'
 import { Logger } from '../../../logger'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { CredentialRepository } from '../repository'
+import { Symbols } from '../../../symbols'
 
 export enum CredentialEventType {
   StateChanged = 'stateChanged',
@@ -56,7 +57,7 @@ export class CredentialService extends EventEmitter {
   private logger: Logger
 
   public constructor(
-    @inject('Wallet') wallet: Wallet,
+    @inject(Symbols.Wallet) wallet: Wallet,
     credentialRepository: CredentialRepository,
     connectionService: ConnectionService,
     ledgerService: LedgerService,

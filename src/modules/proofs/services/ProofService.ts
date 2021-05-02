@@ -40,6 +40,7 @@ import { ProofState } from '../ProofState'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { Logger } from '../../../logger'
 import { ProofRepository } from '../repository'
+import { Symbols } from '../../../symbols'
 
 export enum ProofEventType {
   StateChanged = 'stateChanged',
@@ -70,7 +71,7 @@ export class ProofService extends EventEmitter {
   public constructor(
     proofRepository: ProofRepository,
     ledgerService: LedgerService,
-    @inject('Wallet') wallet: Wallet,
+    @inject(Symbols.Wallet) wallet: Wallet,
     agentConfig: AgentConfig
   ) {
     super()

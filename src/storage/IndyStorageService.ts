@@ -6,6 +6,8 @@ import { BaseRecord } from './BaseRecord'
 import { Wallet } from '../wallet/Wallet'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { Constructor } from '../utils/mixins'
+import { Symbols } from '../symbols'
+
 export interface BaseRecordConstructor<T> extends Constructor<T> {
   type: string
 }
@@ -18,7 +20,7 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     retrieveTags: true,
   }
 
-  public constructor(@inject('Wallet') wallet: Wallet) {
+  public constructor(@inject(Symbols.Wallet) wallet: Wallet) {
     this.wallet = wallet
   }
 
