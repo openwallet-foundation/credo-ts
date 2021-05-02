@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
 import { Matches } from 'class-validator'
-import { v4 as uuid } from 'uuid'
 
+import { uuid } from '../utils/uuid'
 import { Constructor } from '../utils/mixins'
 
 export const MessageIdRegExp = /[-_./a-zA-Z0-9]{8,64}/

@@ -382,14 +382,7 @@ export class ProofService extends EventEmitter {
     // Assert
     proofRecord.assertState(ProofState.RequestReceived)
 
-    // Transform proof request to class instance if this is not already the case
-    // FIXME: proof record should handle transformation
-    const requestMessage =
-      proofRecord.requestMessage instanceof RequestPresentationMessage
-        ? proofRecord.requestMessage
-        : JsonTransformer.fromJSON(proofRecord.requestMessage, RequestPresentationMessage)
-
-    const indyProofRequest = requestMessage.indyProofRequest
+    const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
     if (!indyProofRequest) {
       throw new Error(
         `Missing required base64 encoded attachment data for presentation with thread id ${proofRecord.tags.threadId}`
@@ -447,9 +440,7 @@ export class ProofService extends EventEmitter {
 
     // TODO: add proof class with validator
     const indyProofJson = presentationMessage.indyProof
-    // FIXME: Transformation should be handled by record class
-    const indyProofRequest = JsonTransformer.fromJSON(proofRecord.requestMessage, RequestPresentationMessage)
-      .indyProofRequest
+    const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
 
     if (!indyProofJson) {
       throw new Error(
