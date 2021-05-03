@@ -11,7 +11,7 @@ import { Symbols } from '../../../symbols'
 export class MessagePickupService {
   private messageRepository: MessageRepository
 
-  public constructor(@inject(Symbols.StorageService) messageRepository: MessageRepository) {
+  public constructor(@inject(Symbols.MessageRepository) messageRepository: MessageRepository) {
     this.messageRepository = messageRepository
   }
 
