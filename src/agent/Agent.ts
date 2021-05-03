@@ -140,4 +140,8 @@ export class Agent {
     await this.wallet.close()
     await this.wallet.delete()
   }
+
+  public get injectionContainer() {
+    return this.container
+  }
 }
