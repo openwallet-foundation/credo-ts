@@ -65,7 +65,7 @@ export class ConnectionService extends EventEmitter {
     this.mediationRecipientService = mediationRecipientService
   }
 
-  public async createRouting(mediationId: string | null) {
+  public async createRouting(mediationId: string | undefined) {
     let mediationRecord : MediationRecord | null = null
     let endpoint, routingKeys: Verkey[]
     const defaultMediator = await this.mediationRecipientService.getDefaultMediator()
@@ -396,13 +396,12 @@ export class ConnectionService extends EventEmitter {
     state: ConnectionState
     invitation?: ConnectionInvitationMessage
     alias?: string
-    routingkeys?: Verkey[]
-    recipientKeys?: Verkey[]
     mediationId?: string
     autoAcceptConnection?: boolean
     tags?: ConnectionTags
   }): Promise<ConnectionRecord> {
-    determineRou
+    // const [mediationRecord, endpoint, routingKeys] = await this.createRouting(options.mediationId)
+    const [did, verkey] = await this.wallet.createDid()
     const publicKey = new Ed25119Sig2018({
       id: `${did}#1`,
       controller: did,
@@ -411,9 +410,9 @@ export class ConnectionService extends EventEmitter {
 
     const service = new IndyAgentService({
       id: `${did};indy`,
-      serviceEndpoint: endpoint,
+      serviceEndpoint: this.config.getEndpoint(),
       recipientKeys: [verkey],
-      routingKeys: routingKeys,
+      routingKeys: [],
     })
     
     // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
