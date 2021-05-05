@@ -93,7 +93,7 @@ export class MediationRecipientService extends EventEmitter {
     return mediationRecord
   }
 
-  public async prepareRequestMediation(connection: ConnectionRecord) {
+  public async createRequest(connection: ConnectionRecord) {
     await this.create({
       connectionId: connection.id,
       role: MediationRole.Mediator,
@@ -163,7 +163,7 @@ export class MediationRecipientService extends EventEmitter {
 
     // Update record
     mediationRecord.endpoint = messageContext.message.endpoint
-    mediationRecord.routingKeys = messageContext.message.routing_keys
+    mediationRecord.routingKeys = messageContext.message.routingKeys
     await this.updateState(mediationRecord, MediationState.Granted)
 
     return mediationRecord

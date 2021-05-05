@@ -160,7 +160,7 @@ export class MediationService extends EventEmitter {
       await this.mediationRepository.update(mediation)
       return new MediationGrantMessage({
         endpoint: this.agentConfig.getEndpoint(),
-        routing_keys: this.routingKeys,
+        routingKeys: this.routingKeys,
       })
     }
     

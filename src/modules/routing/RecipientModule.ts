@@ -113,13 +113,13 @@ export class RecipientModule {
   }
 
   public async requestMediation(connection: ConnectionRecord) {
-    const message = await this.mediationRecipientService.prepareRequestMediation(connection)
+    const message = await this.mediationRecipientService.createRequest(connection)
     const outboundMessage = createOutboundMessage(connection, message)
     const response = await this.messageSender.sendMessage(outboundMessage)
     return response
   }
 
-  public async listMediators() {
+  public async getMediators() {
     return await this.mediationRecipientService.getMediators()
   }
 
