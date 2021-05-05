@@ -1,7 +1,5 @@
 import { MediationRecord } from '.'
-import { BaseRecord, RecordType } from '../../../storage/BaseRecord'
-
-export const DEFAULT_MEDIATOR_RECORD_TYPE = 'default_mediator'
+import { BaseRecord } from '../../../storage/BaseRecord'
 
 export interface DefaultMediationProps {
   mediationId: string
@@ -10,11 +8,12 @@ export interface DefaultMediationProps {
 export class DefaultMediationRecord extends BaseRecord implements DefaultMediationProps {
   public mediationId: string
 
-  public static readonly type: RecordType = RecordType.DefaultMediationRecord
-  public readonly type = MediationRecord.type
+  public static readonly type = 'DefaultMediationRecord'
+  public readonly type = DefaultMediationRecord.type
 
   public constructor(props: DefaultMediationProps) {
-    super(DEFAULT_MEDIATOR_RECORD_TYPE, Date.now())
+    super()
+    this.createdAt = new Date()
     this.mediationId = props.mediationId
   }
 }

@@ -1,11 +1,11 @@
 import indy from 'indy-sdk'
-import { v4 as uuid } from 'uuid'
+import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { Wallet } from '../../../wallet/Wallet'
 import { ConnectionService } from '../services/ConnectionService'
 import { ConnectionRecord, ConnectionStorageProps } from '../repository/ConnectionRecord'
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { Connection, ConnectionState, ConnectionRole, DidDoc, IndyAgentService } from '../models'
+import { Connection, ConnectionState, ConnectionRole, DidDoc, DidCommService } from '../models'
 import { InitConfig } from '../../../types'
 import {
   ConnectionInvitationMessage,
@@ -38,7 +38,7 @@ export function getMockConnection({
     publicKey: [],
     authentication: [],
     service: [
-      new IndyAgentService({
+      new DidCommService({
         id: `${did};indy`,
         serviceEndpoint: 'https://endpoint.com',
         recipientKeys: [verkey],
@@ -57,7 +57,7 @@ export function getMockConnection({
     publicKey: [],
     authentication: [],
     service: [
-      new IndyAgentService({
+      new DidCommService({
         id: `${did};indy`,
         serviceEndpoint: 'https://endpoint.com',
         recipientKeys: [verkey],
@@ -325,7 +325,7 @@ describe('ConnectionService', () => {
         publicKey: [],
         authentication: [],
         service: [
-          new IndyAgentService({
+          new DidCommService({
             id: `${theirDid};indy`,
             serviceEndpoint: 'https://endpoint.com',
             recipientKeys: [theirVerkey],
@@ -526,7 +526,7 @@ describe('ConnectionService', () => {
           publicKey: [],
           authentication: [],
           service: [
-            new IndyAgentService({
+            new DidCommService({
               id: `${did};indy`,
               serviceEndpoint: 'https://endpoint.com',
               recipientKeys: [theirVerkey],
@@ -595,7 +595,7 @@ describe('ConnectionService', () => {
           publicKey: [],
           authentication: [],
           service: [
-            new IndyAgentService({
+            new DidCommService({
               id: `${did};indy`,
               serviceEndpoint: 'https://endpoint.com',
               recipientKeys: [theirVerkey],

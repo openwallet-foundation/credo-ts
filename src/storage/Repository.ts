@@ -1,13 +1,14 @@
 import type { WalletQuery } from 'indy-sdk'
 
-import { BaseRecord, RecordType } from './BaseRecord'
+import { BaseRecord } from './BaseRecord'
+import { BaseRecordConstructor } from './IndyStorageService'
 import { StorageService } from './StorageService'
 
 export class Repository<T extends BaseRecord> {
   private storageService: StorageService<T>
-  private recordType: { new (...args: unknown[]): T; type: RecordType }
+  private recordType: BaseRecordConstructor<T>
 
-  public constructor(recordType: { new (...args: any[]): T; type: RecordType }, storageService: StorageService<T>) {
+  public constructor(recordType: BaseRecordConstructor<T>, storageService: StorageService<T>) {
     this.storageService = storageService
     this.recordType = recordType
   }

@@ -1,13 +1,13 @@
 import type { Verkey } from 'indy-sdk'
 import { v4 as uuid } from 'uuid'
-import { BaseRecord, RecordType, Tags } from '../../../storage/BaseRecord'
+import { BaseRecord, Tags } from '../../../storage/BaseRecord'
 import { MediationRole, MediationState } from '..'
 
 export interface MediationRecordProps {
   id?: string
   state: MediationState
   role: MediationRole
-  createdAt?: number
+  createdAt?: Date
   connectionId: string
   endpoint?: string
   recipientKeys?: Verkey[]
@@ -33,11 +33,13 @@ export class MediationRecord extends BaseRecord implements MediationStorageProps
   public recipientKeys: Verkey[]
   public routingKeys: Verkey[]
 
-  public static readonly type: RecordType = RecordType.MediationRecord
+  public static readonly = "MediationRecord"
   public readonly type = MediationRecord.type
 
   public constructor(props: MediationStorageProps) {
-    super(props.id ?? uuid(), Date.now())
+    super()
+    this.id = props.id ?? uuid()
+    this.createdAt = new Date()
     this.connectionId = props.connectionId
     this.recipientKeys = props.recipientKeys || []
     this.routingKeys = props.routingKeys || []

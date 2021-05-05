@@ -20,9 +20,10 @@ import {
   ConnectionRole,
   DidDoc,
   Ed25119Sig2018,
-  IndyAgentService,
   authenticationTypes,
   ReferencedAuthentication,
+  DidCommService,
+  IndyAgentService,
 } from '../models'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
@@ -116,7 +117,7 @@ export class ConnectionService extends EventEmitter {
     })
 
     const { didDoc } = connectionRecord
-    const [service] = didDoc.getServicesByClassType(IndyAgentService)
+    const [service] = didDoc.didCommServices
     const invitation = new ConnectionInvitationMessage({
       label: this.config.label,
       recipientKeys: service.recipientKeys,
@@ -408,11 +409,22 @@ export class ConnectionService extends EventEmitter {
       publicKeyBase58: verkey,
     })
 
-    const service = new IndyAgentService({
-      id: `${did};indy`,
+    // IndyAgentService is old service type
+    // DidCommService is new service type
+    // Include both for better interoperability
+    const indyAgentService = new IndyAgentService({
+      id: `${did}#IndyAgentService`,
       serviceEndpoint: this.config.getEndpoint(),
       recipientKeys: [verkey],
-      routingKeys: [],
+      routingKeys: [], //this.config.getRoutingKeys(),
+    })
+    const didCommService = new DidCommService({
+      id: `${did}#did-communication`,
+      serviceEndpoint: this.config.getEndpoint(),
+      recipientKeys: [verkey],
+      routingKeys: [], //this.config.getRoutingKeys(),
+      // Prefer DidCommService over IndyAgentService
+      priority: 1,
     })
     
     // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
@@ -422,7 +434,7 @@ export class ConnectionService extends EventEmitter {
     const didDoc = new DidDoc({
       id: did,
       authentication: [auth],
-      service: [service],
+      service: [didCommService, indyAgentService],
       publicKey: [publicKey],
     })
 

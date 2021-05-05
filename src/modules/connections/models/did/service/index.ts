@@ -1,10 +1,12 @@
 import { Transform, ClassConstructor, plainToClass } from 'class-transformer'
 
 import { IndyAgentService } from './IndyAgentService'
+import { DidCommService } from './DidCommService'
 import { Service } from './Service'
 
 export const serviceTypes: { [key: string]: unknown | undefined } = {
-  IndyAgent: IndyAgentService,
+  [IndyAgentService.type]: IndyAgentService,
+  [DidCommService.type]: DidCommService,
 }
 
 /**
@@ -32,4 +34,4 @@ export function ServiceTransformer() {
   )
 }
 
-export { IndyAgentService, Service }
+export { IndyAgentService, DidCommService, Service }

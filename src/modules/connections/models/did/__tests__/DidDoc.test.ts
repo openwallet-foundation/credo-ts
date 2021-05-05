@@ -3,7 +3,7 @@ import { classToPlain, plainToClass } from 'class-transformer'
 import { ReferencedAuthentication, EmbeddedAuthentication } from '../authentication'
 import { DidDoc } from '../DidDoc'
 import { Ed25119Sig2018, EddsaSaSigSecp256k1, RsaSig2018 } from '../publicKey'
-import { Service, IndyAgentService } from '../service'
+import { Service, IndyAgentService, DidCommService } from '../service'
 
 import diddoc from './diddoc.json'
 
@@ -56,6 +56,13 @@ const didDoc = new DidDoc({
       routingKeys: ['Q4zqM7aXqm7gDQkUVLng9h'],
       priority: 5,
     }),
+    new DidCommService({
+      id: '7',
+      serviceEndpoint: 'https://agent.com/did-comm',
+      recipientKeys: ['DADEajsDSaksLng9h'],
+      routingKeys: ['DADEajsDSaksLng9h'],
+      priority: 10,
+    }),
   ],
 })
 
@@ -82,6 +89,7 @@ describe('Did | DidDoc', () => {
     // Check Service
     expect(didDoc.service[0]).toBeInstanceOf(Service)
     expect(didDoc.service[1]).toBeInstanceOf(IndyAgentService)
+    expect(didDoc.service[2]).toBeInstanceOf(DidCommService)
 
     // Check Authentication
     expect(didDoc.authentication[0]).toBeInstanceOf(ReferencedAuthentication)
@@ -134,6 +142,14 @@ describe('Did | DidDoc', () => {
       routingKeys: ['Q4zqM7aXqm7gDQkUVLng9h'],
       priority: 5,
     })
+    expect(json.service[2]).toMatchObject({
+      id: '7',
+      type: 'did-communication',
+      serviceEndpoint: 'https://agent.com/did-comm',
+      recipientKeys: ['DADEajsDSaksLng9h'],
+      routingKeys: ['DADEajsDSaksLng9h'],
+      priority: 10,
+    })
 
     // Check Authentication
     expect(json.authentication[0]).toMatchObject({
@@ -162,11 +178,21 @@ describe('Did | DidDoc', () => {
     })
   })
 
-  describe('getServicesByType', () => {
+  describe('getServicesByClassType', () => {
     it('returns all services with specified class', async () => {
       expect(didDoc.getServicesByClassType(IndyAgentService)).toEqual(
         didDoc.service.filter((service) => service instanceof IndyAgentService)
       )
+    })
+  })
+
+  describe('didCommServices', () => {
+    it('returns all IndyAgentService and DidCommService instances', async () => {
+      expect(didDoc.didCommServices).toEqual(expect.arrayContaining([didDoc.service[1], didDoc.service[2]]))
+    })
+
+    it('returns all IndyAgentService and DidCommService instances sorted by priority', async () => {
+      expect(didDoc.didCommServices).toEqual([didDoc.service[2], didDoc.service[1]])
     })
   })
 })
