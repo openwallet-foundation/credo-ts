@@ -20,7 +20,7 @@ import agentConfig from '../../../samples/config'
 import { EventEmitter } from 'events'
 import { MediationRecord } from '.'
 
-export class MediationRecipientModule {
+export class RecipientModule {
   private agentConfig: AgentConfig
   private mediationRecipientService: MediationRecipientService
   private messagePickupService: MessagePickupService

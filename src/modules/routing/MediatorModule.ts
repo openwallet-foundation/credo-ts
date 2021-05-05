@@ -19,7 +19,7 @@ import {
 import { MediationRecord } from '.'
 import { MediationRequestHandler } from './handlers/MediationRequestHandler'
 
-export class MediationModule {
+export class MediatorModule {
   private agentConfig: AgentConfig
   private mediationService: MediationService
   private messagePickupService: MessagePickupService
