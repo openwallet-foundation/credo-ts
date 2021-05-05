@@ -29,9 +29,9 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { KeylistUpdate, KeylistUpdated, MediationRecipientService, MediationRecord } from '../../../modules/routing'
-import { MediationStateChangedEvent, MediationKeylistEvent} from '../../routing/services/MediationService'
+import { MediationStateChangedEvent, MediationKeylistEvent } from '../../routing/services/MediationService'
 import { KeylistState } from '../../routing'
-import {waitForEventWithTimeout} from '../../../utils/promiseWithTimeOut'
+import { waitForEventWithTimeout } from '../../../utils/promiseWithTimeOut'
 export enum ConnectionEventType {
   StateChanged = 'stateChanged',
 }
@@ -58,7 +58,12 @@ export class ConnectionService extends EventEmitter {
   private connectionRepository: Repository<ConnectionRecord>
   private mediationRecipientService: MediationRecipientService
 
-  public constructor(wallet: Wallet, config: AgentConfig, connectionRepository: Repository<ConnectionRecord>,mediationRecipientService: MediationRecipientService) {
+  public constructor(
+    wallet: Wallet,
+    config: AgentConfig,
+    connectionRepository: Repository<ConnectionRecord>,
+    mediationRecipientService: MediationRecipientService
+  ) {
     super()
     this.wallet = wallet
     this.config = config
@@ -66,18 +71,20 @@ export class ConnectionService extends EventEmitter {
     this.mediationRecipientService = mediationRecipientService
   }
 
+  // TODO: move this to routingService
   public async createRouting(mediationId: string | undefined) {
-    let mediationRecord : MediationRecord | null = null
+    // TODO: make generic like...
+    // const { endpoint, routingKeys } = await this.routingService.getXXX({ mediationId: options.mediationId })
+    let mediationRecord: MediationRecord | null = null
     let endpoint, routingKeys: Verkey[]
     const defaultMediator = await this.mediationRecipientService.getDefaultMediator()
-    if(mediationId){
+    if (mediationId) {
       mediationRecord = await this.mediationRecipientService.findById(mediationId)
-    }
-    else if( defaultMediator){ 
+    } else if (defaultMediator) {
       mediationRecord = defaultMediator
     }
     const [did, verkey] = await this.wallet.createDid()
-    if(mediationRecord){
+    if (mediationRecord) {
       endpoint = mediationRecord.endpoint
       const message = await this.mediationRecipientService.prepareKeylistUpdateMessage(verkey)
       routingKeys = mediationRecord.routingKeys
@@ -85,19 +92,20 @@ export class ConnectionService extends EventEmitter {
       const event: keylistUpdateEvent = {
         mediationRecord,
         keylist: message.updates[0],
-        threadId: message.threadId
+        threadId: message.threadId,
       }
-      this.emit( KeylistState.Update, event)
+      this.emit(KeylistState.Update, event)
       //TODO: catch this event in module and send and update message to mediator
       //TODO: emit KeylistState.updated event on this listener from mediationservice handler
-      await waitForEventWithTimeout(this, KeylistState.Updated , message, 2000)
-    }else{ // no mediation
+      await waitForEventWithTimeout(this, KeylistState.Updated, message, 2000)
+    } else {
+      // no mediation
       endpoint = this.config.getEndpoint()
       routingKeys = [verkey]
     }
     return [mediationRecord, endpoint, routingKeys]
   }
-  
+
   /**
    * Create a new connection record containing a connection invitation message
    *
@@ -426,11 +434,11 @@ export class ConnectionService extends EventEmitter {
       // Prefer DidCommService over IndyAgentService
       priority: 1,
     })
-    
+
     // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
     // inferred from the publicKey class instance
     const auth = new ReferencedAuthentication(publicKey, authenticationTypes[publicKey.type])
-    
+
     const didDoc = new DidDoc({
       id: did,
       authentication: [auth],

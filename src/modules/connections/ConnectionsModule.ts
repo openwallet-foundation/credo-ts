@@ -6,7 +6,6 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { ConnectionService, ConnectionEventType, ConnectionStateChangedEvent, TrustPingService } from './services'
-import { MediationService } from '../routing'
 import { ConnectionRecord } from './repository/ConnectionRecord'
 import { ConnectionState } from './models'
 import { ConnectionInvitationMessage } from './messages'
@@ -22,7 +21,6 @@ import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 export class ConnectionsModule {
   private agentConfig: AgentConfig
   private connectionService: ConnectionService
-  private mediationService: MediationService
   private messageSender: MessageSender
   private trustPingService: TrustPingService
 
@@ -30,14 +28,12 @@ export class ConnectionsModule {
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
-    mediationService: MediationService,
     trustPingService: TrustPingService,
     messageSender: MessageSender,
   ) {
     this.agentConfig = agentConfig
     this.connectionService = connectionService
     this.trustPingService = trustPingService
-    this.mediationService = mediationService
     this.messageSender = messageSender
     this.registerHandlers(dispatcher)
   }
