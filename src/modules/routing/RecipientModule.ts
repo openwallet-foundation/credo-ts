@@ -124,11 +124,11 @@ export class RecipientModule {
   }
 
   public async getDefaultMediatorId() {
-    return this.mediationRecipientService.getDefaultMediatorId()
+    return await this.mediationRecipientService.getDefaultMediatorId()
   }
 
   public async getDefaultMediator(): Promise< MediationRecord | undefined> {
-    const mediatorId: string | undefined = this.mediationRecipientService.getDefaultMediatorId()
+    const mediatorId: string | undefined = await this.mediationRecipientService.getDefaultMediatorId()
     if (mediatorId !== undefined) {
       return this.mediationRecipientService.findById(mediatorId)
     }

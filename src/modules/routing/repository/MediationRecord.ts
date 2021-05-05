@@ -12,12 +12,14 @@ export interface MediationRecordProps {
   endpoint?: string
   recipientKeys?: Verkey[]
   routingKeys?: Verkey[]
+  default?: string
 }
 
 export interface MediationTags extends Tags {
   state: MediationState
   role: MediationRole
   connectionId: string
+  default: string
 }
 
 export interface MediationStorageProps extends MediationRecordProps {

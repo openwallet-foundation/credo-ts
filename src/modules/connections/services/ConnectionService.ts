@@ -86,7 +86,7 @@ export class ConnectionService extends EventEmitter {
     const [did, verkey] = await this.wallet.createDid()
     if (mediationRecord) {
       endpoint = mediationRecord.endpoint
-      const message = await this.mediationRecipientService.prepareKeylistUpdateMessage(verkey)
+      const message = await this.mediationRecipientService.createKeylistUpdateMessage(verkey)
       routingKeys = mediationRecord.routingKeys
       // assumption, UpdateMessage will only ever have one keylistupdate
       const event: keylistUpdateEvent = {

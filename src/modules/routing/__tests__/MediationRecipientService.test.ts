@@ -1,4 +1,4 @@
-import {DefaultMediationRecord, MediationRecord, MediationTags, MediationStorageProps, MediationRole, MediationState} from ".."
+import {MediationRecord, MediationTags, MediationStorageProps, MediationRole, MediationState} from ".."
 import type { Verkey } from 'indy-sdk'
 import { assert } from "console"
 
@@ -13,6 +13,7 @@ describe('MediationRecord test',() => {
               state:MediationState.Init,
               role:MediationRole.Recipient,
               connectionId:"fakeConnectionId",
+              default:"false"
             },
           })
         assert(record.state, 'Expected MediationRecord to have an `state` property')

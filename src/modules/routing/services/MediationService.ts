@@ -57,7 +57,7 @@ export class MediationService extends EventEmitter {
       this.routingKeys = routingKeys ?? []
     }
     
-    public async create({ state, role, connectionId, recipientKeys }: MediationRecordProps): Promise<MediationRecord> {
+    public async create({ state, role, connectionId, recipientKeys, d }: MediationRecordProps): Promise<MediationRecord> {
       const mediationRecord = new MediationRecord({
         state,
         role,
@@ -67,6 +67,7 @@ export class MediationService extends EventEmitter {
           state,
           role,
           connectionId,
+          default: "false"
         },
       })
       await this.mediationRepository.save(mediationRecord)
