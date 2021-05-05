@@ -41,7 +41,7 @@ export class MediationRecord extends BaseRecord implements MediationStorageProps
   public constructor(props: MediationStorageProps) {
     super()
     this.id = props.id ?? uuid()
-    this.createdAt = new Date()
+    this.createdAt = props.createdAt ?? new Date()
     this.connectionId = props.connectionId
     this.recipientKeys = props.recipientKeys || []
     this.routingKeys = props.routingKeys || []
