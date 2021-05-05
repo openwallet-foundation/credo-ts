@@ -24,8 +24,8 @@ import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import EventEmitter from 'events'
-import { MediationRecipientModule } from '../modules/routing/MediationRecipientModule'
-import { MediationModule } from '../modules/routing/MediationModule'
+import { RecipientModule } from '../modules/routing/RecipientModule'
+import { MediatorModule } from '../modules/routing/MediatorModule'
 
 export class Agent {
   protected logger: Logger
@@ -58,8 +58,8 @@ export class Agent {
   public basicMessages!: BasicMessagesModule
   public ledger!: LedgerModule
   public credentials!: CredentialsModule
-  public mediationRecipient!: MediationRecipientModule
-  public mediator!: MediationModule
+  public mediationRecipient!: RecipientModule
+  public mediator!: MediatorModule
 
   public constructor(initialConfig: InitConfig, messageRepository?: MessageRepository) {
     this.agentConfig = new AgentConfig(initialConfig)
@@ -209,7 +209,7 @@ export class Agent {
       this.messageSender
     )
 
-    this.mediator = new MediationModule(
+    this.mediator = new MediatorModule(
       this.dispatcher,
       this.agentConfig,
       this.mediationService,
@@ -219,7 +219,7 @@ export class Agent {
       this.eventEmitter
     )
 
-    this.mediationRecipient = new MediationRecipientModule(
+    this.mediationRecipient = new RecipientModule(
       this.dispatcher,
       this.agentConfig,
       this.mediationRecipientService,
