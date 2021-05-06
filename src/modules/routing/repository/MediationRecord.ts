@@ -35,7 +35,7 @@ export class MediationRecord extends BaseRecord implements MediationStorageProps
   public recipientKeys: Verkey[]
   public routingKeys: Verkey[]
 
-  public static readonly = "MediationRecord"
+  public static readonly = 'MediationRecord'
   public readonly type = MediationRecord.type
 
   public constructor(props: MediationStorageProps) {

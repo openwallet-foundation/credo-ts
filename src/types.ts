@@ -24,7 +24,7 @@ export interface InitConfig {
   poolName?: string
   logger?: Logger
   indy: typeof Indy
-  autoAcceptMediationRequests?: Boolean
+  autoAcceptMediationRequests?: boolean
   mediatorInvitation?: ConnectionInvitationMessage
   //mediatorConnectionsInvite?: ConnectionInvitationMessage
   defaultMediatorId?: string

@@ -20,7 +20,7 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import testLogger from '../../../__tests__/logger'
-import { RecipientService, MediationRecord} from '../../routing'
+import { RecipientService, MediationRecord } from '../../routing'
 import { MessageSender } from '../../../agent/MessageSender'
 
 jest.mock('./../../../storage/Repository')

@@ -29,7 +29,7 @@ export class ConnectionsModule {
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
     trustPingService: TrustPingService,
-    messageSender: MessageSender,
+    messageSender: MessageSender
   ) {
     this.agentConfig = agentConfig
     this.connectionService = connectionService

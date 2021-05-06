@@ -22,7 +22,7 @@ export async function waitForEventWithTimeout(
     emitter.on(eventType, listener)
     timer = setTimeout(() => {
       emitter.removeListener(eventType, listener)
-      reject(new Error('timeout waiting for ' + eventType + 'from initialized from message'+ message ))
+      reject(new Error('timeout waiting for ' + eventType + 'from initialized from message' + message))
     }, timeout)
   })
 }

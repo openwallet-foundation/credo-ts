@@ -71,14 +71,19 @@ export class RecipientService extends EventEmitter {
                 "Clear the stored default mediator."
     */
     // check for default mediation id record
-      // set this.defaultMediator
+    // set this.defaultMediator
     // else if mediation invitation in config
-      // Use agent config to establish connection with mediator
-      // request mediation record
-      // Upon granting, set this.defaultMediator
+    // Use agent config to establish connection with mediator
+    // request mediation record
+    // Upon granting, set this.defaultMediator
   }
 
-  public async createRecord({ state, role, connectionId, recipientKeys }: MediationRecordProps): Promise<MediationRecord> {
+  public async createRecord({
+    state,
+    role,
+    connectionId,
+    recipientKeys,
+  }: MediationRecordProps): Promise<MediationRecord> {
     const mediationRecord = new MediationRecord({
       state,
       role,
@@ -88,7 +93,7 @@ export class RecipientService extends EventEmitter {
         state,
         role,
         connectionId,
-        default: "false"
+        default: 'false',
       },
     })
     await this.mediatorRepository.save(mediationRecord)
@@ -103,15 +108,15 @@ export class RecipientService extends EventEmitter {
     })
     return new RequestMediationMessage({})
   }
-  
+
   public createKeylistQuery(filter: Map<string, string>, paginateLimit = -1, paginateOffset = 0) {
     // Method here
   }
 
   public async createKeylistUpdateMessage(verkey?: Verkey): Promise<KeylistUpdateMessage> {
-    if (!verkey){
-      let did 
-      [did, verkey] = await this.wallet.createDid()
+    if (!verkey) {
+      let did
+      ;[did, verkey] = await this.wallet.createDid()
     }
     const keylistUpdateMessage = new KeylistUpdateMessage({
       updates: [
@@ -131,14 +136,14 @@ export class RecipientService extends EventEmitter {
     const mediationRecord = await this.findByConnectionId(messageContext.connection.id)
     if (!mediationRecord) {
       throw new Error(`mediation record for  ${messageContext.connection.id} not found!`)
-    }   
+    }
     const keylist = messageContext.message.updated
     // TODO: update keylist in mediationRecord...
     // for ...
     // await this.mediatorRepository.update(mediationRecord)
     const event: MediationKeylistEvent = {
       mediationRecord,
-      keylist
+      keylist,
     }
     this.emit(MediationEventType.KeylistUpdate, event)
   }
@@ -198,13 +203,13 @@ export class RecipientService extends EventEmitter {
   }
 
   /**
-  * Update the record to a new state and emit an state changed event. Also updates the record
-  * in storage.
-  *
-  * @param MediationRecord The proof record to update the state for
-  * @param newState The state to update to
-  *
-  */
+   * Update the record to a new state and emit an state changed event. Also updates the record
+   * in storage.
+   *
+   * @param MediationRecord The proof record to update the state for
+   * @param newState The state to update to
+   *
+   */
   private async updateState(mediationRecord: MediationRecord, newState: MediationState) {
     const previousState = mediationRecord.state
 
@@ -220,10 +225,10 @@ export class RecipientService extends EventEmitter {
     this.emit(MediationEventType.StateChanged, event)
   }
 
-  public async findById(mediatorId: string): Promise< MediationRecord> {
-      const connection = await this.mediatorRepository.find(mediatorId)
-      return connection
-      // TODO - Handle errors
+  public async findById(mediatorId: string): Promise<MediationRecord> {
+    const connection = await this.mediatorRepository.find(mediatorId)
+    return connection
+    // TODO - Handle errors
   }
 
   public async findByConnectionId(id: string): Promise<MediationRecord | null> {
@@ -251,7 +256,7 @@ export class RecipientService extends EventEmitter {
   }
 
   public async getDefaultMediator() {
-    const results = await this.mediatorRepository.findByQuery({'default':true})
+    const results = await this.mediatorRepository.findByQuery({ default: true })
     this.defaultMediator = results[0] ?? undefined // TODO: call setDefaultMediator
     return this.defaultMediator
   }

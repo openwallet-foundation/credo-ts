@@ -38,7 +38,6 @@ const mediatorConfig: InitConfig = {
   indy,
 }
 
-
 describe('with mediator', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
@@ -117,7 +116,6 @@ describe('with mediator', () => {
     })
 
     aliceMediatorConnection = await aliceAgent.connections.getById(aliceMediationRecord.connectionId)
-
 
     const aliceInboundConnection = await aliceAgent.mediationRecipient.getDefaultMediatorConnection()
     const aliceKeyAtAliceMediator = aliceInboundConnection?.verkey

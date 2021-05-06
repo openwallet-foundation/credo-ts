@@ -65,8 +65,12 @@ describe('with mediator', () => {
     const bobKeyAtBobMediator = bobInboundConnection?.verkey
     logger.test('bobInboundConnection', bobInboundConnection)
     */
-    const aliceMediatorConnection: ConnectionRecord | undefined = await aliceAgent.mediationRecipient.getDefaultMediatorConnection()
-    const bobMediatorConnection: ConnectionRecord | undefined = await bobAgent.mediationRecipient.getDefaultMediatorConnection()
+    const aliceMediatorConnection:
+      | ConnectionRecord
+      | undefined = await aliceAgent.mediationRecipient.getDefaultMediatorConnection()
+    const bobMediatorConnection:
+      | ConnectionRecord
+      | undefined = await bobAgent.mediationRecipient.getDefaultMediatorConnection()
 
     // TODO This endpoint currently exists at mediator only for the testing purpose. It returns mediator's part of the pairwise connection.
     const mediatorConnectionAtAliceMediator = JSON.parse(
