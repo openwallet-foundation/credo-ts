@@ -1,4 +1,4 @@
-// reflect-metadata used for class-transfomer + class-validator
+// reflect-metadata used for class-transformer + class-validator
 import 'reflect-metadata'
 
 export { Agent } from './agent/Agent'

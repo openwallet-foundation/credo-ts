@@ -34,6 +34,14 @@
       "recipientKeys": ["Q4zqM7aXqm7gDQkUVLng9h"],
       "routingKeys": ["Q4zqM7aXqm7gDQkUVLng9h"],
       "priority": 5
+    },
+    {
+      "id": "7",
+      "type": "did-communication",
+      "serviceEndpoint": "https://agent.com/did-comm",
+      "recipientKeys": ["DADEajsDSaksLng9h"],
+      "routingKeys": ["DADEajsDSaksLng9h"],
+      "priority": 10
     }
   ],
   "authentication": [

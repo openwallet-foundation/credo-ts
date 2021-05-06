@@ -4,8 +4,7 @@ import { MessageSender } from '../../agent/MessageSender'
 import { ConnectionService } from '../connections'
 import { EventEmitter } from 'events'
 import { CredentialOfferTemplate, CredentialService } from './services'
-import { ProposeCredentialMessage, ProposeCredentialMessageOptions } from './messages'
-import { JsonTransformer } from '../../utils/JsonTransformer'
+import { ProposeCredentialMessageOptions } from './messages'
 import { CredentialInfo } from './models'
 import { Dispatcher } from '../../agent/Dispatcher'
 import {
@@ -81,13 +80,9 @@ export class CredentialsModule {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
-    // FIXME: transformation should be handled by record class
-    const credentialProposalMessage = JsonTransformer.fromJSON(
-      credentialRecord.proposalMessage,
-      ProposeCredentialMessage
-    )
+    const credentialProposalMessage = credentialRecord.proposalMessage
 
-    if (!credentialProposalMessage.credentialProposal) {
+    if (!credentialProposalMessage?.credentialProposal) {
       throw new Error(`Credential record with id ${credentialRecordId} is missing required credential proposal`)
     }
 

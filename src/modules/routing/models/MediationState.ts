@@ -9,3 +9,9 @@ export enum MediationState {
   Granted = 'granted',
   Denied = 'denied',
 }
+export enum KeylistState {
+  Init = 'init',
+  Update = 'update',
+  Updated = 'updated',
+  Listed = 'listed',
+}

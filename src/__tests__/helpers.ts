@@ -17,7 +17,7 @@ import {
 import { BasicMessage, BasicMessageEventType, BasicMessageReceivedEvent } from '../modules/basic-messages'
 import testLogger from './logger'
 import { MediationState } from '../modules/routing'
-import { MediationEventType, MediationStateChangedEvent } from '../modules/routing/services/MediationService'
+import { MediationEventType, MediationStateChangedEvent } from '../modules/routing/services/MediatorService'
 import { MediationRecord } from '../modules/routing/repository/MediationRecord'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH

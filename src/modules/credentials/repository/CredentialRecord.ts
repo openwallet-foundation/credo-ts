@@ -1,6 +1,6 @@
-import type { CredentialId } from 'indy-sdk'
-import { v4 as uuid } from 'uuid'
-import { BaseRecord, RecordType, Tags } from '../../../storage/BaseRecord'
+import { Type } from 'class-transformer'
+import { uuid } from '../../../utils/uuid'
+import { BaseRecord, Tags } from '../../../storage/BaseRecord'
 import {
   ProposeCredentialMessage,
   IssueCredentialMessage,
@@ -11,11 +11,11 @@ import { CredentialState } from '../CredentialState'
 
 export interface CredentialStorageProps {
   id?: string
-  createdAt?: number
+  createdAt?: Date
   state: CredentialState
   connectionId: string
   requestMetadata?: Record<string, unknown>
-  credentialId?: CredentialId
+  credentialId?: string
   tags: CredentialRecordTags
   proposalMessage?: ProposeCredentialMessage
   offerMessage?: OfferCredentialMessage
@@ -28,33 +28,42 @@ export interface CredentialRecordTags extends Tags {
 }
 
 export class CredentialRecord extends BaseRecord implements CredentialStorageProps {
-  public connectionId: string
-  public credentialId?: CredentialId
+  public connectionId!: string
+  public credentialId?: string
   public requestMetadata?: Record<string, unknown>
-  public tags: CredentialRecordTags
-  public state: CredentialState
+  public tags!: CredentialRecordTags
+  public state!: CredentialState
 
   // message data
+  @Type(() => ProposeCredentialMessage)
   public proposalMessage?: ProposeCredentialMessage
+  @Type(() => OfferCredentialMessage)
   public offerMessage?: OfferCredentialMessage
+  @Type(() => RequestCredentialMessage)
   public requestMessage?: RequestCredentialMessage
+  @Type(() => IssueCredentialMessage)
   public credentialMessage?: IssueCredentialMessage
 
-  public type = RecordType.CredentialRecord
-  public static type: RecordType = RecordType.CredentialRecord
+  public static readonly type = 'CredentialRecord'
+  public readonly type = CredentialRecord.type
 
   public constructor(props: CredentialStorageProps) {
-    super(props.id ?? uuid(), props.createdAt ?? Date.now())
-    this.state = props.state
-    this.connectionId = props.connectionId
-    this.requestMetadata = props.requestMetadata
-    this.credentialId = props.credentialId
-    this.tags = props.tags as { [keys: string]: string }
+    super()
 
-    this.proposalMessage = props.proposalMessage
-    this.offerMessage = props.offerMessage
-    this.requestMessage = props.requestMessage
-    this.credentialMessage = props.credentialMessage
+    if (props) {
+      this.id = props.id ?? uuid()
+      this.createdAt = props.createdAt ?? new Date()
+      this.state = props.state
+      this.connectionId = props.connectionId
+      this.requestMetadata = props.requestMetadata
+      this.credentialId = props.credentialId
+      this.tags = props.tags as { [keys: string]: string }
+
+      this.proposalMessage = props.proposalMessage
+      this.offerMessage = props.offerMessage
+      this.requestMessage = props.requestMessage
+      this.credentialMessage = props.credentialMessage
+    }
   }
 
   public assertState(expectedStates: CredentialState | CredentialState[]) {

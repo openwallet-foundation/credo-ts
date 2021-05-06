@@ -60,16 +60,26 @@ export class LedgerService {
   }
 
   public async getPublicDid(did: Did) {
-    this.logger.debug(`Get public did '${did}' from ledger`)
-    const request = await this.indy.buildGetNymRequest(null, did)
+    try {
+      this.logger.debug(`Get public did '${did}' from ledger`)
+      const request = await this.indy.buildGetNymRequest(null, did)
 
-    this.logger.debug(`Submitting get did request for did '${did}' to ledger`)
-    const response = await this.indy.submitRequest(this.poolHandle, request)
+      this.logger.debug(`Submitting get did request for did '${did}' to ledger`)
+      const response = await this.indy.submitRequest(this.poolHandle, request)
 
-    const result = await this.indy.parseGetNymResponse(response)
-    this.logger.debug(`Retrieved did '${did}' from ledger`, result)
+      const result = await this.indy.parseGetNymResponse(response)
+      this.logger.debug(`Retrieved did '${did}' from ledger`, result)
 
-    return result
+      return result
+    } catch (error) {
+      this.logger.error(`Error retrieving did '${did}' from ledger`, {
+        error,
+        did,
+        poolHandle: this.poolHandle,
+      })
+
+      throw error
+    }
   }
 
   public async registerSchema(did: Did, schemaTemplate: SchemaTemplate): Promise<[SchemaId, Schema]> {

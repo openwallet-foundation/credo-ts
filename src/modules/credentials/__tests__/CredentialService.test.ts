@@ -103,7 +103,7 @@ const mockCredentialRecord = ({
       comment: 'some comment',
       credentialPreview: credentialPreview,
       attachments: [offerAttachment],
-    }).toJSON(),
+    }),
     id,
     requestMessage,
     requestMetadata: requestMetadata,
@@ -186,7 +186,7 @@ describe('CredentialService', () => {
       expect(createdCredentialRecord).toMatchObject({
         type: CredentialRecord.name,
         id: expect.any(String),
-        createdAt: expect.any(Number),
+        createdAt: expect.any(Date),
         offerMessage: credentialOffer,
         tags: { threadId: createdCredentialRecord.offerMessage?.id },
         state: CredentialState.OfferSent,
@@ -270,7 +270,7 @@ describe('CredentialService', () => {
       const expectedCredentialRecord = {
         type: CredentialRecord.name,
         id: expect.any(String),
-        createdAt: expect.any(Number),
+        createdAt: expect.any(Date),
         offerMessage: credentialOfferMessage,
         tags: { threadId: credentialOfferMessage.id },
         state: CredentialState.OfferReceived,

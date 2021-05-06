@@ -3,11 +3,12 @@ import { Equals, IsArray, IsNotEmpty, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { RoutingMessageType as MessageType } from './RoutingMessageType'
+import { Expose } from 'class-transformer'
 
 export interface MediationGrantMessageOptions {
   id?: string
   endpoint: string
-  routing_keys: Verkey[]
+  routingKeys: Verkey[]
 }
 
 /**
@@ -23,7 +24,7 @@ export class MediationGrantMessage extends AgentMessage {
     if (options) {
       this.id = options.id || this.generateId()
       this.endpoint = options.endpoint
-      this.routing_keys = options.routing_keys
+      this.routingKeys = options.routingKeys
     }
   }
   
@@ -33,7 +34,8 @@ export class MediationGrantMessage extends AgentMessage {
 
   @IsNotEmpty()
   @IsArray()
-  public routing_keys!: Verkey[]
+  @Expose({ name: 'routing_keys' })
+  public routingKeys!: Verkey[]
 
   @IsNotEmpty()
   @IsString()

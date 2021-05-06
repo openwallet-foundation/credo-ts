@@ -20,6 +20,7 @@ import {
   CredentialPreviewAttribute,
 } from '../modules/credentials'
 import { InitConfig } from '../types'
+import { JsonTransformer } from '../utils/JsonTransformer'
 
 import testLogger from './logger'
 
@@ -136,13 +137,8 @@ describe('credentials', () => {
       state: CredentialState.OfferReceived,
     })
 
-    // FIXME: expect below expects json, so we do a refetch because the current
-    // returns class instance
-    aliceCredentialRecord = await aliceAgent.credentials.getById(aliceCredentialRecord.id)
-
-    expect(aliceCredentialRecord).toMatchObject({
-      createdAt: expect.any(Number),
-      id: expect.any(String),
+    expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
+      createdAt: expect.any(Date),
       offerMessage: {
         '@id': expect.any(String),
         '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
@@ -164,10 +160,13 @@ describe('credentials', () => {
         },
         'offers~attach': expect.any(Array),
       },
-      tags: { threadId: faberCredentialRecord.tags.threadId },
-      type: CredentialRecord.name,
       state: CredentialState.OfferReceived,
     })
+
+    // below values are not in json object
+    expect(aliceCredentialRecord.id).not.toBeNull()
+    expect(aliceCredentialRecord.tags).toEqual({ threadId: faberCredentialRecord.tags.threadId })
+    expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
 
     testLogger.test('Alice sends credential request to Faber')
     aliceCredentialRecord = await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id)
@@ -199,7 +198,7 @@ describe('credentials', () => {
     expect(aliceCredentialRecord).toMatchObject({
       type: CredentialRecord.name,
       id: expect.any(String),
-      createdAt: expect.any(Number),
+      createdAt: expect.any(Date),
       tags: {
         threadId: expect.any(String),
       },
@@ -213,14 +212,12 @@ describe('credentials', () => {
     expect(faberCredentialRecord).toMatchObject({
       type: CredentialRecord.name,
       id: expect.any(String),
-      createdAt: expect.any(Number),
+      createdAt: expect.any(Date),
       tags: {
         threadId: expect.any(String),
       },
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
-      requestMetadata: undefined,
-      credentialId: undefined,
       state: CredentialState.Done,
     })
   })
@@ -239,13 +236,8 @@ describe('credentials', () => {
       state: CredentialState.OfferReceived,
     })
 
-    // FIXME: expect below expects json, so we do a refetch because the current
-    // returns class instance
-    aliceCredentialRecord = await aliceAgent.credentials.getById(aliceCredentialRecord.id)
-
-    expect(aliceCredentialRecord).toMatchObject({
-      createdAt: expect.any(Number),
-      id: expect.any(String),
+    expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
+      createdAt: expect.any(Date),
       offerMessage: {
         '@id': expect.any(String),
         '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
@@ -267,10 +259,13 @@ describe('credentials', () => {
         },
         'offers~attach': expect.any(Array),
       },
-      tags: { threadId: faberCredentialRecord.tags.threadId },
-      type: CredentialRecord.name,
       state: CredentialState.OfferReceived,
     })
+
+    // below values are not in json object
+    expect(aliceCredentialRecord.id).not.toBeNull()
+    expect(aliceCredentialRecord.tags).toEqual({ threadId: faberCredentialRecord.tags.threadId })
+    expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
 
     testLogger.test('Alice sends credential request to Faber')
     aliceCredentialRecord = await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id)
@@ -302,7 +297,7 @@ describe('credentials', () => {
     expect(aliceCredentialRecord).toMatchObject({
       type: CredentialRecord.name,
       id: expect.any(String),
-      createdAt: expect.any(Number),
+      createdAt: expect.any(Date),
       tags: {
         threadId: expect.any(String),
       },
@@ -316,14 +311,12 @@ describe('credentials', () => {
     expect(faberCredentialRecord).toMatchObject({
       type: CredentialRecord.name,
       id: expect.any(String),
-      createdAt: expect.any(Number),
+      createdAt: expect.any(Date),
       tags: {
         threadId: expect.any(String),
       },
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
-      requestMetadata: undefined,
-      credentialId: undefined,
       state: CredentialState.Done,
     })
   })

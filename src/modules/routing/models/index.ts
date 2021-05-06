@@ -1,2 +1,2 @@
 export * from './MediationRole'
-export * from './MediationStates'
+export * from './MediationState'

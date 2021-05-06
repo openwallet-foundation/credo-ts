@@ -1,4 +1,4 @@
 export enum ConnectionRole {
-  Inviter = 'INVITER',
-  Invitee = 'INVITEE',
+  Inviter = 'inviter',
+  Invitee = 'invitee',
 }

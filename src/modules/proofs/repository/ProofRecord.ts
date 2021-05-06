@@ -1,11 +1,13 @@
-import { v4 as uuid } from 'uuid'
-import { BaseRecord, RecordType, Tags } from '../../../storage/BaseRecord'
+import { Type } from 'class-transformer'
+
+import { uuid } from '../../../utils/uuid'
+import { BaseRecord, Tags } from '../../../storage/BaseRecord'
 import { ProposePresentationMessage, RequestPresentationMessage, PresentationMessage } from '../messages'
 import { ProofState } from '../ProofState'
 
 export interface ProofRecordProps {
   id?: string
-  createdAt?: number
+  createdAt?: Date
 
   isVerified?: boolean
   state: ProofState
@@ -23,30 +25,38 @@ export interface ProofRecordTags extends Tags {
 }
 
 export class ProofRecord extends BaseRecord implements ProofRecordProps {
-  public connectionId: string
+  public connectionId!: string
   public isVerified?: boolean
   public presentationId?: string
-  public state: ProofState
-  public tags: ProofRecordTags
+  public state!: ProofState
+  public tags!: ProofRecordTags
 
   // message data
+  @Type(() => ProposePresentationMessage)
   public proposalMessage?: ProposePresentationMessage
+  @Type(() => RequestPresentationMessage)
   public requestMessage?: RequestPresentationMessage
+  @Type(() => PresentationMessage)
   public presentationMessage?: PresentationMessage
 
-  public static readonly type: RecordType = RecordType.ProofRecord
-  public readonly type = RecordType.ProofRecord
+  public static readonly type = 'ProofRecord'
+  public readonly type = ProofRecord.type
 
   public constructor(props: ProofRecordProps) {
-    super(props.id ?? uuid(), props.createdAt ?? Date.now())
-    this.proposalMessage = props.proposalMessage
-    this.requestMessage = props.requestMessage
-    this.presentationMessage = props.presentationMessage
-    this.isVerified = props.isVerified
-    this.state = props.state
-    this.connectionId = props.connectionId
-    this.presentationId = props.presentationId
-    this.tags = props.tags as { [keys: string]: string }
+    super()
+
+    if (props) {
+      this.id = props.id ?? uuid()
+      this.createdAt = props.createdAt ?? new Date()
+      this.proposalMessage = props.proposalMessage
+      this.requestMessage = props.requestMessage
+      this.presentationMessage = props.presentationMessage
+      this.isVerified = props.isVerified
+      this.state = props.state
+      this.connectionId = props.connectionId
+      this.presentationId = props.presentationId
+      this.tags = props.tags as { [keys: string]: string }
+    }
   }
 
   public assertState(expectedStates: ProofState | ProofState[]) {

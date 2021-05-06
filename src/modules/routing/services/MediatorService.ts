@@ -36,7 +36,7 @@ export enum MediationEventType {
   KeylistUpdate = 'KEYLIST_UPDATE',
 }
 
-export class MediationService extends EventEmitter {
+export class MediatorService extends EventEmitter {
   private messageSender: MessageSender
   private agentConfig: AgentConfig
   private mediationRepository: Repository<MediationRecord>
@@ -57,7 +57,7 @@ export class MediationService extends EventEmitter {
       this.routingKeys = routingKeys ?? []
     }
     
-    public async create({ state, role, connectionId, recipientKeys }: MediationRecordProps): Promise<MediationRecord> {
+    public async createRecord({ state, role, connectionId, recipientKeys }: MediationRecordProps): Promise<MediationRecord> {
       const mediationRecord = new MediationRecord({
         state,
         role,
@@ -67,6 +67,7 @@ export class MediationService extends EventEmitter {
           state,
           role,
           connectionId,
+          default: "false"
         },
       })
       await this.mediationRepository.save(mediationRecord)
@@ -75,7 +76,7 @@ export class MediationService extends EventEmitter {
     
     private _assertConnection(connection: ConnectionRecord | undefined, msgType: BaseMessage): ConnectionRecord {
       if (!connection) throw Error('in bound connection is required for ${msgType.name}!')
-      connection?.assertReady()
+      connection.assertReady()
       return connection
     }
     
@@ -151,7 +152,7 @@ export class MediationService extends EventEmitter {
       return records[0]
     }
     
-    public async prepareGrantMediationMessage(mediation: MediationRecord): Promise<MediationGrantMessage> {
+    public async createGrantMediationMessage(mediation: MediationRecord): Promise<MediationGrantMessage> {
       if(this.routingKeys.length === 0 ){
         const [did , verkey] = await this.wallet.createDid()
         this.routingKeys = [verkey]
@@ -160,7 +161,7 @@ export class MediationService extends EventEmitter {
       await this.mediationRepository.update(mediation)
       return new MediationGrantMessage({
         endpoint: this.agentConfig.getEndpoint(),
-        routing_keys: this.routingKeys,
+        routingKeys: this.routingKeys,
       })
     }
     
@@ -169,7 +170,7 @@ export class MediationService extends EventEmitter {
       // Assert connection
       const connection = this._assertConnection(messageContext.connection, ForwardMessage)
       
-      const mediationRecord = await this.create({
+      const mediationRecord = await this.createRecord({
         connectionId: connection.id,
         role: MediationRole.Mediator,
         state: MediationState.Init,
@@ -177,7 +178,7 @@ export class MediationService extends EventEmitter {
       await this.updateState(mediationRecord, MediationState.Init)
       
       // Mediation can be either granted or denied. Someday, let business logic decide that
-      this.prepareGrantMediationMessage(mediationRecord)
+      this.createGrantMediationMessage(mediationRecord)
     }
     
     public async findByConnectionId(id: string): Promise<MediationRecord | null> {

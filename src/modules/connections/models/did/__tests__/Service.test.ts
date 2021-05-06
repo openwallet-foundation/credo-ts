@@ -1,5 +1,5 @@
 import { classToPlain, plainToClass } from 'class-transformer'
-import { Service, ServiceTransformer, serviceTypes, IndyAgentService } from '../service'
+import { Service, ServiceTransformer, serviceTypes, IndyAgentService, DidCommService } from '../service'
 
 describe('Did | Service', () => {
   it('should correctly transform Json to Service class', async () => {
@@ -31,7 +31,6 @@ describe('Did | Service', () => {
     expect(transformed).toEqual(json)
   })
 
-  // TODO: make more generic like in PublicKey.test.ts
   describe('IndyAgentService', () => {
     it('should correctly transform Json to IndyAgentService class', async () => {
       const json = {
@@ -77,6 +76,63 @@ describe('Did | Service', () => {
 
       const transformService = plainToClass(IndyAgentService, json)
       const constructorService = new IndyAgentService({ ...json })
+
+      expect(transformService.priority).toBe(0)
+      expect(constructorService.priority).toBe(0)
+
+      expect(classToPlain(transformService).priority).toBe(0)
+      expect(classToPlain(constructorService).priority).toBe(0)
+    })
+  })
+
+  describe('DidCommService', () => {
+    it('should correctly transform Json to DidCommService class', async () => {
+      const json = {
+        id: 'test-id',
+        type: 'did-communication',
+        recipientKeys: ['917a109d-eae3-42bc-9436-b02426d3ce2c', '348d5200-0f8f-42cc-aad9-61e0d082a674'],
+        routingKeys: ['0094df0b-7b6d-4ebb-82de-234a621fb615'],
+        accept: ['media-type'],
+        priority: 10,
+        serviceEndpoint: 'https://example.com',
+      }
+      const service = plainToClass(DidCommService, json)
+
+      expect(service).toMatchObject(json)
+    })
+
+    it('should correctly transform DidCommService class to Json', async () => {
+      const json = {
+        id: 'test-id',
+        type: 'did-communication',
+        recipientKeys: ['917a109d-eae3-42bc-9436-b02426d3ce2c', '348d5200-0f8f-42cc-aad9-61e0d082a674'],
+        routingKeys: ['0094df0b-7b6d-4ebb-82de-234a621fb615'],
+        accept: ['media-type'],
+        priority: 10,
+        serviceEndpoint: 'https://example.com',
+      }
+
+      const service = new DidCommService({
+        ...json,
+      })
+
+      const transformed = classToPlain(service)
+
+      expect(transformed).toEqual(json)
+    })
+
+    it("should set 'priority' to default (0) when not present in constructor or during transformation", async () => {
+      const json = {
+        id: 'test-id',
+        type: 'did-communication',
+        recipientKeys: ['917a109d-eae3-42bc-9436-b02426d3ce2c', '348d5200-0f8f-42cc-aad9-61e0d082a674'],
+        routingKeys: ['0094df0b-7b6d-4ebb-82de-234a621fb615'],
+        accept: ['media-type'],
+        serviceEndpoint: 'https://example.com',
+      }
+
+      const transformService = plainToClass(DidCommService, json)
+      const constructorService = new DidCommService({ ...json })
 
       expect(transformService.priority).toBe(0)
       expect(constructorService.priority).toBe(0)
