@@ -9,8 +9,9 @@ export async function waitForEventWithTimeout(
   message: ConnectionInvitationMessage | RequestMediationMessage | KeylistUpdateMessage,
   timeout: number
 ) {
+  // @ts-ignore
   return new Promise((resolve, reject) => {
-    let timer: NodeJS.Timeout = setTimeout(() => {})
+    let timer: NodeJS.Timeout
 
     function listener(data: any) {
       //TODO: check if thread Id matches the one in the message
