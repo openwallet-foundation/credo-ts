@@ -27,7 +27,6 @@ describe('MediationRecord test',() => {
         assert(record.connectionId, 'Expected MediationRecord to have an `connectionId` property')
         expect(record.connectionId).toBeDefined()
         assert(record.endpoint, 'Expected MediationRecord to have an `endpoint` property')
-        expect(record.endpoint).toBeDefined()
         assert(record.recipientKeys, 'Expected MediationRecord to have an `recipientKeys` property')
         expect(record.recipientKeys).toBeDefined()
         assert(record.routingKeys, 'Expected MediationRecord to have an `routingKeys` property')
