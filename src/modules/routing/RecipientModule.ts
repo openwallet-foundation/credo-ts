@@ -1,5 +1,5 @@
 import { AgentConfig } from '../../agent/AgentConfig'
-import { MessagePickupService, MediationRecipientService } from './services'
+import { MessagePickupService, RecipientService } from './services'
 import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
@@ -22,7 +22,7 @@ import { MediationRecord } from '.'
 
 export class RecipientModule {
   private agentConfig: AgentConfig
-  private mediationRecipientService: MediationRecipientService
+  private recipientService: RecipientService
   private messagePickupService: MessagePickupService
   private connectionService: ConnectionService
   private messageSender: MessageSender
@@ -31,7 +31,7 @@ export class RecipientModule {
   public constructor(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
-    mediationRecipientService: MediationRecipientService,
+    recipientService: RecipientService,
     messagePickupService: MessagePickupService,
     connectionService: ConnectionService,
     messageSender: MessageSender,
@@ -40,7 +40,7 @@ export class RecipientModule {
     this.agentConfig = agentConfig
     this.messagePickupService = messagePickupService
     this.connectionService = connectionService
-    this.mediationRecipientService = mediationRecipientService
+    this.recipientService = recipientService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.registerHandlers(dispatcher)
@@ -53,11 +53,11 @@ export class RecipientModule {
    * @returns event emitter for mediation recipient related received messages
    */
    public get events(): EventEmitter {
-    return this.mediationRecipientService
+    return this.recipientService
   }
 
   // public async provision(mediatorConfiguration: MediatorConfiguration) {
-  //   let provisioningRecord = await this.mediationRecipientService.find()
+  //   let provisioningRecord = await this.recipientService.find()
 
   //   if (!provisioningRecord) {
   //     this.logger.info('No provision record found. Creating connection with mediator.')
@@ -113,24 +113,24 @@ export class RecipientModule {
   }
 
   public async requestMediation(connection: ConnectionRecord) {
-    const message = await this.mediationRecipientService.createRequest(connection)
+    const message = await this.recipientService.createRequest(connection)
     const outboundMessage = createOutboundMessage(connection, message)
     const response = await this.messageSender.sendMessage(outboundMessage)
     return response
   }
 
   public async getMediators() {
-    return await this.mediationRecipientService.getMediators()
+    return await this.recipientService.getMediators()
   }
 
   public async getDefaultMediatorId() {
-    return await this.mediationRecipientService.getDefaultMediatorId()
+    return await this.recipientService.getDefaultMediatorId()
   }
 
   public async getDefaultMediator(): Promise< MediationRecord | undefined> {
-    const mediatorId: string | undefined = await this.mediationRecipientService.getDefaultMediatorId()
+    const mediatorId: string | undefined = await this.recipientService.getDefaultMediatorId()
     if (mediatorId !== undefined) {
-      return this.mediationRecipientService.findById(mediatorId)
+      return this.recipientService.findById(mediatorId)
     }
     return undefined
   }
@@ -146,11 +146,11 @@ export class RecipientModule {
 
   // Register handlers for the several messages for the mediator.
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
+    dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.recipientService))
+    dispatcher.registerHandler(new MediationGrantHandler(this.recipientService))
+    dispatcher.registerHandler(new MediationDenyHandler(this.recipientService))
+    dispatcher.registerHandler(new MediationGrantHandler(this.recipientService))
+    dispatcher.registerHandler(new MediationDenyHandler(this.recipientService))
   }
 }
 

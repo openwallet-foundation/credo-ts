@@ -28,7 +28,7 @@ import {
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { KeylistUpdate, KeylistUpdated, MediationRecipientService, MediationRecord } from '../../../modules/routing'
+import { KeylistUpdate, KeylistUpdated, RecipientService, MediationRecord } from '../../../modules/routing'
 import { MediationStateChangedEvent, MediationKeylistEvent } from '../../routing/services/MediatorService'
 import { KeylistState } from '../../routing'
 import { waitForEventWithTimeout } from '../../../utils/promiseWithTimeOut'
@@ -56,19 +56,19 @@ export class ConnectionService extends EventEmitter {
   private wallet: Wallet
   private config: AgentConfig
   private connectionRepository: Repository<ConnectionRecord>
-  private mediationRecipientService: MediationRecipientService
+  private recipientService: RecipientService
 
   public constructor(
     wallet: Wallet,
     config: AgentConfig,
     connectionRepository: Repository<ConnectionRecord>,
-    mediationRecipientService: MediationRecipientService
+    recipientService: RecipientService
   ) {
     super()
     this.wallet = wallet
     this.config = config
     this.connectionRepository = connectionRepository
-    this.mediationRecipientService = mediationRecipientService
+    this.recipientService = recipientService
   }
 
   // TODO: move this to routingService
@@ -77,16 +77,16 @@ export class ConnectionService extends EventEmitter {
     // const { endpoint, routingKeys } = await this.routingService.getXXX({ mediationId: options.mediationId })
     let mediationRecord: MediationRecord | null = null
     let endpoint, routingKeys: Verkey[]
-    const defaultMediator = await this.mediationRecipientService.getDefaultMediator()
+    const defaultMediator = await this.recipientService.getDefaultMediator()
     if (mediationId) {
-      mediationRecord = await this.mediationRecipientService.findById(mediationId)
+      mediationRecord = await this.recipientService.findById(mediationId)
     } else if (defaultMediator) {
       mediationRecord = defaultMediator
     }
     const [did, verkey] = await this.wallet.createDid()
     if (mediationRecord) {
       endpoint = mediationRecord.endpoint
-      const message = await this.mediationRecipientService.createKeylistUpdateMessage(verkey)
+      const message = await this.recipientService.createKeylistUpdateMessage(verkey)
       routingKeys = mediationRecord.routingKeys
       // assumption, UpdateMessage will only ever have one keylistupdate
       const event: keylistUpdateEvent = {

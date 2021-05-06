@@ -6,7 +6,7 @@ import { EnvelopeService } from './EnvelopeService'
 import { ConnectionService, TrustPingService, ConnectionRecord, ConnectionState } from '../modules/connections'
 import { CredentialService, CredentialRecord } from '../modules/credentials'
 import { ProofService, ProofRecord } from '../modules/proofs'
-import { MessagePickupService, MediationRecipientService, MediationRecord, MediatorService } from '../modules/routing'
+import { MessagePickupService, RecipientService, MediationRecord, MediatorService } from '../modules/routing'
 import { BasicMessageService, BasicMessageRecord } from '../modules/basic-messages'
 import { LedgerService } from '../modules/ledger'
 import { Dispatcher } from './Dispatcher'
@@ -44,7 +44,7 @@ export class Agent {
   protected messagePickupService: MessagePickupService
   protected ledgerService: LedgerService
   protected credentialService: CredentialService
-  protected mediationRecipientService: MediationRecipientService
+  protected recipientService: RecipientService
   protected mediatorService: MediatorService
   protected basicMessageRepository: Repository<BasicMessageRecord>
   protected connectionRepository: Repository<ConnectionRecord>
@@ -114,7 +114,7 @@ export class Agent {
       this.agentConfig,
       this.wallet
     )
-    this.mediationRecipientService = new MediationRecipientService(
+    this.recipientService = new RecipientService(
       this.agentConfig,
       this.mediationRecipientRepository,
       this.messageSender,
@@ -124,7 +124,7 @@ export class Agent {
       this.wallet,
       this.agentConfig,
       this.connectionRepository,
-      this.mediationRecipientService
+      this.recipientService
     )
     this.basicMessageService = new BasicMessageService(this.basicMessageRepository)
     this.trustPingService = new TrustPingService()
@@ -221,7 +221,7 @@ export class Agent {
     this.mediationRecipient = new RecipientModule(
       this.dispatcher,
       this.agentConfig,
-      this.mediationRecipientService,
+      this.recipientService,
       this.messagePickupService,
       this.connectionService,
       this.messageSender,

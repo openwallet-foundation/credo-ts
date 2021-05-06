@@ -20,7 +20,7 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import testLogger from '../../../__tests__/logger'
-import { MediationRecipientService, MediationRecord} from '../../routing'
+import { RecipientService, MediationRecord} from '../../routing'
 import { MessageSender } from '../../../agent/MessageSender'
 
 jest.mock('./../../../storage/Repository')
@@ -98,7 +98,7 @@ describe('ConnectionService', () => {
   let mediationRepository: Repository<MediationRecord>
   let connectionService: ConnectionService
   let messageSender: MessageSender
-  let mediationRecipientService: MediationRecipientService
+  let recipientService: RecipientService
 
   beforeAll(async () => {
     agentConfig = new AgentConfig(initConfig)
@@ -117,8 +117,8 @@ describe('ConnectionService', () => {
     MediationRepository.mockClear()
     connectionRepository = new ConnectionRepository()
     mediationRepository = new MediationRepository()
-    mediationRecipientService = new MediationRecipientService(agentConfig, mediationRepository, messageSender, wallet)
-    connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, mediationRecipientService)
+    recipientService = new RecipientService(agentConfig, mediationRepository, messageSender, wallet)
+    connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, recipientService)
   })
 
   describe('createConnectionWithInvitation', () => {

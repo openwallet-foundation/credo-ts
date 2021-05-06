@@ -29,7 +29,7 @@ export enum MediationRecipientEventType {
   KeylistUpdated = 'KEYLIST_UPDATED',
 }
 
-export class MediationRecipientService extends EventEmitter {
+export class RecipientService extends EventEmitter {
   private agentConfig: AgentConfig
   private mediatorRepository: Repository<MediationRecord>
   private messageSender: MessageSender
