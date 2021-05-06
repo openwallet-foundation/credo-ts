@@ -1,16 +1,16 @@
 import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import { MediationService } from '../services'
+import { MediatorService } from '../services'
 import { ForwardMessage } from '../messages'
 
 export class ForwardHandler implements Handler {
-  private routingService: MediationService
+  private mediatorService: MediatorService
   public supportedMessages = [ForwardMessage]
 
-  public constructor(routingService: MediationService) {
-    this.routingService = routingService
+  public constructor(mediatorService: MediatorService) {
+    this.mediatorService = mediatorService
   }
 
   public async handle(messageContext: HandlerInboundMessage<ForwardHandler>) {
-    await this.routingService.processForwardMessage(messageContext)
+    await this.mediatorService.processForwardMessage(messageContext)
   }
 }

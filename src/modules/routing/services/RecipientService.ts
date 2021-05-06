@@ -16,7 +16,7 @@ import { Logger } from '../../../logger'
 import { EventEmitter } from 'events'
 import { Repository } from '../../../storage/Repository'
 import { ConnectionInvitationMessage, ConnectionRecord } from '../../connections'
-import { MediationEventType, MediationKeylistEvent, MediationStateChangedEvent } from './MediationService'
+import { MediationEventType, MediationKeylistEvent, MediationStateChangedEvent } from './MediatorService'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { OutboundMessage } from '../../../types'
 import { isIndyError } from '../../../utils/indyError'
@@ -77,7 +77,7 @@ export class MediationRecipientService extends EventEmitter {
       // Upon granting, set this.defaultMediator
   }
 
-  public async create({ state, role, connectionId, recipientKeys }: MediationRecordProps): Promise<MediationRecord> {
+  public async createRecord({ state, role, connectionId, recipientKeys }: MediationRecordProps): Promise<MediationRecord> {
     const mediationRecord = new MediationRecord({
       state,
       role,
@@ -95,7 +95,7 @@ export class MediationRecipientService extends EventEmitter {
   }
 
   public async createRequest(connection: ConnectionRecord) {
-    await this.create({
+    await this.createRecord({
       connectionId: connection.id,
       role: MediationRole.Mediator,
       state: MediationState.Requested,

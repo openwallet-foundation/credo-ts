@@ -6,7 +6,7 @@ import { EnvelopeService } from './EnvelopeService'
 import { ConnectionService, TrustPingService, ConnectionRecord, ConnectionState } from '../modules/connections'
 import { CredentialService, CredentialRecord } from '../modules/credentials'
 import { ProofService, ProofRecord } from '../modules/proofs'
-import { MessagePickupService, MediationRecipientService, MediationRecord, MediationService } from '../modules/routing'
+import { MessagePickupService, MediationRecipientService, MediationRecord, MediatorService } from '../modules/routing'
 import { BasicMessageService, BasicMessageRecord } from '../modules/basic-messages'
 import { LedgerService } from '../modules/ledger'
 import { Dispatcher } from './Dispatcher'
@@ -45,7 +45,7 @@ export class Agent {
   protected ledgerService: LedgerService
   protected credentialService: CredentialService
   protected mediationRecipientService: MediationRecipientService
-  protected mediationService: MediationService
+  protected mediatorService: MediatorService
   protected basicMessageRepository: Repository<BasicMessageRecord>
   protected connectionRepository: Repository<ConnectionRecord>
   protected credentialRepository: Repository<CredentialRecord>
@@ -108,7 +108,7 @@ export class Agent {
     )
     this.proofRepository = new Repository<ProofRecord>(ProofRecord, storageService as IndyStorageService<ProofRecord>)
     // ---------------------- Services ----------------------
-    this.mediationService = new MediationService(
+    this.mediatorService = new MediatorService(
       this.messageSender,
       this.mediationRepository,
       this.agentConfig,
@@ -204,7 +204,6 @@ export class Agent {
       this.dispatcher,
       this.agentConfig,
       this.connectionService,
-      this.mediationService,
       this.trustPingService,
       this.messageSender
     )
@@ -212,7 +211,7 @@ export class Agent {
     this.mediator = new MediatorModule(
       this.dispatcher,
       this.agentConfig,
-      this.mediationService,
+      this.mediatorService,
       this.messagePickupService,
       this.connectionService,
       this.messageSender,

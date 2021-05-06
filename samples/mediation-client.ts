@@ -18,7 +18,7 @@ import {
 import testLogger, { TestLogger } from '../src/__tests__/logger'
 import indy from 'indy-sdk'
 import { resolve } from 'path'
-import { MediationEventType, MediationStateChangedEvent } from '../src/modules/routing/services/MediationService'
+import { MediationEventType, MediationStateChangedEvent } from '../src/modules/routing/services/MediatorService'
 import { MediationState } from '../src/'
 import { sleep } from '../src/__tests__/helpers'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'

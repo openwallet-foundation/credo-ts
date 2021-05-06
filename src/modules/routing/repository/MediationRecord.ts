@@ -31,7 +31,7 @@ export class MediationRecord extends BaseRecord implements MediationStorageProps
   public role: MediationRole
   public tags: MediationTags
   public connectionId: string
-  public endpoint: string
+  public endpoint?: string
   public recipientKeys: Verkey[]
   public routingKeys: Verkey[]
 
@@ -48,8 +48,7 @@ export class MediationRecord extends BaseRecord implements MediationStorageProps
     this.tags = props.tags || {}
     this.state = props.state || MediationState.Init
     this.role = props.role
-    this.connectionId = props.connectionId
-    this.endpoint = props.endpoint || ''
+    this.endpoint = props.endpoint ?? undefined
   }
 
   public assertState(expectedStates: MediationState | MediationState[]) {

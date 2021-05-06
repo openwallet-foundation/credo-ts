@@ -29,7 +29,7 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { KeylistUpdate, KeylistUpdated, MediationRecipientService, MediationRecord } from '../../../modules/routing'
-import { MediationStateChangedEvent, MediationKeylistEvent } from '../../routing/services/MediationService'
+import { MediationStateChangedEvent, MediationKeylistEvent } from '../../routing/services/MediatorService'
 import { KeylistState } from '../../routing'
 import { waitForEventWithTimeout } from '../../../utils/promiseWithTimeOut'
 export enum ConnectionEventType {
