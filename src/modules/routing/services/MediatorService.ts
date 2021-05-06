@@ -26,6 +26,7 @@ import { BaseMessage } from '../../../agent/BaseMessage'
 import { Wallet } from '../../../wallet/Wallet'
 import { HandlerInboundMessage } from '../../../agent/Handler'
 import { ForwardHandler } from '../handlers'
+import { uuid } from '../../../utils/uuid'
 export interface RoutingTable {
   [recipientKey: string]: ConnectionRecord | undefined
 }
@@ -160,6 +161,7 @@ export class MediatorService extends EventEmitter {
       mediation.state = MediationState.Granted
       await this.mediationRepository.update(mediation)
       return new MediationGrantMessage({
+        id : uuid(), // HELP: should this be the thread id from the request?
         endpoint: this.agentConfig.getEndpoint(),
         routingKeys: this.routingKeys,
       })

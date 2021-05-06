@@ -25,7 +25,7 @@ export class MediatorModule {
   private messagePickupService: MessagePickupService
   private connectionService: ConnectionService
   private messageSender: MessageSender
-  private eventEmitter: EventEmitter
+  public eventEmitter: EventEmitter
 
   public constructor(
     dispatcher: Dispatcher,
