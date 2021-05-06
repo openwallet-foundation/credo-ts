@@ -34,7 +34,7 @@ export class RequestMediationMessage extends AgentMessage {
 
   @Equals(RequestMediationMessage.type)
   public readonly type = RequestMediationMessage.type
-  public static readonly type = RoutingMessageType.RequestMediation
+  public static readonly type = RoutingMessageType.MediationRequest
 
   @Expose({ name: 'sent_time' })
   @Type(() => Date)

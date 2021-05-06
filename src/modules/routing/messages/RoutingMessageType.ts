@@ -1,6 +1,6 @@
 export enum RoutingMessageType {
   // TODO: add other messages from mediator coordination protocol
-  RequestMediation = 'https://didcomm.org/coordinate-mediation/1.0/mediation-request',
+  MediationRequest = 'https://didcomm.org/coordinate-mediation/1.0/mediate-request',
   MediationDeny = 'https://didcomm.org/coordinate-mediation/1.0/mediate-deny',
   MediationGrant = 'https://didcomm.org/coordinate-mediation/1.0/mediate-grant',
   KeylistUpdate = 'https://didcomm.org/coordinate-mediation/1.0/keylist-update',
