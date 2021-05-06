@@ -148,6 +148,8 @@ export class SubjectInboundTransporter implements InboundTransporter {
 export class SubjectOutboundTransporter implements OutboundTransporter {
   private subject: Subject<WireMessage>
 
+  public supportedSchemes = []
+
   public constructor(subject: Subject<WireMessage>) {
     this.subject = subject
   }

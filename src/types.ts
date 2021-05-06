@@ -8,6 +8,11 @@ type $FixMe = any
 
 export type WireMessage = $FixMe
 
+export enum DidCommMimeType {
+  V0 = 'application/ssi-agent-wire',
+  V1 = 'application/didcomm-envelope-enc',
+}
+
 export interface InitConfig {
   host?: string
   port?: string | number
@@ -23,6 +28,7 @@ export interface InitConfig {
   poolName?: string
   logger?: Logger
   indy: typeof Indy
+  didCommMimeType?: DidCommMimeType
 }
 
 export interface UnpackedMessage {
@@ -48,6 +54,7 @@ export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
 export interface OutboundPackage {
   connection: ConnectionRecord
   payload: WireMessage
+  responseRequested?: boolean
   endpoint?: string
 }
 

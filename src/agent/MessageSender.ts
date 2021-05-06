@@ -22,9 +22,8 @@ class MessageSender {
     if (!this.outboundTransporter) {
       throw new Error('Agent has no outbound transporter!')
     }
-    const returnRoute = outboundMessage.payload.hasReturnRouting()
     const outboundPackage = await this.envelopeService.packMessage(outboundMessage)
-    await this.outboundTransporter.sendMessage(outboundPackage, returnRoute)
+    await this.outboundTransporter.sendMessage(outboundPackage)
   }
 }
 

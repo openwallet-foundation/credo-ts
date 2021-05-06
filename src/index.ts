@@ -2,11 +2,10 @@
 import 'reflect-metadata'
 
 export { Agent } from './agent/Agent'
-export { InboundTransporter } from './transport/InboundTransporter'
-export { OutboundTransporter } from './transport/OutboundTransporter'
 export { encodeInvitationToUrl, decodeInvitationFromUrl } from './helpers'
 export { InitConfig, OutboundPackage } from './types'
 
+export * from './transport'
 export * from './modules/basic-messages'
 export * from './modules/credentials'
 export * from './modules/proofs'

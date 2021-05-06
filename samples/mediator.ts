@@ -3,7 +3,7 @@ import cors from 'cors'
 import config from './config'
 import testLogger from '../src/__tests__/logger'
 import { Agent, InboundTransporter, OutboundTransporter } from '../src'
-import { OutboundPackage } from '../src/types'
+import { OutboundPackage, DidCommMimeType } from '../src/types'
 import { MessageRepository } from '../src/storage/MessageRepository'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
 
@@ -32,6 +32,8 @@ class StorageOutboundTransporter implements OutboundTransporter {
   public messages: { [key: string]: any } = {}
   private messageRepository: MessageRepository
 
+  public supportedSchemes = []
+
   public constructor(messageRepository: MessageRepository) {
     this.messageRepository = messageRepository
   }
@@ -59,7 +61,7 @@ const app = express()
 app.use(cors())
 app.use(
   express.text({
-    type: ['application/ssi-agent-wire', 'text/plain'],
+    type: [DidCommMimeType.V0, DidCommMimeType.V1],
   })
 )
 app.set('json spaces', 2)

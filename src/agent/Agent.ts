@@ -33,10 +33,10 @@ import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModu
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 
 export class Agent {
-  protected logger: Logger
+  public readonly logger: Logger
+  public readonly agentConfig: AgentConfig
   protected eventEmitter: EventEmitter
   protected wallet: Wallet
-  protected agentConfig: AgentConfig
   protected messageReceiver: MessageReceiver
   protected dispatcher: Dispatcher
   protected messageSender: MessageSender
