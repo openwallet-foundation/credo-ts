@@ -92,14 +92,14 @@ const mockCredentialRecord = ({
   metadata,
   tags,
   id,
-  credentialAttributesValues,
+  credentialAttributes,
 }: {
   state: CredentialState
   requestMessage?: RequestCredentialMessage
   metadata?: CredentialRecordMetadata
   tags?: CredentialRecordTags
   id?: string
-  credentialAttributesValues?: CredentialPreviewAttribute[]
+  credentialAttributes?: CredentialPreviewAttribute[]
 }) =>
   new CredentialRecord({
     offerMessage: new OfferCredentialMessage({
@@ -108,7 +108,7 @@ const mockCredentialRecord = ({
       attachments: [offerAttachment],
     }),
     id,
-    credentialAttributesValues: credentialAttributesValues || credentialPreview.attributes,
+    credentialAttributes: credentialAttributes || credentialPreview.attributes,
     requestMessage,
     metadata,
     state: state || CredentialState.OfferSent,
@@ -695,7 +695,7 @@ describe('CredentialService', () => {
             state: CredentialState.RequestSent,
             id: 'id',
             // Take only first value from credential
-            credentialAttributesValues: [credentialPreview.attributes[0]],
+            credentialAttributes: [credentialPreview.attributes[0]],
           }),
         ])
       )

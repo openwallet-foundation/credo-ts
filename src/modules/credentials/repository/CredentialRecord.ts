@@ -30,7 +30,7 @@ export interface CredentialStorageProps {
   offerMessage?: OfferCredentialMessage
   requestMessage?: RequestCredentialMessage
   credentialMessage?: IssueCredentialMessage
-  credentialAttributesValues?: CredentialPreviewAttribute[]
+  credentialAttributes?: CredentialPreviewAttribute[]
 }
 
 export interface CredentialRecordTags extends Tags {
@@ -55,7 +55,7 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
   public credentialMessage?: IssueCredentialMessage
 
   @Type(() => CredentialPreviewAttribute)
-  public credentialAttributesValues?: CredentialPreviewAttribute[]
+  public credentialAttributes?: CredentialPreviewAttribute[]
 
   public static readonly type = 'CredentialRecord'
   public readonly type = CredentialRecord.type
@@ -76,14 +76,14 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
       this.offerMessage = props.offerMessage
       this.requestMessage = props.requestMessage
       this.credentialMessage = props.credentialMessage
-      this.credentialAttributesValues = props.credentialAttributesValues
+      this.credentialAttributes = props.credentialAttributes
     }
   }
 
   public getCredentialInfo(): CredentialInfo | null {
-    if (!this.credentialAttributesValues) return null
+    if (!this.credentialAttributes) return null
 
-    const claims = this.credentialAttributesValues.reduce(
+    const claims = this.credentialAttributes.reduce(
       (accumulator, current) => ({
         ...accumulator,
         [current.name]: current.value,

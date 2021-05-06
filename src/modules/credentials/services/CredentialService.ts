@@ -92,7 +92,7 @@ export class CredentialService extends EventEmitter {
       connectionId: connectionRecord.id,
       state: CredentialState.ProposalSent,
       proposalMessage,
-      credentialAttributesValues: proposalMessage.credentialProposal?.attributes,
+      credentialAttributes: proposalMessage.credentialProposal?.attributes,
       tags: { threadId: proposalMessage.threadId },
     })
     await this.credentialRepository.save(credentialRecord)
@@ -126,7 +126,7 @@ export class CredentialService extends EventEmitter {
 
     // Update record
     credentialRecord.proposalMessage = proposalMessage
-    credentialRecord.credentialAttributesValues = proposalMessage.credentialProposal?.attributes
+    credentialRecord.credentialAttributes = proposalMessage.credentialProposal?.attributes
     this.updateState(credentialRecord, CredentialState.ProposalSent)
 
     return { message: proposalMessage, credentialRecord }
@@ -166,14 +166,14 @@ export class CredentialService extends EventEmitter {
 
       // Update record
       credentialRecord.proposalMessage = proposalMessage
-      credentialRecord.credentialAttributesValues = proposalMessage.credentialProposal?.attributes
+      credentialRecord.credentialAttributes = proposalMessage.credentialProposal?.attributes
       await this.updateState(credentialRecord, CredentialState.ProposalReceived)
     } catch {
       // No credential record exists with thread id
       credentialRecord = new CredentialRecord({
         connectionId: connection.id,
         proposalMessage,
-        credentialAttributesValues: proposalMessage.credentialProposal?.attributes,
+        credentialAttributes: proposalMessage.credentialProposal?.attributes,
         state: CredentialState.ProposalReceived,
         tags: { threadId: proposalMessage.threadId },
       })
@@ -225,7 +225,7 @@ export class CredentialService extends EventEmitter {
     })
 
     credentialRecord.offerMessage = credentialOfferMessage
-    credentialRecord.credentialAttributesValues = preview.attributes
+    credentialRecord.credentialAttributes = preview.attributes
     credentialRecord.metadata.credentialDefinitionId = credOffer.cred_def_id
     credentialRecord.metadata.schemaId = credOffer.schema_id
     await this.updateState(credentialRecord, CredentialState.OfferSent)
@@ -269,7 +269,7 @@ export class CredentialService extends EventEmitter {
     const credentialRecord = new CredentialRecord({
       connectionId: connectionRecord.id,
       offerMessage: credentialOfferMessage,
-      credentialAttributesValues: preview.attributes,
+      credentialAttributes: preview.attributes,
       metadata: {
         credentialDefinitionId: credOffer.cred_def_id,
         schemaId: credOffer.schema_id,
@@ -326,7 +326,7 @@ export class CredentialService extends EventEmitter {
       credentialRecord.assertConnection(connection.id)
 
       credentialRecord.offerMessage = credentialOfferMessage
-      credentialRecord.credentialAttributesValues = credentialOfferMessage.credentialPreview.attributes
+      credentialRecord.credentialAttributes = credentialOfferMessage.credentialPreview.attributes
       credentialRecord.metadata.credentialDefinitionId = indyCredentialOffer.cred_def_id
       credentialRecord.metadata.schemaId = indyCredentialOffer.schema_id
       await this.updateState(credentialRecord, CredentialState.OfferReceived)
@@ -335,7 +335,7 @@ export class CredentialService extends EventEmitter {
       credentialRecord = new CredentialRecord({
         connectionId: connection.id,
         offerMessage: credentialOfferMessage,
-        credentialAttributesValues: credentialOfferMessage.credentialPreview.attributes,
+        credentialAttributes: credentialOfferMessage.credentialPreview.attributes,
         metadata: {
           credentialDefinitionId: indyCredentialOffer.cred_def_id,
           schemaId: indyCredentialOffer.schema_id,
@@ -478,7 +478,7 @@ export class CredentialService extends EventEmitter {
     }
 
     // Assert credential attributes
-    const credentialAttributes = credentialRecord.credentialAttributesValues
+    const credentialAttributes = credentialRecord.credentialAttributes
     if (!credentialAttributes) {
       throw new Error(
         `Missing required credential attribute values on credential record with id ${credentialRecord.id}`
@@ -576,10 +576,10 @@ export class CredentialService extends EventEmitter {
     // TODO: Ideally we don't throw here, but instead store that it's not equal.
     // the credential may still have value, and we could just respond with an ack
     // status of fail
-    if (credentialRecord.credentialAttributesValues) {
+    if (credentialRecord.credentialAttributes) {
       CredentialUtils.assertValuesMatch(
         indyCredential.values,
-        CredentialUtils.convertAttributesToValues(credentialRecord.credentialAttributesValues)
+        CredentialUtils.convertAttributesToValues(credentialRecord.credentialAttributes)
       )
     }
 

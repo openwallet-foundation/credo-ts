@@ -8,7 +8,7 @@ describe('CredentialRecord', () => {
       const credentialRecord = new CredentialRecord({
         connectionId: '28790bfe-1345-4c64-b21a-7d98982b3894',
         state: CredentialState.Done,
-        credentialAttributesValues: [
+        credentialAttributes: [
           new CredentialPreviewAttribute({
             name: 'age',
             value: '25',
