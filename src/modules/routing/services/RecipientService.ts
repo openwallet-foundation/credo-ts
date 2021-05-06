@@ -152,7 +152,7 @@ export class RecipientService extends EventEmitter {
     }
 
     // Mediation record already exists
-    const mediationRecord = await this.findByConnectionId(messageContext.connection?.id || '')
+    const mediationRecord = await this.findByConnectionId(connection.id)
 
     if (!mediationRecord) {
       throw new Error(`No mediation has been requested for this connection id: ${connection.id}`)
@@ -172,7 +172,7 @@ export class RecipientService extends EventEmitter {
 
   public async processMediationDeny(messageContext: InboundMessageContext<MediationDenyMessage>) {
     const connection = messageContext.connection
-
+    // TODO: duplicate code from processMediationGrant, move into helper method
     // Assert connection
     connection?.assertReady()
     if (!connection) {
@@ -180,7 +180,7 @@ export class RecipientService extends EventEmitter {
     }
 
     // Mediation record already exists
-    const mediationRecord = await this.findByConnectionId(messageContext.connection?.id || '')
+    const mediationRecord = await this.findByConnectionId(connection.id)
 
     if (!mediationRecord) {
       throw new Error(`No mediation has been requested for this connection id: ${connection.id}`)
