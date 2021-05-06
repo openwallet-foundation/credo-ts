@@ -52,7 +52,7 @@ export class RecipientModule {
    *
    * @returns event emitter for mediation recipient related received messages
    */
-   public get events(): EventEmitter {
+  public get events(): EventEmitter {
     return this.recipientService
   }
 
@@ -127,16 +127,14 @@ export class RecipientModule {
     return await this.recipientService.getDefaultMediatorId()
   }
 
-  public async getDefaultMediator(): Promise< MediationRecord | undefined> {
-    const mediatorId: string | undefined = await this.recipientService.getDefaultMediatorId()
-    if (mediatorId !== undefined) {
-      return this.recipientService.findById(mediatorId)
-    }
-    return undefined
+  public async getDefaultMediator(): Promise<MediationRecord | undefined> {
+    return await this.recipientService.getDefaultMediator()
   }
   public async getDefaultMediatorConnection(): Promise<ConnectionRecord | undefined> {
     const mediatorRecord = await this.getDefaultMediator()
-    if (mediatorRecord) {return await this.connectionService.getById(mediatorRecord.connectionId)}
+    if (mediatorRecord) {
+      return await this.connectionService.getById(mediatorRecord.connectionId)
+    }
     return undefined
   }
 
