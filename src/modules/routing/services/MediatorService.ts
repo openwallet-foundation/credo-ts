@@ -76,7 +76,7 @@ export class MediatorService extends EventEmitter {
     
     private _assertConnection(connection: ConnectionRecord | undefined, msgType: BaseMessage): ConnectionRecord {
       if (!connection) throw Error('in bound connection is required for ${msgType.name}!')
-      connection?.assertReady()
+      connection.assertReady()
       return connection
     }
     

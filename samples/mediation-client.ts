@@ -289,7 +289,7 @@ app.get('/register-mediator', async (req, res) => {
 
 function _assertConnection(connection: ConnectionRecord | undefined): ConnectionRecord {
   if (!connection) throw Error('')
-  connection?.assertReady()
+  connection.assertReady()
   return connection
 }
 app.listen(PORT, '0.0.0.0', 0, async () => {
