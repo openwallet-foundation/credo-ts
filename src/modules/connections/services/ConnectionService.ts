@@ -72,14 +72,14 @@ export class ConnectionService extends EventEmitter {
   }
 
   // TODO: move this to routingService
-  public async createRouting(mediationId: string | undefined) {
+  public async createRouting(mediatorId: string | undefined) {
     // TODO: make generic like...
-    // const { endpoint, routingKeys } = await this.routingService.getXXX({ mediationId: options.mediationId })
+    // const { endpoint, routingKeys } = await this.routingService.getXXX({ mediatorId: options.mediatorId })
     let mediationRecord: MediationRecord | null = null
     let endpoint, routingKeys: Verkey[]
     const defaultMediator = await this.recipientService.getDefaultMediator()
-    if (mediationId) {
-      mediationRecord = await this.recipientService.findById(mediationId)
+    if (mediatorId) {
+      mediationRecord = await this.recipientService.findById(mediatorId)
     } else if (defaultMediator) {
       mediationRecord = defaultMediator
     }
@@ -405,11 +405,11 @@ export class ConnectionService extends EventEmitter {
     state: ConnectionState
     invitation?: ConnectionInvitationMessage
     alias?: string
-    mediationId?: string
+    mediatorId?: string
     autoAcceptConnection?: boolean
     tags?: ConnectionTags
   }): Promise<ConnectionRecord> {
-    // const [mediationRecord, endpoint, routingKeys] = await this.createRouting(options.mediationId)
+    // const [mediationRecord, endpoint, routingKeys] = await this.createRouting(options.mediatorId)
     const [did, verkey] = await this.wallet.createDid()
     const publicKey = new Ed25119Sig2018({
       id: `${did}#1`,
