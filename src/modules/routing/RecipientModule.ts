@@ -138,9 +138,13 @@ export class RecipientModule {
     return undefined
   }
 
-  public async keylistUpdate() {}
+  public async keylistUpdate() {
+    throw new Error('Method not implemented.')
+  }
 
-  public async keylistquery() {}
+  public async keylistquery() {
+    throw new Error('Method not implemented.')
+  }
 
   // Register handlers for the several messages for the mediator.
   private registerHandlers(dispatcher: Dispatcher) {

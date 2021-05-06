@@ -84,7 +84,7 @@ export class MediatorModule {
     return connection
   }
 
-  acceptInvitation(id: string): ConnectionRecord | PromiseLike<ConnectionRecord> {
+  public async acceptInvitation(id: string): Promise<ConnectionRecord> {
     throw new Error('Method not implemented.')
   }
 
