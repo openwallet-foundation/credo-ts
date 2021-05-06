@@ -1,3 +1,3 @@
 export * from './InboundTransporter'
 export * from './OutboundTransporter'
-export * from './http'
+export * from './HttpOutboundTransporter'
