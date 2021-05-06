@@ -66,8 +66,8 @@ export class AgentConfig {
     return this.initConfig.mediatorInvitation
   }
 
-  public get openMediation(){
-    return this.initConfig.openMediation ?? false
+  public get autoAcceptMediationRequests(){
+    return this.initConfig.autoAcceptMediationRequests ?? false
   }
   public get defaultMediatorId(){
     return this.initConfig.defaultMediatorId
