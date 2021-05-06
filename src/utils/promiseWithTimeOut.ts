@@ -10,7 +10,6 @@ export async function waitForEventWithTimeout(
   timeout: number
 ) {
   return new Promise((resolve, reject) => {
-    let timer: NodeJS.Timeout
 
     function listener(data: any) {
       //TODO: check if thread Id matches the on in the message
@@ -20,7 +19,7 @@ export async function waitForEventWithTimeout(
     }
 
     emitter.on(eventType, listener)
-    timer = setTimeout(() => {
+    const timer: NodeJS.Timeout = setTimeout(() => {
       emitter.removeListener(eventType, listener)
       reject(new Error('timeout waiting for ' + eventType + 'from initialized from message' + message))
     }, timeout)
