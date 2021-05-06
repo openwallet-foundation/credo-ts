@@ -152,7 +152,7 @@ export class MediatorService extends EventEmitter {
       return records[0]
     }
     
-    public async prepareGrantMediationMessage(mediation: MediationRecord): Promise<MediationGrantMessage> {
+    public async createGrantMediationMessage(mediation: MediationRecord): Promise<MediationGrantMessage> {
       if(this.routingKeys.length === 0 ){
         const [did , verkey] = await this.wallet.createDid()
         this.routingKeys = [verkey]
@@ -178,7 +178,7 @@ export class MediatorService extends EventEmitter {
       await this.updateState(mediationRecord, MediationState.Init)
       
       // Mediation can be either granted or denied. Someday, let business logic decide that
-      this.prepareGrantMediationMessage(mediationRecord)
+      this.createGrantMediationMessage(mediationRecord)
     }
     
     public async findByConnectionId(id: string): Promise<MediationRecord | null> {

@@ -56,7 +56,7 @@ export class MediatorModule {
   }
 
   public async grantRequestedMediation(connectionRecord: ConnectionRecord, mediationRecord: MediationRecord) {
-    const grantMessage = await this.mediatorService.prepareGrantMediationMessage(mediationRecord)
+    const grantMessage = await this.mediatorService.createGrantMediationMessage(mediationRecord)
     const outboundMessage = createOutboundMessage(connectionRecord, grantMessage)
     const response = await this.messageSender.sendMessage(outboundMessage)
     return response
