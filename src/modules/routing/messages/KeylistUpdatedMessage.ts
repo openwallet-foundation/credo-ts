@@ -4,6 +4,7 @@ import { Expose, Type } from 'class-transformer'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { RoutingMessageType as MessageType } from './RoutingMessageType'
+import { KeylistUpdateMessageOptions } from '..'
 
 export interface KeylistUpdatedMessageOptions {
   id?: string
