@@ -9,9 +9,9 @@ export async function waitForEventWithTimeout(
   message: ConnectionInvitationMessage | RequestMediationMessage | KeylistUpdateMessage,
   timeout: number
 ) {
-  // @ts-ignore
   return new Promise((resolve, reject) => {
-    let timer: NodeJS.Timeout
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    let timer: NodeJS.Timeout = setTimeout(() => {})
 
     function listener(data: any) {
       //TODO: check if thread Id matches the one in the message
