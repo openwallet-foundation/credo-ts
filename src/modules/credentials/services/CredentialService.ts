@@ -15,7 +15,7 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
-import { CredentialInfo } from '../models'
+import { IndyCredentialInfo } from '../models'
 import {
   OfferCredentialMessage,
   CredentialPreview,
@@ -92,6 +92,7 @@ export class CredentialService extends EventEmitter {
       connectionId: connectionRecord.id,
       state: CredentialState.ProposalSent,
       proposalMessage,
+      credentialAttributes: proposalMessage.credentialProposal?.attributes,
       tags: { threadId: proposalMessage.threadId },
     })
     await this.credentialRepository.save(credentialRecord)
@@ -125,6 +126,7 @@ export class CredentialService extends EventEmitter {
 
     // Update record
     credentialRecord.proposalMessage = proposalMessage
+    credentialRecord.credentialAttributes = proposalMessage.credentialProposal?.attributes
     this.updateState(credentialRecord, CredentialState.ProposalSent)
 
     return { message: proposalMessage, credentialRecord }
@@ -164,12 +166,14 @@ export class CredentialService extends EventEmitter {
 
       // Update record
       credentialRecord.proposalMessage = proposalMessage
+      credentialRecord.credentialAttributes = proposalMessage.credentialProposal?.attributes
       await this.updateState(credentialRecord, CredentialState.ProposalReceived)
     } catch {
       // No credential record exists with thread id
       credentialRecord = new CredentialRecord({
         connectionId: connection.id,
         proposalMessage,
+        credentialAttributes: proposalMessage.credentialProposal?.attributes,
         state: CredentialState.ProposalReceived,
         tags: { threadId: proposalMessage.threadId },
       })
@@ -221,6 +225,9 @@ export class CredentialService extends EventEmitter {
     })
 
     credentialRecord.offerMessage = credentialOfferMessage
+    credentialRecord.credentialAttributes = preview.attributes
+    credentialRecord.metadata.credentialDefinitionId = credOffer.cred_def_id
+    credentialRecord.metadata.schemaId = credOffer.schema_id
     await this.updateState(credentialRecord, CredentialState.OfferSent)
 
     return { message: credentialOfferMessage, credentialRecord }
@@ -262,6 +269,11 @@ export class CredentialService extends EventEmitter {
     const credentialRecord = new CredentialRecord({
       connectionId: connectionRecord.id,
       offerMessage: credentialOfferMessage,
+      credentialAttributes: preview.attributes,
+      metadata: {
+        credentialDefinitionId: credOffer.cred_def_id,
+        schemaId: credOffer.schema_id,
+      },
       state: CredentialState.OfferSent,
       tags: { threadId: credentialOfferMessage.id },
     })
@@ -314,12 +326,20 @@ export class CredentialService extends EventEmitter {
       credentialRecord.assertConnection(connection.id)
 
       credentialRecord.offerMessage = credentialOfferMessage
+      credentialRecord.credentialAttributes = credentialOfferMessage.credentialPreview.attributes
+      credentialRecord.metadata.credentialDefinitionId = indyCredentialOffer.cred_def_id
+      credentialRecord.metadata.schemaId = indyCredentialOffer.schema_id
       await this.updateState(credentialRecord, CredentialState.OfferReceived)
     } catch {
       // No credential record exists with thread id
       credentialRecord = new CredentialRecord({
         connectionId: connection.id,
         offerMessage: credentialOfferMessage,
+        credentialAttributes: credentialOfferMessage.credentialPreview.attributes,
+        metadata: {
+          credentialDefinitionId: indyCredentialOffer.cred_def_id,
+          schemaId: indyCredentialOffer.schema_id,
+        },
         state: CredentialState.OfferReceived,
         tags: { threadId: credentialOfferMessage.id },
       })
@@ -383,7 +403,7 @@ export class CredentialService extends EventEmitter {
     })
     credentialRequest.setThread({ threadId: credentialRecord.tags.threadId })
 
-    credentialRecord.requestMetadata = credReqMetadata
+    credentialRecord.metadata.requestMetadata = credReqMetadata
     credentialRecord.requestMessage = credentialRequest
     await this.updateState(credentialRecord, CredentialState.RequestSent)
 
@@ -457,16 +477,24 @@ export class CredentialService extends EventEmitter {
       )
     }
 
-    const indyCredentialOffer = offerMessage?.indyCredentialOffer
-    const indyCredentialRequest = requestMessage?.indyCredentialRequest
-    const indyCredentialValues = CredentialUtils.convertPreviewToValues(offerMessage.credentialPreview)
+    // Assert credential attributes
+    const credentialAttributes = credentialRecord.credentialAttributes
+    if (!credentialAttributes) {
+      throw new Error(
+        `Missing required credential attribute values on credential record with id ${credentialRecord.id}`
+      )
+    }
 
+    // Assert Indy offer
+    const indyCredentialOffer = offerMessage?.indyCredentialOffer
     if (!indyCredentialOffer) {
       throw new Error(
         `Missing required base64 encoded attachment data for credential offer with thread id ${credentialRecord.tags.threadId}`
       )
     }
 
+    // Assert Indy request
+    const indyCredentialRequest = requestMessage?.indyCredentialRequest
     if (!indyCredentialRequest) {
       throw new Error(
         `Missing required base64 encoded attachment data for credential request with thread id ${credentialRecord.tags.threadId}`
@@ -476,7 +504,7 @@ export class CredentialService extends EventEmitter {
     const [credential] = await this.wallet.createCredential(
       indyCredentialOffer,
       indyCredentialRequest,
-      indyCredentialValues
+      CredentialUtils.convertAttributesToValues(credentialAttributes)
     )
 
     const credentialAttachment = new Attachment({
@@ -532,7 +560,7 @@ export class CredentialService extends EventEmitter {
     const credentialRecord = await this.getByThreadId(issueCredentialMessage.threadId)
     credentialRecord.assertState(CredentialState.RequestSent)
 
-    if (!credentialRecord.requestMetadata) {
+    if (!credentialRecord.metadata.requestMetadata) {
       throw new Error(`Missing required request metadata for credential with id ${credentialRecord.id}`)
     }
 
@@ -543,11 +571,23 @@ export class CredentialService extends EventEmitter {
       )
     }
 
+    // Assert the values in the received credential match the values
+    // that were negotiated in the credential exchange
+    // TODO: Ideally we don't throw here, but instead store that it's not equal.
+    // the credential may still have value, and we could just respond with an ack
+    // status of fail
+    if (credentialRecord.credentialAttributes) {
+      CredentialUtils.assertValuesMatch(
+        indyCredential.values,
+        CredentialUtils.convertAttributesToValues(credentialRecord.credentialAttributes)
+      )
+    }
+
     const credentialDefinition = await this.ledgerService.getCredentialDefinition(indyCredential.cred_def_id)
 
     const credentialId = await this.wallet.storeCredential(
       uuid(),
-      credentialRecord.requestMetadata,
+      credentialRecord.metadata.requestMetadata,
       indyCredential,
       credentialDefinition
     )
@@ -661,10 +701,10 @@ export class CredentialService extends EventEmitter {
    * @param credentialId the id (referent) of the indy credential
    * @returns Indy credential info object
    */
-  public async getIndyCredential(credentialId: string): Promise<CredentialInfo> {
+  public async getIndyCredential(credentialId: string): Promise<IndyCredentialInfo> {
     const indyCredential = await this.wallet.getCredential(credentialId)
 
-    return JsonTransformer.fromJSON(indyCredential, CredentialInfo)
+    return JsonTransformer.fromJSON(indyCredential, IndyCredentialInfo)
   }
 
   /**

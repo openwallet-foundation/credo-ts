@@ -1,3 +1,3 @@
 export * from './Credential'
-export * from './CredentialInfo'
+export * from './IndyCredentialInfo'
 export * from './RevocationInterval'
