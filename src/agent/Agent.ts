@@ -22,7 +22,7 @@ import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { Symbols } from '../symbols'
 
 export class Agent {
-  public readonly agentConfig: AgentConfig
+  protected agentConfig: AgentConfig
   protected logger: Logger
   protected container: DependencyContainer
   protected eventEmitter: EventEmitter
