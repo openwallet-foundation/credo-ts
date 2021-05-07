@@ -17,6 +17,30 @@ env:
   GENESIS_TXN_PATH: network/genesis/local-genesis.txn
 
 jobs:
+  validate:
+    runs-on: ubuntu-20.04
+    name: Validate
+    steps:
+      - name: Checkout aries-framework-javascript
+        uses: actions/checkout@v2
+
+      - name: Setup node v12
+        uses: actions/setup-node@v2
+        with:
+          node-version: 12
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Linting
+        run: yarn lint
+
+      - name: Prettier
+        run: yarn check-format
+
+      - name: Compile
+        run: yarn compile
+
   integration-test:
     runs-on: ubuntu-20.04
     name: Integration Tests
@@ -35,9 +59,6 @@ jobs:
 
       - name: Build framework docker image
         run: docker build -t aries-framework-javascript .
-
-      - name: Run lint and format validation
-        run: docker run aries-framework-javascript yarn validate
 
       - name: Start mediator agents
         run: docker-compose -f docker/docker-compose-mediators.yml up -d
