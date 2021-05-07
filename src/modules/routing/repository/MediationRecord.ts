@@ -45,7 +45,7 @@ export class MediationRecord extends BaseRecord implements MediationStorageProps
     this.connectionId = props.connectionId
     this.recipientKeys = props.recipientKeys || []
     this.routingKeys = props.routingKeys || []
-    this.tags = props.tags || {}
+    this.tags = props.tags
     this.state = props.state || MediationState.Init
     this.role = props.role
     this.endpoint = props.endpoint ?? undefined

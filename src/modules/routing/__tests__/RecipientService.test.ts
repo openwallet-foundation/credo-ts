@@ -70,6 +70,7 @@ describe('Recipient', () => {
       assert(record.role, 'Expected MediationRecord to have an `role` property')
       expect(record.role).toBeDefined()
       assert(record.tags, 'Expected MediationRecord to have an `tags` property')
+      expect(record.tags).toBeDefined()
       assert(record.tags.state, 'Expected MediationRecord to have an `tags.state` property')
       assert(record.tags.role, 'Expected MediationRecord to have an `tags.role` property')
       assert(record.tags.connectionId, 'Expected MediationRecord to have an `tags.connectionId` property')
