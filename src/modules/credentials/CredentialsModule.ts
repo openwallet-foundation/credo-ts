@@ -1,3 +1,5 @@
+import { Lifecycle, scoped } from 'tsyringe'
+
 import { CredentialRecord } from './repository/CredentialRecord'
 import { createOutboundMessage } from '../../agent/helpers'
 import { MessageSender } from '../../agent/MessageSender'
@@ -15,6 +17,7 @@ import {
   CredentialAckHandler,
 } from './handlers'
 
+@scoped(Lifecycle.ContainerScoped)
 export class CredentialsModule {
   private connectionService: ConnectionService
   private credentialService: CredentialService

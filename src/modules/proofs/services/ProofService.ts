@@ -1,5 +1,5 @@
+import { inject, scoped, Lifecycle } from 'tsyringe'
 import type { IndyProof, Schema, CredDef } from 'indy-sdk'
-
 import { EventEmitter } from 'events'
 import { validateOrReject } from 'class-validator'
 
@@ -9,7 +9,6 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { ConnectionRecord } from '../../connections'
 import { ProofRecord } from '../repository/ProofRecord'
-import { Repository } from '../../../storage/Repository'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
@@ -40,6 +39,8 @@ import {
 import { ProofState } from '../ProofState'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { Logger } from '../../../logger'
+import { ProofRepository } from '../repository'
+import { Symbols } from '../../../symbols'
 
 export enum ProofEventType {
   StateChanged = 'stateChanged',
@@ -60,16 +61,17 @@ export interface ProofProtocolMsgReturnType<MessageType extends AgentMessage> {
  * @todo add method to reject / revoke messages
  * @todo validate attachments / messages
  */
+@scoped(Lifecycle.ContainerScoped)
 export class ProofService extends EventEmitter {
-  private proofRepository: Repository<ProofRecord>
+  private proofRepository: ProofRepository
   private ledgerService: LedgerService
   private wallet: Wallet
   private logger: Logger
 
   public constructor(
-    proofRepository: Repository<ProofRecord>,
+    proofRepository: ProofRepository,
     ledgerService: LedgerService,
-    wallet: Wallet,
+    @inject(Symbols.Wallet) wallet: Wallet,
     agentConfig: AgentConfig
   ) {
     super()

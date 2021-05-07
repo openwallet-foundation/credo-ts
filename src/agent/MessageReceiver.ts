@@ -1,3 +1,5 @@
+import { Lifecycle, scoped } from 'tsyringe'
+
 import { AgentConfig } from './AgentConfig'
 import { Dispatcher } from './Dispatcher'
 import { EnvelopeService } from './EnvelopeService'
@@ -10,7 +12,8 @@ import { JsonTransformer } from '../utils/JsonTransformer'
 import { Logger } from '../logger'
 import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
-class MessageReceiver {
+@scoped(Lifecycle.ContainerScoped)
+export class MessageReceiver {
   private config: AgentConfig
   private envelopeService: EnvelopeService
   private connectionService: ConnectionService
@@ -148,5 +151,3 @@ class MessageReceiver {
     return message
   }
 }
-
-export { MessageReceiver }

@@ -1,11 +1,14 @@
 import type { WalletQuery } from 'indy-sdk'
 import { EventEmitter } from 'events'
+import { Lifecycle, scoped } from 'tsyringe'
+
 import { BasicMessageService } from './services'
 import { MessageSender } from '../../agent/MessageSender'
 import { ConnectionRecord } from '../connections'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { BasicMessageHandler } from './handlers'
 
+@scoped(Lifecycle.ContainerScoped)
 export class BasicMessagesModule {
   private basicMessageService: BasicMessageService
   private messageSender: MessageSender

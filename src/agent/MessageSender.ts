@@ -1,8 +1,11 @@
+import { Lifecycle, scoped } from 'tsyringe'
+
 import { OutboundMessage, OutboundPackage } from '../types'
 import { OutboundTransporter } from '../transport/OutboundTransporter'
 import { EnvelopeService } from './EnvelopeService'
 
-class MessageSender {
+@scoped(Lifecycle.ContainerScoped)
+export class MessageSender {
   private envelopeService: EnvelopeService
   private outboundTransporter?: OutboundTransporter
 
@@ -26,5 +29,3 @@ class MessageSender {
     await this.outboundTransporter.sendMessage(outboundPackage)
   }
 }
-
-export { MessageSender }

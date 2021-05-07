@@ -1,3 +1,4 @@
+import { inject, scoped, Lifecycle } from 'tsyringe'
 import type { WalletQuery, WalletRecord } from 'indy-sdk'
 
 import { StorageService } from './StorageService'
@@ -5,10 +6,13 @@ import { BaseRecord } from './BaseRecord'
 import { Wallet } from '../wallet/Wallet'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { Constructor } from '../utils/mixins'
+import { Symbols } from '../symbols'
+
 export interface BaseRecordConstructor<T> extends Constructor<T> {
   type: string
 }
 
+@scoped(Lifecycle.ContainerScoped)
 export class IndyStorageService<T extends BaseRecord> implements StorageService<T> {
   private wallet: Wallet
   private static DEFAULT_QUERY_OPTIONS = {
@@ -16,7 +20,7 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     retrieveTags: true,
   }
 
-  public constructor(wallet: Wallet) {
+  public constructor(@inject(Symbols.Wallet) wallet: Wallet) {
     this.wallet = wallet
   }
 

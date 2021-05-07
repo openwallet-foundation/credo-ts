@@ -1,27 +1,14 @@
 import { EventEmitter } from 'events'
+import { container as baseContainer, DependencyContainer } from 'tsyringe'
+
 import { Logger } from '../logger'
 import { InitConfig } from '../types'
 import { IndyWallet } from '../wallet/IndyWallet'
 import { MessageReceiver } from './MessageReceiver'
-import { EnvelopeService } from './EnvelopeService'
-import { ConnectionService, TrustPingService, ConnectionRecord } from '../modules/connections'
-import { CredentialService, CredentialRecord } from '../modules/credentials'
-import { ProofService, ProofRecord } from '../modules/proofs'
-import {
-  ConsumerRoutingService,
-  ProviderRoutingService,
-  MessagePickupService,
-  ProvisioningService,
-  ProvisioningRecord,
-} from '../modules/routing'
-import { BasicMessageService, BasicMessageRecord } from '../modules/basic-messages'
-import { LedgerService } from '../modules/ledger'
-import { Dispatcher } from './Dispatcher'
 import { MessageSender } from './MessageSender'
 import { InboundTransporter } from '../transport/InboundTransporter'
 import { OutboundTransporter } from '../transport/OutboundTransporter'
 import { MessageRepository } from '../storage/MessageRepository'
-import { Repository } from '../storage/Repository'
 import { IndyStorageService } from '../storage/IndyStorageService'
 import { AgentConfig } from './AgentConfig'
 import { Wallet } from '../wallet/Wallet'
@@ -31,43 +18,50 @@ import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { RoutingModule } from '../modules/routing/RoutingModule'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
+import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
+import { Symbols } from '../symbols'
 
 export class Agent {
-  public readonly logger: Logger
-  public readonly agentConfig: AgentConfig
+  protected agentConfig: AgentConfig
+  protected logger: Logger
+  protected container: DependencyContainer
   protected eventEmitter: EventEmitter
   protected wallet: Wallet
   protected messageReceiver: MessageReceiver
-  protected dispatcher: Dispatcher
   protected messageSender: MessageSender
   public inboundTransporter?: InboundTransporter
 
-  protected connectionService: ConnectionService
-  protected proofService: ProofService
-  protected basicMessageService: BasicMessageService
-  protected providerRoutingService: ProviderRoutingService
-  protected consumerRoutingService: ConsumerRoutingService
-  protected trustPingService: TrustPingService
-  protected messagePickupService: MessagePickupService
-  protected provisioningService: ProvisioningService
-  protected ledgerService: LedgerService
-  protected credentialService: CredentialService
-  protected basicMessageRepository: Repository<BasicMessageRecord>
-  protected connectionRepository: Repository<ConnectionRecord>
-  protected provisioningRepository: Repository<ProvisioningRecord>
-  protected credentialRepository: Repository<CredentialRecord>
-  protected proofRepository: Repository<ProofRecord>
-
-  public connections!: ConnectionsModule
-  public proofs!: ProofsModule
-  public routing!: RoutingModule
-  public basicMessages!: BasicMessagesModule
-  public ledger!: LedgerModule
-  public credentials!: CredentialsModule
+  public readonly connections!: ConnectionsModule
+  public readonly proofs!: ProofsModule
+  public readonly routing!: RoutingModule
+  public readonly basicMessages!: BasicMessagesModule
+  public readonly ledger!: LedgerModule
+  public readonly credentials!: CredentialsModule
 
   public constructor(initialConfig: InitConfig, messageRepository?: MessageRepository) {
+    // Create child container so we don't interfere with anything outside of this agent
+    this.container = baseContainer.createChildContainer()
+
     this.agentConfig = new AgentConfig(initialConfig)
     this.logger = this.agentConfig.logger
+    this.eventEmitter = new EventEmitter()
+
+    // Bind class based instances
+    this.container.registerInstance(AgentConfig, this.agentConfig)
+    this.container.registerInstance(EventEmitter, this.eventEmitter)
+
+    // Based on interfaces. Need to register which class to use
+    this.container.registerInstance(Symbols.Logger, this.logger)
+    this.container.registerInstance(Symbols.Indy, this.agentConfig.indy)
+    this.container.registerSingleton(Symbols.Wallet, IndyWallet)
+    this.container.registerSingleton(Symbols.StorageService, IndyStorageService)
+
+    // TODO: do not make messageRepository input parameter
+    if (messageRepository) {
+      this.container.registerInstance(Symbols.MessageRepository, messageRepository)
+    } else {
+      this.container.registerSingleton(Symbols.MessageRepository, InMemoryMessageRepository)
+    }
 
     this.logger.info('Creating agent with config', {
       ...initialConfig,
@@ -77,60 +71,27 @@ export class Agent {
       logger: initialConfig.logger != undefined,
     })
 
-    this.eventEmitter = new EventEmitter()
+    // Resolve instances after everything is registered
+    this.messageSender = this.container.resolve(MessageSender)
+    this.messageReceiver = this.container.resolve(MessageReceiver)
+    this.wallet = this.container.resolve(Symbols.Wallet)
+
+    // We set the modules in the constructor because that allows to set them as read-only
+    this.connections = this.container.resolve(ConnectionsModule)
+    this.credentials = this.container.resolve(CredentialsModule)
+    this.proofs = this.container.resolve(ProofsModule)
+    this.routing = this.container.resolve(RoutingModule)
+    this.basicMessages = this.container.resolve(BasicMessagesModule)
+    this.ledger = this.container.resolve(LedgerModule)
+
+    // Listen for new messages (either from transports or somewhere else in the framework / extensions)
+    this.listenForMessages()
+  }
+
+  private listenForMessages() {
     this.eventEmitter.addListener('agentMessage', async (payload) => {
       await this.receiveMessage(payload)
     })
-
-    this.wallet = new IndyWallet(this.agentConfig)
-    const envelopeService = new EnvelopeService(this.wallet, this.agentConfig)
-
-    this.messageSender = new MessageSender(envelopeService)
-    this.dispatcher = new Dispatcher(this.messageSender)
-
-    const storageService = new IndyStorageService(this.wallet)
-    this.basicMessageRepository = new Repository<BasicMessageRecord>(
-      BasicMessageRecord,
-      storageService as IndyStorageService<BasicMessageRecord>
-    )
-    this.connectionRepository = new Repository<ConnectionRecord>(
-      ConnectionRecord,
-      storageService as IndyStorageService<ConnectionRecord>
-    )
-    this.provisioningRepository = new Repository<ProvisioningRecord>(
-      ProvisioningRecord,
-      storageService as IndyStorageService<ProvisioningRecord>
-    )
-    this.credentialRepository = new Repository<CredentialRecord>(
-      CredentialRecord,
-      storageService as IndyStorageService<CredentialRecord>
-    )
-    this.proofRepository = new Repository<ProofRecord>(ProofRecord, storageService as IndyStorageService<ProofRecord>)
-    this.provisioningService = new ProvisioningService(this.provisioningRepository, this.agentConfig)
-    this.connectionService = new ConnectionService(this.wallet, this.agentConfig, this.connectionRepository)
-    this.basicMessageService = new BasicMessageService(this.basicMessageRepository)
-    this.providerRoutingService = new ProviderRoutingService()
-    this.consumerRoutingService = new ConsumerRoutingService(this.messageSender, this.agentConfig)
-    this.trustPingService = new TrustPingService()
-    this.messagePickupService = new MessagePickupService(messageRepository)
-    this.ledgerService = new LedgerService(this.wallet, this.agentConfig)
-    this.credentialService = new CredentialService(
-      this.wallet,
-      this.credentialRepository,
-      this.connectionService,
-      this.ledgerService,
-      this.agentConfig
-    )
-    this.proofService = new ProofService(this.proofRepository, this.ledgerService, this.wallet, this.agentConfig)
-
-    this.messageReceiver = new MessageReceiver(
-      this.agentConfig,
-      envelopeService,
-      this.connectionService,
-      this.dispatcher
-    )
-
-    this.registerModules()
   }
 
   public setInboundTransporter(inboundTransporter: InboundTransporter) {
@@ -180,38 +141,7 @@ export class Agent {
     await this.wallet.delete()
   }
 
-  protected registerModules() {
-    this.connections = new ConnectionsModule(
-      this.dispatcher,
-      this.agentConfig,
-      this.connectionService,
-      this.trustPingService,
-      this.consumerRoutingService,
-      this.messageSender
-    )
-
-    this.credentials = new CredentialsModule(
-      this.dispatcher,
-      this.connectionService,
-      this.credentialService,
-      this.messageSender
-    )
-
-    this.proofs = new ProofsModule(this.dispatcher, this.proofService, this.connectionService, this.messageSender)
-
-    this.routing = new RoutingModule(
-      this.dispatcher,
-      this.agentConfig,
-      this.providerRoutingService,
-      this.provisioningService,
-      this.messagePickupService,
-      this.connectionService,
-      this.messageSender,
-      this.eventEmitter
-    )
-
-    this.basicMessages = new BasicMessagesModule(this.dispatcher, this.basicMessageService, this.messageSender)
-
-    this.ledger = new LedgerModule(this.wallet, this.ledgerService)
+  public get injectionContainer() {
+    return this.container
   }
 }

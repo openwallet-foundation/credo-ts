@@ -1,3 +1,4 @@
+import { Lifecycle, scoped } from 'tsyringe'
 import { OutboundMessage, OutboundPackage } from '../types'
 import { Handler } from './Handler'
 import { MessageSender } from './MessageSender'
@@ -5,6 +6,7 @@ import { AgentMessage } from './AgentMessage'
 import { InboundMessageContext } from './models/InboundMessageContext'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 
+@scoped(Lifecycle.ContainerScoped)
 class Dispatcher {
   private handlers: Handler[] = []
   private messageSender: MessageSender

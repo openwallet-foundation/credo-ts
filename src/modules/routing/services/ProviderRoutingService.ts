@@ -1,4 +1,6 @@
+import { Lifecycle, scoped } from 'tsyringe'
 import type { Verkey } from 'indy-sdk'
+
 import { OutboundMessage } from '../../../types'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
@@ -16,6 +18,7 @@ export interface RoutingTable {
   [recipientKey: string]: ConnectionRecord | undefined
 }
 
+@scoped(Lifecycle.ContainerScoped)
 class ProviderRoutingService {
   private routingTable: RoutingTable = {}
 

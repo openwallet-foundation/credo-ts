@@ -3,16 +3,24 @@ import { Agent } from '../agent/Agent'
 import { Logger } from '../logger'
 import { OutboundPackage } from '../types'
 import { fetch } from '../utils/fetch'
+import { Symbols } from '../symbols'
+import { AgentConfig } from '../agent/AgentConfig'
 
 export class HttpOutboundTransporter implements OutboundTransporter {
   private agent: Agent
   private logger: Logger
+  private agentConfig: AgentConfig
 
   public supportedSchemes = ['http', 'https']
 
   public constructor(agent: Agent) {
+    // TODO: maybe we can let the transport constructed using
+    // the dependency injection container. For now just
+    // just resolve the dependency from the agent
+
     this.agent = agent
-    this.logger = agent.logger
+    this.agentConfig = agent.injectionContainer.resolve(AgentConfig)
+    this.logger = agent.injectionContainer.resolve(Symbols.Logger)
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
@@ -31,7 +39,7 @@ export class HttpOutboundTransporter implements OutboundTransporter {
       const response = await fetch(endpoint, {
         method: 'POST',
         body: JSON.stringify(payload),
-        headers: { 'Content-Type': this.agent.agentConfig.didCommMimeType },
+        headers: { 'Content-Type': this.agentConfig.didCommMimeType },
       })
       const responseMessage = await response.text()
 
@@ -46,7 +54,7 @@ export class HttpOutboundTransporter implements OutboundTransporter {
       this.logger.error(`Error sending message to ${endpoint}`, {
         error,
         body: payload,
-        didCommMimeType: this.agent.agentConfig.didCommMimeType,
+        didCommMimeType: this.agentConfig.didCommMimeType,
       })
     }
   }
