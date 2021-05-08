@@ -28,10 +28,7 @@ import {
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { KeylistUpdate, KeylistUpdated, RecipientService, MediationRecord, KeylistUpdateMessage } from '../../../modules/routing'
-import { MediationStateChangedEvent, MediationKeylistEvent } from '../../routing/services/MediatorService'
-import { KeylistState } from '../../routing'
-import { waitForEventWithTimeout } from '../../../utils/promiseWithTimeOut'
+import { RecipientService } from '../../../modules/routing'
 import { getRouting } from '../../routing/services/RoutingService'
 export enum ConnectionEventType {
   StateChanged = 'stateChanged',
@@ -367,8 +364,8 @@ export class ConnectionService extends EventEmitter {
     invitation?: ConnectionInvitationMessage
     alias?: string
     mediatorId?: string
-    recipientKeys?: string[],
-    routingKeys?: string[],
+    recipientKeys?: string[]
+    routingKeys?: string[]
     autoAcceptConnection?: boolean
     tags?: ConnectionTags
   }): Promise<ConnectionRecord> {
@@ -378,16 +375,17 @@ export class ConnectionService extends EventEmitter {
       this.wallet,
       this.recipientService,
       options.mediatorId,
-      options.recipientKeys?? [],
-      options.routingKeys?? [],
-      options.endpoint,
+      options.recipientKeys ?? [],
+      options.routingKeys ?? [],
+      options.endpoint
     )
     const endpoint: string = gotten_routing.endpoint
     const did: Did = gotten_routing.did
     const verkey: Verkey = gotten_routing.verkey
     const routingKeys: Verkey[] = gotten_routing.routingKeys
 
-    const publicKey = new Ed25119Sig2018({ // TODO: shouldn't this name be ED25519
+    const publicKey = new Ed25119Sig2018({
+      // TODO: shouldn't this name be ED25519
       id: `${did}#1`,
       controller: did,
       publicKeyBase58: verkey,
