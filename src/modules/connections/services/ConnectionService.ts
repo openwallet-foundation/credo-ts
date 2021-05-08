@@ -381,7 +381,7 @@ export class ConnectionService extends EventEmitter {
     )
     const endpoint: string = gotten_routing.endpoint
     const did: Did = gotten_routing.did
-    const verkey: Verkey = gotten_routing.verkey
+    const verkey: Verkey = gotten_routing.verkey || ""
     const routingKeys: Verkey[] = gotten_routing.routingKeys
 
     const publicKey = new Ed25119Sig2018({
