@@ -5,7 +5,6 @@ import { ConnectionState } from '..'
 import { ConnectionInvitationMessage } from '..'
 import { ConnectionRole } from '..'
 import { DidDoc } from '..'
-import { IndyAgentService } from '..'
 import type { Did, Verkey } from 'indy-sdk'
 
 interface ConnectionProps {

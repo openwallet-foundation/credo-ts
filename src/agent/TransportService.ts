@@ -1,13 +1,17 @@
+import { Lifecycle, scoped, inject } from 'tsyringe'
+
 import { Logger } from '../logger'
 import { ConnectionRecord, ConnectionRole } from '../modules/connections'
+import { Symbols } from '../symbols'
 
 const DID_COMM_TRANSPORT_QUEUE = 'didcomm:transport/queue'
 
+@scoped(Lifecycle.ContainerScoped)
 export class TransportService {
   private transportTable: TransportTable = {}
   private logger: Logger
 
-  public constructor(logger: Logger) {
+  public constructor(@inject(Symbols.Logger) logger: Logger) {
     this.logger = logger
   }
 
@@ -16,31 +20,33 @@ export class TransportService {
   }
 
   public resolveTransport(connection: ConnectionRecord): Transport {
-    const transport = this.getTransport(connection.id)
+    const transport = this.findTransport(connection.id)
     if (transport) {
       return transport
     }
 
     const endpoint = this.findEndpoint(connection)
     if (endpoint) {
-      if (endpoint?.startsWith('ws')) {
+      if (endpoint.startsWith('ws')) {
         return new WebSocketTransport(endpoint)
+      } else if (endpoint.startsWith('http')) {
+        return new HttpTransport(endpoint)
       } else if (endpoint === DID_COMM_TRANSPORT_QUEUE) {
         return new DidCommQueueTransport()
       }
-      return new HttpTransport(endpoint)
+      throw new Error(`Unsupported scheme in endpoint: ${endpoint}.`)
     }
 
     throw new Error(`No transport found for connection with id ${connection.id}`)
   }
 
-  public getTransport(connectionId: string) {
+  private findTransport(connectionId: string) {
     return this.transportTable[connectionId]
   }
 
   private findEndpoint(connection: ConnectionRecord) {
     if (connection.theirDidDoc) {
-      const endpoint = connection.theirDidDoc.service[0].serviceEndpoint
+      const endpoint = connection.theirDidDoc.didCommServices[0].serviceEndpoint
       if (endpoint) {
         this.logger.debug('Taking service endpoint from their DidDoc')
         return endpoint
@@ -69,7 +75,7 @@ export interface Transport {
 }
 
 export class WebSocketTransport implements Transport {
-  public type: TransportType = 'ws'
+  public readonly type = 'ws'
   public endpoint: string
   public socket?: WebSocket
 
@@ -80,7 +86,7 @@ export class WebSocketTransport implements Transport {
 }
 
 export class HttpTransport implements Transport {
-  public type: TransportType = 'http'
+  public readonly type = 'http'
   public endpoint: string
 
   public constructor(endpoint: string) {
@@ -89,6 +95,6 @@ export class HttpTransport implements Transport {
 }
 
 export class DidCommQueueTransport implements Transport {
-  public type: TransportType = 'queue'
+  public readonly type = 'queue'
   public endpoint = DID_COMM_TRANSPORT_QUEUE
 }

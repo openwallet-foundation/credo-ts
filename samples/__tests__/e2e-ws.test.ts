@@ -1,5 +1,5 @@
 import WebSocket from 'ws'
-import { Agent, ConnectionRecord, InboundTransporter, OutboundTransporter } from '../../src'
+import { Agent, ConnectionRecord, ConsoleLogger, InboundTransporter, LogLevel, OutboundTransporter } from '../../src'
 import { OutboundPackage, InitConfig } from '../../src/types'
 import { get } from '../http'
 import { toBeConnectedWith, waitForBasicMessage } from '../../src/__tests__/helpers'
@@ -7,7 +7,7 @@ import indy from 'indy-sdk'
 import testLogger from '../../src/__tests__/logger'
 import { WebSocketTransport } from '../../src/agent/TransportService'
 
-const logger = testLogger
+const logger = new ConsoleLogger(LogLevel.test)
 
 expect.extend({ toBeConnectedWith })
 
@@ -137,6 +137,8 @@ class WsInboundTransporter implements InboundTransporter {
 class WsOutboundTransporter implements OutboundTransporter {
   private transportTable: TransportTable = {}
   private agent: Agent
+
+  public supportedSchemes = ['ws']
 
   public constructor(agent: Agent) {
     this.agent = agent

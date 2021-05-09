@@ -4,7 +4,7 @@ import cors from 'cors'
 import { v4 as uuid } from 'uuid'
 import config from './config'
 import { Agent, InboundTransporter, OutboundTransporter } from '../src'
-import { OutboundPackage } from '../src/types'
+import { OutboundPackage, DidCommMimeType } from '../src/types'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
 import { WebSocketTransport } from '../src/agent/TransportService'
 import testLogger from '../src/__tests__/logger'
@@ -50,6 +50,8 @@ class WsInboundTransporter implements InboundTransporter {
 }
 
 class WsOutboundTransporter implements OutboundTransporter {
+  public supportedSchemes = ['ws']
+
   public async sendMessage(outboundPackage: OutboundPackage) {
     const { connection, payload, transport } = outboundPackage
     logger.debug(`Sending outbound message to connection ${connection.id} over ${transport?.type} transport.`, payload)
@@ -73,7 +75,7 @@ const app = express()
 app.use(cors())
 app.use(
   express.text({
-    type: ['application/ssi-agent-wire', 'text/plain'],
+    type: [DidCommMimeType.V0, DidCommMimeType.V1],
   })
 )
 app.set('json spaces', 2)

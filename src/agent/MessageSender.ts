@@ -31,6 +31,6 @@ export class MessageSender {
     const outboundPackage = await this.envelopeService.packMessage(outboundMessage)
     const transport = this.transportService.resolveTransport(outboundMessage.connection)
     outboundPackage.transport = transport
-    await this.outboundTransporter.sendMessage(outboundPackage, returnRoute)
+    await this.outboundTransporter.sendMessage(outboundPackage)
   }
 }

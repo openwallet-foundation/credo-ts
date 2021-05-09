@@ -74,5 +74,13 @@ describe('TransportService', () => {
       expect(transportService.resolveTransport(connection)).toBeInstanceOf(HttpTransport)
       expect(transportService.resolveTransport(connection).endpoint).toEqual('https://invitationEndpoint.com')
     })
+
+    test('throws error when no transport is found for unsupported scheme', () => {
+      theirDidDoc.service[0].serviceEndpoint = 'myscheme://theirDidDocEndpoint.com'
+      const connection = getMockConnection({ id: 'test-123', theirDidDoc })
+      expect(() => transportService.resolveTransport(connection)).toThrow(
+        `Unsupported scheme in endpoint: myscheme://theirDidDocEndpoint.com.`
+      )
+    })
   })
 })

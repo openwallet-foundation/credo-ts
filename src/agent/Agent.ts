@@ -20,6 +20,7 @@ import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModu
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { Symbols } from '../symbols'
+import { Transport } from './TransportService'
 
 export class Agent {
   protected agentConfig: AgentConfig
