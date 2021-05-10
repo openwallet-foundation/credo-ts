@@ -1,5 +1,5 @@
 import { AgentConfig } from '../../agent/AgentConfig'
-import { MessagePickupService, RecipientService } from './services'
+import { assertConnection, MessagePickupService, RecipientService } from './services'
 import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
@@ -12,7 +12,7 @@ import {
   ConnectionInvitationMessage,
   ConnectionResponseMessage,
 } from '../connections'
-import { BatchMessage } from './messages'
+import { BatchMessage, BatchPickupMessage } from './messages'
 import type { Verkey } from 'indy-sdk'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { ConnectionRecord } from '../connections'
@@ -101,15 +101,15 @@ export class RecipientModule {
   // }
 
   public async downloadMessages(mediatorConnection?: ConnectionRecord) {
-    /*const inboundConnection = mediatorConnection
-      ? { verkey: mediatorConnection.theirKey!, connection: mediatorConnection }
-      : this.getInboundConnection()
-
-    if (inboundConnection) {
-      const outboundMessage = await this.messagePickupService.batchPickup(inboundConnection)
+    const mediationRecord : MediationRecord | undefined = await this.recipientService.getDefaultMediator()
+    if(mediationRecord){
+      let connection : ConnectionRecord = await this.connectionService.getById(mediationRecord.connectionId)
+      connection = assertConnection(connection,"connection not found for default mediator")
+      const batchPickupMessage = new BatchPickupMessage({batchSize: 10,})
+      const outboundMessage = createOutboundMessage(connection, batchPickupMessage)
       outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
       await this.messageSender.sendMessage(outboundMessage)
-    }*/
+    }
   }
 
   public async requestMediation(connection: ConnectionRecord) {
@@ -125,6 +125,14 @@ export class RecipientModule {
     const response = await this.messageSender.sendMessage(outboundMessage)
     return response
   }
+
+  public async requestKeylist(connection: ConnectionRecord){
+    const message = this.recipientService.createKeylistQuery()
+    const outboundMessage = createOutboundMessage(connection, message)
+    const response = await this.messageSender.sendMessage(outboundMessage)
+    return response
+  }
+
   public async getMediators() {
     return await this.recipientService.getMediators()
   }
@@ -136,6 +144,7 @@ export class RecipientModule {
   public async getDefaultMediator(): Promise<MediationRecord | undefined> {
     return await this.recipientService.getDefaultMediator()
   }
+
   public async getDefaultMediatorConnection(): Promise<ConnectionRecord | undefined> {
     const mediatorRecord = await this.getDefaultMediator()
     if (mediatorRecord) {
