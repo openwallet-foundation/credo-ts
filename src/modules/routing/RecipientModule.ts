@@ -155,9 +155,3 @@ export class RecipientModule {
     dispatcher.registerHandler(new MediationDenyHandler(this.recipientService))
   }
 }
-
-interface MediatorConfiguration {
-  verkey: Verkey
-  invitationUrl: string
-  alias?: string
-}

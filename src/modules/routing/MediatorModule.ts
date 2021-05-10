@@ -63,33 +63,6 @@ export class MediatorModule {
   }
 
   // TODO - Belongs in connections.
-  public async receiveMediation(
-    invitation: ConnectionInvitationMessage,
-    config?: {
-      autoAcceptConnection?: boolean
-      alias?: string
-    }
-  ): Promise<ConnectionRecord> {
-    let connection = await this.connectionService.processInvitation(invitation, {
-      autoAcceptConnection: config?.autoAcceptConnection,
-      alias: config?.alias,
-    })
-
-    // if auto accept is enabled (either on the record or the global agent config)
-    // we directly send a connection request
-    if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      connection = await this.acceptInvitation(connection.id)
-    }
-
-    return connection
-  }
-
-  // TODO - Belongs in connections.
-  public async acceptInvitation(id: string): Promise<ConnectionRecord> {
-    throw new Error('Method not implemented.')
-  }
-
-  // TODO - Belongs in connections.
   public async acceptRequest(connectionId: string): Promise<ConnectionRecord> {
     const { message, connectionRecord: connectionRecord } = await this.connectionService.createResponse(connectionId)
 
@@ -99,43 +72,6 @@ export class MediatorModule {
     return connectionRecord
   }
 
-  /**
-   * Accept a connection response as invitee (by sending a trust ping message) for the connection with the specified connection id.
-   * This is not needed when auto accepting of connection is enabled.
-   *
-   * @param connectionId the id of the connection for which to accept the response
-   * @returns connection record
-   */
-  // TODO - Belongs in connections.
-  public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
-    const { message, connectionRecord: connectionRecord } = await this.connectionService.createTrustPing(connectionId)
-
-    const outbound = createOutboundMessage(connectionRecord, message)
-    await this.messageSender.sendMessage(outbound)
-
-    return connectionRecord
-  }
-
-  // TODO - Belongs in connections.
-  public async returnWhenIsConnected(connectionId: string): Promise<ConnectionRecord> {
-    const isConnected = (connection: ConnectionRecord) => {
-      return connection.id === connectionId && connection.state === ConnectionState.Complete
-    }
-
-    const connection = await this.connectionService.find(connectionId)
-    if (connection && isConnected(connection)) return connection
-
-    return new Promise((resolve) => {
-      const listener = ({ connectionRecord: connectionRecord }: ConnectionStateChangedEvent) => {
-        if (isConnected(connectionRecord)) {
-          this.events.off(ConnectionEventType.StateChanged, listener)
-          resolve(connectionRecord)
-        }
-      }
-
-      this.events.on(ConnectionEventType.StateChanged, listener)
-    })
-  }
 
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new KeylistUpdateHandler(this.mediatorService))
