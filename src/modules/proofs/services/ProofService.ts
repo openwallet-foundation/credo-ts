@@ -41,6 +41,7 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { Logger } from '../../../logger'
 import { ProofRepository } from '../repository'
 import { Symbols } from '../../../symbols'
+import { IndyHolderService, IndyVerifierService } from '../../indy'
 
 export enum ProofEventType {
   StateChanged = 'stateChanged',
@@ -67,12 +68,16 @@ export class ProofService extends EventEmitter {
   private ledgerService: LedgerService
   private wallet: Wallet
   private logger: Logger
+  private indyHolderService: IndyHolderService
+  private indyVerifierService: IndyVerifierService
 
   public constructor(
     proofRepository: ProofRepository,
     ledgerService: LedgerService,
     @inject(Symbols.Wallet) wallet: Wallet,
-    agentConfig: AgentConfig
+    agentConfig: AgentConfig,
+    indyHolderService: IndyHolderService,
+    indyVerifierService: IndyVerifierService
   ) {
     super()
 
@@ -80,6 +85,8 @@ export class ProofService extends EventEmitter {
     this.ledgerService = ledgerService
     this.wallet = wallet
     this.logger = agentConfig.logger
+    this.indyHolderService = indyHolderService
+    this.indyVerifierService = indyVerifierService
   }
 
   /**
@@ -747,7 +754,12 @@ export class ProofService extends EventEmitter {
       new Set(proof.identifiers.map((i) => i.credentialDefinitionId))
     )
 
-    return await this.wallet.verifyProof(proofRequest.toJSON(), proofJson, schemas, credentialDefinitions, {}, {})
+    return await this.indyVerifierService.verifyProof({
+      proofRequest: proofRequest.toJSON(),
+      proof: proofJson,
+      schemas,
+      credentialDefinitions,
+    })
   }
 
   /**
@@ -807,7 +819,10 @@ export class ProofService extends EventEmitter {
     const credentialObjects: IndyCredentialInfo[] = []
 
     for (const credentialId of requestedCredentials.getCredentialIdentifiers()) {
-      const credentialInfo = JsonTransformer.fromJSON(await this.wallet.getCredential(credentialId), IndyCredentialInfo)
+      const credentialInfo = JsonTransformer.fromJSON(
+        await this.indyHolderService.getCredential(credentialId),
+        IndyCredentialInfo
+      )
 
       credentialObjects.push(credentialInfo)
     }
@@ -817,13 +832,12 @@ export class ProofService extends EventEmitter {
       new Set(credentialObjects.map((c) => c.credentialDefinitionId))
     )
 
-    const proof = await this.wallet.createProof(
-      proofRequest.toJSON(),
-      requestedCredentials.toJSON(),
+    const proof = await this.indyHolderService.createProof({
+      proofRequest: proofRequest.toJSON(),
+      requestedCredentials: requestedCredentials.toJSON(),
       schemas,
       credentialDefinitions,
-      {}
-    )
+    })
 
     return proof
   }
@@ -832,7 +846,11 @@ export class ProofService extends EventEmitter {
     proofRequest: ProofRequest,
     attributeReferent: string
   ): Promise<Credential[]> {
-    const credentialsJson = await this.wallet.getCredentialsForProofRequest(proofRequest.toJSON(), attributeReferent)
+    const credentialsJson = await this.indyHolderService.getCredentialsForProofRequest({
+      proofRequest: proofRequest.toJSON(),
+      attributeReferent,
+    })
+
     return (JsonTransformer.fromJSON(credentialsJson, Credential) as unknown) as Credential[]
   }
 

@@ -2,32 +2,11 @@ import type {
   DidConfig,
   Did,
   Verkey,
-  Schema,
-  CredDefConfig,
-  CredDefId,
-  CredDef,
-  CredOffer,
-  CredReq,
-  CredReqMetadata,
-  CredValues,
-  Cred,
-  CredRevocId,
-  RevocRegDelta,
-  IndyProofRequest,
-  IndyRequestedCredentials,
-  Schemas,
-  CredentialDefs,
-  RevStates,
-  IndyProof,
-  CredentialId,
-  IndyCredentialInfo,
   WalletRecordOptions,
   WalletRecord,
   WalletQuery,
   WalletSearchOptions,
   LedgerRequest,
-  IndyCredential,
-  RevRegsDefs,
 } from 'indy-sdk'
 import { UnpackedMessageContext } from '../types'
 
@@ -39,44 +18,6 @@ export interface Wallet {
   delete(): Promise<void>
   initPublicDid(didConfig: DidConfig): Promise<void>
   createDid(didConfig?: DidConfig): Promise<[Did, Verkey]>
-  createCredentialDefinition(
-    issuerDid: Did,
-    schema: Schema,
-    tag: string,
-    signatureType: string,
-    config?: CredDefConfig
-  ): Promise<[CredDefId, CredDef]>
-  createCredentialOffer(credDefId: CredDefId): Promise<CredOffer>
-  createCredentialRequest(proverDid: Did, offer: CredOffer, credDef: CredDef): Promise<[CredReq, CredReqMetadata]>
-  createCredential(
-    credOffer: CredOffer,
-    credReq: CredReq,
-    credValues: CredValues
-  ): Promise<[Cred, CredRevocId, RevocRegDelta]>
-  createProof(
-    proofRequest: IndyProofRequest,
-    requestedCredentials: IndyRequestedCredentials,
-    schemas: Schemas,
-    credentialDefs: CredentialDefs,
-    revStates: RevStates
-  ): Promise<IndyProof>
-  getCredentialsForProofRequest(proofRequest: IndyProofRequest, attributeReferent: string): Promise<IndyCredential[]>
-  // TODO Method `verifyProof` does not have a dependency on `wallet`, we could eventually move it outside to another class.
-  verifyProof(
-    proofRequest: IndyProofRequest,
-    proof: IndyProof,
-    schemas: Schemas,
-    credentialDefs: CredentialDefs,
-    revRegsDefs: RevRegsDefs,
-    revRegs: RevStates
-  ): Promise<boolean>
-  storeCredential(
-    credentialId: CredentialId,
-    credReqMetadata: CredReqMetadata,
-    cred: Cred,
-    credDef: CredDef
-  ): Promise<string>
-  getCredential(credentialId: CredentialId): Promise<IndyCredentialInfo>
   pack(payload: Record<string, unknown>, recipientKeys: Verkey[], senderVk: Verkey | null): Promise<JsonWebKey>
   unpack(messagePackage: JsonWebKey): Promise<UnpackedMessageContext>
   sign(data: Buffer, verkey: Verkey): Promise<Buffer>

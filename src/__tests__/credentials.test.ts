@@ -90,17 +90,17 @@ describe('credentials', () => {
       attributes: ['name', 'age'],
       version: '1.0',
     }
-    const [ledgerSchemaId, ledgerSchema] = await registerSchema(faberAgent, schemaTemplate)
-    schemaId = ledgerSchemaId
+    const schema = await registerSchema(faberAgent, schemaTemplate)
+    schemaId = schema.id
 
     const definitionTemplate = {
-      schema: ledgerSchema,
+      schema,
       tag: 'TAG',
-      signatureType: 'CL',
-      config: { supportRevocation: false },
+      signatureType: 'CL' as const,
+      supportRevocation: false,
     }
-    const [ledgerCredDefId] = await registerDefinition(faberAgent, definitionTemplate)
-    credDefId = ledgerCredDefId
+    const credentialDefinition = await registerDefinition(faberAgent, definitionTemplate)
+    credDefId = credentialDefinition.id
 
     const publicDid = faberAgent.publicDid?.did
     await ensurePublicDidIsOnLedger(faberAgent, publicDid!)

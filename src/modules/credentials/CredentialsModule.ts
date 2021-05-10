@@ -225,16 +225,6 @@ export class CredentialsModule {
     return this.credentialService.getByThreadId(threadId)
   }
 
-  /**
-   * Retrieve an indy credential by credential id (referent)
-   *
-   * @param credentialId the id (referent) of the indy credential
-   * @returns Indy credential info object
-   */
-  public async getIndyCredential(credentialId: string): Promise<IndyCredentialInfo> {
-    return this.credentialService.getIndyCredential(credentialId)
-  }
-
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new ProposeCredentialHandler(this.credentialService))
     dispatcher.registerHandler(new OfferCredentialHandler(this.credentialService))

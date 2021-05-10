@@ -55,7 +55,7 @@ export class Agent {
     // Based on interfaces. Need to register which class to use
     this.container.registerInstance(Symbols.Logger, this.logger)
     this.container.registerInstance(Symbols.Indy, this.agentConfig.indy)
-    this.container.registerSingleton(Symbols.Wallet, IndyWallet)
+    this.container.register(Symbols.Wallet, { useToken: IndyWallet })
     this.container.registerSingleton(Symbols.StorageService, IndyStorageService)
 
     // TODO: do not make messageRepository input parameter
@@ -117,11 +117,11 @@ export class Agent {
       await this.wallet.initPublicDid({ seed: publicDidSeed })
     }
 
-    // If the genesisPath is provided in the config, we will automatically handle ledger connection
+    // If the genesis is provided in the config, we will automatically handle ledger connection
     // otherwise the framework consumer needs to do this manually
     if (genesisPath) {
       await this.ledger.connect(poolName, {
-        genesis_txn: genesisPath,
+        genesisPath,
       })
     }
 

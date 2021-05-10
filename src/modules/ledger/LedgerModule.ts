@@ -1,7 +1,7 @@
-import type { CredDefId, Did, PoolConfig, SchemaId } from 'indy-sdk'
+import type { CredDefId, Did, SchemaId } from 'indy-sdk'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
-import { LedgerService, SchemaTemplate, CredDefTemplate } from './services'
+import { LedgerService, SchemaTemplate, CredentialDefinitionTemplate, LedgerConnectOptions } from './services'
 import { Wallet } from '../../wallet/Wallet'
 import { Symbols } from '../../symbols'
 
@@ -15,7 +15,7 @@ export class LedgerModule {
     this.wallet = wallet
   }
 
-  public async connect(poolName: string, poolConfig: PoolConfig) {
+  public async connect(poolName: string, poolConfig: LedgerConnectOptions) {
     return this.ledgerService.connect(poolName, poolConfig)
   }
 
@@ -41,7 +41,7 @@ export class LedgerModule {
     return this.ledgerService.getSchema(id)
   }
 
-  public async registerCredentialDefinition(credentialDefinitionTemplate: CredDefTemplate) {
+  public async registerCredentialDefinition(credentialDefinitionTemplate: CredentialDefinitionTemplate) {
     const did = this.wallet.publicDid?.did
 
     if (!did) {

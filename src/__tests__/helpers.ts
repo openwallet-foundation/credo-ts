@@ -1,12 +1,12 @@
 /* eslint-disable no-console */
-import type { SchemaId, Schema, CredDefId, CredDef, Did } from 'indy-sdk'
+import type { Schema, CredDef, Did } from 'indy-sdk'
 import path from 'path'
 import { Subject } from 'rxjs'
 import { Agent, InboundTransporter, OutboundTransporter } from '..'
 import { OutboundPackage, WireMessage } from '../types'
 import { ConnectionRecord } from '../modules/connections'
 import { ProofRecord, ProofState, ProofEventType, ProofStateChangedEvent } from '../modules/proofs'
-import { SchemaTemplate, CredDefTemplate } from '../modules/ledger'
+import { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/ledger'
 import {
   CredentialRecord,
   CredentialOfferTemplate,
@@ -175,19 +175,19 @@ export async function makeConnection(agentA: Agent, agentB: Agent) {
   }
 }
 
-export async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<[SchemaId, Schema]> {
-  const [schemaId, ledgerSchema] = await agent.ledger.registerSchema(schemaTemplate)
-  testLogger.test(`created schema with id ${schemaId}`, ledgerSchema)
-  return [schemaId, ledgerSchema]
+export async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<Schema> {
+  const schema = await agent.ledger.registerSchema(schemaTemplate)
+  testLogger.test(`created schema with id ${schema.id}`, schema)
+  return schema
 }
 
 export async function registerDefinition(
   agent: Agent,
-  definitionTemplate: CredDefTemplate
-): Promise<[CredDefId, CredDef]> {
-  const [credDefId, ledgerCredDef] = await agent.ledger.registerCredentialDefinition(definitionTemplate)
-  testLogger.test(`created credential definition with id ${credDefId}`, ledgerCredDef)
-  return [credDefId, ledgerCredDef]
+  definitionTemplate: CredentialDefinitionTemplate
+): Promise<CredDef> {
+  const credentialDefinition = await agent.ledger.registerCredentialDefinition(definitionTemplate)
+  testLogger.test(`created credential definition with id ${credentialDefinition.id}`, credentialDefinition)
+  return credentialDefinition
 }
 
 export async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: Did) {

@@ -11,11 +11,9 @@ import { ConnectionService, ConnectionRecord } from '../../connections'
 import { CredentialRecord } from '../repository/CredentialRecord'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { Wallet } from '../../../wallet/Wallet'
-import { JsonTransformer } from '../../../utils/JsonTransformer'
 
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
-import { IndyCredentialInfo } from '../models'
 import {
   OfferCredentialMessage,
   CredentialPreview,
@@ -33,6 +31,7 @@ import { Logger } from '../../../logger'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { CredentialRepository } from '../repository'
 import { Symbols } from '../../../symbols'
+import { IndyIssuerService, IndyHolderService } from '../../indy'
 
 export enum CredentialEventType {
   StateChanged = 'stateChanged',
@@ -55,13 +54,17 @@ export class CredentialService extends EventEmitter {
   private connectionService: ConnectionService
   private ledgerService: LedgerService
   private logger: Logger
+  private indyIssuerService: IndyIssuerService
+  private indyHolderService: IndyHolderService
 
   public constructor(
     @inject(Symbols.Wallet) wallet: Wallet,
     credentialRepository: CredentialRepository,
     connectionService: ConnectionService,
     ledgerService: LedgerService,
-    agentConfig: AgentConfig
+    agentConfig: AgentConfig,
+    indyIssuerService: IndyIssuerService,
+    indyHolderService: IndyHolderService
   ) {
     super()
     this.wallet = wallet
@@ -69,6 +72,8 @@ export class CredentialService extends EventEmitter {
     this.connectionService = connectionService
     this.ledgerService = ledgerService
     this.logger = agentConfig.logger
+    this.indyIssuerService = indyIssuerService
+    this.indyHolderService = indyHolderService
   }
 
   /**
@@ -210,7 +215,7 @@ export class CredentialService extends EventEmitter {
 
     // Create message
     const { credentialDefinitionId, comment, preview } = credentialTemplate
-    const credOffer = await this.wallet.createCredentialOffer(credentialDefinitionId)
+    const credOffer = await this.indyIssuerService.createCredentialOffer(credentialDefinitionId)
     const attachment = new Attachment({
       id: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
       mimeType: 'application/json',
@@ -254,7 +259,7 @@ export class CredentialService extends EventEmitter {
 
     // Create message
     const { credentialDefinitionId, comment, preview } = credentialTemplate
-    const credOffer = await this.wallet.createCredentialOffer(credentialDefinitionId)
+    const credOffer = await this.indyIssuerService.createCredentialOffer(credentialDefinitionId)
     const attachment = new Attachment({
       id: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
       mimeType: 'application/json',
@@ -374,23 +379,23 @@ export class CredentialService extends EventEmitter {
     credentialRecord.assertState(CredentialState.OfferReceived)
 
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
-    const proverDid = connection.did
+    const holderDid = connection.did
 
-    const credOffer = credentialRecord.offerMessage?.indyCredentialOffer
+    const credentialOffer = credentialRecord.offerMessage?.indyCredentialOffer
 
-    if (!credOffer) {
+    if (!credentialOffer) {
       throw new Error(
         `Missing required base64 encoded attachment data for credential offer with thread id ${credentialRecord.tags.threadId}`
       )
     }
 
-    const credentialDefinition = await this.ledgerService.getCredentialDefinition(credOffer.cred_def_id)
+    const credentialDefinition = await this.ledgerService.getCredentialDefinition(credentialOffer.cred_def_id)
 
-    const [credReq, credReqMetadata] = await this.wallet.createCredentialRequest(
-      proverDid,
-      credOffer,
-      credentialDefinition
-    )
+    const [credReq, credReqMetadata] = await this.indyHolderService.createCredentialRequest({
+      holderDid,
+      credentialOffer,
+      credentialDefinition,
+    })
     const attachment = new Attachment({
       id: INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
       mimeType: 'application/json',
@@ -504,11 +509,11 @@ export class CredentialService extends EventEmitter {
       )
     }
 
-    const [credential] = await this.wallet.createCredential(
-      indyCredentialOffer,
-      indyCredentialRequest,
-      CredentialUtils.convertAttributesToValues(credentialAttributes)
-    )
+    const [credential] = await this.indyIssuerService.createCredential({
+      credentialOffer: indyCredentialOffer,
+      credentialRequest: indyCredentialRequest,
+      credentialValues: CredentialUtils.convertAttributesToValues(credentialAttributes),
+    })
 
     const credentialAttachment = new Attachment({
       id: INDY_CREDENTIAL_ATTACHMENT_ID,
@@ -588,12 +593,12 @@ export class CredentialService extends EventEmitter {
 
     const credentialDefinition = await this.ledgerService.getCredentialDefinition(indyCredential.cred_def_id)
 
-    const credentialId = await this.wallet.storeCredential(
-      uuid(),
-      credentialRecord.metadata.requestMetadata,
-      indyCredential,
-      credentialDefinition
-    )
+    const credentialId = await this.indyHolderService.storeCredential({
+      credentialId: uuid(),
+      credentialRequestMetadata: credentialRecord.metadata.requestMetadata,
+      credential: indyCredential,
+      credentialDefinition,
+    })
 
     credentialRecord.credentialId = credentialId
     credentialRecord.credentialMessage = issueCredentialMessage
@@ -696,18 +701,6 @@ export class CredentialService extends EventEmitter {
     }
 
     return credentialRecords[0]
-  }
-
-  /**
-   * Retrieve an indy credential by credential id (referent)
-   *
-   * @param credentialId the id (referent) of the indy credential
-   * @returns Indy credential info object
-   */
-  public async getIndyCredential(credentialId: string): Promise<IndyCredentialInfo> {
-    const indyCredential = await this.wallet.getCredential(credentialId)
-
-    return JsonTransformer.fromJSON(indyCredential, IndyCredentialInfo)
   }
 
   /**

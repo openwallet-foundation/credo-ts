@@ -5,7 +5,6 @@ import type {
   CredDefId,
   Did,
   LedgerRequest,
-  PoolConfig,
   PoolHandle,
   Schema,
   SchemaId,
@@ -17,6 +16,11 @@ import { Logger } from '../../../logger'
 import { isIndyError } from '../../../utils/indyError'
 import { Wallet } from '../../../wallet/Wallet'
 import { Symbols } from '../../../symbols'
+import { IndyIssuerService } from '../../indy'
+
+export interface LedgerConnectOptions {
+  genesisPath: string
+}
 
 @scoped(Lifecycle.ContainerScoped)
 export class LedgerService {
@@ -25,11 +29,13 @@ export class LedgerService {
   private logger: Logger
   private _poolHandle?: PoolHandle
   private authorAgreement?: AuthorAgreement | null
+  private indyIssuer: IndyIssuerService
 
-  public constructor(@inject(Symbols.Wallet) wallet: Wallet, agentConfig: AgentConfig) {
+  public constructor(@inject(Symbols.Wallet) wallet: Wallet, agentConfig: AgentConfig, indyIssuer: IndyIssuerService) {
     this.wallet = wallet
     this.indy = agentConfig.indy
     this.logger = agentConfig.logger
+    this.indyIssuer = indyIssuer
   }
 
   private get poolHandle() {
@@ -40,11 +46,11 @@ export class LedgerService {
     return this._poolHandle
   }
 
-  public async connect(poolName: string, poolConfig: PoolConfig) {
+  public async connect(poolName: string, poolConfig: LedgerConnectOptions) {
     this.logger.debug(`Connecting to ledger pool '${poolName}'`, poolConfig)
     try {
       this.logger.debug(`Creating pool '${poolName}'`)
-      await this.indy.createPoolLedgerConfig(poolName, poolConfig)
+      await this.indy.createPoolLedgerConfig(poolName, { genesis_txn: poolConfig.genesisPath })
     } catch (error) {
       if (isIndyError(error, 'PoolLedgerConfigAlreadyExistsError')) {
         this.logger.debug(`Pool '${poolName}' already exists`, {
@@ -85,23 +91,23 @@ export class LedgerService {
     }
   }
 
-  public async registerSchema(did: Did, schemaTemplate: SchemaTemplate): Promise<[SchemaId, Schema]> {
+  public async registerSchema(did: Did, schemaTemplate: SchemaTemplate): Promise<Schema> {
     try {
       this.logger.debug(`Register schema on ledger with did '${did}'`, schemaTemplate)
       const { name, attributes, version } = schemaTemplate
-      const [schemaId, schema] = await this.indy.issuerCreateSchema(did, name, version, attributes)
+      const schema = await this.indyIssuer.createSchema({ originDid: did, name, version, attributes })
 
       const request = await this.indy.buildSchemaRequest(did, schema)
 
       const response = await this.submitWriteRequest(request, did)
-      this.logger.debug(`Registered schema '${schemaId}' on ledger`, {
+      this.logger.debug(`Registered schema '${schema.id}' on ledger`, {
         response,
         schema,
       })
 
       schema.seqNo = response.result.txnMetadata.seqNo
 
-      return [schemaId, schema]
+      return schema
     } catch (error) {
       this.logger.error(`Error registering schema for did '${did}' on ledger`, {
         error,
@@ -143,26 +149,30 @@ export class LedgerService {
 
   public async registerCredentialDefinition(
     did: Did,
-    credentialDefinitionTemplate: CredDefTemplate
-  ): Promise<[CredDefId, CredDef]> {
+    credentialDefinitionTemplate: CredentialDefinitionTemplate
+  ): Promise<CredDef> {
     try {
       this.logger.debug(`Register credential definition on ledger with did '${did}'`, credentialDefinitionTemplate)
-      const { schema, tag, signatureType, config } = credentialDefinitionTemplate
+      const { schema, tag, signatureType, supportRevocation } = credentialDefinitionTemplate
 
-      const [credDefId, credDef] = await this.wallet.createCredentialDefinition(did, schema, tag, signatureType, {
-        support_revocation: config.supportRevocation,
+      const credentialDefinition = await this.indyIssuer.createCredentialDefinition({
+        issuerDid: did,
+        schema,
+        tag,
+        signatureType,
+        supportRevocation,
       })
 
-      const request = await this.indy.buildCredDefRequest(did, credDef)
+      const request = await this.indy.buildCredDefRequest(did, credentialDefinition)
 
       const response = await this.submitWriteRequest(request, did)
 
-      this.logger.debug(`Registered credential definition '${credDefId}' on ledger`, {
+      this.logger.debug(`Registered credential definition '${credentialDefinition.id}' on ledger`, {
         response,
-        credentialDefinition: credDef,
+        credentialDefinition: credentialDefinition,
       })
 
-      return [credDefId, credDef]
+      return credentialDefinition
     } catch (error) {
       this.logger.error(
         `Error registering credential definition for schema '${credentialDefinitionTemplate.schema.id}' on ledger`,
@@ -290,11 +300,11 @@ export interface SchemaTemplate {
   attributes: string[]
 }
 
-export interface CredDefTemplate {
+export interface CredentialDefinitionTemplate {
   schema: Schema
   tag: string
-  signatureType: string
-  config: { supportRevocation: boolean }
+  signatureType: 'CL'
+  supportRevocation: boolean
 }
 
 interface AuthorAgreement {

@@ -1,2 +1,2 @@
 export * from './CredentialRecord'
-export * from './CredentialRespository'
+export * from './CredentialRepository'

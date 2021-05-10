@@ -1,6 +1,6 @@
 import indy from 'indy-sdk'
 import type { SchemaId } from 'indy-sdk'
-import { Agent, InboundTransporter } from '..'
+import { Agent } from '..'
 import { DID_IDENTIFIER_REGEX, VERKEY_REGEX, isFullVerkey, isAbbreviatedVerkey } from '../utils/did'
 import { genesisPath, sleep } from './helpers'
 import { InitConfig } from '../types'
@@ -77,9 +77,8 @@ describe('ledger', () => {
       version: '1.0',
     }
 
-    const schemaResponse = await faberAgent.ledger.registerSchema(schemaTemplate)
-    schemaId = schemaResponse[0]
-    const schema = schemaResponse[1]
+    const schema = await faberAgent.ledger.registerSchema(schemaTemplate)
+    schemaId = schema.id
 
     await sleep(2000)
 
@@ -107,18 +106,17 @@ describe('ledger', () => {
     const credentialDefinitionTemplate = {
       schema: schema,
       tag: 'TAG',
-      signatureType: 'CL',
-      config: { supportRevocation: true },
+      signatureType: 'CL' as const,
+      supportRevocation: true,
     }
 
-    const [credDefId] = await faberAgent.ledger.registerCredentialDefinition(credentialDefinitionTemplate)
+    const credentialDefinition = await faberAgent.ledger.registerCredentialDefinition(credentialDefinitionTemplate)
 
     await sleep(2000)
 
-    const ledgerCredDef = await faberAgent.ledger.getCredentialDefinition(credDefId)
+    const ledgerCredDef = await faberAgent.ledger.getCredentialDefinition(credentialDefinition.id)
 
     const credDefIdRegExp = new RegExp(`${faberAgent.publicDid.did}:3:CL:[0-9]+:TAG`)
-    expect(credDefId).toEqual(expect.stringMatching(credDefIdRegExp))
     expect(ledgerCredDef).toEqual(
       expect.objectContaining({
         id: expect.stringMatching(credDefIdRegExp),
