@@ -84,10 +84,12 @@ export class MediatorModule {
     return connection
   }
 
+  // TODO - Belongs in connections.
   public async acceptInvitation(id: string): Promise<ConnectionRecord> {
     throw new Error('Method not implemented.')
   }
 
+  // TODO - Belongs in connections.
   public async acceptRequest(connectionId: string): Promise<ConnectionRecord> {
     const { message, connectionRecord: connectionRecord } = await this.connectionService.createResponse(connectionId)
 
@@ -104,6 +106,7 @@ export class MediatorModule {
    * @param connectionId the id of the connection for which to accept the response
    * @returns connection record
    */
+  // TODO - Belongs in connections.
   public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
     const { message, connectionRecord: connectionRecord } = await this.connectionService.createTrustPing(connectionId)
 
@@ -113,6 +116,7 @@ export class MediatorModule {
     return connectionRecord
   }
 
+  // TODO - Belongs in connections.
   public async returnWhenIsConnected(connectionId: string): Promise<ConnectionRecord> {
     const isConnected = (connection: ConnectionRecord) => {
       return connection.id === connectionId && connection.state === ConnectionState.Complete

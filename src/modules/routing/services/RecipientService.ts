@@ -226,8 +226,8 @@ export class RecipientService extends EventEmitter {
   }
 
   public async findById(mediatorId: string): Promise<MediationRecord> {
-    const connection = await this.mediatorRepository.find(mediatorId)
-    return connection
+    const record = await this.mediatorRepository.find(mediatorId)
+    return record
     // TODO - Handle errors
   }
 

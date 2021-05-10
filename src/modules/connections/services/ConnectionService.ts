@@ -48,7 +48,7 @@ export class ConnectionService extends EventEmitter {
   private wallet: Wallet
   private config: AgentConfig
   private connectionRepository: Repository<ConnectionRecord>
-  private recipientService: RecipientService
+  public recipientService: RecipientService
 
   public constructor(
     wallet: Wallet,
@@ -72,12 +72,19 @@ export class ConnectionService extends EventEmitter {
   public async createInvitation(config?: {
     autoAcceptConnection?: boolean
     alias?: string
+    mediatorId?: string
+    recipientKeys?: string[]
+    routingKeys?: string[]
+    endpoint?: string
   }): Promise<ConnectionProtocolMsgReturnType<ConnectionInvitationMessage>> {
     // TODO: public did, multi use
     const connectionRecord = await this.createConnection({
       role: ConnectionRole.Inviter,
       state: ConnectionState.Invited,
       alias: config?.alias,
+      recipientKeys: config?.recipientKeys,
+      routingKeys: config?.routingKeys,
+      endpoint: config?.endpoint,
       autoAcceptConnection: config?.autoAcceptConnection,
     })
 
@@ -117,12 +124,20 @@ export class ConnectionService extends EventEmitter {
     config?: {
       autoAcceptConnection?: boolean
       alias?: string
+      mediatorId?: string
+      recipientKeys?: string[]
+      routingKeys?: string[]
+      endpoint?: string
     }
   ): Promise<ConnectionRecord> {
     const connectionRecord = await this.createConnection({
       role: ConnectionRole.Invitee,
       state: ConnectionState.Invited,
       alias: config?.alias,
+      mediatorId: config?.mediatorId,
+      recipientKeys: config?.recipientKeys,
+      routingKeys: config?.routingKeys,
+      endpoint: config?.endpoint,
       autoAcceptConnection: config?.autoAcceptConnection,
       invitation,
       tags: {

@@ -14,10 +14,12 @@ export async function waitForEventWithTimeout(
     let timer: NodeJS.Timeout = setTimeout(() => {})
 
     function listener(data: any) {
-      //TODO: check if thread Id matches the one in the message
-      clearTimeout(timer)
-      emitter.removeListener(eventType, listener)
-      resolve(data)
+      //TODO: test if thread Id matches the one in the message
+      if(data.threadId === message.threadId){
+        clearTimeout(timer)
+        emitter.removeListener(eventType, listener)
+        resolve(data)
+      }
     }
 
     emitter.on(eventType, listener)
