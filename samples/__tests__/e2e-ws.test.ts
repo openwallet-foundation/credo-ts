@@ -13,8 +13,8 @@ expect.extend({ toBeConnectedWith })
 
 const aliceConfig: InitConfig = {
   label: 'e2e Alice',
-  mediatorUrl: 'http://localhost:3001',
-  walletConfig: { id: 'e2e-alice' },
+  mediatorUrl: 'http://localhost:3003',
+  walletConfig: { id: 'e2e-alice-ws' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
   autoAcceptConnections: true,
   logger: logger,
@@ -23,15 +23,15 @@ const aliceConfig: InitConfig = {
 
 const bobConfig: InitConfig = {
   label: 'e2e Bob',
-  mediatorUrl: 'http://localhost:3002',
-  walletConfig: { id: 'e2e-bob' },
+  mediatorUrl: 'http://localhost:3004',
+  walletConfig: { id: 'e2e-bob-ws' },
   walletCredentials: { key: '00000000000000000000000000000Test02' },
   autoAcceptConnections: true,
   logger: logger,
   indy,
 }
 
-describe.skip('websockets with mediator', () => {
+describe('websockets with mediator', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
   let aliceAtAliceBobId: string
