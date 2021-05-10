@@ -39,6 +39,8 @@ describe('websockets with mediator', () => {
   afterAll(async () => {
     // Wait for messages to flush out
     await new Promise((r) => setTimeout(r, 1000))
+    ;(aliceAgent.outboundTransporter as WsOutboundTransporter).stop()
+    ;(bobAgent.outboundTransporter as WsOutboundTransporter).stop()
 
     await aliceAgent.closeAndDeleteWallet()
     await bobAgent.closeAndDeleteWallet()
@@ -135,7 +137,7 @@ class WsInboundTransporter implements InboundTransporter {
 }
 
 class WsOutboundTransporter implements OutboundTransporter {
-  private transportTable: TransportTable = {}
+  private transportTable: Map<string, WebSocket> = new Map<string, WebSocket>()
   private agent: Agent
 
   public supportedSchemes = ['ws']
@@ -160,13 +162,13 @@ class WsOutboundTransporter implements OutboundTransporter {
     if (transport.socket?.readyState === WebSocket.OPEN) {
       return transport.socket
     } else {
-      let socket = this.transportTable[connection.id]
+      let socket = this.transportTable.get(connection.id)
       if (!socket) {
         if (!transport.endpoint) {
           throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
         }
         socket = await createSocketConnection(transport.endpoint)
-        this.transportTable[connection.id] = socket
+        this.transportTable.set(connection.id, socket)
         this.listenOnWebSocketMessages(this.agent, socket)
       }
 
@@ -181,6 +183,13 @@ class WsOutboundTransporter implements OutboundTransporter {
     socket.addEventListener('message', (event: any) => {
       logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
       agent.receiveMessage(JSON.parse(event.data))
+    })
+  }
+
+  public stop() {
+    this.transportTable.forEach((socket) => {
+      socket.removeAllListeners()
+      socket.close()
     })
   }
 }

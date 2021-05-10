@@ -31,6 +31,7 @@ export class Agent {
   protected messageReceiver: MessageReceiver
   protected messageSender: MessageSender
   public inboundTransporter?: InboundTransporter
+  public outboundTransporter?: OutboundTransporter
 
   public readonly connections!: ConnectionsModule
   public readonly proofs!: ProofsModule
