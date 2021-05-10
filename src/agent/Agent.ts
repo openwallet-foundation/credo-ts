@@ -21,6 +21,7 @@ import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { Symbols } from '../symbols'
 import { Transport } from './TransportService'
+import { FileSystemClass } from '../storage/fs'
 
 export class Agent {
   protected agentConfig: AgentConfig
@@ -57,6 +58,9 @@ export class Agent {
     this.container.registerInstance(Symbols.Indy, this.agentConfig.indy)
     this.container.register(Symbols.Wallet, { useToken: IndyWallet })
     this.container.registerSingleton(Symbols.StorageService, IndyStorageService)
+
+    // File system differs based on NodeJS / React Native
+    this.container.registerSingleton(Symbols.FileSystem, FileSystemClass)
 
     // TODO: do not make messageRepository input parameter
     if (messageRepository) {
