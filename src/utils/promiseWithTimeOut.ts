@@ -1,12 +1,12 @@
 import { EventEmitter } from 'events'
 import { ConnectionInvitationMessage, ConnectionState } from '..'
-import { KeylistState, KeylistUpdateMessage, MediationState, RequestMediationMessage } from '../modules/routing'
+import { KeylistState, KeylistUpdateMessage, MediationState, MediationRequestMessage } from '../modules/routing'
 
 // contributed from simongregory gist at https://gist.github.com/simongregory/2c60d270006d4bf727babca53dca1f87
 export async function waitForEventWithTimeout(
   emitter: EventEmitter,
   eventType: ConnectionState | MediationState | KeylistState,
-  message: ConnectionInvitationMessage | RequestMediationMessage | KeylistUpdateMessage,
+  message: ConnectionInvitationMessage | MediationRequestMessage | KeylistUpdateMessage,
   timeout: number
 ) {
   return new Promise((resolve, reject) => {

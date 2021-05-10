@@ -101,7 +101,7 @@ describe('Recipient', () => {
       )
       assert(service.createKeylistQuery, 'Expected RecipientService to have a `createKeylistQuery` method')
       assert(service.createRequest, 'Expected RecipientService to have a `createRequest` method')
-      assert(service.createRecord, 'Expected RecipientService to have a `createRecord` method')
+      //assert(service.createRecord, 'Expected RecipientService to have a `createRecord` method')
     })
     it('setDefaultMediator adds changes tags on mediation records', () => {
       throw 'not implemented'

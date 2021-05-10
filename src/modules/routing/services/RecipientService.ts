@@ -9,7 +9,7 @@ import {
   ForwardMessage,
   MediationGrantMessage,
   MediationDenyMessage,
-  RequestMediationMessage,
+  MediationRequestMessage,
   KeylistUpdateResponseMessage,
 } from '../messages'
 import { Logger } from '../../../logger'
@@ -20,7 +20,15 @@ import { MediationEventType, MediationKeylistEvent, MediationStateChangedEvent }
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { OutboundMessage } from '../../../types'
 import { isIndyError } from '../../../utils/indyError'
-import { MediationRecord, MediationRecordProps, MediationRole, MediationState, MediationStorageProps } from '..'
+import {
+  assertConnection,
+  createRecord,
+  MediationRecord,
+  MediationRecordProps,
+  MediationRole,
+  MediationState,
+  MediationStorageProps,
+} from '..'
 import { Wallet } from '../../../wallet/Wallet'
 
 export enum MediationRecipientEventType {
@@ -78,39 +86,42 @@ export class RecipientService extends EventEmitter {
     // Upon granting, set this.defaultMediator
   }
 
-  public async createRecord({
-    state,
-    role,
-    connectionId,
-    recipientKeys,
-  }: MediationRecordProps): Promise<MediationRecord> {
-    const mediationRecord = new MediationRecord({
-      state,
-      role,
-      connectionId,
-      recipientKeys,
-      tags: {
-        state,
-        role,
-        connectionId,
-        default: 'false',
+  public async createRequest(connection: ConnectionRecord) {
+    await createRecord(
+      {
+        connectionId: connection.id,
+        role: MediationRole.Mediator,
+        state: MediationState.Requested,
       },
-    })
-    await this.mediatorRepository.save(mediationRecord)
+      this.mediatorRepository
+    )
+    return new MediationRequestMessage({})
+  }
+
+  public async processMediationGrant(messageContext: InboundMessageContext<MediationGrantMessage>) {
+    const connection = assertConnection(
+      messageContext.connection,
+      'No connection associated with incoming mediation grant message'
+    )
+    // Mediation record must already exists to be updated to granted status
+    const mediationRecord = await this.findByConnectionId(connection.id)
+    if (!mediationRecord) {
+      throw new Error(`No mediation has been requested for this connection id: ${connection.id}`)
+    }
+    // Assert
+    mediationRecord.assertState(MediationState.Requested)
+    mediationRecord.assertConnection(connection.id)
+
+    // Update record
+    mediationRecord.endpoint = messageContext.message.endpoint
+    mediationRecord.routingKeys = messageContext.message.routingKeys
+    await this.updateState(mediationRecord, MediationState.Granted)
+
     return mediationRecord
   }
 
-  public async createRequest(connection: ConnectionRecord) {
-    await this.createRecord({
-      connectionId: connection.id,
-      role: MediationRole.Mediator,
-      state: MediationState.Requested,
-    })
-    return new RequestMediationMessage({})
-  }
-
   public createKeylistQuery(filter: Map<string, string>, paginateLimit = -1, paginateOffset = 0) {
-    // Method here
+    // TODO: Implement this
   }
 
   public async createKeylistUpdateMessage(verkey?: Verkey): Promise<KeylistUpdateMessage> {
@@ -130,12 +141,13 @@ export class RecipientService extends EventEmitter {
   }
 
   public async processKeylistUpdateResults(messageContext: InboundMessageContext<KeylistUpdateResponseMessage>) {
-    if (!messageContext.connection) {
-      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
-    }
-    const mediationRecord = await this.findByConnectionId(messageContext.connection.id)
+    const connection = assertConnection(
+      messageContext.connection,
+      'No connection associated with incoming mediation keylistUpdateResults message'
+    )
+    const mediationRecord = await this.findByConnectionId(connection.id)
     if (!mediationRecord) {
-      throw new Error(`mediation record for  ${messageContext.connection.id} not found!`)
+      throw new Error(`mediation record for  ${connection.id} not found!`)
     }
     const keylist = messageContext.message.updated
     // TODO: update keylist in mediationRecord...
@@ -148,42 +160,11 @@ export class RecipientService extends EventEmitter {
     this.emit(MediationEventType.KeylistUpdate, event)
   }
 
-  public async processMediationGrant(messageContext: InboundMessageContext<MediationGrantMessage>) {
-    const connection = messageContext.connection
-
-    // Assert connection
-    connection?.assertReady()
-    if (!connection) {
-      throw new Error('No connection associated with incoming mediation grant message')
-    }
-
-    // Mediation record already exists
-    const mediationRecord = await this.findByConnectionId(connection.id)
-
-    if (!mediationRecord) {
-      throw new Error(`No mediation has been requested for this connection id: ${connection.id}`)
-    }
-
-    // Assert
-    mediationRecord.assertState(MediationState.Requested)
-    mediationRecord.assertConnection(connection.id)
-
-    // Update record
-    mediationRecord.endpoint = messageContext.message.endpoint
-    mediationRecord.routingKeys = messageContext.message.routingKeys
-    await this.updateState(mediationRecord, MediationState.Granted)
-
-    return mediationRecord
-  }
-
   public async processMediationDeny(messageContext: InboundMessageContext<MediationDenyMessage>) {
-    const connection = messageContext.connection
-    // TODO: duplicate code from processMediationGrant, move into helper method
-    // Assert connection
-    connection?.assertReady()
-    if (!connection) {
-      throw new Error('No connection associated with incoming mediation deny message')
-    }
+    const connection = assertConnection(
+      messageContext.connection,
+      'No connection associated with incoming mediation deny message'
+    )
 
     // Mediation record already exists
     const mediationRecord = await this.findByConnectionId(connection.id)
@@ -212,11 +193,8 @@ export class RecipientService extends EventEmitter {
    */
   private async updateState(mediationRecord: MediationRecord, newState: MediationState) {
     const previousState = mediationRecord.state
-
     mediationRecord.state = newState
-
     await this.mediatorRepository.update(mediationRecord)
-
     const event: MediationStateChangedEvent = {
       mediationRecord,
       previousState: previousState,
@@ -228,19 +206,12 @@ export class RecipientService extends EventEmitter {
   public async findById(mediatorId: string): Promise<MediationRecord> {
     const record = await this.mediatorRepository.find(mediatorId)
     return record
-    // TODO - Handle errors
+    // TODO - Handle errors?
   }
 
   public async findByConnectionId(id: string): Promise<MediationRecord | null> {
-    // TODO: Use findByQuery (connectionId as tag)
-    const mediationRecords = await this.mediatorRepository.findAll()
-
-    for (const record of mediationRecords) {
-      if (record.connectionId == id) {
-        return record
-      }
-    }
-    return null
+    const records = await this.mediatorRepository.findByQuery({ id })
+    return records[0]
   }
 
   public async getMediators(): Promise<MediationRecord[] | null> {

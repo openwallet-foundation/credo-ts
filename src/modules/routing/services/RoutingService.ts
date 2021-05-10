@@ -1,12 +1,14 @@
 /*----------------------------------------------------------
 | Routing service is the common code used in mediation senarios 
 |*/
-import { KeylistState, KeylistUpdateMessage, MediationRecord, MediationState, RecipientService } from '../../routing'
+import { KeylistState, KeylistUpdateMessage, MediationRecord, MediationRecordProps, MediationRole, MediationState, RecipientService } from '../../routing'
 import { waitForEventWithTimeout } from '../../../utils/promiseWithTimeOut'
 import { Did, Verkey } from 'indy-sdk'
 import { Wallet } from '../../../wallet/Wallet'
 import EventEmitter from 'events'
 import { AgentConfig } from '../../../agent/AgentConfig'
+import { Repository } from '../../../storage/Repository'
+import { ConnectionRecord } from '../../connections'
 
 export interface keylistUpdateEvent {
   mediationRecord: MediationRecord
@@ -49,8 +51,8 @@ export async function getRouting(
         message,
       }
       emitter.emit(KeylistState.Update, event)
-      //TODO: catch this event in module and send and update message to mediator
-      //TODO: emit KeylistState.updated event on this listener from mediationservice handler
+      //catch this event in module and send and update message to mediator
+      //emit KeylistState.updated event on this listener from mediationservice handler
       await waitForEventWithTimeout(emitter, KeylistState.Updated, message, 2000)
     }
   } else {
@@ -60,4 +62,38 @@ export async function getRouting(
   }
   endpoint = my_endpoint ?? config.getEndpoint()
   return { mediationRecord, endpoint, routingKeys, did: did_data[0], verkey: did_data[1] }
+}
+
+export async function createRecord(
+  {
+    state,
+    role,
+    connectionId,
+    recipientKeys,
+  }: MediationRecordProps,
+  mediatorRepository: Repository<MediationRecord>
+): Promise<MediationRecord> {
+  const mediationRecord = new MediationRecord({
+    state,
+    role,
+    connectionId,
+    recipientKeys,
+    tags: {
+      state,
+      role,
+      connectionId,
+      default: 'false',
+    },
+  })
+  await mediatorRepository.save(mediationRecord)
+  return mediationRecord
+}
+
+export function assertConnection(record:ConnectionRecord| undefined, errormsg:string): ConnectionRecord {
+  // Assert connection
+  record?.assertReady()
+  if (!record) {
+    throw new Error(errormsg)
+  }
+  return record
 }

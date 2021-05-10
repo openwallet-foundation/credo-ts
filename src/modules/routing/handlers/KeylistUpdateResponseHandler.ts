@@ -11,6 +11,10 @@ export class KeylistUpdateResponseHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<KeylistUpdateResponseHandler>) {
+    if (!messageContext.connection) {
+      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+    }
+
     await this.recipientService.processKeylistUpdateResults(messageContext)
   }
 }

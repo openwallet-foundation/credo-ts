@@ -119,6 +119,12 @@ export class RecipientModule {
     return response
   }
 
+  public async notifyKeylistUpdate(connection: ConnectionRecord, verkey?: Verkey) {
+    const message = await this.recipientService.createKeylistUpdateMessage(verkey)
+    const outboundMessage = createOutboundMessage(connection, message)
+    const response = await this.messageSender.sendMessage(outboundMessage)
+    return response
+  }
   public async getMediators() {
     return await this.recipientService.getMediators()
   }
@@ -151,7 +157,6 @@ export class RecipientModule {
     dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.recipientService))
     dispatcher.registerHandler(new MediationGrantHandler(this.recipientService))
     dispatcher.registerHandler(new MediationDenyHandler(this.recipientService))
-    dispatcher.registerHandler(new MediationGrantHandler(this.recipientService))
-    dispatcher.registerHandler(new MediationDenyHandler(this.recipientService))
+    dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.recipientService))
   }
 }

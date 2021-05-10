@@ -16,7 +16,7 @@ export interface MediationRequestMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#mediation-request
  */
-export class RequestMediationMessage extends AgentMessage {
+export class MediationRequestMessage extends AgentMessage {
   /**
    * Create new BasicMessage instance.
    * sentTime will be assigned to new Date if not passed, id will be assigned to uuid/v4 if not passed
@@ -32,8 +32,8 @@ export class RequestMediationMessage extends AgentMessage {
     }
   }
 
-  @Equals(RequestMediationMessage.type)
-  public readonly type = RequestMediationMessage.type
+  @Equals(MediationRequestMessage.type)
+  public readonly type = MediationRequestMessage.type
   public static readonly type = RoutingMessageType.MediationRequest
 
   @Expose({ name: 'sent_time' })

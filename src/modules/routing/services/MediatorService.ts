@@ -10,10 +10,11 @@ import {
   MediationRecordProps,
   MediationRole,
   MediationState,
-  RequestMediationMessage,
   MediationDenyMessage,
   MediationGrantMessage,
+  MediationRequestMessage,
   KeylistUpdate,
+  createRecord,
 } from '..'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { MessageSender } from '../../../agent/MessageSender'
@@ -56,28 +57,6 @@ export class MediatorService extends EventEmitter {
     this.agentConfig = agentConfig
     this.wallet = wallet
     this.routingKeys = routingKeys ?? []
-  }
-
-  public async createRecord({
-    state,
-    role,
-    connectionId,
-    recipientKeys,
-  }: MediationRecordProps): Promise<MediationRecord> {
-    const mediationRecord = new MediationRecord({
-      state,
-      role,
-      connectionId,
-      recipientKeys,
-      tags: {
-        state,
-        role,
-        connectionId,
-        default: 'false',
-      },
-    })
-    await this.mediationRepository.save(mediationRecord)
-    return mediationRecord
   }
 
   private _assertConnection(connection: ConnectionRecord | undefined, msgType: BaseMessage): ConnectionRecord {
@@ -172,16 +151,19 @@ export class MediatorService extends EventEmitter {
     })
   }
 
-  public async processMediationRequest(messageContext: InboundMessageContext<RequestMediationMessage>) {
+  public async processMediationRequest(messageContext: InboundMessageContext<MediationRequestMessage>) {
     const { message } = messageContext
     // Assert connection
     const connection = this._assertConnection(messageContext.connection, ForwardMessage)
 
-    const mediationRecord = await this.createRecord({
-      connectionId: connection.id,
-      role: MediationRole.Mediator,
-      state: MediationState.Init,
-    })
+    const mediationRecord = await createRecord(
+      {
+        connectionId: connection.id,
+        role: MediationRole.Mediator,
+        state: MediationState.Init,
+      },
+      this.mediationRepository
+    )
     await this.updateState(mediationRecord, MediationState.Init)
 
     // Mediation can be either granted or denied. Someday, let business logic decide that
