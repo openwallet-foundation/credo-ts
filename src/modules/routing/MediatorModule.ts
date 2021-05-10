@@ -72,7 +72,6 @@ export class MediatorModule {
     return connectionRecord
   }
 
-
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new KeylistUpdateHandler(this.mediatorService))
     dispatcher.registerHandler(new ForwardHandler(this.mediatorService))

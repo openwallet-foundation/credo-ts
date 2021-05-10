@@ -208,17 +208,13 @@ export class ConnectionsModule {
     dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
     dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService))
   }
-  private registerListeners(){
-    this.connectionService.recipientService.on(KeylistState.Update,this.keylistUpdateEvent)
+  private registerListeners() {
+    this.connectionService.recipientService.on(KeylistState.Update, this.keylistUpdateEvent)
   }
-   private async keylistUpdateEvent({
-    mediationRecord,
-    message,
-  }: keylistUpdateEvent) {
+  private async keylistUpdateEvent({ mediationRecord, message }: keylistUpdateEvent) {
     // new did has been created and mediator needs to be updated with the public key.
     const connectionRecord: ConnectionRecord = await this.connectionService.getById(mediationRecord.connectionId)
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)
   }
 }
-
