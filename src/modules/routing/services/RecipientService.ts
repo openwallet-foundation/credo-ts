@@ -121,9 +121,13 @@ export class RecipientService extends EventEmitter {
     return mediationRecord
   }
 
-  public createKeylistQuery(filter?: Map<string, string>, paginateLimit?: number | undefined, paginateOffset?: number | undefined) {
-    paginateLimit = paginateLimit ?? -1,
-    paginateOffset = paginateOffset ?? 0
+  public createKeylistQuery(
+    filter?: Map<string, string>,
+    paginateLimit?: number | undefined,
+    paginateOffset?: number | undefined
+  ) {
+    //paginateLimit = paginateLimit ?? -1,
+    //paginateOffset = paginateOffset ?? 0
     // TODO: Implement this
     //return new MediationKeyListQueryMessage()
     return new AgentMessage()
