@@ -78,7 +78,8 @@ jobs:
         run: |
           mkdir logs
           docker cp alice-mediator:/www/logs.txt ./logs/alice-mediator.txt
-          docker cp bob-mediator:/www/logs.txt ./logs/bob-mediator.txt
+          docker cp alice-ws-mediator:/www/logs.txt ./logs/alice-ws-mediator.txt
+          docker cp bob-ws-mediator:/www/logs.txt ./logs/bob-ws-mediator.txt
           docker cp framework-jest-tests:/www/logs.txt ./logs/jest.txt
 
       - name: Upload docker logs
