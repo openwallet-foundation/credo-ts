@@ -386,7 +386,7 @@ export class ConnectionService extends EventEmitter {
   }): Promise<ConnectionRecord> {
     const gotten_routing = await getRouting(
       this.config,
-      this,
+      this.recipientService,
       this.wallet,
       this.recipientService,
       options.mediatorId,

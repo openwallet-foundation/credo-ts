@@ -19,6 +19,7 @@ import { ConnectionRecord } from '../connections'
 import agentConfig from '../../../samples/config'
 import { EventEmitter } from 'events'
 import { MediationRecord } from '.'
+import { Agent, MediationEventType, MediationState, MediationStateChangedEvent } from '../..'
 
 export class RecipientModule {
   private agentConfig: AgentConfig
@@ -152,15 +153,45 @@ export class RecipientModule {
     }
     return undefined
   }
+  public async requestAndWaitForAcception(
+    connection: ConnectionRecord,
+    agent: Agent,
+    {
+      id,
+      state,
+      previousState,
+    }: {
+      id?: string
+      state?: MediationState
+      previousState?: MediationState | null
+    }, timeout: number
+  ): Promise<MediationRecord> {
+    return new Promise(async (resolve, reject) => {
+      const message = await this.recipientService.createRequest(connection)
+      const outboundMessage = createOutboundMessage(connection, message)
 
-  public async keylistUpdate() {
-    throw new Error('Method not implemented.')
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      let timer: NodeJS.Timeout = setTimeout(() => {})
+
+      const listener = (event: MediationStateChangedEvent) => {
+        const previousStateMatches = previousState === undefined || event.previousState === previousState
+        const mediationIdMatches = id === undefined || event.mediationRecord.id === id
+        const stateMatches = state === undefined || event.mediationRecord.state === state
+  
+        if (previousStateMatches && mediationIdMatches && stateMatches) {
+          agent.mediator.events.removeListener(MediationEventType.StateChanged, listener)
+          clearTimeout(timer)
+          resolve(event.mediationRecord)
+        }
+      }
+      agent.mediator.events.addListener(MediationEventType.StateChanged, listener)
+      timer = setTimeout(() => {
+        agent.mediator.events.removeListener(MediationEventType.StateChanged, listener)
+        reject(new Error('timeout waiting for mediator to grant mediation, initialized from mediation record id:' + id))
+      }, timeout)
+      await this.messageSender.sendMessage(outboundMessage)
+    })
   }
-
-  public async keylistquery() {
-    throw new Error('Method not implemented.')
-  }
-
   // Register handlers for the several messages for the mediator.
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.recipientService))

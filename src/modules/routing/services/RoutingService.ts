@@ -58,10 +58,9 @@ export async function getRouting(
         mediationRecord,
         message,
       }
-      emitter.emit(KeylistState.Update, event)
-      //catch this event in module and send and update message to mediator
-      //emit KeylistState.updated event on this listener from mediationservice handler
-      await waitForEventWithTimeout(emitter, KeylistState.Updated, message, 2000)
+      // emit KeylistState.update and catch KeylistState.updated event in module from mediationservice handler 
+      // send and update message to mediator
+      await waitForEventWithTimeout(emitter, emitter, KeylistState.Update, event, KeylistState.Updated, message, 2000)
     }
   } else {
     // TODO: register recipient keys for relay
