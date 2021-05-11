@@ -169,7 +169,7 @@ export class RecipientModule {
   ): Promise<MediationRecord> {
     const message = await this.recipientService.createRequest(connection)
     const outboundMessage = createOutboundMessage(connection, message)
-    let promise: Promise<MediationRecord> = new Promise((resolve, reject) => {
+    const promise: Promise<MediationRecord> = new Promise((resolve, reject) => {
       // eslint-disable-next-line @typescript-eslint/no-empty-function
       let timer: NodeJS.Timeout = setTimeout(() => {})
       const listener = (event: MediationStateChangedEvent) => {
