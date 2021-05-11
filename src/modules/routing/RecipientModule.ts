@@ -167,13 +167,11 @@ export class RecipientModule {
     },
     timeout: number
   ): Promise<MediationRecord> {
-    return new Promise(async (resolve, reject) => {
-      const message = await this.recipientService.createRequest(connection)
-      const outboundMessage = createOutboundMessage(connection, message)
-
+    const message = await this.recipientService.createRequest(connection)
+    const outboundMessage = createOutboundMessage(connection, message)
+    let promise: Promise<MediationRecord> = new Promise((resolve, reject) => {
       // eslint-disable-next-line @typescript-eslint/no-empty-function
       let timer: NodeJS.Timeout = setTimeout(() => {})
-
       const listener = (event: MediationStateChangedEvent) => {
         const previousStateMatches = previousState === undefined || event.previousState === previousState
         const mediationIdMatches = id === undefined || event.mediationRecord.id === id
@@ -190,8 +188,9 @@ export class RecipientModule {
         agent.mediator.events.removeListener(MediationEventType.StateChanged, listener)
         reject(new Error('timeout waiting for mediator to grant mediation, initialized from mediation record id:' + id))
       }, timeout)
-      await this.messageSender.sendMessage(outboundMessage)
     })
+    await this.messageSender.sendMessage(outboundMessage)
+    return promise
   }
   // Register handlers for the several messages for the mediator.
   private registerHandlers(dispatcher: Dispatcher) {
