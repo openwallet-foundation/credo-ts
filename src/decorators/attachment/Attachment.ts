@@ -15,7 +15,7 @@ export interface AttachmentOptions {
 export interface AttachmentDataOptions {
   base64?: string
   json?: Record<string, unknown>
-  links?: []
+  links?: string[]
   jws?: Record<string, unknown>
   sha256?: string
 }
