@@ -91,6 +91,7 @@ export class IndyIssuerService {
     revocationRegistryId,
     tailsFilePath,
   }: CreateCredentialOptions): Promise<[Cred, CredRevocId]> {
+    // Indy SDK requires tailsReaderHandle. Use null if no tailsFilePath is present
     const tailsReaderHandle = tailsFilePath ? await this.createTailsReader(tailsFilePath) : 0
 
     if (revocationRegistryId || tailsFilePath) {
@@ -102,9 +103,7 @@ export class IndyIssuerService {
       credentialOffer,
       credentialRequest,
       credentialValues,
-      // TODO: update once new version of @types/indy-sdk is released
-      // @ts-expect-error @types/indy-sdk contains incorrect type
-      revocationRegistryId,
+      revocationRegistryId ?? null,
       tailsReaderHandle
     )
 
@@ -134,8 +133,6 @@ export class IndyIssuerService {
       base_dir: dirname,
     }
 
-    // TODO: update once new version of @types/indy-sdk is released
-    // @ts-expect-error @types/indy-sdk contains incorrect types
     return this.indy.openBlobStorageReader('default', tailsReaderConfig)
   }
 }

@@ -46,12 +46,11 @@ export class IndyHolderService {
   }: StoreCredentialOptions): Promise<Indy.CredentialId> {
     return this.indy.proverStoreCredential(
       this.indyWallet.walletHandle,
-      // @ts-expect-error wait for @types/indy-sdk to be updated
-      credentialId,
+      credentialId ?? null,
       credentialRequestMetadata,
       credential,
       credentialDefinition,
-      revocationRegistryDefinitions
+      revocationRegistryDefinitions ?? null
     )
   }
 
@@ -109,8 +108,7 @@ export class IndyHolderService {
     const searchHandle = await this.indy.proverSearchCredentialsForProofReq(
       this.indyWallet.walletHandle,
       proofRequest,
-      // @ts-expect-error wait for @types/indy-sdk
-      extraQuery
+      extraQuery ?? null
     )
 
     try {
@@ -158,7 +156,7 @@ export interface GetCredentialForProofRequestOptions {
   attributeReferent: string
   start?: number
   limit?: number
-  extraQuery?: Indy.WalletQuery
+  extraQuery?: Indy.ReferentWalletQuery
 }
 
 export interface CreateCredentialRequestOptions {
