@@ -20,6 +20,10 @@ export class MessageSender {
     this.outboundTransporter = outboundTransporter
   }
 
+  public getOutboundTransporter() {
+    return this.outboundTransporter
+  }
+
   public async packMessage(outboundMessage: OutboundMessage): Promise<OutboundPackage> {
     return this.envelopeService.packMessage(outboundMessage)
   }

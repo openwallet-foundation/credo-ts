@@ -37,8 +37,8 @@ describe('websockets with mediator', () => {
   let aliceAtAliceBobId: string
 
   afterAll(async () => {
-    ;(aliceAgent.outboundTransporter as WsOutboundTransporter).stop()
-    ;(bobAgent.outboundTransporter as WsOutboundTransporter).stop()
+    ;(aliceAgent.getOutboundTransporter() as WsOutboundTransporter).stop()
+    ;(bobAgent.getOutboundTransporter() as WsOutboundTransporter).stop()
 
     // Wait for messages to flush out
     await new Promise((r) => setTimeout(r, 1000))
@@ -193,10 +193,6 @@ class WsOutboundTransporter implements OutboundTransporter {
       socket.close()
     })
   }
-}
-
-interface TransportTable {
-  [connectionRecordId: string]: WebSocket
 }
 
 function createSocketConnection(endpoint: string): Promise<WebSocket> {

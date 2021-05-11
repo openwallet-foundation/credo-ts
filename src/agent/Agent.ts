@@ -104,6 +104,10 @@ export class Agent {
     this.messageSender.setOutboundTransporter(outboundTransporter)
   }
 
+  public getOutboundTransporter() {
+    return this.messageSender.getOutboundTransporter()
+  }
+
   public async init() {
     await this.wallet.init()
 
