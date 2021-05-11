@@ -37,10 +37,11 @@ describe('websockets with mediator', () => {
   let aliceAtAliceBobId: string
 
   afterAll(async () => {
-    // Wait for messages to flush out
-    await new Promise((r) => setTimeout(r, 1000))
     ;(aliceAgent.outboundTransporter as WsOutboundTransporter).stop()
     ;(bobAgent.outboundTransporter as WsOutboundTransporter).stop()
+
+    // Wait for messages to flush out
+    await new Promise((r) => setTimeout(r, 1000))
 
     await aliceAgent.closeAndDeleteWallet()
     await bobAgent.closeAndDeleteWallet()
