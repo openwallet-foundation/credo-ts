@@ -1,10 +1,11 @@
 import { Lifecycle, scoped, inject } from 'tsyringe'
 
 import { Logger } from '../logger'
-import { ConnectionRecord, ConnectionRole } from '../modules/connections'
+import { ConnectionRecord } from '../modules/connections/repository'
+import { ConnectionRole } from '../modules/connections/models'
 import { Symbols } from '../symbols'
 
-const DID_COMM_TRANSPORT_QUEUE = 'didcomm:transport/queue'
+export const DID_COMM_TRANSPORT_QUEUE = 'didcomm:transport/queue'
 
 @scoped(Lifecycle.ContainerScoped)
 export class TransportService {
@@ -38,6 +39,10 @@ export class TransportService {
     }
 
     throw new Error(`No transport found for connection with id ${connection.id}`)
+  }
+
+  public hasInboundEndpoint(connection: ConnectionRecord) {
+    return connection.didDoc.didCommServices.find((s) => s.serviceEndpoint !== DID_COMM_TRANSPORT_QUEUE)
   }
 
   private findTransport(connectionId: string) {

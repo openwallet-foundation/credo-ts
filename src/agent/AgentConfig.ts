@@ -1,5 +1,6 @@
 import { ConsoleLogger, Logger, LogLevel } from '../logger'
 import { InitConfig, InboundConnection, DidCommMimeType } from '../types'
+import { DID_COMM_TRANSPORT_QUEUE } from './TransportService'
 
 export class AgentConfig {
   private initConfig: InitConfig
@@ -76,7 +77,7 @@ export class AgentConfig {
 
     // If we still don't have an endpoint, return didcomm:transport/queue
     // https://github.com/hyperledger/aries-rfcs/issues/405#issuecomment-582612875
-    return 'didcomm:transport/queue'
+    return DID_COMM_TRANSPORT_QUEUE
   }
 
   public getRoutingKeys() {
