@@ -72,7 +72,7 @@ interface TransportTable {
   [connectionRecordId: string]: Transport
 }
 
-type TransportType = 'ws' | 'http' | 'queue'
+type TransportType = 'websocket' | 'http' | 'queue'
 
 export interface Transport {
   type: TransportType
@@ -80,7 +80,7 @@ export interface Transport {
 }
 
 export class WebSocketTransport implements Transport {
-  public readonly type = 'ws'
+  public readonly type = 'websocket'
   public endpoint: string
   public socket?: WebSocket
 
