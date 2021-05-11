@@ -70,7 +70,7 @@ describe('with mediator', () => {
     mediator.setOutboundTransporter(new HttpOutboundTransporter(mediator))
     await mediator.init()
     // Create Mediation connection invitation
-    const mediatorAliceInvitation = await mediator.connections.createConnection({autoAcceptConnection: true})
+    const mediatorAliceInvitation = await mediator.connections.createConnection({ autoAcceptConnection: true })
     // Connect agent with their mediator
     let aliceMediatorConnection = await aliceAgent.connections.receiveInvitation(mediatorAliceInvitation.invitation, {
       autoAcceptConnection: true,
@@ -83,11 +83,16 @@ describe('with mediator', () => {
     // Start polling responses from this connection and wait for mediation granted
     aliceInboundTransporter.stop = true
     aliceInboundTransporter.start(aliceAgent, aliceMediatorConnection)
-    
+
     // Once mediator is connected, mediation request can be sent
-    const aliceMediationRecord = await aliceAgent.mediationRecipient.requestAndWaitForAcception(aliceMediatorConnection, aliceAgent, {
-      state: MediationState.Granted
-    },2000)
+    const aliceMediationRecord = await aliceAgent.mediationRecipient.requestAndWaitForAcception(
+      aliceMediatorConnection,
+      aliceAgent,
+      {
+        state: MediationState.Granted,
+      },
+      2000
+    )
 
     // TODO: add expect cases for mediationRecords
     expect(aliceMediatorConnection)

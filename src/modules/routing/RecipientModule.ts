@@ -164,7 +164,8 @@ export class RecipientModule {
       id?: string
       state?: MediationState
       previousState?: MediationState | null
-    }, timeout: number
+    },
+    timeout: number
   ): Promise<MediationRecord> {
     return new Promise(async (resolve, reject) => {
       const message = await this.recipientService.createRequest(connection)
@@ -177,7 +178,7 @@ export class RecipientModule {
         const previousStateMatches = previousState === undefined || event.previousState === previousState
         const mediationIdMatches = id === undefined || event.mediationRecord.id === id
         const stateMatches = state === undefined || event.mediationRecord.state === state
-  
+
         if (previousStateMatches && mediationIdMatches && stateMatches) {
           agent.mediator.events.removeListener(MediationEventType.StateChanged, listener)
           clearTimeout(timer)
