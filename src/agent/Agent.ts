@@ -177,6 +177,8 @@ export class Agent {
     if (this.inboundTransporter) {
       await this.inboundTransporter.start(this)
     }
+
+    this.mediationRecipient.init(this.connections)
   }
 
   public get publicDid() {
