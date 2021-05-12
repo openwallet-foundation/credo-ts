@@ -236,7 +236,7 @@ export class RecipientService extends EventEmitter {
   }
 
   public async getDefaultMediator() {
-    const results = await this.mediatorRepository.findByQuery({ default: true })
+    const results = await this.mediatorRepository.findByQuery({ default: "true" })
     this.defaultMediator = results ? results[0] : this.defaultMediator // TODO: call setDefaultMediator
     return this.defaultMediator
   }

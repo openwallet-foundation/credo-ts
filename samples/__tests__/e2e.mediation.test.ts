@@ -5,37 +5,43 @@ import { sleep, toBeConnectedWith, waitForBasicMessage, waitForMediationRecord }
 import indy from 'indy-sdk'
 import logger from '../../src/__tests__/logger'
 import { MediationState } from '../../src'
+import { AgentConfig } from '../../src/agent/AgentConfig'
+import { IndyWallet } from '../../src/wallet/IndyWallet'
+import { Wallet } from '../../src/wallet/Wallet'
 
 expect.extend({ toBeConnectedWith })
 
 const aliceConfig: InitConfig = {
   label: 'e2e Alice',
-  mediatorUrl: 'http://localhost:4001',
+  host: 'http://localhost',
+  port: 4001,
   walletConfig: { id: 'e2e-alice' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
   autoAcceptConnections: true,
-  logger: logger,
   indy,
+  logger: logger,
 }
 
 const bobConfig: InitConfig = {
   label: 'e2e Bob',
-  mediatorUrl: 'http://localhost:4002',
+  host: 'http://localhost',
+  port: 4002,
   walletConfig: { id: 'e2e-bob' },
   walletCredentials: { key: '00000000000000000000000000000Test02' },
   autoAcceptConnections: true,
-  logger: logger,
   indy,
+  logger: logger,
 }
 
 const mediatorConfig: InitConfig = {
   label: 'e2e ned',
-  mediatorUrl: 'http://localhost:4003',
+  host: 'http://localhost',
+  port: 4003,
   walletConfig: { id: 'e2e-ned' },
   walletCredentials: { key: '00000000000000000000000000000Test03' },
   autoAcceptConnections: true,
-  logger: logger,
   indy,
+  logger: logger,
 }
 
 describe('with mediator', () => {
@@ -43,7 +49,15 @@ describe('with mediator', () => {
   let bobAgent: Agent
   let mediator: Agent
   let aliceAtAliceBobId: string
+  /*let aliceConfig: AgentConfig
+  let aliceWallet: Wallet
 
+  beforeAll(async () => {
+    aliceConfig = new AgentConfig(aliceConfig)
+    aliceWallet = new IndyWallet(aliceConfig)
+    await aliceWallet.init()
+  })
+*/
   afterAll(async () => {
     ;(aliceAgent.inboundTransporter as PollingInboundTransporter).stop = true
     ;(bobAgent.inboundTransporter as PollingInboundTransporter).stop = true
@@ -63,7 +77,8 @@ describe('with mediator', () => {
     aliceAgent.setInboundTransporter(aliceInboundTransporter)
     aliceAgent.setOutboundTransporter(new HttpOutboundTransporter(aliceAgent))
     await aliceAgent.init()
-
+    expect(aliceAgent)
+    
     mediator = new Agent(mediatorConfig)
     const mediatorInBoundTransporter = new PollingInboundTransporter()
     mediator.setInboundTransporter(mediatorInBoundTransporter)
@@ -71,6 +86,7 @@ describe('with mediator', () => {
     await mediator.init()
     // Create Mediation connection invitation
     const mediatorAliceInvitation = await mediator.connections.createConnection({ autoAcceptConnection: true })
+    expect(mediatorAliceInvitation)
     // Connect agent with their mediator
     let aliceMediatorConnection = await aliceAgent.connections.receiveInvitation(mediatorAliceInvitation.invitation, {
       autoAcceptConnection: true,

@@ -48,7 +48,7 @@ export async function getRouting(
     routingKeys = [...routingKeys, ...mediationRecord.routingKeys]
     endpoint = mediationRecord.endpoint
   }
-  if (!recipientKeys) {
+  if (!recipientKeys || recipientKeys.length <= 0 ) {
     // Create and store new key
     did_data = await wallet.createDid()
     recipientKeys = [did_data[1]]
@@ -65,10 +65,11 @@ export async function getRouting(
   } else {
     // TODO: register recipient keys for relay
     // TODO: check that recipient keys are in wallet
-    did_data = ['', recipientKeys[1]] // TODO: extract did, also first key the correct one?
+    did_data = ['', recipientKeys[0]] // TODO: extract did, also first key the correct one?
   }
   endpoint = my_endpoint ?? config.getEndpoint()
-  return { mediationRecord, endpoint, routingKeys, did: did_data[0], verkey: did_data[1] }
+  const result = { mediationRecord, endpoint, routingKeys, did: did_data[0], verkey: did_data[1] }
+  return result
 }
 
 export async function createRecord(

@@ -125,9 +125,6 @@ export class ConnectionService extends EventEmitter {
       autoAcceptConnection?: boolean
       alias?: string
       mediatorId?: string
-      recipientKeys?: string[]
-      routingKeys?: string[]
-      endpoint?: string
     }
   ): Promise<ConnectionRecord> {
     const connectionRecord = await this.createConnection({
@@ -135,9 +132,9 @@ export class ConnectionService extends EventEmitter {
       state: ConnectionState.Invited,
       alias: config?.alias,
       mediatorId: config?.mediatorId,
-      recipientKeys: config?.recipientKeys,
-      routingKeys: config?.routingKeys,
-      endpoint: config?.endpoint,
+      recipientKeys: invitation?.recipientKeys,
+      routingKeys: invitation?.routingKeys,
+      endpoint: invitation?.serviceEndpoint,
       autoAcceptConnection: config?.autoAcceptConnection,
       invitation,
       tags: {

@@ -80,11 +80,13 @@ export class ConnectionsModule {
     config?: {
       autoAcceptConnection?: boolean
       alias?: string
+      mediatorId?: string
     }
   ): Promise<ConnectionRecord> {
     let connection = await this.connectionService.processInvitation(invitation, {
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
+      mediatorId: config?.mediatorId,
     })
 
     if (this.agentConfig.getEndpoint() == 'didcomm:transport/queue') {
