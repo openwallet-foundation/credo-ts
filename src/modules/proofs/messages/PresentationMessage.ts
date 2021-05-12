@@ -12,7 +12,7 @@ export const INDY_PROOF_ATTACHMENT_ID = 'libindy-presentation-0'
 export interface PresentationOptions {
   id?: string
   comment?: string
-  attachments: Attachment[]
+  presentationAttachments: Attachment[]
 }
 
 /**
@@ -28,7 +28,7 @@ export class PresentationMessage extends AgentMessage {
     if (options) {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
-      this.attachments = options.attachments
+      this.presentationAttachments = options.presentationAttachments
     }
   }
 
@@ -52,10 +52,10 @@ export class PresentationMessage extends AgentMessage {
   @ValidateNested({
     each: true,
   })
-  public attachments!: Attachment[]
+  public presentationAttachments!: Attachment[]
 
   public get indyProof(): IndyProof | null {
-    const attachment = this.attachments.find((attachment) => attachment.id === INDY_PROOF_ATTACHMENT_ID)
+    const attachment = this.presentationAttachments.find((attachment) => attachment.id === INDY_PROOF_ATTACHMENT_ID)
 
     // Return null if attachment is not found
     if (!attachment?.data?.base64) {

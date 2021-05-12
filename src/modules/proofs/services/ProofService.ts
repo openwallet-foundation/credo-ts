@@ -247,7 +247,7 @@ export class ProofService extends EventEmitter {
     })
     const requestPresentationMessage = new RequestPresentationMessage({
       comment: config?.comment,
-      attachments: [attachment],
+      requestPresentationAttachments: [attachment],
     })
     requestPresentationMessage.setThread({
       threadId: proofRecord.tags.threadId,
@@ -290,7 +290,7 @@ export class ProofService extends EventEmitter {
     })
     const requestPresentationMessage = new RequestPresentationMessage({
       comment: config?.comment,
-      attachments: [attachment],
+      requestPresentationAttachments: [attachment],
     })
 
     // Create record
@@ -411,7 +411,7 @@ export class ProofService extends EventEmitter {
     })
     const presentationMessage = new PresentationMessage({
       comment: config?.comment,
-      attachments: [attachment],
+      presentationAttachments: [attachment],
     })
     presentationMessage.setThread({ threadId: proofRecord.tags.threadId })
 
