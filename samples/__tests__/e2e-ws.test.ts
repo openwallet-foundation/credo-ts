@@ -1,9 +1,11 @@
-import { Agent, HttpOutboundTransporter, InboundTransporter } from '../../src'
-import { InitConfig } from '../../src/types'
+import WebSocket from 'ws'
+import { Agent, ConnectionRecord, InboundTransporter, OutboundTransporter } from '../../src'
+import { OutboundPackage, InitConfig } from '../../src/types'
 import { get } from '../http'
-import { sleep, toBeConnectedWith, waitForBasicMessage } from '../../src/__tests__/helpers'
+import { toBeConnectedWith, waitForBasicMessage } from '../../src/__tests__/helpers'
 import indy from 'indy-sdk'
 import testLogger from '../../src/__tests__/logger'
+import { WebSocketTransport } from '../../src/agent/TransportService'
 
 const logger = testLogger
 
@@ -11,8 +13,8 @@ expect.extend({ toBeConnectedWith })
 
 const aliceConfig: InitConfig = {
   label: 'e2e Alice',
-  mediatorUrl: 'http://localhost:3001',
-  walletConfig: { id: 'e2e-alice' },
+  mediatorUrl: 'http://localhost:3003',
+  walletConfig: { id: 'e2e-alice-ws' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
   autoAcceptConnections: true,
   logger: logger,
@@ -21,22 +23,22 @@ const aliceConfig: InitConfig = {
 
 const bobConfig: InitConfig = {
   label: 'e2e Bob',
-  mediatorUrl: 'http://localhost:3002',
-  walletConfig: { id: 'e2e-bob' },
+  mediatorUrl: 'http://localhost:3004',
+  walletConfig: { id: 'e2e-bob-ws' },
   walletCredentials: { key: '00000000000000000000000000000Test02' },
   autoAcceptConnections: true,
   logger: logger,
   indy,
 }
 
-describe('with mediator', () => {
+describe('websockets with mediator', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
   let aliceAtAliceBobId: string
 
   afterAll(async () => {
-    ;(aliceAgent.inboundTransporter as PollingInboundTransporter).stop = true
-    ;(bobAgent.inboundTransporter as PollingInboundTransporter).stop = true
+    ;(aliceAgent.getOutboundTransporter() as WsOutboundTransporter).stop()
+    ;(bobAgent.getOutboundTransporter() as WsOutboundTransporter).stop()
 
     // Wait for messages to flush out
     await new Promise((r) => setTimeout(r, 1000))
@@ -47,13 +49,13 @@ describe('with mediator', () => {
 
   test('Alice and Bob make a connection with mediator', async () => {
     aliceAgent = new Agent(aliceConfig)
-    aliceAgent.setInboundTransporter(new PollingInboundTransporter())
-    aliceAgent.setOutboundTransporter(new HttpOutboundTransporter(aliceAgent))
+    aliceAgent.setInboundTransporter(new WsInboundTransporter())
+    aliceAgent.setOutboundTransporter(new WsOutboundTransporter(aliceAgent))
     await aliceAgent.init()
 
     bobAgent = new Agent(bobConfig)
-    bobAgent.setInboundTransporter(new PollingInboundTransporter())
-    bobAgent.setOutboundTransporter(new HttpOutboundTransporter(bobAgent))
+    bobAgent.setInboundTransporter(new WsInboundTransporter())
+    bobAgent.setOutboundTransporter(new WsOutboundTransporter(bobAgent))
     await bobAgent.init()
 
     const aliceInbound = aliceAgent.routing.getInboundConnection()
@@ -118,36 +120,98 @@ describe('with mediator', () => {
   })
 })
 
-class PollingInboundTransporter implements InboundTransporter {
-  public stop: boolean
-
-  public constructor() {
-    this.stop = false
-  }
+class WsInboundTransporter implements InboundTransporter {
   public async start(agent: Agent) {
     await this.registerMediator(agent)
   }
 
-  public async registerMediator(agent: Agent) {
+  private async registerMediator(agent: Agent) {
     const mediatorUrl = agent.getMediatorUrl() || ''
     const mediatorInvitationUrl = await get(`${mediatorUrl}/invitation`)
     const { verkey: mediatorVerkey } = JSON.parse(await get(`${mediatorUrl}/`))
+
     await agent.routing.provision({
       verkey: mediatorVerkey,
       invitationUrl: mediatorInvitationUrl,
     })
-    this.pollDownloadMessages(agent)
+  }
+}
+
+class WsOutboundTransporter implements OutboundTransporter {
+  private transportTable: Map<string, WebSocket> = new Map<string, WebSocket>()
+  private agent: Agent
+
+  public supportedSchemes = ['ws']
+
+  public constructor(agent: Agent) {
+    this.agent = agent
   }
 
-  private pollDownloadMessages(agent: Agent) {
-    const loop = async () => {
-      while (!this.stop) {
-        await agent.routing.downloadMessages()
-        await sleep(1000)
-      }
+  public async sendMessage(outboundPackage: OutboundPackage) {
+    const { connection, payload, transport } = outboundPackage
+    logger.debug(`Sending outbound message to connection ${connection.id} over ${transport?.type} transport.`, payload)
+
+    if (transport instanceof WebSocketTransport) {
+      const socket = await this.resolveSocket(connection, transport)
+      socket.send(JSON.stringify(payload))
+    } else {
+      throw new Error(`Unsupported transport ${transport?.type}.`)
     }
-    new Promise(() => {
-      loop()
+  }
+
+  private async resolveSocket(connection: ConnectionRecord, transport: WebSocketTransport) {
+    if (transport.socket?.readyState === WebSocket.OPEN) {
+      return transport.socket
+    } else {
+      let socket = this.transportTable.get(connection.id)
+      if (!socket) {
+        if (!transport.endpoint) {
+          throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
+        }
+        socket = await createSocketConnection(transport.endpoint)
+        this.transportTable.set(connection.id, socket)
+        this.listenOnWebSocketMessages(this.agent, socket)
+      }
+
+      if (socket.readyState !== WebSocket.OPEN) {
+        throw new Error('Socket is not open.')
+      }
+      return socket
+    }
+  }
+
+  private listenOnWebSocketMessages(agent: Agent, socket: WebSocket) {
+    socket.addEventListener('message', (event: any) => {
+      logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
+      agent.receiveMessage(JSON.parse(event.data))
     })
   }
+
+  public stop() {
+    this.transportTable.forEach((socket) => {
+      socket.removeAllListeners()
+      socket.close()
+    })
+  }
+}
+
+function createSocketConnection(endpoint: string): Promise<WebSocket> {
+  if (!endpoint) {
+    throw new Error('Mediator URL is missing.')
+  }
+  return new Promise((resolve, reject) => {
+    logger.debug('Connecting to mediator via WebSocket')
+    const socket = new WebSocket(endpoint)
+    if (!socket) {
+      throw new Error('WebSocket has not been initialized.')
+    }
+    socket.onopen = () => {
+      logger.debug('Client connected')
+      resolve(socket)
+    }
+    socket.onerror = (e) => {
+      logger.debug('Client connection failed')
+      reject(e)
+    }
+  })
 }

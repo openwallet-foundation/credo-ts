@@ -5,7 +5,6 @@ import { ConnectionState } from '..'
 import { ConnectionInvitationMessage } from '..'
 import { ConnectionRole } from '..'
 import { DidDoc } from '..'
-import { IndyAgentService } from '..'
 import type { Did, Verkey } from 'indy-sdk'
 
 interface ConnectionProps {
@@ -124,9 +123,5 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
     if (this.role !== expectedRole) {
       throw new Error(`Connection record has invalid role ${this.role}. Expected role ${expectedRole}.`)
     }
-  }
-
-  public hasInboundEndpoint() {
-    return this.didDoc.service.find((s) => s.serviceEndpoint !== 'didcomm:transport/queue')
   }
 }

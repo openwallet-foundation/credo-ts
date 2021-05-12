@@ -20,6 +20,7 @@ import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModu
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { Symbols } from '../symbols'
+import { Transport } from './TransportService'
 
 export class Agent {
   protected agentConfig: AgentConfig
@@ -30,6 +31,7 @@ export class Agent {
   protected messageReceiver: MessageReceiver
   protected messageSender: MessageSender
   public inboundTransporter?: InboundTransporter
+  public outboundTransporter?: OutboundTransporter
 
   public readonly connections!: ConnectionsModule
   public readonly proofs!: ProofsModule
@@ -102,6 +104,10 @@ export class Agent {
     this.messageSender.setOutboundTransporter(outboundTransporter)
   }
 
+  public getOutboundTransporter() {
+    return this.messageSender.getOutboundTransporter()
+  }
+
   public async init() {
     await this.wallet.init()
 
@@ -132,8 +138,8 @@ export class Agent {
     return this.agentConfig.mediatorUrl
   }
 
-  public async receiveMessage(inboundPackedMessage: unknown) {
-    return await this.messageReceiver.receiveMessage(inboundPackedMessage)
+  public async receiveMessage(inboundPackedMessage: unknown, transport?: Transport) {
+    return await this.messageReceiver.receiveMessage(inboundPackedMessage, transport)
   }
 
   public async closeAndDeleteWallet() {
