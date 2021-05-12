@@ -60,11 +60,31 @@ export class RecipientService extends EventEmitter {
   }
 
   private provision() {
-    // Check if inviation was provided in config
-    if (this.agentConfig.mediatorInvitation) {
-      // this.createRequest(this.agentConfig.mediatorInvitation)
-    }
-    // Connect to the agent, request mediation
+    /* TODO: handle config flag behaviors.
+    autoAcceptMediationRequests
+                "automatically granting to everyone asking, rather than enabling the feature altogether"
+                "After establishing a connection, "
+                "if enabled, an agent may request message mediation, which will "
+                "allow the mediator to forward messages on behalf of the recipient. "
+                "See aries-rfc:0211."
+    mediatorInvitation
+                "Connect to mediator through provided invitation "
+                "and send mediation request and set as default mediator."
+    //mediatorConnectionsInvite
+                //--"Connect to mediator through a connection invitation. "
+                //"If not specified, connect using an OOB invitation. "
+                //"Default: false."--
+    defaultMediatorId
+                "Set the default mediator by ID"
+    clearDefaultMediator
+                "Clear the stored default mediator."
+    */
+    // check for default mediation id record
+    // set this.defaultMediator
+    // else if mediation invitation in config
+    // Use agent config to establish connection with mediator
+    // request mediation record
+    // Upon granting, set this.defaultMediator
   }
 
   public async createRequest(connection: ConnectionRecord) {
