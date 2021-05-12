@@ -13,7 +13,7 @@ export class ReactNativeFileSystem implements FileSystem {
    * @see https://github.com/itinance/react-native-fs#constants
    */
   public constructor(basePath?: string) {
-    this.basePath = basePath ?? process.cwd()
+    this.basePath = basePath ?? RNFS.DocumentDirectoryPath
   }
 
   public async exists(path: string): Promise<boolean> {
