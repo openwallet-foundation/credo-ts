@@ -20,8 +20,11 @@ export class MultihashEncoder {
    * @param {Uint8Array} data the multihash that has to be decoded
    */
   public static decode(data: Uint8Array): { data: Uint8Array; hashName: string } {
-    const decodedHash = multihash.decode(data)
-    return { data: decodedHash.digest, hashName: decodedHash.name }
+    if (this.validate(data)) {
+      const decodedHash = multihash.decode(data)
+      return { data: decodedHash.digest, hashName: decodedHash.name }
+    }
+    throw new Error(`Invalid multihash: ${data}`)
   }
 
   /**

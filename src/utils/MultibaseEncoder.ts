@@ -1,4 +1,5 @@
 import multibase from 'multibase'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Buffer } from './buffer'
 
 export type BaseName = multibase.BaseName
@@ -25,8 +26,11 @@ export class MultibaseEncoder {
    * @returns {string} encodingAlgorithm name of the encoding algorithm
    */
   public static decode(data: string | Uint8Array): { data: Uint8Array; baseName: string } {
-    const baseName = multibase.encodingFromData(data).name
-    return { data: multibase.decode(data), baseName }
+    if (this.validate(data)) {
+      const baseName = multibase.encodingFromData(data).name
+      return { data: multibase.decode(data), baseName }
+    }
+    throw new Error(`Invalid multibase: ${data}`)
   }
 
   /**
