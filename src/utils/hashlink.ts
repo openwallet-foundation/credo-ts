@@ -97,7 +97,7 @@ export class Hashlink {
     const { data } = MultibaseEncoder.decode(mb)
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const cborData: Map<number, any> = cbor.decode(data)
+      const cborData: Map<number, unknown> = cbor.decode(data)
       cborData.forEach((value, key) => {
         switch (key) {
           case URLS:
