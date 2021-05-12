@@ -48,7 +48,7 @@ export async function getRouting(
     routingKeys = [...routingKeys, ...mediationRecord.routingKeys]
     endpoint = mediationRecord.endpoint
   }
-  if (!recipientKeys || recipientKeys.length <= 0 ) {
+  if (!recipientKeys || recipientKeys.length <= 0) {
     // Create and store new key
     did_data = await wallet.createDid()
     recipientKeys = [did_data[1]]

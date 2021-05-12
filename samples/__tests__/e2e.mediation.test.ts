@@ -78,7 +78,7 @@ describe('with mediator', () => {
     aliceAgent.setOutboundTransporter(new HttpOutboundTransporter(aliceAgent))
     await aliceAgent.init()
     expect(aliceAgent)
-    
+
     mediator = new Agent(mediatorConfig)
     const mediatorInBoundTransporter = new PollingInboundTransporter()
     mediator.setInboundTransporter(mediatorInBoundTransporter)
