@@ -6,7 +6,10 @@ const validData = Buffer.from('Hello World!')
 const validMultibase = 'zKWfinQuRQ3ekD1danFHqvKRg9koFp8vpokUeREEgjSyHwweeKDFaxVHi'
 const invalidMultibase = 'gKWfinQuRQ3ekD1danFHqvKRg9koFp8vpokUeREEgjSyHwweeKDFaxVHi'
 
-describe('multibase', () => {
+describe('MultiBaseEncoder', () => {
+	describe('encode()', () => {
+	})
+})
   it('Encodes multibase', () => {
     const multibase = BufferEncoder.toUtf8String(MultibaseEncoder.encode(validData, 'base58btc'))
     expect(multibase).toEqual('z2NEpo7TZRRrLZSi2U')
