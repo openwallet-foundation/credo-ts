@@ -35,7 +35,7 @@ export class MultibaseEncoder {
    *
    * @param {Uint8Array} data the multibase that needs to be validated
    *
-   * @returns {boolean} bool wether the multibase value is encoded
+   * @returns {boolean} bool whether the multibase value is encoded
    */
   public static validate(data: string | Uint8Array): boolean {
     return multibase.isEncoded(data) ? true : false
