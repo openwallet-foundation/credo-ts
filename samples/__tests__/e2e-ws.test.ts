@@ -123,7 +123,7 @@ class WsOutboundTransporter implements OutboundTransporter {
   private transportTable: Map<string, WebSocket> = new Map<string, WebSocket>()
   private agent: Agent
 
-  public supportedSchemes = ['ws']
+  public supportedSchemes = ['ws', 'wss']
 
   public constructor(agent: Agent) {
     this.agent = agent

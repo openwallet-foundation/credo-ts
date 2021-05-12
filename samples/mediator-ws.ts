@@ -50,7 +50,7 @@ class WsInboundTransporter implements InboundTransporter {
 }
 
 class WsOutboundTransporter implements OutboundTransporter {
-  public supportedSchemes = ['ws']
+  public supportedSchemes = ['ws', 'wss']
 
   public async sendMessage(outboundPackage: OutboundPackage) {
     const { connection, payload, transport } = outboundPackage
