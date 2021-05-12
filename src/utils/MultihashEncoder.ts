@@ -29,6 +29,7 @@ export class MultihashEncoder {
    * Validates if it is a valid mulithash
    *
    * @param {Uint8Array} data the multihash that needs to be validated
+   * @returns {boolean} whether the multihash is valid
    */
   public static validate(data: Uint8Array) {
     try {
