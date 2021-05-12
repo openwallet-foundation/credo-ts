@@ -182,6 +182,14 @@ export class SubjectOutboundTransporter implements OutboundTransporter {
     this.subject = subject
   }
 
+  public async start(): Promise<void> {
+    // Nothing required to start
+  }
+
+  public async stop(): Promise<void> {
+    // Nothing required to stop
+  }
+
   public async sendMessage(outboundPackage: OutboundPackage) {
     testLogger.test(`Sending outbound message to connection ${outboundPackage.connection.id}`)
     const { payload } = outboundPackage

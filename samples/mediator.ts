@@ -38,6 +38,14 @@ class StorageOutboundTransporter implements OutboundTransporter {
     this.messageRepository = messageRepository
   }
 
+  public async start(): Promise<void> {
+    // Nothing required to start
+  }
+
+  public async stop(): Promise<void> {
+    // Nothing required to stop
+  }
+
   public async sendMessage(outboundPackage: OutboundPackage) {
     const { connection, payload } = outboundPackage
 

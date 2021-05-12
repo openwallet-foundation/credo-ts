@@ -9,7 +9,7 @@ import { TransportService } from './TransportService'
 export class MessageSender {
   private envelopeService: EnvelopeService
   private transportService: TransportService
-  private outboundTransporter?: OutboundTransporter
+  private _outboundTransporter?: OutboundTransporter
 
   public constructor(envelopeService: EnvelopeService, transportService: TransportService) {
     this.envelopeService = envelopeService
@@ -17,11 +17,11 @@ export class MessageSender {
   }
 
   public setOutboundTransporter(outboundTransporter: OutboundTransporter) {
-    this.outboundTransporter = outboundTransporter
+    this._outboundTransporter = outboundTransporter
   }
 
-  public getOutboundTransporter() {
-    return this.outboundTransporter
+  public get outboundTransporter() {
+    return this._outboundTransporter
   }
 
   public async packMessage(outboundMessage: OutboundMessage): Promise<OutboundPackage> {

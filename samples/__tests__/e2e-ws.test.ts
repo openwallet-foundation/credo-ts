@@ -1,10 +1,7 @@
-import WebSocket from 'ws'
-import { Agent, ConnectionRecord, InboundTransporter, OutboundTransporter } from '../../src'
-import { OutboundPackage } from '../../src/types'
+import { Agent, InboundTransporter, WsOutboundTransporter } from '../../src'
 import { get } from '../http'
 import { getBaseConfig, toBeConnectedWith, waitForBasicMessage } from '../../src/__tests__/helpers'
 import testLogger from '../../src/__tests__/logger'
-import { WebSocketTransport } from '../../src/agent/TransportService'
 
 const logger = testLogger
 
@@ -19,8 +16,8 @@ describe('websockets with mediator', () => {
   let aliceAtAliceBobId: string
 
   afterAll(async () => {
-    ;(aliceAgent.getOutboundTransporter() as WsOutboundTransporter).stop()
-    ;(bobAgent.getOutboundTransporter() as WsOutboundTransporter).stop()
+    await aliceAgent.outboundTransporter?.stop()
+    await bobAgent.outboundTransporter?.stop()
 
     // Wait for messages to flush out
     await new Promise((r) => setTimeout(r, 1000))
@@ -117,83 +114,4 @@ class WsInboundTransporter implements InboundTransporter {
       invitationUrl: mediatorInvitationUrl,
     })
   }
-}
-
-class WsOutboundTransporter implements OutboundTransporter {
-  private transportTable: Map<string, WebSocket> = new Map<string, WebSocket>()
-  private agent: Agent
-
-  public supportedSchemes = ['ws', 'wss']
-
-  public constructor(agent: Agent) {
-    this.agent = agent
-  }
-
-  public async sendMessage(outboundPackage: OutboundPackage) {
-    const { connection, payload, transport } = outboundPackage
-    logger.debug(`Sending outbound message to connection ${connection.id} over ${transport?.type} transport.`, payload)
-
-    if (transport instanceof WebSocketTransport) {
-      const socket = await this.resolveSocket(connection, transport)
-      socket.send(JSON.stringify(payload))
-    } else {
-      throw new Error(`Unsupported transport ${transport?.type}.`)
-    }
-  }
-
-  private async resolveSocket(connection: ConnectionRecord, transport: WebSocketTransport) {
-    if (transport.socket?.readyState === WebSocket.OPEN) {
-      return transport.socket
-    } else {
-      let socket = this.transportTable.get(connection.id)
-      if (!socket) {
-        if (!transport.endpoint) {
-          throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
-        }
-        socket = await createSocketConnection(transport.endpoint)
-        this.transportTable.set(connection.id, socket)
-        this.listenOnWebSocketMessages(this.agent, socket)
-      }
-
-      if (socket.readyState !== WebSocket.OPEN) {
-        throw new Error('Socket is not open.')
-      }
-      return socket
-    }
-  }
-
-  private listenOnWebSocketMessages(agent: Agent, socket: WebSocket) {
-    socket.addEventListener('message', (event: any) => {
-      logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
-      agent.receiveMessage(JSON.parse(event.data))
-    })
-  }
-
-  public stop() {
-    this.transportTable.forEach((socket) => {
-      socket.removeAllListeners()
-      socket.close()
-    })
-  }
-}
-
-function createSocketConnection(endpoint: string): Promise<WebSocket> {
-  if (!endpoint) {
-    throw new Error('Mediator URL is missing.')
-  }
-  return new Promise((resolve, reject) => {
-    logger.debug('Connecting to mediator via WebSocket')
-    const socket = new WebSocket(endpoint)
-    if (!socket) {
-      throw new Error('WebSocket has not been initialized.')
-    }
-    socket.onopen = () => {
-      logger.debug('Client connected')
-      resolve(socket)
-    }
-    socket.onerror = (e) => {
-      logger.debug('Client connection failed')
-      reject(e)
-    }
-  })
 }

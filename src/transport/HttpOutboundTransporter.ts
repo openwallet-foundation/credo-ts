@@ -23,6 +23,14 @@ export class HttpOutboundTransporter implements OutboundTransporter {
     this.logger = agent.injectionContainer.resolve(Symbols.Logger)
   }
 
+  public async start(): Promise<void> {
+    // Nothing required to start HTTP
+  }
+
+  public async stop(): Promise<void> {
+    // Nothing required to stop HTTP
+  }
+
   public async sendMessage(outboundPackage: OutboundPackage) {
     const { payload, endpoint, responseRequested } = outboundPackage
 
