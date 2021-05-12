@@ -1,6 +1,7 @@
 import indy from 'indy-sdk'
 import * as dotenv from 'dotenv'
 import { InitConfig } from '../src/types'
+import { NodeFileSystem } from '../src/storage/fs/NodeFileSystem'
 import { TestLogger } from '../src/__tests__/logger'
 import { LogLevel } from '../src/logger'
 dotenv.config()
@@ -17,6 +18,7 @@ const agentConfig: InitConfig = {
   autoAcceptConnections: true,
   logger: new TestLogger(LogLevel.debug),
   indy,
+  fileSystem: new NodeFileSystem(),
 }
 
 export default agentConfig

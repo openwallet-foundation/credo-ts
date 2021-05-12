@@ -16,6 +16,10 @@ export class AgentConfig {
     return this.initConfig.indy
   }
 
+  public get fileSystem() {
+    return this.initConfig.fileSystem
+  }
+
   public get label() {
     return this.initConfig.label
   }

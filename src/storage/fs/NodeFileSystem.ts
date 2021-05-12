@@ -4,7 +4,16 @@ import { FileSystem } from './FileSystem'
 const { access, readFile, writeFile } = promises
 
 export class NodeFileSystem implements FileSystem {
-  public readonly basePath = process.cwd()
+  public readonly basePath
+
+  /**
+   * Create new NodeFileSystem class instance.
+   *
+   * @param basePath The base path to use for reading and writing files. process.cwd() if not specified
+   */
+  public constructor(basePath?: string) {
+    this.basePath = basePath ?? process.cwd()
+  }
 
   public async exists(path: string) {
     try {

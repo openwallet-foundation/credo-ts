@@ -24,6 +24,7 @@ import {
 } from '../modules/credentials'
 import { BasicMessage, BasicMessageEventType, BasicMessageReceivedEvent } from '../modules/basic-messages'
 import testLogger from './logger'
+import { NodeFileSystem } from '../storage/fs/NodeFileSystem'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
@@ -44,6 +45,7 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
     poolName: `Pool: ${name}`,
     logger: testLogger,
     indy,
+    fileSystem: new NodeFileSystem(),
     ...extraConfig,
   }
 
