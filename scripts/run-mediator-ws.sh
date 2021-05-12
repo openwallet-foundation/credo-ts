@@ -23,7 +23,7 @@ elif [[ "$AGENT" = "mediator04" ]] || [[ "$AGENT" = "bob-ws" ]]; then
   PUBLIC_DID=SHbU5SEwdmkQkVQ1sMwSEv
   PUBLIC_DID_SEED=00000000000000000000000Forward04
 else
-  echo "Please specify which agent you want to run. Choose from 'alice' or 'bob'."
+  echo "Please specify which agent you want to run. Choose from 'alice-ws' or 'bob-ws'."
   exit 1
 fi
 
