@@ -61,14 +61,14 @@ export class RecipientService extends EventEmitter {
 
   private provision() {
     // Check if inviation was provided in config
-    if (this.agentConfig.mediatorInvitation) {
+    if (this.agentConfig.mediatorInvitation?.did) {
       // this.createRequest(this.agentConfig.mediatorInvitation)
     }
     // Connect to the agent, request mediation
   }
 
-  public async createRequest(connection: ConnectionRecord) {
-    await createRecord(
+  public async createRequest(connection: ConnectionRecord): Promise<[MediationRecord, MediationRequestMessage]> {
+    const mediationRecord = await createRecord(
       {
         connectionId: connection.id,
         role: MediationRole.Mediator,
@@ -76,7 +76,7 @@ export class RecipientService extends EventEmitter {
       },
       this.mediatorRepository
     )
-    return new MediationRequestMessage({})
+    return [mediationRecord, new MediationRequestMessage({})]
   }
 
   public async processMediationGrant(messageContext: InboundMessageContext<MediationGrantMessage>) {
