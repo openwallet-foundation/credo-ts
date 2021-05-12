@@ -1,4 +1,3 @@
-import type Indy from 'indy-sdk'
 import type { WalletQuery, CredDef } from 'indy-sdk'
 import { Wallet } from '../../../wallet/Wallet'
 import { CredentialOfferTemplate, CredentialService, CredentialEventType } from '../services'
@@ -22,7 +21,6 @@ import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { credDef, credOffer, credReq } from './fixtures'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { ConnectionState } from '../../connections'
-import { getMockConnection } from '../../connections/__tests__/ConnectionService.test'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { CredentialUtils } from '../CredentialUtils'
 import { StoreCredentialOptions } from '../../indy'
@@ -32,6 +30,7 @@ import { CredentialRepository } from '../repository/CredentialRepository'
 import { LedgerService } from '../../ledger/services'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
+import { getBaseConfig, getMockConnection } from '../../../__tests__/helpers'
 
 // Mock classes
 jest.mock('./../repository/CredentialRepository')
@@ -44,8 +43,6 @@ const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRep
 const LedgerServiceMock = LedgerService as jest.Mock<LedgerService>
 const IndyHolderServiceMock = IndyHolderService as jest.Mock<IndyHolderService>
 const IndyIssuerServiceMock = IndyIssuerService as jest.Mock<IndyIssuerService>
-
-const indy = {} as typeof Indy
 
 const connection = getMockConnection({
   id: '123',
@@ -158,12 +155,7 @@ describe('CredentialService', () => {
       credentialRepository,
       { getById: () => Promise.resolve(connection) } as any,
       ledgerService,
-      new AgentConfig({
-        walletConfig: { id: 'test' },
-        walletCredentials: { key: 'test' },
-        indy,
-        label: 'test',
-      }),
+      new AgentConfig(getBaseConfig('CredentialServiceTest')),
       indyIssuerService,
       indyHolderService
     )

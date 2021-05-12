@@ -1,33 +1,12 @@
 import { Agent, HttpOutboundTransporter, InboundTransporter } from '../../src'
-import { InitConfig } from '../../src/types'
 import { get } from '../http'
-import { sleep, toBeConnectedWith, waitForBasicMessage } from '../../src/__tests__/helpers'
-import indy from 'indy-sdk'
-import testLogger from '../../src/__tests__/logger'
-
-const logger = testLogger
+import { getBaseConfig, sleep, toBeConnectedWith, waitForBasicMessage } from '../../src/__tests__/helpers'
+import logger from '../../src/__tests__/logger'
 
 expect.extend({ toBeConnectedWith })
 
-const aliceConfig: InitConfig = {
-  label: 'e2e Alice',
-  mediatorUrl: 'http://localhost:3001',
-  walletConfig: { id: 'e2e-alice' },
-  walletCredentials: { key: '00000000000000000000000000000Test01' },
-  autoAcceptConnections: true,
-  logger: logger,
-  indy,
-}
-
-const bobConfig: InitConfig = {
-  label: 'e2e Bob',
-  mediatorUrl: 'http://localhost:3002',
-  walletConfig: { id: 'e2e-bob' },
-  walletCredentials: { key: '00000000000000000000000000000Test02' },
-  autoAcceptConnections: true,
-  logger: logger,
-  indy,
-}
+const aliceConfig = getBaseConfig('E2E Alice')
+const bobConfig = getBaseConfig('E2E Bob')
 
 describe('with mediator', () => {
   let aliceAgent: Agent

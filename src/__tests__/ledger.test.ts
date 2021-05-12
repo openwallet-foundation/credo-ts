@@ -2,20 +2,10 @@ import indy from 'indy-sdk'
 import type { SchemaId } from 'indy-sdk'
 import { Agent } from '..'
 import { DID_IDENTIFIER_REGEX, VERKEY_REGEX, isFullVerkey, isAbbreviatedVerkey } from '../utils/did'
-import { genesisPath, sleep } from './helpers'
-import { InitConfig } from '../types'
+import { genesisPath, getBaseConfig, sleep } from './helpers'
 import testLogger from './logger'
 
-const faberConfig: InitConfig = {
-  label: 'Faber',
-  walletConfig: { id: 'faber' },
-  walletCredentials: { key: '00000000000000000000000000000Test01' },
-  publicDidSeed: process.env.TEST_AGENT_PUBLIC_DID_SEED,
-  genesisPath,
-  poolName: 'test-pool',
-  indy,
-  logger: testLogger,
-}
+const faberConfig = getBaseConfig('Faber Ledger', { genesisPath })
 
 describe('ledger', () => {
   let faberAgent: Agent

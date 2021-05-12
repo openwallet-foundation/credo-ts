@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-import indy from 'indy-sdk'
 import type { CredDefId } from 'indy-sdk'
 import { Subject } from 'rxjs'
 import { Agent } from '..'
@@ -13,9 +11,9 @@ import {
   genesisPath,
   issueCredential,
   waitForProofRecord,
+  getBaseConfig,
 } from './helpers'
 import { CredentialPreview, CredentialPreviewAttribute } from '../modules/credentials'
-import { InitConfig } from '../types'
 import {
   PredicateType,
   PresentationPreview,
@@ -29,28 +27,8 @@ import {
 import { ConnectionRecord } from '../modules/connections'
 import testLogger from './logger'
 
-const faberConfig: InitConfig = {
-  label: 'Faber',
-  walletConfig: { id: 'proofs-test-faber' },
-  walletCredentials: { key: '00000000000000000000000000000Test01' },
-  publicDidSeed: process.env.TEST_AGENT_PUBLIC_DID_SEED,
-  autoAcceptConnections: true,
-  genesisPath,
-  poolName: 'proofs-test-faber-pool',
-  indy,
-  logger: testLogger,
-}
-
-const aliceConfig: InitConfig = {
-  label: 'Alice',
-  walletConfig: { id: 'proofs-test-alice' },
-  walletCredentials: { key: '00000000000000000000000000000Test01' },
-  autoAcceptConnections: true,
-  genesisPath,
-  poolName: 'proofs-test-alice-pool',
-  indy,
-  logger: testLogger,
-}
+const faberConfig = getBaseConfig('Faber Proofs', { genesisPath })
+const aliceConfig = getBaseConfig('Alice Proofs', { genesisPath })
 
 const credentialPreview = new CredentialPreview({
   attributes: [
