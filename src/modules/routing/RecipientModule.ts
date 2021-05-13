@@ -53,14 +53,27 @@ export class RecipientModule {
     // Assumption: processInvitation is a URL-encoded invitation
     // TODO Check assumption with config
     if (this.agentConfig.mediatorInvitation) {
+      /* --------------------------------
+      | Connect to mediator through provided invitation
+      | and send mediation request and set as default mediator.
+      */
       const connectionRecord = await connections.receiveInvitationFromUrl(this.agentConfig.mediatorInvitation, {
         autoAcceptConnection: true,
         alias: 'InitedMediator', // TODO come up with a better name for this
       })
       await connections.returnWhenIsConnected(connectionRecord.id)
-      await this.requestAndWaitForAcception(connectionRecord, this.recipientService, mediationRecord)
+      await this.requestAndWaitForAcception(connectionRecord, this.recipientService, 2000) // TODO: put timeout as a config parameter
     }
-    // Connect to the agent, request mediation
+    if (this.agentConfig.defaultMediatorId) {
+      /*
+      | Set the default mediator by ID
+      */
+    }
+    if (this.agentConfig.clearDefaultMediator) {
+      /*
+      | Clear the stored default mediator
+      */
+    }
   }
 
   /**
@@ -172,8 +185,8 @@ export class RecipientModule {
   public async requestAndWaitForAcception(
     connection: ConnectionRecord,
     mediationRecord: MediationRecord,
-    timeout: number,
-    emitter: EventEmitter
+    timeout: number
+    // emitter: EventEmitter
   ): Promise<MediationRecord> {
     const [record, message] = await this.recipientService.createRequest(connection)
     const outboundMessage = createOutboundMessage(connection, message)
