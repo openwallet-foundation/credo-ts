@@ -51,7 +51,7 @@ else
 fi
 
 # Docker image already compiles. Not needed to do again
-if [[ "$RUN_MODE" != "docker" ]] && [[ "$BUILD" != "false" ]]; then
+if [ "$RUN_MODE" != "docker" ]; then
   ${YARN_COMMAND} prod:build
 fi
 

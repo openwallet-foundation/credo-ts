@@ -3190,10 +3190,10 @@ indent-string@^2.1.0:
   dependencies:
     repeating "^2.0.0"
 
-indy-sdk@^1.15.0-dev-1629:
-  version "1.15.0-dev-1629"
-  resolved "https://registry.yarnpkg.com/indy-sdk/-/indy-sdk-1.15.0-dev-1629.tgz#c7e77b39bebe41653ae2e1bdeec8725e30a04a84"
-  integrity sha512-PcYvt3OnSgXrvFHt5HfPhD03ApI19lkA5JRnHdMFxwZ37p0cPeY8C1IXIx6gwJmifgTxjAtkV9Daln8r6FoKlA==
+indy-sdk@^1.16.0:
+  version "1.16.0"
+  resolved "https://registry.yarnpkg.com/indy-sdk/-/indy-sdk-1.16.0.tgz#034385ec5016388b0b52914f49d6334e372bb6c5"
+  integrity sha512-ATDzxBfHzFvHMiEXZSvmPjdswa3H4/X4npP4SV8yvzR18K/w0u/P4zp9TmEisAWA9of/hy1Fd1ziKMn+phHw+g==
   dependencies:
     bindings "^1.3.1"
     nan "^2.11.1"
