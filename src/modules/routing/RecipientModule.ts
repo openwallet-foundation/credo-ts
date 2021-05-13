@@ -48,33 +48,48 @@ export class RecipientModule {
     this.registerHandlers(dispatcher)
   }
 
-  public async init(connections: ConnectionsModule) {
-    // Check if inviation was provided in config
-    // Assumption: processInvitation is a URL-encoded invitation
-    // TODO Check assumption with config
-    if (this.agentConfig.mediatorInvitation) {
-      /* --------------------------------
+  public async init() {
+    /* TODO: Implement config options configuration...
+       autoAcceptMediationRequests
+       "automatically granting to everyone asking, rather than enabling the feature altogether"
+       "After establishing a connection, "
+       "if enabled, an agent may request message mediation, which will "
+       "allow the mediator to forward messages on behalf of the recipient. "
+       "See aries-rfc:0211."*/
+  }
+
+  /* --------------------------------
       | Connect to mediator through provided invitation
       | and send mediation request and set as default mediator.
       */
-      const connectionRecord = await connections.receiveInvitationFromUrl(this.agentConfig.mediatorInvitation, {
-        autoAcceptConnection: true,
-        alias: 'InitedMediator', // TODO come up with a better name for this
-      })
-      await connections.returnWhenIsConnected(connectionRecord.id)
-      await this.requestAndWaitForAcception(connectionRecord, this.recipientService, 2000) // TODO: put timeout as a config parameter
-    }
-    if (this.agentConfig.defaultMediatorId) {
-      /*
-      | Set the default mediator by ID
-      */
-    }
-    if (this.agentConfig.clearDefaultMediator) {
-      /*
-      | Clear the stored default mediator
-      */
-    }
-  }
+
+  // public async init(connections: ConnectionsModule) {
+  //   // Check if inviation was provided in config
+  //   // Assumption: processInvitation is a URL-encoded invitation
+  //   // TODO Check assumption with config
+  //   if (this.agentConfig.mediatorInvitation) {
+  //     /* --------------------------------
+  //     | Connect to mediator through provided invitation
+  //     | and send mediation request and set as default mediator.
+  //     */
+  //     const connectionRecord = await connections.receiveInvitationFromUrl(this.agentConfig.mediatorInvitation, {
+  //       autoAcceptConnection: true,
+  //       alias: 'InitedMediator', // TODO come up with a better name for this
+  //     })
+  //     await connections.returnWhenIsConnected(connectionRecord.id)
+  //     await this.requestAndWaitForAcception(connectionRecord, this.recipientService, 2000) // TODO: put timeout as a config parameter
+  //   }
+  //   if (this.agentConfig.defaultMediatorId) {
+  //     /*
+  //     | Set the default mediator by ID
+  //     */
+  //   }
+  //   if (this.agentConfig.clearDefaultMediator) {
+  //     /*
+  //     | Clear the stored default mediator
+  //     */
+  //   }
+  // }
 
   /**
    * Get the event emitter for the mediation service. Will emit events
