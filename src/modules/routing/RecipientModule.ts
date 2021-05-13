@@ -20,6 +20,7 @@ import agentConfig from '../../../samples/config'
 import { EventEmitter } from 'events'
 import { MediationRecord } from '.'
 import { Agent, MediationEventType, MediationState, MediationStateChangedEvent } from '../..'
+import { ConnectionsModule } from '../connections/ConnectionsModule'
 
 export class RecipientModule {
   private agentConfig: AgentConfig
@@ -45,6 +46,21 @@ export class RecipientModule {
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.registerHandlers(dispatcher)
+  }
+
+  public async init(connections: ConnectionsModule) {
+    // Check if inviation was provided in config
+    // Assumption: processInvitation is a URL-encoded invitation
+    // TODO Check assumption with config
+    if (this.agentConfig.mediatorInvitation) {
+      const connectionRecord = await connections.receiveInvitationFromUrl(this.agentConfig.mediatorInvitation, {
+        autoAcceptConnection: true,
+        alias: 'InitedMediator', // TODO come up with a better name for this
+      })
+      await connections.returnWhenIsConnected(connectionRecord.id)
+      await this.requestAndWaitForAcception(connectionRecord, this.recipientService, mediationRecord)
+    }
+    // Connect to the agent, request mediation
   }
 
   /**
@@ -155,37 +171,29 @@ export class RecipientModule {
   }
   public async requestAndWaitForAcception(
     connection: ConnectionRecord,
-    agent: Agent,
-    {
-      id,
-      state,
-      previousState,
-    }: {
-      id?: string
-      state?: MediationState
-      previousState?: MediationState | null
-    },
-    timeout: number
+    mediationRecord: MediationRecord,
+    timeout: number,
+    emitter: EventEmitter
   ): Promise<MediationRecord> {
-    const message = await this.recipientService.createRequest(connection)
+    const [record, message] = await this.recipientService.createRequest(connection)
     const outboundMessage = createOutboundMessage(connection, message)
     const promise: Promise<MediationRecord> = new Promise((resolve, reject) => {
       // eslint-disable-next-line @typescript-eslint/no-empty-function
       let timer: NodeJS.Timeout = setTimeout(() => {})
       const listener = (event: MediationStateChangedEvent) => {
-        const previousStateMatches = previousState === undefined || event.previousState === previousState
-        const mediationIdMatches = id === undefined || event.mediationRecord.id === id
-        const stateMatches = state === undefined || event.mediationRecord.state === state
+        const previousStateMatches = MediationState.Init === event.previousState
+        // const mediationIdMatches = id === undefined || event.mediationRecord.id === id // TODO
+        // const stateMatches = state === undefined || event.mediationRecord.state === state // TODO
 
-        if (previousStateMatches && mediationIdMatches && stateMatches) {
-          agent.mediator.events.removeListener(MediationEventType.StateChanged, listener)
-          clearTimeout(timer)
-          resolve(event.mediationRecord)
-        }
+        // if (previousStateMatches && mediationIdMatches && stateMatches) {
+        //   emitter.removeListener(MediationEventType.StateChanged, listener)
+        //   clearTimeout(timer)
+        //   resolve(event.mediationRecord)
+        // }
       }
-      agent.mediator.events.addListener(MediationEventType.StateChanged, listener)
+      emitter.addListener(MediationEventType.StateChanged, listener)
       timer = setTimeout(() => {
-        agent.mediator.events.removeListener(MediationEventType.StateChanged, listener)
+        emitter.removeListener(MediationEventType.StateChanged, listener)
         reject(new Error('timeout waiting for mediator to grant mediation, initialized from mediation record id:' + id))
       }, timeout)
     })

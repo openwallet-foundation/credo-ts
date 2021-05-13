@@ -87,8 +87,8 @@ export class RecipientService extends EventEmitter {
     // Upon granting, set this.defaultMediator
   }
 
-  public async createRequest(connection: ConnectionRecord) {
-    await createRecord(
+  public async createRequest(connection: ConnectionRecord): Promise<[MediationRecord, MediationRequestMessage]> {
+    const mediationRecord = await createRecord(
       {
         connectionId: connection.id,
         role: MediationRole.Mediator,
@@ -96,7 +96,7 @@ export class RecipientService extends EventEmitter {
       },
       this.mediatorRepository
     )
-    return new MediationRequestMessage({})
+    return [mediationRecord, new MediationRequestMessage({})]
   }
 
   public async processMediationGrant(messageContext: InboundMessageContext<MediationGrantMessage>) {
