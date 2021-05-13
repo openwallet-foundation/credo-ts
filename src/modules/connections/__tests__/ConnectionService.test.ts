@@ -1,12 +1,10 @@
-import indy from 'indy-sdk'
 import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { Wallet } from '../../../wallet/Wallet'
 import { ConnectionService } from '../services/ConnectionService'
-import { ConnectionRecord, ConnectionStorageProps } from '../repository/ConnectionRecord'
+import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { Connection, ConnectionState, ConnectionRole, DidDoc, DidCommService } from '../models'
-import { InitConfig } from '../../../types'
 import {
   ConnectionInvitationMessage,
   ConnectionRequestMessage,
@@ -19,75 +17,16 @@ import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import testLogger from '../../../__tests__/logger'
+import { getBaseConfig, getMockConnection } from '../../../__tests__/helpers'
 
 jest.mock('./../../../storage/Repository')
 const ConnectionRepository = <jest.Mock<Repository<ConnectionRecord>>>(<unknown>Repository)
 
-export function getMockConnection({
-  state = ConnectionState.Invited,
-  role = ConnectionRole.Invitee,
-  id = 'test',
-  did = 'test-did',
-  verkey = 'key-1',
-  didDoc = new DidDoc({
-    id: did,
-    publicKey: [],
-    authentication: [],
-    service: [
-      new DidCommService({
-        id: `${did};indy`,
-        serviceEndpoint: 'https://endpoint.com',
-        recipientKeys: [verkey],
-      }),
-    ],
-  }),
-  tags = {},
-  invitation = new ConnectionInvitationMessage({
-    label: 'test',
-    recipientKeys: [verkey],
-    serviceEndpoint: 'https:endpoint.com/msg',
-  }),
-  theirDid = 'their-did',
-  theirDidDoc = new DidDoc({
-    id: theirDid,
-    publicKey: [],
-    authentication: [],
-    service: [
-      new DidCommService({
-        id: `${did};indy`,
-        serviceEndpoint: 'https://endpoint.com',
-        recipientKeys: [verkey],
-      }),
-    ],
-  }),
-}: Partial<ConnectionStorageProps> = {}) {
-  return new ConnectionRecord({
-    did,
-    didDoc,
-    theirDid,
-    theirDidDoc,
-    id,
-    role,
-    state,
-    tags,
-    verkey,
-    invitation,
-  })
-}
-
 describe('ConnectionService', () => {
-  const walletConfig = { id: 'test-wallet' + '-ConnectionServiceTest' }
-  const walletCredentials = { key: 'key' }
-  const initConfig: InitConfig = {
-    label: 'agent label',
+  const initConfig = getBaseConfig('ConnectionServiceTest', {
     host: 'http://agent.com',
     port: 8080,
-    walletConfig,
-    walletCredentials,
-    indy,
-    logger: testLogger,
-  }
+  })
 
   let wallet: Wallet
   let agentConfig: AgentConfig

@@ -3,8 +3,8 @@ import { IndyStorageService } from './IndyStorageService'
 import { IndyWallet } from '../wallet/IndyWallet'
 import { BaseRecord } from './BaseRecord'
 import { uuid } from '../utils/uuid'
-import indy from 'indy-sdk'
 import { AgentConfig } from '../agent/AgentConfig'
+import { getBaseConfig } from '../__tests__/helpers'
 
 interface TestRecordProps {
   id?: string
@@ -34,14 +34,7 @@ describe('IndyStorageService', () => {
   let testRepository: Repository<TestRecord>
 
   beforeEach(async () => {
-    wallet = new IndyWallet(
-      new AgentConfig({
-        indy,
-        label: 'test',
-        walletConfig: { id: 'testWallet' },
-        walletCredentials: { key: 'asbdabsd' },
-      })
-    )
+    wallet = new IndyWallet(new AgentConfig(getBaseConfig('IndyStorageServiceTest')))
     const storageService = new IndyStorageService<TestRecord>(wallet)
     testRepository = new Repository<TestRecord>(TestRecord, storageService)
     await wallet.init()

@@ -1,8 +1,4 @@
-import type Indy from 'indy-sdk'
-import { InitConfig } from '../../types'
 import { Agent } from '../Agent'
-import { TestLogger } from '../../__tests__/logger'
-import { LogLevel } from '../../logger'
 import { ConnectionsModule } from '../../modules/connections/ConnectionsModule'
 import { ProofsModule } from '../../modules/proofs/ProofsModule'
 import { CredentialsModule } from '../../modules/credentials/CredentialsModule'
@@ -28,16 +24,9 @@ import { MessageSender } from '../MessageSender'
 import { MessageReceiver } from '../MessageReceiver'
 import { Dispatcher } from '../Dispatcher'
 import { EnvelopeService } from '../EnvelopeService'
+import { getBaseConfig } from '../../__tests__/helpers'
 
-const indy = {} as typeof Indy
-
-const config: InitConfig = {
-  label: 'di-test',
-  walletConfig: { id: 'di-test' },
-  walletCredentials: { key: 'di-test' },
-  logger: new TestLogger(LogLevel.error),
-  indy,
-}
+const config = getBaseConfig('DI Test')
 
 describe('Agent', () => {
   describe('Dependency Injection', () => {

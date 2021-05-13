@@ -1,32 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import {
-  IndyProofRequest,
-  IndyRequestedCredentials,
-  Schemas,
-  CredentialDefs,
-  RevStates,
-  IndyProof,
-  IndyCredentialInfo,
-  DidConfig,
-  Schema,
-  CredDefConfig,
-  CredDef,
-  CredOffer,
-  ProofCred,
-  CredReq,
-  CredReqMetadata,
-  CredValues,
-  Cred,
-  CredRevocId,
-  RevocRegDelta,
-  CredentialId,
-  WalletRecordOptions,
-  WalletRecord,
-  WalletQuery,
-  LedgerRequest,
-  IndyCredential,
-  RevRegsDefs,
-} from 'indy-sdk'
+import { DidConfig, WalletRecordOptions, WalletRecord, WalletQuery, LedgerRequest } from 'indy-sdk'
 import { Wallet } from '../../../wallet/Wallet'
 import { UnpackedMessageContext } from '../../../types'
 
@@ -43,37 +16,7 @@ export class StubWallet implements Wallet {
   public close(): Promise<void> {
     throw new Error('Method not implemented.')
   }
-  public createProof(
-    proofRequest: IndyProofRequest,
-    requestedCredentials: IndyRequestedCredentials,
-    schemas: Schemas,
-    credentialDefs: CredentialDefs,
-    revStates: RevStates
-  ): Promise<IndyProof> {
-    throw new Error('Method not implemented.')
-  }
-  public getCredentialsForProofRequest(
-    proofRequest: IndyProofRequest,
-    attributeReferent: string
-  ): Promise<IndyCredential[]> {
-    throw new Error('Method not implemented.')
-  }
-  public verifyProof(
-    proofRequest: IndyProofRequest,
-    proof: IndyProof,
-    schemas: Schemas,
-    credentialDefs: CredentialDefs,
-    revRegsDefs: RevRegsDefs,
-    revRegs: RevStates
-  ): Promise<boolean> {
-    throw new Error('Method not implemented.')
-  }
-  public searchCredentialsForProofRequest(proofRequest: IndyProofRequest): Promise<number> {
-    throw new Error('Method not implemented.')
-  }
-  public getCredential(credentialId: string): Promise<IndyCredentialInfo> {
-    throw new Error('Method not implemented.')
-  }
+
   public delete(): Promise<void> {
     throw new Error('Method not implemented.')
   }
@@ -83,64 +26,7 @@ export class StubWallet implements Wallet {
   public createDid(didConfig?: DidConfig | undefined): Promise<[string, string]> {
     throw new Error('Method not implemented.')
   }
-  public createCredentialDefinition(
-    issuerDid: string,
-    schema: Schema,
-    tag: string,
-    signatureType: string,
-    config: CredDefConfig
-  ): Promise<[string, CredDef]> {
-    throw new Error('Method not implemented.')
-  }
-  public createCredentialOffer(credDefId: string): Promise<CredOffer> {
-    return Promise.resolve({
-      schema_id: 'aaa',
-      cred_def_id: credDefId,
-      // Fields below can depend on Cred Def type
-      nonce: 'nonce',
-      key_correctness_proof: {},
-    })
-  }
-  public getCredentialsForProofReq(proof: string): Promise<ProofCred> {
-    throw new Error('Method not implemented')
-  }
-  public createCredentialRequest(
-    proverDid: string,
-    offer: CredOffer,
-    credDef: CredDef
-  ): Promise<[CredReq, CredReqMetadata]> {
-    return Promise.resolve([
-      {
-        prover_did: proverDid,
-        cred_def_id: credDef.id,
-        blinded_ms: {},
-        blinded_ms_correctness_proof: {},
-        nonce: 'nonce',
-      },
-      { cred_req: 'meta-data' },
-    ])
-  }
-  public createCredential(
-    credOffer: CredOffer,
-    credReq: CredReq,
-    credValues: CredValues
-  ): Promise<[Cred, CredRevocId, RevocRegDelta]> {
-    return Promise.resolve([
-      {
-        schema_id: 'schema_id',
-        cred_def_id: 'cred_def_id',
-        rev_reg_def_id: 'rev_reg_def_id',
-        values: {},
-        signature: 'signature',
-        signature_correctness_proof: 'signature_correctness_proof',
-      },
-      '1',
-      {},
-    ])
-  }
-  public storeCredential(credentialId: CredentialId): Promise<string> {
-    return Promise.resolve(credentialId)
-  }
+
   public pack(payload: Record<string, unknown>, recipientKeys: string[], senderVk: string | null): Promise<JsonWebKey> {
     throw new Error('Method not implemented.')
   }

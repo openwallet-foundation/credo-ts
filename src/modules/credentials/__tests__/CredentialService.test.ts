@@ -1,8 +1,5 @@
-/* eslint-disable no-console */
-import type Indy from 'indy-sdk'
 import type { WalletQuery, CredDef } from 'indy-sdk'
 import { Wallet } from '../../../wallet/Wallet'
-import { Repository } from '../../../storage/Repository'
 import { CredentialOfferTemplate, CredentialService, CredentialEventType } from '../services'
 import { CredentialRecord, CredentialRecordMetadata, CredentialRecordTags } from '../repository/CredentialRecord'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
@@ -23,19 +20,29 @@ import { AckStatus } from '../../common'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { credDef, credOffer, credReq } from './fixtures'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
-import { LedgerService as LedgerServiceImpl } from '../../ledger/services'
 import { ConnectionState } from '../../connections'
-import { getMockConnection } from '../../connections/__tests__/ConnectionService.test'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { CredentialUtils } from '../CredentialUtils'
+import { StoreCredentialOptions } from '../../indy'
 
-jest.mock('./../../../storage/Repository')
+// Import mocks
+import { CredentialRepository } from '../repository/CredentialRepository'
+import { LedgerService } from '../../ledger/services'
+import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
+import { IndyHolderService } from '../../indy/services/IndyHolderService'
+import { getBaseConfig, getMockConnection } from '../../../__tests__/helpers'
+
+// Mock classes
+jest.mock('./../repository/CredentialRepository')
 jest.mock('./../../../modules/ledger/services/LedgerService')
+jest.mock('./../../indy/services/IndyHolderService')
+jest.mock('./../../indy/services/IndyIssuerService')
 
-const indy = {} as typeof Indy
-
-const CredentialRepository = <jest.Mock<Repository<CredentialRecord>>>(<unknown>Repository)
-const LedgerService = <jest.Mock<LedgerServiceImpl>>(<unknown>LedgerServiceImpl)
+// Mock typed object
+const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
+const LedgerServiceMock = LedgerService as jest.Mock<LedgerService>
+const IndyHolderServiceMock = IndyHolderService as jest.Mock<IndyHolderService>
+const IndyIssuerServiceMock = IndyIssuerService as jest.Mock<IndyIssuerService>
 
 const connection = getMockConnection({
   id: '123',
@@ -118,9 +125,11 @@ const mockCredentialRecord = ({
 
 describe('CredentialService', () => {
   let wallet: Wallet
-  let credentialRepository: Repository<CredentialRecord>
+  let credentialRepository: CredentialRepository
   let credentialService: CredentialService
-  let ledgerService: LedgerServiceImpl
+  let ledgerService: LedgerService
+  let indyIssuerService: IndyIssuerService
+  let indyHolderService: IndyHolderService
   let repositoryFindMock: jest.Mock<Promise<CredentialRecord>, [string]>
   let repositoryFindByQueryMock: jest.Mock<Promise<CredentialRecord[]>, [WalletQuery]>
   let ledgerServiceGetCredDef: jest.Mock<Promise<CredDef>, [string]>
@@ -136,21 +145,19 @@ describe('CredentialService', () => {
   })
 
   beforeEach(() => {
-    credentialRepository = new CredentialRepository()
-    // connectionService = new ConnectionService();
-    ledgerService = new LedgerService()
+    credentialRepository = new CredentialRepositoryMock()
+    indyIssuerService = new IndyIssuerServiceMock()
+    indyHolderService = new IndyHolderServiceMock()
+    ledgerService = new LedgerServiceMock()
 
     credentialService = new CredentialService(
       wallet,
       credentialRepository,
       { getById: () => Promise.resolve(connection) } as any,
       ledgerService,
-      new AgentConfig({
-        walletConfig: { id: 'test' },
-        walletCredentials: { key: 'test' },
-        indy,
-        label: 'test',
-      })
+      new AgentConfig(getBaseConfig('CredentialServiceTest')),
+      indyIssuerService,
+      indyHolderService
     )
 
     // make separate repositoryFindMock variable to get the correct jest mock typing
@@ -540,7 +547,11 @@ describe('CredentialService', () => {
       })
 
       // We're using instance of `StubWallet`. Value of `cred` should be as same as in the credential response message.
-      const [cred] = await wallet.createCredential(credOffer, credReq, {})
+      const [cred] = await indyIssuerService.createCredential({
+        credentialOffer: credOffer,
+        credentialRequest: credReq,
+        credentialValues: {},
+      })
       const [responseAttachment] = credentialResponse.attachments
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       expect(JsonEncoder.fromBase64(responseAttachment.data.base64!)).toEqual(cred)
@@ -605,7 +616,10 @@ describe('CredentialService', () => {
     })
 
     test('finds credential record by thread ID and saves credential attachment into the wallet', async () => {
-      const walletSaveSpy = jest.spyOn(wallet, 'storeCredential')
+      const storeCredentialMock = indyHolderService.storeCredential as jest.Mock<
+        Promise<string>,
+        [StoreCredentialOptions]
+      >
 
       // given
       repositoryFindByQueryMock.mockReturnValue(Promise.resolve([credential]))
@@ -618,16 +632,12 @@ describe('CredentialService', () => {
       const [[findByQueryArg]] = repositoryFindByQueryMock.mock.calls
       expect(findByQueryArg).toEqual({ threadId: 'somethreadid' })
 
-      expect(walletSaveSpy).toHaveBeenCalledTimes(1)
-      const [[...walletSaveArgs]] = walletSaveSpy.mock.calls
-      expect(walletSaveArgs).toEqual(
-        expect.arrayContaining([
-          expect.any(String),
-          { cred_req: 'meta-data' },
-          messageContext.message.indyCredential,
-          credDef,
-        ])
-      )
+      expect(storeCredentialMock).toHaveBeenNthCalledWith(1, {
+        credentialId: expect.any(String),
+        credentialRequestMetadata: { cred_req: 'meta-data' },
+        credential: messageContext.message.indyCredential,
+        credentialDefinition: credDef,
+      })
     })
 
     test(`updates state to ${CredentialState.CredentialReceived}, set credentialId and returns credential record`, async () => {

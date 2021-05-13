@@ -4,6 +4,7 @@ import { ConnectionRecord } from './modules/connections'
 import { AgentMessage } from './agent/AgentMessage'
 import { Transport } from './agent/TransportService'
 import { Logger } from './logger'
+import { FileSystem } from './storage/fs/FileSystem'
 
 type $FixMe = any
 
@@ -30,6 +31,7 @@ export interface InitConfig {
   logger?: Logger
   indy: typeof Indy
   didCommMimeType?: DidCommMimeType
+  fileSystem: FileSystem
 }
 
 export interface UnpackedMessage {

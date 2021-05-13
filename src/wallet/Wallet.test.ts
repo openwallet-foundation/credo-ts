@@ -1,16 +1,9 @@
-import indy from 'indy-sdk'
 import { IndyWallet } from './IndyWallet'
 import { AgentConfig } from '../agent/AgentConfig'
+import { getBaseConfig } from '../__tests__/helpers'
 
 describe('Wallet', () => {
-  const wallet = new IndyWallet(
-    new AgentConfig({
-      label: 'test',
-      walletConfig: { id: 'test_wallet' },
-      walletCredentials: { key: 'test_key' },
-      indy,
-    })
-  )
+  const wallet = new IndyWallet(new AgentConfig(getBaseConfig('WalletTest')))
 
   test('initialize public did', async () => {
     await wallet.init()

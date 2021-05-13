@@ -4,4 +4,5 @@ export const Symbols = {
   MessageRepository: Symbol('MessageRepository'),
   StorageService: Symbol('StorageService'),
   Logger: Symbol('Logger'),
+  FileSystem: Symbol('FileSystem'),
 }

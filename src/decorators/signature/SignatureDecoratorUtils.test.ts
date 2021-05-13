@@ -3,6 +3,7 @@ import { signData, unpackAndVerifySignatureDecorator } from './SignatureDecorato
 import { IndyWallet } from '../../wallet/IndyWallet'
 import { SignatureDecorator } from './SignatureDecorator'
 import { AgentConfig } from '../../agent/AgentConfig'
+import { getBaseConfig } from '../../__tests__/helpers'
 
 jest.mock('../../utils/timestamp', () => {
   return {
@@ -43,14 +44,7 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
   let wallet: IndyWallet
 
   beforeAll(async () => {
-    wallet = new IndyWallet(
-      new AgentConfig({
-        walletConfig,
-        walletCredentials,
-        indy,
-        label: 'test',
-      })
-    )
+    wallet = new IndyWallet(new AgentConfig(getBaseConfig('SignatureDecoratorUtilsTest')))
     await wallet.init()
   })
 
