@@ -25,7 +25,7 @@ services:
     build: ..
     image: aries-framework-javascript
     container_name: alice-ws-mediator
-    command: ./scripts/run-mediator-ws.sh alice-ws
+    command: ./scripts/run-mediator.sh alice-ws
     networks:
       - hyperledger
     ports:
@@ -35,7 +35,7 @@ services:
     build: ..
     image: aries-framework-javascript
     container_name: bob-ws-mediator
-    command: ./scripts/run-mediator-ws.sh bob-ws
+    command: ./scripts/run-mediator.sh bob-ws
     networks:
       - hyperledger
     ports:

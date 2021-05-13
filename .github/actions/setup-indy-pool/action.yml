@@ -1,0 +1,24 @@
+name: Setup Indy Pool
+description: Setup an Indy ledger pool and register test did on the ledger
+author: 'timo@animo.id'
+
+runs:
+  using: composite
+  steps:
+    - name: Start indy pool
+      run: |
+        docker build -f network/indy-pool.dockerfile -t indy-pool .
+        docker run -d --name indy-pool -p 9701-9708:9701-9708 indy-pool
+      shell: bash
+
+    - name: Setup Indy CLI
+      run: docker exec indy-pool indy-cli-setup
+      shell: bash
+
+    - name: Register DID on ledger
+      run: docker exec indy-pool add-did-from-seed "${TEST_AGENT_PUBLIC_DID_SEED}"
+      shell: bash
+
+branding:
+  icon: scissors
+  color: purple
