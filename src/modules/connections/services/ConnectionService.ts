@@ -127,7 +127,7 @@ export class ConnectionService extends EventEmitter {
       mediatorId?: string
     }
   ): Promise<ConnectionRecord> {
-    const invitationKey = invitation.recipientKeys ? (invitation.recipientKeys[0]) : undefined
+    const invitationKey = invitation.recipientKeys ? invitation.recipientKeys[0] : undefined
     const connectionRecord = await this.createConnection({
       role: ConnectionRole.Invitee,
       state: ConnectionState.Invited,
@@ -139,7 +139,7 @@ export class ConnectionService extends EventEmitter {
       autoAcceptConnection: config?.autoAcceptConnection,
       invitation,
       tags: {
-        invitationKey // TODO: can a tag ever be undefined?
+        invitationKey, // TODO: can a tag ever be undefined?
       },
     })
 

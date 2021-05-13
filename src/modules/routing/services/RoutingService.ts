@@ -65,8 +65,8 @@ export async function getRouting(
   } else {
     // TODO: register recipient keys for relay
     // TODO: check that recipient keys are in wallet
-    
-    did_data = ['did:sov:'+recipientKeys[0], recipientKeys[0]] // TODO: extract did, also first key the correct one?
+
+    did_data = ['did:sov:' + recipientKeys[0], recipientKeys[0]] // TODO: extract did, also first key the correct one?
   }
   endpoint = my_endpoint ?? config.getEndpoint()
   const result = { mediationRecord, endpoint, routingKeys, did: did_data[0], verkey: did_data[1] }
