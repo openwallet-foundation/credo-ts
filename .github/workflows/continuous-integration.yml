@@ -31,7 +31,7 @@ jobs:
 
       # setup dependencies
       - name: Setup Libindy
-        uses: .github/actions/setup-libindy
+        uses: ./.github/actions/setup-libindy
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
@@ -71,13 +71,13 @@ jobs:
 
       # setup dependencies
       - name: Setup Libindy
-        uses: .github/actions/setup-libindy
+        uses: ./.github/actions/setup-libindy
       - name: Setup Indy Pool
-        uses: .github/actions/setup-indy-pool
+        uses: ./.github/actions/setup-indy-pool
         with:
           seed: ${TEST_AGENT_PUBLIC_DID_SEED}
       - name: Run mediator agents
-        uses: .github/actions/run-mediator-agents
+        uses: ./.github/actions/run-mediator-agents
 
       # TODO: move to action once https://github.com/actions/runner/issues/646 is resolved
       - name: Get yarn cache directory path
@@ -136,7 +136,7 @@ jobs:
 
       # setup dependencies
       - name: Setup Libindy
-        uses: .github/actions/setup-libindy
+        uses: ./.github/actions/setup-libindy
 
       - name: git config
         run: |
