@@ -2,6 +2,11 @@ name: Setup Indy Pool
 description: Setup an Indy ledger pool and register test did on the ledger
 author: 'timo@animo.id'
 
+inputs:
+  seed:
+    description: Seed to register on the ledger
+    required: true
+
 runs:
   using: composite
   steps:
@@ -16,7 +21,7 @@ runs:
       shell: bash
 
     - name: Register DID on ledger
-      run: docker exec indy-pool add-did-from-seed "${TEST_AGENT_PUBLIC_DID_SEED}"
+      run: docker exec indy-pool add-did-from-seed ${{ inputs.seed }}
       shell: bash
 
 branding:

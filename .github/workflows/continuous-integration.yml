@@ -12,6 +12,10 @@ on:
         required: true
         default: 'patch'
 
+env:
+  TEST_AGENT_PUBLIC_DID_SEED: 000000000000000000000000Trustee9
+  GENESIS_TXN_PATH: network/genesis/local-genesis.txn
+
 # Make sure we're not running multiple release steps at the same time as this can give issues with determining the next npm version to release.
 # Ideally we only add this to the 'release' job so it doesn't limit PR, but github can't guarantee the job order in that case:
 # "When concurrency is specified at the job level, order is not guaranteed for jobs or runs that queue within 5 minutes of each other."
@@ -26,7 +30,8 @@ jobs:
         uses: actions/checkout@v2
 
       # setup dependencies
-      - uses: ./.github/actions/setup-libindy
+      - name: Setup Libindy
+        uses: .github/actions/setup-libindy
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
@@ -65,9 +70,14 @@ jobs:
         uses: actions/checkout@v2
 
       # setup dependencies
-      - uses: ./.github/actions/setup-libindy
-      - uses: ./.github/actions/setup-indy-pool
-      - uses: ./.github/actions/run-mediator-agents
+      - name: Setup Libindy
+        uses: .github/actions/setup-libindy
+      - name: Setup Indy Pool
+        uses: .github/actions/setup-indy-pool
+        with:
+          seed: ${TEST_AGENT_PUBLIC_DID_SEED}
+      - name: Run mediator agents
+        uses: .github/actions/run-mediator-agents
 
       # TODO: move to action once https://github.com/actions/runner/issues/646 is resolved
       - name: Get yarn cache directory path
@@ -91,7 +101,7 @@ jobs:
         run: yarn install
 
       - name: Run tests
-        run: yarn test --coverage --detectOpenHandles
+        run: TEST_AGENT_PUBLIC_DID_SEED=${TEST_AGENT_PUBLIC_DID_SEED} GENESIS_TXN_PATH=${GENESIS_TXN_PATH} yarn test --coverage --detectOpenHandles
 
       - name: Export logs
         if: always()
@@ -125,7 +135,8 @@ jobs:
           fetch-depth: 0
 
       # setup dependencies
-      - uses: ./.github/actions/setup-libindy
+      - name: Setup Libindy
+        uses: .github/actions/setup-libindy
 
       - name: git config
         run: |
