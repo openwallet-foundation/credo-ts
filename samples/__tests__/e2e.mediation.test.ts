@@ -103,10 +103,7 @@ describe('with mediator', () => {
     // Once mediator is connected, mediation request can be sent
     const aliceMediationRecord = await aliceAgent.mediationRecipient.requestAndWaitForAcception(
       aliceMediatorConnection,
-      aliceAgent,
-      {
-        state: MediationState.Granted,
-      },
+      aliceAgent.mediationRecipient.events,
       2000
     )
 
