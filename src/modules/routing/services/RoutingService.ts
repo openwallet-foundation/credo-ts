@@ -32,7 +32,7 @@ export async function getRouting(
   my_endpoint?: string
 ) {
   let mediationRecord: MediationRecord | null = null
-  let endpoint, did_data: [Did, Verkey]
+  let endpoint
   const defaultMediator = await recipientService.getDefaultMediator()
   if (mediatorId) {
     mediationRecord = await recipientService.findById(mediatorId)
@@ -47,7 +47,7 @@ export async function getRouting(
     endpoint = mediationRecord.endpoint
   }
   // Create and store new key
-  did_data = await wallet.createDid()
+  const did_data = await wallet.createDid()
   if (mediationRecord) {
     const message = await recipientService.createKeylistUpdateMessage(did_data[1])
     const event: keylistUpdateEvent = {
@@ -69,7 +69,7 @@ export async function getRouting(
     // TODO: register recipient keys for relay
     // TODO: check that recipient keys are in wallet
   }
-  endpoint = my_endpoint ?? config.getEndpoint()
+  endpoint = endpoint ?? my_endpoint ?? config.getEndpoint()
   const result = { mediationRecord, endpoint, routingKeys, did: did_data[0], verkey: did_data[1] }
   return result
 }
