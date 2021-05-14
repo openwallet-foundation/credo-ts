@@ -62,18 +62,18 @@ export class AgentConfig {
     return 'didcomm:transport/queue'
   }
 
-  public get mediatorInvitation(){
+  public get mediatorInvitation() {
     return this.initConfig.mediatorInvitation
   }
 
-  public get autoAcceptMediationRequests(){
+  public get autoAcceptMediationRequests() {
     return this.initConfig.autoAcceptMediationRequests ?? false
   }
-  public get defaultMediatorId(){
+  public get defaultMediatorId() {
     return this.initConfig.defaultMediatorId
   }
 
-  public get clearDefaultMediator(){
+  public get clearDefaultMediator() {
     return this.initConfig.clearDefaultMediator ?? false
   }
 }

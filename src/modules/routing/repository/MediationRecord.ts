@@ -35,7 +35,7 @@ export class MediationRecord extends BaseRecord implements MediationStorageProps
   public recipientKeys: Verkey[]
   public routingKeys: Verkey[]
 
-  public static readonly = "MediationRecord"
+  public static readonly = 'MediationRecord'
   public readonly type = MediationRecord.type
 
   public constructor(props: MediationStorageProps) {
@@ -45,7 +45,7 @@ export class MediationRecord extends BaseRecord implements MediationStorageProps
     this.connectionId = props.connectionId
     this.recipientKeys = props.recipientKeys || []
     this.routingKeys = props.routingKeys || []
-    this.tags = props.tags || {}
+    this.tags = props.tags
     this.state = props.state || MediationState.Init
     this.role = props.role
     this.endpoint = props.endpoint ?? undefined

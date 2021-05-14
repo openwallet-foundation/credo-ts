@@ -1,29 +1,37 @@
 import { EventEmitter } from 'events'
 import { ConnectionInvitationMessage, ConnectionState } from '..'
-import { KeylistState, KeylistUpdateMessage, MediationState, RequestMediationMessage } from '../modules/routing'
+import { KeylistState, KeylistUpdateMessage, MediationState, MediationRequestMessage } from '../modules/routing'
 
-// contributed from simongregory gist at https://gist.github.com/simongregory/2c60d270006d4bf727babca53dca1f87
+// based on gist from simongregory at https://gist.github.com/simongregory/2c60d270006d4bf727babca53dca1f87
 export async function waitForEventWithTimeout(
   emitter: EventEmitter,
+  eventListener: EventEmitter,
+  eventTopic: string,
+  event: any,
   eventType: ConnectionState | MediationState | KeylistState,
-  message: ConnectionInvitationMessage | RequestMediationMessage | KeylistUpdateMessage,
+  message: ConnectionInvitationMessage | MediationRequestMessage | KeylistUpdateMessage,
   timeout: number
 ) {
   return new Promise((resolve, reject) => {
-    let timer: NodeJS.Timeout
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    let timer: NodeJS.Timeout = setTimeout(() => {})
 
     function listener(data: any) {
-      //TODO: check if thread Id matches the on in the message
-      clearTimeout(timer)
-      emitter.removeListener(eventType, listener)
-      resolve(data)
+      //TODO: test if thread Id matches the one in the message
+      if (data.threadId === message.threadId) {
+        clearTimeout(timer)
+        eventListener.removeListener(eventType, listener)
+        resolve(data)
+      }
     }
 
-    emitter.on(eventType, listener)
+    eventListener.on(eventType, listener)
     timer = setTimeout(() => {
-      emitter.removeListener(eventType, listener)
-      reject(new Error('timeout waiting for ' + eventType + 'from initialized from message'+ message ))
+      eventListener.removeListener(eventType, listener)
+      reject(new Error('timeout waiting for ' + eventType + 'from initialized from message' + message))
     }, timeout)
+    // emit after listener is listening to prevent any race condition
+    emitter.emit(eventTopic, event)
   })
 }
 

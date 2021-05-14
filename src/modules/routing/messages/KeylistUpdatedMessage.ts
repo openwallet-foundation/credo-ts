@@ -16,7 +16,7 @@ export interface KeylistUpdatedMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#keylist-update
  */
 export class KeylistUpdateMessage extends AgentMessage {
-  public constructor(options: KeylistUpdateMessageOptions) {
+  public constructor(options: KeylistUpdatedMessageOptions) {
     super()
 
     if (options) {

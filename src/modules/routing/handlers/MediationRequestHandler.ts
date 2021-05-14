@@ -1,9 +1,9 @@
 import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import { RequestMediationMessage, MediatorService } from '..'
+import { MediationRequestMessage, MediatorService } from '..'
 
 export class MediationRequestHandler implements Handler {
   private mediatorService: MediatorService
-  public supportedMessages = [RequestMediationMessage]
+  public supportedMessages = [MediationRequestMessage]
 
   public constructor(mediatorService: MediatorService) {
     this.mediatorService = mediatorService

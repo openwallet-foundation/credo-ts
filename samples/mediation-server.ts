@@ -15,7 +15,7 @@ import testLogger, { TestLogger } from '../src/__tests__/logger'
 import indy from 'indy-sdk'
 import { resolve } from 'path'
 import { MediationEventType, MediationStateChangedEvent } from '../src/modules/routing/services/MediatorService'
-import { MediationState } from '../src/modules/routing/models/MediationState'
+import { MediationState } from '../src/modules/routing/'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
 import { MessageRepository } from '../src/storage/MessageRepository'
 
@@ -147,14 +147,14 @@ agent.connections.events.on(ConnectionEventType.StateChanged, async (event: Conn
   testLogger.debug('Previous state: ' + event.previousState + ' New state: ' + event.connectionRecord.state)
 })
 
-agent.routing.mediationEvents.on(MediationEventType.StateChanged, async (event: MediationStateChangedEvent) => {
+agent.mediator.eventEmitter.on(MediationEventType.StateChanged, async (event: MediationStateChangedEvent) => {
   testLogger.info('Mediation state changed for ' + event.mediationRecord.id)
   testLogger.debug('Previous state: ' + event.previousState + ' New state: ' + event.mediationRecord.state)
 
   if (event.mediationRecord.state == MediationState.Requested) {
     const connectionRecord = await agent.connections.getById(event.mediationRecord.connectionId)
     if (connectionRecord) {
-      await agent.routing.grantMediation(connectionRecord, event.mediationRecord)
+      await agent.mediator.grantRequestedMediation(connectionRecord, event.mediationRecord)
       testLogger.info('Mediation blindly granted')
     }
   }

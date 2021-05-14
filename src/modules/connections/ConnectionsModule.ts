@@ -17,6 +17,8 @@ import {
   TrustPingResponseMessageHandler,
 } from './handlers'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
+import { KeylistState } from '../..'
+import { keylistUpdateEvent } from '../routing/services/RoutingService'
 
 export class ConnectionsModule {
   private agentConfig: AgentConfig
@@ -29,13 +31,14 @@ export class ConnectionsModule {
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
     trustPingService: TrustPingService,
-    messageSender: MessageSender,
+    messageSender: MessageSender
   ) {
     this.agentConfig = agentConfig
     this.connectionService = connectionService
     this.trustPingService = trustPingService
     this.messageSender = messageSender
     this.registerHandlers(dispatcher)
+    this.registerListeners()
   }
 
   /**
@@ -77,11 +80,13 @@ export class ConnectionsModule {
     config?: {
       autoAcceptConnection?: boolean
       alias?: string
+      mediatorId?: string
     }
   ): Promise<ConnectionRecord> {
     let connection = await this.connectionService.processInvitation(invitation, {
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
+      mediatorId: config?.mediatorId,
     })
 
     if (this.agentConfig.getEndpoint() == 'didcomm:transport/queue') {
@@ -204,5 +209,14 @@ export class ConnectionsModule {
     dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
     dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
     dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService))
+  }
+  private registerListeners() {
+    this.connectionService.recipientService.on(KeylistState.Update, this.keylistUpdateEvent)
+  }
+  private async keylistUpdateEvent({ mediationRecord, message }: keylistUpdateEvent) {
+    // new did has been created and mediator needs to be updated with the public key.
+    const connectionRecord: ConnectionRecord = await this.connectionService.getById(mediationRecord.connectionId)
+    const outbound = createOutboundMessage(connectionRecord, message)
+    await this.messageSender.sendMessage(outbound)
   }
 }

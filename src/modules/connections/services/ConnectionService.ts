@@ -1,4 +1,4 @@
-import type { Verkey } from 'indy-sdk'
+import type { Did, Verkey } from 'indy-sdk'
 import { EventEmitter } from 'events'
 import { validateOrReject } from 'class-validator'
 
@@ -28,18 +28,10 @@ import {
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { KeylistUpdate, KeylistUpdated, RecipientService, MediationRecord } from '../../../modules/routing'
-import { MediationStateChangedEvent, MediationKeylistEvent } from '../../routing/services/MediatorService'
-import { KeylistState } from '../../routing'
-import { waitForEventWithTimeout } from '../../../utils/promiseWithTimeOut'
+import { RecipientService } from '../../../modules/routing'
+import { getRouting } from '../../routing/services/RoutingService'
 export enum ConnectionEventType {
   StateChanged = 'stateChanged',
-}
-
-export interface keylistUpdateEvent {
-  mediationRecord: MediationRecord
-  keylist: KeylistUpdate
-  threadId: string
 }
 
 export interface ConnectionStateChangedEvent {
@@ -56,7 +48,7 @@ export class ConnectionService extends EventEmitter {
   private wallet: Wallet
   private config: AgentConfig
   private connectionRepository: Repository<ConnectionRecord>
-  private recipientService: RecipientService
+  public recipientService: RecipientService
 
   public constructor(
     wallet: Wallet,
@@ -71,41 +63,6 @@ export class ConnectionService extends EventEmitter {
     this.recipientService = recipientService
   }
 
-  // TODO: move this to routingService
-  public async createRouting(mediatorId: string | undefined) {
-    // TODO: make generic like...
-    // const { endpoint, routingKeys } = await this.routingService.getXXX({ mediatorId: options.mediatorId })
-    let mediationRecord: MediationRecord | null = null
-    let endpoint, routingKeys: Verkey[]
-    const defaultMediator = await this.recipientService.getDefaultMediator()
-    if (mediatorId) {
-      mediationRecord = await this.recipientService.findById(mediatorId)
-    } else if (defaultMediator) {
-      mediationRecord = defaultMediator
-    }
-    const [did, verkey] = await this.wallet.createDid()
-    if (mediationRecord) {
-      endpoint = mediationRecord.endpoint
-      const message = await this.recipientService.createKeylistUpdateMessage(verkey)
-      routingKeys = mediationRecord.routingKeys
-      // assumption, UpdateMessage will only ever have one keylistupdate
-      const event: keylistUpdateEvent = {
-        mediationRecord,
-        keylist: message.updates[0],
-        threadId: message.threadId,
-      }
-      this.emit(KeylistState.Update, event)
-      //TODO: catch this event in module and send and update message to mediator
-      //TODO: emit KeylistState.updated event on this listener from mediationservice handler
-      await waitForEventWithTimeout(this, KeylistState.Updated, message, 2000)
-    } else {
-      // no mediation
-      endpoint = this.config.getEndpoint()
-      routingKeys = [verkey]
-    }
-    return [mediationRecord, endpoint, routingKeys]
-  }
-
   /**
    * Create a new connection record containing a connection invitation message
    *
@@ -115,12 +72,19 @@ export class ConnectionService extends EventEmitter {
   public async createInvitation(config?: {
     autoAcceptConnection?: boolean
     alias?: string
+    mediatorId?: string
+    recipientKeys?: string[]
+    routingKeys?: string[]
+    endpoint?: string
   }): Promise<ConnectionProtocolMsgReturnType<ConnectionInvitationMessage>> {
     // TODO: public did, multi use
     const connectionRecord = await this.createConnection({
       role: ConnectionRole.Inviter,
       state: ConnectionState.Invited,
       alias: config?.alias,
+      recipientKeys: config?.recipientKeys,
+      routingKeys: config?.routingKeys,
+      endpoint: config?.endpoint,
       autoAcceptConnection: config?.autoAcceptConnection,
     })
 
@@ -160,6 +124,7 @@ export class ConnectionService extends EventEmitter {
     config?: {
       autoAcceptConnection?: boolean
       alias?: string
+      mediatorId?: string
     }
   ): Promise<ConnectionRecord> {
     const connectionRecord = await this.createConnection({
@@ -167,6 +132,7 @@ export class ConnectionService extends EventEmitter {
       state: ConnectionState.Invited,
       alias: config?.alias,
       autoAcceptConnection: config?.autoAcceptConnection,
+      mediatorId: config?.mediatorId,
       invitation,
       tags: {
         invitationKey: invitation.recipientKeys && invitation.recipientKeys[0],
@@ -403,15 +369,31 @@ export class ConnectionService extends EventEmitter {
   private async createConnection(options: {
     role: ConnectionRole
     state: ConnectionState
+    endpoint?: string
     invitation?: ConnectionInvitationMessage
     alias?: string
     mediatorId?: string
+    recipientKeys?: string[]
+    routingKeys?: string[]
     autoAcceptConnection?: boolean
     tags?: ConnectionTags
   }): Promise<ConnectionRecord> {
-    // const [mediationRecord, endpoint, routingKeys] = await this.createRouting(options.mediatorId)
-    const [did, verkey] = await this.wallet.createDid()
+    const myRouting = await getRouting(
+      //my routing
+      this.config,
+      this.wallet,
+      this.recipientService,
+      options.mediatorId,
+      options.routingKeys ?? [],
+      options.endpoint
+    )
+    const endpoint: string = myRouting.endpoint
+    const did: Did = myRouting.did
+    const verkey: Verkey = myRouting.verkey || ''
+    const routingKeys: Verkey[] = myRouting.routingKeys
+
     const publicKey = new Ed25119Sig2018({
+      // TODO: shouldn't this name be ED25519
       id: `${did}#1`,
       controller: did,
       publicKeyBase58: verkey,
@@ -422,15 +404,15 @@ export class ConnectionService extends EventEmitter {
     // Include both for better interoperability
     const indyAgentService = new IndyAgentService({
       id: `${did}#IndyAgentService`,
-      serviceEndpoint: this.config.getEndpoint(),
+      serviceEndpoint: endpoint,
       recipientKeys: [verkey],
-      routingKeys: [], //this.config.getRoutingKeys(),
+      routingKeys: routingKeys,
     })
     const didCommService = new DidCommService({
       id: `${did}#did-communication`,
-      serviceEndpoint: this.config.getEndpoint(),
+      serviceEndpoint: endpoint,
       recipientKeys: [verkey],
-      routingKeys: [], //this.config.getRoutingKeys(),
+      routingKeys: routingKeys,
       // Prefer DidCommService over IndyAgentService
       priority: 1,
     })
