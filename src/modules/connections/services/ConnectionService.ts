@@ -378,7 +378,8 @@ export class ConnectionService extends EventEmitter {
     autoAcceptConnection?: boolean
     tags?: ConnectionTags
   }): Promise<ConnectionRecord> {
-    const myRouting = await getRouting( //my routing
+    const myRouting = await getRouting(
+      //my routing
       this.config,
       this.wallet,
       this.recipientService,
