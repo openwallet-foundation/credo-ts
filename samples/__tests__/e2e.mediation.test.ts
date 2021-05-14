@@ -79,7 +79,7 @@ describe('with mediator', () => {
     await aliceAgent.init()
     expect(aliceAgent)
 
-    mediator = new Agent(mediatorConfig)
+    mediator = new Agent(bobConfig)
     const mediatorInBoundTransporter = new PollingInboundTransporter()
     mediator.setInboundTransporter(mediatorInBoundTransporter)
     mediator.setOutboundTransporter(new HttpOutboundTransporter(mediator))
