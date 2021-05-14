@@ -18,6 +18,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
     this.agent = agent
     this.logger = agent.injectionContainer.resolve(Symbols.Logger)
   }
+
   public async start(): Promise<void> {
     // Nothing required to start WS
   }
@@ -68,7 +69,9 @@ export class WsOutboundTransporter implements OutboundTransporter {
     return socket
   }
 
-  private handleMessageEvent(event: any) {
+  // NOTE: Because this method is passed to the event handler this must be a lambda method
+  // so 'this' is scoped to the 'WsOutboundTransporter' class instance
+  private handleMessageEvent = (event: any) => {
     this.logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
     this.agent.receiveMessage(JSON.parse(event.data))
   }
