@@ -24,9 +24,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
 
   public async stop() {
     this.transportTable.forEach((socket) => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      socket.removeAllListeners()
+      socket.removeEventListener('message', this.handleMessageEvent)
       socket.close()
     })
   }
@@ -60,7 +58,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
       }
       socket = await this.createSocketConnection(transport.endpoint)
       this.transportTable.set(connection.id, socket)
-      this.listenOnWebSocketMessages(this.agent, socket)
+      this.listenOnWebSocketMessages(socket)
     }
 
     if (socket.readyState !== WebSocket.OPEN) {
@@ -70,11 +68,13 @@ export class WsOutboundTransporter implements OutboundTransporter {
     return socket
   }
 
-  private listenOnWebSocketMessages(agent: Agent, socket: WebSocket) {
-    socket.addEventListener('message', (event: any) => {
-      this.logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
-      agent.receiveMessage(JSON.parse(event.data))
-    })
+  private handleMessageEvent(event: any) {
+    this.logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
+    this.agent.receiveMessage(JSON.parse(event.data))
+  }
+
+  private listenOnWebSocketMessages(socket: WebSocket) {
+    socket.addEventListener('message', this.handleMessageEvent)
   }
 
   private createSocketConnection(endpoint: string): Promise<WebSocket> {
