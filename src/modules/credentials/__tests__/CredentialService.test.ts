@@ -547,7 +547,11 @@ describe('CredentialService', () => {
       })
 
       // We're using instance of `StubWallet`. Value of `cred` should be as same as in the credential response message.
-      const [cred] = await wallet.createCredential(credOffer, credReq, {})
+      const [cred] = await indyIssuerService.createCredential({
+        credentialOffer: credOffer,
+        credentialRequest: credReq,
+        credentialValues: {},
+      })
       const [responseAttachment] = credentialResponse.credentialAttachments
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       expect(JsonEncoder.fromBase64(responseAttachment.data.base64!)).toEqual(cred)
