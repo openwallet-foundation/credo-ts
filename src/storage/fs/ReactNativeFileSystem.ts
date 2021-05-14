@@ -8,12 +8,12 @@ export class ReactNativeFileSystem implements FileSystem {
   /**
    * Create new ReactNativeFileSystem class instance.
    *
-   * @param basePath The base path to use for reading and writing files. RNFS.DocumentDirectoryPath if not specified
+   * @param basePath The base path to use for reading and writing files. RNFS.TemporaryDirectoryPath if not specified
    *
    * @see https://github.com/itinance/react-native-fs#constants
    */
   public constructor(basePath?: string) {
-    this.basePath = basePath ?? RNFS.DocumentDirectoryPath
+    this.basePath = basePath ?? RNFS.TemporaryDirectoryPath
   }
 
   public async exists(path: string): Promise<boolean> {
