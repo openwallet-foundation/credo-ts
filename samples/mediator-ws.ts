@@ -49,8 +49,16 @@ class WsInboundTransporter implements InboundTransporter {
   }
 }
 
+// TODO: use WsOutboundTransporter from the agent
 class WsOutboundTransporter implements OutboundTransporter {
-  public supportedSchemes = ['ws']
+  public supportedSchemes = ['ws', 'wss']
+
+  public async start(): Promise<void> {
+    // Nothing required to start WS
+  }
+  public async stop(): Promise<void> {
+    // Nothing required to stop WS
+  }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
     const { connection, payload, transport } = outboundPackage

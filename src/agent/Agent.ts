@@ -31,7 +31,6 @@ export class Agent {
   protected messageReceiver: MessageReceiver
   protected messageSender: MessageSender
   public inboundTransporter?: InboundTransporter
-  public outboundTransporter?: OutboundTransporter
 
   public readonly connections!: ConnectionsModule
   public readonly proofs!: ProofsModule
@@ -107,8 +106,8 @@ export class Agent {
     this.messageSender.setOutboundTransporter(outboundTransporter)
   }
 
-  public getOutboundTransporter() {
-    return this.messageSender.getOutboundTransporter()
+  public get outboundTransporter() {
+    return this.messageSender.outboundTransporter
   }
 
   public async init() {
