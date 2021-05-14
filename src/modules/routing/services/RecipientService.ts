@@ -60,13 +60,6 @@ export class RecipientService extends EventEmitter {
   }
 
   private provision() {
-<<<<<<< HEAD
-    // Check if inviation was provided in config
-    if (this.agentConfig.mediatorInvitation?.did) {
-      // this.createRequest(this.agentConfig.mediatorInvitation)
-    }
-    // Connect to the agent, request mediation
-=======
     /* TODO: handle config flag behaviors.
     autoAcceptMediationRequests
                 "automatically granting to everyone asking, rather than enabling the feature altogether"
@@ -85,7 +78,6 @@ export class RecipientService extends EventEmitter {
     // Use agent config to establish connection with mediator
     // request mediation record
     // Upon granting, set this.defaultMediator
->>>>>>> 182ac15 (bug with create connection, extras)
   }
 
   public async createRequest(connection: ConnectionRecord): Promise<[MediationRecord, MediationRequestMessage]> {
