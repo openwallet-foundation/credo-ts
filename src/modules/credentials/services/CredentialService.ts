@@ -1,6 +1,5 @@
-import { inject, scoped, Lifecycle } from 'tsyringe'
+import { scoped, Lifecycle } from 'tsyringe'
 import type { CredDefId } from 'indy-sdk'
-import { EventEmitter } from 'events'
 
 import { uuid } from '../../../utils/uuid'
 import { AgentMessage } from '../../../agent/AgentMessage'
@@ -10,7 +9,6 @@ import { Attachment, AttachmentData } from '../../../decorators/attachment/Attac
 import { ConnectionService, ConnectionRecord } from '../../connections'
 import { CredentialRecord } from '../repository/CredentialRecord'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
-import { Wallet } from '../../../wallet/Wallet'
 
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
@@ -30,17 +28,9 @@ import { AckStatus } from '../../common'
 import { Logger } from '../../../logger'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { CredentialRepository } from '../repository'
-import { Symbols } from '../../../symbols'
 import { IndyIssuerService, IndyHolderService } from '../../indy'
-
-export enum CredentialEventType {
-  StateChanged = 'stateChanged',
-}
-
-export interface CredentialStateChangedEvent {
-  credentialRecord: CredentialRecord
-  previousState: CredentialState
-}
+import { CredentialStateChangedEvent } from '../CredentialEvents'
+import { EventEmitter } from '../../../agent/EventEmitter'
 
 export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessage> {
   message: MessageType
@@ -48,32 +38,31 @@ export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessag
 }
 
 @scoped(Lifecycle.ContainerScoped)
-export class CredentialService extends EventEmitter {
-  private wallet: Wallet
+export class CredentialService {
   private credentialRepository: CredentialRepository
   private connectionService: ConnectionService
   private ledgerService: LedgerService
   private logger: Logger
   private indyIssuerService: IndyIssuerService
   private indyHolderService: IndyHolderService
+  private eventEmitter: EventEmitter
 
   public constructor(
-    @inject(Symbols.Wallet) wallet: Wallet,
     credentialRepository: CredentialRepository,
     connectionService: ConnectionService,
     ledgerService: LedgerService,
     agentConfig: AgentConfig,
     indyIssuerService: IndyIssuerService,
-    indyHolderService: IndyHolderService
+    indyHolderService: IndyHolderService,
+    eventEmitter: EventEmitter
   ) {
-    super()
-    this.wallet = wallet
     this.credentialRepository = credentialRepository
     this.connectionService = connectionService
     this.ledgerService = ledgerService
     this.logger = agentConfig.logger
     this.indyIssuerService = indyIssuerService
     this.indyHolderService = indyHolderService
+    this.eventEmitter = eventEmitter
   }
 
   /**
@@ -104,7 +93,8 @@ export class CredentialService extends EventEmitter {
       tags: { threadId: proposalMessage.threadId },
     })
     await this.credentialRepository.save(credentialRecord)
-    this.emit(CredentialEventType.StateChanged, {
+    this.eventEmitter.emit<CredentialStateChangedEvent>({
+      type: 'CredentialStateChanged',
       credentialRecord,
       previousState: null,
     })
@@ -188,7 +178,8 @@ export class CredentialService extends EventEmitter {
 
       // Save record
       await this.credentialRepository.save(credentialRecord)
-      this.emit(CredentialEventType.StateChanged, {
+      this.eventEmitter.emit<CredentialStateChangedEvent>({
+        type: 'CredentialStateChanged',
         credentialRecord,
         previousState: null,
       })
@@ -287,7 +278,8 @@ export class CredentialService extends EventEmitter {
     })
 
     await this.credentialRepository.save(credentialRecord)
-    this.emit(CredentialEventType.StateChanged, {
+    this.eventEmitter.emit<CredentialStateChangedEvent>({
+      type: 'CredentialStateChanged',
       credentialRecord,
       previousState: null,
     })
@@ -354,7 +346,8 @@ export class CredentialService extends EventEmitter {
 
       // Save in repository
       await this.credentialRepository.save(credentialRecord)
-      this.emit(CredentialEventType.StateChanged, {
+      this.eventEmitter.emit<CredentialStateChangedEvent>({
+        type: 'CredentialStateChanged',
         credentialRecord,
         previousState: null,
       })
@@ -716,12 +709,11 @@ export class CredentialService extends EventEmitter {
     credentialRecord.state = newState
     await this.credentialRepository.update(credentialRecord)
 
-    const event: CredentialStateChangedEvent = {
+    this.eventEmitter.emit<CredentialStateChangedEvent>({
+      type: 'CredentialStateChanged',
       credentialRecord,
       previousState: previousState,
-    }
-
-    this.emit(CredentialEventType.StateChanged, event)
+    })
   }
 }
 

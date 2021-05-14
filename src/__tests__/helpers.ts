@@ -13,16 +13,15 @@ import {
   DidCommService,
   DidDoc,
 } from '../modules/connections'
-import { ProofRecord, ProofState, ProofEventType, ProofStateChangedEvent } from '../modules/proofs'
+import { ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
 import { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/ledger'
 import {
   CredentialRecord,
   CredentialOfferTemplate,
-  CredentialEventType,
   CredentialStateChangedEvent,
   CredentialState,
 } from '../modules/credentials'
-import { BasicMessage, BasicMessageEventType, BasicMessageReceivedEvent } from '../modules/basic-messages'
+import { BasicMessage, BasicMessageReceivedEvent } from '../modules/basic-messages'
 import testLogger from './logger'
 import { NodeFileSystem } from '../storage/fs/NodeFileSystem'
 
@@ -89,13 +88,13 @@ export async function waitForProofRecord(
       const stateMatches = state === undefined || event.proofRecord.state === state
 
       if (previousStateMatches && threadIdMatches && stateMatches) {
-        agent.proofs.events.removeListener(ProofEventType.StateChanged, listener)
+        agent.events.off<ProofStateChangedEvent>('ProofStateChanged', listener)
 
         resolve(event.proofRecord)
       }
     }
 
-    agent.proofs.events.addListener(ProofEventType.StateChanged, listener)
+    agent.events.on<ProofStateChangedEvent>('ProofStateChanged', listener)
   })
 }
 
@@ -118,13 +117,13 @@ export async function waitForCredentialRecord(
       const stateMatches = state === undefined || event.credentialRecord.state === state
 
       if (previousStateMatches && threadIdMatches && stateMatches) {
-        agent.credentials.events.removeListener(CredentialEventType.StateChanged, listener)
+        agent.events.off<CredentialStateChangedEvent>('CredentialStateChanged', listener)
 
         resolve(event.credentialRecord)
       }
     }
 
-    agent.credentials.events.addListener(CredentialEventType.StateChanged, listener)
+    agent.events.on<CredentialStateChangedEvent>('CredentialStateChanged', listener)
   })
 }
 
@@ -138,13 +137,13 @@ export async function waitForBasicMessage(
       const contentMatches = content === undefined || event.message.content === content
 
       if (verkeyMatches && contentMatches) {
-        agent.basicMessages.events.removeListener(BasicMessageEventType.MessageReceived, listener)
+        agent.events.off<BasicMessageReceivedEvent>('BasicMessageReceived', listener)
 
         resolve(event.message)
       }
     }
 
-    agent.basicMessages.events.addListener(BasicMessageEventType.MessageReceived, listener)
+    agent.events.on<BasicMessageReceivedEvent>('BasicMessageReceived', listener)
   })
 }
 

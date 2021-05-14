@@ -1,5 +1,4 @@
 import type { WalletQuery } from 'indy-sdk'
-import { EventEmitter } from 'events'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { BasicMessageService } from './services'
@@ -17,16 +16,6 @@ export class BasicMessagesModule {
     this.basicMessageService = basicMessageService
     this.messageSender = messageSender
     this.registerHandlers(dispatcher)
-  }
-
-  /**
-   * Get the event emitter for the basic message service. Will emit message received events
-   * when basic messages are received.
-   *
-   * @returns event emitter for basic message related events
-   */
-  public get events(): EventEmitter {
-    return this.basicMessageService
   }
 
   public async sendMessage(connection: ConnectionRecord, message: string) {

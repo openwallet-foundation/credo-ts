@@ -1,5 +1,4 @@
 import type { Verkey } from 'indy-sdk'
-import { EventEmitter } from 'events'
 import { validateOrReject } from 'class-validator'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
@@ -30,15 +29,8 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Symbols } from '../../../symbols'
-
-export enum ConnectionEventType {
-  StateChanged = 'stateChanged',
-}
-
-export interface ConnectionStateChangedEvent {
-  connectionRecord: ConnectionRecord
-  previousState: ConnectionState | null
-}
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { ConnectionStateChangedEvent } from '../ConnectionEvents'
 
 export interface ConnectionProtocolMsgReturnType<MessageType extends AgentMessage> {
   message: MessageType
@@ -46,20 +38,22 @@ export interface ConnectionProtocolMsgReturnType<MessageType extends AgentMessag
 }
 
 @scoped(Lifecycle.ContainerScoped)
-export class ConnectionService extends EventEmitter {
+export class ConnectionService {
   private wallet: Wallet
   private config: AgentConfig
   private connectionRepository: ConnectionRepository
+  private eventEmitter: EventEmitter
 
   public constructor(
     @inject(Symbols.Wallet) wallet: Wallet,
     config: AgentConfig,
-    connectionRepository: ConnectionRepository
+    connectionRepository: ConnectionRepository,
+    eventEmitter: EventEmitter
   ) {
-    super()
     this.wallet = wallet
     this.config = config
     this.connectionRepository = connectionRepository
+    this.eventEmitter = eventEmitter
   }
 
   /**
@@ -93,11 +87,11 @@ export class ConnectionService extends EventEmitter {
 
     await this.connectionRepository.update(connectionRecord)
 
-    const event: ConnectionStateChangedEvent = {
+    this.eventEmitter.emit<ConnectionStateChangedEvent>({
+      type: 'ConnectionStateChanged',
       connectionRecord: connectionRecord,
       previousState: null,
-    }
-    this.emit(ConnectionEventType.StateChanged, event)
+    })
 
     return { connectionRecord: connectionRecord, message: invitation }
   }
@@ -130,12 +124,11 @@ export class ConnectionService extends EventEmitter {
     })
 
     await this.connectionRepository.update(connectionRecord)
-
-    const event: ConnectionStateChangedEvent = {
+    this.eventEmitter.emit<ConnectionStateChangedEvent>({
+      type: 'ConnectionStateChanged',
       connectionRecord: connectionRecord,
       previousState: null,
-    }
-    this.emit(ConnectionEventType.StateChanged, event)
+    })
 
     return connectionRecord
   }
@@ -348,12 +341,11 @@ export class ConnectionService extends EventEmitter {
     connectionRecord.state = newState
     await this.connectionRepository.update(connectionRecord)
 
-    const event: ConnectionStateChangedEvent = {
+    this.eventEmitter.emit<ConnectionStateChangedEvent>({
+      type: 'ConnectionStateChanged',
       connectionRecord: connectionRecord,
       previousState,
-    }
-
-    this.emit(ConnectionEventType.StateChanged, event)
+    })
   }
 
   private async createConnection(options: {
@@ -490,12 +482,12 @@ export class ConnectionService extends EventEmitter {
     return new Promise((resolve) => {
       const listener = ({ connectionRecord: connectionRecord }: ConnectionStateChangedEvent) => {
         if (isConnected(connectionRecord)) {
-          this.off(ConnectionEventType.StateChanged, listener)
+          this.eventEmitter.off<ConnectionStateChangedEvent>('ConnectionStateChanged', listener)
           resolve(connectionRecord)
         }
       }
 
-      this.on(ConnectionEventType.StateChanged, listener)
+      this.eventEmitter.on<ConnectionStateChangedEvent>('ConnectionStateChanged', listener)
     })
   }
 }

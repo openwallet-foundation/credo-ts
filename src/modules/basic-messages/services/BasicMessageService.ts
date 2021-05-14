@@ -1,5 +1,4 @@
-import type { Verkey, WalletQuery } from 'indy-sdk'
-import { EventEmitter } from 'events'
+import type { WalletQuery } from 'indy-sdk'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { OutboundMessage } from '../../../types'
@@ -9,23 +8,17 @@ import { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { BasicMessage } from '../messages'
 import { BasicMessageRepository } from '../repository'
-
-export enum BasicMessageEventType {
-  MessageReceived = 'messageReceived',
-}
-
-export interface BasicMessageReceivedEvent {
-  message: BasicMessage
-  verkey: Verkey
-}
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { BasicMessageReceivedEvent } from '../BasicMessageEvents'
 
 @scoped(Lifecycle.ContainerScoped)
-export class BasicMessageService extends EventEmitter {
+export class BasicMessageService {
   private basicMessageRepository: BasicMessageRepository
+  private eventEmitter: EventEmitter
 
-  public constructor(basicMessageRepository: BasicMessageRepository) {
-    super()
+  public constructor(basicMessageRepository: BasicMessageRepository, eventEmitter: EventEmitter) {
     this.basicMessageRepository = basicMessageRepository
+    this.eventEmitter = eventEmitter
   }
 
   public async send(message: string, connection: ConnectionRecord): Promise<OutboundMessage<BasicMessage>> {
@@ -56,11 +49,11 @@ export class BasicMessageService extends EventEmitter {
     })
 
     await this.basicMessageRepository.save(basicMessageRecord)
-    const event: BasicMessageReceivedEvent = {
+    this.eventEmitter.emit<BasicMessageReceivedEvent>({
+      type: 'BasicMessageReceived',
       message,
       verkey: connection.verkey,
-    }
-    this.emit(BasicMessageEventType.MessageReceived, event)
+    })
   }
 
   public async findAllByQuery(query: WalletQuery) {

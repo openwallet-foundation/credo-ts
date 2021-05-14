@@ -14,7 +14,7 @@ export class Repository<T extends BaseRecord> {
   }
 
   public async save(record: T): Promise<void> {
-    this.storageService.save(record)
+    return this.storageService.save(record)
   }
 
   public async update(record: T): Promise<void> {

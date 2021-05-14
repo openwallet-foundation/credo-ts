@@ -18,6 +18,7 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { getBaseConfig, getMockConnection } from '../../../__tests__/helpers'
+import { EventEmitter } from '../../../agent/EventEmitter'
 
 jest.mock('./../../../storage/Repository')
 const ConnectionRepository = <jest.Mock<Repository<ConnectionRecord>>>(<unknown>Repository)
@@ -32,6 +33,7 @@ describe('ConnectionService', () => {
   let agentConfig: AgentConfig
   let connectionRepository: Repository<ConnectionRecord>
   let connectionService: ConnectionService
+  let eventEmitter: EventEmitter
 
   beforeAll(async () => {
     agentConfig = new AgentConfig(initConfig)
@@ -49,7 +51,8 @@ describe('ConnectionService', () => {
     ConnectionRepository.mockClear()
 
     connectionRepository = new ConnectionRepository()
-    connectionService = new ConnectionService(wallet, agentConfig, connectionRepository)
+    eventEmitter = new EventEmitter()
+    connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, eventEmitter)
   })
 
   describe('createConnectionWithInvitation', () => {
