@@ -25,11 +25,9 @@ export interface keylistUpdateEvent {
 
 export async function getRouting(
   config: AgentConfig,
-  emitter: EventEmitter,
   wallet: Wallet,
   recipientService: RecipientService,
   mediatorId: string | undefined,
-  recipientKeys: string[],
   routingKeys: string[],
   my_endpoint?: string
 ) {
@@ -48,25 +46,20 @@ export async function getRouting(
     routingKeys = [...routingKeys, ...mediationRecord.routingKeys]
     endpoint = mediationRecord.endpoint
   }
-  if (!recipientKeys || recipientKeys.length <= 0) {
-    // Create and store new key
-    did_data = await wallet.createDid()
-    recipientKeys = [did_data[1]]
-    if (mediationRecord) {
-      const message = await recipientService.createKeylistUpdateMessage(recipientKeys[0])
-      const event: keylistUpdateEvent = {
-        mediationRecord,
-        message,
-      }
-      // emit KeylistState.update and catch KeylistState.updated event in module from mediationservice handler
-      // send and update message to mediator
-      await waitForEventWithTimeout(emitter, emitter, KeylistState.Update, event, KeylistState.Updated, message, 2000)
+  // Create and store new key
+  did_data = await wallet.createDid()
+  if (mediationRecord) {
+    const message = await recipientService.createKeylistUpdateMessage(did_data[1])
+    const event: keylistUpdateEvent = {
+      mediationRecord,
+      message,
     }
+    // emit KeylistState.update and catch KeylistState.updated event in module from mediationservice handler
+    // send and update message to mediator
+    await waitForEventWithTimeout(recipientService, recipientService, KeylistState.Update, event, KeylistState.Updated, message, 2000)
   } else {
     // TODO: register recipient keys for relay
     // TODO: check that recipient keys are in wallet
-
-    did_data = ['did:sov:' + recipientKeys[0], recipientKeys[0]] // TODO: extract did, also first key the correct one?
   }
   endpoint = my_endpoint ?? config.getEndpoint()
   const result = { mediationRecord, endpoint, routingKeys, did: did_data[0], verkey: did_data[1] }

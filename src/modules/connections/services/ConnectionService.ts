@@ -127,19 +127,15 @@ export class ConnectionService extends EventEmitter {
       mediatorId?: string
     }
   ): Promise<ConnectionRecord> {
-    const invitationKey = invitation.recipientKeys ? invitation.recipientKeys[0] : undefined
     const connectionRecord = await this.createConnection({
       role: ConnectionRole.Invitee,
       state: ConnectionState.Invited,
       alias: config?.alias,
-      mediatorId: config?.mediatorId,
-      recipientKeys: invitation?.recipientKeys,
-      routingKeys: invitation?.routingKeys,
-      endpoint: invitation?.serviceEndpoint,
       autoAcceptConnection: config?.autoAcceptConnection,
+      mediatorId: config?.mediatorId,
       invitation,
       tags: {
-        invitationKey, // TODO: can a tag ever be undefined?
+        invitationKey: invitation.recipientKeys && invitation.recipientKeys[0],
       },
     })
 
@@ -382,20 +378,18 @@ export class ConnectionService extends EventEmitter {
     autoAcceptConnection?: boolean
     tags?: ConnectionTags
   }): Promise<ConnectionRecord> {
-    const gotten_routing = await getRouting(
+    const myRouting = await getRouting( //my routing
       this.config,
-      this.recipientService,
       this.wallet,
       this.recipientService,
       options.mediatorId,
-      options.recipientKeys ?? [],
       options.routingKeys ?? [],
       options.endpoint
     )
-    const endpoint: string = gotten_routing.endpoint
-    const did: Did = gotten_routing.did
-    const verkey: Verkey = gotten_routing.verkey || ''
-    const routingKeys: Verkey[] = gotten_routing.routingKeys
+    const endpoint: string = myRouting.endpoint
+    const did: Did = myRouting.did
+    const verkey: Verkey = myRouting.verkey || ''
+    const routingKeys: Verkey[] = myRouting.routingKeys
 
     const publicKey = new Ed25119Sig2018({
       // TODO: shouldn't this name be ED25519
