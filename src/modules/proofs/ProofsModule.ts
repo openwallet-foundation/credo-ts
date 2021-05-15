@@ -232,6 +232,17 @@ export class ProofsModule {
   }
 
   /**
+   * Retrieve a proof record by id
+   *
+   * @param proofRecordId The proof record id
+   * @return The proof record or null if not found
+   *
+   */
+  public async findById(proofRecordId: string): Promise<ProofRecord | null> {
+    return this.proofService.findById(proofRecordId)
+  }
+
+  /**
    * Retrieve a proof record by thread id
    *
    * @param threadId The thread id

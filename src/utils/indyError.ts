@@ -68,6 +68,13 @@ export interface IndyError {
   indyName?: string
 }
 
+export function handleIndyError(error: IndyError) {
+  throw new AriesFrameworkError(`${error.name}(${error.indyName}): ${error.message}`, {
+    cause: error,
+    constructorOpt: handleIndyError,
+  })
+}
+
 export function isIndyError(error: any, errorName?: IndyErrorValues): error is IndyError {
   const indyError = error.name === 'IndyError'
 

@@ -188,7 +188,7 @@ export class CredentialsModule {
    *
    * @returns List containing all credential records
    */
-  public async getAll(): Promise<CredentialRecord[]> {
+  public getAll(): Promise<CredentialRecord[]> {
     return this.credentialService.getAll()
   }
 
@@ -200,8 +200,18 @@ export class CredentialsModule {
    * @return The credential record
    *
    */
-  public async getById(credentialRecordId: string) {
+  public getById(credentialRecordId: string) {
     return this.credentialService.getById(credentialRecordId)
+  }
+
+  /**
+   * Find a credential record by id
+   *
+   * @param credentialRecordId the credential record id
+   * @returns The credential record or null if not found
+   */
+  public findById(connectionId: string): Promise<CredentialRecord | null> {
+    return this.credentialService.findById(connectionId)
   }
 
   /**
@@ -212,7 +222,7 @@ export class CredentialsModule {
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The credential record
    */
-  public async getByThreadId(threadId: string): Promise<CredentialRecord> {
+  public getByThreadId(threadId: string): Promise<CredentialRecord> {
     return this.credentialService.getByThreadId(threadId)
   }
 

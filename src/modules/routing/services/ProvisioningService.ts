@@ -2,10 +2,10 @@ import type { Verkey } from 'indy-sdk'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { ProvisioningRecord } from '../repository/ProvisioningRecord'
-import { isIndyError } from '../../../utils/indyError'
-import { Logger } from '../../../logger'
 import { ProvisioningRepository } from '../repository'
 import { Symbols } from '../../../symbols'
+import { Logger } from '../../../logger'
+import { RecordNotFoundError } from '../../../error'
 
 const UNIQUE_PROVISIONING_ID = 'UNIQUE_PROVISIONING_ID'
 
@@ -21,10 +21,9 @@ export class ProvisioningService {
 
   public async find(): Promise<ProvisioningRecord | null> {
     try {
-      const provisioningRecord = await this.provisioningRepository.find(UNIQUE_PROVISIONING_ID)
-      return provisioningRecord
+      return await this.provisioningRepository.getById(UNIQUE_PROVISIONING_ID)
     } catch (error) {
-      if (isIndyError(error, 'WalletItemNotFound')) {
+      if (error instanceof RecordNotFoundError) {
         this.logger.debug(`Provision record with id '${UNIQUE_PROVISIONING_ID}' not found.`, {
           indyError: 'WalletItemNotFound',
         })

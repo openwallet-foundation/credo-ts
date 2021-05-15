@@ -660,8 +660,8 @@ export class CredentialService {
    *
    * @returns List containing all credential records
    */
-  public async getAll(): Promise<CredentialRecord[]> {
-    return this.credentialRepository.findAll()
+  public getAll(): Promise<CredentialRecord[]> {
+    return this.credentialRepository.getAll()
   }
 
   /**
@@ -672,8 +672,18 @@ export class CredentialService {
    * @return The credential record
    *
    */
-  public async getById(credentialRecordId: string): Promise<CredentialRecord> {
-    return this.credentialRepository.find(credentialRecordId)
+  public getById(credentialRecordId: string): Promise<CredentialRecord> {
+    return this.credentialRepository.getById(credentialRecordId)
+  }
+
+  /**
+   * Find a credential record by id
+   *
+   * @param credentialRecordId the credential record id
+   * @returns The credential record or null if not found
+   */
+  public findById(connectionId: string): Promise<CredentialRecord | null> {
+    return this.credentialRepository.findById(connectionId)
   }
 
   /**
@@ -684,20 +694,10 @@ export class CredentialService {
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The credential record
    */
-  public async getByThreadId(threadId: string): Promise<CredentialRecord> {
-    const credentialRecords = await this.credentialRepository.findByQuery({
+  public getByThreadId(threadId: string): Promise<CredentialRecord> {
+    return this.credentialRepository.getSingleByQuery({
       threadId,
     })
-
-    if (credentialRecords.length === 0) {
-      throw new Error(`Credential record not found by thread id ${threadId}`)
-    }
-
-    if (credentialRecords.length > 1) {
-      throw new Error(`Multiple credential records found by thread id ${threadId}`)
-    }
-
-    return credentialRecords[0]
   }
 
   /**

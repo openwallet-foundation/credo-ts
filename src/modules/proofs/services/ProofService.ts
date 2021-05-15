@@ -766,41 +766,42 @@ export class ProofService {
    * @returns List containing all proof records
    */
   public async getAll(): Promise<ProofRecord[]> {
-    return this.proofRepository.findAll()
+    return this.proofRepository.getAll()
   }
 
   /**
    * Retrieve a proof record by id
    *
    * @param proofRecordId The proof record id
-   * @throws {Error} If no record is found
+   * @throws {RecordNotFoundError} If no record is found
    * @return The proof record
    *
    */
   public async getById(proofRecordId: string): Promise<ProofRecord> {
-    return this.proofRepository.find(proofRecordId)
+    return this.proofRepository.getById(proofRecordId)
+  }
+
+  /**
+   * Retrieve a proof record by id
+   *
+   * @param proofRecordId The proof record id
+   * @return The proof record or null if not found
+   *
+   */
+  public async findById(proofRecordId: string): Promise<ProofRecord | null> {
+    return this.proofRepository.findById(proofRecordId)
   }
 
   /**
    * Retrieve a proof record by thread id
    *
    * @param threadId The thread id
-   * @throws {Error} If no record is found
-   * @throws {Error} If multiple records are found
+   * @throws {RecordNotFoundError} If no record is found
+   * @throws {RecordDuplicateError} If multiple records are found
    * @returns The proof record
    */
   public async getByThreadId(threadId: string): Promise<ProofRecord> {
-    const proofRecords = await this.proofRepository.findByQuery({ threadId })
-
-    if (proofRecords.length === 0) {
-      throw new Error(`Proof record not found by thread id ${threadId}`)
-    }
-
-    if (proofRecords.length > 1) {
-      throw new Error(`Multiple proof records found by thread id ${threadId}`)
-    }
-
-    return proofRecords[0]
+    return this.proofRepository.getSingleByQuery({ threadId })
   }
 
   /**

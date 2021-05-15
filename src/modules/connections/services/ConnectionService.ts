@@ -1,4 +1,4 @@
-import type { Verkey } from 'indy-sdk'
+import { Verkey } from 'indy-sdk'
 import { validateOrReject } from 'class-validator'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
@@ -31,11 +31,7 @@ import { AgentMessage } from '../../../agent/AgentMessage'
 import { Symbols } from '../../../symbols'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { ConnectionEventTypes, ConnectionStateChangedEvent } from '../ConnectionEvents'
-
-export interface ConnectionProtocolMsgReturnType<MessageType extends AgentMessage> {
-  message: MessageType
-  connectionRecord: ConnectionRecord
-}
+import { AriesFrameworkError } from '../../../error'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ConnectionService {
@@ -144,7 +140,7 @@ export class ConnectionService {
    * @returns outbound message containing connection request
    */
   public async createRequest(connectionId: string): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
-    const connectionRecord = await this.connectionRepository.find(connectionId)
+    const connectionRecord = await this.connectionRepository.getById(connectionId)
 
     connectionRecord.assertState(ConnectionState.Invited)
     connectionRecord.assertRole(ConnectionRole.Invitee)
@@ -216,7 +212,7 @@ export class ConnectionService {
   public async createResponse(
     connectionId: string
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionResponseMessage>> {
-    const connectionRecord = await this.connectionRepository.find(connectionId)
+    const connectionRecord = await this.connectionRepository.getById(connectionId)
 
     connectionRecord.assertState(ConnectionState.Requested)
     connectionRecord.assertRole(ConnectionRole.Inviter)
@@ -301,7 +297,7 @@ export class ConnectionService {
    * @returns outbound message containing trust ping message
    */
   public async createTrustPing(connectionId: string): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
-    const connectionRecord = await this.connectionRepository.find(connectionId)
+    const connectionRecord = await this.connectionRepository.getById(connectionId)
 
     connectionRecord.assertState([ConnectionState.Responded, ConnectionState.Complete])
 
@@ -354,6 +350,75 @@ export class ConnectionService {
         previousState,
       },
     })
+  }
+
+  /**
+   * Retrieve all connections records
+   *
+   * @returns List containing all connection records
+   */
+  public getAll() {
+    return this.connectionRepository.getAll()
+  }
+
+  /**
+   * Retrieve a connection record by id
+   *
+   * @param connectionId The connection record id
+   * @throws {RecordNotFoundError} If no record is found
+   * @return The connection record
+   *
+   */
+  public getById(connectionId: string): Promise<ConnectionRecord> {
+    return this.connectionRepository.getById(connectionId)
+  }
+
+  /**
+   * Find a connection record by id
+   *
+   * @param connectionId the connection record id
+   * @returns The connection record or null if not found
+   */
+  public findById(connectionId: string): Promise<ConnectionRecord | null> {
+    return this.connectionRepository.findById(connectionId)
+  }
+
+  /**
+   * Find connection by verkey.
+   *
+   * @param verkey the verkey to search for
+   * @returns the connection record, or null if not found
+   * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
+   */
+  public findByVerkey(verkey: Verkey): Promise<ConnectionRecord | null> {
+    return this.connectionRepository.findSingleByQuery({
+      verkey,
+    })
+  }
+
+  /**
+   * Find connection by their verkey.
+   *
+   * @param verkey the verkey to search for
+   * @returns the connection record, or null if not found
+   * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
+   */
+  public findByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
+    return this.connectionRepository.findSingleByQuery({
+      theirKey: verkey,
+    })
+  }
+
+  /**
+   * Retrieve a connection record by thread id
+   *
+   * @param threadId The thread id
+   * @throws {RecordNotFoundError} If no record is found
+   * @throws {RecordDuplicateError} If multiple records are found
+   * @returns The connection record
+   */
+  public getByThreadId(threadId: string): Promise<ConnectionRecord> {
+    return this.connectionRepository.getSingleByQuery({ threadId })
   }
 
   private async createConnection(options: {
@@ -420,74 +485,12 @@ export class ConnectionService {
     return connectionRecord
   }
 
-  public getConnections() {
-    return this.connectionRepository.findAll()
-  }
-
-  /**
-   * Retrieve a connection record by id
-   *
-   * @param connectionId The connection record id
-   * @throws {Error} If no record is found
-   * @return The connection record
-   *
-   */
-  public async getById(connectionId: string): Promise<ConnectionRecord> {
-    return this.connectionRepository.find(connectionId)
-  }
-
-  public async find(connectionId: string): Promise<ConnectionRecord | null> {
-    try {
-      const connection = await this.connectionRepository.find(connectionId)
-
-      return connection
-    } catch {
-      // connection not found.
-      return null
-    }
-  }
-
-  public async findByVerkey(verkey: Verkey): Promise<ConnectionRecord | null> {
-    const connectionRecords = await this.connectionRepository.findByQuery({
-      verkey,
-    })
-
-    if (connectionRecords.length > 1) {
-      throw new Error(`There is more than one connection for given verkey ${verkey}`)
-    }
-
-    if (connectionRecords.length < 1) {
-      return null
-    }
-
-    return connectionRecords[0]
-  }
-
-  public async findByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
-    const connectionRecords = await this.connectionRepository.findByQuery({
-      theirKey: verkey,
-    })
-
-    if (connectionRecords.length > 1) {
-      throw new Error(`There is more than one connection for given verkey ${verkey}`)
-    }
-
-    if (connectionRecords.length < 1) {
-      return null
-    }
-
-    return connectionRecords[0]
-  }
-
   public async returnWhenIsConnected(connectionId: string): Promise<ConnectionRecord> {
     const isConnected = (connection: ConnectionRecord) => {
       return connection.id === connectionId && connection.state === ConnectionState.Complete
     }
 
-    const connection = await this.find(connectionId)
-    if (connection && isConnected(connection)) return connection
-
-    return new Promise((resolve) => {
+    const promise = new Promise<ConnectionRecord>((resolve) => {
       const listener = ({ payload: { connectionRecord } }: ConnectionStateChangedEvent) => {
         if (isConnected(connectionRecord)) {
           this.eventEmitter.off<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged, listener)
@@ -497,5 +500,17 @@ export class ConnectionService {
 
       this.eventEmitter.on<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged, listener)
     })
+
+    // Check if already done
+    const connection = await this.connectionRepository.findById(connectionId)
+    if (connection && isConnected(connection)) return connection
+
+    // return listener
+    return promise
   }
+}
+
+export interface ConnectionProtocolMsgReturnType<MessageType extends AgentMessage> {
+  message: MessageType
+  connectionRecord: ConnectionRecord
 }

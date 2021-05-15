@@ -1,16 +1,15 @@
 import { inject, scoped, Lifecycle } from 'tsyringe'
 import type { WalletQuery, WalletRecord } from 'indy-sdk'
 
-import { StorageService } from './StorageService'
+import { StorageService, BaseRecordConstructor } from './StorageService'
 import { BaseRecord } from './BaseRecord'
 import { Wallet } from '../wallet/Wallet'
 import { JsonTransformer } from '../utils/JsonTransformer'
-import { Constructor } from '../utils/mixins'
 import { Symbols } from '../symbols'
 
-export interface BaseRecordConstructor<T> extends Constructor<T> {
-  type: string
-}
+import { handleIndyError, IndyError, isIndyError } from '../utils/indyError'
+import { AriesFrameworkError, RecordNotFoundError } from '../error'
+import { RecordDuplicateError } from '../error/RecordDuplicateError'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyStorageService<T extends BaseRecord> implements StorageService<T> {
@@ -24,52 +23,112 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     this.wallet = wallet
   }
 
-  private recordToInstance(record: WalletRecord, typeClass: BaseRecordConstructor<T>): T {
+  private recordToInstance(record: WalletRecord, recordClass: BaseRecordConstructor<T>): T {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const instance = JsonTransformer.deserialize<T>(record.value!, typeClass)
+    const instance = JsonTransformer.deserialize<T>(record.value!, recordClass)
     instance.id = record.id
     instance.tags = record.tags || {}
 
     return instance
   }
 
+  /** @inheritDoc {StorageService#save} */
   public async save(record: T) {
     const value = JsonTransformer.serialize(record)
 
-    return this.wallet.addWalletRecord(record.type, record.id, value, record.tags)
+    try {
+      await this.wallet.addWalletRecord(record.type, record.id, value, record.tags)
+    } catch (error) {
+      // Record already exists
+      if (isIndyError(error, 'WalletItemAlreadyExists')) {
+        throw new RecordDuplicateError(`Record with id ${record.id} already exists`, { recordType: record.type })
+      } // Other indy error
+      else if (isIndyError(error)) {
+        handleIndyError(error)
+      }
+
+      throw error
+    }
   }
 
+  /** @inheritDoc {StorageService#update} */
   public async update(record: T): Promise<void> {
     const value = JsonTransformer.serialize(record)
 
-    await this.wallet.updateWalletRecordValue(record.type, record.id, value)
-    await this.wallet.updateWalletRecordTags(record.type, record.id, record.tags)
+    try {
+      await this.wallet.updateWalletRecordValue(record.type, record.id, value)
+      await this.wallet.updateWalletRecordTags(record.type, record.id, record.tags)
+    } catch (error) {
+      // Record does not exist
+      if (isIndyError(error, 'WalletItemNotFound')) {
+        throw new RecordNotFoundError(`record with id ${record.id} not found.`, {
+          recordType: record.type,
+          cause: error,
+        })
+      } // Other indy error
+      else if (isIndyError(error)) {
+        handleIndyError(error)
+      }
+
+      throw error
+    }
   }
 
+  /** @inheritDoc {StorageService#delete} */
   public async delete(record: T) {
-    return this.wallet.deleteWalletRecord(record.type, record.id)
+    try {
+      await this.wallet.deleteWalletRecord(record.type, record.id)
+    } catch (error) {
+      // Record does not exist
+      if (isIndyError(error, 'WalletItemNotFound')) {
+        throw new RecordNotFoundError(`record with id ${record.id} not found.`, {
+          recordType: record.type,
+          cause: error,
+        })
+      } // Other indy error
+      else if (isIndyError(error)) {
+        handleIndyError(error)
+      }
+
+      throw error
+    }
   }
 
-  public async find(typeClass: BaseRecordConstructor<T>, id: string): Promise<T> {
-    const record = await this.wallet.getWalletRecord(typeClass.type, id, IndyStorageService.DEFAULT_QUERY_OPTIONS)
+  /** @inheritDoc {StorageService#getById} */
+  public async getById(recordClass: BaseRecordConstructor<T>, id: string): Promise<T> {
+    try {
+      const record = await this.wallet.getWalletRecord(recordClass.type, id, IndyStorageService.DEFAULT_QUERY_OPTIONS)
+      return this.recordToInstance(record, recordClass)
+    } catch (error) {
+      if (isIndyError(error, 'WalletItemNotFound')) {
+        throw new RecordNotFoundError(`record with id ${id} not found.`, {
+          recordType: recordClass.type,
+          cause: error,
+        })
+      } else if (isIndyError(error)) {
+        handleIndyError(error)
+      }
 
-    return this.recordToInstance(record, typeClass)
+      throw error
+    }
   }
 
-  public async findAll(typeClass: BaseRecordConstructor<T>, type: string): Promise<T[]> {
-    const recordIterator = await this.wallet.search(type, {}, IndyStorageService.DEFAULT_QUERY_OPTIONS)
+  /** @inheritDoc {StorageService#getAll} */
+  public async getAll(recordClass: BaseRecordConstructor<T>): Promise<T[]> {
+    const recordIterator = await this.wallet.search(recordClass.type, {}, IndyStorageService.DEFAULT_QUERY_OPTIONS)
     const records = []
     for await (const record of recordIterator) {
-      records.push(this.recordToInstance(record, typeClass))
+      records.push(this.recordToInstance(record, recordClass))
     }
     return records
   }
 
-  public async findByQuery(typeClass: BaseRecordConstructor<T>, type: string, query: WalletQuery): Promise<T[]> {
-    const recordIterator = await this.wallet.search(type, query, IndyStorageService.DEFAULT_QUERY_OPTIONS)
+  /** @inheritDoc {StorageService#findByQuery} */
+  public async findByQuery(recordClass: BaseRecordConstructor<T>, query: WalletQuery): Promise<T[]> {
+    const recordIterator = await this.wallet.search(recordClass.type, query, IndyStorageService.DEFAULT_QUERY_OPTIONS)
     const records = []
     for await (const record of recordIterator) {
-      records.push(this.recordToInstance(record, typeClass))
+      records.push(this.recordToInstance(record, recordClass))
     }
     return records
   }

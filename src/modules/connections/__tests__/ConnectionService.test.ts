@@ -12,16 +12,16 @@ import {
   TrustPingMessage,
 } from '../messages'
 import { AckMessage, AckStatus } from '../../common'
-import { Repository } from '../../../storage/Repository'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { getBaseConfig, getMockConnection } from '../../../__tests__/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { ConnectionRepository } from '../repository/ConnectionRepository'
 
-jest.mock('./../../../storage/Repository')
-const ConnectionRepository = <jest.Mock<Repository<ConnectionRecord>>>(<unknown>Repository)
+jest.mock('../repository/ConnectionRepository')
+const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
 
 describe('ConnectionService', () => {
   const initConfig = getBaseConfig('ConnectionServiceTest', {
@@ -31,7 +31,7 @@ describe('ConnectionService', () => {
 
   let wallet: Wallet
   let agentConfig: AgentConfig
-  let connectionRepository: Repository<ConnectionRecord>
+  let connectionRepository: ConnectionRepository
   let connectionService: ConnectionService
   let eventEmitter: EventEmitter
 
@@ -47,11 +47,8 @@ describe('ConnectionService', () => {
   })
 
   beforeEach(() => {
-    // Clear all instances and calls to constructor and all methods:
-    ConnectionRepository.mockClear()
-
-    connectionRepository = new ConnectionRepository()
     eventEmitter = new EventEmitter()
+    connectionRepository = new ConnectionRepositoryMock()
     connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, eventEmitter)
   })
 
@@ -197,7 +194,7 @@ describe('ConnectionService', () => {
       const connection = getMockConnection()
 
       // make separate mockFind variable to get the correct jest mock typing
-      const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>
+      const mockFind = connectionRepository.getById as jest.Mock<Promise<ConnectionRecord>, [string]>
       mockFind.mockReturnValue(Promise.resolve(connection))
 
       const { connectionRecord: connectionRecord, message } = await connectionService.createRequest('test')
@@ -212,7 +209,7 @@ describe('ConnectionService', () => {
       expect.assertions(1)
 
       // make separate mockFind variable to get the correct jest mock typing
-      const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>
+      const mockFind = connectionRepository.getById as jest.Mock<Promise<ConnectionRecord>, [string]>
 
       mockFind.mockReturnValue(Promise.resolve(getMockConnection({ role: ConnectionRole.Inviter })))
       return expect(connectionService.createRequest('test')).rejects.toThrowError(
@@ -232,7 +229,7 @@ describe('ConnectionService', () => {
         expect.assertions(1)
 
         // make separate mockFind variable to get the correct jest mock typing
-        const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>
+        const mockFind = connectionRepository.getById as jest.Mock<Promise<ConnectionRecord>, [string]>
 
         mockFind.mockReturnValue(Promise.resolve(getMockConnection({ state })))
         return expect(connectionService.createRequest('test')).rejects.toThrowError(
@@ -302,7 +299,7 @@ describe('ConnectionService', () => {
       })
 
       return expect(connectionService.processRequest(messageContext)).rejects.toThrowError(
-        'Connection for verkey test-verkey not found!'
+        'Connection for verkey test-verkey not found'
       )
     })
 
@@ -379,7 +376,7 @@ describe('ConnectionService', () => {
       })
 
       // make separate mockFind variable to get the correct jest mock typing
-      const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>
+      const mockFind = connectionRepository.getById as jest.Mock<Promise<ConnectionRecord>, [string]>
       mockFind.mockReturnValue(Promise.resolve(mockConnection))
 
       const { message, connectionRecord: connectionRecord } = await connectionService.createResponse('test')
@@ -398,7 +395,7 @@ describe('ConnectionService', () => {
       expect.assertions(1)
 
       // make separate mockFind variable to get the correct jest mock typing
-      const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>
+      const mockFind = connectionRepository.getById as jest.Mock<Promise<ConnectionRecord>, [string]>
 
       mockFind.mockReturnValue(
         Promise.resolve(
@@ -425,7 +422,7 @@ describe('ConnectionService', () => {
         expect.assertions(1)
 
         // make separate mockFind variable to get the correct jest mock typing
-        const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>
+        const mockFind = connectionRepository.getById as jest.Mock<Promise<ConnectionRecord>, [string]>
         mockFind.mockReturnValue(Promise.resolve(getMockConnection({ state })))
 
         return expect(connectionService.createResponse('test')).rejects.toThrowError(
@@ -574,7 +571,7 @@ describe('ConnectionService', () => {
       })
 
       return expect(connectionService.processResponse(messageContext)).rejects.toThrowError(
-        'Connection for verkey test-verkey not found!'
+        'Connection for verkey test-verkey not found'
       )
     })
 
@@ -625,7 +622,7 @@ describe('ConnectionService', () => {
       })
 
       // make separate mockFind variable to get the correct jest mock typing
-      const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>
+      const mockFind = connectionRepository.getById as jest.Mock<Promise<ConnectionRecord>, [string]>
       mockFind.mockReturnValue(Promise.resolve(mockConnection))
 
       const { message, connectionRecord: connectionRecord } = await connectionService.createTrustPing('test')
@@ -641,7 +638,7 @@ describe('ConnectionService', () => {
         expect.assertions(1)
 
         // make separate mockFind variable to get the correct jest mock typing
-        const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>
+        const mockFind = connectionRepository.getById as jest.Mock<Promise<ConnectionRecord>, [string]>
 
         mockFind.mockReturnValue(Promise.resolve(getMockConnection({ state })))
         return expect(connectionService.createTrustPing('test')).rejects.toThrowError(
@@ -665,7 +662,7 @@ describe('ConnectionService', () => {
       })
 
       return expect(connectionService.processAck(messageContext)).rejects.toThrowError(
-        'Connection for verkey test-verkey not found!'
+        'Connection for verkey test-verkey not found'
       )
     })
 
@@ -713,183 +710,6 @@ describe('ConnectionService', () => {
       const updatedConnection = await connectionService.processAck(messageContext)
 
       expect(updatedConnection.state).toBe(ConnectionState.Responded)
-    })
-  })
-
-  describe('getConnections', () => {
-    it('returns the connections from the connections repository', async () => {
-      expect.assertions(2)
-
-      const expectedConnections = [getMockConnection(), getMockConnection(), getMockConnection()]
-
-      // make separate mockFind variable to get the correct jest mock typing
-      const mockFindAll = connectionRepository.findAll as jest.Mock<Promise<ConnectionRecord[]>, []>
-      mockFindAll.mockReturnValue(Promise.resolve(expectedConnections))
-
-      const connections = await connectionService.getConnections()
-
-      expect(connections).toEqual(expectedConnections)
-      expect(mockFindAll).toBeCalled()
-    })
-  })
-
-  describe('find', () => {
-    it('returns the connection from the connections repository', async () => {
-      expect.assertions(2)
-
-      const id = 'test-id'
-
-      const expectedConnection = getMockConnection({
-        id,
-      })
-
-      // make separate mockFind variable to get the correct jest mock typing
-      const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>
-      mockFind.mockReturnValue(Promise.resolve(expectedConnection))
-
-      const connection = await connectionService.find(id)
-
-      expect(connection).toEqual(expectedConnection)
-      expect(mockFind).toBeCalledWith(id)
-    })
-
-    it('returns null when the connections repository throws an error', async () => {
-      expect.assertions(2)
-
-      const id = 'test-id'
-
-      // make separate mockFind variable to get the correct jest mock typing
-      const mockFind = connectionRepository.find as jest.Mock<Promise<ConnectionRecord>, [string]>
-      mockFind.mockReturnValue(Promise.reject())
-
-      const connection = await connectionService.find(id)
-
-      expect(connection).toBeNull()
-      expect(mockFind).toBeCalledWith(id)
-    })
-  })
-
-  describe('findByVerkey', () => {
-    it('returns the connection from the connections repository', async () => {
-      expect.assertions(2)
-
-      const verkey = 'test-verkey'
-
-      const expectedConnection = getMockConnection({
-        verkey,
-      })
-
-      // make separate mockFind variable to get the correct jest mock typing
-      const mockFindByQuery = connectionRepository.findByQuery as jest.Mock<
-        Promise<ConnectionRecord[]>,
-        [Record<string, unknown>]
-      >
-      mockFindByQuery.mockReturnValue(Promise.resolve([expectedConnection]))
-
-      const connection = await connectionService.findByVerkey(verkey)
-
-      expect(connection).toEqual(expectedConnection)
-      expect(mockFindByQuery).toBeCalledWith({ verkey })
-    })
-
-    it('returns null when the connection repository does not return any connections', async () => {
-      expect.assertions(2)
-
-      const verkey = 'test-verkey'
-
-      // make separate mockFind variable to get the correct jest mock typing
-      const mockFindByQuery = connectionRepository.findByQuery as jest.Mock<
-        Promise<ConnectionRecord[]>,
-        [Record<string, unknown>]
-      >
-      mockFindByQuery.mockReturnValue(Promise.resolve([]))
-
-      const connection = await connectionService.findByVerkey(verkey)
-
-      expect(connection).toBeNull()
-      expect(mockFindByQuery).toBeCalledWith({ verkey })
-    })
-
-    it('throws an error when the connection repository returns more than one connection', async () => {
-      expect.assertions(2)
-
-      const verkey = 'test-verkey'
-
-      const expectedConnections = [getMockConnection({ verkey }), getMockConnection({ verkey })]
-
-      // make separate mockFind variable to get the correct jest mock typing
-      const mockFindByQuery = connectionRepository.findByQuery as jest.Mock<
-        Promise<ConnectionRecord[]>,
-        [Record<string, unknown>]
-      >
-      mockFindByQuery.mockReturnValue(Promise.resolve(expectedConnections))
-
-      expect(connectionService.findByVerkey(verkey)).rejects.toThrowError(
-        'There is more than one connection for given verkey test-verkey'
-      )
-
-      expect(mockFindByQuery).toBeCalledWith({ verkey })
-    })
-  })
-
-  describe('findByTheirKey', () => {
-    it('returns the connection from the connections repository', async () => {
-      expect.assertions(2)
-
-      const theirKey = 'test-theirVerkey'
-
-      const expectedConnection = getMockConnection()
-
-      // make separate mockFind variable to get the correct jest mock typing
-      const mockFindByQuery = connectionRepository.findByQuery as jest.Mock<
-        Promise<ConnectionRecord[]>,
-        [Record<string, unknown>]
-      >
-      mockFindByQuery.mockReturnValue(Promise.resolve([expectedConnection]))
-
-      const connection = await connectionService.findByTheirKey(theirKey)
-
-      expect(connection).toEqual(expectedConnection)
-      expect(mockFindByQuery).toBeCalledWith({ theirKey })
-    })
-
-    it('returns null when the connection repository does not return any connections', async () => {
-      expect.assertions(2)
-
-      const theirKey = 'test-theirVerkey'
-
-      // make separate mockFind variable to get the correct jest mock typing
-      const mockFindByQuery = connectionRepository.findByQuery as jest.Mock<
-        Promise<ConnectionRecord[]>,
-        [Record<string, unknown>]
-      >
-      mockFindByQuery.mockReturnValue(Promise.resolve([]))
-
-      const connection = await connectionService.findByTheirKey(theirKey)
-
-      expect(connection).toBeNull()
-      expect(mockFindByQuery).toBeCalledWith({ theirKey })
-    })
-
-    it('throws an error when the connection repository returns more than one connection', async () => {
-      expect.assertions(2)
-
-      const theirKey = 'test-theirVerkey'
-
-      const expectedConnections = [getMockConnection(), getMockConnection()]
-
-      // make separate mockFind variable to get the correct jest mock typing
-      const mockFindByQuery = connectionRepository.findByQuery as jest.Mock<
-        Promise<ConnectionRecord[]>,
-        [Record<string, unknown>]
-      >
-      mockFindByQuery.mockReturnValue(Promise.resolve(expectedConnections))
-
-      expect(connectionService.findByTheirKey(theirKey)).rejects.toThrowError(
-        'There is more than one connection for given verkey test-theirVerkey'
-      )
-
-      expect(mockFindByQuery).toBeCalledWith({ theirKey })
     })
   })
 })
