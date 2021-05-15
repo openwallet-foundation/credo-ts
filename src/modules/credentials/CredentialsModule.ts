@@ -14,6 +14,7 @@ import {
   IssueCredentialHandler,
   CredentialAckHandler,
 } from './handlers'
+import { AriesFrameworkError } from '../../error'
 
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialsModule {
@@ -74,13 +75,15 @@ export class CredentialsModule {
     const credentialProposalMessage = credentialRecord.proposalMessage
 
     if (!credentialProposalMessage?.credentialProposal) {
-      throw new Error(`Credential record with id ${credentialRecordId} is missing required credential proposal`)
+      throw new AriesFrameworkError(
+        `Credential record with id ${credentialRecordId} is missing required credential proposal`
+      )
     }
 
     const credentialDefinitionId = config?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
 
     if (!credentialDefinitionId) {
-      throw new Error(
+      throw new AriesFrameworkError(
         'Missing required credential definition id. If credential proposal message contains no credential definition id it must be passed to config.'
       )
     }
@@ -193,7 +196,7 @@ export class CredentialsModule {
    * Retrieve a credential record by id
    *
    * @param credentialRecordId The credential record id
-   * @throws {Error} If no record is found
+   * @throws {RecordNotFoundError} If no record is found
    * @return The credential record
    *
    */
@@ -205,8 +208,8 @@ export class CredentialsModule {
    * Retrieve a credential record by thread id
    *
    * @param threadId The thread id
-   * @throws {Error} If no record is found
-   * @throws {Error} If multiple records are found
+   * @throws {RecordNotFoundError} If no record is found
+   * @throws {RecordDuplicateError} If multiple records are found
    * @returns The credential record
    */
   public async getByThreadId(threadId: string): Promise<CredentialRecord> {

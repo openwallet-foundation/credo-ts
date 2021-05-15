@@ -19,6 +19,7 @@ import { Wallet, DidInfo } from './Wallet'
 import { JsonEncoder } from '../utils/JsonEncoder'
 import { AgentConfig } from '../agent/AgentConfig'
 import { Logger } from '../logger'
+import { AriesFrameworkError } from '../error'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyWallet implements Wallet {
@@ -43,7 +44,7 @@ export class IndyWallet implements Wallet {
 
   public get walletHandle() {
     if (!this._walletHandle) {
-      throw new Error('Wallet has not been initialized yet')
+      throw new AriesFrameworkError('Wallet has not been initialized yet')
     }
 
     return this._walletHandle
@@ -52,7 +53,7 @@ export class IndyWallet implements Wallet {
   public get masterSecretId() {
     // In theory this is not possible if the wallet handle is available
     if (!this._masterSecretId) {
-      throw new Error('Master secret has not been initialized yet')
+      throw new AriesFrameworkError('Master secret has not been initialized yet')
     }
 
     return this._masterSecretId

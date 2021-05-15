@@ -167,9 +167,9 @@ export class ConnectionService {
    * Process a received connection request message. This will not accept the connection request
    * or send a connection response message. It will only update the existing connection record
    * with all the new information from the connection request message. Use {@link ConnectionService#createResponse}
-   * after calling this function to create a connection respone.
+   * after calling this function to create a connection response.
    *
-   * @param messageContext the message context containing a connetion request message
+   * @param messageContext the message context containing a connection request message
    * @returns updated connection record
    */
   public async processRequest(
@@ -178,7 +178,7 @@ export class ConnectionService {
     const { message, connection: connectionRecord, recipientVerkey } = messageContext
 
     if (!connectionRecord) {
-      throw new Error(`Connection for verkey ${recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${recipientVerkey} not found!`)
     }
 
     connectionRecord.assertState(ConnectionState.Invited)
@@ -186,14 +186,14 @@ export class ConnectionService {
 
     // TODO: validate using class-validator
     if (!message.connection) {
-      throw new Error('Invalid message')
+      throw new AriesFrameworkError('Invalid message')
     }
 
     connectionRecord.theirDid = message.connection.did
     connectionRecord.theirDidDoc = message.connection.didDoc
 
     if (!connectionRecord.theirKey) {
-      throw new Error(`Connection with id ${connectionRecord.id} has no recipient keys.`)
+      throw new AriesFrameworkError(`Connection with id ${connectionRecord.id} has no recipient keys.`)
     }
 
     connectionRecord.tags = {
@@ -211,7 +211,7 @@ export class ConnectionService {
    * Create a connection response message for the connection with the specified connection id.
    *
    * @param connectionId the id of the connection for which to create a connection response
-   * @returns outbound message contaning connection response
+   * @returns outbound message containing connection response
    */
   public async createResponse(
     connectionId: string
@@ -247,7 +247,7 @@ export class ConnectionService {
    * with all the new information from the connection response message. Use {@link ConnectionService#createTrustPing}
    * after calling this function to create a trust ping message.
    *
-   * @param messageContext the message context containing a connetion response message
+   * @param messageContext the message context containing a connection response message
    * @returns updated connection record
    */
   public async processResponse(
@@ -256,7 +256,7 @@ export class ConnectionService {
     const { message, connection: connectionRecord, recipientVerkey } = messageContext
 
     if (!connectionRecord) {
-      throw new Error(`Connection for verkey ${recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${recipientVerkey} not found!`)
     }
     connectionRecord.assertState(ConnectionState.Requested)
     connectionRecord.assertRole(ConnectionRole.Invitee)
@@ -272,14 +272,16 @@ export class ConnectionService {
     const signerVerkey = message.connectionSig.signer
     const invitationKey = connectionRecord.tags.invitationKey
     if (signerVerkey !== invitationKey) {
-      throw new Error('Connection in connection response is not signed with same key as recipient key in invitation')
+      throw new AriesFrameworkError(
+        'Connection in connection response is not signed with same key as recipient key in invitation'
+      )
     }
 
     connectionRecord.theirDid = connection.did
     connectionRecord.theirDidDoc = connection.didDoc
 
     if (!connectionRecord.theirKey) {
-      throw new Error(`Connection with id ${connectionRecord.id} has no recipient keys.`)
+      throw new AriesFrameworkError(`Connection with id ${connectionRecord.id} has no recipient keys.`)
     }
 
     connectionRecord.tags = {
@@ -296,7 +298,7 @@ export class ConnectionService {
    * Create a trust ping message for the connection with the specified connection id.
    *
    * @param connectionId the id of the connection for which to create a trust ping message
-   * @returns outbound message contaning trust ping message
+   * @returns outbound message containing trust ping message
    */
   public async createTrustPing(connectionId: string): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
     const connectionRecord = await this.connectionRepository.find(connectionId)
@@ -328,7 +330,7 @@ export class ConnectionService {
     const connection = messageContext.connection
 
     if (!connection) {
-      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found`)
     }
 
     // TODO: This is better addressed in a middleware of some kind because

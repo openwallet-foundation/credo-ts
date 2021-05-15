@@ -1,6 +1,7 @@
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AgentEventTypes, AgentMessageReceivedEvent } from '../../../agent/Events'
 import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import { AriesFrameworkError } from '../../../error'
 
 import { BatchMessage } from '../messages'
 
@@ -14,7 +15,7 @@ export class BatchHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<BatchHandler>) {
     if (!messageContext.connection) {
-      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
 
     const { message } = messageContext

@@ -12,6 +12,7 @@ import { JsonTransformer } from '../utils/JsonTransformer'
 import { Logger } from '../logger'
 import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 import { Transport, TransportService } from './TransportService'
+import { AriesFrameworkError } from '../error'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MessageReceiver {
@@ -45,7 +46,7 @@ export class MessageReceiver {
    */
   public async receiveMessage(inboundPackedMessage: unknown, transport?: Transport) {
     if (typeof inboundPackedMessage !== 'object' || inboundPackedMessage == null) {
-      throw new Error('Invalid message received. Message should be object')
+      throw new AriesFrameworkError('Invalid message received. Message should be object')
     }
 
     this.logger.debug(`Agent ${this.config.label} received message:`, inboundPackedMessage)
@@ -63,7 +64,7 @@ export class MessageReceiver {
       // otherwise everyone could send messages to our key and we would just accept
       // it as if it was send by the key of the connection.
       if (connection && connection.theirKey != null && connection.theirKey != senderKey) {
-        throw new Error(
+        throw new AriesFrameworkError(
           `Inbound message 'sender_key' ${senderKey} is different from connection.theirKey ${connection.theirKey}`
         )
       }
@@ -150,7 +151,7 @@ export class MessageReceiver {
     const MessageClass = this.dispatcher.getMessageClassForType(messageType)
 
     if (!MessageClass) {
-      throw new Error(`No handler for message type "${messageType}" found`)
+      throw new AriesFrameworkError(`No handler for message type "${messageType}" found`)
     }
 
     // Cast the plain JSON object to specific instance of Message extended from AgentMessage

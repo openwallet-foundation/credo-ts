@@ -1,4 +1,5 @@
 import { Transform, TransformationType, ClassConstructor, plainToClass, classToPlain } from 'class-transformer'
+import { AriesFrameworkError } from '../../../../../error'
 
 import { PublicKey, publicKeyTypes } from '../publicKey'
 import { Authentication } from './Authentication'
@@ -41,7 +42,7 @@ export function AuthenticationTransformer() {
             const publicKeyJson = obj.publicKey.find((publicKey) => publicKey.id === auth.publicKey)
 
             if (!publicKeyJson) {
-              throw new Error(`Invalid public key referenced ${auth.publicKey}`)
+              throw new AriesFrameworkError(`Invalid public key referenced ${auth.publicKey}`)
             }
 
             // Referenced keys use other types than embedded keys.

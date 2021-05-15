@@ -4,6 +4,7 @@ import { inject, scoped, Lifecycle } from 'tsyringe'
 import { LedgerService, SchemaTemplate, CredentialDefinitionTemplate, LedgerConnectOptions } from './services'
 import { Wallet } from '../../wallet/Wallet'
 import { Symbols } from '../../symbols'
+import { AriesFrameworkError } from '../../error'
 
 @scoped(Lifecycle.ContainerScoped)
 export class LedgerModule {
@@ -20,7 +21,7 @@ export class LedgerModule {
   }
 
   public async registerPublicDid() {
-    throw new Error('registerPublicDid not implemented.')
+    throw new AriesFrameworkError('registerPublicDid not implemented.')
   }
 
   public async getPublicDid(did: Did) {
@@ -31,7 +32,7 @@ export class LedgerModule {
     const did = this.wallet.publicDid?.did
 
     if (!did) {
-      throw new Error('Agent has no public DID.')
+      throw new AriesFrameworkError('Agent has no public DID.')
     }
 
     return this.ledgerService.registerSchema(did, schema)
@@ -45,7 +46,7 @@ export class LedgerModule {
     const did = this.wallet.publicDid?.did
 
     if (!did) {
-      throw new Error('Agent has no public DID.')
+      throw new AriesFrameworkError('Agent has no public DID.')
     }
 
     return this.ledgerService.registerCredentialDefinition(did, credentialDefinitionTemplate)

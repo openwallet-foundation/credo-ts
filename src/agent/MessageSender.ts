@@ -4,6 +4,7 @@ import { OutboundMessage, OutboundPackage } from '../types'
 import { OutboundTransporter } from '../transport/OutboundTransporter'
 import { EnvelopeService } from './EnvelopeService'
 import { TransportService } from './TransportService'
+import { AriesFrameworkError } from '../error'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MessageSender {
@@ -30,7 +31,7 @@ export class MessageSender {
 
   public async sendMessage(outboundMessage: OutboundMessage): Promise<void> {
     if (!this.outboundTransporter) {
-      throw new Error('Agent has no outbound transporter!')
+      throw new AriesFrameworkError('Agent has no outbound transporter!')
     }
     const outboundPackage = await this.envelopeService.packMessage(outboundMessage)
     const transport = this.transportService.resolveTransport(outboundMessage.connection)

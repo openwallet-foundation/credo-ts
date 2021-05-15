@@ -1,4 +1,6 @@
-export const indyErrors: { [key: number]: string } = {
+import { AriesFrameworkError } from '../error'
+
+export const indyErrors = {
   100: 'CommonInvalidParam1',
   101: 'CommonInvalidParam2',
   102: 'CommonInvalidParam3',
@@ -56,9 +58,17 @@ export const indyErrors: { [key: number]: string } = {
   704: 'PaymentOperationNotSupportedError',
   705: 'PaymentExtraFundsError',
   706: 'TransactionNotAllowedError',
+} as const
+
+type IndyErrorValues = typeof indyErrors[keyof typeof indyErrors]
+
+export interface IndyError {
+  name: 'IndyError'
+  message: string
+  indyName?: string
 }
 
-export function isIndyError(error: any, errorName?: string) {
+export function isIndyError(error: any, errorName?: IndyErrorValues): error is IndyError {
   const indyError = error.name === 'IndyError'
 
   // if no specific indy error name is passed
@@ -74,10 +84,13 @@ export function isIndyError(error: any, errorName?: string) {
   if (!error.indyName) {
     const errorCode = Number(error.message)
     if (!isNaN(errorCode) && Object.prototype.hasOwnProperty.call(indyErrors, errorCode)) {
+      // We already check if the property is set. We can safely ignore this typescript error
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       return errorName === indyErrors[errorCode]
     }
 
-    throw new Error(`Could not determine errorName of indyError ${error.message}`)
+    throw new AriesFrameworkError(`Could not determine errorName of indyError ${error.message}`)
   }
 
   return error.indyName === errorName

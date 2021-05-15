@@ -1,6 +1,7 @@
 import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import { MessagePickupService } from '../services'
 import { BatchPickupMessage } from '../messages'
+import { AriesFrameworkError } from '../../../error'
 
 export class BatchPickupHandler implements Handler {
   private messagePickupService: MessagePickupService
@@ -12,7 +13,7 @@ export class BatchPickupHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<BatchPickupHandler>) {
     if (!messageContext.connection) {
-      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
 
     return this.messagePickupService.batch(messageContext.connection)

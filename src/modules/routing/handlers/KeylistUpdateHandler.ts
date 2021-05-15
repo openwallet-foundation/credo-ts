@@ -2,6 +2,7 @@ import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import { ProviderRoutingService } from '../services'
 import { KeylistUpdateMessage } from '../messages'
 import { createOutboundMessage } from '../../../agent/helpers'
+import { AriesFrameworkError } from '../../../error'
 
 export class KeylistUpdateHandler implements Handler {
   private routingService: ProviderRoutingService
@@ -13,7 +14,7 @@ export class KeylistUpdateHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<KeylistUpdateHandler>) {
     if (!messageContext.connection) {
-      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
 
     const message = this.routingService.updateRoutes(messageContext)

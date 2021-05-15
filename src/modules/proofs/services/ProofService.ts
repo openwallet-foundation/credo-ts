@@ -43,10 +43,7 @@ import { Symbols } from '../../../symbols'
 import { IndyHolderService, IndyVerifierService } from '../../indy'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { ProofEventTypes, ProofStateChangedEvent } from '../ProofEvents'
-export interface ProofProtocolMsgReturnType<MessageType extends AgentMessage> {
-  message: MessageType
-  proofRecord: ProofRecord
-}
+import { AriesFrameworkError } from '../../../error'
 
 /**
  * @todo add method to check if request matches proposal. Useful to see if a request I received is the same as the proposal I sent.
@@ -176,7 +173,7 @@ export class ProofService {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming presentation proposal message with thread id ${proposalMessage.threadId}`
       )
     }
@@ -325,7 +322,7 @@ export class ProofService {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming presentation request message with thread id ${proofRequestMessage.threadId}`
       )
     }
@@ -334,7 +331,7 @@ export class ProofService {
 
     // Assert attachment
     if (!proofRequest) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for presentation request with thread id ${proofRequestMessage.threadId}`
       )
     }
@@ -394,7 +391,7 @@ export class ProofService {
 
     const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
     if (!indyProofRequest) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for presentation with thread id ${proofRecord.tags.threadId}`
       )
     }
@@ -439,7 +436,7 @@ export class ProofService {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming presentation message with thread id ${presentationMessage.threadId}`
       )
     }
@@ -453,13 +450,13 @@ export class ProofService {
     const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
 
     if (!indyProofJson) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for presentation with thread id ${presentationMessage.threadId}`
       )
     }
 
     if (!indyProofRequest) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for presentation request with thread id ${presentationMessage.threadId}`
       )
     }
@@ -510,7 +507,7 @@ export class ProofService {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming presentation acknowledgement message with thread id ${presentationAckMessage.threadId}`
       )
     }
@@ -639,7 +636,7 @@ export class ProofService {
 
       // Can't construct without matching credentials
       if (credentials.length === 0) {
-        throw new Error(
+        throw new AriesFrameworkError(
           `Could not automatically construct requested credentials for proof request '${proofRequest.name}'`
         )
       }
@@ -673,7 +670,7 @@ export class ProofService {
         }
 
         if (!credentialMatch) {
-          throw new Error(
+          throw new AriesFrameworkError(
             `Could not automatically construct requested credentials for proof request '${proofRequest.name}'`
           )
         }
@@ -700,7 +697,7 @@ export class ProofService {
 
       // Can't create requestedPredicates without matching credentials
       if (credentials.length === 0) {
-        throw new Error(
+        throw new AriesFrameworkError(
           `Could not automatically construct requested credentials for proof request '${proofRequest.name}'`
         )
       }
@@ -738,7 +735,7 @@ export class ProofService {
 
     for (const [referent, attribute] of proof.requestedProof.revealedAttributes.entries()) {
       if (!CredentialUtils.checkValidEncoding(attribute.raw, attribute.encoded)) {
-        throw new Error(
+        throw new AriesFrameworkError(
           `The encoded value for '${referent}' is invalid. ` +
             `Expected '${CredentialUtils.encode(attribute.raw)}'. ` +
             `Actual '${attribute.encoded}'`
@@ -913,4 +910,9 @@ export class ProofService {
 
     return credentialDefinitions
   }
+}
+
+export interface ProofProtocolMsgReturnType<MessageType extends AgentMessage> {
+  message: MessageType
+  proofRecord: ProofRecord
 }

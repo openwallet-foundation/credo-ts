@@ -28,6 +28,7 @@ export class ProvisioningService {
         this.logger.debug(`Provision record with id '${UNIQUE_PROVISIONING_ID}' not found.`, {
           indyError: 'WalletItemNotFound',
         })
+
         return null
       } else {
         throw error
@@ -46,7 +47,7 @@ export class ProvisioningService {
   }
 }
 
-interface ProvisioningProps {
+export interface ProvisioningProps {
   mediatorConnectionId: string
   mediatorPublicVerkey: Verkey
 }

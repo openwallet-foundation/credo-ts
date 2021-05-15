@@ -31,11 +31,7 @@ import { CredentialRepository } from '../repository'
 import { IndyIssuerService, IndyHolderService } from '../../indy'
 import { CredentialEventTypes, CredentialStateChangedEvent } from '../CredentialEvents'
 import { EventEmitter } from '../../../agent/EventEmitter'
-
-export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessage> {
-  message: MessageType
-  credentialRecord: CredentialRecord
-}
+import { AriesFrameworkError } from '../../../error'
 
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialService {
@@ -151,7 +147,7 @@ export class CredentialService {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming credential proposal message with thread id ${proposalMessage.threadId}`
       )
     }
@@ -310,7 +306,7 @@ export class CredentialService {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming credential offer message with thread id ${credentialOfferMessage.threadId}`
       )
     }
@@ -318,7 +314,7 @@ export class CredentialService {
     const indyCredentialOffer = credentialOfferMessage.indyCredentialOffer
 
     if (!indyCredentialOffer) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for credential offer with thread id ${credentialOfferMessage.threadId}`
       )
     }
@@ -385,7 +381,7 @@ export class CredentialService {
     const credentialOffer = credentialRecord.offerMessage?.indyCredentialOffer
 
     if (!credentialOffer) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for credential offer with thread id ${credentialRecord.tags.threadId}`
       )
     }
@@ -437,7 +433,7 @@ export class CredentialService {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming credential request message with thread id ${credentialRequestMessage.threadId}`
       )
     }
@@ -445,7 +441,7 @@ export class CredentialService {
     const indyCredentialRequest = credentialRequestMessage?.indyCredentialRequest
 
     if (!indyCredentialRequest) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for credential request with thread id ${credentialRequestMessage.threadId}`
       )
     }
@@ -481,7 +477,7 @@ export class CredentialService {
     const offerMessage = credentialRecord.offerMessage
 
     if (!offerMessage) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing credential offer for credential exchange with thread id ${credentialRecord.tags.threadId}`
       )
     }
@@ -497,7 +493,7 @@ export class CredentialService {
     // Assert Indy offer
     const indyCredentialOffer = offerMessage?.indyCredentialOffer
     if (!indyCredentialOffer) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for credential offer with thread id ${credentialRecord.tags.threadId}`
       )
     }
@@ -505,7 +501,7 @@ export class CredentialService {
     // Assert Indy request
     const indyCredentialRequest = requestMessage?.indyCredentialRequest
     if (!indyCredentialRequest) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for credential request with thread id ${credentialRecord.tags.threadId}`
       )
     }
@@ -560,7 +556,7 @@ export class CredentialService {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming presentation message with thread id ${issueCredentialMessage.threadId}`
       )
     }
@@ -570,12 +566,12 @@ export class CredentialService {
     credentialRecord.assertState(CredentialState.RequestSent)
 
     if (!credentialRecord.metadata.requestMetadata) {
-      throw new Error(`Missing required request metadata for credential with id ${credentialRecord.id}`)
+      throw new AriesFrameworkError(`Missing required request metadata for credential with id ${credentialRecord.id}`)
     }
 
     const indyCredential = issueCredentialMessage.indyCredential
     if (!indyCredential) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for credential with thread id ${issueCredentialMessage.threadId}`
       )
     }
@@ -644,7 +640,7 @@ export class CredentialService {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming presentation acknowledgement message with thread id ${credentialAckMessage.threadId}`
       )
     }
@@ -672,7 +668,7 @@ export class CredentialService {
    * Retrieve a credential record by id
    *
    * @param credentialRecordId The credential record id
-   * @throws {Error} If no record is found
+   * @throws {RecordNotFoundError} If no record is found
    * @return The credential record
    *
    */
@@ -684,8 +680,8 @@ export class CredentialService {
    * Retrieve a credential record by thread id
    *
    * @param threadId The thread id
-   * @throws {Error} If no record is found
-   * @throws {Error} If multiple records are found
+   * @throws {RecordNotFoundError} If no record is found
+   * @throws {RecordDuplicateError} If multiple records are found
    * @returns The credential record
    */
   public async getByThreadId(threadId: string): Promise<CredentialRecord> {
@@ -727,16 +723,21 @@ export class CredentialService {
   }
 }
 
+export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessage> {
+  message: MessageType
+  credentialRecord: CredentialRecord
+}
+
 export interface CredentialOfferTemplate {
   credentialDefinitionId: CredDefId
   comment?: string
   preview: CredentialPreview
 }
 
-interface CredentialRequestOptions {
+export interface CredentialRequestOptions {
   comment?: string
 }
 
-interface CredentialResponseOptions {
+export interface CredentialResponseOptions {
   comment?: string
 }

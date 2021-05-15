@@ -17,6 +17,7 @@ import {
 import { Logger } from '../../logger'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { EventEmitter } from '../../agent/EventEmitter'
+import { AriesFrameworkError } from '../../error'
 
 @scoped(Lifecycle.ContainerScoped)
 export class RoutingModule {
@@ -80,7 +81,7 @@ export class RoutingModule {
     const agentConnectionAtMediator = await this.connectionService.find(provisioningRecord.mediatorConnectionId)
 
     if (!agentConnectionAtMediator) {
-      throw new Error('Connection not found!')
+      throw new AriesFrameworkError('Connection not found!')
     }
     this.logger.debug('agentConnectionAtMediator', agentConnectionAtMediator)
 

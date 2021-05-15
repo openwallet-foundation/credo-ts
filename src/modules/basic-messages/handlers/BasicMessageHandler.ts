@@ -1,6 +1,7 @@
 import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import { BasicMessageService } from '../services/BasicMessageService'
 import { BasicMessage } from '../messages'
+import { AriesFrameworkError } from '../../../error'
 
 export class BasicMessageHandler implements Handler {
   private basicMessageService: BasicMessageService
@@ -14,11 +15,11 @@ export class BasicMessageHandler implements Handler {
     const connection = messageContext.connection
 
     if (!connection) {
-      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
 
     if (!connection.theirKey) {
-      throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`)
+      throw new AriesFrameworkError(`Connection with verkey ${connection.verkey} has no recipient keys.`)
     }
 
     await this.basicMessageService.save(messageContext, connection)
