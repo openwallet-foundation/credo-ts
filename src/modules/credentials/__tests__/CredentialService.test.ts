@@ -1,4 +1,3 @@
-import type { WalletQuery, CredDef } from 'indy-sdk'
 import { CredentialOfferTemplate, CredentialService } from '../services'
 import { CredentialRecord, CredentialRecordMetadata, CredentialRecordTags } from '../repository/CredentialRecord'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
@@ -28,9 +27,9 @@ import { CredentialRepository } from '../repository/CredentialRepository'
 import { LedgerService } from '../../ledger/services'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
-import { getBaseConfig, getMockConnection } from '../../../__tests__/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { CredentialEventTypes, CredentialStateChangedEvent } from '../CredentialEvents'
+import { getBaseConfig, getMockConnection, mockFunction } from '../../../__tests__/helpers'
 import { RecordNotFoundError } from '../../../error'
 
 // Mock classes
@@ -102,13 +101,13 @@ const mockCredentialRecord = ({
   id,
   credentialAttributes,
 }: {
-  state: CredentialState
+  state?: CredentialState
   requestMessage?: RequestCredentialMessage
   metadata?: CredentialRecordMetadata
   tags?: CredentialRecordTags
   id?: string
   credentialAttributes?: CredentialPreviewAttribute[]
-}) =>
+} = {}) =>
   new CredentialRecord({
     offerMessage: new OfferCredentialMessage({
       comment: 'some comment',
@@ -130,11 +129,7 @@ describe('CredentialService', () => {
   let ledgerService: LedgerService
   let indyIssuerService: IndyIssuerService
   let indyHolderService: IndyHolderService
-  let repositoryFindMock: jest.Mock<Promise<CredentialRecord>, [string]>
-
   let eventEmitter: EventEmitter
-  let repositoryGetSingleByQueryMock: jest.Mock<Promise<CredentialRecord | null>, [WalletQuery]>
-  let ledgerServiceGetCredDef: jest.Mock<Promise<CredDef>, [string]>
 
   beforeEach(() => {
     credentialRepository = new CredentialRepositoryMock()
@@ -153,15 +148,7 @@ describe('CredentialService', () => {
       eventEmitter
     )
 
-    // make separate repositoryFindMock variable to get the correct jest mock typing
-    repositoryFindMock = credentialRepository.getById as jest.Mock<Promise<CredentialRecord>, [string]>
-    repositoryGetSingleByQueryMock = credentialRepository.getSingleByQuery as jest.Mock<
-      Promise<CredentialRecord | null>,
-      [WalletQuery]
-    >
-
-    ledgerServiceGetCredDef = ledgerService.getCredentialDefinition as jest.Mock<Promise<CredDef>, [string]>
-    ledgerServiceGetCredDef.mockReturnValue(Promise.resolve(credDef))
+    mockFunction(ledgerService.getCredentialDefinition).mockReturnValue(Promise.resolve(credDef))
   })
 
   describe('createCredentialOffer', () => {
@@ -411,13 +398,13 @@ describe('CredentialService', () => {
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
 
       // given
-      repositoryGetSingleByQueryMock.mockReturnValue(Promise.resolve(credential))
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
 
       // when
       const returnedCredentialRecord = await credentialService.processRequest(messageContext)
 
       // then
-      expect(repositoryGetSingleByQueryMock).toHaveBeenNthCalledWith(1, { threadId: 'somethreadid' })
+      expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, { threadId: 'somethreadid' })
 
       const expectedCredentialRecord = {
         state: CredentialState.RequestReceived,
@@ -431,7 +418,7 @@ describe('CredentialService', () => {
     test(`emits stateChange event from ${CredentialState.OfferSent} to ${CredentialState.RequestReceived}`, async () => {
       const eventListenerMock = jest.fn()
       eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
-      repositoryGetSingleByQueryMock.mockReturnValue(Promise.resolve(credential))
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
 
       await credentialService.processRequest(messageContext)
 
@@ -451,7 +438,9 @@ describe('CredentialService', () => {
     test(`throws an error when state transition is invalid`, async () => {
       await Promise.all(
         invalidCredentialStates.map(async (state) => {
-          repositoryGetSingleByQueryMock.mockReturnValue(Promise.resolve(mockCredentialRecord({ state })))
+          mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(
+            Promise.resolve(mockCredentialRecord({ state }))
+          )
           await expect(credentialService.processRequest(messageContext)).rejects.toThrowError(
             `Credential record is in invalid state ${state}. Valid states are: ${validState}.`
           )
@@ -494,7 +483,7 @@ describe('CredentialService', () => {
       eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
       // given
-      repositoryFindMock.mockReturnValue(Promise.resolve(credential))
+      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
 
       // when
       await credentialService.createCredential(credential)
@@ -513,7 +502,7 @@ describe('CredentialService', () => {
 
     test('returns credential response message base on credential request message', async () => {
       // given
-      repositoryFindMock.mockReturnValue(Promise.resolve(credential))
+      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
       const comment = 'credential response comment'
 
       // when
@@ -615,13 +604,13 @@ describe('CredentialService', () => {
       >
 
       // given
-      repositoryGetSingleByQueryMock.mockReturnValue(Promise.resolve(credential))
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
 
       // when
       await credentialService.processCredential(messageContext)
 
       // then
-      expect(repositoryGetSingleByQueryMock).toHaveBeenNthCalledWith(1, { threadId: 'somethreadid' })
+      expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, { threadId: 'somethreadid' })
 
       expect(storeCredentialMock).toHaveBeenNthCalledWith(1, {
         credentialId: expect.any(String),
@@ -635,7 +624,7 @@ describe('CredentialService', () => {
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
 
       // given
-      repositoryGetSingleByQueryMock.mockReturnValue(Promise.resolve(credential))
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
 
       // when
       const updatedCredential = await credentialService.processCredential(messageContext)
@@ -656,7 +645,7 @@ describe('CredentialService', () => {
       eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
       // given
-      repositoryGetSingleByQueryMock.mockReturnValue(Promise.resolve(credential))
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
 
       // when
       await credentialService.processCredential(messageContext)
@@ -675,7 +664,7 @@ describe('CredentialService', () => {
 
     test('throws error when credential record has no request metadata', async () => {
       // given
-      repositoryGetSingleByQueryMock.mockReturnValue(
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(
         Promise.resolve(
           mockCredentialRecord({
             state: CredentialState.RequestSent,
@@ -691,7 +680,7 @@ describe('CredentialService', () => {
     })
 
     test('throws error when credential attribute values does not match received credential values', async () => {
-      repositoryGetSingleByQueryMock.mockReturnValue(
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(
         Promise.resolve(
           mockCredentialRecord({
             state: CredentialState.RequestSent,
@@ -710,7 +699,7 @@ describe('CredentialService', () => {
     test(`throws an error when state transition is invalid`, async () => {
       await Promise.all(
         invalidCredentialStates.map(async (state) => {
-          repositoryGetSingleByQueryMock.mockReturnValue(
+          mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(
             Promise.resolve(
               mockCredentialRecord({
                 state,
@@ -773,7 +762,7 @@ describe('CredentialService', () => {
 
     test('returns credential response message base on credential request message', async () => {
       // given
-      repositoryFindMock.mockReturnValue(Promise.resolve(credential))
+      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
 
       // when
       const { message: ackMessage } = await credentialService.createAck(credential)
@@ -823,7 +812,7 @@ describe('CredentialService', () => {
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
 
       // given
-      repositoryGetSingleByQueryMock.mockReturnValue(Promise.resolve(credential))
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
 
       // when
       const returnedCredentialRecord = await credentialService.processAck(messageContext)
@@ -832,7 +821,7 @@ describe('CredentialService', () => {
       const expectedCredentialRecord = {
         state: CredentialState.Done,
       }
-      expect(repositoryGetSingleByQueryMock).toHaveBeenNthCalledWith(1, { threadId: 'somethreadid' })
+      expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, { threadId: 'somethreadid' })
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
       expect(updatedCredentialRecord).toMatchObject(expectedCredentialRecord)
@@ -844,7 +833,7 @@ describe('CredentialService', () => {
       eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
       // given
-      repositoryGetSingleByQueryMock.mockReturnValue(Promise.resolve(credential))
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
 
       // when
       await credentialService.processAck(messageContext)
@@ -863,7 +852,7 @@ describe('CredentialService', () => {
 
     test('throws error when there is no credential found by thread ID', async () => {
       // given
-      repositoryGetSingleByQueryMock.mockReturnValue(
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(
         Promise.reject(new RecordNotFoundError('not found', { recordType: CredentialRecord.type }))
       )
 
@@ -876,12 +865,53 @@ describe('CredentialService', () => {
     test(`throws an error when state transition is invalid`, async () => {
       await Promise.all(
         invalidCredentialStates.map(async (state) => {
-          repositoryGetSingleByQueryMock.mockReturnValue(Promise.resolve(mockCredentialRecord({ state })))
+          mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(
+            Promise.resolve(mockCredentialRecord({ state }))
+          )
           await expect(credentialService.processAck(messageContext)).rejects.toThrowError(
             `Credential record is in invalid state ${state}. Valid states are: ${validState}.`
           )
         })
       )
+    })
+  })
+
+  describe('repository methods', () => {
+    it('getById should return value from credentialRepository.getById', async () => {
+      const expected = mockCredentialRecord()
+      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(expected))
+      const result = await credentialService.getById(expected.id)
+      expect(credentialRepository.getById).toBeCalledWith(expected.id)
+
+      expect(result).toBe(expected)
+    })
+
+    it('getById should return value from credentialRepository.getSingleByQuery', async () => {
+      const expected = mockCredentialRecord()
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(expected))
+      const result = await credentialService.getByThreadId('threadId')
+      expect(credentialRepository.getSingleByQuery).toBeCalledWith({ threadId: 'threadId' })
+
+      expect(result).toBe(expected)
+    })
+
+    it('findById should return value from credentialRepository.findById', async () => {
+      const expected = mockCredentialRecord()
+      mockFunction(credentialRepository.findById).mockReturnValue(Promise.resolve(expected))
+      const result = await credentialService.findById(expected.id)
+      expect(credentialRepository.findById).toBeCalledWith(expected.id)
+
+      expect(result).toBe(expected)
+    })
+
+    it('getAll should return value from credentialRepository.getAll', async () => {
+      const expected = [mockCredentialRecord(), mockCredentialRecord()]
+
+      mockFunction(credentialRepository.getAll).mockReturnValue(Promise.resolve(expected))
+      const result = await credentialService.getAll()
+      expect(credentialRepository.getAll).toBeCalledWith()
+
+      expect(result).toEqual(expect.arrayContaining(expected))
     })
   })
 })

@@ -16,8 +16,8 @@ import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { getBaseConfig, getMockConnection } from '../../../__tests__/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { getBaseConfig, getMockConnection, mockFunction } from '../../../__tests__/helpers'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
 
 jest.mock('../repository/ConnectionRepository')
@@ -192,10 +192,7 @@ describe('ConnectionService', () => {
       expect.assertions(4)
 
       const connection = getMockConnection()
-
-      // make separate mockFind variable to get the correct jest mock typing
-      const mockFind = connectionRepository.getById as jest.Mock<Promise<ConnectionRecord>, [string]>
-      mockFind.mockReturnValue(Promise.resolve(connection))
+      mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(connection))
 
       const { connectionRecord: connectionRecord, message } = await connectionService.createRequest('test')
 
@@ -208,10 +205,9 @@ describe('ConnectionService', () => {
     it(`throws an error when connection role is ${ConnectionRole.Inviter} and not ${ConnectionRole.Invitee}`, async () => {
       expect.assertions(1)
 
-      // make separate mockFind variable to get the correct jest mock typing
-      const mockFind = connectionRepository.getById as jest.Mock<Promise<ConnectionRecord>, [string]>
-
-      mockFind.mockReturnValue(Promise.resolve(getMockConnection({ role: ConnectionRole.Inviter })))
+      mockFunction(connectionRepository.getById).mockReturnValue(
+        Promise.resolve(getMockConnection({ role: ConnectionRole.Inviter }))
+      )
       return expect(connectionService.createRequest('test')).rejects.toThrowError(
         `Connection record has invalid role ${ConnectionRole.Inviter}. Expected role ${ConnectionRole.Invitee}.`
       )
@@ -228,10 +224,7 @@ describe('ConnectionService', () => {
       (state) => {
         expect.assertions(1)
 
-        // make separate mockFind variable to get the correct jest mock typing
-        const mockFind = connectionRepository.getById as jest.Mock<Promise<ConnectionRecord>, [string]>
-
-        mockFind.mockReturnValue(Promise.resolve(getMockConnection({ state })))
+        mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(getMockConnection({ state })))
         return expect(connectionService.createRequest('test')).rejects.toThrowError(
           `Connection record is in invalid state ${state}. Valid states are: ${ConnectionState.Invited}.`
         )
@@ -374,10 +367,7 @@ describe('ConnectionService', () => {
         state: ConnectionState.Requested,
         role: ConnectionRole.Inviter,
       })
-
-      // make separate mockFind variable to get the correct jest mock typing
-      const mockFind = connectionRepository.getById as jest.Mock<Promise<ConnectionRecord>, [string]>
-      mockFind.mockReturnValue(Promise.resolve(mockConnection))
+      mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(mockConnection))
 
       const { message, connectionRecord: connectionRecord } = await connectionService.createResponse('test')
 
@@ -394,10 +384,7 @@ describe('ConnectionService', () => {
     it(`throws an error when connection role is ${ConnectionRole.Invitee} and not ${ConnectionRole.Inviter}`, async () => {
       expect.assertions(1)
 
-      // make separate mockFind variable to get the correct jest mock typing
-      const mockFind = connectionRepository.getById as jest.Mock<Promise<ConnectionRecord>, [string]>
-
-      mockFind.mockReturnValue(
+      mockFunction(connectionRepository.getById).mockReturnValue(
         Promise.resolve(
           getMockConnection({
             role: ConnectionRole.Invitee,
@@ -421,9 +408,7 @@ describe('ConnectionService', () => {
       async (state) => {
         expect.assertions(1)
 
-        // make separate mockFind variable to get the correct jest mock typing
-        const mockFind = connectionRepository.getById as jest.Mock<Promise<ConnectionRecord>, [string]>
-        mockFind.mockReturnValue(Promise.resolve(getMockConnection({ state })))
+        mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(getMockConnection({ state })))
 
         return expect(connectionService.createResponse('test')).rejects.toThrowError(
           `Connection record is in invalid state ${state}. Valid states are: ${ConnectionState.Requested}.`
@@ -620,10 +605,7 @@ describe('ConnectionService', () => {
       const mockConnection = getMockConnection({
         state: ConnectionState.Responded,
       })
-
-      // make separate mockFind variable to get the correct jest mock typing
-      const mockFind = connectionRepository.getById as jest.Mock<Promise<ConnectionRecord>, [string]>
-      mockFind.mockReturnValue(Promise.resolve(mockConnection))
+      mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(mockConnection))
 
       const { message, connectionRecord: connectionRecord } = await connectionService.createTrustPing('test')
 
@@ -637,10 +619,7 @@ describe('ConnectionService', () => {
       (state) => {
         expect.assertions(1)
 
-        // make separate mockFind variable to get the correct jest mock typing
-        const mockFind = connectionRepository.getById as jest.Mock<Promise<ConnectionRecord>, [string]>
-
-        mockFind.mockReturnValue(Promise.resolve(getMockConnection({ state })))
+        mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(getMockConnection({ state })))
         return expect(connectionService.createTrustPing('test')).rejects.toThrowError(
           `Connection record is in invalid state ${state}. Valid states are: ${ConnectionState.Responded}, ${ConnectionState.Complete}.`
         )
@@ -710,6 +689,63 @@ describe('ConnectionService', () => {
       const updatedConnection = await connectionService.processAck(messageContext)
 
       expect(updatedConnection.state).toBe(ConnectionState.Responded)
+    })
+  })
+
+  describe('repository methods', () => {
+    it('getById should return value from connectionRepository.getById', async () => {
+      const expected = getMockConnection()
+      mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(expected))
+      const result = await connectionService.getById(expected.id)
+      expect(connectionRepository.getById).toBeCalledWith(expected.id)
+
+      expect(result).toBe(expected)
+    })
+
+    it('getById should return value from connectionRepository.getSingleByQuery', async () => {
+      const expected = getMockConnection()
+      mockFunction(connectionRepository.getSingleByQuery).mockReturnValue(Promise.resolve(expected))
+      const result = await connectionService.getByThreadId('threadId')
+      expect(connectionRepository.getSingleByQuery).toBeCalledWith({ threadId: 'threadId' })
+
+      expect(result).toBe(expected)
+    })
+
+    it('findById should return value from connectionRepository.findById', async () => {
+      const expected = getMockConnection()
+      mockFunction(connectionRepository.findById).mockReturnValue(Promise.resolve(expected))
+      const result = await connectionService.findById(expected.id)
+      expect(connectionRepository.findById).toBeCalledWith(expected.id)
+
+      expect(result).toBe(expected)
+    })
+
+    it('findByVerkey should return value from connectionRepository.findSingleByQuery', async () => {
+      const expected = getMockConnection()
+      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(expected))
+      const result = await connectionService.findByVerkey('verkey')
+      expect(connectionRepository.findSingleByQuery).toBeCalledWith({ verkey: 'verkey' })
+
+      expect(result).toBe(expected)
+    })
+
+    it('findByTheirKey should return value from connectionRepository.findSingleByQuery', async () => {
+      const expected = getMockConnection()
+      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(expected))
+      const result = await connectionService.findByTheirKey('theirKey')
+      expect(connectionRepository.findSingleByQuery).toBeCalledWith({ theirKey: 'theirKey' })
+
+      expect(result).toBe(expected)
+    })
+
+    it('getAll should return value from connectionRepository.getAll', async () => {
+      const expected = [getMockConnection(), getMockConnection()]
+
+      mockFunction(connectionRepository.getAll).mockReturnValue(Promise.resolve(expected))
+      const result = await connectionService.getAll()
+      expect(connectionRepository.getAll).toBeCalledWith()
+
+      expect(result).toEqual(expect.arrayContaining(expected))
     })
   })
 })
