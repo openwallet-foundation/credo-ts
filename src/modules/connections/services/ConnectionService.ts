@@ -30,7 +30,7 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Symbols } from '../../../symbols'
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { ConnectionStateChangedEvent } from '../ConnectionEvents'
+import { ConnectionEventTypes, ConnectionStateChangedEvent } from '../ConnectionEvents'
 
 export interface ConnectionProtocolMsgReturnType<MessageType extends AgentMessage> {
   message: MessageType
@@ -88,9 +88,11 @@ export class ConnectionService {
     await this.connectionRepository.update(connectionRecord)
 
     this.eventEmitter.emit<ConnectionStateChangedEvent>({
-      type: 'ConnectionStateChanged',
-      connectionRecord: connectionRecord,
-      previousState: null,
+      type: ConnectionEventTypes.ConnectionStateChanged,
+      payload: {
+        connectionRecord: connectionRecord,
+        previousState: null,
+      },
     })
 
     return { connectionRecord: connectionRecord, message: invitation }
@@ -125,9 +127,11 @@ export class ConnectionService {
 
     await this.connectionRepository.update(connectionRecord)
     this.eventEmitter.emit<ConnectionStateChangedEvent>({
-      type: 'ConnectionStateChanged',
-      connectionRecord: connectionRecord,
-      previousState: null,
+      type: ConnectionEventTypes.ConnectionStateChanged,
+      payload: {
+        connectionRecord: connectionRecord,
+        previousState: null,
+      },
     })
 
     return connectionRecord
@@ -342,9 +346,11 @@ export class ConnectionService {
     await this.connectionRepository.update(connectionRecord)
 
     this.eventEmitter.emit<ConnectionStateChangedEvent>({
-      type: 'ConnectionStateChanged',
-      connectionRecord: connectionRecord,
-      previousState,
+      type: ConnectionEventTypes.ConnectionStateChanged,
+      payload: {
+        connectionRecord: connectionRecord,
+        previousState,
+      },
     })
   }
 
@@ -480,14 +486,14 @@ export class ConnectionService {
     if (connection && isConnected(connection)) return connection
 
     return new Promise((resolve) => {
-      const listener = ({ connectionRecord: connectionRecord }: ConnectionStateChangedEvent) => {
+      const listener = ({ payload: { connectionRecord } }: ConnectionStateChangedEvent) => {
         if (isConnected(connectionRecord)) {
-          this.eventEmitter.off<ConnectionStateChangedEvent>('ConnectionStateChanged', listener)
+          this.eventEmitter.off<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged, listener)
           resolve(connectionRecord)
         }
       }
 
-      this.eventEmitter.on<ConnectionStateChangedEvent>('ConnectionStateChanged', listener)
+      this.eventEmitter.on<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged, listener)
     })
   }
 }

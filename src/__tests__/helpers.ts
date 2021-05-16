@@ -13,15 +13,16 @@ import {
   DidCommService,
   DidDoc,
 } from '../modules/connections'
-import { ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
+import { ProofEventTypes, ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
 import { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/ledger'
 import {
   CredentialRecord,
   CredentialOfferTemplate,
   CredentialStateChangedEvent,
   CredentialState,
+  CredentialEventTypes,
 } from '../modules/credentials'
-import { BasicMessage, BasicMessageReceivedEvent } from '../modules/basic-messages'
+import { BasicMessage, BasicMessageEventTypes, BasicMessageReceivedEvent } from '../modules/basic-messages'
 import testLogger from './logger'
 import { NodeFileSystem } from '../storage/fs/NodeFileSystem'
 
@@ -83,18 +84,18 @@ export async function waitForProofRecord(
 ): Promise<ProofRecord> {
   return new Promise((resolve) => {
     const listener = (event: ProofStateChangedEvent) => {
-      const previousStateMatches = previousState === undefined || event.previousState === previousState
-      const threadIdMatches = threadId === undefined || event.proofRecord.tags.threadId === threadId
-      const stateMatches = state === undefined || event.proofRecord.state === state
+      const previousStateMatches = previousState === undefined || event.payload.previousState === previousState
+      const threadIdMatches = threadId === undefined || event.payload.proofRecord.tags.threadId === threadId
+      const stateMatches = state === undefined || event.payload.proofRecord.state === state
 
       if (previousStateMatches && threadIdMatches && stateMatches) {
-        agent.events.off<ProofStateChangedEvent>('ProofStateChanged', listener)
+        agent.events.off<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged, listener)
 
-        resolve(event.proofRecord)
+        resolve(event.payload.proofRecord)
       }
     }
 
-    agent.events.on<ProofStateChangedEvent>('ProofStateChanged', listener)
+    agent.events.on<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged, listener)
   })
 }
 
@@ -112,18 +113,18 @@ export async function waitForCredentialRecord(
 ): Promise<CredentialRecord> {
   return new Promise((resolve) => {
     const listener = (event: CredentialStateChangedEvent) => {
-      const previousStateMatches = previousState === undefined || event.previousState === previousState
-      const threadIdMatches = threadId === undefined || event.credentialRecord.tags.threadId === threadId
-      const stateMatches = state === undefined || event.credentialRecord.state === state
+      const previousStateMatches = previousState === undefined || event.payload.previousState === previousState
+      const threadIdMatches = threadId === undefined || event.payload.credentialRecord.tags.threadId === threadId
+      const stateMatches = state === undefined || event.payload.credentialRecord.state === state
 
       if (previousStateMatches && threadIdMatches && stateMatches) {
-        agent.events.off<CredentialStateChangedEvent>('CredentialStateChanged', listener)
+        agent.events.off<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, listener)
 
-        resolve(event.credentialRecord)
+        resolve(event.payload.credentialRecord)
       }
     }
 
-    agent.events.on<CredentialStateChangedEvent>('CredentialStateChanged', listener)
+    agent.events.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, listener)
   })
 }
 
@@ -133,17 +134,17 @@ export async function waitForBasicMessage(
 ): Promise<BasicMessage> {
   return new Promise((resolve) => {
     const listener = (event: BasicMessageReceivedEvent) => {
-      const verkeyMatches = verkey === undefined || event.verkey === verkey
-      const contentMatches = content === undefined || event.message.content === content
+      const verkeyMatches = verkey === undefined || event.payload.verkey === verkey
+      const contentMatches = content === undefined || event.payload.message.content === content
 
       if (verkeyMatches && contentMatches) {
-        agent.events.off<BasicMessageReceivedEvent>('BasicMessageReceived', listener)
+        agent.events.off<BasicMessageReceivedEvent>(BasicMessageEventTypes.BasicMessageReceived, listener)
 
-        resolve(event.message)
+        resolve(event.payload.message)
       }
     }
 
-    agent.events.on<BasicMessageReceivedEvent>('BasicMessageReceived', listener)
+    agent.events.on<BasicMessageReceivedEvent>(BasicMessageEventTypes.BasicMessageReceived, listener)
   })
 }
 

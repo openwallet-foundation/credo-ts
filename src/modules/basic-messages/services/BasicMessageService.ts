@@ -9,7 +9,7 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { BasicMessage } from '../messages'
 import { BasicMessageRepository } from '../repository'
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { BasicMessageReceivedEvent } from '../BasicMessageEvents'
+import { BasicMessageEventTypes, BasicMessageReceivedEvent } from '../BasicMessageEvents'
 
 @scoped(Lifecycle.ContainerScoped)
 export class BasicMessageService {
@@ -50,9 +50,8 @@ export class BasicMessageService {
 
     await this.basicMessageRepository.save(basicMessageRecord)
     this.eventEmitter.emit<BasicMessageReceivedEvent>({
-      type: 'BasicMessageReceived',
-      message,
-      verkey: connection.verkey,
+      type: BasicMessageEventTypes.BasicMessageReceived,
+      payload: { message, verkey: connection.verkey },
     })
   }
 

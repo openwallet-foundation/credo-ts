@@ -1,7 +1,15 @@
-import { ConnectionRecord, ConnectionState } from '.'
+import { BaseEvent } from '../../agent/Events'
+import { ConnectionRecord } from './repository/ConnectionRecord'
+import { ConnectionState } from './models/ConnectionState'
 
-export interface ConnectionStateChangedEvent {
-  type: 'ConnectionStateChanged'
-  connectionRecord: ConnectionRecord
-  previousState: ConnectionState | null
+export enum ConnectionEventTypes {
+  ConnectionStateChanged = 'ConnectionStateChanged',
+}
+
+export interface ConnectionStateChangedEvent extends BaseEvent {
+  type: typeof ConnectionEventTypes.ConnectionStateChanged
+  payload: {
+    connectionRecord: ConnectionRecord
+    previousState: ConnectionState | null
+  }
 }

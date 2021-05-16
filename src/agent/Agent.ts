@@ -21,7 +21,7 @@ import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { Symbols } from '../symbols'
 import { Transport } from './TransportService'
 import { EventEmitter } from './EventEmitter'
-import { AgentMessageReceivedEvent } from './Events'
+import { AgentEventTypes, AgentMessageReceivedEvent } from './Events'
 
 export class Agent {
   protected agentConfig: AgentConfig
@@ -93,8 +93,8 @@ export class Agent {
   }
 
   private listenForMessages() {
-    this.eventEmitter.on<AgentMessageReceivedEvent>('AgentMessageReceived', async (payload) => {
-      await this.receiveMessage(payload.message)
+    this.eventEmitter.on<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived, async (event) => {
+      await this.receiveMessage(event.payload.message)
     })
   }
 

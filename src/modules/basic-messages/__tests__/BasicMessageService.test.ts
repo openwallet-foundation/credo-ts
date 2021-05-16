@@ -11,7 +11,7 @@ import { ConnectionRecord } from '../../connections'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { getBaseConfig } from '../../../__tests__/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { BasicMessageReceivedEvent } from '../BasicMessageEvents'
+import { BasicMessageEventTypes, BasicMessageReceivedEvent } from '../BasicMessageEvents'
 
 describe('BasicMessageService', () => {
   const mockConnectionRecord = {
@@ -49,7 +49,7 @@ describe('BasicMessageService', () => {
 
     it(`emits newMessage with connection verkey and message itself`, async () => {
       const eventListenerMock = jest.fn()
-      eventEmitter.on<BasicMessageReceivedEvent>('BasicMessageReceived', eventListenerMock)
+      eventEmitter.on<BasicMessageReceivedEvent>(BasicMessageEventTypes.BasicMessageReceived, eventListenerMock)
 
       const basicMessage = new BasicMessage({
         id: '123',
@@ -68,8 +68,10 @@ describe('BasicMessageService', () => {
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'BasicMessageReceived',
-        verkey: mockConnectionRecord.verkey,
-        message: messageContext.message,
+        payload: {
+          verkey: mockConnectionRecord.verkey,
+          message: messageContext.message,
+        },
       })
     })
   })

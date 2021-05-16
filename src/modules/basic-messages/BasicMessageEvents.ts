@@ -1,8 +1,15 @@
 import type { Verkey } from 'indy-sdk'
+import { BaseEvent } from '../../agent/Events'
 import { BasicMessage } from './messages'
 
-export interface BasicMessageReceivedEvent {
-  type: 'BasicMessageReceived'
-  message: BasicMessage
-  verkey: Verkey
+export enum BasicMessageEventTypes {
+  BasicMessageReceived = 'BasicMessageReceived',
+}
+
+export interface BasicMessageReceivedEvent extends BaseEvent {
+  type: typeof BasicMessageEventTypes.BasicMessageReceived
+  payload: {
+    message: BasicMessage
+    verkey: Verkey
+  }
 }
