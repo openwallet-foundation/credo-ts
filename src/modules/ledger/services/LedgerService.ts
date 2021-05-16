@@ -52,7 +52,7 @@ export class LedgerService {
     return this._poolHandle
   }
 
-  private async connect() {
+  public async connect() {
     const poolName = this.agentConfig.poolName
     const genesisPath = await this.getGenesisPath()
 
