@@ -7,9 +7,8 @@ import { Wallet } from '../wallet/Wallet'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { Symbols } from '../symbols'
 
-import { handleIndyError, IndyError, isIndyError } from '../utils/indyError'
-import { AriesFrameworkError, RecordNotFoundError } from '../error'
-import { RecordDuplicateError } from '../error/RecordDuplicateError'
+import { handleIndyError, isIndyError } from '../utils/indyError'
+import { RecordNotFoundError, RecordDuplicateError } from '../error'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyStorageService<T extends BaseRecord> implements StorageService<T> {

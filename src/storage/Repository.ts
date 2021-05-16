@@ -2,8 +2,7 @@ import type { WalletQuery } from 'indy-sdk'
 import { RecordDuplicateError, RecordNotFoundError } from '../error'
 
 import { BaseRecord } from './BaseRecord'
-import { BaseRecordConstructor } from './StorageService'
-import { StorageService } from './StorageService'
+import { BaseRecordConstructor, StorageService } from './StorageService'
 
 export class Repository<T extends BaseRecord> {
   private storageService: StorageService<T>

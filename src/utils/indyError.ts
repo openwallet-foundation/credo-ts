@@ -71,7 +71,6 @@ export interface IndyError {
 export function handleIndyError(error: IndyError) {
   throw new AriesFrameworkError(`${error.name}(${error.indyName}): ${error.message}`, {
     cause: error,
-    constructorOpt: handleIndyError,
   })
 }
 

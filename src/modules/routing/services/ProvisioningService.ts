@@ -25,9 +25,8 @@ export class ProvisioningService {
     } catch (error) {
       if (error instanceof RecordNotFoundError) {
         this.logger.debug(`Provision record with id '${UNIQUE_PROVISIONING_ID}' not found.`, {
-          indyError: 'WalletItemNotFound',
+          error,
         })
-
         return null
       } else {
         throw error
