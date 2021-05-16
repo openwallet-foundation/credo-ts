@@ -3,8 +3,8 @@ import WebSocket from 'ws'
 import cors from 'cors'
 import { v4 as uuid } from 'uuid'
 import config from './config'
-import { Agent, InboundTransporter, OutboundTransporter } from '../src'
-import { OutboundPackage, DidCommMimeType } from '../src/types'
+import { Agent, InboundTransporter, WsOutboundTransporter } from '../src'
+import { DidCommMimeType } from '../src/types'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
 import { WebSocketTransport } from '../src/agent/TransportService'
 import testLogger from '../src/__tests__/logger'
@@ -49,34 +49,6 @@ class WsInboundTransporter implements InboundTransporter {
   }
 }
 
-// TODO: use WsOutboundTransporter from the agent
-class WsOutboundTransporter implements OutboundTransporter {
-  public supportedSchemes = ['ws', 'wss']
-
-  public async start(): Promise<void> {
-    // Nothing required to start WS
-  }
-  public async stop(): Promise<void> {
-    // Nothing required to stop WS
-  }
-
-  public async sendMessage(outboundPackage: OutboundPackage) {
-    const { connection, payload, transport } = outboundPackage
-    logger.debug(`Sending outbound message to connection ${connection.id} over ${transport?.type} transport.`, payload)
-
-    if (transport instanceof WebSocketTransport) {
-      if (transport.socket?.readyState === WebSocket.OPEN) {
-        logger.debug('Sending message over existing inbound socket.')
-        transport.socket.send(JSON.stringify(payload))
-      } else {
-        throw new Error('No socket connection.')
-      }
-    } else {
-      throw new Error(`Unsupported transport ${transport?.type}.`)
-    }
-  }
-}
-
 const PORT = config.port
 const app = express()
 
@@ -94,9 +66,9 @@ const socketServer = new WebSocket.Server({ noServer: true })
 config.endpoint = `ws://localhost:${PORT}`
 
 const messageRepository = new InMemoryMessageRepository()
-const messageSender = new WsOutboundTransporter()
-const messageReceiver = new WsInboundTransporter(socketServer)
 const agent = new Agent(config, messageRepository)
+const messageSender = new WsOutboundTransporter(agent)
+const messageReceiver = new WsInboundTransporter(socketServer)
 agent.setInboundTransporter(messageReceiver)
 agent.setOutboundTransporter(messageSender)
 
