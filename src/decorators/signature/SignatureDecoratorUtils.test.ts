@@ -1,4 +1,3 @@
-import indy from 'indy-sdk'
 import { signData, unpackAndVerifySignatureDecorator } from './SignatureDecoratorUtils'
 import { IndyWallet } from '../../wallet/IndyWallet'
 import { SignatureDecorator } from './SignatureDecorator'
@@ -13,9 +12,6 @@ jest.mock('../../utils/timestamp', () => {
 })
 
 describe('Decorators | Signature | SignatureDecoratorUtils', () => {
-  const walletConfig = { id: 'wallet-1' + 'test1' }
-  const walletCredentials = { key: 'key' }
-
   const data = {
     did: 'did',
     did_doc: {
