@@ -3,6 +3,7 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { ConnectionService } from '../services/ConnectionService'
 import { ConnectionResponseMessage } from '../messages'
+import { AriesFrameworkError } from '../../../error'
 
 export class ConnectionResponseHandler implements Handler {
   private connectionService: ConnectionService
@@ -16,7 +17,7 @@ export class ConnectionResponseHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<ConnectionResponseHandler>) {
     if (!messageContext.connection) {
-      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
 
     await this.connectionService.processResponse(messageContext)

@@ -43,10 +43,7 @@ import { Symbols } from '../../../symbols'
 import { IndyHolderService, IndyVerifierService } from '../../indy'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { ProofEventTypes, ProofStateChangedEvent } from '../ProofEvents'
-export interface ProofProtocolMsgReturnType<MessageType extends AgentMessage> {
-  message: MessageType
-  proofRecord: ProofRecord
-}
+import { AriesFrameworkError } from '../../../error'
 
 /**
  * @todo add method to check if request matches proposal. Useful to see if a request I received is the same as the proposal I sent.
@@ -176,7 +173,7 @@ export class ProofService {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming presentation proposal message with thread id ${proposalMessage.threadId}`
       )
     }
@@ -325,7 +322,7 @@ export class ProofService {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming presentation request message with thread id ${proofRequestMessage.threadId}`
       )
     }
@@ -334,7 +331,7 @@ export class ProofService {
 
     // Assert attachment
     if (!proofRequest) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for presentation request with thread id ${proofRequestMessage.threadId}`
       )
     }
@@ -394,7 +391,7 @@ export class ProofService {
 
     const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
     if (!indyProofRequest) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for presentation with thread id ${proofRecord.tags.threadId}`
       )
     }
@@ -439,7 +436,7 @@ export class ProofService {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming presentation message with thread id ${presentationMessage.threadId}`
       )
     }
@@ -453,13 +450,13 @@ export class ProofService {
     const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
 
     if (!indyProofJson) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for presentation with thread id ${presentationMessage.threadId}`
       )
     }
 
     if (!indyProofRequest) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for presentation request with thread id ${presentationMessage.threadId}`
       )
     }
@@ -510,7 +507,7 @@ export class ProofService {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming presentation acknowledgement message with thread id ${presentationAckMessage.threadId}`
       )
     }
@@ -639,7 +636,7 @@ export class ProofService {
 
       // Can't construct without matching credentials
       if (credentials.length === 0) {
-        throw new Error(
+        throw new AriesFrameworkError(
           `Could not automatically construct requested credentials for proof request '${proofRequest.name}'`
         )
       }
@@ -673,7 +670,7 @@ export class ProofService {
         }
 
         if (!credentialMatch) {
-          throw new Error(
+          throw new AriesFrameworkError(
             `Could not automatically construct requested credentials for proof request '${proofRequest.name}'`
           )
         }
@@ -700,7 +697,7 @@ export class ProofService {
 
       // Can't create requestedPredicates without matching credentials
       if (credentials.length === 0) {
-        throw new Error(
+        throw new AriesFrameworkError(
           `Could not automatically construct requested credentials for proof request '${proofRequest.name}'`
         )
       }
@@ -738,7 +735,7 @@ export class ProofService {
 
     for (const [referent, attribute] of proof.requestedProof.revealedAttributes.entries()) {
       if (!CredentialUtils.checkValidEncoding(attribute.raw, attribute.encoded)) {
-        throw new Error(
+        throw new AriesFrameworkError(
           `The encoded value for '${referent}' is invalid. ` +
             `Expected '${CredentialUtils.encode(attribute.raw)}'. ` +
             `Actual '${attribute.encoded}'`
@@ -769,41 +766,42 @@ export class ProofService {
    * @returns List containing all proof records
    */
   public async getAll(): Promise<ProofRecord[]> {
-    return this.proofRepository.findAll()
+    return this.proofRepository.getAll()
   }
 
   /**
    * Retrieve a proof record by id
    *
    * @param proofRecordId The proof record id
-   * @throws {Error} If no record is found
+   * @throws {RecordNotFoundError} If no record is found
    * @return The proof record
    *
    */
   public async getById(proofRecordId: string): Promise<ProofRecord> {
-    return this.proofRepository.find(proofRecordId)
+    return this.proofRepository.getById(proofRecordId)
+  }
+
+  /**
+   * Retrieve a proof record by id
+   *
+   * @param proofRecordId The proof record id
+   * @return The proof record or null if not found
+   *
+   */
+  public async findById(proofRecordId: string): Promise<ProofRecord | null> {
+    return this.proofRepository.findById(proofRecordId)
   }
 
   /**
    * Retrieve a proof record by thread id
    *
    * @param threadId The thread id
-   * @throws {Error} If no record is found
-   * @throws {Error} If multiple records are found
+   * @throws {RecordNotFoundError} If no record is found
+   * @throws {RecordDuplicateError} If multiple records are found
    * @returns The proof record
    */
   public async getByThreadId(threadId: string): Promise<ProofRecord> {
-    const proofRecords = await this.proofRepository.findByQuery({ threadId })
-
-    if (proofRecords.length === 0) {
-      throw new Error(`Proof record not found by thread id ${threadId}`)
-    }
-
-    if (proofRecords.length > 1) {
-      throw new Error(`Multiple proof records found by thread id ${threadId}`)
-    }
-
-    return proofRecords[0]
+    return this.proofRepository.getSingleByQuery({ threadId })
   }
 
   /**
@@ -913,4 +911,9 @@ export class ProofService {
 
     return credentialDefinitions
   }
+}
+
+export interface ProofProtocolMsgReturnType<MessageType extends AgentMessage> {
+  message: MessageType
+  proofRecord: ProofRecord
 }

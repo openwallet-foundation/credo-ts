@@ -2,7 +2,7 @@ import express, { Express } from 'express'
 import cors from 'cors'
 import config from './config'
 import testLogger from '../src/__tests__/logger'
-import { Agent, InboundTransporter, OutboundTransporter } from '../src'
+import { Agent, AriesFrameworkError, InboundTransporter, OutboundTransporter } from '../src'
 import { OutboundPackage, DidCommMimeType } from '../src/types'
 import { MessageRepository } from '../src/storage/MessageRepository'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
@@ -50,11 +50,11 @@ class StorageOutboundTransporter implements OutboundTransporter {
     const { connection, payload } = outboundPackage
 
     if (!connection) {
-      throw new Error(`Missing connection. I don't know how and where to send the message.`)
+      throw new AriesFrameworkError(`Missing connection. I don't know how and where to send the message.`)
     }
 
     if (!connection.theirKey) {
-      throw new Error('Trying to save message without theirKey!')
+      throw new AriesFrameworkError('Trying to save message without theirKey!')
     }
 
     testLogger.debug('Storing message', { connection, payload })
@@ -96,7 +96,7 @@ app.get('/invitation', async (req, res) => {
 app.get('/api/connections/:verkey', async (req, res) => {
   // TODO This endpoint is for testing purpose only. Return mediator connection by their verkey.
   const verkey = req.params.verkey
-  const connection = await agent.connections.findConnectionByTheirKey(verkey)
+  const connection = await agent.connections.findByTheirKey(verkey)
   res.send(connection)
 })
 

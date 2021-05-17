@@ -12,6 +12,7 @@ import type {
   LedgerWriteReplyResponse,
 } from 'indy-sdk'
 import { AgentConfig } from '../../../agent/AgentConfig'
+import { AriesFrameworkError } from '../../../error'
 import { Logger } from '../../../logger'
 import { isIndyError } from '../../../utils/indyError'
 import { Wallet } from '../../../wallet/Wallet'
@@ -40,7 +41,7 @@ export class LedgerService {
 
   private get poolHandle() {
     if (!this._poolHandle) {
-      throw new Error('Pool has not been initialized yet.')
+      throw new AriesFrameworkError('Pool has not been initialized yet.')
     }
 
     return this._poolHandle

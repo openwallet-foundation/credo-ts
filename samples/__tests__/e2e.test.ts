@@ -79,10 +79,7 @@ describe('with mediator', () => {
 
   test('Send a message from Alice to Bob via mediator', async () => {
     // send message from Alice to Bob
-    const aliceConnectionAtAliceBob = await aliceAgent.connections.find(aliceAtAliceBobId)
-    if (!aliceConnectionAtAliceBob) {
-      throw new Error(`There is no connection for id ${aliceAtAliceBobId}`)
-    }
+    const aliceConnectionAtAliceBob = await aliceAgent.connections.getById(aliceAtAliceBobId)
 
     logger.test('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob)
 

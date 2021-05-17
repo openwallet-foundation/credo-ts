@@ -1,4 +1,4 @@
-import type { Verkey } from 'indy-sdk'
+import { Verkey } from 'indy-sdk'
 import { validateOrReject } from 'class-validator'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
@@ -31,11 +31,7 @@ import { AgentMessage } from '../../../agent/AgentMessage'
 import { Symbols } from '../../../symbols'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { ConnectionEventTypes, ConnectionStateChangedEvent } from '../ConnectionEvents'
-
-export interface ConnectionProtocolMsgReturnType<MessageType extends AgentMessage> {
-  message: MessageType
-  connectionRecord: ConnectionRecord
-}
+import { AriesFrameworkError } from '../../../error'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ConnectionService {
@@ -144,7 +140,7 @@ export class ConnectionService {
    * @returns outbound message containing connection request
    */
   public async createRequest(connectionId: string): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
-    const connectionRecord = await this.connectionRepository.find(connectionId)
+    const connectionRecord = await this.connectionRepository.getById(connectionId)
 
     connectionRecord.assertState(ConnectionState.Invited)
     connectionRecord.assertRole(ConnectionRole.Invitee)
@@ -167,9 +163,9 @@ export class ConnectionService {
    * Process a received connection request message. This will not accept the connection request
    * or send a connection response message. It will only update the existing connection record
    * with all the new information from the connection request message. Use {@link ConnectionService#createResponse}
-   * after calling this function to create a connection respone.
+   * after calling this function to create a connection response.
    *
-   * @param messageContext the message context containing a connetion request message
+   * @param messageContext the message context containing a connection request message
    * @returns updated connection record
    */
   public async processRequest(
@@ -178,7 +174,7 @@ export class ConnectionService {
     const { message, connection: connectionRecord, recipientVerkey } = messageContext
 
     if (!connectionRecord) {
-      throw new Error(`Connection for verkey ${recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${recipientVerkey} not found!`)
     }
 
     connectionRecord.assertState(ConnectionState.Invited)
@@ -186,14 +182,14 @@ export class ConnectionService {
 
     // TODO: validate using class-validator
     if (!message.connection) {
-      throw new Error('Invalid message')
+      throw new AriesFrameworkError('Invalid message')
     }
 
     connectionRecord.theirDid = message.connection.did
     connectionRecord.theirDidDoc = message.connection.didDoc
 
     if (!connectionRecord.theirKey) {
-      throw new Error(`Connection with id ${connectionRecord.id} has no recipient keys.`)
+      throw new AriesFrameworkError(`Connection with id ${connectionRecord.id} has no recipient keys.`)
     }
 
     connectionRecord.tags = {
@@ -211,12 +207,12 @@ export class ConnectionService {
    * Create a connection response message for the connection with the specified connection id.
    *
    * @param connectionId the id of the connection for which to create a connection response
-   * @returns outbound message contaning connection response
+   * @returns outbound message containing connection response
    */
   public async createResponse(
     connectionId: string
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionResponseMessage>> {
-    const connectionRecord = await this.connectionRepository.find(connectionId)
+    const connectionRecord = await this.connectionRepository.getById(connectionId)
 
     connectionRecord.assertState(ConnectionState.Requested)
     connectionRecord.assertRole(ConnectionRole.Inviter)
@@ -247,7 +243,7 @@ export class ConnectionService {
    * with all the new information from the connection response message. Use {@link ConnectionService#createTrustPing}
    * after calling this function to create a trust ping message.
    *
-   * @param messageContext the message context containing a connetion response message
+   * @param messageContext the message context containing a connection response message
    * @returns updated connection record
    */
   public async processResponse(
@@ -256,7 +252,7 @@ export class ConnectionService {
     const { message, connection: connectionRecord, recipientVerkey } = messageContext
 
     if (!connectionRecord) {
-      throw new Error(`Connection for verkey ${recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${recipientVerkey} not found!`)
     }
     connectionRecord.assertState(ConnectionState.Requested)
     connectionRecord.assertRole(ConnectionRole.Invitee)
@@ -272,14 +268,16 @@ export class ConnectionService {
     const signerVerkey = message.connectionSig.signer
     const invitationKey = connectionRecord.tags.invitationKey
     if (signerVerkey !== invitationKey) {
-      throw new Error('Connection in connection response is not signed with same key as recipient key in invitation')
+      throw new AriesFrameworkError(
+        'Connection in connection response is not signed with same key as recipient key in invitation'
+      )
     }
 
     connectionRecord.theirDid = connection.did
     connectionRecord.theirDidDoc = connection.didDoc
 
     if (!connectionRecord.theirKey) {
-      throw new Error(`Connection with id ${connectionRecord.id} has no recipient keys.`)
+      throw new AriesFrameworkError(`Connection with id ${connectionRecord.id} has no recipient keys.`)
     }
 
     connectionRecord.tags = {
@@ -296,10 +294,10 @@ export class ConnectionService {
    * Create a trust ping message for the connection with the specified connection id.
    *
    * @param connectionId the id of the connection for which to create a trust ping message
-   * @returns outbound message contaning trust ping message
+   * @returns outbound message containing trust ping message
    */
   public async createTrustPing(connectionId: string): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
-    const connectionRecord = await this.connectionRepository.find(connectionId)
+    const connectionRecord = await this.connectionRepository.getById(connectionId)
 
     connectionRecord.assertState([ConnectionState.Responded, ConnectionState.Complete])
 
@@ -328,7 +326,7 @@ export class ConnectionService {
     const connection = messageContext.connection
 
     if (!connection) {
-      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found`)
     }
 
     // TODO: This is better addressed in a middleware of some kind because
@@ -352,6 +350,75 @@ export class ConnectionService {
         previousState,
       },
     })
+  }
+
+  /**
+   * Retrieve all connections records
+   *
+   * @returns List containing all connection records
+   */
+  public getAll() {
+    return this.connectionRepository.getAll()
+  }
+
+  /**
+   * Retrieve a connection record by id
+   *
+   * @param connectionId The connection record id
+   * @throws {RecordNotFoundError} If no record is found
+   * @return The connection record
+   *
+   */
+  public getById(connectionId: string): Promise<ConnectionRecord> {
+    return this.connectionRepository.getById(connectionId)
+  }
+
+  /**
+   * Find a connection record by id
+   *
+   * @param connectionId the connection record id
+   * @returns The connection record or null if not found
+   */
+  public findById(connectionId: string): Promise<ConnectionRecord | null> {
+    return this.connectionRepository.findById(connectionId)
+  }
+
+  /**
+   * Find connection by verkey.
+   *
+   * @param verkey the verkey to search for
+   * @returns the connection record, or null if not found
+   * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
+   */
+  public findByVerkey(verkey: Verkey): Promise<ConnectionRecord | null> {
+    return this.connectionRepository.findSingleByQuery({
+      verkey,
+    })
+  }
+
+  /**
+   * Find connection by their verkey.
+   *
+   * @param verkey the verkey to search for
+   * @returns the connection record, or null if not found
+   * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
+   */
+  public findByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
+    return this.connectionRepository.findSingleByQuery({
+      theirKey: verkey,
+    })
+  }
+
+  /**
+   * Retrieve a connection record by thread id
+   *
+   * @param threadId The thread id
+   * @throws {RecordNotFoundError} If no record is found
+   * @throws {RecordDuplicateError} If multiple records are found
+   * @returns The connection record
+   */
+  public getByThreadId(threadId: string): Promise<ConnectionRecord> {
+    return this.connectionRepository.getSingleByQuery({ threadId })
   }
 
   private async createConnection(options: {
@@ -418,74 +485,12 @@ export class ConnectionService {
     return connectionRecord
   }
 
-  public getConnections() {
-    return this.connectionRepository.findAll()
-  }
-
-  /**
-   * Retrieve a connection record by id
-   *
-   * @param connectionId The connection record id
-   * @throws {Error} If no record is found
-   * @return The connection record
-   *
-   */
-  public async getById(connectionId: string): Promise<ConnectionRecord> {
-    return this.connectionRepository.find(connectionId)
-  }
-
-  public async find(connectionId: string): Promise<ConnectionRecord | null> {
-    try {
-      const connection = await this.connectionRepository.find(connectionId)
-
-      return connection
-    } catch {
-      // connection not found.
-      return null
-    }
-  }
-
-  public async findByVerkey(verkey: Verkey): Promise<ConnectionRecord | null> {
-    const connectionRecords = await this.connectionRepository.findByQuery({
-      verkey,
-    })
-
-    if (connectionRecords.length > 1) {
-      throw new Error(`There is more than one connection for given verkey ${verkey}`)
-    }
-
-    if (connectionRecords.length < 1) {
-      return null
-    }
-
-    return connectionRecords[0]
-  }
-
-  public async findByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
-    const connectionRecords = await this.connectionRepository.findByQuery({
-      theirKey: verkey,
-    })
-
-    if (connectionRecords.length > 1) {
-      throw new Error(`There is more than one connection for given verkey ${verkey}`)
-    }
-
-    if (connectionRecords.length < 1) {
-      return null
-    }
-
-    return connectionRecords[0]
-  }
-
   public async returnWhenIsConnected(connectionId: string): Promise<ConnectionRecord> {
     const isConnected = (connection: ConnectionRecord) => {
       return connection.id === connectionId && connection.state === ConnectionState.Complete
     }
 
-    const connection = await this.find(connectionId)
-    if (connection && isConnected(connection)) return connection
-
-    return new Promise((resolve) => {
+    const promise = new Promise<ConnectionRecord>((resolve) => {
       const listener = ({ payload: { connectionRecord } }: ConnectionStateChangedEvent) => {
         if (isConnected(connectionRecord)) {
           this.eventEmitter.off<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged, listener)
@@ -495,5 +500,17 @@ export class ConnectionService {
 
       this.eventEmitter.on<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged, listener)
     })
+
+    // Check if already done
+    const connection = await this.connectionRepository.findById(connectionId)
+    if (connection && isConnected(connection)) return connection
+
+    // return listener
+    return promise
   }
+}
+
+export interface ConnectionProtocolMsgReturnType<MessageType extends AgentMessage> {
+  message: MessageType
+  connectionRecord: ConnectionRecord
 }

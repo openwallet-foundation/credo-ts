@@ -3,6 +3,7 @@ import { TrustPingService } from '../services/TrustPingService'
 import { ConnectionService } from '../services/ConnectionService'
 import { ConnectionState } from '../models'
 import { TrustPingMessage } from '../messages'
+import { AriesFrameworkError } from '../../../error'
 
 export class TrustPingMessageHandler implements Handler {
   private trustPingService: TrustPingService
@@ -17,7 +18,7 @@ export class TrustPingMessageHandler implements Handler {
   public async handle(messageContext: HandlerInboundMessage<TrustPingMessageHandler>) {
     const { connection, recipientVerkey } = messageContext
     if (!connection) {
-      throw new Error(`Connection for verkey ${recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${recipientVerkey} not found!`)
     }
 
     // TODO: This is better addressed in a middleware of some kind because

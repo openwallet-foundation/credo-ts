@@ -6,6 +6,7 @@ import { ConnectionInvitationMessage } from '..'
 import { ConnectionRole } from '..'
 import { DidDoc } from '..'
 import type { Did, Verkey } from 'indy-sdk'
+import { AriesFrameworkError } from '../../../error'
 
 interface ConnectionProps {
   id?: string
@@ -101,7 +102,7 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
 
   public assertReady() {
     if (!this.isReady) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Connection record is not ready to be used. Expected ${ConnectionState.Responded} or ${ConnectionState.Complete}, found invalid state ${this.state}`
       )
     }
@@ -113,7 +114,7 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
     }
 
     if (!expectedStates.includes(this.state)) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Connection record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`
       )
     }
@@ -121,7 +122,7 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
 
   public assertRole(expectedRole: ConnectionRole) {
     if (this.role !== expectedRole) {
-      throw new Error(`Connection record has invalid role ${this.role}. Expected role ${expectedRole}.`)
+      throw new AriesFrameworkError(`Connection record has invalid role ${this.role}. Expected role ${expectedRole}.`)
     }
   }
 }

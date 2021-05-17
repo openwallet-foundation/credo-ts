@@ -6,6 +6,7 @@ import { MessageRepository } from '../../../storage/MessageRepository'
 import { ConnectionRecord } from '../../connections'
 import { BatchMessage, BatchMessageMessage, BatchPickupMessage } from '../messages'
 import { Symbols } from '../../../symbols'
+import { AriesFrameworkError } from '../../../error'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MessagePickupService {
@@ -26,10 +27,10 @@ export class MessagePickupService {
   // TODO: add support for batchSize property
   public async batch(connection: ConnectionRecord) {
     if (!this.messageRepository) {
-      throw new Error('There is no message repository.')
+      throw new AriesFrameworkError('There is no message repository.')
     }
     if (!connection.theirKey) {
-      throw new Error('Trying to find messages to connection without theirKey!')
+      throw new AriesFrameworkError('Trying to find messages to connection without theirKey!')
     }
 
     const messages = this.messageRepository.findByVerkey(connection.theirKey)
