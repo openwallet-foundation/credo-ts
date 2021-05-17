@@ -31,33 +31,31 @@ export class WsOutboundTransporter implements OutboundTransporter {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
-    const { connection, payload, transport } = outboundPackage
+    const { connection, payload, endpoint, transport } = outboundPackage
     this.logger.debug(
       `Sending outbound message to connection ${connection.id} over ${transport?.type} transport.`,
       payload
     )
 
     if (transport instanceof WebSocketTransport) {
-      const socket = await this.resolveSocket(connection, transport)
-      socket.send(JSON.stringify(payload))
+      if (transport.socket?.readyState === WebSocket.OPEN) {
+        transport.socket.send(JSON.stringify(payload))
+      }
     } else {
-      throw new Error(`Unsupported transport ${transport?.type}.`)
+      const socket = await this.resolveSocket(connection, endpoint)
+      socket.send(JSON.stringify(payload))
     }
   }
 
-  private async resolveSocket(connection: ConnectionRecord, transport: WebSocketTransport) {
+  private async resolveSocket(connection: ConnectionRecord, endpoint?: string) {
     // If we already have a socket connection use it
-    if (transport.socket?.readyState === WebSocket.OPEN) {
-      return transport.socket
-    }
-
     let socket = this.transportTable.get(connection.id)
 
     if (!socket) {
-      if (!transport.endpoint) {
+      if (!endpoint) {
         throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
       }
-      socket = await this.createSocketConnection(transport.endpoint)
+      socket = await this.createSocketConnection(endpoint)
       this.transportTable.set(connection.id, socket)
       this.listenOnWebSocketMessages(socket)
     }

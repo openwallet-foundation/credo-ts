@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { OutboundMessage, OutboundPackage } from '../types'
@@ -34,10 +35,11 @@ export class MessageSender {
   }
 
   public async packMessage(outboundMessage: OutboundMessage): Promise<OutboundPackage> {
-    const { connection, payload, endpoint } = outboundMessage
+    const { connection, payload } = outboundMessage
     const { verkey, theirKey } = connection
+    const endpoint = this.transportService.findEndpoint(connection)
     const message = payload.toJSON()
-    this.logger.info('outboundMessage', { verkey, theirKey, endpoint, message })
+    this.logger.info('outboundMessage', { verkey, theirKey, message })
     const responseRequested = outboundMessage.payload.hasReturnRouting()
     const wireMessage = await this.envelopeService.packMessage(outboundMessage)
     return { connection, payload: wireMessage, endpoint, responseRequested }
@@ -48,7 +50,7 @@ export class MessageSender {
       throw new AriesFrameworkError('Agent has no outbound transporter!')
     }
     const outboundPackage = await this.packMessage(outboundMessage)
-    const transport = this.transportService.resolveTransport(outboundMessage.connection)
+    const transport = this.transportService.findTransport(outboundMessage.connection.id)
     outboundPackage.transport = transport
     await this.outboundTransporter.sendMessage(outboundPackage)
   }

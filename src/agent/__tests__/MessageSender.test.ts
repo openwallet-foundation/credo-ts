@@ -35,38 +35,39 @@ class DummyTransport implements Transport {
 }
 
 describe('MessageSender', () => {
+  const TransportService = <jest.Mock<TransportServiceImpl>>(<unknown>TransportServiceImpl)
+  const EnvelopeService = <jest.Mock<EnvelopeServiceImpl>>(<unknown>EnvelopeServiceImpl)
+
+  const wireMessage = {
+    alg: 'EC',
+    crv: 'P-256',
+    x: 'MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4',
+    y: '4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM',
+    use: 'enc',
+    kid: '1',
+  }
+
+  const enveloperService = new EnvelopeService()
+  const envelopeServicePackMessageMock = enveloperService.packMessage as jest.Mock<
+    Promise<JsonWebKey>,
+    [OutboundMessage]
+  >
+  envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(wireMessage))
+
+  const transportService = new TransportService()
+  const transport = new DummyTransport()
+  const transportServiceFindTransportMock = mockFunction(transportService.findTransport)
+  transportServiceFindTransportMock.mockReturnValue(transport)
+
+  const endpoint = 'https://www.exampleEndpoint.com'
+  const transportServiceFindEndpointMock = mockFunction(transportService.findEndpoint)
+  transportServiceFindEndpointMock.mockReturnValue(endpoint)
+
+  let messageSender: MessageSender
+  let outboundTransporter: OutboundTransporter
+  let connection: ConnectionRecord
+
   describe('sendMessage', () => {
-    const TransportService = <jest.Mock<TransportServiceImpl>>(<unknown>TransportServiceImpl)
-    const EnvelopeService = <jest.Mock<EnvelopeServiceImpl>>(<unknown>EnvelopeServiceImpl)
-
-    const wireMessage = {
-      alg: 'EC',
-      crv: 'P-256',
-      x: 'MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4',
-      y: '4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM',
-      use: 'enc',
-      kid: '1',
-    }
-
-    const enveloperService = new EnvelopeService()
-    const envelopeServicePackMessageMock = enveloperService.packMessage as jest.Mock<
-      Promise<JsonWebKey>,
-      [OutboundMessage]
-    >
-    envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(wireMessage))
-
-    const transport = new DummyTransport()
-    const transportService = new TransportService()
-    const transportServiceResolveTransportMock = transportService.resolveTransport as jest.Mock<
-      Transport,
-      [ConnectionRecord]
-    >
-    transportServiceResolveTransportMock.mockReturnValue(transport)
-
-    let messageSender: MessageSender
-    let outboundTransporter: OutboundTransporter
-    let connection: ConnectionRecord
-
     beforeEach(() => {
       outboundTransporter = new DummyOutboundTransporter()
       messageSender = new MessageSender(enveloperService, transportService, logger)
@@ -91,23 +92,54 @@ describe('MessageSender', () => {
       expect(sendMessageCall).toEqual({
         connection,
         payload: wireMessage,
-        endpoint: outboundMessage.endpoint,
+        endpoint,
         responseRequested: false,
         transport,
       })
     })
+  })
 
-    test('when message has return route calls transporter with responseRequested', async () => {
+  describe('packMessage', () => {
+    beforeEach(() => {
+      outboundTransporter = new DummyOutboundTransporter()
+      messageSender = new MessageSender(enveloperService, transportService, logger)
+      connection = getMockConnection({ id: 'test-123' })
+    })
+
+    test('returns outbound message context with connection, payload and endpoint', async () => {
       const message = new AgentMessage()
-      const spy = jest.spyOn(outboundTransporter, 'sendMessage')
+      const outboundMessage = createOutboundMessage(connection, message)
+
+      const result = await messageSender.packMessage(outboundMessage)
+
+      expect(result).toEqual({
+        connection,
+        payload: wireMessage,
+        endpoint,
+        responseRequested: false,
+      })
+    })
+
+    test('when message has return route returns outbound message context with responseRequested', async () => {
+      const message = new AgentMessage()
       message.setReturnRouting(ReturnRouteTypes.all)
       const outboundMessage = createOutboundMessage(connection, message)
-      messageSender.setOutboundTransporter(outboundTransporter)
 
-      await messageSender.sendMessage(outboundMessage)
+      const result = await messageSender.packMessage(outboundMessage)
 
-      const [[sendMessageCall]] = spy.mock.calls
-      expect(sendMessageCall.responseRequested).toEqual(true)
+      expect(result.responseRequested).toEqual(true)
     })
   })
 })
+
+/**
+ * Returns mock of function with correct type annotations according to original function `fn`.
+ * It can be used also for class methods.
+ *
+ * @param fn function you want to mock
+ * @returns mock function with type annotations
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.MockedFunction<T> {
+  return fn as jest.MockedFunction<T>
+}

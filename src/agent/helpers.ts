@@ -14,7 +14,6 @@ export function createOutboundMessage<T extends AgentMessage = AgentMessage>(
     // When invitation uses DID
     return {
       connection,
-      endpoint: invitation.serviceEndpoint,
       payload,
       recipientKeys: invitation.recipientKeys || [],
       routingKeys: invitation.routingKeys || [],
@@ -32,7 +31,6 @@ export function createOutboundMessage<T extends AgentMessage = AgentMessage>(
 
   return {
     connection,
-    endpoint: service.serviceEndpoint,
     payload,
     recipientKeys: service.recipientKeys,
     routingKeys: service.routingKeys ?? [],
