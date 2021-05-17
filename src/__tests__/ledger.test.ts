@@ -4,6 +4,7 @@ import { Agent } from '..'
 import { DID_IDENTIFIER_REGEX, VERKEY_REGEX, isFullVerkey, isAbbreviatedVerkey } from '../utils/did'
 import { genesisPath, getBaseConfig, sleep } from './helpers'
 import testLogger from './logger'
+import { promises } from 'fs'
 
 const faberConfig = getBaseConfig('Faber Ledger', { genesisPath })
 
@@ -120,5 +121,17 @@ describe('ledger', () => {
         }),
       })
     )
+  })
+
+  it('should correctly store the genesis file if genesis transactions is passed', async () => {
+    const genesisTransactions = await promises.readFile(genesisPath, { encoding: 'utf-8' })
+    const agent = new Agent(getBaseConfig('Faber Ledger Genesis Transactions', { genesisTransactions }))
+
+    if (!faberAgent.publicDid?.did) {
+      throw new Error('No public did')
+    }
+
+    const did = await agent.ledger.getPublicDid(faberAgent.publicDid.did)
+    expect(did.did).toEqual(faberAgent.publicDid.did)
   })
 })

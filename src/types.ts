@@ -26,12 +26,15 @@ export interface InitConfig {
   walletConfig: WalletConfig
   walletCredentials: WalletCredentials
   autoAcceptConnections?: boolean
-  genesisPath?: string
   poolName?: string
   logger?: Logger
   indy: typeof Indy
   didCommMimeType?: DidCommMimeType
   fileSystem: FileSystem
+
+  // Either path or transactions string can be provided
+  genesisPath?: string
+  genesisTransactions?: string
 }
 
 export interface UnpackedMessage {

@@ -117,18 +117,10 @@ export class Agent {
   public async init() {
     await this.wallet.init()
 
-    const { publicDidSeed, genesisPath, poolName } = this.agentConfig
+    const { publicDidSeed } = this.agentConfig
     if (publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
       await this.wallet.initPublicDid({ seed: publicDidSeed })
-    }
-
-    // If the genesis is provided in the config, we will automatically handle ledger connection
-    // otherwise the framework consumer needs to do this manually
-    if (genesisPath) {
-      await this.ledger.connect(poolName, {
-        genesisPath,
-      })
     }
 
     if (this.inboundTransporter) {

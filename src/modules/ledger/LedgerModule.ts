@@ -1,7 +1,7 @@
 import type { CredDefId, Did, SchemaId } from 'indy-sdk'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
-import { LedgerService, SchemaTemplate, CredentialDefinitionTemplate, LedgerConnectOptions } from './services'
+import { LedgerService, SchemaTemplate, CredentialDefinitionTemplate } from './services'
 import { Wallet } from '../../wallet/Wallet'
 import { Symbols } from '../../symbols'
 import { AriesFrameworkError } from '../../error'
@@ -14,10 +14,6 @@ export class LedgerModule {
   public constructor(@inject(Symbols.Wallet) wallet: Wallet, ledgerService: LedgerService) {
     this.ledgerService = ledgerService
     this.wallet = wallet
-  }
-
-  public async connect(poolName: string, poolConfig: LedgerConnectOptions) {
-    return this.ledgerService.connect(poolName, poolConfig)
   }
 
   public async registerPublicDid() {

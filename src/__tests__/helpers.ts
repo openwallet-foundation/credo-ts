@@ -42,7 +42,7 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
     walletCredentials: { key: `Key: ${name}` },
     publicDidSeed,
     autoAcceptConnections: true,
-    poolName: `Pool: ${name}`,
+    poolName: `pool-${name.toLowerCase()}`,
     logger: testLogger,
     indy,
     fileSystem: new NodeFileSystem(),

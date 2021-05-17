@@ -1,4 +1,6 @@
 import { promises } from 'fs'
+import { dirname } from 'path'
+import { tmpdir } from 'os'
 import { FileSystem } from './FileSystem'
 
 const { access, readFile, writeFile } = promises
@@ -12,7 +14,7 @@ export class NodeFileSystem implements FileSystem {
    * @param basePath The base path to use for reading and writing files. process.cwd() if not specified
    */
   public constructor(basePath?: string) {
-    this.basePath = basePath ?? process.cwd()
+    this.basePath = basePath ?? tmpdir()
   }
 
   public async exists(path: string) {
@@ -25,6 +27,9 @@ export class NodeFileSystem implements FileSystem {
   }
 
   public async write(path: string, data: string): Promise<void> {
+    // Make sure parent directories exist
+    await promises.mkdir(dirname(path), { recursive: true })
+
     return writeFile(path, data, { encoding: 'utf-8' })
   }
 

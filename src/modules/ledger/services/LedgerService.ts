@@ -12,16 +12,12 @@ import type {
   LedgerWriteReplyResponse,
 } from 'indy-sdk'
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { AriesFrameworkError } from '../../../error'
 import { Logger } from '../../../logger'
 import { isIndyError } from '../../../utils/indyError'
 import { Wallet } from '../../../wallet/Wallet'
 import { Symbols } from '../../../symbols'
 import { IndyIssuerService } from '../../indy'
-
-export interface LedgerConnectOptions {
-  genesisPath: string
-}
+import { FileSystem } from '../../../storage/fs/FileSystem'
 
 @scoped(Lifecycle.ContainerScoped)
 export class LedgerService {
@@ -31,27 +27,43 @@ export class LedgerService {
   private _poolHandle?: PoolHandle
   private authorAgreement?: AuthorAgreement | null
   private indyIssuer: IndyIssuerService
+  private agentConfig: AgentConfig
+  private fileSystem: FileSystem
 
-  public constructor(@inject(Symbols.Wallet) wallet: Wallet, agentConfig: AgentConfig, indyIssuer: IndyIssuerService) {
+  public constructor(
+    @inject(Symbols.Wallet) wallet: Wallet,
+    agentConfig: AgentConfig,
+    indyIssuer: IndyIssuerService,
+    @inject(Symbols.FileSystem) fileSystem: FileSystem
+  ) {
     this.wallet = wallet
+    this.agentConfig = agentConfig
     this.indy = agentConfig.indy
     this.logger = agentConfig.logger
     this.indyIssuer = indyIssuer
+    this.fileSystem = fileSystem
   }
 
-  private get poolHandle() {
+  private async getPoolHandle() {
     if (!this._poolHandle) {
-      throw new AriesFrameworkError('Pool has not been initialized yet.')
+      return this.connect()
     }
 
     return this._poolHandle
   }
 
-  public async connect(poolName: string, poolConfig: LedgerConnectOptions) {
-    this.logger.debug(`Connecting to ledger pool '${poolName}'`, poolConfig)
+  public async connect() {
+    const poolName = this.agentConfig.poolName
+    const genesisPath = await this.getGenesisPath()
+
+    if (!genesisPath) {
+      throw new Error('Cannot connect to ledger without genesis file')
+    }
+
+    this.logger.debug(`Connecting to ledger pool '${poolName}'`, { genesisPath })
     try {
       this.logger.debug(`Creating pool '${poolName}'`)
-      await this.indy.createPoolLedgerConfig(poolName, { genesis_txn: poolConfig.genesisPath })
+      await this.indy.createPoolLedgerConfig(poolName, { genesis_txn: genesisPath })
     } catch (error) {
       if (isIndyError(error, 'PoolLedgerConfigAlreadyExistsError')) {
         this.logger.debug(`Pool '${poolName}' already exists`, {
@@ -67,6 +79,7 @@ export class LedgerService {
 
     this.logger.debug(`Opening pool ${poolName}`)
     this._poolHandle = await this.indy.openPoolLedger(poolName)
+    return this._poolHandle
   }
 
   public async getPublicDid(did: Did) {
@@ -75,7 +88,7 @@ export class LedgerService {
       const request = await this.indy.buildGetNymRequest(null, did)
 
       this.logger.debug(`Submitting get did request for did '${did}' to ledger`)
-      const response = await this.indy.submitRequest(this.poolHandle, request)
+      const response = await this.indy.submitRequest(await this.getPoolHandle(), request)
 
       const result = await this.indy.parseGetNymResponse(response)
       this.logger.debug(`Retrieved did '${did}' from ledger`, result)
@@ -85,7 +98,7 @@ export class LedgerService {
       this.logger.error(`Error retrieving did '${did}' from ledger`, {
         error,
         did,
-        poolHandle: this.poolHandle,
+        poolHandle: await this.getPoolHandle(),
       })
 
       throw error
@@ -113,7 +126,7 @@ export class LedgerService {
       this.logger.error(`Error registering schema for did '${did}' on ledger`, {
         error,
         did,
-        poolHandle: this.poolHandle,
+        poolHandle: await this.getPoolHandle(),
         schemaTemplate,
       })
 
@@ -141,7 +154,7 @@ export class LedgerService {
       this.logger.error(`Error retrieving schema '${schemaId}' from ledger`, {
         error,
         schemaId,
-        poolHandle: this.poolHandle,
+        poolHandle: await this.getPoolHandle(),
       })
 
       throw error
@@ -180,7 +193,7 @@ export class LedgerService {
         {
           error,
           did,
-          poolHandle: this.poolHandle,
+          poolHandle: await this.getPoolHandle(),
           credentialDefinitionTemplate,
         }
       )
@@ -211,7 +224,7 @@ export class LedgerService {
       this.logger.error(`Error retrieving credential definition '${credentialDefinitionId}' from ledger`, {
         error,
         credentialDefinitionId: credentialDefinitionId,
-        poolHandle: this.poolHandle,
+        poolHandle: await this.getPoolHandle(),
       })
       throw error
     }
@@ -221,7 +234,7 @@ export class LedgerService {
     const requestWithTaa = await this.appendTaa(request)
     const signedRequestWithTaa = await this.wallet.signRequest(signDid, requestWithTaa)
 
-    const response = await this.indy.submitRequest(this.poolHandle, signedRequestWithTaa)
+    const response = await this.indy.submitRequest(await this.getPoolHandle(), signedRequestWithTaa)
 
     if (response.op === 'REJECT') {
       throw Error(`Ledger rejected transaction request: ${response.reason}`)
@@ -231,7 +244,7 @@ export class LedgerService {
   }
 
   private async submitReadRequest(request: LedgerRequest): Promise<LedgerReadReplyResponse> {
-    const response = await this.indy.submitRequest(this.poolHandle, request)
+    const response = await this.indy.submitRequest(await this.getPoolHandle(), request)
 
     if (response.op === 'REJECT') {
       throw Error(`Ledger rejected transaction request: ${response.reason}`)
@@ -292,6 +305,22 @@ export class LedgerService {
   private getFirstAcceptanceMechanism(authorAgreement: AuthorAgreement) {
     const [firstMechanism] = Object.keys(authorAgreement.acceptanceMechanisms.aml)
     return firstMechanism
+  }
+
+  private async getGenesisPath() {
+    // If the path is already provided return it
+    if (this.agentConfig.genesisPath) return this.agentConfig.genesisPath
+
+    // Determine the genesisPath
+    const genesisPath = this.fileSystem.basePath + `/afj/genesis-${this.agentConfig.poolName}.txn`
+    // Store genesis data if provided
+    if (this.agentConfig.genesisTransactions) {
+      await this.fileSystem.write(genesisPath, this.agentConfig.genesisTransactions)
+      return genesisPath
+    }
+
+    // No genesisPath
+    return null
   }
 }
 

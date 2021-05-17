@@ -44,6 +44,10 @@ export class AgentConfig {
     return this.initConfig.genesisPath
   }
 
+  public get genesisTransactions() {
+    return this.initConfig.genesisTransactions
+  }
+
   public get walletConfig() {
     return this.initConfig.walletConfig
   }

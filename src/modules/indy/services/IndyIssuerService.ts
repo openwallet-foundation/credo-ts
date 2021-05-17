@@ -14,6 +14,7 @@ import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { FileSystem } from '../../../storage/fs/FileSystem'
 import { Symbols } from '../../../symbols'
+import { getDirFromFilePath } from '../../../utils/path'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -120,10 +121,7 @@ export class IndyIssuerService {
     const tailsFileExists = await this.fileSystem.exists(tailsFilePath)
 
     // Extract directory from path (should also work with windows paths)
-    const dirname = tailsFilePath.substring(
-      0,
-      Math.max(tailsFilePath.lastIndexOf('/'), tailsFilePath.lastIndexOf('\\'))
-    )
+    const dirname = getDirFromFilePath(tailsFilePath)
 
     if (!tailsFileExists) {
       throw new Error(`Tails file does not exist at path ${tailsFilePath}`)
