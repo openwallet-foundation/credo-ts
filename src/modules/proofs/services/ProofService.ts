@@ -1,6 +1,5 @@
 import { inject, scoped, Lifecycle } from 'tsyringe'
 import type { IndyProof, Schema, CredDef } from 'indy-sdk'
-import { EventEmitter } from 'events'
 import { validateOrReject } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
@@ -42,16 +41,8 @@ import { Logger } from '../../../logger'
 import { ProofRepository } from '../repository'
 import { Symbols } from '../../../symbols'
 import { IndyHolderService, IndyVerifierService } from '../../indy'
-
-export enum ProofEventType {
-  StateChanged = 'stateChanged',
-}
-
-export interface ProofStateChangedEvent {
-  proofRecord: ProofRecord
-  previousState: ProofState
-}
-
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { ProofEventTypes, ProofStateChangedEvent } from '../ProofEvents'
 export interface ProofProtocolMsgReturnType<MessageType extends AgentMessage> {
   message: MessageType
   proofRecord: ProofRecord
@@ -63,13 +54,14 @@ export interface ProofProtocolMsgReturnType<MessageType extends AgentMessage> {
  * @todo validate attachments / messages
  */
 @scoped(Lifecycle.ContainerScoped)
-export class ProofService extends EventEmitter {
+export class ProofService {
   private proofRepository: ProofRepository
   private ledgerService: LedgerService
   private wallet: Wallet
   private logger: Logger
   private indyHolderService: IndyHolderService
   private indyVerifierService: IndyVerifierService
+  private eventEmitter: EventEmitter
 
   public constructor(
     proofRepository: ProofRepository,
@@ -77,16 +69,16 @@ export class ProofService extends EventEmitter {
     @inject(Symbols.Wallet) wallet: Wallet,
     agentConfig: AgentConfig,
     indyHolderService: IndyHolderService,
-    indyVerifierService: IndyVerifierService
+    indyVerifierService: IndyVerifierService,
+    eventEmitter: EventEmitter
   ) {
-    super()
-
     this.proofRepository = proofRepository
     this.ledgerService = ledgerService
     this.wallet = wallet
     this.logger = agentConfig.logger
     this.indyHolderService = indyHolderService
     this.indyVerifierService = indyVerifierService
+    this.eventEmitter = eventEmitter
   }
 
   /**
@@ -123,7 +115,10 @@ export class ProofService extends EventEmitter {
       tags: { threadId: proposalMessage.threadId },
     })
     await this.proofRepository.save(proofRecord)
-    this.emit(ProofEventType.StateChanged, { proofRecord, previousState: null })
+    this.eventEmitter.emit<ProofStateChangedEvent>({
+      type: ProofEventTypes.ProofStateChanged,
+      payload: { proofRecord, previousState: null },
+    })
 
     return { message: proposalMessage, proofRecord }
   }
@@ -208,9 +203,12 @@ export class ProofService extends EventEmitter {
 
       // Save record
       await this.proofRepository.save(proofRecord)
-      this.emit(ProofEventType.StateChanged, {
-        proofRecord,
-        previousState: null,
+      this.eventEmitter.emit<ProofStateChangedEvent>({
+        type: ProofEventTypes.ProofStateChanged,
+        payload: {
+          proofRecord,
+          previousState: null,
+        },
       })
     }
 
@@ -302,7 +300,10 @@ export class ProofService extends EventEmitter {
     })
 
     await this.proofRepository.save(proofRecord)
-    this.emit(ProofEventType.StateChanged, { proofRecord, previousState: null })
+    this.eventEmitter.emit<ProofStateChangedEvent>({
+      type: ProofEventTypes.ProofStateChanged,
+      payload: { proofRecord, previousState: null },
+    })
 
     return { message: requestPresentationMessage, proofRecord }
   }
@@ -363,9 +364,9 @@ export class ProofService extends EventEmitter {
 
       // Save in repository
       await this.proofRepository.save(proofRecord)
-      this.emit(ProofEventType.StateChanged, {
-        proofRecord,
-        previousState: null,
+      this.eventEmitter.emit<ProofStateChangedEvent>({
+        type: ProofEventTypes.ProofStateChanged,
+        payload: { proofRecord, previousState: null },
       })
     }
 
@@ -867,12 +868,10 @@ export class ProofService extends EventEmitter {
     proofRecord.state = newState
     await this.proofRepository.update(proofRecord)
 
-    const event: ProofStateChangedEvent = {
-      proofRecord,
-      previousState: previousState,
-    }
-
-    this.emit(ProofEventType.StateChanged, event)
+    this.eventEmitter.emit<ProofStateChangedEvent>({
+      type: ProofEventTypes.ProofStateChanged,
+      payload: { proofRecord, previousState: previousState },
+    })
   }
 
   /**

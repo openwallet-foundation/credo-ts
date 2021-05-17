@@ -1,6 +1,6 @@
 import type { WalletQuery, CredDef } from 'indy-sdk'
 import { Wallet } from '../../../wallet/Wallet'
-import { CredentialOfferTemplate, CredentialService, CredentialEventType } from '../services'
+import { CredentialOfferTemplate, CredentialService } from '../services'
 import { CredentialRecord, CredentialRecordMetadata, CredentialRecordTags } from '../repository/CredentialRecord'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { CredentialState } from '../CredentialState'
@@ -31,6 +31,8 @@ import { LedgerService } from '../../ledger/services'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { getBaseConfig, getMockConnection } from '../../../__tests__/helpers'
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { CredentialEventTypes, CredentialStateChangedEvent } from '../CredentialEvents'
 
 // Mock classes
 jest.mock('./../repository/CredentialRepository')
@@ -133,6 +135,7 @@ describe('CredentialService', () => {
   let repositoryFindMock: jest.Mock<Promise<CredentialRecord>, [string]>
   let repositoryFindByQueryMock: jest.Mock<Promise<CredentialRecord[]>, [WalletQuery]>
   let ledgerServiceGetCredDef: jest.Mock<Promise<CredDef>, [string]>
+  let eventEmitter: EventEmitter
 
   beforeAll(async () => {
     wallet = new StubWallet()
@@ -149,15 +152,16 @@ describe('CredentialService', () => {
     indyIssuerService = new IndyIssuerServiceMock()
     indyHolderService = new IndyHolderServiceMock()
     ledgerService = new LedgerServiceMock()
+    eventEmitter = new EventEmitter()
 
     credentialService = new CredentialService(
-      wallet,
       credentialRepository,
       { getById: () => Promise.resolve(connection) } as any,
       ledgerService,
       new AgentConfig(getBaseConfig('CredentialServiceTest')),
       indyIssuerService,
-      indyHolderService
+      indyHolderService,
+      eventEmitter
     )
 
     // make separate repositoryFindMock variable to get the correct jest mock typing
@@ -206,16 +210,17 @@ describe('CredentialService', () => {
 
     test(`emits stateChange event with a new credential in ${CredentialState.OfferSent} state`, async () => {
       const eventListenerMock = jest.fn()
-      credentialService.on(CredentialEventType.StateChanged, eventListenerMock)
+      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
       await credentialService.createOffer(connection, credentialTemplate)
 
-      expect(eventListenerMock).toHaveBeenCalledTimes(1)
-      const [[event]] = eventListenerMock.mock.calls
-      expect(event).toMatchObject({
-        previousState: null,
-        credentialRecord: {
-          state: CredentialState.OfferSent,
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: 'CredentialStateChanged',
+        payload: {
+          previousState: null,
+          credentialRecord: expect.objectContaining({
+            state: CredentialState.OfferSent,
+          }),
         },
       })
     })
@@ -294,18 +299,19 @@ describe('CredentialService', () => {
 
     test(`emits stateChange event with ${CredentialState.OfferReceived}`, async () => {
       const eventListenerMock = jest.fn()
-      credentialService.on(CredentialEventType.StateChanged, eventListenerMock)
+      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
       // when
       await credentialService.processOffer(messageContext)
 
       // then
-      expect(eventListenerMock).toHaveBeenCalledTimes(1)
-      const [[event]] = eventListenerMock.mock.calls
-      expect(event).toMatchObject({
-        previousState: null,
-        credentialRecord: {
-          state: CredentialState.OfferReceived,
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: 'CredentialStateChanged',
+        payload: {
+          previousState: null,
+          credentialRecord: expect.objectContaining({
+            state: CredentialState.OfferReceived,
+          }),
         },
       })
     })
@@ -338,18 +344,19 @@ describe('CredentialService', () => {
 
     test(`emits stateChange event with ${CredentialState.RequestSent}`, async () => {
       const eventListenerMock = jest.fn()
-      credentialService.on(CredentialEventType.StateChanged, eventListenerMock)
+      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
       // when
       await credentialService.createRequest(credentialRecord)
 
       // then
-      expect(eventListenerMock).toHaveBeenCalledTimes(1)
-      const [[event]] = eventListenerMock.mock.calls
-      expect(event).toMatchObject({
-        previousState: CredentialState.OfferReceived,
-        credentialRecord: {
-          state: CredentialState.RequestSent,
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: 'CredentialStateChanged',
+        payload: {
+          previousState: CredentialState.OfferReceived,
+          credentialRecord: expect.objectContaining({
+            state: CredentialState.RequestSent,
+          }),
         },
       })
     })
@@ -439,17 +446,18 @@ describe('CredentialService', () => {
 
     test(`emits stateChange event from ${CredentialState.OfferSent} to ${CredentialState.RequestReceived}`, async () => {
       const eventListenerMock = jest.fn()
-      credentialService.on(CredentialEventType.StateChanged, eventListenerMock)
+      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
       repositoryFindByQueryMock.mockReturnValue(Promise.resolve([credential]))
 
       await credentialService.processRequest(messageContext)
 
-      expect(eventListenerMock).toHaveBeenCalledTimes(1)
-      const [[event]] = eventListenerMock.mock.calls
-      expect(event).toMatchObject({
-        previousState: CredentialState.OfferSent,
-        credentialRecord: {
-          state: CredentialState.RequestReceived,
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: 'CredentialStateChanged',
+        payload: {
+          previousState: CredentialState.OfferSent,
+          credentialRecord: expect.objectContaining({
+            state: CredentialState.RequestReceived,
+          }),
         },
       })
     })
@@ -499,7 +507,7 @@ describe('CredentialService', () => {
 
     test(`emits stateChange event from ${CredentialState.RequestReceived} to ${CredentialState.CredentialIssued}`, async () => {
       const eventListenerMock = jest.fn()
-      credentialService.on(CredentialEventType.StateChanged, eventListenerMock)
+      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
       // given
       repositoryFindMock.mockReturnValue(Promise.resolve(credential))
@@ -508,12 +516,13 @@ describe('CredentialService', () => {
       await credentialService.createCredential(credential)
 
       // then
-      expect(eventListenerMock).toHaveBeenCalledTimes(1)
-      const [[event]] = eventListenerMock.mock.calls
-      expect(event).toMatchObject({
-        previousState: CredentialState.RequestReceived,
-        credentialRecord: {
-          state: CredentialState.CredentialIssued,
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: 'CredentialStateChanged',
+        payload: {
+          previousState: CredentialState.RequestReceived,
+          credentialRecord: expect.objectContaining({
+            state: CredentialState.CredentialIssued,
+          }),
         },
       })
     })
@@ -662,7 +671,7 @@ describe('CredentialService', () => {
 
     test(`emits stateChange event from ${CredentialState.RequestSent} to ${CredentialState.CredentialReceived}`, async () => {
       const eventListenerMock = jest.fn()
-      credentialService.on(CredentialEventType.StateChanged, eventListenerMock)
+      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
       // given
       repositoryFindByQueryMock.mockReturnValue(Promise.resolve([credential]))
@@ -671,12 +680,13 @@ describe('CredentialService', () => {
       await credentialService.processCredential(messageContext)
 
       // then
-      expect(eventListenerMock).toHaveBeenCalledTimes(1)
-      const [[event]] = eventListenerMock.mock.calls
-      expect(event).toMatchObject({
-        previousState: CredentialState.RequestSent,
-        credentialRecord: {
-          state: CredentialState.CredentialReceived,
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: 'CredentialStateChanged',
+        payload: {
+          previousState: CredentialState.RequestSent,
+          credentialRecord: expect.objectContaining({
+            state: CredentialState.CredentialReceived,
+          }),
         },
       })
     })
@@ -762,7 +772,7 @@ describe('CredentialService', () => {
 
     test(`emits stateChange event from ${CredentialState.CredentialReceived} to ${CredentialState.Done}`, async () => {
       const eventListenerMock = jest.fn()
-      credentialService.on(CredentialEventType.StateChanged, eventListenerMock)
+      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
       // given
       repositoryFindMock.mockReturnValue(Promise.resolve(credential))
@@ -771,12 +781,13 @@ describe('CredentialService', () => {
       await credentialService.createAck(credential)
 
       // then
-      expect(eventListenerMock).toHaveBeenCalledTimes(1)
-      const [[event]] = eventListenerMock.mock.calls
-      expect(event).toMatchObject({
-        previousState: CredentialState.CredentialReceived,
-        credentialRecord: {
-          state: CredentialState.Done,
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: 'CredentialStateChanged',
+        payload: {
+          previousState: CredentialState.CredentialReceived,
+          credentialRecord: expect.objectContaining({
+            state: CredentialState.Done,
+          }),
         },
       })
     })
@@ -851,7 +862,7 @@ describe('CredentialService', () => {
 
     test(`emits stateChange event from ${CredentialState.CredentialIssued} to ${CredentialState.Done}`, async () => {
       const eventListenerMock = jest.fn()
-      credentialService.on(CredentialEventType.StateChanged, eventListenerMock)
+      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
       // given
       repositoryFindByQueryMock.mockReturnValue(Promise.resolve([credential]))
@@ -860,12 +871,13 @@ describe('CredentialService', () => {
       await credentialService.processAck(messageContext)
 
       // then
-      expect(eventListenerMock).toHaveBeenCalledTimes(1)
-      const [[event]] = eventListenerMock.mock.calls
-      expect(event).toMatchObject({
-        previousState: CredentialState.CredentialIssued,
-        credentialRecord: {
-          state: CredentialState.Done,
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: 'CredentialStateChanged',
+        payload: {
+          previousState: CredentialState.CredentialIssued,
+          credentialRecord: expect.objectContaining({
+            state: CredentialState.Done,
+          }),
         },
       })
     })

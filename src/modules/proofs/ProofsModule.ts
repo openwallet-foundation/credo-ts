@@ -1,5 +1,4 @@
 import { Lifecycle, scoped } from 'tsyringe'
-import { EventEmitter } from 'events'
 
 import { createOutboundMessage } from '../../agent/helpers'
 import { MessageSender } from '../../agent/MessageSender'
@@ -33,16 +32,6 @@ export class ProofsModule {
     this.connectionService = connectionService
     this.messageSender = messageSender
     this.registerHandlers(dispatcher)
-  }
-
-  /**
-   * Get the event emitter for the proof service. Will emit state changed events
-   * when the state of proof records changes.
-   *
-   * @returns event emitter for proof related actions
-   */
-  public get events(): EventEmitter {
-    return this.proofService
   }
 
   /**

@@ -4,10 +4,8 @@ import { CredentialRecord } from './repository/CredentialRecord'
 import { createOutboundMessage } from '../../agent/helpers'
 import { MessageSender } from '../../agent/MessageSender'
 import { ConnectionService } from '../connections'
-import { EventEmitter } from 'events'
 import { CredentialOfferTemplate, CredentialService } from './services'
 import { ProposeCredentialMessageOptions } from './messages'
-import { IndyCredentialInfo } from './models'
 import { Dispatcher } from '../../agent/Dispatcher'
 import {
   ProposeCredentialHandler,
@@ -33,16 +31,6 @@ export class CredentialsModule {
     this.credentialService = credentialService
     this.messageSender = messageSender
     this.registerHandlers(dispatcher)
-  }
-
-  /**
-   * Get the event emitter for the credential service. Will emit state changed events
-   * when the state of credential records changes.
-   *
-   * @returns event emitter for credential related state changes
-   */
-  public get events(): EventEmitter {
-    return this.credentialService
   }
 
   /**

@@ -1,5 +1,4 @@
 import type { Verkey } from 'indy-sdk'
-import { EventEmitter } from 'events'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
@@ -40,16 +39,6 @@ export class ConnectionsModule {
     this.consumerRoutingService = consumerRoutingService
     this.messageSender = messageSender
     this.registerHandlers(dispatcher)
-  }
-
-  /**
-   * Get the event emitter for the connection service. Will emit state changed events
-   * when the state of connections records changes.
-   *
-   * @returns event emitter for connection related state changes
-   */
-  public get events(): EventEmitter {
-    return this.connectionService
   }
 
   public async createConnection(config?: {

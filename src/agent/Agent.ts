@@ -1,4 +1,3 @@
-import { EventEmitter } from 'events'
 import { container as baseContainer, DependencyContainer } from 'tsyringe'
 
 import { Logger } from '../logger'
@@ -21,6 +20,8 @@ import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { Symbols } from '../symbols'
 import { Transport } from './TransportService'
+import { EventEmitter } from './EventEmitter'
+import { AgentEventTypes, AgentMessageReceivedEvent } from './Events'
 
 export class Agent {
   protected agentConfig: AgentConfig
@@ -45,11 +46,9 @@ export class Agent {
 
     this.agentConfig = new AgentConfig(initialConfig)
     this.logger = this.agentConfig.logger
-    this.eventEmitter = new EventEmitter()
 
     // Bind class based instances
     this.container.registerInstance(AgentConfig, this.agentConfig)
-    this.container.registerInstance(EventEmitter, this.eventEmitter)
 
     // Based on interfaces. Need to register which class to use
     this.container.registerInstance(Symbols.Logger, this.logger)
@@ -76,6 +75,7 @@ export class Agent {
     })
 
     // Resolve instances after everything is registered
+    this.eventEmitter = this.container.resolve(EventEmitter)
     this.messageSender = this.container.resolve(MessageSender)
     this.messageReceiver = this.container.resolve(MessageReceiver)
     this.wallet = this.container.resolve(Symbols.Wallet)
@@ -93,8 +93,8 @@ export class Agent {
   }
 
   private listenForMessages() {
-    this.eventEmitter.addListener('agentMessage', async (payload) => {
-      await this.receiveMessage(payload)
+    this.eventEmitter.on<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived, async (event) => {
+      await this.receiveMessage(event.payload.message)
     })
   }
 
@@ -108,6 +108,10 @@ export class Agent {
 
   public get outboundTransporter() {
     return this.messageSender.outboundTransporter
+  }
+
+  public get events() {
+    return this.eventEmitter
   }
 
   public async init() {

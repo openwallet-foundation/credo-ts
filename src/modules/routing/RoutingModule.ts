@@ -1,4 +1,3 @@
-import { EventEmitter } from 'events'
 import { Lifecycle, scoped } from 'tsyringe'
 import type { Verkey } from 'indy-sdk'
 
@@ -17,6 +16,7 @@ import {
 } from './handlers'
 import { Logger } from '../../logger'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
+import { EventEmitter } from '../../agent/EventEmitter'
 
 @scoped(Lifecycle.ContainerScoped)
 export class RoutingModule {
