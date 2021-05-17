@@ -20,7 +20,7 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import testLogger from '../../../__tests__/logger'
-import { RecipientService, MediationRecord } from '../../routing'
+import { RecipientService, MediationRecord, MediationRole, MediationState } from '../../routing'
 import { MessageSender } from '../../../agent/MessageSender'
 
 jest.mock('./../../../storage/Repository')
@@ -189,6 +189,40 @@ describe('ConnectionService', () => {
       expect(aliasDefined.alias).toBe('test-alias')
       expect(aliasUndefined.alias).toBeUndefined()
     })
+    it('returns a connection record with mediator information', async () => {
+      expect.assertions(1)
+
+      const mediatorRecord = new MediationRecord({
+        state: MediationState.Granted,
+        role: MediationRole.Recipient,
+        connectionId: 'fakeConnectionId',
+        recipientKeys: ['fakeRecipientKey'],
+        routingKeys: ['fakeRoutingKey'],
+        endpoint: 'fakeEndpoint',
+        tags: {
+          state: MediationState.Init,
+          role: MediationRole.Recipient,
+          connectionId: 'fakeConnectionId',
+          default: 'false',
+        },
+      })
+      
+      await mediationRepository.save(mediatorRecord)
+
+
+      const { message: invitation } = await connectionService.createInvitation({
+        mediatorId: mediatorRecord.id
+      })
+      expect(invitation).toEqual(
+        expect.objectContaining({
+          label: initConfig.label,
+          recipientKeys: [expect.any(String)],
+          routingKeys: ['fakeRoutingKey'],
+          serviceEndpoint: 'fakeEndpoint',
+        })
+      )
+    })
+
   })
 
   describe('processInvitation', () => {
