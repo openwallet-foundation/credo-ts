@@ -2,7 +2,7 @@ import type Indy from 'indy-sdk'
 import type { Did, WalletConfig, WalletCredentials, Verkey } from 'indy-sdk'
 import { ConnectionRecord } from './modules/connections'
 import { AgentMessage } from './agent/AgentMessage'
-import { Transport } from './agent/TransportService'
+import { TransportSession } from './agent/TransportService'
 import { Logger } from './logger'
 import { FileSystem } from './storage/fs/FileSystem'
 
@@ -62,7 +62,7 @@ export interface OutboundPackage {
   payload: WireMessage
   responseRequested?: boolean
   endpoint?: string
-  transport?: Transport
+  session?: TransportSession
 }
 
 export interface InboundConnection {

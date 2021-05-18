@@ -10,23 +10,23 @@ export const DID_COMM_TRANSPORT_QUEUE = 'didcomm:transport/queue'
 
 @scoped(Lifecycle.ContainerScoped)
 export class TransportService {
-  private transportTable: TransportTable = {}
+  private transportSessionTable: TransportSessionTable = {}
   private logger: Logger
 
   public constructor(@inject(Symbols.Logger) logger: Logger) {
     this.logger = logger
   }
 
-  public saveTransport(connectionId: string, transport: Transport) {
-    this.transportTable[connectionId] = transport
+  public saveSession(connectionId: string, transport: TransportSession) {
+    this.transportSessionTable[connectionId] = transport
   }
 
   public hasInboundEndpoint(connection: ConnectionRecord) {
     return connection.didDoc.didCommServices.find((s) => s.serviceEndpoint !== DID_COMM_TRANSPORT_QUEUE)
   }
 
-  public findTransport(connectionId: string) {
-    return this.transportTable[connectionId]
+  public findSession(connectionId: string) {
+    return this.transportSessionTable[connectionId]
   }
 
   public findEndpoint(connection: ConnectionRecord) {
@@ -49,24 +49,10 @@ export class TransportService {
   }
 }
 
-interface TransportTable {
-  [connectionRecordId: string]: Transport
+interface TransportSessionTable {
+  [connectionRecordId: string]: TransportSession
 }
 
-type TransportType = 'websocket' | 'http' | 'queue'
-
-export interface Transport {
-  type: TransportType
-  endpoint: string
-}
-
-export class WebSocketTransport implements Transport {
-  public readonly type = 'websocket'
-  public endpoint: string
-  public socket?: WebSocket
-
-  public constructor(endpoint: string, socket?: WebSocket) {
-    this.endpoint = endpoint
-    this.socket = socket
-  }
+export interface TransportSession {
+  type: string
 }

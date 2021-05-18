@@ -1,11 +1,20 @@
 import { OutboundTransporter } from './OutboundTransporter'
 import { Agent } from '../agent/Agent'
-import { WebSocketTransport } from '../agent/TransportService'
+import { TransportSession } from '../agent/TransportService'
 import { Logger } from '../logger'
 import { ConnectionRecord } from '../modules/connections'
 import { OutboundPackage } from '../types'
 import { Symbols } from '../symbols'
 import { WebSocket } from '../utils/ws'
+
+export class WebSocketTransportSession implements TransportSession {
+  public readonly type = 'websocket'
+  public socket?: WebSocket
+
+  public constructor(socket?: WebSocket) {
+    this.socket = socket
+  }
+}
 
 export class WsOutboundTransporter implements OutboundTransporter {
   private transportTable: Map<string, WebSocket> = new Map<string, WebSocket>()
@@ -31,16 +40,14 @@ export class WsOutboundTransporter implements OutboundTransporter {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
-    const { connection, payload, endpoint, transport } = outboundPackage
+    const { connection, payload, endpoint, session } = outboundPackage
     this.logger.debug(
-      `Sending outbound message to connection ${connection.id} over ${transport?.type} transport.`,
+      `Sending outbound message to connection ${connection.id} over ${session?.type} transport.`,
       payload
     )
 
-    if (transport instanceof WebSocketTransport) {
-      if (transport.socket?.readyState === WebSocket.OPEN) {
-        transport.socket.send(JSON.stringify(payload))
-      }
+    if (session instanceof WebSocketTransportSession && session.socket?.readyState === WebSocket.OPEN) {
+      session.socket.send(JSON.stringify(payload))
     } else {
       const socket = await this.resolveSocket(connection, endpoint)
       socket.send(JSON.stringify(payload))

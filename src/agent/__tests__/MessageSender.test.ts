@@ -1,6 +1,6 @@
 import testLogger from '../../__tests__/logger'
 import { MessageSender } from '../MessageSender'
-import { Transport, TransportService as TransportServiceImpl } from '../TransportService'
+import { TransportSession, TransportService as TransportServiceImpl } from '../TransportService'
 import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { createOutboundMessage } from '../helpers'
 import { AgentMessage } from '../AgentMessage'
@@ -29,9 +29,8 @@ class DummyOutboundTransporter implements OutboundTransporter {
   }
 }
 
-class DummyTransport implements Transport {
-  public readonly type = 'websocket'
-  public endpoint = 'endpoint'
+class DummyTransportSession implements TransportSession {
+  public readonly type = 'dummy'
 }
 
 describe('MessageSender', () => {
@@ -55,9 +54,9 @@ describe('MessageSender', () => {
   envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(wireMessage))
 
   const transportService = new TransportService()
-  const transport = new DummyTransport()
-  const transportServiceFindTransportMock = mockFunction(transportService.findTransport)
-  transportServiceFindTransportMock.mockReturnValue(transport)
+  const session = new DummyTransportSession()
+  const transportServiceFindSessionMock = mockFunction(transportService.findSession)
+  transportServiceFindSessionMock.mockReturnValue(session)
 
   const endpoint = 'https://www.exampleEndpoint.com'
   const transportServiceFindEndpointMock = mockFunction(transportService.findEndpoint)
@@ -94,7 +93,7 @@ describe('MessageSender', () => {
         payload: wireMessage,
         endpoint,
         responseRequested: false,
-        transport,
+        session,
       })
     })
   })

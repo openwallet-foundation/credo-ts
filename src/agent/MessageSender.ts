@@ -50,8 +50,7 @@ export class MessageSender {
       throw new AriesFrameworkError('Agent has no outbound transporter!')
     }
     const outboundPackage = await this.packMessage(outboundMessage)
-    const transport = this.transportService.findTransport(outboundMessage.connection.id)
-    outboundPackage.transport = transport
+    outboundPackage.session = this.transportService.findSession(outboundMessage.connection.id)
     await this.outboundTransporter.sendMessage(outboundPackage)
   }
 }

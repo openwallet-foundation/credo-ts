@@ -19,7 +19,7 @@ import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModu
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { Symbols } from '../symbols'
-import { Transport } from './TransportService'
+import { TransportSession } from './TransportService'
 import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes, AgentMessageReceivedEvent } from './Events'
 
@@ -136,8 +136,8 @@ export class Agent {
     return this.agentConfig.mediatorUrl
   }
 
-  public async receiveMessage(inboundPackedMessage: unknown, transport?: Transport) {
-    return await this.messageReceiver.receiveMessage(inboundPackedMessage, transport)
+  public async receiveMessage(inboundPackedMessage: unknown, session?: TransportSession) {
+    return await this.messageReceiver.receiveMessage(inboundPackedMessage, session)
   }
 
   public async closeAndDeleteWallet() {
