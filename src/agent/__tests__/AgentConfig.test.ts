@@ -1,34 +1,8 @@
-import { DidCommService, DidDoc } from '../../modules/connections'
 import { AgentConfig } from '../AgentConfig'
-import { getBaseConfig, getMockConnection } from '../../__tests__/helpers'
+import { getBaseConfig } from '../../__tests__/helpers'
 
 describe('AgentConfig', () => {
   describe('getEndpoint', () => {
-    it('should return the service endpoint of the inbound connection available', () => {
-      const agentConfig = new AgentConfig(getBaseConfig('AgentConfig Test'))
-
-      const endpoint = 'https://mediator-url.com'
-      agentConfig.establishInbound({
-        verkey: 'test',
-        connection: getMockConnection({
-          theirDidDoc: new DidDoc({
-            id: 'test',
-            publicKey: [],
-            authentication: [],
-            service: [
-              new DidCommService({
-                id: `test;indy`,
-                serviceEndpoint: endpoint,
-                recipientKeys: [],
-              }),
-            ],
-          }),
-        }),
-      })
-
-      expect(agentConfig.getEndpoint()).toBe(endpoint)
-    })
-
     it('should return the config endpoint + /msg if no inbound connection is available', () => {
       const endpoint = 'https://local-url.com'
 

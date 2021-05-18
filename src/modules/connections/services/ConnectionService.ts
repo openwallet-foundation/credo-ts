@@ -1,4 +1,4 @@
-import { Verkey } from 'indy-sdk'
+import type { Did, Verkey } from 'indy-sdk'
 import { validateOrReject } from 'class-validator'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
@@ -32,6 +32,8 @@ import { Symbols } from '../../../symbols'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { ConnectionEventTypes, ConnectionStateChangedEvent } from '../ConnectionEvents'
 import { AriesFrameworkError } from '../../../error'
+import { RecipientService } from '../../../modules/routing'
+import { getRouting } from '../../routing/services/RoutingService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ConnectionService {
@@ -39,17 +41,20 @@ export class ConnectionService {
   private config: AgentConfig
   private connectionRepository: ConnectionRepository
   private eventEmitter: EventEmitter
+  private recipientService: RecipientService
 
   public constructor(
     @inject(Symbols.Wallet) wallet: Wallet,
     config: AgentConfig,
     connectionRepository: ConnectionRepository,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    recipientService: RecipientService
   ) {
     this.wallet = wallet
     this.config = config
     this.connectionRepository = connectionRepository
     this.eventEmitter = eventEmitter
+    this.recipientService = recipientService
   }
 
   /**
@@ -61,12 +66,19 @@ export class ConnectionService {
   public async createInvitation(config?: {
     autoAcceptConnection?: boolean
     alias?: string
+    mediatorId?: string
+    recipientKeys?: string[]
+    routingKeys?: string[]
+    endpoint?: string
   }): Promise<ConnectionProtocolMsgReturnType<ConnectionInvitationMessage>> {
     // TODO: public did, multi use
     const connectionRecord = await this.createConnection({
       role: ConnectionRole.Inviter,
       state: ConnectionState.Invited,
       alias: config?.alias,
+      recipientKeys: config?.recipientKeys,
+      routingKeys: config?.routingKeys,
+      endpoint: config?.endpoint,
       autoAcceptConnection: config?.autoAcceptConnection,
     })
 
@@ -108,6 +120,7 @@ export class ConnectionService {
     config?: {
       autoAcceptConnection?: boolean
       alias?: string
+      mediatorId?: string
     }
   ): Promise<ConnectionRecord> {
     const connectionRecord = await this.createConnection({
@@ -115,6 +128,7 @@ export class ConnectionService {
       state: ConnectionState.Invited,
       alias: config?.alias,
       autoAcceptConnection: config?.autoAcceptConnection,
+      mediatorId: config?.mediatorId,
       invitation,
       tags: {
         invitationKey: invitation.recipientKeys && invitation.recipientKeys[0],
@@ -424,14 +438,31 @@ export class ConnectionService {
   private async createConnection(options: {
     role: ConnectionRole
     state: ConnectionState
+    endpoint?: string
     invitation?: ConnectionInvitationMessage
     alias?: string
+    mediatorId?: string
+    recipientKeys?: string[]
+    routingKeys?: string[]
     autoAcceptConnection?: boolean
     tags?: ConnectionTags
   }): Promise<ConnectionRecord> {
-    const [did, verkey] = await this.wallet.createDid()
+    const myRouting = await getRouting(
+      //my routing
+      this.config,
+      this.wallet,
+      this.recipientService,
+      options.mediatorId,
+      options.routingKeys ?? [],
+      options.endpoint
+    )
+    const endpoint: string = myRouting.endpoint
+    const did: Did = myRouting.did
+    const verkey: Verkey = myRouting.verkey || ''
+    const routingKeys: Verkey[] = myRouting.routingKeys
 
     const publicKey = new Ed25119Sig2018({
+      // TODO: shouldn't this name be ED25519
       id: `${did}#1`,
       controller: did,
       publicKeyBase58: verkey,
@@ -442,15 +473,15 @@ export class ConnectionService {
     // Include both for better interoperability
     const indyAgentService = new IndyAgentService({
       id: `${did}#IndyAgentService`,
-      serviceEndpoint: this.config.getEndpoint(),
+      serviceEndpoint: endpoint,
       recipientKeys: [verkey],
-      routingKeys: this.config.getRoutingKeys(),
+      routingKeys: routingKeys,
     })
     const didCommService = new DidCommService({
       id: `${did}#did-communication`,
-      serviceEndpoint: this.config.getEndpoint(),
+      serviceEndpoint: endpoint,
       recipientKeys: [verkey],
-      routingKeys: this.config.getRoutingKeys(),
+      routingKeys: routingKeys,
       // Prefer DidCommService over IndyAgentService
       priority: 1,
     })

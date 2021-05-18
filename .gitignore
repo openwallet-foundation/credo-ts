@@ -9,3 +9,4 @@ coverage
 .DS_Store
 logs.txt
 logs/
+package-lock.json

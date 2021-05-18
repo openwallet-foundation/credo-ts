@@ -19,9 +19,15 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { getBaseConfig, getMockConnection, mockFunction } from '../../../__tests__/helpers'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
+import { MessageSender } from '../../../agent/MessageSender'
+import { MediationRepository } from '../../routing/repository/MediationRepository'
+import { RecipientService } from '../../routing/services/RecipientService'
 
 jest.mock('../repository/ConnectionRepository')
+jest.mock('../repository/MediationRepository')
+
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
+const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
 
 describe('ConnectionService', () => {
   const initConfig = getBaseConfig('ConnectionServiceTest', {
@@ -31,9 +37,12 @@ describe('ConnectionService', () => {
 
   let wallet: Wallet
   let agentConfig: AgentConfig
-  let connectionRepository: ConnectionRepository
-  let connectionService: ConnectionService
   let eventEmitter: EventEmitter
+  let connectionRepository: ConnectionRepository
+  let mediationRepository: MediationRepository
+  let connectionService: ConnectionService
+  let recipientService: RecipientService
+  let messageSender: MessageSender
 
   beforeAll(async () => {
     agentConfig = new AgentConfig(initConfig)
@@ -49,7 +58,9 @@ describe('ConnectionService', () => {
   beforeEach(() => {
     eventEmitter = new EventEmitter()
     connectionRepository = new ConnectionRepositoryMock()
-    connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, eventEmitter)
+    mediationRepository = new MediationRepositoryMock()
+    recipientService = new RecipientService(agentConfig, mediationRepository, messageSender, wallet)
+    connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, eventEmitter, recipientService)
   })
 
   describe('createConnectionWithInvitation', () => {

@@ -1,11 +1,10 @@
 import { ConsoleLogger, Logger, LogLevel } from '../logger'
-import { InitConfig, InboundConnection, DidCommMimeType } from '../types'
+import { InitConfig, DidCommMimeType } from '../types'
 import { DID_COMM_TRANSPORT_QUEUE } from './TransportService'
 
 export class AgentConfig {
   private initConfig: InitConfig
   public logger: Logger
-  public inboundConnection?: InboundConnection
 
   public constructor(initConfig: InitConfig) {
     this.initConfig = initConfig
@@ -32,14 +31,6 @@ export class AgentConfig {
     return this.initConfig.publicDidSeed
   }
 
-  public get mediatorUrl() {
-    return this.initConfig.mediatorUrl
-  }
-
-  public get mediatorRecordId() {
-    return this.initConfig.mediatorRecordId
-  }
-
   public get poolName() {
     return this.initConfig.poolName ?? 'default-pool'
   }
@@ -60,10 +51,6 @@ export class AgentConfig {
     return this.initConfig.walletCredentials
   }
 
-  public establishInbound(inboundConnection: InboundConnection) {
-    this.inboundConnection = inboundConnection
-  }
-
   public get autoAcceptConnections() {
     return this.initConfig.autoAcceptConnections ?? false
   }
@@ -73,10 +60,6 @@ export class AgentConfig {
   }
 
   public getEndpoint() {
-    // If a mediator is used, always return that as endpoint
-    const didCommServices = this.inboundConnection?.connection?.theirDidDoc?.didCommServices
-    if (didCommServices && didCommServices?.length > 0) return didCommServices[0].serviceEndpoint
-
     // Otherwise we check if an endpoint is set
     if (this.initConfig.endpoint) return `${this.initConfig.endpoint}/msg`
 
@@ -92,8 +75,18 @@ export class AgentConfig {
     return DID_COMM_TRANSPORT_QUEUE
   }
 
-  public getRoutingKeys() {
-    const verkey = this.inboundConnection?.verkey
-    return verkey ? [verkey] : []
+  public get mediatorInvitation() {
+    return this.initConfig.mediatorInvitation
+  }
+
+  public get autoAcceptMediationRequests() {
+    return this.initConfig.autoAcceptMediationRequests ?? false
+  }
+  public get defaultMediatorId() {
+    return this.initConfig.defaultMediatorId
+  }
+
+  public get clearDefaultMediator() {
+    return this.initConfig.clearDefaultMediator ?? false
   }
 }

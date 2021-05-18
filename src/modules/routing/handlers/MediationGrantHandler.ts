@@ -1,19 +1,18 @@
 import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import { MediationGrantMessage } from '../messages'
-import { MediationService } from '../services/MediationService'
+import { MediationGrantMessage, RecipientService } from '..'
 
 export class MediationGrantHandler implements Handler {
-  private routingService: MediationService
+  private recipientService: RecipientService
   public supportedMessages = [MediationGrantMessage]
 
-  public constructor(routingService: MediationService) {
-    this.routingService = routingService
+  public constructor(recipientService: RecipientService) {
+    this.recipientService = recipientService
   }
 
   public async handle(messageContext: HandlerInboundMessage<MediationGrantHandler>) {
     if (!messageContext.connection) {
       throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
-    this.routingService.processMediationGrant(messageContext)
+    await this.recipientService.processMediationGrant(messageContext)
   }
 }

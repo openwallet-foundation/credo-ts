@@ -23,7 +23,6 @@ export interface CredentialStorageProps {
   createdAt?: Date
   state: CredentialState
   connectionId: string
-
   credentialId?: string
   metadata?: CredentialRecordMetadata
   tags?: CredentialRecordTags

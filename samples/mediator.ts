@@ -106,11 +106,11 @@ app.get('/api/connections', async (req, res) => {
   res.json(connections)
 })
 
-app.get('/api/routes', async (req, res) => {
+/*app.get('/api/routes', async (req, res) => {
   // TODO This endpoint is for testing purpose only. Return mediator connection by their verkey.
-  const routes = agent.routing.getRoutingTable()
+  const routes = agent.mediator.getRoutingTable()
   res.send(routes)
-})
+})*/
 
 app.get('/api/messages', async (req, res) => {
   // TODO This endpoint is for testing purpose only.

@@ -36,6 +36,12 @@ export interface InitConfig {
   // Either path or transactions string can be provided
   genesisPath?: string
   genesisTransactions?: string
+
+  autoAcceptMediationRequests?: boolean
+  mediatorInvitation?: string
+  //mediatorConnectionsInvite?: ConnectionInvitationMessage
+  defaultMediatorId?: string
+  clearDefaultMediator?: boolean
 }
 
 export interface UnpackedMessage {

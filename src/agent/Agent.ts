@@ -1,7 +1,7 @@
 import { container as baseContainer, DependencyContainer } from 'tsyringe'
 
 import { Logger } from '../logger'
-import { InboundConnection, InitConfig } from '../types'
+import { InitConfig } from '../types'
 import { IndyWallet } from '../wallet/IndyWallet'
 import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
@@ -14,16 +14,14 @@ import { Wallet } from '../wallet/Wallet'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
-import { RoutingModule } from '../modules/routing/RoutingModule'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { Symbols } from '../symbols'
-import { Transport } from './TransportService'
 import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes, AgentMessageReceivedEvent } from './Events'
-import { MediationService } from '../modules/routing/services/MediationService'
-import { ConnectionState } from '../modules/connections'
+import { RecipientModule } from '../modules/routing/RecipientModule'
+import { MediatorModule } from '../modules/routing/MediatorModule'
 
 export class Agent {
   protected agentConfig: AgentConfig
@@ -33,15 +31,15 @@ export class Agent {
   protected wallet: Wallet
   protected messageReceiver: MessageReceiver
   protected messageSender: MessageSender
-  protected mediationService: MediationService
   public inboundTransporter?: InboundTransporter
 
   public readonly connections!: ConnectionsModule
   public readonly proofs!: ProofsModule
-  public readonly routing!: RoutingModule
   public readonly basicMessages!: BasicMessagesModule
   public readonly ledger!: LedgerModule
   public readonly credentials!: CredentialsModule
+  public mediationRecipient!: RecipientModule
+  public mediator!: MediatorModule
 
   public constructor(initialConfig: InitConfig, messageRepository?: MessageRepository) {
     // Create child container so we don't interfere with anything outside of this agent
@@ -82,13 +80,13 @@ export class Agent {
     this.messageSender = this.container.resolve(MessageSender)
     this.messageReceiver = this.container.resolve(MessageReceiver)
     this.wallet = this.container.resolve(Symbols.Wallet)
-    this.mediationService = this.container.resolve(MediationService)
 
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.container.resolve(ConnectionsModule)
     this.credentials = this.container.resolve(CredentialsModule)
     this.proofs = this.container.resolve(ProofsModule)
-    this.routing = this.container.resolve(RoutingModule)
+    this.mediator = this.container.resolve(MediatorModule)
+    this.mediationRecipient = this.container.resolve(RecipientModule)
     this.basicMessages = this.container.resolve(BasicMessagesModule)
     this.ledger = this.container.resolve(LedgerModule)
 
@@ -121,61 +119,36 @@ export class Agent {
   public async init() {
     await this.wallet.init()
 
-    const { publicDidSeed, mediatorRecordId } = this.agentConfig
+    const { publicDidSeed } = this.agentConfig
     if (publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
       await this.wallet.initPublicDid({ seed: publicDidSeed })
-
-      // Init routing key for mediation service (server role)
-      if (this.wallet.publicDid) {
-        this.mediationService.setRoutingKey(this.wallet.publicDid.verkey)
-      }
-    }
-
-    // If mediator record Id is provided, search for it and (if record exists) update other properties
-    // accordingly, overriding them if needed
-    if (mediatorRecordId) {
-      const mediationRecord = await this.mediationService.findById(mediatorRecordId)
-      if (mediationRecord) {
-        const connectionRecord = await this.connections.findById(mediationRecord.connectionId)
-        if (connectionRecord) {
-          this.setInboundConnection({
-            connection: connectionRecord,
-            verkey: mediationRecord.routingKeys[0],
-          })
-        }
-      }
     }
 
     if (this.inboundTransporter) {
       await this.inboundTransporter.start(this)
     }
+
+    this.mediationRecipient.init(this.connections)
   }
 
   public get publicDid() {
     return this.wallet.publicDid
   }
 
-  public getMediatorUrl() {
-    return this.agentConfig.mediatorUrl
-  }
-
-  public async receiveMessage(inboundPackedMessage: unknown, transport?: Transport) {
-    return await this.messageReceiver.receiveMessage(inboundPackedMessage, transport)
-  }
-
-  public async setInboundConnection(inbound: InboundConnection) {
-    inbound.connection.assertState(ConnectionState.Complete)
-
-    this.agentConfig.establishInbound({
-      verkey: inbound.verkey,
-      connection: inbound.connection,
-    })
-  }
-
   public async closeAndDeleteWallet() {
     await this.wallet.close()
     await this.wallet.delete()
+  }
+
+  public async receiveMessage(inboundPackedMessage: unknown) {
+    return await this.messageReceiver.receiveMessage(inboundPackedMessage)
+  }
+
+  public async getMediatorUrl() {
+    const defaultMediator = await this.mediationRecipient.getDefaultMediator()
+
+    return defaultMediator?.endpoint ?? this.agentConfig.getEndpoint()
   }
 
   public get injectionContainer() {
