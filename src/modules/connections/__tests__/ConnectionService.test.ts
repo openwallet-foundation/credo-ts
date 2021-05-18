@@ -22,7 +22,7 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import testLogger from '../../../__tests__/logger'
 import { RecipientService, MediationRecord, MediationRole, MediationState } from '../../routing'
 import { MessageSender } from '../../../agent/MessageSender'
-import {waitForEventWithTimeout} from '../../../utils/promiseWithTimeOut'
+import { waitForEventWithTimeout } from '../../../utils/promiseWithTimeOut'
 jest.mock('./../../../utils/promiseWithTimeOut')
 jest.mock('./../../../storage/Repository')
 const ConnectionRepository = <jest.Mock<Repository<ConnectionRecord>>>(<unknown>Repository)
@@ -211,7 +211,7 @@ describe('ConnectionService', () => {
       const mockWaitForEvent = waitForEventWithTimeout as jest.Mock<Promise<unknown>>
       mockWaitForEvent.mockReturnValue(Promise.resolve({}))
       const { message: invitation } = await connectionService.createInvitation({
-        mediatorId: mediatorRecord.id
+        mediatorId: mediatorRecord.id,
       })
       expect(invitation).toEqual(
         expect.objectContaining({
@@ -222,7 +222,6 @@ describe('ConnectionService', () => {
         })
       )
     })
-
   })
 
   describe('processInvitation', () => {
@@ -299,7 +298,7 @@ describe('ConnectionService', () => {
       mockMediatorFind.mockReturnValue(Promise.resolve(mediatorRecord))
       const mockWaitForEvent = waitForEventWithTimeout as jest.Mock<Promise<unknown>>
       mockWaitForEvent.mockReturnValue(Promise.resolve({}))
-      const record = await connectionService.processInvitation(invitation, { mediatorId : mediatorRecord.id })
+      const record = await connectionService.processInvitation(invitation, { mediatorId: mediatorRecord.id })
       expect(record.didDoc.service[0]).toEqual(
         expect.objectContaining({
           recipientKeys: [expect.any(String)],
