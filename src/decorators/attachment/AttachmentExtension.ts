@@ -17,7 +17,7 @@ export function AttachmentDecorated<T extends BaseMessageConstructor>(Base: T) {
     public attachments?: Attachment[]
 
     public getAttachmentById(id: string): Attachment | undefined {
-      return this.attachments?.find((attachment) => attachment.id === id.substring(0, 64))
+      return this.attachments?.find((attachment) => attachment.id === id)
     }
 
     public addAttachment(attachment: Attachment): void {
