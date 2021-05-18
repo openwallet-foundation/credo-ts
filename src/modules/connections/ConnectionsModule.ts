@@ -5,9 +5,9 @@ import { AgentConfig } from '../../agent/AgentConfig'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { Dispatcher } from '../../agent/Dispatcher'
-import { ConnectionService, TrustPingService } from './services'
-import { ConsumerRoutingService } from '../routing'
+import { ConnectionService, ConnectionEventType, ConnectionStateChangedEvent, TrustPingService } from './services'
 import { ConnectionRecord } from './repository/ConnectionRecord'
+import { ConnectionState } from './models'
 import { ConnectionInvitationMessage } from './messages'
 import {
   ConnectionRequestHandler,
@@ -17,11 +17,12 @@ import {
   TrustPingResponseMessageHandler,
 } from './handlers'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
+import { KeylistState } from '../..'
+import { keylistUpdateEvent } from '../routing/services/RoutingService'
 
 export class ConnectionsModule {
   private agentConfig: AgentConfig
   private connectionService: ConnectionService
-  private consumerRoutingService: ConsumerRoutingService
   private messageSender: MessageSender
   private trustPingService: TrustPingService
 
@@ -30,15 +31,14 @@ export class ConnectionsModule {
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
     trustPingService: TrustPingService,
-    consumerRoutingService: ConsumerRoutingService,
     messageSender: MessageSender
   ) {
     this.agentConfig = agentConfig
     this.connectionService = connectionService
     this.trustPingService = trustPingService
-    this.consumerRoutingService = consumerRoutingService
     this.messageSender = messageSender
     this.registerHandlers(dispatcher)
+    this.registerListeners()
   }
 
   /**
@@ -63,12 +63,6 @@ export class ConnectionsModule {
       alias: config?.alias,
     })
 
-    // If agent has inbound connection, which means it's using a mediator, we need to create a route for newly created
-    // connection verkey at mediator.
-    if (this.agentConfig.inboundConnection) {
-      this.consumerRoutingService.createRoute(connectionRecord.verkey)
-    }
-
     return { connectionRecord, invitation }
   }
 
@@ -86,11 +80,13 @@ export class ConnectionsModule {
     config?: {
       autoAcceptConnection?: boolean
       alias?: string
+      mediatorId?: string
     }
   ): Promise<ConnectionRecord> {
     let connection = await this.connectionService.processInvitation(invitation, {
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
+      mediatorId: config?.mediatorId,
     })
 
     if (this.agentConfig.getEndpoint() == 'didcomm:transport/queue') {
@@ -144,12 +140,6 @@ export class ConnectionsModule {
    */
   public async acceptInvitation(connectionId: string): Promise<ConnectionRecord> {
     const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(connectionId)
-
-    // If agent has inbound connection, which means it's using a mediator,
-    // we need to create a route for newly created connection verkey at mediator.
-    if (this.agentConfig.inboundConnection) {
-      await this.consumerRoutingService.createRoute(connectionRecord.verkey)
-    }
 
     const outbound = createOutboundMessage(connectionRecord, message, connectionRecord.invitation)
     await this.messageSender.sendMessage(outbound)
@@ -219,5 +209,14 @@ export class ConnectionsModule {
     dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
     dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
     dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService))
+  }
+  private registerListeners() {
+    this.connectionService.recipientService.on(KeylistState.Update, this.keylistUpdateEvent)
+  }
+  private async keylistUpdateEvent({ mediationRecord, message }: keylistUpdateEvent) {
+    // new did has been created and mediator needs to be updated with the public key.
+    const connectionRecord: ConnectionRecord = await this.connectionService.getById(mediationRecord.connectionId)
+    const outbound = createOutboundMessage(connectionRecord, message)
+    await this.messageSender.sendMessage(outbound)
   }
 }

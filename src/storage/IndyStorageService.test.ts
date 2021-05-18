@@ -1,28 +1,31 @@
 import { Repository } from './Repository'
 import { IndyStorageService } from './IndyStorageService'
 import { IndyWallet } from '../wallet/IndyWallet'
-import { BaseRecord, RecordType } from './BaseRecord'
-import { v4 as uuid } from 'uuid'
+import { BaseRecord } from './BaseRecord'
+import { uuid } from '../utils/uuid'
 import indy from 'indy-sdk'
 import { AgentConfig } from '../agent/AgentConfig'
 
 interface TestRecordProps {
   id?: string
-  createdAt?: number
+  createdAt?: Date
   tags: { [keys: string]: string }
   foo: string
 }
 
 class TestRecord extends BaseRecord {
-  public foo: string
-
-  public static readonly type: RecordType = RecordType.BaseRecord
-  public readonly type = TestRecord.type
+  public foo!: string
 
   public constructor(props: TestRecordProps) {
-    super(props.id ?? uuid(), props.createdAt ?? Date.now())
-    this.foo = props.foo
-    this.tags = props.tags
+    super()
+
+    if (props) {
+      this.id = props.id ?? uuid()
+      this.createdAt = props.createdAt ?? new Date()
+
+      this.foo = props.foo
+      this.tags = props.tags
+    }
   }
 }
 
@@ -39,7 +42,7 @@ describe('IndyStorageService', () => {
         walletCredentials: { key: 'asbdabsd' },
       })
     )
-    const storageService = new IndyStorageService(wallet)
+    const storageService = new IndyStorageService<TestRecord>(wallet)
     testRepository = new Repository<TestRecord>(TestRecord, storageService)
     await wallet.init()
   })

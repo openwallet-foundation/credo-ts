@@ -1,11 +1,11 @@
 import indy from 'indy-sdk'
-import { v4 as uuid } from 'uuid'
+import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { Wallet } from '../../../wallet/Wallet'
 import { ConnectionService } from '../services/ConnectionService'
 import { ConnectionRecord, ConnectionStorageProps } from '../repository/ConnectionRecord'
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { Connection, ConnectionState, ConnectionRole, DidDoc, IndyAgentService } from '../models'
+import { Connection, ConnectionState, ConnectionRole, DidDoc, DidCommService } from '../models'
 import { InitConfig } from '../../../types'
 import {
   ConnectionInvitationMessage,
@@ -20,9 +20,12 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import testLogger from '../../../__tests__/logger'
+import { RecipientService, MediationRecord } from '../../routing'
+import { MessageSender } from '../../../agent/MessageSender'
 
 jest.mock('./../../../storage/Repository')
 const ConnectionRepository = <jest.Mock<Repository<ConnectionRecord>>>(<unknown>Repository)
+const MediationRepository = <jest.Mock<Repository<MediationRecord>>>(<unknown>Repository)
 
 export function getMockConnection({
   state = ConnectionState.Invited,
@@ -35,7 +38,7 @@ export function getMockConnection({
     publicKey: [],
     authentication: [],
     service: [
-      new IndyAgentService({
+      new DidCommService({
         id: `${did};indy`,
         serviceEndpoint: 'https://endpoint.com',
         recipientKeys: [verkey],
@@ -54,7 +57,7 @@ export function getMockConnection({
     publicKey: [],
     authentication: [],
     service: [
-      new IndyAgentService({
+      new DidCommService({
         id: `${did};indy`,
         serviceEndpoint: 'https://endpoint.com',
         recipientKeys: [verkey],
@@ -92,7 +95,10 @@ describe('ConnectionService', () => {
   let wallet: Wallet
   let agentConfig: AgentConfig
   let connectionRepository: Repository<ConnectionRecord>
+  let mediationRepository: Repository<MediationRecord>
   let connectionService: ConnectionService
+  let messageSender: MessageSender
+  let recipientService: RecipientService
 
   beforeAll(async () => {
     agentConfig = new AgentConfig(initConfig)
@@ -108,9 +114,11 @@ describe('ConnectionService', () => {
   beforeEach(() => {
     // Clear all instances and calls to constructor and all methods:
     ConnectionRepository.mockClear()
-
+    MediationRepository.mockClear()
     connectionRepository = new ConnectionRepository()
-    connectionService = new ConnectionService(wallet, agentConfig, connectionRepository)
+    mediationRepository = new MediationRepository()
+    recipientService = new RecipientService(agentConfig, mediationRepository, messageSender, wallet)
+    connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, recipientService)
   })
 
   describe('createConnectionWithInvitation', () => {
@@ -317,7 +325,7 @@ describe('ConnectionService', () => {
         publicKey: [],
         authentication: [],
         service: [
-          new IndyAgentService({
+          new DidCommService({
             id: `${theirDid};indy`,
             serviceEndpoint: 'https://endpoint.com',
             recipientKeys: [theirVerkey],
@@ -518,7 +526,7 @@ describe('ConnectionService', () => {
           publicKey: [],
           authentication: [],
           service: [
-            new IndyAgentService({
+            new DidCommService({
               id: `${did};indy`,
               serviceEndpoint: 'https://endpoint.com',
               recipientKeys: [theirVerkey],
@@ -587,7 +595,7 @@ describe('ConnectionService', () => {
           publicKey: [],
           authentication: [],
           service: [
-            new IndyAgentService({
+            new DidCommService({
               id: `${did};indy`,
               serviceEndpoint: 'https://endpoint.com',
               recipientKeys: [theirVerkey],

@@ -1,8 +1,13 @@
-import type { WalletQuery } from 'indy-sdk'
+import type { WalletQuery, WalletRecord } from 'indy-sdk'
 
 import { StorageService } from './StorageService'
 import { BaseRecord } from './BaseRecord'
 import { Wallet } from '../wallet/Wallet'
+import { JsonTransformer } from '../utils/JsonTransformer'
+import { Constructor } from '../utils/mixins'
+export interface BaseRecordConstructor<T> extends Constructor<T> {
+  type: string
+}
 
 export class IndyStorageService<T extends BaseRecord> implements StorageService<T> {
   private wallet: Wallet
@@ -15,47 +20,52 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     this.wallet = wallet
   }
 
+  private recordToInstance(record: WalletRecord, typeClass: BaseRecordConstructor<T>): T {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const instance = JsonTransformer.deserialize<T>(record.value!, typeClass)
+    instance.id = record.id
+    instance.tags = record.tags || {}
+
+    return instance
+  }
+
   public async save(record: T) {
-    const { type, id, tags } = record
-    const value = record.getValue()
-    return this.wallet.addWalletRecord(type, id, value, tags)
+    const value = JsonTransformer.serialize(record)
+
+    return this.wallet.addWalletRecord(record.type, record.id, value, record.tags)
   }
 
   public async update(record: T): Promise<void> {
-    const { type, id, tags } = record
-    const value = record.getValue()
-    await this.wallet.updateWalletRecordValue(type, id, value)
-    await this.wallet.updateWalletRecordTags(type, id, tags)
+    const value = JsonTransformer.serialize(record)
+
+    await this.wallet.updateWalletRecordValue(record.type, record.id, value)
+    await this.wallet.updateWalletRecordTags(record.type, record.id, record.tags)
   }
 
   public async delete(record: T) {
-    const { id, type } = record
-    return this.wallet.deleteWalletRecord(type, id)
+    return this.wallet.deleteWalletRecord(record.type, record.id)
   }
 
-  public async find<T>(typeClass: { new (...args: unknown[]): T }, id: string, type: string): Promise<T> {
-    const record = await this.wallet.getWalletRecord(type, id, IndyStorageService.DEFAULT_QUERY_OPTIONS)
-    return BaseRecord.fromPersistence<T>(typeClass, record)
+  public async find(typeClass: BaseRecordConstructor<T>, id: string): Promise<T> {
+    const record = await this.wallet.getWalletRecord(typeClass.type, id, IndyStorageService.DEFAULT_QUERY_OPTIONS)
+
+    return this.recordToInstance(record, typeClass)
   }
 
-  public async findAll<T>(typeClass: { new (...args: unknown[]): T }, type: string): Promise<T[]> {
+  public async findAll(typeClass: BaseRecordConstructor<T>, type: string): Promise<T[]> {
     const recordIterator = await this.wallet.search(type, {}, IndyStorageService.DEFAULT_QUERY_OPTIONS)
     const records = []
     for await (const record of recordIterator) {
-      records.push(BaseRecord.fromPersistence<T>(typeClass, record))
+      records.push(this.recordToInstance(record, typeClass))
     }
     return records
   }
 
-  public async findByQuery<T>(
-    typeClass: { new (...args: unknown[]): T },
-    type: string,
-    query: WalletQuery
-  ): Promise<T[]> {
+  public async findByQuery(typeClass: BaseRecordConstructor<T>, type: string, query: WalletQuery): Promise<T[]> {
     const recordIterator = await this.wallet.search(type, query, IndyStorageService.DEFAULT_QUERY_OPTIONS)
     const records = []
     for await (const record of recordIterator) {
-      records.push(BaseRecord.fromPersistence<T>(typeClass, record))
+      records.push(this.recordToInstance(record, typeClass))
     }
     return records
   }

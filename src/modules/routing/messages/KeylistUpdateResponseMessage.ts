@@ -48,6 +48,7 @@ export class KeylistUpdated {
     if (options) {
       this.recipientKey = options.recipientKey
       this.action = options.action
+      this.result = options.result
     }
   }
 

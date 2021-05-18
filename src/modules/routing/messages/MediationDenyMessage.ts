@@ -4,7 +4,7 @@ import { AgentMessage } from '../../../agent/AgentMessage'
 import { RoutingMessageType as MessageType } from './RoutingMessageType'
 
 export interface MediationDenyMessageOptions {
-  id?: string
+  id: string
 }
 
 /**
@@ -17,7 +17,7 @@ export class MediationDenyMessage extends AgentMessage {
     super()
 
     if (options) {
-      this.id = options.id || this.generateId()
+      this.id = options.id
     }
   }
 

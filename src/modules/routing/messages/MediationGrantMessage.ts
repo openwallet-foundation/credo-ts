@@ -1,13 +1,13 @@
 import type { Verkey } from 'indy-sdk'
-import { Equals, IsArray, IsString } from 'class-validator'
-
+import { Equals, IsArray, IsNotEmpty, IsString } from 'class-validator'
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { RoutingMessageType as MessageType } from './RoutingMessageType'
+import { Expose } from 'class-transformer'
 
 export interface MediationGrantMessageOptions {
-  id?: string
+  id: string
   endpoint: string
-  routing_keys: Verkey[]
+  routingKeys: Verkey[]
 }
 
 /**
@@ -21,9 +21,9 @@ export class MediationGrantMessage extends AgentMessage {
     super()
 
     if (options) {
-      this.id = options.id || this.generateId()
+      this.id = options.id
       this.endpoint = options.endpoint
-      this.routing_keys = options.routing_keys
+      this.routingKeys = options.routingKeys
     }
   }
 
@@ -31,9 +31,12 @@ export class MediationGrantMessage extends AgentMessage {
   public readonly type = MediationGrantMessage.type
   public static readonly type = MessageType.MediationGrant
 
+  @IsNotEmpty()
   @IsArray()
-  public routing_keys!: Verkey[]
+  @Expose({ name: 'routing_keys' })
+  public routingKeys!: Verkey[]
 
+  @IsNotEmpty()
   @IsString()
   public endpoint!: string
 }

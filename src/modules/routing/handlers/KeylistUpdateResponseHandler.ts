@@ -1,10 +1,20 @@
 import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import { KeylistUpdateResponseMessage } from '../messages'
+import { RecipientService } from '../services'
 
 export class KeylistUpdateResponseHandler implements Handler {
+  public recipientService: RecipientService
   public supportedMessages = [KeylistUpdateResponseMessage]
 
+  public constructor(recipientService: RecipientService) {
+    this.recipientService = recipientService
+  }
+
   public async handle(messageContext: HandlerInboundMessage<KeylistUpdateResponseHandler>) {
-    // TODO It should handle the response when agent calls `await this.consumerRoutingService.createRoute(connectionRecord.verkey)` and notify about the result.
+    if (!messageContext.connection) {
+      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+    }
+
+    await this.recipientService.processKeylistUpdateResults(messageContext)
   }
 }
