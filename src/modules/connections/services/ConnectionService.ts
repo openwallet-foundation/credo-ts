@@ -73,7 +73,6 @@ export class ConnectionService extends EventEmitter {
     autoAcceptConnection?: boolean
     alias?: string
     mediatorId?: string
-    recipientKeys?: string[]
     routingKeys?: string[]
     endpoint?: string
   }): Promise<ConnectionProtocolMsgReturnType<ConnectionInvitationMessage>> {
@@ -82,7 +81,7 @@ export class ConnectionService extends EventEmitter {
       role: ConnectionRole.Inviter,
       state: ConnectionState.Invited,
       alias: config?.alias,
-      recipientKeys: config?.recipientKeys,
+      mediatorId: config?.mediatorId,
       routingKeys: config?.routingKeys,
       endpoint: config?.endpoint,
       autoAcceptConnection: config?.autoAcceptConnection,
@@ -373,7 +372,6 @@ export class ConnectionService extends EventEmitter {
     invitation?: ConnectionInvitationMessage
     alias?: string
     mediatorId?: string
-    recipientKeys?: string[]
     routingKeys?: string[]
     autoAcceptConnection?: boolean
     tags?: ConnectionTags
