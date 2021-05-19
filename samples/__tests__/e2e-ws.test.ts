@@ -1,11 +1,9 @@
 import { Agent, InboundTransporter, WsOutboundTransporter } from '../../src'
 import { get } from '../http'
-import { getBaseConfig, toBeConnectedWith, waitForBasicMessage } from '../../src/__tests__/helpers'
+import { getBaseConfig, waitForBasicMessage } from '../../src/__tests__/helpers'
 import testLogger from '../../src/__tests__/logger'
 
 const logger = testLogger
-
-expect.extend({ toBeConnectedWith })
 
 const aliceConfig = getBaseConfig('E2E Alice WebSockets', { mediatorUrl: 'http://localhost:3003' })
 const bobConfig = getBaseConfig('E2E Bob WebSockets', { mediatorUrl: 'http://localhost:3004' })

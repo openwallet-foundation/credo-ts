@@ -1,8 +1,6 @@
 import { Agent, ConnectionRecord, HttpOutboundTransporter, InboundTransporter } from '../../src'
-import { getBaseConfig, sleep, toBeConnectedWith, waitForBasicMessage } from '../../src/__tests__/helpers'
+import { getBaseConfig, sleep, waitForBasicMessage } from '../../src/__tests__/helpers'
 import logger from '../../src/__tests__/logger'
-
-expect.extend({ toBeConnectedWith })
 
 const aliceConfig = getBaseConfig('E2E Mediation Alice', {
   host: 'http://localhost',
