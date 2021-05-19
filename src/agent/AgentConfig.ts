@@ -62,8 +62,8 @@ export class AgentConfig {
     return 'didcomm:transport/queue'
   }
 
-  public get mediatorInvitation() {
-    return this.initConfig.mediatorInvitation
+  public get mediatorConnectionsInvite() {
+    return this.initConfig.mediatorConnectionsInvite
   }
 
   public get autoAcceptMediationRequests() {

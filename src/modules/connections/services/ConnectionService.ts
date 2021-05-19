@@ -131,7 +131,6 @@ export class ConnectionService extends EventEmitter {
       role: ConnectionRole.Invitee,
       state: ConnectionState.Invited,
       alias: config?.alias,
-      mediatorId: config?.mediatorId,
       recipientKeys: invitation?.recipientKeys,
       routingKeys: invitation?.routingKeys,
       endpoint: invitation?.serviceEndpoint,

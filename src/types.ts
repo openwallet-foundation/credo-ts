@@ -25,8 +25,7 @@ export interface InitConfig {
   logger?: Logger
   indy: typeof Indy
   autoAcceptMediationRequests?: boolean
-  mediatorInvitation?: string
-  //mediatorConnectionsInvite?: ConnectionInvitationMessage
+  mediatorConnectionsInvite?: string
   defaultMediatorId?: string
   clearDefaultMediator?: boolean
 }

@@ -48,49 +48,40 @@ export class RecipientModule {
     this.registerHandlers(dispatcher)
   }
 
-  public async init() {
-    /* TODO: Implement config options configuration...
-       autoAcceptMediationRequests
-       "automatically granting to everyone asking, rather than enabling the feature altogether"
-       "After establishing a connection, "
-       "if enabled, an agent may request message mediation, which will "
-       "allow the mediator to forward messages on behalf of the recipient. "
-       "See aries-rfc:0211."*/
-        //mediatorConnectionsInvite
-  }
-
-  /* --------------------------------
+  public async init(connections: ConnectionsModule) {
+    if (this.agentConfig.mediatorConnectionsInvite) {
+      /* --------------------------------
       | Connect to mediator through provided invitation
       | and send mediation request and set as default mediator.
       */
-
-  // public async init(connections: ConnectionsModule) {
-  //   // Check if inviation was provided in config
-  //   // Assumption: processInvitation is a URL-encoded invitation
-  //   // TODO Check assumption with config
-  //   if (this.agentConfig.mediatorInvitation) {
-  //     /* --------------------------------
-  //     | Connect to mediator through provided invitation
-  //     | and send mediation request and set as default mediator.
-  //     */
-  //     const connectionRecord = await connections.receiveInvitationFromUrl(this.agentConfig.mediatorInvitation, {
-  //       autoAcceptConnection: true,
-  //       alias: 'InitedMediator', // TODO come up with a better name for this
-  //     })
-  //     await connections.returnWhenIsConnected(connectionRecord.id)
-  //     await this.requestAndWaitForAcception(connectionRecord, this.recipientService, 2000) // TODO: put timeout as a config parameter
-  //   }
-  //   if (this.agentConfig.defaultMediatorId) {
-  //     /*
-  //     | Set the default mediator by ID
-  //     */
-  //   }
-  //   if (this.agentConfig.clearDefaultMediator) {
-  //     /*
-  //     | Clear the stored default mediator
-  //     */
-  //   }
-  // }
+      // Check if inviation was provided in config
+      // Assumption: processInvitation is a URL-encoded invitation
+      const connectionRecord = await connections.receiveInvitationFromUrl(this.agentConfig.mediatorConnectionsInvite, {
+        autoAcceptConnection: true,
+        alias: 'InitedMediator', // TODO come up with a better name for this
+      })
+      await connections.returnWhenIsConnected(connectionRecord.id)
+      await this.requestAndWaitForAcception(connectionRecord, this.recipientService, 2000) // TODO: put timeout as a config parameter
+    }
+    if (this.agentConfig.defaultMediatorId) {
+      /*
+      | Set the default mediator by ID
+      */
+      const mediatorRecord = await this.recipientService.findById(this.agentConfig.defaultMediatorId)
+      if (mediatorRecord) {
+        this.recipientService.setDefaultMediator(mediatorRecord)
+      } else {
+        this.agentConfig.logger.error('Mediator record not found from config')
+        // TODO: Handle error properly - not found condition
+      }
+    }
+    if (this.agentConfig.clearDefaultMediator) {
+      /*
+      | Clear the stored default mediator
+      */
+      this.recipientService.clearDefaultMediator()
+    }
+  }
 
   /**
    * Get the event emitter for the mediation service. Will emit events
@@ -101,50 +92,6 @@ export class RecipientModule {
   public get events(): EventEmitter {
     return this.recipientService
   }
-
-  // public async provision(mediatorConfiguration: MediatorConfiguration) {
-  //   let provisioningRecord = await this.recipientService.find()
-
-  //   if (!provisioningRecord) {
-  //     this.logger.info('No provision record found. Creating connection with mediator.')
-  //     const { verkey, invitationUrl, alias = 'Mediator' } = mediatorConfiguration
-  //     const mediatorInvitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
-
-  //     const connectionRecord = await this.connectionService.processInvitation(mediatorInvitation, { alias })
-  //     const { message: connectionRequest } = await this.connectionService.createRequest(connectionRecord.id)
-
-  //     const outboundMessage = createOutboundMessage(connectionRecord, connectionRequest, connectionRecord.invitation)
-  //     outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
-
-  //     await this.messageSender.sendMessage(outboundMessage)
-  //     await this.connectionService.returnWhenIsConnected(connectionRecord.id)
-
-  //     const provisioningProps = {
-  //       mediatorConnectionId: connectionRecord.id,
-  //       mediatorPublicVerkey: verkey,
-  //     }
-  //     provisioningRecord = await this.provisioningService.create(provisioningProps)
-  //     this.logger.debug('Provisioning record has been saved.')
-  //   }
-
-  //   this.logger.debug('Provisioning record:', provisioningRecord)
-
-  //   const agentConnectionAtMediator = await this.connectionService.find(provisioningRecord.mediatorConnectionId)
-
-  //   if (!agentConnectionAtMediator) {
-  //     throw new Error('Connection not found!')
-  //   }
-  //   this.logger.debug('agentConnectionAtMediator', agentConnectionAtMediator)
-
-  //   agentConnectionAtMediator.assertState(ConnectionState.Complete)
-
-  //   this.agentConfig.establishInbound({
-  //     verkey: provisioningRecord.mediatorPublicVerkey,
-  //     connection: agentConnectionAtMediator,
-  //   })
-
-  //   return agentConnectionAtMediator
-  // }
 
   public async downloadMessages(mediatorConnection?: ConnectionRecord) {
     const mediationRecord: MediationRecord | undefined = await this.recipientService.getDefaultMediator()
