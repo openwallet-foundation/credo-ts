@@ -1,12 +1,12 @@
 import testLogger from '../../__tests__/logger'
 import { ConnectionInvitationMessage, ConnectionRole, DidDoc, IndyAgentService } from '../../modules/connections'
-import { TransportService, HttpTransport, WebSocketTransport, DidCommQueueTransport } from '../TransportService'
+import { TransportService } from '../TransportService'
 import { getMockConnection } from '../../__tests__/helpers'
 
 const logger = testLogger
 
 describe('TransportService', () => {
-  describe('resolveTransport', () => {
+  describe('findEndpoint', () => {
     let transportService: TransportService
     let theirDidDoc: DidDoc
 
@@ -27,60 +27,38 @@ describe('TransportService', () => {
       transportService = new TransportService(logger)
     })
 
-    test('throws error when no transport is resolved for a given connection ID', () => {
+    test(`throws error when there is no their DidDoc and role is ${ConnectionRole.Inviter}`, () => {
       const connection = getMockConnection({ id: 'test-123', role: ConnectionRole.Inviter })
       connection.theirDidDoc = undefined
-      expect(() => transportService.resolveTransport(connection)).toThrow(
-        `No transport found for connection with id test-123`
+      expect(() => transportService.findEndpoint(connection)).toThrow(
+        `No endpoint found for connection with id test-123`
       )
     })
 
-    test('returns previously stored transport a given connection ID', () => {
-      const connection = getMockConnection({ id: 'test-123' })
-      const transport = new HttpTransport('https://endpoint.com')
-      transportService.saveTransport('test-123', transport)
-      expect(transportService.resolveTransport(connection)).toEqual(transport)
+    test(`throws error when there is no their DidDoc, no invitation and role is ${ConnectionRole.Invitee}`, () => {
+      const connection = getMockConnection({ id: 'test-123', role: ConnectionRole.Invitee })
+      connection.theirDidDoc = undefined
+      connection.invitation = undefined
+      expect(() => transportService.findEndpoint(connection)).toThrow(
+        `No endpoint found for connection with id test-123`
+      )
     })
 
-    test('returns HttpTransport transport when their DidDoc contains http endpoint', () => {
-      theirDidDoc.service[0].serviceEndpoint = 'https://theirDidDocEndpoint.com'
-      const connection = getMockConnection({ id: 'test-123', theirDidDoc })
-      expect(transportService.resolveTransport(connection)).toBeInstanceOf(HttpTransport)
-      expect(transportService.resolveTransport(connection).endpoint).toEqual('https://theirDidDocEndpoint.com')
-    })
-
-    test(`returns WebSocket transport when their DidDoc contains ws endpoint`, () => {
+    test(`returns endpoint from their DidDoc`, () => {
       theirDidDoc.service[0].serviceEndpoint = 'ws://theirDidDocEndpoint.com'
       const connection = getMockConnection({ id: 'test-123', theirDidDoc })
-      expect(transportService.resolveTransport(connection)).toBeInstanceOf(WebSocketTransport)
-      expect(transportService.resolveTransport(connection).endpoint).toEqual('ws://theirDidDocEndpoint.com')
+      expect(transportService.findEndpoint(connection)).toEqual('ws://theirDidDocEndpoint.com')
     })
 
-    test(`returns Queue transport when their DidDoc contains didcomm:transport/queue`, () => {
-      theirDidDoc.service[0].serviceEndpoint = 'didcomm:transport/queue'
-      const connection = getMockConnection({ id: 'test-123', theirDidDoc })
-      expect(transportService.resolveTransport(connection)).toBeInstanceOf(DidCommQueueTransport)
-      expect(transportService.resolveTransport(connection).endpoint).toEqual('didcomm:transport/queue')
-    })
-
-    test(`returns transport with service endpoint from invitation if there is no their DidDoc and role is ${ConnectionRole.Invitee}`, () => {
+    test(`returns endpoint from invitation when there is no their DidDoc and role is ${ConnectionRole.Invitee}`, () => {
       const invitation = new ConnectionInvitationMessage({
         label: 'test',
         recipientKeys: ['verkey'],
-        serviceEndpoint: 'https://invitationEndpoint.com',
+        serviceEndpoint: 'ws://invitationEndpoint.com',
       })
       const connection = getMockConnection({ id: 'test-123', role: ConnectionRole.Invitee, invitation })
       connection.theirDidDoc = undefined
-      expect(transportService.resolveTransport(connection)).toBeInstanceOf(HttpTransport)
-      expect(transportService.resolveTransport(connection).endpoint).toEqual('https://invitationEndpoint.com')
-    })
-
-    test('throws error when no transport is found for unsupported scheme', () => {
-      theirDidDoc.service[0].serviceEndpoint = 'myscheme://theirDidDocEndpoint.com'
-      const connection = getMockConnection({ id: 'test-123', theirDidDoc })
-      expect(() => transportService.resolveTransport(connection)).toThrow(
-        `Unsupported scheme in endpoint: myscheme://theirDidDocEndpoint.com.`
-      )
+      expect(transportService.findEndpoint(connection)).toEqual('ws://invitationEndpoint.com')
     })
   })
 })

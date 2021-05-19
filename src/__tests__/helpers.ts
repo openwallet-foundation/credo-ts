@@ -316,6 +316,14 @@ export async function issueCredential({
   }
 }
 
+/**
+ * Returns mock of function with correct type annotations according to original function `fn`.
+ * It can be used also for class methods.
+ *
+ * @param fn function you want to mock
+ * @returns mock function with type annotations
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.MockedFunction<T> {
   return fn as jest.MockedFunction<T>
 }
