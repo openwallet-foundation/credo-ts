@@ -1,23 +1,20 @@
-import { Lifecycle, scoped } from 'tsyringe'
+import { inject, Lifecycle, scoped } from 'tsyringe'
 import { Verkey } from 'indy-sdk'
 
+import { createRecord } from './RoutingService'
+import { MediationRecord } from '../repository/MediationRecord'
 import {
-  MediationRecord,
   KeylistUpdateMessage,
   KeylistUpdateAction,
   ForwardMessage,
   KeylistUpdateResult,
   KeylistUpdated,
-  MediationRole,
-  MediationState,
   MediationGrantMessage,
   MediationRequestMessage,
-  createRecord,
-} from '..'
-
+} from '../messages'
+import { MediationRole } from '../models/MediationRole'
+import { MediationState } from '../models/MediationState'
 import { AgentConfig } from '../../../agent/AgentConfig'
-
-import { Repository } from '../../../storage/Repository'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { ConnectionRecord } from '../../connections'
 import { BaseMessage } from '../../../agent/BaseMessage'
@@ -28,37 +25,32 @@ import { uuid } from '../../../utils/uuid'
 import { MediationKeylistEvent, MediationStateChangedEvent, RoutingEventTypes } from '../RoutingEvents'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
+import { Symbols } from '../../../symbols'
+import { MediationRepository } from '../repository/MediationRepository'
 
 export interface RoutingTable {
   [recipientKey: string]: ConnectionRecord | undefined
 }
 
-export enum MediationEventType {
-  Grant = 'GRANT',
-  Deny = 'DENY',
-  KeylistUpdate = 'KEYLIST_UPDATE',
-}
-
 @scoped(Lifecycle.ContainerScoped)
 export class MediatorService {
   private agentConfig: AgentConfig
-  private mediationRepository: Repository<MediationRecord>
+  private mediationRepository: MediationRepository
   private wallet: Wallet
-  private routingKeys: Verkey[]
   private eventEmitter: EventEmitter
+  private routingKeys: Verkey[]
 
   public constructor(
-    mediationRepository: Repository<MediationRecord>,
+    mediationRepository: MediationRepository,
     agentConfig: AgentConfig,
-    wallet: Wallet,
-    eventEmitter: EventEmitter,
-    routingKeys?: Verkey[]
+    @inject(Symbols.Wallet) wallet: Wallet,
+    eventEmitter: EventEmitter
   ) {
     this.mediationRepository = mediationRepository
     this.agentConfig = agentConfig
     this.wallet = wallet
     this.eventEmitter = eventEmitter
-    this.routingKeys = routingKeys ?? []
+    this.routingKeys = []
   }
 
   private _assertConnection(connection: ConnectionRecord | undefined, msgType: BaseMessage): ConnectionRecord {

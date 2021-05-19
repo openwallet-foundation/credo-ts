@@ -7,17 +7,19 @@ import {
   OutboundTransporter,
   OutboundPackage,
   InitConfig,
-  ConnectionEventType,
   ConnectionStateChangedEvent,
   LogLevel,
+  ConnectionEventTypes,
+  RoutingEventTypes,
+  MediationStateChangedEvent,
 } from '../src'
 import testLogger, { TestLogger } from '../src/__tests__/logger'
 import indy from 'indy-sdk'
 import { resolve } from 'path'
-import { MediationEventType, MediationStateChangedEvent } from '../src/modules/routing/services/MediatorService'
 import { MediationState } from '../src/modules/routing/'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
 import { MessageRepository } from '../src/storage/MessageRepository'
+import { NodeFileSystem } from '../src/storage/fs/NodeFileSystem'
 
 class HttpInboundTransporter implements InboundTransporter {
   private app: Express
@@ -54,9 +56,18 @@ class HttpOutboundTransporter implements OutboundTransporter {
     this.agent = agent
     this.messageRepository = messageRepository
   }
+  public async start(): Promise<void> {
+    // No custom start logic required
+  }
 
-  public async sendMessage(outboundPackage: OutboundPackage, receiveReply: boolean) {
-    const { connection, payload, endpoint } = outboundPackage
+  public async stop(): Promise<void> {
+    // No custom stop logic required
+  }
+
+  public supportedSchemes = ['http', 'dicomm', 'https', 'ws', 'wss']
+
+  public async sendMessage(outboundPackage: OutboundPackage) {
+    const { connection, payload, endpoint, responseRequested } = outboundPackage
 
     if (!endpoint) {
       throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
@@ -69,7 +80,7 @@ class HttpOutboundTransporter implements OutboundTransporter {
         return
       }
 
-      if (receiveReply) {
+      if (responseRequested) {
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
@@ -118,6 +129,7 @@ const agentConfig: InitConfig = {
   autoAcceptConnections: true,
   logger: new TestLogger(LogLevel.debug),
   indy: indy,
+  fileSystem: new NodeFileSystem(),
 }
 
 const PORT = Number(agentConfig.port)
@@ -142,23 +154,33 @@ const messageReceiver = new HttpInboundTransporter(app)
 agent.setInboundTransporter(messageReceiver)
 agent.setOutboundTransporter(messageSender)
 
-agent.connections.events.on(ConnectionEventType.StateChanged, async (event: ConnectionStateChangedEvent) => {
-  testLogger.info('Connection state changed for ' + event.connectionRecord.id)
-  testLogger.debug('Previous state: ' + event.previousState + ' New state: ' + event.connectionRecord.state)
-})
+agent.events.on<ConnectionStateChangedEvent>(
+  ConnectionEventTypes.ConnectionStateChanged,
+  async (event: ConnectionStateChangedEvent) => {
+    testLogger.info('Connection state changed for ' + event.payload.connectionRecord.id)
+    testLogger.debug(
+      'Previous state: ' + event.payload.previousState + ' New state: ' + event.payload.connectionRecord.state
+    )
+  }
+)
 
-agent.mediator.eventEmitter.on(MediationEventType.StateChanged, async (event: MediationStateChangedEvent) => {
-  testLogger.info('Mediation state changed for ' + event.mediationRecord.id)
-  testLogger.debug('Previous state: ' + event.previousState + ' New state: ' + event.mediationRecord.state)
+agent.events.on<MediationStateChangedEvent>(
+  RoutingEventTypes.MediationStateChanged,
+  async (event: MediationStateChangedEvent) => {
+    testLogger.info('Mediation state changed for ' + event.payload.mediationRecord.id)
+    testLogger.debug(
+      'Previous state: ' + event.payload.previousState + ' New state: ' + event.payload.mediationRecord.state
+    )
 
-  if (event.mediationRecord.state == MediationState.Requested) {
-    const connectionRecord = await agent.connections.getById(event.mediationRecord.connectionId)
-    if (connectionRecord) {
-      await agent.mediator.grantRequestedMediation(connectionRecord, event.mediationRecord)
-      testLogger.info('Mediation blindly granted')
+    if (event.payload.mediationRecord.state == MediationState.Requested) {
+      const connectionRecord = await agent.connections.getById(event.payload.mediationRecord.connectionId)
+      if (connectionRecord) {
+        await agent.mediator.grantRequestedMediation(connectionRecord, event.payload.mediationRecord)
+        testLogger.info('Mediation blindly granted')
+      }
     }
   }
-})
+)
 
 // Create new invitation as inviter to invitee
 app.get('/invitation', async (req, res) => {
@@ -189,7 +211,7 @@ app.post('/receive-invitation', async (req, res) => {
 app.get('/api/connections/:verkey', async (req, res) => {
   // TODO This endpoint is for testing purpose only. Return mediator connection by their verkey.
   const verkey = req.params.verkey
-  const connection = await agent.connections.findConnectionByTheirKey(verkey)
+  const connection = await agent.connections.findByTheirKey(verkey)
   res.send(connection)
 })
 

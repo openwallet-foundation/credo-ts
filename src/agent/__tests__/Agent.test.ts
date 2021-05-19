@@ -3,7 +3,6 @@ import { ConnectionsModule } from '../../modules/connections/ConnectionsModule'
 import { ProofsModule } from '../../modules/proofs/ProofsModule'
 import { CredentialsModule } from '../../modules/credentials/CredentialsModule'
 import { BasicMessagesModule } from '../../modules/basic-messages/BasicMessagesModule'
-import { RoutingModule } from '../../modules/routing/RoutingModule'
 import { LedgerModule } from '../../modules/ledger/LedgerModule'
 import { ConnectionRepository, ConnectionService, TrustPingService } from '../../modules/connections'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
@@ -11,12 +10,6 @@ import { CredentialRepository, CredentialService } from '../../modules/credentia
 import { ProofRepository, ProofService } from '../../modules/proofs'
 import { LedgerService } from '../../modules/ledger'
 import { Symbols } from '../../symbols'
-import {
-  ConsumerRoutingService,
-  ProviderRoutingService,
-  ProvisioningRepository,
-  ProvisioningService,
-} from '../../modules/routing'
 import { IndyWallet } from '../../wallet/IndyWallet'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../../storage/IndyStorageService'
@@ -25,6 +18,13 @@ import { MessageReceiver } from '../MessageReceiver'
 import { Dispatcher } from '../Dispatcher'
 import { EnvelopeService } from '../EnvelopeService'
 import { getBaseConfig } from '../../__tests__/helpers'
+import {
+  MediatorModule,
+  RecipientModule,
+  MediationRepository,
+  MediatorService,
+  RecipientService,
+} from '../../modules/routing'
 
 const config = getBaseConfig('DI Test')
 
@@ -52,11 +52,11 @@ describe('Agent', () => {
       expect(container.resolve(BasicMessageService)).toBeInstanceOf(BasicMessageService)
       expect(container.resolve(BasicMessageRepository)).toBeInstanceOf(BasicMessageRepository)
 
-      expect(container.resolve(RoutingModule)).toBeInstanceOf(RoutingModule)
-      expect(container.resolve(ConsumerRoutingService)).toBeInstanceOf(ConsumerRoutingService)
-      expect(container.resolve(ProviderRoutingService)).toBeInstanceOf(ProviderRoutingService)
-      expect(container.resolve(ProvisioningRepository)).toBeInstanceOf(ProvisioningRepository)
-      expect(container.resolve(ProvisioningService)).toBeInstanceOf(ProvisioningService)
+      expect(container.resolve(MediatorModule)).toBeInstanceOf(MediatorModule)
+      expect(container.resolve(RecipientModule)).toBeInstanceOf(RecipientModule)
+      expect(container.resolve(MediationRepository)).toBeInstanceOf(MediationRepository)
+      expect(container.resolve(MediatorService)).toBeInstanceOf(MediatorService)
+      expect(container.resolve(RecipientService)).toBeInstanceOf(RecipientService)
 
       expect(container.resolve(LedgerModule)).toBeInstanceOf(LedgerModule)
       expect(container.resolve(LedgerService)).toBeInstanceOf(LedgerService)
@@ -65,8 +65,9 @@ describe('Agent', () => {
       expect(container.resolve(Symbols.Wallet)).toBeInstanceOf(IndyWallet)
       expect(container.resolve(Symbols.Logger)).toBe(config.logger)
       expect(container.resolve(Symbols.Indy)).toBe(config.indy)
-      expect(container.resolve(Symbols.MessageRepository)).toBeInstanceOf(InMemoryMessageRepository)
+      expect(container.resolve(Symbols.FileSystem)).toBe(config.fileSystem)
       expect(container.resolve(Symbols.StorageService)).toBeInstanceOf(IndyStorageService)
+      expect(container.resolve(Symbols.MessageRepository)).toBeInstanceOf(InMemoryMessageRepository)
 
       // Agent
       expect(container.resolve(MessageSender)).toBeInstanceOf(MessageSender)
@@ -97,17 +98,18 @@ describe('Agent', () => {
       expect(container.resolve(BasicMessageService)).toBe(container.resolve(BasicMessageService))
       expect(container.resolve(BasicMessageRepository)).toBe(container.resolve(BasicMessageRepository))
 
-      expect(container.resolve(RoutingModule)).toBe(container.resolve(RoutingModule))
-      expect(container.resolve(ConsumerRoutingService)).toBe(container.resolve(ConsumerRoutingService))
-      expect(container.resolve(ProviderRoutingService)).toBe(container.resolve(ProviderRoutingService))
-      expect(container.resolve(ProvisioningRepository)).toBe(container.resolve(ProvisioningRepository))
-      expect(container.resolve(ProvisioningService)).toBe(container.resolve(ProvisioningService))
+      expect(container.resolve(MediatorModule)).toBe(container.resolve(MediatorModule))
+      expect(container.resolve(RecipientModule)).toBe(container.resolve(RecipientModule))
+      expect(container.resolve(MediationRepository)).toBe(container.resolve(MediationRepository))
+      expect(container.resolve(MediatorService)).toBe(container.resolve(MediatorService))
+      expect(container.resolve(RecipientService)).toBe(container.resolve(RecipientService))
 
       expect(container.resolve(LedgerModule)).toBe(container.resolve(LedgerModule))
       expect(container.resolve(LedgerService)).toBe(container.resolve(LedgerService))
 
       // Symbols, interface based
       expect(container.resolve(Symbols.Wallet)).toBe(container.resolve(Symbols.Wallet))
+      expect(container.resolve(Symbols.FileSystem)).toBe(container.resolve(Symbols.FileSystem))
       expect(container.resolve(Symbols.Logger)).toBe(container.resolve(Symbols.Logger))
       expect(container.resolve(Symbols.Indy)).toBe(container.resolve(Symbols.Indy))
       expect(container.resolve(Symbols.MessageRepository)).toBe(container.resolve(Symbols.MessageRepository))

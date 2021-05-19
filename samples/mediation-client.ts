@@ -7,21 +7,22 @@ import {
   OutboundTransporter,
   OutboundPackage,
   InitConfig,
-  ConnectionEventType,
   ConnectionStateChangedEvent,
   LogLevel,
   ConnectionState,
-  BasicMessageEventType,
   BasicMessageReceivedEvent,
   ConnectionRecord,
+  BasicMessageEventTypes,
+  ConnectionEventTypes,
 } from '../src'
 import testLogger, { TestLogger } from '../src/__tests__/logger'
 import indy from 'indy-sdk'
 import { resolve } from 'path'
-import { MediationEventType, MediationStateChangedEvent } from '../src/modules/routing/services/MediatorService'
+import { RoutingEventTypes, MediationStateChangedEvent } from '../src/modules/routing/RoutingEvents'
 import { MediationState } from '../src/'
 import { sleep } from '../src/__tests__/helpers'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
+import { NodeFileSystem } from '../src/storage/fs/NodeFileSystem'
 
 class HttpInboundTransporter implements InboundTransporter {
   private app: Express
@@ -79,9 +80,17 @@ class HttpOutboundTransporter implements OutboundTransporter {
     this.agent = agent
     this.messageRepository = messageRepository
   }
+  public supportedSchemes = []
 
-  public async sendMessage(outboundPackage: OutboundPackage, receiveReply: boolean) {
-    const { connection, payload, endpoint } = outboundPackage
+  public async start(): Promise<void> {
+    // No custom logic required for start
+  }
+  public async stop(): Promise<void> {
+    // No custom logic required for stop
+  }
+
+  public async sendMessage(outboundPackage: OutboundPackage) {
+    const { connection, payload, endpoint, responseRequested } = outboundPackage
 
     if (!endpoint) {
       throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
@@ -94,7 +103,7 @@ class HttpOutboundTransporter implements OutboundTransporter {
         return
       }
 
-      if (receiveReply) {
+      if (responseRequested) {
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
@@ -143,6 +152,7 @@ const agentConfig: InitConfig = {
   autoAcceptConnections: true,
   logger: new TestLogger(LogLevel.debug),
   indy: indy,
+  fileSystem: new NodeFileSystem(),
 }
 
 const PORT = Number(agentConfig.port)
@@ -165,42 +175,58 @@ const messageReceiver = new HttpInboundTransporter(app)
 agent.setInboundTransporter(messageReceiver)
 agent.setOutboundTransporter(messageSender)
 
-agent.connections.events.on(ConnectionEventType.StateChanged, async (event: ConnectionStateChangedEvent) => {
-  testLogger.info('Connection state changed for ' + event.connectionRecord.id)
-  testLogger.debug('Previous state: ' + event.previousState + ' New state: ' + event.connectionRecord.state)
+agent.events.on<ConnectionStateChangedEvent>(
+  ConnectionEventTypes.ConnectionStateChanged,
+  async (event: ConnectionStateChangedEvent) => {
+    testLogger.info('Connection state changed for ' + event.payload.connectionRecord.id)
+    testLogger.debug(
+      'Previous state: ' + event.payload.previousState + ' New state: ' + event.payload.connectionRecord.state
+    )
 
-  if (event.connectionRecord.alias == 'mediator' && event.connectionRecord.state == ConnectionState.Complete) {
-    testLogger.info('Mediator connection completed. Requesting mediation...')
+    if (
+      event.payload.connectionRecord.alias == 'mediator' &&
+      event.payload.connectionRecord.state == ConnectionState.Complete
+    ) {
+      testLogger.info('Mediator connection completed. Requesting mediation...')
 
-    await agent.mediationRecipient.requestMediation(event.connectionRecord)
+      await agent.mediationRecipient.requestMediation(event.payload.connectionRecord)
 
-    // Start polling responses from this connection
-    messageReceiver.stop = true
-    messageReceiver.start(agent, event.connectionRecord)
+      // Start polling responses from this connection
+      messageReceiver.stop = true
+      messageReceiver.start(agent, event.payload.connectionRecord)
 
-    // Request mediation
-    testLogger.info('Mediation Request sent')
+      // Request mediation
+      testLogger.info('Mediation Request sent')
+    }
   }
-})
+)
 
-agent.mediationRecipient.events.on(MediationEventType.StateChanged, async (event: MediationStateChangedEvent) => {
-  testLogger.info('Mediation state changed for ' + event.mediationRecord.id)
-  testLogger.debug('Previous state: ' + event.previousState + ' New state: ' + event.mediationRecord.state)
+agent.events.on<MediationStateChangedEvent>(
+  RoutingEventTypes.MediationStateChanged,
+  async (event: MediationStateChangedEvent) => {
+    testLogger.info('Mediation state changed for ' + event.payload.mediationRecord.id)
+    testLogger.debug(
+      'Previous state: ' + event.payload.previousState + ' New state: ' + event.payload.mediationRecord.state
+    )
 
-  if (event.mediationRecord.state == MediationState.Granted) {
-    const connectionRecord = await agent.connections.getById(event.mediationRecord.connectionId)
-    if (connectionRecord) {
-      /*agent.setInboundConnection({
+    if (event.payload.mediationRecord.state == MediationState.Granted) {
+      const connectionRecord = await agent.connections.getById(event.payload.mediationRecord.connectionId)
+      if (connectionRecord) {
+        /*agent.setInboundConnection({
         connection: connectionRecord,
         verkey: event.mediationRecord.routingKeys[0],
       })*/
+      }
     }
   }
-})
+)
 
-agent.basicMessages.events.on(BasicMessageEventType.MessageReceived, async (event: BasicMessageReceivedEvent) => {
-  testLogger.info('Message received: ' + event.message.content)
-})
+agent.events.on<BasicMessageReceivedEvent>(
+  BasicMessageEventTypes.BasicMessageReceived,
+  async (event: BasicMessageReceivedEvent) => {
+    testLogger.info('Message received: ' + event.payload.message.content)
+  }
+)
 
 app.post('/basic-message', async (req, res) => {
   try {

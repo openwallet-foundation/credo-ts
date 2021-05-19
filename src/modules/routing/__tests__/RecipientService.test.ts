@@ -1,37 +1,25 @@
-import indy from 'indy-sdk'
-import { MediationRecord, MediationTags, MediationStorageProps, MediationRole, MediationState } from '..'
+import { MediationRecord, MediationRole, MediationState } from '..'
 import { RecipientService } from '../services/RecipientService'
-import { Repository } from '../../../storage/Repository'
-import type { Verkey } from 'indy-sdk'
 import { assert } from 'console'
-import { ConnectionRecord, ConnectionService, InitConfig } from '../../..'
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { MessageSender } from '../../../agent/MessageSender'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { Wallet } from '../../../wallet/Wallet'
-import testLogger from '../../../__tests__/logger'
+import { getBaseConfig } from '../../../__tests__/helpers'
+import { MediationRepository } from '../repository/MediationRepository'
+import { EventEmitter } from '../../../agent/EventEmitter'
+
 jest.mock('../services/RecipientService')
 jest.mock('./../../../storage/Repository')
-const MediationRepository = <jest.Mock<Repository<MediationRecord>>>(<unknown>Repository)
+const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
 
 describe('Recipient', () => {
-  const walletConfig = { id: 'test-wallet' + '-RecipientServiceTest' }
-  const walletCredentials = { key: 'key' }
-  const initConfig: InitConfig = {
-    label: 'agent label',
-    host: 'http://agent.com',
-    port: 8080,
-    walletConfig,
-    walletCredentials,
-    indy,
-    logger: testLogger,
-  }
+  const initConfig = getBaseConfig('RecipientService')
 
   let wallet: Wallet
   let agentConfig: AgentConfig
-  let mediationRepository: Repository<MediationRecord>
-  let messageSender: MessageSender
+  let mediationRepository: MediationRepository
   let recipientService: RecipientService
+  let eventEmitter: EventEmitter
 
   beforeAll(async () => {
     agentConfig = new AgentConfig(initConfig)
@@ -45,10 +33,9 @@ describe('Recipient', () => {
   })
 
   beforeEach(() => {
-    // Clear all instances and calls to constructor and all methods:
-    MediationRepository.mockClear()
-    mediationRepository = new MediationRepository()
-    recipientService = new RecipientService(agentConfig, mediationRepository, messageSender, wallet)
+    mediationRepository = new MediationRepositoryMock()
+    eventEmitter = new EventEmitter()
+    recipientService = new RecipientService(mediationRepository, wallet, eventEmitter)
   })
 
   describe('MediationRecord test', () => {
@@ -85,22 +72,24 @@ describe('Recipient', () => {
   })
   describe('Recipient service tests', () => {
     it('validate service class signiture', () => {
-      const service = new RecipientService(agentConfig, mediationRepository, messageSender, wallet)
-      assert(service.setDefaultMediator, 'Expected RecipientService to have a `setDefaultMediator` method')
-      assert(service.getDefaultMediator, 'Expected RecipientService to have a `getDefaultMediator` method')
-      assert(service.getDefaultMediatorId, 'Expected RecipientService to have a `getDefaultMediatorId` method')
-      assert(service.getMediators, 'Expected RecipientService to have a `getMediators` method')
-      assert(service.clearDefaultMediator, 'Expected RecipientService to have a `clearDefaultMediator` method')
-      assert(service.findByConnectionId, 'Expected RecipientService to have a `findByConnectionId` method')
-      assert(service.findById, 'Expected RecipientService to have a `findById` method')
-      assert(service.processMediationDeny, 'Expected RecipientService to have a `processMediationDeny` method')
-      assert(service.processMediationGrant, 'Expected RecipientService to have a `processMediationGrant` method')
+      assert(recipientService.setDefaultMediator, 'Expected RecipientService to have a `setDefaultMediator` method')
+      assert(recipientService.getDefaultMediator, 'Expected RecipientService to have a `getDefaultMediator` method')
+      assert(recipientService.getDefaultMediatorId, 'Expected RecipientService to have a `getDefaultMediatorId` method')
+      assert(recipientService.getMediators, 'Expected RecipientService to have a `getMediators` method')
+      assert(recipientService.clearDefaultMediator, 'Expected RecipientService to have a `clearDefaultMediator` method')
+      assert(recipientService.findByConnectionId, 'Expected RecipientService to have a `findByConnectionId` method')
+      assert(recipientService.findById, 'Expected RecipientService to have a `findById` method')
+      assert(recipientService.processMediationDeny, 'Expected RecipientService to have a `processMediationDeny` method')
       assert(
-        service.processKeylistUpdateResults,
+        recipientService.processMediationGrant,
+        'Expected RecipientService to have a `processMediationGrant` method'
+      )
+      assert(
+        recipientService.processKeylistUpdateResults,
         'Expected RecipientService to have a `processKeylistUpdateResults` method'
       )
-      assert(service.createKeylistQuery, 'Expected RecipientService to have a `createKeylistQuery` method')
-      assert(service.createRequest, 'Expected RecipientService to have a `createRequest` method')
+      assert(recipientService.createKeylistQuery, 'Expected RecipientService to have a `createKeylistQuery` method')
+      assert(recipientService.createRequest, 'Expected RecipientService to have a `createRequest` method')
       //assert(service.createRecord, 'Expected RecipientService to have a `createRecord` method')
     })
     it('setDefaultMediator adds changes tags on mediation records', () => {

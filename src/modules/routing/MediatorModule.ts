@@ -1,26 +1,20 @@
+import { Lifecycle, scoped } from 'tsyringe'
 import type { Verkey } from 'indy-sdk'
-import { EventEmitter } from 'events'
 
-import { AgentConfig } from '../../agent/AgentConfig'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { ConnectionRecord } from '../connections/repository/ConnectionRecord'
-import { ConnectionState } from '../connections/models'
 import { KeylistUpdateHandler, ForwardHandler, BatchPickupHandler, BatchHandler } from './handlers'
 import { MediatorService } from './services/MediatorService'
 import { MessagePickupService } from './services/MessagePickupService'
-import {
-  ConnectionEventType,
-  ConnectionInvitationMessage,
-  ConnectionService,
-  ConnectionStateChangedEvent,
-} from '../connections'
+import { ConnectionService } from '../connections'
 import { MediationRecord } from '.'
 import { MediationRequestHandler } from './handlers/MediationRequestHandler'
+import { EventEmitter } from '../../agent/EventEmitter'
 
+@scoped(Lifecycle.ContainerScoped)
 export class MediatorModule {
-  private agentConfig: AgentConfig
   private mediatorService: MediatorService
   private messagePickupService: MessagePickupService
   private connectionService: ConnectionService
@@ -29,30 +23,18 @@ export class MediatorModule {
 
   public constructor(
     dispatcher: Dispatcher,
-    agentConfig: AgentConfig,
     mediationService: MediatorService,
     messagePickupService: MessagePickupService,
     connectionService: ConnectionService,
     messageSender: MessageSender,
     eventEmitter: EventEmitter
   ) {
-    this.agentConfig = agentConfig
     this.mediatorService = mediationService
     this.messagePickupService = messagePickupService
     this.connectionService = connectionService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.registerHandlers(dispatcher)
-  }
-
-  /**
-   * Get the event emitter for the mediation service. Will emit events
-   * when related messages are received.
-   *
-   * @returns event emitter for mediation-related received messages
-   */
-  public get events(): EventEmitter {
-    return this.mediatorService
   }
 
   public async grantRequestedMediation(connectionRecord: ConnectionRecord, mediationRecord: MediationRecord) {

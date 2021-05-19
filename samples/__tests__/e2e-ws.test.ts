@@ -37,29 +37,34 @@ describe('websockets with mediator', () => {
     bobAgent.setOutboundTransporter(new WsOutboundTransporter(bobAgent))
     await bobAgent.init()
 
-    const aliceInbound = aliceAgent.routing.getInboundConnection()
+    /* //TODO: depricate getInboundConnection
+    const aliceInbound = aliceAgent.mediationRecipient.getInboundConnection()
     const aliceInboundConnection = aliceInbound?.connection
     const aliceKeyAtAliceMediator = aliceInboundConnection?.verkey
     logger.test('aliceInboundConnection', aliceInboundConnection)
 
-    const bobInbound = bobAgent.routing.getInboundConnection()
+    const bobInbound = bobAgent.mediationRecipient.getInboundConnection()
     const bobInboundConnection = bobInbound?.connection
     const bobKeyAtBobMediator = bobInboundConnection?.verkey
     logger.test('bobInboundConnection', bobInboundConnection)
+    */
+
+    const aliceMediatorConnection = await aliceAgent.mediationRecipient.getDefaultMediatorConnection()
+    const bobMediatorConnection = await bobAgent.mediationRecipient.getDefaultMediatorConnection()
 
     // TODO This endpoint currently exists at mediator only for the testing purpose. It returns mediator's part of the pairwise connection.
     const mediatorConnectionAtAliceMediator = JSON.parse(
-      await get(`${aliceAgent.getMediatorUrl()}/api/connections/${aliceKeyAtAliceMediator}`)
+      await get(`${aliceAgent.getMediatorUrl()}/api/connections/${bobMediatorConnection?.verkey}`)
     )
     const mediatorConnectionAtBobMediator = JSON.parse(
-      await get(`${bobAgent.getMediatorUrl()}/api/connections/${bobKeyAtBobMediator}`)
+      await get(`${bobAgent.getMediatorUrl()}/api/connections/${bobMediatorConnection?.verkey}`)
     )
 
     logger.test('mediatorConnectionAtAliceMediator', mediatorConnectionAtAliceMediator)
     logger.test('mediatorConnectionAtBobMediator', mediatorConnectionAtBobMediator)
 
-    expect(aliceInboundConnection).toBeConnectedWith(mediatorConnectionAtAliceMediator)
-    expect(bobInboundConnection).toBeConnectedWith(mediatorConnectionAtBobMediator)
+    expect(aliceMediatorConnection).toBeConnectedWith(mediatorConnectionAtAliceMediator)
+    expect(bobMediatorConnection).toBeConnectedWith(mediatorConnectionAtBobMediator)
   })
 
   test('Alice and Bob make a connection via mediator', async () => {
@@ -106,9 +111,9 @@ class WsInboundTransporter implements InboundTransporter {
     const mediatorInvitationUrl = await get(`${mediatorUrl}/invitation`)
     const { verkey: mediatorVerkey } = JSON.parse(await get(`${mediatorUrl}/`))
 
-    await agent.routing.provision({
-      verkey: mediatorVerkey,
-      invitationUrl: mediatorInvitationUrl,
-    })
+    // await agent.routing.provision({
+    //   verkey: mediatorVerkey,
+    //   invitationUrl: mediatorInvitationUrl,
+    // })
   }
 }

@@ -451,6 +451,7 @@ export class ConnectionService {
       //my routing
       this.config,
       this.wallet,
+      this.eventEmitter,
       this.recipientService,
       options.mediatorId,
       options.routingKeys ?? [],

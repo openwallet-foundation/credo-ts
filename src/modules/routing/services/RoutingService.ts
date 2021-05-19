@@ -3,29 +3,24 @@
 |*/
 import {
   KeylistState,
-  KeylistUpdateMessage,
+  KeylistUpdateEvent,
   MediationRecord,
   MediationRecordProps,
-  MediationRole,
   MediationState,
   RecipientService,
 } from '../../routing'
 import { waitForEventWithTimeout } from '../../../utils/promiseWithTimeOut'
-import { Did, Verkey } from 'indy-sdk'
 import { Wallet } from '../../../wallet/Wallet'
-import EventEmitter from 'events'
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { Repository } from '../../../storage/Repository'
 import { ConnectionRecord } from '../../connections'
-
-export interface keylistUpdateEvent {
-  mediationRecord: MediationRecord
-  message: KeylistUpdateMessage
-}
+import { MediationRepository } from '../repository'
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { RoutingEventTypes } from '../RoutingEvents'
 
 export async function getRouting(
   config: AgentConfig,
   wallet: Wallet,
+  eventEmitter: EventEmitter,
   recipientService: RecipientService,
   mediatorId: string | undefined,
   routingKeys: string[],
@@ -50,21 +45,16 @@ export async function getRouting(
   const did_data = await wallet.createDid()
   if (mediationRecord) {
     const message = await recipientService.createKeylistUpdateMessage(did_data[1])
-    const event: keylistUpdateEvent = {
-      mediationRecord,
-      message,
+    const event: KeylistUpdateEvent = {
+      type: RoutingEventTypes.MediationKeylistUpdate,
+      payload: {
+        mediationRecord,
+        message,
+      },
     }
     // emit KeylistState.update and catch KeylistState.updated event in module from mediationservice handler
     // send and update message to mediator
-    await waitForEventWithTimeout(
-      recipientService,
-      recipientService,
-      KeylistState.Update,
-      event,
-      KeylistState.Updated,
-      message,
-      2000
-    )
+    await waitForEventWithTimeout(eventEmitter, event, KeylistState.Updated, message, 2000)
   } else {
     // TODO: register recipient keys for relay
     // TODO: check that recipient keys are in wallet
@@ -76,7 +66,7 @@ export async function getRouting(
 
 export async function createRecord(
   { state, role, connectionId, recipientKeys }: MediationRecordProps,
-  mediatorRepository: Repository<MediationRecord>
+  mediatorRepository: MediationRepository
 ): Promise<MediationRecord> {
   const mediationRecord = new MediationRecord({
     state,

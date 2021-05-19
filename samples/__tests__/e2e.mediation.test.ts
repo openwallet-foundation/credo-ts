@@ -1,48 +1,23 @@
-import { Agent, ConnectionRecord, InboundTransporter, OutboundTransporter } from '../../src'
-import { OutboundPackage, InitConfig } from '../../src/types'
-import { get, post } from '../http'
-import { sleep, toBeConnectedWith, waitForBasicMessage, waitForMediationRecord } from '../../src/__tests__/helpers'
-import indy from 'indy-sdk'
+import { Agent, ConnectionRecord, HttpOutboundTransporter, InboundTransporter } from '../../src'
+import { getBaseConfig, sleep, toBeConnectedWith, waitForBasicMessage } from '../../src/__tests__/helpers'
 import logger from '../../src/__tests__/logger'
-import { MediationState } from '../../src'
-import { AgentConfig } from '../../src/agent/AgentConfig'
-import { IndyWallet } from '../../src/wallet/IndyWallet'
-import { Wallet } from '../../src/wallet/Wallet'
 
 expect.extend({ toBeConnectedWith })
 
-const aliceConfig: InitConfig = {
-  label: 'e2e Alice',
+const aliceConfig = getBaseConfig('E2E Mediation Alice', {
   host: 'http://localhost',
   port: 3001,
-  walletConfig: { id: 'e2e-alice' },
-  walletCredentials: { key: '00000000000000000000000000000Test01' },
-  autoAcceptConnections: true,
-  indy,
-  logger: logger,
-}
+})
 
-const bobConfig: InitConfig = {
-  label: 'e2e Bob',
+const bobConfig = getBaseConfig('E2E Mediation Bob', {
   host: 'http://localhost',
   port: 3002,
-  walletConfig: { id: 'e2e-bob' },
-  walletCredentials: { key: '00000000000000000000000000000Test02' },
-  autoAcceptConnections: true,
-  indy,
-  logger: logger,
-}
+})
 
-const mediatorConfig: InitConfig = {
-  label: 'e2e ned',
+const mediatorConfig = getBaseConfig('E2E Mediation Mediator', {
   host: 'http://localhost',
   port: 3003,
-  walletConfig: { id: 'e2e-ned' },
-  walletCredentials: { key: '00000000000000000000000000000Test03' },
-  autoAcceptConnections: true,
-  indy,
-  logger: logger,
-}
+})
 
 describe('with mediator', () => {
   let aliceAgent: Agent
@@ -103,7 +78,7 @@ describe('with mediator', () => {
     // Once mediator is connected, mediation request can be sent
     const aliceMediationRecord = await aliceAgent.mediationRecipient.requestAndWaitForAcception(
       aliceMediatorConnection,
-      aliceAgent.mediationRecipient.events,
+      aliceAgent.events,
       2000
     )
 
@@ -151,10 +126,7 @@ describe('with mediator', () => {
 
   test('Send a message from Alice to Bob via mediator', async () => {
     // send message from Alice to Bob
-    const aliceConnectionAtAliceBob = await aliceAgent.connections.find(aliceAtAliceBobId)
-    if (!aliceConnectionAtAliceBob) {
-      throw new Error(`There is no connection for id ${aliceAtAliceBobId}`)
-    }
+    const aliceConnectionAtAliceBob = await aliceAgent.connections.getById(aliceAtAliceBobId)
 
     logger.test('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob)
 
@@ -194,35 +166,5 @@ class PollingInboundTransporter implements InboundTransporter {
     new Promise(() => {
       loop()
     })
-  }
-}
-
-class HttpOutboundTransporter implements OutboundTransporter {
-  private agent: Agent
-
-  public constructor(agent: Agent) {
-    this.agent = agent
-  }
-  public async sendMessage(outboundPackage: OutboundPackage, receiveReply: boolean) {
-    const { payload, endpoint } = outboundPackage
-
-    if (!endpoint) {
-      throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
-    }
-
-    logger.debug(`Sending outbound message to connection ${outboundPackage.connection.id}`, outboundPackage.payload)
-
-    if (receiveReply) {
-      const response = await post(`${endpoint}`, JSON.stringify(payload))
-      if (response) {
-        logger.debug(`Response received:\n ${response}`)
-        const wireMessage = JSON.parse(response)
-        this.agent.receiveMessage(wireMessage)
-      } else {
-        logger.debug(`No response received.`)
-      }
-    } else {
-      await post(`${endpoint}`, JSON.stringify(payload))
-    }
   }
 }

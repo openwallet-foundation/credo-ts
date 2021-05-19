@@ -5,9 +5,8 @@ import { AgentConfig } from '../../agent/AgentConfig'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { Dispatcher } from '../../agent/Dispatcher'
-import { ConnectionService, ConnectionEventType, ConnectionStateChangedEvent, TrustPingService } from './services'
+import { ConnectionService, TrustPingService } from './services'
 import { ConnectionRecord } from './repository/ConnectionRecord'
-import { ConnectionState } from './models'
 import { ConnectionInvitationMessage } from './messages'
 import {
   ConnectionRequestHandler,
@@ -17,27 +16,30 @@ import {
   TrustPingResponseMessageHandler,
 } from './handlers'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { KeylistState } from '../..'
-import { keylistUpdateEvent } from '../routing/services/RoutingService'
-
+import { EventEmitter } from '../../agent/EventEmitter'
+import { KeylistUpdateEvent, RoutingEventTypes } from '../routing/RoutingEvents'
 @scoped(Lifecycle.ContainerScoped)
 export class ConnectionsModule {
   private agentConfig: AgentConfig
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private trustPingService: TrustPingService
+  private eventEmitter: EventEmitter
 
   public constructor(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
     trustPingService: TrustPingService,
-    messageSender: MessageSender
+    messageSender: MessageSender,
+    eventEmitter: EventEmitter
   ) {
     this.agentConfig = agentConfig
     this.connectionService = connectionService
     this.trustPingService = trustPingService
     this.messageSender = messageSender
+    this.eventEmitter = eventEmitter
+
     this.registerHandlers(dispatcher)
     this.registerListeners()
   }
@@ -246,10 +248,12 @@ export class ConnectionsModule {
     dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
     dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService))
   }
+
   private registerListeners() {
-    this.connectionService.recipientService.on(KeylistState.Update, this.keylistUpdateEvent)
+    this.eventEmitter.on(RoutingEventTypes.MediationKeylistUpdate, this.keylistUpdateEvent)
   }
-  private async keylistUpdateEvent({ mediationRecord, message }: keylistUpdateEvent) {
+
+  private async keylistUpdateEvent({ payload: { mediationRecord, message } }: KeylistUpdateEvent) {
     // new did has been created and mediator needs to be updated with the public key.
     const connectionRecord: ConnectionRecord = await this.connectionService.getById(mediationRecord.connectionId)
     const outbound = createOutboundMessage(connectionRecord, message)

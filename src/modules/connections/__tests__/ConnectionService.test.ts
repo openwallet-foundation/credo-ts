@@ -59,7 +59,7 @@ describe('ConnectionService', () => {
     eventEmitter = new EventEmitter()
     connectionRepository = new ConnectionRepositoryMock()
     mediationRepository = new MediationRepositoryMock()
-    recipientService = new RecipientService(agentConfig, mediationRepository, messageSender, wallet)
+    recipientService = new RecipientService(mediationRepository, wallet, eventEmitter)
     connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, eventEmitter, recipientService)
   })
 

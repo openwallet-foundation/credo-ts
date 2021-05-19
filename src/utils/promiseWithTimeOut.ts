@@ -1,13 +1,12 @@
-import { EventEmitter } from 'events'
 import { ConnectionInvitationMessage, ConnectionState } from '..'
+import { EventEmitter } from '../agent/EventEmitter'
+import { BaseEvent } from '../agent/Events'
 import { KeylistState, KeylistUpdateMessage, MediationState, MediationRequestMessage } from '../modules/routing'
 
 // based on gist from simongregory at https://gist.github.com/simongregory/2c60d270006d4bf727babca53dca1f87
-export async function waitForEventWithTimeout(
-  emitter: EventEmitter,
-  eventListener: EventEmitter,
-  eventTopic: string,
-  event: any,
+export async function waitForEventWithTimeout<T extends BaseEvent>(
+  eventEmitter: EventEmitter,
+  event: T,
   eventType: ConnectionState | MediationState | KeylistState,
   message: ConnectionInvitationMessage | MediationRequestMessage | KeylistUpdateMessage,
   timeout: number
@@ -20,18 +19,18 @@ export async function waitForEventWithTimeout(
       //TODO: test if thread Id matches the one in the message
       if (data.threadId === message.threadId) {
         clearTimeout(timer)
-        eventListener.removeListener(eventType, listener)
+        eventEmitter.off(eventType, listener)
         resolve(data)
       }
     }
 
-    eventListener.on(eventType, listener)
+    eventEmitter.on<T>(eventType, listener)
     timer = setTimeout(() => {
-      eventListener.removeListener(eventType, listener)
+      eventEmitter.off<T>(eventType, listener)
       reject(new Error('timeout waiting for ' + eventType + 'from initialized from message' + message))
     }, timeout)
     // emit after listener is listening to prevent any race condition
-    emitter.emit(eventTopic, event)
+    eventEmitter.emit<T>(event)
   })
 }
 

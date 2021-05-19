@@ -22,7 +22,7 @@ import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes, AgentMessageReceivedEvent } from './Events'
 import { RecipientModule } from '../modules/routing/RecipientModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
-
+import { Transport } from './TransportService'
 export class Agent {
   protected agentConfig: AgentConfig
   protected logger: Logger
@@ -141,8 +141,8 @@ export class Agent {
     await this.wallet.delete()
   }
 
-  public async receiveMessage(inboundPackedMessage: unknown) {
-    return await this.messageReceiver.receiveMessage(inboundPackedMessage)
+  public async receiveMessage(inboundPackedMessage: unknown, transport?: Transport) {
+    return await this.messageReceiver.receiveMessage(inboundPackedMessage, transport)
   }
 
   public async getMediatorUrl() {

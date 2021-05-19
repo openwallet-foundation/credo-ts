@@ -1,31 +1,29 @@
+import { Lifecycle, scoped } from 'tsyringe'
+import type { Verkey } from 'indy-sdk'
+
 import { AgentConfig } from '../../agent/AgentConfig'
-import { assertConnection, MessagePickupService, RecipientService } from './services'
+import { assertConnection, RecipientService } from './services'
 import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
 import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import {
-  ConnectionService,
-  ConnectionState,
-  ConnectionInvitationMessage,
-  ConnectionResponseMessage,
-} from '../connections'
-import { BatchMessage, BatchPickupMessage } from './messages'
-import type { Verkey } from 'indy-sdk'
+import { ConnectionService } from '../connections'
+import { BatchPickupMessage } from './messages'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { ConnectionRecord } from '../connections'
-import agentConfig from '../../../samples/config'
-import { EventEmitter } from 'events'
 import { MediationRecord } from '.'
-import { Agent, MediationEventType, MediationState, MediationStateChangedEvent } from '../..'
+import { MediationState, MediationStateChangedEvent } from '../..'
 import { ConnectionsModule } from '../connections/ConnectionsModule'
+import { EventEmitter } from '../../agent/EventEmitter'
+import { RoutingEventTypes } from './RoutingEvents'
+import { AriesFrameworkError } from '../../error'
 
+@scoped(Lifecycle.ContainerScoped)
 export class RecipientModule {
   private agentConfig: AgentConfig
   private recipientService: RecipientService
-  private messagePickupService: MessagePickupService
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
@@ -34,13 +32,11 @@ export class RecipientModule {
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     recipientService: RecipientService,
-    messagePickupService: MessagePickupService,
     connectionService: ConnectionService,
     messageSender: MessageSender,
     eventEmitter: EventEmitter
   ) {
     this.agentConfig = agentConfig
-    this.messagePickupService = messagePickupService
     this.connectionService = connectionService
     this.recipientService = recipientService
     this.messageSender = messageSender
@@ -57,18 +53,8 @@ export class RecipientModule {
         autoAcceptConnection: true,
         alias: 'InitedMediator', // TODO come up with a better name for this
       })
-      await this.requestAndWaitForAcception(connectionRecord, this.recipientService, 2000) // TODO: put timeout as a config parameter
+      await this.requestAndWaitForAcception(connectionRecord, this.eventEmitter, 2000) // TODO: put timeout as a config parameter
     }
-  }
-
-  /**
-   * Get the event emitter for the mediation service. Will emit events
-   * when related messages are received.
-   *
-   * @returns event emitter for mediation recipient related received messages
-   */
-  public get events(): EventEmitter {
-    return this.recipientService
   }
 
   // public async provision(mediatorConfiguration: MediatorConfiguration) {
@@ -185,21 +171,21 @@ export class RecipientModule {
       // eslint-disable-next-line @typescript-eslint/no-empty-function
       let timer: NodeJS.Timeout = setTimeout(() => {})
       const listener = (event: MediationStateChangedEvent) => {
-        const previousStateMatches = MediationState.Init === event.previousState
-        const mediationIdMatches = record.id || event.mediationRecord.id
-        const stateMatches = record.state || event.mediationRecord.state
+        const previousStateMatches = MediationState.Init === event.payload.previousState
+        const mediationIdMatches = record.id || event.payload.mediationRecord.id
+        const stateMatches = record.state || event.payload.mediationRecord.state
 
         if (previousStateMatches && mediationIdMatches && stateMatches) {
-          emitter.removeListener(MediationEventType.StateChanged, listener)
+          emitter.off<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
           clearTimeout(timer)
-          resolve(event.mediationRecord)
+          resolve(event.payload.mediationRecord)
         }
       }
-      emitter.addListener(MediationEventType.StateChanged, listener)
+      emitter.on<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
       timer = setTimeout(() => {
-        emitter.removeListener(MediationEventType.StateChanged, listener)
+        emitter.off<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
         reject(
-          new Error(
+          new AriesFrameworkError(
             'timeout waiting for mediator to grant mediation, initialized from mediation record id:' + record.id
           )
         )
