@@ -75,8 +75,8 @@ export class AgentConfig {
     return DID_COMM_TRANSPORT_QUEUE
   }
 
-  public get mediatorInvitation() {
-    return this.initConfig.mediatorInvitation
+  public get mediatorConnectionsInvite() {
+    return this.initConfig.mediatorConnectionsInvite
   }
 
   public get autoAcceptMediationRequests() {

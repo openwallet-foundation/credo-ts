@@ -37,6 +37,15 @@ export class MediatorModule {
     this.registerHandlers(dispatcher)
   }
 
+  public async init() {
+    // autoAcceptMediationRequests
+    //             "automatically granting to everyone asking, rather than enabling the feature altogether"
+    //             "After establishing a connection, "
+    //             "if enabled, an agent may request message mediation, which will "
+    //             "allow the mediator to forward messages on behalf of the recipient. "
+    //             "See aries-rfc:0211."
+  }
+
   public async grantRequestedMediation(connectionRecord: ConnectionRecord, mediationRecord: MediationRecord) {
     const grantMessage = await this.mediatorService.createGrantMediationMessage(mediationRecord)
     const outboundMessage = createOutboundMessage(connectionRecord, grantMessage)

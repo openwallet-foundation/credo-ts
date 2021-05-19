@@ -38,8 +38,7 @@ export interface InitConfig {
   genesisTransactions?: string
 
   autoAcceptMediationRequests?: boolean
-  mediatorInvitation?: string
-  //mediatorConnectionsInvite?: ConnectionInvitationMessage
+  mediatorConnectionsInvite?: string
   defaultMediatorId?: string
   clearDefaultMediator?: boolean
 }
