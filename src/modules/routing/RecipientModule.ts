@@ -56,6 +56,7 @@ export class RecipientModule {
        "if enabled, an agent may request message mediation, which will "
        "allow the mediator to forward messages on behalf of the recipient. "
        "See aries-rfc:0211."*/
+        //mediatorConnectionsInvite
   }
 
   /* --------------------------------
@@ -158,7 +159,7 @@ export class RecipientModule {
   }
 
   public async requestMediation(connection: ConnectionRecord) {
-    const message = await this.recipientService.createRequest(connection)
+    const [record, message] = await this.recipientService.createRequest(connection)
     const outboundMessage = createOutboundMessage(connection, message)
     const response = await this.messageSender.sendMessage(outboundMessage)
     return response
@@ -199,10 +200,16 @@ export class RecipientModule {
   }
   public async requestAndWaitForAcception(
     connection: ConnectionRecord,
-    mediationRecord: MediationRecord,
+    emitter: EventEmitter,
     timeout: number
-    // emitter: EventEmitter
   ): Promise<MediationRecord> {
+    /*
+    | create mediation record and request.
+    | register listener for mediation grant, before sending request to remove race condition
+    | resolve record when mediator grants request. time out otherwise
+    | send request message to mediator
+    | return promise with listener
+    */
     const [record, message] = await this.recipientService.createRequest(connection)
     const outboundMessage = createOutboundMessage(connection, message)
     const promise: Promise<MediationRecord> = new Promise((resolve, reject) => {
@@ -210,19 +217,23 @@ export class RecipientModule {
       let timer: NodeJS.Timeout = setTimeout(() => {})
       const listener = (event: MediationStateChangedEvent) => {
         const previousStateMatches = MediationState.Init === event.previousState
-        // const mediationIdMatches = id === undefined || event.mediationRecord.id === id // TODO
-        // const stateMatches = state === undefined || event.mediationRecord.state === state // TODO
+        const mediationIdMatches = record.id || event.mediationRecord.id
+        const stateMatches = record.state || event.mediationRecord.state
 
-        // if (previousStateMatches && mediationIdMatches && stateMatches) {
-        //   emitter.removeListener(MediationEventType.StateChanged, listener)
-        //   clearTimeout(timer)
-        //   resolve(event.mediationRecord)
-        // }
+        if (previousStateMatches && mediationIdMatches && stateMatches) {
+          emitter.removeListener(MediationEventType.StateChanged, listener)
+          clearTimeout(timer)
+          resolve(event.mediationRecord)
+        }
       }
       emitter.addListener(MediationEventType.StateChanged, listener)
       timer = setTimeout(() => {
         emitter.removeListener(MediationEventType.StateChanged, listener)
-        reject(new Error('timeout waiting for mediator to grant mediation, initialized from mediation record id:' + id))
+        reject(
+          new Error(
+            'timeout waiting for mediator to grant mediation, initialized from mediation record id:' + record.id
+          )
+        )
       }, timeout)
     })
     await this.messageSender.sendMessage(outboundMessage)

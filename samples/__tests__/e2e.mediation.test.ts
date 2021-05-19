@@ -14,7 +14,7 @@ expect.extend({ toBeConnectedWith })
 const aliceConfig: InitConfig = {
   label: 'e2e Alice',
   host: 'http://localhost',
-  port: 4001,
+  port: 3001,
   walletConfig: { id: 'e2e-alice' },
   walletCredentials: { key: '00000000000000000000000000000Test01' },
   autoAcceptConnections: true,
@@ -25,7 +25,7 @@ const aliceConfig: InitConfig = {
 const bobConfig: InitConfig = {
   label: 'e2e Bob',
   host: 'http://localhost',
-  port: 4002,
+  port: 3002,
   walletConfig: { id: 'e2e-bob' },
   walletCredentials: { key: '00000000000000000000000000000Test02' },
   autoAcceptConnections: true,
@@ -36,7 +36,7 @@ const bobConfig: InitConfig = {
 const mediatorConfig: InitConfig = {
   label: 'e2e ned',
   host: 'http://localhost',
-  port: 4003,
+  port: 3003,
   walletConfig: { id: 'e2e-ned' },
   walletCredentials: { key: '00000000000000000000000000000Test03' },
   autoAcceptConnections: true,
@@ -79,7 +79,7 @@ describe('with mediator', () => {
     await aliceAgent.init()
     expect(aliceAgent)
 
-    mediator = new Agent(mediatorConfig)
+    mediator = new Agent(bobConfig)
     const mediatorInBoundTransporter = new PollingInboundTransporter()
     mediator.setInboundTransporter(mediatorInBoundTransporter)
     mediator.setOutboundTransporter(new HttpOutboundTransporter(mediator))
@@ -103,10 +103,7 @@ describe('with mediator', () => {
     // Once mediator is connected, mediation request can be sent
     const aliceMediationRecord = await aliceAgent.mediationRecipient.requestAndWaitForAcception(
       aliceMediatorConnection,
-      aliceAgent,
-      {
-        state: MediationState.Granted,
-      },
+      aliceAgent.mediationRecipient.events,
       2000
     )
 
