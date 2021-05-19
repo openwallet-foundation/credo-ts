@@ -19,7 +19,6 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { getBaseConfig, getMockConnection, mockFunction } from '../../../__tests__/helpers'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
-import { MessageSender } from '../../../agent/MessageSender'
 import { MediationRepository } from '../../routing/repository/MediationRepository'
 import { RecipientService } from '../../routing/services/RecipientService'
 
@@ -37,12 +36,11 @@ describe('ConnectionService', () => {
 
   let wallet: Wallet
   let agentConfig: AgentConfig
-  let eventEmitter: EventEmitter
   let connectionRepository: ConnectionRepository
   let mediationRepository: MediationRepository
   let connectionService: ConnectionService
+  let eventEmitter: EventEmitter
   let recipientService: RecipientService
-  let messageSender: MessageSender
 
   beforeAll(async () => {
     agentConfig = new AgentConfig(initConfig)

@@ -18,11 +18,12 @@ import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModu
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { Symbols } from '../symbols'
+import { Transport } from './TransportService'
 import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes, AgentMessageReceivedEvent } from './Events'
 import { RecipientModule } from '../modules/routing/RecipientModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
-import { Transport } from './TransportService'
+
 export class Agent {
   protected agentConfig: AgentConfig
   protected logger: Logger
@@ -38,8 +39,8 @@ export class Agent {
   public readonly basicMessages!: BasicMessagesModule
   public readonly ledger!: LedgerModule
   public readonly credentials!: CredentialsModule
-  public mediationRecipient!: RecipientModule
-  public mediator!: MediatorModule
+  public readonly mediationRecipient!: RecipientModule
+  public readonly mediator!: MediatorModule
 
   public constructor(initialConfig: InitConfig, messageRepository?: MessageRepository) {
     // Create child container so we don't interfere with anything outside of this agent
@@ -129,26 +130,26 @@ export class Agent {
       await this.inboundTransporter.start(this)
     }
 
-    this.mediationRecipient.init(this.connections)
+    await this.mediationRecipient.init(this.connections)
   }
 
   public get publicDid() {
     return this.wallet.publicDid
   }
 
-  public async closeAndDeleteWallet() {
-    await this.wallet.close()
-    await this.wallet.delete()
+  public async getMediatorUrl() {
+    const defaultMediator = await this.mediationRecipient.getDefaultMediator()
+
+    return defaultMediator?.endpoint ?? this.agentConfig.getEndpoint()
   }
 
   public async receiveMessage(inboundPackedMessage: unknown, transport?: Transport) {
     return await this.messageReceiver.receiveMessage(inboundPackedMessage, transport)
   }
 
-  public async getMediatorUrl() {
-    const defaultMediator = await this.mediationRecipient.getDefaultMediator()
-
-    return defaultMediator?.endpoint ?? this.agentConfig.getEndpoint()
+  public async closeAndDeleteWallet() {
+    await this.wallet.close()
+    await this.wallet.delete()
   }
 
   public get injectionContainer() {

@@ -82,6 +82,7 @@ export class AgentConfig {
   public get autoAcceptMediationRequests() {
     return this.initConfig.autoAcceptMediationRequests ?? false
   }
+
   public get defaultMediatorId() {
     return this.initConfig.defaultMediatorId
   }

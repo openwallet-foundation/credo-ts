@@ -18,6 +18,8 @@ import {
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { KeylistUpdateEvent, RoutingEventTypes } from '../routing/RoutingEvents'
+import { DID_COMM_TRANSPORT_QUEUE } from '../../agent/TransportService'
+
 @scoped(Lifecycle.ContainerScoped)
 export class ConnectionsModule {
   private agentConfig: AgentConfig
@@ -82,7 +84,7 @@ export class ConnectionsModule {
       mediatorId: config?.mediatorId,
     })
 
-    if (this.agentConfig.getEndpoint() == 'didcomm:transport/queue') {
+    if (this.agentConfig.getEndpoint() == DID_COMM_TRANSPORT_QUEUE) {
       const {
         message: connectionRequest,
         connectionRecord: connectionRecord,
@@ -250,7 +252,7 @@ export class ConnectionsModule {
   }
 
   private registerListeners() {
-    this.eventEmitter.on(RoutingEventTypes.MediationKeylistUpdate, this.keylistUpdateEvent)
+    this.eventEmitter.on<KeylistUpdateEvent>(RoutingEventTypes.MediationKeylistUpdate, this.keylistUpdateEvent)
   }
 
   private async keylistUpdateEvent({ payload: { mediationRecord, message } }: KeylistUpdateEvent) {

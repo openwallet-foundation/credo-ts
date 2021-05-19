@@ -10,6 +10,13 @@ import { CredentialRepository, CredentialService } from '../../modules/credentia
 import { ProofRepository, ProofService } from '../../modules/proofs'
 import { LedgerService } from '../../modules/ledger'
 import { Symbols } from '../../symbols'
+import {
+  MediatorModule,
+  RecipientModule,
+  MediationRepository,
+  MediatorService,
+  RecipientService,
+} from '../../modules/routing'
 import { IndyWallet } from '../../wallet/IndyWallet'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../../storage/IndyStorageService'
@@ -18,13 +25,6 @@ import { MessageReceiver } from '../MessageReceiver'
 import { Dispatcher } from '../Dispatcher'
 import { EnvelopeService } from '../EnvelopeService'
 import { getBaseConfig } from '../../__tests__/helpers'
-import {
-  MediatorModule,
-  RecipientModule,
-  MediationRepository,
-  MediatorService,
-  RecipientService,
-} from '../../modules/routing'
 
 const config = getBaseConfig('DI Test')
 
@@ -66,8 +66,8 @@ describe('Agent', () => {
       expect(container.resolve(Symbols.Logger)).toBe(config.logger)
       expect(container.resolve(Symbols.Indy)).toBe(config.indy)
       expect(container.resolve(Symbols.FileSystem)).toBe(config.fileSystem)
-      expect(container.resolve(Symbols.StorageService)).toBeInstanceOf(IndyStorageService)
       expect(container.resolve(Symbols.MessageRepository)).toBeInstanceOf(InMemoryMessageRepository)
+      expect(container.resolve(Symbols.StorageService)).toBeInstanceOf(IndyStorageService)
 
       // Agent
       expect(container.resolve(MessageSender)).toBeInstanceOf(MessageSender)
