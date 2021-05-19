@@ -6,6 +6,7 @@ import { BaseRecord } from './BaseRecord'
 import { Wallet } from '../wallet/Wallet'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { Symbols } from '../symbols'
+
 import { handleIndyError, isIndyError } from '../utils/indyError'
 import { RecordNotFoundError, RecordDuplicateError } from '../error'
 
