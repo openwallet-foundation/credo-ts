@@ -1,15 +1,7 @@
 import { Subject } from 'rxjs'
 import { Agent } from '..'
-import {
-  toBeConnectedWith,
-  SubjectInboundTransporter,
-  SubjectOutboundTransporter,
-  waitForBasicMessage,
-  getBaseConfig,
-} from './helpers'
+import { SubjectInboundTransporter, SubjectOutboundTransporter, waitForBasicMessage, getBaseConfig } from './helpers'
 import { ConnectionRecord } from '../modules/connections'
-
-expect.extend({ toBeConnectedWith })
 
 const aliceConfig = getBaseConfig('Agents Alice')
 const bobConfig = getBaseConfig('Agents Bob')

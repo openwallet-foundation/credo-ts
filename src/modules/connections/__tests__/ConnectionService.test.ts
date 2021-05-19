@@ -54,10 +54,11 @@ describe('ConnectionService', () => {
 
   describe('createConnectionWithInvitation', () => {
     it('returns a connection record with values set', async () => {
-      expect.assertions(6)
+      expect.assertions(7)
 
       const { connectionRecord: connectionRecord } = await connectionService.createInvitation()
 
+      expect(connectionRecord.type).toBe('ConnectionRecord')
       expect(connectionRecord.role).toBe(ConnectionRole.Inviter)
       expect(connectionRecord.state).toBe(ConnectionState.Invited)
       expect(connectionRecord.autoAcceptConnection).toBeUndefined()

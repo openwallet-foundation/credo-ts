@@ -53,7 +53,7 @@ export class ConnectionRecord extends BaseRecord implements ConnectionStoragePro
   public autoAcceptConnection?: boolean
   public tags!: ConnectionTags
 
-  public static readonly type: 'ConnectionRecord'
+  public static readonly type = 'ConnectionRecord'
   public readonly type = ConnectionRecord.type
 
   public constructor(props: ConnectionStorageProps) {
