@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { OutboundMessage, OutboundPackage } from '../types'
@@ -39,7 +38,7 @@ export class MessageSender {
     const { verkey, theirKey } = connection
     const endpoint = this.transportService.findEndpoint(connection)
     const message = payload.toJSON()
-    this.logger.info('outboundMessage', { verkey, theirKey, message })
+    this.logger.debug('outboundMessage', { verkey, theirKey, message })
     const responseRequested = outboundMessage.payload.hasReturnRouting()
     const wireMessage = await this.envelopeService.packMessage(outboundMessage)
     return { connection, payload: wireMessage, endpoint, responseRequested }

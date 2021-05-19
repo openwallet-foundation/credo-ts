@@ -5,11 +5,10 @@ import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { createOutboundMessage } from '../helpers'
 import { AgentMessage } from '../AgentMessage'
 import { OutboundTransporter } from '../../transport'
-import { OutboundPackage } from '../..'
-import { OutboundMessage } from '../../types'
+import { OutboundPackage } from '../../types'
 import { ConnectionRecord } from '../../modules/connections'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { getMockConnection } from '../../__tests__/helpers'
+import { getMockConnection, mockFunction } from '../../__tests__/helpers'
 
 jest.mock('../TransportService')
 jest.mock('../EnvelopeService')
@@ -47,10 +46,7 @@ describe('MessageSender', () => {
   }
 
   const enveloperService = new EnvelopeService()
-  const envelopeServicePackMessageMock = enveloperService.packMessage as jest.Mock<
-    Promise<JsonWebKey>,
-    [OutboundMessage]
-  >
+  const envelopeServicePackMessageMock = mockFunction(enveloperService.packMessage)
   envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(wireMessage))
 
   const transportService = new TransportService()
@@ -130,15 +126,3 @@ describe('MessageSender', () => {
     })
   })
 })
-
-/**
- * Returns mock of function with correct type annotations according to original function `fn`.
- * It can be used also for class methods.
- *
- * @param fn function you want to mock
- * @returns mock function with type annotations
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.MockedFunction<T> {
-  return fn as jest.MockedFunction<T>
-}
