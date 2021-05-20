@@ -21,9 +21,11 @@ import { getBaseConfig, getMockConnection, mockFunction } from '../../../__tests
 import { ConnectionRepository } from '../repository/ConnectionRepository'
 import { MediationRepository } from '../../routing/repository/MediationRepository'
 import { RecipientService } from '../../routing/services/RecipientService'
+import { MediationRecord, MediationRole, MediationState } from '../../routing'
+import { waitForEventWithTimeout } from '../../../utils/promiseWithTimeOut'
 
 jest.mock('../repository/ConnectionRepository')
-jest.mock('../repository/MediationRepository')
+jest.mock('../../routing/repository/MediationRepository')
 
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
 const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
@@ -32,6 +34,21 @@ describe('ConnectionService', () => {
   const initConfig = getBaseConfig('ConnectionServiceTest', {
     host: 'http://agent.com',
     port: 8080,
+  })
+
+  const mediatorRecord = new MediationRecord({
+    state: MediationState.Granted,
+    role: MediationRole.Recipient,
+    connectionId: 'fakeConnectionId',
+    recipientKeys: ['fakeRecipientKey'],
+    routingKeys: ['fakeRoutingKey'],
+    endpoint: 'fakeEndpoint',
+    tags: {
+      state: MediationState.Init,
+      role: MediationRole.Recipient,
+      connectionId: 'fakeConnectionId',
+      default: 'false',
+    },
   })
 
   let wallet: Wallet
@@ -130,6 +147,26 @@ describe('ConnectionService', () => {
       expect(aliasDefined.alias).toBe('test-alias')
       expect(aliasUndefined.alias).toBeUndefined()
     })
+
+    it('returns a connection record with mediator information', async () => {
+      expect.assertions(1)
+
+      const mockMediatorFind = mediationRepository.findById as jest.Mock<Promise<MediationRecord>, [string]>
+      mockMediatorFind.mockReturnValue(Promise.resolve(mediatorRecord))
+      const mockWaitForEvent = waitForEventWithTimeout as jest.Mock<Promise<unknown>>
+      mockWaitForEvent.mockReturnValue(Promise.resolve({}))
+      const { message: invitation } = await connectionService.createInvitation({
+        mediatorId: mediatorRecord.id,
+      })
+      expect(invitation).toEqual(
+        expect.objectContaining({
+          label: initConfig.label,
+          recipientKeys: [expect.any(String)],
+          routingKeys: ['fakeRoutingKey'],
+          serviceEndpoint: 'fakeEndpoint',
+        })
+      )
+    })
   })
 
   describe('processInvitation', () => {
@@ -194,6 +231,27 @@ describe('ConnectionService', () => {
 
       expect(aliasDefined.alias).toBe('test-alias')
       expect(aliasUndefined.alias).toBeUndefined()
+    })
+
+    it('returns a connection record with the mediator with mediator information', async () => {
+      expect.assertions(1)
+      const invitation = new ConnectionInvitationMessage({
+        did: 'did:sov:test',
+        label: 'test label',
+      })
+
+      const mockMediatorFind = mediationRepository.findById as jest.Mock<Promise<MediationRecord>, [string]>
+      mockMediatorFind.mockReturnValue(Promise.resolve(mediatorRecord))
+      const mockWaitForEvent = waitForEventWithTimeout as jest.Mock<Promise<unknown>>
+      mockWaitForEvent.mockReturnValue(Promise.resolve({}))
+      const record = await connectionService.processInvitation(invitation, { mediatorId: mediatorRecord.id })
+      expect(record.didDoc.service[0]).toEqual(
+        expect.objectContaining({
+          recipientKeys: [expect.any(String)],
+          routingKeys: ['fakeRoutingKey'],
+          serviceEndpoint: 'fakeEndpoint',
+        })
+      )
     })
   })
 
