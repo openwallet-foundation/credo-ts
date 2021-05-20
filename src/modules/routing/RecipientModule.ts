@@ -45,6 +45,7 @@ export class RecipientModule {
   }
 
   public async init(connections: ConnectionsModule) {
+    this.recipientService.init()
     if (this.agentConfig.mediatorConnectionsInvite) {
       /* --------------------------------
       | Connect to mediator through provided invitation
