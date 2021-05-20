@@ -39,6 +39,15 @@ export class RecipientService {
     this.eventEmitter = eventEmitter
   }
 
+  public async init() {
+    const results = await this.mediatorRepository.findByQuery({ default: 'true' })
+    this.defaultMediator = results ? results[0] : this.defaultMediator
+    if (this.defaultMediator) {
+      // Remove any possible competing mediators set all other record tags' default to false.
+      this.setDefaultMediator(this.defaultMediator)
+    }
+  }
+
   public async createRequest(connection: ConnectionRecord): Promise<[MediationRecord, MediationRequestMessage]> {
     const mediationRecord = await createRecord(
       {
@@ -192,23 +201,36 @@ export class RecipientService {
   }
 
   public async getDefaultMediator() {
-    const results = await this.mediatorRepository.findByQuery({ default: 'true' })
-    this.defaultMediator = results ? results[0] : this.defaultMediator // TODO: call setDefaultMediator
+    if (this.defaultMediator === undefined) {
+      const results = await this.mediatorRepository.findByQuery({ default: 'true' })
+      if (results[0]) {
+        this.setDefaultMediator(results[0])
+      }
+    }
     return this.defaultMediator
   }
 
-  public setDefaultMediator(mediator: MediationRecord) {
-    // TODO: update default tag to be "true", set all other record default tags to "false"
+  public async setDefaultMediator(mediator: MediationRecord) {
+    // Get list of all mediator records. For each record, update default all others to false.
+    // let fetchedRecords: MediationRecord[]
+    const fetchedRecords = (await this.getMediators()) ?? []
+
+    fetchedRecords.forEach(this.updateDefault)
+    // Set record coming in tag to true and then update.
+    mediator.tags['default'] = 'true'
+    this.mediatorRepository.save(mediator)
     this.defaultMediator = mediator
   }
 
-  public clearDefaultMediator() {
-    // TODO: set all record default tags to "false"
+  public async clearDefaultMediator() {
+    const fetchedRecords = (await this.getMediators()) ?? []
+    fetchedRecords.forEach(this.updateDefault)
     delete this.defaultMediator
   }
-}
 
-interface MediationRecipientProps {
-  mediatorConnectionId: string
-  mediatorPublicVerkey: Verkey
+  private updateDefault(record: MediationRecord) {
+    record.tags['default'] = 'false'
+    this.mediatorRepository.save(record)
+    return record
+  }
 }
