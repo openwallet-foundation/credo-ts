@@ -87,7 +87,7 @@ yarn install rn-indy-sdk
 
 ### Using the framework
 
-While the framework is still in early development the best way to know what API the framework exposes is by looking at the [tests](src/__tests__), the [source code](src) or the [samples](samples). As the framework reaches a more mature state, documentation on the usage of the framework will be added.
+While the framework is still in early development the best way to know what API the framework exposes is by looking at the [tests](src/__tests__), the [source code](src) or the [test](test). As the framework reaches a more mature state, documentation on the usage of the framework will be added.
 
 ### Usage in React Native
 
