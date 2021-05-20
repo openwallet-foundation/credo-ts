@@ -20,12 +20,12 @@
  * Original code is from project <https://github.com/blakeembrey/make-error-cause>.
  *
  * Changes to the original code:
- * - Use inspect from `util-inspect` insted of Node.js `util` module.
- * - Remove annotation for instanbul.
+ * - Use inspect from `object-inspect` insted of Node.js `util` module.
+ * - Change `inspect()` method signature
  */
 
-import * as makeError from 'make-error'
-import * as inspect from 'util-inspect'
+import makeError from 'make-error'
+import inspect from 'object-inspect'
 
 /**
  * @internal
@@ -36,7 +36,7 @@ export const SEPARATOR_TEXT = `\n\nThe following exception was the direct cause 
  * Create a new error instance of `cause` property support.
  */
 export class BaseError extends makeError.BaseError {
-  public constructor(message?: string, public cause?: Error) {
+  protected constructor(message?: string, public cause?: Error) {
     super(message)
 
     Object.defineProperty(this, 'cause', {
@@ -46,7 +46,7 @@ export class BaseError extends makeError.BaseError {
     })
   }
 
-  public [inspect.custom || 'inspect']() {
+  public inspect() {
     return fullStack(this)
   }
 }
