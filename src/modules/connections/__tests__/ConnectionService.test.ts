@@ -35,7 +35,7 @@ describe('ConnectionService', () => {
     host: 'http://agent.com',
     port: 8080,
   })
-  
+
   const mediatorRecord = new MediationRecord({
     state: MediationState.Granted,
     role: MediationRole.Recipient,
@@ -50,7 +50,7 @@ describe('ConnectionService', () => {
       default: 'false',
     },
   })
-  
+
   let wallet: Wallet
   let agentConfig: AgentConfig
   let connectionRepository: ConnectionRepository
@@ -147,7 +147,7 @@ describe('ConnectionService', () => {
       expect(aliasDefined.alias).toBe('test-alias')
       expect(aliasUndefined.alias).toBeUndefined()
     })
-    
+
     it('returns a connection record with mediator information', async () => {
       expect.assertions(1)
 

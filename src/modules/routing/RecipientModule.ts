@@ -17,7 +17,7 @@ import { MediationRecord } from '.'
 import { MediationState, MediationStateChangedEvent } from '../..'
 import { ConnectionsModule } from '../connections/ConnectionsModule'
 import { EventEmitter } from '../../agent/EventEmitter'
-import { RoutingEventTypes } from './RoutingEvents'
+import { KeylistUpdateEvent, RoutingEventTypes } from './RoutingEvents'
 import { AriesFrameworkError } from '../../error'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -42,6 +42,7 @@ export class RecipientModule {
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.registerHandlers(dispatcher)
+    this.registerListeners()
   }
 
   public async init(connections: ConnectionsModule) {
@@ -177,6 +178,18 @@ export class RecipientModule {
     dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.recipientService))
     dispatcher.registerHandler(new MediationGrantHandler(this.recipientService))
     dispatcher.registerHandler(new MediationDenyHandler(this.recipientService))
-    dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.recipientService))
+    //dispatcher.registerHandler(new KeylistListHandler(this.recipientService)) // TODO: write this
   }
+
+  private registerListeners() {
+    this.eventEmitter.on<KeylistUpdateEvent>(RoutingEventTypes.MediationKeylistUpdate, this.keylistUpdateEvent)
+  }
+
+  private async keylistUpdateEvent({ payload: { mediationRecord, message } }: KeylistUpdateEvent) {
+    // new did has been created and mediator needs to be updated with the public key.
+    const connectionRecord: ConnectionRecord = await this.connectionService.getById(mediationRecord.connectionId)
+    const outbound = createOutboundMessage(connectionRecord, message)
+    await this.messageSender.sendMessage(outbound)
+  }
+
 }
