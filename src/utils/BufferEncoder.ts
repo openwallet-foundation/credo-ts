@@ -7,8 +7,8 @@ export class BufferEncoder {
    *
    * @param buffer the buffer to encode into base64 string
    */
-  public static toBase64(buffer: Buffer) {
-    return buffer.toString('base64')
+  public static toBase64(buffer: Buffer | Uint8Array) {
+    return Buffer.from(buffer).toString('base64')
   }
 
   /**

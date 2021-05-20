@@ -3,10 +3,9 @@ import WebSocket from 'ws'
 import cors from 'cors'
 import { v4 as uuid } from 'uuid'
 import config from './config'
-import { Agent, InboundTransporter, WsOutboundTransporter } from '../src'
+import { Agent, InboundTransporter, WebSocketTransportSession, WsOutboundTransporter } from '../src'
 import { DidCommMimeType } from '../src/types'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
-import { WebSocketTransport } from '../src/agent/TransportService'
 import testLogger from '../src/__tests__/logger'
 
 const logger = testLogger
@@ -40,8 +39,8 @@ class WsInboundTransporter implements InboundTransporter {
     socket.addEventListener('message', async (event: any) => {
       logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
       // @ts-expect-error Property 'dispatchEvent' is missing in type WebSocket imported from 'ws' module but required in type 'WebSocket'.
-      const transport = new WebSocketTransport('', socket)
-      const outboundMessage = await agent.receiveMessage(JSON.parse(event.data), transport)
+      const session = new WebSocketTransportSession(socket)
+      const outboundMessage = await agent.receiveMessage(JSON.parse(event.data), session)
       if (outboundMessage) {
         socket.send(JSON.stringify(outboundMessage.payload))
       }

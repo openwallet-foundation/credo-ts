@@ -61,7 +61,7 @@ export class JsonEncoder {
    *
    * @param buffer the buffer to decode into json
    */
-  public static fromBuffer(buffer: Buffer) {
-    return JsonEncoder.fromString(buffer.toString('utf-8'))
+  public static fromBuffer(buffer: Buffer | Uint8Array) {
+    return JsonEncoder.fromString(Buffer.from(buffer).toString('utf-8'))
   }
 }
