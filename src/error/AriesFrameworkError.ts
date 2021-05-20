@@ -1,4 +1,4 @@
-import { BaseError } from 'make-error-cause'
+import { BaseError } from './BaseError'
 
 export class AriesFrameworkError extends BaseError {
   /**
