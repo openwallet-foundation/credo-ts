@@ -192,5 +192,4 @@ export class RecipientModule {
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)
   }
-
 }

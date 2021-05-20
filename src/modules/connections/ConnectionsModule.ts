@@ -249,5 +249,4 @@ export class ConnectionsModule {
     dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
     dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService))
   }
-
 }
