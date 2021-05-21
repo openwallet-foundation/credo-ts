@@ -1,7 +1,6 @@
-import { isNodeJS } from './environment'
+import { isNodeJS, isReactNative } from './environment'
 
-// RN exposes global WebSocket
-let WebSocket = global.WebSocket
+let WebSocket
 
 // NodeJS doesn't have WebSocket by default
 if (!WebSocket && isNodeJS()) {
@@ -9,6 +8,10 @@ if (!WebSocket && isNodeJS()) {
   const nodeWebSocket = require('ws')
 
   WebSocket = nodeWebSocket
+} else if (!WebSocket && isReactNative()) {
+  WebSocket = global.WebSocket
+} else {
+  WebSocket = window.WebSocket.bind(window)
 }
 
 export { WebSocket }
