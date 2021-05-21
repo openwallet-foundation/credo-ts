@@ -1,10 +1,6 @@
 import { isNodeJS, isReactNative } from './environment'
 
-type Fetch = {
-  (input: RequestInfo, init?: RequestInit): Promise<Response>
-}
-
-let fetch: Fetch
+let fetch: typeof global.fetch
 let Headers
 let Request
 let Response
