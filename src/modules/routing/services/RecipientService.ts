@@ -9,13 +9,14 @@ import {
   MediationDenyMessage,
   MediationRequestMessage,
   KeylistUpdateResponseMessage,
+  KeylistUpdated,
 } from '../messages'
 
 import { ConnectionRecord } from '../../connections'
-import { RoutingEventTypes, MediationKeylistEvent, MediationStateChangedEvent } from '../RoutingEvents'
+import { RoutingEventTypes, MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 
-import { assertConnection, createRecord, MediationRecord, MediationRole, MediationState } from '..'
+import { assertConnection, createRecord, KeylistState, MediationRecord, MediationRole, MediationState } from '..'
 import { Wallet } from '../../../wallet/Wallet'
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -120,16 +121,36 @@ export class RecipientService {
       throw new Error(`mediation record for  ${connection.id} not found!`)
     }
     const keylist = messageContext.message.updated
-    // TODO: update keylist in mediationRecord...
-    // for ...
-    // await this.mediatorRepository.update(mediationRecord)
-    this.eventEmitter.emit<MediationKeylistEvent>({
-      type: RoutingEventTypes.MediationKeylist,
+
+    // update keylist in mediationRecord
+    for (const update of keylist) {
+      if (update.action === KeylistUpdateAction.add) {
+        await this.saveRoute(update.recipientKey, mediationRecord)
+      } else if (update.action === KeylistUpdateAction.remove) {
+        await this.removeRoute(update.recipientKey, mediationRecord)
+      }
+    }
+
+    this.eventEmitter.emit<KeylistUpdatedEvent>({
+      type: RoutingEventTypes.MediationKeylistUpdated,
       payload: {
         mediationRecord,
         keylist,
       },
     })
+  }
+
+  public async saveRoute(recipientKey: Verkey, mediationRecord: MediationRecord){
+    mediationRecord.recipientKeys.push(recipientKey)
+    this.mediatorRepository.update(mediationRecord)
+  }
+
+  public async removeRoute(recipientKey: Verkey, mediationRecord: MediationRecord) {
+    const index = mediationRecord.recipientKeys.indexOf(recipientKey, 0)
+    if (index > -1) {
+      mediationRecord.recipientKeys.splice(index, 1)
+    }
+    this.mediatorRepository.update(mediationRecord)
   }
 
   public async processMediationDeny(messageContext: InboundMessageContext<MediationDenyMessage>) {

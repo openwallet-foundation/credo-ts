@@ -12,6 +12,7 @@ export enum RoutingEventTypes {
   MediationGranted = 'MediationGranted',
   MediationKeylist = 'MediationKeylist',
   MediationKeylistUpdate = 'MediationKeylistUpdate',
+  MediationKeylistUpdated = 'MediationKeylistUpdated',
 }
 
 export interface MediationGrantedEvent extends BaseEvent {
@@ -44,5 +45,13 @@ export interface KeylistUpdateEvent extends BaseEvent {
   payload: {
     mediationRecord: MediationRecord
     message: KeylistUpdateMessage
+  }
+}
+
+export interface KeylistUpdatedEvent extends BaseEvent {
+  type: typeof RoutingEventTypes.MediationKeylistUpdated
+  payload: {
+    mediationRecord: MediationRecord
+    keylist: KeylistUpdated[]
   }
 }
