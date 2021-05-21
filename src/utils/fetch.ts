@@ -1,12 +1,16 @@
 import { isNodeJS, isReactNative } from './environment'
 
-let fetch
+type Fetch = {
+  (input: RequestInfo, init?: RequestInit): Promise<Response>
+}
+
+let fetch: Fetch
 let Headers
 let Request
 let Response
 
 // NodeJS doesn't have fetch by default
-if (!fetch && isNodeJS()) {
+if (isNodeJS()) {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const nodeFetch = require('node-fetch')
 
@@ -14,7 +18,7 @@ if (!fetch && isNodeJS()) {
   Headers = nodeFetch.Headers
   Request = nodeFetch.Request
   Response = nodeFetch.Response
-} else if (!fetch && isReactNative()) {
+} else if (isReactNative()) {
   fetch = global.fetch
   Headers = global.Headers
   Request = global.Request

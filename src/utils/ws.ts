@@ -1,14 +1,23 @@
 import { isNodeJS, isReactNative } from './environment'
 
-let WebSocket
+type WS = {
+  new (url: string, protocols?: string | string[] | undefined): WebSocket
+  prototype: WebSocket
+  readonly CLOSED: number
+  readonly CLOSING: number
+  readonly CONNECTING: number
+  readonly OPEN: number
+}
+
+let WebSocket: WS
 
 // NodeJS doesn't have WebSocket by default
-if (!WebSocket && isNodeJS()) {
+if (isNodeJS()) {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const nodeWebSocket = require('ws')
 
   WebSocket = nodeWebSocket
-} else if (!WebSocket && isReactNative()) {
+} else if (isReactNative()) {
   WebSocket = global.WebSocket
 } else {
   WebSocket = window.WebSocket.bind(window)
