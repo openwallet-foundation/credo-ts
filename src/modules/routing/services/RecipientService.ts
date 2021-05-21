@@ -239,7 +239,7 @@ export class RecipientService {
     fetchedRecords.forEach(this.updateDefault)
     // Set record coming in tag to true and then update.
     mediator.tags['default'] = 'true'
-    this.mediatorRepository.save(mediator)
+    this.mediatorRepository.update(mediator)
     this.defaultMediator = mediator
   }
 
@@ -251,7 +251,7 @@ export class RecipientService {
 
   private updateDefault(record: MediationRecord) {
     record.tags['default'] = 'false'
-    this.mediatorRepository.save(record)
+    this.mediatorRepository.update(record)
     return record
   }
 }
