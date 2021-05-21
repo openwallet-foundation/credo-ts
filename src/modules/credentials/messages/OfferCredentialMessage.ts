@@ -13,7 +13,7 @@ export const INDY_CREDENTIAL_OFFER_ATTACHMENT_ID = 'libindy-cred-offer-0'
 export interface OfferCredentialMessageOptions {
   id?: string
   comment?: string
-  attachments: Attachment[]
+  offerAttachments: Attachment[]
   credentialPreview: CredentialPreview
 }
 
@@ -30,7 +30,7 @@ export class OfferCredentialMessage extends AgentMessage {
       this.id = options.id || this.generateId()
       this.comment = options.comment
       this.credentialPreview = options.credentialPreview
-      this.attachments = options.attachments
+      this.offerAttachments = options.offerAttachments
     }
   }
 
@@ -52,10 +52,10 @@ export class OfferCredentialMessage extends AgentMessage {
   @ValidateNested({
     each: true,
   })
-  public attachments!: Attachment[]
+  public offerAttachments!: Attachment[]
 
   public get indyCredentialOffer(): CredOffer | null {
-    const attachment = this.attachments.find((attachment) => attachment.id === INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
+    const attachment = this.offerAttachments.find((attachment) => attachment.id === INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
 
     // Return null if attachment is not found
     if (!attachment?.data?.base64) {

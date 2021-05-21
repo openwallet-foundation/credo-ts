@@ -216,7 +216,7 @@ export class CredentialService {
     })
     const credentialOfferMessage = new OfferCredentialMessage({
       comment,
-      attachments: [attachment],
+      offerAttachments: [attachment],
       credentialPreview: preview,
     })
     credentialOfferMessage.setThread({
@@ -260,7 +260,7 @@ export class CredentialService {
     })
     const credentialOfferMessage = new OfferCredentialMessage({
       comment,
-      attachments: [attachment],
+      offerAttachments: [attachment],
       credentialPreview: preview,
     })
 
@@ -404,7 +404,7 @@ export class CredentialService {
     const { comment } = options
     const credentialRequest = new RequestCredentialMessage({
       comment,
-      attachments: [attachment],
+      requestAttachments: [attachment],
     })
     credentialRequest.setThread({ threadId: credentialRecord.tags.threadId })
 
@@ -523,7 +523,7 @@ export class CredentialService {
     const { comment } = options
     const issueCredentialMessage = new IssueCredentialMessage({
       comment,
-      attachments: [credentialAttachment],
+      credentialAttachments: [credentialAttachment],
     })
     issueCredentialMessage.setThread({
       threadId: credentialRecord.tags.threadId,

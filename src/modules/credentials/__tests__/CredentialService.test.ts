@@ -112,7 +112,7 @@ const mockCredentialRecord = ({
     offerMessage: new OfferCredentialMessage({
       comment: 'some comment',
       credentialPreview: credentialPreview,
-      attachments: [offerAttachment],
+      offerAttachments: [offerAttachment],
     }),
     id,
     credentialAttributes: credentialAttributes || credentialPreview.attributes,
@@ -242,7 +242,7 @@ describe('CredentialService', () => {
       credentialOfferMessage = new OfferCredentialMessage({
         comment: 'some comment',
         credentialPreview: credentialPreview,
-        attachments: [offerAttachment],
+        offerAttachments: [offerAttachment],
       })
       messageContext = new InboundMessageContext(credentialOfferMessage, {
         connection,
@@ -386,7 +386,7 @@ describe('CredentialService', () => {
 
       const credentialRequest = new RequestCredentialMessage({
         comment: 'abcd',
-        attachments: [requestAttachment],
+        requestAttachments: [requestAttachment],
       })
       credentialRequest.setThread({ threadId: 'somethreadid' })
       messageContext = new InboundMessageContext(credentialRequest, {
@@ -458,7 +458,7 @@ describe('CredentialService', () => {
         state: CredentialState.RequestReceived,
         requestMessage: new RequestCredentialMessage({
           comment: 'abcd',
-          attachments: [requestAttachment],
+          requestAttachments: [requestAttachment],
         }),
         tags: { threadId },
       })
@@ -534,7 +534,7 @@ describe('CredentialService', () => {
         credentialRequest: credReq,
         credentialValues: {},
       })
-      const [responseAttachment] = credentialResponse.attachments
+      const [responseAttachment] = credentialResponse.credentialAttachments
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       expect(JsonEncoder.fromBase64(responseAttachment.data.base64!)).toEqual(cred)
     })
@@ -564,7 +564,7 @@ describe('CredentialService', () => {
                 state,
                 tags: { threadId },
                 requestMessage: new RequestCredentialMessage({
-                  attachments: [requestAttachment],
+                  requestAttachments: [requestAttachment],
                 }),
               })
             )
@@ -582,14 +582,14 @@ describe('CredentialService', () => {
       credential = mockCredentialRecord({
         state: CredentialState.RequestSent,
         requestMessage: new RequestCredentialMessage({
-          attachments: [requestAttachment],
+          requestAttachments: [requestAttachment],
         }),
         metadata: { requestMetadata: { cred_req: 'meta-data' } },
       })
 
       const credentialResponse = new IssueCredentialMessage({
         comment: 'abcd',
-        attachments: [credentialAttachment],
+        credentialAttachments: [credentialAttachment],
       })
       credentialResponse.setThread({ threadId: 'somethreadid' })
       messageContext = new InboundMessageContext(credentialResponse, {

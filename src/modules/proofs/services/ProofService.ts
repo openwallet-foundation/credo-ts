@@ -242,7 +242,7 @@ export class ProofService {
     })
     const requestPresentationMessage = new RequestPresentationMessage({
       comment: config?.comment,
-      attachments: [attachment],
+      requestPresentationAttachments: [attachment],
     })
     requestPresentationMessage.setThread({
       threadId: proofRecord.tags.threadId,
@@ -285,7 +285,7 @@ export class ProofService {
     })
     const requestPresentationMessage = new RequestPresentationMessage({
       comment: config?.comment,
-      attachments: [attachment],
+      requestPresentationAttachments: [attachment],
     })
 
     // Create record
@@ -409,7 +409,7 @@ export class ProofService {
     })
     const presentationMessage = new PresentationMessage({
       comment: config?.comment,
-      attachments: [attachment],
+      presentationAttachments: [attachment],
     })
     presentationMessage.setThread({ threadId: proofRecord.tags.threadId })
 

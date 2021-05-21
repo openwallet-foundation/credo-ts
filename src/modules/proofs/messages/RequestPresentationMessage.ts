@@ -11,7 +11,7 @@ import { PresentProofMessageType } from './PresentProofMessageType'
 export interface RequestPresentationOptions {
   id?: string
   comment?: string
-  attachments: Attachment[]
+  requestPresentationAttachments: Attachment[]
 }
 
 export const INDY_PROOF_REQUEST_ATTACHMENT_ID = 'libindy-request-presentation-0'
@@ -28,7 +28,7 @@ export class RequestPresentationMessage extends AgentMessage {
     if (options) {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
-      this.attachments = options.attachments
+      this.requestPresentationAttachments = options.requestPresentationAttachments
     }
   }
 
@@ -52,10 +52,12 @@ export class RequestPresentationMessage extends AgentMessage {
   @ValidateNested({
     each: true,
   })
-  public attachments!: Attachment[]
+  public requestPresentationAttachments!: Attachment[]
 
   public get indyProofRequest(): ProofRequest | null {
-    const attachment = this.attachments.find((attachment) => attachment.id === INDY_PROOF_REQUEST_ATTACHMENT_ID)
+    const attachment = this.requestPresentationAttachments.find(
+      (attachment) => attachment.id === INDY_PROOF_REQUEST_ATTACHMENT_ID
+    )
 
     // Return null if attachment is not found
     if (!attachment?.data?.base64) {
