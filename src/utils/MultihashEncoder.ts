@@ -6,10 +6,12 @@ export class MultihashEncoder {
    *
    * Encodes a buffer into a hash
    *
-   * @param {Uint8Array} buffer the buffer that has to be encoded
-   * @param {string} hashName the hashing algorithm, 'sha2-256'
+   * @param buffer the buffer that has to be encoded
+   * @param hashName the hashing algorithm, 'sha2-256'
+   *
+   * @returns a multihash
    */
-  public static encode(buffer: Uint8Array, hashName: 'sha2-256') {
+  public static encode(buffer: Uint8Array, hashName: 'sha2-256'): Uint8Array {
     return multihash.encode(buffer, hashName)
   }
 
@@ -17,10 +19,12 @@ export class MultihashEncoder {
    *
    * Decodes the multihash
    *
-   * @param {Uint8Array} data the multihash that has to be decoded
+   * @param data the multihash that has to be decoded
+   *
+   * @returns object with the data and the hashing algorithm
    */
   public static decode(data: Uint8Array): { data: Uint8Array; hashName: string } {
-    if (this.validate(data)) {
+    if (this.isValid(data)) {
       const decodedHash = multihash.decode(data)
       return { data: decodedHash.digest, hashName: decodedHash.name }
     }
@@ -31,10 +35,11 @@ export class MultihashEncoder {
    *
    * Validates if it is a valid mulithash
    *
-   * @param {Uint8Array} data the multihash that needs to be validated
-   * @returns {boolean} whether the multihash is valid
+   * @param data the multihash that needs to be validated
+   *
+   * @returns a boolean whether the multihash is valid
    */
-  public static validate(data: Uint8Array) {
+  public static isValid(data: Uint8Array): boolean {
     try {
       multihash.validate(data)
       return true

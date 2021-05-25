@@ -1,9 +1,9 @@
 import { Buffer } from 'buffer'
-import { HashlinkEncoder } from '../hashlinkEncoder'
+import { HashlinkEncoder } from '../HashlinkEncoder'
 
 const validData = {
   data: Buffer.from('Hello World!'),
-  metaData: {
+  metadata: {
     urls: ['https://example.org/hw.txt'],
     contentType: 'text/plain',
   },
@@ -11,7 +11,7 @@ const validData = {
 
 const invalidData = {
   data: Buffer.from('Hello World!'),
-  metaData: {
+  metadata: {
     unknownKey: 'unkownValue',
     contentType: 'image/png',
   },
@@ -34,13 +34,13 @@ describe('HashlinkEncoder', () => {
     })
 
     it('Encodes string and metadata to hashlink', () => {
-      const hashlink = HashlinkEncoder.encode(validData.data, 'sha2-256', 'base58btc', validData.metaData)
+      const hashlink = HashlinkEncoder.encode(validData.data, 'sha2-256', 'base58btc', validData.metadata)
       expect(hashlink).toEqual(validHashlink)
     })
 
     it('Encodes invalid metadata in hashlink', () => {
       expect(() => {
-        HashlinkEncoder.encode(validData.data, 'sha2-256', 'base58btc', invalidData.metaData)
+        HashlinkEncoder.encode(validData.data, 'sha2-256', 'base58btc', invalidData.metadata)
       }).toThrow(/^Invalid metadata: /)
     })
   })
@@ -67,12 +67,12 @@ describe('HashlinkEncoder', () => {
     })
   })
 
-  describe('validate()', () => {
+  describe('isValid()', () => {
     it('Validate hashlink', () => {
-      expect(HashlinkEncoder.validate(validHashlink)).toEqual(true)
+      expect(HashlinkEncoder.isValid(validHashlink)).toEqual(true)
     })
     it('Validate invalid hashlink', () => {
-      expect(HashlinkEncoder.validate(invalidHashlink)).toEqual(false)
+      expect(HashlinkEncoder.isValid(invalidHashlink)).toEqual(false)
     })
   })
 })

@@ -28,15 +28,13 @@ describe('MultiBaseEncoder', () => {
     })
   })
 
-  describe('validate()', () => {
+  describe('isValid()', () => {
     it('Validates valid multibase', () => {
-      const bool = MultibaseEncoder.validate(validMultibase)
-      expect(bool).toEqual(true)
+      expect(MultibaseEncoder.isValid(validMultibase)).toEqual(true)
     })
 
     it('Validates invalid multibase', () => {
-      const bool = MultibaseEncoder.validate(invalidMultibase)
-      expect(bool).toEqual(false)
+      expect(MultibaseEncoder.isValid(invalidMultibase)).toEqual(false)
     })
   })
 })

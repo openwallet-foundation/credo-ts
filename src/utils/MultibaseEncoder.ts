@@ -26,7 +26,7 @@ export class MultibaseEncoder {
    * @returns {string} encodingAlgorithm name of the encoding algorithm
    */
   public static decode(data: string | Uint8Array): { data: Uint8Array; baseName: string } {
-    if (this.validate(data)) {
+    if (this.isValid(data)) {
       const baseName = multibase.encodingFromData(data).name
       return { data: multibase.decode(data), baseName }
     }
@@ -41,7 +41,7 @@ export class MultibaseEncoder {
    *
    * @returns {boolean} bool whether the multibase value is encoded
    */
-  public static validate(data: string | Uint8Array): boolean {
+  public static isValid(data: string | Uint8Array): boolean {
     return multibase.isEncoded(data) ? true : false
   }
 }

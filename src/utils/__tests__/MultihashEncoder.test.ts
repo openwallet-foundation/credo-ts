@@ -28,15 +28,13 @@ describe('multihash', () => {
     })
   })
 
-  describe('validate()', () => {
+  describe('isValid()', () => {
     it('Validates valid multihash', () => {
-      const bool = MultihashEncoder.validate(validMultihash)
-      expect(bool).toEqual(true)
+      expect(MultihashEncoder.isValid(validMultihash)).toEqual(true)
     })
 
     it('Validates invalid multihash', () => {
-      const bool = MultihashEncoder.validate(invalidMultihash)
-      expect(bool).toEqual(false)
+      expect(MultihashEncoder.isValid(invalidMultihash)).toEqual(false)
     })
   })
 })
