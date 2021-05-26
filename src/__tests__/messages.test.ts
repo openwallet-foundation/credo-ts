@@ -25,3 +25,8 @@ import { JsonTransformer } from '../utils/JsonTransformer'
 import testLogger from './logger'
 
 // Adding tests here...
+describe('place holder for message tests', () => {
+  test('pass', async () => {
+    expect(true).toBe(true)
+  })
+})
