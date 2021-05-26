@@ -69,7 +69,7 @@ export class ConnectionService {
     mediatorId?: string
     routingKeys?: string[]
     endpoint?: string
-  }): Promise<ConnectionProtocolMsgReturnType<ConnectionInvitationMessage>> {
+  }){
     // TODO: public did, multi use
     const connectionRecord = await this.createConnection({
       role: ConnectionRole.Inviter,

@@ -152,10 +152,10 @@ describe('ConnectionService', () => {
     it('returns a connection record with mediator information', async () => {
       expect.assertions(1)
 
-      const mockMediatorFind = mediationRepository.findById as jest.Mock<Promise<MediationRecord>, [string]>
-      mockMediatorFind.mockReturnValue(Promise.resolve(mediatorRecord))
-      const mockWaitForEvent = waitForEventWithTimeout as jest.Mock<Promise<unknown>>
-      mockWaitForEvent.mockReturnValue(Promise.resolve({}))
+      mockFunction(mediationRepository.findById).mockReturnValue(
+        Promise.resolve(mediatorRecord)
+      )
+      mockFunction(waitForEventWithTimeout).mockReturnValue(Promise.resolve({}))
       const { message: invitation } = await connectionService.createInvitation({
         mediatorId: mediatorRecord.id,
       })
@@ -241,7 +241,7 @@ describe('ConnectionService', () => {
         label: 'test label',
       })
 
-      mockFunction(mediationRepository.getById).mockReturnValue(
+      mockFunction(mediationRepository.findById).mockReturnValue(
         Promise.resolve(mediatorRecord)
       )
       mockFunction(waitForEventWithTimeout).mockReturnValue(Promise.resolve({}))

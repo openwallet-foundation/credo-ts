@@ -224,7 +224,7 @@ export class RecipientService {
   public async getDefaultMediator() {
     if (this.defaultMediator === undefined) {
       const results = await this.mediatorRepository.findByQuery({ default: 'true' })
-      if (results[0]) {
+      if (Array.isArray(results) && results.length) {
         this.setDefaultMediator(results[0])
       }
     }
@@ -239,7 +239,7 @@ export class RecipientService {
     fetchedRecords.forEach(this.updateDefault)
     // Set record coming in tag to true and then update.
     mediator.tags['default'] = 'true'
-    this.mediatorRepository.update(mediator)
+    this.mediatorRepository.save(mediator) // TODO: should this be update not save?
     this.defaultMediator = mediator
   }
 
