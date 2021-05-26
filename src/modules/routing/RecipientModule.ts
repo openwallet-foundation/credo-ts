@@ -81,16 +81,13 @@ export class RecipientModule {
     }
   }
 
-  public async downloadMessages(mediatorConnection?: ConnectionRecord) {
-    const mediationRecord: MediationRecord | undefined = await this.recipientService.getDefaultMediator()
-    if (mediationRecord) {
-      let connection: ConnectionRecord = await this.connectionService.getById(mediationRecord.connectionId)
-      connection = assertConnection(connection, 'connection not found for default mediator')
-      const batchPickupMessage = new BatchPickupMessage({ batchSize: 10 })
-      const outboundMessage = createOutboundMessage(connection, batchPickupMessage)
-      outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
-      await this.messageSender.sendMessage(outboundMessage)
-    }
+  public async downloadMessages(mediatorConnection: ConnectionRecord) {
+    let connection = mediatorConnection ?? await this.getDefaultMediatorConnection()
+    connection = assertConnection(connection, 'connection not found for default mediator')
+    const batchPickupMessage = new BatchPickupMessage({ batchSize: 10 })
+    const outboundMessage = createOutboundMessage(connection, batchPickupMessage)
+    outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
+    await this.messageSender.sendMessage(outboundMessage)
   }
 
   public async requestMediation(connection: ConnectionRecord) {

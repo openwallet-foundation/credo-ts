@@ -128,7 +128,7 @@ describe('Present Proof', () => {
 
   test('Alice starts with proof proposal to Faber', async () => {
     testLogger.test('Alice sends presentation proposal to Faber')
-    let aliceProofRecord = await aliceAgent.proofs.proposeProof(aliceConnection.id, presentationPreview)
+    let aliceProofRecord =  await aliceAgent.proofs.proposeProof(aliceConnection.id, presentationPreview)
 
     testLogger.test('Faber waits for presentation proposal from Alice')
     let faberProofRecord = await waitForProofRecord(faberAgent, {
