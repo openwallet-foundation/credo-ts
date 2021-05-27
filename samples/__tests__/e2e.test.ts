@@ -1,6 +1,14 @@
 import express, { Express } from 'express'
-import { Agent,  assertConnection,  ConnectionRecord, ConnectionState, InboundTransporter, MediationState, WsOutboundTransporter } from '../../src'
-import {HttpOutboundTransporter} from '../mediation-server'
+import {
+  Agent,
+  assertConnection,
+  ConnectionRecord,
+  ConnectionState,
+  InboundTransporter,
+  MediationState,
+  WsOutboundTransporter,
+} from '../../src'
+import { HttpOutboundTransporter } from '../mediation-server'
 import { get } from '../http'
 import { getBaseConfig, sleep, waitForBasicMessage } from '../../src/__tests__/helpers'
 import logger from '../../src/__tests__/logger'
@@ -35,8 +43,6 @@ describe('with mediator', () => {
 
   const messageRepository = new InMemoryMessageRepository()
 
-  const messageReceiver = new HttpInboundTransporter(app)
-
   /*let recipientConfig: AgentConfig
   let recipientWallet: Wallet
 
@@ -57,48 +63,25 @@ describe('with mediator', () => {
     await mediatorAgent.closeAndDeleteWallet()
   })
 
-  test('recipient and mediator establish a connection and request mediation', async () => {
+  test('recipient and mediator establish a connection and granted mediation', async () => {
     recipientAgent = new Agent(recipientConfig)
-    recipientAgent.setInboundTransporter(new PollingInboundTransporter())
     recipientAgent.setOutboundTransporter(new HttpOutboundTransporter(recipientAgent))
     await recipientAgent.init()
 
-    mediatorAgent = new Agent(mediatorConfig,messageRepository)
+    mediatorAgent = new Agent(mediatorConfig, messageRepository)
     mediatorAgent.setInboundTransporter(new HttpInboundTransporter(app))
     mediatorAgent.setOutboundTransporter(new HttpOutboundTransporter(mediatorAgent, messageRepository))
     await mediatorAgent.init()
 
-    recipientAgent.inboundTransporter.init()
-
-    const recipientInboundConnection = await recipientAgent.mediationRecipient.getDefaultMediatorConnection()
-    const recipientKeyAtMediator = recipientInboundConnection?.verkey
-    logger.test('recipientInboundConnection', recipientInboundConnection)
-
-    const bobInbound = mediatorAgent.mediationRecipient.getInboundConnection()
-    const bobInboundConnection = bobInbound?.connection
-    const bobKeyAtBobMediator = bobInboundConnection?.verkey
-    logger.test('bobInboundConnection', bobInboundConnection)
+    recipientAgent.setInboundTransporter(new PollingInboundTransporter(recipientAgent, mediatorAgent))
+    recipientAgent.inboundTransporter?.start(recipientAgent)
     const recipientMediatorConnection = await recipientAgent.mediationRecipient.getDefaultMediatorConnection()
-    const bobMediatorConnection = await mediatorAgent.mediationRecipient.getDefaultMediatorConnection()
-
-    // TODO This endpoint currently exists at mediator only for the testing purpose. It returns mediator's part of the pairwise connection.
-    const mediatorConnectionAtMediator = JSON.parse(
-      await get(`${recipientAgent.getMediatorUrl()}/api/connections/${bobMediatorConnection?.verkey}`)
-    )
-    const mediatorConnectionAtBobMediator = JSON.parse(
-      await get(`${mediatorAgent.getMediatorUrl()}/api/connections/${bobMediatorConnection?.verkey}`)
-    )
-
-    logger.test('mediatorConnectionAtMediator', mediatorConnectionAtMediator)
-    logger.test('mediatorConnectionAtBobMediator', mediatorConnectionAtBobMediator)
-
-    expect(recipientMediatorConnection).toBeConnectedWith(mediatorConnectionAtMediator)
-    expect(bobMediatorConnection).toBeConnectedWith(mediatorConnectionAtBobMediator)
+    expect(recipientMediatorConnection)
   })
 
   test('recipient and Bob make a connection via mediator', async () => {
     // eslint-disable-next-line prefer-const
-    let { invitation, connectionRecord} = await recipientAgent.connections.createConnection()
+    let { invitation, connectionRecord } = await recipientAgent.connections.createConnection()
 
     let mediatorAgentConnection = await mediatorAgent.connections.receiveInvitation(invitation)
 
@@ -108,7 +91,6 @@ describe('with mediator', () => {
 
     expect(recipientAgentConnection).toBeConnectedWith(mediatorAgentConnection)
     expect(mediatorAgentConnection).toBeConnectedWith(recipientAgentConnection)
-
   })
 
   test('Send a message from recipient to Bob via mediator', async () => {
@@ -149,7 +131,7 @@ describe('websockets with mediator', () => {
     recipientAgent.setOutboundTransporter(new WsOutboundTransporter(recipientAgent))
     await recipientAgent.init()
 
-    mediatorAgent = new Agent(bobConfig)
+    mediatorAgent = new Agent(mediatorConfig)
     mediatorAgent.setInboundTransporter(new WsInboundTransporter())
     mediatorAgent.setOutboundTransporter(new WsOutboundTransporter(mediatorAgent))
     await mediatorAgent.init()
@@ -186,33 +168,38 @@ class HttpInboundTransporter implements InboundTransporter {
 class PollingInboundTransporter implements InboundTransporter {
   public stop: boolean
   public connection?: ConnectionRecord
+  public recipient: Agent
+  public mediator: Agent
 
-  public constructor() {
+  public constructor(recipient: Agent, mediator: Agent) {
     this.stop = true
-  }
-
-  public async init(recipient:Agent, mediator:Agent){
-    await this.registerMediator(recipient, mediator)
+    this.recipient = recipient
+    this.mediator = mediator
   }
 
   public async start(agent: Agent) {
+    await this.registerMediator(this.recipient, this.mediator)
     if (this.connection) {
       this.stop = false
       this.pollDownloadMessages(agent, this.connection)
     }
   }
 
-  public async registerMediator(recipient: Agent, mediator:Agent) {
-    const mediatorUrl = mediator.getMediatorUrl() || ''
+  public async registerMediator(recipient: Agent, mediator: Agent) {
     const { invitation, connectionRecord } = await mediator.connections.createConnection()
-    let recipientConnection = await recipient.connections.receiveInvitation(invitation)
+    const recipientConnection = await recipient.connections.receiveInvitation(invitation)
     const mediatorAgentConnection = await mediator.connections.returnWhenIsConnected(connectionRecord.id)
     const recipientAgentConnection = await recipient.connections.returnWhenIsConnected(recipientConnection.id)
-    const mediationRecord = await recipient.mediationRecipient.requestAndWaitForAcception(connectionRecord, undefined, 2000)
+    const mediationRecord = await recipient.mediationRecipient.requestAndWaitForAcception(
+      connectionRecord,
+      undefined,
+      2000
+    )
     // expects should be a independent test, but this will do for now...
     expect(mediationRecord.state).toBe(MediationState.Granted)
     expect(recipientAgentConnection).toBeConnectedWith(mediatorAgentConnection)
     expect(mediatorAgentConnection).toBeConnectedWith(recipientAgentConnection)
+    this.connection = recipientAgentConnection
     // this.pollDownloadMessages(recipient, recipientConnection)
   }
 
@@ -234,8 +221,5 @@ class WsInboundTransporter implements InboundTransporter {
     await this.registerMediator(agent)
   }
 
-  private async registerMediator(agent: Agent) {
-
-
-  }
+  private async registerMediator(agent: Agent) {}
 }

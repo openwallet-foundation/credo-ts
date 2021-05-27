@@ -38,8 +38,8 @@ export const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms))
 export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
   const config: InitConfig = {
     label: `Agent: ${name}`,
-    host: 'http://localhost',
-    port: '3001',
+    // host: 'http://localhost',
+    // port: '3001',
     walletConfig: { id: `Wallet: ${name}` },
     walletCredentials: { key: `Key: ${name}` },
     publicDidSeed,

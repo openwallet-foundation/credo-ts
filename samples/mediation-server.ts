@@ -118,7 +118,7 @@ const agentConfig: InitConfig = {
   host: process.env.AGENT_HOST,
   port: process.env.AGENT_PORT || 3001,
   poolName: 'local-js',
-  genesisPath: resolve(process.env.GENESIS_TXN_PATH!),
+  genesisPath: resolve(process.env.GENESIS_TXN_PATH || ''),
   endpoint: process.env.AGENT_ENDPOINT,
   label: process.env.AGENT_LABEL || '',
   walletConfig: { id: process.env.WALLET_NAME || '' },
