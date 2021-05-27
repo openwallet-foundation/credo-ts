@@ -132,7 +132,7 @@ export class RecipientModule {
   }
   public async requestAndWaitForAcception(
     connection: ConnectionRecord,
-    emitter: EventEmitter,
+    emitter: EventEmitter = this.eventEmitter,
     timeout: number
   ): Promise<MediationRecord> {
     /*

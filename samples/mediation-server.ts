@@ -48,7 +48,7 @@ class HttpInboundTransporter implements InboundTransporter {
   }
 }
 
-class HttpOutboundTransporter implements OutboundTransporter {
+export class HttpOutboundTransporter implements OutboundTransporter {
   private agent: Agent
   private messageRepository?: MessageRepository
 
