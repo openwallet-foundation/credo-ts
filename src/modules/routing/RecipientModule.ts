@@ -90,11 +90,15 @@ export class RecipientModule {
     await this.messageSender.sendMessage(outboundMessage)
   }
 
-  public async requestMediation(connection: ConnectionRecord) {
+  public async setDefaultMediator(mediatorRecord: MediationRecord){
+    return await this.recipientService.setDefaultMediator(mediatorRecord)
+  }
+
+  public async requestMediation(connection: ConnectionRecord): Promise<MediationRecord> {
     const [record, message] = await this.recipientService.createRequest(connection)
     const outboundMessage = createOutboundMessage(connection, message)
-    const response = await this.messageSender.sendMessage(outboundMessage)
-    return response
+    await this.messageSender.sendMessage(outboundMessage)
+    return record
   }
 
   public async notifyKeylistUpdate(connection: ConnectionRecord, verkey?: Verkey) {
@@ -127,9 +131,7 @@ export class RecipientModule {
     return await this.recipientService.getDefaultMediator()
   }
 
-  public async setDefaultMediator(mediatorRecord: MediationRecord){
-    return await this.recipientService.setDefaultMediator(mediatorRecord)
-  }
+
 
   public async getDefaultMediatorConnection(): Promise<ConnectionRecord | undefined> {
     const mediatorRecord = await this.getDefaultMediator()

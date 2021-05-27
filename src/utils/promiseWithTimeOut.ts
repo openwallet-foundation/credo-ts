@@ -17,11 +17,11 @@ export async function waitForEventWithTimeout<T extends BaseEvent>(
 
     function listener(data: any) {
       //TODO: test if thread Id matches the one in the message
-      if (data.threadId === message.threadId) {
-        clearTimeout(timer)
-        eventEmitter.off(eventType, listener)
-        resolve(data)
-      }
+      //if (data.threadId === message.threadId) {
+      clearTimeout(timer)
+      eventEmitter.off(eventType, listener)
+      resolve(data)
+      //}
     }
 
     eventEmitter.on<T>(eventType, listener)

@@ -240,13 +240,14 @@ export class RecipientService {
   public async setDefaultMediator(mediator: MediationRecord) {
     // Get list of all mediator records. For each record, update default all others to false.
     // let fetchedRecords: MediationRecord[]
-    const fetchedRecords = await this.getMediators()
-    if(fetchedRecords?.length){
-      for (let record of fetchedRecords){
-        record.default = false
-        await this.mediatorRepository.update(record)
-      }
+    const fetchedRecords = (await this.getMediators()) ?? []
+
+    //fetchedRecords.forEach(this.updateDefault)
+    for (let record of fetchedRecords) {
+      record.default = false
+      await this.mediatorRepository.update(record)
     }
+    // Set record coming in tag to true and then update.
     mediator.default = true
     await this.mediatorRepository.update(mediator)
     this.defaultMediator = mediator

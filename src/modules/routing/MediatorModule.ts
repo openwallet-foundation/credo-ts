@@ -8,7 +8,14 @@ import { KeylistUpdateHandler, ForwardHandler, BatchPickupHandler, BatchHandler 
 import { MediatorService } from './services/MediatorService'
 import { MessagePickupService } from './services/MessagePickupService'
 import { ConnectionService } from '../connections'
-import { MediationGrantedEvent, MediationKeylistUpdatedEvent, RoutingEventTypes } from '.'
+import {
+  MediationGrantedEvent,
+  MediationKeylistUpdatedEvent,
+  RoutingEventTypes,
+  ForwardEvent,
+  MediationKeylistEvent,
+  MediationRecord,
+} from '.'
 import { MediationRequestHandler } from './handlers/MediationRequestHandler'
 import { EventEmitter } from '../../agent/EventEmitter'
 
@@ -48,7 +55,13 @@ export class MediatorModule {
     //if (config.autoAcceptMediationRequests) {
     //  this.autoAcceptMediationRequests = config.autoAcceptMediationRequests
     //}
+  }
 
+  public async grantRequestedMediation(connectionRecord: ConnectionRecord, mediationRecord: MediationRecord) {
+    const grantMessage = await this.mediatorService.createGrantMediationMessage(mediationRecord)
+    const outboundMessage = createOutboundMessage(connectionRecord, grantMessage)
+    const response = await this.messageSender.sendMessage(outboundMessage)
+    return response
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
@@ -59,15 +72,36 @@ export class MediatorModule {
     dispatcher.registerHandler(new MediationRequestHandler(this.mediatorService))
   }
   private registerListeners() {
-    this.eventEmitter.on<MediationKeylistUpdatedEvent>(RoutingEventTypes.MediationKeylistUpdated, this.keylistUpdatedResponseEvent)
-    this.eventEmitter.on<MediationGrantedEvent>(RoutingEventTypes.MediationGranted, this.grantRequestedMediation )
+    this.eventEmitter.on<MediationKeylistUpdatedEvent>(
+      RoutingEventTypes.MediationKeylistUpdated,
+      this.keylistUpdatedResponseEvent
+    )
+    this.eventEmitter.on<MediationGrantedEvent>(RoutingEventTypes.MediationGranted, this.grantRequestedMediation_)
+    this.eventEmitter.on(RoutingEventTypes.Forward, async (event: ForwardEvent) => {
+      // TODO: Other checks (verKey, theirKey, etc.)
+      const connectionRecord: ConnectionRecord = await this.connectionService.getById(event.payload.connectionId)
+      const outbound = createOutboundMessage(connectionRecord, event.payload.message)
+      await this.messageSender.sendMessage(outbound)
+    })
+
+    this.eventEmitter.on(RoutingEventTypes.MediationKeylist, async (event: MediationKeylistEvent) => {
+      const connectionRecord: ConnectionRecord = await this.connectionService.getById(
+        event.payload.mediationRecord.connectionId
+      )
+      // TODO: update this to use keylist response instead of updated response
+      //const message = await this.mediatorService.createKeylistUpdateResponseMessage(event.payload.keylist)
+      //const outbound = createOutboundMessage(connectionRecord, message)
+      //await this.messageSender.sendMessage(outbound)
+    })
   }
-  private keylistUpdatedResponseEvent = async ({ payload: { mediationRecord, message } }: MediationKeylistUpdatedEvent) => {
+  private keylistUpdatedResponseEvent = async ({
+    payload: { mediationRecord, message },
+  }: MediationKeylistUpdatedEvent) => {
     const connectionRecord: ConnectionRecord = await this.connectionService.getById(mediationRecord.connectionId)
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)
   }
-  private grantRequestedMediation = async ({ payload: { mediationRecord, message } }: MediationGrantedEvent) => {
+  private grantRequestedMediation_ = async ({ payload: { mediationRecord, message } }: MediationGrantedEvent) => {
     const connectionRecord: ConnectionRecord = await this.connectionService.getById(mediationRecord.connectionId)
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)
