@@ -850,7 +850,7 @@ export class ProofService {
       attributeReferent,
     })
 
-    return (JsonTransformer.fromJSON(credentialsJson, Credential) as unknown) as Credential[]
+    return JsonTransformer.fromJSON(credentialsJson, Credential) as unknown as Credential[]
   }
 
   /**

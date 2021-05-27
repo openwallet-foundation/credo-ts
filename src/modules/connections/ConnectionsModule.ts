@@ -41,10 +41,7 @@ export class ConnectionsModule {
     this.registerHandlers(dispatcher)
   }
 
-  public async createConnection(config?: {
-    autoAcceptConnection?: boolean
-    alias?: string
-  }): Promise<{
+  public async createConnection(config?: { autoAcceptConnection?: boolean; alias?: string }): Promise<{
     invitation: ConnectionInvitationMessage
     connectionRecord: ConnectionRecord
   }> {
