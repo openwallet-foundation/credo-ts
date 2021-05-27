@@ -32,6 +32,7 @@ export class Agent {
   protected messageReceiver: MessageReceiver
   protected messageSender: MessageSender
   public inboundTransporter?: InboundTransporter
+  private _isInitialized = false
 
   public readonly connections!: ConnectionsModule
   public readonly proofs!: ProofsModule
@@ -114,6 +115,10 @@ export class Agent {
     return this.eventEmitter
   }
 
+  public get isInitialized() {
+    return this._isInitialized
+  }
+
   public async init() {
     await this.wallet.init()
 
@@ -126,6 +131,8 @@ export class Agent {
     if (this.inboundTransporter) {
       await this.inboundTransporter.start(this)
     }
+
+    this._isInitialized = true
   }
 
   public get publicDid() {

@@ -26,9 +26,21 @@ import { Dispatcher } from '../Dispatcher'
 import { EnvelopeService } from '../EnvelopeService'
 import { getBaseConfig } from '../../__tests__/helpers'
 
-const config = getBaseConfig('DI Test')
+const config = getBaseConfig('Agent Class Test')
 
 describe('Agent', () => {
+  describe('Initialization', () => {
+    it('isInitialized should only return true after initialization', async () => {
+      expect.assertions(2)
+
+      const agent = new Agent(config)
+
+      expect(agent.isInitialized).toBe(false)
+      await agent.init()
+      expect(agent.isInitialized).toBe(true)
+    })
+  })
+
   describe('Dependency Injection', () => {
     it('should be able to resolve registered instances', () => {
       const agent = new Agent(config)
