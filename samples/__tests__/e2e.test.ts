@@ -2,34 +2,42 @@ import express, { Express } from 'express'
 import {
   Agent,
   assertConnection,
+  Connection,
   ConnectionRecord,
   ConnectionState,
   InboundTransporter,
+  MediationRecord,
   MediationState,
+  OutboundPackage,
+  OutboundTransporter,
   WsOutboundTransporter,
 } from '../../src'
-import { HttpOutboundTransporter } from '../mediation-server'
+import testLogger, { TestLogger } from '../../src/__tests__/logger'
 import { get } from '../http'
 import { getBaseConfig, sleep, waitForBasicMessage } from '../../src/__tests__/helpers'
 import logger from '../../src/__tests__/logger'
 import cors from 'cors'
 import { InMemoryMessageRepository } from '../../src/storage/InMemoryMessageRepository'
+import { MessageRepository } from '../../src/storage/MessageRepository'
+import { ReturnRouteTypes } from '../../src/decorators/transport/TransportDecorator'
+import { HttpOutboundTransporter } from '../mediation-server'
 
-const recipientConfig = getBaseConfig('E2E recipient', {
-  host: 'http://localhost',
-  port: 3001,
-})
-
-const mediatorConfig = getBaseConfig('E2E Bob', {
+const recipientConfig = getBaseConfig('E2E recipient')
+const mediatorConfig = getBaseConfig('E2E mediator', {
   host: 'http://localhost',
   port: 3002,
+})
+const tedConfig = getBaseConfig('E2E ted', {
+  host: 'http://localhost',
+  port: 3003,
 })
 
 describe('with mediator', () => {
   let recipientAgent: Agent
   let mediatorAgent: Agent
-  let recipientAgentConnection: ConnectionRecord
-
+  let recipientMediatorRecord: MediationRecord | undefined
+  let tedAgent: Agent
+  let tedRecipientConnection: ConnectionRecord
   const app = express()
 
   app.use(cors())
@@ -43,64 +51,65 @@ describe('with mediator', () => {
 
   const messageRepository = new InMemoryMessageRepository()
 
-  /*let recipientConfig: AgentConfig
-  let recipientWallet: Wallet
+  //let recipientConfig: AgentConfig
+  //let recipientWallet: Wallet
 
   beforeAll(async () => {
-    recipientConfig = new AgentConfig(recipientConfig)
-    recipientWallet = new IndyWallet(recipientConfig)
-    await recipientWallet.init()
+    //recipientConfig = new AgentConfig(recipientConfig)
+    //recipientWallet = new IndyWallet(recipientConfig)
+    //await recipientWallet.init()
   })
-*/
   afterAll(async () => {
-    ;(recipientAgent.inboundTransporter as PollingInboundTransporter).stop = true
-    ;(mediatorAgent.inboundTransporter as PollingInboundTransporter).stop = true
-
+    ;(recipientAgent.inboundTransporter as mockMobileInboundTransporter).stop = true
+    
     // Wait for messages to flush out
     await new Promise((r) => setTimeout(r, 1000))
-
+    
     await recipientAgent.closeAndDeleteWallet()
     await mediatorAgent.closeAndDeleteWallet()
   })
 
+
   test('recipient and mediator establish a connection and granted mediation', async () => {
     recipientAgent = new Agent(recipientConfig)
-    recipientAgent.setOutboundTransporter(new HttpOutboundTransporter(recipientAgent))
+    recipientAgent.setOutboundTransporter(new mockMobileOutBoundTransporter(recipientAgent))
     await recipientAgent.init()
 
     mediatorAgent = new Agent(mediatorConfig, messageRepository)
-    mediatorAgent.setInboundTransporter(new HttpInboundTransporter(app))
-    mediatorAgent.setOutboundTransporter(new HttpOutboundTransporter(mediatorAgent, messageRepository))
+    mediatorAgent.setInboundTransporter(new mockMediatorInBoundTransporter(app))
     await mediatorAgent.init()
 
-    recipientAgent.setInboundTransporter(new PollingInboundTransporter(recipientAgent, mediatorAgent))
+    recipientAgent.setInboundTransporter(new mockMobileInboundTransporter(recipientAgent, mediatorAgent))
+    
     recipientAgent.inboundTransporter?.start(recipientAgent)
     const recipientMediatorConnection = await recipientAgent.mediationRecipient.getDefaultMediatorConnection()
-    expect(recipientMediatorConnection)
+    expect(recipientMediatorConnection?.isReady)
+    recipientMediatorRecord = await recipientAgent.mediationRecipient.getDefaultMediator()
+    expect(recipientMediatorRecord?.state).toBe(MediationState.Granted)
   })
 
-  test('recipient and Bob make a connection via mediator', async () => {
+  test('recipient and Ted make a connection via mediator', async () => {
     // eslint-disable-next-line prefer-const
-    let { invitation, connectionRecord } = await recipientAgent.connections.createConnection()
-
-    let mediatorAgentConnection = await mediatorAgent.connections.receiveInvitation(invitation)
-
-    recipientAgentConnection = await recipientAgent.connections.returnWhenIsConnected(connectionRecord.id)
-
-    mediatorAgentConnection = await mediatorAgent.connections.returnWhenIsConnected(mediatorAgentConnection.id)
-
-    expect(recipientAgentConnection).toBeConnectedWith(mediatorAgentConnection)
-    expect(mediatorAgentConnection).toBeConnectedWith(recipientAgentConnection)
+    tedAgent = new Agent(tedConfig)
+    tedAgent.setOutboundTransporter(new HttpOutboundTransporter(tedAgent))
+    let { invitation, connectionRecord } = await recipientAgent.connections.createConnection(
+      {
+        autoAcceptConnection: true,
+        mediatorId: recipientMediatorRecord?.id
+      }
+    )
+    tedRecipientConnection = await tedAgent.connections.receiveInvitation(invitation)
+    const recipientTedConnection = await recipientAgent.connections.returnWhenIsConnected(connectionRecord.id)
+    tedRecipientConnection = await tedAgent.connections.returnWhenIsConnected(tedRecipientConnection.id)
+    expect(tedRecipientConnection.isReady)
+    expect(tedRecipientConnection).toBeConnectedWith(recipientTedConnection)
+    expect(recipientTedConnection).toBeConnectedWith(tedRecipientConnection)
   })
 
-  test('Send a message from recipient to Bob via mediator', async () => {
-    // send message from recipient to Bob
-    const recipientConnectionAtBob = await recipientAgent.connections.getById(recipientAgentConnection.id)
-
-    logger.test('recipientConnectionAtBob\n', recipientConnectionAtBob)
-
+  test('Send a message from recipient to ted via mediator', async () => {
+    // send message from recipient to ted
     const message = 'hello, world'
-    await recipientAgent.basicMessages.sendMessage(recipientConnectionAtBob, message)
+    await recipientAgent.basicMessages.sendMessage(tedRecipientConnection, message)
 
     const basicMessage = await waitForBasicMessage(mediatorAgent, {
       content: message,
@@ -138,19 +147,14 @@ describe('websockets with mediator', () => {
   })
 })
 
-// coppied from mediation-server.ts
-class HttpInboundTransporter implements InboundTransporter {
+class mockMediatorInBoundTransporter implements InboundTransporter {
   private app: Express
-
   public constructor(app: Express) {
     this.app = app
   }
-
   public async start(agent: Agent) {
     this.app.post('/msg', async (req, res) => {
-      const message = req.body
-      const packedMessage = JSON.parse(message)
-
+      const packedMessage = JSON.parse(req.body)
       try {
         const outboundMessage = await agent.receiveMessage(packedMessage)
         if (outboundMessage) {
@@ -165,18 +169,60 @@ class HttpInboundTransporter implements InboundTransporter {
   }
 }
 
-class PollingInboundTransporter implements InboundTransporter {
+class mockMobileOutBoundTransporter implements OutboundTransporter {
+  private agent: Agent
+
+  public constructor(agent: Agent) {
+    this.agent = agent
+  }
+  public async start(): Promise<void> {
+    // No custom start logic required
+  }
+
+  public async stop(): Promise<void> {
+    // No custom stop logic required
+  }
+
+  public supportedSchemes = ['http', 'dicomm', 'https']
+
+  public async sendMessage(outboundPackage: OutboundPackage) {
+    const { connection, payload, endpoint, responseRequested } = outboundPackage
+    if (!endpoint || endpoint == 'didcomm:transport/queue' ) {
+      throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
+    }
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/ssi-agent-wire',
+        },
+        body: JSON.stringify(payload),
+      })
+      const data = await response.text()
+      if (data) {
+        testLogger.debug(`Response received:\n ${response}`)
+        const wireMessage = JSON.parse(data)
+        this.agent.receiveMessage(wireMessage)
+      } else {
+        testLogger.debug(`No response received.`)
+      }
+      } catch (e) {
+      testLogger.debug('error sending message', e)
+      throw e
+    }
+  }
+}
+
+class mockMobileInboundTransporter implements InboundTransporter {
   public stop: boolean
   public connection?: ConnectionRecord
   public recipient: Agent
   public mediator: Agent
-
   public constructor(recipient: Agent, mediator: Agent) {
     this.stop = true
     this.recipient = recipient
     this.mediator = mediator
   }
-
   public async start(agent: Agent) {
     await this.registerMediator(this.recipient, this.mediator)
     if (this.connection) {
@@ -186,7 +232,8 @@ class PollingInboundTransporter implements InboundTransporter {
   }
 
   public async registerMediator(recipient: Agent, mediator: Agent) {
-    const { invitation, connectionRecord } = await mediator.connections.createConnection()
+    let { invitation, connectionRecord } = await mediator.connections.createConnection({autoAcceptConnection: true})
+    // invitation.setReturnRouting(ReturnRouteTypes.all)
     const recipientConnection = await recipient.connections.receiveInvitation(invitation)
     const mediatorAgentConnection = await mediator.connections.returnWhenIsConnected(connectionRecord.id)
     const recipientAgentConnection = await recipient.connections.returnWhenIsConnected(recipientConnection.id)

@@ -133,7 +133,8 @@ export class RecipientModule {
   public async requestAndWaitForAcception(
     connection: ConnectionRecord,
     emitter: EventEmitter = this.eventEmitter,
-    timeout: number
+    timeout: number,
+    setReturnRouting: ReturnRouteTypes = ReturnRouteTypes.all,
   ): Promise<MediationRecord> {
     /*
     | create mediation record and request.
@@ -143,6 +144,9 @@ export class RecipientModule {
     | return promise with listener
     */
     const [record, message] = await this.recipientService.createRequest(connection)
+    if(setReturnRouting){
+      message.setReturnRouting(setReturnRouting)
+    }
     const outboundMessage = createOutboundMessage(connection, message)
     const promise: Promise<MediationRecord> = new Promise((resolve, reject) => {
       // eslint-disable-next-line @typescript-eslint/no-empty-function

@@ -48,6 +48,7 @@ export class ConnectionsModule {
   public async createConnection(config?: {
     autoAcceptConnection?: boolean
     alias?: string
+    mediatorId?: string
   }): Promise<{
     invitation: ConnectionInvitationMessage
     connectionRecord: ConnectionRecord
@@ -55,6 +56,7 @@ export class ConnectionsModule {
     const { connectionRecord: connectionRecord, message: invitation } = await this.connectionService.createInvitation({
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
+      mediatorId: config?.mediatorId,
     })
 
     return { connectionRecord, invitation }
