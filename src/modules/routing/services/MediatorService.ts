@@ -11,9 +11,10 @@ import {
   KeylistUpdated,
   MediationGrantMessage,
   MediationRequestMessage,
+  KeylistUpdateResponseMessage,
 } from '../messages'
 import { MediationRole } from '../models/MediationRole'
-import { MediationState } from '../models/MediationState'
+import { KeylistState, MediationState } from '../models/MediationState'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { ConnectionRecord } from '../../connections'
@@ -22,7 +23,7 @@ import { Wallet } from '../../../wallet/Wallet'
 import { HandlerInboundMessage } from '../../../agent/Handler'
 import { ForwardHandler } from '../handlers'
 import { uuid } from '../../../utils/uuid'
-import { MediationKeylistEvent, MediationStateChangedEvent, RoutingEventTypes } from '../RoutingEvents'
+import { KeylistUpdatedEvent, MediationGrantedEvent, MediationKeylistEvent, MediationKeylistUpdatedEvent, MediationStateChangedEvent, RoutingEventTypes } from '../RoutingEvents'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
 import { Symbols } from '../../../symbols'
@@ -66,7 +67,7 @@ export class MediatorService {
   public async processKeylistUpdateRequest(messageContext: InboundMessageContext<KeylistUpdateMessage>) {
     const { message } = messageContext
     const connection = this._assertConnection(messageContext.connection, ForwardMessage)
-    const updated = []
+    const keylist:KeylistUpdated[] = []
     const mediationRecord = await this.findRecipientByConnectionId(connection.id)
     if (!mediationRecord) {
       throw new Error(`mediation record for  ${connection.id} not found!`)
@@ -79,19 +80,27 @@ export class MediatorService {
       })
       if (update.action === KeylistUpdateAction.add) {
         update_.result = await this.saveRoute(update.recipientKey, mediationRecord)
-        updated.push(update_)
+        keylist.push(update_)
       } else if (update.action === KeylistUpdateAction.remove) {
         update_.result = await this.removeRoute(update.recipientKey, mediationRecord)
-        updated.push(update_)
+        keylist.push(update_)
       }
     }
-    // TODO: catch event in module and create/send message
-    //const responseMessage = new KeylistUpdateResponseMessage({ updated })
-    this.eventEmitter.emit<MediationKeylistEvent>({
-      type: RoutingEventTypes.MediationKeylist,
+    // emit internal event
+    this.eventEmitter.emit<KeylistUpdatedEvent>({
+      type: RoutingEventTypes.MediationKeylistUpdated,
       payload: {
         mediationRecord,
-        keylist: updated,
+        keylist,
+      },
+    })
+    // emit event to send message that notifies recipient
+    const message_ = new KeylistUpdateResponseMessage({ keylist })
+    this.eventEmitter.emit<MediationKeylistUpdatedEvent>({
+      type: RoutingEventTypes.MediationKeylistUpdated,
+      payload: {
+        mediationRecord,
+        "message": message_
       },
     })
   }
@@ -149,9 +158,8 @@ export class MediatorService {
   }
 
   public async processMediationRequest(messageContext: InboundMessageContext<MediationRequestMessage>) {
-    const { message } = messageContext
     // Assert connection
-    const connection = this._assertConnection(messageContext.connection, ForwardMessage)
+    const connection = this._assertConnection(messageContext.connection, MediationRequestMessage)
 
     const mediationRecord = await createRecord(
       {
@@ -164,19 +172,19 @@ export class MediatorService {
     await this.updateState(mediationRecord, MediationState.Init)
 
     // Mediation can be either granted or denied. Someday, let business logic decide that
-    this.createGrantMediationMessage(mediationRecord)
+    const message = await this.createGrantMediationMessage(mediationRecord)
+    this.eventEmitter.emit<MediationGrantedEvent>({
+      type: RoutingEventTypes.MediationGranted,
+      payload: {
+        mediationRecord,
+        message
+      },
+    })
   }
 
   public async findByConnectionId(id: string): Promise<MediationRecord | null> {
-    // TODO: Use findByQuery (connectionId as tag)
-    const mediationRecords = await this.mediationRepository.getAll()
-
-    for (const record of mediationRecords) {
-      if (record.connectionId == id) {
-        return record
-      }
-    }
-    return null
+    const records = await this.mediationRepository.findByQuery({ id })
+    return records[0]
   }
 
   public async getAll(): Promise<MediationRecord[]> {

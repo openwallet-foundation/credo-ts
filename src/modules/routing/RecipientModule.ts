@@ -152,15 +152,15 @@ export class RecipientModule {
       // eslint-disable-next-line @typescript-eslint/no-empty-function
       let timer: NodeJS.Timeout = setTimeout(() => {})
       const listener = (event: MediationStateChangedEvent) => {
-        const previousStateMatches = MediationState.Init === event.payload.previousState
-        const mediationIdMatches = record.id || event.payload.mediationRecord.id
-        const stateMatches = record.state || event.payload.mediationRecord.state
+        //const previousStateMatches = MediationState.Init === event.payload.previousState
+        //const mediationIdMatches = record.id || event.payload.mediationRecord.id
+        //const stateMatches = record.state || event.payload.mediationRecord.state
 
-        if (previousStateMatches && mediationIdMatches && stateMatches) {
+        //if (previousStateMatches && mediationIdMatches && stateMatches) {
           emitter.off<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
           clearTimeout(timer)
           resolve(event.payload.mediationRecord)
-        }
+        //}
       }
       emitter.on<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
       timer = setTimeout(() => {
