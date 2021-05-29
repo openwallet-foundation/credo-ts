@@ -1,4 +1,4 @@
-import * as cbor from 'borc'
+import cbor from 'borc'
 import { sha256 } from 'js-sha256'
 import { BufferEncoder } from './BufferEncoder'
 import { Buffer } from './buffer'
