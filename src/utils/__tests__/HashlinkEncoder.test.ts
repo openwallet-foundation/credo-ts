@@ -18,7 +18,7 @@ const invalidData = {
 }
 
 const validHashlink =
-  'hl:zQmWvQxTqbG2Z9HPJgG57jjwR154cKhbtJenbyYTWkjgF3e:zCwQVpeF6FPqFyc4pvisK5cpW4kc358NTX6ZbhqfawZTBmXm372zoAj5oLSh'
+  'hl:zQmWvQxTqbG2Z9HPJgG57jjwR154cKhbtJenbyYTWkjgF3e:zCwPSdabLuj3jue1qYujzunnKwpL4myKdyeqySyFhnzZ8qeLeC1U6N5eycFD'
 
 const invalidHashlink =
   'hl:gQmWvQxTqbqwlkhhhhh9w8e7rJenbyYTWkjgF3e:z51a94WAQfNv1KEcPeoV3V2isZFPFqSzE9ghNFQ8DuQu4hTHtFRug8SDgug14Ff'

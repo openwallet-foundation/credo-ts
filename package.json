@@ -23,10 +23,9 @@
     "prepare": "husky install"
   },
   "dependencies": {
-    "bignumber.js": "^9.0.1",
     "bn.js": "^5.2.0",
+    "borc": "^3.0.0",
     "buffer": "^6.0.3",
-    "cbor": "^7.0.5",
     "class-transformer": "^0.4.0",
     "class-validator": "^0.13.1",
     "events": "^3.3.0",

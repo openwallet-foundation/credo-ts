@@ -1,4 +1,4 @@
-import cbor from 'cbor'
+import * as cbor from 'borc'
 import { sha256 } from 'js-sha256'
 import { BufferEncoder } from './BufferEncoder'
 import { Buffer } from './buffer'
@@ -15,8 +15,6 @@ export type HashlinkData = {
   metadata?: Metadata
 }
 
-const URLS = 0x0f
-const CONTENTTYPE = 0x0e
 const hexTable = {
   urls: 0x0f,
   contentType: 0x0e,
@@ -35,7 +33,7 @@ export class HashlinkEncoder {
    * @returns hashlink hashlink with optional metadata
    */
   public static encode(
-    buffer: Buffer,
+    buffer: Buffer | Uint8Array,
     hashAlgorithm: 'sha2-256',
     baseEncoding: BaseName = 'base58btc',
     metadata?: Metadata
@@ -87,7 +85,11 @@ export class HashlinkEncoder {
     return validMultibase && validMultihash ? true : false
   }
 
-  private static encodeMultihashEncoder(buffer: Buffer, hashName: 'sha2-256', baseEncoding: BaseName): string {
+  private static encodeMultihashEncoder(
+    buffer: Buffer | Uint8Array,
+    hashName: 'sha2-256',
+    baseEncoding: BaseName
+  ): string {
     // TODO: Support more hashing algorithms
     const hash = new Uint8Array(sha256.array(buffer))
     const mh = MultihashEncoder.encode(hash, hashName)
@@ -117,6 +119,7 @@ export class HashlinkEncoder {
     const obj = { urls: [] as string[], contentType: '' }
     const { data } = MultibaseEncoder.decode(mb)
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const cborData: Map<number, any> = cbor.decode(data)
       cborData.forEach((value, key) => {
         if (key === hexTable.urls) {
