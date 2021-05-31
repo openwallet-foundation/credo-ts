@@ -67,8 +67,6 @@ export class RecipientService {
       'No connection associated with incoming mediation grant message'
     )
     // Mediation record must already exists to be updated to granted status
-    console.log("PUKE: filename: /src/modules/routing/services/RecipientService.ts, line: 70"); //PKDBG/Point;
-    console.log(connection.id);
     const mediationRecord = await this.findByConnectionId(connection.id)
     if (!mediationRecord) {
       throw new Error(`No mediation has been requested for this connection id: ${connection.id}`)
@@ -80,9 +78,7 @@ export class RecipientService {
     // Update record
     mediationRecord.endpoint = messageContext.message.endpoint
     mediationRecord.routingKeys = messageContext.message.routingKeys
-    await this.updateState(mediationRecord, MediationState.Granted)
-
-    return mediationRecord
+    return await this.updateState(mediationRecord, MediationState.Granted)
   }
 
   public createKeylistQuery(
@@ -198,6 +194,7 @@ export class RecipientService {
         previousState,
       },
     })
+    return mediationRecord
   }
 
   public async findById(id: string): Promise<MediationRecord | null> {
@@ -207,13 +204,8 @@ export class RecipientService {
   }
 
   public async findByConnectionId(connectionId: string): Promise<MediationRecord | null> {
-    //const records = await this.mediatorRepository.findByQuery({ connectionId })
-    const records = await this.mediatorRepository.getAll()
-    console.log("PUKE: filename: /src/modules/routing/services/RecipientService.ts, line: 212"); //PKDBG/Point;
-    for (const record of records) {
-      if (record.connectionId === connectionId) return record
-    }
-    return null
+    const records = await this.mediatorRepository.findByQuery({ connectionId })
+    return records[0]
   }
 
   public async getMediators(): Promise<MediationRecord[] | null> {
@@ -230,9 +222,11 @@ export class RecipientService {
 
   public async getDefaultMediator() {
     if (this.defaultMediator === undefined) {
-      const results = await this.mediatorRepository.findByQuery({ default: 'true' })
-      if (Array.isArray(results) && results.length) {
-        this.setDefaultMediator(results[0])
+      const results = await this.mediatorRepository.getAll()
+      for (const record of results) {
+        if (record.default){
+          this.setDefaultMediator(record)
+        }
       }
     }
     return this.defaultMediator
@@ -244,10 +238,10 @@ export class RecipientService {
     const fetchedRecords = (await this.getMediators()) ?? []
 
     fetchedRecords.forEach(this.updateDefault)
-    // Set record coming in tag to true and then update.
-    mediator.tags['default'] = 'true'
-    this.mediatorRepository.save(mediator) // TODO: should this be update not save?
+    mediator.default = true
+    await this.mediatorRepository.update(mediator)
     this.defaultMediator = mediator
+    return this.defaultMediator
   }
 
   public async clearDefaultMediator() {
@@ -256,9 +250,9 @@ export class RecipientService {
     delete this.defaultMediator
   }
 
-  private updateDefault(record: MediationRecord) {
-    record.tags['default'] = 'false'
-    this.mediatorRepository.update(record)
+  private updateDefault = async(record: MediationRecord) =>{
+    record.default = false
+    await this.mediatorRepository.update(record)
     return record
   }
 }

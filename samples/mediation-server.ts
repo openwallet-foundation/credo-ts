@@ -175,7 +175,7 @@ agent.events.on<MediationStateChangedEvent>(
     if (event.payload.mediationRecord.state == MediationState.Requested) {
       const connectionRecord = await agent.connections.getById(event.payload.mediationRecord.connectionId)
       if (connectionRecord) {
-        await agent.mediator.grantRequestedMediation(connectionRecord, event.payload.mediationRecord)
+        //await agent.mediator.grantRequestedMediation(connectionRecord, event.payload.mediationRecord)
         testLogger.info('Mediation blindly granted')
       }
     }

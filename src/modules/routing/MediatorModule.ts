@@ -71,7 +71,5 @@ export class MediatorModule {
     const connectionRecord: ConnectionRecord = await this.connectionService.getById(mediationRecord.connectionId)
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)
-    console.log("PUKE: filename: /src/modules/routing/MediatorModule.ts, line: 74"); //PKDBG/Point;
-    console.log("grant mediation");
   }
 }

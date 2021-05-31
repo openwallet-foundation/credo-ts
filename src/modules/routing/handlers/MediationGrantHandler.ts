@@ -13,7 +13,6 @@ export class MediationGrantHandler implements Handler {
     if (!messageContext.connection) {
       throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
-    console.log("PUKE: filename: /src/modules/routing/handlers/MediationGrantHandler.ts, line: 16"); //PKDBG/Point;
     await this.recipientService.processMediationGrant(messageContext)
   }
 }

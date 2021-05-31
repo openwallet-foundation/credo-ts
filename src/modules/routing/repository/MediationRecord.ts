@@ -15,14 +15,12 @@ export interface MediationRecordProps {
   endpoint?: string
   recipientKeys?: Verkey[]
   routingKeys?: Verkey[]
-  default?: string
+  default?: boolean
 }
 
 export interface MediationTags extends Tags {
-  state: MediationState
-  role: MediationRole
-  connectionId: string
-  default: string
+  role?: MediationRole
+  connectionId?: string
 }
 
 export interface MediationStorageProps extends MediationRecordProps {
@@ -30,29 +28,32 @@ export interface MediationStorageProps extends MediationRecordProps {
 }
 
 export class MediationRecord extends BaseRecord implements MediationStorageProps {
-  public id: string
-  public state: MediationState
-  public role: MediationRole
-  public tags: MediationTags
-  public connectionId: string
+  public state!: MediationState
+  public role!: MediationRole
+  public tags!: MediationTags
+  public connectionId!: string
   public endpoint?: string
-  public recipientKeys: Verkey[]
-  public routingKeys: Verkey[]
-
+  public recipientKeys!: Verkey[]
+  public routingKeys!: Verkey[]
+  public default!: boolean
   public static readonly type = 'MediationRecord'
   public readonly type = MediationRecord.type
 
   public constructor(props: MediationStorageProps) {
     super()
-    this.id = props.id ?? uuid()
-    this.createdAt = props.createdAt ?? new Date()
-    this.connectionId = props.connectionId
-    this.recipientKeys = props.recipientKeys || []
-    this.routingKeys = props.routingKeys || []
-    this.tags = props.tags
-    this.state = props.state || MediationState.Init
-    this.role = props.role
-    this.endpoint = props.endpoint ?? undefined
+
+    if(props) {
+      this.id = props.id ?? uuid()
+      this.createdAt = props.createdAt ?? new Date()
+      this.connectionId = props.connectionId
+      this.recipientKeys = props.recipientKeys || []
+      this.routingKeys = props.routingKeys || []
+      this.tags = props.tags
+      this.state = props.state || MediationState.Init
+      this.role = props.role
+      this.endpoint = props.endpoint ?? undefined
+      this.default = props.default || false
+    }
   }
 
   public assertState(expectedStates: MediationState | MediationState[]) {

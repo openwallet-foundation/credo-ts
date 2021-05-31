@@ -59,7 +59,7 @@ export class RecipientModule {
         alias: 'InitedMediator', // TODO come up with a better name for this
       })
       await connections.returnWhenIsConnected(connectionRecord.id)
-      await this.requestAndWaitForAcception(connectionRecord, this.eventEmitter, 2000) // TODO: put timeout as a config parameter
+      await this.requestAndWaitForAcception(connectionRecord, 2000) // TODO: put timeout as a config parameter
     }
     if (this.agentConfig.defaultMediatorId) {
       /*
@@ -136,7 +136,6 @@ export class RecipientModule {
   }
   public async requestAndWaitForAcception(
     connection: ConnectionRecord,
-    emitter: EventEmitter = this.eventEmitter,
     timeout: number,
     setReturnRouting: ReturnRouteTypes = ReturnRouteTypes.all,
   ): Promise<MediationRecord> {
@@ -156,19 +155,20 @@ export class RecipientModule {
       // eslint-disable-next-line @typescript-eslint/no-empty-function
       let timer: NodeJS.Timeout = setTimeout(() => {})
       const listener = (event: MediationStateChangedEvent) => {
-        const previousStateMatches = MediationState.Init === event.payload.previousState
-        const mediationIdMatches = record.id || event.payload.mediationRecord.id
-        const stateMatches = record.state || event.payload.mediationRecord.state
+        const previousStateMatches = MediationState.Requested === event.payload.previousState
+        const mediationIdMatches = record.id === event.payload.mediationRecord.id
+        const stateMatches = MediationState.Granted === event.payload.mediationRecord.state
 
         if (previousStateMatches && mediationIdMatches && stateMatches) {
-          emitter.off<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
+          this.eventEmitter.off<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
           clearTimeout(timer)
           resolve(event.payload.mediationRecord)
         }
       }
-      emitter.on<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
+      this.eventEmitter.on<MediationStateChangedEvent>(
+        RoutingEventTypes.MediationStateChanged, listener)
       timer = setTimeout(() => {
-        emitter.off<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
+        this.eventEmitter.off<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
         reject(
           new AriesFrameworkError(
             'timeout waiting for mediator to grant mediation, initialized from mediation record id:' + record.id
@@ -191,7 +191,7 @@ export class RecipientModule {
     this.eventEmitter.on<KeylistUpdateEvent>(RoutingEventTypes.MediationKeylistUpdate, this.keylistUpdateEvent)
   }
 
-  private async keylistUpdateEvent({ payload: { mediationRecord, message } }: KeylistUpdateEvent) {
+  private keylistUpdateEvent = async ({ payload: { mediationRecord, message } }: KeylistUpdateEvent) => {
     // new did has been created and mediator needs to be updated with the public key.
     const connectionRecord: ConnectionRecord = await this.connectionService.getById(mediationRecord.connectionId)
     const outbound = createOutboundMessage(connectionRecord, message)

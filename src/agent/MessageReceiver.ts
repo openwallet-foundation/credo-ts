@@ -52,7 +52,6 @@ export class MessageReceiver {
     this.logger.debug(`Agent ${this.config.label} received message:`, inboundPackedMessage)
     
     const unpackedMessage = await this.unpackMessage(inboundPackedMessage as Record<string, unknown>)
-    console.log(`${this.config.label} received message:`, unpackedMessage)
     const senderKey = unpackedMessage.sender_verkey
     let connection = undefined
     if (senderKey && unpackedMessage.recipient_verkey) {

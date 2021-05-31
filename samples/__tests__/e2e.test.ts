@@ -87,6 +87,7 @@ describe('with mediator', () => {
     const recipientMediatorConnection = await recipientAgent.mediationRecipient.getDefaultMediatorConnection()
     expect(recipientMediatorConnection?.isReady)
     recipientMediatorRecord = await recipientAgent.mediationRecipient.getDefaultMediator()
+    console.log(`${JSON.stringify(recipientMediatorRecord)}`)
     expect(recipientMediatorRecord?.state).toBe(MediationState.Granted)
   })
 
@@ -225,8 +226,6 @@ class mockMobileOutBoundTransporter implements OutboundTransporter {
       if (data) {
         testLogger.debug(`Response received:\n ${response}`)
         const wireMessage = JSON.parse(data)
-        console.log("PUKE: filename: /samples/__tests__/e2e.test.ts, line: 228"); //PKDBG/Point;
-        console.log(wireMessage);
         this.agent.receiveMessage(wireMessage)
       } else {
         testLogger.debug(`No response received.`)
@@ -265,14 +264,11 @@ class mockMobileInboundTransporter implements InboundTransporter {
     expect(recipientAgentConnection).toBeConnectedWith(mediatorAgentConnection)
     expect(mediatorAgentConnection).toBeConnectedWith(recipientAgentConnection)
     expect(mediatorAgentConnection.isReady)
-    const mediationRecord = await recipient.mediationRecipient.requestAndWaitForAcception(
+    let mediationRecord = await recipient.mediationRecipient.requestAndWaitForAcception(
       recipientAgentConnection,
-      undefined,
       200000
     )
-    console.log("PUKE: filename: /samples/__tests__/e2e.test.ts, line: 273"); //PKDBG/Point;
-    await recipient.mediationRecipient.setDefaultMediator(mediationRecord)
-    console.log(mediationRecord)
+    mediationRecord = await recipient.mediationRecipient.setDefaultMediator(mediationRecord)
     // expects should be a independent test, but this will do for now...
     expect(mediationRecord.state).toBe(MediationState.Granted)
     this.connection = recipientAgentConnection
