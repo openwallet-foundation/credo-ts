@@ -60,19 +60,18 @@ export class MediatorModule {
   }
   private registerListeners() {
     this.eventEmitter.on<MediationKeylistUpdatedEvent>(RoutingEventTypes.MediationKeylistUpdated, this.keylistUpdatedResponseEvent)
-    this.eventEmitter.on<MediationGrantedEvent>(RoutingEventTypes.MediationGranted, this.grantRequestedMediation)
+    this.eventEmitter.on<MediationGrantedEvent>(RoutingEventTypes.MediationGranted, this.grantRequestedMediation )
   }
-  private async keylistUpdatedResponseEvent({ payload: { mediationRecord, message } }: MediationKeylistUpdatedEvent) {
+  private keylistUpdatedResponseEvent = async ({ payload: { mediationRecord, message } }: MediationKeylistUpdatedEvent) => {
     const connectionRecord: ConnectionRecord = await this.connectionService.getById(mediationRecord.connectionId)
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)
   }
-  public async grantRequestedMediation({ payload: { mediationRecord, message } }: MediationGrantedEvent) {
-
-    console.log("PUKE: filename: /src/modules/routing/MediatorModule.ts, line: 72"); //PKDBG/Point;
-    console.log(this.connectionService);
+  private grantRequestedMediation = async ({ payload: { mediationRecord, message } }: MediationGrantedEvent) => {
     const connectionRecord: ConnectionRecord = await this.connectionService.getById(mediationRecord.connectionId)
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)
+    console.log("PUKE: filename: /src/modules/routing/MediatorModule.ts, line: 74"); //PKDBG/Point;
+    console.log("grant mediation");
   }
 }

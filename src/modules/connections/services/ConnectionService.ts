@@ -535,9 +535,9 @@ export class ConnectionService {
 
     // Check if already done
     const connection = await this.connectionRepository.findById(connectionId)
-    if (connection && isConnected(connection)) return connection
+    if (connection && isConnected(connection)) return connection //TODO: does this leave trailing listeners behind?
 
-    // return listener
+    // return listener 
     return promise
   }
 }

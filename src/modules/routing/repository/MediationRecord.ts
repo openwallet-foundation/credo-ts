@@ -30,6 +30,7 @@ export interface MediationStorageProps extends MediationRecordProps {
 }
 
 export class MediationRecord extends BaseRecord implements MediationStorageProps {
+  public id: string
   public state: MediationState
   public role: MediationRole
   public tags: MediationTags

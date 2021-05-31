@@ -23,11 +23,12 @@ import { Wallet } from '../../../wallet/Wallet'
 import { HandlerInboundMessage } from '../../../agent/Handler'
 import { ForwardHandler } from '../handlers'
 import { uuid } from '../../../utils/uuid'
-import { KeylistUpdatedEvent, MediationGrantedEvent, MediationKeylistEvent, MediationKeylistUpdatedEvent, MediationStateChangedEvent, RoutingEventTypes } from '../RoutingEvents'
+import { KeylistUpdatedEvent, MediationGrantedEvent, MediationKeylistUpdatedEvent, MediationStateChangedEvent, RoutingEventTypes } from '../RoutingEvents'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
 import { Symbols } from '../../../symbols'
 import { MediationRepository } from '../repository/MediationRepository'
+import { createOutboundMessage } from '../../../agent/helpers'
 
 export interface RoutingTable {
   [recipientKey: string]: ConnectionRecord | undefined
@@ -171,7 +172,6 @@ export class MediatorService {
     )
     await this.updateState(mediationRecord, MediationState.Init)
 
-    // Mediation can be either granted or denied. Someday, let business logic decide that
     const message = await this.createGrantMediationMessage(mediationRecord)
     this.eventEmitter.emit<MediationGrantedEvent>({
       type: RoutingEventTypes.MediationGranted,
@@ -180,10 +180,12 @@ export class MediatorService {
         message
       },
     })
+    // return routing path.. TODO: will this endup in a queue or something undesired.
+    return createOutboundMessage(connection, message)
   }
 
-  public async findByConnectionId(id: string): Promise<MediationRecord | null> {
-    const records = await this.mediationRepository.findByQuery({ id })
+  public async findByConnectionId(connectionId: string): Promise<MediationRecord | null> {
+    const records = await this.mediationRepository.findByQuery({ connectionId })
     return records[0]
   }
 

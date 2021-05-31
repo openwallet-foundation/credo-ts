@@ -14,6 +14,6 @@ export class MediationRequestHandler implements Handler {
       throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
 
-    await this.mediatorService.processMediationRequest(messageContext)
+    return await this.mediatorService.processMediationRequest(messageContext)
   }
 }

@@ -23,8 +23,8 @@ import { MessageRepository } from '../../src/storage/MessageRepository'
 import { ReturnRouteTypes } from '../../src/decorators/transport/TransportDecorator'
 import { HttpOutboundTransporter } from '../mediation-server'
 
-const recipientConfig = getBaseConfig('E2E recipient')
-const mediatorConfig = getBaseConfig('E2E mediator', {
+const recipientConfig = getBaseConfig('recipient')
+const mediatorConfig = getBaseConfig('mediator', {
   host: 'http://localhost',
   port: 3002,
 })
@@ -78,6 +78,7 @@ describe('with mediator', () => {
 
     mediatorAgent = new Agent(mediatorConfig, messageRepository)
     mediatorAgent.setInboundTransporter(new mockMediatorInBoundTransporter(app))
+    mediatorAgent.setOutboundTransporter(new mockMediatorOutBoundTransporter())
     await mediatorAgent.init()
 
     recipientAgent.inboundTransporter = new mockMobileInboundTransporter(recipientAgent, mediatorAgent)
@@ -172,6 +173,25 @@ class mockMediatorInBoundTransporter implements InboundTransporter {
   }
 }
 
+class mockMediatorOutBoundTransporter implements OutboundTransporter {
+
+  public constructor() {
+  }
+  public async start(): Promise<void> {
+    // No custom start logic required
+  }
+
+  public async stop(): Promise<void> {
+    // No custom stop logic required
+  }
+
+  public supportedSchemes = ['http', 'dicomm', 'https']
+
+  public async sendMessage(outboundPackage: OutboundPackage) {
+    const { connection, payload, endpoint, responseRequested } = outboundPackage
+  }
+}
+
 class mockMobileOutBoundTransporter implements OutboundTransporter {
   private agent: Agent
 
@@ -205,6 +225,8 @@ class mockMobileOutBoundTransporter implements OutboundTransporter {
       if (data) {
         testLogger.debug(`Response received:\n ${response}`)
         const wireMessage = JSON.parse(data)
+        console.log("PUKE: filename: /samples/__tests__/e2e.test.ts, line: 228"); //PKDBG/Point;
+        console.log(wireMessage);
         this.agent.receiveMessage(wireMessage)
       } else {
         testLogger.debug(`No response received.`)
@@ -248,6 +270,9 @@ class mockMobileInboundTransporter implements InboundTransporter {
       undefined,
       200000
     )
+    console.log("PUKE: filename: /samples/__tests__/e2e.test.ts, line: 273"); //PKDBG/Point;
+    await recipient.mediationRecipient.setDefaultMediator(mediationRecord)
+    console.log(mediationRecord)
     // expects should be a independent test, but this will do for now...
     expect(mediationRecord.state).toBe(MediationState.Granted)
     this.connection = recipientAgentConnection

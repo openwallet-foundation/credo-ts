@@ -67,6 +67,8 @@ export class RecipientService {
       'No connection associated with incoming mediation grant message'
     )
     // Mediation record must already exists to be updated to granted status
+    console.log("PUKE: filename: /src/modules/routing/services/RecipientService.ts, line: 70"); //PKDBG/Point;
+    console.log(connection.id);
     const mediationRecord = await this.findByConnectionId(connection.id)
     if (!mediationRecord) {
       throw new Error(`No mediation has been requested for this connection id: ${connection.id}`)
@@ -198,15 +200,20 @@ export class RecipientService {
     })
   }
 
-  public async findById(mediatorId: string): Promise<MediationRecord | null> {
-    const record = await this.mediatorRepository.findById(mediatorId)
+  public async findById(id: string): Promise<MediationRecord | null> {
+    const record = await this.mediatorRepository.findById(id)
     return record
     // TODO - Handle errors?
   }
 
-  public async findByConnectionId(id: string): Promise<MediationRecord | null> {
-    const records = await this.mediatorRepository.findByQuery({ id })
-    return records[0]
+  public async findByConnectionId(connectionId: string): Promise<MediationRecord | null> {
+    //const records = await this.mediatorRepository.findByQuery({ connectionId })
+    const records = await this.mediatorRepository.getAll()
+    console.log("PUKE: filename: /src/modules/routing/services/RecipientService.ts, line: 212"); //PKDBG/Point;
+    for (const record of records) {
+      if (record.connectionId === connectionId) return record
+    }
+    return null
   }
 
   public async getMediators(): Promise<MediationRecord[] | null> {
