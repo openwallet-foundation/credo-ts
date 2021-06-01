@@ -84,11 +84,6 @@ describe('with mediator', () => {
     recipientAgent.inboundTransporter = new mockMobileInboundTransporter(recipientAgent, mediatorAgent)
     
     recipientAgent.inboundTransporter.start(recipientAgent)
-    const recipientMediatorConnection = await recipientAgent.mediationRecipient.getDefaultMediatorConnection()
-    expect(recipientMediatorConnection?.isReady)
-    recipientMediatorRecord = await recipientAgent.mediationRecipient.getDefaultMediator()
-    console.log(`${JSON.stringify(recipientMediatorRecord)}`)
-    expect(recipientMediatorRecord?.state).toBe(MediationState.Granted)
   })
 
   test('recipient and Ted make a connection via mediator', async () => {
@@ -242,49 +237,53 @@ class mockMobileInboundTransporter implements InboundTransporter {
   public connection?: ConnectionRecord
   public recipient: Agent
   public mediator: Agent
+  
   public constructor(recipient: Agent, mediator: Agent) {
     this.stop = true
     this.recipient = recipient
     this.mediator = mediator
   }
   public async start(agent: Agent) {
-    await this.registerMediator(this.recipient, this.mediator)
-    if (this.connection) {
-      this.stop = false
-      //this.pollDownloadMessages(agent, this.connection)
-    }
+    this.recipient = agent
+    await this.registerMediator()
+    this.stop = false
+    this.pollDownloadMessages()
   }
 
-  public async registerMediator(recipient: Agent, mediator: Agent) {
-    let { invitation, connectionRecord } = await mediator.connections.createConnection({autoAcceptConnection: true})
+  public async registerMediator() {
+    let { invitation, connectionRecord } = await this.mediator.connections.createConnection({autoAcceptConnection: true})
     // invitation.setReturnRouting(ReturnRouteTypes.all)
-    const recipientConnection = await recipient.connections.receiveInvitation(invitation)
-    const mediatorAgentConnection = await mediator.connections.returnWhenIsConnected(connectionRecord.id)
-    const recipientAgentConnection = await recipient.connections.returnWhenIsConnected(recipientConnection.id)
+    const recipientConnection = await this.recipient.connections.receiveInvitation(invitation)
+    const mediatorAgentConnection = await this.mediator.connections.returnWhenIsConnected(connectionRecord.id)
+    const recipientAgentConnection = await this.recipient.connections.returnWhenIsConnected(recipientConnection.id)
     expect(recipientAgentConnection).toBeConnectedWith(mediatorAgentConnection)
     expect(mediatorAgentConnection).toBeConnectedWith(recipientAgentConnection)
     expect(mediatorAgentConnection.isReady)
-    let mediationRecord = await recipient.mediationRecipient.requestAndWaitForAcception(
+    let mediationRecord = await this.recipient.mediationRecipient.requestAndWaitForAcception(
       recipientAgentConnection,
       200000
     )
-    mediationRecord = await recipient.mediationRecipient.setDefaultMediator(mediationRecord)
+    mediationRecord = await this.recipient.mediationRecipient.setDefaultMediator(mediationRecord)
     // expects should be a independent test, but this will do for now...
-    expect(mediationRecord.state).toBe(MediationState.Granted)
+    let mediationRecord_ = await this.recipient.mediationRecipient.getDefaultMediator()
+    if(mediationRecord_){
+      expect(mediationRecord_.state).toBe(MediationState.Granted)
+    }else{ throw new Error()}
+    const recipientMediatorConnection = await this.recipient.mediationRecipient.getDefaultMediatorConnection()
+    if(recipientMediatorConnection){
+      expect(recipientMediatorConnection?.isReady)
+      const recipientMediatorRecord = await this.recipient.mediationRecipient.findByConnectionId(recipientMediatorConnection.id)
+      expect(recipientMediatorRecord?.state).toBe(MediationState.Granted)
+    }else{ throw new Error("no mediator connection found.") }
     this.connection = recipientAgentConnection
-    // this.pollDownloadMessages(recipient, recipientConnection)
   }
 
-  private pollDownloadMessages(recipient: Agent, Connection: ConnectionRecord) {
-    const loop = async () => {
-      while (!this.stop) {
-        await recipient.mediationRecipient.downloadMessages(Connection)
-        await sleep(10000)
-      }
+  private async pollDownloadMessages() {
+    if(this.connection){
+      await this.recipient.mediationRecipient.downloadMessages(this.connection)
     }
-    new Promise(() => {
-      loop()
-    })
+    await sleep(10000)
+    await this.pollDownloadMessages()
   }
 }
 

@@ -111,6 +111,10 @@ export class RecipientModule {
     return response
   }
 
+  public async findByConnectionId(connectionId: string){
+    return await this.recipientService.findByConnectionId(connectionId)
+  }
+
   public async getMediators() {
     return await this.recipientService.getMediators()
   }

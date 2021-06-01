@@ -42,9 +42,7 @@ export class RecipientService {
 
   public async init() {
     const records = await this.mediatorRepository.getAll()
-      console.log(JSON.stringify(records))
       for (let record of records) {
-        console.log(JSON.stringify(record))
         if (record.default){
           // Remove any possible competing mediators set all other record tags' default to false.
           this.setDefaultMediator(record)
@@ -229,9 +227,7 @@ export class RecipientService {
   public async getDefaultMediator() {
     if (!this.defaultMediator) {
       const records = await this.mediatorRepository.getAll()
-      console.log(JSON.stringify(records))
       for (let record of records) {
-        console.log(JSON.stringify(record))
         if (record.default){
           this.setDefaultMediator(record)
           return this.defaultMediator
