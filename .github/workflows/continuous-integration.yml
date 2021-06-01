@@ -172,6 +172,9 @@ jobs:
       - name: Prepend Node path
         run: npm config set scripts-prepend-node-path true
 
+      - name: Set Verbose Logging
+        run: npm config set loglevel verbose --global
+
       - name: Set NPM config
         run: |
           echo "//registry.npmjs.org/:_authToken=${{secrets.NPM_TOKEN}}" >> .npmrc
@@ -186,7 +189,7 @@ jobs:
         if: github.event_name == 'push'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: yarn release patch --preRelease=unstable
+        run: yarn release patch --preRelease=unstable -VV
 
       # On manual workflow dispatch release stable version
       - name: Release Stable
