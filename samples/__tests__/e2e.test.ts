@@ -251,7 +251,7 @@ class mockMobileInboundTransporter implements InboundTransporter {
     await this.registerMediator(this.recipient, this.mediator)
     if (this.connection) {
       this.stop = false
-      this.pollDownloadMessages(agent, this.connection)
+      //this.pollDownloadMessages(agent, this.connection)
     }
   }
 
