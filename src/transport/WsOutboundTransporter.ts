@@ -1,11 +1,20 @@
 import { OutboundTransporter } from './OutboundTransporter'
 import { Agent } from '../agent/Agent'
-import { WebSocketTransport } from '../agent/TransportService'
+import { TransportSession } from '../agent/TransportService'
 import { Logger } from '../logger'
 import { ConnectionRecord } from '../modules/connections'
 import { OutboundPackage } from '../types'
 import { Symbols } from '../symbols'
 import { WebSocket } from '../utils/ws'
+
+export class WebSocketTransportSession implements TransportSession {
+  public readonly type = 'websocket'
+  public socket?: WebSocket
+
+  public constructor(socket?: WebSocket) {
+    this.socket = socket
+  }
+}
 
 export class WsOutboundTransporter implements OutboundTransporter {
   private transportTable: Map<string, WebSocket> = new Map<string, WebSocket>()
@@ -31,33 +40,29 @@ export class WsOutboundTransporter implements OutboundTransporter {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
-    const { connection, payload, transport } = outboundPackage
+    const { connection, payload, endpoint, session } = outboundPackage
     this.logger.debug(
-      `Sending outbound message to connection ${connection.id} over ${transport?.type} transport.`,
+      `Sending outbound message to connection ${connection.id} over ${session?.type} transport.`,
       payload
     )
 
-    if (transport instanceof WebSocketTransport) {
-      const socket = await this.resolveSocket(connection, transport)
-      socket.send(JSON.stringify(payload))
+    if (session instanceof WebSocketTransportSession && session.socket?.readyState === WebSocket.OPEN) {
+      session.socket.send(JSON.stringify(payload))
     } else {
-      throw new Error(`Unsupported transport ${transport?.type}.`)
+      const socket = await this.resolveSocket(connection, endpoint)
+      socket.send(JSON.stringify(payload))
     }
   }
 
-  private async resolveSocket(connection: ConnectionRecord, transport: WebSocketTransport) {
+  private async resolveSocket(connection: ConnectionRecord, endpoint?: string) {
     // If we already have a socket connection use it
-    if (transport.socket?.readyState === WebSocket.OPEN) {
-      return transport.socket
-    }
-
     let socket = this.transportTable.get(connection.id)
 
     if (!socket) {
-      if (!transport.endpoint) {
+      if (!endpoint) {
         throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
       }
-      socket = await this.createSocketConnection(transport.endpoint)
+      socket = await this.createSocketConnection(endpoint)
       this.transportTable.set(connection.id, socket)
       this.listenOnWebSocketMessages(socket)
     }

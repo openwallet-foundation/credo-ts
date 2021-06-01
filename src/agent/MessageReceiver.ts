@@ -11,7 +11,7 @@ import { AgentMessage } from './AgentMessage'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { Logger } from '../logger'
 import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
-import { Transport, TransportService } from './TransportService'
+import { TransportSession, TransportService } from './TransportService'
 import { AriesFrameworkError } from '../error'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -44,7 +44,7 @@ export class MessageReceiver {
    *
    * @param inboundPackedMessage the message to receive and handle
    */
-  public async receiveMessage(inboundPackedMessage: unknown, transport?: Transport) {
+  public async receiveMessage(inboundPackedMessage: unknown, session?: TransportSession) {
     if (typeof inboundPackedMessage !== 'object' || inboundPackedMessage == null) {
       throw new AriesFrameworkError('Invalid message received. Message should be object')
     }
@@ -69,8 +69,8 @@ export class MessageReceiver {
       }
     }
 
-    if (connection && transport) {
-      this.transportService.saveTransport(connection.id, transport)
+    if (connection && session) {
+      this.transportService.saveSession(connection.id, session)
     }
 
     this.logger.info(`Received message with type '${unpackedMessage.message['@type']}'`, unpackedMessage.message)
