@@ -86,7 +86,7 @@ export class CredentialService {
       state: CredentialState.ProposalSent,
       proposalMessage,
       credentialAttributes: proposalMessage.credentialProposal?.attributes,
-      tags: { threadId: proposalMessage.threadId },
+      tags: { threadId: proposalMessage.threadId, connectionId: connectionRecord.id },
     })
     await this.credentialRepository.save(credentialRecord)
     this.eventEmitter.emit<CredentialStateChangedEvent>({
@@ -154,11 +154,10 @@ export class CredentialService {
 
     try {
       // Credential record already exists
-      credentialRecord = await this.getByThreadId(proposalMessage.threadId)
+      credentialRecord = await this.getByConnectionAndThreadId(connection.id, proposalMessage.threadId)
 
       // Assert
       credentialRecord.assertState(CredentialState.OfferSent)
-      credentialRecord.assertConnection(connection.id)
 
       // Update record
       credentialRecord.proposalMessage = proposalMessage
@@ -171,7 +170,7 @@ export class CredentialService {
         proposalMessage,
         credentialAttributes: proposalMessage.credentialProposal?.attributes,
         state: CredentialState.ProposalReceived,
-        tags: { threadId: proposalMessage.threadId },
+        tags: { threadId: proposalMessage.threadId, connectionId: connection.id },
       })
 
       // Save record
@@ -274,7 +273,7 @@ export class CredentialService {
         schemaId: credOffer.schema_id,
       },
       state: CredentialState.OfferSent,
-      tags: { threadId: credentialOfferMessage.id },
+      tags: { threadId: credentialOfferMessage.id, connectionId: connectionRecord.id },
     })
 
     await this.credentialRepository.save(credentialRecord)
@@ -321,11 +320,10 @@ export class CredentialService {
 
     try {
       // Credential record already exists
-      credentialRecord = await this.getByThreadId(credentialOfferMessage.threadId)
+      credentialRecord = await this.getByConnectionAndThreadId(connection.id, credentialOfferMessage.threadId)
 
       // Assert
       credentialRecord.assertState(CredentialState.ProposalSent)
-      credentialRecord.assertConnection(connection.id)
 
       credentialRecord.offerMessage = credentialOfferMessage
       credentialRecord.credentialAttributes = credentialOfferMessage.credentialPreview.attributes
@@ -343,7 +341,7 @@ export class CredentialService {
           schemaId: indyCredentialOffer.schema_id,
         },
         state: CredentialState.OfferReceived,
-        tags: { threadId: credentialOfferMessage.id },
+        tags: { threadId: credentialOfferMessage.id, connectionId: connection.id },
       })
 
       // Save in repository
@@ -446,9 +444,8 @@ export class CredentialService {
       )
     }
 
-    const credentialRecord = await this.getByThreadId(credentialRequestMessage.threadId)
+    const credentialRecord = await this.getByConnectionAndThreadId(connection.id, credentialRequestMessage.threadId)
     credentialRecord.assertState(CredentialState.OfferSent)
-    credentialRecord.assertConnection(connection.id)
 
     this.logger.debug('Credential record found when processing credential request', credentialRecord)
 
@@ -562,7 +559,7 @@ export class CredentialService {
     }
 
     // Assert credential record
-    const credentialRecord = await this.getByThreadId(issueCredentialMessage.threadId)
+    const credentialRecord = await this.getByConnectionAndThreadId(connection.id, issueCredentialMessage.threadId)
     credentialRecord.assertState(CredentialState.RequestSent)
 
     if (!credentialRecord.metadata.requestMetadata) {
@@ -646,7 +643,7 @@ export class CredentialService {
     }
 
     // Assert credential record
-    const credentialRecord = await this.getByThreadId(credentialAckMessage.threadId)
+    const credentialRecord = await this.getByConnectionAndThreadId(connection.id, credentialAckMessage.threadId)
     credentialRecord.assertState(CredentialState.CredentialIssued)
 
     // Update record
@@ -687,16 +684,18 @@ export class CredentialService {
   }
 
   /**
-   * Retrieve a credential record by thread id
+   * Retrieve a credential record by connection id and thread id
    *
+   * @param connectionId The connection id
    * @param threadId The thread id
    * @throws {RecordNotFoundError} If no record is found
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The credential record
    */
-  public getByThreadId(threadId: string): Promise<CredentialRecord> {
+  public getByConnectionAndThreadId(connectionId: string, threadId: string): Promise<CredentialRecord> {
     return this.credentialRepository.getSingleByQuery({
       threadId,
+      connectionId,
     })
   }
 

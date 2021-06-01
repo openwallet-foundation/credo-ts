@@ -243,15 +243,16 @@ export class ProofsModule {
   }
 
   /**
-   * Retrieve a proof record by thread id
+   * Retrieve a proof record by connection id and thread id
    *
+   * @param connectionId The connection id
    * @param threadId The thread id
    * @throws {RecordNotFoundError} If no record is found
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The proof record
    */
-  public async getByThreadId(threadId: string): Promise<ProofRecord> {
-    return this.proofService.getByThreadId(threadId)
+  public async getByConnectionAndThreadId(connectionId: string, threadId: string): Promise<ProofRecord> {
+    return this.proofService.getByConnectionAndThreadId(connectionId, threadId)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {

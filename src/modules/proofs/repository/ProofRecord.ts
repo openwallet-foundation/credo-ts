@@ -22,7 +22,8 @@ export interface ProofRecordProps {
   presentationMessage?: PresentationMessage
 }
 export interface ProofRecordTags extends Tags {
-  threadId?: string
+  threadId: string
+  connectionId: string
 }
 
 export class ProofRecord extends BaseRecord implements ProofRecordProps {
@@ -56,7 +57,7 @@ export class ProofRecord extends BaseRecord implements ProofRecordProps {
       this.state = props.state
       this.connectionId = props.connectionId
       this.presentationId = props.presentationId
-      this.tags = props.tags as { [keys: string]: string }
+      this.tags = props.tags
     }
   }
 

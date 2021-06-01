@@ -26,7 +26,7 @@ export interface CredentialStorageProps {
 
   credentialId?: string
   metadata?: CredentialRecordMetadata
-  tags?: CredentialRecordTags
+  tags: CredentialRecordTags
   proposalMessage?: ProposeCredentialMessage
   offerMessage?: OfferCredentialMessage
   requestMessage?: RequestCredentialMessage
@@ -35,7 +35,8 @@ export interface CredentialStorageProps {
 }
 
 export interface CredentialRecordTags extends Tags {
-  threadId?: string
+  threadId: string
+  connectionId: string
 }
 
 export class CredentialRecord extends BaseRecord implements CredentialStorageProps {
@@ -71,7 +72,7 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
       this.connectionId = props.connectionId
       this.metadata = props.metadata ?? {}
       this.credentialId = props.credentialId
-      this.tags = (props.tags as { [keys: string]: string }) ?? {}
+      this.tags = props.tags
 
       this.proposalMessage = props.proposalMessage
       this.offerMessage = props.offerMessage
