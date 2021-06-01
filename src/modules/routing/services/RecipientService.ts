@@ -42,26 +42,26 @@ export class RecipientService {
 
   public async init() {
     const records = await this.mediatorRepository.getAll()
-      for (let record of records) {
-        if (record.default){
-          // Remove any possible competing mediators set all other record tags' default to false.
-          this.setDefaultMediator(record)
-          return this.defaultMediator
-        }
+    for (let record of records) {
+      if (record.default) {
+        // Remove any possible competing mediators set all other record tags' default to false.
+        this.setDefaultMediator(record)
+        return this.defaultMediator
       }
+    }
   }
 
   public async createRequest(connection: ConnectionRecord): Promise<[MediationRecord, MediationRequestMessage]> {
-      const mediationRecord = new MediationRecord({
-        state: MediationState.Requested,
+    const mediationRecord = new MediationRecord({
+      state: MediationState.Requested,
+      role: MediationRole.Mediator,
+      connectionId: connection.id,
+      tags: {
         role: MediationRole.Mediator,
         connectionId: connection.id,
-        tags: {
-          role: MediationRole.Mediator,
-          connectionId: connection.id,
-        },
-      })
-      await this.mediatorRepository.save(mediationRecord)
+      },
+    })
+    await this.mediatorRepository.save(mediationRecord)
     return [mediationRecord, new MediationRequestMessage({})]
   }
 
@@ -142,7 +142,7 @@ export class RecipientService {
     })
   }
 
-  public async saveRoute(recipientKey: Verkey, mediationRecord: MediationRecord){
+  public async saveRoute(recipientKey: Verkey, mediationRecord: MediationRecord) {
     mediationRecord.recipientKeys.push(recipientKey)
     this.mediatorRepository.update(mediationRecord)
   }
@@ -228,7 +228,7 @@ export class RecipientService {
     if (!this.defaultMediator) {
       const records = await this.mediatorRepository.getAll()
       for (let record of records) {
-        if (record.default){
+        if (record.default) {
           this.setDefaultMediator(record)
           return this.defaultMediator
         }
@@ -256,7 +256,7 @@ export class RecipientService {
 
   public async clearDefaultMediator() {
     const fetchedRecords = (await this.getMediators()) ?? []
-    for (let record of fetchedRecords){
+    for (let record of fetchedRecords) {
       record.default = false
       await this.mediatorRepository.update(record)
     }

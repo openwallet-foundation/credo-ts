@@ -1,5 +1,5 @@
 import type { Verkey } from 'indy-sdk'
-import { MediationGrantMessage, KeylistUpdateMessage, KeylistUpdated, KeylistUpdateResponseMessage} from '.'
+import { MediationGrantMessage, KeylistUpdateMessage, KeylistUpdated, KeylistUpdateResponseMessage } from '.'
 
 import { BaseEvent } from '../../agent/Events'
 import { ConnectionRecord } from '../connections'

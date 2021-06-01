@@ -23,7 +23,15 @@ import { Wallet } from '../../../wallet/Wallet'
 import { HandlerInboundMessage } from '../../../agent/Handler'
 import { ForwardHandler } from '../handlers'
 import { uuid } from '../../../utils/uuid'
-import { ForwardEvent, MediationKeylistEvent, KeylistUpdatedEvent, MediationGrantedEvent, MediationKeylistUpdatedEvent, MediationStateChangedEvent, RoutingEventTypes } from '../RoutingEvents'
+import {
+  ForwardEvent,
+  MediationKeylistEvent,
+  KeylistUpdatedEvent,
+  MediationGrantedEvent,
+  MediationKeylistUpdatedEvent,
+  MediationStateChangedEvent,
+  RoutingEventTypes,
+} from '../RoutingEvents'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
 import { Symbols } from '../../../symbols'
@@ -87,7 +95,7 @@ export class MediatorService {
   public async processKeylistUpdateRequest(messageContext: InboundMessageContext<KeylistUpdateMessage>) {
     const { message } = messageContext
     const connection = this._assertConnection(messageContext.connection, ForwardMessage)
-    const keylist:KeylistUpdated[] = []
+    const keylist: KeylistUpdated[] = []
     const mediationRecord = await this.findRecipientByConnectionId(connection.id)
     if (!mediationRecord) {
       throw new Error(`mediation record for  ${connection.id} not found!`)
@@ -120,7 +128,7 @@ export class MediatorService {
       type: RoutingEventTypes.MediationKeylistUpdated,
       payload: {
         mediationRecord,
-        "message": message_
+        message: message_,
       },
     })
   }
@@ -164,10 +172,10 @@ export class MediatorService {
   }
   // TODO: resolve possible duplicate keylist messages
   //public async createKeylistUpdateResponseMessage(keylist: KeylistUpdated[]): Promise<KeylistUpdateResponseMessage> {
-    //const keylistUpdateMessage = new KeylistUpdateResponseMessage({
-    //  updated: keylist,
-    //})
-    //return keylistUpdateMessage
+  //const keylistUpdateMessage = new KeylistUpdateResponseMessage({
+  //  updated: keylist,
+  //})
+  //return keylistUpdateMessage
   //}
 
   public async createGrantMediationMessage(mediation: MediationRecord): Promise<MediationGrantMessage> {
@@ -203,7 +211,7 @@ export class MediatorService {
       type: RoutingEventTypes.MediationGranted,
       payload: {
         mediationRecord,
-        message
+        message,
       },
     })
     // return routing path.. TODO: will this endup in a queue or something undesired.
