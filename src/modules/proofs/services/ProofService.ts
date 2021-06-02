@@ -833,7 +833,7 @@ export class ProofService extends EventEmitter {
     attributeReferent: string
   ): Promise<Credential[]> {
     const credentialsJson = await this.wallet.getCredentialsForProofRequest(proofRequest.toJSON(), attributeReferent)
-    return (JsonTransformer.fromJSON(credentialsJson, Credential) as unknown) as Credential[]
+    return JsonTransformer.fromJSON(credentialsJson, Credential) as unknown as Credential[]
   }
 
   /**

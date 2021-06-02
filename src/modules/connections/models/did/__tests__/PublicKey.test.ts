@@ -68,12 +68,8 @@ describe('Did | PublicKey', () => {
     expect(transformed).toEqual(json)
   })
 
-  const publicKeyJsonToClassTests: [
-    string,
-    ClassConstructor<PublicKey>,
-    Record<string, string | undefined>,
-    string
-  ][] = publicKeysJson.map((pk) => [pk.class.name, pk.class, pk.json, pk.valueKey])
+  const publicKeyJsonToClassTests: [string, ClassConstructor<PublicKey>, Record<string, string | undefined>, string][] =
+    publicKeysJson.map((pk) => [pk.class.name, pk.class, pk.json, pk.valueKey])
   test.each(publicKeyJsonToClassTests)(
     'should correctly transform Json to %s class',
     async (_, publicKeyClass, json, valueKey) => {
@@ -86,12 +82,8 @@ describe('Did | PublicKey', () => {
     }
   )
 
-  const publicKeyClassToJsonTests: [
-    string,
-    PublicKey,
-    Record<string, string | undefined>,
-    string
-  ][] = publicKeysJson.map((pk) => [pk.class.name, new pk.class({ ...(pk.json as any) }), pk.json, pk.valueKey])
+  const publicKeyClassToJsonTests: [string, PublicKey, Record<string, string | undefined>, string][] =
+    publicKeysJson.map((pk) => [pk.class.name, new pk.class({ ...(pk.json as any) }), pk.json, pk.valueKey])
 
   test.each(publicKeyClassToJsonTests)(
     'should correctly transform %s class to Json',

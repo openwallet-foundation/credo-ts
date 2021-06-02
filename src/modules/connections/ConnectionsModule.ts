@@ -52,10 +52,7 @@ export class ConnectionsModule {
     return this.connectionService
   }
 
-  public async createConnection(config?: {
-    autoAcceptConnection?: boolean
-    alias?: string
-  }): Promise<{
+  public async createConnection(config?: { autoAcceptConnection?: boolean; alias?: string }): Promise<{
     invitation: ConnectionInvitationMessage
     connectionRecord: ConnectionRecord
   }> {

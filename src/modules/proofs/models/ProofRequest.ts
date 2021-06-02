@@ -59,6 +59,6 @@ export class ProofRequest {
 
   public toJSON() {
     // IndyProofRequest is indy-sdk json type
-    return (JsonTransformer.toJSON(this) as unknown) as IndyProofRequest
+    return JsonTransformer.toJSON(this) as unknown as IndyProofRequest
   }
 }
