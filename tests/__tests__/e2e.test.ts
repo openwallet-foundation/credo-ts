@@ -62,14 +62,13 @@ describe('with mediator', () => {
   })
   afterAll(async () => {
     ;(recipientAgent.inboundTransporter as mockMobileInboundTransporter).stop = true
-    
+
     // Wait for messages to flush out
     await new Promise((r) => setTimeout(r, 1000))
-    
+
     await recipientAgent.closeAndDeleteWallet()
     await mediatorAgent.closeAndDeleteWallet()
   })
-
 
   test('recipient and mediator establish a connection and granted mediation', async () => {
     recipientAgent = new Agent(recipientConfig)
@@ -82,7 +81,7 @@ describe('with mediator', () => {
     await mediatorAgent.init()
 
     recipientAgent.inboundTransporter = new mockMobileInboundTransporter(recipientAgent, mediatorAgent)
-    
+
     recipientAgent.inboundTransporter.start(recipientAgent)
   })
 
@@ -170,9 +169,7 @@ class mockMediatorInBoundTransporter implements InboundTransporter {
 }
 
 class mockMediatorOutBoundTransporter implements OutboundTransporter {
-
-  public constructor() {
-  }
+  public constructor() {}
   public async start(): Promise<void> {
     // No custom start logic required
   }
@@ -206,7 +203,7 @@ class mockMobileOutBoundTransporter implements OutboundTransporter {
 
   public async sendMessage(outboundPackage: OutboundPackage) {
     const { connection, payload, endpoint, responseRequested } = outboundPackage
-    if (!endpoint || endpoint == 'didcomm:transport/queue' ) {
+    if (!endpoint || endpoint == 'didcomm:transport/queue') {
       throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
     }
     try {
@@ -225,7 +222,7 @@ class mockMobileOutBoundTransporter implements OutboundTransporter {
       } else {
         testLogger.debug(`No response received.`)
       }
-      } catch (e) {
+    } catch (e) {
       testLogger.debug('error sending message', e)
       throw e
     }
@@ -237,7 +234,7 @@ class mockMobileInboundTransporter implements InboundTransporter {
   public connection?: ConnectionRecord
   public recipient: Agent
   public mediator: Agent
-  
+
   public constructor(recipient: Agent, mediator: Agent) {
     this.stop = true
     this.recipient = recipient
@@ -251,7 +248,9 @@ class mockMobileInboundTransporter implements InboundTransporter {
   }
 
   public async registerMediator() {
-    let { invitation, connectionRecord } = await this.mediator.connections.createConnection({autoAcceptConnection: true})
+    let { invitation, connectionRecord } = await this.mediator.connections.createConnection({
+      autoAcceptConnection: true,
+    })
     // invitation.setReturnRouting(ReturnRouteTypes.all)
     const recipientConnection = await this.recipient.connections.receiveInvitation(invitation)
     const mediatorAgentConnection = await this.mediator.connections.returnWhenIsConnected(connectionRecord.id)
@@ -266,20 +265,26 @@ class mockMobileInboundTransporter implements InboundTransporter {
     mediationRecord = await this.recipient.mediationRecipient.setDefaultMediator(mediationRecord)
     // expects should be a independent test, but this will do for now...
     let mediationRecord_ = await this.recipient.mediationRecipient.getDefaultMediator()
-    if(mediationRecord_){
+    if (mediationRecord_) {
       expect(mediationRecord_.state).toBe(MediationState.Granted)
-    }else{ throw new Error()}
+    } else {
+      throw new Error()
+    }
     const recipientMediatorConnection = await this.recipient.mediationRecipient.getDefaultMediatorConnection()
-    if(recipientMediatorConnection){
+    if (recipientMediatorConnection) {
       expect(recipientMediatorConnection?.isReady)
-      const recipientMediatorRecord = await this.recipient.mediationRecipient.findByConnectionId(recipientMediatorConnection.id)
+      const recipientMediatorRecord = await this.recipient.mediationRecipient.findByConnectionId(
+        recipientMediatorConnection.id
+      )
       expect(recipientMediatorRecord?.state).toBe(MediationState.Granted)
-    }else{ throw new Error("no mediator connection found.") }
+    } else {
+      throw new Error('no mediator connection found.')
+    }
     this.connection = recipientAgentConnection
   }
 
   private async pollDownloadMessages() {
-    if(this.connection){
+    if (this.connection) {
       await this.recipient.mediationRecipient.downloadMessages(this.connection)
     }
     await sleep(10000)

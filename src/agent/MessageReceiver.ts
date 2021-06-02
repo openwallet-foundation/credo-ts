@@ -50,7 +50,7 @@ export class MessageReceiver {
     }
 
     this.logger.debug(`Agent ${this.config.label} received message:`, inboundPackedMessage)
-    
+
     const unpackedMessage = await this.unpackMessage(inboundPackedMessage as Record<string, unknown>)
     const senderKey = unpackedMessage.sender_verkey
     let connection = undefined

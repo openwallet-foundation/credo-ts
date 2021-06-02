@@ -69,7 +69,7 @@ export class ConnectionService {
     mediatorId?: string
     routingKeys?: string[]
     endpoint?: string
-  }){
+  }) {
     // TODO: public did, multi use
     const connectionRecord = await this.createConnection({
       role: ConnectionRole.Inviter,
@@ -537,7 +537,7 @@ export class ConnectionService {
     const connection = await this.connectionRepository.findById(connectionId)
     if (connection && isConnected(connection)) return connection //TODO: does this leave trailing listeners behind?
 
-    // return listener 
+    // return listener
     return promise
   }
 }
