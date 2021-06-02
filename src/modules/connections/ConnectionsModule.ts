@@ -127,7 +127,7 @@ export class ConnectionsModule {
       await this.consumerRoutingService.createRoute(connectionRecord.verkey)
     }
 
-    const outbound = createOutboundMessage(connectionRecord, message, connectionRecord.invitation)
+    const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)
 
     return connectionRecord

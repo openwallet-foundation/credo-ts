@@ -1,5 +1,7 @@
 import type { Logger } from '../logger'
-import type { OutboundMessage, UnpackedMessageContext } from '../types'
+import type { UnpackedMessageContext } from '../types'
+import type { AgentMessage } from './AgentMessage'
+import type { Verkey } from 'indy-sdk'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
@@ -8,6 +10,12 @@ import { ForwardMessage } from '../modules/routing/messages'
 import { Wallet } from '../wallet/Wallet'
 
 import { AgentConfig } from './AgentConfig'
+
+interface Keys {
+  recipientKeys: Verkey[]
+  routingKeys: Verkey[]
+  senderVk: Verkey | null
+}
 
 @scoped(Lifecycle.ContainerScoped)
 class EnvelopeService {
@@ -19,8 +27,8 @@ class EnvelopeService {
     this.logger = agentConfig.logger
   }
 
-  public async packMessage(outboundMessage: OutboundMessage): Promise<JsonWebKey> {
-    const { routingKeys, recipientKeys, senderVk, payload } = outboundMessage
+  public async packMessage(keys: Keys, payload: AgentMessage): Promise<JsonWebKey> {
+    const { routingKeys, recipientKeys, senderVk } = keys
     const message = payload.toJSON()
 
     let wireMessage = await this.wallet.pack(message, recipientKeys, senderVk)

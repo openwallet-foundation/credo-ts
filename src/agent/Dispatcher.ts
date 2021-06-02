@@ -43,9 +43,15 @@ class Dispatcher {
         outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
       }
 
-      // check for return routing, with thread id
+      // Check for return routing, with thread id
       if (message.hasReturnRouting(threadId)) {
-        return await this.messageSender.packMessage(outboundMessage)
+        // Find service with highest priority and keys to pack message
+        const [service] = this.transportService.findServices(outboundMessage.connection)
+        if (!service) {
+          throw new AriesFrameworkError(`Connection with id ${outboundMessage.connection.id} has no service!`)
+        }
+        // TODO Should we validate inbound transport session scheme and service endpoint scheme?
+        return await this.messageSender.packMessage(outboundMessage, service)
       }
 
       await this.messageSender.sendMessage(outboundMessage)

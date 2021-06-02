@@ -1,3 +1,4 @@
+import type { DidCommService } from '../modules/connections'
 import type { OutboundTransporter } from '../transport/OutboundTransporter'
 import type { OutboundMessage, OutboundPackage } from '../types'
 
@@ -35,14 +36,19 @@ export class MessageSender {
     return this._outboundTransporter
   }
 
-  public async packMessage(outboundMessage: OutboundMessage): Promise<OutboundPackage> {
+  public async packMessage(outboundMessage: OutboundMessage, service: DidCommService): Promise<OutboundPackage> {
     const { connection, payload } = outboundMessage
     const { verkey, theirKey } = connection
-    const endpoint = this.transportService.findEndpoint(connection)
+    const endpoint = service.serviceEndpoint
     const message = payload.toJSON()
     this.logger.debug('outboundMessage', { verkey, theirKey, message })
+    const keys = {
+      recipientKeys: service.recipientKeys,
+      routingKeys: service.routingKeys || [],
+      senderVk: connection.verkey,
+    }
+    const wireMessage = await this.envelopeService.packMessage(keys, outboundMessage.payload)
     const responseRequested = outboundMessage.payload.hasReturnRouting()
-    const wireMessage = await this.envelopeService.packMessage(outboundMessage)
     return { connection, payload: wireMessage, endpoint, responseRequested }
   }
 
@@ -50,8 +56,30 @@ export class MessageSender {
     if (!this.outboundTransporter) {
       throw new AriesFrameworkError('Agent has no outbound transporter!')
     }
-    const outboundPackage = await this.packMessage(outboundMessage)
-    outboundPackage.session = this.transportService.findSession(outboundMessage.connection.id)
-    await this.outboundTransporter.sendMessage(outboundPackage)
+
+    const services = this.transportService.findServices(outboundMessage.connection)
+    if (services.length === 0) {
+      throw new AriesFrameworkError(`Connection with id ${outboundMessage.connection.id} has no service!`)
+    }
+
+    let success = false
+    for await (const service of services) {
+      this.logger.debug(`Sending outbound message to service:`, { service })
+      if (!success) {
+        try {
+          const outboundPackage = await this.packMessage(outboundMessage, service)
+          outboundPackage.session = this.transportService.findSession(outboundMessage.connection.id)
+          await this.outboundTransporter.sendMessage(outboundPackage)
+          success = true
+        } catch (error) {
+          this.logger.debug(
+            `Sending outbound message to service with id ${service.id} failed with the following error:`,
+            {
+              error,
+            }
+          )
+        }
+      }
+    }
   }
 }

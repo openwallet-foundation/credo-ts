@@ -3,9 +3,8 @@ import type { ConnectionRecord } from '../modules/connections/repository'
 import { Lifecycle, scoped, inject } from 'tsyringe'
 
 import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
-import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
-import { ConnectionRole } from '../modules/connections/models'
+import { ConnectionRole, DidCommService } from '../modules/connections/models'
 
 @scoped(Lifecycle.ContainerScoped)
 export class TransportService {
@@ -28,23 +27,24 @@ export class TransportService {
     return this.transportSessionTable[connectionId]
   }
 
-  public findEndpoint(connection: ConnectionRecord) {
+  public findServices(connection: ConnectionRecord): DidCommService[] {
     if (connection.theirDidDoc) {
-      const endpoint = connection.theirDidDoc.didCommServices[0].serviceEndpoint
-      if (endpoint) {
-        this.logger.debug(`Taking service endpoint ${endpoint} from their DidDoc`)
-        return endpoint
-      }
+      return connection.theirDidDoc.didCommServices
     }
 
     if (connection.role === ConnectionRole.Invitee && connection.invitation) {
-      const endpoint = connection.invitation.serviceEndpoint
-      if (endpoint) {
-        this.logger.debug(`Taking service endpoint ${endpoint} from invitation`)
-        return endpoint
+      const { invitation } = connection
+      if (invitation.serviceEndpoint) {
+        const service = new DidCommService({
+          id: `${connection.id}-invitation`,
+          serviceEndpoint: invitation.serviceEndpoint,
+          recipientKeys: invitation.recipientKeys || [],
+          routingKeys: invitation.routingKeys || [],
+        })
+        return [service]
       }
     }
-    throw new AriesFrameworkError(`No endpoint found for connection with id ${connection.id}`)
+    return []
   }
 }
 
