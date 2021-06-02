@@ -226,7 +226,7 @@ export class RecipientService {
 
   public async getDefaultMediator() {
     if (!this.defaultMediator) {
-      const records = await this.mediatorRepository.getAll()
+      const records = await this.mediatorRepository.getAll() ?? []
       for (let record of records) {
         if (record.default) {
           this.setDefaultMediator(record)
