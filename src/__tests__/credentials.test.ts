@@ -149,7 +149,10 @@ describe('credentials', () => {
 
     // below values are not in json object
     expect(aliceCredentialRecord.id).not.toBeNull()
-    expect(aliceCredentialRecord.tags).toEqual({ threadId: faberCredentialRecord.tags.threadId })
+    expect(aliceCredentialRecord.tags).toEqual({
+      threadId: faberCredentialRecord.tags.threadId,
+      connectionId: aliceCredentialRecord.tags.connectionId,
+    })
     expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
 
     testLogger.test('Alice sends credential request to Faber')
@@ -185,6 +188,7 @@ describe('credentials', () => {
       createdAt: expect.any(Date),
       tags: {
         threadId: expect.any(String),
+        connectionId: expect.any(String),
       },
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
@@ -203,6 +207,7 @@ describe('credentials', () => {
       createdAt: expect.any(Date),
       tags: {
         threadId: expect.any(String),
+        connectionId: expect.any(String),
       },
       metadata: {
         schemaId,
@@ -256,7 +261,10 @@ describe('credentials', () => {
 
     // below values are not in json object
     expect(aliceCredentialRecord.id).not.toBeNull()
-    expect(aliceCredentialRecord.tags).toEqual({ threadId: faberCredentialRecord.tags.threadId })
+    expect(aliceCredentialRecord.tags).toEqual({
+      threadId: faberCredentialRecord.tags.threadId,
+      connectionId: aliceConnection.id,
+    })
     expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
 
     testLogger.test('Alice sends credential request to Faber')
@@ -292,6 +300,7 @@ describe('credentials', () => {
       createdAt: expect.any(Date),
       tags: {
         threadId: expect.any(String),
+        connectionId: expect.any(String),
       },
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
@@ -306,6 +315,7 @@ describe('credentials', () => {
       createdAt: expect.any(Date),
       tags: {
         threadId: expect.any(String),
+        connectionId: expect.any(String),
       },
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),

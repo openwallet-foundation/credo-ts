@@ -215,15 +215,16 @@ export class CredentialsModule {
   }
 
   /**
-   * Retrieve a credential record by thread id
+   * Retrieve a credential record by connection id and thread id
    *
+   * @param connectionId The connection id
    * @param threadId The thread id
    * @throws {RecordNotFoundError} If no record is found
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The credential record
    */
-  public getByThreadId(threadId: string): Promise<CredentialRecord> {
-    return this.credentialService.getByThreadId(threadId)
+  public getByConnectionAndThreadId(connectionId: string, threadId: string): Promise<CredentialRecord> {
+    return this.credentialService.getByConnectionAndThreadId(connectionId, threadId)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
