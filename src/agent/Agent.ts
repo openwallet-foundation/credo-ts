@@ -1,4 +1,3 @@
-import { EventEmitter } from 'events'
 import { container as baseContainer, DependencyContainer } from 'tsyringe'
 
 import { Logger } from '../logger'
@@ -20,6 +19,9 @@ import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModu
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { Symbols } from '../symbols'
+import { TransportSession } from './TransportService'
+import { EventEmitter } from './EventEmitter'
+import { AgentEventTypes, AgentMessageReceivedEvent } from './Events'
 
 export class Agent {
   protected agentConfig: AgentConfig
@@ -30,6 +32,7 @@ export class Agent {
   protected messageReceiver: MessageReceiver
   protected messageSender: MessageSender
   public inboundTransporter?: InboundTransporter
+  private _isInitialized = false
 
   public readonly connections!: ConnectionsModule
   public readonly proofs!: ProofsModule
@@ -44,17 +47,18 @@ export class Agent {
 
     this.agentConfig = new AgentConfig(initialConfig)
     this.logger = this.agentConfig.logger
-    this.eventEmitter = new EventEmitter()
 
     // Bind class based instances
     this.container.registerInstance(AgentConfig, this.agentConfig)
-    this.container.registerInstance(EventEmitter, this.eventEmitter)
 
     // Based on interfaces. Need to register which class to use
     this.container.registerInstance(Symbols.Logger, this.logger)
     this.container.registerInstance(Symbols.Indy, this.agentConfig.indy)
-    this.container.registerSingleton(Symbols.Wallet, IndyWallet)
+    this.container.register(Symbols.Wallet, { useToken: IndyWallet })
     this.container.registerSingleton(Symbols.StorageService, IndyStorageService)
+
+    // File system differs based on NodeJS / React Native
+    this.container.registerInstance(Symbols.FileSystem, this.agentConfig.fileSystem)
 
     // TODO: do not make messageRepository input parameter
     if (messageRepository) {
@@ -72,6 +76,7 @@ export class Agent {
     })
 
     // Resolve instances after everything is registered
+    this.eventEmitter = this.container.resolve(EventEmitter)
     this.messageSender = this.container.resolve(MessageSender)
     this.messageReceiver = this.container.resolve(MessageReceiver)
     this.wallet = this.container.resolve(Symbols.Wallet)
@@ -89,8 +94,8 @@ export class Agent {
   }
 
   private listenForMessages() {
-    this.eventEmitter.addListener('agentMessage', async (payload) => {
-      await this.receiveMessage(payload)
+    this.eventEmitter.on<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived, async (event) => {
+      await this.receiveMessage(event.payload.message)
     })
   }
 
@@ -102,26 +107,32 @@ export class Agent {
     this.messageSender.setOutboundTransporter(outboundTransporter)
   }
 
+  public get outboundTransporter() {
+    return this.messageSender.outboundTransporter
+  }
+
+  public get events() {
+    return this.eventEmitter
+  }
+
+  public get isInitialized() {
+    return this._isInitialized
+  }
+
   public async init() {
     await this.wallet.init()
 
-    const { publicDidSeed, genesisPath, poolName } = this.agentConfig
+    const { publicDidSeed } = this.agentConfig
     if (publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
       await this.wallet.initPublicDid({ seed: publicDidSeed })
     }
 
-    // If the genesisPath is provided in the config, we will automatically handle ledger connection
-    // otherwise the framework consumer needs to do this manually
-    if (genesisPath) {
-      await this.ledger.connect(poolName, {
-        genesis_txn: genesisPath,
-      })
-    }
-
     if (this.inboundTransporter) {
       await this.inboundTransporter.start(this)
     }
+
+    this._isInitialized = true
   }
 
   public get publicDid() {
@@ -132,8 +143,8 @@ export class Agent {
     return this.agentConfig.mediatorUrl
   }
 
-  public async receiveMessage(inboundPackedMessage: unknown) {
-    return await this.messageReceiver.receiveMessage(inboundPackedMessage)
+  public async receiveMessage(inboundPackedMessage: unknown, session?: TransportSession) {
+    return await this.messageReceiver.receiveMessage(inboundPackedMessage, session)
   }
 
   public async closeAndDeleteWallet() {

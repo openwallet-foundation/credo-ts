@@ -1,19 +1,11 @@
-import type Indy from 'indy-sdk'
-import { getMockConnection } from '../../modules/connections/__tests__/ConnectionService.test'
 import { DidCommService, DidDoc } from '../../modules/connections'
 import { AgentConfig } from '../AgentConfig'
-
-const indy = {} as typeof Indy
+import { getBaseConfig, getMockConnection } from '../../__tests__/helpers'
 
 describe('AgentConfig', () => {
   describe('getEndpoint', () => {
     it('should return the service endpoint of the inbound connection available', () => {
-      const agentConfig = new AgentConfig({
-        label: 'test',
-        walletConfig: { id: 'test' },
-        walletCredentials: { key: 'test' },
-        indy,
-      })
+      const agentConfig = new AgentConfig(getBaseConfig('AgentConfig Test'))
 
       const endpoint = 'https://mediator-url.com'
       agentConfig.establishInbound({
@@ -40,13 +32,11 @@ describe('AgentConfig', () => {
     it('should return the config endpoint + /msg if no inbound connection is available', () => {
       const endpoint = 'https://local-url.com'
 
-      const agentConfig = new AgentConfig({
-        endpoint,
-        label: 'test',
-        walletConfig: { id: 'test' },
-        walletCredentials: { key: 'test' },
-        indy,
-      })
+      const agentConfig = new AgentConfig(
+        getBaseConfig('AgentConfig Test', {
+          endpoint,
+        })
+      )
 
       expect(agentConfig.getEndpoint()).toBe(endpoint + '/msg')
     })
@@ -54,13 +44,11 @@ describe('AgentConfig', () => {
     it('should return the config host + /msg if no inbound connection or config endpoint is available', () => {
       const host = 'https://local-url.com'
 
-      const agentConfig = new AgentConfig({
-        host,
-        label: 'test',
-        walletConfig: { id: 'test' },
-        walletCredentials: { key: 'test' },
-        indy,
-      })
+      const agentConfig = new AgentConfig(
+        getBaseConfig('AgentConfig Test', {
+          host,
+        })
+      )
 
       expect(agentConfig.getEndpoint()).toBe(host + '/msg')
     })
@@ -69,14 +57,12 @@ describe('AgentConfig', () => {
       const host = 'https://local-url.com'
       const port = 8080
 
-      const agentConfig = new AgentConfig({
-        host,
-        port,
-        label: 'test',
-        walletConfig: { id: 'test' },
-        walletCredentials: { key: 'test' },
-        indy,
-      })
+      const agentConfig = new AgentConfig(
+        getBaseConfig('AgentConfig Test', {
+          host,
+          port,
+        })
+      )
 
       expect(agentConfig.getEndpoint()).toBe(`${host}:${port}/msg`)
     })
@@ -86,25 +72,18 @@ describe('AgentConfig', () => {
       const endpoint = 'https://local-url.com'
       const port = 8080
 
-      const agentConfig = new AgentConfig({
-        endpoint,
-        port,
-        label: 'test',
-        walletConfig: { id: 'test' },
-        walletCredentials: { key: 'test' },
-        indy,
-      })
+      const agentConfig = new AgentConfig(
+        getBaseConfig('AgentConfig TesT', {
+          endpoint,
+          port,
+        })
+      )
 
       expect(agentConfig.getEndpoint()).toBe(`${endpoint}/msg`)
     })
 
     it("should return 'didcomm:transport/queue' if no inbound connection or config endpoint or host/port is available", () => {
-      const agentConfig = new AgentConfig({
-        label: 'test',
-        walletConfig: { id: 'test' },
-        walletCredentials: { key: 'test' },
-        indy,
-      })
+      const agentConfig = new AgentConfig(getBaseConfig('AgentConfig Test'))
 
       expect(agentConfig.getEndpoint()).toBe('didcomm:transport/queue')
     })

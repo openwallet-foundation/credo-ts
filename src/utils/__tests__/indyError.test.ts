@@ -23,6 +23,7 @@ describe('isIndyError()', () => {
   it('should return false when the indyName does not match the passes errorName', () => {
     const error = { name: 'IndyError', indyName: 'WalletAlreadyExistsError' }
 
+    // @ts-expect-error not a valid error name
     expect(isIndyError(error, 'DoesNotMatchError')).toBe(false)
   })
 
@@ -36,12 +37,14 @@ describe('isIndyError()', () => {
   it('should return false when the indyName is missing and the message contains a valid but not matching error code', () => {
     const error = { name: 'IndyError', message: '212' }
 
+    // @ts-expect-error not a valid error name
     expect(isIndyError(error, 'DoesNotMatchError')).toBe(false)
   })
 
   it('should throw an error when the indyName is missing and the message contains an invalid error code', () => {
     const error = { name: 'IndyError', message: '832882' }
 
+    // @ts-expect-error not a valid error name
     expect(() => isIndyError(error, 'SomeNewErrorWeDoNotHave')).toThrowError(
       'Could not determine errorName of indyError 832882'
     )

@@ -1,4 +1,3 @@
-import { EventEmitter } from 'events'
 import { Lifecycle, scoped } from 'tsyringe'
 import type { Verkey } from 'indy-sdk'
 
@@ -17,6 +16,8 @@ import {
 } from './handlers'
 import { Logger } from '../../logger'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
+import { EventEmitter } from '../../agent/EventEmitter'
+import { AriesFrameworkError } from '../../error'
 
 @scoped(Lifecycle.ContainerScoped)
 export class RoutingModule {
@@ -51,10 +52,11 @@ export class RoutingModule {
   }
 
   public async provision(mediatorConfiguration: MediatorConfiguration) {
+    this.logger.debug('Provisioning connection with mediator')
     let provisioningRecord = await this.provisioningService.find()
 
     if (!provisioningRecord) {
-      this.logger.info('No provision record found. Creating connection with mediator.')
+      this.logger.debug('No provision record found. Creating connection with mediator.')
       const { verkey, invitationUrl, alias = 'Mediator' } = mediatorConfiguration
       const mediatorInvitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
 
@@ -77,11 +79,7 @@ export class RoutingModule {
 
     this.logger.debug('Provisioning record:', provisioningRecord)
 
-    const agentConnectionAtMediator = await this.connectionService.find(provisioningRecord.mediatorConnectionId)
-
-    if (!agentConnectionAtMediator) {
-      throw new Error('Connection not found!')
-    }
+    const agentConnectionAtMediator = await this.connectionService.getById(provisioningRecord.mediatorConnectionId)
     this.logger.debug('agentConnectionAtMediator', agentConnectionAtMediator)
 
     agentConnectionAtMediator.assertState(ConnectionState.Complete)

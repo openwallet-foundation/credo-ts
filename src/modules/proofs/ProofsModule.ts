@@ -1,5 +1,4 @@
 import { Lifecycle, scoped } from 'tsyringe'
-import { EventEmitter } from 'events'
 
 import { createOutboundMessage } from '../../agent/helpers'
 import { MessageSender } from '../../agent/MessageSender'
@@ -16,6 +15,7 @@ import {
   PresentationAckHandler,
   PresentationHandler,
 } from './handlers'
+import { AriesFrameworkError } from '../../error'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ProofsModule {
@@ -33,16 +33,6 @@ export class ProofsModule {
     this.connectionService = connectionService
     this.messageSender = messageSender
     this.registerHandlers(dispatcher)
-  }
-
-  /**
-   * Get the event emitter for the proof service. Will emit state changed events
-   * when the state of proof records changes.
-   *
-   * @returns event emitter for proof related actions
-   */
-  public get events(): EventEmitter {
-    return this.proofService
   }
 
   /**
@@ -97,7 +87,7 @@ export class ProofsModule {
 
     const presentationProposal = proofRecord.proposalMessage?.presentationProposal
     if (!presentationProposal) {
-      throw new Error(`Proof record with id ${proofRecordId} is missing required presentation proposal`)
+      throw new AriesFrameworkError(`Proof record with id ${proofRecordId} is missing required presentation proposal`)
     }
 
     const proofRequest = await this.proofService.createProofRequestFromProposal(presentationProposal, {
@@ -232,7 +222,8 @@ export class ProofsModule {
    * Retrieve a proof record by id
    *
    * @param proofRecordId The proof record id
-   * @throws {Error} If no record is found
+   * @throws {RecordNotFoundError} If no record is found
+   * @throws {RecordDuplicateError} If multiple records are found
    * @return The proof record
    *
    */
@@ -241,11 +232,22 @@ export class ProofsModule {
   }
 
   /**
+   * Retrieve a proof record by id
+   *
+   * @param proofRecordId The proof record id
+   * @return The proof record or null if not found
+   *
+   */
+  public async findById(proofRecordId: string): Promise<ProofRecord | null> {
+    return this.proofService.findById(proofRecordId)
+  }
+
+  /**
    * Retrieve a proof record by thread id
    *
    * @param threadId The thread id
-   * @throws {Error} If no record is found
-   * @throws {Error} If multiple records are found
+   * @throws {RecordNotFoundError} If no record is found
+   * @throws {RecordDuplicateError} If multiple records are found
    * @returns The proof record
    */
   public async getByThreadId(threadId: string): Promise<ProofRecord> {

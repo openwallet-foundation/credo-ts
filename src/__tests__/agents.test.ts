@@ -1,35 +1,10 @@
 import { Subject } from 'rxjs'
 import { Agent } from '..'
-import {
-  toBeConnectedWith,
-  SubjectInboundTransporter,
-  SubjectOutboundTransporter,
-  waitForBasicMessage,
-} from './helpers'
-import { InitConfig } from '../types'
-import indy from 'indy-sdk'
+import { SubjectInboundTransporter, SubjectOutboundTransporter, waitForBasicMessage, getBaseConfig } from './helpers'
 import { ConnectionRecord } from '../modules/connections'
-import testLogger from './logger'
 
-expect.extend({ toBeConnectedWith })
-
-const aliceConfig: InitConfig = {
-  label: 'Alice',
-  walletConfig: { id: 'alice' },
-  walletCredentials: { key: '00000000000000000000000000000Test01' },
-  autoAcceptConnections: true,
-  logger: testLogger,
-  indy,
-}
-
-const bobConfig: InitConfig = {
-  label: 'Bob',
-  walletConfig: { id: 'bob' },
-  walletCredentials: { key: '00000000000000000000000000000Test02' },
-  autoAcceptConnections: true,
-  logger: testLogger,
-  indy,
-}
+const aliceConfig = getBaseConfig('Agents Alice')
+const bobConfig = getBaseConfig('Agents Bob')
 
 describe('agents', () => {
   let aliceAgent: Agent

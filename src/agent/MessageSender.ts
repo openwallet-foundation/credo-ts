@@ -1,31 +1,55 @@
-import { Lifecycle, scoped } from 'tsyringe'
+import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { OutboundMessage, OutboundPackage } from '../types'
 import { OutboundTransporter } from '../transport/OutboundTransporter'
 import { EnvelopeService } from './EnvelopeService'
+import { TransportService } from './TransportService'
+import { AriesFrameworkError } from '../error'
+import { Logger } from '../logger'
+import { Symbols } from '../symbols'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MessageSender {
   private envelopeService: EnvelopeService
-  private outboundTransporter?: OutboundTransporter
+  private transportService: TransportService
+  private logger: Logger
+  private _outboundTransporter?: OutboundTransporter
 
-  public constructor(envelopeService: EnvelopeService) {
+  public constructor(
+    envelopeService: EnvelopeService,
+    transportService: TransportService,
+    @inject(Symbols.Logger) logger: Logger
+  ) {
     this.envelopeService = envelopeService
+    this.transportService = transportService
+    this.logger = logger
   }
 
   public setOutboundTransporter(outboundTransporter: OutboundTransporter) {
-    this.outboundTransporter = outboundTransporter
+    this._outboundTransporter = outboundTransporter
+  }
+
+  public get outboundTransporter() {
+    return this._outboundTransporter
   }
 
   public async packMessage(outboundMessage: OutboundMessage): Promise<OutboundPackage> {
-    return this.envelopeService.packMessage(outboundMessage)
+    const { connection, payload } = outboundMessage
+    const { verkey, theirKey } = connection
+    const endpoint = this.transportService.findEndpoint(connection)
+    const message = payload.toJSON()
+    this.logger.debug('outboundMessage', { verkey, theirKey, message })
+    const responseRequested = outboundMessage.payload.hasReturnRouting()
+    const wireMessage = await this.envelopeService.packMessage(outboundMessage)
+    return { connection, payload: wireMessage, endpoint, responseRequested }
   }
 
   public async sendMessage(outboundMessage: OutboundMessage): Promise<void> {
     if (!this.outboundTransporter) {
-      throw new Error('Agent has no outbound transporter!')
+      throw new AriesFrameworkError('Agent has no outbound transporter!')
     }
-    const outboundPackage = await this.envelopeService.packMessage(outboundMessage)
+    const outboundPackage = await this.packMessage(outboundMessage)
+    outboundPackage.session = this.transportService.findSession(outboundMessage.connection.id)
     await this.outboundTransporter.sendMessage(outboundPackage)
   }
 }

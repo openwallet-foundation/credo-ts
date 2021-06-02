@@ -10,6 +10,7 @@ import {
 } from '../messages'
 import { CredentialState } from '../CredentialState'
 import { CredentialInfo } from '../models/CredentialInfo'
+import { AriesFrameworkError } from '../../../error'
 
 export interface CredentialRecordMetadata {
   requestMetadata?: Record<string, unknown>
@@ -106,7 +107,7 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
     }
 
     if (!expectedStates.includes(this.state)) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Credential record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`
       )
     }
@@ -114,7 +115,7 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
 
   public assertConnection(currentConnectionId: string) {
     if (this.connectionId !== currentConnectionId) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Credential record is associated with connection '${this.connectionId}'. Current connection is '${currentConnectionId}'`
       )
     }

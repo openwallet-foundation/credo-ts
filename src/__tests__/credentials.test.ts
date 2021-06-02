@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-import indy from 'indy-sdk'
 import { Subject } from 'rxjs'
 import { Agent, ConnectionRecord } from '..'
 import {
@@ -11,6 +9,7 @@ import {
   SubjectOutboundTransporter,
   waitForCredentialRecord,
   genesisPath,
+  getBaseConfig,
 } from './helpers'
 import {
   CredentialRecord,
@@ -18,33 +17,17 @@ import {
   CredentialPreview,
   CredentialPreviewAttribute,
 } from '../modules/credentials'
-import { InitConfig } from '../types'
 import { JsonTransformer } from '../utils/JsonTransformer'
 
 import testLogger from './logger'
 
-const faberConfig: InitConfig = {
-  label: 'Faber',
-  walletConfig: { id: 'credentials-test-faber' },
-  walletCredentials: { key: '00000000000000000000000000000Test01' },
-  publicDidSeed: process.env.TEST_AGENT_PUBLIC_DID_SEED,
-  autoAcceptConnections: true,
+const faberConfig = getBaseConfig('Faber Credentials', {
   genesisPath,
-  poolName: 'credentials-test-faber-pool',
-  indy,
-  logger: testLogger,
-}
+})
 
-const aliceConfig: InitConfig = {
-  label: 'Alice',
-  walletConfig: { id: 'credentials-test-alice' },
-  walletCredentials: { key: '00000000000000000000000000000Test01' },
-  autoAcceptConnections: true,
+const aliceConfig = getBaseConfig('Alice Credentials', {
   genesisPath,
-  poolName: 'credentials-test-alice-pool',
-  indy,
-  logger: testLogger,
-}
+})
 
 const credentialPreview = new CredentialPreview({
   attributes: [
@@ -90,17 +73,17 @@ describe('credentials', () => {
       attributes: ['name', 'age'],
       version: '1.0',
     }
-    const [ledgerSchemaId, ledgerSchema] = await registerSchema(faberAgent, schemaTemplate)
-    schemaId = ledgerSchemaId
+    const schema = await registerSchema(faberAgent, schemaTemplate)
+    schemaId = schema.id
 
     const definitionTemplate = {
-      schema: ledgerSchema,
+      schema,
       tag: 'TAG',
-      signatureType: 'CL',
-      config: { supportRevocation: false },
+      signatureType: 'CL' as const,
+      supportRevocation: false,
     }
-    const [ledgerCredDefId] = await registerDefinition(faberAgent, definitionTemplate)
-    credDefId = ledgerCredDefId
+    const credentialDefinition = await registerDefinition(faberAgent, definitionTemplate)
+    credDefId = credentialDefinition.id
 
     const publicDid = faberAgent.publicDid?.did
     await ensurePublicDidIsOnLedger(faberAgent, publicDid!)

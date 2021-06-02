@@ -4,10 +4,8 @@ import { CredentialRecord } from './repository/CredentialRecord'
 import { createOutboundMessage } from '../../agent/helpers'
 import { MessageSender } from '../../agent/MessageSender'
 import { ConnectionService } from '../connections'
-import { EventEmitter } from 'events'
 import { CredentialOfferTemplate, CredentialService } from './services'
 import { ProposeCredentialMessageOptions } from './messages'
-import { IndyCredentialInfo } from './models'
 import { Dispatcher } from '../../agent/Dispatcher'
 import {
   ProposeCredentialHandler,
@@ -16,6 +14,7 @@ import {
   IssueCredentialHandler,
   CredentialAckHandler,
 } from './handlers'
+import { AriesFrameworkError } from '../../error'
 
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialsModule {
@@ -33,16 +32,6 @@ export class CredentialsModule {
     this.credentialService = credentialService
     this.messageSender = messageSender
     this.registerHandlers(dispatcher)
-  }
-
-  /**
-   * Get the event emitter for the credential service. Will emit state changed events
-   * when the state of credential records changes.
-   *
-   * @returns event emitter for credential related state changes
-   */
-  public get events(): EventEmitter {
-    return this.credentialService
   }
 
   /**
@@ -86,13 +75,15 @@ export class CredentialsModule {
     const credentialProposalMessage = credentialRecord.proposalMessage
 
     if (!credentialProposalMessage?.credentialProposal) {
-      throw new Error(`Credential record with id ${credentialRecordId} is missing required credential proposal`)
+      throw new AriesFrameworkError(
+        `Credential record with id ${credentialRecordId} is missing required credential proposal`
+      )
     }
 
     const credentialDefinitionId = config?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
 
     if (!credentialDefinitionId) {
-      throw new Error(
+      throw new AriesFrameworkError(
         'Missing required credential definition id. If credential proposal message contains no credential definition id it must be passed to config.'
       )
     }
@@ -197,7 +188,7 @@ export class CredentialsModule {
    *
    * @returns List containing all credential records
    */
-  public async getAll(): Promise<CredentialRecord[]> {
+  public getAll(): Promise<CredentialRecord[]> {
     return this.credentialService.getAll()
   }
 
@@ -205,34 +196,34 @@ export class CredentialsModule {
    * Retrieve a credential record by id
    *
    * @param credentialRecordId The credential record id
-   * @throws {Error} If no record is found
+   * @throws {RecordNotFoundError} If no record is found
    * @return The credential record
    *
    */
-  public async getById(credentialRecordId: string) {
+  public getById(credentialRecordId: string) {
     return this.credentialService.getById(credentialRecordId)
+  }
+
+  /**
+   * Find a credential record by id
+   *
+   * @param credentialRecordId the credential record id
+   * @returns The credential record or null if not found
+   */
+  public findById(connectionId: string): Promise<CredentialRecord | null> {
+    return this.credentialService.findById(connectionId)
   }
 
   /**
    * Retrieve a credential record by thread id
    *
    * @param threadId The thread id
-   * @throws {Error} If no record is found
-   * @throws {Error} If multiple records are found
+   * @throws {RecordNotFoundError} If no record is found
+   * @throws {RecordDuplicateError} If multiple records are found
    * @returns The credential record
    */
-  public async getByThreadId(threadId: string): Promise<CredentialRecord> {
+  public getByThreadId(threadId: string): Promise<CredentialRecord> {
     return this.credentialService.getByThreadId(threadId)
-  }
-
-  /**
-   * Retrieve an indy credential by credential id (referent)
-   *
-   * @param credentialId the id (referent) of the indy credential
-   * @returns Indy credential info object
-   */
-  public async getIndyCredential(credentialId: string): Promise<IndyCredentialInfo> {
-    return this.credentialService.getIndyCredential(credentialId)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {

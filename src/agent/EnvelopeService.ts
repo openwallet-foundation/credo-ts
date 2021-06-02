@@ -1,5 +1,5 @@
 import { inject, scoped, Lifecycle } from 'tsyringe'
-import { OutboundMessage, OutboundPackage, UnpackedMessageContext } from '../types'
+import { OutboundMessage, UnpackedMessageContext } from '../types'
 import { Wallet } from '../wallet/Wallet'
 import { ForwardMessage } from '../modules/routing/messages'
 import { AgentConfig } from './AgentConfig'
@@ -16,21 +16,11 @@ class EnvelopeService {
     this.logger = agentConfig.logger
   }
 
-  public async packMessage(outboundMessage: OutboundMessage): Promise<OutboundPackage> {
-    const { connection, routingKeys, recipientKeys, senderVk, payload, endpoint } = outboundMessage
-    const { verkey, theirKey } = connection
-
-    const returnRoute = outboundMessage.payload.hasReturnRouting()
+  public async packMessage(outboundMessage: OutboundMessage): Promise<JsonWebKey> {
+    const { routingKeys, recipientKeys, senderVk, payload } = outboundMessage
     const message = payload.toJSON()
 
-    this.logger.info('outboundMessage', {
-      verkey,
-      theirKey,
-      routingKeys,
-      endpoint,
-      message,
-    })
-    let outboundPackedMessage = await this.wallet.pack(message, recipientKeys, senderVk)
+    let wireMessage = await this.wallet.pack(message, recipientKeys, senderVk)
 
     if (routingKeys && routingKeys.length > 0) {
       for (const routingKey of routingKeys) {
@@ -38,14 +28,14 @@ class EnvelopeService {
 
         const forwardMessage = new ForwardMessage({
           to: recipientKey,
-          message: outboundPackedMessage,
+          message: wireMessage,
         })
 
         this.logger.debug('Forward message created', forwardMessage)
-        outboundPackedMessage = await this.wallet.pack(forwardMessage.toJSON(), [routingKey], senderVk)
+        wireMessage = await this.wallet.pack(forwardMessage.toJSON(), [routingKey], senderVk)
       }
     }
-    return { connection, payload: outboundPackedMessage, endpoint, responseRequested: returnRoute }
+    return wireMessage
   }
 
   public async unpackMessage(packedMessage: JsonWebKey): Promise<UnpackedMessageContext> {

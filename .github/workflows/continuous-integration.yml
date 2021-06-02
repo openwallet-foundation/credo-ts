@@ -16,6 +16,11 @@ env:
   TEST_AGENT_PUBLIC_DID_SEED: 000000000000000000000000Trustee9
   GENESIS_TXN_PATH: network/genesis/local-genesis.txn
 
+# Make sure we're not running multiple release steps at the same time as this can give issues with determining the next npm version to release.
+# Ideally we only add this to the 'release' job so it doesn't limit PR runs, but github can't guarantee the job order in that case:
+# "When concurrency is specified at the job level, order is not guaranteed for jobs or runs that queue within 5 minutes of each other."
+concurrency: aries-framework-${{ github.ref }}-${{ github.repository }}-${{ github.event_name }}
+
 jobs:
   validate:
     runs-on: ubuntu-20.04
@@ -24,10 +29,26 @@ jobs:
       - name: Checkout aries-framework-javascript
         uses: actions/checkout@v2
 
-      - name: Setup node v12
+      # setup dependencies
+      - name: Setup Libindy
+        uses: ./.github/actions/setup-libindy
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - uses: actions/cache@v2
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Setup node v16
         uses: actions/setup-node@v2
         with:
-          node-version: 12
+          node-version: 16
 
       - name: Install dependencies
         run: yarn install
@@ -44,34 +65,48 @@ jobs:
   integration-test:
     runs-on: ubuntu-20.04
     name: Integration Tests
+
+    strategy:
+      matrix:
+        node-version: [12.x, 14.x, 16.x]
+
     steps:
       - name: Checkout aries-framework-javascript
         uses: actions/checkout@v2
 
-      - name: Start indy pool
-        run: |
-          docker build -f network/indy-pool.dockerfile -t indy-pool .
-          docker run -d --name indy-pool -p 9701-9708:9701-9708 indy-pool
-          docker exec indy-pool indy-cli-setup
+      # setup dependencies
+      - name: Setup Libindy
+        uses: ./.github/actions/setup-libindy
+      - name: Setup Indy Pool
+        uses: ./.github/actions/setup-indy-pool
+        with:
+          seed: ${TEST_AGENT_PUBLIC_DID_SEED}
+      - name: Run mediator agents
+        uses: ./.github/actions/run-mediator-agents
 
-      - name: Register DID on ledger
-        run: docker exec indy-pool add-did-from-seed "${TEST_AGENT_PUBLIC_DID_SEED}"
+      # TODO: move to action once https://github.com/actions/runner/issues/646 is resolved
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
 
-      - name: Build framework docker image
-        run: docker build -t aries-framework-javascript .
+      - uses: actions/cache@v2
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
 
-      - name: Start mediator agents
-        run: docker-compose -f docker/docker-compose-mediators.yml up -d
+      - name: Setup NodeJS ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: yarn install
 
       - name: Run tests
-        run: >-
-          docker run
-          --network host
-          --name framework-jest-tests
-          --env TEST_AGENT_PUBLIC_DID_SEED=${TEST_AGENT_PUBLIC_DID_SEED}
-          --env GENESIS_TXN_PATH=${GENESIS_TXN_PATH}
-          aries-framework-javascript
-          yarn test --coverage
+        run: TEST_AGENT_PUBLIC_DID_SEED=${TEST_AGENT_PUBLIC_DID_SEED} GENESIS_TXN_PATH=${GENESIS_TXN_PATH} yarn test --coverage --detectOpenHandles
 
       - name: Export logs
         if: always()
@@ -79,7 +114,8 @@ jobs:
           mkdir logs
           docker cp alice-mediator:/www/logs.txt ./logs/alice-mediator.txt
           docker cp bob-mediator:/www/logs.txt ./logs/bob-mediator.txt
-          docker cp framework-jest-tests:/www/logs.txt ./logs/jest.txt
+          docker cp alice-ws-mediator:/www/logs.txt ./logs/alice-ws-mediator.txt
+          docker cp bob-ws-mediator:/www/logs.txt ./logs/bob-ws-mediator.txt
 
       - name: Upload docker logs
         uses: actions/upload-artifact@v1
@@ -88,9 +124,6 @@ jobs:
           name: docker-logs
           path: logs
 
-      - name: Export test coverage
-        if: always()
-        run: docker cp framework-jest-tests:/www/coverage ./
       - uses: codecov/codecov-action@v1
         if: always()
 
@@ -106,19 +139,41 @@ jobs:
         with:
           fetch-depth: 0
 
+      # setup dependencies
+      - name: Setup Libindy
+        uses: ./.github/actions/setup-libindy
+
       - name: git config
         run: |
           git config user.name "@github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Setup node
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - uses: actions/cache@v2
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Setup node v16
         uses: actions/setup-node@v2
         with:
-          node-version: '12.x'
+          node-version: 16
+
+      - name: Install dependencies
+        run: yarn install
 
       # https://github.com/yarnpkg/yarn/issues/6617#issuecomment-436222106
       - name: Prepend Node path
         run: npm config set scripts-prepend-node-path true
+
+      - name: Set Verbose Logging
+        run: npm config set loglevel verbose --global
 
       - name: Set NPM config
         run: |
@@ -127,14 +182,14 @@ jobs:
           echo "always-auth=true" >> .npmrc
 
       - name: Install dependencies
-        run: yarn install --ignore-optional --frozen-lockfile
+        run: yarn install --frozen-lockfile
 
       # On push to master, release unstable version
       - name: Release Unstable
         if: github.event_name == 'push'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: yarn release patch --preRelease=unstable
+        run: yarn release patch --preRelease=unstable -VV
 
       # On manual workflow dispatch release stable version
       - name: Release Stable

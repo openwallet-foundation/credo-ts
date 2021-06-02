@@ -1,0 +1,18 @@
+name: Setup Libindy
+description: Download and install the libindy binary from the sovrin repository
+author: 'timo@animo.id'
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Indy
+      run: |
+        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
+        sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb bionic stable"
+        sudo apt-get update -y
+        sudo apt-get install -y --allow-unauthenticated libindy
+      shell: bash
+
+branding:
+  icon: scissors
+  color: purple

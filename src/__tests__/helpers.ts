@@ -1,45 +1,55 @@
-/* eslint-disable no-console */
-import type { SchemaId, Schema, CredDefId, CredDef, Did } from 'indy-sdk'
+import type { Schema, CredDef, Did } from 'indy-sdk'
+import indy from 'indy-sdk'
 import path from 'path'
 import { Subject } from 'rxjs'
 import { Agent, InboundTransporter, OutboundTransporter } from '..'
-import { OutboundPackage, WireMessage } from '../types'
-import { ConnectionRecord } from '../modules/connections'
-import { ProofRecord, ProofState, ProofEventType, ProofStateChangedEvent } from '../modules/proofs'
-import { SchemaTemplate, CredDefTemplate } from '../modules/ledger'
+import { InitConfig, OutboundPackage, WireMessage } from '../types'
+import {
+  ConnectionInvitationMessage,
+  ConnectionRecord,
+  ConnectionRole,
+  ConnectionState,
+  ConnectionStorageProps,
+  DidCommService,
+  DidDoc,
+} from '../modules/connections'
+import { ProofEventTypes, ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
+import { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/ledger'
 import {
   CredentialRecord,
   CredentialOfferTemplate,
-  CredentialEventType,
   CredentialStateChangedEvent,
   CredentialState,
+  CredentialEventTypes,
 } from '../modules/credentials'
-import { BasicMessage, BasicMessageEventType, BasicMessageReceivedEvent } from '../modules/basic-messages'
+import { BasicMessage, BasicMessageEventTypes, BasicMessageReceivedEvent } from '../modules/basic-messages'
 import testLogger from './logger'
+import { NodeFileSystem } from '../storage/fs/NodeFileSystem'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
-  : path.join(__dirname, '../../../network/genesis/local-genesis.txn')
+  : path.join(__dirname, '../../network/genesis/local-genesis.txn')
+
+export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
 
 export const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms))
 
-// Custom matchers which can be used to extend Jest matchers via extend, e. g. `expect.extend({ toBeConnectedWith })`.
-
-export function toBeConnectedWith(received: ConnectionRecord, connection: ConnectionRecord) {
-  const pass = received.theirDid === connection.did && received.theirKey === connection.verkey
-  if (pass) {
-    return {
-      message: () =>
-        `expected connection ${received.did}, ${received.verkey} not to be connected to with ${connection.did}, ${connection.verkey}`,
-      pass: true,
-    }
-  } else {
-    return {
-      message: () =>
-        `expected connection ${received.did}, ${received.verkey} to be connected to with ${connection.did}, ${connection.verkey}`,
-      pass: false,
-    }
+export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
+  const config: InitConfig = {
+    label: `Agent: ${name}`,
+    mediatorUrl: 'http://localhost:3001',
+    walletConfig: { id: `Wallet: ${name}` },
+    walletCredentials: { key: `Key: ${name}` },
+    publicDidSeed,
+    autoAcceptConnections: true,
+    poolName: `pool-${name.toLowerCase()}`,
+    logger: testLogger,
+    indy,
+    fileSystem: new NodeFileSystem(),
+    ...extraConfig,
   }
+
+  return config
 }
 
 export async function waitForProofRecord(
@@ -56,18 +66,18 @@ export async function waitForProofRecord(
 ): Promise<ProofRecord> {
   return new Promise((resolve) => {
     const listener = (event: ProofStateChangedEvent) => {
-      const previousStateMatches = previousState === undefined || event.previousState === previousState
-      const threadIdMatches = threadId === undefined || event.proofRecord.tags.threadId === threadId
-      const stateMatches = state === undefined || event.proofRecord.state === state
+      const previousStateMatches = previousState === undefined || event.payload.previousState === previousState
+      const threadIdMatches = threadId === undefined || event.payload.proofRecord.tags.threadId === threadId
+      const stateMatches = state === undefined || event.payload.proofRecord.state === state
 
       if (previousStateMatches && threadIdMatches && stateMatches) {
-        agent.proofs.events.removeListener(ProofEventType.StateChanged, listener)
+        agent.events.off<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged, listener)
 
-        resolve(event.proofRecord)
+        resolve(event.payload.proofRecord)
       }
     }
 
-    agent.proofs.events.addListener(ProofEventType.StateChanged, listener)
+    agent.events.on<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged, listener)
   })
 }
 
@@ -85,18 +95,18 @@ export async function waitForCredentialRecord(
 ): Promise<CredentialRecord> {
   return new Promise((resolve) => {
     const listener = (event: CredentialStateChangedEvent) => {
-      const previousStateMatches = previousState === undefined || event.previousState === previousState
-      const threadIdMatches = threadId === undefined || event.credentialRecord.tags.threadId === threadId
-      const stateMatches = state === undefined || event.credentialRecord.state === state
+      const previousStateMatches = previousState === undefined || event.payload.previousState === previousState
+      const threadIdMatches = threadId === undefined || event.payload.credentialRecord.tags.threadId === threadId
+      const stateMatches = state === undefined || event.payload.credentialRecord.state === state
 
       if (previousStateMatches && threadIdMatches && stateMatches) {
-        agent.credentials.events.removeListener(CredentialEventType.StateChanged, listener)
+        agent.events.off<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, listener)
 
-        resolve(event.credentialRecord)
+        resolve(event.payload.credentialRecord)
       }
     }
 
-    agent.credentials.events.addListener(CredentialEventType.StateChanged, listener)
+    agent.events.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, listener)
   })
 }
 
@@ -106,17 +116,17 @@ export async function waitForBasicMessage(
 ): Promise<BasicMessage> {
   return new Promise((resolve) => {
     const listener = (event: BasicMessageReceivedEvent) => {
-      const verkeyMatches = verkey === undefined || event.verkey === verkey
-      const contentMatches = content === undefined || event.message.content === content
+      const verkeyMatches = verkey === undefined || event.payload.verkey === verkey
+      const contentMatches = content === undefined || event.payload.message.content === content
 
       if (verkeyMatches && contentMatches) {
-        agent.basicMessages.events.removeListener(BasicMessageEventType.MessageReceived, listener)
+        agent.events.off<BasicMessageReceivedEvent>(BasicMessageEventTypes.BasicMessageReceived, listener)
 
-        resolve(event.message)
+        resolve(event.payload.message)
       }
     }
 
-    agent.basicMessages.events.addListener(BasicMessageEventType.MessageReceived, listener)
+    agent.events.on<BasicMessageReceivedEvent>(BasicMessageEventTypes.BasicMessageReceived, listener)
   })
 }
 
@@ -154,11 +164,71 @@ export class SubjectOutboundTransporter implements OutboundTransporter {
     this.subject = subject
   }
 
+  public async start(): Promise<void> {
+    // Nothing required to start
+  }
+
+  public async stop(): Promise<void> {
+    // Nothing required to stop
+  }
+
   public async sendMessage(outboundPackage: OutboundPackage) {
     testLogger.test(`Sending outbound message to connection ${outboundPackage.connection.id}`)
     const { payload } = outboundPackage
     this.subject.next(payload)
   }
+}
+
+export function getMockConnection({
+  state = ConnectionState.Invited,
+  role = ConnectionRole.Invitee,
+  id = 'test',
+  did = 'test-did',
+  verkey = 'key-1',
+  didDoc = new DidDoc({
+    id: did,
+    publicKey: [],
+    authentication: [],
+    service: [
+      new DidCommService({
+        id: `${did};indy`,
+        serviceEndpoint: 'https://endpoint.com',
+        recipientKeys: [verkey],
+      }),
+    ],
+  }),
+  tags = {},
+  invitation = new ConnectionInvitationMessage({
+    label: 'test',
+    recipientKeys: [verkey],
+    serviceEndpoint: 'https:endpoint.com/msg',
+  }),
+  theirDid = 'their-did',
+  theirDidDoc = new DidDoc({
+    id: theirDid,
+    publicKey: [],
+    authentication: [],
+    service: [
+      new DidCommService({
+        id: `${did};indy`,
+        serviceEndpoint: 'https://endpoint.com',
+        recipientKeys: [verkey],
+      }),
+    ],
+  }),
+}: Partial<ConnectionStorageProps> = {}) {
+  return new ConnectionRecord({
+    did,
+    didDoc,
+    theirDid,
+    theirDidDoc,
+    id,
+    role,
+    state,
+    tags,
+    verkey,
+    invitation,
+  })
 }
 
 export async function makeConnection(agentA: Agent, agentB: Agent) {
@@ -175,19 +245,19 @@ export async function makeConnection(agentA: Agent, agentB: Agent) {
   }
 }
 
-export async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<[SchemaId, Schema]> {
-  const [schemaId, ledgerSchema] = await agent.ledger.registerSchema(schemaTemplate)
-  testLogger.test(`created schema with id ${schemaId}`, ledgerSchema)
-  return [schemaId, ledgerSchema]
+export async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<Schema> {
+  const schema = await agent.ledger.registerSchema(schemaTemplate)
+  testLogger.test(`created schema with id ${schema.id}`, schema)
+  return schema
 }
 
 export async function registerDefinition(
   agent: Agent,
-  definitionTemplate: CredDefTemplate
-): Promise<[CredDefId, CredDef]> {
-  const [credDefId, ledgerCredDef] = await agent.ledger.registerCredentialDefinition(definitionTemplate)
-  testLogger.test(`created credential definition with id ${credDefId}`, ledgerCredDef)
-  return [credDefId, ledgerCredDef]
+  definitionTemplate: CredentialDefinitionTemplate
+): Promise<CredDef> {
+  const credentialDefinition = await agent.ledger.registerCredentialDefinition(definitionTemplate)
+  testLogger.test(`created credential definition with id ${credentialDefinition.id}`, credentialDefinition)
+  return credentialDefinition
 }
 
 export async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: Did) {
@@ -244,4 +314,16 @@ export async function issueCredential({
     issuerCredential: issuerCredentialRecord,
     holderCredential: holderCredentialRecord,
   }
+}
+
+/**
+ * Returns mock of function with correct type annotations according to original function `fn`.
+ * It can be used also for class methods.
+ *
+ * @param fn function you want to mock
+ * @returns mock function with type annotations
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.MockedFunction<T> {
+  return fn as jest.MockedFunction<T>
 }

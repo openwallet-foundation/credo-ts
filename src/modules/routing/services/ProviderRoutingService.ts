@@ -13,6 +13,7 @@ import {
   KeylistUpdateResponseMessage,
   KeylistUpdateResult,
 } from '../messages'
+import { AriesFrameworkError } from '../../../error'
 
 export interface RoutingTable {
   [recipientKey: string]: ConnectionRecord | undefined
@@ -27,7 +28,7 @@ class ProviderRoutingService {
 
     if (!connection) {
       // TODO We could eventually remove this check if we do it at some higher level where we create messageContext that must have a connection.
-      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
 
     const updated = []
@@ -59,17 +60,17 @@ class ProviderRoutingService {
 
     // TODO: update to class-validator validation
     if (!message.to) {
-      throw new Error('Invalid Message: Missing required attribute "to"')
+      throw new AriesFrameworkError('Invalid Message: Missing required attribute "to"')
     }
 
     const connection = this.findRecipient(message.to)
 
     if (!connection) {
-      throw new Error(`Connection for verkey ${recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${recipientVerkey} not found!`)
     }
 
     if (!connection.theirKey) {
-      throw new Error(`Connection with verkey ${connection.verkey} has no recipient keys.`)
+      throw new AriesFrameworkError(`Connection with verkey ${connection.verkey} has no recipient keys.`)
     }
 
     return createOutboundMessage(connection, message)
@@ -86,7 +87,7 @@ class ProviderRoutingService {
     // It should either be called getRecipient and throw error
     // or findRecipient and return null
     if (!connection) {
-      throw new Error(`Routing entry for recipientKey ${recipientKey} does not exists.`)
+      throw new AriesFrameworkError(`Routing entry for recipientKey ${recipientKey} does not exists.`)
     }
 
     return connection
@@ -94,7 +95,7 @@ class ProviderRoutingService {
 
   public saveRoute(recipientKey: Verkey, connection: ConnectionRecord) {
     if (this.routingTable[recipientKey]) {
-      throw new Error(`Routing entry for recipientKey ${recipientKey} already exists.`)
+      throw new AriesFrameworkError(`Routing entry for recipientKey ${recipientKey} already exists.`)
     }
 
     this.routingTable[recipientKey] = connection
@@ -104,11 +105,11 @@ class ProviderRoutingService {
     const storedConnection = this.routingTable[recipientKey]
 
     if (!storedConnection) {
-      throw new Error('Cannot remove non-existing routing entry')
+      throw new AriesFrameworkError('Cannot remove non-existing routing entry')
     }
 
     if (storedConnection.id !== connection.id) {
-      throw new Error('Cannot remove routing entry for another connection')
+      throw new AriesFrameworkError('Cannot remove routing entry for another connection')
     }
 
     delete this.routingTable[recipientKey]

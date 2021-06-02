@@ -1,6 +1,5 @@
-import { inject, scoped, Lifecycle } from 'tsyringe'
+import { scoped, Lifecycle } from 'tsyringe'
 import type { CredDefId } from 'indy-sdk'
-import { EventEmitter } from 'events'
 
 import { uuid } from '../../../utils/uuid'
 import { AgentMessage } from '../../../agent/AgentMessage'
@@ -10,12 +9,9 @@ import { Attachment, AttachmentData } from '../../../decorators/attachment/Attac
 import { ConnectionService, ConnectionRecord } from '../../connections'
 import { CredentialRecord } from '../repository/CredentialRecord'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
-import { Wallet } from '../../../wallet/Wallet'
-import { JsonTransformer } from '../../../utils/JsonTransformer'
 
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
-import { IndyCredentialInfo } from '../models'
 import {
   OfferCredentialMessage,
   CredentialPreview,
@@ -32,43 +28,37 @@ import { AckStatus } from '../../common'
 import { Logger } from '../../../logger'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { CredentialRepository } from '../repository'
-import { Symbols } from '../../../symbols'
-
-export enum CredentialEventType {
-  StateChanged = 'stateChanged',
-}
-
-export interface CredentialStateChangedEvent {
-  credentialRecord: CredentialRecord
-  previousState: CredentialState
-}
-
-export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessage> {
-  message: MessageType
-  credentialRecord: CredentialRecord
-}
+import { IndyIssuerService, IndyHolderService } from '../../indy'
+import { CredentialEventTypes, CredentialStateChangedEvent } from '../CredentialEvents'
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { AriesFrameworkError } from '../../../error'
 
 @scoped(Lifecycle.ContainerScoped)
-export class CredentialService extends EventEmitter {
-  private wallet: Wallet
+export class CredentialService {
   private credentialRepository: CredentialRepository
   private connectionService: ConnectionService
   private ledgerService: LedgerService
   private logger: Logger
+  private indyIssuerService: IndyIssuerService
+  private indyHolderService: IndyHolderService
+  private eventEmitter: EventEmitter
 
   public constructor(
-    @inject(Symbols.Wallet) wallet: Wallet,
     credentialRepository: CredentialRepository,
     connectionService: ConnectionService,
     ledgerService: LedgerService,
-    agentConfig: AgentConfig
+    agentConfig: AgentConfig,
+    indyIssuerService: IndyIssuerService,
+    indyHolderService: IndyHolderService,
+    eventEmitter: EventEmitter
   ) {
-    super()
-    this.wallet = wallet
     this.credentialRepository = credentialRepository
     this.connectionService = connectionService
     this.ledgerService = ledgerService
     this.logger = agentConfig.logger
+    this.indyIssuerService = indyIssuerService
+    this.indyHolderService = indyHolderService
+    this.eventEmitter = eventEmitter
   }
 
   /**
@@ -99,9 +89,12 @@ export class CredentialService extends EventEmitter {
       tags: { threadId: proposalMessage.threadId },
     })
     await this.credentialRepository.save(credentialRecord)
-    this.emit(CredentialEventType.StateChanged, {
-      credentialRecord,
-      previousState: null,
+    this.eventEmitter.emit<CredentialStateChangedEvent>({
+      type: CredentialEventTypes.CredentialStateChanged,
+      payload: {
+        credentialRecord,
+        previousState: null,
+      },
     })
 
     return { message: proposalMessage, credentialRecord }
@@ -154,7 +147,7 @@ export class CredentialService extends EventEmitter {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming credential proposal message with thread id ${proposalMessage.threadId}`
       )
     }
@@ -183,9 +176,12 @@ export class CredentialService extends EventEmitter {
 
       // Save record
       await this.credentialRepository.save(credentialRecord)
-      this.emit(CredentialEventType.StateChanged, {
-        credentialRecord,
-        previousState: null,
+      this.eventEmitter.emit<CredentialStateChangedEvent>({
+        type: CredentialEventTypes.CredentialStateChanged,
+        payload: {
+          credentialRecord,
+          previousState: null,
+        },
       })
     }
 
@@ -210,7 +206,7 @@ export class CredentialService extends EventEmitter {
 
     // Create message
     const { credentialDefinitionId, comment, preview } = credentialTemplate
-    const credOffer = await this.wallet.createCredentialOffer(credentialDefinitionId)
+    const credOffer = await this.indyIssuerService.createCredentialOffer(credentialDefinitionId)
     const attachment = new Attachment({
       id: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
       mimeType: 'application/json',
@@ -220,7 +216,7 @@ export class CredentialService extends EventEmitter {
     })
     const credentialOfferMessage = new OfferCredentialMessage({
       comment,
-      attachments: [attachment],
+      offerAttachments: [attachment],
       credentialPreview: preview,
     })
     credentialOfferMessage.setThread({
@@ -254,7 +250,7 @@ export class CredentialService extends EventEmitter {
 
     // Create message
     const { credentialDefinitionId, comment, preview } = credentialTemplate
-    const credOffer = await this.wallet.createCredentialOffer(credentialDefinitionId)
+    const credOffer = await this.indyIssuerService.createCredentialOffer(credentialDefinitionId)
     const attachment = new Attachment({
       id: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
       mimeType: 'application/json',
@@ -264,7 +260,7 @@ export class CredentialService extends EventEmitter {
     })
     const credentialOfferMessage = new OfferCredentialMessage({
       comment,
-      attachments: [attachment],
+      offerAttachments: [attachment],
       credentialPreview: preview,
     })
 
@@ -282,9 +278,12 @@ export class CredentialService extends EventEmitter {
     })
 
     await this.credentialRepository.save(credentialRecord)
-    this.emit(CredentialEventType.StateChanged, {
-      credentialRecord,
-      previousState: null,
+    this.eventEmitter.emit<CredentialStateChangedEvent>({
+      type: CredentialEventTypes.CredentialStateChanged,
+      payload: {
+        credentialRecord,
+        previousState: null,
+      },
     })
 
     return { message: credentialOfferMessage, credentialRecord }
@@ -307,7 +306,7 @@ export class CredentialService extends EventEmitter {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming credential offer message with thread id ${credentialOfferMessage.threadId}`
       )
     }
@@ -315,7 +314,7 @@ export class CredentialService extends EventEmitter {
     const indyCredentialOffer = credentialOfferMessage.indyCredentialOffer
 
     if (!indyCredentialOffer) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for credential offer with thread id ${credentialOfferMessage.threadId}`
       )
     }
@@ -349,9 +348,12 @@ export class CredentialService extends EventEmitter {
 
       // Save in repository
       await this.credentialRepository.save(credentialRecord)
-      this.emit(CredentialEventType.StateChanged, {
-        credentialRecord,
-        previousState: null,
+      this.eventEmitter.emit<CredentialStateChangedEvent>({
+        type: CredentialEventTypes.CredentialStateChanged,
+        payload: {
+          credentialRecord,
+          previousState: null,
+        },
       })
     }
 
@@ -374,23 +376,23 @@ export class CredentialService extends EventEmitter {
     credentialRecord.assertState(CredentialState.OfferReceived)
 
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
-    const proverDid = connection.did
+    const holderDid = connection.did
 
-    const credOffer = credentialRecord.offerMessage?.indyCredentialOffer
+    const credentialOffer = credentialRecord.offerMessage?.indyCredentialOffer
 
-    if (!credOffer) {
-      throw new Error(
+    if (!credentialOffer) {
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for credential offer with thread id ${credentialRecord.tags.threadId}`
       )
     }
 
-    const credentialDefinition = await this.ledgerService.getCredentialDefinition(credOffer.cred_def_id)
+    const credentialDefinition = await this.ledgerService.getCredentialDefinition(credentialOffer.cred_def_id)
 
-    const [credReq, credReqMetadata] = await this.wallet.createCredentialRequest(
-      proverDid,
-      credOffer,
-      credentialDefinition
-    )
+    const [credReq, credReqMetadata] = await this.indyHolderService.createCredentialRequest({
+      holderDid,
+      credentialOffer,
+      credentialDefinition,
+    })
     const attachment = new Attachment({
       id: INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
       mimeType: 'application/json',
@@ -402,7 +404,7 @@ export class CredentialService extends EventEmitter {
     const { comment } = options
     const credentialRequest = new RequestCredentialMessage({
       comment,
-      attachments: [attachment],
+      requestAttachments: [attachment],
     })
     credentialRequest.setThread({ threadId: credentialRecord.tags.threadId })
 
@@ -431,7 +433,7 @@ export class CredentialService extends EventEmitter {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming credential request message with thread id ${credentialRequestMessage.threadId}`
       )
     }
@@ -439,7 +441,7 @@ export class CredentialService extends EventEmitter {
     const indyCredentialRequest = credentialRequestMessage?.indyCredentialRequest
 
     if (!indyCredentialRequest) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for credential request with thread id ${credentialRequestMessage.threadId}`
       )
     }
@@ -475,7 +477,7 @@ export class CredentialService extends EventEmitter {
     const offerMessage = credentialRecord.offerMessage
 
     if (!offerMessage) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing credential offer for credential exchange with thread id ${credentialRecord.tags.threadId}`
       )
     }
@@ -491,7 +493,7 @@ export class CredentialService extends EventEmitter {
     // Assert Indy offer
     const indyCredentialOffer = offerMessage?.indyCredentialOffer
     if (!indyCredentialOffer) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for credential offer with thread id ${credentialRecord.tags.threadId}`
       )
     }
@@ -499,16 +501,16 @@ export class CredentialService extends EventEmitter {
     // Assert Indy request
     const indyCredentialRequest = requestMessage?.indyCredentialRequest
     if (!indyCredentialRequest) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for credential request with thread id ${credentialRecord.tags.threadId}`
       )
     }
 
-    const [credential] = await this.wallet.createCredential(
-      indyCredentialOffer,
-      indyCredentialRequest,
-      CredentialUtils.convertAttributesToValues(credentialAttributes)
-    )
+    const [credential] = await this.indyIssuerService.createCredential({
+      credentialOffer: indyCredentialOffer,
+      credentialRequest: indyCredentialRequest,
+      credentialValues: CredentialUtils.convertAttributesToValues(credentialAttributes),
+    })
 
     const credentialAttachment = new Attachment({
       id: INDY_CREDENTIAL_ATTACHMENT_ID,
@@ -521,7 +523,7 @@ export class CredentialService extends EventEmitter {
     const { comment } = options
     const issueCredentialMessage = new IssueCredentialMessage({
       comment,
-      attachments: [credentialAttachment],
+      credentialAttachments: [credentialAttachment],
     })
     issueCredentialMessage.setThread({
       threadId: credentialRecord.tags.threadId,
@@ -554,7 +556,7 @@ export class CredentialService extends EventEmitter {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming presentation message with thread id ${issueCredentialMessage.threadId}`
       )
     }
@@ -564,12 +566,12 @@ export class CredentialService extends EventEmitter {
     credentialRecord.assertState(CredentialState.RequestSent)
 
     if (!credentialRecord.metadata.requestMetadata) {
-      throw new Error(`Missing required request metadata for credential with id ${credentialRecord.id}`)
+      throw new AriesFrameworkError(`Missing required request metadata for credential with id ${credentialRecord.id}`)
     }
 
     const indyCredential = issueCredentialMessage.indyCredential
     if (!indyCredential) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for credential with thread id ${issueCredentialMessage.threadId}`
       )
     }
@@ -588,12 +590,12 @@ export class CredentialService extends EventEmitter {
 
     const credentialDefinition = await this.ledgerService.getCredentialDefinition(indyCredential.cred_def_id)
 
-    const credentialId = await this.wallet.storeCredential(
-      uuid(),
-      credentialRecord.metadata.requestMetadata,
-      indyCredential,
-      credentialDefinition
-    )
+    const credentialId = await this.indyHolderService.storeCredential({
+      credentialId: uuid(),
+      credentialRequestMetadata: credentialRecord.metadata.requestMetadata,
+      credential: indyCredential,
+      credentialDefinition,
+    })
 
     credentialRecord.credentialId = credentialId
     credentialRecord.credentialMessage = issueCredentialMessage
@@ -638,7 +640,7 @@ export class CredentialService extends EventEmitter {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming presentation acknowledgement message with thread id ${credentialAckMessage.threadId}`
       )
     }
@@ -658,56 +660,44 @@ export class CredentialService extends EventEmitter {
    *
    * @returns List containing all credential records
    */
-  public async getAll(): Promise<CredentialRecord[]> {
-    return this.credentialRepository.findAll()
+  public getAll(): Promise<CredentialRecord[]> {
+    return this.credentialRepository.getAll()
   }
 
   /**
    * Retrieve a credential record by id
    *
    * @param credentialRecordId The credential record id
-   * @throws {Error} If no record is found
+   * @throws {RecordNotFoundError} If no record is found
    * @return The credential record
    *
    */
-  public async getById(credentialRecordId: string): Promise<CredentialRecord> {
-    return this.credentialRepository.find(credentialRecordId)
+  public getById(credentialRecordId: string): Promise<CredentialRecord> {
+    return this.credentialRepository.getById(credentialRecordId)
+  }
+
+  /**
+   * Find a credential record by id
+   *
+   * @param credentialRecordId the credential record id
+   * @returns The credential record or null if not found
+   */
+  public findById(connectionId: string): Promise<CredentialRecord | null> {
+    return this.credentialRepository.findById(connectionId)
   }
 
   /**
    * Retrieve a credential record by thread id
    *
    * @param threadId The thread id
-   * @throws {Error} If no record is found
-   * @throws {Error} If multiple records are found
+   * @throws {RecordNotFoundError} If no record is found
+   * @throws {RecordDuplicateError} If multiple records are found
    * @returns The credential record
    */
-  public async getByThreadId(threadId: string): Promise<CredentialRecord> {
-    const credentialRecords = await this.credentialRepository.findByQuery({
+  public getByThreadId(threadId: string): Promise<CredentialRecord> {
+    return this.credentialRepository.getSingleByQuery({
       threadId,
     })
-
-    if (credentialRecords.length === 0) {
-      throw new Error(`Credential record not found by thread id ${threadId}`)
-    }
-
-    if (credentialRecords.length > 1) {
-      throw new Error(`Multiple credential records found by thread id ${threadId}`)
-    }
-
-    return credentialRecords[0]
-  }
-
-  /**
-   * Retrieve an indy credential by credential id (referent)
-   *
-   * @param credentialId the id (referent) of the indy credential
-   * @returns Indy credential info object
-   */
-  public async getIndyCredential(credentialId: string): Promise<IndyCredentialInfo> {
-    const indyCredential = await this.wallet.getCredential(credentialId)
-
-    return JsonTransformer.fromJSON(indyCredential, IndyCredentialInfo)
   }
 
   /**
@@ -723,13 +713,19 @@ export class CredentialService extends EventEmitter {
     credentialRecord.state = newState
     await this.credentialRepository.update(credentialRecord)
 
-    const event: CredentialStateChangedEvent = {
-      credentialRecord,
-      previousState: previousState,
-    }
-
-    this.emit(CredentialEventType.StateChanged, event)
+    this.eventEmitter.emit<CredentialStateChangedEvent>({
+      type: CredentialEventTypes.CredentialStateChanged,
+      payload: {
+        credentialRecord,
+        previousState: previousState,
+      },
+    })
   }
+}
+
+export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessage> {
+  message: MessageType
+  credentialRecord: CredentialRecord
 }
 
 export interface CredentialOfferTemplate {
@@ -738,10 +734,10 @@ export interface CredentialOfferTemplate {
   preview: CredentialPreview
 }
 
-interface CredentialRequestOptions {
+export interface CredentialRequestOptions {
   comment?: string
 }
 
-interface CredentialResponseOptions {
+export interface CredentialResponseOptions {
   comment?: string
 }

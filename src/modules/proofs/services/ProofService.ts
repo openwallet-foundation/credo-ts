@@ -1,6 +1,5 @@
 import { inject, scoped, Lifecycle } from 'tsyringe'
 import type { IndyProof, Schema, CredDef } from 'indy-sdk'
-import { EventEmitter } from 'events'
 import { validateOrReject } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
@@ -41,20 +40,10 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { Logger } from '../../../logger'
 import { ProofRepository } from '../repository'
 import { Symbols } from '../../../symbols'
-
-export enum ProofEventType {
-  StateChanged = 'stateChanged',
-}
-
-export interface ProofStateChangedEvent {
-  proofRecord: ProofRecord
-  previousState: ProofState
-}
-
-export interface ProofProtocolMsgReturnType<MessageType extends AgentMessage> {
-  message: MessageType
-  proofRecord: ProofRecord
-}
+import { IndyHolderService, IndyVerifierService } from '../../indy'
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { ProofEventTypes, ProofStateChangedEvent } from '../ProofEvents'
+import { AriesFrameworkError } from '../../../error'
 
 /**
  * @todo add method to check if request matches proposal. Useful to see if a request I received is the same as the proposal I sent.
@@ -62,24 +51,31 @@ export interface ProofProtocolMsgReturnType<MessageType extends AgentMessage> {
  * @todo validate attachments / messages
  */
 @scoped(Lifecycle.ContainerScoped)
-export class ProofService extends EventEmitter {
+export class ProofService {
   private proofRepository: ProofRepository
   private ledgerService: LedgerService
   private wallet: Wallet
   private logger: Logger
+  private indyHolderService: IndyHolderService
+  private indyVerifierService: IndyVerifierService
+  private eventEmitter: EventEmitter
 
   public constructor(
     proofRepository: ProofRepository,
     ledgerService: LedgerService,
     @inject(Symbols.Wallet) wallet: Wallet,
-    agentConfig: AgentConfig
+    agentConfig: AgentConfig,
+    indyHolderService: IndyHolderService,
+    indyVerifierService: IndyVerifierService,
+    eventEmitter: EventEmitter
   ) {
-    super()
-
     this.proofRepository = proofRepository
     this.ledgerService = ledgerService
     this.wallet = wallet
     this.logger = agentConfig.logger
+    this.indyHolderService = indyHolderService
+    this.indyVerifierService = indyVerifierService
+    this.eventEmitter = eventEmitter
   }
 
   /**
@@ -116,7 +112,10 @@ export class ProofService extends EventEmitter {
       tags: { threadId: proposalMessage.threadId },
     })
     await this.proofRepository.save(proofRecord)
-    this.emit(ProofEventType.StateChanged, { proofRecord, previousState: null })
+    this.eventEmitter.emit<ProofStateChangedEvent>({
+      type: ProofEventTypes.ProofStateChanged,
+      payload: { proofRecord, previousState: null },
+    })
 
     return { message: proposalMessage, proofRecord }
   }
@@ -174,7 +173,7 @@ export class ProofService extends EventEmitter {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming presentation proposal message with thread id ${proposalMessage.threadId}`
       )
     }
@@ -201,9 +200,12 @@ export class ProofService extends EventEmitter {
 
       // Save record
       await this.proofRepository.save(proofRecord)
-      this.emit(ProofEventType.StateChanged, {
-        proofRecord,
-        previousState: null,
+      this.eventEmitter.emit<ProofStateChangedEvent>({
+        type: ProofEventTypes.ProofStateChanged,
+        payload: {
+          proofRecord,
+          previousState: null,
+        },
       })
     }
 
@@ -240,7 +242,7 @@ export class ProofService extends EventEmitter {
     })
     const requestPresentationMessage = new RequestPresentationMessage({
       comment: config?.comment,
-      attachments: [attachment],
+      requestPresentationAttachments: [attachment],
     })
     requestPresentationMessage.setThread({
       threadId: proofRecord.tags.threadId,
@@ -283,7 +285,7 @@ export class ProofService extends EventEmitter {
     })
     const requestPresentationMessage = new RequestPresentationMessage({
       comment: config?.comment,
-      attachments: [attachment],
+      requestPresentationAttachments: [attachment],
     })
 
     // Create record
@@ -295,7 +297,10 @@ export class ProofService extends EventEmitter {
     })
 
     await this.proofRepository.save(proofRecord)
-    this.emit(ProofEventType.StateChanged, { proofRecord, previousState: null })
+    this.eventEmitter.emit<ProofStateChangedEvent>({
+      type: ProofEventTypes.ProofStateChanged,
+      payload: { proofRecord, previousState: null },
+    })
 
     return { message: requestPresentationMessage, proofRecord }
   }
@@ -317,7 +322,7 @@ export class ProofService extends EventEmitter {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming presentation request message with thread id ${proofRequestMessage.threadId}`
       )
     }
@@ -326,7 +331,7 @@ export class ProofService extends EventEmitter {
 
     // Assert attachment
     if (!proofRequest) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for presentation request with thread id ${proofRequestMessage.threadId}`
       )
     }
@@ -356,9 +361,9 @@ export class ProofService extends EventEmitter {
 
       // Save in repository
       await this.proofRepository.save(proofRecord)
-      this.emit(ProofEventType.StateChanged, {
-        proofRecord,
-        previousState: null,
+      this.eventEmitter.emit<ProofStateChangedEvent>({
+        type: ProofEventTypes.ProofStateChanged,
+        payload: { proofRecord, previousState: null },
       })
     }
 
@@ -386,7 +391,7 @@ export class ProofService extends EventEmitter {
 
     const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
     if (!indyProofRequest) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for presentation with thread id ${proofRecord.tags.threadId}`
       )
     }
@@ -404,7 +409,7 @@ export class ProofService extends EventEmitter {
     })
     const presentationMessage = new PresentationMessage({
       comment: config?.comment,
-      attachments: [attachment],
+      presentationAttachments: [attachment],
     })
     presentationMessage.setThread({ threadId: proofRecord.tags.threadId })
 
@@ -431,7 +436,7 @@ export class ProofService extends EventEmitter {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming presentation message with thread id ${presentationMessage.threadId}`
       )
     }
@@ -445,13 +450,13 @@ export class ProofService extends EventEmitter {
     const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
 
     if (!indyProofJson) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for presentation with thread id ${presentationMessage.threadId}`
       )
     }
 
     if (!indyProofRequest) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for presentation request with thread id ${presentationMessage.threadId}`
       )
     }
@@ -502,7 +507,7 @@ export class ProofService extends EventEmitter {
     // Assert connection
     connection?.assertReady()
     if (!connection) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `No connection associated with incoming presentation acknowledgement message with thread id ${presentationAckMessage.threadId}`
       )
     }
@@ -631,7 +636,7 @@ export class ProofService extends EventEmitter {
 
       // Can't construct without matching credentials
       if (credentials.length === 0) {
-        throw new Error(
+        throw new AriesFrameworkError(
           `Could not automatically construct requested credentials for proof request '${proofRequest.name}'`
         )
       }
@@ -665,7 +670,7 @@ export class ProofService extends EventEmitter {
         }
 
         if (!credentialMatch) {
-          throw new Error(
+          throw new AriesFrameworkError(
             `Could not automatically construct requested credentials for proof request '${proofRequest.name}'`
           )
         }
@@ -692,7 +697,7 @@ export class ProofService extends EventEmitter {
 
       // Can't create requestedPredicates without matching credentials
       if (credentials.length === 0) {
-        throw new Error(
+        throw new AriesFrameworkError(
           `Could not automatically construct requested credentials for proof request '${proofRequest.name}'`
         )
       }
@@ -730,7 +735,7 @@ export class ProofService extends EventEmitter {
 
     for (const [referent, attribute] of proof.requestedProof.revealedAttributes.entries()) {
       if (!CredentialUtils.checkValidEncoding(attribute.raw, attribute.encoded)) {
-        throw new Error(
+        throw new AriesFrameworkError(
           `The encoded value for '${referent}' is invalid. ` +
             `Expected '${CredentialUtils.encode(attribute.raw)}'. ` +
             `Actual '${attribute.encoded}'`
@@ -747,7 +752,12 @@ export class ProofService extends EventEmitter {
       new Set(proof.identifiers.map((i) => i.credentialDefinitionId))
     )
 
-    return await this.wallet.verifyProof(proofRequest.toJSON(), proofJson, schemas, credentialDefinitions, {}, {})
+    return await this.indyVerifierService.verifyProof({
+      proofRequest: proofRequest.toJSON(),
+      proof: proofJson,
+      schemas,
+      credentialDefinitions,
+    })
   }
 
   /**
@@ -756,41 +766,42 @@ export class ProofService extends EventEmitter {
    * @returns List containing all proof records
    */
   public async getAll(): Promise<ProofRecord[]> {
-    return this.proofRepository.findAll()
+    return this.proofRepository.getAll()
   }
 
   /**
    * Retrieve a proof record by id
    *
    * @param proofRecordId The proof record id
-   * @throws {Error} If no record is found
+   * @throws {RecordNotFoundError} If no record is found
    * @return The proof record
    *
    */
   public async getById(proofRecordId: string): Promise<ProofRecord> {
-    return this.proofRepository.find(proofRecordId)
+    return this.proofRepository.getById(proofRecordId)
+  }
+
+  /**
+   * Retrieve a proof record by id
+   *
+   * @param proofRecordId The proof record id
+   * @return The proof record or null if not found
+   *
+   */
+  public async findById(proofRecordId: string): Promise<ProofRecord | null> {
+    return this.proofRepository.findById(proofRecordId)
   }
 
   /**
    * Retrieve a proof record by thread id
    *
    * @param threadId The thread id
-   * @throws {Error} If no record is found
-   * @throws {Error} If multiple records are found
+   * @throws {RecordNotFoundError} If no record is found
+   * @throws {RecordDuplicateError} If multiple records are found
    * @returns The proof record
    */
   public async getByThreadId(threadId: string): Promise<ProofRecord> {
-    const proofRecords = await this.proofRepository.findByQuery({ threadId })
-
-    if (proofRecords.length === 0) {
-      throw new Error(`Proof record not found by thread id ${threadId}`)
-    }
-
-    if (proofRecords.length > 1) {
-      throw new Error(`Multiple proof records found by thread id ${threadId}`)
-    }
-
-    return proofRecords[0]
+    return this.proofRepository.getSingleByQuery({ threadId })
   }
 
   /**
@@ -807,7 +818,10 @@ export class ProofService extends EventEmitter {
     const credentialObjects: IndyCredentialInfo[] = []
 
     for (const credentialId of requestedCredentials.getCredentialIdentifiers()) {
-      const credentialInfo = JsonTransformer.fromJSON(await this.wallet.getCredential(credentialId), IndyCredentialInfo)
+      const credentialInfo = JsonTransformer.fromJSON(
+        await this.indyHolderService.getCredential(credentialId),
+        IndyCredentialInfo
+      )
 
       credentialObjects.push(credentialInfo)
     }
@@ -817,13 +831,12 @@ export class ProofService extends EventEmitter {
       new Set(credentialObjects.map((c) => c.credentialDefinitionId))
     )
 
-    const proof = await this.wallet.createProof(
-      proofRequest.toJSON(),
-      requestedCredentials.toJSON(),
+    const proof = await this.indyHolderService.createProof({
+      proofRequest: proofRequest.toJSON(),
+      requestedCredentials: requestedCredentials.toJSON(),
       schemas,
       credentialDefinitions,
-      {}
-    )
+    })
 
     return proof
   }
@@ -832,7 +845,11 @@ export class ProofService extends EventEmitter {
     proofRequest: ProofRequest,
     attributeReferent: string
   ): Promise<Credential[]> {
-    const credentialsJson = await this.wallet.getCredentialsForProofRequest(proofRequest.toJSON(), attributeReferent)
+    const credentialsJson = await this.indyHolderService.getCredentialsForProofRequest({
+      proofRequest: proofRequest.toJSON(),
+      attributeReferent,
+    })
+
     return JsonTransformer.fromJSON(credentialsJson, Credential) as unknown as Credential[]
   }
 
@@ -849,12 +866,10 @@ export class ProofService extends EventEmitter {
     proofRecord.state = newState
     await this.proofRepository.update(proofRecord)
 
-    const event: ProofStateChangedEvent = {
-      proofRecord,
-      previousState: previousState,
-    }
-
-    this.emit(ProofEventType.StateChanged, event)
+    this.eventEmitter.emit<ProofStateChangedEvent>({
+      type: ProofEventTypes.ProofStateChanged,
+      payload: { proofRecord, previousState: previousState },
+    })
   }
 
   /**
@@ -896,4 +911,9 @@ export class ProofService extends EventEmitter {
 
     return credentialDefinitions
   }
+}
+
+export interface ProofProtocolMsgReturnType<MessageType extends AgentMessage> {
+  message: MessageType
+  proofRecord: ProofRecord
 }

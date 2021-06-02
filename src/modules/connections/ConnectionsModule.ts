@@ -1,5 +1,4 @@
 import type { Verkey } from 'indy-sdk'
-import { EventEmitter } from 'events'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
@@ -40,16 +39,6 @@ export class ConnectionsModule {
     this.consumerRoutingService = consumerRoutingService
     this.messageSender = messageSender
     this.registerHandlers(dispatcher)
-  }
-
-  /**
-   * Get the event emitter for the connection service. Will emit state changed events
-   * when the state of connections records changes.
-   *
-   * @returns event emitter for connection related state changes
-   */
-  public get events(): EventEmitter {
-    return this.connectionService
   }
 
   public async createConnection(config?: { autoAcceptConnection?: boolean; alias?: string }): Promise<{
@@ -178,24 +167,69 @@ export class ConnectionsModule {
     return this.connectionService.returnWhenIsConnected(connectionId)
   }
 
-  public async getAll() {
-    return this.connectionService.getConnections()
+  /**
+   * Retrieve all connections records
+   *
+   * @returns List containing all connection records
+   */
+  public getAll() {
+    return this.connectionService.getAll()
   }
 
-  public async find(connectionId: string): Promise<ConnectionRecord | null> {
-    return this.connectionService.find(connectionId)
-  }
-
-  public async getById(connectionId: string): Promise<ConnectionRecord> {
+  /**
+   * Retrieve a connection record by id
+   *
+   * @param connectionId The connection record id
+   * @throws {RecordNotFoundError} If no record is found
+   * @return The connection record
+   *
+   */
+  public getById(connectionId: string): Promise<ConnectionRecord> {
     return this.connectionService.getById(connectionId)
   }
 
-  public async findConnectionByVerkey(verkey: Verkey): Promise<ConnectionRecord | null> {
+  /**
+   * Find a connection record by id
+   *
+   * @param connectionId the connection record id
+   * @returns The connection record or null if not found
+   */
+  public findById(connectionId: string): Promise<ConnectionRecord | null> {
+    return this.connectionService.findById(connectionId)
+  }
+
+  /**
+   * Find connection by verkey.
+   *
+   * @param verkey the verkey to search for
+   * @returns the connection record, or null if not found
+   * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
+   */
+  public findByVerkey(verkey: Verkey): Promise<ConnectionRecord | null> {
     return this.connectionService.findByVerkey(verkey)
   }
 
-  public async findConnectionByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
+  /**
+   * Find connection by their verkey.
+   *
+   * @param verkey the verkey to search for
+   * @returns the connection record, or null if not found
+   * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
+   */
+  public findByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
     return this.connectionService.findByTheirKey(verkey)
+  }
+
+  /**
+   * Retrieve a connection record by thread id
+   *
+   * @param threadId The thread id
+   * @throws {RecordNotFoundError} If no record is found
+   * @throws {RecordDuplicateError} If multiple records are found
+   * @returns The connection record
+   */
+  public getByThreadId(threadId: string): Promise<ConnectionRecord> {
+    return this.connectionService.getByThreadId(threadId)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {

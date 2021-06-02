@@ -2,7 +2,9 @@ import type Indy from 'indy-sdk'
 import type { Did, WalletConfig, WalletCredentials, Verkey } from 'indy-sdk'
 import { ConnectionRecord } from './modules/connections'
 import { AgentMessage } from './agent/AgentMessage'
+import { TransportSession } from './agent/TransportService'
 import { Logger } from './logger'
+import { FileSystem } from './storage/fs/FileSystem'
 
 type $FixMe = any
 
@@ -24,11 +26,15 @@ export interface InitConfig {
   walletConfig: WalletConfig
   walletCredentials: WalletCredentials
   autoAcceptConnections?: boolean
-  genesisPath?: string
   poolName?: string
   logger?: Logger
   indy: typeof Indy
   didCommMimeType?: DidCommMimeType
+  fileSystem: FileSystem
+
+  // Either path or transactions string can be provided
+  genesisPath?: string
+  genesisTransactions?: string
 }
 
 export interface UnpackedMessage {
@@ -56,6 +62,7 @@ export interface OutboundPackage {
   payload: WireMessage
   responseRequested?: boolean
   endpoint?: string
+  session?: TransportSession
 }
 
 export interface InboundConnection {

@@ -5,14 +5,18 @@ import { MessageSender } from './MessageSender'
 import { AgentMessage } from './AgentMessage'
 import { InboundMessageContext } from './models/InboundMessageContext'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
+import { TransportService } from './TransportService'
+import { AriesFrameworkError } from '../error/AriesFrameworkError'
 
 @scoped(Lifecycle.ContainerScoped)
 class Dispatcher {
   private handlers: Handler[] = []
   private messageSender: MessageSender
+  private transportService: TransportService
 
-  public constructor(messageSender: MessageSender) {
+  public constructor(messageSender: MessageSender, transportService: TransportService) {
     this.messageSender = messageSender
+    this.transportService = transportService
   }
 
   public registerHandler(handler: Handler) {
@@ -24,7 +28,7 @@ class Dispatcher {
     const handler = this.getHandlerForType(message.type)
 
     if (!handler) {
-      throw new Error(`No handler for message type "${message.type}" found`)
+      throw new AriesFrameworkError(`No handler for message type "${message.type}" found`)
     }
 
     const outboundMessage = await handler.handle(messageContext)
@@ -32,7 +36,7 @@ class Dispatcher {
     if (outboundMessage) {
       const threadId = outboundMessage.payload.threadId
 
-      if (!outboundMessage.connection.hasInboundEndpoint()) {
+      if (!this.transportService.hasInboundEndpoint(outboundMessage.connection)) {
         outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
       }
 

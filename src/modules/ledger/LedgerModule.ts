@@ -1,9 +1,10 @@
-import type { CredDefId, Did, PoolConfig, SchemaId } from 'indy-sdk'
+import type { CredDefId, Did, SchemaId } from 'indy-sdk'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
-import { LedgerService, SchemaTemplate, CredDefTemplate } from './services'
+import { LedgerService, SchemaTemplate, CredentialDefinitionTemplate } from './services'
 import { Wallet } from '../../wallet/Wallet'
 import { Symbols } from '../../symbols'
+import { AriesFrameworkError } from '../../error'
 
 @scoped(Lifecycle.ContainerScoped)
 export class LedgerModule {
@@ -15,12 +16,8 @@ export class LedgerModule {
     this.wallet = wallet
   }
 
-  public async connect(poolName: string, poolConfig: PoolConfig) {
-    return this.ledgerService.connect(poolName, poolConfig)
-  }
-
   public async registerPublicDid() {
-    throw new Error('registerPublicDid not implemented.')
+    throw new AriesFrameworkError('registerPublicDid not implemented.')
   }
 
   public async getPublicDid(did: Did) {
@@ -31,7 +28,7 @@ export class LedgerModule {
     const did = this.wallet.publicDid?.did
 
     if (!did) {
-      throw new Error('Agent has no public DID.')
+      throw new AriesFrameworkError('Agent has no public DID.')
     }
 
     return this.ledgerService.registerSchema(did, schema)
@@ -41,11 +38,11 @@ export class LedgerModule {
     return this.ledgerService.getSchema(id)
   }
 
-  public async registerCredentialDefinition(credentialDefinitionTemplate: CredDefTemplate) {
+  public async registerCredentialDefinition(credentialDefinitionTemplate: CredentialDefinitionTemplate) {
     const did = this.wallet.publicDid?.did
 
     if (!did) {
-      throw new Error('Agent has no public DID.')
+      throw new AriesFrameworkError('Agent has no public DID.')
     }
 
     return this.ledgerService.registerCredentialDefinition(did, credentialDefinitionTemplate)

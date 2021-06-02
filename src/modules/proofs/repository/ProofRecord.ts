@@ -4,6 +4,7 @@ import { uuid } from '../../../utils/uuid'
 import { BaseRecord, Tags } from '../../../storage/BaseRecord'
 import { ProposePresentationMessage, RequestPresentationMessage, PresentationMessage } from '../messages'
 import { ProofState } from '../ProofState'
+import { AriesFrameworkError } from '../../../error'
 
 export interface ProofRecordProps {
   id?: string
@@ -65,13 +66,15 @@ export class ProofRecord extends BaseRecord implements ProofRecordProps {
     }
 
     if (!expectedStates.includes(this.state)) {
-      throw new Error(`Proof record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`)
+      throw new AriesFrameworkError(
+        `Proof record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`
+      )
     }
   }
 
   public assertConnection(currentConnectionId: string) {
     if (this.connectionId !== currentConnectionId) {
-      throw new Error(
+      throw new AriesFrameworkError(
         `Proof record is associated with connection '${this.connectionId}'. Current connection is '${currentConnectionId}'`
       )
     }

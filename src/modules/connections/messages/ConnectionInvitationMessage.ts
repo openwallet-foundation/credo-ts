@@ -2,6 +2,7 @@ import { Transform } from 'class-transformer'
 import { Equals, IsString, ValidateIf, IsArray, IsOptional } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { AriesFrameworkError } from '../../../error'
 import { decodeInvitationFromUrl, encodeInvitationToUrl } from '../../../helpers'
 import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 import { ConnectionMessageType } from './ConnectionMessageType'
@@ -45,7 +46,9 @@ export class ConnectionInvitationMessage extends AgentMessage {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       if (options.did && (options.recipientKeys || options.routingKeys || options.serviceEndpoint)) {
-        throw new Error('either the did or the recipientKeys/serviceEndpoint/routingKeys must be set, but not both')
+        throw new AriesFrameworkError(
+          'either the did or the recipientKeys/serviceEndpoint/routingKeys must be set, but not both'
+        )
       }
     }
   }

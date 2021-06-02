@@ -21,5 +21,25 @@ services:
     ports:
       - 3002:3002
 
+  alice-ws-mediator:
+    build: ..
+    image: aries-framework-javascript
+    container_name: alice-ws-mediator
+    command: ./scripts/run-mediator.sh alice-ws
+    networks:
+      - hyperledger
+    ports:
+      - 3003:3003
+
+  bob-ws-mediator:
+    build: ..
+    image: aries-framework-javascript
+    container_name: bob-ws-mediator
+    command: ./scripts/run-mediator.sh bob-ws
+    networks:
+      - hyperledger
+    ports:
+      - 3004:3004
+
 networks:
   hyperledger:

@@ -1,40 +1,21 @@
-import { Agent, HttpOutboundTransporter, InboundTransporter } from '../../src'
-import { InitConfig } from '../../src/types'
+import { Agent, InboundTransporter, WsOutboundTransporter } from '../../src'
 import { get } from '../http'
-import { sleep, toBeConnectedWith, waitForBasicMessage } from '../../src/__tests__/helpers'
-import indy from 'indy-sdk'
-import logger from '../../src/__tests__/logger'
+import { getBaseConfig, waitForBasicMessage } from '../../src/__tests__/helpers'
+import testLogger from '../../src/__tests__/logger'
 
-expect.extend({ toBeConnectedWith })
+const logger = testLogger
 
-const aliceConfig: InitConfig = {
-  label: 'e2e Alice',
-  mediatorUrl: 'http://localhost:3001',
-  walletConfig: { id: 'e2e-alice' },
-  walletCredentials: { key: '00000000000000000000000000000Test01' },
-  autoAcceptConnections: true,
-  logger: logger,
-  indy,
-}
+const aliceConfig = getBaseConfig('E2E Alice WebSockets', { mediatorUrl: 'http://localhost:3003' })
+const bobConfig = getBaseConfig('E2E Bob WebSockets', { mediatorUrl: 'http://localhost:3004' })
 
-const bobConfig: InitConfig = {
-  label: 'e2e Bob',
-  mediatorUrl: 'http://localhost:3002',
-  walletConfig: { id: 'e2e-bob' },
-  walletCredentials: { key: '00000000000000000000000000000Test02' },
-  autoAcceptConnections: true,
-  logger: logger,
-  indy,
-}
-
-describe('with mediator', () => {
+describe('websockets with mediator', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
   let aliceAtAliceBobId: string
 
   afterAll(async () => {
-    ;(aliceAgent.inboundTransporter as PollingInboundTransporter).stop = true
-    ;(bobAgent.inboundTransporter as PollingInboundTransporter).stop = true
+    await aliceAgent.outboundTransporter?.stop()
+    await bobAgent.outboundTransporter?.stop()
 
     // Wait for messages to flush out
     await new Promise((r) => setTimeout(r, 1000))
@@ -45,13 +26,13 @@ describe('with mediator', () => {
 
   test('Alice and Bob make a connection with mediator', async () => {
     aliceAgent = new Agent(aliceConfig)
-    aliceAgent.setInboundTransporter(new PollingInboundTransporter())
-    aliceAgent.setOutboundTransporter(new HttpOutboundTransporter(aliceAgent))
+    aliceAgent.setInboundTransporter(new WsInboundTransporter())
+    aliceAgent.setOutboundTransporter(new WsOutboundTransporter(aliceAgent))
     await aliceAgent.init()
 
     bobAgent = new Agent(bobConfig)
-    bobAgent.setInboundTransporter(new PollingInboundTransporter())
-    bobAgent.setOutboundTransporter(new HttpOutboundTransporter(bobAgent))
+    bobAgent.setInboundTransporter(new WsInboundTransporter())
+    bobAgent.setOutboundTransporter(new WsOutboundTransporter(bobAgent))
     await bobAgent.init()
 
     const aliceInbound = aliceAgent.routing.getInboundConnection()
@@ -98,10 +79,7 @@ describe('with mediator', () => {
 
   test('Send a message from Alice to Bob via mediator', async () => {
     // send message from Alice to Bob
-    const aliceConnectionAtAliceBob = await aliceAgent.connections.find(aliceAtAliceBobId)
-    if (!aliceConnectionAtAliceBob) {
-      throw new Error(`There is no connection for id ${aliceAtAliceBobId}`)
-    }
+    const aliceConnectionAtAliceBob = await aliceAgent.connections.getById(aliceAtAliceBobId)
 
     logger.test('aliceConnectionAtAliceBob\n', aliceConnectionAtAliceBob)
 
@@ -116,36 +94,19 @@ describe('with mediator', () => {
   })
 })
 
-class PollingInboundTransporter implements InboundTransporter {
-  public stop: boolean
-
-  public constructor() {
-    this.stop = false
-  }
+class WsInboundTransporter implements InboundTransporter {
   public async start(agent: Agent) {
     await this.registerMediator(agent)
   }
 
-  public async registerMediator(agent: Agent) {
+  private async registerMediator(agent: Agent) {
     const mediatorUrl = agent.getMediatorUrl() || ''
     const mediatorInvitationUrl = await get(`${mediatorUrl}/invitation`)
     const { verkey: mediatorVerkey } = JSON.parse(await get(`${mediatorUrl}/`))
+
     await agent.routing.provision({
       verkey: mediatorVerkey,
       invitationUrl: mediatorInvitationUrl,
-    })
-    this.pollDownloadMessages(agent)
-  }
-
-  private pollDownloadMessages(agent: Agent) {
-    const loop = async () => {
-      while (!this.stop) {
-        await agent.routing.downloadMessages()
-        await sleep(1000)
-      }
-    }
-    new Promise(() => {
-      loop()
     })
   }
 }

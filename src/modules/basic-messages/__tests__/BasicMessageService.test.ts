@@ -1,19 +1,19 @@
-import indy from 'indy-sdk'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { Wallet } from '../../../wallet/Wallet'
 import { Repository } from '../../../storage/Repository'
 import { StorageService } from '../../../storage/StorageService'
 import { IndyStorageService } from '../../../storage/IndyStorageService'
-import { BasicMessageService, BasicMessageEventType } from '../services'
+import { BasicMessageService } from '../services'
 import { BasicMessageRecord } from '../repository/BasicMessageRecord'
 import { BasicMessage } from '../messages'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { ConnectionRecord } from '../../connections'
 import { AgentConfig } from '../../../agent/AgentConfig'
+import { getBaseConfig } from '../../../__tests__/helpers'
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { BasicMessageEventTypes, BasicMessageReceivedEvent } from '../BasicMessageEvents'
 
 describe('BasicMessageService', () => {
-  const walletConfig = { id: 'test-wallet' + '-BasicMessageServiceTest' }
-  const walletCredentials = { key: 'key' }
   const mockConnectionRecord = {
     id: 'd3849ac3-c981-455b-a1aa-a10bea6cead8',
     verkey: '71X9Y1aSPK11ariWUYQCYMjSewf2Kw2JFGeygEf9uZd9',
@@ -26,14 +26,7 @@ describe('BasicMessageService', () => {
   let storageService: StorageService<BasicMessageRecord>
 
   beforeAll(async () => {
-    wallet = new IndyWallet(
-      new AgentConfig({
-        walletConfig,
-        walletCredentials,
-        indy,
-        label: 'test',
-      })
-    )
+    wallet = new IndyWallet(new AgentConfig(getBaseConfig('BasicMessageServiceTest')))
     await wallet.init()
     storageService = new IndyStorageService(wallet)
   })
@@ -46,15 +39,17 @@ describe('BasicMessageService', () => {
   describe('save', () => {
     let basicMessageRepository: Repository<BasicMessageRecord>
     let basicMessageService: BasicMessageService
+    let eventEmitter: EventEmitter
 
     beforeEach(() => {
       basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService)
-      basicMessageService = new BasicMessageService(basicMessageRepository)
+      eventEmitter = new EventEmitter()
+      basicMessageService = new BasicMessageService(basicMessageRepository, eventEmitter)
     })
 
     it(`emits newMessage with connection verkey and message itself`, async () => {
       const eventListenerMock = jest.fn()
-      basicMessageService.on(BasicMessageEventType.MessageReceived, eventListenerMock)
+      eventEmitter.on<BasicMessageReceivedEvent>(BasicMessageEventTypes.BasicMessageReceived, eventListenerMock)
 
       const basicMessage = new BasicMessage({
         id: '123',
@@ -72,8 +67,11 @@ describe('BasicMessageService', () => {
       await basicMessageService.save(messageContext, mockConnectionRecord as ConnectionRecord)
 
       expect(eventListenerMock).toHaveBeenCalledWith({
-        verkey: mockConnectionRecord.verkey,
-        message: messageContext.message,
+        type: 'BasicMessageReceived',
+        payload: {
+          verkey: mockConnectionRecord.verkey,
+          message: messageContext.message,
+        },
       })
     })
   })
