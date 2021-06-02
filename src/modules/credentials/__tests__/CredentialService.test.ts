@@ -107,21 +107,27 @@ const mockCredentialRecord = ({
   tags?: CredentialRecordTags
   id?: string
   credentialAttributes?: CredentialPreviewAttribute[]
-} = {}) =>
-  new CredentialRecord({
-    offerMessage: new OfferCredentialMessage({
-      comment: 'some comment',
-      credentialPreview: credentialPreview,
-      attachments: [offerAttachment],
-    }),
+} = {}) => {
+  const offerMessage = new OfferCredentialMessage({
+    comment: 'some comment',
+    credentialPreview: credentialPreview,
+    offerAttachments: [offerAttachment],
+  })
+
+  return new CredentialRecord({
+    offerMessage,
     id,
     credentialAttributes: credentialAttributes || credentialPreview.attributes,
     requestMessage,
     metadata,
     state: state || CredentialState.OfferSent,
-    tags: tags || {},
+    tags: tags ?? {
+      threadId: offerMessage.id,
+      connectionId: '123',
+    },
     connectionId: '123',
   })
+}
 
 describe('CredentialService', () => {
   let credentialRepository: CredentialRepository
@@ -177,7 +183,7 @@ describe('CredentialService', () => {
         id: expect.any(String),
         createdAt: expect.any(Date),
         offerMessage: credentialOffer,
-        tags: { threadId: createdCredentialRecord.offerMessage?.id },
+        tags: { threadId: createdCredentialRecord.offerMessage?.id, connectionId: connection.id },
         state: CredentialState.OfferSent,
       })
     })
@@ -242,7 +248,7 @@ describe('CredentialService', () => {
       credentialOfferMessage = new OfferCredentialMessage({
         comment: 'some comment',
         credentialPreview: credentialPreview,
-        attachments: [offerAttachment],
+        offerAttachments: [offerAttachment],
       })
       messageContext = new InboundMessageContext(credentialOfferMessage, {
         connection,
@@ -262,7 +268,7 @@ describe('CredentialService', () => {
         id: expect.any(String),
         createdAt: expect.any(Date),
         offerMessage: credentialOfferMessage,
-        tags: { threadId: credentialOfferMessage.id },
+        tags: { threadId: credentialOfferMessage.id, connectionId: connection.id },
         state: CredentialState.OfferReceived,
       }
       expect(repositorySaveSpy).toHaveBeenCalledTimes(1)
@@ -297,7 +303,10 @@ describe('CredentialService', () => {
     beforeEach(() => {
       credentialRecord = mockCredentialRecord({
         state: CredentialState.OfferReceived,
-        tags: { threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746' },
+        tags: {
+          threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
+          connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
+        },
       })
     })
 
@@ -386,7 +395,7 @@ describe('CredentialService', () => {
 
       const credentialRequest = new RequestCredentialMessage({
         comment: 'abcd',
-        attachments: [requestAttachment],
+        requestAttachments: [requestAttachment],
       })
       credentialRequest.setThread({ threadId: 'somethreadid' })
       messageContext = new InboundMessageContext(credentialRequest, {
@@ -404,7 +413,10 @@ describe('CredentialService', () => {
       const returnedCredentialRecord = await credentialService.processRequest(messageContext)
 
       // then
-      expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, { threadId: 'somethreadid' })
+      expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, {
+        threadId: 'somethreadid',
+        connectionId: connection.id,
+      })
 
       const expectedCredentialRecord = {
         state: CredentialState.RequestReceived,
@@ -458,9 +470,9 @@ describe('CredentialService', () => {
         state: CredentialState.RequestReceived,
         requestMessage: new RequestCredentialMessage({
           comment: 'abcd',
-          attachments: [requestAttachment],
+          requestAttachments: [requestAttachment],
         }),
-        tags: { threadId },
+        tags: { threadId, connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190' },
       })
     })
 
@@ -534,7 +546,7 @@ describe('CredentialService', () => {
         credentialRequest: credReq,
         credentialValues: {},
       })
-      const [responseAttachment] = credentialResponse.attachments
+      const [responseAttachment] = credentialResponse.credentialAttachments
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       expect(JsonEncoder.fromBase64(responseAttachment.data.base64!)).toEqual(cred)
     })
@@ -545,7 +557,7 @@ describe('CredentialService', () => {
         credentialService.createCredential(
           mockCredentialRecord({
             state: CredentialState.RequestReceived,
-            tags: { threadId },
+            tags: { threadId, connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190' },
           })
         )
       ).rejects.toThrowError(
@@ -562,9 +574,9 @@ describe('CredentialService', () => {
             credentialService.createCredential(
               mockCredentialRecord({
                 state,
-                tags: { threadId },
+                tags: { threadId, connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190' },
                 requestMessage: new RequestCredentialMessage({
-                  attachments: [requestAttachment],
+                  requestAttachments: [requestAttachment],
                 }),
               })
             )
@@ -582,14 +594,14 @@ describe('CredentialService', () => {
       credential = mockCredentialRecord({
         state: CredentialState.RequestSent,
         requestMessage: new RequestCredentialMessage({
-          attachments: [requestAttachment],
+          requestAttachments: [requestAttachment],
         }),
         metadata: { requestMetadata: { cred_req: 'meta-data' } },
       })
 
       const credentialResponse = new IssueCredentialMessage({
         comment: 'abcd',
-        attachments: [credentialAttachment],
+        credentialAttachments: [credentialAttachment],
       })
       credentialResponse.setThread({ threadId: 'somethreadid' })
       messageContext = new InboundMessageContext(credentialResponse, {
@@ -610,7 +622,10 @@ describe('CredentialService', () => {
       await credentialService.processCredential(messageContext)
 
       // then
-      expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, { threadId: 'somethreadid' })
+      expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, {
+        threadId: 'somethreadid',
+        connectionId: connection.id,
+      })
 
       expect(storeCredentialMock).toHaveBeenNthCalledWith(1, {
         credentialId: expect.any(String),
@@ -722,7 +737,7 @@ describe('CredentialService', () => {
     beforeEach(() => {
       credential = mockCredentialRecord({
         state: CredentialState.CredentialReceived,
-        tags: { threadId },
+        tags: { threadId, connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190' },
       })
     })
 
@@ -783,7 +798,9 @@ describe('CredentialService', () => {
       await Promise.all(
         invalidCredentialStates.map(async (state) => {
           await expect(
-            credentialService.createAck(mockCredentialRecord({ state, tags: { threadId } }))
+            credentialService.createAck(
+              mockCredentialRecord({ state, tags: { threadId, connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190' } })
+            )
           ).rejects.toThrowError(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
         })
       )
@@ -821,7 +838,10 @@ describe('CredentialService', () => {
       const expectedCredentialRecord = {
         state: CredentialState.Done,
       }
-      expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, { threadId: 'somethreadid' })
+      expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, {
+        threadId: 'somethreadid',
+        connectionId: connection.id,
+      })
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
       expect(updatedCredentialRecord).toMatchObject(expectedCredentialRecord)
@@ -889,8 +909,11 @@ describe('CredentialService', () => {
     it('getById should return value from credentialRepository.getSingleByQuery', async () => {
       const expected = mockCredentialRecord()
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(expected))
-      const result = await credentialService.getByThreadId('threadId')
-      expect(credentialRepository.getSingleByQuery).toBeCalledWith({ threadId: 'threadId' })
+      const result = await credentialService.getByConnectionAndThreadId('connectionId', 'threadId')
+      expect(credentialRepository.getSingleByQuery).toBeCalledWith({
+        threadId: 'threadId',
+        connectionId: 'connectionId',
+      })
 
       expect(result).toBe(expected)
     })

@@ -45,10 +45,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
 
-      - name: Setup node v12
+      - name: Setup node v16
         uses: actions/setup-node@v2
         with:
-          node-version: 12
+          node-version: 16
 
       - name: Install dependencies
         run: yarn install
@@ -65,6 +65,11 @@ jobs:
   integration-test:
     runs-on: ubuntu-20.04
     name: Integration Tests
+
+    strategy:
+      matrix:
+        node-version: [12.x, 14.x, 16.x]
+
     steps:
       - name: Checkout aries-framework-javascript
         uses: actions/checkout@v2
@@ -92,10 +97,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
 
-      - name: Setup node v12
+      - name: Setup NodeJS ${{ matrix.node-version }}
         uses: actions/setup-node@v2
         with:
-          node-version: 12
+          node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
         run: yarn install
@@ -155,10 +160,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
 
-      - name: Setup node v12
+      - name: Setup node v16
         uses: actions/setup-node@v2
         with:
-          node-version: 12
+          node-version: 16
 
       - name: Install dependencies
         run: yarn install
@@ -166,6 +171,9 @@ jobs:
       # https://github.com/yarnpkg/yarn/issues/6617#issuecomment-436222106
       - name: Prepend Node path
         run: npm config set scripts-prepend-node-path true
+
+      - name: Set Verbose Logging
+        run: npm config set loglevel verbose --global
 
       - name: Set NPM config
         run: |
@@ -181,7 +189,7 @@ jobs:
         if: github.event_name == 'push'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: yarn release patch --preRelease=unstable
+        run: yarn release patch --preRelease=unstable -VV
 
       # On manual workflow dispatch release stable version
       - name: Release Stable

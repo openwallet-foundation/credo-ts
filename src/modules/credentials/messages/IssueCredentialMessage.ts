@@ -12,7 +12,7 @@ export const INDY_CREDENTIAL_ATTACHMENT_ID = 'libindy-cred-0'
 interface IssueCredentialMessageOptions {
   id?: string
   comment?: string
-  attachments: Attachment[]
+  credentialAttachments: Attachment[]
 }
 
 export class IssueCredentialMessage extends AgentMessage {
@@ -22,7 +22,7 @@ export class IssueCredentialMessage extends AgentMessage {
     if (options) {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
-      this.attachments = options.attachments
+      this.credentialAttachments = options.credentialAttachments
     }
   }
 
@@ -39,10 +39,10 @@ export class IssueCredentialMessage extends AgentMessage {
   @ValidateNested({
     each: true,
   })
-  public attachments!: Attachment[]
+  public credentialAttachments!: Attachment[]
 
   public get indyCredential(): Cred | null {
-    const attachment = this.attachments.find((attachment) => attachment.id === INDY_CREDENTIAL_ATTACHMENT_ID)
+    const attachment = this.credentialAttachments.find((attachment) => attachment.id === INDY_CREDENTIAL_ATTACHMENT_ID)
 
     // Return null if attachment is not found
     if (!attachment?.data?.base64) {

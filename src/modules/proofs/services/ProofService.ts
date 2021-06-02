@@ -109,7 +109,7 @@ export class ProofService {
       connectionId: connectionRecord.id,
       state: ProofState.ProposalSent,
       proposalMessage,
-      tags: { threadId: proposalMessage.threadId },
+      tags: { threadId: proposalMessage.threadId, connectionId: connectionRecord.id },
     })
     await this.proofRepository.save(proofRecord)
     this.eventEmitter.emit<ProofStateChangedEvent>({
@@ -180,11 +180,10 @@ export class ProofService {
 
     try {
       // Proof record already exists
-      proofRecord = await this.getByThreadId(proposalMessage.threadId)
+      proofRecord = await this.getByConnectionAndThreadId(connection.id, proposalMessage.threadId)
 
       // Assert
       proofRecord.assertState(ProofState.RequestSent)
-      proofRecord.assertConnection(connection.id)
 
       // Update record
       proofRecord.proposalMessage = proposalMessage
@@ -195,7 +194,7 @@ export class ProofService {
         connectionId: connection.id,
         proposalMessage,
         state: ProofState.ProposalReceived,
-        tags: { threadId: proposalMessage.threadId },
+        tags: { threadId: proposalMessage.threadId, connectionId: connection.id },
       })
 
       // Save record
@@ -242,7 +241,7 @@ export class ProofService {
     })
     const requestPresentationMessage = new RequestPresentationMessage({
       comment: config?.comment,
-      attachments: [attachment],
+      requestPresentationAttachments: [attachment],
     })
     requestPresentationMessage.setThread({
       threadId: proofRecord.tags.threadId,
@@ -285,7 +284,7 @@ export class ProofService {
     })
     const requestPresentationMessage = new RequestPresentationMessage({
       comment: config?.comment,
-      attachments: [attachment],
+      requestPresentationAttachments: [attachment],
     })
 
     // Create record
@@ -293,7 +292,7 @@ export class ProofService {
       connectionId: connectionRecord.id,
       requestMessage: requestPresentationMessage,
       state: ProofState.RequestSent,
-      tags: { threadId: requestPresentationMessage.threadId },
+      tags: { threadId: requestPresentationMessage.threadId, connectionId: connectionRecord.id },
     })
 
     await this.proofRepository.save(proofRecord)
@@ -341,11 +340,10 @@ export class ProofService {
 
     try {
       // Proof record already exists
-      proofRecord = await this.getByThreadId(proofRequestMessage.threadId)
+      proofRecord = await this.getByConnectionAndThreadId(connection.id, proofRequestMessage.threadId)
 
       // Assert
       proofRecord.assertState(ProofState.ProposalSent)
-      proofRecord.assertConnection(connection.id)
 
       // Update record
       proofRecord.requestMessage = proofRequestMessage
@@ -356,7 +354,7 @@ export class ProofService {
         connectionId: connection.id,
         requestMessage: proofRequestMessage,
         state: ProofState.RequestReceived,
-        tags: { threadId: proofRequestMessage.threadId },
+        tags: { threadId: proofRequestMessage.threadId, connectionId: connection.id },
       })
 
       // Save in repository
@@ -409,7 +407,7 @@ export class ProofService {
     })
     const presentationMessage = new PresentationMessage({
       comment: config?.comment,
-      attachments: [attachment],
+      presentationAttachments: [attachment],
     })
     presentationMessage.setThread({ threadId: proofRecord.tags.threadId })
 
@@ -442,7 +440,7 @@ export class ProofService {
     }
 
     // Assert proof record
-    const proofRecord = await this.getByThreadId(presentationMessage.threadId)
+    const proofRecord = await this.getByConnectionAndThreadId(connection.id, presentationMessage.threadId)
     proofRecord.assertState(ProofState.RequestSent)
 
     // TODO: add proof class with validator
@@ -513,7 +511,7 @@ export class ProofService {
     }
 
     // Assert proof record
-    const proofRecord = await this.getByThreadId(presentationAckMessage.threadId)
+    const proofRecord = await this.getByConnectionAndThreadId(connection.id, presentationAckMessage.threadId)
     proofRecord.assertState(ProofState.PresentationSent)
 
     // Update record
@@ -793,15 +791,16 @@ export class ProofService {
   }
 
   /**
-   * Retrieve a proof record by thread id
+   * Retrieve a proof record by connection id and thread id
    *
+   * @param connectionId The connection id
    * @param threadId The thread id
    * @throws {RecordNotFoundError} If no record is found
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The proof record
    */
-  public async getByThreadId(threadId: string): Promise<ProofRecord> {
-    return this.proofRepository.getSingleByQuery({ threadId })
+  public async getByConnectionAndThreadId(connectionId: string, threadId: string): Promise<ProofRecord> {
+    return this.proofRepository.getSingleByQuery({ threadId, connectionId })
   }
 
   /**
@@ -850,7 +849,7 @@ export class ProofService {
       attributeReferent,
     })
 
-    return (JsonTransformer.fromJSON(credentialsJson, Credential) as unknown) as Credential[]
+    return JsonTransformer.fromJSON(credentialsJson, Credential) as unknown as Credential[]
   }
 
   /**

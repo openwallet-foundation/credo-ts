@@ -25,6 +25,6 @@ export class Credential {
   public interval?: RevocationInterval
 
   public toJSON(): IndyCredential {
-    return (JsonTransformer.toJSON(this) as unknown) as IndyCredential
+    return JsonTransformer.toJSON(this) as unknown as IndyCredential
   }
 }

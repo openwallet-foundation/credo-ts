@@ -14,11 +14,11 @@
     "format": "yarn prettier --write",
     "check-format": "yarn prettier --list-different",
     "test": "jest --verbose",
-    "dev": "ts-node-dev --respawn --transpile-only ./samples/mediator.ts",
-    "prod:start": "node ./build/samples/mediator.js",
-    "prod:start-ws": "node ./build/samples/mediator-ws.js",
-    "prod:start-mediation-client": "node ./build/samples/mediation-client.js",
-    "prod:start-mediation-server": "node ./build/samples/mediation-server.js",
+"dev": "ts-node-dev --respawn --transpile-only ./tests/mediator.ts",
+"prod:start": "node ./build/tests/mediator.js",
+"prod:start-ws": "node ./build/tests/mediator-ws.js",
+"prod:start-mediation-client": "node ./build/tests/mediation-client.js",
+"prod:start-mediation-server": "node ./build/tests/mediation-server.js",
     "prod:build": "rm -rf build && yarn compile",
     "validate": "npm-run-all --parallel lint compile",
     "prepack": "rm -rf build && yarn compile",
@@ -27,13 +27,17 @@
   },
   "dependencies": {
     "bn.js": "^5.2.0",
+    "borc": "^3.0.0",
     "buffer": "^6.0.3",
     "class-transformer": "^0.4.0",
     "class-validator": "^0.13.1",
     "events": "^3.3.0",
     "js-sha256": "^0.9.0",
-    "make-error-cause": "^2.3.0",
+    "multibase": "4.0.2",
+    "multihashes": "^4.0.2",
+    "make-error": "^1.3.6",
     "node-fetch": "^2.6.1",
+    "object-inspect": "^1.10.3",
     "react-native-fs": "^2.18.0",
     "reflect-metadata": "^0.1.13",
     "tsyringe": "^4.5.0",
@@ -47,6 +51,7 @@
     "@types/indy-sdk": "^1.15.3",
     "@types/jest": "^26.0.20",
     "@types/node-fetch": "^2.5.8",
+    "@types/object-inspect": "^1.8.0",
     "@types/uuid": "^8.3.0",
     "@types/ws": "^7.4.1",
     "@typescript-eslint/eslint-plugin": "^4.17.0",
@@ -58,7 +63,7 @@
     "eslint-plugin-prettier": "^3.3.1",
     "express": "^4.17.1",
     "husky": "^5.1.3",
-    "indy-sdk": "^1.16.0",
+    "indy-sdk": "^1.16.0-dev-1633",
     "jest": "^26.6.3",
     "npm-run-all": "^4.1.5",
     "prettier": "^2.2.1",
@@ -89,6 +94,6 @@
     }
   },
   "engines": {
-    "node": "^12"
+    "node": ">= 12"
   }
 }

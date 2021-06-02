@@ -7,7 +7,7 @@ export interface AttachmentOptions {
   description?: string
   filename?: string
   mimeType?: string
-  lastmodTime?: number
+  lastmodTime?: Date
   byteCount?: number
   data: AttachmentData
 }
@@ -15,7 +15,7 @@ export interface AttachmentOptions {
 export interface AttachmentDataOptions {
   base64?: string
   json?: Record<string, unknown>
-  links?: []
+  links?: string[]
   jws?: Record<string, unknown>
   sha256?: string
 }
@@ -117,7 +117,7 @@ export class Attachment {
   @Type(() => Date)
   @IsOptional()
   @IsDate()
-  public lastmodTime?: number
+  public lastmodTime?: Date
 
   /**
    * Optional, and mostly relevant when content is included by reference instead of by value. Lets the receiver guess how expensive it will be, in time, bandwidth, and storage, to fully fetch the attachment.

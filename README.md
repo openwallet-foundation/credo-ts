@@ -87,7 +87,7 @@ yarn install rn-indy-sdk
 
 ### Using the framework
 
-While the framework is still in early development the best way to know what API the framework exposes is by looking at the [tests](src/__tests__), the [source code](src) or the [samples](samples). As the framework reaches a more mature state, documentation on the usage of the framework will be added.
+While the framework is still in early development the best way to know what API the framework exposes is by looking at the [tests](src/__tests__), the [source code](src) or the [e2e tests](tests). As the framework reaches a more mature state, documentation on the usage of the framework will be added.
 
 ### Usage in React Native
 
@@ -110,7 +110,43 @@ const config = {
 const agent = new Agent(config)
 ```
 
+If you're using TypeScript in your React Native project you need to install `indy-sdk` types with alias:
+
+```
+yarn add -D @types/rn-indy-sdk@npm:@types/indy-sdk
+```
+
 For an example react native app that makes use of the framework see [Aries Mobile Agent React Native](https://github.com/animo/aries-mobile-agent-react-native.git)
+
+#### Known Errors
+
+Error:
+
+```
+[Error: crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported]
+```
+
+Problem: We're using `uuid` npm package which requires `react-native-get-random-values`.
+
+Solution: Install [react-native-get-random-values](https://github.com/uuidjs/uuid#getrandomvalues-not-supported) and import it in your `index.js` file.
+
+```js
+import 'react-native-get-random-values'
+```
+
+Error:
+
+```
+TypeError: Symbol.asyncIterator is not defined.
+```
+
+Problem: Running React Native with Hermes JS engine doesn't support `for-await-of`.
+
+Solution: Install [@azure/core-asynciterator-polyfill](https://github.com/Azure/azure-sdk-for-js/tree/master/sdk/core/core-asynciterator-polyfill) and import it in your `index.js` file.
+
+```js
+import '@azure/core-asynciterator-polyfill'
+```
 
 ### Logs
 

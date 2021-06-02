@@ -28,4 +28,17 @@ export class BufferEncoder {
   public static fromBase64(base64: string) {
     return Buffer.from(base64, 'base64')
   }
+
+  /**
+   * Decode string into buffer.
+   *
+   * @param str the string to decode into buffer format
+   */
+  public static fromString(str: string): Uint8Array {
+    return Buffer.from(str)
+  }
+
+  public static toUtf8String(buffer: Buffer | Uint8Array) {
+    return Buffer.from(buffer).toString()
+  }
 }

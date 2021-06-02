@@ -43,7 +43,7 @@ export class RequestedCredentials {
 
   public toJSON() {
     // IndyRequestedCredentials is indy-sdk json type
-    return (JsonTransformer.toJSON(this) as unknown) as IndyRequestedCredentials
+    return JsonTransformer.toJSON(this) as unknown as IndyRequestedCredentials
   }
 
   public getCredentialIdentifiers(): string[] {

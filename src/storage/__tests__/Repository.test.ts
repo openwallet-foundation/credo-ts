@@ -6,7 +6,7 @@ import { mockFunction } from '../../__tests__/helpers'
 
 jest.mock('../IndyStorageService')
 
-const StorageMock = (IndyStorageService as unknown) as jest.Mock<IndyStorageService<TestRecord>>
+const StorageMock = IndyStorageService as unknown as jest.Mock<IndyStorageService<TestRecord>>
 
 describe('Repository', () => {
   let repository: Repository<TestRecord>

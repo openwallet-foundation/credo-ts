@@ -45,6 +45,6 @@ export class IndyCredentialInfo {
   public credentialRevocationId?: string
 
   public toJSON(): IndySDKCredentialInfo {
-    return (JsonTransformer.toJSON(this) as unknown) as IndySDKCredentialInfo
+    return JsonTransformer.toJSON(this) as unknown as IndySDKCredentialInfo
   }
 }
