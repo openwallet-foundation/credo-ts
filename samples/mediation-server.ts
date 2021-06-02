@@ -48,7 +48,7 @@ class HttpInboundTransporter implements InboundTransporter {
   }
 }
 
-class HttpOutboundTransporter implements OutboundTransporter {
+export class HttpOutboundTransporter implements OutboundTransporter {
   private agent: Agent
   private messageRepository?: MessageRepository
 
@@ -118,7 +118,7 @@ const agentConfig: InitConfig = {
   host: process.env.AGENT_HOST,
   port: process.env.AGENT_PORT || 3001,
   poolName: 'local-js',
-  genesisPath: resolve(process.env.GENESIS_TXN_PATH!),
+  genesisPath: resolve(process.env.GENESIS_TXN_PATH || ''),
   endpoint: process.env.AGENT_ENDPOINT,
   label: process.env.AGENT_LABEL || '',
   walletConfig: { id: process.env.WALLET_NAME || '' },
@@ -175,7 +175,7 @@ agent.events.on<MediationStateChangedEvent>(
     if (event.payload.mediationRecord.state == MediationState.Requested) {
       const connectionRecord = await agent.connections.getById(event.payload.mediationRecord.connectionId)
       if (connectionRecord) {
-        await agent.mediator.grantRequestedMediation(connectionRecord, event.payload.mediationRecord)
+        //await agent.mediator.grantRequestedMediation(connectionRecord, event.payload.mediationRecord)
         testLogger.info('Mediation blindly granted')
       }
     }

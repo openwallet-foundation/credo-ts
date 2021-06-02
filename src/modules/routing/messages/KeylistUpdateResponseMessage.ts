@@ -8,7 +8,7 @@ import { KeylistUpdateAction } from './KeylistUpdateMessage'
 
 export interface KeylistUpdateResponseMessageOptions {
   id?: string
-  updated: KeylistUpdated[]
+  keylist: KeylistUpdated[]
 }
 
 /**
@@ -22,7 +22,7 @@ export class KeylistUpdateResponseMessage extends AgentMessage {
 
     if (options) {
       this.id = options.id || this.generateId()
-      this.updated = options.updated
+      this.updated = options.keylist
     }
   }
 

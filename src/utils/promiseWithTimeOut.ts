@@ -1,4 +1,4 @@
-import { ConnectionInvitationMessage, ConnectionState } from '..'
+import { ConnectionInvitationMessage, ConnectionState, RoutingEventTypes } from '..'
 import { EventEmitter } from '../agent/EventEmitter'
 import { BaseEvent } from '../agent/Events'
 import { KeylistState, KeylistUpdateMessage, MediationState, MediationRequestMessage } from '../modules/routing'
@@ -7,7 +7,7 @@ import { KeylistState, KeylistUpdateMessage, MediationState, MediationRequestMes
 export async function waitForEventWithTimeout<T extends BaseEvent>(
   eventEmitter: EventEmitter,
   event: T,
-  eventType: ConnectionState | MediationState | KeylistState,
+  eventType: string,
   message: ConnectionInvitationMessage | MediationRequestMessage | KeylistUpdateMessage,
   timeout: number
 ) {
@@ -17,11 +17,11 @@ export async function waitForEventWithTimeout<T extends BaseEvent>(
 
     function listener(data: any) {
       //TODO: test if thread Id matches the one in the message
-      if (data.threadId === message.threadId) {
-        clearTimeout(timer)
-        eventEmitter.off(eventType, listener)
-        resolve(data)
-      }
+      //if (data.threadId === message.threadId) {
+      clearTimeout(timer)
+      eventEmitter.off(eventType, listener)
+      resolve(data)
+      //}
     }
 
     eventEmitter.on<T>(eventType, listener)

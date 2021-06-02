@@ -1,6 +1,5 @@
 import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import { MediatorService, KeylistUpdateMessage } from '..'
-import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
 
 export class KeylistUpdateHandler implements Handler {

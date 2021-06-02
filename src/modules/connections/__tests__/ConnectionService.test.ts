@@ -26,6 +26,7 @@ import { waitForEventWithTimeout } from '../../../utils/promiseWithTimeOut'
 
 jest.mock('../repository/ConnectionRepository')
 jest.mock('../../routing/repository/MediationRepository')
+jest.mock( '../../../utils/promiseWithTimeOut')
 
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
 const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
@@ -151,10 +152,10 @@ describe('ConnectionService', () => {
     it('returns a connection record with mediator information', async () => {
       expect.assertions(1)
 
-      const mockMediatorFind = mediationRepository.findById as jest.Mock<Promise<MediationRecord>, [string]>
-      mockMediatorFind.mockReturnValue(Promise.resolve(mediatorRecord))
-      const mockWaitForEvent = waitForEventWithTimeout as jest.Mock<Promise<unknown>>
-      mockWaitForEvent.mockReturnValue(Promise.resolve({}))
+      mockFunction(mediationRepository.findById).mockReturnValue(
+        Promise.resolve(mediatorRecord)
+      )
+      mockFunction(waitForEventWithTimeout).mockReturnValue(Promise.resolve({}))
       const { message: invitation } = await connectionService.createInvitation({
         mediatorId: mediatorRecord.id,
       })
@@ -240,10 +241,10 @@ describe('ConnectionService', () => {
         label: 'test label',
       })
 
-      const mockMediatorFind = mediationRepository.findById as jest.Mock<Promise<MediationRecord>, [string]>
-      mockMediatorFind.mockReturnValue(Promise.resolve(mediatorRecord))
-      const mockWaitForEvent = waitForEventWithTimeout as jest.Mock<Promise<unknown>>
-      mockWaitForEvent.mockReturnValue(Promise.resolve({}))
+      mockFunction(mediationRepository.findById).mockReturnValue(
+        Promise.resolve(mediatorRecord)
+      )
+      mockFunction(waitForEventWithTimeout).mockReturnValue(Promise.resolve({}))
       const record = await connectionService.processInvitation(invitation, { mediatorId: mediatorRecord.id })
       expect(record.didDoc.service[0]).toEqual(
         expect.objectContaining({

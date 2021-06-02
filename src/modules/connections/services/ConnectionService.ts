@@ -69,7 +69,7 @@ export class ConnectionService {
     mediatorId?: string
     routingKeys?: string[]
     endpoint?: string
-  }): Promise<ConnectionProtocolMsgReturnType<ConnectionInvitationMessage>> {
+  }){
     // TODO: public did, multi use
     const connectionRecord = await this.createConnection({
       role: ConnectionRole.Inviter,
@@ -126,8 +126,8 @@ export class ConnectionService {
       role: ConnectionRole.Invitee,
       state: ConnectionState.Invited,
       alias: config?.alias,
-      routingKeys: invitation?.routingKeys,
-      endpoint: invitation?.serviceEndpoint,
+      //routingKeys: invitation?.routingKeys,
+      //endpoint: invitation?.serviceEndpoint,
       autoAcceptConnection: config?.autoAcceptConnection,
       mediatorId: config?.mediatorId,
       invitation,
@@ -535,9 +535,9 @@ export class ConnectionService {
 
     // Check if already done
     const connection = await this.connectionRepository.findById(connectionId)
-    if (connection && isConnected(connection)) return connection
+    if (connection && isConnected(connection)) return connection //TODO: does this leave trailing listeners behind?
 
-    // return listener
+    // return listener 
     return promise
   }
 }

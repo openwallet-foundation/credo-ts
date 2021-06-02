@@ -1,9 +1,9 @@
 import type { Verkey } from 'indy-sdk'
+import { MediationGrantMessage, KeylistUpdateMessage, KeylistUpdated, KeylistUpdateResponseMessage } from '.'
 
 import { BaseEvent } from '../../agent/Events'
 import { ConnectionRecord } from '../connections'
-import { KeylistUpdateMessage } from './messages/KeylistUpdateMessage'
-import { KeylistUpdated } from './messages/KeylistUpdateResponseMessage'
+import { ForwardMessage } from './messages'
 import { MediationState } from './models/MediationState'
 import { MediationRecord } from './repository/MediationRecord'
 
@@ -12,14 +12,15 @@ export enum RoutingEventTypes {
   MediationGranted = 'MediationGranted',
   MediationKeylist = 'MediationKeylist',
   MediationKeylistUpdate = 'MediationKeylistUpdate',
+  MediationKeylistUpdated = 'MediationKeylistUpdated',
+  Forward = 'Forward',
 }
 
 export interface MediationGrantedEvent extends BaseEvent {
   type: typeof RoutingEventTypes.MediationGranted
   payload: {
-    connectionRecord: ConnectionRecord
-    endpoint: string
-    routingKeys: Verkey[]
+    mediationRecord: MediationRecord
+    message: MediationGrantMessage
   }
 }
 
@@ -39,10 +40,34 @@ export interface MediationKeylistEvent extends BaseEvent {
   }
 }
 
+export interface MediationKeylistUpdatedEvent extends BaseEvent {
+  type: typeof RoutingEventTypes.MediationKeylistUpdated
+  payload: {
+    mediationRecord: MediationRecord
+    message: KeylistUpdateResponseMessage
+  }
+}
+
 export interface KeylistUpdateEvent extends BaseEvent {
   type: typeof RoutingEventTypes.MediationKeylistUpdate
   payload: {
     mediationRecord: MediationRecord
     message: KeylistUpdateMessage
+  }
+}
+
+export interface KeylistUpdatedEvent extends BaseEvent {
+  type: typeof RoutingEventTypes.MediationKeylistUpdated
+  payload: {
+    mediationRecord: MediationRecord
+    keylist: KeylistUpdated[]
+  }
+}
+
+export interface ForwardEvent extends BaseEvent {
+  type: typeof RoutingEventTypes.Forward
+  payload: {
+    connectionId: string
+    message: ForwardMessage
   }
 }

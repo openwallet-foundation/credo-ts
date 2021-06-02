@@ -54,7 +54,7 @@ export async function getRouting(
     }
     // emit KeylistState.update and catch KeylistState.updated event in module from mediationservice handler
     // send and update message to mediator
-    await waitForEventWithTimeout(eventEmitter, event, KeylistState.Updated, message, 2000)
+    await waitForEventWithTimeout(eventEmitter, event, RoutingEventTypes.MediationKeylistUpdated, message, 20000)
   } else {
     // TODO: register recipient keys for relay
     // TODO: check that recipient keys are in wallet
@@ -74,10 +74,8 @@ export async function createRecord(
     connectionId,
     recipientKeys,
     tags: {
-      state,
       role,
       connectionId,
-      default: 'false',
     },
   })
   await mediatorRepository.save(mediationRecord)

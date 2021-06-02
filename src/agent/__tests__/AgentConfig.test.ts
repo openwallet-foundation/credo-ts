@@ -17,14 +17,16 @@ describe('AgentConfig', () => {
 
     it('should return the config host + /msg if no inbound connection or config endpoint is available', () => {
       const host = 'https://local-url.com'
+      const port = '3001'
 
       const agentConfig = new AgentConfig(
         getBaseConfig('AgentConfig Test', {
           host,
+          port,
         })
       )
 
-      expect(agentConfig.getEndpoint()).toBe(host + '/msg')
+      expect(agentConfig.getEndpoint()).toBe(host + ':' + port + '/msg')
     })
 
     it('should return the config host and port + /msg if no inbound connection or config endpoint is available', () => {
@@ -58,7 +60,6 @@ describe('AgentConfig', () => {
 
     it("should return 'didcomm:transport/queue' if no inbound connection or config endpoint or host/port is available", () => {
       const agentConfig = new AgentConfig(getBaseConfig('AgentConfig Test'))
-
       expect(agentConfig.getEndpoint()).toBe('didcomm:transport/queue')
     })
   })

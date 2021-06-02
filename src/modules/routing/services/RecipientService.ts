@@ -9,13 +9,14 @@ import {
   MediationDenyMessage,
   MediationRequestMessage,
   KeylistUpdateResponseMessage,
+  KeylistUpdated,
 } from '../messages'
 
 import { ConnectionRecord } from '../../connections'
-import { RoutingEventTypes, MediationKeylistEvent, MediationStateChangedEvent } from '../RoutingEvents'
+import { RoutingEventTypes, MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 
-import { assertConnection, createRecord, MediationRecord, MediationRole, MediationState } from '..'
+import { assertConnection, createRecord, KeylistState, MediationRecord, MediationRole, MediationState } from '..'
 import { Wallet } from '../../../wallet/Wallet'
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -40,23 +41,27 @@ export class RecipientService {
   }
 
   public async init() {
-    const results = await this.mediatorRepository.findByQuery({ default: 'true' })
-    this.defaultMediator = results ? results[0] : this.defaultMediator
-    if (this.defaultMediator) {
-      // Remove any possible competing mediators set all other record tags' default to false.
-      this.setDefaultMediator(this.defaultMediator)
+    const records = await this.mediatorRepository.getAll()
+    for (let record of records) {
+      if (record.default) {
+        // Remove any possible competing mediators set all other record tags' default to false.
+        this.setDefaultMediator(record)
+        return this.defaultMediator
+      }
     }
   }
 
   public async createRequest(connection: ConnectionRecord): Promise<[MediationRecord, MediationRequestMessage]> {
-    const mediationRecord = await createRecord(
-      {
-        connectionId: connection.id,
+    const mediationRecord = new MediationRecord({
+      state: MediationState.Requested,
+      role: MediationRole.Mediator,
+      connectionId: connection.id,
+      tags: {
         role: MediationRole.Mediator,
-        state: MediationState.Requested,
+        connectionId: connection.id,
       },
-      this.mediatorRepository
-    )
+    })
+    await this.mediatorRepository.save(mediationRecord)
     return [mediationRecord, new MediationRequestMessage({})]
   }
 
@@ -77,9 +82,7 @@ export class RecipientService {
     // Update record
     mediationRecord.endpoint = messageContext.message.endpoint
     mediationRecord.routingKeys = messageContext.message.routingKeys
-    await this.updateState(mediationRecord, MediationState.Granted)
-
-    return mediationRecord
+    return await this.updateState(mediationRecord, MediationState.Granted)
   }
 
   public createKeylistQuery(
@@ -120,16 +123,36 @@ export class RecipientService {
       throw new Error(`mediation record for  ${connection.id} not found!`)
     }
     const keylist = messageContext.message.updated
-    // TODO: update keylist in mediationRecord...
-    // for ...
-    // await this.mediatorRepository.update(mediationRecord)
-    this.eventEmitter.emit<MediationKeylistEvent>({
-      type: RoutingEventTypes.MediationKeylist,
+
+    // update keylist in mediationRecord
+    for (let update of keylist) {
+      if (update.action === KeylistUpdateAction.add) {
+        await this.saveRoute(update.recipientKey, mediationRecord)
+      } else if (update.action === KeylistUpdateAction.remove) {
+        await this.removeRoute(update.recipientKey, mediationRecord)
+      }
+    }
+
+    this.eventEmitter.emit<KeylistUpdatedEvent>({
+      type: RoutingEventTypes.MediationKeylistUpdated,
       payload: {
         mediationRecord,
         keylist,
       },
     })
+  }
+
+  public async saveRoute(recipientKey: Verkey, mediationRecord: MediationRecord) {
+    mediationRecord.recipientKeys.push(recipientKey)
+    this.mediatorRepository.update(mediationRecord)
+  }
+
+  public async removeRoute(recipientKey: Verkey, mediationRecord: MediationRecord) {
+    const index = mediationRecord.recipientKeys.indexOf(recipientKey, 0)
+    if (index > -1) {
+      mediationRecord.recipientKeys.splice(index, 1)
+    }
+    this.mediatorRepository.update(mediationRecord)
   }
 
   public async processMediationDeny(messageContext: InboundMessageContext<MediationDenyMessage>) {
@@ -175,16 +198,17 @@ export class RecipientService {
         previousState,
       },
     })
+    return mediationRecord
   }
 
-  public async findById(mediatorId: string): Promise<MediationRecord | null> {
-    const record = await this.mediatorRepository.findById(mediatorId)
+  public async findById(id: string): Promise<MediationRecord | null> {
+    const record = await this.mediatorRepository.findById(id)
     return record
     // TODO - Handle errors?
   }
 
-  public async findByConnectionId(id: string): Promise<MediationRecord | null> {
-    const records = await this.mediatorRepository.findByQuery({ id })
+  public async findByConnectionId(connectionId: string): Promise<MediationRecord | null> {
+    const records = await this.mediatorRepository.findByQuery({ connectionId })
     return records[0]
   }
 
@@ -193,7 +217,7 @@ export class RecipientService {
   }
 
   public async getDefaultMediatorId(): Promise<string | undefined> {
-    if (this.defaultMediator !== undefined) {
+    if (this.defaultMediator) {
       return this.defaultMediator.id
     }
     const record = await this.getDefaultMediator()
@@ -201,10 +225,13 @@ export class RecipientService {
   }
 
   public async getDefaultMediator() {
-    if (this.defaultMediator === undefined) {
-      const results = await this.mediatorRepository.findByQuery({ default: 'true' })
-      if (results[0]) {
-        this.setDefaultMediator(results[0])
+    if (!this.defaultMediator) {
+      const records = await this.mediatorRepository.getAll()
+      for (let record of records) {
+        if (record.default) {
+          this.setDefaultMediator(record)
+          return this.defaultMediator
+        }
       }
     }
     return this.defaultMediator
@@ -215,22 +242,24 @@ export class RecipientService {
     // let fetchedRecords: MediationRecord[]
     const fetchedRecords = (await this.getMediators()) ?? []
 
-    fetchedRecords.forEach(this.updateDefault)
+    //fetchedRecords.forEach(this.updateDefault)
+    for (let record of fetchedRecords) {
+      record.default = false
+      await this.mediatorRepository.update(record)
+    }
     // Set record coming in tag to true and then update.
-    mediator.tags['default'] = 'true'
-    this.mediatorRepository.save(mediator)
+    mediator.default = true
+    await this.mediatorRepository.update(mediator)
     this.defaultMediator = mediator
+    return this.defaultMediator
   }
 
   public async clearDefaultMediator() {
     const fetchedRecords = (await this.getMediators()) ?? []
-    fetchedRecords.forEach(this.updateDefault)
+    for (let record of fetchedRecords) {
+      record.default = false
+      await this.mediatorRepository.update(record)
+    }
     delete this.defaultMediator
-  }
-
-  private updateDefault(record: MediationRecord) {
-    record.tags['default'] = 'false'
-    this.mediatorRepository.save(record)
-    return record
   }
 }
