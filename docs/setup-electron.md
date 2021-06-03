@@ -29,7 +29,7 @@ contextBridge.exposeInMainWorld('fs', {
 })
 ```
 
-Now that indy is exposed in the mainworld, we have get our error-handling back use the exposed indy-sdk. Initializing the Agent also requires some Electron specific setup, mainly for the Indy SDK and File System. Below is a sample config, see the [Docs](./README.md) for an overview of getting started guides. If you want to jump right in, check the [Getting Started: Agent](./getting-started/0-agent.md) guide.
+Now that indy is exposed in the mainworld, we have to get our error-handling back.
 
 ```ts
 // src/agent.ts
@@ -63,6 +63,12 @@ function wrapIndyCallWithErrorHandling(func: any) {
 const indyWithErrorHandling = Object.fromEntries(
   Object.entries(window.indy).map(([funcName, funcImpl]) => [funcName, wrapIndyCallWithErrorHandling(funcImpl)])
 )
+```
+
+Initializing the Agent also requires some Electron specific setup, mainly for the Indy SDK and File System. Below is a sample config, see the [Docs](./README.md) for an overview of getting started guides. If you want to jump right in, check the [Getting Started: Agent](./getting-started/0-agent.md) guide.
+
+```ts
+// src/agent.ts
 
 // This creates an agent with all the specified configuration data
 const agent = new Agent({
