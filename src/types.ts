@@ -1,5 +1,5 @@
 import type Indy from 'indy-sdk'
-import type { Did, WalletConfig, WalletCredentials, Verkey } from 'indy-sdk'
+import type { WalletConfig, WalletCredentials, Verkey } from 'indy-sdk'
 import { ConnectionRecord } from './modules/connections'
 import { AgentMessage } from './agent/AgentMessage'
 import { TransportSession } from './agent/TransportService'
@@ -20,7 +20,6 @@ export interface InitConfig {
   port?: string | number
   endpoint?: string
   label: string
-  publicDid?: Did
   publicDidSeed?: string
   mediatorUrl?: string
   walletConfig: WalletConfig

@@ -24,10 +24,6 @@ export class AgentConfig {
     return this.initConfig.label
   }
 
-  public get publicDid() {
-    return this.initConfig.publicDid
-  }
-
   public get publicDidSeed() {
     return this.initConfig.publicDidSeed
   }
