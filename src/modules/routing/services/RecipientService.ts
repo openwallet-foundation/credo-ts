@@ -202,14 +202,22 @@ export class RecipientService {
   }
 
   public async findById(id: string): Promise<MediationRecord | null> {
-    const record = await this.mediatorRepository.findById(id)
-    return record
+    try {
+      const record = await this.mediatorRepository.findById(id)
+      return record
+    } catch (error) {
+      return null
+    }
     // TODO - Handle errors?
   }
 
   public async findByConnectionId(connectionId: string): Promise<MediationRecord | null> {
-    const records = await this.mediatorRepository.findByQuery({ connectionId })
-    return records[0]
+    try {
+      const records = await this.mediatorRepository.findByQuery({ connectionId })
+      return records[0]
+    } catch (error) {
+     return null 
+    }
   }
 
   public async getMediators(): Promise<MediationRecord[] | null> {

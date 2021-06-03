@@ -10,7 +10,7 @@ import testLogger from '../src/__tests__/logger'
 
 const logger = testLogger
 
-class WsInboundTransporter implements InboundTransporter {
+export class WsInboundTransporter implements InboundTransporter {
   private socketServer: WebSocket.Server
 
   // We're using a `socketId` just for the prevention of calling the connection handler twice.

@@ -165,10 +165,14 @@ export class MediatorService {
     }
     return null
   }
-
+// TODO: remove this in favor of find by connection id
   public async findRecipientByConnectionId(connectionId: string): Promise<MediationRecord | null> {
-    const records = await this.mediationRepository.findByQuery({ connectionId })
-    return records[0]
+    try {
+      const records = await this.mediationRepository.findByQuery({ connectionId })
+      return records[0]
+    } catch (error) {
+     return null 
+    }
   }
   // TODO: resolve possible duplicate keylist messages
   //public async createKeylistUpdateResponseMessage(keylist: KeylistUpdated[]): Promise<KeylistUpdateResponseMessage> {
@@ -195,6 +199,7 @@ export class MediatorService {
   public async processMediationRequest(messageContext: InboundMessageContext<MediationRequestMessage>) {
     // Assert connection
     const connection = this._assertConnection(messageContext.connection, MediationRequestMessage)
+    console.log("PUKE: filename: /src/modules/routing/services/MediatorService.ts, line: 202"); //PKDBG/Point;
 
     const mediationRecord = await createRecord(
       {
@@ -204,6 +209,7 @@ export class MediatorService {
       },
       this.mediationRepository
     )
+    console.log("PUKE: filename: /src/modules/routing/services/MediatorService.ts, line: 212"); //PKDBG/Point;
     await this.updateState(mediationRecord, MediationState.Init)
 
     const message = await this.createGrantMediationMessage(mediationRecord)
@@ -219,8 +225,12 @@ export class MediatorService {
   }
 
   public async findByConnectionId(connectionId: string): Promise<MediationRecord | null> {
-    const records = await this.mediationRepository.findByQuery({ connectionId })
-    return records[0]
+    try {
+      const records = await this.mediationRepository.findByQuery({ connectionId })
+      return records[0]
+    } catch (error) {
+     return null 
+    }
   }
 
   public async getAll(): Promise<MediationRecord[]> {

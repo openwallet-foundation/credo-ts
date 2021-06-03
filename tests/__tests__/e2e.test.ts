@@ -1,4 +1,5 @@
 import express, { Express } from 'express'
+import WebSocket from 'ws'
 import fetch from 'node-fetch'
 import {
   Agent,
@@ -15,9 +16,10 @@ import {
 } from '../../src'
 import testLogger, { TestLogger } from '../../src/__tests__/logger'
 import { get } from '../http'
-import { getBaseConfig, sleep, waitForBasicMessage } from '../../src/__tests__/helpers'
+import { getBaseConfig, makeConnection, sleep, waitForBasicMessage } from '../../src/__tests__/helpers'
 import logger from '../../src/__tests__/logger'
 import cors from 'cors'
+import { WsInboundTransporter } from '../mediator-ws'
 import { InMemoryMessageRepository } from '../../src/storage/InMemoryMessageRepository'
 import { MessageRepository } from '../../src/storage/MessageRepository'
 import { ReturnRouteTypes } from '../../src/decorators/transport/TransportDecorator'
@@ -52,7 +54,6 @@ describe('with mediator', () => {
 
   const messageRepository = new InMemoryMessageRepository()
 
-  //let recipientConfig: AgentConfig
   //let recipientWallet: Wallet
 
   beforeAll(async () => {
@@ -79,10 +80,85 @@ describe('with mediator', () => {
     mediatorAgent.setInboundTransporter(new mockMediatorInBoundTransporter(app))
     mediatorAgent.setOutboundTransporter(new mockMediatorOutBoundTransporter())
     await mediatorAgent.init()
-
-    recipientAgent.inboundTransporter = new mockMobileInboundTransporter(recipientAgent, mediatorAgent)
-
+    recipientAgent.inboundTransporter = new mockMobileInboundTransporter()
+    const { agentAConnection: recipientAgentConnection, agentBConnection: mediatorAgentConnection } =
+    await makeConnection(mediatorAgent, recipientAgent, {
+      autoAcceptConnection: true,
+    })
+    expect(recipientAgentConnection).toBeConnectedWith(mediatorAgentConnection)
+    expect(mediatorAgentConnection).toBeConnectedWith(recipientAgentConnection)
+    expect(mediatorAgentConnection.isReady)
+    console.log("PUKE: filename: /tests/__tests__/e2e.test.ts, line: 91"); //PKDBG/Point;
+    let mediationRecord: MediationRecord = await recipientAgent.mediationRecipient.requestAndWaitForAcception(
+      recipientAgentConnection,
+      200000
+    )
+    console.log("PUKE: filename: /tests/__tests__/e2e.test.ts, line: 96"); //PKDBG/Point;
+    mediationRecord = await recipientAgent.mediationRecipient.setDefaultMediator(mediationRecord)
+    console.log("PUKE: filename: /tests/__tests__/e2e.test.ts, line: 98"); //PKDBG/Point;
+    let retrievedMediationRecord = await recipientAgent.mediationRecipient.getDefaultMediator()
+    console.log("PUKE: filename: /tests/__tests__/e2e.test.ts, line: 100"); //PKDBG/Point;
+    if (retrievedMediationRecord) {
+      expect(retrievedMediationRecord.state).toBe(MediationState.Granted)
+    } else {
+      throw new Error()
+    }
+    console.log("PUKE: filename: /tests/__tests__/e2e.test.ts, line: 106"); //PKDBG/Point;
+    const recipientMediatorConnection = await recipientAgent.mediationRecipient.getDefaultMediatorConnection()
+    if (recipientMediatorConnection) {
+      expect(recipientMediatorConnection?.isReady)
+      const recipientMediatorRecord = await recipientAgent.mediationRecipient.findByConnectionId(
+        recipientMediatorConnection.id
+      )
+      expect(recipientMediatorRecord?.state).toBe(MediationState.Granted)
+    } else {
+      throw new Error('no mediator connection found.')
+    }
     recipientAgent.inboundTransporter.start(recipientAgent)
+  })
+
+  test('recipient and mediator establish a connection and granted mediation with WebSockets', async () => {
+    // websockets
+    //const socketServer = new WebSocket.Server({ noServer: true })
+    //recipientAgent.setInboundTransporter(new WsInboundTransporter(socketServer))
+    //recipientAgent.setOutboundTransporter(new WsOutboundTransporter(recipientAgent))
+    //await recipientAgent.init()
+
+    /*const mediatorAgent_ = new Agent(mediatorConfig, messageRepository)
+    const socketServer_ = new WebSocket.Server({ noServer: false })
+    mediatorAgent_.setInboundTransporter(new WsInboundTransporter(socketServer_))
+    mediatorAgent_.setOutboundTransporter(new WsOutboundTransporter(mediatorAgent_))
+    await mediatorAgent_.init()
+
+    const { agentAConnection: recipientAgentConnection, agentBConnection: mediatorAgentConnection } =
+      await makeConnection(recipientAgent_, mediatorAgent_, {
+        autoAcceptConnection: true,
+      })
+      expect(recipientAgentConnection).toBeConnectedWith(mediatorAgentConnection)
+      expect(mediatorAgentConnection).toBeConnectedWith(recipientAgentConnection)
+      expect(mediatorAgentConnection.isReady)
+      let mediationRecord = await recipientAgent_.mediationRecipient.requestAndWaitForAcception(
+        recipientAgentConnection,
+        200000 // TODO: remove hard magic number
+      )
+      mediationRecord = await recipientAgent_.mediationRecipient.setDefaultMediator(mediationRecord)
+      // expects should be a independent test, but this will do for now...
+      let mediationRecord_ = await recipientAgent_.mediationRecipient.getDefaultMediator()
+      if (mediationRecord_) {
+        expect(mediationRecord_.state).toBe(MediationState.Granted)
+      } else {
+        throw new Error()
+      }
+      const recipientMediatorConnection = await recipientAgent_.mediationRecipient.getDefaultMediatorConnection()
+      if (recipientMediatorConnection) {
+        expect(recipientMediatorConnection?.isReady)
+        const recipientMediatorRecord = await recipientAgent_.mediationRecipient.findByConnectionId(
+          recipientMediatorConnection.id
+        )
+        expect(recipientMediatorRecord?.state).toBe(MediationState.Granted)
+      } else {
+        throw new Error('no mediator connection found.')
+      }*/
   })
 
   test('recipient and Ted make a connection via mediator', async () => {
@@ -131,7 +207,7 @@ describe('websockets with mediator', () => {
     await mediatorAgent.closeAndDeleteWallet()
   })*/
 
-  test('recipient and Bob make a connection with mediator from config', async () => {
+  test('recipient and Bob make a connection with mediator from config', () => {
     /*recipientAgent = new Agent(recipientConfig)
     recipientAgent.setInboundTransporter(new WsInboundTransporter())
     recipientAgent.setOutboundTransporter(new WsOutboundTransporter(recipientAgent))
@@ -232,70 +308,23 @@ class mockMobileOutBoundTransporter implements OutboundTransporter {
 class mockMobileInboundTransporter implements InboundTransporter {
   public stop: boolean
   public connection?: ConnectionRecord
-  public recipient: Agent
-  public mediator: Agent
 
-  public constructor(recipient: Agent, mediator: Agent) {
+  public constructor() {
     this.stop = true
-    this.recipient = recipient
-    this.mediator = mediator
   }
   public async start(agent: Agent) {
-    this.recipient = agent
-    await this.registerMediator()
     this.stop = false
-    this.pollDownloadMessages()
+    await this.pollDownloadMessages(agent)
   }
 
-  public async registerMediator() {
-    let { invitation, connectionRecord } = await this.mediator.connections.createConnection({
-      autoAcceptConnection: true,
-    })
-    // invitation.setReturnRouting(ReturnRouteTypes.all)
-    const recipientConnection = await this.recipient.connections.receiveInvitation(invitation)
-    const mediatorAgentConnection = await this.mediator.connections.returnWhenIsConnected(connectionRecord.id)
-    const recipientAgentConnection = await this.recipient.connections.returnWhenIsConnected(recipientConnection.id)
-    expect(recipientAgentConnection).toBeConnectedWith(mediatorAgentConnection)
-    expect(mediatorAgentConnection).toBeConnectedWith(recipientAgentConnection)
-    expect(mediatorAgentConnection.isReady)
-    let mediationRecord = await this.recipient.mediationRecipient.requestAndWaitForAcception(
-      recipientAgentConnection,
-      200000
-    )
-    mediationRecord = await this.recipient.mediationRecipient.setDefaultMediator(mediationRecord)
-    // expects should be a independent test, but this will do for now...
-    let mediationRecord_ = await this.recipient.mediationRecipient.getDefaultMediator()
-    if (mediationRecord_) {
-      expect(mediationRecord_.state).toBe(MediationState.Granted)
-    } else {
-      throw new Error()
+  private async pollDownloadMessages(recipient:Agent, run = !this.stop) {
+    if (run){
+      const connection = await recipient.mediationRecipient.getDefaultMediatorConnection() 
+      if (this.connection) {
+        await recipient.mediationRecipient.downloadMessages(this.connection)
+        await sleep(10000)
+        await this.pollDownloadMessages(recipient)
+      }
     }
-    const recipientMediatorConnection = await this.recipient.mediationRecipient.getDefaultMediatorConnection()
-    if (recipientMediatorConnection) {
-      expect(recipientMediatorConnection?.isReady)
-      const recipientMediatorRecord = await this.recipient.mediationRecipient.findByConnectionId(
-        recipientMediatorConnection.id
-      )
-      expect(recipientMediatorRecord?.state).toBe(MediationState.Granted)
-    } else {
-      throw new Error('no mediator connection found.')
-    }
-    this.connection = recipientAgentConnection
   }
-
-  private async pollDownloadMessages() {
-    if (this.connection) {
-      await this.recipient.mediationRecipient.downloadMessages(this.connection)
-    }
-    await sleep(10000)
-    await this.pollDownloadMessages()
-  }
-}
-
-class WsInboundTransporter implements InboundTransporter {
-  public async start(agent: Agent) {
-    await this.registerMediator(agent)
-  }
-
-  private async registerMediator(agent: Agent) {}
 }

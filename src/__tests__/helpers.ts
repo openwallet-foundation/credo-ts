@@ -262,9 +262,13 @@ export function getMockConnection({
   })
 }
 
-export async function makeConnection(agentA: Agent, agentB: Agent) {
+export async function makeConnection(agentA: Agent, agentB: Agent, config?: {
+  autoAcceptConnection?: boolean
+  alias?: string
+  mediatorId?: string
+}) {
   // eslint-disable-next-line prefer-const
-  let { invitation, connectionRecord: agentAConnection } = await agentA.connections.createConnection()
+  let { invitation, connectionRecord: agentAConnection } = await agentA.connections.createConnection(config)
   let agentBConnection = await agentB.connections.receiveInvitation(invitation)
 
   agentAConnection = await agentA.connections.returnWhenIsConnected(agentAConnection.id)
