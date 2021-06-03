@@ -67,7 +67,6 @@ Some features are not yet supported, but are on our Roadmap. Check [the roadmap]
 
 ## Getting Started
 
-
 - NodeJS: [setup guide](./docs/setup-nodejs.md)
 - React Native: [setup guide](./docs/setup-react-native.md)
 - Electron: [setup guide](./docs/setup-electron.md)

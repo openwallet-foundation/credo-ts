@@ -34,7 +34,7 @@ const agent = new Agent({
   walletConfig: { id: 'walletId' },
   walletCredentials: { key: 'testkey0000000000000000000000000' },
   indy,
-  fileSystem: new NodeFileSystem()
+  fileSystem: new NodeFileSystem(),
 })
 
 // Make sure to initialize the agent before using it.

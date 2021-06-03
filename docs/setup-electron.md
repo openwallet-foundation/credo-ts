@@ -6,7 +6,6 @@ To start using Electron some depencies are required. Please follow the [prerequi
 
 > At this point aries-framework and the indy-sdk are installed in your Electron project.
 
-
 Because Electron is like a browser-environment, some additional work has to be done to get it working. The indy-sdk is used to make calls to `Libindy`. Since browsers can not do this, a binding has to be created in the `public/preload.js`.
 
 ```ts
@@ -14,8 +13,7 @@ Because Electron is like a browser-environment, some additional work has to be d
 
 const { contextBridge } = require('electron')
 const indy = require('indy-sdk')
-const NodeFileSystem =
-  require('aries-framework/build/src/storage/fs/NodeFileSystem').NodeFileSystem
+const NodeFileSystem = require('aries-framework/build/src/storage/fs/NodeFileSystem').NodeFileSystem
 
 const fs = new NodeFileSystem()
 
@@ -72,14 +70,14 @@ const agent = new Agent({
   walletConfig: { id: 'walletId' },
   walletCredentials: { key: 'testkey0000000000000000000000000' },
   indy: indyWithErrorHandling as unknown as typeof Indy,
-  fileSystem: new NodeFileSystem()
+  fileSystem: new NodeFileSystem(),
 })
 
 // Here we try to initialize the agent for usage
 try {
   await agent.init()
   console.log('Initialized agent!')
-} catch(error) {
+} catch (error) {
   console.log(error)
 }
 ```
