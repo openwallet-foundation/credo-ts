@@ -35,7 +35,7 @@ The agent currently supports the following configuration options. Fields marked 
 
 - `label`\*: The label to use for invitations.
 - `walletConfig`\*: The wallet config to use for creating and unlocking the wallet
-- `walletCredentials`\*: The wallet credentials to use for creating and unlocking` the wallet
+- `walletCredentials`\*: The wallet credentials to use for creating and unlocking the wallet
 - `indy`\*: The indy sdk to use for indy operations. This is different for NodeJS / React Native
 - `fileSystem`\*: The file system instance used for reading and writing files.
 - `host`: The host to use for invitations.
