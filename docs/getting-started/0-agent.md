@@ -45,7 +45,7 @@ The agent currently supports the following configuration options. Fields marked 
 - `mediatorUrl`: The url of the mediator to use for inbound routing
 - `autoAcceptConnections`: Whether to auto accept all incoming connections. Default false
 - `genesisPath`: The path to the genesis file to use for connecting to an Indy ledger.
-- `genesisTransactions`: String of genesis transactions to sue for connecting to an Indy ledger.
+- `genesisTransactions`: String of genesis transactions to use for connecting to an Indy ledger.
 - `poolName`: The name of the pool to use for the specified `genesisPath`. Default `default-pool`
 - `logger`: The logger instance to use. Must implement `Logger` interface
 - `didCommMimeType`: The mime-type to use for sending and receiving messages.
