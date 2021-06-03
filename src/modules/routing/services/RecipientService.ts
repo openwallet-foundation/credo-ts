@@ -42,7 +42,7 @@ export class RecipientService {
 
   public async init() {
     const records = await this.mediatorRepository.getAll()
-    for (let record of records) {
+    for (const record of records) {
       if (record.default) {
         // Remove any possible competing mediators set all other record tags' default to false.
         this.setDefaultMediator(record)
@@ -125,7 +125,7 @@ export class RecipientService {
     const keylist = messageContext.message.updated
 
     // update keylist in mediationRecord
-    for (let update of keylist) {
+    for (const update of keylist) {
       if (update.action === KeylistUpdateAction.add) {
         await this.saveRoute(update.recipientKey, mediationRecord)
       } else if (update.action === KeylistUpdateAction.remove) {
@@ -134,7 +134,7 @@ export class RecipientService {
     }
 
     this.eventEmitter.emit<KeylistUpdatedEvent>({
-      type: RoutingEventTypes.MediationKeylistUpdated,
+      type: RoutingEventTypes.KeylistUpdated,
       payload: {
         mediationRecord,
         keylist,
@@ -227,9 +227,9 @@ export class RecipientService {
   public async getDefaultMediator() {
     if (!this.defaultMediator) {
       const records = await this.mediatorRepository.getAll()
-      for (let record of records) {
+      for (const record of records) {
         if (record.default) {
-          this.setDefaultMediator(record)
+          await this.setDefaultMediator(record)
           return this.defaultMediator
         }
       }
@@ -243,7 +243,7 @@ export class RecipientService {
     const fetchedRecords = (await this.getMediators()) ?? []
 
     //fetchedRecords.forEach(this.updateDefault)
-    for (let record of fetchedRecords) {
+    for (const record of fetchedRecords) {
       record.default = false
       await this.mediatorRepository.update(record)
     }
@@ -256,7 +256,7 @@ export class RecipientService {
 
   public async clearDefaultMediator() {
     const fetchedRecords = (await this.getMediators()) ?? []
-    for (let record of fetchedRecords) {
+    for (const record of fetchedRecords) {
       record.default = false
       await this.mediatorRepository.update(record)
     }

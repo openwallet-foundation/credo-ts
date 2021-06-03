@@ -116,7 +116,7 @@ export class MediatorService {
     }
     // emit internal event
     this.eventEmitter.emit<KeylistUpdatedEvent>({
-      type: RoutingEventTypes.MediationKeylistUpdated,
+      type: RoutingEventTypes.KeylistUpdated,
       payload: {
         mediationRecord,
         keylist,
@@ -206,16 +206,20 @@ export class MediatorService {
     )
     await this.updateState(mediationRecord, MediationState.Init)
 
-    const message = await this.createGrantMediationMessage(mediationRecord)
-    this.eventEmitter.emit<MediationGrantedEvent>({
-      type: RoutingEventTypes.MediationGranted,
-      payload: {
-        mediationRecord,
-        message,
-      },
-    })
-    // return routing path.. TODO: will this endup in a queue or something undesired.
-    return createOutboundMessage(connection, message)
+    if (this.agentConfig.autoAcceptMediationRequests) {
+      const message = await this.createGrantMediationMessage(mediationRecord)
+      this.eventEmitter.emit<MediationGrantedEvent>({
+        type: RoutingEventTypes.MediationGranted,
+        payload: {
+          mediationRecord,
+          message,
+        },
+      })
+      // return routing path.. TODO: will this endup in a queue or something undesired.
+      return createOutboundMessage(connection, message)
+    } else {
+      await this.updateState(mediationRecord, MediationState.Requested)
+    }
   }
 
   public async findByConnectionId(connectionId: string): Promise<MediationRecord | null> {

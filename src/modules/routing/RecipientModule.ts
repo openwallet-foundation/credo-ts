@@ -82,7 +82,7 @@ export class RecipientModule {
   }
 
   public async downloadMessages(mediatorConnection: ConnectionRecord) {
-    let connection = mediatorConnection ?? await this.getDefaultMediatorConnection()
+    let connection = mediatorConnection ?? (await this.getDefaultMediatorConnection())
     connection = assertConnection(connection, 'connection not found for default mediator')
     const batchPickupMessage = new BatchPickupMessage({ batchSize: 10 })
     const outboundMessage = createOutboundMessage(connection, batchPickupMessage)
@@ -90,7 +90,7 @@ export class RecipientModule {
     await this.messageSender.sendMessage(outboundMessage)
   }
 
-  public async setDefaultMediator(mediatorRecord: MediationRecord){
+  public async setDefaultMediator(mediatorRecord: MediationRecord) {
     return await this.recipientService.setDefaultMediator(mediatorRecord)
   }
 
@@ -115,7 +115,7 @@ export class RecipientModule {
     return response
   }
 
-  public async findByConnectionId(connectionId: string){
+  public async findByConnectionId(connectionId: string) {
     return await this.recipientService.findByConnectionId(connectionId)
   }
 
@@ -131,8 +131,6 @@ export class RecipientModule {
     return await this.recipientService.getDefaultMediator()
   }
 
-
-
   public async getDefaultMediatorConnection(): Promise<ConnectionRecord | undefined> {
     const mediatorRecord = await this.getDefaultMediator()
     if (mediatorRecord) {
@@ -143,7 +141,7 @@ export class RecipientModule {
   public async requestAndWaitForAcception(
     connection: ConnectionRecord,
     timeout: number,
-    setReturnRouting: ReturnRouteTypes = ReturnRouteTypes.all,
+    setReturnRouting: ReturnRouteTypes = ReturnRouteTypes.all
   ): Promise<MediationRecord> {
     /*
     | create mediation record and request.
@@ -153,7 +151,7 @@ export class RecipientModule {
     | return promise with listener
     */
     const [record, message] = await this.recipientService.createRequest(connection)
-    if(setReturnRouting){
+    if (setReturnRouting) {
       message.setReturnRouting(setReturnRouting)
     }
     const outboundMessage = createOutboundMessage(connection, message)
@@ -171,8 +169,7 @@ export class RecipientModule {
           resolve(event.payload.mediationRecord)
         }
       }
-      this.eventEmitter.on<MediationStateChangedEvent>(
-        RoutingEventTypes.MediationStateChanged, listener)
+      this.eventEmitter.on<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
       timer = setTimeout(() => {
         this.eventEmitter.off<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
         reject(
@@ -203,5 +200,4 @@ export class RecipientModule {
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)
   }
-
 }
