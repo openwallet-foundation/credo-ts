@@ -25,6 +25,9 @@ agent.setOutboundTransporter(HttpOutboundTransporter)
 
 ```ts
 import { Agent, InboundTransporter } from 'aries-framework'
+
+// In React Native you don't have to import node-fetch
+// Fetch is globally available in React Native
 import fetch from 'node-fetch'
 
 class PollingInboundTransporter implements InboundTransporter {
@@ -52,7 +55,7 @@ class PollingInboundTransporter implements InboundTransporter {
     const loop = async () => {
       while (!this.stop) {
         await agent.routing.downloadMessages()
-        await new Promise((res) => setTimeout(res, 10000))
+        await new Promise((res) => setTimeout(res, 5000))
       }
     }
     new Promise(() => {
