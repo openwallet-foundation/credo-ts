@@ -63,6 +63,9 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
 - 🚧 Mediator Coordination Protocol ([RFC 0211](https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md))
 - 🚧 WebSocket Transport
 - ❌ Browser
+- ❌ Connection-less Issuance and Verification
+- ❌ Issue Credential V2, Present Proof V2, DID Exchange Protocol, Out-Of-Band
+- ❌ W3C Linked Data VCs, BBS+ Signatures
 
 ## Getting Started
 
