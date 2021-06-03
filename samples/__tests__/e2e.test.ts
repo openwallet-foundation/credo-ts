@@ -21,7 +21,7 @@ import cors from 'cors'
 import { InMemoryMessageRepository } from '../../src/storage/InMemoryMessageRepository'
 import { MessageRepository } from '../../src/storage/MessageRepository'
 import { ReturnRouteTypes } from '../../src/decorators/transport/TransportDecorator'
-import { HttpOutboundTransporter } from '../mediation-server'
+import { HttpOutboundTransporter } from '../mediator-http'
 
 const recipientConfig = getBaseConfig('recipient')
 const mediatorConfig = getBaseConfig('mediator', {

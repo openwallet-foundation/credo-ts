@@ -16,7 +16,7 @@ import {
 import testLogger, { TestLogger } from '../src/__tests__/logger'
 import indy from 'indy-sdk'
 import { resolve } from 'path'
-import { MediationState } from '../src/modules/routing/'
+import { MediationState } from '../src/modules/routing'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
 import { MessageRepository } from '../src/storage/MessageRepository'
 import { NodeFileSystem } from '../src/storage/fs/NodeFileSystem'
@@ -125,8 +125,8 @@ const agentConfig: InitConfig = {
   walletCredentials: { key: process.env.WALLET_KEY || '' },
   publicDid: process.env.PUBLIC_DID || '',
   publicDidSeed: process.env.PUBLIC_DID_SEED || '',
-  mediatorRecordId: process.env.MEDIATOR_RECORD_ID || '',
   autoAcceptConnections: true,
+  //autoAcceptMediationRequests: process.env.AUTO_ACCEPT_MEDIATION === '1',
   logger: new TestLogger(LogLevel.debug),
   indy: indy,
   fileSystem: new NodeFileSystem(),
@@ -175,8 +175,8 @@ agent.events.on<MediationStateChangedEvent>(
     if (event.payload.mediationRecord.state == MediationState.Requested) {
       const connectionRecord = await agent.connections.getById(event.payload.mediationRecord.connectionId)
       if (connectionRecord) {
-        //await agent.mediator.grantRequestedMediation(connectionRecord, event.payload.mediationRecord)
-        testLogger.info('Mediation blindly granted')
+        await agent.mediator.grantRequestedMediation(connectionRecord, event.payload.mediationRecord)
+        testLogger.info('Mediation granted')
       }
     }
   }
