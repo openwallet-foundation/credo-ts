@@ -40,7 +40,6 @@
 <p align="center">
   <a href="#features">Features</a> &nbsp;|&nbsp;
   <a href="#getting-started">Getting started</a> &nbsp;|&nbsp;
-  <a href="#example">Example</a> &nbsp;|&nbsp;
   <a href="#contributing">Contributing</a> &nbsp;|&nbsp;
   <a href="#license">License</a> 
 </p>
@@ -49,7 +48,7 @@ Aries Framework JavaScript is a typescript framework for building **SSI Agents a
 
 ## Features
 
-Some features are not yet supported, but are on our Roadmap. Check [the roadmap](https://github.com/hyperledger/aries-framework-javascript/issues/39) for more information.
+Some features are not yet supported, but are on our roadmap. Check [the roadmap](https://github.com/hyperledger/aries-framework-javascript/issues/39) for more information.
 
 - ✅ React Native
 - ✅ Node.JS
