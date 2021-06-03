@@ -34,10 +34,11 @@
       alt="aries-framework-javascript npm version"
       src="https://img.shields.io/npm/v/aries-framework"
   /></a>
-  <a><img
+  <a href="https://www.typescriptlang.org/"
+    ><img
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
-  ></img></a>
+  /></a>
 </p>
 <br />
 
