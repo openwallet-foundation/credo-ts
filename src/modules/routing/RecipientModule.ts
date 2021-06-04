@@ -151,22 +151,22 @@ export class RecipientModule {
     | return promise with listener
     */
     const [record, message] = await this.recipientService.createRequest(connection)
-    if (setReturnRouting) {
+   if (setReturnRouting) {
       message.setReturnRouting(setReturnRouting)
     }
-    const outboundMessage = createOutboundMessage(connection, message)
+   const outboundMessage = createOutboundMessage(connection, message)
     const promise: Promise<MediationRecord> = new Promise((resolve, reject) => {
       // eslint-disable-next-line @typescript-eslint/no-empty-function
-      let timer: NodeJS.Timeout = setTimeout(() => {})
+   let timer: NodeJS.Timeout = setTimeout(() => {})
       const listener = (event: MediationStateChangedEvent) => {
-        const previousStateMatches = MediationState.Requested === event.payload.previousState
+   const previousStateMatches = MediationState.Requested === event.payload.previousState
         const mediationIdMatches = record.id === event.payload.mediationRecord.id
         const stateMatches = MediationState.Granted === event.payload.mediationRecord.state
 
-        if (previousStateMatches && mediationIdMatches && stateMatches) {
+   if (previousStateMatches && mediationIdMatches && stateMatches) {
           this.eventEmitter.off<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
           clearTimeout(timer)
-          resolve(event.payload.mediationRecord)
+   resolve(event.payload.mediationRecord)
         }
       }
       this.eventEmitter.on<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
@@ -180,7 +180,7 @@ export class RecipientModule {
       }, timeout)
     })
     await this.messageSender.sendMessage(outboundMessage)
-    return promise
+   return promise
   }
   // Register handlers for the several messages for the mediator.
   private registerHandlers(dispatcher: Dispatcher) {

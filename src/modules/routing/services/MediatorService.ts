@@ -199,7 +199,6 @@ export class MediatorService {
   public async processMediationRequest(messageContext: InboundMessageContext<MediationRequestMessage>) {
     // Assert connection
     const connection = this._assertConnection(messageContext.connection, MediationRequestMessage)
-    console.log("PUKE: filename: /src/modules/routing/services/MediatorService.ts, line: 202"); //PKDBG/Point;
 
     const mediationRecord = await createRecord(
       {
@@ -209,7 +208,6 @@ export class MediatorService {
       },
       this.mediationRepository
     )
-    console.log("PUKE: filename: /src/modules/routing/services/MediatorService.ts, line: 212"); //PKDBG/Point;
     await this.updateState(mediationRecord, MediationState.Init)
 
     const message = await this.createGrantMediationMessage(mediationRecord)

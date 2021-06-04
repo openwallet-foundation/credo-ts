@@ -62,7 +62,7 @@ describe('with mediator', () => {
     //await recipientWallet.init()
   })
   afterAll(async () => {
-    ;(recipientAgent.inboundTransporter as mockMobileInboundTransporter).stop = true
+    ;(recipientAgent.inboundTransporter as mockMobileInboundTransporter).stop()
 
     // Wait for messages to flush out
     await new Promise((r) => setTimeout(r, 1000))
@@ -73,6 +73,7 @@ describe('with mediator', () => {
 
   test('recipient and mediator establish a connection and granted mediation', async () => {
     recipientAgent = new Agent(recipientConfig)
+    recipientAgent.setInboundTransporter(new mockMobileInboundTransporter())
     recipientAgent.setOutboundTransporter(new mockMobileOutBoundTransporter(recipientAgent))
     await recipientAgent.init()
 
@@ -80,30 +81,26 @@ describe('with mediator', () => {
     mediatorAgent.setInboundTransporter(new mockMediatorInBoundTransporter(app))
     mediatorAgent.setOutboundTransporter(new mockMediatorOutBoundTransporter())
     await mediatorAgent.init()
+    await (recipientAgent.inboundTransporter as mockMobileInboundTransporter).stop()
     recipientAgent.inboundTransporter = new mockMobileInboundTransporter()
-    const { agentAConnection: recipientAgentConnection, agentBConnection: mediatorAgentConnection } =
+    const { agentAConnection: mediatorAgentConnection , agentBConnection: recipientAgentConnection } =
     await makeConnection(mediatorAgent, recipientAgent, {
       autoAcceptConnection: true,
     })
     expect(recipientAgentConnection).toBeConnectedWith(mediatorAgentConnection)
     expect(mediatorAgentConnection).toBeConnectedWith(recipientAgentConnection)
     expect(mediatorAgentConnection.isReady)
-    console.log("PUKE: filename: /tests/__tests__/e2e.test.ts, line: 91"); //PKDBG/Point;
     let mediationRecord: MediationRecord = await recipientAgent.mediationRecipient.requestAndWaitForAcception(
       recipientAgentConnection,
       200000
     )
-    console.log("PUKE: filename: /tests/__tests__/e2e.test.ts, line: 96"); //PKDBG/Point;
     mediationRecord = await recipientAgent.mediationRecipient.setDefaultMediator(mediationRecord)
-    console.log("PUKE: filename: /tests/__tests__/e2e.test.ts, line: 98"); //PKDBG/Point;
     let retrievedMediationRecord = await recipientAgent.mediationRecipient.getDefaultMediator()
-    console.log("PUKE: filename: /tests/__tests__/e2e.test.ts, line: 100"); //PKDBG/Point;
     if (retrievedMediationRecord) {
       expect(retrievedMediationRecord.state).toBe(MediationState.Granted)
     } else {
       throw new Error()
     }
-    console.log("PUKE: filename: /tests/__tests__/e2e.test.ts, line: 106"); //PKDBG/Point;
     const recipientMediatorConnection = await recipientAgent.mediationRecipient.getDefaultMediatorConnection()
     if (recipientMediatorConnection) {
       expect(recipientMediatorConnection?.isReady)
@@ -114,7 +111,8 @@ describe('with mediator', () => {
     } else {
       throw new Error('no mediator connection found.')
     }
-    recipientAgent.inboundTransporter.start(recipientAgent)
+    //await recipientAgent.inboundTransporter.start(recipientAgent)
+    //await (recipientAgent.inboundTransporter as mockMobileInboundTransporter).stop()
   })
 
   test('recipient and mediator establish a connection and granted mediation with WebSockets', async () => {
@@ -306,18 +304,21 @@ class mockMobileOutBoundTransporter implements OutboundTransporter {
 }
 
 class mockMobileInboundTransporter implements InboundTransporter {
-  public stop: boolean
+  public run: boolean
   public connection?: ConnectionRecord
 
   public constructor() {
-    this.stop = true
+    this.run = false
   }
   public async start(agent: Agent) {
-    this.stop = false
+    this.run = true
     await this.pollDownloadMessages(agent)
   }
 
-  private async pollDownloadMessages(recipient:Agent, run = !this.stop) {
+  public async stop(): Promise<void> {
+    this.run = false
+  }
+  private async pollDownloadMessages(recipient:Agent, run = this.run) {
     if (run){
       const connection = await recipient.mediationRecipient.getDefaultMediatorConnection() 
       if (this.connection) {
