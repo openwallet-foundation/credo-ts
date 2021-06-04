@@ -197,6 +197,7 @@ export class RecipientModule {
   private keylistUpdateEvent = async ({ payload: { mediationRecord, message } }: KeylistUpdateEvent) => {
     // new did has been created and mediator needs to be updated with the public key.
     const connectionRecord: ConnectionRecord = await this.connectionService.getById(mediationRecord.connectionId)
+    message.setReturnRouting(ReturnRouteTypes.all)
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)
   }
