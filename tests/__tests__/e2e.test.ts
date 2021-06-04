@@ -71,7 +71,7 @@ describe('with mediator', () => {
     await recipientAgent.closeAndDeleteWallet()
     await mediatorAgent.closeAndDeleteWallet()
   })
-  afterEach(() =>async () =>{
+  afterEach(() => async () => {
     await recipientAgent.closeAndDeleteWallet()
     await mediatorAgent.closeAndDeleteWallet()
   })
@@ -87,10 +87,10 @@ describe('with mediator', () => {
     mediatorAgent.setOutboundTransporter(new mockMediatorOutBoundTransporter())
     await mediatorAgent.init()
 
-    const { agentAConnection: mediatorAgentConnection , agentBConnection: recipientAgentConnection } =
-    await makeConnection(mediatorAgent, recipientAgent, {
-      autoAcceptConnection: true,
-    })
+    const { agentAConnection: mediatorAgentConnection, agentBConnection: recipientAgentConnection } =
+      await makeConnection(mediatorAgent, recipientAgent, {
+        autoAcceptConnection: true,
+      })
     expect(recipientAgentConnection).toBeConnectedWith(mediatorAgentConnection)
     expect(mediatorAgentConnection).toBeConnectedWith(recipientAgentConnection)
     expect(mediatorAgentConnection.isReady)
@@ -100,7 +100,7 @@ describe('with mediator', () => {
     )
     // test default mediator
     mediationRecord = await recipientAgent.mediationRecipient.setDefaultMediator(mediationRecord)
-    let retrievedMediationRecord = await recipientAgent.mediationRecipient.getDefaultMediator()
+    const retrievedMediationRecord = await recipientAgent.mediationRecipient.getDefaultMediator()
     if (retrievedMediationRecord) {
       expect(retrievedMediationRecord.state).toBe(MediationState.Granted)
     } else {
@@ -131,25 +131,25 @@ describe('with mediator', () => {
     recipientAgent.setOutboundTransporter(new WsOutboundTransporter(recipientAgent))
     await recipientAgent.init()
     mediatorAgent = new Agent(mediatorConfig, messageRepository)
-    const socketServer_ = new WebSocket.Server({ noServer: false, port:3002 })
+    const socketServer_ = new WebSocket.Server({ noServer: false, port: 3002 })
     mediatorAgent.setInboundTransporter(new WsInboundTransporter(socketServer_))
     mediatorAgent.setOutboundTransporter(new WsOutboundTransporter(mediatorAgent))
     await mediatorAgent.init()
-    const { agentAConnection: mediatorAgentConnection , agentBConnection: recipientAgentConnection } =
-    await makeConnection(mediatorAgent, recipientAgent, {
-      autoAcceptConnection: true,
-    })
-    
+    const { agentAConnection: mediatorAgentConnection, agentBConnection: recipientAgentConnection } =
+      await makeConnection(mediatorAgent, recipientAgent, {
+        autoAcceptConnection: true,
+      })
+
     expect(recipientAgentConnection).toBeConnectedWith(mediatorAgentConnection)
     expect(mediatorAgentConnection).toBeConnectedWith(recipientAgentConnection)
     expect(mediatorAgentConnection.isReady)
     let mediationRecord: MediationRecord = await recipientAgent.mediationRecipient.requestAndWaitForAcception(
       recipientAgentConnection,
       200000 // TODO: remove magic number
-      )
+    )
     // test default mediator
     mediationRecord = await recipientAgent.mediationRecipient.setDefaultMediator(mediationRecord)
-    let retrievedMediationRecord = await recipientAgent.mediationRecipient.getDefaultMediator()
+    const retrievedMediationRecord = await recipientAgent.mediationRecipient.getDefaultMediator()
     if (retrievedMediationRecord) {
       expect(retrievedMediationRecord.state).toBe(MediationState.Granted)
     } else {
@@ -255,7 +255,6 @@ class mockMediatorInBoundTransporter implements InboundTransporter {
 }
 
 class mockMediatorOutBoundTransporter implements OutboundTransporter {
-  public constructor() {}
   public async start(): Promise<void> {
     // No custom start logic required
   }
@@ -330,9 +329,9 @@ class mockMobileInboundTransporter implements InboundTransporter {
   public stop(): void {
     this.run = false
   }
-  private async pollDownloadMessages(recipient:Agent, run = this.run) {
-    if (run){
-      const connection = await recipient.mediationRecipient.getDefaultMediatorConnection() 
+  private async pollDownloadMessages(recipient: Agent, run = this.run) {
+    if (run) {
+      const connection = await recipient.mediationRecipient.getDefaultMediatorConnection()
       if (this.connection) {
         await recipient.mediationRecipient.downloadMessages(this.connection)
         await sleep(10000)
@@ -354,7 +353,6 @@ export class WsInboundTransporter implements InboundTransporter {
 
   public async start(agent: Agent) {
     this.socketServer.on('connection', (socket: any, _: Express.Request, socketId: string) => {
-
       if (!this.socketIds[socketId]) {
         logger.debug(`Saving new socket with id ${socketId}.`)
         this.socketIds[socketId] = socket

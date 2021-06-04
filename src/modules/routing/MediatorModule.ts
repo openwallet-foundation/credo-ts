@@ -26,7 +26,6 @@ export class MediatorModule {
   private connectionService: ConnectionService
   private messageSender: MessageSender
   public eventEmitter: EventEmitter
-  private autoAcceptMediationRequests: boolean = true
 
   public constructor(
     dispatcher: Dispatcher,

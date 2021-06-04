@@ -165,13 +165,13 @@ export class MediatorService {
     }
     return null
   }
-// TODO: remove this in favor of find by connection id
+  // TODO: remove this in favor of find by connection id
   public async findRecipientByConnectionId(connectionId: string): Promise<MediationRecord | null> {
     try {
       const records = await this.mediationRepository.findByQuery({ connectionId })
       return records[0]
     } catch (error) {
-     return null 
+      return null
     }
   }
   // TODO: resolve possible duplicate keylist messages
@@ -227,7 +227,7 @@ export class MediatorService {
       const records = await this.mediationRepository.findByQuery({ connectionId })
       return records[0]
     } catch (error) {
-     return null 
+      return null
     }
   }
 
