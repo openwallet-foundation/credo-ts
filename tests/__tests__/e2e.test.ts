@@ -120,10 +120,16 @@ class PollingInboundTransporter implements InboundTransporter {
     this.pollDownloadMessages(agent)
   }
 
-  private async pollDownloadMessages(agent: Agent) {
-    while (!this.stop) {
-      await agent.routing.downloadMessages()
-      await sleep(5000)
+  private pollDownloadMessages(agent: Agent) {
+    const loop = async () => {
+      while (!this.stop) {
+        await agent.routing.downloadMessages()
+        await sleep(1000)
+      }
     }
+
+    new Promise(() => {
+      loop()
+    })
   }
 }
