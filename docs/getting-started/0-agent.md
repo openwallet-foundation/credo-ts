@@ -4,9 +4,9 @@ The Agent is the base component to use in Aries Framework JavaScript. It builds 
 
 Before initializing your agent, make sure you have followed the setup guide for your platform and environment:
 
-- [Electron](./../setup-electron.md)
-- [NodeJS](./../setup-nodejs.md)
-- [React Native](./../setup-react-native.md)
+- [Electron](../setup-electron.md)
+- [NodeJS](../setup-nodejs.md)
+- [React Native](../setup-react-native.md)
 
 ## Setting Up Your Agent
 

@@ -1,4 +1,4 @@
-import { Agent, HttpOutboundTransporter, InboundTransporter } from '../../src'
+import { Agent, AriesFrameworkError, HttpOutboundTransporter, InboundTransporter } from '../../src'
 import { get } from '../http'
 import { getBaseConfig, sleep, waitForBasicMessage } from '../../src/__tests__/helpers'
 import logger from '../../src/__tests__/logger'
@@ -103,7 +103,14 @@ class PollingInboundTransporter implements InboundTransporter {
   }
 
   public async registerMediator(agent: Agent) {
-    const mediatorUrl = agent.getMediatorUrl() || ''
+    const mediatorUrl = agent.getMediatorUrl()
+
+    if (!mediatorUrl) {
+      throw new AriesFrameworkError(
+        'Agent has no mediator URL. Make sure to provide the `mediatorUrl` in the agent config.'
+      )
+    }
+
     const mediatorInvitationUrl = await get(`${mediatorUrl}/invitation`)
     const { verkey: mediatorVerkey } = JSON.parse(await get(`${mediatorUrl}/`))
     await agent.routing.provision({
@@ -113,15 +120,10 @@ class PollingInboundTransporter implements InboundTransporter {
     this.pollDownloadMessages(agent)
   }
 
-  private pollDownloadMessages(agent: Agent) {
-    const loop = async () => {
-      while (!this.stop) {
-        await agent.routing.downloadMessages()
-        await sleep(1000)
-      }
+  private async pollDownloadMessages(agent: Agent) {
+    while (!this.stop) {
+      await agent.routing.downloadMessages()
+      await sleep(5000)
     }
-    new Promise(() => {
-      loop()
-    })
   }
 }

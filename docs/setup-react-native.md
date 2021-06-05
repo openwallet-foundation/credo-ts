@@ -8,7 +8,7 @@ To start using Aries Framework JavaScript in React Native some platform specific
 2. Add `rn-indy-sdk` and `aries-framework` to your project.
 
 ```bash
-yarn add aries-framework rn-indy-sdk    # npm install aries-framework rn-indy-sdk
+yarn add aries-framework rn-indy-sdk
 ```
 
 3. Install [Libindy](https://github.com/hyperledger/indy-sdk) for iOS and Android:
@@ -17,7 +17,27 @@ yarn add aries-framework rn-indy-sdk    # npm install aries-framework rn-indy-sd
    - [Android](../docs/libindy/android.md)
 
 4. If you're using React Native > 0.61.5, make sure you have Hermes enabled, as the app will crash on Android when opening a ledger pool. See the React Native [docs](https://reactnative.dev/docs/hermes) on Hermes on how to enable Hermes.
+
    - Indy SDK [issue](https://github.com/hyperledger/indy-sdk/issues/2346#issuecomment-841000640)
+
+5. Install React Native polyfills and import them in the `index.js` file:
+
+```bash
+yarn add react-native-get-random-values @azure/core-asynciterator-polyfill
+```
+
+```js
+import 'react-native-get-random-values'
+import '@azure/core-asynciterator-polyfill'
+```
+
+## TypeScript
+
+If you're using TypeScript in your React Native project you need to install `indy-sdk` types both with and without alias. This is to make sure you have types when importing `rn-indy-sdk`, but also for `indy-sdk` types used by the framework.
+
+```
+yarn add -D @types/rn-indy-sdk@npm:@types/indy-sdk @types/indy-sdk
+```
 
 ## Agent Setup
 

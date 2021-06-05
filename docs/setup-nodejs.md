@@ -19,7 +19,7 @@ yarn add aries-framework indy-sdk   # npm install aries-framework indy-sdk
 
 ## Agent Setup
 
-Initializing the Agent also requires some NodeJS specific setup, mainly for the Indy SDK and File System. Below is a sample config, see the [Docs](./README.md) for an overview of getting started guides. If you want to jump right in, check the [Getting Started: Agent](./getting-started/0-agent.md) guide.
+Initializing the Agent also requires some NodeJS specific setup, mainly for the Indy SDK and File System. Below is a sample config, see the [README](../README.md#getting-started) for an overview of getting started guides. If you want to jump right in, check the [Getting Started: Agent](./getting-started/0-agent.md) guide.
 
 ```ts
 import { Agent } from 'aries-framework'

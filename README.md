@@ -49,7 +49,7 @@
   <a href="#license">License</a> 
 </p>
 
-Aries Framework JavaScript is a typescript framework for building **SSI Agents and DIDComm services** that aims to be **compliant and interoperable** with the standards defined in the [Aries RFCs](https://github.com/hyperledger/aries-rfcs).
+Aries Framework JavaScript is a framework written in TypeScript for building **SSI Agents and DIDComm services** that aims to be **compliant and interoperable** with the standards defined in the [Aries RFCs](https://github.com/hyperledger/aries-rfcs).
 
 ## Features
 
@@ -74,14 +74,31 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
 
 ## Getting Started
 
-- NodeJS: [setup guide](./docs/setup-nodejs.md)
-- React Native: [setup guide](./docs/setup-react-native.md)
-- Electron: [setup guide](./docs/setup-electron.md)
+### Platform Specific Setup
+
+In order to use Aries Framework JavaScript some platform specific dependencies and setup is required. See our guides below to quickly set up you project with Aries Framework JavaScript for NodeJS, React Native and Electron.
+
+- [React Native](/docs/setup-react-native.md)
+- [NodeJS](/docs/setup-nodejs.md)
+- [Electron](/docs/setup-electron.md)
+
+### Usage
+
+Now that your project is setup and everything seems to be working, it is time to start building! Follow these guides below to get started!
+
+0. [Agent](/docs/getting-started/0-agent.md)
+1. [Transports](/docs/getting-started/1-transports.md)
+2. [Connections](/docs/getting-started/2-connections.md)
+3. [Routing](/docs/getting-started/3-routing.md)
+4. [Ledger](/docs/getting-started/4-ledger.md)
+5. [Credentials](/docs/getting-started/5-credentials.md)
+6. [Proofs](/docs/getting-started/6-proofs.md)
+7. [Logging](/docs/getting-started/7-logging.md)
 
 ## Contributing
 
-If you would like to contribute to the framework, please read the [Framework Developers README](DEVREADME.md) and the [CONTRIBUTING](CONTRIBUTING.md) guidelines. These documents will provide more information to get you started!
+If you would like to contribute to the framework, please read the [Framework Developers README](/DEVREADME.md) and the [CONTRIBUTING](/CONTRIBUTING.md) guidelines. These documents will provide more information to get you started!
 
 ## License
 
-Hyperledger Aries Framework JavaScript is licensed under the [Apache License Version 2.0 (Apache-2.0)](LICENSE).
+Hyperledger Aries Framework JavaScript is licensed under the [Apache License Version 2.0 (Apache-2.0)](/LICENSE).
