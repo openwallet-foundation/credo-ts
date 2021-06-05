@@ -153,7 +153,7 @@ export class Agent {
     return await this.messageReceiver.receiveMessage(inboundPackedMessage, session)
   }
 
-  public async closeAndDeleteWallet():Promise<void> {
+  public async closeAndDeleteWallet(): Promise<void> {
     await this.wallet.close()
     return await this.wallet.delete()
   }
