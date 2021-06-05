@@ -273,7 +273,6 @@ export async function makeConnection(
 ) {
   // eslint-disable-next-line prefer-const
   let { invitation, connectionRecord: agentAConnection } = await agentA.connections.createConnection(config)
-  console.log(invitation)
   let agentBConnection = await agentB.connections.receiveInvitation(invitation)
 
   agentAConnection = await agentA.connections.returnWhenIsConnected(agentAConnection.id)
