@@ -1,3 +1,6 @@
+import express, { Express } from 'express'
+import cors from 'cors'
+import { Server } from 'http'
 import type { Schema, CredDef, Did } from 'indy-sdk'
 import indy from 'indy-sdk'
 import path from 'path'
@@ -288,6 +291,61 @@ export async function makeTransport(agent: Agent, inboundTransporter: InboundTra
   agent.setInboundTransporter(inboundTransporter)
   agent.setOutboundTransporter(outboundTransporter)
   await agent.init()
+}
+
+export function makeInBoundTransporter(){
+  const app = express()
+  app.use(cors())
+  app.use(express.json())
+  app.use(
+    express.text({
+      type: ['application/ssi-agent-wire', 'text/plain'],
+    })
+  )
+  app.set('json spaces', 2)
+return new mockInBoundTransporter(app)
+}
+
+
+export class mockInBoundTransporter implements InboundTransporter {
+  private app: Express
+  public server?: Server
+  public constructor(app: Express) {
+    this.app = app
+  }
+  public async start(agent: Agent) {
+    this.app.post('/msg', async (req, res) => {
+      const packedMessage = JSON.parse(req.body)
+      try {
+        const outboundMessage = await agent.receiveMessage(packedMessage)
+        if (outboundMessage) {
+          res.status(200).json(outboundMessage.payload).end()
+        } else {
+          res.status(200).end()
+        }
+      } catch (e) {
+        res.status(200).end()
+      }
+    })
+    this.server = this.app.listen(agent.getPort(), () => {
+    })
+  }
+  public async stop(): Promise<void> {
+    this.server?.close()
+  }
+}
+
+export class mockOutBoundTransporter implements OutboundTransporter {
+  public async start(): Promise<void> {
+    // No custom start logic required
+  }
+  public async stop(): Promise<void> {
+    // No custom stop logic required
+  }
+  public supportedSchemes = ['http', 'dicomm', 'https']
+  public async sendMessage(outboundPackage: OutboundPackage) {
+    const { connection, payload, endpoint, responseRequested } = outboundPackage
+  }
 }
 
 export async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<Schema> {

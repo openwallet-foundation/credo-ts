@@ -75,6 +75,10 @@ export class AgentConfig {
     return DID_COMM_TRANSPORT_QUEUE
   }
 
+  public get myPort() {
+    return this.initConfig.port
+  }
+
   public get mediatorConnectionsInvite() {
     return this.initConfig.mediatorConnectionsInvite
   }

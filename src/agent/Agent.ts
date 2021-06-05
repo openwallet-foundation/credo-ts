@@ -148,7 +148,9 @@ export class Agent {
 
     return defaultMediator?.endpoint ?? this.agentConfig.getEndpoint()
   }
-
+  public getPort(){
+    return this.agentConfig.myPort
+  }
   public async receiveMessage(inboundPackedMessage: unknown, session?: TransportSession) {
     return await this.messageReceiver.receiveMessage(inboundPackedMessage, session)
   }
