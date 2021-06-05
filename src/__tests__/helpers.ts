@@ -1,7 +1,7 @@
 import type { Schema, CredDef, Did } from 'indy-sdk'
 import indy from 'indy-sdk'
 import path from 'path'
-import { Subject } from 'rxjs'
+import { async, Subject } from 'rxjs'
 import { Agent, InboundTransporter, OutboundTransporter } from '..'
 import { InitConfig, OutboundPackage, WireMessage } from '../types'
 import {
@@ -282,6 +282,12 @@ export async function makeConnection(
     agentAConnection,
     agentBConnection,
   }
+}
+
+export async function makeTransport(agent: Agent, inboundTransporter: InboundTransporter,outboundTransporter: OutboundTransporter){
+  agent.setInboundTransporter(inboundTransporter)
+  agent.setOutboundTransporter(outboundTransporter)
+  await agent.init()
 }
 
 export async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<Schema> {
