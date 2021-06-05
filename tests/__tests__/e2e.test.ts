@@ -26,10 +26,7 @@ import { ReturnRouteTypes } from '../../src/decorators/transport/TransportDecora
 import { HttpOutboundTransporter } from '../mediation-server'
 import { Server } from 'http'
 
-const recipientConfig = getBaseConfig('recipient', {
-  host: 'http://localhost',
-  port: 3002,
-})
+const recipientConfig = getBaseConfig('recipient')
 const mediatorConfig = getBaseConfig('mediator', {
   host: 'http://localhost',
   port: 3003,
@@ -102,67 +99,67 @@ describe('with mediator', () => {
     console.log("After All - Completed")
   })
 
-  // test('recipient and mediator establish a connection and granted mediation', async () => {
-  //   console.log("recipient and mediator establish a connection and granted mediation start")
+  test('recipient and mediator establish a connection and granted mediation', async () => {
+    console.log("recipient and mediator establish a connection and granted mediation start")
 
-  //   recipientAgent = new Agent(recipientConfig)
-  //   recipientAgent.setInboundTransporter(new mockMobileInboundTransporter())
-  //   recipientAgent.setOutboundTransporter(new mockMobileOutBoundTransporter(recipientAgent))
-  //   await recipientAgent.init()
+    try{
+      recipientAgent = new Agent(recipientConfig)
+      recipientAgent.setInboundTransporter(new mockMobileInboundTransporter())
+      recipientAgent.setOutboundTransporter(new mockMobileOutBoundTransporter(recipientAgent))
+      await recipientAgent.init()
 
-  //   mediatorAgent = new Agent(mediatorConfig, messageRepository)
-  //   mediatorAgent.setInboundTransporter(new mockMediatorInBoundTransporter(app))
-  //   mediatorAgent.setOutboundTransporter(new mockMediatorOutBoundTransporter())
-  //   await mediatorAgent.init()
+      mediatorAgent = new Agent(mediatorConfig, messageRepository)
+      mediatorAgent.setInboundTransporter(new mockMediatorInBoundTransporter(app))
+      mediatorAgent.setOutboundTransporter(new mockMediatorOutBoundTransporter())
+      await mediatorAgent.init()
+    } catch (error){
+      console.warn(error)
+    }
+    console.log("Agents configured")
+
+    const { agentAConnection: mediatorAgentConnection, agentBConnection: recipientAgentConnection } =
+      await makeConnection(mediatorAgent, recipientAgent, {
+        autoAcceptConnection: true,
+      })
+    console.log("Connections established")
+
+    expect(recipientAgentConnection).toBeConnectedWith(mediatorAgentConnection)
+    expect(mediatorAgentConnection).toBeConnectedWith(recipientAgentConnection)
+    expect(mediatorAgentConnection.isReady)
 
 
-  //   const { agentAConnection: mediatorAgentConnection, agentBConnection: recipientAgentConnection } =
-  //     await makeConnection(mediatorAgent, recipientAgent, {
-  //       autoAcceptConnection: true,
-  //     })
-  //   expect(recipientAgentConnection).toBeConnectedWith(mediatorAgentConnection)
-  //   expect(mediatorAgentConnection).toBeConnectedWith(recipientAgentConnection)
-  //   expect(mediatorAgentConnection.isReady)
-  //   let mediationRecord: MediationRecord = await recipientAgent.mediationRecipient.requestAndWaitForAcception(
-  //     recipientAgentConnection,
-  //     200000 // TODO: remove magic number
-  //   )
-  //   // test default mediator
-  //   mediationRecord = await recipientAgent.mediationRecipient.setDefaultMediator(mediationRecord)
-  //   const retrievedMediationRecord = await recipientAgent.mediationRecipient.getDefaultMediator()
-  //   if (retrievedMediationRecord) {
-  //     expect(retrievedMediationRecord.state).toBe(MediationState.Granted)
-  //   } else {
-  //     throw new Error()
-  //   }
-  //   const recipientMediatorConnection = await recipientAgent.mediationRecipient.getDefaultMediatorConnection()
-  //   if (recipientMediatorConnection) {
-  //     expect(recipientMediatorConnection?.isReady)
-  //     const recipientMediatorRecord = await recipientAgent.mediationRecipient.findByConnectionId(
-  //       recipientMediatorConnection.id
-  //     )
-  //     expect(recipientMediatorRecord?.state).toBe(MediationState.Granted)
-  //   } else {
-  //     throw new Error('no mediator connection found.')
-  //   }
+    let mediationRecord: MediationRecord = await recipientAgent.mediationRecipient.requestAndWaitForAcception(
+      recipientAgentConnection,
+      20000 // TODO: remove magic number
+    )
+    // test default mediator
+    mediationRecord = await recipientAgent.mediationRecipient.setDefaultMediator(mediationRecord)
+    const retrievedMediationRecord = await recipientAgent.mediationRecipient.getDefaultMediator()
+    if (retrievedMediationRecord) {
+      expect(retrievedMediationRecord.state).toBe(MediationState.Granted)
+    } else {
+      throw new Error()
+    }
+    const recipientMediatorConnection = await recipientAgent.mediationRecipient.getDefaultMediatorConnection()
+    if (recipientMediatorConnection) {
+      expect(recipientMediatorConnection?.isReady)
+      const recipientMediatorRecord = await recipientAgent.mediationRecipient.findByConnectionId(
+        recipientMediatorConnection.id
+      )
+      expect(recipientMediatorRecord?.state).toBe(MediationState.Granted)
+    } else {
+      throw new Error('no mediator connection found.')
+    }
 
-  //   await (recipientAgent.inboundTransporter as mockMobileInboundTransporter).stop()
-  //   await (mediatorAgent.inboundTransporter as mockMediatorInBoundTransporter).stop()
-  //   console.log("Cleanup - Started")
+    console.log("Transport Cleanup - Started")
 
-  //   try{
-  //     console.log(typeof recipientAgent.closeAndDeleteWallet)
-  //     await recipientAgent.closeAndDeleteWallet()
+    await (recipientAgent.inboundTransporter as mockMobileInboundTransporter).stop()
+    await (mediatorAgent.inboundTransporter as mockMediatorInBoundTransporter).stop()
 
-  //     console.log(typeof mediatorAgent.closeAndDeleteWallet)
-  //     await mediatorAgent.closeAndDeleteWallet()
-  //   } catch(error){
-  //     console.warn("After Each - Error closing wallets", error)
-  //   }
+    console.log("Transport Cleanup - Completed")
 
-  //   console.log("Cleanup - Completed")
-  //   console.log("recipient and mediator establish a connection and granted mediation end")
-  // })
+    console.log("recipient and mediator establish a connection and granted mediation end")
+  })
 
   test('recipient and mediator establish a connection and granted mediation with WebSockets', async () => {
     console.log("recipient and mediator establish a connection and granted mediation with WebSockets start")
@@ -293,34 +290,34 @@ describe('with mediator', () => {
 // })
 
 
-// class mockMediatorInBoundTransporter implements InboundTransporter {
-//   private app: Express
-//   public server?: Server
-//   public constructor(app: Express) {
-//     this.app = app
-//   }
-//   public async start(agent: Agent) {
-//     this.app.post('/msg', async (req, res) => {
-//       const packedMessage = JSON.parse(req.body)
-//       try {
-//         const outboundMessage = await agent.receiveMessage(packedMessage)
-//         if (outboundMessage) {
-//           res.status(200).json(outboundMessage.payload).end()
-//         } else {
-//           res.status(200).end()
-//         }
-//       } catch (e) {
-//         res.status(200).end()
-//       }
-//     })
-//     this.server = this.app.listen(3002, () => {
-//       //TODO: fix this hard coded port
-//     })
-//   }
-//   public async stop(): Promise<void> {
-//     this.server?.close()
-//   }
-// }
+class mockMediatorInBoundTransporter implements InboundTransporter {
+  private app: Express
+  public server?: Server
+  public constructor(app: Express) {
+    this.app = app
+  }
+  public async start(agent: Agent) {
+    this.app.post('/msg', async (req, res) => {
+      const packedMessage = JSON.parse(req.body)
+      try {
+        const outboundMessage = await agent.receiveMessage(packedMessage)
+        if (outboundMessage) {
+          res.status(200).json(outboundMessage.payload).end()
+        } else {
+          res.status(200).end()
+        }
+      } catch (e) {
+        res.status(200).end()
+      }
+    })
+    this.server = this.app.listen(3003, () => {
+      //TODO: fix this hard coded port
+    })
+  }
+  public async stop(): Promise<void> {
+    this.server?.close()
+  }
+}
 
 class mockMediatorOutBoundTransporter implements OutboundTransporter {
   public async start(): Promise<void> {
