@@ -39,6 +39,39 @@ If you're using TypeScript in your React Native project you need to install `ind
 yarn add -D @types/rn-indy-sdk@npm:@types/indy-sdk @types/indy-sdk
 ```
 
+### Using decorators
+
+If you intend to extend the core framework capabilities good change you will need to use decorators. In this case you need to enable support for decorators in both TypeScript and Babel.
+
+1. Install `babel-plugin-transform-typescript-metadata` and `@babel/plugin-proposal-decorators`
+
+```sh
+yarn add babel-plugin-transform-typescript-metadata @babel/plugin-proposal-decorators
+```
+
+2. Add them to your babel config
+
+```js
+// babel.config.js
+module.exports = {
+  // ... other config ... //
+  plugins: ['babel-plugin-transform-typescript-metadata', ['@babel/plugin-proposal-decorators', { legacy: true }]],
+}
+```
+
+3. Enable decorators in your `tsconfig.json`
+
+```jsonc
+// tsconfig.json
+{
+  "compilerOptions": {
+    // ... other options ... //
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  }
+}
+```
+
 ## Agent Setup
 
 Initializing the Agent also requires some React Native specific setup, mainly for the Indy SDK and File System. Below is a sample config, see the [README](../README.md#getting-started) for an overview of getting started guides. If you want to jump right in, check the [Getting Started: Agent](./getting-started/0-agent.md) guide.
