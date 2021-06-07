@@ -7,6 +7,10 @@
   "files": [
     "build/src"
   ],
+  "repository": {
+    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "type": "git"
+  },
   "scripts": {
     "compile": "tsc",
     "lint": "eslint --ignore-path .gitignore .",
