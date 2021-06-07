@@ -12,7 +12,6 @@ if [[ "$AGENT" = "mediator01" ]] || [[ "$AGENT" = "alice" ]]; then
   AGENT_LABEL=RoutingMediator01
   WALLET_NAME=mediator01
   WALLET_KEY=0000000000000000000000000Mediator01
-  PUBLIC_DID=DtWRdd6C5dN5vpcN6XRAvu
   PUBLIC_DID_SEED=00000000000000000000000Forward01
   MEDIATOR_COMMAND="prod:start"
 elif [[ "$AGENT" = "mediator02" ]] || [[ "$AGENT" = "bob" ]]; then
@@ -22,7 +21,6 @@ elif [[ "$AGENT" = "mediator02" ]] || [[ "$AGENT" = "bob" ]]; then
   AGENT_LABEL=RoutingMediator02
   WALLET_NAME=mediator02
   WALLET_KEY=0000000000000000000000000Mediator02
-  PUBLIC_DID=SHbU5SEwdmkQkVQ1sMwSEv
   PUBLIC_DID_SEED=00000000000000000000000Forward02
   MEDIATOR_COMMAND="prod:start"
 elif [[ "$AGENT" = "mediator03" ]] || [[ "$AGENT" = "alice-ws" ]]; then
