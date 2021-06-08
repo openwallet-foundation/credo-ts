@@ -8,7 +8,8 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { Logger } from '../../logger'
-import { ConnectionService, ConnectionState, ConnectionInvitationMessage } from '../connections'
+import { ConnectionService, ConnectionState } from '../connections'
+import { ConnectionInvitationMessage } from '../connections/messages/ConnectionInvitationMessage'
 
 import {
   BatchHandler,

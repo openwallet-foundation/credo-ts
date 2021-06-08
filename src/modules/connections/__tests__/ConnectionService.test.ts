@@ -367,6 +367,9 @@ describe('ConnectionService', () => {
         verkey,
         state: ConnectionState.Requested,
         role: ConnectionRole.Inviter,
+        tags: {
+          threadId: 'test',
+        },
       })
       mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(mockConnection))
 
