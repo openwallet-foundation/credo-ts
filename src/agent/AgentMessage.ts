@@ -1,12 +1,13 @@
-import { Compose } from '../utils/mixins'
-import { ThreadDecorated } from '../decorators/thread/ThreadDecoratorExtension'
-import { L10nDecorated } from '../decorators/l10n/L10nDecoratorExtension'
-import { TransportDecorated } from '../decorators/transport/TransportDecoratorExtension'
-import { TimingDecorated } from '../decorators/timing/TimingDecoratorExtension'
-import { BaseMessage } from './BaseMessage'
-import { JsonTransformer } from '../utils/JsonTransformer'
 import { AckDecorated } from '../decorators/ack/AckDecoratorExtension'
 import { AttachmentDecorated } from '../decorators/attachment/AttachmentExtension'
+import { L10nDecorated } from '../decorators/l10n/L10nDecoratorExtension'
+import { ThreadDecorated } from '../decorators/thread/ThreadDecoratorExtension'
+import { TimingDecorated } from '../decorators/timing/TimingDecoratorExtension'
+import { TransportDecorated } from '../decorators/transport/TransportDecoratorExtension'
+import { JsonTransformer } from '../utils/JsonTransformer'
+import { Compose } from '../utils/mixins'
+
+import { BaseMessage } from './BaseMessage'
 
 const DefaultDecorators = [
   ThreadDecorated,

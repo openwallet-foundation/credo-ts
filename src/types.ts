@@ -1,9 +1,9 @@
-import type Indy from 'indy-sdk'
-import type { WalletConfig, WalletCredentials, Verkey } from 'indy-sdk'
-import { ConnectionRecord } from './modules/connections'
+import type { default as Indy, WalletConfig, WalletCredentials, Verkey } from 'indy-sdk'
+
 import { AgentMessage } from './agent/AgentMessage'
 import { TransportSession } from './agent/TransportService'
 import { Logger } from './logger'
+import { ConnectionRecord } from './modules/connections'
 import { FileSystem } from './storage/fs/FileSystem'
 
 type $FixMe = any

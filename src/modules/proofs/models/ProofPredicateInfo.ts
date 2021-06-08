@@ -1,9 +1,10 @@
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsEnum, IsInt, IsOptional, IsString, ValidateNested } from 'class-validator'
 
+import { RevocationInterval } from '../../credentials'
+
 import { AttributeFilter } from './AttributeFilter'
 import { PredicateType } from './PredicateType'
-import { RevocationInterval } from '../../credentials'
 
 export class ProofPredicateInfo {
   public constructor(options: ProofPredicateInfo) {

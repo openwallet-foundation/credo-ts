@@ -1,8 +1,9 @@
-import { Repository } from '../Repository'
-import { TestRecord } from './TestRecord'
-import { IndyStorageService } from '../IndyStorageService'
-import { AriesFrameworkError, RecordDuplicateError, RecordNotFoundError } from '../../error'
 import { mockFunction } from '../../__tests__/helpers'
+import { AriesFrameworkError, RecordDuplicateError, RecordNotFoundError } from '../../error'
+import { IndyStorageService } from '../IndyStorageService'
+import { Repository } from '../Repository'
+
+import { TestRecord } from './TestRecord'
 
 jest.mock('../IndyStorageService')
 

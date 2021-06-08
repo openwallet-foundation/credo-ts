@@ -1,10 +1,11 @@
-import { OutboundTransporter } from './OutboundTransporter'
 import { Agent } from '../agent/Agent'
+import { AgentConfig } from '../agent/AgentConfig'
 import { Logger } from '../logger'
+import { Symbols } from '../symbols'
 import { OutboundPackage } from '../types'
 import { fetch } from '../utils/fetch'
-import { Symbols } from '../symbols'
-import { AgentConfig } from '../agent/AgentConfig'
+
+import { OutboundTransporter } from './OutboundTransporter'
 
 export class HttpOutboundTransporter implements OutboundTransporter {
   private agent: Agent

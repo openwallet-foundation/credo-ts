@@ -1,10 +1,12 @@
-import type { CredReq } from 'indy-sdk'
-import { Equals, IsArray, IsString, ValidateNested } from 'class-validator'
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { IssueCredentialMessageType } from './IssueCredentialMessageType'
 import { Expose, Type } from 'class-transformer'
+import { Equals, IsArray, IsString, ValidateNested } from 'class-validator'
+import type { CredReq } from 'indy-sdk'
+
+import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
+
+import { IssueCredentialMessageType } from './IssueCredentialMessageType'
 
 export const INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID = 'libindy-cred-request-0'
 

@@ -2,6 +2,7 @@ import { Expose, Type } from 'class-transformer'
 import { Equals, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
+
 import { CredentialPreview } from './CredentialPreview'
 import { IssueCredentialMessageType } from './IssueCredentialMessageType'
 

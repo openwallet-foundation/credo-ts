@@ -1,12 +1,14 @@
-import express from 'express'
-import WebSocket from 'ws'
 import cors from 'cors'
+import express from 'express'
 import { v4 as uuid } from 'uuid'
-import config from './config'
+import WebSocket from 'ws'
+
 import { Agent, InboundTransporter, WebSocketTransportSession, WsOutboundTransporter } from '../src'
-import { DidCommMimeType } from '../src/types'
-import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
 import testLogger from '../src/__tests__/logger'
+import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
+import { DidCommMimeType } from '../src/types'
+
+import config from './config'
 
 const logger = testLogger
 

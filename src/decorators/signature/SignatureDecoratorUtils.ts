@@ -1,11 +1,13 @@
 import type { Verkey } from 'indy-sdk'
-import { SignatureDecorator } from './SignatureDecorator'
+
+import { AriesFrameworkError } from '../../error'
+import { BufferEncoder } from '../../utils/BufferEncoder'
+import { JsonEncoder } from '../../utils/JsonEncoder'
+import { Buffer } from '../../utils/buffer'
 import timestamp from '../../utils/timestamp'
 import { Wallet } from '../../wallet/Wallet'
-import { Buffer } from '../../utils/buffer'
-import { JsonEncoder } from '../../utils/JsonEncoder'
-import { BufferEncoder } from '../../utils/BufferEncoder'
-import { AriesFrameworkError } from '../../error'
+
+import { SignatureDecorator } from './SignatureDecorator'
 
 /**
  * Unpack and verify signed data before casting it to the supplied type.

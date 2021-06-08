@@ -1,7 +1,7 @@
 import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import { BasicMessageService } from '../services/BasicMessageService'
-import { BasicMessage } from '../messages'
 import { AriesFrameworkError } from '../../../error'
+import { BasicMessage } from '../messages'
+import { BasicMessageService } from '../services/BasicMessageService'
 
 export class BasicMessageHandler implements Handler {
   private basicMessageService: BasicMessageService

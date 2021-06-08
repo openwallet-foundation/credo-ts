@@ -1,12 +1,13 @@
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
-import { OutboundMessage, OutboundPackage } from '../types'
-import { OutboundTransporter } from '../transport/OutboundTransporter'
-import { EnvelopeService } from './EnvelopeService'
-import { TransportService } from './TransportService'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
 import { Symbols } from '../symbols'
+import { OutboundTransporter } from '../transport/OutboundTransporter'
+import { OutboundMessage, OutboundPackage } from '../types'
+
+import { EnvelopeService } from './EnvelopeService'
+import { TransportService } from './TransportService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MessageSender {

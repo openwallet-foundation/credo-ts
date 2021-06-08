@@ -1,7 +1,7 @@
 import { validateOrReject } from 'class-validator'
 
-import { ConnectionInvitationMessage } from '../messages/ConnectionInvitationMessage'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { ConnectionInvitationMessage } from '../messages/ConnectionInvitationMessage'
 
 describe('ConnectionInvitationMessage', () => {
   it('should allow routingKeys to be left out of inline invitation', async () => {

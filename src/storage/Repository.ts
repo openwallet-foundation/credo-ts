@@ -1,4 +1,5 @@
 import type { WalletQuery } from 'indy-sdk'
+
 import { RecordDuplicateError, RecordNotFoundError } from '../error'
 
 import { BaseRecord } from './BaseRecord'

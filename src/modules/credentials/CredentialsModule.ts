@@ -1,12 +1,11 @@
 import { Lifecycle, scoped } from 'tsyringe'
 
-import { CredentialRecord } from './repository/CredentialRecord'
-import { createOutboundMessage } from '../../agent/helpers'
-import { MessageSender } from '../../agent/MessageSender'
-import { ConnectionService } from '../connections'
-import { CredentialOfferTemplate, CredentialService } from './services'
-import { ProposeCredentialMessageOptions } from './messages'
 import { Dispatcher } from '../../agent/Dispatcher'
+import { MessageSender } from '../../agent/MessageSender'
+import { createOutboundMessage } from '../../agent/helpers'
+import { AriesFrameworkError } from '../../error'
+import { ConnectionService } from '../connections'
+
 import {
   ProposeCredentialHandler,
   OfferCredentialHandler,
@@ -14,7 +13,9 @@ import {
   IssueCredentialHandler,
   CredentialAckHandler,
 } from './handlers'
-import { AriesFrameworkError } from '../../error'
+import { ProposeCredentialMessageOptions } from './messages'
+import { CredentialRecord } from './repository/CredentialRecord'
+import { CredentialOfferTemplate, CredentialService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialsModule {

@@ -1,19 +1,26 @@
-import { inject, scoped, Lifecycle } from 'tsyringe'
-import type { IndyProof, Schema, CredDef } from 'indy-sdk'
 import { validateOrReject } from 'class-validator'
+import type { IndyProof, Schema, CredDef } from 'indy-sdk'
+import { inject, scoped, Lifecycle } from 'tsyringe'
 
+import { AgentConfig } from '../../../agent/AgentConfig'
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { LedgerService } from '../../ledger/services/LedgerService'
+import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
-import { ConnectionRecord } from '../../connections'
-import { ProofRecord } from '../repository/ProofRecord'
+import { AriesFrameworkError } from '../../../error'
+import { Logger } from '../../../logger'
+import { Symbols } from '../../../symbols'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { Wallet } from '../../../wallet/Wallet'
+import { AckStatus } from '../../common'
+import { ConnectionRecord } from '../../connections'
 import { CredentialUtils, Credential, IndyCredentialInfo } from '../../credentials'
-
+import { IndyHolderService, IndyVerifierService } from '../../indy'
+import { LedgerService } from '../../ledger/services/LedgerService'
+import { ProofEventTypes, ProofStateChangedEvent } from '../ProofEvents'
+import { ProofState } from '../ProofState'
 import {
   PresentationMessage,
   PresentationPreview,
@@ -24,7 +31,6 @@ import {
   INDY_PROOF_REQUEST_ATTACHMENT_ID,
   INDY_PROOF_ATTACHMENT_ID,
 } from '../messages'
-import { AckStatus } from '../../common'
 import {
   PartialProof,
   ProofAttributeInfo,
@@ -35,15 +41,8 @@ import {
   RequestedAttribute,
   RequestedPredicate,
 } from '../models'
-import { ProofState } from '../ProofState'
-import { AgentConfig } from '../../../agent/AgentConfig'
-import { Logger } from '../../../logger'
 import { ProofRepository } from '../repository'
-import { Symbols } from '../../../symbols'
-import { IndyHolderService, IndyVerifierService } from '../../indy'
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { ProofEventTypes, ProofStateChangedEvent } from '../ProofEvents'
-import { AriesFrameworkError } from '../../../error'
+import { ProofRecord } from '../repository/ProofRecord'
 
 /**
  * @todo add method to check if request matches proposal. Useful to see if a request I received is the same as the proposal I sent.

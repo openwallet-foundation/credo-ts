@@ -1,6 +1,20 @@
 import type { CredDefId } from 'indy-sdk'
 import { Subject } from 'rxjs'
+
 import { Agent } from '..'
+import { ConnectionRecord } from '../modules/connections'
+import { CredentialPreview, CredentialPreviewAttribute } from '../modules/credentials'
+import {
+  PredicateType,
+  PresentationPreview,
+  PresentationPreviewAttribute,
+  PresentationPreviewPredicate,
+  ProofState,
+  ProofAttributeInfo,
+  AttributeFilter,
+  ProofPredicateInfo,
+} from '../modules/proofs'
+
 import {
   ensurePublicDidIsOnLedger,
   makeConnection,
@@ -13,18 +27,6 @@ import {
   waitForProofRecord,
   getBaseConfig,
 } from './helpers'
-import { CredentialPreview, CredentialPreviewAttribute } from '../modules/credentials'
-import {
-  PredicateType,
-  PresentationPreview,
-  PresentationPreviewAttribute,
-  PresentationPreviewPredicate,
-  ProofState,
-  ProofAttributeInfo,
-  AttributeFilter,
-  ProofPredicateInfo,
-} from '../modules/proofs'
-import { ConnectionRecord } from '../modules/connections'
 import testLogger from './logger'
 
 const faberConfig = getBaseConfig('Faber Proofs', { genesisPath })

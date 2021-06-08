@@ -1,10 +1,11 @@
-import type { Verkey } from 'indy-sdk'
-import { Equals, IsArray, ValidateNested, IsString, IsEnum } from 'class-validator'
 import { Expose, Type } from 'class-transformer'
+import { Equals, IsArray, ValidateNested, IsString, IsEnum } from 'class-validator'
+import type { Verkey } from 'indy-sdk'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { RoutingMessageType as MessageType } from './RoutingMessageType'
+
 import { KeylistUpdateAction } from './KeylistUpdateMessage'
+import { RoutingMessageType as MessageType } from './RoutingMessageType'
 
 export interface KeylistUpdateResponseMessageOptions {
   id?: string

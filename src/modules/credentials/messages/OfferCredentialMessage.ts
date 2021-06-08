@@ -1,12 +1,13 @@
-import type { CredOffer } from 'indy-sdk'
-import { Equals, IsArray, IsString, ValidateNested } from 'class-validator'
 import { Expose, Type } from 'class-transformer'
+import { Equals, IsArray, IsString, ValidateNested } from 'class-validator'
+import type { CredOffer } from 'indy-sdk'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { IssueCredentialMessageType } from './IssueCredentialMessageType'
 import { Attachment } from '../../../decorators/attachment/Attachment'
-import { CredentialPreview } from './CredentialPreview'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
+
+import { CredentialPreview } from './CredentialPreview'
+import { IssueCredentialMessageType } from './IssueCredentialMessageType'
 
 export const INDY_CREDENTIAL_OFFER_ATTACHMENT_ID = 'libindy-cred-offer-0'
 

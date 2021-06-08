@@ -1,9 +1,10 @@
-import { Lifecycle, scoped } from 'tsyringe'
 import type { Verkey } from 'indy-sdk'
+import { Lifecycle, scoped } from 'tsyringe'
 
-import { OutboundMessage } from '../../../types'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import { AriesFrameworkError } from '../../../error'
+import { OutboundMessage } from '../../../types'
 import { ConnectionRecord } from '../../connections'
 import {
   KeylistUpdateMessage,
@@ -13,7 +14,6 @@ import {
   KeylistUpdateResponseMessage,
   KeylistUpdateResult,
 } from '../messages'
-import { AriesFrameworkError } from '../../../error'
 
 export interface RoutingTable {
   [recipientKey: string]: ConnectionRecord | undefined

@@ -1,15 +1,15 @@
 import type { WalletQuery } from 'indy-sdk'
 import { Lifecycle, scoped } from 'tsyringe'
 
-import { OutboundMessage } from '../../../types'
+import { EventEmitter } from '../../../agent/EventEmitter'
 import { createOutboundMessage } from '../../../agent/helpers'
-import { BasicMessageRecord } from '../repository/BasicMessageRecord'
-import { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import { OutboundMessage } from '../../../types'
+import { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
+import { BasicMessageEventTypes, BasicMessageReceivedEvent } from '../BasicMessageEvents'
 import { BasicMessage } from '../messages'
 import { BasicMessageRepository } from '../repository'
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { BasicMessageEventTypes, BasicMessageReceivedEvent } from '../BasicMessageEvents'
+import { BasicMessageRecord } from '../repository/BasicMessageRecord'
 
 @scoped(Lifecycle.ContainerScoped)
 export class BasicMessageService {

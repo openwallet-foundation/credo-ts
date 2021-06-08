@@ -1,9 +1,10 @@
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { Repository } from '../../../storage/Repository'
-import { CredentialRecord } from './CredentialRecord'
 import { StorageService } from '../../../storage/StorageService'
 import { Symbols } from '../../../symbols'
+
+import { CredentialRecord } from './CredentialRecord'
 
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialRepository extends Repository<CredentialRecord> {

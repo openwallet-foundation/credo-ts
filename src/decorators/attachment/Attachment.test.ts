@@ -1,4 +1,5 @@
 import { JsonTransformer } from '../..'
+
 import { Attachment } from './Attachment'
 
 const mockJson = {

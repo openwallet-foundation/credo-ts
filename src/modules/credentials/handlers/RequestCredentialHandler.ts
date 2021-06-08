@@ -1,6 +1,6 @@
 import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import { CredentialService } from '../services'
 import { RequestCredentialMessage } from '../messages'
+import { CredentialService } from '../services'
 
 export class RequestCredentialHandler implements Handler {
   private credentialService: CredentialService

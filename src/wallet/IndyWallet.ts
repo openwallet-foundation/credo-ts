@@ -1,5 +1,5 @@
-import { Lifecycle, scoped } from 'tsyringe'
 import type {
+  default as Indy,
   Did,
   DidConfig,
   LedgerRequest,
@@ -11,15 +11,16 @@ import type {
   WalletRecordOptions,
   WalletSearchOptions,
 } from 'indy-sdk'
-import type Indy from 'indy-sdk'
+import { Lifecycle, scoped } from 'tsyringe'
 
-import { UnpackedMessageContext } from '../types'
-import { isIndyError } from '../utils/indyError'
-import { Wallet, DidInfo } from './Wallet'
-import { JsonEncoder } from '../utils/JsonEncoder'
 import { AgentConfig } from '../agent/AgentConfig'
-import { Logger } from '../logger'
 import { AriesFrameworkError } from '../error'
+import { Logger } from '../logger'
+import { UnpackedMessageContext } from '../types'
+import { JsonEncoder } from '../utils/JsonEncoder'
+import { isIndyError } from '../utils/indyError'
+
+import { Wallet, DidInfo } from './Wallet'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyWallet implements Wallet {

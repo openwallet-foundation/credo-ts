@@ -1,7 +1,7 @@
+import { getMockConnection } from '../../__tests__/helpers'
 import testLogger from '../../__tests__/logger'
 import { ConnectionInvitationMessage, ConnectionRole, DidDoc, IndyAgentService } from '../../modules/connections'
 import { TransportService } from '../TransportService'
-import { getMockConnection } from '../../__tests__/helpers'
 
 const logger = testLogger
 

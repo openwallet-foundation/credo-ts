@@ -1,8 +1,9 @@
 import { Equals, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { ConnectionMessageType } from './ConnectionMessageType'
 import { TimingDecorator } from '../../../decorators/timing/TimingDecorator'
+
+import { ConnectionMessageType } from './ConnectionMessageType'
 
 export interface TrustPingResponseMessageOptions {
   comment?: string

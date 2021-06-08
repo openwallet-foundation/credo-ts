@@ -2,6 +2,7 @@ import { Expose, Type } from 'class-transformer'
 import { Equals, ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+
 import { IssueCredentialMessageType } from './IssueCredentialMessageType'
 
 export interface CredentialPreviewOptions {

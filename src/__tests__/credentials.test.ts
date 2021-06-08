@@ -1,5 +1,15 @@
 import { Subject } from 'rxjs'
-import { Agent, ConnectionRecord } from '..'
+
+import { Agent } from '../agent/Agent'
+import { ConnectionRecord } from '../modules/connections'
+import {
+  CredentialRecord,
+  CredentialState,
+  CredentialPreview,
+  CredentialPreviewAttribute,
+} from '../modules/credentials'
+import { JsonTransformer } from '../utils/JsonTransformer'
+
 import {
   ensurePublicDidIsOnLedger,
   makeConnection,
@@ -11,14 +21,6 @@ import {
   genesisPath,
   getBaseConfig,
 } from './helpers'
-import {
-  CredentialRecord,
-  CredentialState,
-  CredentialPreview,
-  CredentialPreviewAttribute,
-} from '../modules/credentials'
-import { JsonTransformer } from '../utils/JsonTransformer'
-
 import testLogger from './logger'
 
 const faberConfig = getBaseConfig('Faber Credentials', {

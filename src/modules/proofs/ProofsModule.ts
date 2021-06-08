@@ -1,21 +1,22 @@
 import { Lifecycle, scoped } from 'tsyringe'
 
-import { createOutboundMessage } from '../../agent/helpers'
-import { MessageSender } from '../../agent/MessageSender'
-import { ConnectionService } from '../connections'
-import { ProofService } from './services'
-import { ProofRecord } from './repository/ProofRecord'
-import { ProofRequest } from './models/ProofRequest'
-import { PresentationPreview } from './messages'
-import { RequestedCredentials } from './models'
 import { Dispatcher } from '../../agent/Dispatcher'
+import { MessageSender } from '../../agent/MessageSender'
+import { createOutboundMessage } from '../../agent/helpers'
+import { AriesFrameworkError } from '../../error'
+import { ConnectionService } from '../connections'
+
 import {
   ProposePresentationHandler,
   RequestPresentationHandler,
   PresentationAckHandler,
   PresentationHandler,
 } from './handlers'
-import { AriesFrameworkError } from '../../error'
+import { PresentationPreview } from './messages'
+import { RequestedCredentials } from './models'
+import { ProofRequest } from './models/ProofRequest'
+import { ProofRecord } from './repository/ProofRecord'
+import { ProofService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ProofsModule {

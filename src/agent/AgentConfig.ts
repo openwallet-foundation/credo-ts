@@ -1,5 +1,6 @@
 import { ConsoleLogger, Logger, LogLevel } from '../logger'
 import { InitConfig, InboundConnection, DidCommMimeType } from '../types'
+
 import { DID_COMM_TRANSPORT_QUEUE } from './TransportService'
 
 export class AgentConfig {

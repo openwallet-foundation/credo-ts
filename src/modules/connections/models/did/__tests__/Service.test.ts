@@ -1,4 +1,5 @@
 import { classToPlain, plainToClass } from 'class-transformer'
+
 import { Service, ServiceTransformer, serviceTypes, IndyAgentService, DidCommService } from '../service'
 
 describe('Did | Service', () => {

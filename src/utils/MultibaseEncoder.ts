@@ -1,6 +1,7 @@
 import multibase from 'multibase'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 import { Buffer } from './buffer'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 
 export type BaseName = multibase.BaseName
 

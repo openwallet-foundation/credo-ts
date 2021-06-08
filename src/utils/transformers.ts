@@ -1,4 +1,5 @@
 import { Transform, TransformationType } from 'class-transformer'
+
 import { JsonTransformer } from './JsonTransformer'
 
 /**

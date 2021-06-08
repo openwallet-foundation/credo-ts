@@ -1,5 +1,5 @@
-import { IsInt, IsPositive, IsString } from 'class-validator'
 import { Expose } from 'class-transformer'
+import { IsInt, IsPositive, IsString } from 'class-validator'
 
 export class ProofAttribute {
   public constructor(options: ProofAttribute) {

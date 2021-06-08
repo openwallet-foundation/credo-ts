@@ -1,9 +1,10 @@
-import { Equals, ValidateNested } from 'class-validator'
 import { Type, Expose } from 'class-transformer'
+import { Equals, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { ConnectionMessageType } from './ConnectionMessageType'
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
+
+import { ConnectionMessageType } from './ConnectionMessageType'
 
 export interface ConnectionResponseMessageOptions {
   id?: string

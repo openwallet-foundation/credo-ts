@@ -1,8 +1,9 @@
-import { signData, unpackAndVerifySignatureDecorator } from './SignatureDecoratorUtils'
-import { IndyWallet } from '../../wallet/IndyWallet'
-import { SignatureDecorator } from './SignatureDecorator'
-import { AgentConfig } from '../../agent/AgentConfig'
 import { getBaseConfig } from '../../__tests__/helpers'
+import { AgentConfig } from '../../agent/AgentConfig'
+import { IndyWallet } from '../../wallet/IndyWallet'
+
+import { SignatureDecorator } from './SignatureDecorator'
+import { signData, unpackAndVerifySignatureDecorator } from './SignatureDecoratorUtils'
 
 jest.mock('../../utils/timestamp', () => {
   return {

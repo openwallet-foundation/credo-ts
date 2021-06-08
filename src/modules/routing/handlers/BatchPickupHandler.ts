@@ -1,7 +1,7 @@
 import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import { MessagePickupService } from '../services'
-import { BatchPickupMessage } from '../messages'
 import { AriesFrameworkError } from '../../../error'
+import { BatchPickupMessage } from '../messages'
+import { MessagePickupService } from '../services'
 
 export class BatchPickupHandler implements Handler {
   private messagePickupService: MessagePickupService

@@ -1,11 +1,12 @@
-import { OutboundTransporter } from './OutboundTransporter'
 import { Agent } from '../agent/Agent'
 import { TransportSession } from '../agent/TransportService'
 import { Logger } from '../logger'
 import { ConnectionRecord } from '../modules/connections'
-import { OutboundPackage } from '../types'
 import { Symbols } from '../symbols'
+import { OutboundPackage } from '../types'
 import { WebSocket } from '../utils/ws'
+
+import { OutboundTransporter } from './OutboundTransporter'
 
 export class WebSocketTransportSession implements TransportSession {
   public readonly type = 'websocket'

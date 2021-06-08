@@ -1,5 +1,5 @@
-import type Indy from 'indy-sdk'
 import type {
+  default as Indy,
   CredDef,
   Schema,
   Cred,

@@ -1,19 +1,24 @@
-import { Verkey } from 'indy-sdk'
 import { validateOrReject } from 'class-validator'
+import { Verkey } from 'indy-sdk'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { ConnectionRecord, ConnectionTags } from '../repository/ConnectionRecord'
-import { ConnectionRepository } from '../repository'
+import { AgentMessage } from '../../../agent/AgentMessage'
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
+import { AriesFrameworkError } from '../../../error'
+import { Symbols } from '../../../symbols'
+import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { Wallet } from '../../../wallet/Wallet'
+import { AckMessage } from '../../common'
+import { ConnectionEventTypes, ConnectionStateChangedEvent } from '../ConnectionEvents'
 import {
   ConnectionInvitationMessage,
   ConnectionRequestMessage,
   ConnectionResponseMessage,
   TrustPingMessage,
 } from '../messages'
-import { AckMessage } from '../../common'
-import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import {
   Connection,
   ConnectionState,
@@ -25,13 +30,8 @@ import {
   DidCommService,
   IndyAgentService,
 } from '../models'
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { Symbols } from '../../../symbols'
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { ConnectionEventTypes, ConnectionStateChangedEvent } from '../ConnectionEvents'
-import { AriesFrameworkError } from '../../../error'
+import { ConnectionRepository } from '../repository'
+import { ConnectionRecord, ConnectionTags } from '../repository/ConnectionRecord'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ConnectionService {

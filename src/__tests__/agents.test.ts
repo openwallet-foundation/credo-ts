@@ -1,7 +1,9 @@
 import { Subject } from 'rxjs'
+
 import { Agent } from '..'
-import { SubjectInboundTransporter, SubjectOutboundTransporter, waitForBasicMessage, getBaseConfig } from './helpers'
 import { ConnectionRecord } from '../modules/connections'
+
+import { SubjectInboundTransporter, SubjectOutboundTransporter, waitForBasicMessage, getBaseConfig } from './helpers'
 
 const aliceConfig = getBaseConfig('Agents Alice')
 const bobConfig = getBaseConfig('Agents Bob')

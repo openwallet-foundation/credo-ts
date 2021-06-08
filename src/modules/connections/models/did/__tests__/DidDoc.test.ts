@@ -1,7 +1,7 @@
 import { classToPlain, plainToClass } from 'class-transformer'
 
-import { ReferencedAuthentication, EmbeddedAuthentication } from '../authentication'
 import { DidDoc } from '../DidDoc'
+import { ReferencedAuthentication, EmbeddedAuthentication } from '../authentication'
 import { Ed25119Sig2018, EddsaSaSigSecp256k1, RsaSig2018 } from '../publicKey'
 import { Service, IndyAgentService, DidCommService } from '../service'
 
