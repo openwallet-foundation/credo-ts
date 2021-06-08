@@ -5,7 +5,7 @@ import { CredentialPreviewAttribute } from '../messages/CredentialPreview'
  * Sample test cases for encoding/decoding of verifiable credential claims - Aries RFCs 0036 and 0037
  * @see https://gist.github.com/swcurran/78e5a9e8d11236f003f6a6263c6619a6
  */
-const testEncodings: { [key: string]: { raw: any; encoded: string } } = {
+const testEncodings: { [key: string]: { raw: string | number | boolean | null; encoded: string } } = {
   address2: {
     raw: '101 Wilson Lane',
     encoded: '68086943237164982734333428280784300550565381723532936263016368251445461241953',
@@ -201,7 +201,9 @@ describe('CredentialUtils', () => {
 
   describe('checkValidEncoding', () => {
     // Formatted for test.each
-    const testEntries = Object.entries(testEncodings).map(([name, { raw, encoded }]) => [name, raw, encoded])
+    const testEntries = Object.entries(testEncodings).map(
+      ([name, { raw, encoded }]) => [name, raw, encoded] as [string, string | number | boolean | null, string]
+    )
 
     test.each(testEntries)('returns true for valid encoding %s', (_, raw, encoded) => {
       expect(CredentialUtils.checkValidEncoding(raw, encoded)).toEqual(true)

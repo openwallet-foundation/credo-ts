@@ -74,7 +74,10 @@ export function handleIndyError(error: IndyError) {
   })
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isIndyError(error: any, errorName?: IndyErrorValues): error is IndyError {
+  if (typeof error !== 'object' || error === null) return false
+
   const indyError = error.name === 'IndyError'
 
   // if no specific indy error name is passed

@@ -31,7 +31,6 @@ class HttpInboundTransporter implements InboundTransporter {
 }
 
 class StorageOutboundTransporter implements OutboundTransporter {
-  public messages: { [key: string]: any } = {}
   private messageRepository: MessageRepository
 
   public supportedSchemes = []
@@ -112,11 +111,6 @@ app.get('/api/routes', async (req, res) => {
   // TODO This endpoint is for testing purpose only. Return mediator connection by their verkey.
   const routes = agent.routing.getRoutingTable()
   res.send(routes)
-})
-
-app.get('/api/messages', async (req, res) => {
-  // TODO This endpoint is for testing purpose only.
-  res.send(messageSender.messages)
 })
 
 app.listen(PORT, async () => {

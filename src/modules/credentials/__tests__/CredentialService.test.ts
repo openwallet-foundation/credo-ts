@@ -6,7 +6,7 @@ import { Attachment, AttachmentData } from '../../../decorators/attachment/Attac
 import { RecordNotFoundError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { AckStatus } from '../../common'
-import { ConnectionState } from '../../connections'
+import { ConnectionService, ConnectionState } from '../../connections'
 import { StoreCredentialOptions } from '../../indy'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
@@ -145,7 +145,7 @@ describe('CredentialService', () => {
 
     credentialService = new CredentialService(
       credentialRepository,
-      { getById: () => Promise.resolve(connection) } as any,
+      { getById: () => Promise.resolve(connection) } as unknown as ConnectionService,
       ledgerService,
       new AgentConfig(getBaseConfig('CredentialServiceTest')),
       indyIssuerService,

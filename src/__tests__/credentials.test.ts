@@ -88,6 +88,7 @@ describe('credentials', () => {
     credDefId = credentialDefinition.id
 
     const publicDid = faberAgent.publicDid?.did
+
     await ensurePublicDidIsOnLedger(faberAgent, publicDid!)
     const { agentAConnection, agentBConnection } = await makeConnection(faberAgent, aliceAgent)
     faberConnection = agentAConnection

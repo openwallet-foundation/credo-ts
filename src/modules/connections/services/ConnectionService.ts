@@ -224,8 +224,14 @@ export class ConnectionService {
 
     const connectionJson = JsonTransformer.toJSON(connection)
 
+    const { threadId } = connectionRecord.tags
+
+    if (!threadId) {
+      throw new AriesFrameworkError(`Connection record with id ${connectionId} does not have a thread id`)
+    }
+
     const connectionResponse = new ConnectionResponseMessage({
-      threadId: connectionRecord.tags.threadId!,
+      threadId,
       connectionSig: await signData(connectionJson, this.wallet, connectionRecord.verkey),
     })
 

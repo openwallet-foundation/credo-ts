@@ -38,6 +38,7 @@ module.exports = {
       files: ['*.test.*'],
       rules: {
         'no-console': 'off',
+        '@typescript-eslint/no-non-null-assertion': 'off',
       },
     },
     {

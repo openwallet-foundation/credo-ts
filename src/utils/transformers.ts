@@ -11,6 +11,7 @@ import { JsonTransformer } from './JsonTransformer'
  *   private services: Record<string, Service>;
  * }
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function RecordTransformer<T>(Class: { new (...args: any[]): T }) {
   return Transform(({ value, type }) => {
     switch (type) {

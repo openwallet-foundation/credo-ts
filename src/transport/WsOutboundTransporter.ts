@@ -77,6 +77,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
 
   // NOTE: Because this method is passed to the event handler this must be a lambda method
   // so 'this' is scoped to the 'WsOutboundTransporter' class instance
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private handleMessageEvent = (event: any) => {
     this.logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
     this.agent.receiveMessage(JSON.parse(event.data))

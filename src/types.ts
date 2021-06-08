@@ -6,6 +6,7 @@ import { Logger } from './logger'
 import { ConnectionRecord } from './modules/connections'
 import { FileSystem } from './storage/fs/FileSystem'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type $FixMe = any
 
 export type WireMessage = $FixMe

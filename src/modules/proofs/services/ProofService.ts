@@ -482,7 +482,7 @@ export class ProofService {
     // Create message
     const ackMessage = new PresentationAckMessage({
       status: AckStatus.OK,
-      threadId: proofRecord.tags.threadId!,
+      threadId: proofRecord.tags.threadId,
     })
 
     // Update record

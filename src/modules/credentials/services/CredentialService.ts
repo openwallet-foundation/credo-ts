@@ -615,7 +615,7 @@ export class CredentialService {
     // Create message
     const ackMessage = new CredentialAckMessage({
       status: AckStatus.OK,
-      threadId: credentialRecord.tags.threadId!,
+      threadId: credentialRecord.tags.threadId,
     })
 
     await this.updateState(credentialRecord, CredentialState.Done)

@@ -7,7 +7,6 @@ import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { ConnectionService, ConnectionState, ConnectionInvitationMessage } from '../connections'
 

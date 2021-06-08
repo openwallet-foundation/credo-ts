@@ -3,7 +3,6 @@ import testLogger from '../../__tests__/logger'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { ConnectionRecord } from '../../modules/connections'
 import { OutboundTransporter } from '../../transport'
-import { OutboundPackage } from '../../types'
 import { AgentMessage } from '../AgentMessage'
 import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { MessageSender } from '../MessageSender'
@@ -19,11 +18,14 @@ class DummyOutboundTransporter implements OutboundTransporter {
   public start(): Promise<void> {
     throw new Error('Method not implemented.')
   }
+
   public stop(): Promise<void> {
     throw new Error('Method not implemented.')
   }
+
   public supportedSchemes: string[] = []
-  public sendMessage(outboundPackage: OutboundPackage): Promise<any> {
+
+  public sendMessage() {
     return Promise.resolve()
   }
 }

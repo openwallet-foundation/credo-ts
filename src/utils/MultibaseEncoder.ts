@@ -1,8 +1,5 @@
 import multibase from 'multibase'
 
-import { Buffer } from './buffer'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-
 export type BaseName = multibase.BaseName
 
 export class MultibaseEncoder {
