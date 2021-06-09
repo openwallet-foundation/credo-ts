@@ -1,21 +1,20 @@
-import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { AgentMessage } from '../../../agent/AgentMessage'
-import type { EventEmitter } from '../../../agent/EventEmitter'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { Wallet } from '../../../wallet/Wallet'
 import type { AckMessage } from '../../common'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
-import type { ConnectionRepository } from '../repository'
 import type { ConnectionTags } from '../repository/ConnectionRecord'
 import type { Verkey } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
+import { AgentConfig } from '../../../agent/AgentConfig'
+import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { Wallet } from '../../../wallet/Wallet'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import {
   ConnectionInvitationMessage,
@@ -34,6 +33,7 @@ import {
   DidCommService,
   IndyAgentService,
 } from '../models'
+import { ConnectionRepository } from '../repository'
 import { ConnectionRecord } from '../repository/ConnectionRecord'
 
 @scoped(Lifecycle.ContainerScoped)

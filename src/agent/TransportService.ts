@@ -1,10 +1,10 @@
-import type { Logger } from '../logger'
 import type { ConnectionRecord } from '../modules/connections/repository'
 
 import { Lifecycle, scoped, inject } from 'tsyringe'
 
 import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
+import { Logger } from '../logger'
 import { ConnectionRole } from '../modules/connections/models'
 
 @scoped(Lifecycle.ContainerScoped)

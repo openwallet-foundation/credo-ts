@@ -1,15 +1,14 @@
-import type { Dispatcher } from '../../agent/Dispatcher'
-import type { MessageSender } from '../../agent/MessageSender'
-import type { ConnectionService } from '../connections'
 import type { PresentationPreview } from './messages'
 import type { RequestedCredentials } from './models'
 import type { ProofRecord } from './repository/ProofRecord'
-import type { ProofService } from './services'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
+import { Dispatcher } from '../../agent/Dispatcher'
+import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
+import { ConnectionService } from '../connections'
 
 import {
   ProposePresentationHandler,
@@ -18,6 +17,7 @@ import {
   PresentationHandler,
 } from './handlers'
 import { ProofRequest } from './models/ProofRequest'
+import { ProofService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ProofsModule {

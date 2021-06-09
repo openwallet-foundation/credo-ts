@@ -1,6 +1,6 @@
-import type { PublicKey } from '../publicKey/PublicKey'
-
 import { IsNotEmpty, ValidateNested } from 'class-validator'
+
+import { PublicKey } from '../publicKey/PublicKey'
 
 import { Authentication } from './Authentication'
 

@@ -1,4 +1,3 @@
-import type { MessageRepository } from '../../../storage/MessageRepository'
 import type { InboundConnection } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 
@@ -7,6 +6,7 @@ import { inject, scoped, Lifecycle } from 'tsyringe'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
+import { MessageRepository } from '../../../storage/MessageRepository'
 import { BatchMessage, BatchMessageMessage, BatchPickupMessage } from '../messages'
 
 @scoped(Lifecycle.ContainerScoped)

@@ -1,12 +1,13 @@
-import type { Dispatcher } from '../../agent/Dispatcher'
-import type { MessageSender } from '../../agent/MessageSender'
 import type { ConnectionRecord } from '../connections'
-import type { BasicMessageService } from './services'
 import type { WalletQuery } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
+import { Dispatcher } from '../../agent/Dispatcher'
+import { MessageSender } from '../../agent/MessageSender'
+
 import { BasicMessageHandler } from './handlers'
+import { BasicMessageService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
 export class BasicMessagesModule {

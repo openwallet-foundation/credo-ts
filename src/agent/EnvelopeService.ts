@@ -1,12 +1,13 @@
 import type { Logger } from '../logger'
 import type { OutboundMessage, UnpackedMessageContext } from '../types'
-import type { Wallet } from '../wallet/Wallet'
-import type { AgentConfig } from './AgentConfig'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { InjectionSymbols } from '../constants'
 import { ForwardMessage } from '../modules/routing/messages'
+import { Wallet } from '../wallet/Wallet'
+
+import { AgentConfig } from './AgentConfig'
 
 @scoped(Lifecycle.ContainerScoped)
 class EnvelopeService {

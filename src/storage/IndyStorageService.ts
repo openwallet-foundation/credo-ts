@@ -1,4 +1,3 @@
-import type { Wallet } from '../wallet/Wallet'
 import type { BaseRecord } from './BaseRecord'
 import type { StorageService, BaseRecordConstructor } from './StorageService'
 import type { WalletQuery, WalletRecord } from 'indy-sdk'
@@ -9,6 +8,7 @@ import { InjectionSymbols } from '../constants'
 import { RecordNotFoundError, RecordDuplicateError } from '../error'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { handleIndyError, isIndyError } from '../utils/indyError'
+import { Wallet } from '../wallet/Wallet'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyStorageService<T extends BaseRecord> implements StorageService<T> {

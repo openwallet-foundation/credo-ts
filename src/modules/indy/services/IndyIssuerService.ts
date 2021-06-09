@@ -1,5 +1,3 @@
-import type { FileSystem } from '../../../storage/fs/FileSystem'
-import type { IndyWallet } from '../../../wallet/IndyWallet'
 import type {
   default as Indy,
   CredDef,
@@ -16,7 +14,9 @@ import type {
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { InjectionSymbols } from '../../../constants'
+import { FileSystem } from '../../../storage/fs/FileSystem'
 import { getDirFromFilePath } from '../../../utils/path'
+import { IndyWallet } from '../../../wallet/IndyWallet'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyIssuerService {

@@ -1,11 +1,11 @@
-import type { Logger } from '../../../logger'
-import type { ProvisioningRepository } from '../repository'
 import type { Verkey } from 'indy-sdk'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { InjectionSymbols } from '../../../constants'
 import { RecordNotFoundError } from '../../../error'
+import { Logger } from '../../../logger'
+import { ProvisioningRepository } from '../repository'
 import { ProvisioningRecord } from '../repository/ProvisioningRecord'
 
 const UNIQUE_PROVISIONING_ID = 'UNIQUE_PROVISIONING_ID'

@@ -1,11 +1,13 @@
-import type { Wallet } from '../../wallet/Wallet'
-import type { LedgerService, SchemaTemplate, CredentialDefinitionTemplate } from './services'
+import type { SchemaTemplate, CredentialDefinitionTemplate } from './services'
 import type { CredDefId, Did, SchemaId } from 'indy-sdk'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
+import { Wallet } from '../../wallet/Wallet'
+
+import { LedgerService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
 export class LedgerModule {

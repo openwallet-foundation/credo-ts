@@ -13,7 +13,7 @@
   },
   "scripts": {
     "compile": "tsc",
-    "lint": "eslint --ignore-path .gitignore .",
+    "lint": "eslint .",
     "prettier": "prettier --ignore-path .gitignore '**/*.+(js|json|ts|md|yml|yaml)'",
     "format": "yarn prettier --write",
     "check-format": "yarn prettier --list-different",

@@ -1,9 +1,8 @@
-import type { StorageService } from '../../../storage/StorageService'
-
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { InjectionSymbols } from '../../../constants'
 import { Repository } from '../../../storage/Repository'
+import { StorageService } from '../../../storage/StorageService'
 
 import { ProofRecord } from './ProofRecord'
 

@@ -1,14 +1,15 @@
 import type { OutboundMessage, OutboundPackage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { Handler } from './Handler'
-import type { MessageSender } from './MessageSender'
-import type { TransportService } from './TransportService'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
+
+import { MessageSender } from './MessageSender'
+import { TransportService } from './TransportService'
 
 @scoped(Lifecycle.ContainerScoped)
 class Dispatcher {

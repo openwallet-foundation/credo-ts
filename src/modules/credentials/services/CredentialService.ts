@@ -1,23 +1,23 @@
-import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { AgentMessage } from '../../../agent/AgentMessage'
-import type { EventEmitter } from '../../../agent/EventEmitter'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
-import type { ConnectionService, ConnectionRecord } from '../../connections'
-import type { IndyIssuerService, IndyHolderService } from '../../indy'
-import type { LedgerService } from '../../ledger/services/LedgerService'
+import type { ConnectionRecord } from '../../connections'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialPreview, ProposeCredentialMessageOptions } from '../messages'
-import type { CredentialRepository } from '../repository'
 import type { CredDefId } from 'indy-sdk'
 
 import { scoped, Lifecycle } from 'tsyringe'
 
+import { AgentConfig } from '../../../agent/AgentConfig'
+import { EventEmitter } from '../../../agent/EventEmitter'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { uuid } from '../../../utils/uuid'
 import { AckStatus } from '../../common'
+import { ConnectionService } from '../../connections'
+import { IndyIssuerService, IndyHolderService } from '../../indy'
+import { LedgerService } from '../../ledger/services/LedgerService'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
@@ -31,6 +31,7 @@ import {
   INDY_CREDENTIAL_ATTACHMENT_ID,
   ProposeCredentialMessage,
 } from '../messages'
+import { CredentialRepository } from '../repository'
 import { CredentialRecord } from '../repository/CredentialRecord'
 
 @scoped(Lifecycle.ContainerScoped)

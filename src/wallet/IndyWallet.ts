@@ -1,4 +1,3 @@
-import type { AgentConfig } from '../agent/AgentConfig'
 import type { Logger } from '../logger'
 import type { UnpackedMessageContext } from '../types'
 import type { Wallet, DidInfo } from './Wallet'
@@ -18,6 +17,7 @@ import type {
 
 import { Lifecycle, scoped } from 'tsyringe'
 
+import { AgentConfig } from '../agent/AgentConfig'
 import { AriesFrameworkError } from '../error'
 import { JsonEncoder } from '../utils/JsonEncoder'
 import { isIndyError } from '../utils/indyError'

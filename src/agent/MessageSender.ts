@@ -1,13 +1,14 @@
-import type { Logger } from '../logger'
 import type { OutboundTransporter } from '../transport/OutboundTransporter'
 import type { OutboundMessage, OutboundPackage } from '../types'
-import type { EnvelopeService } from './EnvelopeService'
-import type { TransportService } from './TransportService'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
+import { Logger } from '../logger'
+
+import { EnvelopeService } from './EnvelopeService'
+import { TransportService } from './TransportService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MessageSender {
