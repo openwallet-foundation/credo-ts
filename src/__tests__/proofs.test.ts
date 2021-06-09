@@ -1,4 +1,5 @@
 import type { CredDefId } from 'indy-sdk'
+
 import { Subject } from 'rxjs'
 
 import { Agent } from '..'

@@ -1,4 +1,5 @@
 import type { WalletQuery, WalletRecord } from 'indy-sdk'
+
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { RecordNotFoundError, RecordDuplicateError } from '../error'

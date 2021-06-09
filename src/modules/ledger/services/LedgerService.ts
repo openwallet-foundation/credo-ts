@@ -10,6 +10,7 @@ import type {
   LedgerReadReplyResponse,
   LedgerWriteReplyResponse,
 } from 'indy-sdk'
+
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'

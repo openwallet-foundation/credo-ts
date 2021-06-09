@@ -1,4 +1,5 @@
 import type { CredDefId } from 'indy-sdk'
+
 import { scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'

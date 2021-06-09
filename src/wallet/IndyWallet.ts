@@ -11,6 +11,7 @@ import type {
   WalletRecordOptions,
   WalletSearchOptions,
 } from 'indy-sdk'
+
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../agent/AgentConfig'

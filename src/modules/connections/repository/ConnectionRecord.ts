@@ -1,5 +1,6 @@
-import { Type } from 'class-transformer'
 import type { Did, Verkey } from 'indy-sdk'
+
+import { Type } from 'class-transformer'
 
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord, Tags } from '../../../storage/BaseRecord'

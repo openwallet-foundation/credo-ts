@@ -1,4 +1,5 @@
 import type { WalletQuery } from 'indy-sdk'
+
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { EventEmitter } from '../../../agent/EventEmitter'

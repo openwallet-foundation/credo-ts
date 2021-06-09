@@ -1,6 +1,7 @@
+import type { IndyProof } from 'indy-sdk'
+
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsString, ValidateNested, IsOptional } from 'class-validator'
-import type { IndyProof } from 'indy-sdk'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'

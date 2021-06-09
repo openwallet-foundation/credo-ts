@@ -1,5 +1,6 @@
-import { validateOrReject } from 'class-validator'
 import type { IndyProof, Schema, CredDef } from 'indy-sdk'
+
+import { validateOrReject } from 'class-validator'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'

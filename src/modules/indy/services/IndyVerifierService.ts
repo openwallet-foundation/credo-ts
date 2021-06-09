@@ -1,4 +1,5 @@
 import type Indy from 'indy-sdk'
+
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { Symbols } from '../../../symbols'

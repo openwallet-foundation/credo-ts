@@ -1,6 +1,7 @@
+import type { IndyProofRequest } from 'indy-sdk'
+
 import { Expose, Type } from 'class-transformer'
 import { IsString, ValidateNested, IsOptional, IsIn } from 'class-validator'
-import type { IndyProofRequest } from 'indy-sdk'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { RecordTransformer } from '../../../utils/transformers'

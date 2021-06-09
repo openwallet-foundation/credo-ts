@@ -1,4 +1,5 @@
 import type { CredDefId, Did, SchemaId } from 'indy-sdk'
+
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { AriesFrameworkError } from '../../error'

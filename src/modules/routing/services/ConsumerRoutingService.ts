@@ -1,4 +1,5 @@
 import type { Verkey } from 'indy-sdk'
+
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'

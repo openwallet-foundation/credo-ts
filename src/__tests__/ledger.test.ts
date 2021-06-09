@@ -1,6 +1,7 @@
+import type { SchemaId } from 'indy-sdk'
+
 import { promises } from 'fs'
 import indy from 'indy-sdk'
-import type { SchemaId } from 'indy-sdk'
 
 import { Agent } from '..'
 import { DID_IDENTIFIER_REGEX, VERKEY_REGEX, isFullVerkey, isAbbreviatedVerkey } from '../utils/did'

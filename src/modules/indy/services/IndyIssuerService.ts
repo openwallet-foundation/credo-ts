@@ -10,6 +10,7 @@ import type {
   CredValues,
   BlobReaderHandle,
 } from 'indy-sdk'
+
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { FileSystem } from '../../../storage/fs/FileSystem'

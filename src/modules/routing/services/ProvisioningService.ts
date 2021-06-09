@@ -1,4 +1,5 @@
 import type { Verkey } from 'indy-sdk'
+
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { RecordNotFoundError } from '../../../error'

@@ -1,6 +1,7 @@
+import type { Cred } from 'indy-sdk'
+
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsString, ValidateNested } from 'class-validator'
-import type { Cred } from 'indy-sdk'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'

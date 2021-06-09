@@ -1,6 +1,7 @@
+import type { Verkey } from 'indy-sdk'
+
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, ValidateNested, IsString, IsEnum } from 'class-validator'
-import type { Verkey } from 'indy-sdk'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 

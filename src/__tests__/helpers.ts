@@ -1,4 +1,5 @@
 import type { Schema, CredDef, Did } from 'indy-sdk'
+
 import indy from 'indy-sdk'
 import path from 'path'
 import { Subject } from 'rxjs'

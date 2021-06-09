@@ -1,5 +1,6 @@
-import BigNumber from 'bn.js'
 import type { CredValues } from 'indy-sdk'
+
+import BigNumber from 'bn.js'
 import { sha256 } from 'js-sha256'
 
 import { CredentialPreviewAttribute } from './messages/CredentialPreview'
