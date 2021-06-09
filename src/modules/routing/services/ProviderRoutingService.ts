@@ -1,20 +1,14 @@
+import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { OutboundMessage } from '../../../types'
+import type { ConnectionRecord } from '../../connections'
+import type { KeylistUpdateMessage, ForwardMessage } from '../messages'
 import type { Verkey } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { createOutboundMessage } from '../../../agent/helpers'
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { AriesFrameworkError } from '../../../error'
-import { OutboundMessage } from '../../../types'
-import { ConnectionRecord } from '../../connections'
-import {
-  KeylistUpdateMessage,
-  KeylistUpdateAction,
-  ForwardMessage,
-  KeylistUpdated,
-  KeylistUpdateResponseMessage,
-  KeylistUpdateResult,
-} from '../messages'
+import { KeylistUpdateAction, KeylistUpdated, KeylistUpdateResponseMessage, KeylistUpdateResult } from '../messages'
 
 export interface RoutingTable {
   [recipientKey: string]: ConnectionRecord | undefined

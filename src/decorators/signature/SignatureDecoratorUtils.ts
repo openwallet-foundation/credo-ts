@@ -1,3 +1,4 @@
+import type { Wallet } from '../../wallet/Wallet'
 import type { Verkey } from 'indy-sdk'
 
 import { AriesFrameworkError } from '../../error'
@@ -5,7 +6,6 @@ import { BufferEncoder } from '../../utils/BufferEncoder'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { Buffer } from '../../utils/buffer'
 import timestamp from '../../utils/timestamp'
-import { Wallet } from '../../wallet/Wallet'
 
 import { SignatureDecorator } from './SignatureDecorator'
 

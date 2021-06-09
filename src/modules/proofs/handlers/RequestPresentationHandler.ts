@@ -1,6 +1,7 @@
-import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { ProofService } from '../services'
+
 import { RequestPresentationMessage } from '../messages'
-import { ProofService } from '../services'
 
 export class RequestPresentationHandler implements Handler {
   private proofService: ProofService

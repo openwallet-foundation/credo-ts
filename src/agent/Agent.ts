@@ -1,6 +1,16 @@
-import { container as baseContainer, DependencyContainer } from 'tsyringe'
+import type { Logger } from '../logger'
+import type { MessageRepository } from '../storage/MessageRepository'
+import type { InboundTransporter } from '../transport/InboundTransporter'
+import type { OutboundTransporter } from '../transport/OutboundTransporter'
+import type { InitConfig } from '../types'
+import type { Wallet } from '../wallet/Wallet'
+import type { AgentMessageReceivedEvent } from './Events'
+import type { TransportSession } from './TransportService'
+import type { DependencyContainer } from 'tsyringe'
 
-import { Logger } from '../logger'
+import { container as baseContainer } from 'tsyringe'
+
+import { InjectionSymbols } from '../constants'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
@@ -9,20 +19,13 @@ import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { RoutingModule } from '../modules/routing/RoutingModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
-import { MessageRepository } from '../storage/MessageRepository'
-import { Symbols } from '../symbols'
-import { InboundTransporter } from '../transport/InboundTransporter'
-import { OutboundTransporter } from '../transport/OutboundTransporter'
-import { InitConfig } from '../types'
 import { IndyWallet } from '../wallet/IndyWallet'
-import { Wallet } from '../wallet/Wallet'
 
 import { AgentConfig } from './AgentConfig'
 import { EventEmitter } from './EventEmitter'
-import { AgentEventTypes, AgentMessageReceivedEvent } from './Events'
+import { AgentEventTypes } from './Events'
 import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
-import { TransportSession } from './TransportService'
 
 export class Agent {
   protected agentConfig: AgentConfig
@@ -53,19 +56,19 @@ export class Agent {
     this.container.registerInstance(AgentConfig, this.agentConfig)
 
     // Based on interfaces. Need to register which class to use
-    this.container.registerInstance(Symbols.Logger, this.logger)
-    this.container.registerInstance(Symbols.Indy, this.agentConfig.indy)
-    this.container.register(Symbols.Wallet, { useToken: IndyWallet })
-    this.container.registerSingleton(Symbols.StorageService, IndyStorageService)
+    this.container.registerInstance(InjectionSymbols.Logger, this.logger)
+    this.container.registerInstance(InjectionSymbols.Indy, this.agentConfig.indy)
+    this.container.register(InjectionSymbols.Wallet, { useToken: IndyWallet })
+    this.container.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
 
     // File system differs based on NodeJS / React Native
-    this.container.registerInstance(Symbols.FileSystem, this.agentConfig.fileSystem)
+    this.container.registerInstance(InjectionSymbols.FileSystem, this.agentConfig.fileSystem)
 
     // TODO: do not make messageRepository input parameter
     if (messageRepository) {
-      this.container.registerInstance(Symbols.MessageRepository, messageRepository)
+      this.container.registerInstance(InjectionSymbols.MessageRepository, messageRepository)
     } else {
-      this.container.registerSingleton(Symbols.MessageRepository, InMemoryMessageRepository)
+      this.container.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
     }
 
     this.logger.info('Creating agent with config', {
@@ -80,7 +83,7 @@ export class Agent {
     this.eventEmitter = this.container.resolve(EventEmitter)
     this.messageSender = this.container.resolve(MessageSender)
     this.messageReceiver = this.container.resolve(MessageReceiver)
-    this.wallet = this.container.resolve(Symbols.Wallet)
+    this.wallet = this.container.resolve(InjectionSymbols.Wallet)
 
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.container.resolve(ConnectionsModule)

@@ -1,9 +1,11 @@
+import type { Tags } from '../../../storage/BaseRecord'
+import type { CredentialState } from '../CredentialState'
+
 import { Type } from 'class-transformer'
 
 import { AriesFrameworkError } from '../../../error'
-import { BaseRecord, Tags } from '../../../storage/BaseRecord'
+import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { CredentialState } from '../CredentialState'
 import {
   ProposeCredentialMessage,
   IssueCredentialMessage,

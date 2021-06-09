@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { DidConfig, WalletRecordOptions, WalletRecord, WalletQuery, LedgerRequest } from 'indy-sdk'
 
-import { UnpackedMessageContext } from '../../../types'
-import { Wallet } from '../../../wallet/Wallet'
+import type { UnpackedMessageContext } from '../../../types'
+import type { Wallet } from '../../../wallet/Wallet'
+import type { DidConfig, WalletRecordOptions, WalletRecord, WalletQuery, LedgerRequest } from 'indy-sdk'
 
 export class StubWallet implements Wallet {
   public get walletHandle() {

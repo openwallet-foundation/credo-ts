@@ -1,9 +1,10 @@
 import { Transform } from 'class-transformer'
-import { Equals, IsString, ValidateIf, IsArray, IsOptional } from 'class-validator'
+import { Equals, IsString, ValidateIf, IsArray, IsOptional, validateOrReject } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { AriesFrameworkError } from '../../../error'
-import { decodeInvitationFromUrl, encodeInvitationToUrl } from '../../../helpers'
+import { JsonEncoder } from '../../../utils/JsonEncoder'
+import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 
 import { ConnectionMessageType } from './ConnectionMessageType'
@@ -86,12 +87,38 @@ export class ConnectionInvitationMessage extends AgentMessage {
   @ValidateIf((o: ConnectionInvitationMessage) => o.did === undefined)
   public routingKeys?: string[]
 
-  public toUrl(domain?: string) {
-    return encodeInvitationToUrl(this, domain)
+  /**
+   * Create an invitation url from this instance
+   *
+   * @param domain domain name to use for invitation url
+   * @returns invitation url with base64 encoded invitation
+   */
+  public toUrl(domain = 'https://example.com/ssi') {
+    const invitationJson = this.toJSON()
+    const encodedInvitation = JsonEncoder.toBase64URL(invitationJson)
+    const invitationUrl = `${domain}?c_i=${encodedInvitation}`
+
+    return invitationUrl
   }
 
+  /**
+   * Create a `ConnectionInvitationMessage` instance from the `c_i` parameter of an URL
+   *
+   * @param invitationUrl invitation url containing c_i parameter
+   *
+   * @throws Error when url can not be decoded to JSON, or decoded message is not a valid `ConnectionInvitationMessage`
+   */
   public static async fromUrl(invitationUrl: string) {
-    return decodeInvitationFromUrl(invitationUrl)
+    // TODO: properly extract c_i param from invitation URL
+    const [, encodedInvitation] = invitationUrl.split('c_i=')
+    const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
+
+    const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
+
+    // TODO: should validation happen here?
+    await validateOrReject(invitation)
+
+    return invitation
   }
 }
 

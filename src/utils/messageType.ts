@@ -1,4 +1,4 @@
-import { UnpackedMessage } from '../types'
+import type { UnpackedMessage } from '../types'
 
 export function replaceLegacyDidSovPrefixOnMessage(message: UnpackedMessage) {
   message['@type'] = replaceLegacyDidSovPrefix(message['@type'])

@@ -1,16 +1,16 @@
+import type { IndyWallet } from '../../../wallet/IndyWallet'
 import type Indy from 'indy-sdk'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
-import { Symbols } from '../../../symbols'
-import { IndyWallet } from '../../../wallet/IndyWallet'
+import { InjectionSymbols } from '../../../constants'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyVerifierService {
   private indy: typeof Indy
   private indyWallet: IndyWallet
 
-  public constructor(@inject(Symbols.Indy) indy: typeof Indy, indyWallet: IndyWallet) {
+  public constructor(@inject(InjectionSymbols.Indy) indy: typeof Indy, indyWallet: IndyWallet) {
     this.indy = indy
     this.indyWallet = indyWallet
   }

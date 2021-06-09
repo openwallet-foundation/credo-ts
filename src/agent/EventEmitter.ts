@@ -1,7 +1,7 @@
+import type { BaseEvent } from './Events'
+
 import { EventEmitter as NativeEventEmitter } from 'events'
 import { Lifecycle, scoped } from 'tsyringe'
-
-import { BaseEvent } from './Events'
 
 @scoped(Lifecycle.ContainerScoped)
 export class EventEmitter {

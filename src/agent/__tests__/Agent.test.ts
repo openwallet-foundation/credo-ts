@@ -1,4 +1,5 @@
 import { getBaseConfig } from '../../__tests__/helpers'
+import { InjectionSymbols } from '../../constants'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
 import { BasicMessagesModule } from '../../modules/basic-messages/BasicMessagesModule'
 import { ConnectionRepository, ConnectionService, TrustPingService } from '../../modules/connections'
@@ -18,7 +19,6 @@ import {
 import { RoutingModule } from '../../modules/routing/RoutingModule'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../../storage/IndyStorageService'
-import { Symbols } from '../../symbols'
 import { IndyWallet } from '../../wallet/IndyWallet'
 import { Agent } from '../Agent'
 import { Dispatcher } from '../Dispatcher'
@@ -74,11 +74,11 @@ describe('Agent', () => {
       expect(container.resolve(LedgerService)).toBeInstanceOf(LedgerService)
 
       // Symbols, interface based
-      expect(container.resolve(Symbols.Wallet)).toBeInstanceOf(IndyWallet)
-      expect(container.resolve(Symbols.Logger)).toBe(config.logger)
-      expect(container.resolve(Symbols.Indy)).toBe(config.indy)
-      expect(container.resolve(Symbols.MessageRepository)).toBeInstanceOf(InMemoryMessageRepository)
-      expect(container.resolve(Symbols.StorageService)).toBeInstanceOf(IndyStorageService)
+      expect(container.resolve(InjectionSymbols.Wallet)).toBeInstanceOf(IndyWallet)
+      expect(container.resolve(InjectionSymbols.Logger)).toBe(config.logger)
+      expect(container.resolve(InjectionSymbols.Indy)).toBe(config.indy)
+      expect(container.resolve(InjectionSymbols.MessageRepository)).toBeInstanceOf(InMemoryMessageRepository)
+      expect(container.resolve(InjectionSymbols.StorageService)).toBeInstanceOf(IndyStorageService)
 
       // Agent
       expect(container.resolve(MessageSender)).toBeInstanceOf(MessageSender)
@@ -119,11 +119,15 @@ describe('Agent', () => {
       expect(container.resolve(LedgerService)).toBe(container.resolve(LedgerService))
 
       // Symbols, interface based
-      expect(container.resolve(Symbols.Wallet)).toBe(container.resolve(Symbols.Wallet))
-      expect(container.resolve(Symbols.Logger)).toBe(container.resolve(Symbols.Logger))
-      expect(container.resolve(Symbols.Indy)).toBe(container.resolve(Symbols.Indy))
-      expect(container.resolve(Symbols.MessageRepository)).toBe(container.resolve(Symbols.MessageRepository))
-      expect(container.resolve(Symbols.StorageService)).toBe(container.resolve(Symbols.StorageService))
+      expect(container.resolve(InjectionSymbols.Wallet)).toBe(container.resolve(InjectionSymbols.Wallet))
+      expect(container.resolve(InjectionSymbols.Logger)).toBe(container.resolve(InjectionSymbols.Logger))
+      expect(container.resolve(InjectionSymbols.Indy)).toBe(container.resolve(InjectionSymbols.Indy))
+      expect(container.resolve(InjectionSymbols.MessageRepository)).toBe(
+        container.resolve(InjectionSymbols.MessageRepository)
+      )
+      expect(container.resolve(InjectionSymbols.StorageService)).toBe(
+        container.resolve(InjectionSymbols.StorageService)
+      )
 
       // Agent
       expect(container.resolve(MessageSender)).toBe(container.resolve(MessageSender))

@@ -1,12 +1,13 @@
+import type { Tags } from '../../../storage/BaseRecord'
+import type { ConnectionRole } from '../models/ConnectionRole'
 import type { Did, Verkey } from 'indy-sdk'
 
 import { Type } from 'class-transformer'
 
 import { AriesFrameworkError } from '../../../error'
-import { BaseRecord, Tags } from '../../../storage/BaseRecord'
+import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 import { ConnectionInvitationMessage } from '../messages/ConnectionInvitationMessage'
-import { ConnectionRole } from '../models/ConnectionRole'
 import { ConnectionState } from '../models/ConnectionState'
 import { DidDoc } from '../models/did/DidDoc'
 

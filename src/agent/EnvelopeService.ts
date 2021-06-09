@@ -1,19 +1,19 @@
+import type { Logger } from '../logger'
+import type { OutboundMessage, UnpackedMessageContext } from '../types'
+import type { Wallet } from '../wallet/Wallet'
+import type { AgentConfig } from './AgentConfig'
+
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
-import { Logger } from '../logger'
+import { InjectionSymbols } from '../constants'
 import { ForwardMessage } from '../modules/routing/messages'
-import { Symbols } from '../symbols'
-import { OutboundMessage, UnpackedMessageContext } from '../types'
-import { Wallet } from '../wallet/Wallet'
-
-import { AgentConfig } from './AgentConfig'
 
 @scoped(Lifecycle.ContainerScoped)
 class EnvelopeService {
   private wallet: Wallet
   private logger: Logger
 
-  public constructor(@inject(Symbols.Wallet) wallet: Wallet, agentConfig: AgentConfig) {
+  public constructor(@inject(InjectionSymbols.Wallet) wallet: Wallet, agentConfig: AgentConfig) {
     this.wallet = wallet
     this.logger = agentConfig.logger
   }

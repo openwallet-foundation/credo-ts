@@ -1,3 +1,4 @@
+import type { UnpackedMessageContext } from '../types'
 import type {
   DidConfig,
   Did,
@@ -8,8 +9,6 @@ import type {
   WalletSearchOptions,
   LedgerRequest,
 } from 'indy-sdk'
-
-import { UnpackedMessageContext } from '../types'
 
 export interface Wallet {
   publicDid: DidInfo | undefined

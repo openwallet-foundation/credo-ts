@@ -1,3 +1,7 @@
+import type { AgentConfig } from '../agent/AgentConfig'
+import type { Logger } from '../logger'
+import type { UnpackedMessageContext } from '../types'
+import type { Wallet, DidInfo } from './Wallet'
 import type {
   default as Indy,
   Did,
@@ -14,14 +18,9 @@ import type {
 
 import { Lifecycle, scoped } from 'tsyringe'
 
-import { AgentConfig } from '../agent/AgentConfig'
 import { AriesFrameworkError } from '../error'
-import { Logger } from '../logger'
-import { UnpackedMessageContext } from '../types'
 import { JsonEncoder } from '../utils/JsonEncoder'
 import { isIndyError } from '../utils/indyError'
-
-import { Wallet, DidInfo } from './Wallet'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyWallet implements Wallet {

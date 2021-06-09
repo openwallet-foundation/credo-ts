@@ -1,4 +1,4 @@
-export const Symbols = {
+export const InjectionSymbols = {
   Wallet: Symbol('Wallet'),
   Indy: Symbol('Indy'),
   MessageRepository: Symbol('MessageRepository'),
@@ -6,3 +6,5 @@ export const Symbols = {
   Logger: Symbol('Logger'),
   FileSystem: Symbol('FileSystem'),
 }
+
+export const DID_COMM_TRANSPORT_QUEUE = 'didcomm:transport/queue'

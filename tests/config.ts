@@ -1,10 +1,11 @@
+import type { InitConfig } from '../src/types'
+
 import * as dotenv from 'dotenv'
 import indy from 'indy-sdk'
 
 import { TestLogger } from '../src/__tests__/logger'
 import { LogLevel } from '../src/logger'
 import { NodeFileSystem } from '../src/storage/fs/NodeFileSystem'
-import { InitConfig } from '../src/types'
 dotenv.config()
 
 const agentConfig: InitConfig = {

@@ -1,10 +1,8 @@
+import type { WireMessage } from '../types'
+import type { MessageRepository } from './MessageRepository'
 import type { Verkey } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
-
-import { WireMessage } from '../types'
-
-import { MessageRepository } from './MessageRepository'
 
 @scoped(Lifecycle.ContainerScoped)
 export class InMemoryMessageRepository implements MessageRepository {

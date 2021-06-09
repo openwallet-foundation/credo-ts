@@ -1,4 +1,6 @@
-import { Agent, InboundTransporter, WsOutboundTransporter } from '../../src'
+import type { InboundTransporter } from '../../src'
+
+import { Agent, WsOutboundTransporter } from '../../src'
 import { getBaseConfig, waitForBasicMessage } from '../../src/__tests__/helpers'
 import testLogger from '../../src/__tests__/logger'
 import { get } from '../http'

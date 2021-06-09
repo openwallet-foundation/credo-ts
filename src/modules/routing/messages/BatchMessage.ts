@@ -1,9 +1,10 @@
+import type { WireMessage } from '../../../types'
+
 import { Type, Expose } from 'class-transformer'
 import { Equals, Matches, IsArray, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { MessageIdRegExp } from '../../../agent/BaseMessage'
-import { WireMessage } from '../../../types'
 import { uuid } from '../../../utils/uuid'
 
 import { RoutingMessageType as MessageType } from './RoutingMessageType'

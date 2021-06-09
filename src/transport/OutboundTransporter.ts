@@ -1,4 +1,4 @@
-import { OutboundPackage } from '../types'
+import type { OutboundPackage } from '../types'
 
 export interface OutboundTransporter {
   supportedSchemes: string[]

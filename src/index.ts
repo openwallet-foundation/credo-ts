@@ -2,7 +2,6 @@
 import 'reflect-metadata'
 
 export { Agent } from './agent/Agent'
-export { encodeInvitationToUrl, decodeInvitationFromUrl } from './helpers'
 export { InitConfig, OutboundPackage, DidCommMimeType } from './types'
 
 export * from './transport'

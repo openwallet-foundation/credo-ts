@@ -1,4 +1,6 @@
-import { Transform, TransformationType, ClassConstructor, plainToClass, classToPlain } from 'class-transformer'
+import type { ClassConstructor } from 'class-transformer'
+
+import { Transform, TransformationType, plainToClass, classToPlain } from 'class-transformer'
 
 import { AriesFrameworkError } from '../../../../../error'
 import { PublicKey, publicKeyTypes } from '../publicKey'

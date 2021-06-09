@@ -1,3 +1,8 @@
+import type { AgentConfig } from '../../../agent/AgentConfig'
+import type { Logger } from '../../../logger'
+import type { FileSystem } from '../../../storage/fs/FileSystem'
+import type { Wallet } from '../../../wallet/Wallet'
+import type { IndyIssuerService } from '../../indy'
 import type {
   default as Indy,
   CredDef,
@@ -13,13 +18,8 @@ import type {
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
-import { AgentConfig } from '../../../agent/AgentConfig'
-import { Logger } from '../../../logger'
-import { FileSystem } from '../../../storage/fs/FileSystem'
-import { Symbols } from '../../../symbols'
+import { InjectionSymbols } from '../../../constants'
 import { isIndyError } from '../../../utils/indyError'
-import { Wallet } from '../../../wallet/Wallet'
-import { IndyIssuerService } from '../../indy'
 
 @scoped(Lifecycle.ContainerScoped)
 export class LedgerService {
@@ -33,10 +33,10 @@ export class LedgerService {
   private fileSystem: FileSystem
 
   public constructor(
-    @inject(Symbols.Wallet) wallet: Wallet,
+    @inject(InjectionSymbols.Wallet) wallet: Wallet,
     agentConfig: AgentConfig,
     indyIssuer: IndyIssuerService,
-    @inject(Symbols.FileSystem) fileSystem: FileSystem
+    @inject(InjectionSymbols.FileSystem) fileSystem: FileSystem
   ) {
     this.wallet = wallet
     this.agentConfig = agentConfig

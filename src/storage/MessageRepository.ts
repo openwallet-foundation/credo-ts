@@ -1,6 +1,5 @@
+import type { WireMessage } from '../types'
 import type { Verkey } from 'indy-sdk'
-
-import { WireMessage } from '../types'
 
 export interface MessageRepository {
   findByVerkey(verkey: Verkey): WireMessage[]

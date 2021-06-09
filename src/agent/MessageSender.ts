@@ -1,13 +1,13 @@
+import type { Logger } from '../logger'
+import type { OutboundTransporter } from '../transport/OutboundTransporter'
+import type { OutboundMessage, OutboundPackage } from '../types'
+import type { EnvelopeService } from './EnvelopeService'
+import type { TransportService } from './TransportService'
+
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
+import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
-import { Logger } from '../logger'
-import { Symbols } from '../symbols'
-import { OutboundTransporter } from '../transport/OutboundTransporter'
-import { OutboundMessage, OutboundPackage } from '../types'
-
-import { EnvelopeService } from './EnvelopeService'
-import { TransportService } from './TransportService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MessageSender {
@@ -19,7 +19,7 @@ export class MessageSender {
   public constructor(
     envelopeService: EnvelopeService,
     transportService: TransportService,
-    @inject(Symbols.Logger) logger: Logger
+    @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.envelopeService = envelopeService
     this.transportService = transportService

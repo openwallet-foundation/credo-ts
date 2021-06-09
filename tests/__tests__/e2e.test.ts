@@ -1,4 +1,6 @@
-import { Agent, AriesFrameworkError, HttpOutboundTransporter, InboundTransporter } from '../../src'
+import type { InboundTransporter } from '../../src'
+
+import { Agent, AriesFrameworkError, HttpOutboundTransporter } from '../../src'
 import { getBaseConfig, sleep, waitForBasicMessage } from '../../src/__tests__/helpers'
 import logger from '../../src/__tests__/logger'
 import { get } from '../http'

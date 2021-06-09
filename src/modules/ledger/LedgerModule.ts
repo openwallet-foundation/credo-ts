@@ -1,19 +1,18 @@
+import type { Wallet } from '../../wallet/Wallet'
+import type { LedgerService, SchemaTemplate, CredentialDefinitionTemplate } from './services'
 import type { CredDefId, Did, SchemaId } from 'indy-sdk'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
+import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
-import { Symbols } from '../../symbols'
-import { Wallet } from '../../wallet/Wallet'
-
-import { LedgerService, SchemaTemplate, CredentialDefinitionTemplate } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
 export class LedgerModule {
   private ledgerService: LedgerService
   private wallet: Wallet
 
-  public constructor(@inject(Symbols.Wallet) wallet: Wallet, ledgerService: LedgerService) {
+  public constructor(@inject(InjectionSymbols.Wallet) wallet: Wallet, ledgerService: LedgerService) {
     this.ledgerService = ledgerService
     this.wallet = wallet
   }

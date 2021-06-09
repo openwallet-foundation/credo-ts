@@ -1,4 +1,5 @@
-import { Handler } from '../../../agent/Handler'
+import type { Handler } from '../../../agent/Handler'
+
 import { KeylistUpdateResponseMessage } from '../messages'
 
 export class KeylistUpdateResponseHandler implements Handler {

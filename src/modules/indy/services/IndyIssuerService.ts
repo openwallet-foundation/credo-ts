@@ -1,3 +1,5 @@
+import type { FileSystem } from '../../../storage/fs/FileSystem'
+import type { IndyWallet } from '../../../wallet/IndyWallet'
 import type {
   default as Indy,
   CredDef,
@@ -13,10 +15,8 @@ import type {
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
-import { FileSystem } from '../../../storage/fs/FileSystem'
-import { Symbols } from '../../../symbols'
+import { InjectionSymbols } from '../../../constants'
 import { getDirFromFilePath } from '../../../utils/path'
-import { IndyWallet } from '../../../wallet/IndyWallet'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyIssuerService {
@@ -25,9 +25,9 @@ export class IndyIssuerService {
   private fileSystem: FileSystem
 
   public constructor(
-    @inject(Symbols.Indy) indy: typeof Indy,
+    @inject(InjectionSymbols.Indy) indy: typeof Indy,
     indyWallet: IndyWallet,
-    @inject(Symbols.FileSystem) fileSystem: FileSystem
+    @inject(InjectionSymbols.FileSystem) fileSystem: FileSystem
   ) {
     this.indy = indy
     this.indyWallet = indyWallet

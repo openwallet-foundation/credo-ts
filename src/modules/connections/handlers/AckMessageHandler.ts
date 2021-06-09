@@ -1,6 +1,7 @@
-import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { ConnectionService } from '../services/ConnectionService'
+
 import { AckMessage } from '../../common'
-import { ConnectionService } from '../services/ConnectionService'
 
 export class AckMessageHandler implements Handler {
   private connectionService: ConnectionService

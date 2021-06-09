@@ -1,3 +1,4 @@
+import type { Optional } from '../../../utils/type'
 import type { IndyProofRequest } from 'indy-sdk'
 
 import { Expose, Type } from 'class-transformer'
@@ -5,7 +6,6 @@ import { IsString, ValidateNested, IsOptional, IsIn } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { RecordTransformer } from '../../../utils/transformers'
-import { Optional } from '../../../utils/type'
 import { RevocationInterval } from '../../credentials'
 
 import { ProofAttributeInfo } from './ProofAttributeInfo'

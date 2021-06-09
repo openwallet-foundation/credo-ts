@@ -1,7 +1,9 @@
-import { ConsoleLogger, Logger, LogLevel } from '../logger'
-import { InitConfig, InboundConnection, DidCommMimeType } from '../types'
+import type { Logger } from '../logger'
+import type { InitConfig, InboundConnection } from '../types'
 
-import { DID_COMM_TRANSPORT_QUEUE } from './TransportService'
+import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
+import { ConsoleLogger, LogLevel } from '../logger'
+import { DidCommMimeType } from '../types'
 
 export class AgentConfig {
   private initConfig: InitConfig

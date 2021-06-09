@@ -1,8 +1,9 @@
-import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { ProviderRoutingService } from '../services'
+
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
 import { KeylistUpdateMessage } from '../messages'
-import { ProviderRoutingService } from '../services'
 
 export class KeylistUpdateHandler implements Handler {
   private routingService: ProviderRoutingService

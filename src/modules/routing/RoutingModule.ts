@@ -1,15 +1,17 @@
+import type { AgentConfig } from '../../agent/AgentConfig'
+import type { Dispatcher } from '../../agent/Dispatcher'
+import type { EventEmitter } from '../../agent/EventEmitter'
+import type { MessageSender } from '../../agent/MessageSender'
+import type { Logger } from '../../logger'
+import type { ConnectionService } from '../connections'
+import type { ProviderRoutingService, MessagePickupService, ProvisioningService } from './services'
 import type { Verkey } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
-import { AgentConfig } from '../../agent/AgentConfig'
-import { Dispatcher } from '../../agent/Dispatcher'
-import { EventEmitter } from '../../agent/EventEmitter'
-import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { Logger } from '../../logger'
-import { ConnectionService, ConnectionState } from '../connections'
+import { ConnectionState } from '../connections'
 import { ConnectionInvitationMessage } from '../connections/messages/ConnectionInvitationMessage'
 
 import {
@@ -19,7 +21,6 @@ import {
   KeylistUpdateHandler,
   KeylistUpdateResponseHandler,
 } from './handlers'
-import { ProviderRoutingService, MessagePickupService, ProvisioningService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
 export class RoutingModule {

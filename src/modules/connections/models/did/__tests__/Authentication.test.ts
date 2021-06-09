@@ -1,11 +1,8 @@
+import type { Authentication } from '../authentication'
+
 import { classToPlain, plainToClass } from 'class-transformer'
 
-import {
-  Authentication,
-  AuthenticationTransformer,
-  ReferencedAuthentication,
-  EmbeddedAuthentication,
-} from '../authentication'
+import { AuthenticationTransformer, ReferencedAuthentication, EmbeddedAuthentication } from '../authentication'
 import { PublicKey, RsaSig2018 } from '../publicKey'
 
 describe('Did | Authentication', () => {

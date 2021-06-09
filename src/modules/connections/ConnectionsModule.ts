@@ -1,12 +1,14 @@
+import type { AgentConfig } from '../../agent/AgentConfig'
+import type { Dispatcher } from '../../agent/Dispatcher'
+import type { MessageSender } from '../../agent/MessageSender'
+import type { ConsumerRoutingService } from '../routing'
+import type { ConnectionRecord } from './repository/ConnectionRecord'
+import type { ConnectionService, TrustPingService } from './services'
 import type { Verkey } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
-import { AgentConfig } from '../../agent/AgentConfig'
-import { Dispatcher } from '../../agent/Dispatcher'
-import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import { ConsumerRoutingService } from '../routing'
 
 import {
   ConnectionRequestHandler,
@@ -16,8 +18,6 @@ import {
   TrustPingResponseMessageHandler,
 } from './handlers'
 import { ConnectionInvitationMessage } from './messages'
-import { ConnectionRecord } from './repository/ConnectionRecord'
-import { ConnectionService, TrustPingService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ConnectionsModule {

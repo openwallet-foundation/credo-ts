@@ -1,10 +1,9 @@
+import type { AgentMessage } from './agent/AgentMessage'
+import type { TransportSession } from './agent/TransportService'
+import type { Logger } from './logger'
+import type { ConnectionRecord } from './modules/connections'
+import type { FileSystem } from './storage/fs/FileSystem'
 import type { default as Indy, WalletConfig, WalletCredentials, Verkey } from 'indy-sdk'
-
-import { AgentMessage } from './agent/AgentMessage'
-import { TransportSession } from './agent/TransportService'
-import { Logger } from './logger'
-import { ConnectionRecord } from './modules/connections'
-import { FileSystem } from './storage/fs/FileSystem'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type $FixMe = any

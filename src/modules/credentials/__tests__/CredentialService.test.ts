@@ -1,3 +1,9 @@
+import type { ConnectionService } from '../../connections'
+import type { StoreCredentialOptions } from '../../indy'
+import type { CredentialStateChangedEvent } from '../CredentialEvents'
+import type { CredentialRecordMetadata, CredentialRecordTags } from '../repository/CredentialRecord'
+import type { CredentialOfferTemplate } from '../services'
+
 import { getBaseConfig, getMockConnection, mockFunction } from '../../../__tests__/helpers'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -6,12 +12,11 @@ import { Attachment, AttachmentData } from '../../../decorators/attachment/Attac
 import { RecordNotFoundError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { AckStatus } from '../../common'
-import { ConnectionService, ConnectionState } from '../../connections'
-import { StoreCredentialOptions } from '../../indy'
+import { ConnectionState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { LedgerService } from '../../ledger/services'
-import { CredentialEventTypes, CredentialStateChangedEvent } from '../CredentialEvents'
+import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
 import {
@@ -25,9 +30,9 @@ import {
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_ATTACHMENT_ID,
 } from '../messages'
-import { CredentialRecord, CredentialRecordMetadata, CredentialRecordTags } from '../repository/CredentialRecord'
+import { CredentialRecord } from '../repository/CredentialRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
-import { CredentialOfferTemplate, CredentialService } from '../services'
+import { CredentialService } from '../services'
 
 import { credDef, credOffer, credReq } from './fixtures'
 

@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import type { ILogObject } from 'tslog'
+
 import { appendFileSync } from 'fs'
-import { ILogObject, Logger } from 'tslog'
+import { Logger } from 'tslog'
 
 import { LogLevel } from '../logger'
 import { BaseLogger } from '../logger/BaseLogger'

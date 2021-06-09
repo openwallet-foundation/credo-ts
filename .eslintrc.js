@@ -22,6 +22,8 @@ module.exports = {
     'no-console': 'error',
     // Because of early development, we only warn on ts-ignore. In future we want to move to error
     '@typescript-eslint/ban-ts-comment': 'warn',
+    '@typescript-eslint/consistent-type-imports': 'error',
+    'import/no-cycle': 'error',
     'import/order': [
       'error',
       {

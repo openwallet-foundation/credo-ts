@@ -1,8 +1,8 @@
-import { AriesFrameworkError } from '../error'
-import { ConnectionRecord, ConnectionInvitationMessage } from '../modules/connections'
-import { OutboundMessage } from '../types'
+import type { ConnectionRecord, ConnectionInvitationMessage } from '../modules/connections'
+import type { OutboundMessage } from '../types'
+import type { AgentMessage } from './AgentMessage'
 
-import { AgentMessage } from './AgentMessage'
+import { AriesFrameworkError } from '../error'
 
 export function createOutboundMessage<T extends AgentMessage = AgentMessage>(
   connection: ConnectionRecord,

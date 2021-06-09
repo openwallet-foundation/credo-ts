@@ -1,4 +1,6 @@
-import fetch, { BodyInit } from 'node-fetch'
+import type { BodyInit } from 'node-fetch'
+
+import fetch from 'node-fetch'
 
 import testLogger from '../src/__tests__/logger'
 
