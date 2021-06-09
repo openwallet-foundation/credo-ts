@@ -1,4 +1,5 @@
 import { JsonTransformer } from '../../utils/JsonTransformer'
+
 import { ThreadDecorator } from './ThreadDecorator'
 
 describe('Decorators | ThreadDecorator', () => {

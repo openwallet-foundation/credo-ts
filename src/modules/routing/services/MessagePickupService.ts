@@ -1,12 +1,12 @@
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
-import { InboundConnection } from '../../../types'
 import { createOutboundMessage } from '../../../agent/helpers'
+import { AriesFrameworkError } from '../../../error'
 import { MessageRepository } from '../../../storage/MessageRepository'
+import { Symbols } from '../../../symbols'
+import { InboundConnection } from '../../../types'
 import { ConnectionRecord } from '../../connections'
 import { BatchMessage, BatchMessageMessage, BatchPickupMessage } from '../messages'
-import { Symbols } from '../../../symbols'
-import { AriesFrameworkError } from '../../../error'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MessagePickupService {

@@ -1,5 +1,5 @@
-import { uuid } from '../../../utils/uuid'
 import { BaseRecord } from '../../../storage/BaseRecord'
+import { uuid } from '../../../utils/uuid'
 
 interface ProvisioningRecordProps {
   id: string

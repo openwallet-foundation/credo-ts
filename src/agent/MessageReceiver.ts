@@ -1,18 +1,19 @@
 import { Lifecycle, scoped } from 'tsyringe'
 
+import { AriesFrameworkError } from '../error'
+import { Logger } from '../logger'
+import { ConnectionService } from '../modules/connections'
+import { RoutingMessageType as MessageType } from '../modules/routing'
+import { UnpackedMessageContext, UnpackedMessage } from '../types'
+import { JsonTransformer } from '../utils/JsonTransformer'
+import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
+
 import { AgentConfig } from './AgentConfig'
+import { AgentMessage } from './AgentMessage'
 import { Dispatcher } from './Dispatcher'
 import { EnvelopeService } from './EnvelopeService'
-import { UnpackedMessageContext, UnpackedMessage } from '../types'
-import { InboundMessageContext } from './models/InboundMessageContext'
-import { RoutingMessageType as MessageType } from '../modules/routing'
-import { ConnectionService } from '../modules/connections'
-import { AgentMessage } from './AgentMessage'
-import { JsonTransformer } from '../utils/JsonTransformer'
-import { Logger } from '../logger'
-import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 import { TransportSession, TransportService } from './TransportService'
-import { AriesFrameworkError } from '../error'
+import { InboundMessageContext } from './models/InboundMessageContext'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MessageReceiver {

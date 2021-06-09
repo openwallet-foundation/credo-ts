@@ -1,5 +1,5 @@
-import { IsInt, IsOptional, IsPositive, IsString } from 'class-validator'
 import { Expose } from 'class-transformer'
+import { IsInt, IsOptional, IsPositive, IsString } from 'class-validator'
 
 /**
  * Requested Predicate for Indy proof creation

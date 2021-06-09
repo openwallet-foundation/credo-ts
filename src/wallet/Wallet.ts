@@ -8,6 +8,7 @@ import type {
   WalletSearchOptions,
   LedgerRequest,
 } from 'indy-sdk'
+
 import { UnpackedMessageContext } from '../types'
 
 export interface Wallet {

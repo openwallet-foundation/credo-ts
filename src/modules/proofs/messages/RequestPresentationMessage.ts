@@ -1,11 +1,12 @@
-import { Equals, IsArray, IsString, ValidateNested, IsOptional } from 'class-validator'
 import { Expose, Type } from 'class-transformer'
+import { Equals, IsArray, IsString, ValidateNested, IsOptional } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { ProofRequest } from '../models'
+
 import { PresentProofMessageType } from './PresentProofMessageType'
 
 export interface RequestPresentationOptions {

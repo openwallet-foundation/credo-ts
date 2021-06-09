@@ -1,6 +1,9 @@
 import { Type } from 'class-transformer'
-import { uuid } from '../../../utils/uuid'
+
+import { AriesFrameworkError } from '../../../error'
 import { BaseRecord, Tags } from '../../../storage/BaseRecord'
+import { uuid } from '../../../utils/uuid'
+import { CredentialState } from '../CredentialState'
 import {
   ProposeCredentialMessage,
   IssueCredentialMessage,
@@ -8,9 +11,7 @@ import {
   OfferCredentialMessage,
   CredentialPreviewAttribute,
 } from '../messages'
-import { CredentialState } from '../CredentialState'
 import { CredentialInfo } from '../models/CredentialInfo'
-import { AriesFrameworkError } from '../../../error'
 
 export interface CredentialRecordMetadata {
   requestMetadata?: Record<string, unknown>

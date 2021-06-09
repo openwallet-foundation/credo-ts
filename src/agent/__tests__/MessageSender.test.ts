@@ -1,14 +1,13 @@
+import { getMockConnection, mockFunction } from '../../__tests__/helpers'
 import testLogger from '../../__tests__/logger'
+import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
+import { ConnectionRecord } from '../../modules/connections'
+import { OutboundTransporter } from '../../transport'
+import { AgentMessage } from '../AgentMessage'
+import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { MessageSender } from '../MessageSender'
 import { TransportSession, TransportService as TransportServiceImpl } from '../TransportService'
-import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { createOutboundMessage } from '../helpers'
-import { AgentMessage } from '../AgentMessage'
-import { OutboundTransporter } from '../../transport'
-import { OutboundPackage } from '../../types'
-import { ConnectionRecord } from '../../modules/connections'
-import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { getMockConnection, mockFunction } from '../../__tests__/helpers'
 
 jest.mock('../TransportService')
 jest.mock('../EnvelopeService')
@@ -19,11 +18,14 @@ class DummyOutboundTransporter implements OutboundTransporter {
   public start(): Promise<void> {
     throw new Error('Method not implemented.')
   }
+
   public stop(): Promise<void> {
     throw new Error('Method not implemented.')
   }
+
   public supportedSchemes: string[] = []
-  public sendMessage(outboundPackage: OutboundPackage): Promise<any> {
+
+  public sendMessage() {
     return Promise.resolve()
   }
 }

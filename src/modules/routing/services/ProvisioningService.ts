@@ -1,11 +1,11 @@
 import type { Verkey } from 'indy-sdk'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
-import { ProvisioningRecord } from '../repository/ProvisioningRecord'
-import { ProvisioningRepository } from '../repository'
-import { Symbols } from '../../../symbols'
-import { Logger } from '../../../logger'
 import { RecordNotFoundError } from '../../../error'
+import { Logger } from '../../../logger'
+import { Symbols } from '../../../symbols'
+import { ProvisioningRepository } from '../repository'
+import { ProvisioningRecord } from '../repository/ProvisioningRecord'
 
 const UNIQUE_PROVISIONING_ID = 'UNIQUE_PROVISIONING_ID'
 

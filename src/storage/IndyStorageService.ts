@@ -1,14 +1,14 @@
-import { inject, scoped, Lifecycle } from 'tsyringe'
 import type { WalletQuery, WalletRecord } from 'indy-sdk'
+import { inject, scoped, Lifecycle } from 'tsyringe'
 
-import { StorageService, BaseRecordConstructor } from './StorageService'
-import { BaseRecord } from './BaseRecord'
-import { Wallet } from '../wallet/Wallet'
-import { JsonTransformer } from '../utils/JsonTransformer'
-import { Symbols } from '../symbols'
-
-import { handleIndyError, isIndyError } from '../utils/indyError'
 import { RecordNotFoundError, RecordDuplicateError } from '../error'
+import { Symbols } from '../symbols'
+import { JsonTransformer } from '../utils/JsonTransformer'
+import { handleIndyError, isIndyError } from '../utils/indyError'
+import { Wallet } from '../wallet/Wallet'
+
+import { BaseRecord } from './BaseRecord'
+import { StorageService, BaseRecordConstructor } from './StorageService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyStorageService<T extends BaseRecord> implements StorageService<T> {

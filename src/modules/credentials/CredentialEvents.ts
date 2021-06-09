@@ -1,4 +1,5 @@
 import { BaseEvent } from '../../agent/Events'
+
 import { CredentialState } from './CredentialState'
 import { CredentialRecord } from './repository/CredentialRecord'
 

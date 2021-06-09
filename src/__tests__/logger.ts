@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { appendFileSync } from 'fs'
 import { ILogObject, Logger } from 'tslog'
+
 import { LogLevel } from '../logger'
 import { BaseLogger } from '../logger/BaseLogger'
-import { appendFileSync } from 'fs'
 
 function logToTransport(logObject: ILogObject) {
   appendFileSync('logs.txt', JSON.stringify(logObject) + '\n')

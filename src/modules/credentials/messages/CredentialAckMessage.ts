@@ -1,7 +1,8 @@
 import { Equals } from 'class-validator'
-import { IssueCredentialMessageType } from './IssueCredentialMessageType'
 
 import { AckMessage, AckMessageOptions } from '../../common'
+
+import { IssueCredentialMessageType } from './IssueCredentialMessageType'
 
 export type CredentialAckMessageOptions = AckMessageOptions
 

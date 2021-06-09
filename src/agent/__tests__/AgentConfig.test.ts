@@ -1,6 +1,6 @@
+import { getBaseConfig, getMockConnection } from '../../__tests__/helpers'
 import { DidCommService, DidDoc } from '../../modules/connections'
 import { AgentConfig } from '../AgentConfig'
-import { getBaseConfig, getMockConnection } from '../../__tests__/helpers'
 
 describe('AgentConfig', () => {
   describe('getEndpoint', () => {

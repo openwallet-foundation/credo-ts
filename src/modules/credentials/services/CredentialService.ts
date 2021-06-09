@@ -1,15 +1,20 @@
-import { scoped, Lifecycle } from 'tsyringe'
 import type { CredDefId } from 'indy-sdk'
+import { scoped, Lifecycle } from 'tsyringe'
 
-import { uuid } from '../../../utils/uuid'
+import { AgentConfig } from '../../../agent/AgentConfig'
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { LedgerService } from '../../ledger/services/LedgerService'
+import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
-import { ConnectionService, ConnectionRecord } from '../../connections'
-import { CredentialRecord } from '../repository/CredentialRecord'
+import { AriesFrameworkError } from '../../../error'
+import { Logger } from '../../../logger'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
-
+import { uuid } from '../../../utils/uuid'
+import { AckStatus } from '../../common'
+import { ConnectionService, ConnectionRecord } from '../../connections'
+import { IndyIssuerService, IndyHolderService } from '../../indy'
+import { LedgerService } from '../../ledger/services/LedgerService'
+import { CredentialEventTypes, CredentialStateChangedEvent } from '../CredentialEvents'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
 import {
@@ -24,14 +29,8 @@ import {
   ProposeCredentialMessage,
   ProposeCredentialMessageOptions,
 } from '../messages'
-import { AckStatus } from '../../common'
-import { Logger } from '../../../logger'
-import { AgentConfig } from '../../../agent/AgentConfig'
 import { CredentialRepository } from '../repository'
-import { IndyIssuerService, IndyHolderService } from '../../indy'
-import { CredentialEventTypes, CredentialStateChangedEvent } from '../CredentialEvents'
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { AriesFrameworkError } from '../../../error'
+import { CredentialRecord } from '../repository/CredentialRecord'
 
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialService {
@@ -616,7 +615,7 @@ export class CredentialService {
     // Create message
     const ackMessage = new CredentialAckMessage({
       status: AckStatus.OK,
-      threadId: credentialRecord.tags.threadId!,
+      threadId: credentialRecord.tags.threadId,
     })
 
     await this.updateState(credentialRecord, CredentialState.Done)

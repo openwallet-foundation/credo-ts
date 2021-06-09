@@ -1,9 +1,10 @@
 import cbor from 'borc'
 import { sha256 } from 'js-sha256'
+
 import { BufferEncoder } from './BufferEncoder'
-import { Buffer } from './buffer'
 import { MultibaseEncoder, BaseName } from './MultibaseEncoder'
 import { MultihashEncoder } from './MultihashEncoder'
+import { Buffer } from './buffer'
 
 type Metadata = {
   urls?: string[]

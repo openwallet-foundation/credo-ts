@@ -1,10 +1,11 @@
-import type { IndyProof } from 'indy-sdk'
-import { Equals, IsArray, IsString, ValidateNested, IsOptional } from 'class-validator'
 import { Expose, Type } from 'class-transformer'
+import { Equals, IsArray, IsString, ValidateNested, IsOptional } from 'class-validator'
+import type { IndyProof } from 'indy-sdk'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
+
 import { PresentProofMessageType } from './PresentProofMessageType'
 
 export const INDY_PROOF_ATTACHMENT_ID = 'libindy-presentation-0'

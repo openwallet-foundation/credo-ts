@@ -1,30 +1,30 @@
-import { Agent } from '../Agent'
-import { ConnectionsModule } from '../../modules/connections/ConnectionsModule'
-import { ProofsModule } from '../../modules/proofs/ProofsModule'
-import { CredentialsModule } from '../../modules/credentials/CredentialsModule'
-import { BasicMessagesModule } from '../../modules/basic-messages/BasicMessagesModule'
-import { RoutingModule } from '../../modules/routing/RoutingModule'
-import { LedgerModule } from '../../modules/ledger/LedgerModule'
-import { ConnectionRepository, ConnectionService, TrustPingService } from '../../modules/connections'
+import { getBaseConfig } from '../../__tests__/helpers'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
+import { BasicMessagesModule } from '../../modules/basic-messages/BasicMessagesModule'
+import { ConnectionRepository, ConnectionService, TrustPingService } from '../../modules/connections'
+import { ConnectionsModule } from '../../modules/connections/ConnectionsModule'
 import { CredentialRepository, CredentialService } from '../../modules/credentials'
-import { ProofRepository, ProofService } from '../../modules/proofs'
+import { CredentialsModule } from '../../modules/credentials/CredentialsModule'
 import { LedgerService } from '../../modules/ledger'
-import { Symbols } from '../../symbols'
+import { LedgerModule } from '../../modules/ledger/LedgerModule'
+import { ProofRepository, ProofService } from '../../modules/proofs'
+import { ProofsModule } from '../../modules/proofs/ProofsModule'
 import {
   ConsumerRoutingService,
   ProviderRoutingService,
   ProvisioningRepository,
   ProvisioningService,
 } from '../../modules/routing'
-import { IndyWallet } from '../../wallet/IndyWallet'
+import { RoutingModule } from '../../modules/routing/RoutingModule'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../../storage/IndyStorageService'
-import { MessageSender } from '../MessageSender'
-import { MessageReceiver } from '../MessageReceiver'
+import { Symbols } from '../../symbols'
+import { IndyWallet } from '../../wallet/IndyWallet'
+import { Agent } from '../Agent'
 import { Dispatcher } from '../Dispatcher'
 import { EnvelopeService } from '../EnvelopeService'
-import { getBaseConfig } from '../../__tests__/helpers'
+import { MessageReceiver } from '../MessageReceiver'
+import { MessageSender } from '../MessageSender'
 
 const config = getBaseConfig('Agent Class Test')
 

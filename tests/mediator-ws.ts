@@ -1,12 +1,14 @@
-import express from 'express'
-import WebSocket from 'ws'
 import cors from 'cors'
+import express from 'express'
 import { v4 as uuid } from 'uuid'
-import config from './config'
+import WebSocket from 'ws'
+
 import { Agent, InboundTransporter, WebSocketTransportSession, WsOutboundTransporter } from '../src'
-import { DidCommMimeType } from '../src/types'
-import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
 import testLogger from '../src/__tests__/logger'
+import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
+import { DidCommMimeType } from '../src/types'
+
+import config from './config'
 
 const logger = testLogger
 
@@ -21,7 +23,7 @@ class WsInboundTransporter implements InboundTransporter {
   }
 
   public async start(agent: Agent) {
-    this.socketServer.on('connection', (socket: any, _: Express.Request, socketId: string) => {
+    this.socketServer.on('connection', (socket: WebSocket, _: Express.Request, socketId: string) => {
       logger.debug('Socket connected.')
 
       if (!this.socketIds[socketId]) {
@@ -36,6 +38,7 @@ class WsInboundTransporter implements InboundTransporter {
   }
 
   private listenOnWebSocketMessages(agent: Agent, socket: WebSocket) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     socket.addEventListener('message', async (event: any) => {
       logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
       // @ts-expect-error Property 'dispatchEvent' is missing in type WebSocket imported from 'ws' module but required in type 'WebSocket'.
@@ -71,13 +74,13 @@ const messageReceiver = new WsInboundTransporter(socketServer)
 agent.setInboundTransporter(messageReceiver)
 agent.setOutboundTransporter(messageSender)
 
-app.get('/', async (req, res) => {
+app.get('/', async (_, res) => {
   const agentDid = agent.publicDid
   res.send(agentDid)
 })
 
 // Create new invitation as inviter to invitee
-app.get('/invitation', async (req, res) => {
+app.get('/invitation', async (_, res) => {
   const { invitation } = await agent.connections.createConnection()
 
   res.send(invitation.toUrl())
@@ -100,11 +103,6 @@ app.get('/api/routes', async (req, res) => {
   // TODO This endpoint is for testing purpose only. Return mediator connection by their verkey.
   const routes = agent.routing.getRoutingTable()
   res.send(routes)
-})
-
-app.get('/api/messages', async (req, res) => {
-  // TODO This endpoint is for testing purpose only.
-  // res.send(messageSender.messages)
 })
 
 const server = app.listen(PORT, async () => {

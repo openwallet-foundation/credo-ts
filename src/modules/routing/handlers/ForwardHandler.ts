@@ -1,6 +1,6 @@
 import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import { ProviderRoutingService } from '../services'
 import { ForwardMessage } from '../messages'
+import { ProviderRoutingService } from '../services'
 
 export class ForwardHandler implements Handler {
   private routingService: ProviderRoutingService

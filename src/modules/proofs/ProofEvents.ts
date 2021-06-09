@@ -1,4 +1,5 @@
 import { BaseEvent } from '../../agent/Events'
+
 import { ProofState } from './ProofState'
 import { ProofRecord } from './repository'
 

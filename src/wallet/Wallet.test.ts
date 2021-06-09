@@ -1,6 +1,7 @@
-import { IndyWallet } from './IndyWallet'
-import { AgentConfig } from '../agent/AgentConfig'
 import { getBaseConfig } from '../__tests__/helpers'
+import { AgentConfig } from '../agent/AgentConfig'
+
+import { IndyWallet } from './IndyWallet'
 
 describe('Wallet', () => {
   const wallet = new IndyWallet(new AgentConfig(getBaseConfig('WalletTest')))

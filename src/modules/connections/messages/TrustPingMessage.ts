@@ -1,9 +1,10 @@
-import { Equals, IsString, IsBoolean } from 'class-validator'
 import { Expose } from 'class-transformer'
+import { Equals, IsString, IsBoolean } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { ConnectionMessageType } from './ConnectionMessageType'
 import { TimingDecorator } from '../../../decorators/timing/TimingDecorator'
+
+import { ConnectionMessageType } from './ConnectionMessageType'
 
 export interface TrustPingMessageOptions {
   comment?: string

@@ -1,10 +1,10 @@
 import { Lifecycle, scoped, inject } from 'tsyringe'
 
-import { Logger } from '../logger'
-import { ConnectionRecord } from '../modules/connections/repository'
-import { ConnectionRole } from '../modules/connections/models'
-import { Symbols } from '../symbols'
 import { AriesFrameworkError } from '../error'
+import { Logger } from '../logger'
+import { ConnectionRole } from '../modules/connections/models'
+import { ConnectionRecord } from '../modules/connections/repository'
+import { Symbols } from '../symbols'
 
 export const DID_COMM_TRANSPORT_QUEUE = 'didcomm:transport/queue'
 

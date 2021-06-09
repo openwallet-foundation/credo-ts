@@ -2,8 +2,9 @@ import type { Schema, CredDef, Did } from 'indy-sdk'
 import indy from 'indy-sdk'
 import path from 'path'
 import { Subject } from 'rxjs'
+
 import { Agent, InboundTransporter, OutboundTransporter } from '..'
-import { InitConfig, OutboundPackage, WireMessage } from '../types'
+import { BasicMessage, BasicMessageEventTypes, BasicMessageReceivedEvent } from '../modules/basic-messages'
 import {
   ConnectionInvitationMessage,
   ConnectionRecord,
@@ -13,8 +14,6 @@ import {
   DidCommService,
   DidDoc,
 } from '../modules/connections'
-import { ProofEventTypes, ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
-import { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/ledger'
 import {
   CredentialRecord,
   CredentialOfferTemplate,
@@ -22,9 +21,12 @@ import {
   CredentialState,
   CredentialEventTypes,
 } from '../modules/credentials'
-import { BasicMessage, BasicMessageEventTypes, BasicMessageReceivedEvent } from '../modules/basic-messages'
-import testLogger from './logger'
+import { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/ledger'
+import { ProofEventTypes, ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
 import { NodeFileSystem } from '../storage/fs/NodeFileSystem'
+import { InitConfig, OutboundPackage, WireMessage } from '../types'
+
+import testLogger from './logger'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)

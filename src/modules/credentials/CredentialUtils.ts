@@ -1,6 +1,6 @@
+import BigNumber from 'bn.js'
 import type { CredValues } from 'indy-sdk'
 import { sha256 } from 'js-sha256'
-import BigNumber from 'bn.js'
 
 import { CredentialPreviewAttribute } from './messages/CredentialPreview'
 
@@ -74,7 +74,7 @@ export class CredentialUtils {
    * @see https://github.com/hyperledger/aries-framework-dotnet/blob/a18bef91e5b9e4a1892818df7408e2383c642dfa/src/Hyperledger.Aries/Utils/CredentialUtils.cs#L78-L89
    * @see https://github.com/hyperledger/aries-rfcs/blob/be4ad0a6fb2823bb1fc109364c96f077d5d8dffa/features/0037-present-proof/README.md#verifying-claims-of-indy-based-verifiable-credentials
    */
-  public static checkValidEncoding(raw: any, encoded: string) {
+  public static checkValidEncoding(raw: unknown, encoded: string) {
     return encoded === CredentialUtils.encode(raw)
   }
 
@@ -88,28 +88,28 @@ export class CredentialUtils {
    * @see https://github.com/hyperledger/aries-rfcs/blob/be4ad0a6fb2823bb1fc109364c96f077d5d8dffa/features/0037-present-proof/README.md#verifying-claims-of-indy-based-verifiable-credentials
    * @see https://github.com/hyperledger/aries-rfcs/blob/be4ad0a6fb2823bb1fc109364c96f077d5d8dffa/features/0036-issue-credential/README.md#encoding-claims-for-indy-based-verifiable-credentials
    */
-  public static encode(value: any) {
-    const isString = typeof value === 'string'
-    const isEmpty = isString && value === ''
-    const isNumber = typeof value === 'number'
-    const isBoolean = typeof value === 'boolean'
+  public static encode(value: unknown) {
+    const isString = (value: unknown): value is string => typeof value === 'string'
+    const isEmpty = (value: unknown): value is '' => isString(value) && value === ''
+    const isNumber = (value: unknown): value is number => typeof value === 'number'
+    const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean'
 
     // If bool return bool as number string
-    if (isBoolean) {
+    if (isBoolean(value)) {
       return Number(value).toString()
     }
 
     // If value is int32 return as number string
-    if (isNumber && this.isInt32(value)) {
+    if (isNumber(value) && this.isInt32(value)) {
       return value.toString()
     }
 
     // If value is an int32 number string return as number string
-    if (isString && !isEmpty && !isNaN(Number(value)) && this.isInt32(Number(value))) {
+    if (isString(value) && !isEmpty(value) && !isNaN(Number(value)) && this.isInt32(Number(value))) {
       return value
     }
 
-    if (isNumber) {
+    if (isNumber(value)) {
       value = value.toString()
     }
 
@@ -118,7 +118,7 @@ export class CredentialUtils {
       value = 'None'
     }
 
-    return new BigNumber(sha256.array(value)).toString()
+    return new BigNumber(sha256.array(value as string)).toString()
   }
 
   private static isInt32(number: number) {

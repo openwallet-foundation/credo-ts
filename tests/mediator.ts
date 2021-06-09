@@ -1,11 +1,13 @@
-import express, { Express } from 'express'
 import cors from 'cors'
-import config from './config'
-import testLogger from '../src/__tests__/logger'
+import express, { Express } from 'express'
+
 import { Agent, AriesFrameworkError, InboundTransporter, OutboundTransporter } from '../src'
-import { OutboundPackage, DidCommMimeType } from '../src/types'
-import { MessageRepository } from '../src/storage/MessageRepository'
+import testLogger from '../src/__tests__/logger'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
+import { MessageRepository } from '../src/storage/MessageRepository'
+import { OutboundPackage, DidCommMimeType } from '../src/types'
+
+import config from './config'
 
 class HttpInboundTransporter implements InboundTransporter {
   private app: Express
@@ -29,7 +31,6 @@ class HttpInboundTransporter implements InboundTransporter {
 }
 
 class StorageOutboundTransporter implements OutboundTransporter {
-  public messages: { [key: string]: any } = {}
   private messageRepository: MessageRepository
 
   public supportedSchemes = []
@@ -110,11 +111,6 @@ app.get('/api/routes', async (req, res) => {
   // TODO This endpoint is for testing purpose only. Return mediator connection by their verkey.
   const routes = agent.routing.getRoutingTable()
   res.send(routes)
-})
-
-app.get('/api/messages', async (req, res) => {
-  // TODO This endpoint is for testing purpose only.
-  res.send(messageSender.messages)
 })
 
 app.listen(PORT, async () => {

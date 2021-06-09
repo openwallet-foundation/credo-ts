@@ -1,7 +1,7 @@
 import { Agent, InboundTransporter, WsOutboundTransporter } from '../../src'
-import { get } from '../http'
 import { getBaseConfig, waitForBasicMessage } from '../../src/__tests__/helpers'
 import testLogger from '../../src/__tests__/logger'
+import { get } from '../http'
 
 const logger = testLogger
 

@@ -1,6 +1,8 @@
 import { Transform } from 'class-transformer'
 import { IsString } from 'class-validator'
+
 import { PublicKey } from '../publicKey/PublicKey'
+
 import { Authentication } from './Authentication'
 
 export class ReferencedAuthentication extends Authentication {

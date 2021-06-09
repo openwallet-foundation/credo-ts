@@ -1,8 +1,9 @@
-import { IndyStorageService } from '../IndyStorageService'
-import { IndyWallet } from '../../wallet/IndyWallet'
-import { AgentConfig } from '../../agent/AgentConfig'
 import { getBaseConfig } from '../../__tests__/helpers'
+import { AgentConfig } from '../../agent/AgentConfig'
 import { RecordDuplicateError, RecordNotFoundError } from '../../error'
+import { IndyWallet } from '../../wallet/IndyWallet'
+import { IndyStorageService } from '../IndyStorageService'
+
 import { TestRecord } from './TestRecord'
 
 describe('IndyStorageService', () => {

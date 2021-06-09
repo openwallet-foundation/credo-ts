@@ -1,4 +1,5 @@
 import { ArrayNotEmpty, IsOptional, IsString } from 'class-validator'
+
 import { Service } from './Service'
 
 export class DidCommService extends Service {

@@ -1,9 +1,8 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { ConnectionRecord } from '../src/modules/connections/repository/ConnectionRecord'
+import type { ConnectionRecord } from '../src/modules/connections/repository/ConnectionRecord'
 
 declare global {
   namespace jest {
-    interface Matchers<R, T> {
+    interface Matchers<R> {
       toBeConnectedWith(connection: ConnectionRecord): R
     }
   }

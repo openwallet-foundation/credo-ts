@@ -1,10 +1,10 @@
 import { Type } from 'class-transformer'
 
-import { uuid } from '../../../utils/uuid'
-import { BaseRecord, Tags } from '../../../storage/BaseRecord'
-import { ProposePresentationMessage, RequestPresentationMessage, PresentationMessage } from '../messages'
-import { ProofState } from '../ProofState'
 import { AriesFrameworkError } from '../../../error'
+import { BaseRecord, Tags } from '../../../storage/BaseRecord'
+import { uuid } from '../../../utils/uuid'
+import { ProofState } from '../ProofState'
+import { ProposePresentationMessage, RequestPresentationMessage, PresentationMessage } from '../messages'
 
 export interface ProofRecordProps {
   id?: string

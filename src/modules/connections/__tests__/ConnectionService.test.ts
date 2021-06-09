@@ -1,24 +1,24 @@
+import { getBaseConfig, getMockConnection, mockFunction } from '../../../__tests__/helpers'
+import { AgentConfig } from '../../../agent/AgentConfig'
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
+import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
+import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { Wallet } from '../../../wallet/Wallet'
-import { ConnectionService } from '../services/ConnectionService'
-import { ConnectionRecord } from '../repository/ConnectionRecord'
-import { AgentConfig } from '../../../agent/AgentConfig'
-import { Connection, ConnectionState, ConnectionRole, DidDoc, DidCommService } from '../models'
+import { AckMessage, AckStatus } from '../../common'
 import {
   ConnectionInvitationMessage,
   ConnectionRequestMessage,
   ConnectionResponseMessage,
   TrustPingMessage,
 } from '../messages'
-import { AckMessage, AckStatus } from '../../common'
-import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
-import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { getBaseConfig, getMockConnection, mockFunction } from '../../../__tests__/helpers'
+import { Connection, ConnectionState, ConnectionRole, DidDoc, DidCommService } from '../models'
+import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
+import { ConnectionService } from '../services/ConnectionService'
 
 jest.mock('../repository/ConnectionRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
@@ -367,6 +367,9 @@ describe('ConnectionService', () => {
         verkey,
         state: ConnectionState.Requested,
         role: ConnectionRole.Inviter,
+        tags: {
+          threadId: 'test',
+        },
       })
       mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(mockConnection))
 

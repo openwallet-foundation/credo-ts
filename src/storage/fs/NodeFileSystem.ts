@@ -1,6 +1,7 @@
 import { promises } from 'fs'
-import { dirname } from 'path'
 import { tmpdir } from 'os'
+import { dirname } from 'path'
+
 import { FileSystem } from './FileSystem'
 
 const { access, readFile, writeFile } = promises

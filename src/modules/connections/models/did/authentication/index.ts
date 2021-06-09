@@ -1,7 +1,8 @@
 import { Transform, TransformationType, ClassConstructor, plainToClass, classToPlain } from 'class-transformer'
-import { AriesFrameworkError } from '../../../../../error'
 
+import { AriesFrameworkError } from '../../../../../error'
 import { PublicKey, publicKeyTypes } from '../publicKey'
+
 import { Authentication } from './Authentication'
 import { EmbeddedAuthentication } from './EmbeddedAuthentication'
 import { ReferencedAuthentication } from './ReferencedAuthentication'

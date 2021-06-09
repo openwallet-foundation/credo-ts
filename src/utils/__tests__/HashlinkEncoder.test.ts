@@ -1,4 +1,5 @@
 import { Buffer } from 'buffer'
+
 import { HashlinkEncoder } from '../HashlinkEncoder'
 
 const validData = {

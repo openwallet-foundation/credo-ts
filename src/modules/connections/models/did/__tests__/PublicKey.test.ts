@@ -1,4 +1,5 @@
 import { ClassConstructor, classToPlain, plainToClass } from 'class-transformer'
+
 import {
   PublicKeyTransformer,
   PublicKey,
@@ -83,6 +84,7 @@ describe('Did | PublicKey', () => {
   )
 
   const publicKeyClassToJsonTests: [string, PublicKey, Record<string, string | undefined>, string][] =
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     publicKeysJson.map((pk) => [pk.class.name, new pk.class({ ...(pk.json as any) }), pk.json, pk.valueKey])
 
   test.each(publicKeyClassToJsonTests)(

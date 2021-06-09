@@ -1,9 +1,10 @@
-import { Equals, IsEnum, IsInt, IsString, ValidateIf, ValidateNested } from 'class-validator'
 import { Expose, Type } from 'class-transformer'
+import { Equals, IsEnum, IsInt, IsString, ValidateIf, ValidateNested } from 'class-validator'
 
-import { PresentProofMessageType } from './PresentProofMessageType'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { PredicateType } from '../models/PredicateType'
+
+import { PresentProofMessageType } from './PresentProofMessageType'
 
 export interface PresentationPreviewOptions {
   attributes?: PresentationPreviewAttribute[]

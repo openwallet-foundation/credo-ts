@@ -1,6 +1,7 @@
 import type { Verkey } from 'indy-sdk'
-import { AgentMessage } from '../AgentMessage'
+
 import { ConnectionRecord } from '../../modules/connections'
+import { AgentMessage } from '../AgentMessage'
 
 export interface MessageContextParams {
   connection?: ConnectionRecord

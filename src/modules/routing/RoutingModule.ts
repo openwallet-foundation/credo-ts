@@ -1,12 +1,16 @@
-import { Lifecycle, scoped } from 'tsyringe'
 import type { Verkey } from 'indy-sdk'
+import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
-import { ProviderRoutingService, MessagePickupService, ProvisioningService } from './services'
+import { Dispatcher } from '../../agent/Dispatcher'
+import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import { ConnectionService, ConnectionState, ConnectionInvitationMessage } from '../connections'
-import { Dispatcher } from '../../agent/Dispatcher'
+import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
+import { Logger } from '../../logger'
+import { ConnectionService, ConnectionState } from '../connections'
+import { ConnectionInvitationMessage } from '../connections/messages/ConnectionInvitationMessage'
+
 import {
   BatchHandler,
   BatchPickupHandler,
@@ -14,10 +18,7 @@ import {
   KeylistUpdateHandler,
   KeylistUpdateResponseHandler,
 } from './handlers'
-import { Logger } from '../../logger'
-import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { EventEmitter } from '../../agent/EventEmitter'
-import { AriesFrameworkError } from '../../error'
+import { ProviderRoutingService, MessagePickupService, ProvisioningService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
 export class RoutingModule {

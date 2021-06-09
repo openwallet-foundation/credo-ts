@@ -5,6 +5,7 @@ import { AgentMessage } from '../../../agent/AgentMessage'
 import { AriesFrameworkError } from '../../../error'
 import { decodeInvitationFromUrl, encodeInvitationToUrl } from '../../../helpers'
 import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
+
 import { ConnectionMessageType } from './ConnectionMessageType'
 
 // TODO: improve typing of `DIDInvitationData` and `InlineInvitationData` so properties can't be mixed

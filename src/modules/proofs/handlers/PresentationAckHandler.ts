@@ -1,6 +1,6 @@
 import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import { ProofService } from '../services'
 import { PresentationAckMessage } from '../messages'
+import { ProofService } from '../services'
 
 export class PresentationAckHandler implements Handler {
   private proofService: ProofService

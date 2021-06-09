@@ -1,11 +1,12 @@
-import type { IndyRequestedCredentials } from 'indy-sdk'
-import { ValidateNested } from 'class-validator'
 import { Expose, Type } from 'class-transformer'
+import { ValidateNested } from 'class-validator'
+import type { IndyRequestedCredentials } from 'indy-sdk'
+
+import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { RecordTransformer } from '../../../utils/transformers'
 
 import { RequestedAttribute } from './RequestedAttribute'
 import { RequestedPredicate } from './RequestedPredicate'
-import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { RecordTransformer } from '../../../utils/transformers'
 
 interface RequestedCredentialsOptions {
   requestedAttributes?: Record<string, RequestedAttribute>

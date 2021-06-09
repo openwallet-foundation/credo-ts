@@ -1,7 +1,7 @@
 import { Agent, AriesFrameworkError, HttpOutboundTransporter, InboundTransporter } from '../../src'
-import { get } from '../http'
 import { getBaseConfig, sleep, waitForBasicMessage } from '../../src/__tests__/helpers'
 import logger from '../../src/__tests__/logger'
+import { get } from '../http'
 
 const aliceConfig = getBaseConfig('E2E Alice', { mediatorUrl: 'http://localhost:3001' })
 const bobConfig = getBaseConfig('E2E Bob', { mediatorUrl: 'http://localhost:3002' })

@@ -1,5 +1,6 @@
 import { Expose } from 'class-transformer'
 import { Equals, IsString } from 'class-validator'
+
 import { PublicKey } from './PublicKey'
 
 export class EddsaSaSigSecp256k1 extends PublicKey {

@@ -2,13 +2,11 @@ import type { Verkey } from 'indy-sdk'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
+import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import { Dispatcher } from '../../agent/Dispatcher'
-import { ConnectionService, TrustPingService } from './services'
 import { ConsumerRoutingService } from '../routing'
-import { ConnectionRecord } from './repository/ConnectionRecord'
-import { ConnectionInvitationMessage } from './messages'
+
 import {
   ConnectionRequestHandler,
   ConnectionResponseHandler,
@@ -16,6 +14,9 @@ import {
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
 } from './handlers'
+import { ConnectionInvitationMessage } from './messages'
+import { ConnectionRecord } from './repository/ConnectionRecord'
+import { ConnectionService, TrustPingService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ConnectionsModule {
