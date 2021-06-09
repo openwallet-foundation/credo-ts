@@ -1,10 +1,10 @@
-import { BaseRecord } from '../../../storage/BaseRecord'
+import { BaseRecord, TagsBase } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 
 interface ProvisioningRecordProps {
   id: string
   createdAt?: Date
-  tags?: { [keys: string]: string }
+  tags?: TagsBase
   mediatorConnectionId: string
   mediatorPublicVerkey: string
 }
@@ -24,7 +24,11 @@ export class ProvisioningRecord extends BaseRecord {
       this.createdAt = props.createdAt ?? new Date()
       this.mediatorConnectionId = props.mediatorConnectionId
       this.mediatorPublicVerkey = props.mediatorPublicVerkey
-      this.tags = props.tags || {}
+      this._tags = props.tags || {}
     }
+  }
+
+  public getTags() {
+    return this._tags
   }
 }

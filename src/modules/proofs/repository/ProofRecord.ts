@@ -1,4 +1,4 @@
-import type { Tags } from '../../../storage/BaseRecord'
+import type { TagsBase } from '../../../storage/BaseRecord'
 import type { ProofState } from '../ProofState'
 
 import { Type } from 'class-transformer'
@@ -15,25 +15,29 @@ export interface ProofRecordProps {
   isVerified?: boolean
   state: ProofState
   connectionId: string
+  threadId: string
   presentationId?: string
-  tags: ProofRecordTags
+  tags?: CustomProofTags
 
   // message data
   proposalMessage?: ProposePresentationMessage
   requestMessage?: RequestPresentationMessage
   presentationMessage?: PresentationMessage
 }
-export interface ProofRecordTags extends Tags {
+
+export type CustomProofTags = TagsBase
+export type ComputedProofTags = {
   threadId: string
   connectionId: string
+  state: ProofState
 }
 
-export class ProofRecord extends BaseRecord implements ProofRecordProps {
+export class ProofRecord extends BaseRecord<ComputedProofTags, CustomProofTags> {
   public connectionId!: string
+  public threadId!: string
   public isVerified?: boolean
   public presentationId?: string
   public state!: ProofState
-  public tags!: ProofRecordTags
 
   // message data
   @Type(() => ProposePresentationMessage)
@@ -58,8 +62,18 @@ export class ProofRecord extends BaseRecord implements ProofRecordProps {
       this.isVerified = props.isVerified
       this.state = props.state
       this.connectionId = props.connectionId
+      this.threadId = props.threadId
       this.presentationId = props.presentationId
-      this.tags = props.tags
+      this._tags = props.tags ?? {}
+    }
+  }
+
+  public getTags() {
+    return {
+      ...this._tags,
+      threadId: this.threadId,
+      connectionId: this.connectionId,
+      state: this.state,
     }
   }
 
