@@ -1,19 +1,18 @@
+import type { ConnectionRecord } from '../modules/connections/repository'
+
 import { Lifecycle, scoped, inject } from 'tsyringe'
 
+import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
 import { ConnectionRole } from '../modules/connections/models'
-import { ConnectionRecord } from '../modules/connections/repository'
-import { Symbols } from '../symbols'
-
-export const DID_COMM_TRANSPORT_QUEUE = 'didcomm:transport/queue'
 
 @scoped(Lifecycle.ContainerScoped)
 export class TransportService {
   private transportSessionTable: TransportSessionTable = {}
   private logger: Logger
 
-  public constructor(@inject(Symbols.Logger) logger: Logger) {
+  public constructor(@inject(InjectionSymbols.Logger) logger: Logger) {
     this.logger = logger
   }
 

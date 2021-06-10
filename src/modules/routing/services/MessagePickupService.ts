@@ -1,18 +1,19 @@
+import type { InboundConnection } from '../../../types'
+import type { ConnectionRecord } from '../../connections'
+
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { createOutboundMessage } from '../../../agent/helpers'
+import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
 import { MessageRepository } from '../../../storage/MessageRepository'
-import { Symbols } from '../../../symbols'
-import { InboundConnection } from '../../../types'
-import { ConnectionRecord } from '../../connections'
 import { BatchMessage, BatchMessageMessage, BatchPickupMessage } from '../messages'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MessagePickupService {
   private messageRepository: MessageRepository
 
-  public constructor(@inject(Symbols.MessageRepository) messageRepository: MessageRepository) {
+  public constructor(@inject(InjectionSymbols.MessageRepository) messageRepository: MessageRepository) {
     this.messageRepository = messageRepository
   }
 

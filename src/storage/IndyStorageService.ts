@@ -1,14 +1,14 @@
+import type { BaseRecord } from './BaseRecord'
+import type { StorageService, BaseRecordConstructor } from './StorageService'
 import type { WalletQuery, WalletRecord } from 'indy-sdk'
+
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
+import { InjectionSymbols } from '../constants'
 import { RecordNotFoundError, RecordDuplicateError } from '../error'
-import { Symbols } from '../symbols'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { handleIndyError, isIndyError } from '../utils/indyError'
 import { Wallet } from '../wallet/Wallet'
-
-import { BaseRecord } from './BaseRecord'
-import { StorageService, BaseRecordConstructor } from './StorageService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyStorageService<T extends BaseRecord> implements StorageService<T> {
@@ -18,7 +18,7 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     retrieveTags: true,
   }
 
-  public constructor(@inject(Symbols.Wallet) wallet: Wallet) {
+  public constructor(@inject(InjectionSymbols.Wallet) wallet: Wallet) {
     this.wallet = wallet
   }
 

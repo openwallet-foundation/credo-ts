@@ -1,3 +1,7 @@
+import type { PresentationPreview } from './messages'
+import type { RequestedCredentials } from './models'
+import type { ProofRecord } from './repository/ProofRecord'
+
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { Dispatcher } from '../../agent/Dispatcher'
@@ -12,10 +16,7 @@ import {
   PresentationAckHandler,
   PresentationHandler,
 } from './handlers'
-import { PresentationPreview } from './messages'
-import { RequestedCredentials } from './models'
 import { ProofRequest } from './models/ProofRequest'
-import { ProofRecord } from './repository/ProofRecord'
 import { ProofService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)

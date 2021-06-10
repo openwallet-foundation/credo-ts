@@ -1,8 +1,9 @@
+import type { TimingDecorator } from '../../../decorators/timing/TimingDecorator'
+
 import { Expose } from 'class-transformer'
 import { Equals, IsString, IsBoolean } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { TimingDecorator } from '../../../decorators/timing/TimingDecorator'
 
 import { ConnectionMessageType } from './ConnectionMessageType'
 

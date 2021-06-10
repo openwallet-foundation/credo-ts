@@ -1,4 +1,6 @@
-import { Logger, LogLevel } from './Logger'
+import type { Logger } from './Logger'
+
+import { LogLevel } from './Logger'
 
 export abstract class BaseLogger implements Logger {
   public logLevel: LogLevel

@@ -1,4 +1,6 @@
+import type { Logger } from '../../logger'
 import type { Verkey } from 'indy-sdk'
+
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
@@ -7,7 +9,6 @@ import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { Logger } from '../../logger'
 import { ConnectionService, ConnectionState } from '../connections'
 import { ConnectionInvitationMessage } from '../connections/messages/ConnectionInvitationMessage'
 

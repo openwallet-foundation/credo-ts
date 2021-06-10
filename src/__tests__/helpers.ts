@@ -1,30 +1,29 @@
+import type { Agent } from '../agent/Agent'
+import type { BasicMessage, BasicMessageReceivedEvent } from '../modules/basic-messages'
+import type { ConnectionStorageProps } from '../modules/connections'
+import type { CredentialRecord, CredentialOfferTemplate, CredentialStateChangedEvent } from '../modules/credentials'
+import type { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/ledger'
+import type { ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
+import type { InboundTransporter, OutboundTransporter } from '../transport'
+import type { InitConfig, OutboundPackage, WireMessage } from '../types'
 import type { Schema, CredDef, Did } from 'indy-sdk'
+import type { Subject } from 'rxjs'
+
 import indy from 'indy-sdk'
 import path from 'path'
-import { Subject } from 'rxjs'
 
-import { Agent, InboundTransporter, OutboundTransporter } from '..'
-import { BasicMessage, BasicMessageEventTypes, BasicMessageReceivedEvent } from '../modules/basic-messages'
+import { BasicMessageEventTypes } from '../modules/basic-messages'
 import {
   ConnectionInvitationMessage,
   ConnectionRecord,
   ConnectionRole,
   ConnectionState,
-  ConnectionStorageProps,
   DidCommService,
   DidDoc,
 } from '../modules/connections'
-import {
-  CredentialRecord,
-  CredentialOfferTemplate,
-  CredentialStateChangedEvent,
-  CredentialState,
-  CredentialEventTypes,
-} from '../modules/credentials'
-import { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/ledger'
-import { ProofEventTypes, ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
+import { CredentialState, CredentialEventTypes } from '../modules/credentials'
+import { ProofEventTypes } from '../modules/proofs'
 import { NodeFileSystem } from '../storage/fs/NodeFileSystem'
-import { InitConfig, OutboundPackage, WireMessage } from '../types'
 
 import testLogger from './logger'
 

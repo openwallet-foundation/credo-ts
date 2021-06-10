@@ -1,12 +1,14 @@
+import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { OutboundMessage } from '../../../types'
+import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
+import type { BasicMessageReceivedEvent } from '../BasicMessageEvents'
 import type { WalletQuery } from 'indy-sdk'
+
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { createOutboundMessage } from '../../../agent/helpers'
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import { OutboundMessage } from '../../../types'
-import { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
-import { BasicMessageEventTypes, BasicMessageReceivedEvent } from '../BasicMessageEvents'
+import { BasicMessageEventTypes } from '../BasicMessageEvents'
 import { BasicMessage } from '../messages'
 import { BasicMessageRepository } from '../repository'
 import { BasicMessageRecord } from '../repository/BasicMessageRecord'

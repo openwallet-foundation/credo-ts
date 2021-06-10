@@ -1,12 +1,12 @@
-import { Agent } from '../agent/Agent'
-import { TransportSession } from '../agent/TransportService'
-import { Logger } from '../logger'
-import { ConnectionRecord } from '../modules/connections'
-import { Symbols } from '../symbols'
-import { OutboundPackage } from '../types'
-import { WebSocket } from '../utils/ws'
+import type { Agent } from '../agent/Agent'
+import type { TransportSession } from '../agent/TransportService'
+import type { Logger } from '../logger'
+import type { ConnectionRecord } from '../modules/connections'
+import type { OutboundPackage } from '../types'
+import type { OutboundTransporter } from './OutboundTransporter'
 
-import { OutboundTransporter } from './OutboundTransporter'
+import { InjectionSymbols } from '../constants'
+import { WebSocket } from '../utils/ws'
 
 export class WebSocketTransportSession implements TransportSession {
   public readonly type = 'websocket'
@@ -26,7 +26,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
 
   public constructor(agent: Agent) {
     this.agent = agent
-    this.logger = agent.injectionContainer.resolve(Symbols.Logger)
+    this.logger = agent.injectionContainer.resolve(InjectionSymbols.Logger)
   }
 
   public async start(): Promise<void> {

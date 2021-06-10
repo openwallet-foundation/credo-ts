@@ -1,12 +1,14 @@
+import type { ConnectionRecord } from '../../modules/connections'
+import type { OutboundTransporter } from '../../transport'
+import type { TransportSession } from '../TransportService'
+
 import { getMockConnection, mockFunction } from '../../__tests__/helpers'
 import testLogger from '../../__tests__/logger'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { ConnectionRecord } from '../../modules/connections'
-import { OutboundTransporter } from '../../transport'
 import { AgentMessage } from '../AgentMessage'
 import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { MessageSender } from '../MessageSender'
-import { TransportSession, TransportService as TransportServiceImpl } from '../TransportService'
+import { TransportService as TransportServiceImpl } from '../TransportService'
 import { createOutboundMessage } from '../helpers'
 
 jest.mock('../TransportService')

@@ -1,8 +1,6 @@
+import type { BaseEvent } from '../../agent/Events'
+import type { BasicMessage } from './messages'
 import type { Verkey } from 'indy-sdk'
-
-import { BaseEvent } from '../../agent/Events'
-
-import { BasicMessage } from './messages'
 
 export enum BasicMessageEventTypes {
   BasicMessageReceived = 'BasicMessageReceived',

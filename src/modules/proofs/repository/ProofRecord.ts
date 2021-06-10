@@ -1,9 +1,11 @@
+import type { Tags } from '../../../storage/BaseRecord'
+import type { ProofState } from '../ProofState'
+
 import { Type } from 'class-transformer'
 
 import { AriesFrameworkError } from '../../../error'
-import { BaseRecord, Tags } from '../../../storage/BaseRecord'
+import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { ProofState } from '../ProofState'
 import { ProposePresentationMessage, RequestPresentationMessage, PresentationMessage } from '../messages'
 
 export interface ProofRecordProps {

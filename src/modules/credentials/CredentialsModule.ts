@@ -1,3 +1,7 @@
+import type { ProposeCredentialMessageOptions } from './messages'
+import type { CredentialRecord } from './repository/CredentialRecord'
+import type { CredentialOfferTemplate } from './services'
+
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { Dispatcher } from '../../agent/Dispatcher'
@@ -13,9 +17,7 @@ import {
   IssueCredentialHandler,
   CredentialAckHandler,
 } from './handlers'
-import { ProposeCredentialMessageOptions } from './messages'
-import { CredentialRecord } from './repository/CredentialRecord'
-import { CredentialOfferTemplate, CredentialService } from './services'
+import { CredentialService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialsModule {

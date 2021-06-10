@@ -1,7 +1,8 @@
+import type { ConnectionRecord } from '../modules/connections'
+
 import { Subject } from 'rxjs'
 
 import { Agent } from '../agent/Agent'
-import { ConnectionRecord } from '../modules/connections'
 import {
   CredentialRecord,
   CredentialState,

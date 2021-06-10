@@ -1,9 +1,11 @@
+import type { InboundTransporter } from '../src'
+
 import cors from 'cors'
 import express from 'express'
 import { v4 as uuid } from 'uuid'
 import WebSocket from 'ws'
 
-import { Agent, InboundTransporter, WebSocketTransportSession, WsOutboundTransporter } from '../src'
+import { Agent, WebSocketTransportSession, WsOutboundTransporter } from '../src'
 import testLogger from '../src/__tests__/logger'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
 import { DidCommMimeType } from '../src/types'

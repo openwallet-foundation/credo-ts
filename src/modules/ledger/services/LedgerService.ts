@@ -1,3 +1,4 @@
+import type { Logger } from '../../../logger'
 import type {
   default as Indy,
   CredDef,
@@ -10,12 +11,12 @@ import type {
   LedgerReadReplyResponse,
   LedgerWriteReplyResponse,
 } from 'indy-sdk'
+
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { Logger } from '../../../logger'
+import { InjectionSymbols } from '../../../constants'
 import { FileSystem } from '../../../storage/fs/FileSystem'
-import { Symbols } from '../../../symbols'
 import { isIndyError } from '../../../utils/indyError'
 import { Wallet } from '../../../wallet/Wallet'
 import { IndyIssuerService } from '../../indy'
@@ -32,10 +33,10 @@ export class LedgerService {
   private fileSystem: FileSystem
 
   public constructor(
-    @inject(Symbols.Wallet) wallet: Wallet,
+    @inject(InjectionSymbols.Wallet) wallet: Wallet,
     agentConfig: AgentConfig,
     indyIssuer: IndyIssuerService,
-    @inject(Symbols.FileSystem) fileSystem: FileSystem
+    @inject(InjectionSymbols.FileSystem) fileSystem: FileSystem
   ) {
     this.wallet = wallet
     this.agentConfig = agentConfig

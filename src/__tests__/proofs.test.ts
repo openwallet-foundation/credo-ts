@@ -1,8 +1,9 @@
+import type { ConnectionRecord } from '../modules/connections'
 import type { CredDefId } from 'indy-sdk'
+
 import { Subject } from 'rxjs'
 
-import { Agent } from '..'
-import { ConnectionRecord } from '../modules/connections'
+import { Agent } from '../agent/Agent'
 import { CredentialPreview, CredentialPreviewAttribute } from '../modules/credentials'
 import {
   PredicateType,

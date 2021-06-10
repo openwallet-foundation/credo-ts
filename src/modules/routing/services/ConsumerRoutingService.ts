@@ -1,10 +1,11 @@
+import type { Logger } from '../../../logger'
 import type { Verkey } from 'indy-sdk'
+
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { MessageSender } from '../../../agent/MessageSender'
 import { createOutboundMessage } from '../../../agent/helpers'
-import { Logger } from '../../../logger'
 import { KeylistUpdateMessage, KeylistUpdate, KeylistUpdateAction } from '../messages'
 
 @scoped(Lifecycle.ContainerScoped)

@@ -1,11 +1,15 @@
-import cors from 'cors'
-import express, { Express } from 'express'
+import type { InboundTransporter, OutboundTransporter } from '../src'
+import type { MessageRepository } from '../src/storage/MessageRepository'
+import type { OutboundPackage } from '../src/types'
+import type { Express } from 'express'
 
-import { Agent, AriesFrameworkError, InboundTransporter, OutboundTransporter } from '../src'
+import cors from 'cors'
+import express from 'express'
+
+import { Agent, AriesFrameworkError } from '../src'
 import testLogger from '../src/__tests__/logger'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
-import { MessageRepository } from '../src/storage/MessageRepository'
-import { OutboundPackage, DidCommMimeType } from '../src/types'
+import { DidCommMimeType } from '../src/types'
 
 import config from './config'
 

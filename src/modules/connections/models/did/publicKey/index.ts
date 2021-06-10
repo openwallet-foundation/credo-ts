@@ -1,4 +1,6 @@
-import { Transform, ClassConstructor, plainToClass } from 'class-transformer'
+import type { ClassConstructor } from 'class-transformer'
+
+import { Transform, plainToClass } from 'class-transformer'
 
 import { Ed25119Sig2018 } from './Ed25119Sig2018'
 import { EddsaSaSigSecp256k1 } from './EddsaSaSigSecp256k1'

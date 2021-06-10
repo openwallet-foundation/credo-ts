@@ -1,9 +1,13 @@
+import type { Authentication } from './authentication'
+import type { PublicKey } from './publicKey'
+import type { Service } from './service'
+
 import { Expose } from 'class-transformer'
 import { Equals, IsArray, IsString, ValidateNested } from 'class-validator'
 
-import { AuthenticationTransformer, Authentication } from './authentication'
-import { PublicKey, PublicKeyTransformer } from './publicKey'
-import { DidCommService, IndyAgentService, Service, ServiceTransformer } from './service'
+import { AuthenticationTransformer } from './authentication'
+import { PublicKeyTransformer } from './publicKey'
+import { DidCommService, IndyAgentService, ServiceTransformer } from './service'
 
 type DidDocOptions = Pick<DidDoc, 'id' | 'publicKey' | 'service' | 'authentication'>
 

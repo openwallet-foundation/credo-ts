@@ -1,7 +1,8 @@
+import type { ConnectionRecord } from '../modules/connections'
+
 import { Subject } from 'rxjs'
 
-import { Agent } from '..'
-import { ConnectionRecord } from '../modules/connections'
+import { Agent } from '../agent/Agent'
 
 import { SubjectInboundTransporter, SubjectOutboundTransporter, waitForBasicMessage, getBaseConfig } from './helpers'
 

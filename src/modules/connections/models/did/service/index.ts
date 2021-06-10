@@ -1,4 +1,6 @@
-import { Transform, ClassConstructor, plainToClass } from 'class-transformer'
+import type { ClassConstructor } from 'class-transformer'
+
+import { Transform, plainToClass } from 'class-transformer'
 
 import { DidCommService } from './DidCommService'
 import { IndyAgentService } from './IndyAgentService'

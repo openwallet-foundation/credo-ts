@@ -1,25 +1,28 @@
+import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Logger } from '../../../logger'
+import type { ConnectionRecord } from '../../connections'
+import type { CredentialStateChangedEvent } from '../CredentialEvents'
+import type { CredentialPreview, ProposeCredentialMessageOptions } from '../messages'
 import type { CredDefId } from 'indy-sdk'
+
 import { scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { AgentMessage } from '../../../agent/AgentMessage'
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
-import { Logger } from '../../../logger'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { uuid } from '../../../utils/uuid'
 import { AckStatus } from '../../common'
-import { ConnectionService, ConnectionRecord } from '../../connections'
+import { ConnectionService } from '../../connections'
 import { IndyIssuerService, IndyHolderService } from '../../indy'
 import { LedgerService } from '../../ledger/services/LedgerService'
-import { CredentialEventTypes, CredentialStateChangedEvent } from '../CredentialEvents'
+import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
 import {
   OfferCredentialMessage,
-  CredentialPreview,
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   RequestCredentialMessage,
   IssueCredentialMessage,
@@ -27,7 +30,6 @@ import {
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   INDY_CREDENTIAL_ATTACHMENT_ID,
   ProposeCredentialMessage,
-  ProposeCredentialMessageOptions,
 } from '../messages'
 import { CredentialRepository } from '../repository'
 import { CredentialRecord } from '../repository/CredentialRecord'

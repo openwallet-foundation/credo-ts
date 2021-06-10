@@ -1,3 +1,5 @@
+import type { Wallet } from '../../../wallet/Wallet'
+
 import { getBaseConfig, getMockConnection, mockFunction } from '../../../__tests__/helpers'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -7,7 +9,6 @@ import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
-import { Wallet } from '../../../wallet/Wallet'
 import { AckMessage, AckStatus } from '../../common'
 import {
   ConnectionInvitationMessage,

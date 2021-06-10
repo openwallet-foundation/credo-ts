@@ -1,4 +1,6 @@
-import { ClassConstructor, classToPlain, plainToClass } from 'class-transformer'
+import type { ClassConstructor } from 'class-transformer'
+
+import { classToPlain, plainToClass } from 'class-transformer'
 
 import {
   PublicKeyTransformer,

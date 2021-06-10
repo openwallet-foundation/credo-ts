@@ -1,8 +1,8 @@
+import type { FileSystem } from './FileSystem'
+
 import RNFS from 'react-native-fs'
 
 import { getDirFromFilePath } from '../../utils/path'
-
-import { FileSystem } from './FileSystem'
 
 export class ReactNativeFileSystem implements FileSystem {
   public readonly basePath

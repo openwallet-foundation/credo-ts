@@ -1,4 +1,6 @@
+import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Verkey } from 'indy-sdk'
+
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
@@ -15,7 +17,6 @@ import {
   TrustPingResponseMessageHandler,
 } from './handlers'
 import { ConnectionInvitationMessage } from './messages'
-import { ConnectionRecord } from './repository/ConnectionRecord'
 import { ConnectionService, TrustPingService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
