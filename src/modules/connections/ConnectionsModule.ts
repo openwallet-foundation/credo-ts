@@ -7,7 +7,7 @@ import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import { ConsumerRoutingService } from '../routing'
+import { ConsumerRoutingService } from '../routing/services/ConsumerRoutingService'
 
 import {
   ConnectionRequestHandler,
