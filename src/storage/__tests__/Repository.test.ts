@@ -1,6 +1,7 @@
+import type { TagsBase } from '../BaseRecord'
+
 import { mockFunction } from '../../__tests__/helpers'
 import { AriesFrameworkError, RecordDuplicateError, RecordNotFoundError } from '../../error'
-import { TagsBase } from '../BaseRecord'
 import { IndyStorageService } from '../IndyStorageService'
 import { Repository } from '../Repository'
 

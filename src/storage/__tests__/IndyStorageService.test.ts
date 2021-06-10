@@ -1,8 +1,9 @@
+import type { TagsBase } from '../BaseRecord'
+
 import { getBaseConfig } from '../../__tests__/helpers'
 import { AgentConfig } from '../../agent/AgentConfig'
 import { RecordDuplicateError, RecordNotFoundError } from '../../error'
 import { IndyWallet } from '../../wallet/IndyWallet'
-import { TagsBase } from '../BaseRecord'
 import { IndyStorageService } from '../IndyStorageService'
 
 import { TestRecord } from './TestRecord'

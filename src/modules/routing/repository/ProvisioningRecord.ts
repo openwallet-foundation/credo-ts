@@ -1,4 +1,6 @@
-import { BaseRecord, TagsBase } from '../../../storage/BaseRecord'
+import type { TagsBase } from '../../../storage/BaseRecord'
+
+import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 
 interface ProvisioningRecordProps {
