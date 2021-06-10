@@ -75,6 +75,7 @@ app.use(cors())
 app.use(
   express.text({
     type: [DidCommMimeType.V0, DidCommMimeType.V1],
+    limit: '5mb',
   })
 )
 app.set('json spaces', 2)

@@ -19,27 +19,27 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { Wallet } from '../../../wallet/Wallet'
 import { AckStatus } from '../../common'
-import { CredentialUtils, Credential, IndyCredentialInfo } from '../../credentials'
+import { CredentialUtils, Credential, IndyCredentialInfo, CredentialRepository } from '../../credentials'
 import { IndyHolderService, IndyVerifierService } from '../../indy'
 import { LedgerService } from '../../ledger/services/LedgerService'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofState } from '../ProofState'
 import {
+  INDY_PROOF_ATTACHMENT_ID,
+  INDY_PROOF_REQUEST_ATTACHMENT_ID,
+  PresentationAckMessage,
   PresentationMessage,
   ProposePresentationMessage,
   RequestPresentationMessage,
-  PresentationAckMessage,
-  INDY_PROOF_REQUEST_ATTACHMENT_ID,
-  INDY_PROOF_ATTACHMENT_ID,
 } from '../messages'
 import {
+  AttributeFilter,
   PartialProof,
   ProofAttributeInfo,
-  AttributeFilter,
   ProofPredicateInfo,
   ProofRequest,
-  RequestedCredentials,
   RequestedAttribute,
+  RequestedCredentials,
   RequestedPredicate,
 } from '../models'
 import { ProofRepository } from '../repository'
@@ -53,6 +53,7 @@ import { ProofRecord } from '../repository/ProofRecord'
 @scoped(Lifecycle.ContainerScoped)
 export class ProofService {
   private proofRepository: ProofRepository
+  private credentialRepository: CredentialRepository
   private ledgerService: LedgerService
   private wallet: Wallet
   private logger: Logger
@@ -67,9 +68,11 @@ export class ProofService {
     agentConfig: AgentConfig,
     indyHolderService: IndyHolderService,
     indyVerifierService: IndyVerifierService,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    credentialRepository: CredentialRepository
   ) {
     this.proofRepository = proofRepository
+    this.credentialRepository = credentialRepository
     this.ledgerService = ledgerService
     this.wallet = wallet
     this.logger = agentConfig.logger
@@ -394,6 +397,12 @@ export class ProofService {
       )
     }
 
+    // Get the matching attachments to the requested credentials
+    const attachments = await this.getRequestedAttachmentsForRequestedCredentials(
+      indyProofRequest,
+      requestedCredentials
+    )
+
     // Create proof
     const proof = await this.createProof(indyProofRequest, requestedCredentials)
 
@@ -405,9 +414,11 @@ export class ProofService {
         base64: JsonEncoder.toBase64(proof),
       }),
     })
+
     const presentationMessage = new PresentationMessage({
       comment: config?.comment,
       presentationAttachments: [attachment],
+      attachments,
     })
     presentationMessage.setThread({ threadId: proofRecord.tags.threadId })
 
@@ -608,6 +619,42 @@ export class ProofService {
     }
 
     return proofRequest
+  }
+
+  public async getRequestedAttachmentsForRequestedCredentials(
+    indyProofRequest: ProofRequest,
+    requestedCredentials: RequestedCredentials
+  ): Promise<Attachment[] | undefined> {
+    let attachments: Attachment[] | undefined
+
+    for (const [referent, requestedAttribute] of Object.entries(requestedCredentials.requestedAttributes)) {
+      // set the credential ID
+      const credentialId = requestedAttribute.credentialId
+
+      // Find the credential record
+      const credentialRecord = await this.credentialRepository.getSingleByQuery({ credentialId })
+
+      // Find the requested Attributes
+      const reqAttribute = indyProofRequest.requestedAttributes[referent]
+
+      // List the requested attributes
+      const arr = reqAttribute?.names ?? [reqAttribute?.name]
+
+      // filter on hashlinks and see if list of requested attributes includes the credential name
+      const reqCredential = credentialRecord.credentialAttributes?.find(
+        (cred) => cred.value.toLowerCase().startsWith('hl:') && arr?.includes(cred.name)
+      )
+      // Add the matching attachments to an object
+      if (reqCredential) {
+        const requestedAttachments = credentialRecord.attachments?.find(
+          (attachment) => reqCredential.value.split(':')[1] === attachment.id
+        )
+        if (requestedAttachments) {
+          attachments = attachments ? [...attachments, requestedAttachments] : [requestedAttachments]
+        }
+      }
+    }
+    return attachments
   }
 
   /**

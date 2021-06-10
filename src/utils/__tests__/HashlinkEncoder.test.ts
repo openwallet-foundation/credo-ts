@@ -1,5 +1,6 @@
 import { Buffer } from 'buffer'
 
+import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
 import { HashlinkEncoder } from '../HashlinkEncoder'
 
 const validData = {
@@ -27,22 +28,38 @@ const invalidHashlink =
 const invalidMetadata =
   'hl:zQmWvQxTqbG2Z9HPJgG57jjwR154cKhbtJenbyYTWkjgF3e:zHCwSqQisPgCc2sMSNmHWyQtCKu4kgQVD6Q1Nhxff7uNRqN6r'
 
+const attachment = new Attachment({ data: new AttachmentData({ json: { hello: 'world' } }) })
+const invalidAttachment = new Attachment({ data: new AttachmentData({}) })
+
 describe('HashlinkEncoder', () => {
   describe('encode()', () => {
     it('Encodes string to hashlink', () => {
-      const hashlink = HashlinkEncoder.encode(validData.data, 'sha2-256')
+      const hashlink = HashlinkEncoder.encode(validData.data)
       expect(hashlink).toEqual('hl:zQmWvQxTqbG2Z9HPJgG57jjwR154cKhbtJenbyYTWkjgF3e')
     })
 
     it('Encodes string and metadata to hashlink', () => {
-      const hashlink = HashlinkEncoder.encode(validData.data, 'sha2-256', 'base58btc', validData.metadata)
+      const hashlink = HashlinkEncoder.encode(validData.data, validData.metadata)
       expect(hashlink).toEqual(validHashlink)
     })
 
     it('Encodes invalid metadata in hashlink', () => {
       expect(() => {
-        HashlinkEncoder.encode(validData.data, 'sha2-256', 'base58btc', invalidData.metadata)
+        HashlinkEncoder.encode(validData.data, invalidData.metadata)
       }).toThrow(/^Invalid metadata: /)
+    })
+  })
+
+  describe('encodeAttachment()', () => {
+    it('Encodes attachment to hashlink', () => {
+      const hashlink = HashlinkEncoder.encodeAttachment(attachment)
+      expect(hashlink).toEqual('hl:zQmYGx7Wzqe5prvEsTSzYBQN8xViYUM9qsWJSF5EENLcNmM')
+    })
+
+    it('Encodes invalid attachment to hashlink', () => {
+      expect(() => {
+        HashlinkEncoder.encodeAttachment(invalidAttachment)
+      }).toThrow(/^Attachment: /)
     })
   })
 

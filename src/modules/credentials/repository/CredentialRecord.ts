@@ -3,6 +3,7 @@ import type { CredentialState } from '../CredentialState'
 
 import { Type } from 'class-transformer'
 
+import { Attachment } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
@@ -35,6 +36,7 @@ export interface CredentialStorageProps {
   requestMessage?: RequestCredentialMessage
   credentialMessage?: IssueCredentialMessage
   credentialAttributes?: CredentialPreviewAttribute[]
+  attachments?: Attachment[]
 }
 
 export interface CredentialRecordTags extends Tags {
@@ -62,6 +64,9 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
   @Type(() => CredentialPreviewAttribute)
   public credentialAttributes?: CredentialPreviewAttribute[]
 
+  @Type(() => Attachment)
+  public attachments?: Attachment[]
+
   public static readonly type = 'CredentialRecord'
   public readonly type = CredentialRecord.type
 
@@ -82,6 +87,7 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
       this.requestMessage = props.requestMessage
       this.credentialMessage = props.credentialMessage
       this.credentialAttributes = props.credentialAttributes
+      this.attachments = props.attachments
     }
   }
 
@@ -98,6 +104,7 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
 
     return new CredentialInfo({
       claims,
+      attachments: this.attachments ? this.attachments : undefined,
       metadata: {
         credentialDefinitionId: this.metadata.credentialDefinitionId,
         schemaId: this.metadata.schemaId,

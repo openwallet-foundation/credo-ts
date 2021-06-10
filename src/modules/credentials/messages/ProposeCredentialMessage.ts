@@ -1,3 +1,5 @@
+import type { Attachment } from '../../../decorators/attachment/Attachment'
+
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsOptional, IsString, ValidateNested } from 'class-validator'
 
@@ -16,6 +18,7 @@ export interface ProposeCredentialMessageOptions {
   schemaVersion?: string
   credentialDefinitionId?: string
   issuerDid?: string
+  attachments?: Attachment[]
 }
 
 /**
@@ -37,6 +40,7 @@ export class ProposeCredentialMessage extends AgentMessage {
       this.schemaVersion = options.schemaVersion
       this.credentialDefinitionId = options.credentialDefinitionId
       this.issuerDid = options.issuerDid
+      this.attachments = options.attachments
     }
   }
 

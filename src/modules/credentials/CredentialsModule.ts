@@ -1,6 +1,5 @@
-import type { ProposeCredentialMessageOptions } from './messages'
 import type { CredentialRecord } from './repository/CredentialRecord'
-import type { CredentialOfferTemplate } from './services'
+import type { CredentialOfferTemplate, CredentialProposeOptions } from './services'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -11,11 +10,11 @@ import { AriesFrameworkError } from '../../error'
 import { ConnectionService } from '../connections'
 
 import {
-  ProposeCredentialHandler,
-  OfferCredentialHandler,
-  RequestCredentialHandler,
-  IssueCredentialHandler,
   CredentialAckHandler,
+  IssueCredentialHandler,
+  OfferCredentialHandler,
+  ProposeCredentialHandler,
+  RequestCredentialHandler,
 } from './handlers'
 import { CredentialService } from './services'
 
@@ -45,7 +44,7 @@ export class CredentialsModule {
    * @param config Additional configuration to use for the proposal
    * @returns Credential record associated with the sent proposal message
    */
-  public async proposeCredential(connectionId: string, config?: Omit<ProposeCredentialMessageOptions, 'id'>) {
+  public async proposeCredential(connectionId: string, config?: CredentialProposeOptions) {
     const connection = await this.connectionService.getById(connectionId)
 
     const { message, credentialRecord } = await this.credentialService.createProposal(connection, config)
@@ -85,6 +84,8 @@ export class CredentialsModule {
 
     const credentialDefinitionId = config?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
 
+    credentialRecord.attachments = credentialProposalMessage.attachments
+
     if (!credentialDefinitionId) {
       throw new AriesFrameworkError(
         'Missing required credential definition id. If credential proposal message contains no credential definition id it must be passed to config.'
@@ -96,6 +97,7 @@ export class CredentialsModule {
       preview: credentialProposalMessage.credentialProposal,
       credentialDefinitionId,
       comment: config?.comment,
+      attachments: credentialProposalMessage.attachments,
     })
 
     const outboundMessage = createOutboundMessage(connection, message)

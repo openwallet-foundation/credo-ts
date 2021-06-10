@@ -1,10 +1,14 @@
+import type { Attachment } from '../decorators/attachment/Attachment'
 import type { BaseName } from './MultibaseEncoder'
 import type { Buffer } from './buffer'
 
 import cbor from 'borc'
 import { sha256 } from 'js-sha256'
 
+import { AriesFrameworkError } from '../error/AriesFrameworkError'
+
 import { BufferEncoder } from './BufferEncoder'
+import { JsonEncoder } from './JsonEncoder'
 import { MultibaseEncoder } from './MultibaseEncoder'
 import { MultihashEncoder } from './MultihashEncoder'
 
@@ -25,7 +29,6 @@ const hexTable = {
 
 export class HashlinkEncoder {
   /**
-   *
    * Encodes a buffer, with optional metadata, into a hashlink
    *
    * @param buffer the buffer to encode into a hashlink
@@ -37,17 +40,16 @@ export class HashlinkEncoder {
    */
   public static encode(
     buffer: Buffer | Uint8Array,
-    hashAlgorithm: 'sha2-256',
-    baseEncoding: BaseName = 'base58btc',
-    metadata?: Metadata
+    metadata?: Metadata,
+    hashAlgorithm: 'sha2-256' = 'sha2-256',
+    baseEncoding: BaseName = 'base58btc'
   ) {
     const checksum = this.encodeMultihashEncoder(buffer, hashAlgorithm, baseEncoding)
-    const mbMetadata = metadata ? this.encodeMetadata(metadata, baseEncoding) : null
+    const mbMetadata = metadata && Object.keys(metadata).length > 0 ? this.encodeMetadata(metadata, baseEncoding) : null
     return mbMetadata ? `hl:${checksum}:${mbMetadata}` : `hl:${checksum}`
   }
 
   /**
-   *
    * Decodes a hashlink into HashlinkData object
    *
    * @param hashlink the hashlink that needs decoding
@@ -57,9 +59,6 @@ export class HashlinkEncoder {
   public static decode(hashlink: string): HashlinkData {
     if (this.isValid(hashlink)) {
       const hashlinkList = hashlink.split(':')
-      //      const checksum = hashlinkList[1]
-      //      const metadata = hashlinkList[2] ? this.decodeMetadata(hashlinkList[2]) : null
-
       const [, checksum, encodedMetadata] = hashlinkList
       return encodedMetadata ? { checksum, metadata: this.decodeMetadata(encodedMetadata) } : { checksum }
     } else {
@@ -68,7 +67,6 @@ export class HashlinkEncoder {
   }
 
   /**
-   *
    * Validates a hashlink
    *
    * @param hashlink the hashlink that needs validating
@@ -76,7 +74,6 @@ export class HashlinkEncoder {
    * @returns a boolean whether the hashlink is valid
    *
    * */
-
   public static isValid(hashlink: string): boolean {
     const hashlinkList = hashlink.split(':')
     const validMultibase = MultibaseEncoder.isValid(hashlinkList[1])
@@ -88,10 +85,26 @@ export class HashlinkEncoder {
     return validMultibase && validMultihash ? true : false
   }
 
+  public static encodeAttachment(
+    attachment: Attachment,
+    hashAlgorithm: 'sha2-256' = 'sha2-256',
+    baseName: BaseName = 'base58btc'
+  ) {
+    if (attachment.data.sha256) {
+      return `hl:${attachment.data.sha256}`
+    } else if (attachment.data.base64) {
+      return this.encode(BufferEncoder.fromBase64(attachment.data.base64), {}, hashAlgorithm, baseName)
+    } else if (attachment.data.json) {
+      return this.encode(JsonEncoder.toBuffer(attachment.data.json), {}, hashAlgorithm, baseName)
+    } else {
+      throw new AriesFrameworkError(`Attachment: (${attachment.id}) has no data to create a link with`)
+    }
+  }
+
   private static encodeMultihashEncoder(
     buffer: Buffer | Uint8Array,
-    hashName: 'sha2-256',
-    baseEncoding: BaseName
+    hashName: 'sha2-256' = 'sha2-256',
+    baseEncoding: BaseName = 'base58btc'
   ): string {
     // TODO: Support more hashing algorithms
     const hash = new Uint8Array(sha256.array(buffer))

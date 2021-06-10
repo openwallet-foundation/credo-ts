@@ -1,10 +1,36 @@
-import type { CredentialPreviewAttribute } from './messages/CredentialPreview'
+import type { LinkedAttachment } from '../../utils/LinkedAttachment'
 import type { CredValues } from 'indy-sdk'
 
 import BigNumber from 'bn.js'
 import { sha256 } from 'js-sha256'
 
+import { HashlinkEncoder } from '../../utils/HashlinkEncoder'
+
+import { CredentialPreview, CredentialPreviewAttribute } from './messages/CredentialPreview'
+
 export class CredentialUtils {
+  /**
+   * Adds a credential to the preview where it links to the attachment
+   *
+   * @param attachments a list of the attachments that need to be linked to a credential
+   * @param preview the credential previews where the new linked credential has to be appended to
+   *
+   * @returns a modified version of the credential preview with the linked credentials
+   * */
+  public static createAndLinkCredentialToAttachment(attachments: LinkedAttachment[], preview: CredentialPreview) {
+    const credentialPreview = new CredentialPreview({ attributes: [...preview.attributes] })
+    attachments?.forEach((linkedAttachment) => {
+      const credentialPreviewAttribute = new CredentialPreviewAttribute({
+        name: linkedAttachment.name,
+        mimeType: linkedAttachment.attachment.mimeType,
+        value: HashlinkEncoder.encodeAttachment(linkedAttachment.attachment),
+      })
+      credentialPreview.attributes.push(credentialPreviewAttribute)
+    })
+
+    return credentialPreview
+  }
+
   /**
    * Converts int value to string
    * Converts string value:
