@@ -135,6 +135,7 @@ export class ConnectionsModule {
    */
   public async acceptInvitation(connectionId: string): Promise<ConnectionRecord> {
     const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(connectionId)
+    console.log('Connection request:', JSON.stringify(message))
 
     const outbound = createOutboundMessage(connectionRecord, message, connectionRecord.invitation)
     await this.messageSender.sendMessage(outbound)

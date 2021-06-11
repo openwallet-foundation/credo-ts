@@ -293,7 +293,7 @@ export async function makeTransport(agent: Agent, inboundTransporter: InboundTra
   await agent.init()
 }
 
-export function makeInBoundTransporter(){
+export function makeInBoundTransporter() {
   const app = express()
   app.use(cors())
   app.use(express.json())
@@ -303,9 +303,8 @@ export function makeInBoundTransporter(){
     })
   )
   app.set('json spaces', 2)
-return new mockInBoundTransporter(app)
+  return new mockInBoundTransporter(app)
 }
-
 
 export class mockInBoundTransporter implements InboundTransporter {
   private app: Express

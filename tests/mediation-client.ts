@@ -63,7 +63,7 @@ class HttpInboundTransporter implements InboundTransporter {
     const loop = async () => {
       while (!this.stop) {
         await agent.mediationRecipient.downloadMessages(mediatorConnection)
-        await sleep(5000)
+        await sleep(50)
       }
     }
     new Promise(() => {

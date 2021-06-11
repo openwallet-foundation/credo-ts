@@ -182,6 +182,7 @@ export class RecipientModule {
     await this.messageSender.sendMessage(outboundMessage)
     return promise
   }
+
   // Register handlers for the several messages for the mediator.
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.recipientService))

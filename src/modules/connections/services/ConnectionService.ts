@@ -519,6 +519,7 @@ export class ConnectionService {
 
   public async returnWhenIsConnected(connectionId: string): Promise<ConnectionRecord> {
     const isConnected = (connection: ConnectionRecord) => {
+      console.log(`${JSON.stringify(connection.state)}`)
       return connection.id === connectionId && connection.state === ConnectionState.Complete
     }
 
