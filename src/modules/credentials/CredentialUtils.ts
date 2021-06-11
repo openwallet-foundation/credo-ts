@@ -4,6 +4,7 @@ import type { CredValues } from 'indy-sdk'
 import BigNumber from 'bn.js'
 import { sha256 } from 'js-sha256'
 
+import { AriesFrameworkError } from '../../error'
 import { HashlinkEncoder } from '../../utils/HashlinkEncoder'
 
 import { CredentialPreview, CredentialPreviewAttribute } from './messages/CredentialPreview'
@@ -20,6 +21,9 @@ export class CredentialUtils {
   public static createAndLinkCredentialToAttachment(attachments: LinkedAttachment[], preview: CredentialPreview) {
     const credentialPreview = new CredentialPreview({ attributes: [...preview.attributes] })
     attachments?.forEach((linkedAttachment) => {
+      if (credentialPreview.attributes.map((attribute) => attribute.name).includes(linkedAttachment.name)) {
+        throw new AriesFrameworkError(`linkedAttachment ${linkedAttachment.name} already exists in the preview`)
+      }
       const credentialPreviewAttribute = new CredentialPreviewAttribute({
         name: linkedAttachment.name,
         mimeType: linkedAttachment.attachment.mimeType,

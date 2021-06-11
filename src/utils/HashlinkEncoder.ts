@@ -1,5 +1,5 @@
 import type { Attachment } from '../decorators/attachment/Attachment'
-import type { BaseName } from './MultibaseEncoder'
+import type { BaseName } from './MultiBaseEncoder'
 import type { Buffer } from './buffer'
 
 import cbor from 'borc'
@@ -9,8 +9,8 @@ import { AriesFrameworkError } from '../error/AriesFrameworkError'
 
 import { BufferEncoder } from './BufferEncoder'
 import { JsonEncoder } from './JsonEncoder'
-import { MultibaseEncoder } from './MultibaseEncoder'
-import { MultihashEncoder } from './MultihashEncoder'
+import { MultiBaseEncoder } from './MultiBaseEncoder'
+import { MultiHashEncoder } from './MultiHashEncoder'
 
 type Metadata = {
   urls?: string[]
@@ -44,7 +44,7 @@ export class HashlinkEncoder {
     hashAlgorithm: 'sha2-256' = 'sha2-256',
     baseEncoding: BaseName = 'base58btc'
   ) {
-    const checksum = this.encodeMultihashEncoder(buffer, hashAlgorithm, baseEncoding)
+    const checksum = this.encodeMultiHashEncoder(buffer, hashAlgorithm, baseEncoding)
     const mbMetadata = metadata && Object.keys(metadata).length > 0 ? this.encodeMetadata(metadata, baseEncoding) : null
     return mbMetadata ? `hl:${checksum}:${mbMetadata}` : `hl:${checksum}`
   }
@@ -76,13 +76,13 @@ export class HashlinkEncoder {
    * */
   public static isValid(hashlink: string): boolean {
     const hashlinkList = hashlink.split(':')
-    const validMultibase = MultibaseEncoder.isValid(hashlinkList[1])
-    if (!validMultibase) {
+    const validMultiBase = MultiBaseEncoder.isValid(hashlinkList[1])
+    if (!validMultiBase) {
       return false
     }
-    const { data } = MultibaseEncoder.decode(hashlinkList[1])
-    const validMultihash = MultihashEncoder.isValid(data)
-    return validMultibase && validMultihash ? true : false
+    const { data } = MultiBaseEncoder.decode(hashlinkList[1])
+    const validMultiHash = MultiHashEncoder.isValid(data)
+    return validMultiBase && validMultiHash ? true : false
   }
 
   public static encodeAttachment(
@@ -101,15 +101,15 @@ export class HashlinkEncoder {
     }
   }
 
-  private static encodeMultihashEncoder(
+  private static encodeMultiHashEncoder(
     buffer: Buffer | Uint8Array,
     hashName: 'sha2-256' = 'sha2-256',
     baseEncoding: BaseName = 'base58btc'
   ): string {
     // TODO: Support more hashing algorithms
     const hash = new Uint8Array(sha256.array(buffer))
-    const mh = MultihashEncoder.encode(hash, hashName)
-    const mb = MultibaseEncoder.encode(mh, baseEncoding)
+    const mh = MultiHashEncoder.encode(hash, hashName)
+    const mb = MultiBaseEncoder.encode(mh, baseEncoding)
     return BufferEncoder.toUtf8String(mb)
   }
 
@@ -126,14 +126,14 @@ export class HashlinkEncoder {
 
     const cborData = cbor.encode(metadataMap)
 
-    const multibaseMetadata = MultibaseEncoder.encode(cborData, baseEncoding)
+    const multibaseMetadata = MultiBaseEncoder.encode(cborData, baseEncoding)
 
     return BufferEncoder.toUtf8String(multibaseMetadata)
   }
 
   private static decodeMetadata(mb: string): Metadata {
     const obj = { urls: [] as string[], contentType: '' }
-    const { data } = MultibaseEncoder.decode(mb)
+    const { data } = MultiBaseEncoder.decode(mb)
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const cborData: Map<number, any> = cbor.decode(data)
