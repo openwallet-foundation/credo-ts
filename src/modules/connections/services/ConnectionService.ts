@@ -122,7 +122,6 @@ export class ConnectionService {
       mediatorId?: string
     }
   ): Promise<ConnectionRecord> {
-    console.log(`processInvitation, ${JSON.stringify(config)}`)
     const connectionRecord = await this.createConnection({
       role: ConnectionRole.Invitee,
       state: ConnectionState.Invited,
