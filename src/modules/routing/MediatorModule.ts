@@ -93,9 +93,10 @@ export class MediatorModule {
       //await this.messageSender.sendMessage(outbound)
     })
   }
-  private keylistUpdatedResponseEvent = async ({
-    payload: { mediationRecord, message },
-  }: MediationKeylistUpdatedEvent) => {
+  private keylistUpdatedResponseEvent = async ({payload:{
+    mediationRecord,
+    message,
+    keylist,} }: MediationKeylistUpdatedEvent) => {
     const connectionRecord: ConnectionRecord = await this.connectionService.getById(mediationRecord.connectionId)
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)

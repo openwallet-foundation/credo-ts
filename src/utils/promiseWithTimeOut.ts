@@ -15,19 +15,19 @@ export async function waitForEventWithTimeout<T extends BaseEvent>(
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     let timer: NodeJS.Timeout = setTimeout(() => {})
 
-    function listener(data: any) {
+    const listener = (data: any) => {
       //TODO: test if thread Id matches the one in the message
-      //if (data.threadId === message.threadId) {
-      clearTimeout(timer)
+      // if (data.threadId === message.threadId) {
       eventEmitter.off(eventType, listener)
+      clearTimeout(timer)
       resolve(data)
-      //}
+      // }
     }
 
     eventEmitter.on<T>(eventType, listener)
     timer = setTimeout(() => {
       eventEmitter.off<T>(eventType, listener)
-      reject(new Error('timeout waiting for ' + eventType + 'from initialized from message' + message))
+      reject(new Error('timeout waiting for "' + eventType + '" from initialized from message: ' + JSON.stringify(message)))
     }, timeout)
     // emit after listener is listening to prevent any race condition
     eventEmitter.emit<T>(event)

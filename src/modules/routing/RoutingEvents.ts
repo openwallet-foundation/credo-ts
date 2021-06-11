@@ -6,12 +6,14 @@ import { ConnectionRecord } from '../connections'
 import { ForwardMessage } from './messages'
 import { MediationState } from './models/MediationState'
 import { MediationRecord } from './repository/MediationRecord'
-
+// TODO: clean up event names and structures
 export enum RoutingEventTypes {
   MediationStateChanged = 'MediationStateChanged',
   MediationGranted = 'MediationGranted',
   MediationKeylist = 'MediationKeylist',
+  RecipientKeylistUpdate = 'RecipientKeylistUpdate',
   MediationKeylistUpdate = 'MediationKeylistUpdate',
+  RecipientKeylistUpdated = 'RecipientKeylistUpdated',
   MediationKeylistUpdated = 'MediationKeylistUpdated',
   Forward = 'Forward',
 }
@@ -40,16 +42,8 @@ export interface MediationKeylistEvent extends BaseEvent {
   }
 }
 
-export interface MediationKeylistUpdatedEvent extends BaseEvent {
-  type: typeof RoutingEventTypes.MediationKeylistUpdated
-  payload: {
-    mediationRecord: MediationRecord
-    message: KeylistUpdateResponseMessage
-  }
-}
-
 export interface KeylistUpdateEvent extends BaseEvent {
-  type: typeof RoutingEventTypes.MediationKeylistUpdate
+  type: typeof RoutingEventTypes.RecipientKeylistUpdate
   payload: {
     mediationRecord: MediationRecord
     message: KeylistUpdateMessage
@@ -57,9 +51,18 @@ export interface KeylistUpdateEvent extends BaseEvent {
 }
 
 export interface KeylistUpdatedEvent extends BaseEvent {
+  type: typeof RoutingEventTypes.RecipientKeylistUpdated
+  payload: {
+    mediationRecord: MediationRecord
+    keylist: KeylistUpdated[]
+  }
+}
+
+export interface MediationKeylistUpdatedEvent extends BaseEvent {
   type: typeof RoutingEventTypes.MediationKeylistUpdated
   payload: {
     mediationRecord: MediationRecord
+    message: KeylistUpdateResponseMessage
     keylist: KeylistUpdated[]
   }
 }

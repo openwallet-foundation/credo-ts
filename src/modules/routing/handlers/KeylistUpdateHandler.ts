@@ -14,7 +14,6 @@ export class KeylistUpdateHandler implements Handler {
     if (!messageContext.connection) {
       throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
-
-    await this.mediatorService.processKeylistUpdateRequest(messageContext)
+    return await this.mediatorService.processKeylistUpdateRequest(messageContext)
   }
 }

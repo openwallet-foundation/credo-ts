@@ -132,9 +132,8 @@ export class RecipientService {
         await this.removeRoute(update.recipientKey, mediationRecord)
       }
     }
-
     this.eventEmitter.emit<KeylistUpdatedEvent>({
-      type: RoutingEventTypes.MediationKeylistUpdated,
+      type: RoutingEventTypes.RecipientKeylistUpdated,
       payload: {
         mediationRecord,
         keylist,

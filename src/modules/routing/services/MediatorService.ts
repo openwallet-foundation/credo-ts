@@ -114,14 +114,6 @@ export class MediatorService {
         keylist.push(update_)
       }
     }
-    // emit internal event
-    this.eventEmitter.emit<KeylistUpdatedEvent>({
-      type: RoutingEventTypes.MediationKeylistUpdated,
-      payload: {
-        mediationRecord,
-        keylist,
-      },
-    })
     // emit event to send message that notifies recipient
     const message_ = new KeylistUpdateResponseMessage({ keylist })
     this.eventEmitter.emit<MediationKeylistUpdatedEvent>({
@@ -129,8 +121,11 @@ export class MediatorService {
       payload: {
         mediationRecord,
         message: message_,
+        keylist,
       },
     })
+    // return routing path.. TODO: will this endup in a queue or something undesired.
+    return createOutboundMessage(connection, message_)
   }
 
   public async saveRoute(recipientKey: Verkey, mediationRecord: MediationRecord | null): Promise<KeylistUpdateResult> {

@@ -20,8 +20,10 @@ export class BatchHandler implements Handler {
 
     const { message } = messageContext
     const forwardedMessages = message.messages
+    console.log(`message picked: ${JSON.stringify(message)}`)
 
     forwardedMessages.forEach((message) => {
+      console.log(`message picked: ${JSON.stringify(message)}`)
       this.eventEmitter.emit<AgentMessageReceivedEvent>({
         type: AgentEventTypes.AgentMessageReceived,
         payload: {

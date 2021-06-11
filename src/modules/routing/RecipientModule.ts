@@ -191,7 +191,7 @@ export class RecipientModule {
   }
 
   private registerListeners() {
-    this.eventEmitter.on<KeylistUpdateEvent>(RoutingEventTypes.MediationKeylistUpdate, this.keylistUpdateEvent)
+    this.eventEmitter.on<KeylistUpdateEvent>(RoutingEventTypes.RecipientKeylistUpdate, this.keylistUpdateEvent)
   }
 
   private keylistUpdateEvent = async ({ payload: { mediationRecord, message } }: KeylistUpdateEvent) => {

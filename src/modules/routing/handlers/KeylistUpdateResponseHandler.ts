@@ -14,7 +14,6 @@ export class KeylistUpdateResponseHandler implements Handler {
     if (!messageContext.connection) {
       throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
-
-    await this.recipientService.processKeylistUpdateResults(messageContext)
+    return await this.recipientService.processKeylistUpdateResults(messageContext)
   }
 }
