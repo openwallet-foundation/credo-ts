@@ -1,17 +1,15 @@
-import type { InboundTransporter, OutboundTransporter } from '../src'
-import type { MessageRepository } from '../src/storage/MessageRepository'
-import type { OutboundPackage } from '../src/types'
+import type { MessageRepository } from '../packages/core/src/storage/MessageRepository'
+import type { InboundTransporter, OutboundTransporter, OutboundPackage } from '@aries-framework/core'
 import type { Express } from 'express'
 
 import cors from 'cors'
-import express from 'express'
+import express, { text } from 'express'
 
-import { Agent, AriesFrameworkError } from '../src'
-import testLogger from '../src/__tests__/logger'
-import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
-import { DidCommMimeType } from '../src/types'
+import testLogger from '../packages/core/tests/logger'
 
-import config from './config'
+import config, { dependencies } from './config'
+
+import { DidCommMimeType, AriesFrameworkError, Agent, InMemoryMessageRepository } from '@aries-framework/core'
 
 class HttpInboundTransporter implements InboundTransporter {
   private app: Express
@@ -73,7 +71,7 @@ const app = express()
 
 app.use(cors())
 app.use(
-  express.text({
+  text({
     type: [DidCommMimeType.V0, DidCommMimeType.V1],
   })
 )
@@ -82,7 +80,7 @@ app.set('json spaces', 2)
 const messageRepository = new InMemoryMessageRepository()
 const messageSender = new StorageOutboundTransporter(messageRepository)
 const messageReceiver = new HttpInboundTransporter(app)
-const agent = new Agent(config, messageRepository)
+const agent = new Agent(config, dependencies, messageRepository)
 agent.setInboundTransporter(messageReceiver)
 agent.setOutboundTransporter(messageSender)
 

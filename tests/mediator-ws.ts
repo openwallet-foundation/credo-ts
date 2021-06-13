@@ -1,16 +1,22 @@
-import type { InboundTransporter } from '../src'
+import type { InboundTransporter } from '@aries-framework/core'
+import type WebSocket from 'ws'
 
 import cors from 'cors'
-import express from 'express'
+import express, { text } from 'express'
 import { v4 as uuid } from 'uuid'
-import WebSocket from 'ws'
+import { Server } from 'ws'
 
-import { Agent, WebSocketTransportSession, WsOutboundTransporter } from '../src'
-import testLogger from '../src/__tests__/logger'
-import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
-import { DidCommMimeType } from '../src/types'
+import testLogger from '../packages/core/tests/logger'
 
-import config from './config'
+import config, { dependencies } from './config'
+
+import {
+  Agent,
+  WebSocketTransportSession,
+  WsOutboundTransporter,
+  DidCommMimeType,
+  InMemoryMessageRepository,
+} from '@aries-framework/core'
 
 const logger = testLogger
 
@@ -43,7 +49,6 @@ class WsInboundTransporter implements InboundTransporter {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     socket.addEventListener('message', async (event: any) => {
       logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
-      // @ts-expect-error Property 'dispatchEvent' is missing in type WebSocket imported from 'ws' module but required in type 'WebSocket'.
       const session = new WebSocketTransportSession(socket)
       const outboundMessage = await agent.receiveMessage(JSON.parse(event.data), session)
       if (outboundMessage) {
@@ -58,19 +63,19 @@ const app = express()
 
 app.use(cors())
 app.use(
-  express.text({
+  text({
     type: [DidCommMimeType.V0, DidCommMimeType.V1],
   })
 )
 app.set('json spaces', 2)
 
-const socketServer = new WebSocket.Server({ noServer: true })
+const socketServer = new Server({ noServer: true })
 // TODO Remove when mediation protocol is implemented
 // This endpoint is used in all invitations created by this mediator agent.
 config.endpoint = `ws://localhost:${PORT}`
 
 const messageRepository = new InMemoryMessageRepository()
-const agent = new Agent(config, messageRepository)
+const agent = new Agent(config, dependencies, messageRepository)
 const messageSender = new WsOutboundTransporter(agent)
 const messageReceiver = new WsInboundTransporter(socketServer)
 agent.setInboundTransporter(messageReceiver)

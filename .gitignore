@@ -4,8 +4,8 @@ build
 yarn-error.log
 .idea
 aries-framework-*.tgz
-src/lib/__tests__/genesis-von.txn
 coverage
 .DS_Store
 logs.txt
 logs/
+packages/core/src/__tests__/genesis-von.txn

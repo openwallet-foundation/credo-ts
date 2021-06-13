@@ -1,8 +1,8 @@
 import type { BodyInit } from 'node-fetch'
 
-import fetch from 'node-fetch'
+import testLogger from '../packages/core/tests/logger'
 
-import testLogger from '../src/__tests__/logger'
+import { fetch } from '@aries-framework/node'
 
 export async function get(url: string) {
   testLogger.debug(`HTTP GET request: '${url}'`)

@@ -1,0 +1,34 @@
+{
+  "name": "@aries-framework/react-native",
+  "version": "1.0.0",
+  "main": "build/index",
+  "types": "build/index",
+  "files": [
+    "build"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "directory": "packages/react-native"
+  },
+  "scripts": {
+    "build": "yarn run clean && yarn run compile",
+    "clean": "rimraf -rf ./build",
+    "compile": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "yarn run build",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@aries-framework/core": "*",
+    "events": "^3.3.0",
+    "react-native-fs": "^2.18.0",
+    "rn-indy-sdk": "^0.1.10"
+  },
+  "devDependencies": {
+    "@types/node": "*",
+    "@types/react-native": "^0.64.10",
+    "@types/rn-indy-sdk": "npm:@types/indy-sdk@^1.15.3",
+    "rimraf": "~3.0.2",
+    "typescript": "~4.3.0"
+  }
+}

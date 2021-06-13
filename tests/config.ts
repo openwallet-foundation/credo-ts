@@ -1,11 +1,11 @@
-import type { InitConfig } from '../src/types'
+import type { InitConfig, AgentDependencies } from '@aries-framework/core'
 
 import * as dotenv from 'dotenv'
-import indy from 'indy-sdk'
 
-import { TestLogger } from '../src/__tests__/logger'
-import { LogLevel } from '../src/logger'
-import { NodeFileSystem } from '../src/storage/fs/NodeFileSystem'
+import { TestLogger } from '../packages/core/tests/logger'
+
+import { LogLevel } from '@aries-framework/core'
+import { fetch, NodeFileSystem, EventEmitter, WebSocket, indy } from '@aries-framework/node'
 dotenv.config()
 
 const agentConfig: InitConfig = {
@@ -18,7 +18,13 @@ const agentConfig: InitConfig = {
   publicDidSeed: process.env.PUBLIC_DID_SEED || '',
   autoAcceptConnections: true,
   logger: new TestLogger(LogLevel.debug),
+}
+
+export const dependencies: AgentDependencies = {
   indy,
+  NativeEventEmitter: EventEmitter,
+  WebSocket,
+  fetch,
   fileSystem: new NodeFileSystem(),
 }
 
