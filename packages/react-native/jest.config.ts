@@ -6,6 +6,7 @@ import packageJson from './package.json'
 
 const config: Config.InitialOptions = {
   ...base,
+  preset: 'react-native',
   name: packageJson.name,
   displayName: packageJson.name,
   moduleNameMapper: {
