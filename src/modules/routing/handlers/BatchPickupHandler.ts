@@ -12,6 +12,7 @@ export class BatchPickupHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<BatchPickupHandler>) {
+    console.log("batchPickup message handler.")
     if (!messageContext.connection) {
       throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }

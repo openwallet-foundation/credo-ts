@@ -34,6 +34,7 @@ export class MessagePickupService {
     }
 
     const messages = this.messageRepository.findByVerkey(connection.theirKey)
+    console.log('batched messages',JSON.stringify(messages))
     // TODO: each message should be stored with an id. to be able to conform to the id property
     // of batch message
     const batchMessages = messages.map(
@@ -51,8 +52,8 @@ export class MessagePickupService {
     return createOutboundMessage(connection, batchMessage)
   }
 
-  public queueMessage(connectionKey: string, message: WireMessage) {
-    this.messageRepository.save(connectionKey, message)
-    console.log(this.messageRepository.findByVerkey(connectionKey))
+  public queueMessage(theirKey: string, message: WireMessage) {
+    this.messageRepository.save(theirKey, message)
+    console.log(this.messageRepository.findByVerkey(theirKey))
   }
 }

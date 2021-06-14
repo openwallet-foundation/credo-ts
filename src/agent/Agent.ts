@@ -98,6 +98,7 @@ export class Agent {
 
   private listenForMessages() {
     this.eventEmitter.on<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived, async (event) => {
+      console.log(this.agentConfig.label,"received forward message",JSON.stringify(event.payload.message))
       await this.receiveMessage(event.payload.message)
     })
   }

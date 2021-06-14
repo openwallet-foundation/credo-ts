@@ -135,7 +135,6 @@ export class ConnectionService {
         invitationKey: invitation.recipientKeys && invitation.recipientKeys[0],
       },
     })
-    console.log("PUKE: filename: /src/modules/connections/services/ConnectionService.ts, line: 138"); //PKDBG/Point;
     await this.connectionRepository.update(connectionRecord)
     this.eventEmitter.emit<ConnectionStateChangedEvent>({
       type: ConnectionEventTypes.ConnectionStateChanged,

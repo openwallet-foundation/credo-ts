@@ -310,14 +310,14 @@ class mockMobileInboundTransporter implements InboundTransporter {
   }
 
   private async pollDownloadMessages(recipient: Agent, run = this.run, connection_?: ConnectionRecord) {
-    if (this.run) {
-      const connection = connection_ ?? (await recipient.mediationRecipient.getDefaultMediatorConnection())
-      if (connection?.state == "complete") {
-        await recipient.mediationRecipient.downloadMessages(connection)
-        await sleep(50)
-        await this.pollDownloadMessages(recipient, run, connection)
+    setInterval(async () => {
+      if (this.run) {
+        const connection = connection_ ?? (await recipient.mediationRecipient.getDefaultMediatorConnection())
+        if (connection?.state == "complete") {
+          await recipient.mediationRecipient.downloadMessages(connection)
+        }
       }
-    }
+    }, 2000);
   }
 }
 

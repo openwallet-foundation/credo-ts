@@ -94,7 +94,6 @@ export class ConnectionsModule {
 
       await this.messageSender.sendMessage(outboundMessage)
       await this.connectionService.returnWhenIsConnected(connectionRecord.id)
-      console.log("PUKE: filename: /src/modules/connections/ConnectionsModule.ts, line: 97"); //PKDBG/Point;
     } else {
       // if auto accept is enabled (either on the record or the global agent config)
       // we directly send a connection request

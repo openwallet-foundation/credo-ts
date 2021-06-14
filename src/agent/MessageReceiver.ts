@@ -52,9 +52,6 @@ export class MessageReceiver {
     this.logger.debug(`Agent ${this.config.label} received message:`, inboundPackedMessage)
 
     const unpackedMessage = await this.unpackMessage(inboundPackedMessage as Record<string, unknown>)
-    if(this.config.label == "Agent: mediator"){
-      console.log(this.config.label, JSON.stringify(unpackedMessage))
-    }
     const senderKey = unpackedMessage.sender_verkey
     let connection = undefined
     if (senderKey && unpackedMessage.recipient_verkey) {
