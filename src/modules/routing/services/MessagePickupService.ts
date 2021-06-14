@@ -1,6 +1,6 @@
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
-import { InboundConnection } from '../../../types'
+import { InboundConnection, WireMessage } from '../../../types'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { MessageRepository } from '../../../storage/MessageRepository'
 import { ConnectionRecord } from '../../connections'
@@ -49,5 +49,10 @@ export class MessagePickupService {
 
     await this.messageRepository.deleteAllByVerkey(connection.theirKey) // TODO Maybe, don't delete, but just marked them as read
     return createOutboundMessage(connection, batchMessage)
+  }
+
+  public queueMessage(connectionKey: string, message: WireMessage) {
+    this.messageRepository.save(connectionKey, message)
+    console.log(this.messageRepository.findByVerkey(connectionKey))
   }
 }

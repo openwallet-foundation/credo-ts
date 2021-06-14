@@ -18,6 +18,7 @@ import {
 } from '.'
 import { MediationRequestHandler } from './handlers/MediationRequestHandler'
 import { EventEmitter } from '../../agent/EventEmitter'
+import {WireMessage} from '../../types'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MediatorModule {
@@ -61,6 +62,11 @@ export class MediatorModule {
     const outboundMessage = createOutboundMessage(connectionRecord, grantMessage)
     const response = await this.messageSender.sendMessage(outboundMessage)
     return response
+  }
+
+  public queueMessage(connectionKey: string, message: WireMessage) {
+    console.log('Queuing message for', connectionKey, message)
+    return this.messagePickupService.queueMessage(connectionKey, message)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {

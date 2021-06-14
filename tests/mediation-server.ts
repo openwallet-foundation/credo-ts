@@ -56,6 +56,7 @@ export class HttpOutboundTransporter implements OutboundTransporter {
     this.agent = agent
     this.messageRepository = messageRepository
   }
+
   public async start(): Promise<void> {
     // No custom start logic required
   }

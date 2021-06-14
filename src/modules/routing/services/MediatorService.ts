@@ -115,17 +115,19 @@ export class MediatorService {
       }
     }
     // emit event to send message that notifies recipient
-    const message_ = new KeylistUpdateResponseMessage({ keylist })
-    this.eventEmitter.emit<MediationKeylistUpdatedEvent>({
-      type: RoutingEventTypes.MediationKeylistUpdated,
-      payload: {
-        mediationRecord,
-        message: message_,
-        keylist,
-      },
-    })
-    // return routing path.. TODO: will this endup in a queue or something undesired.
-    return createOutboundMessage(connection, message_)
+    const responseMessage = new KeylistUpdateResponseMessage({ keylist })
+    if (message.hasReturnRouting()) {
+      return createOutboundMessage(connection, responseMessage)
+    } else {
+      this.eventEmitter.emit<MediationKeylistUpdatedEvent>({
+        type: RoutingEventTypes.MediationKeylistUpdated,
+        payload: {
+          mediationRecord,
+          message: responseMessage,
+          keylist,
+        },
+      })
+    }
   }
 
   public async saveRoute(recipientKey: Verkey, mediationRecord: MediationRecord | null): Promise<KeylistUpdateResult> {
@@ -206,15 +208,17 @@ export class MediatorService {
     await this.updateState(mediationRecord, MediationState.Init)
 
     const message = await this.createGrantMediationMessage(mediationRecord)
-    this.eventEmitter.emit<MediationGrantedEvent>({
-      type: RoutingEventTypes.MediationGranted,
-      payload: {
-        mediationRecord,
-        message,
-      },
-    })
-    // return routing path.. TODO: will this endup in a queue or something undesired.
-    return createOutboundMessage(connection, message)
+    if (messageContext.message.hasReturnRouting()) {
+      return createOutboundMessage(connection, message)
+    } else {
+      this.eventEmitter.emit<MediationGrantedEvent>({
+        type: RoutingEventTypes.MediationGranted,
+        payload: {
+          mediationRecord,
+          message,
+        },
+      })
+    }
   }
 
   public async findByConnectionId(connectionId: string): Promise<MediationRecord | null> {

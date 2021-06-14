@@ -1,12 +1,13 @@
-import express, { Express } from 'express'
 import cors from 'cors'
-import { Server } from 'http'
-import type { Schema, CredDef, Did } from 'indy-sdk'
+import express, {Express} from 'express'
+import {Server} from 'http'
+import type {CredDef, Did, Schema} from 'indy-sdk'
 import indy from 'indy-sdk'
+import fetch from 'node-fetch'
 import path from 'path'
-import { async, Subject } from 'rxjs'
-import { Agent, InboundTransporter, OutboundTransporter } from '..'
-import { InitConfig, OutboundPackage, WireMessage } from '../types'
+import {Subject} from 'rxjs'
+import {Agent, InboundTransporter, OutboundTransporter} from '..'
+import {BasicMessage, BasicMessageEventTypes, BasicMessageReceivedEvent} from '../modules/basic-messages'
 import {
   ConnectionInvitationMessage,
   ConnectionRecord,
@@ -14,21 +15,19 @@ import {
   ConnectionState,
   ConnectionStorageProps,
   DidCommService,
-  DidDoc,
+  DidDoc
 } from '../modules/connections'
-import { ProofEventTypes, ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
-import { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/ledger'
 import {
-  CredentialRecord,
-  CredentialOfferTemplate,
-  CredentialStateChangedEvent,
-  CredentialState,
-  CredentialEventTypes,
+  CredentialEventTypes, CredentialOfferTemplate, CredentialRecord, CredentialState, CredentialStateChangedEvent
 } from '../modules/credentials'
-import { BasicMessage, BasicMessageEventTypes, BasicMessageReceivedEvent } from '../modules/basic-messages'
+import {CredentialDefinitionTemplate, SchemaTemplate} from '../modules/ledger'
+import {ProofEventTypes, ProofRecord, ProofState, ProofStateChangedEvent} from '../modules/proofs'
+import {MediationRecord, MediationState, MediationStateChangedEvent, RoutingEventTypes} from '../modules/routing'
+import {NodeFileSystem} from '../storage/fs/NodeFileSystem'
+import {InMemoryMessageRepository} from '../storage/InMemoryMessageRepository'
+import {MessageRepository} from '../storage/MessageRepository'
+import {InitConfig, OutboundPackage, WireMessage} from '../types'
 import testLogger from './logger'
-import { NodeFileSystem } from '../storage/fs/NodeFileSystem'
-import { RoutingEventTypes, MediationStateChangedEvent, MediationState, MediationRecord } from '../modules/routing'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
@@ -335,6 +334,12 @@ export class mockInBoundTransporter implements InboundTransporter {
 }
 
 export class mockOutBoundTransporter implements OutboundTransporter {
+  private agent: Agent
+
+  public constructor(agent: Agent) {
+    this.agent = agent
+  }
+
   public async start(): Promise<void> {
     // No custom start logic required
   }
@@ -344,6 +349,78 @@ export class mockOutBoundTransporter implements OutboundTransporter {
   public supportedSchemes = ['http', 'dicomm', 'https']
   public async sendMessage(outboundPackage: OutboundPackage) {
     const { connection, payload, endpoint, responseRequested } = outboundPackage
+    if (!endpoint || endpoint == 'didcomm:transport/queue') {
+      throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
+    }
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/ssi-agent-wire',
+        },
+        body: JSON.stringify(payload),
+      })
+      const data = await response.text()
+      if (data) {
+        testLogger.debug(`Response received:\n ${response}`)
+        const wireMessage = JSON.parse(data)
+        this.agent.receiveMessage(wireMessage)
+      } else {
+        testLogger.debug(`No response received.`)
+      }
+    } catch (e) {
+      testLogger.debug('error sending message', e)
+      throw e
+    }
+  }
+}
+
+export class MockMediatorOutboundTransporter implements OutboundTransporter {
+  private agent: Agent
+  private messageRepository: MessageRepository
+
+  public constructor(agent: Agent) {
+    this.agent = agent
+    this.messageRepository = new InMemoryMessageRepository()
+  }
+
+  public async start(): Promise<void> {
+    // No custom start logic required
+  }
+  public async stop(): Promise<void> {
+    // No custom stop logic required
+  }
+  public supportedSchemes = ['http', 'dicomm', 'https']
+  public async sendMessage(outboundPackage: OutboundPackage) {
+    const { connection, payload, endpoint, responseRequested } = outboundPackage
+    if (!endpoint) {
+      throw new Error('Missing endpoint')
+    }
+    if (endpoint == 'didcomm:transport/queue' && this.messageRepository) {
+      testLogger.debug('Storing message for queue: ', { connection, payload })
+      this.agent.mediator.queueMessage(connection.theirKey!, payload)
+      return
+    }
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/ssi-agent-wire',
+        },
+        body: JSON.stringify(payload),
+      })
+      const data = await response.text()
+      if (data) {
+        testLogger.debug(`Response received:\n ${response}`)
+        const wireMessage = JSON.parse(data)
+        this.agent.receiveMessage(wireMessage)
+      } else {
+        testLogger.debug(`No response received.`)
+      }
+    } catch (e) {
+      testLogger.debug('error sending message', e)
+      throw e
+    }
   }
 }
 

@@ -25,7 +25,8 @@ import {
   makeTransport,
   sleep,
   waitForBasicMessage,
-  mockInBoundTransporter
+  mockInBoundTransporter,
+  MockMediatorOutboundTransporter
 } from '../../src/__tests__/helpers'
 import logger from '../../src/__tests__/logger'
 import cors from 'cors'
@@ -81,7 +82,7 @@ describe('mediator establishment', () => {
         new mockMobileInboundTransporter(),
         new mockMobileOutBoundTransporter(recipientAgent)
       )
-      await makeTransport(mediatorAgent, makeInBoundTransporter(), new mockOutBoundTransporter())
+      await makeTransport(mediatorAgent, makeInBoundTransporter(), new mockOutBoundTransporter(mediatorAgent))
     } catch (error) {
       console.warn(error)
     }
@@ -175,8 +176,8 @@ describe('mediator features', () => {
         new mockMobileInboundTransporter(),
         new mockMobileOutBoundTransporter(recipientAgent)
       )
-      await makeTransport(mediatorAgent, makeInBoundTransporter(), new mockOutBoundTransporter())
-      await makeTransport(tedAgent, makeInBoundTransporter(), new mockOutBoundTransporter())
+      await makeTransport(mediatorAgent, makeInBoundTransporter(), new MockMediatorOutboundTransporter(mediatorAgent))
+      await makeTransport(tedAgent, makeInBoundTransporter(), new mockOutBoundTransporter(tedAgent))
     } catch (error) {
       console.warn(error)
     }
@@ -223,18 +224,12 @@ describe('mediator features', () => {
       autoAcceptConnection: true,
       mediatorId: mediationRecord.id
     })
-    console.log(`Just before Ted receives invitation ${JSON.stringify(invitation)}`)
     let agentBConnection = await tedAgent.connections.receiveInvitation(invitation, { autoAcceptConnection: true })
-    console.log(JSON.stringify(agentBConnection))
-    /*console.log(`recipientAgent returnWhenIsConnected about to be called ${JSON.stringify(agentAConnection)}`)
     agentAConnection = await recipientAgent.connections.returnWhenIsConnected(agentAConnection.id)
-    console.log(`recipientAgent returnWhenIsConnected after called ${JSON.stringify(agentAConnection)}`)
-    console.log(`tedAgent returnWhenIsConnected about to be called ${JSON.stringify(agentBConnection)}`)
     agentBConnection = await tedAgent.connections.returnWhenIsConnected(agentBConnection.id)
-    console.log(`tedAgent returnWhenIsConnected after called ${JSON.stringify(agentBConnection)}`)
     expect(agentAConnection).toBeConnectedWith(agentBConnection)
     expect(agentBConnection).toBeConnectedWith(agentAConnection)
-    expect(agentBConnection.isReady)*/
+    expect(agentBConnection.isReady)
   })
 
    /*test('Send a message from recipient to ted via mediator', async () => {
