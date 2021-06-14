@@ -35,7 +35,7 @@ export class MediationRecord extends BaseRecord implements MediationStorageProps
   public endpoint?: string
   public recipientKeys!: Verkey[]
   public routingKeys!: Verkey[]
-  public default!: boolean
+  public default: boolean = false
   public static readonly type = 'MediationRecord'
   public readonly type = MediationRecord.type
 
