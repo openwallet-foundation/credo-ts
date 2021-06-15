@@ -21,12 +21,10 @@ interface RequestedCredentialsOptions {
  * @see https://github.com/hyperledger/indy-sdk/blob/57dcdae74164d1c7aa06f2cccecaae121cefac25/libindy/src/api/anoncreds.rs#L1433-L1445
  */
 export class RequestedCredentials {
-  public constructor(options: RequestedCredentialsOptions) {
-    if (options) {
-      this.requestedAttributes = options.requestedAttributes ?? {}
-      this.requestedPredicates = options.requestedPredicates ?? {}
-      this.selfAttestedAttributes = options.selfAttestedAttributes ?? {}
-    }
+  public constructor(options: RequestedCredentialsOptions = {}) {
+    this.requestedAttributes = options.requestedAttributes ?? {}
+    this.requestedPredicates = options.requestedPredicates ?? {}
+    this.selfAttestedAttributes = options.selfAttestedAttributes ?? {}
   }
 
   @Expose({ name: 'requested_attributes' })

@@ -41,6 +41,7 @@ import {
   RequestedCredentials,
   RequestedAttribute,
   RequestedPredicate,
+  RetrievedCredentials,
 } from '../models'
 import { ProofRepository } from '../repository'
 import { ProofRecord } from '../repository/ProofRecord'
@@ -611,48 +612,41 @@ export class ProofService {
   }
 
   /**
-   * Create a {@link RequestedCredentials} object. Given input proof request and presentation proposal,
+   * Create a {@link RetrievedCredentials} object. Given input proof request and presentation proposal,
    * use credentials in the wallet to build indy requested credentials object for input to proof creation.
    * If restrictions allow, self attested attributes will be used.
    *
-   * Use the return value of this method as input to {@link ProofService.createPresentation} to automatically
-   * accept a received presentation request.
    *
    * @param proofRequest The proof request to build the requested credentials object from
    * @param presentationProposal Optional presentation proposal to improve credential selection algorithm
-   * @returns Requested credentials object for use in proof creation
+   * @returns RetrievedCredential object
    */
   public async getRequestedCredentialsForProofRequest(
     proofRequest: ProofRequest,
     presentationProposal?: PresentationPreview
-  ): Promise<RequestedCredentials> {
+  ): Promise<RetrievedCredentials> {
     const requestedCredentials = new RequestedCredentials({})
+    const retrievedCredentials = new RetrievedCredentials()
 
     for (const [referent, requestedAttribute] of Object.entries(proofRequest.requestedAttributes)) {
-      let credentialMatch: Credential | null = null
+      let credentialMatch: Credential[]  = []
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
-      // Can't construct without matching credentials
-      if (credentials.length === 0) {
-        throw new AriesFrameworkError(
-          `Could not automatically construct requested credentials for proof request '${proofRequest.name}'`
-        )
-      }
       // If we have exactly one credential, or no proposal to pick preferences
-      // on the credential to use, we will use the first one
-      else if (credentials.length === 1 || !presentationProposal) {
-        credentialMatch = credentials[0]
+      // on the credentials to use, we will use the first one
+      if (credentials.length === 1 || !presentationProposal) {
+        credentialMatch = credentials
       }
-      // If we have a proposal we will use that to determine the credential to use
+      // If we have a proposal we will use that to determine the credentials to use
       else {
         const names = requestedAttribute.names ?? [requestedAttribute.name]
 
-        // Find credential that matches all parameters from the proposal
-        for (const credential of credentials) {
+        // Find credentials that matches all parameters from the proposal
+        credentialMatch = credentials.filter((credential)=>{
           const { attributes, credentialDefinitionId } = credential.credentialInfo
 
-          // Check if credential matches all parameters from proposal
-          const isMatch = names.every((name) =>
+          // Check if credentials matches all parameters from proposal
+          return names.every((name) =>
             presentationProposal.attributes.find(
               (a) =>
                 a.name === name &&
@@ -660,63 +654,68 @@ export class ProofService {
                 (!a.value || a.value === attributes[name])
             )
           )
-
-          if (isMatch) {
-            credentialMatch = credential
-            break
-          }
-        }
-
-        if (!credentialMatch) {
-          throw new AriesFrameworkError(
-            `Could not automatically construct requested credentials for proof request '${proofRequest.name}'`
-          )
-        }
-      }
-
-      if (requestedAttribute.restrictions) {
-        requestedCredentials.requestedAttributes[referent] = new RequestedAttribute({
-          credentialId: credentialMatch.credentialInfo.referent,
-          revealed: true,
         })
       }
-      // If there are no restrictions we can self attest the attribute
-      else {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const value = credentialMatch.credentialInfo.attributes[requestedAttribute.name!]
 
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        requestedCredentials.selfAttestedAttributes[referent] = value!
-      }
+        retrievedCredentials.requestedAttributes[referent] = credentialMatch.map((credential:Credential)=>{
+          return new RequestedAttribute({
+            credentialId: credential.credentialInfo.referent,
+            revealed: true,
+          })
+      })
     }
 
     for (const [referent, requestedPredicate] of Object.entries(proofRequest.requestedPredicates)) {
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
-      // Can't create requestedPredicates without matching credentials
-      if (credentials.length === 0) {
-        throw new AriesFrameworkError(
-          `Could not automatically construct requested credentials for proof request '${proofRequest.name}'`
-        )
-      }
-
-      const credentialMatch = credentials[0]
-      if (requestedPredicate.restrictions) {
-        requestedCredentials.requestedPredicates[referent] = new RequestedPredicate({
-          credentialId: credentialMatch.credentialInfo.referent,
+      retrievedCredentials.requestedPredicates[referent] = credentials.map((credential)=>{
+        return new RequestedPredicate({
+          credentialId: credential.credentialInfo.referent,
         })
-      }
-      // If there are no restrictions we can self attest the attribute
-      else {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const value = credentialMatch.credentialInfo.attributes[requestedPredicate.name!]
-
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        requestedCredentials.selfAttestedAttributes[referent] = value!
-      }
+      })
     }
 
-    return requestedCredentials
+    return retrievedCredentials
+  }
+
+  /**
+   * Takes a RetrievedCredentials object and auto selects credentials in a RequestedCredentials object
+   * 
+   * Use the return value of this method as input to {@link ProofService.createPresentation} to 
+   * automatically accept a received presentation request.
+   * 
+   * @param retrievedCredentials The retrieved credentials object to get credentials from
+   * 
+   * @returns RequestedCredentials
+   */
+  autoSelectCredentialsForProofRequest(
+    retrievedCredentials:RetrievedCredentials
+  ): RequestedCredentials {
+    const requestedCredentials = new RequestedCredentials()
+
+    Object.keys(retrievedCredentials.requestedAttributes).forEach((attributeName)=>{
+        const attributeArray = retrievedCredentials.requestedAttributes[attributeName]
+
+        if(attributeArray.length === 0){
+            throw new AriesFrameworkError("Unable to automatically select requested attributes.")
+        }else{
+            requestedCredentials.requestedAttributes[
+                attributeName
+            ] = attributeArray[0]
+        }
+    })
+
+    Object.keys(retrievedCredentials.requestedPredicates).forEach((attributeName)=>{
+        if(retrievedCredentials.requestedPredicates[attributeName].length === 0){
+            throw new AriesFrameworkError("Unable to automatically select requested predicates.")
+        }else{
+            requestedCredentials.requestedPredicates[
+                attributeName
+            ] = retrievedCredentials.requestedPredicates[attributeName][0]
+        }
+    })
+
+    return requestedCredentials;
   }
 
   /**
