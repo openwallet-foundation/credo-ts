@@ -192,7 +192,7 @@ export class ProofsModule {
     return proofRecord
   }
 
- /**
+  /**
    * Create a {@link RetrievedCredentials} object. Given input proof request and presentation proposal,
    * use credentials in the wallet to build indy requested credentials object for input to proof creation.
    * If restrictions allow, self attested attributes will be used.
@@ -205,23 +205,21 @@ export class ProofsModule {
   public async getRequestedCredentialsForProofRequest(
     proofRequest: ProofRequest,
     presentationProposal?: PresentationPreview
-  ):Promise<RetrievedCredentials> {
+  ): Promise<RetrievedCredentials> {
     return this.proofService.getRequestedCredentialsForProofRequest(proofRequest, presentationProposal)
   }
 
   /**
    * Takes a RetrievedCredentials object and auto selects credentials in a RequestedCredentials object
-   * 
-   * Use the return value of this method as input to {@link ProofService.createPresentation} to 
+   *
+   * Use the return value of this method as input to {@link ProofService.createPresentation} to
    * automatically accept a received presentation request.
-   * 
+   *
    * @param retrievedCredentials The retrieved credentials object to get credentials from
-   * 
+   *
    * @returns RequestedCredentials
    */
-  autoSelectCredentialsForProofRequest(
-    retrievedCredentials:RetrievedCredentials
-  ): RequestedCredentials {
+  autoSelectCredentialsForProofRequest(retrievedCredentials: RetrievedCredentials): RequestedCredentials {
     return this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)
   }
 

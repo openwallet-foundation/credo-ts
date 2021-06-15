@@ -629,7 +629,7 @@ export class ProofService {
     const retrievedCredentials = new RetrievedCredentials()
 
     for (const [referent, requestedAttribute] of Object.entries(proofRequest.requestedAttributes)) {
-      let credentialMatch: Credential[]  = []
+      let credentialMatch: Credential[] = []
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
       // If we have exactly one credential, or no proposal to pick preferences
@@ -642,7 +642,7 @@ export class ProofService {
         const names = requestedAttribute.names ?? [requestedAttribute.name]
 
         // Find credentials that matches all parameters from the proposal
-        credentialMatch = credentials.filter((credential)=>{
+        credentialMatch = credentials.filter((credential) => {
           const { attributes, credentialDefinitionId } = credential.credentialInfo
 
           // Check if credentials matches all parameters from proposal
@@ -657,18 +657,18 @@ export class ProofService {
         })
       }
 
-        retrievedCredentials.requestedAttributes[referent] = credentialMatch.map((credential:Credential)=>{
-          return new RequestedAttribute({
-            credentialId: credential.credentialInfo.referent,
-            revealed: true,
-          })
+      retrievedCredentials.requestedAttributes[referent] = credentialMatch.map((credential: Credential) => {
+        return new RequestedAttribute({
+          credentialId: credential.credentialInfo.referent,
+          revealed: true,
+        })
       })
     }
 
     for (const [referent, requestedPredicate] of Object.entries(proofRequest.requestedPredicates)) {
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
-      retrievedCredentials.requestedPredicates[referent] = credentials.map((credential)=>{
+      retrievedCredentials.requestedPredicates[referent] = credentials.map((credential) => {
         return new RequestedPredicate({
           credentialId: credential.credentialInfo.referent,
         })
@@ -680,42 +680,37 @@ export class ProofService {
 
   /**
    * Takes a RetrievedCredentials object and auto selects credentials in a RequestedCredentials object
-   * 
-   * Use the return value of this method as input to {@link ProofService.createPresentation} to 
+   *
+   * Use the return value of this method as input to {@link ProofService.createPresentation} to
    * automatically accept a received presentation request.
-   * 
+   *
    * @param retrievedCredentials The retrieved credentials object to get credentials from
-   * 
+   *
    * @returns RequestedCredentials
    */
-  autoSelectCredentialsForProofRequest(
-    retrievedCredentials:RetrievedCredentials
-  ): RequestedCredentials {
+  autoSelectCredentialsForProofRequest(retrievedCredentials: RetrievedCredentials): RequestedCredentials {
     const requestedCredentials = new RequestedCredentials()
 
-    Object.keys(retrievedCredentials.requestedAttributes).forEach((attributeName)=>{
-        const attributeArray = retrievedCredentials.requestedAttributes[attributeName]
+    Object.keys(retrievedCredentials.requestedAttributes).forEach((attributeName) => {
+      const attributeArray = retrievedCredentials.requestedAttributes[attributeName]
 
-        if(attributeArray.length === 0){
-            throw new AriesFrameworkError("Unable to automatically select requested attributes.")
-        }else{
-            requestedCredentials.requestedAttributes[
-                attributeName
-            ] = attributeArray[0]
-        }
+      if (attributeArray.length === 0) {
+        throw new AriesFrameworkError('Unable to automatically select requested attributes.')
+      } else {
+        requestedCredentials.requestedAttributes[attributeName] = attributeArray[0]
+      }
     })
 
-    Object.keys(retrievedCredentials.requestedPredicates).forEach((attributeName)=>{
-        if(retrievedCredentials.requestedPredicates[attributeName].length === 0){
-            throw new AriesFrameworkError("Unable to automatically select requested predicates.")
-        }else{
-            requestedCredentials.requestedPredicates[
-                attributeName
-            ] = retrievedCredentials.requestedPredicates[attributeName][0]
-        }
+    Object.keys(retrievedCredentials.requestedPredicates).forEach((attributeName) => {
+      if (retrievedCredentials.requestedPredicates[attributeName].length === 0) {
+        throw new AriesFrameworkError('Unable to automatically select requested predicates.')
+      } else {
+        requestedCredentials.requestedPredicates[attributeName] =
+          retrievedCredentials.requestedPredicates[attributeName][0]
+      }
     })
 
-    return requestedCredentials;
+    return requestedCredentials
   }
 
   /**
