@@ -65,7 +65,6 @@ export class MediatorModule {
   }
 
   public queueMessage(theirKey: string, message: WireMessage) {
-    console.log('Queuing message for', theirKey, message)
     return this.messagePickupService.queueMessage(theirKey, message)
   }
 

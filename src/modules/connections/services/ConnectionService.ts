@@ -190,7 +190,7 @@ export class ConnectionService {
     if (!connectionRecord) {
       throw new AriesFrameworkError(`Connection for verkey ${recipientVerkey} not found!`)
     }
-
+    console.log(this.config.label,JSON.stringify(connectionRecord))
     connectionRecord.assertState(ConnectionState.Invited)
     connectionRecord.assertRole(ConnectionRole.Inviter)
 

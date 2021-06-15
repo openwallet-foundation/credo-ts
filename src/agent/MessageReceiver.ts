@@ -72,7 +72,7 @@ export class MessageReceiver {
     if (connection && session) {
       this.transportService.saveSession(connection.id, session)
     }
-
+    //console.log(this.config.label,`Received message with type '${unpackedMessage.message['@type']}'`, unpackedMessage.message)
     this.logger.info(`Received message with type '${unpackedMessage.message['@type']}'`, unpackedMessage.message)
 
     const message = await this.transformMessage(unpackedMessage)

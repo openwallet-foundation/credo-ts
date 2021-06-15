@@ -23,7 +23,6 @@ class EnvelopeService {
     let wireMessage = await this.wallet.pack(message, recipientKeys, senderVk)
 
     if (routingKeys && routingKeys.length > 0) {
-      console.log('Wrapping message in forward for each routing key', routingKeys)
       for (const routingKey of routingKeys) {
         const [recipientKey] = recipientKeys
 
@@ -31,8 +30,6 @@ class EnvelopeService {
           to: recipientKey,
           message: wireMessage,
         })
-        console.log('forward message:', forwardMessage)
-
         this.logger.debug('Forward message created', forwardMessage)
         wireMessage = await this.wallet.pack(forwardMessage.toJSON(), [routingKey], senderVk)
       }
