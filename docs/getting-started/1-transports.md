@@ -39,7 +39,8 @@ const agentConfig = {
 
 const agent = new Agent(agentConfig)
 
-const pollingInboundTransporter = new PollingInboundTransporter()
+// Construct polling inbound transporter with optional polling interval in ms
+const pollingInboundTransporter = new PollingInboundTransporter(5000)
 
 agent.setInboundTransporter(pollingInboundTransporter)
 ```

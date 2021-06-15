@@ -7,9 +7,11 @@ import { sleep } from '../utils/sleep'
 
 export class PollingInboundTransporter implements InboundTransporter {
   public stop: boolean
+  private pollingInterval: number
 
-  public constructor() {
+  public constructor(pollingInterval = 5000) {
     this.stop = false
+    this.pollingInterval = pollingInterval
   }
 
   public async start(agent: Agent) {
@@ -41,7 +43,7 @@ export class PollingInboundTransporter implements InboundTransporter {
   private async pollDownloadMessages(agent: Agent) {
     while (!this.stop) {
       await agent.routing.downloadMessages()
-      await sleep(5000)
+      await sleep(this.pollingInterval)
     }
   }
 }
