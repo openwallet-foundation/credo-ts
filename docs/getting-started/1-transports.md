@@ -27,65 +27,21 @@ agent.setOutboundTransporter(wsOutboundTransporter)
 
 ## Inbound Transport
 
-Inbound transports allow you to receive messages from other agents. No inbound transports are exported from the framework at the moment. See the example transports below to get started.
+Inbound transports allow you to receive messages from other agents. Only `PollingInboundTransporter` is exported from the framework at the moment. Make sure you provide a `mediatorUrl` if using the polling inbound transporters. See the example transports below for other inbound transports.
 
 ```ts
+import { Agent, PollingInboundTransporter } from 'aries-framework'
+
 const agentConfig = {
   // ... agent config ... //
+  mediatorUrl: 'https://your-afj-mediator-url.com',
 }
-
-const someInboundTransport = new SomeInboundTransport()
 
 const agent = new Agent(agentConfig)
-agent.setInboundTransporter(someInboundTransport)
-```
 
-### Example `PollingInboundTransporter`
+const pollingInboundTransporter = new PollingInboundTransporter()
 
-This is an example of a polling inbound transport. This is mostly useful for edge agents, that use a mediator to receive inbound messages. Make sure to provide a `mediatorUrl` in the agent config when using this transport. See [3. Routing](./3-routing.md) for more information.
-
-```ts
-import { Agent, InboundTransporter } from 'aries-framework'
-
-// In React Native you don't have to import node-fetch
-// Fetch is globally available in React Native
-import fetch from 'node-fetch'
-
-class PollingInboundTransporter implements InboundTransporter {
-  public stop: boolean
-
-  public constructor() {
-    this.stop = false
-  }
-  public async start(agent: Agent) {
-    await this.registerMediator(agent)
-  }
-
-  public async registerMediator(agent: Agent) {
-    const mediatorUrl = agent.getMediatorUrl()
-
-    if (!mediatorUrl) {
-      throw new AriesFrameworkError(
-        'Agent has no mediator URL. Make sure to provide the `mediatorUrl` in the agent config.'
-      )
-    }
-
-    const mediatorInvitationUrl = await get(`${mediatorUrl}/invitation`)
-    const { verkey: mediatorVerkey } = JSON.parse(await get(`${mediatorUrl}/`))
-    await agent.routing.provision({
-      verkey: mediatorVerkey,
-      invitationUrl: mediatorInvitationUrl,
-    })
-    this.pollDownloadMessages(agent)
-  }
-
-  private async pollDownloadMessages(agent: Agent) {
-    while (!this.stop) {
-      await agent.routing.downloadMessages()
-      await sleep(5000)
-    }
-  }
-}
+agent.setInboundTransporter(pollingInboundTransporter)
 ```
 
 ### Example `HttpInboundTransporter`
