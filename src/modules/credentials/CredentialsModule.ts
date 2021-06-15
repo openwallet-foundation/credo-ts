@@ -1,9 +1,11 @@
+import type { AutoAcceptCredentialAndProof } from '../../types'
 import type { ProposeCredentialMessageOptions } from './messages'
 import type { CredentialRecord } from './repository/CredentialRecord'
 import type { CredentialOfferTemplate } from './services'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
+import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
@@ -24,16 +26,19 @@ export class CredentialsModule {
   private connectionService: ConnectionService
   private credentialService: CredentialService
   private messageSender: MessageSender
+  private agentConfig: AgentConfig
 
   public constructor(
     dispatcher: Dispatcher,
     connectionService: ConnectionService,
     credentialService: CredentialService,
-    messageSender: MessageSender
+    messageSender: MessageSender,
+    agentConfig: AgentConfig
   ) {
     this.connectionService = connectionService
     this.credentialService = credentialService
     this.messageSender = messageSender
+    this.agentConfig = agentConfig
     this.registerHandlers(dispatcher)
   }
 
@@ -45,7 +50,10 @@ export class CredentialsModule {
    * @param config Additional configuration to use for the proposal
    * @returns Credential record associated with the sent proposal message
    */
-  public async proposeCredential(connectionId: string, config?: Omit<ProposeCredentialMessageOptions, 'id'>) {
+  public async proposeCredential(
+    connectionId: string,
+    config?: Omit<ProposeCredentialMessageOptions, 'id'> & { autoAcceptCredential?: AutoAcceptCredentialAndProof }
+  ) {
     const connection = await this.connectionService.getById(connectionId)
 
     const { message, credentialRecord } = await this.credentialService.createProposal(connection, config)
@@ -70,6 +78,7 @@ export class CredentialsModule {
     config?: {
       comment?: string
       credentialDefinitionId?: string
+      autoAcceptCredential?: AutoAcceptCredentialAndProof
     }
   ) {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)
@@ -96,6 +105,7 @@ export class CredentialsModule {
       preview: credentialProposalMessage.credentialProposal,
       credentialDefinitionId,
       comment: config?.comment,
+      autoAcceptCredential: config?.autoAcceptCredential,
     })
 
     const outboundMessage = createOutboundMessage(connection, message)
@@ -114,7 +124,7 @@ export class CredentialsModule {
    */
   public async offerCredential(
     connectionId: string,
-    credentialTemplate: CredentialOfferTemplate
+    credentialTemplate: CredentialOfferTemplate & { autoAcceptCredential?: AutoAcceptCredentialAndProof }
   ): Promise<CredentialRecord> {
     const connection = await this.connectionService.getById(connectionId)
 
@@ -135,7 +145,10 @@ export class CredentialsModule {
    * @returns Credential record associated with the sent credential request message
    *
    */
-  public async acceptOffer(credentialRecordId: string, config?: { comment?: string }) {
+  public async acceptOffer(
+    credentialRecordId: string,
+    config?: { comment?: string; autoAcceptCredential?: AutoAcceptCredentialAndProof }
+  ) {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
@@ -156,7 +169,10 @@ export class CredentialsModule {
    * @returns Credential record associated with the sent presentation message
    *
    */
-  public async acceptRequest(credentialRecordId: string, config?: { comment?: string }) {
+  public async acceptRequest(
+    credentialRecordId: string,
+    config?: { comment?: string; autoAcceptCredential?: AutoAcceptCredentialAndProof }
+  ) {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
@@ -231,10 +247,10 @@ export class CredentialsModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new ProposeCredentialHandler(this.credentialService))
-    dispatcher.registerHandler(new OfferCredentialHandler(this.credentialService))
-    dispatcher.registerHandler(new RequestCredentialHandler(this.credentialService))
-    dispatcher.registerHandler(new IssueCredentialHandler(this.credentialService))
+    dispatcher.registerHandler(new ProposeCredentialHandler(this.credentialService, this.agentConfig))
+    dispatcher.registerHandler(new OfferCredentialHandler(this.credentialService, this.agentConfig))
+    dispatcher.registerHandler(new RequestCredentialHandler(this.credentialService, this.agentConfig))
+    dispatcher.registerHandler(new IssueCredentialHandler(this.credentialService, this.agentConfig))
     dispatcher.registerHandler(new CredentialAckHandler(this.credentialService))
   }
 }

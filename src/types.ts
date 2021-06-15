@@ -25,6 +25,7 @@ export interface InitConfig {
   walletConfig: WalletConfig
   walletCredentials: WalletCredentials
   autoAcceptConnections?: boolean
+  autoAcceptCredentials?: AutoAcceptCredentialAndProof
   poolName?: string
   logger?: Logger
   indy: typeof Indy
@@ -63,4 +64,15 @@ export interface OutboundPackage {
 export interface InboundConnection {
   verkey: Verkey
   connection: ConnectionRecord
+}
+
+export enum AutoAcceptCredentialAndProof {
+  // Always auto accepts the credential and proof no matter if it changed in subsequent steps
+  'always' = 'always',
+
+  // Only auto accepts the credential and proof if nothing changed in the request
+  'contentNotChanged' = 'contentNotChanged',
+
+  // (DEFAULT:q: Never auto accept a credential or proof
+  'never' = 'never',
 }

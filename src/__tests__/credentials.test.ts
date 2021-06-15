@@ -9,6 +9,7 @@ import {
   CredentialPreview,
   CredentialPreviewAttribute,
 } from '../modules/credentials'
+import { AutoAcceptCredentialAndProof } from '../types'
 import { JsonTransformer } from '../utils/JsonTransformer'
 
 import {
@@ -106,6 +107,7 @@ describe('credentials', () => {
     let aliceCredentialRecord = await aliceAgent.credentials.proposeCredential(aliceConnection.id, {
       credentialProposal: credentialPreview,
       credentialDefinitionId: credDefId,
+      autoAcceptCredential: AutoAcceptCredentialAndProof.always,
     })
 
     testLogger.test('Faber waits for credential proposal from Alice')
@@ -117,6 +119,7 @@ describe('credentials', () => {
     testLogger.test('Faber sends credential offer to Alice')
     faberCredentialRecord = await faberAgent.credentials.acceptProposal(faberCredentialRecord.id, {
       comment: 'some comment about credential',
+      autoAcceptCredential: AutoAcceptCredentialAndProof.always,
     })
 
     testLogger.test('Alice waits for credential offer from Faber')
@@ -159,17 +162,17 @@ describe('credentials', () => {
     })
     expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
 
-    testLogger.test('Alice sends credential request to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id)
+    // testLogger.test('Alice sends credential request to Faber')
+    // aliceCredentialRecord = await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id)
 
-    testLogger.test('Faber waits for credential request from Alice')
+    // testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
       threadId: aliceCredentialRecord.tags.threadId,
       state: CredentialState.RequestReceived,
     })
 
-    testLogger.test('Faber sends credential to Alice')
-    faberCredentialRecord = await faberAgent.credentials.acceptRequest(faberCredentialRecord.id)
+    // testLogger.test('Faber sends credential to Alice')
+    // faberCredentialRecord = await faberAgent.credentials.acceptRequest(faberCredentialRecord.id)
 
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -177,14 +180,15 @@ describe('credentials', () => {
       state: CredentialState.CredentialReceived,
     })
 
-    testLogger.test('Alice sends credential ack to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
+    // testLogger.test('Alice sends credential ack to Faber')
+    // aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
       threadId: faberCredentialRecord.tags.threadId,
       state: CredentialState.Done,
     })
+    console.log('NOWAY')
 
     expect(aliceCredentialRecord).toMatchObject({
       type: CredentialRecord.name,
@@ -229,6 +233,7 @@ describe('credentials', () => {
       preview: credentialPreview,
       credentialDefinitionId: credDefId,
       comment: 'some comment about credential',
+      autoAcceptCredential: AutoAcceptCredentialAndProof.always,
     })
 
     testLogger.test('Alice waits for credential offer from Faber')
@@ -272,7 +277,9 @@ describe('credentials', () => {
     expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
 
     testLogger.test('Alice sends credential request to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id)
+    aliceCredentialRecord = await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id, {
+      autoAcceptCredential: AutoAcceptCredentialAndProof.always,
+    })
 
     testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
@@ -280,8 +287,8 @@ describe('credentials', () => {
       state: CredentialState.RequestReceived,
     })
 
-    testLogger.test('Faber sends credential to Alice')
-    faberCredentialRecord = await faberAgent.credentials.acceptRequest(faberCredentialRecord.id)
+    // testLogger.test('Faber sends credential to Alice')
+    // faberCredentialRecord = await faberAgent.credentials.acceptRequest(faberCredentialRecord.id)
 
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -289,8 +296,8 @@ describe('credentials', () => {
       state: CredentialState.CredentialReceived,
     })
 
-    testLogger.test('Alice sends credential ack to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
+    // testLogger.test('Alice sends credential ack to Faber')
+    // aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
