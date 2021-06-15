@@ -1,5 +1,5 @@
-import { RequestedAttribute } from './RequestedAttribute'
-import { RequestedPredicate } from './RequestedPredicate'
+import type { RequestedAttribute } from './RequestedAttribute'
+import type { RequestedPredicate } from './RequestedPredicate'
 
 export interface RetrievedCredentialsOptions {
   requestedAttributes?: Record<string, RequestedAttribute[]>

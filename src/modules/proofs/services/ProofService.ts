@@ -625,8 +625,7 @@ export class ProofService {
     proofRequest: ProofRequest,
     presentationProposal?: PresentationPreview
   ): Promise<RetrievedCredentials> {
-    const requestedCredentials = new RequestedCredentials({})
-    const retrievedCredentials = new RetrievedCredentials()
+    const retrievedCredentials = new RetrievedCredentials({})
 
     for (const [referent, requestedAttribute] of Object.entries(proofRequest.requestedAttributes)) {
       let credentialMatch: Credential[] = []
@@ -665,7 +664,7 @@ export class ProofService {
       })
     }
 
-    for (const [referent, requestedPredicate] of Object.entries(proofRequest.requestedPredicates)) {
+    for (const [referent] of Object.entries(proofRequest.requestedPredicates)) {
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
       retrievedCredentials.requestedPredicates[referent] = credentials.map((credential) => {
@@ -688,8 +687,8 @@ export class ProofService {
    *
    * @returns RequestedCredentials
    */
-  autoSelectCredentialsForProofRequest(retrievedCredentials: RetrievedCredentials): RequestedCredentials {
-    const requestedCredentials = new RequestedCredentials()
+  public autoSelectCredentialsForProofRequest(retrievedCredentials: RetrievedCredentials): RequestedCredentials {
+    const requestedCredentials = new RequestedCredentials({})
 
     Object.keys(retrievedCredentials.requestedAttributes).forEach((attributeName) => {
       const attributeArray = retrievedCredentials.requestedAttributes[attributeName]

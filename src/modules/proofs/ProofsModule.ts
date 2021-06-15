@@ -219,7 +219,7 @@ export class ProofsModule {
    *
    * @returns RequestedCredentials
    */
-  autoSelectCredentialsForProofRequest(retrievedCredentials: RetrievedCredentials): RequestedCredentials {
+  public autoSelectCredentialsForProofRequest(retrievedCredentials: RetrievedCredentials): RequestedCredentials {
     return this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)
   }
 
