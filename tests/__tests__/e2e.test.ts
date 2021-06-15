@@ -202,6 +202,7 @@ describe('mediator features', () => {
   })
 
   test('should set default mediator and retrieve', async () => {
+    expect.assertions(1)
     await recipientAgent.mediationRecipient.setDefaultMediator(mediationRecord)
     const retrievedMediationRecord = await recipientAgent.mediationRecipient.getDefaultMediator()
     expect(mediationRecord).toBe(retrievedMediationRecord)

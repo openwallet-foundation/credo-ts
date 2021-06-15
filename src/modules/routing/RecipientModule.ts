@@ -140,7 +140,7 @@ export class RecipientModule {
   }
   public async requestAndWaitForAcception(
     connection: ConnectionRecord,
-    timeout: number = 5000,
+    timeout: number = 500,
     setReturnRouting: ReturnRouteTypes = ReturnRouteTypes.all
   ): Promise<MediationRecord> {
     /*
