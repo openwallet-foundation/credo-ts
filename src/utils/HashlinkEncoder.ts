@@ -1,14 +1,10 @@
-import type { Attachment } from '../decorators/attachment/Attachment'
 import type { BaseName } from './MultiBaseEncoder'
 import type { Buffer } from './buffer'
 
 import cbor from 'borc'
 import { sha256 } from 'js-sha256'
 
-import { AriesFrameworkError } from '../error/AriesFrameworkError'
-
 import { BufferEncoder } from './BufferEncoder'
-import { JsonEncoder } from './JsonEncoder'
 import { MultiBaseEncoder } from './MultiBaseEncoder'
 import { MultiHashEncoder } from './MultiHashEncoder'
 
