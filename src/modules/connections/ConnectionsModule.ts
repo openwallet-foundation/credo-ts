@@ -17,7 +17,6 @@ import {
 } from './handlers'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { EventEmitter } from '../../agent/EventEmitter'
-import { KeylistUpdateEvent, RoutingEventTypes } from '../routing/RoutingEvents'
 import { DID_COMM_TRANSPORT_QUEUE } from '../../agent/TransportService'
 
 @scoped(Lifecycle.ContainerScoped)

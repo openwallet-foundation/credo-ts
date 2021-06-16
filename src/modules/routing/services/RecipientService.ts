@@ -9,14 +9,13 @@ import {
   MediationDenyMessage,
   MediationRequestMessage,
   KeylistUpdateResponseMessage,
-  KeylistUpdated,
 } from '../messages'
 
 import { ConnectionRecord } from '../../connections'
 import { RoutingEventTypes, MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 
-import { assertConnection, createRecord, KeylistState, MediationRecord, MediationRole, MediationState } from '..'
+import { assertConnection, MediationRecord, MediationRole, MediationState } from '../index'
 import { Wallet } from '../../../wallet/Wallet'
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { EventEmitter } from '../../../agent/EventEmitter'

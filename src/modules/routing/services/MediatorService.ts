@@ -14,21 +14,16 @@ import {
   KeylistUpdateResponseMessage,
 } from '../messages'
 import { MediationRole } from '../models/MediationRole'
-import { KeylistState, MediationState } from '../models/MediationState'
+import { MediationState } from '../models/MediationState'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import { ConnectionRecord } from '../../connections'
+import { ConnectionRecord, ConnectionService } from '../../connections'
 import { BaseMessage } from '../../../agent/BaseMessage'
 import { Wallet } from '../../../wallet/Wallet'
 import { HandlerInboundMessage } from '../../../agent/Handler'
 import { ForwardHandler } from '../handlers'
 import { uuid } from '../../../utils/uuid'
 import {
-  ForwardEvent,
-  MediationKeylistEvent,
-  KeylistUpdatedEvent,
-  MediationGrantedEvent,
-  MediationKeylistUpdatedEvent,
   MediationStateChangedEvent,
   RoutingEventTypes,
 } from '../RoutingEvents'
@@ -37,6 +32,7 @@ import { AriesFrameworkError } from '../../../error'
 import { Symbols } from '../../../symbols'
 import { MediationRepository } from '../repository/MediationRepository'
 import { createOutboundMessage } from '../../../agent/helpers'
+import { MessageSender } from '../../../agent/MessageSender'
 
 export interface RoutingTable {
   [recipientKey: string]: ConnectionRecord | undefined
@@ -49,18 +45,24 @@ export class MediatorService {
   private wallet: Wallet
   private eventEmitter: EventEmitter
   private routingKeys: Verkey[]
+  private messageSender: MessageSender
+  private connectionService: ConnectionService
 
   public constructor(
     mediationRepository: MediationRepository,
     agentConfig: AgentConfig,
     @inject(Symbols.Wallet) wallet: Wallet,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    @inject(Symbols.MessageSender) messageSender: MessageSender,
+    connectionService: ConnectionService
   ) {
     this.mediationRepository = mediationRepository
     this.agentConfig = agentConfig
     this.wallet = wallet
     this.eventEmitter = eventEmitter
     this.routingKeys = []
+    this.messageSender = messageSender
+    this.connectionService = connectionService
   }
 
   private _assertConnection(connection: ConnectionRecord | undefined, msgType: BaseMessage): ConnectionRecord {
@@ -79,14 +81,10 @@ export class MediatorService {
 
     const connectionId = await this.findRecipient(message.to)
     if (connectionId) {
-      // Emit event to be handled by MediatorModule
-      this.eventEmitter.emit<ForwardEvent>({
-        type: RoutingEventTypes.Forward,
-        payload: {
-          connectionId,
-          message,
-        },
-      })
+      // TODO: Other checks (verKey, theirKey, etc.)
+      const connectionRecord: ConnectionRecord = await this.connectionService.getById(connectionId)
+      const outbound = createOutboundMessage(connectionRecord, message)
+      await this.messageSender.sendMessage(outbound)
     } else {
       throw new Error(`Connection for verkey ${recipientVerkey} not found!`)
     }
@@ -94,7 +92,7 @@ export class MediatorService {
 
   public async processKeylistUpdateRequest(messageContext: InboundMessageContext<KeylistUpdateMessage>) {
     const { message } = messageContext
-    const connection = this._assertConnection(messageContext.connection, ForwardMessage)
+    const connection = this._assertConnection(messageContext.connection, KeylistUpdateMessage)
     const keylist: KeylistUpdated[] = []
     const mediationRecord = await this.findRecipientByConnectionId(connection.id)
     if (!mediationRecord) {
@@ -116,17 +114,12 @@ export class MediatorService {
     }
     // emit event to send message that notifies recipient
     const responseMessage = new KeylistUpdateResponseMessage({ keylist })
+    const outbound = createOutboundMessage(connection, responseMessage)
     if (message.hasReturnRouting()) {
-      return createOutboundMessage(connection, responseMessage)
+      return outbound
     } else {
-      this.eventEmitter.emit<MediationKeylistUpdatedEvent>({
-        type: RoutingEventTypes.MediationKeylistUpdated,
-        payload: {
-          mediationRecord,
-          message: responseMessage,
-          keylist,
-        },
-      })
+      await this.messageSender.sendMessage(outbound)
+
     }
   }
 
@@ -208,16 +201,11 @@ export class MediatorService {
     await this.updateState(mediationRecord, MediationState.Init)
 
     const message = await this.createGrantMediationMessage(mediationRecord)
-    if (messageContext.message.hasReturnRouting()) {
-      return createOutboundMessage(connection, message)
+    const outbound = createOutboundMessage(connection, message)
+    if (message.hasReturnRouting()) {
+      return outbound
     } else {
-      this.eventEmitter.emit<MediationGrantedEvent>({
-        type: RoutingEventTypes.MediationGranted,
-        payload: {
-          mediationRecord,
-          message,
-        },
-      })
+      await this.messageSender.sendMessage(outbound)
     }
   }
 

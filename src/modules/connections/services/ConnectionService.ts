@@ -32,8 +32,10 @@ import { Symbols } from '../../../symbols'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { ConnectionEventTypes, ConnectionStateChangedEvent } from '../ConnectionEvents'
 import { AriesFrameworkError } from '../../../error'
-import { RecipientService } from '../../../modules/routing'
-import { getRouting } from '../../routing/services/RoutingService'
+import { MediationRecord, MediationState, RecipientService } from '../../../modules/routing'
+import { MessageSender } from '../../../agent/MessageSender'
+import { createOutboundMessage } from '../../../agent/helpers'
+import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ConnectionService {
@@ -42,19 +44,22 @@ export class ConnectionService {
   private connectionRepository: ConnectionRepository
   private eventEmitter: EventEmitter
   private recipientService: RecipientService
+  private messageSender: MessageSender
 
   public constructor(
     @inject(Symbols.Wallet) wallet: Wallet,
     config: AgentConfig,
     connectionRepository: ConnectionRepository,
     eventEmitter: EventEmitter,
-    recipientService: RecipientService
+    recipientService: RecipientService,
+    @inject(MessageSender)messageSender: MessageSender,
   ) {
     this.wallet = wallet
     this.config = config
     this.connectionRepository = connectionRepository
     this.eventEmitter = eventEmitter
     this.recipientService = recipientService
+    this.messageSender = messageSender
   }
 
   /**
@@ -434,6 +439,44 @@ export class ConnectionService {
     return this.connectionRepository.getSingleByQuery({ threadId })
   }
 
+  private async getRouting(
+    mediatorId: string | undefined,
+    routingKeys: string[],
+    my_endpoint?: string,
+  ) {
+    let mediationRecord: MediationRecord | null = null
+    let endpoint
+    const defaultMediator = await this.recipientService.getDefaultMediator()
+    if (mediatorId) {
+      mediationRecord = await this.recipientService.findById(mediatorId)
+    } else if (defaultMediator) {
+      mediationRecord = defaultMediator
+    }
+    if (mediationRecord) {
+      if (mediationRecord.state !== MediationState.Granted) {
+        throw new Error(`Mediation State for ${mediationRecord.id} is not granted!`)
+      }
+      routingKeys = [...routingKeys, ...mediationRecord.routingKeys]
+      endpoint = mediationRecord.endpoint
+    }
+    // Create and store new key
+    const did_data = await this.wallet.createDid()
+    if (mediationRecord) {
+      const message = await this.recipientService.createKeylistUpdateMessage(did_data[1])
+      // new did has been created and mediator needs to be updated with the public key.
+      const connectionRecord: ConnectionRecord = await this.getById(mediationRecord.connectionId)
+      message.setReturnRouting(ReturnRouteTypes.all)
+      const outbound = createOutboundMessage(connectionRecord, message)
+      await this.messageSender.sendMessage(outbound)
+    } else {
+      // TODO: register recipient keys for relay
+      // TODO: check that recipient keys are in wallet
+    }
+    endpoint = endpoint ?? my_endpoint ?? this.config.getEndpoint()
+    const result = { mediationRecord, endpoint, routingKeys, did: did_data[0], verkey: did_data[1] }
+    return result
+  }
+
   private async createConnection(options: {
     role: ConnectionRole
     state: ConnectionState
@@ -445,12 +488,8 @@ export class ConnectionService {
     autoAcceptConnection?: boolean
     tags?: ConnectionTags
   }): Promise<ConnectionRecord> {
-    const myRouting = await getRouting(
+    const myRouting = await this.getRouting(
       //my routing
-      this.config,
-      this.wallet,
-      this.eventEmitter,
-      this.recipientService,
       options.mediatorId,
       options.routingKeys ?? [],
       options.endpoint
