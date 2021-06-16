@@ -29,7 +29,7 @@
       alt="License"
       src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"
   /></a>
-  <a href="https://npmjs.com/package/aries-framework-javascript"
+  <a href="https://npmjs.com/package/aries-framework"
     ><img
       alt="aries-framework-javascript npm version"
       src="https://img.shields.io/npm/v/aries-framework"
