@@ -19,6 +19,7 @@ import { ConnectionsModule } from '../connections/ConnectionsModule'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { KeylistUpdateEvent, RoutingEventTypes } from './RoutingEvents'
 import { AriesFrameworkError } from '../../error'
+import { BaseEvent } from '../../agent/Events'
 
 @scoped(Lifecycle.ContainerScoped)
 export class RecipientModule {
@@ -59,7 +60,8 @@ export class RecipientModule {
         alias: 'InitedMediator', // TODO come up with a better name for this
       })
       await connections.returnWhenIsConnected(connectionRecord.id)
-      await this.requestAndWaitForAcception(connectionRecord, 2000) // TODO: put timeout as a config parameter
+      const mediationRecord = await this.requestAndAwaitGrant(connectionRecord, 2000) // TODO: put timeout as a config parameter
+      //Todo: fix me.. await this.recipientService.setDefaultMediator(mediationRecord.id)
     }
     if (this.agentConfig.defaultMediatorId) {
       /*
@@ -138,49 +140,90 @@ export class RecipientModule {
     }
     return undefined
   }
-  public async requestAndWaitForAcception(
-    connection: ConnectionRecord,
-    timeout: number = 500,
-    setReturnRouting: ReturnRouteTypes = ReturnRouteTypes.all
-  ): Promise<MediationRecord> {
-    /*
-    | create mediation record and request.
-    | register listener for mediation grant, before sending request to remove race condition
-    | resolve record when mediator grants request. time out otherwise
-    | send request message to mediator
-    | return promise with listener
-    */
-    const [record, message] = await this.recipientService.createRequest(connection)
-    if (setReturnRouting) {
-      message.setReturnRouting(setReturnRouting)
-    }
-    const outboundMessage = createOutboundMessage(connection, message)
-    const promise: Promise<MediationRecord> = new Promise((resolve, reject) => {
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      let timer: NodeJS.Timeout = setTimeout(() => {})
-      const listener = (event: MediationStateChangedEvent) => {
-        const previousStateMatches = MediationState.Requested === event.payload.previousState
-        const mediationIdMatches = record.id === event.payload.mediationRecord.id
-        const stateMatches = MediationState.Granted === event.payload.mediationRecord.state
 
-        if (previousStateMatches && mediationIdMatches && stateMatches) {
-          this.eventEmitter.off<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
-          clearTimeout(timer)
-          resolve(event.payload.mediationRecord)
+  /**
+   * waitForEvent
+   * eventProducer
+   *    callable function():void{}
+   * eventEmitter
+   *    EventEmitter
+   *    Emitter that will emit the event
+   * eventName
+   *    String
+   *    the name of the event that will be emitted
+   * filter
+   *    callable function(event):boolean{}
+   *    optional function returning whether or not the event satisfies conditions
+   **/
+
+  public async waitForEvent(
+    eventProducer: CallableFunction,
+    eventName: string,
+    condition: CallableFunction,
+    timeout: number = 500
+  ): Promise<BaseEvent> {
+    // Capture an event and retrieve its value
+    return new Promise<BaseEvent>(async (resolve, reject) => {
+      setTimeout(() => {
+        cleanup()
+        reject(new Error('Timed out waiting for event: ${eventName}'))
+      }, timeout)
+
+      const cleanup = () => {
+        this.eventEmitter.off(eventName, handler)
+        return true
+      }
+
+      const handler = async (event: BaseEvent) => {
+        try {
+          if ((await condition(event)) ?? true) {
+            cleanup()
+            resolve(event)
+          }
+        } catch (e) {
+          cleanup()
+          reject(e)
         }
       }
-      this.eventEmitter.on<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
-      timer = setTimeout(() => {
-        this.eventEmitter.off<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
-        reject(
-          new AriesFrameworkError(
-            'timeout waiting for mediator to grant mediation, initialized from mediation record id:' + record.id
-          )
-        )
-      }, timeout)
+      try {
+        this.eventEmitter.on(eventName, handler)
+        await eventProducer()
+      } catch (e) {
+        cleanup()
+        reject(e)
+      }
+    }).then((event) => {
+      return event
     })
-    await this.messageSender.sendMessage(outboundMessage)
-    return promise
+  }
+  /**
+   * create mediation record and request.
+   * register listener for mediation grant, before sending request to remove race condition
+   * resolve record when mediator grants request. time out otherwise
+   * send request message to mediator
+   * return promise with listener
+   **/
+  public async requestAndAwaitGrant(connection: ConnectionRecord, timeout: number = 50):Promise<MediationRecord> {
+    const [record, message] = await this.recipientService.createRequest(connection)
+
+    const sendMediationRequest = async () => {
+      message.setReturnRouting(ReturnRouteTypes.all) // return message on request response
+      const outboundMessage = createOutboundMessage(connection, message)
+      await this.messageSender.sendMessage(outboundMessage)
+    }
+    const condition = async (event: MediationStateChangedEvent) => {
+      const previousStateMatches = MediationState.Requested === event.payload.previousState
+      const mediationIdMatches = record.id === event.payload.mediationRecord.id
+      const stateMatches = MediationState.Granted === event.payload.mediationRecord.state
+      return previousStateMatches && mediationIdMatches && stateMatches
+    }
+    const results = await this.waitForEvent(
+      sendMediationRequest,
+      RoutingEventTypes.MediationStateChanged,
+      condition,
+      timeout
+    )
+    return (results as MediationStateChangedEvent).payload.mediationRecord
   }
 
   // Register handlers for the several messages for the mediator.
