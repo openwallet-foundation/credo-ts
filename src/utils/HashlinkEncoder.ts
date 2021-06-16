@@ -40,11 +40,11 @@ export class HashlinkEncoder {
    */
   public static encode(
     buffer: Buffer | Uint8Array,
-    metadata?: Metadata,
     hashAlgorithm: 'sha2-256' = 'sha2-256',
-    baseEncoding: BaseName = 'base58btc'
+    baseEncoding: BaseName = 'base58btc',
+    metadata?: Metadata
   ) {
-    const checksum = this.encodeMultiHashEncoder(buffer, hashAlgorithm, baseEncoding)
+    const checksum = this.encodeMultiHash(buffer, hashAlgorithm, baseEncoding)
     const mbMetadata = metadata && Object.keys(metadata).length > 0 ? this.encodeMetadata(metadata, baseEncoding) : null
     return mbMetadata ? `hl:${checksum}:${mbMetadata}` : `hl:${checksum}`
   }
@@ -82,26 +82,10 @@ export class HashlinkEncoder {
     }
     const { data } = MultiBaseEncoder.decode(hashlinkList[1])
     const validMultiHash = MultiHashEncoder.isValid(data)
-    return validMultiBase && validMultiHash ? true : false
+    return validMultiHash ? true : false
   }
 
-  public static encodeAttachment(
-    attachment: Attachment,
-    hashAlgorithm: 'sha2-256' = 'sha2-256',
-    baseName: BaseName = 'base58btc'
-  ) {
-    if (attachment.data.sha256) {
-      return `hl:${attachment.data.sha256}`
-    } else if (attachment.data.base64) {
-      return this.encode(BufferEncoder.fromBase64(attachment.data.base64), {}, hashAlgorithm, baseName)
-    } else if (attachment.data.json) {
-      return this.encode(JsonEncoder.toBuffer(attachment.data.json), {}, hashAlgorithm, baseName)
-    } else {
-      throw new AriesFrameworkError(`Attachment: (${attachment.id}) has no data to create a link with`)
-    }
-  }
-
-  private static encodeMultiHashEncoder(
+  private static encodeMultiHash(
     buffer: Buffer | Uint8Array,
     hashName: 'sha2-256' = 'sha2-256',
     baseEncoding: BaseName = 'base58btc'

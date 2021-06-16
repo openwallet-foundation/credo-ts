@@ -7,6 +7,7 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
+import { isLinkedAttachment } from '../../utils/attachment'
 import { ConnectionService } from '../connections'
 
 import {
@@ -84,7 +85,9 @@ export class CredentialsModule {
 
     const credentialDefinitionId = config?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
 
-    credentialRecord.attachments = credentialProposalMessage.attachments
+    credentialRecord.linkedAttachments = credentialProposalMessage.attachments?.filter((attachment) =>
+      isLinkedAttachment(attachment)
+    )
 
     if (!credentialDefinitionId) {
       throw new AriesFrameworkError(
@@ -97,7 +100,7 @@ export class CredentialsModule {
       preview: credentialProposalMessage.credentialProposal,
       credentialDefinitionId,
       comment: config?.comment,
-      attachments: credentialProposalMessage.attachments,
+      attachments: credentialRecord.linkedAttachments,
     })
 
     const outboundMessage = createOutboundMessage(connection, message)

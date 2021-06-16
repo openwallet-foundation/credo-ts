@@ -646,8 +646,8 @@ export class ProofService {
       )
       // Add the matching attachments to an object
       if (reqCredential) {
-        const requestedAttachments = credentialRecord.attachments?.find(
-          (attachment) => reqCredential.value.split(':')[1] === attachment.id
+        const requestedAttachments = credentialRecord.linkedAttachments?.find(
+          (attachment) => reqCredential.value.split(':')[1].substring(0, 64) === attachment.id
         )
         if (requestedAttachments) {
           attachments = attachments ? [...attachments, requestedAttachments] : [requestedAttachments]

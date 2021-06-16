@@ -14,6 +14,7 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
+import { isLinkedAttachment } from '../../../utils/attachment'
 import { uuid } from '../../../utils/uuid'
 import { AckStatus } from '../../common'
 import { ConnectionService } from '../../connections'
@@ -80,24 +81,26 @@ export class CredentialService {
     // Assert
     connectionRecord.assertReady()
 
+    const options = { ...config }
+
     // Add the linked attachments to the credentialProposal
     if (config?.linkedAttachments) {
-      config.credentialProposal = CredentialUtils.createAndLinkCredentialToAttachment(
+      options.credentialProposal = CredentialUtils.createAndLinkAttachmentsToPreview(
         config.linkedAttachments,
-        config.credentialProposal ? config.credentialProposal : new CredentialPreview({ attributes: [] })
+        config.credentialProposal ?? new CredentialPreview({ attributes: [] })
       )
-      config.attachments = config.linkedAttachments.map((linkedAttachment) => linkedAttachment.attachment)
+      options.attachments = config.linkedAttachments.map((linkedAttachment) => linkedAttachment.attachment)
     }
 
     // Create message
-    const proposalMessage = new ProposeCredentialMessage(config ?? {})
+    const proposalMessage = new ProposeCredentialMessage(options ?? {})
 
     // Create record
     const credentialRecord = new CredentialRecord({
       connectionId: connectionRecord.id,
       state: CredentialState.ProposalSent,
       proposalMessage,
-      attachments: config?.linkedAttachments?.map((linkedAttachment) => linkedAttachment.attachment),
+      linkedAttachments: config?.linkedAttachments?.map((linkedAttachment) => linkedAttachment.attachment),
       credentialAttributes: proposalMessage.credentialProposal?.attributes,
       tags: { threadId: proposalMessage.threadId, connectionId: connectionRecord.id },
     })
@@ -219,7 +222,7 @@ export class CredentialService {
     // Create message
     const { credentialDefinitionId, comment, preview, attachments } = credentialTemplate
     const credOffer = await this.indyIssuerService.createCredentialOffer(credentialDefinitionId)
-    const offerAttachments = new Attachment({
+    const offerAttachment = new Attachment({
       id: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
       mimeType: 'application/json',
       data: new AttachmentData({
@@ -229,7 +232,7 @@ export class CredentialService {
 
     const credentialOfferMessage = new OfferCredentialMessage({
       comment,
-      offerAttachments: [offerAttachments],
+      offerAttachments: [offerAttachment],
       credentialPreview: preview,
       attachments,
     })
@@ -242,6 +245,7 @@ export class CredentialService {
     credentialRecord.credentialAttributes = preview.attributes
     credentialRecord.metadata.credentialDefinitionId = credOffer.cred_def_id
     credentialRecord.metadata.schemaId = credOffer.schema_id
+    credentialRecord.linkedAttachments = attachments?.filter((attachment) => isLinkedAttachment(attachment))
     await this.updateState(credentialRecord, CredentialState.OfferSent)
 
     return { message: credentialOfferMessage, credentialRecord }
@@ -276,7 +280,7 @@ export class CredentialService {
 
     // Create and link credential to attacment
     const credentialPreview = linkedAttachments
-      ? CredentialUtils.createAndLinkCredentialToAttachment(linkedAttachments, preview)
+      ? CredentialUtils.createAndLinkAttachmentsToPreview(linkedAttachments, preview)
       : preview
 
     // Construct offer message
@@ -292,7 +296,7 @@ export class CredentialService {
       connectionId: connectionRecord.id,
       offerMessage: credentialOfferMessage,
       credentialAttributes: credentialPreview.attributes,
-      attachments: linkedAttachments?.map((linkedAttachments) => linkedAttachments.attachment),
+      linkedAttachments: linkedAttachments?.map((linkedAttachments) => linkedAttachments.attachment),
       metadata: {
         credentialDefinitionId: credOffer.cred_def_id,
         schemaId: credOffer.schema_id,
@@ -352,7 +356,9 @@ export class CredentialService {
 
       credentialRecord.offerMessage = credentialOfferMessage
       credentialRecord.credentialAttributes = credentialOfferMessage.credentialPreview.attributes
-      credentialRecord.attachments = credentialOfferMessage.attachments
+      credentialRecord.linkedAttachments = credentialOfferMessage.attachments?.filter((attachment) =>
+        isLinkedAttachment(attachment)
+      )
       credentialRecord.metadata.credentialDefinitionId = indyCredentialOffer.cred_def_id
       credentialRecord.metadata.schemaId = indyCredentialOffer.schema_id
       await this.updateState(credentialRecord, CredentialState.OfferReceived)
@@ -430,14 +436,16 @@ export class CredentialService {
     const credentialRequest = new RequestCredentialMessage({
       comment,
       requestAttachments: [requestAttachment],
-      attachments: credentialRecord.offerMessage?.attachments,
+      attachments: credentialRecord.offerMessage?.attachments?.filter((attachment) => isLinkedAttachment(attachment)),
     })
 
     credentialRequest.setThread({ threadId: credentialRecord.tags.threadId })
 
     credentialRecord.metadata.requestMetadata = credReqMetadata
     credentialRecord.requestMessage = credentialRequest
-    credentialRecord.attachments = credentialRecord.offerMessage?.attachments
+    credentialRecord.linkedAttachments = credentialRecord.offerMessage?.attachments?.filter((attachment) =>
+      isLinkedAttachment(attachment)
+    )
     await this.updateState(credentialRecord, CredentialState.RequestSent)
 
     return { message: credentialRequest, credentialRecord }
@@ -553,7 +561,9 @@ export class CredentialService {
     const issueCredentialMessage = new IssueCredentialMessage({
       comment,
       credentialAttachments: [credentialAttachment],
-      attachments: offerMessage?.attachments || requestMessage?.attachments,
+      attachments:
+        offerMessage?.attachments?.filter((attachment) => isLinkedAttachment(attachment)) ||
+        requestMessage?.attachments?.filter((attachment) => isLinkedAttachment(attachment)),
     })
     issueCredentialMessage.setThread({
       threadId: credentialRecord.tags.threadId,

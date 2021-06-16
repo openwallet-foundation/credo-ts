@@ -36,7 +36,7 @@ export interface CredentialStorageProps {
   requestMessage?: RequestCredentialMessage
   credentialMessage?: IssueCredentialMessage
   credentialAttributes?: CredentialPreviewAttribute[]
-  attachments?: Attachment[]
+  linkedAttachments?: Attachment[]
 }
 
 export interface CredentialRecordTags extends Tags {
@@ -65,7 +65,7 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
   public credentialAttributes?: CredentialPreviewAttribute[]
 
   @Type(() => Attachment)
-  public attachments?: Attachment[]
+  public linkedAttachments?: Attachment[]
 
   public static readonly type = 'CredentialRecord'
   public readonly type = CredentialRecord.type
@@ -87,7 +87,7 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
       this.requestMessage = props.requestMessage
       this.credentialMessage = props.credentialMessage
       this.credentialAttributes = props.credentialAttributes
-      this.attachments = props.attachments
+      this.linkedAttachments = props.linkedAttachments
     }
   }
 
@@ -104,7 +104,7 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
 
     return new CredentialInfo({
       claims,
-      attachments: this.attachments ? this.attachments : undefined,
+      attachments: this.linkedAttachments,
       metadata: {
         credentialDefinitionId: this.metadata.credentialDefinitionId,
         schemaId: this.metadata.schemaId,

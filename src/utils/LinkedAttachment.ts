@@ -3,7 +3,7 @@ import { IsString } from 'class-validator'
 
 import { Attachment } from '../decorators/attachment/Attachment'
 
-import { HashlinkEncoder } from './HashlinkEncoder'
+import { encodeAttachment } from './attachment'
 
 export interface LinkedAttachmentOptions {
   name: string
@@ -12,7 +12,7 @@ export interface LinkedAttachmentOptions {
 
 export class LinkedAttachment {
   public constructor(options: LinkedAttachmentOptions) {
-    this.name = options.name
+    this.attributeName = options.name
     this.attachment = options.attachment
     this.attachment.id = this.getId(options.attachment)
   }
@@ -21,7 +21,7 @@ export class LinkedAttachment {
    * The name that will be used to generate the linked credential
    */
   @IsString()
-  public name: string
+  public attributeName: string
 
   /**
    * The attachment that needs to be linked to the credential
@@ -38,6 +38,6 @@ export class LinkedAttachment {
   private getId(attachment: Attachment): string {
     // Take the second element since the id property
     // of a decorator MUST not contain a colon and has a maximum size of 64 characters
-    return HashlinkEncoder.encodeAttachment(attachment).split(':')[1].substring(0, 64)
+    return encodeAttachment(attachment).split(':')[1].substring(0, 64)
   }
 }
