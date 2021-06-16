@@ -1,7 +1,0 @@
-FROM python:3.6
-
-WORKDIR /usr/src/app
-
-RUN pip install openapi-python-client
-
-ENTRYPOINT ["/bin/sh", "-c", "openapi-python-client \"$@\"", "--"]
