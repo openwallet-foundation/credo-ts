@@ -1,0 +1,41 @@
+version: '3'
+#**************************************************************
+# integration level test agents                                *
+#***************************************************************
+
+services:
+  #*************************************************************
+  # acapy_plugin_agent: acapy agent loaded with plugin         *
+  # for testing                                                *
+  #*************************************************************
+
+  acapy_plugin_agent:
+    image: acapy-plugin-toolbox
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile
+    ports:
+      - "3001:3001"
+    command: start -it http 0.0.0.0 3000 -ot http -e http://test_agent:3000 --no-ledger --admin 0.0.0.0 3001 --admin-insecure-mode --log-level debug
+
+  #*************************************************************
+  # tester: drives tests for acapy_plugin_toolbox in a         *
+  # "Juggernaut" fashion!                                      *
+  #*************************************************************
+
+  tests:
+      container_name: juggernaut
+      build:
+        context: .
+        dockerfile: ./Dockerfile.test.runner
+      environment:
+        - WAIT_BEFORE_HOSTS=3
+        - WAIT_HOSTS=acapy_plugin_agent:3000
+        - WAIT_HOSTS_TIMEOUT=60
+        - WAIT_SLEEP_INTERVAL=1
+        - WAIT_HOST_CONNECT_TIMEOUT=30
+        - AGENT_HOST=acapy_plugin_agent
+        - AGENT_PORT=3000
+        - AGENT_BACKCHANNEL_PORT=3001
+      depends_on:
+        - acapy_plugin_agent
