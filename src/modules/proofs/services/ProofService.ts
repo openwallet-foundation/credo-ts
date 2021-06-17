@@ -19,7 +19,7 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { Wallet } from '../../../wallet/Wallet'
 import { AckStatus } from '../../common'
-import { CredentialUtils, Credential, IndyCredentialInfo } from '../../credentials'
+import { CredentialUtils, Credential } from '../../credentials'
 import { IndyHolderService, IndyVerifierService } from '../../indy'
 import { LedgerService } from '../../ledger/services/LedgerService'
 import { ProofEventTypes } from '../ProofEvents'
@@ -660,6 +660,7 @@ export class ProofService {
         return new RequestedAttribute({
           credentialId: credential.credentialInfo.referent,
           revealed: true,
+          credentialInfo: credential.credentialInfo,
         })
       })
     }
@@ -670,6 +671,7 @@ export class ProofService {
       retrievedCredentials.requestedPredicates[referent] = credentials.map((credential) => {
         return new RequestedPredicate({
           credentialId: credential.credentialInfo.referent,
+          credentialInfo: credential.credentialInfo,
         })
       })
     }
@@ -807,18 +809,13 @@ export class ProofService {
     proofRequest: ProofRequest,
     requestedCredentials: RequestedCredentials
   ): Promise<IndyProof> {
-    const credentialObjects: IndyCredentialInfo[] = []
-
-    for (const credentialId of requestedCredentials.getCredentialIdentifiers()) {
-      const credentialInfo = JsonTransformer.fromJSON(
-        await this.indyHolderService.getCredential(credentialId),
-        IndyCredentialInfo
-      )
-
-      credentialObjects.push(credentialInfo)
-    }
+    const credentialObjects = [
+      ...Object.values(requestedCredentials.requestedAttributes),
+      ...Object.values(requestedCredentials.requestedPredicates),
+    ].map((c) => c.credentialInfo)
 
     const schemas = await this.getSchemas(new Set(credentialObjects.map((c) => c.schemaId)))
+
     const credentialDefinitions = await this.getCredentialDefinitions(
       new Set(credentialObjects.map((c) => c.credentialDefinitionId))
     )
