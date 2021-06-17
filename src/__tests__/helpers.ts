@@ -33,8 +33,6 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
 
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
 
-export const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms))
-
 export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
   const config: InitConfig = {
     label: `Agent: ${name}`,
