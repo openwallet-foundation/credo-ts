@@ -1,4 +1,5 @@
 import type { PackedMessage, UnpackedMessageContext } from '../types'
+import type { Buffer } from '../utils/buffer'
 import type {
   DidConfig,
   Did,

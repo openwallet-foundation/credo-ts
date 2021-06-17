@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 import type { PackedMessage, UnpackedMessageContext } from '../../../types'
+import type { Buffer } from '../../../utils/buffer'
 import type { Wallet } from '../../../wallet/Wallet'
 import type {
   DidConfig,

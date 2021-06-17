@@ -1,17 +1,8 @@
 {
+  "extends": "./tsconfig.build.json",
   "compilerOptions": {
-    "target": "ES2017",
-    "module": "commonjs",
-    "lib": [],
-    "declaration": true,
-    "sourceMap": true,
-    "outDir": "./build",
-    "strict": true,
-    "typeRoots": ["node_modules/@types", "./types"],
-    "types": ["jest"],
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
-  }
+    "types": ["jest"]
+  },
+  "include": ["src", "types", "tests", "*.config.js"],
+  "exclude": ["node_modules", "build", "**/node_modules", "**/node_modules/**"]
 }

@@ -62,7 +62,7 @@ jobs:
         run: yarn check-format
 
       - name: Compile
-        run: yarn compile
+        run: yarn check-types
 
   integration-test:
     runs-on: ubuntu-20.04

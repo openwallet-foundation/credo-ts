@@ -1,5 +1,6 @@
 import type { Logger } from '../logger'
 import type { PackedMessage, UnpackedMessageContext } from '../types'
+import type { Buffer } from '../utils/buffer'
 import type { Wallet, DidInfo } from './Wallet'
 import type {
   default as Indy,
