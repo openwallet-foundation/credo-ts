@@ -13,7 +13,7 @@ Because Electron is like a browser-environment, some additional work has to be d
 
 const { contextBridge } = require('electron')
 const indy = require('indy-sdk')
-const NodeFileSystem = require('aries-framework/build/src/storage/fs/NodeFileSystem').NodeFileSystem
+const NodeFileSystem = require('aries-framework/build/storage/fs/NodeFileSystem').NodeFileSystem
 
 // fs is not available in the browser, so we initialize it in the main world
 const fs = new NodeFileSystem()
