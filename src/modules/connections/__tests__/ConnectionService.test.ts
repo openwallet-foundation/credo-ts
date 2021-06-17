@@ -159,6 +159,7 @@ describe('ConnectionService', () => {
 
     it('returns a connection record with mediator information', async () => {
       expect.assertions(1)
+      const { connectionRecord: connectionRecord } = await connectionService.createInvitation()
 
       mockFunction(mediationRepository.findById).mockReturnValue(Promise.resolve(mediatorRecord))
       mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(connectionRecord))
@@ -248,6 +249,7 @@ describe('ConnectionService', () => {
       })
 
       mockFunction(mediationRepository.findById).mockReturnValue(Promise.resolve(mediatorRecord))
+      mockFunction(connectionService.keylistUpdatdAndAwait).mockReturnValue(Promise.resolve(mediatorRecord))
       const record = await connectionService.processInvitation(invitation, { mediator: mediatorRecord })
       expect(record.didDoc.service[0]).toEqual(
         expect.objectContaining({
