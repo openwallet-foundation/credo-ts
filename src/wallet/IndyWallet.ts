@@ -1,5 +1,5 @@
 import type { Logger } from '../logger'
-import type { UnpackedMessageContext } from '../types'
+import type { PackedMessage, UnpackedMessageContext } from '../types'
 import type { Wallet, DidInfo } from './Wallet'
 import type {
   default as Indy,
@@ -289,13 +289,17 @@ export class IndyWallet implements Wallet {
     return this.indy.createAndStoreMyDid(this.walletHandle, didConfig || {})
   }
 
-  public async pack(payload: Record<string, unknown>, recipientKeys: Verkey[], senderVk: Verkey): Promise<JsonWebKey> {
+  public async pack(
+    payload: Record<string, unknown>,
+    recipientKeys: Verkey[],
+    senderVk: Verkey
+  ): Promise<PackedMessage> {
     const messageRaw = JsonEncoder.toBuffer(payload)
     const packedMessage = await this.indy.packMessage(this.walletHandle, messageRaw, recipientKeys, senderVk)
     return JsonEncoder.fromBuffer(packedMessage)
   }
 
-  public async unpack(messagePackage: JsonWebKey): Promise<UnpackedMessageContext> {
+  public async unpack(messagePackage: PackedMessage): Promise<UnpackedMessageContext> {
     const unpackedMessageBuffer = await this.indy.unpackMessage(this.walletHandle, JsonEncoder.toBuffer(messagePackage))
     const unpackedMessage = JsonEncoder.fromBuffer(unpackedMessageBuffer)
     return {

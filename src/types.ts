@@ -47,6 +47,8 @@ export interface UnpackedMessageContext {
   recipient_verkey?: Verkey
 }
 
+export type PackedMessage = Record<string, unknown>
+
 export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
   connection: ConnectionRecord
   payload: T
