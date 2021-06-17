@@ -2,13 +2,14 @@ import type { Agent } from '../agent/Agent'
 import type { Logger } from '../logger'
 import type { ConnectionRecord } from '../modules/connections'
 import type { OutboundPackage } from '../types'
+import type { WebSocketType } from '../utils/ws'
 import type { OutboundTransporter } from './OutboundTransporter'
 
 import { InjectionSymbols } from '../constants'
 import { WebSocket } from '../utils/ws'
 
 export class WsOutboundTransporter implements OutboundTransporter {
-  private transportTable: Map<string, WebSocket> = new Map<string, WebSocket>()
+  private transportTable: Map<string, WebSocketType> = new Map<string, WebSocketType>()
   private agent: Agent
   private logger: Logger
 
@@ -65,11 +66,11 @@ export class WsOutboundTransporter implements OutboundTransporter {
     this.agent.receiveMessage(JSON.parse(event.data))
   }
 
-  private listenOnWebSocketMessages(socket: WebSocket) {
+  private listenOnWebSocketMessages(socket: WebSocketType) {
     socket.addEventListener('message', this.handleMessageEvent)
   }
 
-  private createSocketConnection(endpoint: string): Promise<WebSocket> {
+  private createSocketConnection(endpoint: string): Promise<WebSocketType> {
     return new Promise((resolve, reject) => {
       this.logger.debug(`Connecting to WebSocket ${endpoint}`)
       const socket = new WebSocket(endpoint)

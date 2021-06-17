@@ -1,6 +1,9 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+import type Fetch from 'node-fetch'
+
 import { isNodeJS, isReactNative } from './environment'
 
-let fetch: typeof global.fetch
+let fetch: typeof Fetch
 let Headers
 let Request
 let Response
@@ -15,14 +18,22 @@ if (isNodeJS()) {
   Request = nodeFetch.Request
   Response = nodeFetch.Response
 } else if (isReactNative()) {
+  // @ts-ignore
   fetch = global.fetch
+  // @ts-ignore
   Headers = global.Headers
+  // @ts-ignore
   Request = global.Request
+  // @ts-ignore
   Response = global.Response
 } else {
+  // @ts-ignore
   fetch = window.fetch.bind(window)
+  // @ts-ignore
   Headers = window.Headers
+  // @ts-ignore
   Request = window.Request
+  // @ts-ignore
   Response = window.Response
 }
 
