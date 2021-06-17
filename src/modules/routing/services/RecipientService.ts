@@ -96,22 +96,6 @@ export class RecipientService {
     return new AgentMessage()
   }
 
-  public async createKeylistUpdateMessage(verkey?: Verkey): Promise<KeylistUpdateMessage> {
-    if (!verkey) {
-      let did
-      ;[did, verkey] = await this.wallet.createDid()
-    }
-    const keylistUpdateMessage = new KeylistUpdateMessage({
-      updates: [
-        new KeylistUpdate({
-          action: KeylistUpdateAction.add,
-          recipientKey: verkey,
-        }),
-      ],
-    })
-    return keylistUpdateMessage
-  }
-
   public async processKeylistUpdateResults(messageContext: InboundMessageContext<KeylistUpdateResponseMessage>) {
     const connection = assertConnection(
       messageContext.connection,
@@ -241,6 +225,22 @@ export class RecipientService {
       }
     }
     return this.defaultMediator
+  }
+
+  public async discoverMediation(
+    mediatorId: string | undefined,
+  ){
+    let mediationRecord: MediationRecord | null = null
+    const defaultMediator = await this.getDefaultMediator()
+    if (mediatorId) {
+      mediationRecord = await this.findById(mediatorId)
+    } else if (defaultMediator) {
+      mediationRecord = defaultMediator
+      if (mediationRecord.state !== MediationState.Granted) {
+        throw new Error(`Mediation State for ${mediationRecord.id} is not granted!`)
+      }
+      return mediationRecord
+    }
   }
 
   public async setDefaultMediator(mediator: MediationRecord) {

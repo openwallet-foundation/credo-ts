@@ -36,6 +36,7 @@ import { MediationRecord, MediationState, RecipientService } from '../../../modu
 import { MessageSender } from '../../../agent/MessageSender'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
+import { KeylistUpdate, KeylistUpdateAction, KeylistUpdateMessage } from '../../routing/messages/KeylistUpdatedMessage'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ConnectionService {
@@ -43,7 +44,6 @@ export class ConnectionService {
   private config: AgentConfig
   private connectionRepository: ConnectionRepository
   private eventEmitter: EventEmitter
-  private recipientService: RecipientService
   private messageSender: MessageSender
 
   public constructor(
@@ -51,14 +51,12 @@ export class ConnectionService {
     config: AgentConfig,
     connectionRepository: ConnectionRepository,
     eventEmitter: EventEmitter,
-    recipientService: RecipientService,
-    @inject(MessageSender)messageSender: MessageSender,
+    messageSender: MessageSender,
   ) {
     this.wallet = wallet
     this.config = config
     this.connectionRepository = connectionRepository
     this.eventEmitter = eventEmitter
-    this.recipientService = recipientService
     this.messageSender = messageSender
   }
 
@@ -71,7 +69,7 @@ export class ConnectionService {
   public async createInvitation(config?: {
     autoAcceptConnection?: boolean
     alias?: string
-    mediatorId?: string
+    mediator?: MediationRecord
     routingKeys?: string[]
     endpoint?: string
   }) {
@@ -80,7 +78,7 @@ export class ConnectionService {
       role: ConnectionRole.Inviter,
       state: ConnectionState.Invited,
       alias: config?.alias,
-      mediatorId: config?.mediatorId,
+      mediator: config?.mediator,
       routingKeys: config?.routingKeys,
       endpoint: config?.endpoint,
       autoAcceptConnection: config?.autoAcceptConnection,
@@ -124,7 +122,7 @@ export class ConnectionService {
     config?: {
       autoAcceptConnection?: boolean
       alias?: string
-      mediatorId?: string
+      mediator?: MediationRecord
     }
   ): Promise<ConnectionRecord> {
     const connectionRecord = await this.createConnection({
@@ -134,7 +132,7 @@ export class ConnectionService {
       //routingKeys: invitation?.routingKeys,
       //endpoint: invitation?.serviceEndpoint,
       autoAcceptConnection: config?.autoAcceptConnection,
-      mediatorId: config?.mediatorId,
+      mediator: config?.mediator,
       invitation,
       tags: {
         invitationKey: invitation.recipientKeys && invitation.recipientKeys[0],
@@ -440,32 +438,25 @@ export class ConnectionService {
   }
 
   private async getRouting(
-    mediatorId: string | undefined,
+    mediationRecord: MediationRecord| undefined,
     routingKeys: string[],
     my_endpoint?: string,
   ) {
-    let mediationRecord: MediationRecord | null = null
     let endpoint
-    const defaultMediator = await this.recipientService.getDefaultMediator()
-    if (mediatorId) {
-      mediationRecord = await this.recipientService.findById(mediatorId)
-    } else if (defaultMediator) {
-      mediationRecord = defaultMediator
-    }
     if (mediationRecord) {
-      if (mediationRecord.state !== MediationState.Granted) {
-        throw new Error(`Mediation State for ${mediationRecord.id} is not granted!`)
-      }
       routingKeys = [...routingKeys, ...mediationRecord.routingKeys]
       endpoint = mediationRecord.endpoint
     }
     // Create and store new key
     const did_data = await this.wallet.createDid()
     if (mediationRecord) {
-      const message = await this.recipientService.createKeylistUpdateMessage(did_data[1])
+      const message = this.createKeylistUpdateMessage(did_data[1])
       // new did has been created and mediator needs to be updated with the public key.
+      console.log("get routing, mediationrecord : ",mediationRecord)
       const connectionRecord: ConnectionRecord = await this.getById(mediationRecord.connectionId)
+      console.log("get routing, connectionRecord : ",connectionRecord)
       message.setReturnRouting(ReturnRouteTypes.all)
+      console.log("get routing, update key message: ",message)
       const outbound = createOutboundMessage(connectionRecord, message)
       await this.messageSender.sendMessage(outbound)
     } else {
@@ -476,6 +467,18 @@ export class ConnectionService {
     const result = { mediationRecord, endpoint, routingKeys, did: did_data[0], verkey: did_data[1] }
     return result
   }
+  
+  public createKeylistUpdateMessage(verkey: Verkey): KeylistUpdateMessage {
+    const keylistUpdateMessage = new KeylistUpdateMessage({
+      updates: [
+        new KeylistUpdate({
+          action: KeylistUpdateAction.add,
+          recipientKey: verkey,
+        }),
+      ],
+    })
+    return keylistUpdateMessage
+  }
 
   private async createConnection(options: {
     role: ConnectionRole
@@ -483,14 +486,14 @@ export class ConnectionService {
     endpoint?: string
     invitation?: ConnectionInvitationMessage
     alias?: string
-    mediatorId?: string
+    mediator?: MediationRecord
     routingKeys?: string[]
     autoAcceptConnection?: boolean
     tags?: ConnectionTags
   }): Promise<ConnectionRecord> {
     const myRouting = await this.getRouting(
       //my routing
-      options.mediatorId,
+      options.mediator,
       options.routingKeys ?? [],
       options.endpoint
     )

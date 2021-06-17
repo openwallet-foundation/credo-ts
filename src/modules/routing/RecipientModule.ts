@@ -101,8 +101,8 @@ export class RecipientModule {
     return record
   }
 
-  public async notifyKeylistUpdate(connection: ConnectionRecord, verkey?: Verkey) {
-    const message = await this.recipientService.createKeylistUpdateMessage(verkey)
+  public async notifyKeylistUpdate(connection: ConnectionRecord, verkey: Verkey) {
+    const message = await this.connectionService.createKeylistUpdateMessage(verkey)
     const outboundMessage = createOutboundMessage(connection, message)
     const response = await this.messageSender.sendMessage(outboundMessage)
     return response

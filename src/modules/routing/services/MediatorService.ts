@@ -53,7 +53,7 @@ export class MediatorService {
     agentConfig: AgentConfig,
     @inject(Symbols.Wallet) wallet: Wallet,
     eventEmitter: EventEmitter,
-    @inject(Symbols.MessageSender) messageSender: MessageSender,
+    messageSender: MessageSender,
     connectionService: ConnectionService
   ) {
     this.mediationRepository = mediationRepository

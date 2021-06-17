@@ -16,8 +16,8 @@ import {
   TrustPingResponseMessageHandler,
 } from './handlers'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { EventEmitter } from '../../agent/EventEmitter'
 import { DID_COMM_TRANSPORT_QUEUE } from '../../agent/TransportService'
+import { RecipientService } from '../routing'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ConnectionsModule {
@@ -25,7 +25,7 @@ export class ConnectionsModule {
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private trustPingService: TrustPingService
-  private eventEmitter: EventEmitter
+  private recipientService: RecipientService
 
   public constructor(
     dispatcher: Dispatcher,
@@ -33,14 +33,13 @@ export class ConnectionsModule {
     connectionService: ConnectionService,
     trustPingService: TrustPingService,
     messageSender: MessageSender,
-    eventEmitter: EventEmitter
+    recipientService: RecipientService,
   ) {
     this.agentConfig = agentConfig
     this.connectionService = connectionService
     this.trustPingService = trustPingService
     this.messageSender = messageSender
-    this.eventEmitter = eventEmitter
-
+    this.recipientService = recipientService
     this.registerHandlers(dispatcher)
   }
 
@@ -52,10 +51,11 @@ export class ConnectionsModule {
     invitation: ConnectionInvitationMessage
     connectionRecord: ConnectionRecord
   }> {
+    const mediationRecord = await this.recipientService.discoverMediation(config?.mediatorId)
     const { connectionRecord: connectionRecord, message: invitation } = await this.connectionService.createInvitation({
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
-      mediatorId: config?.mediatorId,
+      mediator: mediationRecord,
     })
 
     return { connectionRecord, invitation }
@@ -78,10 +78,11 @@ export class ConnectionsModule {
       mediatorId?: string
     }
   ): Promise<ConnectionRecord> {
+    const mediationRecord = await this.recipientService.discoverMediation(config?.mediatorId)
     let connection = await this.connectionService.processInvitation(invitation, {
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
-      mediatorId: config?.mediatorId,
+      mediator: mediationRecord,
     })
 
     if (!config?.mediatorId && this.agentConfig.getEndpoint() == DID_COMM_TRANSPORT_QUEUE) {

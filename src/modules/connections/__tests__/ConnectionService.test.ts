@@ -20,23 +20,31 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { getBaseConfig, getMockConnection, mockFunction } from '../../../__tests__/helpers'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
 import { MediationRepository } from '../../routing/repository/MediationRepository'
-import { RecipientService } from '../../routing/services/RecipientService'
 import { MediationRecord, MediationRole, MediationState } from '../../routing'
-import { waitForEventWithTimeout } from '../../../utils/promiseWithTimeOut'
+import { MessageSender } from '../../../agent/MessageSender'
+import { TransportService as TransportServiceImpl} from '../../../agent/TransportService'
+import { EnvelopeService as EnvelopeServiceImpl } from '../../../agent/EnvelopeService'
+import testLogger from '../../../__tests__/logger'
 
 jest.mock('../repository/ConnectionRepository')
 jest.mock('../../routing/repository/MediationRepository')
-jest.mock('../../../utils/promiseWithTimeOut')
+jest.mock('../../../agent/TransportService')
+jest.mock('../../../agent/EnvelopeService')
 
+const logger = testLogger
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
 const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
 
 describe('ConnectionService', () => {
+  const TransportService = <jest.Mock<TransportServiceImpl>>(<unknown>TransportServiceImpl)
+  const EnvelopeService = <jest.Mock<EnvelopeServiceImpl>>(<unknown>EnvelopeServiceImpl)
   const initConfig = getBaseConfig('ConnectionServiceTest', {
     host: 'http://agent.com',
     port: 8080,
   })
 
+  const transportService = new TransportService()
+  const enveloperService = new EnvelopeService()
   const mediatorRecord = new MediationRecord({
     state: MediationState.Granted,
     role: MediationRole.Recipient,
@@ -58,7 +66,7 @@ describe('ConnectionService', () => {
   let mediationRepository: MediationRepository
   let connectionService: ConnectionService
   let eventEmitter: EventEmitter
-  let recipientService: RecipientService
+  let messageSender: MessageSender
 
   beforeAll(async () => {
     agentConfig = new AgentConfig(initConfig)
@@ -75,8 +83,8 @@ describe('ConnectionService', () => {
     eventEmitter = new EventEmitter()
     connectionRepository = new ConnectionRepositoryMock()
     mediationRepository = new MediationRepositoryMock()
-    recipientService = new RecipientService(mediationRepository, wallet, eventEmitter)
-    connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, eventEmitter, recipientService)
+    messageSender = new MessageSender(enveloperService, transportService, logger)
+    connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, eventEmitter, messageSender)
   })
 
   describe('createConnectionWithInvitation', () => {
@@ -153,9 +161,9 @@ describe('ConnectionService', () => {
       expect.assertions(1)
 
       mockFunction(mediationRepository.findById).mockReturnValue(Promise.resolve(mediatorRecord))
-      mockFunction(waitForEventWithTimeout).mockReturnValue(Promise.resolve({}))
+      mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(connectionRecord))
       const { message: invitation } = await connectionService.createInvitation({
-        mediatorId: mediatorRecord.id,
+        mediator: mediatorRecord,
       })
       expect(invitation).toEqual(
         expect.objectContaining({
@@ -240,8 +248,7 @@ describe('ConnectionService', () => {
       })
 
       mockFunction(mediationRepository.findById).mockReturnValue(Promise.resolve(mediatorRecord))
-      mockFunction(waitForEventWithTimeout).mockReturnValue(Promise.resolve({}))
-      const record = await connectionService.processInvitation(invitation, { mediatorId: mediatorRecord.id })
+      const record = await connectionService.processInvitation(invitation, { mediator: mediatorRecord })
       expect(record.didDoc.service[0]).toEqual(
         expect.objectContaining({
           recipientKeys: [expect.any(String)],
