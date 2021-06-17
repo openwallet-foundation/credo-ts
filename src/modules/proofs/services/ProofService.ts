@@ -815,7 +815,6 @@ export class ProofService {
     ].map((c) => c.credentialInfo)
 
     const schemas = await this.getSchemas(new Set(credentialObjects.map((c) => c.schemaId)))
-
     const credentialDefinitions = await this.getCredentialDefinitions(
       new Set(credentialObjects.map((c) => c.credentialDefinitionId))
     )
