@@ -22,9 +22,11 @@ interface RequestedCredentialsOptions {
  */
 export class RequestedCredentials {
   public constructor(options: RequestedCredentialsOptions = {}) {
-    this.requestedAttributes = options.requestedAttributes ?? {}
-    this.requestedPredicates = options.requestedPredicates ?? {}
-    this.selfAttestedAttributes = options.selfAttestedAttributes ?? {}
+    if (options) {
+      this.requestedAttributes = options.requestedAttributes ?? {}
+      this.requestedPredicates = options.requestedPredicates ?? {}
+      this.selfAttestedAttributes = options.selfAttestedAttributes ?? {}
+    }
   }
 
   @Expose({ name: 'requested_attributes' })

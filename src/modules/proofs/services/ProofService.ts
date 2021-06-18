@@ -619,7 +619,7 @@ export class ProofService {
    *
    * @param proofRequest The proof request to build the requested credentials object from
    * @param presentationProposal Optional presentation proposal to improve credential selection algorithm
-   * @returns RetrievedCredential object
+   * @returns RetrievedCredentials object
    */
   public async getRequestedCredentialsForProofRequest(
     proofRequest: ProofRequest,
