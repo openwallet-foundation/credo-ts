@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import type Fetch from 'node-fetch'
 
 import { isNodeJS, isReactNative } from './environment'
 
-let fetch: typeof Fetch
+let fetch: any
 let Headers
 let Request
 let Response

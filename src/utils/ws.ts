@@ -1,9 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import type WebSocketType from 'ws'
-
 import { isNodeJS, isReactNative } from './environment'
 
-let WebSocket: typeof WebSocketType
+let WebSocket: any
 
 // NodeJS doesn't have WebSocket by default
 if (isNodeJS()) {
@@ -19,4 +17,4 @@ if (isNodeJS()) {
   WebSocket = window.WebSocket.bind(window)
 }
 
-export { WebSocket, WebSocketType }
+export { WebSocket }
