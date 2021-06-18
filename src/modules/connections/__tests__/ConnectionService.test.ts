@@ -222,7 +222,6 @@ describe('ConnectionService', () => {
       expect(aliasDefined.alias).toBe('test-alias')
       expect(aliasUndefined.alias).toBeUndefined()
     })
-
   })
 
   describe('createRequest', () => {
