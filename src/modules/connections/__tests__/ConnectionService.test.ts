@@ -157,48 +157,6 @@ describe('ConnectionService', () => {
       expect(aliasDefined.alias).toBe('test-alias')
       expect(aliasUndefined.alias).toBeUndefined()
     })
-
-    it('returns a connection record with mediator information', async () => {
-      expect.assertions(1)
-      const expected = getMockConnection()
-      const mediatorRecord = new MediationRecord({
-        state: MediationState.Granted,
-        role: MediationRole.Recipient,
-        connectionId: expected.id,
-        recipientKeys: [expected.myKey!],
-        routingKeys: [expected.theirKey!],
-        endpoint: 'fakeEndpoint',
-        tags: {
-          state: MediationState.Init,
-          role: MediationRole.Recipient,
-          connectionId: expected.id,
-          default: 'false',
-        },
-      })
-      mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(expected))
-      setTimeout(() => {
-        eventEmitter.emit<KeylistUpdatedEvent>({
-          // trigger waitForEvent
-          type: RoutingEventTypes.RecipientKeylistUpdated,
-          payload: {
-            mediationRecord: mediatorRecord,
-            keylist: [],
-          },
-        })
-      }, 500)
-      const { message: invitation } = await connectionService.createInvitation({
-        mediator: mediatorRecord,
-      })
-      console.log('created invitation', invitation)
-      expect(invitation).toEqual(
-        expect.objectContaining({
-          label: initConfig.label,
-          recipientKeys: [expect.any(String)],
-          routingKeys: ['fakeRoutingKey'],
-          serviceEndpoint: 'fakeEndpoint',
-        })
-      )
-    })
   })
 
   describe('processInvitation', () => {
@@ -265,24 +223,6 @@ describe('ConnectionService', () => {
       expect(aliasUndefined.alias).toBeUndefined()
     })
 
-    /*it('returns a connection record with the mediator with mediator information', async () => {
-      expect.assertions(1)
-      const invitation = new ConnectionInvitationMessage({
-        did: 'did:sov:test',
-        label: 'test label',
-      })
-
-      mockFunction(mediationRepository.findById).mockReturnValue(Promise.resolve(mediatorRecord))
-      mockFunction(connectionService.keylistUpdatdAndAwait).mockReturnValue(Promise.resolve(mediatorRecord))
-      const record = await connectionService.processInvitation(invitation, { mediator: mediatorRecord })
-      expect(record.didDoc.service[0]).toEqual(
-        expect.objectContaining({
-          recipientKeys: [expect.any(String)],
-          routingKeys: ['fakeRoutingKey'],
-          serviceEndpoint: 'fakeEndpoint',
-        })
-      )
-    })*/
   })
 
   describe('createRequest', () => {
