@@ -1,5 +1,0 @@
-pytest
-pytest-asyncio
-pytest-cov
-asynctest==0.13.0
-requests

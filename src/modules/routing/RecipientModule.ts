@@ -146,7 +146,7 @@ export class RecipientModule {
    * send request message to mediator
    * return promise with listener
    **/
-  public async requestAndAwaitGrant(connection: ConnectionRecord, timeout: number = 50): Promise<MediationRecord> {
+  public async requestAndAwaitGrant(connection: ConnectionRecord, timeout = 50): Promise<MediationRecord> {
     const [record, message] = await this.recipientService.createRequest(connection)
 
     const sendMediationRequest = async () => {

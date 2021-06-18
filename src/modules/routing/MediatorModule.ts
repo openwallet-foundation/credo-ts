@@ -7,10 +7,10 @@ import { ConnectionRecord } from '../connections/repository/ConnectionRecord'
 import { KeylistUpdateHandler, ForwardHandler, BatchPickupHandler, BatchHandler } from './handlers'
 import { MediatorService } from './services/MediatorService'
 import { MessagePickupService } from './services/MessagePickupService'
-import { MediationRecord} from './index'
+import { MediationRecord } from './index'
 import { MediationRequestHandler } from './handlers/MediationRequestHandler'
 import { EventEmitter } from '../../agent/EventEmitter'
-import {WireMessage} from '../../types'
+import { WireMessage } from '../../types'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MediatorModule {

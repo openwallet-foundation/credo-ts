@@ -17,14 +17,19 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { getBaseConfig, getMockConnection, mockFunction } from '../../../__tests__/helpers'
+import {
+  getBaseConfig,
+  getMockConnection,
+  mockFunction,
+  MockMediatorOutboundTransporter,
+} from '../../../__tests__/helpers'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
-import { MediationRepository } from '../../routing/repository/MediationRepository'
 import { MediationRecord, MediationRole, MediationState } from '../../routing'
 import { MessageSender } from '../../../agent/MessageSender'
-import { TransportService as TransportServiceImpl} from '../../../agent/TransportService'
-import { EnvelopeService as EnvelopeServiceImpl } from '../../../agent/EnvelopeService'
+import { TransportService } from '../../../agent/TransportService'
+import { EnvelopeService } from '../../../agent/EnvelopeService'
 import testLogger from '../../../__tests__/logger'
+import { Agent, KeylistUpdatedEvent, OutboundPackage, OutboundTransporter, RoutingEventTypes } from '../../..'
 
 jest.mock('../repository/ConnectionRepository')
 jest.mock('../../routing/repository/MediationRepository')
@@ -33,18 +38,15 @@ jest.mock('../../../agent/EnvelopeService')
 
 const logger = testLogger
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
-const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
-
+const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
+const TransportServiceMock = TransportService as jest.Mock<TransportService>
+const EnvelopeServiceMock = EnvelopeService as jest.Mock<EnvelopeService>
 describe('ConnectionService', () => {
-  const TransportService = <jest.Mock<TransportServiceImpl>>(<unknown>TransportServiceImpl)
-  const EnvelopeService = <jest.Mock<EnvelopeServiceImpl>>(<unknown>EnvelopeServiceImpl)
   const initConfig = getBaseConfig('ConnectionServiceTest', {
     host: 'http://agent.com',
     port: 8080,
   })
 
-  const transportService = new TransportService()
-  const enveloperService = new EnvelopeService()
   const mediatorRecord = new MediationRecord({
     state: MediationState.Granted,
     role: MediationRole.Recipient,
@@ -63,7 +65,6 @@ describe('ConnectionService', () => {
   let wallet: Wallet
   let agentConfig: AgentConfig
   let connectionRepository: ConnectionRepository
-  let mediationRepository: MediationRepository
   let connectionService: ConnectionService
   let eventEmitter: EventEmitter
   let messageSender: MessageSender
@@ -82,8 +83,8 @@ describe('ConnectionService', () => {
   beforeEach(() => {
     eventEmitter = new EventEmitter()
     connectionRepository = new ConnectionRepositoryMock()
-    mediationRepository = new MediationRepositoryMock()
-    messageSender = new MessageSender(enveloperService, transportService, logger)
+    messageSender = new MessageSenderMock(new EnvelopeServiceMock(), new TransportServiceMock(), logger)
+    messageSender.setOutboundTransporter(new mockOutboundTransporter())
     connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, eventEmitter, messageSender)
   })
 
@@ -159,13 +160,36 @@ describe('ConnectionService', () => {
 
     it('returns a connection record with mediator information', async () => {
       expect.assertions(1)
-      const { connectionRecord: connectionRecord } = await connectionService.createInvitation()
-
-      mockFunction(mediationRepository.findById).mockReturnValue(Promise.resolve(mediatorRecord))
-      mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(connectionRecord))
+      const expected = getMockConnection()
+      const mediatorRecord = new MediationRecord({
+        state: MediationState.Granted,
+        role: MediationRole.Recipient,
+        connectionId: expected.id,
+        recipientKeys: [expected.myKey!],
+        routingKeys: [expected.theirKey!],
+        endpoint: 'fakeEndpoint',
+        tags: {
+          state: MediationState.Init,
+          role: MediationRole.Recipient,
+          connectionId: expected.id,
+          default: 'false',
+        },
+      })
+      mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(expected))
+      setTimeout(() => {
+        eventEmitter.emit<KeylistUpdatedEvent>({
+          // trigger waitForEvent
+          type: RoutingEventTypes.RecipientKeylistUpdated,
+          payload: {
+            mediationRecord: mediatorRecord,
+            keylist: [],
+          },
+        })
+      }, 500)
       const { message: invitation } = await connectionService.createInvitation({
         mediator: mediatorRecord,
       })
+      console.log('created invitation', invitation)
       expect(invitation).toEqual(
         expect.objectContaining({
           label: initConfig.label,
@@ -241,7 +265,7 @@ describe('ConnectionService', () => {
       expect(aliasUndefined.alias).toBeUndefined()
     })
 
-    it('returns a connection record with the mediator with mediator information', async () => {
+    /*it('returns a connection record with the mediator with mediator information', async () => {
       expect.assertions(1)
       const invitation = new ConnectionInvitationMessage({
         did: 'did:sov:test',
@@ -258,7 +282,7 @@ describe('ConnectionService', () => {
           serviceEndpoint: 'fakeEndpoint',
         })
       )
-    })
+    })*/
   })
 
   describe('createRequest', () => {
@@ -823,3 +847,15 @@ describe('ConnectionService', () => {
     })
   })
 })
+class mockOutboundTransporter implements OutboundTransporter {
+  public async start(): Promise<void> {
+    // No custom start logic required
+  }
+  public async stop(): Promise<void> {
+    // No custom stop logic required
+  }
+  public supportedSchemes = ['http', 'dicomm', 'https']
+  public async sendMessage(outboundPackage: OutboundPackage) {
+    const { connection, payload, endpoint, responseRequested } = outboundPackage
+  }
+}

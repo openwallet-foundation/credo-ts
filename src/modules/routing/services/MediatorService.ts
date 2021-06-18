@@ -23,10 +23,7 @@ import { Wallet } from '../../../wallet/Wallet'
 import { HandlerInboundMessage } from '../../../agent/Handler'
 import { ForwardHandler } from '../handlers'
 import { uuid } from '../../../utils/uuid'
-import {
-  MediationStateChangedEvent,
-  RoutingEventTypes,
-} from '../RoutingEvents'
+import { MediationStateChangedEvent, RoutingEventTypes } from '../RoutingEvents'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
 import { Symbols } from '../../../symbols'
@@ -119,7 +116,6 @@ export class MediatorService {
       return outbound
     } else {
       await this.messageSender.sendMessage(outbound)
-
     }
   }
 
@@ -202,7 +198,7 @@ export class MediatorService {
 
     const message = await this.createGrantMediationMessage(mediationRecord)
     const outbound = createOutboundMessage(connection, message)
-    if (message.hasReturnRouting()) {
+    if (messageContext.message.hasReturnRouting()) {
       return outbound
     } else {
       await this.messageSender.sendMessage(outbound)

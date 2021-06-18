@@ -98,7 +98,6 @@ export class Agent {
 
   private listenForMessages() {
     this.eventEmitter.on<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived, async (event) => {
-      console.log(this.agentConfig.label,"received forward message")
       await this.receiveMessage(event.payload.message)
     })
   }
@@ -149,7 +148,7 @@ export class Agent {
 
     return defaultMediator?.endpoint ?? this.agentConfig.getEndpoint()
   }
-  public getPort(){
+  public getPort() {
     return this.agentConfig.myPort
   }
   public async receiveMessage(inboundPackedMessage: unknown, session?: TransportSession) {

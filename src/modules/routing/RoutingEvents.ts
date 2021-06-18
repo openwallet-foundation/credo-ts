@@ -25,4 +25,3 @@ export interface KeylistUpdatedEvent extends BaseEvent {
     keylist: KeylistUpdated[]
   }
 }
-

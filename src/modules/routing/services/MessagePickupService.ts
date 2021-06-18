@@ -37,7 +37,7 @@ export class MessagePickupService {
     // TODO: fix race condition, messages can be deleted before they are ever returned from repo.
     // TODO-continue: to fix this each message will need to be removed by id from repo after succeful pick reported
     this.messageRepository.deleteAllByVerkey(connection.theirKey) // TODO Maybe, don't delete, but just marked them as read
-    
+
     // TODO: each message should be stored with an id. to be able to conform to the id property
     // of batch message
     const batchMessages = messages.map(

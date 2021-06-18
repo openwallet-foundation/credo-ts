@@ -1,13 +1,13 @@
 import cors from 'cors'
-import express, {Express} from 'express'
-import {Server} from 'http'
-import type {CredDef, Did, Schema} from 'indy-sdk'
+import express, { Express } from 'express'
+import { Server } from 'http'
+import type { CredDef, Did, Schema } from 'indy-sdk'
 import indy from 'indy-sdk'
 import fetch from 'node-fetch'
 import path from 'path'
-import {Subject} from 'rxjs'
-import {Agent, InboundTransporter, OutboundTransporter} from '..'
-import {BasicMessage, BasicMessageEventTypes, BasicMessageReceivedEvent} from '../modules/basic-messages'
+import { Subject } from 'rxjs'
+import { Agent, InboundTransporter, OutboundTransporter } from '..'
+import { BasicMessage, BasicMessageEventTypes, BasicMessageReceivedEvent } from '../modules/basic-messages'
 import {
   ConnectionInvitationMessage,
   ConnectionRecord,
@@ -15,18 +15,22 @@ import {
   ConnectionState,
   ConnectionStorageProps,
   DidCommService,
-  DidDoc
+  DidDoc,
 } from '../modules/connections'
 import {
-  CredentialEventTypes, CredentialOfferTemplate, CredentialRecord, CredentialState, CredentialStateChangedEvent
+  CredentialEventTypes,
+  CredentialOfferTemplate,
+  CredentialRecord,
+  CredentialState,
+  CredentialStateChangedEvent,
 } from '../modules/credentials'
-import {CredentialDefinitionTemplate, SchemaTemplate} from '../modules/ledger'
-import {ProofEventTypes, ProofRecord, ProofState, ProofStateChangedEvent} from '../modules/proofs'
-import {MediationRecord, MediationState, MediationStateChangedEvent, RoutingEventTypes} from '../modules/routing'
-import {NodeFileSystem} from '../storage/fs/NodeFileSystem'
-import {InMemoryMessageRepository} from '../storage/InMemoryMessageRepository'
-import {MessageRepository} from '../storage/MessageRepository'
-import {InitConfig, OutboundPackage, WireMessage} from '../types'
+import { CredentialDefinitionTemplate, SchemaTemplate } from '../modules/ledger'
+import { ProofEventTypes, ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
+import { MediationRecord, MediationState, MediationStateChangedEvent, RoutingEventTypes } from '../modules/routing'
+import { NodeFileSystem } from '../storage/fs/NodeFileSystem'
+import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
+import { MessageRepository } from '../storage/MessageRepository'
+import { InitConfig, OutboundPackage, WireMessage } from '../types'
 import testLogger from './logger'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
@@ -286,7 +290,11 @@ export async function makeConnection(
   }
 }
 
-export async function makeTransport(agent: Agent, inboundTransporter: InboundTransporter,outboundTransporter: OutboundTransporter){
+export async function makeTransport(
+  agent: Agent,
+  inboundTransporter: InboundTransporter,
+  outboundTransporter: OutboundTransporter
+) {
   agent.setInboundTransporter(inboundTransporter)
   agent.setOutboundTransporter(outboundTransporter)
   await agent.init()
@@ -325,8 +333,7 @@ export class mockInBoundTransporter implements InboundTransporter {
         res.status(200).end()
       }
     })
-    this.server = this.app.listen(agent.getPort(), () => {
-    })
+    this.server = this.app.listen(agent.getPort())
   }
   public async stop(): Promise<void> {
     this.server?.close()

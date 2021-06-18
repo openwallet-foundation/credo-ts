@@ -227,9 +227,7 @@ export class RecipientService {
     return this.defaultMediator
   }
 
-  public async discoverMediation(
-    mediatorId: string | undefined,
-  ){
+  public async discoverMediation(mediatorId: string | undefined) {
     let mediationRecord: MediationRecord | null = null
     const defaultMediator = await this.getDefaultMediator()
     if (mediatorId) {
