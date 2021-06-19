@@ -84,24 +84,16 @@ export class ConnectionsModule {
       alias: config?.alias,
       mediator: mediationRecord,
     })
-
-    if (!config?.mediatorId && this.agentConfig.getEndpoint() == DID_COMM_TRANSPORT_QUEUE) {
-      const { message: connectionRequest, connectionRecord: connectionRecord } =
-        await this.connectionService.createRequest(connection.id)
-
-      const outboundMessage = createOutboundMessage(connectionRecord, connectionRequest, connectionRecord.invitation)
-      outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
-
-      await this.messageSender.sendMessage(outboundMessage)
-      await this.connectionService.returnWhenIsConnected(connectionRecord.id)
-    } else {
-      // if auto accept is enabled (either on the record or the global agent config)
-      // we directly send a connection request
-      if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
+    // if auto accept is enabled (either on the record or the global agent config)
+    // we directly send a connection request
+    if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
+      if (!config?.mediatorId && this.agentConfig.getEndpoint() == DID_COMM_TRANSPORT_QUEUE) {
+        connection = await this.acceptInvitation(connection.id, ReturnRouteTypes.all)
+      } else {
         connection = await this.acceptInvitation(connection.id)
       }
+      await this.connectionService.returnWhenIsConnected(connection.id)
     }
-
     return connection
   }
 
@@ -133,10 +125,12 @@ export class ConnectionsModule {
    * @param connectionId the id of the connection for which to accept the invitation
    * @returns connection record
    */
-  public async acceptInvitation(connectionId: string): Promise<ConnectionRecord> {
+  public async acceptInvitation(connectionId: string, returnRouting?: ReturnRouteTypes): Promise<ConnectionRecord> {
     const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(connectionId)
-
     const outbound = createOutboundMessage(connectionRecord, message, connectionRecord.invitation)
+    if (returnRouting) {
+      outbound.payload.setReturnRouting(returnRouting)
+    }
     await this.messageSender.sendMessage(outbound)
 
     return connectionRecord

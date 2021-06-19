@@ -84,7 +84,6 @@ describe('mediator establishment', () => {
     done()
   })
   test('recipient and mediator establish a connection and granted mediation', async () => {
-    //console.log('recipient and mediator establish a connection and granted mediation start')
     await makeTransport(
       recipientAgent,
       new mockMobileInboundTransporter(),
@@ -135,12 +134,10 @@ describe('mediator establishment', () => {
       await makeConnection(mediatorAgent, recipientAgent, {
         autoAcceptConnection: true,
       })
-    //console.log('Agents connected')
     expect(recipientAgentConnection).toBeConnectedWith(mediatorAgentConnection)
     expect(mediatorAgentConnection).toBeConnectedWith(recipientAgentConnection)
     expect(mediatorAgentConnection.isReady)
 
-    //console.log('Connected, requesting and waiting for accept')
     const mediationRecord: MediationRecord = await recipientAgent.mediationRecipient.requestAndAwaitGrant(
       recipientAgentConnection
     )
