@@ -89,10 +89,10 @@ export class ConnectionsModule {
     if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
       if (!config?.mediatorId && this.agentConfig.getEndpoint() == DID_COMM_TRANSPORT_QUEUE) {
         connection = await this.acceptInvitation(connection.id, ReturnRouteTypes.all)
-      } else {
+      } else {//Todo: update to use send and wait for response flow
         connection = await this.acceptInvitation(connection.id)
+        await this.connectionService.returnWhenIsConnected(connection.id)
       }
-      await this.connectionService.returnWhenIsConnected(connection.id)
     }
     return connection
   }
