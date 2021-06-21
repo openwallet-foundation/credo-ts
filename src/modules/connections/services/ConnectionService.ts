@@ -467,7 +467,7 @@ export class ConnectionService {
   public async keylistUpdatdAndAwait(
     mediationRecord: MediationRecord,
     verKey: string,
-    timeout = 50
+    timeout = 2000
   ): Promise<MediationRecord> {
     const message = this.createKeylistUpdateMessage(verKey)
     const connection = await this.getById(mediationRecord.connectionId)
