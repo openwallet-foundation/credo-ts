@@ -118,7 +118,7 @@ describe('IndyStorageService', () => {
     it('should update the record', async () => {
       const record = await insertRecord({ id: 'test-id' })
 
-      record.setTags({ ...record.getTags(), foo: 'bar' })
+      record.replaceTags({ ...record.getTags(), foo: 'bar' })
       record.foo = 'foobaz'
       await storageService.update(record)
 

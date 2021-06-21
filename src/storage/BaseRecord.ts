@@ -6,10 +6,9 @@ export type TagsBase = {
   [key: number]: never
 }
 
-export type Tags<ComputedTags, CustomTags extends TagsBase> = CustomTags & ComputedTags
+export type Tags<DefaultTags, CustomTags extends TagsBase> = CustomTags & DefaultTags
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-export abstract class BaseRecord<ComputedTags = {}, CustomTags extends TagsBase = TagsBase> {
+export abstract class BaseRecord<DefaultTags = Record<string, unknown>, CustomTags extends TagsBase = TagsBase> {
   @Exclude()
   protected _tags!: CustomTags
 
@@ -27,10 +26,10 @@ export abstract class BaseRecord<ComputedTags = {}, CustomTags extends TagsBase 
   public static readonly type: string = 'BaseRecord'
 
   /**
-   * Get all tags. This is includes custom and computed tags
+   * Get all tags. This is includes custom and default tags
    * @returns tags object
    */
-  public abstract getTags(): Tags<ComputedTags, CustomTags>
+  public abstract getTags(): Tags<DefaultTags, CustomTags>
 
   /**
    * Set the value for a tag
@@ -46,15 +45,29 @@ export abstract class BaseRecord<ComputedTags = {}, CustomTags extends TagsBase 
    * @param name name of the tag
    * @returns The tag value, or undefined if not found
    */
-  public getTag(name: keyof CustomTags) {
-    return this._tags[name]
+  public getTag(name: keyof CustomTags | keyof DefaultTags) {
+    return this.getTags()[name]
   }
 
   /**
-   * Set all tags. Computed tags will still be added overridden when retrieving tags
+   * Set custom tags. This will merge the tags object with passed in tag properties
+   *
    * @param tags the tags to set
    */
-  public setTags(tags: CustomTags & Partial<ComputedTags>) {
+  public setTags(tags: Partial<CustomTags>) {
+    this._tags = {
+      ...this._tags,
+      ...tags,
+    }
+  }
+
+  /**
+   * Replace tags. This will replace the whole tags object.
+   * Default tags will still be overridden when retrieving tags
+   *
+   * @param tags the tags to set
+   */
+  public replaceTags(tags: CustomTags & Partial<DefaultTags>) {
     this._tags = tags
   }
 }

@@ -65,7 +65,7 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     instance.id = record.id
 
     const tags = record.tags ? this.transformToRecordTagValues(record.tags) : {}
-    instance.setTags(tags)
+    instance.replaceTags(tags)
 
     return instance
   }

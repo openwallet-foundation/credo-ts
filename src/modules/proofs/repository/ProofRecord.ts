@@ -26,13 +26,13 @@ export interface ProofRecordProps {
 }
 
 export type CustomProofTags = TagsBase
-export type ComputedProofTags = {
+export type DefaultProofTags = {
   threadId: string
   connectionId: string
   state: ProofState
 }
 
-export class ProofRecord extends BaseRecord<ComputedProofTags, CustomProofTags> {
+export class ProofRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
   public connectionId!: string
   public threadId!: string
   public isVerified?: boolean

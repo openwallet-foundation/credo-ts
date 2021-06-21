@@ -39,13 +39,13 @@ export interface CredentialRecordProps {
 }
 
 export type CustomCredentialTags = TagsBase
-export type ComputedCredentialTags = {
+export type DefaultCredentialTags = {
   threadId: string
   connectionId: string
   state: CredentialState
 }
 
-export class CredentialRecord extends BaseRecord<ComputedCredentialTags, CustomCredentialTags> {
+export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCredentialTags> {
   public connectionId!: string
   public threadId!: string
   public credentialId?: string

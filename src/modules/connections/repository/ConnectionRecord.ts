@@ -29,7 +29,7 @@ export interface ConnectionRecordProps {
 }
 
 export type CustomConnectionTags = TagsBase
-export type ComputedConnectionTags = {
+export type DefaultConnectionTags = {
   state: ConnectionState
   role: ConnectionRole
   invitationKey?: string
@@ -39,7 +39,7 @@ export type ComputedConnectionTags = {
 }
 
 export class ConnectionRecord
-  extends BaseRecord<ComputedConnectionTags, CustomConnectionTags>
+  extends BaseRecord<DefaultConnectionTags, CustomConnectionTags>
   implements ConnectionRecordProps
 {
   public state!: ConnectionState

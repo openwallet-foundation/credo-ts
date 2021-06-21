@@ -5,7 +5,7 @@ import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 
 export type CustomBasicMessageTags = TagsBase
-export type ComputedBasicMessageTags = {
+export type DefaultBasicMessageTags = {
   connectionId: string
   role: BasicMessageRole
 }
@@ -21,7 +21,7 @@ export interface BasicMessageStorageProps {
   sentTime: string
 }
 
-export class BasicMessageRecord extends BaseRecord<ComputedBasicMessageTags, CustomBasicMessageTags> {
+export class BasicMessageRecord extends BaseRecord<DefaultBasicMessageTags, CustomBasicMessageTags> {
   public content!: string
   public sentTime!: string
   public connectionId!: string
