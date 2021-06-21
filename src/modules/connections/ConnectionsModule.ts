@@ -169,7 +169,7 @@ export class ConnectionsModule {
     return connectionRecord
   }
 
-  public async pingMediator(connection: ConnectionRecord,options?: TrustPingMessageOptions){
+  public async pingMediator(connection: ConnectionRecord, options?: TrustPingMessageOptions) {
     const message = new TrustPingMessage(options)
     message.responseRequested = false
     const outboundMessage = createOutboundMessage(connection, message)
