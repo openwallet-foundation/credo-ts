@@ -53,13 +53,13 @@ export class RecipientModule {
       */
       // Check if inviation was provided in config
       // Assumption: processInvitation is a URL-encoded invitation
-      const connectionRecord = await connections.receiveInvitationFromUrl(this.agentConfig.mediatorConnectionsInvite, {
+      let connectionRecord = await connections.receiveInvitationFromUrl(this.agentConfig.mediatorConnectionsInvite, {
         autoAcceptConnection: true,
         alias: 'InitedMediator', // TODO come up with a better name for this
       })
-      await connections.returnWhenIsConnected(connectionRecord.id)
+      connectionRecord = await connections.returnWhenIsConnected(connectionRecord.id)
       const mediationRecord = await this.requestAndAwaitGrant(connectionRecord, 2000) // TODO: put timeout as a config parameter
-      //Todo: fix me.. await this.recipientService.setDefaultMediator(mediationRecord.id)
+      await this.recipientService.setDefaultMediator(mediationRecord)
     }
     if (this.agentConfig.defaultMediatorId) {
       /*
