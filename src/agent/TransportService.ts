@@ -27,7 +27,7 @@ export class TransportService {
     return this.transportSessionTable[connectionId]
   }
 
-  public findServices(connection: ConnectionRecord): DidCommService[] {
+  public findDidCommServices(connection: ConnectionRecord): DidCommService[] {
     if (connection.theirDidDoc) {
       return connection.theirDidDoc.didCommServices
     }

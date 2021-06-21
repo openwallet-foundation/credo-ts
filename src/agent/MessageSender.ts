@@ -45,7 +45,7 @@ export class MessageSender {
     const keys = {
       recipientKeys: service.recipientKeys,
       routingKeys: service.routingKeys || [],
-      senderVk: connection.verkey,
+      senderKey: connection.verkey,
     }
     const wireMessage = await this.envelopeService.packMessage(keys, outboundMessage.payload)
     const responseRequested = outboundMessage.payload.hasReturnRouting()
@@ -57,28 +57,25 @@ export class MessageSender {
       throw new AriesFrameworkError('Agent has no outbound transporter!')
     }
 
-    const services = this.transportService.findServices(outboundMessage.connection)
+    const services = this.transportService.findDidCommServices(outboundMessage.connection)
     if (services.length === 0) {
       throw new AriesFrameworkError(`Connection with id ${outboundMessage.connection.id} has no service!`)
     }
 
-    let success = false
     for await (const service of services) {
       this.logger.debug(`Sending outbound message to service:`, { service })
-      if (!success) {
-        try {
-          const outboundPackage = await this.packMessage(outboundMessage, service)
-          outboundPackage.session = this.transportService.findSession(outboundMessage.connection.id)
-          await this.outboundTransporter.sendMessage(outboundPackage)
-          success = true
-        } catch (error) {
-          this.logger.debug(
-            `Sending outbound message to service with id ${service.id} failed with the following error:`,
-            {
-              error,
-            }
-          )
-        }
+      try {
+        const outboundPackage = await this.packMessage(outboundMessage, service)
+        outboundPackage.session = this.transportService.findSession(outboundMessage.connection.id)
+        await this.outboundTransporter.sendMessage(outboundPackage)
+        break
+      } catch (error) {
+        this.logger.debug(
+          `Sending outbound message to service with id ${service.id} failed with the following error:`,
+          {
+            error,
+          }
+        )
       }
     }
   }

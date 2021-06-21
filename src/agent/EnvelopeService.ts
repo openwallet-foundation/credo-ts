@@ -14,7 +14,7 @@ import { AgentConfig } from './AgentConfig'
 interface Keys {
   recipientKeys: Verkey[]
   routingKeys: Verkey[]
-  senderVk: Verkey | null
+  senderKey: Verkey | null
 }
 
 @scoped(Lifecycle.ContainerScoped)
@@ -28,7 +28,7 @@ class EnvelopeService {
   }
 
   public async packMessage(keys: Keys, payload: AgentMessage): Promise<JsonWebKey> {
-    const { routingKeys, recipientKeys, senderVk } = keys
+    const { routingKeys, recipientKeys, senderKey: senderVk } = keys
     const message = payload.toJSON()
 
     let wireMessage = await this.wallet.pack(message, recipientKeys, senderVk)

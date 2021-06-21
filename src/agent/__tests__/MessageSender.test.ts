@@ -68,7 +68,7 @@ describe('MessageSender', () => {
     serviceEndpoint: 'https://www.second-endpoint.com',
     recipientKeys: ['verkey'],
   })
-  const transportServiceFindServicesMock = mockFunction(transportService.findServices)
+  const transportServiceFindServicesMock = mockFunction(transportService.findDidCommServices)
 
   let messageSender: MessageSender
   let outboundTransporter: OutboundTransporter
@@ -111,15 +111,14 @@ describe('MessageSender', () => {
 
       await messageSender.sendMessage(outboundMessage)
 
-      const [[sendMessageCallArg]] = sendMessageSpy.mock.calls
-      expect(sendMessageCallArg).toEqual({
+      expect(sendMessageSpy).toHaveBeenCalledWith({
         connection,
         payload: wireMessage,
         endpoint: firstDidCommService.serviceEndpoint,
         responseRequested: false,
         session,
       })
-      expect(sendMessageSpy.mock.calls.length).toEqual(1)
+      expect(sendMessageSpy).toHaveBeenCalledTimes(1)
     })
 
     test('calls send message with connection, payload and endpoint from second DidComm service when the first fails', async () => {
@@ -131,15 +130,14 @@ describe('MessageSender', () => {
 
       await messageSender.sendMessage(outboundMessage)
 
-      const [, [sendMessageSecondCallArg]] = sendMessageSpy.mock.calls
-      expect(sendMessageSecondCallArg).toEqual({
+      expect(sendMessageSpy).toHaveBeenNthCalledWith(2, {
         connection,
         payload: wireMessage,
         endpoint: secondDidCommService.serviceEndpoint,
         responseRequested: false,
         session,
       })
-      expect(sendMessageSpy.mock.calls.length).toEqual(2)
+      expect(sendMessageSpy).toHaveBeenCalledTimes(2)
     })
   })
 

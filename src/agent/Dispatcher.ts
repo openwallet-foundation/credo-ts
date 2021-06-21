@@ -46,7 +46,7 @@ class Dispatcher {
       // Check for return routing, with thread id
       if (message.hasReturnRouting(threadId)) {
         // Find service with highest priority and keys to pack message
-        const [service] = this.transportService.findServices(outboundMessage.connection)
+        const [service] = this.transportService.findDidCommServices(outboundMessage.connection)
         if (!service) {
           throw new AriesFrameworkError(`Connection with id ${outboundMessage.connection.id} has no service!`)
         }
