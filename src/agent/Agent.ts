@@ -136,6 +136,10 @@ export class Agent {
     }
 
     await this.mediationRecipient.init(this.connections)
+    const defaultMediator = await this.mediationRecipient.getDefaultMediatorConnection()
+    if (defaultMediator) {
+      const message = this.connections.pingMediator(defaultMediator)
+    }
     this._isInitialized = true
   }
 

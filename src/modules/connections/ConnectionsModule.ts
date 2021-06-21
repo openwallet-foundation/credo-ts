@@ -7,7 +7,7 @@ import { createOutboundMessage } from '../../agent/helpers'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { ConnectionService, TrustPingService } from './services'
 import { ConnectionRecord } from './repository/ConnectionRecord'
-import { ConnectionInvitationMessage } from './messages'
+import { ConnectionInvitationMessage, TrustPingMessage, TrustPingMessageOptions } from './messages'
 import {
   ConnectionRequestHandler,
   ConnectionResponseHandler,
@@ -167,6 +167,14 @@ export class ConnectionsModule {
     await this.messageSender.sendMessage(outbound)
 
     return connectionRecord
+  }
+
+  public async pingMediator(connection: ConnectionRecord,options?: TrustPingMessageOptions){
+    const message = new TrustPingMessage(options)
+    message.responseRequested = false
+    const outboundMessage = createOutboundMessage(connection, message)
+    outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
+    await this.messageSender.sendMessage(outboundMessage)
   }
 
   public async returnWhenIsConnected(connectionId: string): Promise<ConnectionRecord> {
