@@ -1,6 +1,6 @@
-import type { DidCommService } from '../modules/connections'
 import type { OutboundTransporter } from '../transport/OutboundTransporter'
 import type { OutboundMessage, OutboundPackage } from '../types'
+import type { EnvelopeKeys } from './EnvelopeService'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
@@ -36,20 +36,10 @@ export class MessageSender {
     return this._outboundTransporter
   }
 
-  public async packMessage(outboundMessage: OutboundMessage, service: DidCommService): Promise<OutboundPackage> {
+  public async packMessage(outboundMessage: OutboundMessage, keys: EnvelopeKeys): Promise<OutboundPackage> {
     const { connection, payload } = outboundMessage
-    const { verkey, theirKey } = connection
-    const endpoint = service.serviceEndpoint
-    const message = payload.toJSON()
-    this.logger.debug('outboundMessage', { verkey, theirKey, message })
-    const keys = {
-      recipientKeys: service.recipientKeys,
-      routingKeys: service.routingKeys || [],
-      senderKey: connection.verkey,
-    }
-    const wireMessage = await this.envelopeService.packMessage(keys, outboundMessage.payload)
-    const responseRequested = outboundMessage.payload.hasReturnRouting()
-    return { connection, payload: wireMessage, endpoint, responseRequested }
+    const wireMessage = await this.envelopeService.packMessage(payload, keys)
+    return { connection, payload: wireMessage }
   }
 
   public async sendMessage(outboundMessage: OutboundMessage): Promise<void> {
@@ -57,16 +47,32 @@ export class MessageSender {
       throw new AriesFrameworkError('Agent has no outbound transporter!')
     }
 
-    const services = this.transportService.findDidCommServices(outboundMessage.connection)
+    const { connection, payload } = outboundMessage
+    const { id, verkey, theirKey } = connection
+    const message = payload.toJSON()
+    this.logger.debug('Send outbound message', {
+      messageId: message.id,
+      connection: { id, verkey, theirKey },
+    })
+
+    const services = this.transportService.findDidCommServices(connection)
     if (services.length === 0) {
-      throw new AriesFrameworkError(`Connection with id ${outboundMessage.connection.id} has no service!`)
+      throw new AriesFrameworkError(`Connection with id ${connection.id} has no service!`)
     }
 
     for await (const service of services) {
-      this.logger.debug(`Sending outbound message to service:`, { service })
+      this.logger.debug(`Sending outbound message to service:`, { messageId: message.id, service })
       try {
-        const outboundPackage = await this.packMessage(outboundMessage, service)
-        outboundPackage.session = this.transportService.findSession(outboundMessage.connection.id)
+        const keys = {
+          recipientKeys: service.recipientKeys,
+          routingKeys: service.routingKeys || [],
+          senderKey: connection.verkey,
+        }
+        const outboundPackage = await this.packMessage(outboundMessage, keys)
+        outboundPackage.session = this.transportService.findSession(connection.id)
+        outboundPackage.endpoint = service.serviceEndpoint
+        outboundPackage.responseRequested = outboundMessage.payload.hasReturnRouting()
+
         await this.outboundTransporter.sendMessage(outboundPackage)
         break
       } catch (error) {

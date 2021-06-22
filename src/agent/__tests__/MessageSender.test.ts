@@ -139,6 +139,26 @@ describe('MessageSender', () => {
       })
       expect(sendMessageSpy).toHaveBeenCalledTimes(2)
     })
+
+    test('calls send message with responseRequested when message has return route', async () => {
+      messageSender.setOutboundTransporter(outboundTransporter)
+      const sendMessageSpy = jest.spyOn(outboundTransporter, 'sendMessage')
+
+      const message = new AgentMessage()
+      message.setReturnRouting(ReturnRouteTypes.all)
+      const outboundMessage = createOutboundMessage(connection, message)
+
+      await messageSender.sendMessage(outboundMessage)
+
+      expect(sendMessageSpy).toHaveBeenCalledWith({
+        connection,
+        payload: wireMessage,
+        endpoint: firstDidCommService.serviceEndpoint,
+        responseRequested: true,
+        session,
+      })
+      expect(sendMessageSpy).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('packMessage', () => {
@@ -158,24 +178,17 @@ describe('MessageSender', () => {
       const message = new AgentMessage()
       const outboundMessage = createOutboundMessage(connection, message)
 
-      const result = await messageSender.packMessage(outboundMessage, firstDidCommService)
+      const keys = {
+        recipientKeys: ['service.recipientKeys'],
+        routingKeys: [],
+        senderKey: connection.verkey,
+      }
+      const result = await messageSender.packMessage(outboundMessage, keys)
 
       expect(result).toEqual({
         connection,
         payload: wireMessage,
-        endpoint: firstDidCommService.serviceEndpoint,
-        responseRequested: false,
       })
-    })
-
-    test('when message has return route returns outbound message context with responseRequested', async () => {
-      const message = new AgentMessage()
-      message.setReturnRouting(ReturnRouteTypes.all)
-      const outboundMessage = createOutboundMessage(connection, message)
-
-      const result = await messageSender.packMessage(outboundMessage, firstDidCommService)
-
-      expect(result.responseRequested).toEqual(true)
     })
   })
 })
