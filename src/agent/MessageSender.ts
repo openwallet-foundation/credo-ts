@@ -79,7 +79,8 @@ export class MessageSender {
         this.logger.debug(
           `Sending outbound message to service with id ${service.id} failed with the following error:`,
           {
-            error,
+            message: error.message,
+            error: error,
           }
         )
       }
