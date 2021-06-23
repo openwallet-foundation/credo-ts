@@ -168,7 +168,7 @@ describe('CredentialUtils', () => {
       }
 
       expect(() => CredentialUtils.assertValuesMatch(firstValues, secondValues)).toThrow(
-        "Second cred values object has not value for key 'name'"
+        "Second cred values object has no value for key 'name'"
       )
     })
 
