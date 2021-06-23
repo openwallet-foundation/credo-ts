@@ -30,6 +30,21 @@ export class CredentialUtils {
   }
 
   /**
+   * "wrapper" for {@link assertValuesMatch}
+   *
+   * @returns a boolean whether the values are equal
+   *
+   */
+  public static checkValuesMatch(firstValues: CredValues, secondValues: CredValues): boolean {
+    try {
+      this.assertValuesMatch(firstValues, secondValues)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  /**
    * Assert two credential values objects match.
    *
    * @param firstValues The first values object

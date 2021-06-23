@@ -4,6 +4,7 @@ import type { CredentialRecord } from '../repository'
 import type { CredentialService } from '../services'
 
 import { createOutboundMessage } from '../../../agent/helpers'
+import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { AutoAcceptCredentialAndProof } from '../../../types'
 import { CredentialUtils } from '../CredentialUtils'
 import { IssueCredentialMessage } from '../messages'
@@ -31,16 +32,17 @@ export class IssueCredentialHandler implements Handler {
       return await this.nextStep(credentialRecord, messageContext)
     } else if (autoAccept === AutoAcceptCredentialAndProof.attributesNotChanged) {
       if (credentialRecord.credentialAttributes && credentialRecord.credentialMessage) {
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          const credentialMessageValues = credentialRecord.credentialMessage.indyCredential!.values
-          const credentialRecordValues = CredentialUtils.convertAttributesToValues(
-            credentialRecord.credentialAttributes
-          )
-          CredentialUtils.assertValuesMatch(credentialMessageValues, credentialRecordValues)
+        const indyCredential = credentialRecord.credentialMessage.indyCredential
+
+        if (!indyCredential) {
+          throw new AriesFrameworkError(`Missing required base64 encoded attachment data for credential`)
+        }
+
+        const credentialMessageValues = indyCredential.values
+        const credentialRecordValues = CredentialUtils.convertAttributesToValues(credentialRecord.credentialAttributes)
+        if (CredentialUtils.checkValuesMatch(credentialMessageValues, credentialRecordValues)) {
           return await this.nextStep(credentialRecord, messageContext)
-          // eslint-disable-next-line no-empty
-        } catch {}
+        }
       }
     }
   }

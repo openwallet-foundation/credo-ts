@@ -42,11 +42,9 @@ export class ProposeCredentialHandler implements Handler {
           credentialRecord.offerMessage.credentialPreview.attributes
         )
 
-        try {
-          CredentialUtils.assertValuesMatch(proposalValues, offerValues)
+        if (CredentialUtils.checkValuesMatch(proposalValues, offerValues)) {
           return await this.nextStep(credentialRecord, messageContext)
-          // eslint-disable-next-line no-empty
-        } catch {}
+        }
       } else {
         return await this.nextStep(credentialRecord, messageContext)
       }
