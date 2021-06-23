@@ -30,10 +30,13 @@ export const waitForEvent = async (
   eventEmitter: EventEmitter
 ): Promise<BaseEvent> => {
   // Capture an event and retrieve its value
+  let complete = false
   return new Promise<BaseEvent>(async (resolve, reject) => {
     setTimeout(() => {
-      cleanup()
-      reject(new Error(`Timed out waiting for event: ${eventName}`))
+      if(!complete){
+        cleanup();
+        reject(new Error(`Timed out waiting for event: ${eventName}`))
+      }
     }, timeout)
 
     const cleanup = () => {
@@ -45,6 +48,7 @@ export const waitForEvent = async (
       try {
         if ((await condition(event)) ?? true) {
           cleanup()
+          complete = true
           resolve(event)
         }
       } catch (e) {
