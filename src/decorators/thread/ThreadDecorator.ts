@@ -1,5 +1,6 @@
 import { Expose } from 'class-transformer'
 import { Matches } from 'class-validator'
+
 import { MessageIdRegExp } from '../../agent/BaseMessage'
 
 /**

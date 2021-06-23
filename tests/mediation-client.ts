@@ -20,7 +20,6 @@ import indy from 'indy-sdk'
 import { resolve } from 'path'
 import { RoutingEventTypes, MediationStateChangedEvent } from '../src/modules/routing/RoutingEvents'
 import { MediationState } from '../src/'
-import { sleep } from '../src/__tests__/helpers'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
 import { NodeFileSystem } from '../src/storage/fs/NodeFileSystem'
 
@@ -60,15 +59,11 @@ class HttpInboundTransporter implements InboundTransporter {
   }
 
   private pollDownloadMessages(agent: Agent, mediatorConnection: ConnectionRecord) {
-    const loop = async () => {
-      while (!this.stop) {
+    setInterval(async () => {
+      if (!this.stop) {
         await agent.mediationRecipient.downloadMessages(mediatorConnection)
-        await sleep(50)
       }
-    }
-    new Promise(() => {
-      loop()
-    })
+    }, 50)
   }
 }
 
@@ -146,7 +141,7 @@ const agentConfig: InitConfig = {
   label: process.env.AGENT_LABEL || '',
   walletConfig: { id: process.env.WALLET_NAME || '' },
   walletCredentials: { key: process.env.WALLET_KEY || '' },
-  publicDid: process.env.PUBLIC_DID || '',
+  // publicDid: process.env.PUBLIC_DID || '',
   publicDidSeed: process.env.PUBLIC_DID_SEED || '',
   mediatorRecordId: process.env.MEDIATOR_RECORD_ID || '',
   autoAcceptConnections: true,

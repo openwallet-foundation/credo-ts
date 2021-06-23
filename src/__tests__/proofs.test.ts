@@ -1,6 +1,21 @@
+import type { ConnectionRecord } from '../modules/connections'
 import type { CredDefId } from 'indy-sdk'
+
 import { Subject } from 'rxjs'
-import { Agent } from '..'
+
+import { Agent } from '../agent/Agent'
+import { CredentialPreview, CredentialPreviewAttribute } from '../modules/credentials'
+import {
+  PredicateType,
+  PresentationPreview,
+  PresentationPreviewAttribute,
+  PresentationPreviewPredicate,
+  ProofState,
+  ProofAttributeInfo,
+  AttributeFilter,
+  ProofPredicateInfo,
+} from '../modules/proofs'
+
 import {
   ensurePublicDidIsOnLedger,
   makeConnection,
@@ -13,18 +28,6 @@ import {
   waitForProofRecord,
   getBaseConfig,
 } from './helpers'
-import { CredentialPreview, CredentialPreviewAttribute } from '../modules/credentials'
-import {
-  PredicateType,
-  PresentationPreview,
-  PresentationPreviewAttribute,
-  PresentationPreviewPredicate,
-  ProofState,
-  ProofAttributeInfo,
-  AttributeFilter,
-  ProofPredicateInfo,
-} from '../modules/proofs'
-import { ConnectionRecord } from '../modules/connections'
 import testLogger from './logger'
 
 const faberConfig = getBaseConfig('Faber Proofs', { genesisPath })
@@ -147,10 +150,11 @@ describe('Present Proof', () => {
 
     testLogger.test('Alice accepts presentation request from Faber')
     const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest
-    const requestedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
+    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
       indyProofRequest!,
       presentationPreview
     )
+    const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
     await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
 
     testLogger.test('Faber waits for presentation from Alice')
@@ -213,10 +217,11 @@ describe('Present Proof', () => {
 
     testLogger.test('Alice accepts presentation request from Faber')
     const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest
-    const requestedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
+    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
       indyProofRequest!,
       presentationPreview
     )
+    const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
     await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
 
     testLogger.test('Faber waits for presentation from Alice')

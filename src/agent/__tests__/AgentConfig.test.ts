@@ -1,5 +1,5 @@
-import { AgentConfig } from '../AgentConfig'
 import { getBaseConfig } from '../../__tests__/helpers'
+import { AgentConfig } from '../AgentConfig'
 
 describe('AgentConfig', () => {
   describe('getEndpoint', () => {

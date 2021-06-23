@@ -1,6 +1,7 @@
-import { MultihashEncoder } from '../MultihashEncoder'
 import { Buffer } from 'buffer'
+
 import { BufferEncoder } from '../BufferEncoder'
+import { MultihashEncoder } from '../MultihashEncoder'
 
 const validData = Buffer.from('Hello World!')
 const validMultihash = new Uint8Array([18, 12, 72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100, 33])

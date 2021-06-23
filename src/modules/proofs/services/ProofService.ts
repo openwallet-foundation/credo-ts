@@ -1,30 +1,37 @@
-import { inject, scoped, Lifecycle } from 'tsyringe'
+import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Logger } from '../../../logger'
+import type { ConnectionRecord } from '../../connections'
+import type { ProofStateChangedEvent } from '../ProofEvents'
+import type { PresentationPreview, PresentationPreviewAttribute } from '../messages'
 import type { IndyProof, Schema, CredDef } from 'indy-sdk'
-import { validateOrReject } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { LedgerService } from '../../ledger/services/LedgerService'
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import { validateOrReject } from 'class-validator'
+import { inject, scoped, Lifecycle } from 'tsyringe'
+
+import { AgentConfig } from '../../../agent/AgentConfig'
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { InjectionSymbols } from '../../../constants'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
-import { ConnectionRecord } from '../../connections'
-import { ProofRecord } from '../repository/ProofRecord'
+import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { Wallet } from '../../../wallet/Wallet'
-import { CredentialUtils, Credential, IndyCredentialInfo } from '../../credentials'
-
+import { AckStatus } from '../../common'
+import { CredentialUtils, Credential } from '../../credentials'
+import { IndyHolderService, IndyVerifierService } from '../../indy'
+import { LedgerService } from '../../ledger/services/LedgerService'
+import { ProofEventTypes } from '../ProofEvents'
+import { ProofState } from '../ProofState'
 import {
   PresentationMessage,
-  PresentationPreview,
-  PresentationPreviewAttribute,
   ProposePresentationMessage,
   RequestPresentationMessage,
   PresentationAckMessage,
   INDY_PROOF_REQUEST_ATTACHMENT_ID,
   INDY_PROOF_ATTACHMENT_ID,
 } from '../messages'
-import { AckStatus } from '../../common'
 import {
   PartialProof,
   ProofAttributeInfo,
@@ -34,16 +41,10 @@ import {
   RequestedCredentials,
   RequestedAttribute,
   RequestedPredicate,
+  RetrievedCredentials,
 } from '../models'
-import { ProofState } from '../ProofState'
-import { AgentConfig } from '../../../agent/AgentConfig'
-import { Logger } from '../../../logger'
 import { ProofRepository } from '../repository'
-import { Symbols } from '../../../symbols'
-import { IndyHolderService, IndyVerifierService } from '../../indy'
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { ProofEventTypes, ProofStateChangedEvent } from '../ProofEvents'
-import { AriesFrameworkError } from '../../../error'
+import { ProofRecord } from '../repository/ProofRecord'
 
 /**
  * @todo add method to check if request matches proposal. Useful to see if a request I received is the same as the proposal I sent.
@@ -63,7 +64,7 @@ export class ProofService {
   public constructor(
     proofRepository: ProofRepository,
     ledgerService: LedgerService,
-    @inject(Symbols.Wallet) wallet: Wallet,
+    @inject(InjectionSymbols.Wallet) wallet: Wallet,
     agentConfig: AgentConfig,
     indyHolderService: IndyHolderService,
     indyVerifierService: IndyVerifierService,
@@ -483,7 +484,7 @@ export class ProofService {
     // Create message
     const ackMessage = new PresentationAckMessage({
       status: AckStatus.OK,
-      threadId: proofRecord.tags.threadId!,
+      threadId: proofRecord.tags.threadId,
     })
 
     // Update record
@@ -611,48 +612,40 @@ export class ProofService {
   }
 
   /**
-   * Create a {@link RequestedCredentials} object. Given input proof request and presentation proposal,
+   * Create a {@link RetrievedCredentials} object. Given input proof request and presentation proposal,
    * use credentials in the wallet to build indy requested credentials object for input to proof creation.
    * If restrictions allow, self attested attributes will be used.
    *
-   * Use the return value of this method as input to {@link ProofService.createPresentation} to automatically
-   * accept a received presentation request.
    *
    * @param proofRequest The proof request to build the requested credentials object from
    * @param presentationProposal Optional presentation proposal to improve credential selection algorithm
-   * @returns Requested credentials object for use in proof creation
+   * @returns RetrievedCredentials object
    */
   public async getRequestedCredentialsForProofRequest(
     proofRequest: ProofRequest,
     presentationProposal?: PresentationPreview
-  ): Promise<RequestedCredentials> {
-    const requestedCredentials = new RequestedCredentials({})
+  ): Promise<RetrievedCredentials> {
+    const retrievedCredentials = new RetrievedCredentials({})
 
     for (const [referent, requestedAttribute] of Object.entries(proofRequest.requestedAttributes)) {
-      let credentialMatch: Credential | null = null
+      let credentialMatch: Credential[] = []
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
-      // Can't construct without matching credentials
-      if (credentials.length === 0) {
-        throw new AriesFrameworkError(
-          `Could not automatically construct requested credentials for proof request '${proofRequest.name}'`
-        )
-      }
       // If we have exactly one credential, or no proposal to pick preferences
-      // on the credential to use, we will use the first one
-      else if (credentials.length === 1 || !presentationProposal) {
-        credentialMatch = credentials[0]
+      // on the credentials to use, we will use the first one
+      if (credentials.length === 1 || !presentationProposal) {
+        credentialMatch = credentials
       }
-      // If we have a proposal we will use that to determine the credential to use
+      // If we have a proposal we will use that to determine the credentials to use
       else {
         const names = requestedAttribute.names ?? [requestedAttribute.name]
 
-        // Find credential that matches all parameters from the proposal
-        for (const credential of credentials) {
+        // Find credentials that matches all parameters from the proposal
+        credentialMatch = credentials.filter((credential) => {
           const { attributes, credentialDefinitionId } = credential.credentialInfo
 
-          // Check if credential matches all parameters from proposal
-          const isMatch = names.every((name) =>
+          // Check if credentials matches all parameters from proposal
+          return names.every((name) =>
             presentationProposal.attributes.find(
               (a) =>
                 a.name === name &&
@@ -660,61 +653,63 @@ export class ProofService {
                 (!a.value || a.value === attributes[name])
             )
           )
-
-          if (isMatch) {
-            credentialMatch = credential
-            break
-          }
-        }
-
-        if (!credentialMatch) {
-          throw new AriesFrameworkError(
-            `Could not automatically construct requested credentials for proof request '${proofRequest.name}'`
-          )
-        }
-      }
-
-      if (requestedAttribute.restrictions) {
-        requestedCredentials.requestedAttributes[referent] = new RequestedAttribute({
-          credentialId: credentialMatch.credentialInfo.referent,
-          revealed: true,
         })
       }
-      // If there are no restrictions we can self attest the attribute
-      else {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const value = credentialMatch.credentialInfo.attributes[requestedAttribute.name!]
 
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        requestedCredentials.selfAttestedAttributes[referent] = value!
-      }
+      retrievedCredentials.requestedAttributes[referent] = credentialMatch.map((credential: Credential) => {
+        return new RequestedAttribute({
+          credentialId: credential.credentialInfo.referent,
+          revealed: true,
+          credentialInfo: credential.credentialInfo,
+        })
+      })
     }
 
-    for (const [referent, requestedPredicate] of Object.entries(proofRequest.requestedPredicates)) {
+    for (const [referent] of Object.entries(proofRequest.requestedPredicates)) {
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
-      // Can't create requestedPredicates without matching credentials
-      if (credentials.length === 0) {
-        throw new AriesFrameworkError(
-          `Could not automatically construct requested credentials for proof request '${proofRequest.name}'`
-        )
-      }
-
-      const credentialMatch = credentials[0]
-      if (requestedPredicate.restrictions) {
-        requestedCredentials.requestedPredicates[referent] = new RequestedPredicate({
-          credentialId: credentialMatch.credentialInfo.referent,
+      retrievedCredentials.requestedPredicates[referent] = credentials.map((credential) => {
+        return new RequestedPredicate({
+          credentialId: credential.credentialInfo.referent,
+          credentialInfo: credential.credentialInfo,
         })
-      }
-      // If there are no restrictions we can self attest the attribute
-      else {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const value = credentialMatch.credentialInfo.attributes[requestedPredicate.name!]
-
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        requestedCredentials.selfAttestedAttributes[referent] = value!
-      }
+      })
     }
+
+    return retrievedCredentials
+  }
+
+  /**
+   * Takes a RetrievedCredentials object and auto selects credentials in a RequestedCredentials object
+   *
+   * Use the return value of this method as input to {@link ProofService.createPresentation} to
+   * automatically accept a received presentation request.
+   *
+   * @param retrievedCredentials The retrieved credentials object to get credentials from
+   *
+   * @returns RequestedCredentials
+   */
+  public autoSelectCredentialsForProofRequest(retrievedCredentials: RetrievedCredentials): RequestedCredentials {
+    const requestedCredentials = new RequestedCredentials({})
+
+    Object.keys(retrievedCredentials.requestedAttributes).forEach((attributeName) => {
+      const attributeArray = retrievedCredentials.requestedAttributes[attributeName]
+
+      if (attributeArray.length === 0) {
+        throw new AriesFrameworkError('Unable to automatically select requested attributes.')
+      } else {
+        requestedCredentials.requestedAttributes[attributeName] = attributeArray[0]
+      }
+    })
+
+    Object.keys(retrievedCredentials.requestedPredicates).forEach((attributeName) => {
+      if (retrievedCredentials.requestedPredicates[attributeName].length === 0) {
+        throw new AriesFrameworkError('Unable to automatically select requested predicates.')
+      } else {
+        requestedCredentials.requestedPredicates[attributeName] =
+          retrievedCredentials.requestedPredicates[attributeName][0]
+      }
+    })
 
     return requestedCredentials
   }
@@ -814,16 +809,10 @@ export class ProofService {
     proofRequest: ProofRequest,
     requestedCredentials: RequestedCredentials
   ): Promise<IndyProof> {
-    const credentialObjects: IndyCredentialInfo[] = []
-
-    for (const credentialId of requestedCredentials.getCredentialIdentifiers()) {
-      const credentialInfo = JsonTransformer.fromJSON(
-        await this.indyHolderService.getCredential(credentialId),
-        IndyCredentialInfo
-      )
-
-      credentialObjects.push(credentialInfo)
-    }
+    const credentialObjects = [
+      ...Object.values(requestedCredentials.requestedAttributes),
+      ...Object.values(requestedCredentials.requestedPredicates),
+    ].map((c) => c.credentialInfo)
 
     const schemas = await this.getSchemas(new Set(credentialObjects.map((c) => c.schemaId)))
     const credentialDefinitions = await this.getCredentialDefinitions(

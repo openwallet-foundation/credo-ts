@@ -124,7 +124,7 @@ const agentConfig: InitConfig = {
   label: process.env.AGENT_LABEL || '',
   walletConfig: { id: process.env.WALLET_NAME || '' },
   walletCredentials: { key: process.env.WALLET_KEY || '' },
-  publicDid: process.env.PUBLIC_DID || '',
+  // publicDid: process.env.PUBLIC_DID || '',
   publicDidSeed: process.env.PUBLIC_DID_SEED || '',
   mediatorRecordId: process.env.MEDIATOR_RECORD_ID || '',
   autoAcceptConnections: true,

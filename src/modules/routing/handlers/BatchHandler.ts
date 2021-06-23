@@ -1,8 +1,9 @@
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { AgentEventTypes, AgentMessageReceivedEvent } from '../../../agent/Events'
-import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import { AriesFrameworkError } from '../../../error'
+import type { EventEmitter } from '../../../agent/EventEmitter'
+import type { AgentMessageReceivedEvent } from '../../../agent/Events'
+import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 
+import { AgentEventTypes } from '../../../agent/Events'
+import { AriesFrameworkError } from '../../../error'
 import { BatchMessage } from '../messages'
 
 export class BatchHandler implements Handler {

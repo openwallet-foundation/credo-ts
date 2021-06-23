@@ -1,4 +1,5 @@
-import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+
 import { KeylistUpdateResponseMessage } from '../messages'
 import { RecipientService } from '../services'
 

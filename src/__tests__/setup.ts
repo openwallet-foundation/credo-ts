@@ -1,5 +1,5 @@
 import 'reflect-metadata'
-import { ConnectionRecord } from '../modules/connections/repository/ConnectionRecord'
+import type { ConnectionRecord } from '../modules/connections/repository/ConnectionRecord'
 
 expect.extend({ toBeConnectedWith })
 

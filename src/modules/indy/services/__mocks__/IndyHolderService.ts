@@ -1,4 +1,4 @@
-import { CreateCredentialRequestOptions, StoreCredentialOptions } from '../IndyHolderService'
+import type { CreateCredentialRequestOptions, StoreCredentialOptions } from '../IndyHolderService'
 
 export const IndyHolderService = jest.fn(() => ({
   storeCredential: jest.fn(({ credentialId }: StoreCredentialOptions) =>

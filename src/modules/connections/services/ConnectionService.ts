@@ -1,10 +1,13 @@
+import type { AckMessage } from '../../common'
+import type { ConnectionTags } from '../repository/ConnectionRecord'
 import type { Did, Verkey } from 'indy-sdk'
+
 import { validateOrReject } from 'class-validator'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { ConnectionRecord, ConnectionTags } from '../repository/ConnectionRecord'
-import { ConnectionRepository } from '../repository'
+import { InjectionSymbols } from '../../../constants'
+import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { Wallet } from '../../../wallet/Wallet'
 import {
   ConnectionInvitationMessage,
@@ -12,8 +15,6 @@ import {
   ConnectionResponseMessage,
   TrustPingMessage,
 } from '../messages'
-import { AckMessage } from '../../common'
-import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import {
   Connection,
   ConnectionState,
@@ -28,22 +29,15 @@ import {
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { Symbols } from '../../../symbols'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { ConnectionEventTypes, ConnectionStateChangedEvent } from '../ConnectionEvents'
 import { AriesFrameworkError } from '../../../error'
-import {
-  KeylistUpdatedEvent,
-  MediationRecord,
-  MediationState,
-  RecipientService,
-  RoutingEventTypes,
-  waitForEvent,
-} from '../../../modules/routing'
+import { KeylistUpdatedEvent, MediationRecord, RoutingEventTypes, waitForEvent } from '../../../modules/routing'
 import { MessageSender } from '../../../agent/MessageSender'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import { KeylistUpdate, KeylistUpdateAction, KeylistUpdateMessage } from '../../routing/messages/KeylistUpdatedMessage'
+import { ConnectionRepository, ConnectionRecord } from '../index'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ConnectionService {
@@ -54,7 +48,7 @@ export class ConnectionService {
   private messageSender: MessageSender
 
   public constructor(
-    @inject(Symbols.Wallet) wallet: Wallet,
+    @inject(InjectionSymbols.Wallet) wallet: Wallet,
     config: AgentConfig,
     connectionRepository: ConnectionRepository,
     eventEmitter: EventEmitter,
@@ -247,8 +241,14 @@ export class ConnectionService {
 
     const connectionJson = JsonTransformer.toJSON(connection)
 
+    const { threadId } = connectionRecord.tags
+
+    if (!threadId) {
+      throw new AriesFrameworkError(`Connection record with id ${connectionId} does not have a thread id`)
+    }
+
     const connectionResponse = new ConnectionResponseMessage({
-      threadId: connectionRecord.tags.threadId!,
+      threadId,
       connectionSig: await signData(connectionJson, this.wallet, connectionRecord.verkey),
     })
 

@@ -1,12 +1,15 @@
+import type { OutboundMessage, OutboundPackage } from '../types'
+import type { AgentMessage } from './AgentMessage'
+import type { Handler } from './Handler'
+import type { InboundMessageContext } from './models/InboundMessageContext'
+
 import { Lifecycle, scoped } from 'tsyringe'
-import { OutboundMessage, OutboundPackage } from '../types'
-import { Handler } from './Handler'
-import { MessageSender } from './MessageSender'
-import { AgentMessage } from './AgentMessage'
-import { InboundMessageContext } from './models/InboundMessageContext'
+
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
-import { TransportService } from './TransportService'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
+
+import { MessageSender } from './MessageSender'
+import { TransportService } from './TransportService'
 
 @scoped(Lifecycle.ContainerScoped)
 class Dispatcher {
@@ -40,9 +43,14 @@ class Dispatcher {
         outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
       }
 
-      // check for return routing, with thread id
+      // Check for return routing, with thread id
       if (message.hasReturnRouting(threadId)) {
-        return await this.messageSender.packMessage(outboundMessage)
+        const keys = {
+          recipientKeys: messageContext.senderVerkey ? [messageContext.senderVerkey] : [],
+          routingKeys: [],
+          senderKey: messageContext.connection?.verkey || null,
+        }
+        return await this.messageSender.packMessage(outboundMessage, keys)
       }
 
       await this.messageSender.sendMessage(outboundMessage)

@@ -1,10 +1,12 @@
 import type { Cred } from 'indy-sdk'
+
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
+
 import { IssueCredentialMessageType } from './IssueCredentialMessageType'
 
 export const INDY_CREDENTIAL_ATTACHMENT_ID = 'libindy-cred-0'

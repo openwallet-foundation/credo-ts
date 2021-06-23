@@ -1,7 +1,9 @@
-import { Transform, ClassConstructor, plainToClass } from 'class-transformer'
+import type { ClassConstructor } from 'class-transformer'
 
-import { IndyAgentService } from './IndyAgentService'
+import { Transform, plainToClass } from 'class-transformer'
+
 import { DidCommService } from './DidCommService'
+import { IndyAgentService } from './IndyAgentService'
 import { Service } from './Service'
 
 export const serviceTypes: { [key: string]: unknown | undefined } = {

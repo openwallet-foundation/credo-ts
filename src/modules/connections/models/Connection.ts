@@ -1,5 +1,5 @@
-import { IsString, ValidateNested } from 'class-validator'
 import { Expose, Type } from 'class-transformer'
+import { IsString, ValidateNested } from 'class-validator'
 
 import { DidDoc } from './did/DidDoc'
 

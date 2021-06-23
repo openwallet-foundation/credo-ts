@@ -7,9 +7,13 @@
   "files": [
     "build/src"
   ],
+  "repository": {
+    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "type": "git"
+  },
   "scripts": {
     "compile": "tsc",
-    "lint": "eslint --ignore-path .gitignore .",
+    "lint": "eslint .",
     "prettier": "prettier --ignore-path .gitignore '**/*.+(js|json|ts|md|yml|yaml)'",
     "format": "yarn prettier --write",
     "check-format": "yarn prettier --list-different",
@@ -33,9 +37,9 @@
     "class-validator": "^0.13.1",
     "events": "^3.3.0",
     "js-sha256": "^0.9.0",
+    "make-error": "^1.3.6",
     "multibase": "4.0.2",
     "multihashes": "^4.0.2",
-    "make-error": "^1.3.6",
     "node-fetch": "^2.6.1",
     "object-inspect": "^1.10.3",
     "react-native-fs": "^2.18.0",
@@ -60,6 +64,7 @@
     "dotenv": "^8.2.0",
     "eslint": "^7.21.0",
     "eslint-config-prettier": "^8.1.0",
+    "eslint-plugin-import": "^2.23.4",
     "eslint-plugin-prettier": "^3.3.1",
     "express": "^4.17.1",
     "husky": "^5.1.3",
@@ -90,7 +95,8 @@
     "git": {
       "requireBranch": "main",
       "push": false,
-      "commit": false
+      "commit": false,
+      "requireCommits": true
     }
   },
   "engines": {

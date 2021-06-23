@@ -1,10 +1,11 @@
-import { OutboundTransporter } from './OutboundTransporter'
-import { Agent } from '../agent/Agent'
-import { Logger } from '../logger'
-import { OutboundPackage } from '../types'
-import { fetch } from '../utils/fetch'
-import { Symbols } from '../symbols'
+import type { Agent } from '../agent/Agent'
+import type { Logger } from '../logger'
+import type { OutboundPackage } from '../types'
+import type { OutboundTransporter } from './OutboundTransporter'
+
 import { AgentConfig } from '../agent/AgentConfig'
+import { InjectionSymbols } from '../constants'
+import { fetch } from '../utils/fetch'
 
 export class HttpOutboundTransporter implements OutboundTransporter {
   private agent: Agent
@@ -20,7 +21,7 @@ export class HttpOutboundTransporter implements OutboundTransporter {
 
     this.agent = agent
     this.agentConfig = agent.injectionContainer.resolve(AgentConfig)
-    this.logger = agent.injectionContainer.resolve(Symbols.Logger)
+    this.logger = agent.injectionContainer.resolve(InjectionSymbols.Logger)
   }
 
   public async start(): Promise<void> {

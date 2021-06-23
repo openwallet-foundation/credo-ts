@@ -1,9 +1,10 @@
-import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import { TrustPingService } from '../services/TrustPingService'
-import { ConnectionService } from '../services/ConnectionService'
-import { ConnectionState } from '../models'
-import { TrustPingMessage } from '../messages'
+import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { ConnectionService } from '../services/ConnectionService'
+import type { TrustPingService } from '../services/TrustPingService'
+
 import { AriesFrameworkError } from '../../../error'
+import { TrustPingMessage } from '../messages'
+import { ConnectionState } from '../models'
 
 export class TrustPingMessageHandler implements Handler {
   private trustPingService: TrustPingService

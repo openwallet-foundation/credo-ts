@@ -1,7 +1,7 @@
-import { KeylistUpdated } from './index'
-import { BaseEvent } from '../../agent/Events'
-import { MediationState } from './models/MediationState'
-import { MediationRecord } from './repository/MediationRecord'
+import type { KeylistUpdated } from './index'
+import type { BaseEvent } from '../../agent/Events'
+import type { MediationState } from './models/MediationState'
+import type { MediationRecord } from './repository/MediationRecord'
 // TODO: clean up event names and structures
 export enum RoutingEventTypes {
   MediationStateChanged = 'MediationStateChanged',

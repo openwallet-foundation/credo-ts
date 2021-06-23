@@ -1,7 +1,8 @@
+import type { BaseMessageConstructor } from '../../agent/BaseMessage'
+
 import { Expose, Type } from 'class-transformer'
 import { ValidateNested } from 'class-validator'
 
-import { BaseMessageConstructor } from '../../agent/BaseMessage'
 import { AckDecorator } from './AckDecorator'
 
 export function AckDecorated<T extends BaseMessageConstructor>(Base: T) {

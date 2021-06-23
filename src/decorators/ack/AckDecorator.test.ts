@@ -1,7 +1,7 @@
+import { BaseMessage } from '../../agent/BaseMessage'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import { Compose } from '../../utils/mixins'
 
-import { BaseMessage } from '../../agent/BaseMessage'
 import { AckDecorated } from './AckDecoratorExtension'
 
 describe('Decorators | AckDecoratorExtension', () => {

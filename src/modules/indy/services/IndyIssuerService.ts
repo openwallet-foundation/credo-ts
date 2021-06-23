@@ -1,5 +1,5 @@
-import type Indy from 'indy-sdk'
 import type {
+  default as Indy,
   CredDef,
   Schema,
   Cred,
@@ -10,10 +10,11 @@ import type {
   CredValues,
   BlobReaderHandle,
 } from 'indy-sdk'
+
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
+import { InjectionSymbols } from '../../../constants'
 import { FileSystem } from '../../../storage/fs/FileSystem'
-import { Symbols } from '../../../symbols'
 import { getDirFromFilePath } from '../../../utils/path'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 
@@ -24,9 +25,9 @@ export class IndyIssuerService {
   private fileSystem: FileSystem
 
   public constructor(
-    @inject(Symbols.Indy) indy: typeof Indy,
+    @inject(InjectionSymbols.Indy) indy: typeof Indy,
     indyWallet: IndyWallet,
-    @inject(Symbols.FileSystem) fileSystem: FileSystem
+    @inject(InjectionSymbols.FileSystem) fileSystem: FileSystem
   ) {
     this.indy = indy
     this.indyWallet = indyWallet

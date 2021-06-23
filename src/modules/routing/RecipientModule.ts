@@ -1,7 +1,10 @@
 import { Lifecycle, scoped } from 'tsyringe'
 import type { Verkey } from 'indy-sdk'
+import type { ConnectionRecord } from '../connections'
+import type { MediationRecord } from './index'
+import type { EventEmitter } from '../../agent/EventEmitter'
 
-import { AgentConfig } from '../../agent/AgentConfig'
+import type { AgentConfig } from '../../agent/AgentConfig'
 import { assertConnection, RecipientService, waitForEvent } from './services'
 import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
@@ -12,13 +15,9 @@ import { createOutboundMessage } from '../../agent/helpers'
 import { ConnectionService } from '../connections'
 import { BatchPickupMessage } from './messages'
 import { Dispatcher } from '../../agent/Dispatcher'
-import { ConnectionRecord } from '../connections'
-import { MediationRecord } from './index'
 import { MediationState, MediationStateChangedEvent } from '../..'
 import { ConnectionsModule } from '../connections/ConnectionsModule'
-import { EventEmitter } from '../../agent/EventEmitter'
 import { RoutingEventTypes } from './RoutingEvents'
-import { BaseEvent } from '../../agent/Events'
 
 @scoped(Lifecycle.ContainerScoped)
 export class RecipientModule {
@@ -58,7 +57,7 @@ export class RecipientModule {
         alias: 'InitedMediator', // TODO come up with a better name for this
       })
       connectionRecord = await connections.returnWhenIsConnected(connectionRecord.id)
-      const mediationRecord = await this.requestAndAwaitGrant(connectionRecord, 2000) // TODO: put timeout as a config parameter
+      const mediationRecord = await this.requestAndAwaitGrant(connectionRecord, 60000) // TODO: put timeout as a config parameter
       await this.recipientService.setDefaultMediator(mediationRecord)
     }
     if (this.agentConfig.defaultMediatorId) {
@@ -146,7 +145,7 @@ export class RecipientModule {
    * send request message to mediator
    * return promise with listener
    **/
-  public async requestAndAwaitGrant(connection: ConnectionRecord, timeout = 50): Promise<MediationRecord> {
+  public async requestAndAwaitGrant(connection: ConnectionRecord, timeout = 10000): Promise<MediationRecord> {
     const [record, message] = await this.recipientService.createRequest(connection)
 
     const sendMediationRequest = async () => {

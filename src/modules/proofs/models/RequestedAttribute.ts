@@ -1,5 +1,7 @@
+import { Exclude, Expose } from 'class-transformer'
 import { IsBoolean, IsInt, IsOptional, IsPositive, IsString } from 'class-validator'
-import { Expose } from 'class-transformer'
+
+import { IndyCredentialInfo } from '../../credentials'
 
 /**
  * Requested Attribute for Indy proof creation
@@ -10,6 +12,7 @@ export class RequestedAttribute {
       this.credentialId = options.credentialId
       this.timestamp = options.timestamp
       this.revealed = options.revealed
+      this.credentialInfo = options.credentialInfo
     }
   }
 
@@ -25,4 +28,7 @@ export class RequestedAttribute {
 
   @IsBoolean()
   public revealed!: boolean
+
+  @Exclude({ toPlainOnly: true })
+  public credentialInfo!: IndyCredentialInfo
 }

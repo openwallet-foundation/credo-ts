@@ -1,11 +1,11 @@
 /*----------------------------------------------------------
 | Routing service is the common code used in mediation senarios 
 |*/
+import type { ConnectionRecord } from '../../connections'
+import type { MediationRepository } from '../repository'
+import type { BaseEvent } from '../../../agent/Events'
+import type { EventEmitter } from '../../../agent/EventEmitter'
 import { MediationRecord, MediationRecordProps } from '../../routing'
-import { ConnectionRecord } from '../../connections'
-import { MediationRepository } from '../repository'
-import { BaseEvent } from '../../../agent/Events'
-import { EventEmitter } from '../../../agent/EventEmitter'
 
 /**
  * waitForEvent
@@ -26,7 +26,7 @@ export const waitForEvent = async (
   eventProducer: CallableFunction,
   eventName: string,
   condition: CallableFunction,
-  timeout = 500,
+  timeout = 10000,
   eventEmitter: EventEmitter
 ): Promise<BaseEvent> => {
   // Capture an event and retrieve its value

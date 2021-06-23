@@ -1,6 +1,7 @@
-import { MultibaseEncoder } from '../MultibaseEncoder'
 import { Buffer } from 'buffer'
+
 import { BufferEncoder } from '../BufferEncoder'
+import { MultibaseEncoder } from '../MultibaseEncoder'
 
 const validData = Buffer.from('Hello World!')
 const validMultibase = 'zKWfinQuRQ3ekD1danFHqvKRg9koFp8vpokUeREEgjSyHwweeKDFaxVHi'

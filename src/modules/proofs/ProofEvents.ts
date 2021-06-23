@@ -1,6 +1,6 @@
-import { BaseEvent } from '../../agent/Events'
-import { ProofState } from './ProofState'
-import { ProofRecord } from './repository'
+import type { BaseEvent } from '../../agent/Events'
+import type { ProofState } from './ProofState'
+import type { ProofRecord } from './repository'
 
 export enum ProofEventTypes {
   ProofStateChanged = 'ProofStateChanged',

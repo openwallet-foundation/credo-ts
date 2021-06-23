@@ -1,7 +1,8 @@
+import type { BaseMessageConstructor } from '../../agent/BaseMessage'
+
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsOptional, ValidateNested } from 'class-validator'
 
-import { BaseMessageConstructor } from '../../agent/BaseMessage'
 import { Attachment } from './Attachment'
 
 export function AttachmentDecorated<T extends BaseMessageConstructor>(Base: T) {

@@ -1,6 +1,6 @@
-import { BaseEvent } from '../../agent/Events'
-import { ConnectionRecord } from './repository/ConnectionRecord'
-import { ConnectionState } from './models/ConnectionState'
+import type { BaseEvent } from '../../agent/Events'
+import type { ConnectionState } from './models/ConnectionState'
+import type { ConnectionRecord } from './repository/ConnectionRecord'
 
 export enum ConnectionEventTypes {
   ConnectionStateChanged = 'ConnectionStateChanged',

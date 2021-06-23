@@ -1,15 +1,15 @@
-import { Agent } from '../Agent'
-import { ConnectionsModule } from '../../modules/connections/ConnectionsModule'
-import { ProofsModule } from '../../modules/proofs/ProofsModule'
-import { CredentialsModule } from '../../modules/credentials/CredentialsModule'
-import { BasicMessagesModule } from '../../modules/basic-messages/BasicMessagesModule'
-import { LedgerModule } from '../../modules/ledger/LedgerModule'
-import { ConnectionRepository, ConnectionService, TrustPingService } from '../../modules/connections'
+import { getBaseConfig } from '../../__tests__/helpers'
+import { InjectionSymbols } from '../../constants'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
+import { BasicMessagesModule } from '../../modules/basic-messages/BasicMessagesModule'
+import { ConnectionRepository, ConnectionService, TrustPingService } from '../../modules/connections'
+import { ConnectionsModule } from '../../modules/connections/ConnectionsModule'
 import { CredentialRepository, CredentialService } from '../../modules/credentials'
-import { ProofRepository, ProofService } from '../../modules/proofs'
+import { CredentialsModule } from '../../modules/credentials/CredentialsModule'
 import { LedgerService } from '../../modules/ledger'
-import { Symbols } from '../../symbols'
+import { LedgerModule } from '../../modules/ledger/LedgerModule'
+import { ProofRepository, ProofService } from '../../modules/proofs'
+import { ProofsModule } from '../../modules/proofs/ProofsModule'
 import {
   MediatorModule,
   RecipientModule,
@@ -17,14 +17,14 @@ import {
   MediatorService,
   RecipientService,
 } from '../../modules/routing'
-import { IndyWallet } from '../../wallet/IndyWallet'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../../storage/IndyStorageService'
-import { MessageSender } from '../MessageSender'
-import { MessageReceiver } from '../MessageReceiver'
+import { IndyWallet } from '../../wallet/IndyWallet'
+import { Agent } from '../Agent'
 import { Dispatcher } from '../Dispatcher'
 import { EnvelopeService } from '../EnvelopeService'
-import { getBaseConfig } from '../../__tests__/helpers'
+import { MessageReceiver } from '../MessageReceiver'
+import { MessageSender } from '../MessageSender'
 
 const config = getBaseConfig('Agent Class Test')
 
@@ -74,12 +74,11 @@ describe('Agent', () => {
       expect(container.resolve(LedgerService)).toBeInstanceOf(LedgerService)
 
       // Symbols, interface based
-      expect(container.resolve(Symbols.Wallet)).toBeInstanceOf(IndyWallet)
-      expect(container.resolve(Symbols.Logger)).toBe(config.logger)
-      expect(container.resolve(Symbols.Indy)).toBe(config.indy)
-      expect(container.resolve(Symbols.FileSystem)).toBe(config.fileSystem)
-      expect(container.resolve(Symbols.MessageRepository)).toBeInstanceOf(InMemoryMessageRepository)
-      expect(container.resolve(Symbols.StorageService)).toBeInstanceOf(IndyStorageService)
+      expect(container.resolve(InjectionSymbols.Wallet)).toBeInstanceOf(IndyWallet)
+      expect(container.resolve(InjectionSymbols.Logger)).toBe(config.logger)
+      expect(container.resolve(InjectionSymbols.Indy)).toBe(config.indy)
+      expect(container.resolve(InjectionSymbols.MessageRepository)).toBeInstanceOf(InMemoryMessageRepository)
+      expect(container.resolve(InjectionSymbols.StorageService)).toBeInstanceOf(IndyStorageService)
 
       // Agent
       expect(container.resolve(MessageSender)).toBeInstanceOf(MessageSender)
@@ -120,12 +119,15 @@ describe('Agent', () => {
       expect(container.resolve(LedgerService)).toBe(container.resolve(LedgerService))
 
       // Symbols, interface based
-      expect(container.resolve(Symbols.Wallet)).toBe(container.resolve(Symbols.Wallet))
-      expect(container.resolve(Symbols.FileSystem)).toBe(container.resolve(Symbols.FileSystem))
-      expect(container.resolve(Symbols.Logger)).toBe(container.resolve(Symbols.Logger))
-      expect(container.resolve(Symbols.Indy)).toBe(container.resolve(Symbols.Indy))
-      expect(container.resolve(Symbols.MessageRepository)).toBe(container.resolve(Symbols.MessageRepository))
-      expect(container.resolve(Symbols.StorageService)).toBe(container.resolve(Symbols.StorageService))
+      expect(container.resolve(InjectionSymbols.Wallet)).toBe(container.resolve(InjectionSymbols.Wallet))
+      expect(container.resolve(InjectionSymbols.Logger)).toBe(container.resolve(InjectionSymbols.Logger))
+      expect(container.resolve(InjectionSymbols.Indy)).toBe(container.resolve(InjectionSymbols.Indy))
+      expect(container.resolve(InjectionSymbols.MessageRepository)).toBe(
+        container.resolve(InjectionSymbols.MessageRepository)
+      )
+      expect(container.resolve(InjectionSymbols.StorageService)).toBe(
+        container.resolve(InjectionSymbols.StorageService)
+      )
 
       // Agent
       expect(container.resolve(MessageSender)).toBe(container.resolve(MessageSender))

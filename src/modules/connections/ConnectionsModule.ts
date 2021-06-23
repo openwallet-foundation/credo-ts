@@ -1,13 +1,13 @@
+import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Verkey } from 'indy-sdk'
+
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
+import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import { Dispatcher } from '../../agent/Dispatcher'
-import { ConnectionService, TrustPingService } from './services'
-import { ConnectionRecord } from './repository/ConnectionRecord'
-import { ConnectionInvitationMessage, TrustPingMessage, TrustPingMessageOptions } from './messages'
+
 import {
   ConnectionRequestHandler,
   ConnectionResponseHandler,
@@ -16,7 +16,10 @@ import {
   TrustPingResponseMessageHandler,
 } from './handlers'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { DID_COMM_TRANSPORT_QUEUE } from '../../agent/TransportService'
+import { DID_COMM_TRANSPORT_QUEUE } from '../../constants'
+import { ConnectionInvitationMessage, TrustPingMessage } from './messages'
+import type { TrustPingMessageOptions } from './messages'
+import { ConnectionService, TrustPingService } from './services'
 import { RecipientService } from '../routing'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -128,7 +131,7 @@ export class ConnectionsModule {
    */
   public async acceptInvitation(connectionId: string, returnRouting?: ReturnRouteTypes): Promise<ConnectionRecord> {
     const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(connectionId)
-    const outbound = createOutboundMessage(connectionRecord, message, connectionRecord.invitation)
+    const outbound = createOutboundMessage(connectionRecord, message)
     if (returnRouting) {
       outbound.payload.setReturnRouting(returnRouting)
     }
@@ -169,7 +172,7 @@ export class ConnectionsModule {
     return connectionRecord
   }
 
-  public async pingMediator(connection: ConnectionRecord, options?: TrustPingMessageOptions) {
+  public async pingMediator(connection: ConnectionRecord, options?: TrustPingMessageOptions): Promise<void> {
     const message = new TrustPingMessage(options)
     message.responseRequested = false
     const outboundMessage = createOutboundMessage(connection, message)

@@ -1,5 +1,6 @@
-import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import { CredentialService } from '../services'
+import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { CredentialService } from '../services'
+
 import { CredentialAckMessage } from '../messages'
 
 export class CredentialAckHandler implements Handler {

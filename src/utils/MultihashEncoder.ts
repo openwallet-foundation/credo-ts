@@ -1,5 +1,4 @@
 import multihash from 'multihashes'
-import { Buffer } from './buffer'
 
 export class MultihashEncoder {
   /**

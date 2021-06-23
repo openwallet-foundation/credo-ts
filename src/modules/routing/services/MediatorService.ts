@@ -6,7 +6,6 @@ import { MediationRecord } from '../repository/MediationRecord'
 import {
   KeylistUpdateMessage,
   KeylistUpdateAction,
-  ForwardMessage,
   KeylistUpdateResult,
   KeylistUpdated,
   MediationGrantMessage,
@@ -26,10 +25,10 @@ import { uuid } from '../../../utils/uuid'
 import { MediationStateChangedEvent, RoutingEventTypes } from '../RoutingEvents'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
-import { Symbols } from '../../../symbols'
 import { MediationRepository } from '../repository/MediationRepository'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { MessageSender } from '../../../agent/MessageSender'
+import { InjectionSymbols } from '../../../constants'
 
 export interface RoutingTable {
   [recipientKey: string]: ConnectionRecord | undefined
@@ -48,7 +47,7 @@ export class MediatorService {
   public constructor(
     mediationRepository: MediationRepository,
     agentConfig: AgentConfig,
-    @inject(Symbols.Wallet) wallet: Wallet,
+    @inject(InjectionSymbols.Wallet) wallet: Wallet,
     eventEmitter: EventEmitter,
     messageSender: MessageSender,
     connectionService: ConnectionService

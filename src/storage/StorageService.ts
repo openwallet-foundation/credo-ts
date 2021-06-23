@@ -1,7 +1,6 @@
+import type { Constructor } from '../utils/mixins'
+import type { BaseRecord } from './BaseRecord'
 import type { WalletQuery } from 'indy-sdk'
-
-import { Constructor } from '../utils/mixins'
-import { BaseRecord } from './BaseRecord'
 
 export interface BaseRecordConstructor<T> extends Constructor<T> {
   type: string

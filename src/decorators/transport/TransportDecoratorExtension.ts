@@ -1,7 +1,9 @@
+import type { BaseMessageConstructor } from '../../agent/BaseMessage'
+
 import { Expose, Type } from 'class-transformer'
 import { ValidateNested } from 'class-validator'
+
 import { TransportDecorator, ReturnRouteTypes } from './TransportDecorator'
-import { BaseMessageConstructor } from '../../agent/BaseMessage'
 
 export function TransportDecorated<T extends BaseMessageConstructor>(Base: T) {
   class TransportDecoratorExtension extends Base {

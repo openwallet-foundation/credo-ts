@@ -1,7 +1,10 @@
+import type { ConnectionRecord } from '../modules/connections'
+
 import { Subject } from 'rxjs'
-import { Agent } from '..'
+
+import { Agent } from '../agent/Agent'
+
 import { SubjectInboundTransporter, SubjectOutboundTransporter, waitForBasicMessage, getBaseConfig } from './helpers'
-import { ConnectionRecord } from '../modules/connections'
 
 const aliceConfig = getBaseConfig('Agents Alice')
 const bobConfig = getBaseConfig('Agents Bob')
@@ -17,19 +20,19 @@ describe('agents', () => {
     await bobAgent.closeAndDeleteWallet()
   })
 
-  test('make a connection between agents', async () => {
+  test('make a connection between agents and send a message over the connection', async () => {
     const aliceMessages = new Subject()
     const bobMessages = new Subject()
 
     aliceAgent = new Agent(aliceConfig)
     aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages, bobMessages))
     aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(bobMessages))
-    await aliceAgent.init()
+    expect(await aliceAgent.init()).toReturn()
 
     bobAgent = new Agent(bobConfig)
     bobAgent.setInboundTransporter(new SubjectInboundTransporter(bobMessages, aliceMessages))
     bobAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages))
-    await bobAgent.init()
+    expect(await bobAgent.init()).toReturn()
 
     const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection()
     const bobConnectionAtBobAlice = await bobAgent.connections.receiveInvitation(aliceConnectionAtAliceBob.invitation)
@@ -39,11 +42,9 @@ describe('agents', () => {
 
     expect(aliceConnection).toBeConnectedWith(bobConnection)
     expect(bobConnection).toBeConnectedWith(aliceConnection)
-  })
 
-  test('send a message to connection', async () => {
     const message = 'hello, world'
-    await aliceAgent.basicMessages.sendMessage(aliceConnection, message)
+    expect(await aliceAgent.basicMessages.sendMessage(aliceConnection, message)).toReturn()
 
     const basicMessage = await waitForBasicMessage(bobAgent, {
       content: message,

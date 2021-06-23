@@ -1,7 +1,24 @@
-import { CredentialOfferTemplate, CredentialService } from '../services'
-import { CredentialRecord, CredentialRecordMetadata, CredentialRecordTags } from '../repository/CredentialRecord'
+import type { ConnectionService } from '../../connections'
+import type { StoreCredentialOptions } from '../../indy'
+import type { CredentialStateChangedEvent } from '../CredentialEvents'
+import type { CredentialRecordMetadata, CredentialRecordTags } from '../repository/CredentialRecord'
+import type { CredentialOfferTemplate } from '../services'
+
+import { getBaseConfig, getMockConnection, mockFunction } from '../../../__tests__/helpers'
+import { AgentConfig } from '../../../agent/AgentConfig'
+import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
+import { RecordNotFoundError } from '../../../error'
+import { JsonEncoder } from '../../../utils/JsonEncoder'
+import { AckStatus } from '../../common'
+import { ConnectionState } from '../../connections'
+import { IndyHolderService } from '../../indy/services/IndyHolderService'
+import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
+import { LedgerService } from '../../ledger/services'
+import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../CredentialState'
+import { CredentialUtils } from '../CredentialUtils'
 import {
   OfferCredentialMessage,
   CredentialPreview,
@@ -13,24 +30,11 @@ import {
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_ATTACHMENT_ID,
 } from '../messages'
-import { AckStatus } from '../../common'
-import { JsonEncoder } from '../../../utils/JsonEncoder'
-import { credDef, credOffer, credReq } from './fixtures'
-import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
-import { ConnectionState } from '../../connections'
-import { AgentConfig } from '../../../agent/AgentConfig'
-import { CredentialUtils } from '../CredentialUtils'
-import { StoreCredentialOptions } from '../../indy'
-
-// Import mocks
+import { CredentialRecord } from '../repository/CredentialRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
-import { LedgerService } from '../../ledger/services'
-import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
-import { IndyHolderService } from '../../indy/services/IndyHolderService'
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { CredentialEventTypes, CredentialStateChangedEvent } from '../CredentialEvents'
-import { getBaseConfig, getMockConnection, mockFunction } from '../../../__tests__/helpers'
-import { RecordNotFoundError } from '../../../error'
+import { CredentialService } from '../services'
+
+import { credDef, credOffer, credReq } from './fixtures'
 
 // Mock classes
 jest.mock('../repository/CredentialRepository')
@@ -146,7 +150,7 @@ describe('CredentialService', () => {
 
     credentialService = new CredentialService(
       credentialRepository,
-      { getById: () => Promise.resolve(connection) } as any,
+      { getById: () => Promise.resolve(connection) } as unknown as ConnectionService,
       ledgerService,
       new AgentConfig(getBaseConfig('CredentialServiceTest')),
       indyIssuerService,

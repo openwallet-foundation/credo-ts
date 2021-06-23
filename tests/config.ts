@@ -1,9 +1,11 @@
-import indy from 'indy-sdk'
+import type { InitConfig } from '../src/types'
+
 import * as dotenv from 'dotenv'
-import { InitConfig } from '../src/types'
-import { NodeFileSystem } from '../src/storage/fs/NodeFileSystem'
+import indy from 'indy-sdk'
+
 import { TestLogger } from '../src/__tests__/logger'
 import { LogLevel } from '../src/logger'
+import { NodeFileSystem } from '../src/storage/fs/NodeFileSystem'
 dotenv.config()
 
 const agentConfig: InitConfig = {
@@ -13,7 +15,6 @@ const agentConfig: InitConfig = {
   label: process.env.AGENT_LABEL || '',
   walletConfig: { id: process.env.WALLET_NAME || '' },
   walletCredentials: { key: process.env.WALLET_KEY || '' },
-  publicDid: process.env.PUBLIC_DID || '',
   publicDidSeed: process.env.PUBLIC_DID_SEED || '',
   autoAcceptConnections: true,
   logger: new TestLogger(LogLevel.debug),

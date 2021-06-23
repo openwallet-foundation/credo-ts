@@ -1,11 +1,13 @@
-import { Equals, Matches, IsArray, ValidateNested } from 'class-validator'
+import type { WireMessage } from '../../../types'
+
 import { Type, Expose } from 'class-transformer'
+import { Equals, Matches, IsArray, ValidateNested } from 'class-validator'
+
+import { AgentMessage } from '../../../agent/AgentMessage'
+import { MessageIdRegExp } from '../../../agent/BaseMessage'
 import { uuid } from '../../../utils/uuid'
 
-import { MessageIdRegExp } from '../../../agent/BaseMessage'
-import { AgentMessage } from '../../../agent/AgentMessage'
 import { RoutingMessageType as MessageType } from './RoutingMessageType'
-import { WireMessage } from '../../../types'
 
 export interface BatchMessageOptions {
   id?: string

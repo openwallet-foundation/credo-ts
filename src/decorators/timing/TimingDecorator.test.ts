@@ -1,4 +1,5 @@
 import { JsonTransformer } from '../../utils/JsonTransformer'
+
 import { TimingDecorator } from './TimingDecorator'
 
 describe('Decorators | TimingDecorator', () => {

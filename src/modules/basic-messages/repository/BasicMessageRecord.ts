@@ -1,5 +1,7 @@
+import type { Tags } from '../../../storage/BaseRecord'
+
+import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { BaseRecord, Tags } from '../../../storage/BaseRecord'
 
 export interface BasicMessageStorageProps {
   id?: string

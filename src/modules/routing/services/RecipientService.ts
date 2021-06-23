@@ -1,41 +1,27 @@
-import { inject, Lifecycle, scoped } from 'tsyringe'
+import { Lifecycle, scoped } from 'tsyringe'
 import type { Verkey } from 'indy-sdk'
+import type { ConnectionRecord } from '../../connections'
+import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { MediationStateChangedEvent } from '../RoutingEvents'
+import type { MediationRepository } from '../repository/MediationRepository'
+import type { EventEmitter } from '../../../agent/EventEmitter'
 
-import {
-  KeylistUpdateMessage,
-  KeylistUpdate,
-  KeylistUpdateAction,
-  MediationGrantMessage,
-  MediationDenyMessage,
-  MediationRequestMessage,
-  KeylistUpdateResponseMessage,
-} from '../messages'
+import type { MediationGrantMessage, MediationDenyMessage, KeylistUpdateResponseMessage } from '../messages'
 
-import { ConnectionRecord } from '../../connections'
-import { RoutingEventTypes, MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import { KeylistUpdateAction, MediationRequestMessage } from '../messages'
 
+import { RoutingEventTypes, KeylistUpdatedEvent } from '../RoutingEvents'
 import { assertConnection, MediationRecord, MediationRole, MediationState } from '../index'
-import { Wallet } from '../../../wallet/Wallet'
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { Symbols } from '../../../symbols'
-import { MediationRepository } from '../repository/MediationRepository'
+import { KeylistMessage } from '../messages/KeylistMessage'
 
 @scoped(Lifecycle.ContainerScoped)
 export class RecipientService {
   private mediatorRepository: MediationRepository
   private defaultMediator?: MediationRecord
-  private wallet: Wallet
   private eventEmitter: EventEmitter
 
-  public constructor(
-    mediatorRepository: MediationRepository,
-    @inject(Symbols.Wallet) wallet: Wallet,
-    eventEmitter: EventEmitter
-  ) {
+  public constructor(mediatorRepository: MediationRepository, eventEmitter: EventEmitter) {
     this.mediatorRepository = mediatorRepository
-    this.wallet = wallet
     this.eventEmitter = eventEmitter
   }
 
@@ -92,8 +78,7 @@ export class RecipientService {
     //paginateLimit = paginateLimit ?? -1,
     //paginateOffset = paginateOffset ?? 0
     // TODO: Implement this
-    //return new MediationKeyListQueryMessage()
-    return new AgentMessage()
+    return new KeylistMessage({})
   }
 
   public async processKeylistUpdateResults(messageContext: InboundMessageContext<KeylistUpdateResponseMessage>) {

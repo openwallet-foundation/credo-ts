@@ -1,11 +1,11 @@
-import type Indy from 'indy-sdk'
-import type { Did, WalletConfig, WalletCredentials, Verkey } from 'indy-sdk'
-import { ConnectionRecord } from './modules/connections'
-import { AgentMessage } from './agent/AgentMessage'
-import { TransportSession } from './agent/TransportService'
-import { Logger } from './logger'
-import { FileSystem } from './storage/fs/FileSystem'
+import type { AgentMessage } from './agent/AgentMessage'
+import type { TransportSession } from './agent/TransportService'
+import type { Logger } from './logger'
+import type { ConnectionRecord } from './modules/connections'
+import type { FileSystem } from './storage/fs/FileSystem'
+import type { default as Indy, WalletConfig, WalletCredentials, Verkey } from 'indy-sdk'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type $FixMe = any
 
 export type WireMessage = $FixMe
@@ -20,7 +20,6 @@ export interface InitConfig {
   port?: string | number
   endpoint?: string
   label: string
-  publicDid?: Did
   publicDidSeed?: string
   mediatorUrl?: string
   mediatorRecordId?: string
@@ -56,11 +55,7 @@ export interface UnpackedMessageContext {
 
 export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
   connection: ConnectionRecord
-  endpoint?: string
   payload: T
-  recipientKeys: Verkey[]
-  routingKeys: Verkey[]
-  senderVk: Verkey | null
 }
 
 export interface OutboundPackage {

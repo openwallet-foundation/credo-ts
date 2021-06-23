@@ -1,12 +1,8 @@
-import express, { Express } from 'express'
 import WebSocket from 'ws'
 import fetch from 'node-fetch'
 import {
   Agent,
-  assertConnection,
-  Connection,
   ConnectionRecord,
-  ConnectionState,
   InboundTransporter,
   MediationRecord,
   MediationState,
@@ -15,27 +11,18 @@ import {
   WsOutboundTransporter,
   WebSocketTransportSession,
 } from '../../src'
-import testLogger, { TestLogger } from '../../src/__tests__/logger'
-import { get } from '../http'
+import testLogger from '../../src/__tests__/logger'
 import {
   getBaseConfig,
   makeConnection,
   makeInBoundTransporter,
   mockOutBoundTransporter,
   makeTransport,
-  sleep,
-  waitForBasicMessage,
   mockInBoundTransporter,
-  MockMediatorOutboundTransporter,
 } from '../../src/__tests__/helpers'
 import logger from '../../src/__tests__/logger'
-import cors from 'cors'
 import { InMemoryMessageRepository } from '../../src/storage/InMemoryMessageRepository'
-import { MessageRepository } from '../../src/storage/MessageRepository'
-import { ReturnRouteTypes } from '../../src/decorators/transport/TransportDecorator'
-import { HttpOutboundTransporter } from '../mediation-server'
-import { Server } from 'http'
-import { noop, timer } from 'rxjs'
+import { noop } from 'rxjs'
 
 const recipientConfig = getBaseConfig('recipient')
 const mediatorConfig = getBaseConfig('mediator', {
@@ -164,6 +151,13 @@ describe('mediator establishment', () => {
     }
   })
 })
+
+/* 
+* tests below are dependent on pickup protocol which is not available yet. 
+* they could be constructed to use trust ping to retrieve messages, but that is not advisable by some developers 
+* and is intentionally not demonstrated below.
+*/
+
 /*describe('mediator features', () => {
   let recipientAgent: Agent
   let mediatorAgent: Agent
@@ -370,7 +364,6 @@ export class WsInboundTransporter implements InboundTransporter {
           logger.error('Error closing socket server')
           reject(error)
         } else {
-          //console.log('Socket Server closed')
           resolve()
         }
       })

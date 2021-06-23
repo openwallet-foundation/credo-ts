@@ -1,20 +1,28 @@
-import { scoped, Lifecycle } from 'tsyringe'
+import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Logger } from '../../../logger'
+import type { ConnectionRecord } from '../../connections'
+import type { CredentialStateChangedEvent } from '../CredentialEvents'
+import type { CredentialPreview, ProposeCredentialMessageOptions } from '../messages'
 import type { CredDefId } from 'indy-sdk'
 
-import { uuid } from '../../../utils/uuid'
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { LedgerService } from '../../ledger/services/LedgerService'
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
-import { ConnectionService, ConnectionRecord } from '../../connections'
-import { CredentialRecord } from '../repository/CredentialRecord'
-import { JsonEncoder } from '../../../utils/JsonEncoder'
+import { scoped, Lifecycle } from 'tsyringe'
 
+import { AgentConfig } from '../../../agent/AgentConfig'
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
+import { AriesFrameworkError } from '../../../error'
+import { JsonEncoder } from '../../../utils/JsonEncoder'
+import { uuid } from '../../../utils/uuid'
+import { AckStatus } from '../../common'
+import { ConnectionService } from '../../connections'
+import { IndyIssuerService, IndyHolderService } from '../../indy'
+import { LedgerService } from '../../ledger/services/LedgerService'
+import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
 import {
   OfferCredentialMessage,
-  CredentialPreview,
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   RequestCredentialMessage,
   IssueCredentialMessage,
@@ -22,16 +30,9 @@ import {
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   INDY_CREDENTIAL_ATTACHMENT_ID,
   ProposeCredentialMessage,
-  ProposeCredentialMessageOptions,
 } from '../messages'
-import { AckStatus } from '../../common'
-import { Logger } from '../../../logger'
-import { AgentConfig } from '../../../agent/AgentConfig'
 import { CredentialRepository } from '../repository'
-import { IndyIssuerService, IndyHolderService } from '../../indy'
-import { CredentialEventTypes, CredentialStateChangedEvent } from '../CredentialEvents'
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { AriesFrameworkError } from '../../../error'
+import { CredentialRecord } from '../repository/CredentialRecord'
 
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialService {
@@ -616,7 +617,7 @@ export class CredentialService {
     // Create message
     const ackMessage = new CredentialAckMessage({
       status: AckStatus.OK,
-      threadId: credentialRecord.tags.threadId!,
+      threadId: credentialRecord.tags.threadId,
     })
 
     await this.updateState(credentialRecord, CredentialState.Done)

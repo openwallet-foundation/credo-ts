@@ -1,8 +1,10 @@
-import { Transform, ClassConstructor, plainToClass } from 'class-transformer'
+import type { ClassConstructor } from 'class-transformer'
 
-import { PublicKey } from './PublicKey'
+import { Transform, plainToClass } from 'class-transformer'
+
 import { Ed25119Sig2018 } from './Ed25119Sig2018'
 import { EddsaSaSigSecp256k1 } from './EddsaSaSigSecp256k1'
+import { PublicKey } from './PublicKey'
 import { RsaSig2018 } from './RsaSig2018'
 
 export const publicKeyTypes: { [key: string]: unknown | undefined } = {

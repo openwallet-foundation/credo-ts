@@ -1,6 +1,9 @@
-import { ConsoleLogger, Logger, LogLevel } from '../logger'
-import { InitConfig, DidCommMimeType } from '../types'
-import { DID_COMM_TRANSPORT_QUEUE } from './TransportService'
+import type { Logger } from '../logger'
+import type { InitConfig } from '../types'
+
+import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
+import { ConsoleLogger, LogLevel } from '../logger'
+import { DidCommMimeType } from '../types'
 
 export class AgentConfig {
   private initConfig: InitConfig
@@ -21,10 +24,6 @@ export class AgentConfig {
 
   public get label() {
     return this.initConfig.label
-  }
-
-  public get publicDid() {
-    return this.initConfig.publicDid
   }
 
   public get publicDidSeed() {

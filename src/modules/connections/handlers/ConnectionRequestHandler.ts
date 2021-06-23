@@ -1,9 +1,10 @@
-import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import { ConnectionService } from '../services/ConnectionService'
-import { ConnectionRequestMessage } from '../messages'
-import { AgentConfig } from '../../../agent/AgentConfig'
+import type { AgentConfig } from '../../../agent/AgentConfig'
+import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { ConnectionService } from '../services/ConnectionService'
+
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
+import { ConnectionRequestMessage } from '../messages'
 
 export class ConnectionRequestHandler implements Handler {
   private connectionService: ConnectionService

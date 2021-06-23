@@ -1,14 +1,15 @@
+import type { Optional } from '../../../utils/type'
 import type { IndyProofRequest } from 'indy-sdk'
-import { IsString, ValidateNested, IsOptional, IsIn } from 'class-validator'
-import { Expose, Type } from 'class-transformer'
 
-import { RevocationInterval } from '../../credentials'
-import { ProofAttributeInfo } from './ProofAttributeInfo'
-import { ProofPredicateInfo } from './ProofPredicateInfo'
+import { Expose, Type } from 'class-transformer'
+import { IsString, ValidateNested, IsOptional, IsIn } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { Optional } from '../../../utils/type'
 import { RecordTransformer } from '../../../utils/transformers'
+import { RevocationInterval } from '../../credentials'
+
+import { ProofAttributeInfo } from './ProofAttributeInfo'
+import { ProofPredicateInfo } from './ProofPredicateInfo'
 
 /**
  * Proof Request for Indy based proof format

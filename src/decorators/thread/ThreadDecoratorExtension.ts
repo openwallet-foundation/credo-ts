@@ -1,7 +1,8 @@
+import type { BaseMessageConstructor } from '../../agent/BaseMessage'
+
 import { Expose, Type } from 'class-transformer'
 import { ValidateNested } from 'class-validator'
 
-import { BaseMessageConstructor } from '../../agent/BaseMessage'
 import { ThreadDecorator } from './ThreadDecorator'
 
 export function ThreadDecorated<T extends BaseMessageConstructor>(Base: T) {

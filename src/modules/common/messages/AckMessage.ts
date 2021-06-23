@@ -1,6 +1,7 @@
 import { Equals, IsEnum } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
+
 import { CommonMessageType } from './CommonMessageType'
 
 /**

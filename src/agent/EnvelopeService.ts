@@ -1,24 +1,37 @@
+import type { Logger } from '../logger'
+import type { UnpackedMessageContext } from '../types'
+import type { AgentMessage } from './AgentMessage'
+import type { Verkey } from 'indy-sdk'
+
 import { inject, scoped, Lifecycle } from 'tsyringe'
-import { OutboundMessage, UnpackedMessageContext } from '../types'
-import { Wallet } from '../wallet/Wallet'
+
+import { InjectionSymbols } from '../constants'
 import { ForwardMessage } from '../modules/routing/messages'
+import { Wallet } from '../wallet/Wallet'
+
 import { AgentConfig } from './AgentConfig'
-import { Logger } from '../logger'
-import { Symbols } from '../symbols'
+
+export interface EnvelopeKeys {
+  recipientKeys: Verkey[]
+  routingKeys: Verkey[]
+  senderKey: Verkey | null
+}
 
 @scoped(Lifecycle.ContainerScoped)
 class EnvelopeService {
   private wallet: Wallet
   private logger: Logger
 
-  public constructor(@inject(Symbols.Wallet) wallet: Wallet, agentConfig: AgentConfig) {
+  public constructor(@inject(InjectionSymbols.Wallet) wallet: Wallet, agentConfig: AgentConfig) {
     this.wallet = wallet
     this.logger = agentConfig.logger
   }
 
-  public async packMessage(outboundMessage: OutboundMessage): Promise<JsonWebKey> {
-    const { routingKeys, recipientKeys, senderVk, payload } = outboundMessage
+  public async packMessage(payload: AgentMessage, keys: EnvelopeKeys): Promise<JsonWebKey> {
+    const { routingKeys, recipientKeys, senderKey: senderVk } = keys
     const message = payload.toJSON()
+
+    this.logger.debug('Pack outbound message', { message })
 
     let wireMessage = await this.wallet.pack(message, recipientKeys, senderVk)
 

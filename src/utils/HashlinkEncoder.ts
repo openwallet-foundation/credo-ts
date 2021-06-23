@@ -1,8 +1,11 @@
+import type { BaseName } from './MultibaseEncoder'
+import type { Buffer } from './buffer'
+
 import cbor from 'borc'
 import { sha256 } from 'js-sha256'
+
 import { BufferEncoder } from './BufferEncoder'
-import { Buffer } from './buffer'
-import { MultibaseEncoder, BaseName } from './MultibaseEncoder'
+import { MultibaseEncoder } from './MultibaseEncoder'
 import { MultihashEncoder } from './MultihashEncoder'
 
 type Metadata = {
