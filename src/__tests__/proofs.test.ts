@@ -179,9 +179,6 @@ describe('Present Proof', () => {
     const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
     await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
 
-    // Alice accepts request
-    aliceProofRecord = await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
-
     testLogger.test('Faber waits for presentation from Alice')
     faberProofRecord = await waitForProofRecord(faberAgent, {
       threadId: aliceProofRecord.tags.threadId,
@@ -192,7 +189,7 @@ describe('Present Proof', () => {
     expect(faberProofRecord.isVerified).toBe(true)
 
     // Faber accepts presentation
-    faberProofRecord = await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
 
     // Alice waits till it receives presentation ack
     aliceProofRecord = await waitForProofRecord(aliceAgent, {
@@ -201,126 +198,10 @@ describe('Present Proof', () => {
     })
   })
 
-  test('Faber starts with proof request to Alice', async () => {
+  test('Faber starts with proof requests to Alice', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
-    const requestedAttributes = {
-      name: new ProofAttributeInfo({
-        name: 'name',
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-    }
-
-    const requestedPredicates = {
-      age: new ProofPredicateInfo({
-        name: 'age',
-        predicateType: PredicateType.GreaterThanOrEqualTo,
-        predicateValue: 50,
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-    }
-
-    let faberProofRecord = await faberAgent.proofs.requestProof(faberConnection.id, {
-      name: 'test-proof-request',
-      requestedAttributes,
-      requestedPredicates,
-    })
-
-    testLogger.test('Alice waits for presentation request from Faber')
-    let aliceProofRecord = await waitForProofRecord(aliceAgent, {
-      threadId: faberProofRecord.tags.threadId,
-      state: ProofState.RequestReceived,
-    })
-
-    testLogger.test('Alice accepts presentation request from Faber')
-    const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest
-    const requestedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
-      indyProofRequest!,
-      presentationPreview
-    )
-
-    // Alice accepts request
-    aliceProofRecord = await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
-
-    testLogger.test('Faber waits for presentation from Alice')
-    faberProofRecord = await waitForProofRecord(faberAgent, {
-      threadId: aliceProofRecord.tags.threadId,
-      state: ProofState.PresentationReceived,
-    })
-
-    // assert presentation is valid
-    expect(faberProofRecord.isVerified).toBe(true)
-
-    // Faber accepts presentation
-    faberProofRecord = await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
-
-    // Alice waits till it receives presentation ack
-    aliceProofRecord = await waitForProofRecord(aliceAgent, {
-      threadId: aliceProofRecord.tags.threadId,
-      state: ProofState.Done,
-    })
-  })
-
-  test('Alice starts with proof proposal, with attachments, to Faber', async () => {
-    testLogger.test('Alice sends presentation proposal to Faber')
-    let aliceProofRecord = await aliceAgent.proofs.proposeProof(aliceConnection.id, presentationPreview)
-
-    testLogger.test('Faber waits for presentation proposal from Alice')
-    let faberProofRecord = await waitForProofRecord(faberAgent, {
-      threadId: aliceProofRecord.tags.threadId,
-      state: ProofState.ProposalReceived,
-    })
-
-    testLogger.test('Faber accepts presentation proposal from Alice')
-    faberProofRecord = await faberAgent.proofs.acceptProposal(faberProofRecord.id)
-
-    testLogger.test('Alice waits for presentation request from Faber')
-    aliceProofRecord = await waitForProofRecord(aliceAgent, {
-      threadId: aliceProofRecord.tags.threadId,
-      state: ProofState.RequestReceived,
-    })
-
-    testLogger.test('Alice accepts presentation request from Faber')
-    const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest
-    const requestedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
-      indyProofRequest!,
-      presentationPreview
-    )
-
-    // Alice accepts request
-    aliceProofRecord = await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
-
-    testLogger.test('Faber waits for presentation from Alice')
-    faberProofRecord = await waitForProofRecord(faberAgent, {
-      threadId: aliceProofRecord.tags.threadId,
-      state: ProofState.PresentationReceived,
-    })
-
-    // assert presentation is valid
-    expect(faberProofRecord.isVerified).toBe(true)
-
-    // Faber accepts presentation
-    faberProofRecord = await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
-
-    // Alice waits till it receives presentation ack
-    aliceProofRecord = await waitForProofRecord(aliceAgent, {
-      threadId: aliceProofRecord.tags.threadId,
-      state: ProofState.Done,
-    })
-  })
-
-  test('Faber starts with proof request, with attachments, to Alice', async () => {
-    testLogger.test('Faber sends presentation request to Alice')
-
-    const requestedAttributes = {
+    const attributes = {
       name: new ProofAttributeInfo({
         name: 'name',
         restrictions: [
@@ -347,7 +228,7 @@ describe('Present Proof', () => {
       }),
     }
 
-    const requestedPredicates = {
+    const predicates = {
       age: new ProofPredicateInfo({
         name: 'age',
         predicateType: PredicateType.GreaterThanOrEqualTo,
@@ -362,8 +243,8 @@ describe('Present Proof', () => {
 
     let faberProofRecord = await faberAgent.proofs.requestProof(faberConnection.id, {
       name: 'test-proof-request',
-      requestedAttributes,
-      requestedPredicates,
+      requestedAttributes: attributes,
+      requestedPredicates: predicates,
     })
 
     testLogger.test('Alice waits for presentation request from Faber')
@@ -391,7 +272,7 @@ describe('Present Proof', () => {
     expect(faberProofRecord.isVerified).toBe(true)
 
     // Faber accepts presentation
-    faberProofRecord = await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
 
     // Alice waits till it receives presentation ack
     aliceProofRecord = await waitForProofRecord(aliceAgent, {
