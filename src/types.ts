@@ -49,11 +49,7 @@ export interface UnpackedMessageContext {
 
 export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
   connection: ConnectionRecord
-  endpoint?: string
   payload: T
-  recipientKeys: Verkey[]
-  routingKeys: Verkey[]
-  senderVk: Verkey | null
 }
 
 export interface OutboundPackage {

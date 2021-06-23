@@ -43,9 +43,14 @@ class Dispatcher {
         outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
       }
 
-      // check for return routing, with thread id
+      // Check for return routing, with thread id
       if (message.hasReturnRouting(threadId)) {
-        return await this.messageSender.packMessage(outboundMessage)
+        const keys = {
+          recipientKeys: messageContext.senderVerkey ? [messageContext.senderVerkey] : [],
+          routingKeys: [],
+          senderKey: messageContext.connection?.verkey || null,
+        }
+        return await this.messageSender.packMessage(outboundMessage, keys)
       }
 
       await this.messageSender.sendMessage(outboundMessage)

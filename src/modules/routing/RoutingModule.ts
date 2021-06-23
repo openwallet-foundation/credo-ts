@@ -65,7 +65,7 @@ export class RoutingModule {
       const connectionRecord = await this.connectionService.processInvitation(mediatorInvitation, { alias })
       const { message: connectionRequest } = await this.connectionService.createRequest(connectionRecord.id)
 
-      const outboundMessage = createOutboundMessage(connectionRecord, connectionRequest, connectionRecord.invitation)
+      const outboundMessage = createOutboundMessage(connectionRecord, connectionRequest)
       outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
 
       await this.messageSender.sendMessage(outboundMessage)

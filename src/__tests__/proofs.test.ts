@@ -172,10 +172,12 @@ describe('Present Proof', () => {
 
     testLogger.test('Alice accepts presentation request from Faber')
     const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest
-    const requestedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
+    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
       indyProofRequest!,
       presentationPreview
     )
+    const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
+    await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
 
     // Alice accepts request
     aliceProofRecord = await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
@@ -372,13 +374,12 @@ describe('Present Proof', () => {
 
     testLogger.test('Alice accepts presentation request from Faber')
     const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest
-    const requestedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
+    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
       indyProofRequest!,
       presentationPreview
     )
-
-    // Alice accepts request
-    aliceProofRecord = await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
+    const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
+    await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
 
     testLogger.test('Faber waits for presentation from Alice')
     faberProofRecord = await waitForProofRecord(faberAgent, {

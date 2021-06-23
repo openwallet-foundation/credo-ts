@@ -1,5 +1,5 @@
 import type { PresentationPreview } from './messages'
-import type { RequestedCredentials } from './models'
+import type { RequestedCredentials, RetrievedCredentials } from './models'
 import type { ProofRecord } from './repository/ProofRecord'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -193,22 +193,34 @@ export class ProofsModule {
   }
 
   /**
-   * Create a RequestedCredentials object. Given input proof request and presentation proposal,
+   * Create a {@link RetrievedCredentials} object. Given input proof request and presentation proposal,
    * use credentials in the wallet to build indy requested credentials object for input to proof creation.
    * If restrictions allow, self attested attributes will be used.
    *
-   * Use the return value of this method as input to {@link ProofService.createPresentation} to automatically
-   * accept a received presentation request.
    *
    * @param proofRequest The proof request to build the requested credentials object from
    * @param presentationProposal Optional presentation proposal to improve credential selection algorithm
-   * @returns Requested credentials object for use in proof creation
+   * @returns RetrievedCredentials object
    */
   public async getRequestedCredentialsForProofRequest(
     proofRequest: ProofRequest,
     presentationProposal?: PresentationPreview
-  ) {
+  ): Promise<RetrievedCredentials> {
     return this.proofService.getRequestedCredentialsForProofRequest(proofRequest, presentationProposal)
+  }
+
+  /**
+   * Takes a RetrievedCredentials object and auto selects credentials in a RequestedCredentials object
+   *
+   * Use the return value of this method as input to {@link ProofService.createPresentation} to
+   * automatically accept a received presentation request.
+   *
+   * @param retrievedCredentials The retrieved credentials object to get credentials from
+   *
+   * @returns RequestedCredentials
+   */
+  public autoSelectCredentialsForProofRequest(retrievedCredentials: RetrievedCredentials): RequestedCredentials {
+    return this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)
   }
 
   /**

@@ -1,5 +1,7 @@
-import { Expose } from 'class-transformer'
+import { Exclude, Expose } from 'class-transformer'
 import { IsInt, IsOptional, IsPositive, IsString } from 'class-validator'
+
+import { IndyCredentialInfo } from '../../credentials'
 
 /**
  * Requested Predicate for Indy proof creation
@@ -9,6 +11,7 @@ export class RequestedPredicate {
     if (options) {
       this.credentialId = options.credentialId
       this.timestamp = options.timestamp
+      this.credentialInfo = options.credentialInfo
     }
   }
 
@@ -21,4 +24,7 @@ export class RequestedPredicate {
   @IsInt()
   @IsOptional()
   public timestamp?: number
+
+  @Exclude({ toPlainOnly: true })
+  public credentialInfo!: IndyCredentialInfo
 }

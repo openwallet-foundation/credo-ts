@@ -12,6 +12,17 @@ ls /usr/local/lib/libindy.dylib
 
 ## MacOS
 
+It is now possible to install libindy and all its dependencies with homebrew!
+
+<p align="center">⚠️ This does not currenlty work on the Macbooks with Apple silicon ⚠️</p>
+
+```bash
+brew tap blu3beri/homebrew-libindy
+brew install libindy
+```
+
+If this does not work, you could also use the old steps to install libindy.
+
 1. Download libindy for macOS from the [Sovrin binary repo](https://repo.sovrin.org/macos/libindy/stable/1.16.0/)
 2. Extract the ZIP and execute the following commands in the unzipped directory:
 
