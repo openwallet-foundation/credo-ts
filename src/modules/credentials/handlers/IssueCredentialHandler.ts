@@ -31,7 +31,7 @@ export class IssueCredentialHandler implements Handler {
       const { message } = await this.credentialService.createAck(credentialRecord)
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       return createOutboundMessage(messageContext.connection!, message)
-    } else if (autoAccept === AutoAcceptCredentialAndProof.contentNotChanged) {
+    } else if (autoAccept === AutoAcceptCredentialAndProof.attributesNotChanged) {
       // Detect change in credentialRecord messages
       throw new AriesFrameworkError('contentNotChanged is not implemented yet!')
     }

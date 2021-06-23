@@ -71,7 +71,7 @@ export enum AutoAcceptCredentialAndProof {
   'always' = 'always',
 
   // Only auto accepts the credential and proof if nothing changed in the request
-  'contentNotChanged' = 'contentNotChanged',
+  'attributesNotChanged' = 'attributesNotChanged',
 
   // (DEFAULT:q: Never auto accept a credential or proof
   'never' = 'never',

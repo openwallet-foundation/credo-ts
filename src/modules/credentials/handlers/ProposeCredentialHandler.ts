@@ -1,8 +1,9 @@
-/* eslint-disable no-console */
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { CredentialRecord } from '../repository/CredentialRecord'
 import type { CredentialService } from '../services'
 
+import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
 import { AutoAcceptCredentialAndProof } from '../../../types'
 import { CredentialUtils } from '../CredentialUtils'
@@ -28,22 +29,47 @@ export class ProposeCredentialHandler implements Handler {
 
     // Always accept any credential no matter what
     if (autoAccept === AutoAcceptCredentialAndProof.always) {
-      if (!credentialRecord.proposalMessage?.credentialProposal) {
-        throw new AriesFrameworkError(
-          `Credential record with id ${credentialRecord.id} is missing required credential proposal`
-        )
-      }
-      if (!credentialRecord.proposalMessage.credentialDefinitionId) {
-        throw new AriesFrameworkError('Missing required credential definition id')
-      }
-      await this.credentialService.createOfferAsResponse(credentialRecord, {
-        credentialDefinitionId: credentialRecord.proposalMessage.credentialDefinitionId,
-        preview: credentialRecord.proposalMessage.credentialProposal,
-      })
-      // Here we should call the next function to continue the flow
-    } else if (autoAccept === AutoAcceptCredentialAndProof.contentNotChanged) {
+      return await this.nextStep(credentialRecord, messageContext)
+    } else if (autoAccept === AutoAcceptCredentialAndProof.attributesNotChanged) {
       // Detect change in credentialRecord messages
-      throw new AriesFrameworkError('contentNotChanged is not implemented yet!')
+      // throw new AriesFrameworkError('contentNotChanged is not implemented yet!')
+      if (credentialRecord.proposalMessage && credentialRecord.offerMessage) {
+        // Check if the values in the messages are the same
+        const proposalValues = CredentialUtils.convertAttributesToValues(
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          credentialRecord.proposalMessage.credentialProposal!.attributes
+        )
+        const offerValues = CredentialUtils.convertAttributesToValues(
+          credentialRecord.offerMessage.credentialPreview.attributes
+        )
+        try {
+          CredentialUtils.assertValuesMatch(proposalValues, offerValues)
+          return await this.nextStep(credentialRecord, messageContext)
+          // eslint-disable-next-line no-empty
+        } catch {}
+      } else {
+        return await this.nextStep(credentialRecord, messageContext)
+      }
     }
+  }
+
+  private async nextStep(
+    credentialRecord: CredentialRecord,
+    messageContext: HandlerInboundMessage<ProposeCredentialHandler>
+  ) {
+    if (!credentialRecord.proposalMessage?.credentialProposal) {
+      throw new AriesFrameworkError(
+        `Credential record with id ${credentialRecord.id} is missing required credential proposal`
+      )
+    }
+    if (!credentialRecord.proposalMessage.credentialDefinitionId) {
+      throw new AriesFrameworkError('Missing required credential definition id')
+    }
+    const { message } = await this.credentialService.createOfferAsResponse(credentialRecord, {
+      credentialDefinitionId: credentialRecord.proposalMessage.credentialDefinitionId,
+      preview: credentialRecord.proposalMessage.credentialProposal,
+    })
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return createOutboundMessage(messageContext.connection!, message)
   }
 }
