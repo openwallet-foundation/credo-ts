@@ -3,7 +3,6 @@ import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { CredentialService } from '../services'
 
 import { createOutboundMessage } from '../../../agent/helpers'
-import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { AutoAcceptCredentialAndProof } from '../../../types'
 import { CredentialUtils } from '../CredentialUtils'
 import { IssueCredentialMessage } from '../messages'
@@ -27,13 +26,13 @@ export class IssueCredentialHandler implements Handler {
     )
 
     // Always accept any credential no matter what
-    if (autoAccept === AutoAcceptCredentialAndProof.always) {
+    if (
+      autoAccept === AutoAcceptCredentialAndProof.always ||
+      autoAccept == AutoAcceptCredentialAndProof.attributesNotChanged
+    ) {
       const { message } = await this.credentialService.createAck(credentialRecord)
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       return createOutboundMessage(messageContext.connection!, message)
-    } else if (autoAccept === AutoAcceptCredentialAndProof.attributesNotChanged) {
-      // Detect change in credentialRecord messages
-      throw new AriesFrameworkError('contentNotChanged is not implemented yet!')
     }
   }
 }

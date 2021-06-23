@@ -11,6 +11,7 @@ import {
 } from '../modules/credentials'
 import { AutoAcceptCredentialAndProof } from '../types'
 import { JsonTransformer } from '../utils/JsonTransformer'
+import { sleep } from '../utils/sleep'
 
 import {
   ensurePublicDidIsOnLedger,
@@ -27,12 +28,10 @@ import testLogger from './logger'
 
 const faberConfig = getBaseConfig('Faber Credentials', {
   genesisPath,
-  autoAcceptCredentials: AutoAcceptCredentialAndProof.attributesNotChanged,
 })
 
 const aliceConfig = getBaseConfig('Alice Credentials', {
   genesisPath,
-  autoAcceptCredentials: AutoAcceptCredentialAndProof.attributesNotChanged,
 })
 
 const credentialPreview = new CredentialPreview({
@@ -46,6 +45,26 @@ const credentialPreview = new CredentialPreview({
       name: 'age',
       mimeType: 'text/plain',
       value: '99',
+    }),
+  ],
+})
+
+const newCredentialPreview = new CredentialPreview({
+  attributes: [
+    new CredentialPreviewAttribute({
+      name: 'name',
+      mimeType: 'text/plain',
+      value: 'John',
+    }),
+    new CredentialPreviewAttribute({
+      name: 'age',
+      mimeType: 'text/plain',
+      value: '99',
+    }),
+    new CredentialPreviewAttribute({
+      name: 'foo',
+      mimeType: 'text/plain',
+      value: 'bar',
     }),
   ],
 })
@@ -76,7 +95,7 @@ describe('credentials', () => {
 
     const schemaTemplate = {
       name: `test-schema-${Date.now()}`,
-      attributes: ['name', 'age'],
+      attributes: ['name', 'age', 'foo'],
       version: '1.0',
     }
     const schema = await registerSchema(faberAgent, schemaTemplate)
@@ -109,12 +128,19 @@ describe('credentials', () => {
     let aliceCredentialRecord = await aliceAgent.credentials.proposeCredential(aliceConnection.id, {
       credentialProposal: credentialPreview,
       credentialDefinitionId: credDefId,
+      autoAcceptCredential: AutoAcceptCredentialAndProof.attributesNotChanged,
     })
 
     testLogger.test('Faber waits for credential proposal from Alice')
     let faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
       threadId: aliceCredentialRecord.tags.threadId,
       state: CredentialState.ProposalReceived,
+    })
+
+    testLogger.test('Faber sends credential offer to Alice')
+    faberCredentialRecord = await faberAgent.credentials.acceptProposal(faberCredentialRecord.id, {
+      comment: 'some comment about credential',
+      autoAcceptCredential: AutoAcceptCredentialAndProof.attributesNotChanged,
     })
 
     testLogger.test('Alice waits for credential offer from Faber')
@@ -217,6 +243,7 @@ describe('credentials', () => {
       preview: credentialPreview,
       credentialDefinitionId: credDefId,
       comment: 'some comment about credential',
+      autoAcceptCredential: AutoAcceptCredentialAndProof.attributesNotChanged,
     })
 
     testLogger.test('Alice waits for credential offer from Faber')
@@ -258,6 +285,11 @@ describe('credentials', () => {
       connectionId: aliceConnection.id,
     })
     expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
+
+    testLogger.test('Alice sends credential request to Faber')
+    aliceCredentialRecord = await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id, {
+      autoAcceptCredential: AutoAcceptCredentialAndProof.attributesNotChanged,
+    })
 
     testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
@@ -304,5 +336,151 @@ describe('credentials', () => {
       requestMessage: expect.any(Object),
       state: CredentialState.Done,
     })
+  })
+
+  test('Alice starts with credential proposal to Faber, both have auto accept on `attributesNotChanged` and attributes did change', async () => {
+    testLogger.test('Alice sends credential proposal to Faber')
+    let aliceCredentialRecord = await aliceAgent.credentials.proposeCredential(aliceConnection.id, {
+      credentialProposal: credentialPreview,
+      credentialDefinitionId: credDefId,
+      autoAcceptCredential: AutoAcceptCredentialAndProof.attributesNotChanged,
+    })
+
+    testLogger.test('Faber waits for credential proposal from Alice')
+    let faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
+      threadId: aliceCredentialRecord.tags.threadId,
+      state: CredentialState.ProposalReceived,
+    })
+
+    faberCredentialRecord = await faberAgent.credentials.negotiateProposal(
+      faberCredentialRecord.id,
+      newCredentialPreview,
+      {
+        comment: 'some comment about credential',
+        autoAcceptCredential: AutoAcceptCredentialAndProof.attributesNotChanged,
+      }
+    )
+
+    testLogger.test('Alice waits for credential offer from Faber')
+    aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+      threadId: faberCredentialRecord.tags.threadId,
+      state: CredentialState.OfferReceived,
+    })
+
+    expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
+      createdAt: expect.any(Date),
+      offerMessage: {
+        '@id': expect.any(String),
+        '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
+        credential_preview: {
+          '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
+          attributes: [
+            {
+              name: 'name',
+              'mime-type': 'text/plain',
+              value: 'John',
+            },
+            {
+              name: 'age',
+              'mime-type': 'text/plain',
+              value: '99',
+            },
+            {
+              name: 'foo',
+              'mime-type': 'text/plain',
+              value: 'bar',
+            },
+          ],
+        },
+        'offers~attach': expect.any(Array),
+      },
+      state: CredentialState.OfferReceived,
+    })
+
+    // below values are not in json object
+    expect(aliceCredentialRecord.id).not.toBeNull()
+    expect(aliceCredentialRecord.tags).toEqual({
+      threadId: faberCredentialRecord.tags.threadId,
+      connectionId: aliceCredentialRecord.tags.connectionId,
+    })
+    expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
+
+    // Wait for ten seconds
+    await sleep(10000)
+
+    // Check if the state of fabers credential record did not change
+    faberCredentialRecord = await faberAgent.credentials.getById(faberCredentialRecord.id)
+    faberCredentialRecord.assertState(CredentialState.OfferSent)
+
+    aliceCredentialRecord = await aliceAgent.credentials.getById(aliceCredentialRecord.id)
+    aliceCredentialRecord.assertState(CredentialState.OfferReceived)
+  })
+
+  test('Faber starts with credential offer to Alice, both have auto accept on `attributesNotChanged` and attributes did change', async () => {
+    testLogger.test('Faber sends credential offer to Alice')
+    faberCredentialRecord = await faberAgent.credentials.offerCredential(faberConnection.id, {
+      preview: credentialPreview,
+      credentialDefinitionId: credDefId,
+      comment: 'some comment about credential',
+      autoAcceptCredential: AutoAcceptCredentialAndProof.attributesNotChanged,
+    })
+
+    testLogger.test('Alice waits for credential offer from Faber')
+    aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+      threadId: faberCredentialRecord.tags.threadId,
+      state: CredentialState.OfferReceived,
+    })
+
+    expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
+      createdAt: expect.any(Date),
+      offerMessage: {
+        '@id': expect.any(String),
+        '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
+        comment: 'some comment about credential',
+        credential_preview: {
+          '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
+          attributes: [
+            {
+              name: 'name',
+              'mime-type': 'text/plain',
+              value: 'John',
+            },
+            {
+              name: 'age',
+              'mime-type': 'text/plain',
+              value: '99',
+            },
+          ],
+        },
+        'offers~attach': expect.any(Array),
+      },
+      state: CredentialState.OfferReceived,
+    })
+
+    // below values are not in json object
+    expect(aliceCredentialRecord.id).not.toBeNull()
+    expect(aliceCredentialRecord.tags).toEqual({
+      threadId: faberCredentialRecord.tags.threadId,
+      connectionId: aliceConnection.id,
+    })
+    expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
+
+    testLogger.test('Alice sends credential request to Faber')
+    aliceCredentialRecord = await aliceAgent.credentials.negotiateOffer(
+      aliceCredentialRecord.id,
+      newCredentialPreview,
+      {
+        autoAcceptCredential: AutoAcceptCredentialAndProof.always,
+      }
+    )
+    // Wait for ten seconds
+    await sleep(10000)
+
+    // Check if the state of fabers credential record did not change
+    faberCredentialRecord = await faberAgent.credentials.getById(faberCredentialRecord.id)
+    faberCredentialRecord.assertState(CredentialState.ProposalReceived)
+
+    aliceCredentialRecord = await aliceAgent.credentials.getById(aliceCredentialRecord.id)
+    aliceCredentialRecord.assertState(CredentialState.ProposalSent)
   })
 })

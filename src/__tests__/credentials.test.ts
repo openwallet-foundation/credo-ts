@@ -274,9 +274,7 @@ describe('credentials', () => {
     expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
 
     testLogger.test('Alice sends credential request to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id, {
-      autoAcceptCredential: AutoAcceptCredentialAndProof.always,
-    })
+    aliceCredentialRecord = await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id)
 
     testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecord(faberAgent, {

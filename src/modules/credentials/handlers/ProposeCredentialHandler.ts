@@ -32,7 +32,6 @@ export class ProposeCredentialHandler implements Handler {
       return await this.nextStep(credentialRecord, messageContext)
     } else if (autoAccept === AutoAcceptCredentialAndProof.attributesNotChanged) {
       // Detect change in credentialRecord messages
-      // throw new AriesFrameworkError('contentNotChanged is not implemented yet!')
       if (credentialRecord.proposalMessage && credentialRecord.offerMessage) {
         // Check if the values in the messages are the same
         const proposalValues = CredentialUtils.convertAttributesToValues(
@@ -42,6 +41,7 @@ export class ProposeCredentialHandler implements Handler {
         const offerValues = CredentialUtils.convertAttributesToValues(
           credentialRecord.offerMessage.credentialPreview.attributes
         )
+
         try {
           CredentialUtils.assertValuesMatch(proposalValues, offerValues)
           return await this.nextStep(credentialRecord, messageContext)

@@ -114,7 +114,7 @@ export class CredentialService {
    */
   public async createProposalAsResponse(
     credentialRecord: CredentialRecord,
-    config?: Omit<ProposeCredentialMessageOptions, 'id'>
+    config?: Omit<ProposeCredentialMessageOptions, 'id'> & { autoAcceptCredential?: AutoAcceptCredentialAndProof }
   ): Promise<CredentialProtocolMsgReturnType<ProposeCredentialMessage>> {
     // Assert
     credentialRecord.assertState(CredentialState.OfferReceived)

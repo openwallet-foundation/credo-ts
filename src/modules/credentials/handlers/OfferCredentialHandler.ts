@@ -4,7 +4,6 @@ import type { CredentialRecord } from '../repository/CredentialRecord'
 import type { CredentialService } from '../services'
 
 import { createOutboundMessage } from '../../../agent/helpers'
-import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { AutoAcceptCredentialAndProof } from '../../../types'
 import { CredentialUtils } from '../CredentialUtils'
 import { OfferCredentialMessage } from '../messages'

@@ -1,5 +1,5 @@
 import type { AutoAcceptCredentialAndProof } from '../../types'
-import type { ProposeCredentialMessageOptions } from './messages'
+import type { CredentialPreview, ProposeCredentialMessageOptions } from './messages'
 import type { CredentialRecord } from './repository/CredentialRecord'
 import type { CredentialOfferTemplate } from './services'
 
@@ -114,6 +114,47 @@ export class CredentialsModule {
     return credentialRecord
   }
 
+  public async negotiateProposal(
+    credentialRecordId: string,
+    preview: CredentialPreview,
+    config?: {
+      comment?: string
+      credentialDefinitionId?: string
+      autoAcceptCredential?: AutoAcceptCredentialAndProof
+    }
+  ) {
+    const credentialRecord = await this.credentialService.getById(credentialRecordId)
+    const connection = await this.connectionService.getById(credentialRecord.connectionId)
+
+    const credentialProposalMessage = credentialRecord.proposalMessage
+
+    if (!credentialProposalMessage?.credentialProposal) {
+      throw new AriesFrameworkError(
+        `Credential record with id ${credentialRecordId} is missing required credential proposal`
+      )
+    }
+
+    const credentialDefinitionId = config?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
+
+    if (!credentialDefinitionId) {
+      throw new AriesFrameworkError(
+        'Missing required credential definition id. If credential proposal message contains no credential definition id it must be passed to config.'
+      )
+    }
+
+    const { message } = await this.credentialService.createOfferAsResponse(credentialRecord, {
+      preview,
+      credentialDefinitionId,
+      comment: config?.comment,
+      autoAcceptCredential: config?.autoAcceptCredential,
+    })
+
+    const outboundMessage = createOutboundMessage(connection, message)
+    await this.messageSender.sendMessage(outboundMessage)
+
+    return credentialRecord
+  }
+
   /**
    * Initiate a new credential exchange as issuer by sending a credential offer message
    * to the connection with the specified connection id.
@@ -153,6 +194,25 @@ export class CredentialsModule {
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
     const { message } = await this.credentialService.createRequest(credentialRecord, config)
+
+    const outboundMessage = createOutboundMessage(connection, message)
+    await this.messageSender.sendMessage(outboundMessage)
+
+    return credentialRecord
+  }
+
+  public async negotiateOffer(
+    credentialRecordId: string,
+    preview: CredentialPreview,
+    config?: { comment?: string; autoAcceptCredential?: AutoAcceptCredentialAndProof }
+  ) {
+    const credentialRecord = await this.credentialService.getById(credentialRecordId)
+    const connection = await this.connectionService.getById(credentialRecord.connectionId)
+
+    const { message } = await this.credentialService.createProposalAsResponse(credentialRecord, {
+      ...config,
+      credentialProposal: preview,
+    })
 
     const outboundMessage = createOutboundMessage(connection, message)
     await this.messageSender.sendMessage(outboundMessage)
