@@ -6,9 +6,9 @@ export type TagsBase = {
   [key: number]: never
 }
 
-export type Tags<DefaultTags, CustomTags extends TagsBase> = CustomTags & DefaultTags
+export type Tags<DefaultTags extends TagsBase, CustomTags extends TagsBase> = CustomTags & DefaultTags
 
-export abstract class BaseRecord<DefaultTags = Record<string, unknown>, CustomTags extends TagsBase = TagsBase> {
+export abstract class BaseRecord<DefaultTags extends TagsBase = TagsBase, CustomTags extends TagsBase = TagsBase> {
   @Exclude()
   protected _tags!: CustomTags
 

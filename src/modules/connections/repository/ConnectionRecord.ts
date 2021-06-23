@@ -94,7 +94,7 @@ export class ConnectionRecord
       role: this.role,
       invitationKey,
       threadId: this.threadId,
-      verkey: this.verkey || undefined,
+      verkey: this.verkey,
       theirKey: this.theirKey || undefined,
     }
   }
