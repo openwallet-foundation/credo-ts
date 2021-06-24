@@ -25,3 +25,34 @@ export class PollingInboundTransporter implements InboundTransporter {
     }, this.pollingInterval)
   }
 }
+
+export class TrustPingPollingInboundTransporter implements InboundTransporter {
+  public run: boolean
+  private pollingInterval: number
+
+  public constructor(pollingInterval = 5000) {
+    this.run = false
+    this.pollingInterval = pollingInterval
+  }
+
+  public async start(agent: Agent) {
+    this.run = true
+    await this.pollDownloadMessages(agent)
+  }
+
+  public async stop(): Promise<void> {
+    this.run = false
+  }
+
+  private async pollDownloadMessages(recipient: Agent) {
+    setInterval(async () => {
+      if (this.run) {
+        const connection = await recipient.mediationRecipient.getDefaultMediatorConnection()
+        if (connection && connection.state == 'complete') {
+          /*ping mediator uses a trust ping to trigger any stored messages to be sent back, one at a time.*/
+          await recipient.connections.pingMediator(connection)
+        }
+      }
+    }, this.pollingInterval)
+  }
+}

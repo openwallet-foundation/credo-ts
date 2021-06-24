@@ -1,13 +1,11 @@
-import type {
-  ConnectionRecord,
+import {
+  HttpOutboundTransporter,
   InboundTransporter,
   MediationRecord,
-  OutboundPackage,
-  OutboundTransporter,
+  TrustPingPollingInboundTransporter,
 } from '../../src'
 import type { mockInBoundTransporter } from '../../src/__tests__/helpers'
 
-import fetch from 'node-fetch'
 import { noop } from 'rxjs'
 import WebSocket from 'ws'
 
@@ -16,7 +14,6 @@ import {
   getBaseConfig,
   makeConnection,
   makeInBoundTransporter,
-  mockOutBoundTransporter,
   makeTransport,
 } from '../../src/__tests__/helpers'
 import logger from '../../src/__tests__/logger'
@@ -71,10 +68,10 @@ describe('mediator establishment', () => {
   test('recipient and mediator establish a connection and granted mediation', async () => {
     await makeTransport(
       recipientAgent,
-      new mockMobileInboundTransporter(),
-      new mockMobileOutBoundTransporter(recipientAgent)
+      new TrustPingPollingInboundTransporter(),
+      new HttpOutboundTransporter(recipientAgent)
     )
-    await makeTransport(mediatorAgent, makeInBoundTransporter(), new mockOutBoundTransporter(mediatorAgent))
+    await makeTransport(mediatorAgent, makeInBoundTransporter(), new HttpOutboundTransporter(mediatorAgent))
 
     const { agentAConnection: mediatorAgentConnection, agentBConnection: recipientAgentConnection } =
       await makeConnection(mediatorAgent, recipientAgent, {
@@ -90,7 +87,7 @@ describe('mediator establishment', () => {
     expect(mediationRecord.state).toBe(MediationState.Granted)
 
     try {
-      await (recipientAgent.inboundTransporter as mockMobileInboundTransporter).stop()
+      await (recipientAgent.inboundTransporter as TrustPingPollingInboundTransporter).stop()
     } catch (e) {
       noop()
     }
@@ -169,11 +166,11 @@ describe('mediator establishment', () => {
       tedAgent = new Agent(tedConfig, new InMemoryMessageRepository())
       await makeTransport(
         recipientAgent,
-        new mockMobileInboundTransporter(),
-        new mockMobileOutBoundTransporter(recipientAgent)
+        new TrustPingPollingInboundTransporter(),
+        new HttpOutboundTransporter(recipientAgent)
       )
-      await makeTransport(mediatorAgent, makeInBoundTransporter(), new MockMediatorOutboundTransporter(mediatorAgent))
-      await makeTransport(tedAgent, makeInBoundTransporter(), new mockOutBoundTransporter(tedAgent))
+      await makeTransport(mediatorAgent, makeInBoundTransporter(), new HttpOutboundTransporter(mediatorAgent))
+      await makeTransport(tedAgent, makeInBoundTransporter(), new HttpOutboundTransporter(tedAgent))
       const { agentAConnection: mediatorAgentConnection, agentBConnection: recipientAgentConnection } =
         await makeConnection(mediatorAgent, recipientAgent, {
           autoAcceptConnection: true,
@@ -185,7 +182,7 @@ describe('mediator establishment', () => {
   })
   afterEach(async () => {
     try {
-      await (recipientAgent.inboundTransporter as mockMobileInboundTransporter).stop()
+      await (recipientAgent.inboundTransporter as TrustPingPollingInboundTransporter).stop()
     } catch (e) {}
     try {
       await (mediatorAgent.inboundTransporter as mockInBoundTransporter).stop()
@@ -259,77 +256,6 @@ describe('mediator establishment', () => {
      expect(basicMessage.content).toBe(message)
    })
 })*/
-
-class mockMobileOutBoundTransporter implements OutboundTransporter {
-  private agent: Agent
-
-  public constructor(agent: Agent) {
-    this.agent = agent
-  }
-  public async start(): Promise<void> {
-    // No custom start logic required
-  }
-
-  public async stop(): Promise<void> {
-    // No custom stop logic required
-  }
-
-  public supportedSchemes = ['http', 'dicomm', 'https']
-
-  public async sendMessage(outboundPackage: OutboundPackage) {
-    const { payload, endpoint } = outboundPackage
-    if (!endpoint || endpoint == 'didcomm:transport/queue') {
-      throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
-    }
-    try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/ssi-agent-wire',
-        },
-        body: JSON.stringify(payload),
-      })
-      const data = await response.text()
-      if (data) {
-        logger.debug(`Response received:\n ${response}`)
-        const wireMessage = JSON.parse(data)
-        this.agent.receiveMessage(wireMessage)
-      } else {
-        logger.debug(`No response received.`)
-      }
-    } catch (e) {
-      logger.debug('error sending message', e)
-      throw e
-    }
-  }
-}
-
-class mockMobileInboundTransporter implements InboundTransporter {
-  public run: boolean
-
-  public constructor() {
-    this.run = false
-  }
-  public async start(agent: Agent) {
-    this.run = true
-    await this.pollDownloadMessages(agent)
-  }
-
-  public async stop(): Promise<void> {
-    this.run = false
-  }
-
-  private async pollDownloadMessages(recipient: Agent, run = this.run, connection_?: ConnectionRecord) {
-    setInterval(async () => {
-      if (run) {
-        const connection = connection_ ?? (await recipient.mediationRecipient.getDefaultMediatorConnection())
-        if (connection?.state == 'complete') {
-          await recipient.mediationRecipient.downloadMessages(connection)
-        }
-      }
-    }, 200)
-  }
-}
 
 export class WsInboundTransporter implements InboundTransporter {
   private socketServer: WebSocket.Server
