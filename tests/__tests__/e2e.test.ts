@@ -1,21 +1,18 @@
-import {
-  HttpOutboundTransporter,
-  InboundTransporter,
-  MediationRecord,
-  TrustPingPollingInboundTransporter,
-} from '../../src'
+import type { InboundTransporter, MediationRecord } from '../../src'
 import type { mockInBoundTransporter } from '../../src/__tests__/helpers'
 
 import { noop } from 'rxjs'
 import WebSocket from 'ws'
 
-import { Agent, MediationState, WsOutboundTransporter, WebSocketTransportSession } from '../../src'
 import {
-  getBaseConfig,
-  makeConnection,
-  makeInBoundTransporter,
-  makeTransport,
-} from '../../src/__tests__/helpers'
+  HttpOutboundTransporter,
+  TrustPingPollingInboundTransporter,
+  Agent,
+  MediationState,
+  WsOutboundTransporter,
+  WebSocketTransportSession,
+} from '../../src'
+import { getBaseConfig, makeConnection, makeInBoundTransporter, makeTransport } from '../../src/__tests__/helpers'
 import logger from '../../src/__tests__/logger'
 import { InMemoryMessageRepository } from '../../src/storage/InMemoryMessageRepository'
 

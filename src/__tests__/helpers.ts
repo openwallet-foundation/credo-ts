@@ -5,7 +5,6 @@ import type { CredentialOfferTemplate, CredentialRecord, CredentialStateChangedE
 import type { CredentialDefinitionTemplate, SchemaTemplate } from '../modules/ledger'
 import type { ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
 import type { MediationRecord, MediationState, MediationStateChangedEvent } from '../modules/routing'
-import type { MessageRepository } from '../storage/MessageRepository'
 import type { InitConfig, OutboundPackage, WireMessage } from '../types'
 import type { Express } from 'express'
 import type { Server } from 'http'
@@ -15,7 +14,6 @@ import type { Subject } from 'rxjs'
 import cors from 'cors'
 import express from 'express'
 import indy from 'indy-sdk'
-import fetch from 'node-fetch'
 import path from 'path'
 
 import { BasicMessageEventTypes } from '../modules/basic-messages'
@@ -30,7 +28,6 @@ import {
 import { CredentialEventTypes, CredentialState } from '../modules/credentials'
 import { ProofEventTypes } from '../modules/proofs'
 import { RoutingEventTypes } from '../modules/routing'
-import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { NodeFileSystem } from '../storage/fs/NodeFileSystem'
 
 import testLogger from './logger'
