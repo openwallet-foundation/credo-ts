@@ -115,35 +115,6 @@ export async function waitForCredentialRecord(
   })
 }
 
-export async function waitForMediationRecord(
-  agent: Agent,
-  {
-    id,
-    state,
-    previousState,
-  }: {
-    id?: string
-    state?: MediationState
-    previousState?: MediationState | null
-  }
-): Promise<MediationRecord> {
-  return new Promise((resolve) => {
-    const listener = (event: MediationStateChangedEvent) => {
-      const previousStateMatches = previousState === undefined || event.payload.previousState === previousState
-      const mediationIdMatches = id === undefined || event.payload.mediationRecord.id === id
-      const stateMatches = state === undefined || event.payload.mediationRecord.state === state
-
-      if (previousStateMatches && mediationIdMatches && stateMatches) {
-        agent.events.off<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
-
-        resolve(event.payload.mediationRecord)
-      }
-    }
-
-    agent.events.on<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged, listener)
-  })
-}
-
 export async function waitForBasicMessage(
   agent: Agent,
   { verkey, content }: { verkey?: string; content?: string }

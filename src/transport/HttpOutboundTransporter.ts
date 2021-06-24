@@ -59,7 +59,14 @@ export class HttpOutboundTransporter implements OutboundTransporter {
         body: JSON.stringify(payload),
         headers: { 'Content-Type': this.agentConfig.didCommMimeType },
       })
-      const responseMessage = await response.text()
+      
+      const action: any = await Promise.race([
+        response,
+        new Promise((accept) => {
+          setTimeout(() => accept(false), 150000);
+        }),
+      ]);
+      const responseMessage = action ? await action.text() : false;
 
       // TODO: do we just want to ignore messages that were
       // returned if we didn't request it?

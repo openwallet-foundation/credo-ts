@@ -16,7 +16,8 @@ import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
-import { MediatorModule, RecipientModule } from '../modules/routing'
+import { MediatorModule } from '../modules/routing/MediatorModule'
+import { RecipientModule } from '../modules/routing/RecipientModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
 import { IndyWallet } from '../wallet/IndyWallet'
@@ -140,7 +141,7 @@ export class Agent {
 
     await this.mediationRecipient.init(this.connections)
     const defaultMediator = await this.mediationRecipient.getDefaultMediatorConnection()
-    if (defaultMediator) {
+    if (defaultMediator) { // TODO: update with batch pickup protocol.
       this.connections.pingMediator(defaultMediator)
     }
     this._isInitialized = true

@@ -1,6 +1,5 @@
 node_modules
 build
-int
 .vscode
 yarn-error.log
 .idea
@@ -9,5 +8,3 @@ src/lib/__tests__/genesis-von.txn
 coverage
 .DS_Store
 logs.txt
-logs/
-package-lock.json
