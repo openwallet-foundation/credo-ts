@@ -1,18 +1,19 @@
-import { Lifecycle, scoped } from 'tsyringe'
-import type { Verkey } from 'indy-sdk'
-import type { ConnectionRecord } from '../../connections'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { MediationStateChangedEvent } from '../RoutingEvents'
-import type { MediationRepository } from '../repository/MediationRepository'
-import type { EventEmitter } from '../../../agent/EventEmitter'
-
+import type { ConnectionRecord } from '../../connections'
+import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
 import type { MediationGrantMessage, MediationDenyMessage, KeylistUpdateResponseMessage } from '../messages'
+import type { Verkey } from 'indy-sdk'
 
+import { Lifecycle, scoped } from 'tsyringe'
+
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { RoutingEventTypes } from '../RoutingEvents'
 import { KeylistUpdateAction, MediationRequestMessage } from '../messages'
-
-import { RoutingEventTypes, KeylistUpdatedEvent } from '../RoutingEvents'
-import { assertConnection, MediationRecord, MediationRole, MediationState } from '../index'
 import { KeylistMessage } from '../messages/KeylistMessage'
+import { MediationRole, MediationState } from '../models'
+import { MediationRecord } from '../repository/MediationRecord'
+import { MediationRepository } from '../repository/MediationRepository'
+import { assertConnection } from '../services/RoutingService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class RecipientService {
@@ -70,6 +71,7 @@ export class RecipientService {
     return await this.updateState(mediationRecord, MediationState.Granted)
   }
 
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   public createKeylistQuery(
     filter?: Map<string, string>,
     paginateLimit?: number | undefined,
@@ -80,6 +82,7 @@ export class RecipientService {
     // TODO: Implement this
     return new KeylistMessage({})
   }
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   public async processKeylistUpdateResults(messageContext: InboundMessageContext<KeylistUpdateResponseMessage>) {
     const connection = assertConnection(

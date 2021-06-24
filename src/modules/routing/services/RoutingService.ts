@@ -1,11 +1,13 @@
 /*----------------------------------------------------------
 | Routing service is the common code used in mediation senarios 
 |*/
-import type { ConnectionRecord } from '../../connections'
-import type { MediationRepository } from '../repository'
-import type { BaseEvent } from '../../../agent/Events'
 import type { EventEmitter } from '../../../agent/EventEmitter'
-import { MediationRecord, MediationRecordProps } from '../../routing'
+import type { BaseEvent } from '../../../agent/Events'
+import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
+import type { MediationRecordProps } from '../repository/MediationRecord'
+import type { MediationRepository } from '../repository/MediationRepository'
+
+import { MediationRecord } from '../repository/MediationRecord'
 
 /**
  * waitForEvent

@@ -34,5 +34,7 @@ export class KeylistMessage extends AgentMessage {
 }
 
 export class Keylist {
-  public constructor() {}
+  public constructor(options: { paginateOffset: number }) {
+    return options
+  }
 }

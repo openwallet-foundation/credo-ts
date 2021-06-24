@@ -1,10 +1,11 @@
+import type { Tags } from '../../../storage/BaseRecord'
+import type { MediationRole } from '../models/MediationRole'
 import type { Verkey } from 'indy-sdk'
-import { uuid } from '../../../utils/uuid'
 
-import { BaseRecord, Tags } from '../../../storage/BaseRecord'
-import { MediationRole } from '../models/MediationRole'
-import { MediationState } from '../models/MediationState'
 import { AriesFrameworkError } from '../../../error'
+import { BaseRecord } from '../../../storage/BaseRecord'
+import { uuid } from '../../../utils/uuid'
+import { MediationState } from '../models/MediationState'
 
 export interface MediationRecordProps {
   id?: string

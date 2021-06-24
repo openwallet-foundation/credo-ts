@@ -1,38 +1,36 @@
-import WebSocket from 'ws'
-import fetch from 'node-fetch'
-import {
-  Agent,
+import type {
   ConnectionRecord,
   InboundTransporter,
   MediationRecord,
-  MediationState,
   OutboundPackage,
   OutboundTransporter,
-  WsOutboundTransporter,
-  WebSocketTransportSession,
 } from '../../src'
-import testLogger from '../../src/__tests__/logger'
+import type { mockInBoundTransporter } from '../../src/__tests__/helpers'
+
+import fetch from 'node-fetch'
+import { noop } from 'rxjs'
+import WebSocket from 'ws'
+
+import { Agent, MediationState, WsOutboundTransporter, WebSocketTransportSession } from '../../src'
 import {
   getBaseConfig,
   makeConnection,
   makeInBoundTransporter,
   mockOutBoundTransporter,
   makeTransport,
-  mockInBoundTransporter,
 } from '../../src/__tests__/helpers'
 import logger from '../../src/__tests__/logger'
 import { InMemoryMessageRepository } from '../../src/storage/InMemoryMessageRepository'
-import { noop } from 'rxjs'
 
 const recipientConfig = getBaseConfig('recipient')
 const mediatorConfig = getBaseConfig('mediator', {
   host: 'http://localhost',
   port: 3002,
 })
-const tedConfig = getBaseConfig('ted', {
+/*const tedConfig = getBaseConfig('ted', {
   host: 'http://localhost',
   port: 3003,
-})
+})*/
 
 describe('mediator establishment', () => {
   let recipientAgent: Agent
@@ -152,11 +150,11 @@ describe('mediator establishment', () => {
   })
 })
 
-/* 
-* tests below are dependent on pickup protocol which is not available yet. 
-* they could be constructed to use trust ping to retrieve messages, but that is not advisable by some developers 
-* and is intentionally not demonstrated below.
-*/
+/*
+ * tests below are dependent on pickup protocol which is not available yet.
+ * they could be constructed to use trust ping to retrieve messages, but that is not advisable by some developers
+ * and is intentionally not demonstrated below.
+ */
 
 /*describe('mediator features', () => {
   let recipientAgent: Agent
@@ -279,7 +277,7 @@ class mockMobileOutBoundTransporter implements OutboundTransporter {
   public supportedSchemes = ['http', 'dicomm', 'https']
 
   public async sendMessage(outboundPackage: OutboundPackage) {
-    const { connection, payload, endpoint, responseRequested } = outboundPackage
+    const { payload, endpoint } = outboundPackage
     if (!endpoint || endpoint == 'didcomm:transport/queue') {
       throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
     }
@@ -293,14 +291,14 @@ class mockMobileOutBoundTransporter implements OutboundTransporter {
       })
       const data = await response.text()
       if (data) {
-        testLogger.debug(`Response received:\n ${response}`)
+        logger.debug(`Response received:\n ${response}`)
         const wireMessage = JSON.parse(data)
         this.agent.receiveMessage(wireMessage)
       } else {
-        testLogger.debug(`No response received.`)
+        logger.debug(`No response received.`)
       }
     } catch (e) {
-      testLogger.debug('error sending message', e)
+      logger.debug('error sending message', e)
       throw e
     }
   }
@@ -323,7 +321,7 @@ class mockMobileInboundTransporter implements InboundTransporter {
 
   private async pollDownloadMessages(recipient: Agent, run = this.run, connection_?: ConnectionRecord) {
     setInterval(async () => {
-      if (this.run) {
+      if (run) {
         const connection = connection_ ?? (await recipient.mediationRecipient.getDefaultMediatorConnection())
         if (connection?.state == 'complete') {
           await recipient.mediationRecipient.downloadMessages(connection)
@@ -344,7 +342,7 @@ export class WsInboundTransporter implements InboundTransporter {
   }
 
   public async start(agent: Agent) {
-    this.socketServer.on('connection', (socket: any, _: Express.Request, socketId: string) => {
+    this.socketServer.on('connection', (socket: WebSocket, _: Express.Request, socketId: string) => {
       if (!this.socketIds[socketId]) {
         logger.debug(`Saving new socket with id ${socketId}.`)
         this.socketIds[socketId] = socket
@@ -373,7 +371,7 @@ export class WsInboundTransporter implements InboundTransporter {
   }
 
   private listenOnWebSocketMessages(agent: Agent, socket: WebSocket) {
-    socket.addEventListener('message', async (event: any) => {
+    socket.addEventListener('message', async (event): Promise<void> => {
       logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
       // @ts-expect-error Property 'dispatchEvent' is missing in type WebSocket imported from 'ws' module but required in type 'WebSocket'.
       const session = new WebSocketTransportSession(socket)

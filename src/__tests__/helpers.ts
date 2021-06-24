@@ -1,36 +1,38 @@
-import cors from 'cors'
-import express, { Express } from 'express'
-import { Server } from 'http'
+import type { Agent, InboundTransporter, OutboundTransporter } from '..'
+import type { BasicMessage, BasicMessageReceivedEvent } from '../modules/basic-messages'
+import type { ConnectionStorageProps } from '../modules/connections'
+import type { CredentialOfferTemplate, CredentialRecord, CredentialStateChangedEvent } from '../modules/credentials'
+import type { CredentialDefinitionTemplate, SchemaTemplate } from '../modules/ledger'
+import type { ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
+import type { MediationRecord, MediationState, MediationStateChangedEvent } from '../modules/routing'
+import type { MessageRepository } from '../storage/MessageRepository'
+import type { InitConfig, OutboundPackage, WireMessage } from '../types'
+import type { Express } from 'express'
+import type { Server } from 'http'
 import type { CredDef, Did, Schema } from 'indy-sdk'
+import type { Subject } from 'rxjs'
+
+import cors from 'cors'
+import express from 'express'
 import indy from 'indy-sdk'
 import fetch from 'node-fetch'
 import path from 'path'
-import { Subject } from 'rxjs'
-import { Agent, InboundTransporter, OutboundTransporter } from '..'
-import { BasicMessage, BasicMessageEventTypes, BasicMessageReceivedEvent } from '../modules/basic-messages'
+
+import { BasicMessageEventTypes } from '../modules/basic-messages'
 import {
   ConnectionInvitationMessage,
   ConnectionRecord,
   ConnectionRole,
   ConnectionState,
-  ConnectionStorageProps,
   DidCommService,
   DidDoc,
 } from '../modules/connections'
-import {
-  CredentialEventTypes,
-  CredentialOfferTemplate,
-  CredentialRecord,
-  CredentialState,
-  CredentialStateChangedEvent,
-} from '../modules/credentials'
-import { CredentialDefinitionTemplate, SchemaTemplate } from '../modules/ledger'
-import { ProofEventTypes, ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
-import { MediationRecord, MediationState, MediationStateChangedEvent, RoutingEventTypes } from '../modules/routing'
-import { NodeFileSystem } from '../storage/fs/NodeFileSystem'
+import { CredentialEventTypes, CredentialState } from '../modules/credentials'
+import { ProofEventTypes } from '../modules/proofs'
+import { RoutingEventTypes } from '../modules/routing'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
-import { MessageRepository } from '../storage/MessageRepository'
-import { InitConfig, OutboundPackage, WireMessage } from '../types'
+import { NodeFileSystem } from '../storage/fs/NodeFileSystem'
+
 import testLogger from './logger'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
@@ -353,7 +355,7 @@ export class mockOutBoundTransporter implements OutboundTransporter {
   }
   public supportedSchemes = ['http', 'dicomm', 'https']
   public async sendMessage(outboundPackage: OutboundPackage) {
-    const { connection, payload, endpoint, responseRequested } = outboundPackage
+    const { payload, endpoint } = outboundPackage
     if (!endpoint || endpoint == 'didcomm:transport/queue') {
       throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
     }
@@ -397,13 +399,16 @@ export class MockMediatorOutboundTransporter implements OutboundTransporter {
   }
   public supportedSchemes = ['http', 'dicomm', 'https']
   public async sendMessage(outboundPackage: OutboundPackage) {
-    const { connection, payload, endpoint, responseRequested } = outboundPackage
+    const { connection, payload, endpoint } = outboundPackage
     if (!endpoint) {
       throw new Error('Missing endpoint')
     }
     if (endpoint == 'didcomm:transport/queue' && this.messageRepository) {
       testLogger.debug('Storing message for queue: ', { connection, payload })
-      this.agent.mediator.queueMessage(connection.theirKey!, payload)
+      connection.assertReady()
+      if (connection && connection.theirKey) {
+        this.agent.mediator.queueMessage(connection.theirKey, payload)
+      }
       return
     }
     try {

@@ -1,24 +1,24 @@
-import express, { Express } from 'express'
-import fetch from 'node-fetch'
-import cors from 'cors'
-import {
-  Agent,
+import type {
   InboundTransporter,
   OutboundTransporter,
   OutboundPackage,
   InitConfig,
   ConnectionStateChangedEvent,
-  LogLevel,
-  ConnectionEventTypes,
-  RoutingEventTypes,
   MediationStateChangedEvent,
 } from '../src'
-import testLogger, { TestLogger } from '../src/__tests__/logger'
+import type { MessageRepository } from '../src/storage/MessageRepository'
+import type { Express } from 'express'
+
+import cors from 'cors'
+import express from 'express'
 import indy from 'indy-sdk'
+import fetch from 'node-fetch'
 import { resolve } from 'path'
+
+import { Agent, LogLevel, ConnectionEventTypes, RoutingEventTypes } from '../src'
+import testLogger, { TestLogger } from '../src/__tests__/logger'
 import { MediationState } from '../src/modules/routing/'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
-import { MessageRepository } from '../src/storage/MessageRepository'
 import { NodeFileSystem } from '../src/storage/fs/NodeFileSystem'
 
 class HttpInboundTransporter implements InboundTransporter {
@@ -77,7 +77,9 @@ export class HttpOutboundTransporter implements OutboundTransporter {
     try {
       if (endpoint == 'didcomm:transport/queue' && this.messageRepository) {
         testLogger.debug('Storing message for queue: ', { connection, payload })
-        this.messageRepository.save(connection.theirKey!, payload)
+        if (connection && connection.theirKey) {
+          this.messageRepository.save(connection.theirKey, payload)
+        }
         return
       }
 

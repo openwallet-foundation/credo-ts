@@ -1,6 +1,7 @@
-import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { RecipientService } from '..'
+import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+
 import { MediationDenyMessage } from '../messages'
-import { RecipientService } from '..'
 
 export class MediationDenyHandler implements Handler {
   private recipientService: RecipientService

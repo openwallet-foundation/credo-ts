@@ -1,3 +1,4 @@
+import type { TrustPingMessageOptions } from './messages'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Verkey } from 'indy-sdk'
 
@@ -7,6 +8,9 @@ import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
+import { DID_COMM_TRANSPORT_QUEUE } from '../../constants'
+import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
+import { RecipientService } from '../routing/services/RecipientService'
 
 import {
   ConnectionRequestHandler,
@@ -15,12 +19,9 @@ import {
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
 } from './handlers'
-import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { DID_COMM_TRANSPORT_QUEUE } from '../../constants'
 import { ConnectionInvitationMessage, TrustPingMessage } from './messages'
-import type { TrustPingMessageOptions } from './messages'
-import { ConnectionService, TrustPingService } from './services'
-import { RecipientService } from '../routing'
+import { ConnectionService } from './services/ConnectionService'
+import { TrustPingService } from './services/TrustPingService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ConnectionsModule {

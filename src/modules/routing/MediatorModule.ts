@@ -1,16 +1,18 @@
-import { Lifecycle, scoped } from 'tsyringe'
+import type { WireMessage } from '../../types'
 import type { ConnectionRecord } from '../connections/repository/ConnectionRecord'
 import type { MediationRecord } from './index'
 
+import { Lifecycle, scoped } from 'tsyringe'
+
+import { Dispatcher } from '../../agent/Dispatcher'
+import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import { Dispatcher } from '../../agent/Dispatcher'
+
 import { KeylistUpdateHandler, ForwardHandler, BatchPickupHandler, BatchHandler } from './handlers'
+import { MediationRequestHandler } from './handlers/MediationRequestHandler'
 import { MediatorService } from './services/MediatorService'
 import { MessagePickupService } from './services/MessagePickupService'
-import { MediationRequestHandler } from './handlers/MediationRequestHandler'
-import { EventEmitter } from '../../agent/EventEmitter'
-import { WireMessage } from '../../types'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MediatorModule {
@@ -32,7 +34,7 @@ export class MediatorModule {
     this.eventEmitter = eventEmitter
     this.registerHandlers(dispatcher)
   }
-
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   public async init(config: { autoAcceptMediationRequests: boolean }) {
     // autoAcceptMediationRequests
     //             "automatically granting to everyone asking, rather than enabling the feature altogether"
@@ -44,6 +46,7 @@ export class MediatorModule {
     //  this.autoAcceptMediationRequests = config.autoAcceptMediationRequests
     //}
   }
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   public async grantRequestedMediation(connectionRecord: ConnectionRecord, mediationRecord: MediationRecord) {
     const grantMessage = await this.mediatorService.createGrantMediationMessage(mediationRecord)

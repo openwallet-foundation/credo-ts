@@ -16,6 +16,7 @@ import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
+import { MediatorModule, RecipientModule } from '../modules/routing'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
 import { IndyWallet } from '../wallet/IndyWallet'
@@ -25,7 +26,6 @@ import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes } from './Events'
 import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
-import { MediatorModule, RecipientModule } from '../modules/routing'
 
 export class Agent {
   protected agentConfig: AgentConfig
@@ -141,7 +141,7 @@ export class Agent {
     await this.mediationRecipient.init(this.connections)
     const defaultMediator = await this.mediationRecipient.getDefaultMediatorConnection()
     if (defaultMediator) {
-      const message = this.connections.pingMediator(defaultMediator)
+      this.connections.pingMediator(defaultMediator)
     }
     this._isInitialized = true
   }

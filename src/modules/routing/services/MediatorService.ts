@@ -1,8 +1,24 @@
-import { inject, Lifecycle, scoped } from 'tsyringe'
-import { Verkey } from 'indy-sdk'
+import type { BaseMessage } from '../../../agent/BaseMessage'
+import type { HandlerInboundMessage } from '../../../agent/Handler'
+import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { ConnectionRecord } from '../../connections'
+import type { MediationStateChangedEvent } from '../RoutingEvents'
+import type { ForwardHandler } from '../handlers'
+import type { MediationRecord } from '../repository/MediationRecord'
+import type { Verkey } from 'indy-sdk'
 
-import { createRecord } from './RoutingService'
-import { MediationRecord } from '../repository/MediationRecord'
+import { inject, Lifecycle, scoped } from 'tsyringe'
+
+import { AgentConfig } from '../../../agent/AgentConfig'
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { MessageSender } from '../../../agent/MessageSender'
+import { createOutboundMessage } from '../../../agent/helpers'
+import { InjectionSymbols } from '../../../constants'
+import { AriesFrameworkError } from '../../../error'
+import { uuid } from '../../../utils/uuid'
+import { Wallet } from '../../../wallet/Wallet'
+import { ConnectionService } from '../../connections'
+import { RoutingEventTypes } from '../RoutingEvents'
 import {
   KeylistUpdateMessage,
   KeylistUpdateAction,
@@ -14,21 +30,9 @@ import {
 } from '../messages'
 import { MediationRole } from '../models/MediationRole'
 import { MediationState } from '../models/MediationState'
-import { AgentConfig } from '../../../agent/AgentConfig'
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import { ConnectionRecord, ConnectionService } from '../../connections'
-import { BaseMessage } from '../../../agent/BaseMessage'
-import { Wallet } from '../../../wallet/Wallet'
-import { HandlerInboundMessage } from '../../../agent/Handler'
-import { ForwardHandler } from '../handlers'
-import { uuid } from '../../../utils/uuid'
-import { MediationStateChangedEvent, RoutingEventTypes } from '../RoutingEvents'
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { AriesFrameworkError } from '../../../error'
 import { MediationRepository } from '../repository/MediationRepository'
-import { createOutboundMessage } from '../../../agent/helpers'
-import { MessageSender } from '../../../agent/MessageSender'
-import { InjectionSymbols } from '../../../constants'
+
+import { createRecord } from './RoutingService'
 
 export interface RoutingTable {
   [recipientKey: string]: ConnectionRecord | undefined
@@ -169,7 +173,9 @@ export class MediatorService {
 
   public async createGrantMediationMessage(mediation: MediationRecord): Promise<MediationGrantMessage> {
     if (this.routingKeys.length === 0) {
-      const [did, verkey] = await this.wallet.createDid()
+      /* eslint-disable @typescript-eslint/no-unused-vars */
+      const [_, verkey] = await this.wallet.createDid()
+      /* eslint-enable @typescript-eslint/no-unused-vars */
       this.routingKeys = [verkey]
     }
     mediation.state = MediationState.Granted

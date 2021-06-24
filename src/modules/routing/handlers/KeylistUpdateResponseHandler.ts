@@ -1,7 +1,7 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { RecipientService } from '../services'
 
 import { KeylistUpdateResponseMessage } from '../messages'
-import { RecipientService } from '../services'
 
 export class KeylistUpdateResponseHandler implements Handler {
   public recipientService: RecipientService

@@ -1,4 +1,8 @@
+import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { KeylistUpdatedEvent, MediationRecord } from '../../../modules/routing'
 import type { AckMessage } from '../../common'
+import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionTags } from '../repository/ConnectionRecord'
 import type { Did, Verkey } from 'indy-sdk'
 
@@ -6,9 +10,19 @@ import { validateOrReject } from 'class-validator'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { MessageSender } from '../../../agent/MessageSender'
+import { createOutboundMessage } from '../../../agent/helpers'
 import { InjectionSymbols } from '../../../constants'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
+import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
+import { AriesFrameworkError } from '../../../error'
+import { RoutingEventTypes } from '../../../modules/routing/RoutingEvents'
+import { waitForEvent } from '../../../modules/routing/services/RoutingService'
+import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { Wallet } from '../../../wallet/Wallet'
+import { KeylistUpdate, KeylistUpdateAction, KeylistUpdateMessage } from '../../routing/messages/KeylistUpdatedMessage'
+import { ConnectionEventTypes } from '../ConnectionEvents'
 import {
   ConnectionInvitationMessage,
   ConnectionRequestMessage,
@@ -26,18 +40,8 @@ import {
   DidCommService,
   IndyAgentService,
 } from '../models'
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { ConnectionEventTypes, ConnectionStateChangedEvent } from '../ConnectionEvents'
-import { AriesFrameworkError } from '../../../error'
-import { KeylistUpdatedEvent, MediationRecord, RoutingEventTypes, waitForEvent } from '../../../modules/routing'
-import { MessageSender } from '../../../agent/MessageSender'
-import { createOutboundMessage } from '../../../agent/helpers'
-import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
-import { KeylistUpdate, KeylistUpdateAction, KeylistUpdateMessage } from '../../routing/messages/KeylistUpdatedMessage'
-import { ConnectionRepository, ConnectionRecord } from '../index'
+import { ConnectionRecord } from '../repository/ConnectionRecord'
+import { ConnectionRepository } from '../repository/ConnectionRepository'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ConnectionService {

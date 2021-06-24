@@ -1,12 +1,12 @@
+import type { InboundConnection, WireMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
-import type{ MessageRepository } from '../../../storage/MessageRepository'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
-import { InboundConnection, WireMessage } from '../../../types'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
+import { MessageRepository } from '../../../storage/MessageRepository'
 import { BatchMessage, BatchMessageMessage, BatchPickupMessage } from '../messages'
 
 @scoped(Lifecycle.ContainerScoped)

@@ -1,8 +1,12 @@
 import type { Wallet } from '../../../wallet/Wallet'
 
 import { getBaseConfig, getMockConnection, mockFunction } from '../../../__tests__/helpers'
+import testLogger from '../../../__tests__/logger'
 import { AgentConfig } from '../../../agent/AgentConfig'
+import { EnvelopeService } from '../../../agent/EnvelopeService'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { MessageSender } from '../../../agent/MessageSender'
+import { TransportService } from '../../../agent/TransportService'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
@@ -20,12 +24,6 @@ import { Connection, ConnectionState, ConnectionRole, DidDoc, DidCommService } f
 import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
 import { ConnectionService } from '../services/ConnectionService'
-import { OutboundTransporter, OutboundPackage } from '../../..'
-import { EnvelopeService } from '../../../agent/EnvelopeService'
-import { MessageSender } from '../../../agent/MessageSender'
-import { TransportService } from '../../../agent/TransportService'
-import testLogger from '../../../__tests__/logger'
-import { MediationRecord, MediationState, MediationRole } from '../../routing'
 
 jest.mock('../repository/ConnectionRepository')
 jest.mock('../../routing/repository/MediationRepository')
@@ -41,21 +39,6 @@ describe('ConnectionService', () => {
   const initConfig = getBaseConfig('ConnectionServiceTest', {
     host: 'http://agent.com',
     port: 8080,
-  })
-
-  const mediatorRecord = new MediationRecord({
-    state: MediationState.Granted,
-    role: MediationRole.Recipient,
-    connectionId: 'fakeConnectionId',
-    recipientKeys: ['fakeRecipientKey'],
-    routingKeys: ['fakeRoutingKey'],
-    endpoint: 'fakeEndpoint',
-    tags: {
-      state: MediationState.Init,
-      role: MediationRole.Recipient,
-      connectionId: 'fakeConnectionId',
-      default: 'false',
-    },
   })
 
   let wallet: Wallet
@@ -80,7 +63,6 @@ describe('ConnectionService', () => {
     eventEmitter = new EventEmitter()
     connectionRepository = new ConnectionRepositoryMock()
     messageSender = new MessageSenderMock(new EnvelopeServiceMock(), new TransportServiceMock(), logger)
-    messageSender.setOutboundTransporter(new mockOutboundTransporter())
     connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, eventEmitter, messageSender)
   })
 
@@ -785,15 +767,3 @@ describe('ConnectionService', () => {
     })
   })
 })
-class mockOutboundTransporter implements OutboundTransporter {
-  public async start(): Promise<void> {
-    // No custom start logic required
-  }
-  public async stop(): Promise<void> {
-    // No custom stop logic required
-  }
-  public supportedSchemes = ['http', 'dicomm', 'https']
-  public async sendMessage(outboundPackage: OutboundPackage) {
-    const { connection, payload, endpoint, responseRequested } = outboundPackage
-  }
-}

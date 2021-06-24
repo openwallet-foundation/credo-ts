@@ -1,6 +1,8 @@
-import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import { MediatorService, KeylistUpdateMessage } from '../index'
+import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MediatorService } from '../services/MediatorService'
+
 import { AriesFrameworkError } from '../../../error'
+import { KeylistUpdateMessage } from '../messages'
 
 export class KeylistUpdateHandler implements Handler {
   private mediatorService: MediatorService

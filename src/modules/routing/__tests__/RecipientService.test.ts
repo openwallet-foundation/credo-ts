@@ -1,12 +1,14 @@
-import { MediationRecord, MediationRole, MediationState } from '..'
-import { RecipientService } from '../services/RecipientService'
+import type { Wallet } from '../../../wallet/Wallet'
+
 import { assert } from 'console'
-import { AgentConfig } from '../../../agent/AgentConfig'
-import { IndyWallet } from '../../../wallet/IndyWallet'
-import { Wallet } from '../../../wallet/Wallet'
+
+import { MediationRecord, MediationRole, MediationState } from '..'
 import { getBaseConfig } from '../../../__tests__/helpers'
-import { MediationRepository } from '../repository/MediationRepository'
+import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { IndyWallet } from '../../../wallet/IndyWallet'
+import { MediationRepository } from '../repository/MediationRepository'
+import { RecipientService } from '../services/RecipientService'
 
 jest.mock('../services/RecipientService')
 jest.mock('./../../../storage/Repository')
@@ -35,7 +37,7 @@ describe('Recipient', () => {
   beforeEach(() => {
     mediationRepository = new MediationRepositoryMock()
     eventEmitter = new EventEmitter()
-    recipientService = new RecipientService(mediationRepository, wallet, eventEmitter)
+    recipientService = new RecipientService(mediationRepository, eventEmitter)
   })
 
   describe('MediationRecord test', () => {

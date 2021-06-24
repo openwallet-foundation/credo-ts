@@ -1,5 +1,6 @@
-import { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import { MediatorService } from '../services'
+import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MediatorService } from '../services'
+
 import { ForwardMessage } from '../messages'
 
 export class ForwardHandler implements Handler {

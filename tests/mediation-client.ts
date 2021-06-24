@@ -1,26 +1,25 @@
-import express, { Express } from 'express'
-import fetch from 'node-fetch'
-import cors from 'cors'
-import {
-  Agent,
+import type {
   InboundTransporter,
   OutboundTransporter,
   OutboundPackage,
   InitConfig,
   ConnectionStateChangedEvent,
-  LogLevel,
-  ConnectionState,
   BasicMessageReceivedEvent,
   ConnectionRecord,
-  BasicMessageEventTypes,
-  ConnectionEventTypes,
 } from '../src'
-import testLogger, { TestLogger } from '../src/__tests__/logger'
+import type { MediationStateChangedEvent } from '../src/modules/routing/RoutingEvents'
+import type { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
+import type { Express } from 'express'
+
+import cors from 'cors'
+import express from 'express'
 import indy from 'indy-sdk'
+import fetch from 'node-fetch'
 import { resolve } from 'path'
-import { RoutingEventTypes, MediationStateChangedEvent } from '../src/modules/routing/RoutingEvents'
-import { MediationState } from '../src/'
-import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
+
+import { Agent, LogLevel, ConnectionState, BasicMessageEventTypes, ConnectionEventTypes, MediationState } from '../src'
+import testLogger, { TestLogger } from '../src/__tests__/logger'
+import { RoutingEventTypes } from '../src/modules/routing/RoutingEvents'
 import { NodeFileSystem } from '../src/storage/fs/NodeFileSystem'
 
 class HttpInboundTransporter implements InboundTransporter {
@@ -94,7 +93,9 @@ class HttpOutboundTransporter implements OutboundTransporter {
     try {
       if (endpoint == 'didcomm:transport/queue' && this.messageRepository) {
         testLogger.debug('Storing message for queue: ', { connection, payload })
-        this.messageRepository.save(connection.theirKey!, payload)
+        if (connection && connection.theirKey) {
+          this.messageRepository.save(connection.theirKey, payload)
+        }
         return
       }
 
@@ -136,7 +137,7 @@ const agentConfig: InitConfig = {
   host: process.env.AGENT_HOST,
   port: process.env.AGENT_PORT || 3001,
   poolName: 'local-js',
-  genesisPath: resolve(process.env.GENESIS_TXN_PATH!),
+  genesisPath: resolve(process.env.GENESIS_TXN_PATH ?? '/Path/To/no-were'),
   endpoint: process.env.AGENT_ENDPOINT,
   label: process.env.AGENT_LABEL || '',
   walletConfig: { id: process.env.WALLET_NAME || '' },

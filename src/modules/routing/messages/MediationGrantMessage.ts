@@ -1,8 +1,11 @@
 import type { Verkey } from 'indy-sdk'
-import { Equals, IsArray, IsNotEmpty, IsString } from 'class-validator'
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { RoutingMessageType as MessageType } from './RoutingMessageType'
+
 import { Expose } from 'class-transformer'
+import { Equals, IsArray, IsNotEmpty, IsString } from 'class-validator'
+
+import { AgentMessage } from '../../../agent/AgentMessage'
+
+import { RoutingMessageType as MessageType } from './RoutingMessageType'
 
 export interface MediationGrantMessageOptions {
   id: string
