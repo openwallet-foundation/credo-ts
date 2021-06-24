@@ -27,12 +27,12 @@ describe('agents', () => {
     aliceAgent = new Agent(aliceConfig)
     aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages, bobMessages))
     aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(bobMessages))
-    expect(await aliceAgent.init()).toReturn()
+    await aliceAgent.init()
 
     bobAgent = new Agent(bobConfig)
     bobAgent.setInboundTransporter(new SubjectInboundTransporter(bobMessages, aliceMessages))
     bobAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages))
-    expect(await bobAgent.init()).toReturn()
+    await bobAgent.init()
 
     const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection()
     const bobConnectionAtBobAlice = await bobAgent.connections.receiveInvitation(aliceConnectionAtAliceBob.invitation)
@@ -44,7 +44,7 @@ describe('agents', () => {
     expect(bobConnection).toBeConnectedWith(aliceConnection)
 
     const message = 'hello, world'
-    expect(await aliceAgent.basicMessages.sendMessage(aliceConnection, message)).toReturn()
+    await aliceAgent.basicMessages.sendMessage(aliceConnection, message)
 
     const basicMessage = await waitForBasicMessage(bobAgent, {
       content: message,
