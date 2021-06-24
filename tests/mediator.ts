@@ -123,7 +123,7 @@ app.get('/api/routes', async (req, res) => {
 })
 
 app.listen(PORT, async () => {
-  await agent.init()
+  await agent.initialize()
   messageReceiver.start(agent)
   testLogger.info(`Application started on port ${PORT}`)
 })

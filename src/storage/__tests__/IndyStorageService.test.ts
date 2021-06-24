@@ -13,14 +13,14 @@ describe('IndyStorageService', () => {
   let storageService: IndyStorageService<TestRecord>
 
   beforeEach(async () => {
-    wallet = new IndyWallet(new AgentConfig(getBaseConfig('IndyStorageServiceTest')))
-    await wallet.init()
+    const config = new AgentConfig(getBaseConfig('IndyStorageServiceTest'))
+    wallet = new IndyWallet(config)
+    await wallet.initialize(config.walletConfig!, config.walletCredentials!)
     storageService = new IndyStorageService<TestRecord>(wallet)
   })
 
   afterEach(async () => {
-    await wallet.close()
-    await wallet.delete()
+    await wallet.deleteWallet()
   })
 
   const insertRecord = async ({ id, tags }: { id?: string; tags?: TagsBase }) => {

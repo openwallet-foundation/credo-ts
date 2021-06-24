@@ -1,6 +1,7 @@
 import { Agent, HttpOutboundTransporter, PollingInboundTransporter } from '../../src'
-import { getBaseConfig, waitForBasicMessage } from '../../src/__tests__/helpers'
+import { closeAndDeleteWallet, getBaseConfig, waitForBasicMessage } from '../../src/__tests__/helpers'
 import logger from '../../src/__tests__/logger'
+import { sleep } from '../../src/utils/sleep'
 import { get } from '../http'
 
 const aliceConfig = getBaseConfig('E2E Alice', { mediatorUrl: 'http://localhost:3001' })
@@ -16,22 +17,22 @@ describe('with mediator', () => {
     ;(bobAgent.inboundTransporter as PollingInboundTransporter).stop = true
 
     // Wait for messages to flush out
-    await new Promise((r) => setTimeout(r, 1000))
+    await sleep(1000)
 
-    await aliceAgent.closeAndDeleteWallet()
-    await bobAgent.closeAndDeleteWallet()
+    await closeAndDeleteWallet(aliceAgent)
+    await closeAndDeleteWallet(bobAgent)
   })
 
   test('Alice and Bob make a connection with mediator', async () => {
     aliceAgent = new Agent(aliceConfig)
     aliceAgent.setInboundTransporter(new PollingInboundTransporter())
     aliceAgent.setOutboundTransporter(new HttpOutboundTransporter(aliceAgent))
-    await aliceAgent.init()
+    await aliceAgent.initialize()
 
     bobAgent = new Agent(bobConfig)
     bobAgent.setInboundTransporter(new PollingInboundTransporter())
     bobAgent.setOutboundTransporter(new HttpOutboundTransporter(bobAgent))
-    await bobAgent.init()
+    await bobAgent.initialize()
 
     const aliceInbound = aliceAgent.routing.getInboundConnection()
     const aliceInboundConnection = aliceInbound?.connection

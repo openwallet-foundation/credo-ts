@@ -108,7 +108,7 @@ app.get('/api/routes', async (req, res) => {
 })
 
 const server = app.listen(PORT, async () => {
-  await agent.init()
+  await agent.initialize()
   messageReceiver.start(agent)
   logger.info(`WebSockets application started on port ${PORT}`)
 })

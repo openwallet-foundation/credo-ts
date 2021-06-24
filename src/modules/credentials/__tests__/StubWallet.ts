@@ -2,23 +2,35 @@
 
 import type { UnpackedMessageContext } from '../../../types'
 import type { Wallet } from '../../../wallet/Wallet'
-import type { DidConfig, WalletRecordOptions, WalletRecord, WalletQuery, LedgerRequest } from 'indy-sdk'
+import type {
+  DidConfig,
+  WalletRecordOptions,
+  WalletRecord,
+  WalletQuery,
+  LedgerRequest,
+  WalletConfig,
+  WalletCredentials,
+} from 'indy-sdk'
 
 export class StubWallet implements Wallet {
+  public get isInitialized() {
+    return true
+  }
+
   public get walletHandle() {
     return 0
   }
   public get publicDid() {
     return undefined
   }
-  public init(): Promise<void> {
+  public initialize(walletConfig: WalletConfig, walletCredentials: WalletCredentials): Promise<void> {
     return Promise.resolve()
   }
-  public close(): Promise<void> {
+  public closeWallet(): Promise<void> {
     throw new Error('Method not implemented.')
   }
 
-  public delete(): Promise<void> {
+  public deleteWallet(): Promise<void> {
     throw new Error('Method not implemented.')
   }
   public initPublicDid(didConfig: DidConfig): Promise<void> {

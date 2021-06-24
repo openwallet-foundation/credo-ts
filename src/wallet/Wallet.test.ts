@@ -4,10 +4,11 @@ import { AgentConfig } from '../agent/AgentConfig'
 import { IndyWallet } from './IndyWallet'
 
 describe('Wallet', () => {
-  const wallet = new IndyWallet(new AgentConfig(getBaseConfig('WalletTest')))
+  const config = new AgentConfig(getBaseConfig('WalletTest'))
+  const wallet = new IndyWallet(config)
 
   test('initialize public did', async () => {
-    await wallet.init()
+    await wallet.initialize(config.walletConfig!, config.walletCredentials!)
 
     await wallet.initPublicDid({ seed: '00000000000000000000000Forward01' })
 
@@ -18,7 +19,6 @@ describe('Wallet', () => {
   })
 
   afterEach(async () => {
-    await wallet.close()
-    await wallet.delete()
+    await wallet.deleteWallet()
   })
 })

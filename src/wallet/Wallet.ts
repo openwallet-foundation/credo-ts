@@ -8,14 +8,18 @@ import type {
   WalletQuery,
   WalletSearchOptions,
   LedgerRequest,
+  WalletConfig,
+  WalletCredentials,
 } from 'indy-sdk'
 
 export interface Wallet {
   publicDid: DidInfo | undefined
+  isInitialized: boolean
 
-  init(): Promise<void>
-  close(): Promise<void>
-  delete(): Promise<void>
+  initialize(walletConfig: WalletConfig, walletCredentials: WalletCredentials): Promise<void>
+  closeWallet(): Promise<void>
+  deleteWallet(): Promise<void>
+
   initPublicDid(didConfig: DidConfig): Promise<void>
   createDid(didConfig?: DidConfig): Promise<[Did, Verkey]>
   pack(payload: Record<string, unknown>, recipientKeys: Verkey[], senderVk: Verkey | null): Promise<JsonWebKey>

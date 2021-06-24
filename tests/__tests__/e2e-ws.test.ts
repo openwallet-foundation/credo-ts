@@ -1,8 +1,9 @@
 import type { InboundTransporter } from '../../src'
 
 import { Agent, WsOutboundTransporter } from '../../src'
-import { getBaseConfig, waitForBasicMessage } from '../../src/__tests__/helpers'
+import { closeAndDeleteWallet, getBaseConfig, waitForBasicMessage } from '../../src/__tests__/helpers'
 import testLogger from '../../src/__tests__/logger'
+import { sleep } from '../../src/utils/sleep'
 import { get } from '../http'
 
 const logger = testLogger
@@ -20,22 +21,22 @@ describe('websockets with mediator', () => {
     await bobAgent.outboundTransporter?.stop()
 
     // Wait for messages to flush out
-    await new Promise((r) => setTimeout(r, 1000))
+    await sleep(1000)
 
-    await aliceAgent.closeAndDeleteWallet()
-    await bobAgent.closeAndDeleteWallet()
+    await closeAndDeleteWallet(aliceAgent)
+    await closeAndDeleteWallet(bobAgent)
   })
 
   test('Alice and Bob make a connection with mediator', async () => {
     aliceAgent = new Agent(aliceConfig)
     aliceAgent.setInboundTransporter(new WsInboundTransporter())
     aliceAgent.setOutboundTransporter(new WsOutboundTransporter(aliceAgent))
-    await aliceAgent.init()
+    await aliceAgent.initialize()
 
     bobAgent = new Agent(bobConfig)
     bobAgent.setInboundTransporter(new WsInboundTransporter())
     bobAgent.setOutboundTransporter(new WsOutboundTransporter(bobAgent))
-    await bobAgent.init()
+    await bobAgent.initialize()
 
     const aliceInbound = aliceAgent.routing.getInboundConnection()
     const aliceInboundConnection = aliceInbound?.connection

@@ -13,6 +13,7 @@ import { concatMap } from 'rxjs/operators'
 import { container as baseContainer } from 'tsyringe'
 
 import { InjectionSymbols } from '../constants'
+import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
@@ -22,6 +23,7 @@ import { RoutingModule } from '../modules/routing/RoutingModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
 import { IndyWallet } from '../wallet/IndyWallet'
+import { WalletError } from '../wallet/error'
 
 import { AgentConfig } from './AgentConfig'
 import { EventEmitter } from './EventEmitter'
@@ -82,6 +84,14 @@ export class Agent {
       logger: initialConfig.logger != undefined,
     })
 
+    if (!this.agentConfig.walletConfig || !this.agentConfig.walletCredentials) {
+      this.logger.warn(
+        'Wallet config and/or credentials have not been set on the agent config. ' +
+          'Make sure to initialize the wallet yourself before initializing the agent, ' +
+          'or provide the required wallet configuration in the agent constructor'
+      )
+    }
+
     // Resolve instances after everything is registered
     this.eventEmitter = this.container.resolve(EventEmitter)
     this.messageSender = this.container.resolve(MessageSender)
@@ -120,13 +130,28 @@ export class Agent {
   }
 
   public get isInitialized() {
-    return this._isInitialized
+    return this._isInitialized && this.wallet.isInitialized
   }
 
-  public async init() {
-    await this.wallet.init()
+  public async initialize() {
+    const { publicDidSeed, walletConfig, walletCredentials } = this.agentConfig
 
-    const { publicDidSeed } = this.agentConfig
+    if (this._isInitialized) {
+      throw new AriesFrameworkError(
+        'Agent already initialized. Currently it is not supported to re-initialize an already initialized agent.'
+      )
+    }
+
+    if (!this.wallet.isInitialized && walletConfig && walletCredentials) {
+      await this.wallet.initialize(walletConfig, walletCredentials)
+    } else if (!this.wallet.isInitialized) {
+      throw new WalletError(
+        'Wallet config and/or credentials have not been set on the agent config. ' +
+          'Make sure to initialize the wallet yourself before initializing the agent, ' +
+          'or provide the required wallet configuration in the agent constructor'
+      )
+    }
+
     if (publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
       await this.wallet.initPublicDid({ seed: publicDidSeed })
@@ -149,11 +174,6 @@ export class Agent {
 
   public async receiveMessage(inboundPackedMessage: unknown, session?: TransportSession) {
     return await this.messageReceiver.receiveMessage(inboundPackedMessage, session)
-  }
-
-  public async closeAndDeleteWallet() {
-    await this.wallet.close()
-    await this.wallet.delete()
   }
 
   public get injectionContainer() {

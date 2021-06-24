@@ -39,12 +39,11 @@ describe('ConnectionService', () => {
   beforeAll(async () => {
     agentConfig = new AgentConfig(initConfig)
     wallet = new IndyWallet(agentConfig)
-    await wallet.init()
+    await wallet.initialize(agentConfig.walletConfig!, agentConfig.walletCredentials!)
   })
 
   afterAll(async () => {
-    await wallet.close()
-    await wallet.delete()
+    await wallet.deleteWallet()
   })
 
   beforeEach(() => {
