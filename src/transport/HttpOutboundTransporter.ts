@@ -63,7 +63,7 @@ export class HttpOutboundTransporter implements OutboundTransporter {
       const action = await Promise.race([
         response,
         new Promise((accept) => {
-          setTimeout(() => accept(false), 150000)
+          setTimeout(() => accept(false), 15000)
         }),
       ])
       const responseMessage = action ? await (action as Response).text() : false
