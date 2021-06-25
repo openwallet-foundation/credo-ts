@@ -79,7 +79,7 @@ export class WsReactNativeOutboundTransporter implements OutboundTransporter {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
-    const { connection, payload, endpoint, responseRequested } = outboundPackage
+    const { payload } = outboundPackage
 
     this.logger.debug(
       `Sending outbound message to connection ${outboundPackage.connection.id}`,

@@ -151,7 +151,7 @@ export class Agent {
   public get publicDid() {
     return this.wallet.publicDid
   }
-  public async preparePackMessage(outboundMessage: OutboundMessage){
+  public async preparePackMessage(outboundMessage: OutboundMessage) {
     return await this.messageSender.PatrickPackedMessage(outboundMessage)
   }
   public async getMediatorUrl() {
