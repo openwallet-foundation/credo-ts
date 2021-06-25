@@ -180,7 +180,6 @@ export class ConnectionsModule {
 
   public async preparePing(connection: ConnectionRecord, options?: TrustPingMessageOptions) {
     const message = new TrustPingMessage(options)
-    message.responseRequested = false
     const outboundMessage = createOutboundMessage(connection, message)
     outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
     return outboundMessage
