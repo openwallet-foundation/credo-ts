@@ -30,7 +30,7 @@ export class RecipientModule {
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
-
+  
   public constructor(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
@@ -38,54 +38,57 @@ export class RecipientModule {
     connectionService: ConnectionService,
     messageSender: MessageSender,
     eventEmitter: EventEmitter
-  ) {
-    this.agentConfig = agentConfig
-    this.connectionService = connectionService
-    this.recipientService = recipientService
-    this.messageSender = messageSender
-    this.eventEmitter = eventEmitter
-    this.registerHandlers(dispatcher)
-  }
-
-  public async init(connections: ConnectionsModule) {
-    this.recipientService.init()
-    if (this.agentConfig.mediatorConnectionsInvite) {
-      /* --------------------------------
-      | Connect to mediator through provided invitation
-      | and send mediation request and set as default mediator.
-      */
-      // Check if inviation was provided in config
-      // Assumption: processInvitation is a URL-encoded invitation
-      let connectionRecord = await connections.receiveInvitationFromUrl(this.agentConfig.mediatorConnectionsInvite, {
-        autoAcceptConnection: true,
-        alias: 'InitedMediator', // TODO come up with a better name for this
-      })
-      connectionRecord = await connections.returnWhenIsConnected(connectionRecord.id)
-      const mediationRecord = await this.requestAndAwaitGrant(connectionRecord, 60000) // TODO: put timeout as a config parameter
-      await this.recipientService.setDefaultMediator(mediationRecord)
+    ) {
+      this.agentConfig = agentConfig
+      this.connectionService = connectionService
+      this.recipientService = recipientService
+      this.messageSender = messageSender
+      this.eventEmitter = eventEmitter
+      this.registerHandlers(dispatcher)
     }
-    if (this.agentConfig.defaultMediatorId) {
-      /*
-      | Set the default mediator by ID
-      */
-      const mediatorRecord = await this.recipientService.findById(this.agentConfig.defaultMediatorId)
-      if (mediatorRecord) {
-        this.recipientService.setDefaultMediator(mediatorRecord)
-      } else {
-        this.agentConfig.logger.error('Mediator record not found from config')
-        // TODO: Handle error properly - not found condition
+    
+    public async init(connections: ConnectionsModule) {
+      this.recipientService.init()
+      if (this.agentConfig.mediatorConnectionsInvite) {
+        /* --------------------------------
+        | Connect to mediator through provided invitation
+        | and send mediation request and set as default mediator.
+        */
+       // Check if inviation was provided in config
+       // Assumption: processInvitation is a URL-encoded invitation
+       let connectionRecord = await connections.receiveInvitationFromUrl(this.agentConfig.mediatorConnectionsInvite, {
+         autoAcceptConnection: true,
+         alias: 'InitedMediator', // TODO come up with a better name for this
+        })
+        connectionRecord = await connections.returnWhenIsConnected(connectionRecord.id)
+        const mediationRecord = await this.requestAndAwaitGrant(connectionRecord, 60000) // TODO: put timeout as a config parameter
+        await this.recipientService.setDefaultMediator(mediationRecord)
+      }
+      if (this.agentConfig.defaultMediatorId) {
+        /*
+        | Set the default mediator by ID
+        */
+       const mediatorRecord = await this.recipientService.findById(this.agentConfig.defaultMediatorId)
+       if (mediatorRecord) {
+         this.recipientService.setDefaultMediator(mediatorRecord)
+        } else {
+          this.agentConfig.logger.error('Mediator record not found from config')
+          // TODO: Handle error properly - not found condition
+        }
+      }
+      if (this.agentConfig.clearDefaultMediator) {
+        /*
+        | Clear the stored default mediator
+        */
+       this.recipientService.clearDefaultMediator()
       }
     }
-    if (this.agentConfig.clearDefaultMediator) {
-      /*
-      | Clear the stored default mediator
-      */
-      this.recipientService.clearDefaultMediator()
+    
+    public async discoverMediation() {
+      return this.recipientService.discoverMediation()
     }
-  }
-
-  public async downloadMessages(mediatorConnection: ConnectionRecord) {
-    let connection = mediatorConnection ?? (await this.getDefaultMediatorConnection())
+    public async downloadMessages(mediatorConnection: ConnectionRecord) {
+      let connection = mediatorConnection ?? (await this.getDefaultMediatorConnection())
     connection = assertConnection(connection, 'connection not found for default mediator')
     const batchPickupMessage = new BatchPickupMessage({ batchSize: 10 })
     const outboundMessage = createOutboundMessage(connection, batchPickupMessage)

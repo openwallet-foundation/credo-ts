@@ -70,7 +70,7 @@ export class HttpOutboundTransporter implements OutboundTransporter {
 
       // TODO: do we just want to ignore messages that were
       // returned if we didn't request it?
-      if (responseMessage && responseRequested) {
+      if (responseMessage) {
         this.logger.debug(`Response received:\n ${response}`)
         const wireMessage = JSON.parse(responseMessage)
         this.agent.receiveMessage(wireMessage)

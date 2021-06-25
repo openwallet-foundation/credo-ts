@@ -174,11 +174,16 @@ export class ConnectionsModule {
   }
 
   public async pingMediator(connection: ConnectionRecord, options?: TrustPingMessageOptions): Promise<void> {
+    const outboundMessage = await this.preparePing(connection, options)
+    await this.messageSender.sendMessage(outboundMessage)
+  }
+  
+  public async preparePing(connection: ConnectionRecord, options?: TrustPingMessageOptions) {
     const message = new TrustPingMessage(options)
     message.responseRequested = false
     const outboundMessage = createOutboundMessage(connection, message)
     outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
-    await this.messageSender.sendMessage(outboundMessage)
+    return outboundMessage
   }
 
   public async returnWhenIsConnected(connectionId: string): Promise<ConnectionRecord> {
