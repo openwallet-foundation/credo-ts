@@ -177,7 +177,7 @@ export class ConnectionsModule {
     const outboundMessage = await this.preparePing(connection, options)
     await this.messageSender.sendMessage(outboundMessage)
   }
-  
+
   public async preparePing(connection: ConnectionRecord, options?: TrustPingMessageOptions) {
     const message = new TrustPingMessage(options)
     message.responseRequested = false

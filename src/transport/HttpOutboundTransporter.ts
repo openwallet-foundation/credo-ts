@@ -33,7 +33,7 @@ export class HttpOutboundTransporter implements OutboundTransporter {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
-    const { connection, payload, endpoint, responseRequested } = outboundPackage
+    const { connection, payload, endpoint } = outboundPackage
 
     if (!endpoint) {
       throw new Error(`Missing endpoint. I don't know how and where to send the message.`)

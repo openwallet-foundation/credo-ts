@@ -26,7 +26,6 @@ export class WsReactNativeOutboundTransporter implements OutboundTransporter {
   }
 
   public async start(): Promise<void> {
-
     this.ws.onopen = async () => {
       // connection opened
       const connection = await this.agent.mediationRecipient.getDefaultMediatorConnection()
@@ -43,7 +42,7 @@ export class WsReactNativeOutboundTransporter implements OutboundTransporter {
 
     this.ws.onmessage = (e) => {
       // a message was received
-      console.log(e.data)
+      this.logger.debug(e.data)
       const { topic, wallet_id, payload } = e.data
       try {
         if (payload) {
@@ -65,12 +64,12 @@ export class WsReactNativeOutboundTransporter implements OutboundTransporter {
 
     this.ws.onerror = (e) => {
       // an error occurred
-      console.warn(e)
+      this.logger.warn(JSON.stringify(e))
     }
 
     this.ws.onclose = (e) => {
       // connection closed
-      console.warn(e.code, e.reason)
+      this.logger.warn(JSON.stringify(e))
     }
   }
 
