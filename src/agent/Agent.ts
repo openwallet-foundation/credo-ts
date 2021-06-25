@@ -2,7 +2,7 @@ import type { Logger } from '../logger'
 import type { MessageRepository } from '../storage/MessageRepository'
 import type { InboundTransporter } from '../transport/InboundTransporter'
 import type { OutboundTransporter } from '../transport/OutboundTransporter'
-import type { InitConfig } from '../types'
+import type { InitConfig, OutboundMessage } from '../types'
 import type { Wallet } from '../wallet/Wallet'
 import type { AgentMessageReceivedEvent } from './Events'
 import type { TransportSession } from './TransportService'
@@ -151,7 +151,9 @@ export class Agent {
   public get publicDid() {
     return this.wallet.publicDid
   }
-
+  public async preparePackMessage(outboundMessage: OutboundMessage){
+    return await this.messageSender.PatrickPackedMessage(outboundMessage)
+  }
   public async getMediatorUrl() {
     const defaultMediator = await this.mediationRecipient.getDefaultMediator()
 
