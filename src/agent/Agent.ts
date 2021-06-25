@@ -152,7 +152,7 @@ export class Agent {
     return this.wallet.publicDid
   }
   public async preparePackMessage(outboundMessage: OutboundMessage) {
-    return await this.messageSender.PatrickPackedMessage(outboundMessage)
+    return await this.messageSender.packOutBoundMessage(outboundMessage)
   }
   public async getMediatorUrl() {
     const defaultMediator = await this.mediationRecipient.getDefaultMediator()
