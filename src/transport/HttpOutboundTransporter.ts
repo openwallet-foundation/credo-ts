@@ -39,10 +39,10 @@ export class HttpOutboundTransporter implements OutboundTransporter {
       throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
     }
 
-    this.logger.debug(
-      `Sending outbound message to connection ${outboundPackage.connection.id}`,
-      outboundPackage.payload
-    )
+    this.logger.debug(`Sending outbound message to endpoint '${outboundPackage.endpoint}'`, {
+      payload: outboundPackage.payload,
+      connectionId: outboundPackage.connection?.id,
+    })
 
     try {
       const response = await fetch(endpoint, {

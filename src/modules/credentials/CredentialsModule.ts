@@ -1,4 +1,4 @@
-import type { ProposeCredentialMessageOptions } from './messages'
+import type { OfferCredentialMessage, ProposeCredentialMessageOptions } from './messages'
 import type { CredentialRecord } from './repository/CredentialRecord'
 import type { CredentialOfferTemplate } from './services'
 
@@ -17,22 +17,26 @@ import {
   IssueCredentialHandler,
   CredentialAckHandler,
 } from './handlers'
+import { CredentialRepository } from './repository/CredentialRepository'
 import { CredentialService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialsModule {
   private connectionService: ConnectionService
+  private credentialRepository: CredentialRepository
   private credentialService: CredentialService
   private messageSender: MessageSender
 
   public constructor(
     dispatcher: Dispatcher,
     connectionService: ConnectionService,
+    credentialRepository: CredentialRepository,
     credentialService: CredentialService,
     messageSender: MessageSender
   ) {
     this.connectionService = connectionService
     this.credentialService = credentialService
+    this.credentialRepository = credentialRepository
     this.messageSender = messageSender
     this.registerHandlers(dispatcher)
   }
@@ -73,10 +77,15 @@ export class CredentialsModule {
     }
   ) {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)
+    if (!credentialRecord.connectionId) {
+      throw new AriesFrameworkError(
+        `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
+      )
+    }
+
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
     const credentialProposalMessage = credentialRecord.proposalMessage
-
     if (!credentialProposalMessage?.credentialProposal) {
       throw new AriesFrameworkError(
         `Credential record with id ${credentialRecordId} is missing required credential proposal`
@@ -84,7 +93,6 @@ export class CredentialsModule {
     }
 
     const credentialDefinitionId = config?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
-
     if (!credentialDefinitionId) {
       throw new AriesFrameworkError(
         'Missing required credential definition id. If credential proposal message contains no credential definition id it must be passed to config.'
@@ -118,12 +126,36 @@ export class CredentialsModule {
   ): Promise<CredentialRecord> {
     const connection = await this.connectionService.getById(connectionId)
 
-    const { message, credentialRecord } = await this.credentialService.createOffer(connection, credentialTemplate)
+    const { message, credentialRecord } = await this.credentialService.createOffer(credentialTemplate, connection)
 
     const outboundMessage = createOutboundMessage(connection, message)
     await this.messageSender.sendMessage(outboundMessage)
 
     return credentialRecord
+  }
+
+  /**
+   * Initiate a new credential exchange as issuer by creating a credential offer
+   * not bound to any connection. The offer must be delivered out-of-band to the holder
+   *
+   * @param credentialTemplate The credential template to use for the offer
+   * @returns The credential record and credential offer message
+   */
+  public async createOutOfBandOffer(credentialTemplate: CredentialOfferTemplate): Promise<{
+    offer: OfferCredentialMessage
+    credentialRecord: CredentialRecord
+  }> {
+    const { message, credentialRecord } = await this.credentialService.createOffer(credentialTemplate)
+
+    // Create and set ~service decorator
+    const ourService = await this.connectionService.createEphemeralService()
+    message.service = ourService
+
+    // Save ~service decorator to record (to remember our verkey)
+    credentialRecord.offerMessage = message
+    await this.credentialRepository.update(credentialRecord)
+
+    return { credentialRecord, offer: message }
   }
 
   /**
@@ -135,16 +167,52 @@ export class CredentialsModule {
    * @returns Credential record associated with the sent credential request message
    *
    */
-  public async acceptOffer(credentialRecordId: string, config?: { comment?: string }) {
-    const credentialRecord = await this.credentialService.getById(credentialRecordId)
-    const connection = await this.connectionService.getById(credentialRecord.connectionId)
+  public async acceptOffer(credentialRecordId: string, config?: { comment?: string }): Promise<CredentialRecord> {
+    const record = await this.credentialService.getById(credentialRecordId)
 
-    const { message } = await this.credentialService.createRequest(credentialRecord, config)
+    // Use connection if present
+    if (record.connectionId) {
+      const connection = await this.connectionService.getById(record.connectionId)
 
-    const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+      const { message, credentialRecord } = await this.credentialService.createRequest(record, {
+        ...config,
+        holderDid: connection.did,
+      })
+      const outboundMessage = createOutboundMessage(connection, message)
 
-    return credentialRecord
+      await this.messageSender.sendMessage(outboundMessage)
+      return credentialRecord
+    }
+    // Use ~service decorator otherwise
+    else if (record.offerMessage?.service) {
+      // Create ~service decorator
+      const ourService = await this.connectionService.createEphemeralService()
+      const recipientService = record.offerMessage.service
+
+      const { message, credentialRecord } = await this.credentialService.createRequest(record, {
+        ...config,
+        holderDid: ourService.recipientKeys[0],
+      })
+
+      // Set and save ~service decorator to record (to remember our verkey)
+      message.service = ourService
+      credentialRecord.requestMessage = message
+      await this.credentialRepository.update(credentialRecord)
+
+      await this.messageSender.sendMessageToService({
+        message,
+        service: recipientService.toDidCommService(),
+        senderKey: ourService.recipientKeys[0],
+      })
+
+      return credentialRecord
+    }
+    // Cannot send message without credentialId or ~service decorator
+    else {
+      throw new AriesFrameworkError(
+        `Cannot accept offer for credential record without connectionId or ~service decorator on credential offer.`
+      )
+    }
   }
 
   /**
@@ -157,12 +225,38 @@ export class CredentialsModule {
    *
    */
   public async acceptRequest(credentialRecordId: string, config?: { comment?: string }) {
-    const credentialRecord = await this.credentialService.getById(credentialRecordId)
-    const connection = await this.connectionService.getById(credentialRecord.connectionId)
+    const record = await this.credentialService.getById(credentialRecordId)
+    const { message, credentialRecord } = await this.credentialService.createCredential(record, config)
 
-    const { message } = await this.credentialService.createCredential(credentialRecord, config)
-    const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    // Use connection if present
+    if (credentialRecord.connectionId) {
+      const connection = await this.connectionService.getById(credentialRecord.connectionId)
+      const outboundMessage = createOutboundMessage(connection, message)
+
+      await this.messageSender.sendMessage(outboundMessage)
+    }
+    // Use ~service decorator otherwise
+    else if (credentialRecord.requestMessage?.service && credentialRecord.offerMessage?.service) {
+      const recipientService = credentialRecord.requestMessage.service
+      const ourService = credentialRecord.offerMessage.service
+
+      // Set ~service, update message in record (for later use)
+      message.setService(ourService)
+      credentialRecord.credentialMessage = message
+      await this.credentialRepository.update(credentialRecord)
+
+      await this.messageSender.sendMessageToService({
+        message,
+        service: recipientService.toDidCommService(),
+        senderKey: ourService.recipientKeys[0],
+      })
+    }
+    // Cannot send message without credentialId or ~service decorator
+    else {
+      throw new AriesFrameworkError(
+        `Cannot accept request for credential record without connectionId or ~service decorator on credential offer / request.`
+      )
+    }
 
     return credentialRecord
   }
@@ -176,12 +270,32 @@ export class CredentialsModule {
    *
    */
   public async acceptCredential(credentialRecordId: string) {
-    const credentialRecord = await this.credentialService.getById(credentialRecordId)
-    const connection = await this.connectionService.getById(credentialRecord.connectionId)
+    const record = await this.credentialService.getById(credentialRecordId)
+    const { message, credentialRecord } = await this.credentialService.createAck(record)
 
-    const { message } = await this.credentialService.createAck(credentialRecord)
-    const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    if (credentialRecord.connectionId) {
+      const connection = await this.connectionService.getById(credentialRecord.connectionId)
+      const outboundMessage = createOutboundMessage(connection, message)
+
+      await this.messageSender.sendMessage(outboundMessage)
+    }
+    // Use ~service decorator otherwise
+    else if (credentialRecord.credentialMessage?.service && credentialRecord.requestMessage?.service) {
+      const recipientService = credentialRecord.credentialMessage.service
+      const ourService = credentialRecord.requestMessage.service
+
+      await this.messageSender.sendMessageToService({
+        message,
+        service: recipientService.toDidCommService(),
+        senderKey: ourService.recipientKeys[0],
+      })
+    }
+    // Cannot send message without credentialId or ~service decorator
+    else {
+      throw new AriesFrameworkError(
+        `Cannot accept offer for credential record without connectionId or ~service decorator on credential offer.`
+      )
+    }
 
     return credentialRecord
   }
@@ -215,19 +329,6 @@ export class CredentialsModule {
    */
   public findById(connectionId: string): Promise<CredentialRecord | null> {
     return this.credentialService.findById(connectionId)
-  }
-
-  /**
-   * Retrieve a credential record by connection id and thread id
-   *
-   * @param connectionId The connection id
-   * @param threadId The thread id
-   * @throws {RecordNotFoundError} If no record is found
-   * @throws {RecordDuplicateError} If multiple records are found
-   * @returns The credential record
-   */
-  public getByConnectionAndThreadId(connectionId: string, threadId: string): Promise<CredentialRecord> {
-    return this.credentialService.getByConnectionAndThreadId(connectionId, threadId)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {

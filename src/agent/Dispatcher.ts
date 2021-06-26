@@ -48,9 +48,13 @@ class Dispatcher {
         const keys = {
           recipientKeys: messageContext.senderVerkey ? [messageContext.senderVerkey] : [],
           routingKeys: [],
-          senderKey: messageContext.connection?.verkey || null,
+          senderKey: messageContext.connection?.verkey ?? messageContext.recipientVerkey ?? null,
         }
-        return await this.messageSender.packMessage(outboundMessage, keys)
+        const packedMessage = await this.messageSender.packMessage(outboundMessage.payload, keys)
+        return {
+          connection: outboundMessage.connection,
+          payload: packedMessage,
+        }
       }
 
       await this.messageSender.sendMessage(outboundMessage)

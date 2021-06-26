@@ -1,5 +1,8 @@
 import { IsArray, IsOptional, IsString } from 'class-validator'
 
+import { DidCommService } from '../../modules/connections/models/did/service/DidCommService'
+import { uuid } from '../../utils/uuid'
+
 export interface ServiceDecoratorOptions {
   recipientKeys: string[]
   routingKeys?: string[]
@@ -32,4 +35,13 @@ export class ServiceDecorator {
 
   @IsString()
   public serviceEndpoint!: string
+
+  public toDidCommService(id?: string) {
+    return new DidCommService({
+      id: id ?? uuid(),
+      recipientKeys: this.recipientKeys,
+      routingKeys: this.routingKeys,
+      serviceEndpoint: this.serviceEndpoint,
+    })
+  }
 }

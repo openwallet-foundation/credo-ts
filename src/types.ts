@@ -48,12 +48,12 @@ export interface UnpackedMessageContext {
 }
 
 export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
-  connection: ConnectionRecord
   payload: T
+  connection: ConnectionRecord
 }
 
 export interface OutboundPackage {
-  connection: ConnectionRecord
+  connection?: ConnectionRecord
   payload: WireMessage
   responseRequested?: boolean
   endpoint?: string

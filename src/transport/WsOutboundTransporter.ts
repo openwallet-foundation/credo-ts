@@ -1,11 +1,11 @@
 import type { Agent } from '../agent/Agent'
 import type { TransportSession } from '../agent/TransportService'
 import type { Logger } from '../logger'
-import type { ConnectionRecord } from '../modules/connections'
 import type { OutboundPackage } from '../types'
 import type { OutboundTransporter } from './OutboundTransporter'
 
 import { InjectionSymbols } from '../constants'
+import { AriesFrameworkError } from '../error'
 import { WebSocket } from '../utils/ws'
 
 export class WebSocketTransportSession implements TransportSession {
@@ -41,35 +41,47 @@ export class WsOutboundTransporter implements OutboundTransporter {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
-    const { connection, payload, endpoint, session } = outboundPackage
-    this.logger.debug(
-      `Sending outbound message to connection ${connection.id} over ${session?.type} transport.`,
-      payload
-    )
+    const { connection, payload, endpoint, session, responseRequested } = outboundPackage
+    this.logger.debug(`Sending outbound message to endpoint '${endpoint}' over ${session?.type} transport.`, {
+      payload,
+      connectionId: connection?.id,
+    })
 
+    // If session is already available, use it
     if (session instanceof WebSocketTransportSession && session.socket?.readyState === WebSocket.OPEN) {
       session.socket.send(JSON.stringify(payload))
-    } else {
-      const socket = await this.resolveSocket(connection, endpoint)
+    }
+    // Else if a socket is available for this connection, use it
+    else if (connection) {
+      const socket = await this.resolveSocket(connection.id, endpoint)
+      socket.send(JSON.stringify(payload))
+    }
+    // Else use a long-lived socket (connection-less)
+    else {
+      if (!endpoint) {
+        throw new AriesFrameworkError(`Missing endpoint. I don't know how and where to send the message.`)
+      }
+
+      const socket = await this.resolveSocket(endpoint, endpoint)
       socket.send(JSON.stringify(payload))
     }
   }
 
-  private async resolveSocket(connection: ConnectionRecord, endpoint?: string) {
+  private async resolveSocket(socketIdentifier: string, endpoint?: string) {
     // If we already have a socket connection use it
-    let socket = this.transportTable.get(connection.id)
+    let socket = this.transportTable.get(socketIdentifier)
 
     if (!socket) {
       if (!endpoint) {
-        throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
+        throw new AriesFrameworkError(`Missing endpoint. I don't know how and where to send the message.`)
       }
       socket = await this.createSocketConnection(endpoint)
-      this.transportTable.set(connection.id, socket)
+      this.transportTable.set(socketIdentifier, socket)
       this.listenOnWebSocketMessages(socket)
     }
 
     if (socket.readyState !== WebSocket.OPEN) {
-      throw new Error('Socket is not open.')
+      throw new AriesFrameworkError('Websocket is not open.')
     }
 
     return socket

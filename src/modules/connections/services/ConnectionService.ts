@@ -11,10 +11,12 @@ import { inject, scoped, Lifecycle } from 'tsyringe'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
+import { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { Wallet } from '../../../wallet/Wallet'
+import { ConsumerRoutingService } from '../../routing/services/ConsumerRoutingService'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import {
   ConnectionInvitationMessage,
@@ -42,17 +44,20 @@ export class ConnectionService {
   private config: AgentConfig
   private connectionRepository: ConnectionRepository
   private eventEmitter: EventEmitter
+  private consumerRoutingService: ConsumerRoutingService
 
   public constructor(
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
     config: AgentConfig,
     connectionRepository: ConnectionRepository,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    consumerRoutingService: ConsumerRoutingService
   ) {
     this.wallet = wallet
     this.config = config
     this.connectionRepository = connectionRepository
     this.eventEmitter = eventEmitter
+    this.consumerRoutingService = consumerRoutingService
   }
 
   /**
@@ -477,6 +482,32 @@ export class ConnectionService {
 
     await this.connectionRepository.save(connectionRecord)
     return connectionRecord
+  }
+
+  /**
+   * Create ephemeral service to be used for connection-less exchanges. Creates
+   * a new did, optionally register the verkey at the mediator, and create a ~service
+   * decorator according the the agent config.
+   *
+   * @returns ~service decorator to be used on out-of-band message
+   */
+  public async createEphemeralService(): Promise<ServiceDecorator> {
+    // Create ephemeral did to use for this exchange
+    const [, senderKey] = await this.wallet.createDid()
+
+    // If agent has inbound connection, which means it's using a mediator, we need to create a route for newly created
+    // verkey at mediator.
+    if (this.config.inboundConnection) {
+      await this.consumerRoutingService.createRoute(senderKey)
+    }
+
+    const service = new ServiceDecorator({
+      serviceEndpoint: this.config.getEndpoint(),
+      recipientKeys: [senderKey],
+      routingKeys: this.config.getRoutingKeys(),
+    })
+
+    return service
   }
 
   public async returnWhenIsConnected(connectionId: string): Promise<ConnectionRecord> {

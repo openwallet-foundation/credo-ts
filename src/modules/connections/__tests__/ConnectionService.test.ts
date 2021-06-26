@@ -10,6 +10,7 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { AckMessage, AckStatus } from '../../common'
+import { ConsumerRoutingService } from '../../routing/services/ConsumerRoutingService'
 import {
   ConnectionInvitationMessage,
   ConnectionRequestMessage,
@@ -22,7 +23,9 @@ import { ConnectionRepository } from '../repository/ConnectionRepository'
 import { ConnectionService } from '../services/ConnectionService'
 
 jest.mock('../repository/ConnectionRepository')
+jest.mock('../../routing/services/ConsumerRoutingService')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
+const ConsumerRoutingServiceMock = ConsumerRoutingService as jest.Mock<ConsumerRoutingService>
 
 describe('ConnectionService', () => {
   const initConfig = getBaseConfig('ConnectionServiceTest', {
@@ -33,6 +36,7 @@ describe('ConnectionService', () => {
   let wallet: Wallet
   let agentConfig: AgentConfig
   let connectionRepository: ConnectionRepository
+  let consumerRoutingService: ConsumerRoutingService
   let connectionService: ConnectionService
   let eventEmitter: EventEmitter
 
@@ -50,7 +54,14 @@ describe('ConnectionService', () => {
   beforeEach(() => {
     eventEmitter = new EventEmitter()
     connectionRepository = new ConnectionRepositoryMock()
-    connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, eventEmitter)
+    consumerRoutingService = new ConsumerRoutingServiceMock()
+    connectionService = new ConnectionService(
+      wallet,
+      agentConfig,
+      connectionRepository,
+      eventEmitter,
+      consumerRoutingService
+    )
   })
 
   describe('createConnectionWithInvitation', () => {

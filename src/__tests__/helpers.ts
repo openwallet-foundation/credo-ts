@@ -168,7 +168,7 @@ export class SubjectOutboundTransporter implements OutboundTransporter {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
-    testLogger.test(`Sending outbound message to connection ${outboundPackage.connection.id}`)
+    testLogger.test(`Sending outbound message to endpoint '${outboundPackage.endpoint}'`)
     const { payload } = outboundPackage
     this.subject.next(payload)
   }
