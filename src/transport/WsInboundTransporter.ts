@@ -4,7 +4,7 @@ import type { InboundTransporter } from './InboundTransporter'
 
 import { InjectionSymbols } from '../constants'
 
-export class WsTransporter implements InboundTransporter {
+export class WsInboundTransporter implements InboundTransporter {
   private agent: Agent
   private logger: Logger
   public supportedSchemes = ['ws', 'wss']
