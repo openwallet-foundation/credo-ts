@@ -22,9 +22,10 @@ export class WsInboundTransporter implements InboundTransporter {
     this.mediatorSocket?.close()
   }
   public createMediatorSocket(invitationURL: string) {
-    this.mediatorEndpoint = invitationURL.split('?')[0]
+    this.mediatorEndpoint = invitationURL.split('?')[0] // must be invitation from default mediator
     const socket = new WebSocket(this.mediatorEndpoint)
     socket.onmessage = (event) => {
+      this.logger.trace('Socket, Message received from mediator:', event.data)
       const payload = JSON.parse(Buffer.from(event.data).toString('utf-8'))
       this.logger.debug('Payload received from mediator:', payload)
       this.agent.receiveMessage(payload)
@@ -33,15 +34,15 @@ export class WsInboundTransporter implements InboundTransporter {
       this.logger.debug('Socket ERROR', error)
     }
     socket.onopen = async () => {
-      this.logger.debug('Socket has been opened')
+      this.logger.trace('Socket has been opened')
       const mediator = await this.agent.mediationRecipient.getDefaultMediatorConnection()
-      this.logger.debug('Mediator connection record:', mediator)
+      this.logger.debug('Mediator connection record being used:', mediator)
       if (mediator) {
         const ping = await this.agent.connections.preparePing(mediator, { responseRequested: false })
-        this.logger.debug('Sending ping to mediator:', ping)
+        this.logger.trace('Sending ping to socket with mediator connection encryption:', ping)
         const packed = await this.agent.preparePackMessage(ping)
         if (packed) {
-          this.logger.debug('Packed:', packed.payload)
+          this.logger.debug('Ping Packed for mediator being sent over socket:', packed.payload)
           const messageBuffer = Buffer.from(JSON.stringify(packed.payload))
           socket.send(messageBuffer)
         }
