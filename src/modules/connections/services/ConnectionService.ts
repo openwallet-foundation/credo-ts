@@ -134,8 +134,6 @@ export class ConnectionService {
       role: ConnectionRole.Invitee,
       state: ConnectionState.Invited,
       alias: config?.alias,
-      //routingKeys: invitation?.routingKeys,
-      //endpoint: invitation?.serviceEndpoint,
       autoAcceptConnection: config?.autoAcceptConnection,
       mediator: config?.mediator,
       invitation,
@@ -471,7 +469,7 @@ export class ConnectionService {
   public async keylistUpdatdAndAwait(
     mediationRecord: MediationRecord,
     verKey: string,
-    timeout = 15000
+    timeout = 15000 // TODO: this should be a configurable value in agent config
   ): Promise<MediationRecord> {
     const message = this.createKeylistUpdateMessage(verKey)
     const connection = await this.getById(mediationRecord.connectionId)
@@ -601,7 +599,7 @@ export class ConnectionService {
 
     // Check if already done
     const connection = await this.connectionRepository.findById(connectionId)
-    if (connection && isConnected(connection)) return connection //TODO: does this leave trailing listeners behind?
+    if (connection && isConnected(connection)) return connection //TODO: check if this leaves trailing listeners behind?
 
     // return listener
     return promise

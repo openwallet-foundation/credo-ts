@@ -36,14 +36,14 @@ export class ConnectionsModule {
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
     trustPingService: TrustPingService,
-    messageSender: MessageSender,
-    recipientService: RecipientService
+    recipientService: RecipientService,
+    messageSender: MessageSender
   ) {
     this.agentConfig = agentConfig
     this.connectionService = connectionService
     this.trustPingService = trustPingService
-    this.messageSender = messageSender
     this.recipientService = recipientService
+    this.messageSender = messageSender
     this.registerHandlers(dispatcher)
   }
 

@@ -10,7 +10,7 @@ export interface KeylistMessageOptions {
 }
 
 /**
- * Used to notify the mediator of keys in use by the recipient.
+ * Used to notify the recipient of keys in use by the mediator.
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#keylist
  */
