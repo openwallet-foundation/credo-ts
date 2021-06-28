@@ -25,9 +25,8 @@ export class WsInboundTransporter implements InboundTransporter {
     this.mediatorEndpoint = invitationURL.split('?')[0]
     const socket = new WebSocket(this.mediatorEndpoint)
     socket.onmessage = (event) => {
-      this.logger.debug('Socket, Message received from mediator:', event.data)
       const payload = JSON.parse(Buffer.from(event.data).toString('utf-8'))
-      this.logger.debug('Payload', payload)
+      this.logger.debug('Payload received from mediator:', payload)
       this.agent.receiveMessage(payload)
     }
     socket.onerror = (error) => {
@@ -38,14 +37,12 @@ export class WsInboundTransporter implements InboundTransporter {
       const mediator = await this.agent.mediationRecipient.getDefaultMediatorConnection()
       this.logger.debug('Mediator connection record:', mediator)
       if (mediator) {
-        this.logger.debug('Sending ping to mediator')
         const ping = await this.agent.connections.preparePing(mediator, { responseRequested: false })
-        this.logger.debug('Ping:', ping)
+        this.logger.debug('Sending ping to mediator:', ping)
         const packed = await this.agent.preparePackMessage(ping)
         if (packed) {
           this.logger.debug('Packed:', packed.payload)
           const messageBuffer = Buffer.from(JSON.stringify(packed.payload))
-          this.logger.debug('MessageBuffer:', messageBuffer)
           socket.send(messageBuffer)
         }
       }
