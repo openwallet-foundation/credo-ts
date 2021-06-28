@@ -131,14 +131,17 @@ export class RecipientModule {
 
   public async getMediatorConnections() {
     const all_mediators = await this.getMediators()
-    const mediators_connection_ids = all_mediators
-      ? all_mediators.map((mediator) => {
-          mediator.connectionId
-        })
-      : []
+    if (!all_mediators) {
+      return
+    }
+    const mediators_connection_ids = all_mediators.map((mediator: MediationRecord) => {
+      return mediator.connectionId
+    })
     const all_connections = await this.connectionService.getAll()
     return all_connections && mediators_connection_ids
-      ? all_connections.filter((connection) => connection.id in mediators_connection_ids)
+      ? all_connections.filter((connection) => {
+          mediators_connection_ids.indexOf(connection.id) > -1
+        })
       : []
   }
 
