@@ -35,11 +35,18 @@ export class OfferCredentialHandler implements Handler {
           credentialRecord.proposalMessage.credentialProposal!.attributes
         )
 
+        const proposalCredentialDefinitionId = credentialRecord.proposalMessage.credentialDefinitionId
+
         const offerValues = CredentialUtils.convertAttributesToValues(
           credentialRecord.offerMessage.credentialPreview.attributes
         )
 
-        if (CredentialUtils.checkValuesMatch(proposalValues, offerValues)) {
+        const offerCredentialDefinitionId = credentialRecord.offerMessage.indyCredentialOffer?.cred_def_id
+
+        if (
+          CredentialUtils.checkValuesMatch(proposalValues, offerValues) &&
+          proposalCredentialDefinitionId === offerCredentialDefinitionId
+        ) {
           return await this.nextStep(credentialRecord, messageContext)
         }
       }
