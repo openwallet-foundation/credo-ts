@@ -5,7 +5,7 @@ import type { CredentialService } from '../services'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
-import { AutoAcceptCredentialAndProof } from '../../../types'
+import { AutoAcceptCredential } from '../../../types'
 import { CredentialUtils } from '../CredentialUtils'
 import { ProposeCredentialMessage } from '../messages'
 
@@ -28,9 +28,12 @@ export class ProposeCredentialHandler implements Handler {
     )
 
     // Always accept any credential no matter what
-    if (autoAccept === AutoAcceptCredentialAndProof.always) {
+    if (autoAccept === AutoAcceptCredential.always) {
       return await this.nextStep(credentialRecord, messageContext)
-    } else if (autoAccept === AutoAcceptCredentialAndProof.attributesNotChanged) {
+    } else if (
+      autoAccept === AutoAcceptCredential.attributesNotChanged ||
+      autoAccept === AutoAcceptCredential.singleAccept
+    ) {
       // Detect change in credentialRecord messages
       if (credentialRecord.proposalMessage && credentialRecord.offerMessage) {
         // Check if the values in the messages are the same
@@ -45,7 +48,7 @@ export class ProposeCredentialHandler implements Handler {
         if (CredentialUtils.checkValuesMatch(proposalValues, offerValues)) {
           return await this.nextStep(credentialRecord, messageContext)
         }
-      } else {
+      } else if (autoAccept === AutoAcceptCredential.attributesNotChanged) {
         return await this.nextStep(credentialRecord, messageContext)
       }
     }

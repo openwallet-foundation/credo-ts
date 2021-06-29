@@ -1,7 +1,7 @@
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
-import type { AutoAcceptCredentialAndProof } from '../../../types'
+import type { AutoAcceptCredential } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialPreview, ProposeCredentialMessageOptions } from '../messages'
@@ -74,7 +74,7 @@ export class CredentialService {
    */
   public async createProposal(
     connectionRecord: ConnectionRecord,
-    config?: Omit<ProposeCredentialMessageOptions, 'id'> & { autoAcceptCredential?: AutoAcceptCredentialAndProof }
+    config?: Omit<ProposeCredentialMessageOptions, 'id'> & { autoAcceptCredential?: AutoAcceptCredential }
   ): Promise<CredentialProtocolMsgReturnType<ProposeCredentialMessage>> {
     // Assert
     connectionRecord.assertReady()
@@ -114,7 +114,7 @@ export class CredentialService {
    */
   public async createProposalAsResponse(
     credentialRecord: CredentialRecord,
-    config?: Omit<ProposeCredentialMessageOptions, 'id'> & { autoAcceptCredential?: AutoAcceptCredentialAndProof }
+    config?: Omit<ProposeCredentialMessageOptions, 'id'> & { autoAcceptCredential?: AutoAcceptCredential }
   ): Promise<CredentialProtocolMsgReturnType<ProposeCredentialMessage>> {
     // Assert
     credentialRecord.assertState(CredentialState.OfferReceived)
@@ -201,7 +201,7 @@ export class CredentialService {
    */
   public async createOfferAsResponse(
     credentialRecord: CredentialRecord,
-    credentialTemplate: CredentialOfferTemplate & { autoAcceptCredential?: AutoAcceptCredentialAndProof }
+    credentialTemplate: CredentialOfferTemplate & { autoAcceptCredential?: AutoAcceptCredential }
   ): Promise<CredentialProtocolMsgReturnType<OfferCredentialMessage>> {
     // Assert
     credentialRecord.assertState(CredentialState.ProposalReceived)
@@ -248,7 +248,7 @@ export class CredentialService {
    */
   public async createOffer(
     connectionRecord: ConnectionRecord,
-    credentialTemplate: CredentialOfferTemplate & { autoAcceptCredential?: AutoAcceptCredentialAndProof }
+    credentialTemplate: CredentialOfferTemplate & { autoAcceptCredential?: AutoAcceptCredential }
   ): Promise<CredentialProtocolMsgReturnType<OfferCredentialMessage>> {
     // Assert
     connectionRecord.assertReady()
@@ -375,7 +375,7 @@ export class CredentialService {
    */
   public async createRequest(
     credentialRecord: CredentialRecord,
-    options: CredentialRequestOptions & { autoAcceptCredential?: AutoAcceptCredentialAndProof } = {}
+    options: CredentialRequestOptions & { autoAcceptCredential?: AutoAcceptCredential } = {}
   ): Promise<CredentialProtocolMsgReturnType<RequestCredentialMessage>> {
     // Assert credential
     credentialRecord.assertState(CredentialState.OfferReceived)
@@ -474,7 +474,7 @@ export class CredentialService {
    */
   public async createCredential(
     credentialRecord: CredentialRecord,
-    options: CredentialResponseOptions & { autoAcceptCredential?: AutoAcceptCredentialAndProof } = {}
+    options: CredentialResponseOptions & { autoAcceptCredential?: AutoAcceptCredential } = {}
   ): Promise<CredentialProtocolMsgReturnType<IssueCredentialMessage>> {
     // Assert
     credentialRecord.assertState(CredentialState.RequestReceived)

@@ -25,7 +25,7 @@ export interface InitConfig {
   walletConfig: WalletConfig
   walletCredentials: WalletCredentials
   autoAcceptConnections?: boolean
-  autoAcceptCredentials?: AutoAcceptCredentialAndProof
+  autoAcceptCredentials?: AutoAcceptCredential
   poolName?: string
   logger?: Logger
   indy: typeof Indy
@@ -66,13 +66,16 @@ export interface InboundConnection {
   connection: ConnectionRecord
 }
 
-export enum AutoAcceptCredentialAndProof {
+export enum AutoAcceptCredential {
   // Always auto accepts the credential and proof no matter if it changed in subsequent steps
   'always' = 'always',
 
   // Only auto accepts the credential and proof if nothing changed in the request
   'attributesNotChanged' = 'attributesNotChanged',
 
-  // (DEFAULT:q: Never auto accept a credential or proof
+  // Needs one acceptation and the rest will be automated if nothing changes
+  'singleAccept' = 'singleAccept',
+
+  // DEFAULT: Never auto accept a credential or proof
   'never' = 'never',
 }

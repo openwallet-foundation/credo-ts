@@ -3,7 +3,7 @@ import type { InitConfig, InboundConnection } from '../types'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { ConsoleLogger, LogLevel } from '../logger'
-import { AutoAcceptCredentialAndProof, DidCommMimeType } from '../types'
+import { AutoAcceptCredential, DidCommMimeType } from '../types'
 
 export class AgentConfig {
   private initConfig: InitConfig
@@ -64,7 +64,7 @@ export class AgentConfig {
   }
 
   public get autoAcceptCredentials() {
-    return this.initConfig.autoAcceptCredentials ?? AutoAcceptCredentialAndProof.never
+    return this.initConfig.autoAcceptCredentials ?? AutoAcceptCredential.never
   }
 
   public get didCommMimeType() {

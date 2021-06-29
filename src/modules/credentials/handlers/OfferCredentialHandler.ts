@@ -4,7 +4,7 @@ import type { CredentialRecord } from '../repository/CredentialRecord'
 import type { CredentialService } from '../services'
 
 import { createOutboundMessage } from '../../../agent/helpers'
-import { AutoAcceptCredentialAndProof } from '../../../types'
+import { AutoAcceptCredential } from '../../../types'
 import { CredentialUtils } from '../CredentialUtils'
 import { OfferCredentialMessage } from '../messages'
 
@@ -27,9 +27,12 @@ export class OfferCredentialHandler implements Handler {
     )
 
     // Always accept any credential no matter what
-    if (autoAccept === AutoAcceptCredentialAndProof.always) {
+    if (autoAccept === AutoAcceptCredential.always) {
       return await this.nextStep(credentialRecord, messageContext)
-    } else if (autoAccept === AutoAcceptCredentialAndProof.attributesNotChanged) {
+    } else if (
+      autoAccept === AutoAcceptCredential.attributesNotChanged ||
+      autoAccept === AutoAcceptCredential.singleAccept
+    ) {
       // Detect change in credentialRecord messages
       // throw new AriesFrameworkError('contentNotChanged is not implemented yet!')
       if (credentialRecord.proposalMessage && credentialRecord.offerMessage) {
@@ -44,7 +47,7 @@ export class OfferCredentialHandler implements Handler {
         if (CredentialUtils.checkValuesMatch(proposalValues, offerValues)) {
           return await this.nextStep(credentialRecord, messageContext)
         }
-      } else {
+      } else if (autoAccept === AutoAcceptCredential.attributesNotChanged) {
         return await this.nextStep(credentialRecord, messageContext)
       }
     }

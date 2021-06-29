@@ -3,7 +3,7 @@ import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { CredentialService } from '../services'
 
 import { createOutboundMessage } from '../../../agent/helpers'
-import { AutoAcceptCredentialAndProof } from '../../../types'
+import { AutoAcceptCredential } from '../../../types'
 import { CredentialUtils } from '../CredentialUtils'
 import { RequestCredentialMessage } from '../messages'
 
@@ -27,8 +27,9 @@ export class RequestCredentialHandler implements Handler {
 
     // Always accept any credential no matter what
     if (
-      autoAccept === AutoAcceptCredentialAndProof.always ||
-      autoAccept === AutoAcceptCredentialAndProof.attributesNotChanged
+      autoAccept === AutoAcceptCredential.always ||
+      autoAccept === AutoAcceptCredential.attributesNotChanged ||
+      autoAccept === AutoAcceptCredential.singleAccept
     ) {
       const { message } = await this.credentialService.createCredential(credentialRecord)
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

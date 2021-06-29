@@ -1,4 +1,4 @@
-import type { AutoAcceptCredentialAndProof } from '../../types'
+import type { AutoAcceptCredential } from '../../types'
 import type { CredentialPreview, ProposeCredentialMessageOptions } from './messages'
 import type { CredentialRecord } from './repository/CredentialRecord'
 import type { CredentialOfferTemplate } from './services'
@@ -52,7 +52,7 @@ export class CredentialsModule {
    */
   public async proposeCredential(
     connectionId: string,
-    config?: Omit<ProposeCredentialMessageOptions, 'id'> & { autoAcceptCredential?: AutoAcceptCredentialAndProof }
+    config?: Omit<ProposeCredentialMessageOptions, 'id'> & { autoAcceptCredential?: AutoAcceptCredential }
   ) {
     const connection = await this.connectionService.getById(connectionId)
 
@@ -78,7 +78,7 @@ export class CredentialsModule {
     config?: {
       comment?: string
       credentialDefinitionId?: string
-      autoAcceptCredential?: AutoAcceptCredentialAndProof
+      autoAcceptCredential?: AutoAcceptCredential
     }
   ) {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)
@@ -120,7 +120,7 @@ export class CredentialsModule {
     config?: {
       comment?: string
       credentialDefinitionId?: string
-      autoAcceptCredential?: AutoAcceptCredentialAndProof
+      autoAcceptCredential?: AutoAcceptCredential
     }
   ) {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)
@@ -165,7 +165,7 @@ export class CredentialsModule {
    */
   public async offerCredential(
     connectionId: string,
-    credentialTemplate: CredentialOfferTemplate & { autoAcceptCredential?: AutoAcceptCredentialAndProof }
+    credentialTemplate: CredentialOfferTemplate & { autoAcceptCredential?: AutoAcceptCredential }
   ): Promise<CredentialRecord> {
     const connection = await this.connectionService.getById(connectionId)
 
@@ -188,7 +188,7 @@ export class CredentialsModule {
    */
   public async acceptOffer(
     credentialRecordId: string,
-    config?: { comment?: string; autoAcceptCredential?: AutoAcceptCredentialAndProof }
+    config?: { comment?: string; autoAcceptCredential?: AutoAcceptCredential }
   ) {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
@@ -204,7 +204,7 @@ export class CredentialsModule {
   public async negotiateOffer(
     credentialRecordId: string,
     preview: CredentialPreview,
-    config?: { comment?: string; autoAcceptCredential?: AutoAcceptCredentialAndProof }
+    config?: { comment?: string; autoAcceptCredential?: AutoAcceptCredential }
   ) {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
@@ -231,7 +231,7 @@ export class CredentialsModule {
    */
   public async acceptRequest(
     credentialRecordId: string,
-    config?: { comment?: string; autoAcceptCredential?: AutoAcceptCredentialAndProof }
+    config?: { comment?: string; autoAcceptCredential?: AutoAcceptCredential }
   ) {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)
     const connection = await this.connectionService.getById(credentialRecord.connectionId)

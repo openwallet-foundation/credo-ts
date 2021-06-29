@@ -9,7 +9,6 @@ import {
   CredentialPreview,
   CredentialPreviewAttribute,
 } from '../modules/credentials'
-import { AutoAcceptCredentialAndProof } from '../types'
 import { JsonTransformer } from '../utils/JsonTransformer'
 
 import {
@@ -230,7 +229,6 @@ describe('credentials', () => {
       preview: credentialPreview,
       credentialDefinitionId: credDefId,
       comment: 'some comment about credential',
-      autoAcceptCredential: AutoAcceptCredentialAndProof.always,
     })
 
     testLogger.test('Alice waits for credential offer from Faber')

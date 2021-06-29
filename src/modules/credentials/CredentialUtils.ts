@@ -4,7 +4,7 @@ import type { CredValues } from 'indy-sdk'
 import BigNumber from 'bn.js'
 import { sha256 } from 'js-sha256'
 
-import { AutoAcceptCredentialAndProof } from '../../types'
+import { AutoAcceptCredential } from '../../types'
 
 export class CredentialUtils {
   /**
@@ -138,11 +138,8 @@ export class CredentialUtils {
     return new BigNumber(sha256.array(value as string)).toString()
   }
 
-  public static composeAutoAccept(
-    a: AutoAcceptCredentialAndProof | undefined,
-    b: AutoAcceptCredentialAndProof | undefined
-  ) {
-    return a ? a : b ? b : AutoAcceptCredentialAndProof.never
+  public static composeAutoAccept(a: AutoAcceptCredential | undefined, b: AutoAcceptCredential | undefined) {
+    return a ? a : b ? b : AutoAcceptCredential.never
   }
 
   private static isInt32(number: number) {

@@ -5,7 +5,7 @@ import type { CredentialService } from '../services'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
-import { AutoAcceptCredentialAndProof } from '../../../types'
+import { AutoAcceptCredential } from '../../../types'
 import { CredentialUtils } from '../CredentialUtils'
 import { IssueCredentialMessage } from '../messages'
 
@@ -28,9 +28,12 @@ export class IssueCredentialHandler implements Handler {
     )
 
     // Always accept any credential no matter what
-    if (autoAccept === AutoAcceptCredentialAndProof.always) {
+    if (autoAccept === AutoAcceptCredential.always) {
       return await this.nextStep(credentialRecord, messageContext)
-    } else if (autoAccept === AutoAcceptCredentialAndProof.attributesNotChanged) {
+    } else if (
+      autoAccept === AutoAcceptCredential.attributesNotChanged ||
+      autoAccept === AutoAcceptCredential.singleAccept
+    ) {
       if (credentialRecord.credentialAttributes && credentialRecord.credentialMessage) {
         const indyCredential = credentialRecord.credentialMessage.indyCredential
 

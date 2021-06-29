@@ -9,7 +9,7 @@ import {
   CredentialPreview,
   CredentialPreviewAttribute,
 } from '../modules/credentials'
-import { AutoAcceptCredentialAndProof } from '../types'
+import { AutoAcceptCredential } from '../types'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { sleep } from '../utils/sleep'
 
@@ -128,7 +128,7 @@ describe('credentials', () => {
     let aliceCredentialRecord = await aliceAgent.credentials.proposeCredential(aliceConnection.id, {
       credentialProposal: credentialPreview,
       credentialDefinitionId: credDefId,
-      autoAcceptCredential: AutoAcceptCredentialAndProof.attributesNotChanged,
+      autoAcceptCredential: AutoAcceptCredential.attributesNotChanged,
     })
 
     testLogger.test('Faber waits for credential proposal from Alice')
@@ -140,7 +140,7 @@ describe('credentials', () => {
     testLogger.test('Faber sends credential offer to Alice')
     faberCredentialRecord = await faberAgent.credentials.acceptProposal(faberCredentialRecord.id, {
       comment: 'some comment about credential',
-      autoAcceptCredential: AutoAcceptCredentialAndProof.attributesNotChanged,
+      autoAcceptCredential: AutoAcceptCredential.attributesNotChanged,
     })
 
     testLogger.test('Alice waits for credential offer from Faber')
@@ -243,7 +243,7 @@ describe('credentials', () => {
       preview: credentialPreview,
       credentialDefinitionId: credDefId,
       comment: 'some comment about credential',
-      autoAcceptCredential: AutoAcceptCredentialAndProof.attributesNotChanged,
+      autoAcceptCredential: AutoAcceptCredential.attributesNotChanged,
     })
 
     testLogger.test('Alice waits for credential offer from Faber')
@@ -288,7 +288,7 @@ describe('credentials', () => {
 
     testLogger.test('Alice sends credential request to Faber')
     aliceCredentialRecord = await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id, {
-      autoAcceptCredential: AutoAcceptCredentialAndProof.attributesNotChanged,
+      autoAcceptCredential: AutoAcceptCredential.attributesNotChanged,
     })
 
     testLogger.test('Faber waits for credential request from Alice')
@@ -343,7 +343,7 @@ describe('credentials', () => {
     let aliceCredentialRecord = await aliceAgent.credentials.proposeCredential(aliceConnection.id, {
       credentialProposal: credentialPreview,
       credentialDefinitionId: credDefId,
-      autoAcceptCredential: AutoAcceptCredentialAndProof.attributesNotChanged,
+      autoAcceptCredential: AutoAcceptCredential.attributesNotChanged,
     })
 
     testLogger.test('Faber waits for credential proposal from Alice')
@@ -357,7 +357,7 @@ describe('credentials', () => {
       newCredentialPreview,
       {
         comment: 'some comment about credential',
-        autoAcceptCredential: AutoAcceptCredentialAndProof.attributesNotChanged,
+        autoAcceptCredential: AutoAcceptCredential.attributesNotChanged,
       }
     )
 
@@ -408,7 +408,7 @@ describe('credentials', () => {
     // Wait for ten seconds
     await sleep(10000)
 
-    // Check if the state of fabers credential record did not change
+    // Check if the state of the credential records did not change
     faberCredentialRecord = await faberAgent.credentials.getById(faberCredentialRecord.id)
     faberCredentialRecord.assertState(CredentialState.OfferSent)
 
@@ -422,7 +422,7 @@ describe('credentials', () => {
       preview: credentialPreview,
       credentialDefinitionId: credDefId,
       comment: 'some comment about credential',
-      autoAcceptCredential: AutoAcceptCredentialAndProof.attributesNotChanged,
+      autoAcceptCredential: AutoAcceptCredential.attributesNotChanged,
     })
 
     testLogger.test('Alice waits for credential offer from Faber')
@@ -466,13 +466,7 @@ describe('credentials', () => {
     expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
 
     testLogger.test('Alice sends credential request to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.negotiateOffer(
-      aliceCredentialRecord.id,
-      newCredentialPreview,
-      {
-        autoAcceptCredential: AutoAcceptCredentialAndProof.always,
-      }
-    )
+    aliceCredentialRecord = await aliceAgent.credentials.negotiateOffer(aliceCredentialRecord.id, newCredentialPreview)
     // Wait for ten seconds
     await sleep(10000)
 
