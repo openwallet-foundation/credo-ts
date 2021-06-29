@@ -1,4 +1,4 @@
-import type { Tags } from '../../../storage/BaseRecord'
+import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptCredential } from '../../../types'
 import type { CredentialState } from '../CredentialState'
 
@@ -22,15 +22,16 @@ export interface CredentialRecordMetadata {
   schemaId?: string
 }
 
-export interface CredentialStorageProps {
+export interface CredentialRecordProps {
   id?: string
   createdAt?: Date
   state: CredentialState
   connectionId: string
+  threadId: string
 
   credentialId?: string
   metadata?: CredentialRecordMetadata
-  tags: CredentialRecordTags
+  tags?: CustomCredentialTags
   proposalMessage?: ProposeCredentialMessage
   offerMessage?: OfferCredentialMessage
   requestMessage?: RequestCredentialMessage
@@ -39,15 +40,17 @@ export interface CredentialStorageProps {
   autoAcceptCredential?: AutoAcceptCredential
 }
 
-export interface CredentialRecordTags extends Tags {
+export type CustomCredentialTags = TagsBase
+export type DefaultCredentialTags = {
   threadId: string
   connectionId: string
+  state: CredentialState
 }
 
-export class CredentialRecord extends BaseRecord implements CredentialStorageProps {
+export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCredentialTags> {
   public connectionId!: string
+  public threadId!: string
   public credentialId?: string
-  public tags!: CredentialRecordTags
   public state!: CredentialState
   public metadata!: CredentialRecordMetadata
   public autoAcceptCredential?: AutoAcceptCredential
@@ -68,7 +71,7 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
   public static readonly type = 'CredentialRecord'
   public readonly type = CredentialRecord.type
 
-  public constructor(props: CredentialStorageProps) {
+  public constructor(props: CredentialRecordProps) {
     super()
 
     if (props) {
@@ -78,7 +81,8 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
       this.connectionId = props.connectionId
       this.metadata = props.metadata ?? {}
       this.credentialId = props.credentialId
-      this.tags = props.tags
+      this.threadId = props.threadId
+      this._tags = props.tags ?? {}
 
       this.proposalMessage = props.proposalMessage
       this.offerMessage = props.offerMessage
@@ -86,6 +90,15 @@ export class CredentialRecord extends BaseRecord implements CredentialStoragePro
       this.credentialMessage = props.credentialMessage
       this.credentialAttributes = props.credentialAttributes
       this.autoAcceptCredential = props.autoAcceptCredential
+    }
+  }
+
+  public getTags() {
+    return {
+      ...this._tags,
+      threadId: this.threadId,
+      connectionId: this.connectionId,
+      state: this.state,
     }
   }
 

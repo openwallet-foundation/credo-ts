@@ -5,6 +5,7 @@ import BigNumber from 'bn.js'
 import { sha256 } from 'js-sha256'
 
 import { AutoAcceptCredential } from '../../types'
+import { isBoolean, isNumber, isString } from '../../utils/type'
 
 export class CredentialUtils {
   /**
@@ -67,7 +68,7 @@ export class CredentialUtils {
       const secondValue = secondValues[key]
 
       if (!secondValue) {
-        throw new Error(`Second cred values object has not value for key '${key}'`)
+        throw new Error(`Second cred values object has no value for key '${key}'`)
       }
 
       if (firstValue.encoded !== secondValue.encoded) {
@@ -106,10 +107,7 @@ export class CredentialUtils {
    * @see https://github.com/hyperledger/aries-rfcs/blob/be4ad0a6fb2823bb1fc109364c96f077d5d8dffa/features/0036-issue-credential/README.md#encoding-claims-for-indy-based-verifiable-credentials
    */
   public static encode(value: unknown) {
-    const isString = (value: unknown): value is string => typeof value === 'string'
-    const isEmpty = (value: unknown): value is '' => isString(value) && value === ''
-    const isNumber = (value: unknown): value is number => typeof value === 'number'
-    const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean'
+    const isEmpty = (value: unknown) => isString(value) && value === ''
 
     // If bool return bool as number string
     if (isBoolean(value)) {

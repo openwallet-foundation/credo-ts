@@ -2,7 +2,7 @@ import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { AckMessage } from '../../common'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
-import type { ConnectionTags } from '../repository/ConnectionRecord'
+import type { CustomConnectionTags } from '../repository/ConnectionRecord'
 import type { Verkey } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
@@ -190,15 +190,10 @@ export class ConnectionService {
 
     connectionRecord.theirDid = message.connection.did
     connectionRecord.theirDidDoc = message.connection.didDoc
+    connectionRecord.threadId = message.id
 
     if (!connectionRecord.theirKey) {
       throw new AriesFrameworkError(`Connection with id ${connectionRecord.id} has no recipient keys.`)
-    }
-
-    connectionRecord.tags = {
-      ...connectionRecord.tags,
-      theirKey: connectionRecord.theirKey,
-      threadId: message.id,
     }
 
     await this.updateState(connectionRecord, ConnectionState.Requested)
@@ -227,14 +222,12 @@ export class ConnectionService {
 
     const connectionJson = JsonTransformer.toJSON(connection)
 
-    const { threadId } = connectionRecord.tags
-
-    if (!threadId) {
+    if (!connectionRecord.threadId) {
       throw new AriesFrameworkError(`Connection record with id ${connectionId} does not have a thread id`)
     }
 
     const connectionResponse = new ConnectionResponseMessage({
-      threadId,
+      threadId: connectionRecord.threadId,
       connectionSig: await signData(connectionJson, this.wallet, connectionRecord.verkey),
     })
 
@@ -275,7 +268,7 @@ export class ConnectionService {
     // Per the Connection RFC we must check if the key used to sign the connection~sig is the same key
     // as the recipient key(s) in the connection invitation message
     const signerVerkey = message.connectionSig.signer
-    const invitationKey = connectionRecord.tags.invitationKey
+    const invitationKey = connectionRecord.getTags().invitationKey
     if (signerVerkey !== invitationKey) {
       throw new AriesFrameworkError(
         'Connection in connection response is not signed with same key as recipient key in invitation'
@@ -284,15 +277,10 @@ export class ConnectionService {
 
     connectionRecord.theirDid = connection.did
     connectionRecord.theirDidDoc = connection.didDoc
+    connectionRecord.threadId = message.threadId
 
     if (!connectionRecord.theirKey) {
       throw new AriesFrameworkError(`Connection with id ${connectionRecord.id} has no recipient keys.`)
-    }
-
-    connectionRecord.tags = {
-      ...connectionRecord.tags,
-      theirKey: connectionRecord.theirKey,
-      threadId: message.threadId,
     }
 
     await this.updateState(connectionRecord, ConnectionState.Responded)
@@ -436,7 +424,7 @@ export class ConnectionService {
     invitation?: ConnectionInvitationMessage
     alias?: string
     autoAcceptConnection?: boolean
-    tags?: ConnectionTags
+    tags?: CustomConnectionTags
   }): Promise<ConnectionRecord> {
     const [did, verkey] = await this.wallet.createDid()
 
@@ -481,10 +469,7 @@ export class ConnectionService {
       verkey,
       state: options.state,
       role: options.role,
-      tags: {
-        verkey,
-        ...options.tags,
-      },
+      tags: options.tags,
       invitation: options.invitation,
       alias: options.alias,
       autoAcceptConnection: options.autoAcceptConnection,
