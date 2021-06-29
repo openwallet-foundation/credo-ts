@@ -27,7 +27,6 @@ export class IssueCredentialHandler implements Handler {
       this.agentConfig.autoAcceptCredentials
     )
 
-    // Always accept any credential no matter what
     if (autoAccept === AutoAcceptCredential.always) {
       return await this.nextStep(credentialRecord, messageContext)
     } else if (autoAccept === AutoAcceptCredential.contentApproved) {
@@ -40,6 +39,7 @@ export class IssueCredentialHandler implements Handler {
 
         const credentialMessageValues = indyCredential.values
         const credentialRecordValues = CredentialUtils.convertAttributesToValues(credentialRecord.credentialAttributes)
+
         if (CredentialUtils.checkValuesMatch(credentialMessageValues, credentialRecordValues)) {
           return await this.nextStep(credentialRecord, messageContext)
         }

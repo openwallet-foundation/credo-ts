@@ -25,7 +25,6 @@ export class RequestCredentialHandler implements Handler {
       this.agentConfig.autoAcceptCredentials
     )
 
-    // Always accept any credential no matter what
     if (autoAccept === AutoAcceptCredential.always || autoAccept === AutoAcceptCredential.contentApproved) {
       const { message } = await this.credentialService.createCredential(credentialRecord)
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

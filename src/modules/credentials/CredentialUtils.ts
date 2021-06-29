@@ -136,6 +136,13 @@ export class CredentialUtils {
     return new BigNumber(sha256.array(value as string)).toString()
   }
 
+  /**
+   * Prioritizes the auto accept state and returns the most important auto accept state
+   *
+   * @param a The auto accept state that has priority
+   * @param b The auto accept state that does not have priority
+   * @returns the auto accept state
+   */
   public static composeAutoAccept(a: AutoAcceptCredential | undefined, b: AutoAcceptCredential | undefined) {
     return a ? a : b ? b : AutoAcceptCredential.never
   }

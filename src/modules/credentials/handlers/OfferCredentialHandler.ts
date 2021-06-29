@@ -26,21 +26,19 @@ export class OfferCredentialHandler implements Handler {
       this.agentConfig.autoAcceptCredentials
     )
 
-    // Always accept any credential no matter what
     if (autoAccept === AutoAcceptCredential.always) {
       return await this.nextStep(credentialRecord, messageContext)
     } else if (autoAccept === AutoAcceptCredential.contentApproved) {
-      // Detect change in credentialRecord messages
-      // throw new AriesFrameworkError('contentNotChanged is not implemented yet!')
       if (credentialRecord.proposalMessage && credentialRecord.offerMessage) {
-        // Check if the values in the messages are the same
         const proposalValues = CredentialUtils.convertAttributesToValues(
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           credentialRecord.proposalMessage.credentialProposal!.attributes
         )
+
         const offerValues = CredentialUtils.convertAttributesToValues(
           credentialRecord.offerMessage.credentialPreview.attributes
         )
+
         if (CredentialUtils.checkValuesMatch(proposalValues, offerValues)) {
           return await this.nextStep(credentialRecord, messageContext)
         }
