@@ -30,10 +30,7 @@ export class ProposeCredentialHandler implements Handler {
     // Always accept any credential no matter what
     if (autoAccept === AutoAcceptCredential.always) {
       return await this.nextStep(credentialRecord, messageContext)
-    } else if (
-      autoAccept === AutoAcceptCredential.attributesNotChanged ||
-      autoAccept === AutoAcceptCredential.singleAccept
-    ) {
+    } else if (autoAccept === AutoAcceptCredential.contentApproved) {
       // Detect change in credentialRecord messages
       if (credentialRecord.proposalMessage && credentialRecord.offerMessage) {
         // Check if the values in the messages are the same
@@ -48,8 +45,6 @@ export class ProposeCredentialHandler implements Handler {
         if (CredentialUtils.checkValuesMatch(proposalValues, offerValues)) {
           return await this.nextStep(credentialRecord, messageContext)
         }
-      } else if (autoAccept === AutoAcceptCredential.attributesNotChanged) {
-        return await this.nextStep(credentialRecord, messageContext)
       }
     }
   }

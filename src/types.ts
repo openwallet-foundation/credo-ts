@@ -70,11 +70,8 @@ export enum AutoAcceptCredential {
   // Always auto accepts the credential and proof no matter if it changed in subsequent steps
   'always' = 'always',
 
-  // Only auto accepts the credential and proof if nothing changed in the request
-  'attributesNotChanged' = 'attributesNotChanged',
-
   // Needs one acceptation and the rest will be automated if nothing changes
-  'singleAccept' = 'singleAccept',
+  'contentApproved' = 'contentApproved',
 
   // DEFAULT: Never auto accept a credential or proof
   'never' = 'never',

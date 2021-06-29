@@ -30,10 +30,7 @@ export class IssueCredentialHandler implements Handler {
     // Always accept any credential no matter what
     if (autoAccept === AutoAcceptCredential.always) {
       return await this.nextStep(credentialRecord, messageContext)
-    } else if (
-      autoAccept === AutoAcceptCredential.attributesNotChanged ||
-      autoAccept === AutoAcceptCredential.singleAccept
-    ) {
+    } else if (autoAccept === AutoAcceptCredential.contentApproved) {
       if (credentialRecord.credentialAttributes && credentialRecord.credentialMessage) {
         const indyCredential = credentialRecord.credentialMessage.indyCredential
 

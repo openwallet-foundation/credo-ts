@@ -29,10 +29,7 @@ export class OfferCredentialHandler implements Handler {
     // Always accept any credential no matter what
     if (autoAccept === AutoAcceptCredential.always) {
       return await this.nextStep(credentialRecord, messageContext)
-    } else if (
-      autoAccept === AutoAcceptCredential.attributesNotChanged ||
-      autoAccept === AutoAcceptCredential.singleAccept
-    ) {
+    } else if (autoAccept === AutoAcceptCredential.contentApproved) {
       // Detect change in credentialRecord messages
       // throw new AriesFrameworkError('contentNotChanged is not implemented yet!')
       if (credentialRecord.proposalMessage && credentialRecord.offerMessage) {
@@ -47,8 +44,6 @@ export class OfferCredentialHandler implements Handler {
         if (CredentialUtils.checkValuesMatch(proposalValues, offerValues)) {
           return await this.nextStep(credentialRecord, messageContext)
         }
-      } else if (autoAccept === AutoAcceptCredential.attributesNotChanged) {
-        return await this.nextStep(credentialRecord, messageContext)
       }
     }
   }

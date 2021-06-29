@@ -26,11 +26,7 @@ export class RequestCredentialHandler implements Handler {
     )
 
     // Always accept any credential no matter what
-    if (
-      autoAccept === AutoAcceptCredential.always ||
-      autoAccept === AutoAcceptCredential.attributesNotChanged ||
-      autoAccept === AutoAcceptCredential.singleAccept
-    ) {
+    if (autoAccept === AutoAcceptCredential.always || autoAccept === AutoAcceptCredential.contentApproved) {
       const { message } = await this.credentialService.createCredential(credentialRecord)
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       return createOutboundMessage(messageContext.connection!, message)

@@ -1,5 +1,6 @@
 import type { ConnectionRecord } from '../modules/connections'
 
+import { Allow } from 'class-validator'
 import { Subject } from 'rxjs'
 
 import { Agent } from '../agent/Agent'
@@ -28,12 +29,12 @@ import testLogger from './logger'
 
 const faberConfig = getBaseConfig('Faber Credentials', {
   genesisPath,
-  autoAcceptCredentials: AutoAcceptCredential.singleAccept,
+  autoAcceptCredentials: AutoAcceptCredential.contentApproved,
 })
 
 const aliceConfig = getBaseConfig('Alice Credentials', {
   genesisPath,
-  autoAcceptCredentials: AutoAcceptCredential.singleAccept,
+  autoAcceptCredentials: AutoAcceptCredential.contentApproved,
 })
 
 const credentialPreview = new CredentialPreview({
@@ -134,7 +135,7 @@ describe('credentials', () => {
 
     testLogger.test('Faber waits for credential proposal from Alice')
     let faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
-      threadId: aliceCredentialRecord.tags.threadId,
+      threadId: aliceCredentialRecord.threadId,
       state: CredentialState.ProposalReceived,
     })
 
@@ -143,7 +144,7 @@ describe('credentials', () => {
 
     testLogger.test('Alice waits for credential offer from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
-      threadId: faberCredentialRecord.tags.threadId,
+      threadId: faberCredentialRecord.threadId,
       state: CredentialState.OfferReceived,
     })
 
@@ -174,27 +175,28 @@ describe('credentials', () => {
 
     // below values are not in json object
     expect(aliceCredentialRecord.id).not.toBeNull()
-    expect(aliceCredentialRecord.tags).toEqual({
-      threadId: faberCredentialRecord.tags.threadId,
-      connectionId: aliceCredentialRecord.tags.connectionId,
+    expect(aliceCredentialRecord.getTags()).toEqual({
+      threadId: aliceCredentialRecord.threadId,
+      state: aliceCredentialRecord.state,
+      connectionId: aliceConnection.id,
     })
     expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
 
     testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
-      threadId: aliceCredentialRecord.tags.threadId,
+      threadId: aliceCredentialRecord.threadId,
       state: CredentialState.RequestReceived,
     })
 
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
-      threadId: faberCredentialRecord.tags.threadId,
+      threadId: faberCredentialRecord.threadId,
       state: CredentialState.CredentialReceived,
     })
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
-      threadId: faberCredentialRecord.tags.threadId,
+      threadId: faberCredentialRecord.threadId,
       state: CredentialState.Done,
     })
 
@@ -202,10 +204,6 @@ describe('credentials', () => {
       type: CredentialRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      tags: {
-        threadId: expect.any(String),
-        connectionId: expect.any(String),
-      },
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
       metadata: {
@@ -221,10 +219,6 @@ describe('credentials', () => {
       type: CredentialRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      tags: {
-        threadId: expect.any(String),
-        connectionId: expect.any(String),
-      },
       metadata: {
         schemaId,
         credentialDefinitionId: credDefId,
@@ -244,7 +238,7 @@ describe('credentials', () => {
 
     testLogger.test('Alice waits for credential offer from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
-      threadId: faberCredentialRecord.tags.threadId,
+      threadId: faberCredentialRecord.threadId,
       state: CredentialState.OfferReceived,
     })
 
@@ -275,8 +269,9 @@ describe('credentials', () => {
 
     // below values are not in json object
     expect(aliceCredentialRecord.id).not.toBeNull()
-    expect(aliceCredentialRecord.tags).toEqual({
-      threadId: faberCredentialRecord.tags.threadId,
+    expect(aliceCredentialRecord.getTags()).toEqual({
+      threadId: aliceCredentialRecord.threadId,
+      state: aliceCredentialRecord.state,
       connectionId: aliceConnection.id,
     })
     expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
@@ -286,19 +281,19 @@ describe('credentials', () => {
 
     testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
-      threadId: aliceCredentialRecord.tags.threadId,
+      threadId: aliceCredentialRecord.threadId,
       state: CredentialState.RequestReceived,
     })
 
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
-      threadId: faberCredentialRecord.tags.threadId,
+      threadId: faberCredentialRecord.threadId,
       state: CredentialState.CredentialReceived,
     })
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
-      threadId: faberCredentialRecord.tags.threadId,
+      threadId: faberCredentialRecord.threadId,
       state: CredentialState.Done,
     })
 
@@ -306,10 +301,6 @@ describe('credentials', () => {
       type: CredentialRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      tags: {
-        threadId: expect.any(String),
-        connectionId: expect.any(String),
-      },
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
       metadata: { requestMetadata: expect.any(Object) },
@@ -321,10 +312,6 @@ describe('credentials', () => {
       type: CredentialRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      tags: {
-        threadId: expect.any(String),
-        connectionId: expect.any(String),
-      },
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
       state: CredentialState.Done,
@@ -340,7 +327,7 @@ describe('credentials', () => {
 
     testLogger.test('Faber waits for credential proposal from Alice')
     let faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
-      threadId: aliceCredentialRecord.tags.threadId,
+      threadId: aliceCredentialRecord.threadId,
       state: CredentialState.ProposalReceived,
     })
 
@@ -352,7 +339,7 @@ describe('credentials', () => {
     testLogger.test('Alice waits for credential offer from Faber')
 
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
-      threadId: faberCredentialRecord.tags.threadId,
+      threadId: faberCredentialRecord.threadId,
       state: CredentialState.OfferReceived,
     })
 
@@ -388,9 +375,10 @@ describe('credentials', () => {
 
     // below values are not in json object
     expect(aliceCredentialRecord.id).not.toBeNull()
-    expect(aliceCredentialRecord.tags).toEqual({
-      threadId: faberCredentialRecord.tags.threadId,
-      connectionId: aliceCredentialRecord.tags.connectionId,
+    expect(aliceCredentialRecord.getTags()).toEqual({
+      threadId: aliceCredentialRecord.threadId,
+      state: aliceCredentialRecord.state,
+      connectionId: aliceConnection.id,
     })
     expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
 
@@ -414,7 +402,7 @@ describe('credentials', () => {
 
     testLogger.test('Alice waits for credential offer from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
-      threadId: faberCredentialRecord.tags.threadId,
+      threadId: faberCredentialRecord.threadId,
       state: CredentialState.OfferReceived,
     })
 
@@ -445,8 +433,9 @@ describe('credentials', () => {
 
     // below values are not in json object
     expect(aliceCredentialRecord.id).not.toBeNull()
-    expect(aliceCredentialRecord.tags).toEqual({
-      threadId: faberCredentialRecord.tags.threadId,
+    expect(aliceCredentialRecord.getTags()).toEqual({
+      threadId: aliceCredentialRecord.threadId,
+      state: aliceCredentialRecord.state,
       connectionId: aliceConnection.id,
     })
     expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
