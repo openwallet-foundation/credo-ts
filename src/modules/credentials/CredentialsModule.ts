@@ -114,6 +114,16 @@ export class CredentialsModule {
     return credentialRecord
   }
 
+  /**
+   * Negotiate a credential proposal as issuer (by sending a credential offer message) to the connection
+   * associated with the credential record.
+   *
+   * @param credentialRecordId The id of the credential record for which to accept the proposal
+   * @param preview The new preview for negotiation
+   * @param config Additional configuration to use for the offer
+   * @returns Credential record associated with the credential offer
+   *
+   */
   public async negotiateProposal(
     credentialRecordId: string,
     preview: CredentialPreview,
@@ -201,6 +211,16 @@ export class CredentialsModule {
     return credentialRecord
   }
 
+  /**
+   * Negotiate a credential offer as holder (by sending a credential proposal message) to the connection
+   * associated with the credential record.
+   *
+   * @param credentialRecordId The id of the credential record for which to accept the offer
+   * @param preview The new preview for negotiation
+   * @param config Additional configuration to use for the request
+   * @returns Credential record associated with the sent credential request message
+   *
+   */
   public async negotiateOffer(
     credentialRecordId: string,
     preview: CredentialPreview,

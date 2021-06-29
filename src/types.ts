@@ -67,12 +67,12 @@ export interface InboundConnection {
 }
 
 export enum AutoAcceptCredential {
-  // Always auto accepts the credential and proof no matter if it changed in subsequent steps
+  // Always auto accepts the credential no matter if it changed in subsequent steps
   'always' = 'always',
 
   // Needs one acceptation and the rest will be automated if nothing changes
   'contentApproved' = 'contentApproved',
 
-  // DEFAULT: Never auto accept a credential or proof
+  // DEFAULT: Never auto accept a credential
   'never' = 'never',
 }

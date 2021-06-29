@@ -1,17 +1,17 @@
-import type { Agent } from '../agent/Agent'
 import type { BasicMessage, BasicMessageReceivedEvent } from '../modules/basic-messages'
 import type { ConnectionRecordProps } from '../modules/connections'
 import type { CredentialRecord, CredentialOfferTemplate, CredentialStateChangedEvent } from '../modules/credentials'
 import type { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/ledger'
 import type { ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
 import type { InboundTransporter, OutboundTransporter } from '../transport'
-import type { InitConfig, OutboundPackage, WireMessage } from '../types'
+import type { AutoAcceptCredential, InitConfig, OutboundPackage, WireMessage } from '../types'
 import type { Schema, CredDef, Did } from 'indy-sdk'
-import type { Subject } from 'rxjs'
 
 import indy from 'indy-sdk'
 import path from 'path'
+import { Subject } from 'rxjs'
 
+import { Agent } from '../agent/Agent'
 import { BasicMessageEventTypes } from '../modules/basic-messages'
 import {
   ConnectionInvitationMessage,
@@ -323,4 +323,60 @@ export async function issueCredential({
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.MockedFunction<T> {
   return fn as jest.MockedFunction<T>
+}
+
+export async function setupCredentialTests(
+  faberName: string,
+  aliceName: string,
+  autoAcceptCredentials?: AutoAcceptCredential
+) {
+  const faberMessages = new Subject()
+  const aliceMessages = new Subject()
+
+  const faberConfig = getBaseConfig(faberName, {
+    genesisPath,
+    autoAcceptCredentials,
+  })
+
+  const aliceConfig = getBaseConfig(aliceName, {
+    genesisPath,
+    autoAcceptCredentials,
+  })
+
+  const faberAgent = new Agent(faberConfig)
+  faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages, aliceMessages))
+  faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages))
+  await faberAgent.init()
+
+  const aliceAgent = new Agent(aliceConfig)
+  aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages, faberMessages))
+  aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages))
+  await aliceAgent.init()
+
+  const schemaTemplate = {
+    name: `test-schema-${Date.now()}`,
+    attributes: ['name', 'age', 'lastname'],
+    version: '1.0',
+  }
+  const schema = await registerSchema(faberAgent, schemaTemplate)
+  const schemaId = schema.id
+
+  const definitionTemplate = {
+    schema,
+    tag: 'TAG',
+    signatureType: 'CL' as const,
+    supportRevocation: false,
+  }
+  const credentialDefinition = await registerDefinition(faberAgent, definitionTemplate)
+  const credDefId = credentialDefinition.id
+
+  const publicDid = faberAgent.publicDid?.did
+
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  await ensurePublicDidIsOnLedger(faberAgent, publicDid!)
+  const { agentAConnection, agentBConnection } = await makeConnection(faberAgent, aliceAgent)
+  const faberConnection = agentAConnection
+  const aliceConnection = agentBConnection
+
+  return { faberAgent, aliceAgent, credDefId, schemaId, faberConnection, aliceConnection }
 }
