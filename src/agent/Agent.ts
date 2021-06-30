@@ -26,6 +26,7 @@ import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes } from './Events'
 import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
+import { Queue } from './Queue'
 
 export class Agent {
   protected agentConfig: AgentConfig
@@ -37,6 +38,7 @@ export class Agent {
   protected messageSender: MessageSender
   public inboundTransporter?: InboundTransporter
   private _isInitialized = false
+  private inboundMessageQueue: Queue<unknown> = new Queue()
 
   public readonly connections!: ConnectionsModule
   public readonly proofs!: ProofsModule
@@ -97,10 +99,17 @@ export class Agent {
     this.listenForMessages()
   }
 
-  private listenForMessages() {
+  private async listenForMessages() {
+    // Listen for incoming agent messages from the event listener
     this.eventEmitter.on<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived, async (event) => {
-      await this.receiveMessage(event.payload.message)
+      this.inboundMessageQueue.enqueue(event.payload.message)
     })
+
+    // Continuously listen for new messages in the queue
+    while (await this.inboundMessageQueue.waitForMessage()) {
+      const message = this.inboundMessageQueue.dequeue()
+      await this.messageReceiver.receiveMessage(message)
+    }
   }
 
   public setInboundTransporter(inboundTransporter: InboundTransporter) {
