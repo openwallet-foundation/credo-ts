@@ -40,7 +40,6 @@ export class ProofRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
   public isVerified?: boolean
   public presentationId?: string
   public state!: ProofState
-  public tags!: CustomProofTags
   public autoAcceptProof?: AutoAcceptProof
 
   // message data
