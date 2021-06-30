@@ -6,8 +6,10 @@ import type { InitConfig } from '../types'
 import type { Wallet } from '../wallet/Wallet'
 import type { AgentMessageReceivedEvent } from './Events'
 import type { TransportSession } from './TransportService'
+import type { Subscription } from 'rxjs'
 import type { DependencyContainer } from 'tsyringe'
 
+import { concatMap } from 'rxjs/operators'
 import { container as baseContainer } from 'tsyringe'
 
 import { InjectionSymbols } from '../constants'
@@ -37,6 +39,7 @@ export class Agent {
   protected messageSender: MessageSender
   public inboundTransporter?: InboundTransporter
   private _isInitialized = false
+  public messageSubscription: Subscription
 
   public readonly connections!: ConnectionsModule
   public readonly proofs!: ProofsModule
@@ -94,13 +97,10 @@ export class Agent {
     this.ledger = this.container.resolve(LedgerModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
-    this.listenForMessages()
-  }
-
-  private listenForMessages() {
-    this.eventEmitter.on<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived, async (event) => {
-      await this.receiveMessage(event.payload.message)
-    })
+    this.messageSubscription = this.eventEmitter
+      .observable<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived)
+      .pipe(concatMap((e) => this.messageReceiver.receiveMessage(e.payload.message)))
+      .subscribe()
   }
 
   public setInboundTransporter(inboundTransporter: InboundTransporter) {
