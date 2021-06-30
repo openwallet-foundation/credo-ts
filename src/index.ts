@@ -3,6 +3,7 @@ import 'reflect-metadata'
 
 export { Agent } from './agent/Agent'
 export { InitConfig, OutboundPackage, DidCommMimeType } from './types'
+export { InjectionSymbols } from './constants'
 export type { Wallet } from './wallet/Wallet'
 
 export * from './transport'
