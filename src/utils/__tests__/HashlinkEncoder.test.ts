@@ -30,7 +30,7 @@ const invalidMetadata =
 describe('HashlinkEncoder', () => {
   describe('encode()', () => {
     it('Encodes string to hashlink', () => {
-      const hashlink = HashlinkEncoder.encode(validData.data)
+      const hashlink = HashlinkEncoder.encode(validData.data, 'sha2-256')
       expect(hashlink).toEqual('hl:zQmWvQxTqbG2Z9HPJgG57jjwR154cKhbtJenbyYTWkjgF3e')
     })
 

@@ -36,7 +36,7 @@ export class HashlinkEncoder {
    */
   public static encode(
     buffer: Buffer | Uint8Array,
-    hashAlgorithm: 'sha2-256' = 'sha2-256',
+    hashAlgorithm: 'sha2-256',
     baseEncoding: BaseName = 'base58btc',
     metadata?: Metadata
   ) {
@@ -83,7 +83,7 @@ export class HashlinkEncoder {
 
   private static encodeMultiHash(
     buffer: Buffer | Uint8Array,
-    hashName: 'sha2-256' = 'sha2-256',
+    hashName: 'sha2-256',
     baseEncoding: BaseName = 'base58btc'
   ): string {
     // TODO: Support more hashing algorithms
