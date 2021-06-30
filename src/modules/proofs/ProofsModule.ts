@@ -275,7 +275,7 @@ export class ProofsModule {
 
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new ProposePresentationHandler(this.proofService, this.agentConfig))
-    dispatcher.registerHandler(new RequestPresentationHandler(this.proofService))
+    dispatcher.registerHandler(new RequestPresentationHandler(this.proofService, this.agentConfig))
     dispatcher.registerHandler(new PresentationHandler(this.proofService))
     dispatcher.registerHandler(new PresentationAckHandler(this.proofService))
   }
