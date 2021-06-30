@@ -23,7 +23,10 @@ export class RequestPresentationHandler implements Handler {
 
     const autoAccept = ProofUtils.composeAutoAccept(proofRecord.autoAcceptProof, this.agentConfig.autoAcceptProofs)
 
-    if (autoAccept === AutoAcceptProof.always) {
+    if (
+      autoAccept === AutoAcceptProof.always ||
+      (autoAccept === AutoAcceptProof.contentApproved && proofRecord.proposalMessage)
+    ) {
       return await this.nextStep(proofRecord, messageContext)
     }
   }
