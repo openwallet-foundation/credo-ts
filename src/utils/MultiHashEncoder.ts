@@ -10,7 +10,7 @@ export class MultiHashEncoder {
    *
    * @returns a multihash
    */
-  public static encode(buffer: Uint8Array, hashName: 'sha2-256' = 'sha2-256'): Uint8Array {
+  public static encode(buffer: Uint8Array, hashName: 'sha2-256'): Uint8Array {
     return multihash.encode(buffer, hashName)
   }
 
