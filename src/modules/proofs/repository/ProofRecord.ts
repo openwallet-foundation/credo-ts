@@ -1,4 +1,5 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
+import type { AutoAcceptProof } from '../../../types'
 import type { ProofState } from '../ProofState'
 
 import { Type } from 'class-transformer'
@@ -18,6 +19,7 @@ export interface ProofRecordProps {
   threadId: string
   presentationId?: string
   tags?: CustomProofTags
+  autoAcceptProof?: AutoAcceptProof
 
   // message data
   proposalMessage?: ProposePresentationMessage
@@ -38,6 +40,8 @@ export class ProofRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
   public isVerified?: boolean
   public presentationId?: string
   public state!: ProofState
+  public tags!: CustomProofTags
+  public autoAcceptProof?: AutoAcceptProof
 
   // message data
   @Type(() => ProposePresentationMessage)
@@ -64,6 +68,7 @@ export class ProofRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
       this.connectionId = props.connectionId
       this.threadId = props.threadId
       this.presentationId = props.presentationId
+      this.autoAcceptProof = props.autoAcceptProof
       this._tags = props.tags ?? {}
     }
   }

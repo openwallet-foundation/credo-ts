@@ -1,9 +1,9 @@
 import type { Logger } from '../logger'
-import type { InitConfig, InboundConnection } from '../types'
+import type { InboundConnection, InitConfig } from '../types'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { ConsoleLogger, LogLevel } from '../logger'
-import { DidCommMimeType } from '../types'
+import { AutoAcceptCredential, AutoAcceptProof, DidCommMimeType } from '../types'
 
 export class AgentConfig {
   private initConfig: InitConfig
@@ -61,6 +61,14 @@ export class AgentConfig {
 
   public get autoAcceptConnections() {
     return this.initConfig.autoAcceptConnections ?? false
+  }
+
+  public get autoAcceptCredentials() {
+    return this.initConfig.autoAcceptCredentials ?? AutoAcceptCredential.never
+  }
+
+  public get autoAcceptProofs() {
+    return this.initConfig.autoAcceptProofs ?? AutoAcceptProof.never
   }
 
   public get didCommMimeType() {

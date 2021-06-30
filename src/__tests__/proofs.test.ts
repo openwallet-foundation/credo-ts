@@ -15,6 +15,7 @@ import {
   AttributeFilter,
   ProofPredicateInfo,
 } from '../modules/proofs'
+import { AutoAcceptProof } from '../types'
 
 import {
   ensurePublicDidIsOnLedger,
@@ -30,8 +31,8 @@ import {
 } from './helpers'
 import testLogger from './logger'
 
-const faberConfig = getBaseConfig('Faber Proofs', { genesisPath })
-const aliceConfig = getBaseConfig('Alice Proofs', { genesisPath })
+const faberConfig = getBaseConfig('Faber Proofs', { genesisPath, autoAcceptProofs: AutoAcceptProof.always })
+const aliceConfig = getBaseConfig('Alice Proofs', { genesisPath, autoAcceptProofs: AutoAcceptProof.always })
 
 const credentialPreview = new CredentialPreview({
   attributes: [
@@ -138,9 +139,6 @@ describe('Present Proof', () => {
       threadId: aliceProofRecord.threadId,
       state: ProofState.ProposalReceived,
     })
-
-    testLogger.test('Faber accepts presentation proposal from Alice')
-    faberProofRecord = await faberAgent.proofs.acceptProposal(faberProofRecord.id)
 
     testLogger.test('Alice waits for presentation request from Faber')
     aliceProofRecord = await waitForProofRecord(aliceAgent, {
