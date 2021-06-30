@@ -111,9 +111,9 @@ export class ProofService {
     // Create record
     const proofRecord = new ProofRecord({
       connectionId: connectionRecord.id,
+      threadId: proposalMessage.threadId,
       state: ProofState.ProposalSent,
       proposalMessage,
-      tags: { threadId: proposalMessage.threadId, connectionId: connectionRecord.id },
     })
     await this.proofRepository.save(proofRecord)
     this.eventEmitter.emit<ProofStateChangedEvent>({
@@ -149,7 +149,7 @@ export class ProofService {
       comment: config?.comment,
       presentationProposal,
     })
-    proposalMessage.setThread({ threadId: proofRecord.tags.threadId })
+    proposalMessage.setThread({ threadId: proofRecord.threadId })
 
     // Update record
     proofRecord.proposalMessage = proposalMessage
@@ -196,9 +196,9 @@ export class ProofService {
       // No proof record exists with thread id
       proofRecord = new ProofRecord({
         connectionId: connection.id,
+        threadId: proposalMessage.threadId,
         proposalMessage,
         state: ProofState.ProposalReceived,
-        tags: { threadId: proposalMessage.threadId, connectionId: connection.id },
       })
 
       // Save record
@@ -248,7 +248,7 @@ export class ProofService {
       requestPresentationAttachments: [attachment],
     })
     requestPresentationMessage.setThread({
-      threadId: proofRecord.tags.threadId,
+      threadId: proofRecord.threadId,
     })
 
     // Update record
@@ -294,9 +294,9 @@ export class ProofService {
     // Create record
     const proofRecord = new ProofRecord({
       connectionId: connectionRecord.id,
+      threadId: requestPresentationMessage.threadId,
       requestMessage: requestPresentationMessage,
       state: ProofState.RequestSent,
-      tags: { threadId: requestPresentationMessage.threadId, connectionId: connectionRecord.id },
     })
 
     await this.proofRepository.save(proofRecord)
@@ -356,9 +356,9 @@ export class ProofService {
       // No proof record exists with thread id
       proofRecord = new ProofRecord({
         connectionId: connection.id,
+        threadId: proofRequestMessage.threadId,
         requestMessage: proofRequestMessage,
         state: ProofState.RequestReceived,
-        tags: { threadId: proofRequestMessage.threadId, connectionId: connection.id },
       })
 
       // Save in repository
@@ -394,7 +394,7 @@ export class ProofService {
     const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
     if (!indyProofRequest) {
       throw new AriesFrameworkError(
-        `Missing required base64 encoded attachment data for presentation with thread id ${proofRecord.tags.threadId}`
+        `Missing required base64 encoded attachment data for presentation with thread id ${proofRecord.threadId}`
       )
     }
 
@@ -421,7 +421,7 @@ export class ProofService {
       presentationAttachments: [attachment],
       attachments,
     })
-    presentationMessage.setThread({ threadId: proofRecord.tags.threadId })
+    presentationMessage.setThread({ threadId: proofRecord.threadId })
 
     // Update record
     proofRecord.presentationMessage = presentationMessage
@@ -495,7 +495,7 @@ export class ProofService {
     // Create message
     const ackMessage = new PresentationAckMessage({
       status: AckStatus.OK,
-      threadId: proofRecord.tags.threadId,
+      threadId: proofRecord.threadId,
     })
 
     // Update record

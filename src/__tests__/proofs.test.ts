@@ -157,7 +157,7 @@ describe('Present Proof', () => {
 
     testLogger.test('Faber waits for presentation proposal from Alice')
     let faberProofRecord = await waitForProofRecord(faberAgent, {
-      threadId: aliceProofRecord.tags.threadId,
+      threadId: aliceProofRecord.threadId,
       state: ProofState.ProposalReceived,
     })
 
@@ -166,7 +166,7 @@ describe('Present Proof', () => {
 
     testLogger.test('Alice waits for presentation request from Faber')
     aliceProofRecord = await waitForProofRecord(aliceAgent, {
-      threadId: aliceProofRecord.tags.threadId,
+      threadId: aliceProofRecord.threadId,
       state: ProofState.RequestReceived,
     })
 
@@ -181,7 +181,7 @@ describe('Present Proof', () => {
 
     testLogger.test('Faber waits for presentation from Alice')
     faberProofRecord = await waitForProofRecord(faberAgent, {
-      threadId: aliceProofRecord.tags.threadId,
+      threadId: aliceProofRecord.threadId,
       state: ProofState.PresentationReceived,
     })
 
@@ -193,7 +193,7 @@ describe('Present Proof', () => {
 
     // Alice waits till it receives presentation ack
     aliceProofRecord = await waitForProofRecord(aliceAgent, {
-      threadId: aliceProofRecord.tags.threadId,
+      threadId: aliceProofRecord.threadId,
       state: ProofState.Done,
     })
   })
@@ -249,7 +249,7 @@ describe('Present Proof', () => {
 
     testLogger.test('Alice waits for presentation request from Faber')
     let aliceProofRecord = await waitForProofRecord(aliceAgent, {
-      threadId: faberProofRecord.tags.threadId,
+      threadId: faberProofRecord.threadId,
       state: ProofState.RequestReceived,
     })
 
@@ -264,7 +264,7 @@ describe('Present Proof', () => {
 
     testLogger.test('Faber waits for presentation from Alice')
     faberProofRecord = await waitForProofRecord(faberAgent, {
-      threadId: aliceProofRecord.tags.threadId,
+      threadId: aliceProofRecord.threadId,
       state: ProofState.PresentationReceived,
     })
 
@@ -276,7 +276,7 @@ describe('Present Proof', () => {
 
     // Alice waits till it receives presentation ack
     aliceProofRecord = await waitForProofRecord(aliceAgent, {
-      threadId: aliceProofRecord.tags.threadId,
+      threadId: aliceProofRecord.threadId,
       state: ProofState.Done,
     })
   })

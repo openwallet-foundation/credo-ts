@@ -98,11 +98,11 @@ export class CredentialService {
     // Create record
     const credentialRecord = new CredentialRecord({
       connectionId: connectionRecord.id,
+      threadId: proposalMessage.threadId,
       state: CredentialState.ProposalSent,
       proposalMessage,
       linkedAttachments: config?.linkedAttachments?.map((linkedAttachment) => linkedAttachment.attachment),
       credentialAttributes: proposalMessage.credentialProposal?.attributes,
-      tags: { threadId: proposalMessage.threadId, connectionId: connectionRecord.id },
     })
     await this.credentialRepository.save(credentialRecord)
     this.eventEmitter.emit<CredentialStateChangedEvent>({
@@ -134,7 +134,7 @@ export class CredentialService {
 
     // Create message
     const proposalMessage = new ProposeCredentialMessage(config ?? {})
-    proposalMessage.setThread({ threadId: credentialRecord.tags.threadId })
+    proposalMessage.setThread({ threadId: credentialRecord.threadId })
 
     // Update record
     credentialRecord.proposalMessage = proposalMessage
@@ -183,10 +183,10 @@ export class CredentialService {
       // No credential record exists with thread id
       credentialRecord = new CredentialRecord({
         connectionId: connection.id,
+        threadId: proposalMessage.threadId,
         proposalMessage,
         credentialAttributes: proposalMessage.credentialProposal?.attributes,
         state: CredentialState.ProposalReceived,
-        tags: { threadId: proposalMessage.threadId, connectionId: connection.id },
       })
 
       // Save record
@@ -238,7 +238,7 @@ export class CredentialService {
     })
 
     credentialOfferMessage.setThread({
-      threadId: credentialRecord.tags.threadId,
+      threadId: credentialRecord.threadId,
     })
 
     credentialRecord.offerMessage = credentialOfferMessage
@@ -294,6 +294,7 @@ export class CredentialService {
     // Create record
     const credentialRecord = new CredentialRecord({
       connectionId: connectionRecord.id,
+      threadId: credentialOfferMessage.id,
       offerMessage: credentialOfferMessage,
       credentialAttributes: credentialPreview.attributes,
       linkedAttachments: linkedAttachments?.map((linkedAttachments) => linkedAttachments.attachment),
@@ -302,7 +303,6 @@ export class CredentialService {
         schemaId: credOffer.schema_id,
       },
       state: CredentialState.OfferSent,
-      tags: { threadId: credentialOfferMessage.id, connectionId: connectionRecord.id },
     })
 
     await this.credentialRepository.save(credentialRecord)
@@ -366,6 +366,7 @@ export class CredentialService {
       // No credential record exists with thread id
       credentialRecord = new CredentialRecord({
         connectionId: connection.id,
+        threadId: credentialOfferMessage.id,
         offerMessage: credentialOfferMessage,
         credentialAttributes: credentialOfferMessage.credentialPreview.attributes,
         metadata: {
@@ -373,7 +374,6 @@ export class CredentialService {
           schemaId: indyCredentialOffer.schema_id,
         },
         state: CredentialState.OfferReceived,
-        tags: { threadId: credentialOfferMessage.id, connectionId: connection.id },
       })
 
       // Save in repository
@@ -412,7 +412,7 @@ export class CredentialService {
 
     if (!credentialOffer) {
       throw new AriesFrameworkError(
-        `Missing required base64 encoded attachment data for credential offer with thread id ${credentialRecord.tags.threadId}`
+        `Missing required base64 encoded attachment data for credential offer with thread id ${credentialRecord.threadId}`
       )
     }
 
@@ -438,8 +438,7 @@ export class CredentialService {
       requestAttachments: [requestAttachment],
       attachments: credentialRecord.offerMessage?.attachments?.filter((attachment) => isLinkedAttachment(attachment)),
     })
-
-    credentialRequest.setThread({ threadId: credentialRecord.tags.threadId })
+    credentialRequest.setThread({ threadId: credentialRecord.threadId })
 
     credentialRecord.metadata.requestMetadata = credReqMetadata
     credentialRecord.requestMessage = credentialRequest
@@ -514,7 +513,7 @@ export class CredentialService {
     // Assert offer message
     if (!offerMessage) {
       throw new AriesFrameworkError(
-        `Missing credential offer for credential exchange with thread id ${credentialRecord.tags.threadId}`
+        `Missing credential offer for credential exchange with thread id ${credentialRecord.threadId}`
       )
     }
 
@@ -530,7 +529,7 @@ export class CredentialService {
     const indyCredentialOffer = offerMessage?.indyCredentialOffer
     if (!indyCredentialOffer) {
       throw new AriesFrameworkError(
-        `Missing required base64 encoded attachment data for credential offer with thread id ${credentialRecord.tags.threadId}`
+        `Missing required base64 encoded attachment data for credential offer with thread id ${credentialRecord.threadId}`
       )
     }
 
@@ -538,7 +537,7 @@ export class CredentialService {
     const indyCredentialRequest = requestMessage?.indyCredentialRequest
     if (!indyCredentialRequest) {
       throw new AriesFrameworkError(
-        `Missing required base64 encoded attachment data for credential request with thread id ${credentialRecord.tags.threadId}`
+        `Missing required base64 encoded attachment data for credential request with thread id ${credentialRecord.threadId}`
       )
     }
 
@@ -566,7 +565,7 @@ export class CredentialService {
         requestMessage?.attachments?.filter((attachment) => isLinkedAttachment(attachment)),
     })
     issueCredentialMessage.setThread({
-      threadId: credentialRecord.tags.threadId,
+      threadId: credentialRecord.threadId,
     })
     issueCredentialMessage.setPleaseAck()
 
@@ -636,7 +635,6 @@ export class CredentialService {
       credential: indyCredential,
       credentialDefinition,
     })
-    credentialRecord.tags.credentialId = credentialId
     credentialRecord.credentialId = credentialId
     credentialRecord.credentialMessage = issueCredentialMessage
     await this.updateState(credentialRecord, CredentialState.CredentialReceived)
@@ -659,7 +657,7 @@ export class CredentialService {
     // Create message
     const ackMessage = new CredentialAckMessage({
       status: AckStatus.OK,
-      threadId: credentialRecord.tags.threadId,
+      threadId: credentialRecord.threadId,
     })
 
     await this.updateState(credentialRecord, CredentialState.Done)
