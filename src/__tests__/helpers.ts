@@ -4,7 +4,7 @@ import type { CredentialRecord, CredentialOfferTemplate, CredentialStateChangedE
 import type { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/ledger'
 import type { ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
 import type { InboundTransporter, OutboundTransporter } from '../transport'
-import type { AutoAcceptCredential, AutoAcceptProof, InitConfig, OutboundPackage, WireMessage } from '../types'
+import type { AutoAcceptProof, InitConfig, OutboundPackage, WireMessage } from '../types'
 import type { Schema, CredDef, Did } from 'indy-sdk'
 
 import indy from 'indy-sdk'

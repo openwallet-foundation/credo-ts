@@ -3,7 +3,7 @@ import type { InboundConnection, InitConfig } from '../types'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { ConsoleLogger, LogLevel } from '../logger'
-import { AutoAcceptCredential, AutoAcceptProof, DidCommMimeType } from '../types'
+import { AutoAcceptProof, DidCommMimeType } from '../types'
 
 export class AgentConfig {
   private initConfig: InitConfig
