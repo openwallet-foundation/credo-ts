@@ -6,32 +6,33 @@ import { Subject } from 'rxjs'
 import { Agent } from '../agent/Agent'
 import { CredentialPreview, CredentialPreviewAttribute } from '../modules/credentials'
 import {
+  AttributeFilter,
   PredicateType,
   PresentationPreview,
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
-  ProofState,
   ProofAttributeInfo,
-  AttributeFilter,
   ProofPredicateInfo,
+  ProofState,
 } from '../modules/proofs'
+import { AutoAcceptProof } from '../types'
 
 import {
   ensurePublicDidIsOnLedger,
+  genesisPath,
+  getBaseConfig,
+  issueCredential,
   makeConnection,
   registerDefinition,
   registerSchema,
   SubjectInboundTransporter,
   SubjectOutboundTransporter,
-  genesisPath,
-  issueCredential,
   waitForProofRecord,
-  getBaseConfig,
 } from './helpers'
 import testLogger from './logger'
 
-const faberConfig = getBaseConfig('Faber Proofs', { genesisPath })
-const aliceConfig = getBaseConfig('Alice Proofs', { genesisPath })
+const faberConfig = getBaseConfig('Faber Proofs', { genesisPath, autoAcceptProofs: AutoAcceptProof.always })
+const aliceConfig = getBaseConfig('Alice Proofs', { genesisPath, autoAcceptProofs: AutoAcceptProof.always })
 
 const credentialPreview = new CredentialPreview({
   attributes: [
@@ -139,23 +140,11 @@ describe('Present Proof', () => {
       state: ProofState.ProposalReceived,
     })
 
-    testLogger.test('Faber accepts presentation proposal from Alice')
-    faberProofRecord = await faberAgent.proofs.acceptProposal(faberProofRecord.id)
-
     testLogger.test('Alice waits for presentation request from Faber')
     aliceProofRecord = await waitForProofRecord(aliceAgent, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.RequestReceived,
     })
-
-    testLogger.test('Alice accepts presentation request from Faber')
-    const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest
-    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
-      indyProofRequest!,
-      presentationPreview
-    )
-    const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
-    await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
 
     testLogger.test('Faber waits for presentation from Alice')
     faberProofRecord = await waitForProofRecord(faberAgent, {
@@ -165,9 +154,6 @@ describe('Present Proof', () => {
 
     // assert presentation is valid
     expect(faberProofRecord.isVerified).toBe(true)
-
-    // Faber accepts presentation
-    await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
 
     // Alice waits till it receives presentation ack
     aliceProofRecord = await waitForProofRecord(aliceAgent, {
@@ -215,15 +201,6 @@ describe('Present Proof', () => {
       state: ProofState.RequestReceived,
     })
 
-    testLogger.test('Alice accepts presentation request from Faber')
-    const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest
-    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
-      indyProofRequest!,
-      presentationPreview
-    )
-    const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
-    await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
-
     testLogger.test('Faber waits for presentation from Alice')
     faberProofRecord = await waitForProofRecord(faberAgent, {
       threadId: aliceProofRecord.threadId,
@@ -232,9 +209,6 @@ describe('Present Proof', () => {
 
     // assert presentation is valid
     expect(faberProofRecord.isVerified).toBe(true)
-
-    // Faber accepts presentation
-    await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
 
     // Alice waits till it receives presentation ack
     aliceProofRecord = await waitForProofRecord(aliceAgent, {

@@ -29,14 +29,19 @@ export class RequestPresentationHandler implements Handler {
   }
 
   private async nextStep(proofRecord: ProofRecord, messageContext: HandlerInboundMessage<RequestPresentationHandler>) {
-    // const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
-    // //TODO: how can I get the credentials without access to the agent
-    // // const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
-    // //   indyProofRequest!,
-    // //   presentationPreview
-    // // )
-    // // const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
-    // const { message } = await this.proofService.createPresentation(proofRecord, requestedCredentials)
-    // return createOutboundMessage(messageContext.connection!, message)
+    const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
+
+    if (indyProofRequest) {
+      const retrievedCredentials = await this.proofService.getRequestedCredentialsForProofRequest(
+        indyProofRequest,
+        proofRecord.proposalMessage?.presentationProposal
+      )
+
+      const requestedCredentials = this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)
+
+      const { message } = await this.proofService.createPresentation(proofRecord, requestedCredentials)
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      return createOutboundMessage(messageContext.connection!, message)
+    }
   }
 }
