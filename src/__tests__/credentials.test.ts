@@ -390,6 +390,7 @@ describe('credentials', () => {
     // below values are not in json object
     expect(aliceCredentialRecord.id).not.toBeNull()
     expect(aliceCredentialRecord.getTags()).toEqual({
+      state: aliceCredentialRecord.state,
       threadId: faberCredentialRecord.threadId,
       connectionId: aliceCredentialRecord.connectionId,
     })
@@ -426,10 +427,6 @@ describe('credentials', () => {
       type: CredentialRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      tags: {
-        threadId: expect.any(String),
-        connectionId: expect.any(String),
-      },
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
       metadata: {
@@ -445,10 +442,6 @@ describe('credentials', () => {
       type: CredentialRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      tags: {
-        threadId: expect.any(String),
-        connectionId: expect.any(String),
-      },
       metadata: {
         schemaId,
         credentialDefinitionId: credDefId,
@@ -519,6 +512,7 @@ describe('credentials', () => {
     // below values are not in json object
     expect(aliceCredentialRecord.id).not.toBeNull()
     expect(aliceCredentialRecord.getTags()).toEqual({
+      state: aliceCredentialRecord.state,
       threadId: faberCredentialRecord.threadId,
       connectionId: aliceCredentialRecord.connectionId,
     })
@@ -555,10 +549,6 @@ describe('credentials', () => {
       type: CredentialRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      tags: {
-        threadId: expect.any(String),
-      },
-      offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
       metadata: { requestMetadata: expect.any(Object) },
       credentialId: expect.any(String),
@@ -569,10 +559,6 @@ describe('credentials', () => {
       type: CredentialRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      tags: {
-        threadId: expect.any(String),
-      },
-      offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
       state: CredentialState.Done,
     })
