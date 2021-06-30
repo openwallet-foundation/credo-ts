@@ -63,10 +63,6 @@ export class AgentConfig {
     return this.initConfig.autoAcceptConnections ?? false
   }
 
-  public get autoAcceptCredentials() {
-    return this.initConfig.autoAcceptCredentials ?? AutoAcceptCredential.never
-  }
-
   public get autoAcceptProofs() {
     return this.initConfig.autoAcceptProofs ?? AutoAcceptProof.never
   }
