@@ -45,10 +45,7 @@ class WsInboundTransporter implements InboundTransporter {
       logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
       // @ts-expect-error Property 'dispatchEvent' is missing in type WebSocket imported from 'ws' module but required in type 'WebSocket'.
       const session = new WebSocketTransportSession(socket)
-      const outboundMessage = await agent.receiveMessage(JSON.parse(event.data), session)
-      if (outboundMessage) {
-        socket.send(JSON.stringify(outboundMessage.payload))
-      }
+      await agent.receiveMessage(JSON.parse(event.data), session)
     })
   }
 }

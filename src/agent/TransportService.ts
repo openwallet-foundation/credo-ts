@@ -1,4 +1,5 @@
 import type { ConnectionRecord } from '../modules/connections/repository'
+import type { OutboundPackage } from '../types'
 
 import { Lifecycle, scoped, inject } from 'tsyringe'
 
@@ -54,4 +55,5 @@ interface TransportSessionTable {
 
 export interface TransportSession {
   type: string
+  send(outboundMessage: OutboundPackage): Promise<void>
 }

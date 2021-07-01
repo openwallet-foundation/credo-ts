@@ -10,10 +10,18 @@ import { WebSocket } from '../utils/ws'
 
 export class WebSocketTransportSession implements TransportSession {
   public readonly type = 'websocket'
-  public socket?: WebSocket
+  public socket: WebSocket
 
-  public constructor(socket?: WebSocket) {
+  public constructor(socket: WebSocket) {
     this.socket = socket
+  }
+
+  public async send(outboundMessage: OutboundPackage): Promise<void> {
+    // logger.debug(`Sending outbound message via ${this.type} transport session`)
+    if (this.socket.readyState !== WebSocket.OPEN) {
+      throw new Error(`${this.type} transport session has been closed.`)
+    }
+    this.socket.send(JSON.stringify(outboundMessage.payload))
   }
 }
 

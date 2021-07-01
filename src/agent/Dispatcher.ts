@@ -10,6 +10,9 @@ import { AriesFrameworkError } from '../error/AriesFrameworkError'
 
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
+import { ConsoleLogger, LogLevel } from '../logger'
+
+const logger = new ConsoleLogger(LogLevel.debug)
 
 @scoped(Lifecycle.ContainerScoped)
 class Dispatcher {
@@ -26,7 +29,7 @@ class Dispatcher {
     this.handlers.push(handler)
   }
 
-  public async dispatch(messageContext: InboundMessageContext): Promise<OutboundMessage | OutboundPackage | undefined> {
+  public async dispatch(messageContext: InboundMessageContext): Promise<void> {
     const message = messageContext.message
     const handler = this.getHandlerForType(message.type)
 
@@ -50,7 +53,14 @@ class Dispatcher {
           routingKeys: [],
           senderKey: messageContext.connection?.verkey || null,
         }
-        return await this.messageSender.packMessage(outboundMessage, keys)
+        const session = this.transportService.findSession(messageContext.connection?.id || '')
+        const outboundPackage = await this.messageSender.packMessage(outboundMessage, keys)
+        try {
+          await session.send(outboundPackage)
+          return
+        } catch (error) {
+          logger.info('The transport session has been closed or failed to send the outbound message.', error)
+        }
       }
 
       await this.messageSender.sendMessage(outboundMessage)

@@ -1,6 +1,6 @@
 import type { ConnectionRecord } from '../../modules/connections'
 import type { OutboundTransporter } from '../../transport'
-import type { OutboundMessage } from '../../types'
+import type { OutboundMessage, OutboundPackage } from '../../types'
 import type { TransportSession } from '../TransportService'
 
 import { getMockConnection, mockFunction } from '../../__tests__/helpers'
@@ -36,6 +36,9 @@ class DummyOutboundTransporter implements OutboundTransporter {
 
 class DummyTransportSession implements TransportSession {
   public readonly type = 'dummy'
+  public send(outboundMessage: OutboundPackage): Promise<void> {
+    throw new Error('Method not implemented.')
+  }
 }
 
 describe('MessageSender', () => {
