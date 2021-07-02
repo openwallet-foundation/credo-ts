@@ -7,7 +7,7 @@ import { get } from '../http'
 const aliceConfig = getBaseConfig('E2E Alice', { mediatorUrl: 'http://localhost:3001' })
 const bobConfig = getBaseConfig('E2E Bob', { mediatorUrl: 'http://localhost:3002' })
 
-describe('with mediator', () => {
+describe('with http mediator', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
   let aliceAtAliceBobId: string

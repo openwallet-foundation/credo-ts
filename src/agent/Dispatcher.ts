@@ -1,4 +1,3 @@
-import type { OutboundMessage, OutboundPackage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { Handler } from './Handler'
 import type { InboundMessageContext } from './models/InboundMessageContext'
@@ -7,10 +6,10 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { ConsoleLogger, LogLevel } from '../logger'
 
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
-import { ConsoleLogger, LogLevel } from '../logger'
 
 const logger = new ConsoleLogger(LogLevel.debug)
 
@@ -48,13 +47,11 @@ class Dispatcher {
 
       // Check for return routing, with thread id
       if (message.hasReturnRouting(threadId)) {
-        const keys = {
-          recipientKeys: messageContext.senderVerkey ? [messageContext.senderVerkey] : [],
-          routingKeys: [],
-          senderKey: messageContext.connection?.verkey || null,
-        }
         const session = this.transportService.findSession(messageContext.connection?.id || '')
-        const outboundPackage = await this.messageSender.packMessage(outboundMessage, keys)
+        if (!session.keys) {
+          throw new AriesFrameworkError(`There are no keys for the transport session with type ${session.type}`)
+        }
+        const outboundPackage = await this.messageSender.packMessage(outboundMessage, session.keys)
         try {
           await session.send(outboundPackage)
           return

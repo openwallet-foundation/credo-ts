@@ -74,6 +74,13 @@ export class MessageReceiver {
     }
 
     if (connection && session) {
+      const keys = {
+        // TODO handle the case when senderKey is missing
+        recipientKeys: senderKey ? [senderKey] : [],
+        routingKeys: [],
+        senderKey: connection?.verkey || null,
+      }
+      session.keys = keys
       this.transportService.saveSession(connection.id, session)
     }
 
