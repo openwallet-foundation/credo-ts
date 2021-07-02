@@ -1,10 +1,12 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { CredentialRecord } from '../repository/CredentialRecord'
 import type { CredentialService } from '../services'
 
+import { createOutboundMessage } from '../../../agent/helpers'
 import { ProposeCredentialMessage } from '../messages'
 
-import { AutoRespondHandler } from './AutoRespondHandler'
+import { AutoResponseHandler } from './AutoResponseHandler'
 
 export class ProposeCredentialHandler implements Handler {
   private credentialService: CredentialService
@@ -18,10 +20,50 @@ export class ProposeCredentialHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<ProposeCredentialHandler>) {
     const credentialRecord = await this.credentialService.processProposal(messageContext)
-    return await new AutoRespondHandler(this.credentialService).shoudlAutoRespondToProposal(
-      messageContext,
-      credentialRecord,
-      this.agentConfig
+    if (
+      await AutoResponseHandler.shoudlAutoRespondToProposal(credentialRecord, this.agentConfig.autoAcceptCredentials)
+    ) {
+      return await this.sendOffer(credentialRecord, messageContext)
+    }
+  }
+
+  /**
+   * Sends an offer message to the other agent
+   *
+   * @param credentialRecord The credentialRecord that contains the message(s) to respond to
+   * @param messageContext The context that is needed to respond on
+   * @returns a message that will be send to the other agent
+   */
+  private async sendOffer(
+    credentialRecord: CredentialRecord,
+    messageContext: HandlerInboundMessage<ProposeCredentialHandler>
+  ) {
+    this.agentConfig.logger.info(
+      `Automatically sending offer with autoAccept on ${this.agentConfig.autoAcceptCredentials}`
     )
+
+    if (!messageContext.connection) {
+      this.agentConfig.logger.error('No connection on the messageContext, aborting auto accept')
+      return
+    }
+
+    if (!credentialRecord.proposalMessage?.credentialProposal) {
+      this.agentConfig.logger.error(
+        `Credential record with id ${credentialRecord.id} is missing required credential proposal`
+      )
+      return
+    }
+
+    if (!credentialRecord.proposalMessage.credentialDefinitionId) {
+      this.agentConfig.logger.error('Missing required credential definition id')
+      return
+    }
+
+    const { message } = await this.credentialService.createOfferAsResponse(credentialRecord, {
+      credentialDefinitionId: credentialRecord.proposalMessage.credentialDefinitionId,
+      preview: credentialRecord.proposalMessage.credentialProposal,
+    })
+
+    return createOutboundMessage(messageContext.connection, message)
   }
 }
