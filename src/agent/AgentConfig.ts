@@ -64,7 +64,7 @@ export class AgentConfig {
   }
 
   public get autoAcceptCredentials() {
-    return this.initConfig.autoAcceptCredentials ?? AutoAcceptCredential.never
+    return this.initConfig.autoAcceptCredentials ?? AutoAcceptCredential.Never
   }
 
   public get didCommMimeType() {

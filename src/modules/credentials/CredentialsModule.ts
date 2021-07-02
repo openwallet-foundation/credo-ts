@@ -1,7 +1,7 @@
 import type { AutoAcceptCredential } from '../../types'
-import type { CredentialPreview, ProposeCredentialMessageOptions } from './messages'
+import type { CredentialPreview } from './messages'
 import type { CredentialRecord } from './repository/CredentialRecord'
-import type { CredentialOfferTemplate } from './services'
+import type { CredentialOfferTemplate, CredentialProposeOptions } from './services'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -10,7 +10,7 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
-import { ConnectionService } from '../connections'
+import { ConnectionService } from '../connections/services/ConnectionService'
 
 import {
   ProposeCredentialHandler,
@@ -50,10 +50,7 @@ export class CredentialsModule {
    * @param config Additional configuration to use for the proposal
    * @returns Credential record associated with the sent proposal message
    */
-  public async proposeCredential(
-    connectionId: string,
-    config?: Omit<ProposeCredentialMessageOptions, 'id'> & { autoAcceptCredential?: AutoAcceptCredential }
-  ) {
+  public async proposeCredential(connectionId: string, config?: CredentialProposeOptions) {
     const connection = await this.connectionService.getById(connectionId)
 
     const { message, credentialRecord } = await this.credentialService.createProposal(connection, config)
@@ -175,7 +172,7 @@ export class CredentialsModule {
    */
   public async offerCredential(
     connectionId: string,
-    credentialTemplate: CredentialOfferTemplate & { autoAcceptCredential?: AutoAcceptCredential }
+    credentialTemplate: CredentialOfferTemplate
   ): Promise<CredentialRecord> {
     const connection = await this.connectionService.getById(connectionId)
 

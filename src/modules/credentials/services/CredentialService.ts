@@ -74,7 +74,7 @@ export class CredentialService {
    */
   public async createProposal(
     connectionRecord: ConnectionRecord,
-    config?: Omit<ProposeCredentialMessageOptions, 'id'> & { autoAcceptCredential?: AutoAcceptCredential }
+    config?: CredentialProposeOptions
   ): Promise<CredentialProtocolMsgReturnType<ProposeCredentialMessage>> {
     // Assert
     connectionRecord.assertReady()
@@ -89,7 +89,6 @@ export class CredentialService {
       state: CredentialState.ProposalSent,
       proposalMessage,
       credentialAttributes: proposalMessage.credentialProposal?.attributes,
-      tags: { threadId: proposalMessage.threadId, connectionId: connectionRecord.id },
       autoAcceptCredential: config?.autoAcceptCredential,
     })
     await this.credentialRepository.save(credentialRecord)
@@ -115,7 +114,7 @@ export class CredentialService {
    */
   public async createProposalAsResponse(
     credentialRecord: CredentialRecord,
-    config?: Omit<ProposeCredentialMessageOptions, 'id'> & { autoAcceptCredential?: AutoAcceptCredential }
+    config?: CredentialProposeOptions
   ): Promise<CredentialProtocolMsgReturnType<ProposeCredentialMessage>> {
     // Assert
     credentialRecord.assertState(CredentialState.OfferReceived)
@@ -165,7 +164,6 @@ export class CredentialService {
 
       // Update record
       credentialRecord.proposalMessage = proposalMessage
-      credentialRecord.credentialAttributes = proposalMessage.credentialProposal?.attributes
       await this.updateState(credentialRecord, CredentialState.ProposalReceived)
     } catch {
       // No credential record exists with thread id
@@ -202,7 +200,7 @@ export class CredentialService {
    */
   public async createOfferAsResponse(
     credentialRecord: CredentialRecord,
-    credentialTemplate: CredentialOfferTemplate & { autoAcceptCredential?: AutoAcceptCredential }
+    credentialTemplate: CredentialOfferTemplate
   ): Promise<CredentialProtocolMsgReturnType<OfferCredentialMessage>> {
     // Assert
     credentialRecord.assertState(CredentialState.ProposalReceived)
@@ -249,7 +247,7 @@ export class CredentialService {
    */
   public async createOffer(
     connectionRecord: ConnectionRecord,
-    credentialTemplate: CredentialOfferTemplate & { autoAcceptCredential?: AutoAcceptCredential }
+    credentialTemplate: CredentialOfferTemplate
   ): Promise<CredentialProtocolMsgReturnType<OfferCredentialMessage>> {
     // Assert
     connectionRecord.assertReady()
@@ -281,7 +279,6 @@ export class CredentialService {
         schemaId: credOffer.schema_id,
       },
       state: CredentialState.OfferSent,
-      tags: { threadId: credentialOfferMessage.id, connectionId: connectionRecord.id },
       autoAcceptCredential: credentialTemplate.autoAcceptCredential,
     })
 
@@ -335,7 +332,6 @@ export class CredentialService {
       credentialRecord.assertState(CredentialState.ProposalSent)
 
       credentialRecord.offerMessage = credentialOfferMessage
-      credentialRecord.credentialAttributes = credentialOfferMessage.credentialPreview.attributes
       credentialRecord.metadata.credentialDefinitionId = indyCredentialOffer.cred_def_id
       credentialRecord.metadata.schemaId = indyCredentialOffer.schema_id
       await this.updateState(credentialRecord, CredentialState.OfferReceived)
@@ -377,7 +373,7 @@ export class CredentialService {
    */
   public async createRequest(
     credentialRecord: CredentialRecord,
-    options: CredentialRequestOptions & { autoAcceptCredential?: AutoAcceptCredential } = {}
+    options?: CredentialRequestOptions
   ): Promise<CredentialProtocolMsgReturnType<RequestCredentialMessage>> {
     // Assert credential
     credentialRecord.assertState(CredentialState.OfferReceived)
@@ -408,16 +404,15 @@ export class CredentialService {
       }),
     })
 
-    const { comment } = options
     const credentialRequest = new RequestCredentialMessage({
-      comment,
+      comment: options?.comment,
       requestAttachments: [attachment],
     })
     credentialRequest.setThread({ threadId: credentialRecord.threadId })
 
     credentialRecord.metadata.requestMetadata = credReqMetadata
     credentialRecord.requestMessage = credentialRequest
-    credentialRecord.autoAcceptCredential = options.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
+    credentialRecord.autoAcceptCredential = options?.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
     await this.updateState(credentialRecord, CredentialState.RequestSent)
 
@@ -476,7 +471,7 @@ export class CredentialService {
    */
   public async createCredential(
     credentialRecord: CredentialRecord,
-    options: CredentialResponseOptions & { autoAcceptCredential?: AutoAcceptCredential } = {}
+    options?: CredentialResponseOptions
   ): Promise<CredentialProtocolMsgReturnType<IssueCredentialMessage>> {
     // Assert
     credentialRecord.assertState(CredentialState.RequestReceived)
@@ -528,9 +523,8 @@ export class CredentialService {
       }),
     })
 
-    const { comment, autoAcceptCredential } = options
     const issueCredentialMessage = new IssueCredentialMessage({
-      comment,
+      comment: options?.comment,
       credentialAttachments: [credentialAttachment],
     })
     issueCredentialMessage.setThread({
@@ -539,7 +533,7 @@ export class CredentialService {
     issueCredentialMessage.setPleaseAck()
 
     credentialRecord.credentialMessage = issueCredentialMessage
-    credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
+    credentialRecord.autoAcceptCredential = options?.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
     await this.updateState(credentialRecord, CredentialState.CredentialIssued)
 
@@ -582,18 +576,6 @@ export class CredentialService {
     if (!indyCredential) {
       throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for credential with thread id ${issueCredentialMessage.threadId}`
-      )
-    }
-
-    // Assert the values in the received credential match the values
-    // that were negotiated in the credential exchange
-    // TODO: Ideally we don't throw here, but instead store that it's not equal.
-    // the credential may still have value, and we could just respond with an ack
-    // status of fail
-    if (credentialRecord.credentialAttributes) {
-      CredentialUtils.assertValuesMatch(
-        indyCredential.values,
-        CredentialUtils.convertAttributesToValues(credentialRecord.credentialAttributes)
       )
     }
 
@@ -743,12 +725,19 @@ export interface CredentialOfferTemplate {
   credentialDefinitionId: CredDefId
   comment?: string
   preview: CredentialPreview
+  autoAcceptCredential?: AutoAcceptCredential
 }
 
 export interface CredentialRequestOptions {
   comment?: string
+  autoAcceptCredential?: AutoAcceptCredential
 }
 
 export interface CredentialResponseOptions {
   comment?: string
+  autoAcceptCredential?: AutoAcceptCredential
+}
+
+export type CredentialProposeOptions = Omit<ProposeCredentialMessageOptions, 'id'> & {
+  autoAcceptCredential?: AutoAcceptCredential
 }

@@ -2,10 +2,9 @@ import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { CredentialService } from '../services'
 
-import { createOutboundMessage } from '../../../agent/helpers'
-import { AutoAcceptCredential } from '../../../types'
-import { CredentialUtils } from '../CredentialUtils'
 import { RequestCredentialMessage } from '../messages'
+
+import { AutoRespondHandler } from './AutoRespondHandler'
 
 export class RequestCredentialHandler implements Handler {
   private agentConfig: AgentConfig
@@ -19,16 +18,10 @@ export class RequestCredentialHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<RequestCredentialHandler>) {
     const credentialRecord = await this.credentialService.processRequest(messageContext)
-
-    const autoAccept = CredentialUtils.composeAutoAccept(
-      credentialRecord.autoAcceptCredential,
-      this.agentConfig.autoAcceptCredentials
+    return await new AutoRespondHandler(this.credentialService).shouldAutoRespondToRequest(
+      messageContext,
+      credentialRecord,
+      this.agentConfig
     )
-
-    if (autoAccept === AutoAcceptCredential.always || autoAccept === AutoAcceptCredential.contentApproved) {
-      const { message } = await this.credentialService.createCredential(credentialRecord)
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      return createOutboundMessage(messageContext.connection!, message)
-    }
   }
 }
