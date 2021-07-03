@@ -15,6 +15,7 @@ import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { uuid } from '../../../utils/uuid'
 import { AckStatus } from '../../common'
+import { ConnectionService } from '../../connections'
 import { IndyIssuerService, IndyHolderService } from '../../indy'
 import { LedgerService } from '../../ledger/services/LedgerService'
 import { CredentialEventTypes } from '../CredentialEvents'
@@ -36,6 +37,7 @@ import { CredentialRecord } from '../repository/CredentialRecord'
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialService {
   private credentialRepository: CredentialRepository
+  private connectionService: ConnectionService
   private ledgerService: LedgerService
   private logger: Logger
   private indyIssuerService: IndyIssuerService
@@ -44,6 +46,7 @@ export class CredentialService {
 
   public constructor(
     credentialRepository: CredentialRepository,
+    connectionService: ConnectionService,
     ledgerService: LedgerService,
     agentConfig: AgentConfig,
     indyIssuerService: IndyIssuerService,
@@ -51,6 +54,7 @@ export class CredentialService {
     eventEmitter: EventEmitter
   ) {
     this.credentialRepository = credentialRepository
+    this.connectionService = connectionService
     this.ledgerService = ledgerService
     this.logger = agentConfig.logger
     this.indyIssuerService = indyIssuerService
@@ -142,7 +146,6 @@ export class CredentialService {
     const { message: proposalMessage, connection } = messageContext
 
     this.logger.debug(`Processing credential proposal with id ${proposalMessage.id}`)
-    this.assertConnectionOrServiceDecorator(messageContext)
 
     try {
       // Credential record already exists
@@ -150,6 +153,10 @@ export class CredentialService {
 
       // Assert
       credentialRecord.assertState(CredentialState.OfferSent)
+      this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
+        previousReceivedMessage: credentialRecord.proposalMessage,
+        previousSentMessage: credentialRecord.offerMessage,
+      })
 
       // Update record
       credentialRecord.proposalMessage = proposalMessage
@@ -164,6 +171,9 @@ export class CredentialService {
         credentialAttributes: proposalMessage.credentialProposal?.attributes,
         state: CredentialState.ProposalReceived,
       })
+
+      // Assert
+      this.connectionService.assertConnectionOrServiceDecorator(messageContext)
 
       // Save record
       await this.credentialRepository.save(credentialRecord)
@@ -295,7 +305,6 @@ export class CredentialService {
     const { message: credentialOfferMessage, connection } = messageContext
 
     this.logger.debug(`Processing credential offer with id ${credentialOfferMessage.id}`)
-    this.assertConnectionOrServiceDecorator(messageContext)
 
     const indyCredentialOffer = credentialOfferMessage.indyCredentialOffer
     if (!indyCredentialOffer) {
@@ -310,6 +319,10 @@ export class CredentialService {
 
       // Assert
       credentialRecord.assertState(CredentialState.ProposalSent)
+      this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
+        previousReceivedMessage: credentialRecord.offerMessage,
+        previousSentMessage: credentialRecord.proposalMessage,
+      })
 
       credentialRecord.offerMessage = credentialOfferMessage
       credentialRecord.credentialAttributes = credentialOfferMessage.credentialPreview.attributes
@@ -329,6 +342,9 @@ export class CredentialService {
         },
         state: CredentialState.OfferReceived,
       })
+
+      // Assert
+      this.connectionService.assertConnectionOrServiceDecorator(messageContext)
 
       // Save in repository
       await this.credentialRepository.save(credentialRecord)
@@ -412,7 +428,6 @@ export class CredentialService {
     const { message: credentialRequestMessage, connection } = messageContext
 
     this.logger.debug(`Processing credential request with id ${credentialRequestMessage.id}`)
-    this.assertConnectionOrServiceDecorator(messageContext)
 
     const indyCredentialRequest = credentialRequestMessage?.indyCredentialRequest
 
@@ -423,7 +438,13 @@ export class CredentialService {
     }
 
     const credentialRecord = await this.getByThreadAndConnectionId(credentialRequestMessage.threadId, connection?.id)
+
+    // Assert
     credentialRecord.assertState(CredentialState.OfferSent)
+    this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      previousReceivedMessage: credentialRecord.proposalMessage,
+      previousSentMessage: credentialRecord.offerMessage,
+    })
 
     this.logger.debug('Credential record found when processing credential request', credentialRecord)
 
@@ -529,11 +550,15 @@ export class CredentialService {
     const { message: issueCredentialMessage, connection } = messageContext
 
     this.logger.debug(`Processing credential with id ${issueCredentialMessage.id}`)
-    this.assertConnectionOrServiceDecorator(messageContext)
 
-    // Assert credential record
     const credentialRecord = await this.getByThreadAndConnectionId(issueCredentialMessage.threadId, connection?.id)
+
+    // Assert
     credentialRecord.assertState(CredentialState.RequestSent)
+    this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      previousReceivedMessage: credentialRecord.offerMessage,
+      previousSentMessage: credentialRecord.requestMessage,
+    })
 
     if (!credentialRecord.metadata.requestMetadata) {
       throw new AriesFrameworkError(`Missing required request metadata for credential with id ${credentialRecord.id}`)
@@ -609,11 +634,14 @@ export class CredentialService {
 
     this.logger.debug(`Processing credential ack with id ${credentialAckMessage.id}`)
 
-    if (connection) connection.assertReady()
-
-    // Assert credential record
     const credentialRecord = await this.getByThreadAndConnectionId(credentialAckMessage.threadId, connection?.id)
+
+    // Assert
     credentialRecord.assertState(CredentialState.CredentialIssued)
+    this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      previousReceivedMessage: credentialRecord.requestMessage,
+      previousSentMessage: credentialRecord.credentialMessage,
+    })
 
     // Update record
     await this.updateState(credentialRecord, CredentialState.Done)
@@ -688,31 +716,6 @@ export class CredentialService {
         previousState: previousState,
       },
     })
-  }
-
-  /**
-   * Assert that an inbound message has either a connection associated with it,
-   * or contains a ~service decorator
-   *
-   * @param messageContext - the inbound message context
-   */
-  private async assertConnectionOrServiceDecorator(messageContext: InboundMessageContext) {
-    const { connection, message } = messageContext
-
-    if (connection) {
-      connection.assertReady()
-      this.logger.trace(`Processing message with id ${message.id} and connection id ${connection.id}`, {
-        type: message.type,
-      })
-    } else if (message.service) {
-      this.logger.trace(`Processing connection-less message with id ${message.id}`, {
-        type: message.type,
-      })
-    } else {
-      throw new AriesFrameworkError(
-        `No connection associated with incoming ${message.type} message with thread id ${message.threadId}`
-      )
-    }
   }
 }
 

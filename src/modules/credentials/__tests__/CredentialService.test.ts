@@ -1,3 +1,4 @@
+import type { ConnectionService } from '../../connections'
 import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialRecordMetadata, CustomCredentialTags } from '../repository/CredentialRecord'
@@ -151,6 +152,10 @@ describe('CredentialService', () => {
 
     credentialService = new CredentialService(
       credentialRepository,
+      {
+        getById: () => Promise.resolve(connection),
+        assertConnectionOrServiceDecorator: () => true,
+      } as unknown as ConnectionService,
       ledgerService,
       new AgentConfig(getBaseConfig('CredentialServiceTest')),
       indyIssuerService,

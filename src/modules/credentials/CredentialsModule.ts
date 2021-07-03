@@ -142,7 +142,7 @@ export class CredentialsModule {
    * @returns The credential record and credential offer message
    */
   public async createOutOfBandOffer(credentialTemplate: CredentialOfferTemplate): Promise<{
-    offer: OfferCredentialMessage
+    offerMessage: OfferCredentialMessage
     credentialRecord: CredentialRecord
   }> {
     const { message, credentialRecord } = await this.credentialService.createOffer(credentialTemplate)
@@ -155,7 +155,7 @@ export class CredentialsModule {
     credentialRecord.offerMessage = message
     await this.credentialRepository.update(credentialRecord)
 
-    return { credentialRecord, offer: message }
+    return { credentialRecord, offerMessage: message }
   }
 
   /**
@@ -207,7 +207,7 @@ export class CredentialsModule {
 
       return credentialRecord
     }
-    // Cannot send message without credentialId or ~service decorator
+    // Cannot send message without connectionId or ~service decorator
     else {
       throw new AriesFrameworkError(
         `Cannot accept offer for credential record without connectionId or ~service decorator on credential offer.`
@@ -251,7 +251,7 @@ export class CredentialsModule {
         senderKey: ourService.recipientKeys[0],
       })
     }
-    // Cannot send message without credentialId or ~service decorator
+    // Cannot send message without connectionId or ~service decorator
     else {
       throw new AriesFrameworkError(
         `Cannot accept request for credential record without connectionId or ~service decorator on credential offer / request.`
@@ -290,10 +290,10 @@ export class CredentialsModule {
         senderKey: ourService.recipientKeys[0],
       })
     }
-    // Cannot send message without credentialId or ~service decorator
+    // Cannot send message without connectionId or ~service decorator
     else {
       throw new AriesFrameworkError(
-        `Cannot accept offer for credential record without connectionId or ~service decorator on credential offer.`
+        `Cannot accept credential without connectionId or ~service decorator on credential message.`
       )
     }
 

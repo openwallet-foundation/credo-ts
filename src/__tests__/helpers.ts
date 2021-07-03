@@ -11,6 +11,8 @@ import type { Subject } from 'rxjs'
 
 import indy from 'indy-sdk'
 import path from 'path'
+import { firstValueFrom } from 'rxjs'
+import { catchError, filter, first, map, timeout } from 'rxjs/operators'
 
 import { BasicMessageEventTypes } from '../modules/basic-messages'
 import {
@@ -57,27 +59,31 @@ export async function waitForProofRecord(
     threadId,
     state,
     previousState,
+    timeoutMs = 5000,
   }: {
     threadId?: string
     state?: ProofState
     previousState?: ProofState | null
+    timeoutMs?: number
   }
-): Promise<ProofRecord> {
-  return new Promise((resolve) => {
-    const listener = (event: ProofStateChangedEvent) => {
-      const previousStateMatches = previousState === undefined || event.payload.previousState === previousState
-      const threadIdMatches = threadId === undefined || event.payload.proofRecord.threadId === threadId
-      const stateMatches = state === undefined || event.payload.proofRecord.state === state
+) {
+  const observable = agent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).pipe(
+    filter((e) => previousState === undefined || e.payload.previousState === previousState),
+    filter((e) => threadId === undefined || e.payload.proofRecord.threadId === threadId),
+    filter((e) => state === undefined || e.payload.proofRecord.state === state),
+    timeout(timeoutMs),
+    catchError(() => {
+      throw new Error(`ProofStateChanged event not emitted within specified timeout: {
+  previousState: ${previousState},
+  threadId: ${threadId},
+  state: ${state}
+}`)
+    }),
+    first(),
+    map((e) => e.payload.proofRecord)
+  )
 
-      if (previousStateMatches && threadIdMatches && stateMatches) {
-        agent.events.off<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged, listener)
-
-        resolve(event.payload.proofRecord)
-      }
-    }
-
-    agent.events.on<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged, listener)
-  })
+  return firstValueFrom(observable)
 }
 
 export async function waitForCredentialRecord(
@@ -86,27 +92,33 @@ export async function waitForCredentialRecord(
     threadId,
     state,
     previousState,
+    timeoutMs = 5000,
   }: {
     threadId?: string
     state?: CredentialState
     previousState?: CredentialState | null
+    timeoutMs?: number
   }
-): Promise<CredentialRecord> {
-  return new Promise((resolve) => {
-    const listener = (event: CredentialStateChangedEvent) => {
-      const previousStateMatches = previousState === undefined || event.payload.previousState === previousState
-      const threadIdMatches = threadId === undefined || event.payload.credentialRecord.threadId === threadId
-      const stateMatches = state === undefined || event.payload.credentialRecord.state === state
+) {
+  const observable = agent.events
+    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+    .pipe(
+      filter((e) => previousState === undefined || e.payload.previousState === previousState),
+      filter((e) => threadId === undefined || e.payload.credentialRecord.threadId === threadId),
+      filter((e) => state === undefined || e.payload.credentialRecord.state === state),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(`CredentialStateChanged event not emitted within specified timeout: {
+  previousState: ${previousState},
+  threadId: ${threadId},
+  state: ${state}
+}`)
+      }),
+      first(),
+      map((e) => e.payload.credentialRecord)
+    )
 
-      if (previousStateMatches && threadIdMatches && stateMatches) {
-        agent.events.off<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, listener)
-
-        resolve(event.payload.credentialRecord)
-      }
-    }
-
-    agent.events.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, listener)
-  })
+  return firstValueFrom(observable)
 }
 
 export async function waitForBasicMessage(agent: Agent, { content }: { content?: string }): Promise<BasicMessage> {
@@ -285,6 +297,55 @@ export async function issueCredential({
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.OfferReceived,
   })
+
+  holderCredentialRecord = await holderAgent.credentials.acceptOffer(holderCredentialRecord.id)
+
+  issuerCredentialRecord = await waitForCredentialRecord(issuerAgent, {
+    threadId: holderCredentialRecord.threadId,
+    state: CredentialState.RequestReceived,
+  })
+
+  issuerCredentialRecord = await issuerAgent.credentials.acceptRequest(issuerCredentialRecord.id)
+
+  holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
+    threadId: issuerCredentialRecord.threadId,
+    state: CredentialState.CredentialReceived,
+  })
+
+  holderCredentialRecord = await holderAgent.credentials.acceptCredential(holderCredentialRecord.id)
+
+  issuerCredentialRecord = await waitForCredentialRecord(issuerAgent, {
+    threadId: issuerCredentialRecord.threadId,
+    state: CredentialState.Done,
+  })
+
+  return {
+    issuerCredential: issuerCredentialRecord,
+    holderCredential: holderCredentialRecord,
+  }
+}
+
+export async function issueConnectionLessCredential({
+  issuerAgent,
+  holderAgent,
+  credentialTemplate,
+}: {
+  issuerAgent: Agent
+  holderAgent: Agent
+  credentialTemplate: CredentialOfferTemplate
+}) {
+  // eslint-disable-next-line prefer-const
+  let { credentialRecord: issuerCredentialRecord, offerMessage } = await issuerAgent.credentials.createOutOfBandOffer(
+    credentialTemplate
+  )
+
+  const credentialRecordPromise = waitForCredentialRecord(holderAgent, {
+    threadId: issuerCredentialRecord.threadId,
+    state: CredentialState.OfferReceived,
+  })
+
+  await holderAgent.receiveMessage(offerMessage.toJSON())
+  let holderCredentialRecord = await credentialRecordPromise
 
   holderCredentialRecord = await holderAgent.credentials.acceptOffer(holderCredentialRecord.id)
 

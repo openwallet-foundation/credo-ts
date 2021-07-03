@@ -7,7 +7,6 @@ import {
   CredentialPreview,
   CredentialPreviewAttribute,
 } from '../modules/credentials'
-import { JsonTransformer } from '../utils/JsonTransformer'
 
 import {
   ensurePublicDidIsOnLedger,
@@ -21,11 +20,11 @@ import {
 } from './helpers'
 import testLogger from './logger'
 
-const faberConfig = getBaseConfig('Faber Credentials', {
+const faberConfig = getBaseConfig('Faber connection-less Credentials', {
   genesisPath,
 })
 
-const aliceConfig = getBaseConfig('Alice Credentials', {
+const aliceConfig = getBaseConfig('Alice connection-less Credentials', {
   genesisPath,
 })
 
@@ -80,7 +79,6 @@ describe('credentials', () => {
     credDefId = credentialDefinition.id
 
     const publicDid = faberAgent.publicDid?.did
-
     await ensurePublicDidIsOnLedger(faberAgent, publicDid!)
   })
 
@@ -92,7 +90,7 @@ describe('credentials', () => {
   test('Faber starts with connection-less credential offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
     // eslint-disable-next-line prefer-const
-    let { offer, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOutOfBandOffer({
+    let { offerMessage, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOutOfBandOffer({
       preview: credentialPreview,
       credentialDefinitionId: credDefId,
       comment: 'some comment about credential',
@@ -103,44 +101,10 @@ describe('credentials', () => {
       state: CredentialState.OfferReceived,
     })
 
-    await aliceAgent.receiveMessage(offer.toJSON())
+    await aliceAgent.receiveMessage(offerMessage.toJSON())
 
     testLogger.test('Alice waits for credential offer from Faber')
     let aliceCredentialRecord = await credentialRecordPromise
-
-    expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
-      createdAt: expect.any(Date),
-      offerMessage: {
-        '@id': expect.any(String),
-        '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
-        comment: 'some comment about credential',
-        credential_preview: {
-          '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
-          attributes: [
-            {
-              name: 'name',
-              'mime-type': 'text/plain',
-              value: 'John',
-            },
-            {
-              name: 'age',
-              'mime-type': 'text/plain',
-              value: '99',
-            },
-          ],
-        },
-        'offers~attach': expect.any(Array),
-      },
-      state: CredentialState.OfferReceived,
-    })
-
-    // below values are not in json object
-    expect(aliceCredentialRecord.id).not.toBeNull()
-    expect(aliceCredentialRecord.getTags()).toEqual({
-      threadId: faberCredentialRecord.threadId,
-      state: aliceCredentialRecord.state,
-    })
-    expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
 
     testLogger.test('Alice sends credential request to Faber')
     aliceCredentialRecord = await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id)

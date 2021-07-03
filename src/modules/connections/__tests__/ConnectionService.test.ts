@@ -1,6 +1,7 @@
 import type { Wallet } from '../../../wallet/Wallet'
 
 import { getBaseConfig, getMockConnection, mockFunction } from '../../../__tests__/helpers'
+import testLogger from '../../../__tests__/logger'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
@@ -60,7 +61,8 @@ describe('ConnectionService', () => {
       agentConfig,
       connectionRepository,
       eventEmitter,
-      consumerRoutingService
+      consumerRoutingService,
+      testLogger
     )
   })
 
