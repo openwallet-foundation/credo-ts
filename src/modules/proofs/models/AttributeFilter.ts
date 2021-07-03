@@ -1,5 +1,5 @@
 import { Expose, Transform, TransformationType, Type } from 'class-transformer'
-import { IsIBAN, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 export class AttributeValue {
   public constructor(options: AttributeValue) {

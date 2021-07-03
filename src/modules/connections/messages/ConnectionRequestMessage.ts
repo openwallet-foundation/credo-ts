@@ -1,7 +1,7 @@
 import type { DidDoc } from '../models'
 
 import { Type } from 'class-transformer'
-import { Equals, IsInstance, IsObject, IsString, ValidateNested } from 'class-validator'
+import { Equals, IsInstance, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Connection } from '../models'
