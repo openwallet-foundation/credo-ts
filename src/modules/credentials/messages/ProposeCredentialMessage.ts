@@ -58,6 +58,7 @@ export class ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'credential_proposal' })
   @Type(() => CredentialPreview)
   @ValidateNested()
+  @IsOptional()
   public credentialProposal?: CredentialPreview
 
   /**

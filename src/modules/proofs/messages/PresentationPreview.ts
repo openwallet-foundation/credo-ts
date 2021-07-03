@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsEnum, IsInt, IsString, ValidateIf, ValidateNested } from 'class-validator'
+import { Equals, IsEnum, IsInt, IsMimeType, IsOptional, IsString, ValidateIf, ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { PredicateType } from '../models/PredicateType'
@@ -71,10 +71,16 @@ export class PresentationPreviewAttribute {
   public credentialDefinitionId?: string
 
   @Expose({ name: 'mime-type' })
+  @IsOptional()
+  @IsMimeType()
   public mimeType?: string
 
+  @IsString()
+  @IsOptional()
   public value?: string
 
+  @IsString()
+  @IsOptional()
   public referent?: string
 
   public toJSON(): Record<string, unknown> {
@@ -99,6 +105,7 @@ export class PresentationPreviewPredicate {
     }
   }
 
+  @IsString()
   public name!: string
 
   @Expose({ name: 'cred_def_id' })

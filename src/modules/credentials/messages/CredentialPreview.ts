@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer'
-import { Equals, ValidateNested } from 'class-validator'
+import { Equals, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 
@@ -52,11 +52,15 @@ export class CredentialPreviewAttribute {
     }
   }
 
+  @IsString()
   public name!: string
 
   @Expose({ name: 'mime-type' })
+  @IsOptional()
+  @IsMimeType()
   public mimeType?: string
 
+  @IsString()
   public value!: string
 
   public toJSON(): Record<string, unknown> {

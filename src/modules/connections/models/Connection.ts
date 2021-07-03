@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer'
-import { IsString, ValidateNested } from 'class-validator'
+import { IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { DidDoc } from './did/DidDoc'
 
@@ -23,5 +23,6 @@ export class Connection {
   @Expose({ name: 'DIDDoc' })
   @Type(() => DidDoc)
   @ValidateNested()
+  @IsOptional()
   public didDoc?: DidDoc
 }

@@ -1,7 +1,7 @@
 import type { BaseMessageConstructor } from '../../agent/BaseMessage'
 
 import { Expose, Type } from 'class-transformer'
-import { ValidateNested } from 'class-validator'
+import { IsOptional, ValidateNested } from 'class-validator'
 
 import { TimingDecorator } from './TimingDecorator'
 
@@ -13,6 +13,7 @@ export function TimingDecorated<T extends BaseMessageConstructor>(Base: T) {
     @Expose({ name: '~timing' })
     @Type(() => TimingDecorator)
     @ValidateNested()
+    @IsOptional()
     public timing?: TimingDecorator
 
     public setTiming(options: Partial<TimingDecorator>) {

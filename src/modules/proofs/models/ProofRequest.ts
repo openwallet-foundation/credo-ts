@@ -40,11 +40,13 @@ export class ProofRequest {
 
   @Expose({ name: 'requested_attributes' })
   @ValidateNested({ each: true })
+  @Type((t) => ProofAttributeInfo)
   @RecordTransformer(ProofAttributeInfo)
   public requestedAttributes!: Record<string, ProofAttributeInfo>
 
   @Expose({ name: 'requested_predicates' })
   @ValidateNested({ each: true })
+  @Type((t) => ProofPredicateInfo)
   @RecordTransformer(ProofPredicateInfo)
   public requestedPredicates!: Record<string, ProofPredicateInfo>
 

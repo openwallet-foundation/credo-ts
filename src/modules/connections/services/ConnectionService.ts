@@ -191,9 +191,8 @@ export class ConnectionService {
     connectionRecord.assertState(ConnectionState.Invited)
     connectionRecord.assertRole(ConnectionRole.Inviter)
 
-    // TODO: validate using class-validator
-    if (!message.connection) {
-      throw new AriesFrameworkError('Invalid message')
+    if (!message.connection.didDoc) {
+      throw new AriesFrameworkError('Public DIDs are not supported yet')
     }
 
     connectionRecord.theirDid = message.connection.did

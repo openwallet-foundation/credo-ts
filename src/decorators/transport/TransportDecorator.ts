@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer'
-import { IsEnum, ValidateIf, Matches } from 'class-validator'
+import { IsEnum, ValidateIf, Matches, IsOptional } from 'class-validator'
 
 import { MessageIdRegExp } from '../../agent/BaseMessage'
 
@@ -27,10 +27,12 @@ export class TransportDecorator {
 
   @Expose({ name: 'return_route' })
   @IsEnum(ReturnRouteTypes)
+  @IsOptional()
   public returnRoute?: ReturnRouteTypes
 
   @Expose({ name: 'return_route_thread' })
   @ValidateIf((o: TransportDecorator) => o.returnRoute === ReturnRouteTypes.thread)
   @Matches(MessageIdRegExp)
+  @IsOptional()
   public returnRouteThread?: string
 }
