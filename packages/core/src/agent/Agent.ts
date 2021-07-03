@@ -55,6 +55,8 @@ export class Agent {
   public readonly mediator!: MediatorModule
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
+    const credentialSupported = false
+    
     // Create child container so we don't interfere with anything outside of this agent
     this.container = baseContainer.createChildContainer()
 
@@ -94,6 +96,8 @@ export class Agent {
 
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.container.resolve(ConnectionsModule)
+
+    if (this.)
     this.credentials = this.container.resolve(CredentialsModule)
     this.proofs = this.container.resolve(ProofsModule)
     this.mediator = this.container.resolve(MediatorModule)

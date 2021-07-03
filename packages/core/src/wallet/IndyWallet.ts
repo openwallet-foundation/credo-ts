@@ -2,19 +2,7 @@ import type { Logger } from '../logger'
 import type { PackedMessage, UnpackedMessageContext } from '../types'
 import type { Buffer } from '../utils/buffer'
 import type { Wallet, DidInfo } from './Wallet'
-import type {
-  default as Indy,
-  Did,
-  DidConfig,
-  LedgerRequest,
-  Verkey,
-  WalletConfig,
-  WalletCredentials,
-  WalletQuery,
-  WalletRecord,
-  WalletRecordOptions,
-  WalletSearchOptions,
-} from 'indy-sdk'
+import type { default as Indy, Did, DidConfig, Verkey, WalletConfig, WalletCredentials } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -287,7 +275,11 @@ export class IndyWallet implements Wallet {
   }
 
   public async createDid(didConfig?: DidConfig): Promise<[Did, Verkey]> {
-    return this.indy.createAndStoreMyDid(this.walletHandle, didConfig || {})
+    try {
+      return await this.indy.createAndStoreMyDid(this.walletHandle, didConfig || {})
+    } catch (error) {
+      throw new WalletError('Error creating Did', { cause: error })
+    }
   }
 
   public async pack(
@@ -295,76 +287,50 @@ export class IndyWallet implements Wallet {
     recipientKeys: Verkey[],
     senderVk: Verkey
   ): Promise<PackedMessage> {
-    const messageRaw = JsonEncoder.toBuffer(payload)
-    const packedMessage = await this.indy.packMessage(this.walletHandle, messageRaw, recipientKeys, senderVk)
-    return JsonEncoder.fromBuffer(packedMessage)
+    try {
+      const messageRaw = JsonEncoder.toBuffer(payload)
+      const packedMessage = await this.indy.packMessage(this.walletHandle, messageRaw, recipientKeys, senderVk)
+      return JsonEncoder.fromBuffer(packedMessage)
+    } catch (error) {
+      throw new WalletError('Error packing message', { cause: error })
+    }
   }
 
   public async unpack(messagePackage: PackedMessage): Promise<UnpackedMessageContext> {
-    const unpackedMessageBuffer = await this.indy.unpackMessage(this.walletHandle, JsonEncoder.toBuffer(messagePackage))
-    const unpackedMessage = JsonEncoder.fromBuffer(unpackedMessageBuffer)
-    return {
-      ...unpackedMessage,
-      message: JsonEncoder.fromString(unpackedMessage.message),
+    try {
+      const unpackedMessageBuffer = await this.indy.unpackMessage(
+        this.walletHandle,
+        JsonEncoder.toBuffer(messagePackage)
+      )
+      const unpackedMessage = JsonEncoder.fromBuffer(unpackedMessageBuffer)
+      return {
+        ...unpackedMessage,
+        message: JsonEncoder.fromString(unpackedMessage.message),
+      }
+    } catch (error) {
+      throw new WalletError('Error unpacking message', { cause: error })
     }
   }
 
   public async sign(data: Buffer, verkey: Verkey): Promise<Buffer> {
-    const signatureBuffer = await this.indy.cryptoSign(this.walletHandle, verkey, data)
+    try {
+      const signatureBuffer = await this.indy.cryptoSign(this.walletHandle, verkey, data)
 
-    return signatureBuffer
+      return signatureBuffer
+    } catch (error) {
+      throw new WalletError(`Error signing data with verkey ${verkey}`, { cause: error })
+    }
   }
 
   public async verify(signerVerkey: Verkey, data: Buffer, signature: Buffer): Promise<boolean> {
-    // check signature
-    const isValid = await this.indy.cryptoVerify(signerVerkey, data, signature)
+    try {
+      // check signature
+      const isValid = await this.indy.cryptoVerify(signerVerkey, data, signature)
 
-    return isValid
-  }
-
-  public async addWalletRecord(type: string, id: string, value: string, tags: Record<string, string>) {
-    return this.indy.addWalletRecord(this.walletHandle, type, id, value, tags)
-  }
-
-  public async updateWalletRecordValue(type: string, id: string, value: string) {
-    return this.indy.updateWalletRecordValue(this.walletHandle, type, id, value)
-  }
-
-  public async updateWalletRecordTags(type: string, id: string, tags: Record<string, string>) {
-    return this.indy.addWalletRecordTags(this.walletHandle, type, id, tags)
-  }
-
-  public async deleteWalletRecord(type: string, id: string) {
-    return this.indy.deleteWalletRecord(this.walletHandle, type, id)
-  }
-
-  public async search(type: string, query: WalletQuery, options: WalletSearchOptions) {
-    const sh: number = await this.indy.openWalletSearch(this.walletHandle, type, query, options)
-    const generator = async function* (indy: typeof Indy, wh: number) {
-      try {
-        while (true) {
-          // count should probably be exported as a config?
-          const recordSearch = await indy.fetchWalletSearchNextRecords(wh, sh, 10)
-          for (const record of recordSearch.records) {
-            yield record
-          }
-        }
-      } catch (error) {
-        // pass
-      } finally {
-        await indy.closeWalletSearch(sh)
-      }
+      return isValid
+    } catch (error) {
+      throw new WalletError(`Error signing data with verkey ${signerVerkey}`, { cause: error })
     }
-
-    return generator(this.indy, this.walletHandle)
-  }
-
-  public getWalletRecord(type: string, id: string, options: WalletRecordOptions): Promise<WalletRecord> {
-    return this.indy.getWalletRecord(this.walletHandle, type, id, options)
-  }
-
-  public signRequest(myDid: Did, request: LedgerRequest) {
-    return this.indy.signRequest(this.walletHandle, myDid, request)
   }
 
   public async generateNonce() {

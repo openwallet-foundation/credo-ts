@@ -83,6 +83,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
   })
   @IsOptional()
   @ValidateIf((o: ConnectionInvitationMessage) => o.did === undefined)
+  @IsOptional()
   public routingKeys?: string[]
 
   /**

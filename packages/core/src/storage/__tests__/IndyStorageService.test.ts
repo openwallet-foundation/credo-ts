@@ -1,4 +1,5 @@
 import type { TagsBase } from '../BaseRecord'
+import type { default as Indy } from 'indy-sdk'
 
 import { getAgentConfig } from '../../../tests/helpers'
 import { RecordDuplicateError, RecordNotFoundError } from '../../error'
@@ -9,6 +10,7 @@ import { TestRecord } from './TestRecord'
 
 describe('IndyStorageService', () => {
   let wallet: IndyWallet
+  let indy: typeof Indy
   let storageService: IndyStorageService<TestRecord>
 
   beforeEach(async () => {
@@ -16,7 +18,7 @@ describe('IndyStorageService', () => {
     wallet = new IndyWallet(config)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.initialize(config.walletConfig!, config.walletCredentials!)
-    storageService = new IndyStorageService<TestRecord>(wallet)
+    storageService = new IndyStorageService<TestRecord>(wallet, config.agentDependencies.indy)
   })
 
   afterEach(async () => {
@@ -45,7 +47,7 @@ describe('IndyStorageService', () => {
         },
       })
 
-      const got = await wallet.getWalletRecord(record.type, record.id, {
+      const got = await indy.getWalletRecord(wallet.walletHandle, record.type, record.id, {
         retrieveType: true,
         retrieveTags: true,
       })
@@ -58,7 +60,7 @@ describe('IndyStorageService', () => {
     })
 
     it('should correctly transform tag values from string after retrieving', async () => {
-      await wallet.addWalletRecord(TestRecord.type, 'some-id', '{}', {
+      await indy.addWalletRecord(wallet.walletHandle, TestRecord.type, 'some-id', '{}', {
         someBoolean: '1',
         someOtherBoolean: '0',
         someStringValue: 'string',

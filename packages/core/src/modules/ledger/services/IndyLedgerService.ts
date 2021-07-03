@@ -13,10 +13,15 @@ import type {
   LedgerWriteReplyResponse,
 } from 'indy-sdk'
 
-import { scoped, Lifecycle } from 'tsyringe'
+import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
+import { InjectionSymbols } from '../../../constants'
+<<<<<<< HEAD:packages/core/src/modules/ledger/services/LedgerService.ts
+=======
 import { AriesFrameworkError, IndySdkError } from '../../../error'
+import { FileSystem } from '../../../storage/fs/FileSystem'
+>>>>>>> cb52bb4b (feat: break out indy wallet, better indy handling):packages/core/src/modules/ledger/services/IndyLedgerService.ts
 import { isIndyError } from '../../../utils/indyError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { IndyIssuerService } from '../../indy'
@@ -32,7 +37,11 @@ export class IndyLedgerService {
   private agentConfig: AgentConfig
   private fileSystem: FileSystem
 
-  public constructor(wallet: IndyWallet, agentConfig: AgentConfig, indyIssuer: IndyIssuerService) {
+  public constructor(
+    wallet: IndyWallet,
+    agentConfig: AgentConfig,
+    indyIssuer: IndyIssuerService
+  ) {
     this.wallet = wallet
     this.agentConfig = agentConfig
     this.indy = agentConfig.agentDependencies.indy
