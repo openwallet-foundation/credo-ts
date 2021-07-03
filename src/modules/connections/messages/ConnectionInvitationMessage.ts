@@ -1,10 +1,11 @@
 import { Transform } from 'class-transformer'
-import { Equals, IsString, ValidateIf, IsArray, validateOrReject, ArrayNotEmpty, IsOptional } from 'class-validator'
+import { Equals, IsString, ValidateIf, IsArray, ArrayNotEmpty, IsOptional } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { MessageValidator } from '../../../utils/MessageValidator'
 import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 
 import { ConnectionMessageType } from './ConnectionMessageType'
@@ -116,8 +117,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
 
     const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
 
-    // TODO: should validation happen here?
-    await validateOrReject(invitation)
+    await MessageValidator.validate(invitation)
 
     return invitation
   }

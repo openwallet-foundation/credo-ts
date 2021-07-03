@@ -6,7 +6,6 @@ import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { PresentationPreview, PresentationPreviewAttribute } from '../messages'
 import type { IndyProof, Schema, CredDef } from 'indy-sdk'
 
-import { validateOrReject } from 'class-validator'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
@@ -16,6 +15,7 @@ import { Attachment, AttachmentData } from '../../../decorators/attachment/Attac
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { MessageValidator } from '../../../utils/MessageValidator'
 import { uuid } from '../../../utils/uuid'
 import { Wallet } from '../../../wallet/Wallet'
 import { AckStatus } from '../../common'
@@ -333,7 +333,7 @@ export class ProofService {
         `Missing required base64 encoded attachment data for presentation request with thread id ${proofRequestMessage.threadId}`
       )
     }
-    await validateOrReject(proofRequest)
+    await MessageValidator.validate(proofRequest)
 
     this.logger.debug('received proof request', proofRequest)
 

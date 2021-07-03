@@ -5,7 +5,6 @@ import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
 import type { Verkey } from 'indy-sdk'
 
-import { validateOrReject } from 'class-validator'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
@@ -14,6 +13,7 @@ import { InjectionSymbols } from '../../../constants'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import {
@@ -278,8 +278,7 @@ export class ConnectionService {
     const connectionJson = await unpackAndVerifySignatureDecorator(message.connectionSig, this.wallet)
 
     const connection = JsonTransformer.fromJSON(connectionJson, Connection)
-    // TODO: throw framework error stating the connection object is invalid
-    await validateOrReject(connection)
+    await MessageValidator.validate(connection)
 
     // Per the Connection RFC we must check if the key used to sign the connection~sig is the same key
     // as the recipient key(s) in the connection invitation message
