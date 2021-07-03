@@ -1,4 +1,3 @@
-export * from './PresentProofMessageType'
 export * from './ProposePresentationMessage'
 export * from './RequestPresentationMessage'
 export * from './PresentationMessage'

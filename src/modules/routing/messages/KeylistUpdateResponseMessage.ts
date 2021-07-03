@@ -5,7 +5,6 @@ import { Verkey } from 'indy-sdk'
 import { AgentMessage } from '../../../agent/AgentMessage'
 
 import { KeylistUpdateAction } from './KeylistUpdateMessage'
-import { RoutingMessageType as MessageType } from './RoutingMessageType'
 
 export interface KeylistUpdateResponseMessageOptions {
   id?: string
@@ -29,7 +28,7 @@ export class KeylistUpdateResponseMessage extends AgentMessage {
 
   @Equals(KeylistUpdateResponseMessage.type)
   public readonly type = KeylistUpdateResponseMessage.type
-  public static readonly type = MessageType.KeylistUpdateResponse
+  public static readonly type = 'https://didcomm.org/coordinatemediation/1.0/keylist-update-response'
 
   @Type(() => KeylistUpdated)
   @IsArray()

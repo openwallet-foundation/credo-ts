@@ -4,8 +4,6 @@ import { Equals, ValidateNested } from 'class-validator'
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
 
-import { ConnectionMessageType } from './ConnectionMessageType'
-
 export interface ConnectionResponseMessageOptions {
   id?: string
   threadId: string
@@ -35,7 +33,7 @@ export class ConnectionResponseMessage extends AgentMessage {
 
   @Equals(ConnectionResponseMessage.type)
   public readonly type = ConnectionResponseMessage.type
-  public static readonly type = ConnectionMessageType.ConnectionResponse
+  public static readonly type = 'https://didcomm.org/connections/1.0/response'
 
   @Type(() => SignatureDecorator)
   @ValidateNested()

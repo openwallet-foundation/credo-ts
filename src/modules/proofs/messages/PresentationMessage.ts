@@ -7,8 +7,6 @@ import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 
-import { PresentProofMessageType } from './PresentProofMessageType'
-
 export const INDY_PROOF_ATTACHMENT_ID = 'libindy-presentation-0'
 
 export interface PresentationOptions {
@@ -36,7 +34,7 @@ export class PresentationMessage extends AgentMessage {
 
   @Equals(PresentationMessage.type)
   public readonly type = PresentationMessage.type
-  public static readonly type = PresentProofMessageType.Presentation
+  public static readonly type = 'https://didcomm.org/present-proof/1.0/presentation'
 
   /**
    *  Provides some human readable information about this request for a presentation.

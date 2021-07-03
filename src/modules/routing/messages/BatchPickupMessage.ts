@@ -3,8 +3,6 @@ import { Equals, IsNumber } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 
-import { RoutingMessageType as MessageType } from './RoutingMessageType'
-
 export interface BatchPickupMessageOptions {
   id?: string
   batchSize: number
@@ -32,7 +30,7 @@ export class BatchPickupMessage extends AgentMessage {
 
   @Equals(BatchPickupMessage.type)
   public readonly type = BatchPickupMessage.type
-  public static readonly type = MessageType.BatchPickup
+  public static readonly type = 'https://didcomm.org/messagepickup/1.0/batch-pickup'
 
   @IsNumber()
   @Expose({ name: 'batch_size' })

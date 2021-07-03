@@ -4,8 +4,6 @@ import { Equals } from 'class-validator'
 
 import { AckMessage } from '../../common'
 
-import { IssueCredentialMessageType } from './IssueCredentialMessageType'
-
 export type CredentialAckMessageOptions = AckMessageOptions
 
 /**
@@ -22,5 +20,5 @@ export class CredentialAckMessage extends AckMessage {
 
   @Equals(CredentialAckMessage.type)
   public readonly type = CredentialAckMessage.type
-  public static readonly type = IssueCredentialMessageType.CredentialAck
+  public static readonly type = 'https://didcomm.org/issue-credential/1.0/ack'
 }

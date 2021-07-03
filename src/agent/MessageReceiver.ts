@@ -7,7 +7,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../error'
 import { ConnectionService } from '../modules/connections'
-import { RoutingMessageType as MessageType } from '../modules/routing'
+import { ForwardMessage } from '../modules/routing'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
@@ -112,7 +112,7 @@ export class MessageReceiver {
       // if the message is of type forward we should check whether the
       //  - forward message is intended for us (so unpack inner `msg` and pass that to dispatcher)
       //  - or that the message should be forwarded (pass unpacked forward message with packed `msg` to dispatcher)
-      if (unpackedMessage.message['@type'] === MessageType.ForwardMessage) {
+      if (unpackedMessage.message['@type'] === ForwardMessage.type) {
         this.logger.debug('unpacking forwarded message', unpackedMessage)
 
         try {
