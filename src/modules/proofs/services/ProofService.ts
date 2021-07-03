@@ -172,7 +172,6 @@ export class ProofService {
     const { message: proposalMessage, connection } = messageContext
 
     // Assert connection
-    connection?.assertReady()
     if (!connection) {
       throw new AriesFrameworkError(
         `No connection associated with incoming presentation proposal message with thread id ${proposalMessage.threadId}`
@@ -320,7 +319,6 @@ export class ProofService {
     const { message: proofRequestMessage, connection } = messageContext
 
     // Assert connection
-    connection?.assertReady()
     if (!connection) {
       throw new AriesFrameworkError(
         `No connection associated with incoming presentation request message with thread id ${proofRequestMessage.threadId}`
@@ -433,7 +431,6 @@ export class ProofService {
     const { message: presentationMessage, connection } = messageContext
 
     // Assert connection
-    connection?.assertReady()
     if (!connection) {
       throw new AriesFrameworkError(
         `No connection associated with incoming presentation message with thread id ${presentationMessage.threadId}`
@@ -504,7 +501,6 @@ export class ProofService {
     const { message: presentationAckMessage, connection } = messageContext
 
     // Assert connection
-    connection?.assertReady()
     if (!connection) {
       throw new AriesFrameworkError(
         `No connection associated with incoming presentation acknowledgement message with thread id ${presentationAckMessage.threadId}`
