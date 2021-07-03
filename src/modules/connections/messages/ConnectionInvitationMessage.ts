@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer'
-import { Equals, IsString, ValidateIf, IsArray, validateOrReject, ArrayNotEmpty } from 'class-validator'
+import { Equals, IsString, ValidateIf, IsArray, validateOrReject, ArrayNotEmpty, IsOptional } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { AriesFrameworkError } from '../../../error'
@@ -85,6 +85,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
     each: true,
   })
   @ValidateIf((o: ConnectionInvitationMessage) => o.did === undefined)
+  @IsOptional()
   public routingKeys?: string[]
 
   /**

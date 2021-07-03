@@ -21,7 +21,7 @@ import { Wallet } from '../../../wallet/Wallet'
 import { AckStatus } from '../../common'
 import { CredentialUtils, Credential } from '../../credentials'
 import { IndyHolderService, IndyVerifierService } from '../../indy'
-import { LedgerService } from '../../ledger/services/LedgerService'
+import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofState } from '../ProofState'
 import {
@@ -54,7 +54,7 @@ import { ProofRecord } from '../repository/ProofRecord'
 @scoped(Lifecycle.ContainerScoped)
 export class ProofService {
   private proofRepository: ProofRepository
-  private ledgerService: LedgerService
+  private ledgerService: IndyLedgerService
   private wallet: Wallet
   private logger: Logger
   private indyHolderService: IndyHolderService
@@ -63,7 +63,7 @@ export class ProofService {
 
   public constructor(
     proofRepository: ProofRepository,
-    ledgerService: LedgerService,
+    ledgerService: IndyLedgerService,
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
     agentConfig: AgentConfig,
     indyHolderService: IndyHolderService,
