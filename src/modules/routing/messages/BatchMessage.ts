@@ -1,5 +1,5 @@
 import { Type, Expose } from 'class-transformer'
-import { Equals, Matches, IsArray, ValidateNested, IsObject } from 'class-validator'
+import { Equals, Matches, IsArray, ValidateNested, IsObject, IsInstance } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { MessageIdRegExp } from '../../../agent/BaseMessage'
@@ -7,6 +7,21 @@ import { WireMessage } from '../../../types'
 import { uuid } from '../../../utils/uuid'
 
 import { RoutingMessageType as MessageType } from './RoutingMessageType'
+
+export class BatchMessageMessage {
+  public constructor(options: { id?: string; message: WireMessage }) {
+    if (options) {
+      this.id = options.id || uuid()
+      this.message = options.message
+    }
+  }
+
+  @Matches(MessageIdRegExp)
+  public id!: string
+
+  @IsObject()
+  public message!: WireMessage
+}
 
 export interface BatchMessageOptions {
   id?: string
@@ -35,21 +50,7 @@ export class BatchMessage extends AgentMessage {
   @Type(() => BatchMessageMessage)
   @IsArray()
   @ValidateNested()
+  @IsInstance(BatchMessageMessage, { each: true })
   @Expose({ name: 'messages~attach' })
   public messages!: BatchMessageMessage[]
-}
-
-export class BatchMessageMessage {
-  public constructor(options: { id?: string; message: WireMessage }) {
-    if (options) {
-      this.id = options.id || uuid()
-      this.message = options.message
-    }
-  }
-
-  @Matches(MessageIdRegExp)
-  public id!: string
-
-  @IsObject()
-  public message!: WireMessage
 }

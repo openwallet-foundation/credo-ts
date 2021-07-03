@@ -1,7 +1,7 @@
 import type { CredOffer } from 'indy-sdk'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsArray, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
@@ -47,6 +47,7 @@ export class OfferCredentialMessage extends AgentMessage {
   @Expose({ name: 'credential_preview' })
   @Type(() => CredentialPreview)
   @ValidateNested()
+  @IsInstance(CredentialPreview)
   public credentialPreview!: CredentialPreview
 
   @Expose({ name: 'offers~attach' })
@@ -55,6 +56,7 @@ export class OfferCredentialMessage extends AgentMessage {
   @ValidateNested({
     each: true,
   })
+  @IsInstance(Attachment, { each: true })
   public offerAttachments!: Attachment[]
 
   public get indyCredentialOffer(): CredOffer | null {

@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 
@@ -59,6 +59,7 @@ export class ProposeCredentialMessage extends AgentMessage {
   @Type(() => CredentialPreview)
   @ValidateNested()
   @IsOptional()
+  @IsInstance(CredentialPreview)
   public credentialProposal?: CredentialPreview
 
   /**

@@ -33,6 +33,5 @@ export class TransportDecorator {
   @Expose({ name: 'return_route_thread' })
   @ValidateIf((o: TransportDecorator) => o.returnRoute === ReturnRouteTypes.thread)
   @Matches(MessageIdRegExp)
-  @IsOptional()
   public returnRouteThread?: string
 }

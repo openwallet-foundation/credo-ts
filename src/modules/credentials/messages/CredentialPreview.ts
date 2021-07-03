@@ -1,41 +1,9 @@
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { Equals, IsInstance, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 
 import { IssueCredentialMessageType } from './IssueCredentialMessageType'
-
-export interface CredentialPreviewOptions {
-  attributes: CredentialPreviewAttribute[]
-}
-
-/**
- * Credential preview inner message class.
- *
- * This is not a message but an inner object for other messages in this protocol. It is used construct a preview of the data for the credential.
- *
- * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#preview-credential
- */
-export class CredentialPreview {
-  public constructor(options: CredentialPreviewOptions) {
-    if (options) {
-      this.attributes = options.attributes
-    }
-  }
-
-  @Expose({ name: '@type' })
-  @Equals(CredentialPreview.type)
-  public readonly type = CredentialPreview.type
-  public static readonly type = IssueCredentialMessageType.CredentialPreview
-
-  @Type(() => CredentialPreviewAttribute)
-  @ValidateNested({ each: true })
-  public attributes!: CredentialPreviewAttribute[]
-
-  public toJSON(): Record<string, unknown> {
-    return JsonTransformer.toJSON(this)
-  }
-}
 
 interface CredentialPreviewAttributeOptions {
   name: string
@@ -62,6 +30,39 @@ export class CredentialPreviewAttribute {
 
   @IsString()
   public value!: string
+
+  public toJSON(): Record<string, unknown> {
+    return JsonTransformer.toJSON(this)
+  }
+}
+
+export interface CredentialPreviewOptions {
+  attributes: CredentialPreviewAttribute[]
+}
+
+/**
+ * Credential preview inner message class.
+ *
+ * This is not a message but an inner object for other messages in this protocol. It is used construct a preview of the data for the credential.
+ *
+ * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#preview-credential
+ */
+export class CredentialPreview {
+  public constructor(options: CredentialPreviewOptions) {
+    if (options) {
+      this.attributes = options.attributes
+    }
+  }
+
+  @Expose({ name: '@type' })
+  @Equals(CredentialPreview.type)
+  public readonly type = CredentialPreview.type
+  public static readonly type = IssueCredentialMessageType.CredentialPreview
+
+  @Type(() => CredentialPreviewAttribute)
+  @ValidateNested({ each: true })
+  @IsInstance(CredentialPreviewAttribute, { each: true })
+  public attributes!: CredentialPreviewAttribute[]
 
   public toJSON(): Record<string, unknown> {
     return JsonTransformer.toJSON(this)

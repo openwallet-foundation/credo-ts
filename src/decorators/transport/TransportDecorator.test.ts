@@ -4,10 +4,10 @@ import { JsonTransformer } from '../../utils/JsonTransformer'
 
 import { TransportDecorator, ReturnRouteTypes } from './TransportDecorator'
 
-const validTranport = (obj: Record<string, unknown>) =>
+const validTransport = (obj: Record<string, unknown>) =>
   validateOrReject(JsonTransformer.fromJSON(obj, TransportDecorator))
-const expectValid = (obj: Record<string, unknown>) => expect(validTranport(obj)).resolves.toBeUndefined()
-const expectInvalid = (obj: Record<string, unknown>) => expect(validTranport(obj)).rejects.not.toBeNull()
+const expectValid = (obj: Record<string, unknown>) => expect(validTransport(obj)).resolves.toBeUndefined()
+const expectInvalid = (obj: Record<string, unknown>) => expect(validTransport(obj)).rejects.not.toBeNull()
 
 const valid = {
   all: {

@@ -1,7 +1,7 @@
 import type { BaseMessageConstructor } from '../../agent/BaseMessage'
 
 import { Expose, Type } from 'class-transformer'
-import { IsOptional, ValidateNested } from 'class-validator'
+import { IsInstance, IsOptional, ValidateNested } from 'class-validator'
 
 import { TransportDecorator, ReturnRouteTypes } from './TransportDecorator'
 
@@ -11,6 +11,7 @@ export function TransportDecorated<T extends BaseMessageConstructor>(Base: T) {
     @Type(() => TransportDecorator)
     @ValidateNested()
     @IsOptional()
+    @IsInstance(TransportDecorator)
     public transport?: TransportDecorator
 
     public setReturnRouting(type: ReturnRouteTypes, thread?: string) {

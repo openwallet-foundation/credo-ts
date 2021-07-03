@@ -299,32 +299,6 @@ describe('ConnectionService', () => {
       )
     })
 
-    it('throws an error when the message does not contain a connection parameter', async () => {
-      expect.assertions(1)
-
-      const connection = getMockConnection({
-        role: ConnectionRole.Inviter,
-      })
-
-      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(connection))
-
-      const connectionRequest = new ConnectionRequestMessage({
-        did: 'did',
-        label: 'test-label',
-      })
-
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      delete connectionRequest.connection
-
-      const messageContext = new InboundMessageContext(connectionRequest, {
-        connection,
-        recipientVerkey: 'test-verkey',
-      })
-
-      return expect(connectionService.processRequest(messageContext)).rejects.toThrowError('Invalid message')
-    })
-
     it(`throws an error when connection role is ${ConnectionRole.Invitee} and not ${ConnectionRole.Inviter}`, async () => {
       expect.assertions(1)
 
@@ -357,6 +331,12 @@ describe('ConnectionService', () => {
       const connectionRequest = new ConnectionRequestMessage({
         did: 'did',
         label: 'test-label',
+        didDoc: new DidDoc({
+          id: 'did:test',
+          publicKey: [],
+          service: [],
+          authentication: [],
+        }),
       })
 
       const messageContext = new InboundMessageContext(connectionRequest, {

@@ -1,7 +1,7 @@
 import type { Cred } from 'indy-sdk'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsArray, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
@@ -42,6 +42,7 @@ export class IssueCredentialMessage extends AgentMessage {
   @ValidateNested({
     each: true,
   })
+  @IsInstance(Attachment, { each: true })
   public credentialAttachments!: Attachment[]
 
   public get indyCredential(): Cred | null {

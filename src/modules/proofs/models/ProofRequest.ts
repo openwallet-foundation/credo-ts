@@ -2,7 +2,7 @@ import type { Optional } from '../../../utils/type'
 import type { IndyProofRequest } from 'indy-sdk'
 
 import { Expose, Type } from 'class-transformer'
-import { IsString, ValidateNested, IsOptional, IsIn } from 'class-validator'
+import { IsString, ValidateNested, IsOptional, IsIn, IsInstance } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { RecordTransformer } from '../../../utils/transformers'
@@ -40,13 +40,15 @@ export class ProofRequest {
 
   @Expose({ name: 'requested_attributes' })
   @ValidateNested({ each: true })
-  @Type((t) => ProofAttributeInfo)
+  @Type(() => ProofAttributeInfo)
+  @IsInstance(ProofPredicateInfo, { each: true })
   @RecordTransformer(ProofAttributeInfo)
   public requestedAttributes!: Record<string, ProofAttributeInfo>
 
   @Expose({ name: 'requested_predicates' })
   @ValidateNested({ each: true })
-  @Type((t) => ProofPredicateInfo)
+  @Type(() => ProofPredicateInfo)
+  @IsInstance(ProofPredicateInfo, { each: true })
   @RecordTransformer(ProofPredicateInfo)
   public requestedPredicates!: Record<string, ProofPredicateInfo>
 
@@ -54,6 +56,7 @@ export class ProofRequest {
   @ValidateNested()
   @Type(() => RevocationInterval)
   @IsOptional()
+  @IsInstance(RevocationInterval)
   public nonRevoked?: RevocationInterval
 
   @IsIn(['1.0', '2.0'])
