@@ -584,7 +584,7 @@ export class ProofService {
         ],
       })
 
-      proofRequest.requestedAttributes[referent] = requestedAttribute
+      proofRequest.requestedAttributes.set(referent, requestedAttribute)
     }
 
     this.logger.debug('proposal predicates', presentationProposal.predicates)
@@ -601,7 +601,7 @@ export class ProofService {
         ],
       })
 
-      proofRequest.requestedPredicates[uuid()] = requestedPredicate
+      proofRequest.requestedPredicates.set(uuid(), requestedPredicate)
     }
 
     return proofRequest
@@ -623,7 +623,7 @@ export class ProofService {
   ): Promise<RetrievedCredentials> {
     const retrievedCredentials = new RetrievedCredentials({})
 
-    for (const [referent, requestedAttribute] of Object.entries(proofRequest.requestedAttributes)) {
+    for (const [referent, requestedAttribute] of proofRequest.requestedAttributes) {
       let credentialMatch: Credential[] = []
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
@@ -661,7 +661,7 @@ export class ProofService {
       })
     }
 
-    for (const [referent] of Object.entries(proofRequest.requestedPredicates)) {
+    for (const referent of proofRequest.requestedPredicates.keys()) {
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
       retrievedCredentials.requestedPredicates[referent] = credentials.map((credential) => {
@@ -694,7 +694,7 @@ export class ProofService {
       if (attributeArray.length === 0) {
         throw new AriesFrameworkError('Unable to automatically select requested attributes.')
       } else {
-        requestedCredentials.requestedAttributes[attributeName] = attributeArray[0]
+        requestedCredentials.requestedAttributes.set(attributeName, attributeArray[0])
       }
     })
 
@@ -702,8 +702,10 @@ export class ProofService {
       if (retrievedCredentials.requestedPredicates[attributeName].length === 0) {
         throw new AriesFrameworkError('Unable to automatically select requested predicates.')
       } else {
-        requestedCredentials.requestedPredicates[attributeName] =
+        requestedCredentials.requestedPredicates.set(
+          attributeName,
           retrievedCredentials.requestedPredicates[attributeName][0]
+        )
       }
     })
 
@@ -806,8 +808,8 @@ export class ProofService {
     requestedCredentials: RequestedCredentials
   ): Promise<IndyProof> {
     const credentialObjects = [
-      ...Object.values(requestedCredentials.requestedAttributes),
-      ...Object.values(requestedCredentials.requestedPredicates),
+      ...requestedCredentials.requestedAttributes.values(),
+      ...requestedCredentials.requestedPredicates.values(),
     ].map((c) => c.credentialInfo)
 
     const schemas = await this.getSchemas(new Set(credentialObjects.map((c) => c.schemaId)))
