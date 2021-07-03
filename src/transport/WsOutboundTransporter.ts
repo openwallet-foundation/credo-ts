@@ -41,7 +41,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
-    const { connection, payload, endpoint, session, responseRequested } = outboundPackage
+    const { connection, payload, endpoint, session } = outboundPackage
     this.logger.debug(`Sending outbound message to endpoint '${endpoint}' over ${session?.type} transport.`, {
       payload,
       connectionId: connection?.id,
