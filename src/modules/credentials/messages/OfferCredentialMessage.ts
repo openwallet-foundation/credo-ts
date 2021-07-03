@@ -1,7 +1,7 @@
 import type { CredOffer } from 'indy-sdk'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsArray, IsString, ValidateNested } from 'class-validator'
+import { Equals, IsArray, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
@@ -41,6 +41,7 @@ export class OfferCredentialMessage extends AgentMessage {
   public static readonly type = IssueCredentialMessageType.OfferCredential
 
   @IsString()
+  @IsOptional()
   public comment?: string
 
   @Expose({ name: 'credential_preview' })

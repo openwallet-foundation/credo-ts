@@ -10,6 +10,7 @@ import { AriesFrameworkError } from '../error'
 import { ConnectionService } from '../modules/connections'
 import { RoutingMessageType as MessageType } from '../modules/routing'
 import { JsonTransformer } from '../utils/JsonTransformer'
+import { MessageValidator } from '../utils/MessageValidator'
 import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
 import { AgentConfig } from './AgentConfig'
@@ -79,6 +80,17 @@ export class MessageReceiver {
     this.logger.info(`Received message with type '${unpackedMessage.message['@type']}'`, unpackedMessage.message)
 
     const message = await this.transformMessage(unpackedMessage)
+    try {
+      await MessageValidator.validate(message)
+    } catch (error) {
+      this.logger.error(`Error validating message ${message.type}`, {
+        errors: error,
+        message: message.toJSON(),
+      })
+
+      throw error
+    }
+
     const messageContext = new InboundMessageContext(message, {
       connection: connection ?? undefined,
       senderVerkey: theirKey,

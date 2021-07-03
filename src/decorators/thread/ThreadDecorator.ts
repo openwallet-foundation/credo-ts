@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer'
-import { Matches } from 'class-validator'
+import { IsOptional, Matches } from 'class-validator'
 
 import { MessageIdRegExp } from '../../agent/BaseMessage'
 
@@ -20,6 +20,7 @@ export class ThreadDecorator {
    */
   @Expose({ name: 'thid' })
   @Matches(MessageIdRegExp)
+  @IsOptional()
   public threadId?: string
 
   /**
@@ -27,12 +28,14 @@ export class ThreadDecorator {
    */
   @Expose({ name: 'pthid' })
   @Matches(MessageIdRegExp)
+  @IsOptional()
   public parentThreadId?: string
 
   /**
    * A number that tells where this message fits in the sequence of all messages that the current sender has contributed to this thread.
    */
   @Expose({ name: 'sender_order' })
+  @IsOptional()
   public senderOrder?: number
 
   /**
@@ -40,5 +43,6 @@ export class ThreadDecorator {
    * This value is often missing if it is the first message in an interaction, but should be used otherwise, as it provides an implicit ACK.
    */
   @Expose({ name: 'received_orders' })
+  @IsOptional()
   public receivedOrders?: { [key: string]: number }
 }

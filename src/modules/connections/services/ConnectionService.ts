@@ -319,7 +319,7 @@ export class ConnectionService {
     //  - create ack message
     //  - allow for options
     //  - maybe this shouldn't be in the connection service?
-    const trustPing = new TrustPingMessage()
+    const trustPing = new TrustPingMessage({})
 
     await this.updateState(connectionRecord, ConnectionState.Complete)
 
