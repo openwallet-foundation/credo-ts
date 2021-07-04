@@ -1,13 +1,12 @@
 import type { ConnectionRecord } from '../../modules/connections'
 import type { OutboundTransporter } from '../../transport'
-import type { OutboundMessage, OutboundPackage } from '../../types'
+import type { OutboundMessage } from '../../types'
 import type { EnvelopeKeys } from '../EnvelopeService'
 import type { TransportSession } from '../TransportService'
 
 import { getMockConnection, mockFunction } from '../../__tests__/helpers'
 import testLogger from '../../__tests__/logger'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { ConsoleLogger, LogLevel } from '../../logger'
 import { DidCommService } from '../../modules/connections'
 import { AgentMessage } from '../AgentMessage'
 import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
@@ -18,7 +17,7 @@ import { createOutboundMessage } from '../helpers'
 jest.mock('../TransportService')
 jest.mock('../EnvelopeService')
 
-const logger = new ConsoleLogger(LogLevel.debug)
+const logger = testLogger
 
 class DummyOutboundTransporter implements OutboundTransporter {
   public start(): Promise<void> {
@@ -39,7 +38,8 @@ class DummyOutboundTransporter implements OutboundTransporter {
 class DummyTransportSession implements TransportSession {
   public readonly type = 'http'
   public keys: EnvelopeKeys | undefined
-  public send(outboundMessage: OutboundPackage): Promise<void> {
+  public inboundMessage: AgentMessage | undefined
+  public send(): Promise<void> {
     throw new Error('Method not implemented.')
   }
 }
@@ -60,15 +60,20 @@ describe('MessageSender', () => {
   const enveloperService = new EnvelopeService()
   const envelopeServicePackMessageMock = mockFunction(enveloperService.packMessage)
 
+  const inboundMessage = new AgentMessage()
+  inboundMessage.setReturnRouting(ReturnRouteTypes.all)
+
   const session = new DummyTransportSession()
   session.keys = {
     recipientKeys: ['verkey'],
     routingKeys: [],
     senderKey: 'senderKey',
   }
+  session.inboundMessage = inboundMessage
   session.send = jest.fn()
 
   const sessionWithoutKeys = new DummyTransportSession()
+  sessionWithoutKeys.inboundMessage = inboundMessage
   sessionWithoutKeys.send = jest.fn()
 
   const transportService = new TransportService()

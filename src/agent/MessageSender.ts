@@ -55,13 +55,11 @@ export class MessageSender {
       connection: { id, verkey, theirKey },
     })
 
-    const services = this.transportService.findDidCommServices(connection)
-    if (services.length === 0) {
-      throw new AriesFrameworkError(`Connection with id ${connection.id} has no service!`)
-    }
-
     const session = this.transportService.findSession(connection.id)
-    if (session) {
+    if (
+      session?.inboundMessage?.hasReturnRouting() ||
+      session?.inboundMessage?.hasReturnRouting(outboundMessage.payload.threadId)
+    ) {
       this.logger.debug(`Existing ${session.type} transport session has been found.`)
       if (!session.keys) {
         throw new AriesFrameworkError(`There are no keys for the given ${session.type} transport session.`)
@@ -73,6 +71,11 @@ export class MessageSender {
       } catch (error) {
         this.logger.info('The transport session has been closed or failed to send the outbound message.', error)
       }
+    }
+
+    const services = this.transportService.findDidCommServices(connection)
+    if (services.length === 0) {
+      throw new AriesFrameworkError(`Connection with id ${connection.id} has no service!`)
     }
 
     for await (const service of services) {

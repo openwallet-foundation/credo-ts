@@ -1,5 +1,6 @@
 import type { ConnectionRecord } from '../modules/connections/repository'
 import type { OutboundPackage } from '../types'
+import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
 
 import { Lifecycle, scoped, inject } from 'tsyringe'
@@ -57,5 +58,6 @@ interface TransportSessionTable {
 export interface TransportSession {
   type: string
   keys?: EnvelopeKeys
+  inboundMessage?: AgentMessage
   send(outboundMessage: OutboundPackage): Promise<void>
 }

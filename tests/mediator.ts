@@ -7,14 +7,14 @@ import type { Express, Request, Response } from 'express'
 import cors from 'cors'
 import express from 'express'
 
-import { Agent, AriesFrameworkError, ConsoleLogger, LogLevel } from '../src'
+import { Agent, AriesFrameworkError } from '../src'
 import testLogger from '../src/__tests__/logger'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
 import { DidCommMimeType } from '../src/types'
 
 import config from './config'
 
-const logger = new ConsoleLogger(LogLevel.test)
+const logger = testLogger
 
 class HttpTransportSession implements TransportSession {
   public readonly type = 'http'
