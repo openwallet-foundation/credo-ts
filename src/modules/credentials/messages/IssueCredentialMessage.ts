@@ -28,7 +28,7 @@ export class IssueCredentialMessage extends AgentMessage {
 
   @Equals(IssueCredentialMessage.type)
   public readonly type = IssueCredentialMessage.type
-  public static readonly type = "'https://didcomm.org/issue-credential/1.0/issue-credential'"
+  public static readonly type = 'https://didcomm.org/issue-credential/1.0/issue-credential'
 
   @IsString()
   public comment?: string
