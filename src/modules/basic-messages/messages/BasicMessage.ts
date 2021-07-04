@@ -3,8 +3,6 @@ import { Equals, IsDate, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 
-import { MessageType } from './BasicMessageMessageType'
-
 export class BasicMessage extends AgentMessage {
   /**
    * Create new BasicMessage instance.
@@ -24,7 +22,7 @@ export class BasicMessage extends AgentMessage {
 
   @Equals(BasicMessage.type)
   public readonly type = BasicMessage.type
-  public static readonly type = MessageType.BasicMessage
+  public static readonly type = 'https://didcomm.org/basicmessage/1.0/message'
 
   @Expose({ name: 'sent_time' })
   @Type(() => Date)
