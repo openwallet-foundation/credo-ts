@@ -35,20 +35,8 @@ describe('Present Proof', () => {
       testLogger.test('Alice sends presentation proposal to Faber')
       let aliceProofRecord = await aliceAgent.proofs.proposeProof(aliceConnection.id, presentationPreview)
 
-      testLogger.test('Faber waits for presentation proposal from Alice')
-      let faberProofRecord = await waitForProofRecord(faberAgent, {
-        threadId: aliceProofRecord.threadId,
-        state: ProofState.ProposalReceived,
-      })
-
-      testLogger.test('Alice waits for presentation request from Faber')
-      aliceProofRecord = await waitForProofRecord(aliceAgent, {
-        threadId: aliceProofRecord.threadId,
-        state: ProofState.RequestReceived,
-      })
-
       testLogger.test('Faber waits for presentation from Alice')
-      faberProofRecord = await waitForProofRecord(faberAgent, {
+      const faberProofRecord = await waitForProofRecord(faberAgent, {
         threadId: aliceProofRecord.threadId,
         state: ProofState.PresentationReceived,
       })
@@ -96,15 +84,9 @@ describe('Present Proof', () => {
         requestedPredicates: predicates,
       })
 
-      testLogger.test('Alice waits for presentation request from Faber')
-      let aliceProofRecord = await waitForProofRecord(aliceAgent, {
-        threadId: faberProofRecord.threadId,
-        state: ProofState.RequestReceived,
-      })
-
       testLogger.test('Faber waits for presentation from Alice')
       faberProofRecord = await waitForProofRecord(faberAgent, {
-        threadId: aliceProofRecord.threadId,
+        threadId: faberProofRecord.threadId,
         state: ProofState.PresentationReceived,
       })
 
@@ -112,8 +94,8 @@ describe('Present Proof', () => {
       expect(faberProofRecord.isVerified).toBe(true)
 
       // Alice waits till it receives presentation ack
-      aliceProofRecord = await waitForProofRecord(aliceAgent, {
-        threadId: aliceProofRecord.threadId,
+      await waitForProofRecord(aliceAgent, {
+        threadId: faberProofRecord.threadId,
         state: ProofState.Done,
       })
     })
@@ -145,12 +127,6 @@ describe('Present Proof', () => {
 
       testLogger.test('Faber accepts presentation proposal from Alice')
       faberProofRecord = await faberAgent.proofs.acceptProposal(faberProofRecord.id)
-
-      testLogger.test('Alice waits for presentation request from Faber')
-      aliceProofRecord = await waitForProofRecord(aliceAgent, {
-        threadId: aliceProofRecord.threadId,
-        state: ProofState.RequestReceived,
-      })
 
       testLogger.test('Faber waits for presentation from Alice')
       faberProofRecord = await waitForProofRecord(faberAgent, {
