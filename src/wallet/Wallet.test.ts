@@ -19,6 +19,6 @@ describe('Wallet', () => {
   })
 
   afterEach(async () => {
-    await wallet.deleteWallet()
+    await wallet.delete()
   })
 })

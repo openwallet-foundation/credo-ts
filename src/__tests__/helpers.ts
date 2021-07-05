@@ -56,7 +56,7 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
 export async function closeAndDeleteWallet(agent: Agent) {
   const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
 
-  await wallet.deleteWallet()
+  await wallet.delete()
 }
 
 export async function waitForProofRecord(

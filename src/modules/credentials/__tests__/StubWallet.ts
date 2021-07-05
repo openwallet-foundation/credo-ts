@@ -26,11 +26,11 @@ export class StubWallet implements Wallet {
   public initialize(walletConfig: WalletConfig, walletCredentials: WalletCredentials): Promise<void> {
     return Promise.resolve()
   }
-  public closeWallet(): Promise<void> {
+  public close(): Promise<void> {
     throw new Error('Method not implemented.')
   }
 
-  public deleteWallet(): Promise<void> {
+  public delete(): Promise<void> {
     throw new Error('Method not implemented.')
   }
   public initPublicDid(didConfig: DidConfig): Promise<void> {

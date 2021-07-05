@@ -20,7 +20,7 @@ describe('IndyStorageService', () => {
   })
 
   afterEach(async () => {
-    await wallet.deleteWallet()
+    await wallet.delete()
   })
 
   const insertRecord = async ({ id, tags }: { id?: string; tags?: TagsBase }) => {

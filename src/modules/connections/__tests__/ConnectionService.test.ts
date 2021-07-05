@@ -43,7 +43,7 @@ describe('ConnectionService', () => {
   })
 
   afterAll(async () => {
-    await wallet.deleteWallet()
+    await wallet.delete()
   })
 
   beforeEach(() => {

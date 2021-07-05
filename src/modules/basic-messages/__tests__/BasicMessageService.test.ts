@@ -33,7 +33,7 @@ describe('BasicMessageService', () => {
   })
 
   afterAll(async () => {
-    await wallet.deleteWallet()
+    await wallet.delete()
   })
 
   describe('save', () => {

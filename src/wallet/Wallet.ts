@@ -17,8 +17,8 @@ export interface Wallet {
   isInitialized: boolean
 
   initialize(walletConfig: WalletConfig, walletCredentials: WalletCredentials): Promise<void>
-  closeWallet(): Promise<void>
-  deleteWallet(): Promise<void>
+  close(): Promise<void>
+  delete(): Promise<void>
 
   initPublicDid(didConfig: DidConfig): Promise<void>
   createDid(didConfig?: DidConfig): Promise<[Did, Verkey]>

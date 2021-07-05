@@ -47,7 +47,7 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
   })
 
   afterAll(async () => {
-    await wallet.deleteWallet()
+    await wallet.delete()
   })
 
   test('signData signs json object and returns SignatureDecorator', async () => {
