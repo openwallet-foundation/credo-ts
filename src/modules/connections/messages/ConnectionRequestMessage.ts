@@ -39,7 +39,7 @@ export class ConnectionRequestMessage extends AgentMessage {
 
   @Equals(ConnectionRequestMessage.type)
   public readonly type = ConnectionRequestMessage.type
-  public static readonly type = "https://didcomm.org/connections/1.0/request'"
+  public static readonly type = 'https://didcomm.org/connections/1.0/request'
 
   @IsString()
   public label!: string
