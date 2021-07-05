@@ -45,6 +45,7 @@ export type DefaultCredentialTags = {
   threadId: string
   connectionId: string
   state: CredentialState
+  credentialId?: string
 }
 
 export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCredentialTags> {
@@ -101,6 +102,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       threadId: this.threadId,
       connectionId: this.connectionId,
       state: this.state,
+      credentialId: this.credentialId,
     }
   }
 

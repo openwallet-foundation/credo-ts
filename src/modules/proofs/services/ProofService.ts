@@ -4,10 +4,10 @@ import type { Logger } from '../../../logger'
 import type { ConnectionRecord } from '../../connections'
 import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { PresentationPreview, PresentationPreviewAttribute } from '../messages'
-import type { IndyProof, Schema, CredDef } from 'indy-sdk'
+import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
-import { inject, scoped, Lifecycle } from 'tsyringe'
+import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -19,7 +19,7 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { Wallet } from '../../../wallet/Wallet'
 import { AckStatus } from '../../common'
-import { CredentialUtils, Credential, CredentialRepository } from '../../credentials'
+import { Credential, CredentialRepository, CredentialUtils } from '../../credentials'
 import { IndyHolderService, IndyVerifierService } from '../../indy'
 import { LedgerService } from '../../ledger/services/LedgerService'
 import { ProofEventTypes } from '../ProofEvents'
@@ -622,40 +622,60 @@ export class ProofService {
     return proofRequest
   }
 
+  /**
+   * Retreives the linked attachments for an {@link indyProofRequest}
+   * @param indyProofRequest The proof request for which the linked attachments have to be found
+   * @param requestedCredentials The requested credentials
+   * @returns a list of attachments that are linked to the requested credentials
+   */
   public async getRequestedAttachmentsForRequestedCredentials(
     indyProofRequest: ProofRequest,
     requestedCredentials: RequestedCredentials
   ): Promise<Attachment[] | undefined> {
-    let attachments: Attachment[] | undefined
+    const attachments: Attachment[] = []
+    const credentialIds = new Set<string>()
+    const requestedAttributesNames: (string | undefined)[] = []
 
+    // Get the credentialIds if it contains a hashlink
     for (const [referent, requestedAttribute] of Object.entries(requestedCredentials.requestedAttributes)) {
-      // set the credential ID
-      const credentialId = requestedAttribute.credentialId
-
-      // Find the credential record
-      const credentialRecord = await this.credentialRepository.getSingleByQuery({ credentialId })
-
       // Find the requested Attributes
-      const reqAttribute = indyProofRequest.requestedAttributes[referent]
+      const requestedAttributes = indyProofRequest.requestedAttributes[referent]
 
       // List the requested attributes
-      const arr = reqAttribute?.names ?? [reqAttribute?.name]
+      requestedAttributesNames.push(...(requestedAttributes.names ?? [requestedAttributes.name]))
 
-      // filter on hashlinks and see if list of requested attributes includes the credential name
-      const reqCredential = credentialRecord.credentialAttributes?.find(
-        (cred) => cred.value.toLowerCase().startsWith('hl:') && arr?.includes(cred.name)
-      )
-      // Add the matching attachments to an object
-      if (reqCredential) {
-        const requestedAttachments = credentialRecord.linkedAttachments?.find(
-          (attachment) => reqCredential.value.split(':')[1].substring(0, 64) === attachment.id
-        )
-        if (requestedAttachments) {
-          attachments = attachments ? [...attachments, requestedAttachments] : [requestedAttachments]
+      // Find the attributes that have a hashlink as a value
+      for (const attribute of Object.values(requestedAttribute.credentialInfo.attributes)) {
+        if (attribute.toLowerCase().startsWith('hl:')) {
+          credentialIds.add(requestedAttribute.credentialId)
         }
       }
     }
-    return attachments
+
+    // Only continues if there is an attribute value that contains a hashlink
+    for (const credentialId of credentialIds) {
+      // Get the credentialRecord that matches the ID
+      const credentialRecord = await this.credentialRepository.getSingleByQuery({ credentialId })
+
+      if (credentialRecord.linkedAttachments) {
+        // Get the credentials that have a hashlink as value and are requested
+        const requestedCredentials = credentialRecord.credentialAttributes?.filter(
+          (credential) =>
+            credential.value.toLowerCase().startsWith('hl:') && requestedAttributesNames.includes(credential.name)
+        )
+
+        // Get the linked attachments that match the requestedCredentials
+        const linkedAttachments = credentialRecord.linkedAttachments.filter((attachment) =>
+          requestedCredentials?.map((credential) => credential.value.split(':')[1]).includes(attachment.id)
+        )
+
+        if (linkedAttachments) {
+          attachments.push(...linkedAttachments)
+        }
+      }
+    }
+
+    return attachments.length ? attachments : undefined
   }
 
   /**
