@@ -22,7 +22,7 @@ describe('Present Proof', () => {
       ;({ faberAgent, aliceAgent, faberConnection, aliceConnection, presentationPreview } = await setupProofsTest(
         'faber agent always',
         'alice agent always',
-        AutoAcceptProof.always
+        AutoAcceptProof.Always
       ))
     })
 
@@ -124,7 +124,7 @@ describe('Present Proof', () => {
       ;({ faberAgent, aliceAgent, faberConnection, aliceConnection, presentationPreview } = await setupProofsTest(
         'faber agent contentApproved',
         'alice agent contentApproved',
-        AutoAcceptProof.contentApproved
+        AutoAcceptProof.ContentApproved
       ))
     })
 

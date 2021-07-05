@@ -64,7 +64,7 @@ export class AgentConfig {
   }
 
   public get autoAcceptProofs() {
-    return this.initConfig.autoAcceptProofs ?? AutoAcceptProof.never
+    return this.initConfig.autoAcceptProofs ?? AutoAcceptProof.Never
   }
 
   public get didCommMimeType() {

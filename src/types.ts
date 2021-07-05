@@ -68,11 +68,11 @@ export interface InboundConnection {
 
 export enum AutoAcceptProof {
   // Always auto accepts the proof no matter if it changed in subsequent steps
-  'always' = 'always',
+  Always = 'always',
 
   // Needs one acceptation and the rest will be automated if nothing changes
-  'contentApproved' = 'contentApproved',
+  ContentApproved = 'contentApproved',
 
   // DEFAULT: Never auto accept a proof
-  'never' = 'never',
+  Never = 'never',
 }

@@ -1,34 +1,40 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { ProofResponseCoordinator } from '../ProofResponseCoordinator'
 import type { ProofRecord } from '../repository'
 import type { ProofService } from '../services'
 
 import { createOutboundMessage } from '../../../agent/helpers'
-import { AutoAcceptProof } from '../../../types'
-import { ProofUtils } from '../ProofUtils'
 import { ProposePresentationMessage } from '../messages'
 
 export class ProposePresentationHandler implements Handler {
   private proofService: ProofService
   private agentConfig: AgentConfig
+  private proofResponseCoordinator: ProofResponseCoordinator
   public supportedMessages = [ProposePresentationMessage]
 
-  public constructor(proofService: ProofService, agentConfig: AgentConfig) {
+  public constructor(
+    proofService: ProofService,
+    agentConfig: AgentConfig,
+    proofResponseCoordinator: ProofResponseCoordinator
+  ) {
     this.proofService = proofService
     this.agentConfig = agentConfig
+    this.proofResponseCoordinator = proofResponseCoordinator
   }
 
   public async handle(messageContext: HandlerInboundMessage<ProposePresentationHandler>) {
     const proofRecord = await this.proofService.processProposal(messageContext)
 
-    const autoAccept = ProofUtils.composeAutoAccept(proofRecord.autoAcceptProof, this.agentConfig.autoAcceptProofs)
-
-    if (autoAccept === AutoAcceptProof.always) {
-      return await this.nextStep(proofRecord, messageContext)
+    if (this.proofResponseCoordinator.shoudlAutoRespondToProposal(proofRecord)) {
+      return await this.sendRequest(proofRecord, messageContext)
     }
   }
 
-  private async nextStep(proofRecord: ProofRecord, messageContext: HandlerInboundMessage<ProposePresentationHandler>) {
+  private async sendRequest(
+    proofRecord: ProofRecord,
+    messageContext: HandlerInboundMessage<ProposePresentationHandler>
+  ) {
     const proofRequest = await this.proofService.createProofRequestFromProposal(
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       proofRecord.proposalMessage!.presentationProposal,
