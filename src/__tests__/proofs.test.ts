@@ -15,6 +15,7 @@ import {
   AttributeFilter,
   ProofPredicateInfo,
 } from '../modules/proofs'
+import { AutoAcceptCredential } from '../types'
 
 import {
   ensurePublicDidIsOnLedger,
@@ -30,8 +31,8 @@ import {
 } from './helpers'
 import testLogger from './logger'
 
-const faberConfig = getBaseConfig('Faber Proofs', { genesisPath })
-const aliceConfig = getBaseConfig('Alice Proofs', { genesisPath })
+const faberConfig = getBaseConfig('Faber Proofs', { genesisPath, autoAcceptCredentials: AutoAcceptCredential.Always })
+const aliceConfig = getBaseConfig('Alice Proofs', { genesisPath, autoAcceptCredentials: AutoAcceptCredential.Always })
 
 const credentialPreview = new CredentialPreview({
   attributes: [

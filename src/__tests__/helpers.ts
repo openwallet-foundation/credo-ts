@@ -281,26 +281,10 @@ export async function issueCredential({
 }) {
   let issuerCredentialRecord = await issuerAgent.credentials.offerCredential(issuerConnectionId, credentialTemplate)
 
-  let holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
-    threadId: issuerCredentialRecord.threadId,
-    state: CredentialState.OfferReceived,
-  })
-
-  holderCredentialRecord = await holderAgent.credentials.acceptOffer(holderCredentialRecord.id)
-
-  issuerCredentialRecord = await waitForCredentialRecord(issuerAgent, {
-    threadId: holderCredentialRecord.threadId,
-    state: CredentialState.RequestReceived,
-  })
-
-  issuerCredentialRecord = await issuerAgent.credentials.acceptRequest(issuerCredentialRecord.id)
-
-  holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
+  const holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.CredentialReceived,
   })
-
-  holderCredentialRecord = await holderAgent.credentials.acceptCredential(holderCredentialRecord.id)
 
   issuerCredentialRecord = await waitForCredentialRecord(issuerAgent, {
     threadId: issuerCredentialRecord.threadId,
