@@ -12,6 +12,7 @@ import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { ConnectionService } from '../connections/services/ConnectionService'
 
+import { CredentialResponseCoordinator } from './AutoResponse'
 import {
   ProposeCredentialHandler,
   OfferCredentialHandler,
@@ -27,18 +28,21 @@ export class CredentialsModule {
   private credentialService: CredentialService
   private messageSender: MessageSender
   private agentConfig: AgentConfig
+  private credentialResponseCoordinator: CredentialResponseCoordinator
 
   public constructor(
     dispatcher: Dispatcher,
     connectionService: ConnectionService,
     credentialService: CredentialService,
     messageSender: MessageSender,
-    agentConfig: AgentConfig
+    agentConfig: AgentConfig,
+    credentialResponseCoordinator: CredentialResponseCoordinator
   ) {
     this.connectionService = connectionService
     this.credentialService = credentialService
     this.messageSender = messageSender
     this.agentConfig = agentConfig
+    this.credentialResponseCoordinator = credentialResponseCoordinator
     this.registerHandlers(dispatcher)
   }
 
@@ -324,10 +328,18 @@ export class CredentialsModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new ProposeCredentialHandler(this.credentialService, this.agentConfig))
-    dispatcher.registerHandler(new OfferCredentialHandler(this.credentialService, this.agentConfig))
-    dispatcher.registerHandler(new RequestCredentialHandler(this.credentialService, this.agentConfig))
-    dispatcher.registerHandler(new IssueCredentialHandler(this.credentialService, this.agentConfig))
+    dispatcher.registerHandler(
+      new ProposeCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
+    )
+    dispatcher.registerHandler(
+      new OfferCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
+    )
+    dispatcher.registerHandler(
+      new RequestCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
+    )
+    dispatcher.registerHandler(
+      new IssueCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
+    )
     dispatcher.registerHandler(new CredentialAckHandler(this.credentialService))
   }
 }

@@ -1,14 +1,24 @@
-import type { Logger } from '../../../logger/Logger'
-import type { CredentialRecord } from '../repository'
+import type { CredentialRecord } from './repository'
 
-import { AutoAcceptCredential } from '../../../types'
-import { CredentialUtils } from '../CredentialUtils'
+import { scoped, Lifecycle } from 'tsyringe'
+
+import { AgentConfig } from '../../agent/AgentConfig'
+import { AutoAcceptCredential } from '../../types'
+
+import { CredentialUtils } from './CredentialUtils'
 
 /**
  * This class handles all the automation with all the messages in the issue credential protocol
  * Every function returns `true` if it should automate the flow and `false` if not
  */
-export class AutoResponseHandler {
+@scoped(Lifecycle.ContainerScoped)
+export class CredentialResponseCoordinator {
+  private agentConfig: AgentConfig
+
+  public constructor(agentConfig: AgentConfig) {
+    this.agentConfig = agentConfig
+  }
+
   /**
    * Returns the credential auto accept config based on priority:
    *	- The record config takes first priority
@@ -33,11 +43,11 @@ export class AutoResponseHandler {
    * @param agentAutoAccept The configuration on the agent whether to auto accept
    * @returns a message that will be send to the other agent
    */
-  public static async shoudlAutoRespondToProposal(
-    credentialRecord: CredentialRecord,
-    agentAutoAccept: AutoAcceptCredential
-  ) {
-    const autoAccept = this.composeAutoAccept(credentialRecord.autoAcceptCredential, agentAutoAccept)
+  public async shoudlAutoRespondToProposal(credentialRecord: CredentialRecord) {
+    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
+      credentialRecord.autoAcceptCredential,
+      this.agentConfig.autoAcceptCredentials
+    )
 
     if (autoAccept === AutoAcceptCredential.Always) {
       return true
@@ -76,11 +86,11 @@ export class AutoResponseHandler {
    * @param agentAutoAccept The configuration on the agent whether to auto accept
    * @returns a message that will be send to the other agent
    */
-  public static async shouldAutoRespondToOffer(
-    credentialRecord: CredentialRecord,
-    agentAutoAccept: AutoAcceptCredential
-  ) {
-    const autoAccept = this.composeAutoAccept(credentialRecord.autoAcceptCredential, agentAutoAccept)
+  public async shouldAutoRespondToOffer(credentialRecord: CredentialRecord) {
+    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
+      credentialRecord.autoAcceptCredential,
+      this.agentConfig.autoAcceptCredentials
+    )
 
     if (autoAccept === AutoAcceptCredential.Always) {
       return true
@@ -119,11 +129,11 @@ export class AutoResponseHandler {
    * @param agentAutoAccept The configuration on the agent whether to auto accept
    * @returns a message that will be send to the other agent
    */
-  public static async shouldAutoRespondToRequest(
-    credentialRecord: CredentialRecord,
-    agentAutoAccept: AutoAcceptCredential
-  ) {
-    const autoAccept = this.composeAutoAccept(credentialRecord.autoAcceptCredential, agentAutoAccept)
+  public async shouldAutoRespondToRequest(credentialRecord: CredentialRecord) {
+    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
+      credentialRecord.autoAcceptCredential,
+      this.agentConfig.autoAcceptCredentials
+    )
 
     if (autoAccept === AutoAcceptCredential.Always) {
       return true
@@ -148,12 +158,11 @@ export class AutoResponseHandler {
    * @param agentAutoAccept The configuration on the agent whether to auto accept
    * @returns a message that will be send to the other agent
    */
-  public static async shouldAutoRespondToIssue(
-    credentialRecord: CredentialRecord,
-    agentAutoAccept: AutoAcceptCredential,
-    logger: Logger
-  ) {
-    const autoAccept = this.composeAutoAccept(credentialRecord.autoAcceptCredential, agentAutoAccept)
+  public async shouldAutoRespondToIssue(credentialRecord: CredentialRecord) {
+    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
+      credentialRecord.autoAcceptCredential,
+      this.agentConfig.autoAcceptCredentials
+    )
 
     if (autoAccept === AutoAcceptCredential.Always) {
       return true
@@ -162,7 +171,7 @@ export class AutoResponseHandler {
         const indyCredential = credentialRecord.credentialMessage.indyCredential
 
         if (!indyCredential) {
-          logger.error(`Missing required base64 encoded attachment data for credential`)
+          this.agentConfig.logger.error(`Missing required base64 encoded attachment data for credential`)
           return false
         }
 

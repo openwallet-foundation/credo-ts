@@ -1,28 +1,31 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { CredentialResponseCoordinator } from '../AutoResponse'
 import type { CredentialRecord } from '../repository/CredentialRecord'
 import type { CredentialService } from '../services'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { RequestCredentialMessage } from '../messages'
 
-import { AutoResponseHandler } from './AutoResponseHandler'
-
 export class RequestCredentialHandler implements Handler {
   private agentConfig: AgentConfig
   private credentialService: CredentialService
+  private credentialResponseCoordinator: CredentialResponseCoordinator
   public supportedMessages = [RequestCredentialMessage]
 
-  public constructor(credentialService: CredentialService, agentConfig: AgentConfig) {
+  public constructor(
+    credentialService: CredentialService,
+    agentConfig: AgentConfig,
+    credentialResponseCoordinator: CredentialResponseCoordinator
+  ) {
     this.credentialService = credentialService
     this.agentConfig = agentConfig
+    this.credentialResponseCoordinator = credentialResponseCoordinator
   }
 
   public async handle(messageContext: HandlerInboundMessage<RequestCredentialHandler>) {
     const credentialRecord = await this.credentialService.processRequest(messageContext)
-    if (
-      await AutoResponseHandler.shouldAutoRespondToRequest(credentialRecord, this.agentConfig.autoAcceptCredentials)
-    ) {
+    if (await this.credentialResponseCoordinator.shouldAutoRespondToRequest(credentialRecord)) {
       return await this.sendCredential(credentialRecord, messageContext)
     }
   }
