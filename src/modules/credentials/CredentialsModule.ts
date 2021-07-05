@@ -12,7 +12,7 @@ import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { ConnectionService } from '../connections/services/ConnectionService'
 
-import { CredentialResponseCoordinator } from './AutoResponse'
+import { CredentialResponseCoordinator } from './CredentialResponseCoordinator'
 import {
   ProposeCredentialHandler,
   OfferCredentialHandler,
