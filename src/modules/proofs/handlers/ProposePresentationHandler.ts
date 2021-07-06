@@ -35,16 +35,27 @@ export class ProposePresentationHandler implements Handler {
     proofRecord: ProofRecord,
     messageContext: HandlerInboundMessage<ProposePresentationHandler>
   ) {
+    this.agentConfig.logger.info(
+      `Automatically sending request with autoAccept on ${this.agentConfig.autoAcceptProofs}`
+    )
+
+    if (!messageContext.connection) {
+      this.agentConfig.logger.error('No connection on the messageContext')
+      return
+    }
+    if (!proofRecord.proposalMessage) {
+      this.agentConfig.logger.error(`Proof record with id ${proofRecord.id} is missing required credential proposal`)
+      return
+    }
     const proofRequest = await this.proofService.createProofRequestFromProposal(
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      proofRecord.proposalMessage!.presentationProposal,
+      proofRecord.proposalMessage.presentationProposal,
       {
         name: 'proof-request',
         version: '1.0',
       }
     )
     const { message } = await this.proofService.createRequestAsResponse(proofRecord, proofRequest)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return createOutboundMessage(messageContext.connection!, message)
+
+    return createOutboundMessage(messageContext.connection, message)
   }
 }

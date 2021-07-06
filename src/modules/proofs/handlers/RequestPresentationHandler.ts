@@ -37,17 +37,27 @@ export class RequestPresentationHandler implements Handler {
   ) {
     const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
 
-    if (indyProofRequest) {
-      const retrievedCredentials = await this.proofService.getRequestedCredentialsForProofRequest(
-        indyProofRequest,
-        proofRecord.proposalMessage?.presentationProposal
-      )
+    this.agentConfig.logger.info(
+      `Automatically sending presentation with autoAccept on ${this.agentConfig.autoAcceptProofs}`
+    )
 
-      const requestedCredentials = this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)
-
-      const { message } = await this.proofService.createPresentation(proofRecord, requestedCredentials)
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      return createOutboundMessage(messageContext.connection!, message)
+    if (!messageContext.connection) {
+      this.agentConfig.logger.error('No connection on the messageContext')
+      return
     }
+
+    if (!indyProofRequest) {
+      return
+    }
+
+    const retrievedCredentials = await this.proofService.getRequestedCredentialsForProofRequest(
+      indyProofRequest,
+      proofRecord.proposalMessage?.presentationProposal
+    )
+
+    const requestedCredentials = this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)
+
+    const { message } = await this.proofService.createPresentation(proofRecord, requestedCredentials)
+    return createOutboundMessage(messageContext.connection, message)
   }
 }

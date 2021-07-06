@@ -33,7 +33,15 @@ export class PresentationHandler implements Handler {
   private async sendAck(proofRecord: ProofRecord, messageContext: HandlerInboundMessage<PresentationHandler>) {
     const { message } = await this.proofService.createAck(proofRecord)
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return createOutboundMessage(messageContext.connection!, message)
+    this.agentConfig.logger.info(
+      `Automatically sending acknowledgement with autoAccept on ${this.agentConfig.autoAcceptProofs}`
+    )
+
+    if (!messageContext.connection) {
+      this.agentConfig.logger.error('No connection on the messageContext')
+      return
+    }
+
+    return createOutboundMessage(messageContext.connection, message)
   }
 }
