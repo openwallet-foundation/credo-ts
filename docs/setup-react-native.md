@@ -31,6 +31,19 @@ import 'react-native-get-random-values'
 import '@azure/core-asynciterator-polyfill'
 ```
 
+6. Install react native file system and update pods
+
+```bash
+yarn add react-native-fs
+```
+
+```bash
+cd ios 
+```
+
+```bash
+pod install 
+
 ## TypeScript
 
 If you're using TypeScript in your React Native project you need to install `indy-sdk` types both with and without alias. This is to make sure you have types when importing `rn-indy-sdk`, but also for `indy-sdk` types used by the framework.
