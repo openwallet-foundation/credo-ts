@@ -38,7 +38,7 @@ yarn add react-native-fs
 ```
 
 ```bash
-cd ios  and pod install
+pod install --project-directory=ios/
 ```
 
 ## TypeScript
