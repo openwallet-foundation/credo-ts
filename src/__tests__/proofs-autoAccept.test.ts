@@ -9,7 +9,7 @@ import { AutoAcceptProof } from '../types'
 import { setupProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'
 
-describe('Present Proof', () => {
+describe('Auto accept present proof', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
   let credDefId: CredDefId
@@ -31,7 +31,7 @@ describe('Present Proof', () => {
       await aliceAgent.closeAndDeleteWallet()
     })
 
-    test('Alice starts with proof proposal to Faber', async () => {
+    test('Alice starts with proof proposal to Faber, both with autoAcceptProof on `always`', async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
       let aliceProofRecord = await aliceAgent.proofs.proposeProof(aliceConnection.id, presentationPreview)
 
@@ -51,7 +51,7 @@ describe('Present Proof', () => {
       })
     })
 
-    test('Faber starts with proof requests to Alice', async () => {
+    test('Faber starts with proof requests to Alice, both with autoAcceptProof on `always`', async () => {
       testLogger.test('Faber sends presentation request to Alice')
 
       const attributes = {
@@ -115,7 +115,7 @@ describe('Present Proof', () => {
       await aliceAgent.closeAndDeleteWallet()
     })
 
-    test('Alice starts with proof proposal to Faber', async () => {
+    test('Alice starts with proof proposal to Faber, both with autoacceptproof on `contentapproved`', async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
       let aliceProofRecord = await aliceAgent.proofs.proposeProof(aliceConnection.id, presentationPreview)
 
@@ -144,7 +144,7 @@ describe('Present Proof', () => {
       })
     })
 
-    test('Faber starts with proof requests to Alice', async () => {
+    test('Faber starts with proof requests to Alice, both with autoacceptproof on `contentapproved`', async () => {
       testLogger.test('Faber sends presentation request to Alice')
 
       const attributes = {
