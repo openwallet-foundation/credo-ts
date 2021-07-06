@@ -34,6 +34,12 @@ export class ProofResponseCoordinator {
     return recordConfig ?? agentConfig ?? AutoAcceptProof.Never
   }
 
+  /**
+   * Checks whether it should automatically respond to a proposal
+   *
+   * @param proofRecord The proofrecord that contains the message(s) to respond to
+   * @returns a boolean whether it should automatically accept the proposal
+   */
   public shoudlAutoRespondToProposal(proofRecord: ProofRecord) {
     const autoAccept = ProofResponseCoordinator.composeAutoAccept(
       proofRecord.autoAcceptProof,
@@ -50,7 +56,7 @@ export class ProofResponseCoordinator {
    * Checks whether it should automatically respond to a request
    *
    * @param proofRecord The proofrecord that contains the message(s) to respond to
-   * @returns a message that will be send to the other agent
+   * @returns a boolean whether it should automatically accept the request
    */
   public async shouldAutoRespondToRequest(proofRecord: ProofRecord) {
     const autoAccept = ProofResponseCoordinator.composeAutoAccept(
@@ -72,7 +78,7 @@ export class ProofResponseCoordinator {
    * Checks whether it should automatically respond to a presention of proof
    *
    * @param proofRecord The proofrecord that contains the message(s) to respond to
-   * @returns a message that will be send to the other agent
+   * @returns a boolean whether it should automatically accept the presentation
    */
   public async shouldAutoRespondToPresentation(proofRecord: ProofRecord) {
     const autoAccept = ProofResponseCoordinator.composeAutoAccept(
