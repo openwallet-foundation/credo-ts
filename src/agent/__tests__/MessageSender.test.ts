@@ -1,8 +1,6 @@
 import type { ConnectionRecord } from '../../modules/connections'
 import type { OutboundTransporter } from '../../transport'
 import type { OutboundMessage } from '../../types'
-import type { EnvelopeKeys } from '../EnvelopeService'
-import type { TransportSession } from '../TransportService'
 
 import { getMockConnection, mockFunction } from '../../__tests__/helpers'
 import testLogger from '../../__tests__/logger'
@@ -13,6 +11,8 @@ import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { MessageSender } from '../MessageSender'
 import { TransportService as TransportServiceImpl } from '../TransportService'
 import { createOutboundMessage } from '../helpers'
+
+import { DummyTransportSession } from './stubs'
 
 jest.mock('../TransportService')
 jest.mock('../EnvelopeService')
@@ -35,15 +35,6 @@ class DummyOutboundTransporter implements OutboundTransporter {
   }
 }
 
-class DummyTransportSession implements TransportSession {
-  public readonly type = 'http'
-  public keys: EnvelopeKeys | undefined
-  public inboundMessage: AgentMessage | undefined
-  public send(): Promise<void> {
-    throw new Error('Method not implemented.')
-  }
-}
-
 describe('MessageSender', () => {
   const TransportService = <jest.Mock<TransportServiceImpl>>(<unknown>TransportServiceImpl)
   const EnvelopeService = <jest.Mock<EnvelopeServiceImpl>>(<unknown>EnvelopeServiceImpl)
@@ -63,7 +54,7 @@ describe('MessageSender', () => {
   const inboundMessage = new AgentMessage()
   inboundMessage.setReturnRouting(ReturnRouteTypes.all)
 
-  const session = new DummyTransportSession()
+  const session = new DummyTransportSession('session-123')
   session.keys = {
     recipientKeys: ['verkey'],
     routingKeys: [],
@@ -72,12 +63,12 @@ describe('MessageSender', () => {
   session.inboundMessage = inboundMessage
   session.send = jest.fn()
 
-  const sessionWithoutKeys = new DummyTransportSession()
+  const sessionWithoutKeys = new DummyTransportSession('sessionWithoutKeys-123')
   sessionWithoutKeys.inboundMessage = inboundMessage
   sessionWithoutKeys.send = jest.fn()
 
   const transportService = new TransportService()
-  const transportServiceFindSessionMock = mockFunction(transportService.findSession)
+  const transportServiceFindSessionMock = mockFunction(transportService.findSessionByConnectionId)
 
   const firstDidCommService = new DidCommService({
     id: `<did>;indy`,
@@ -125,15 +116,6 @@ describe('MessageSender', () => {
       )
     })
 
-    test('throw error when there is a session without keys', async () => {
-      messageSender.setOutboundTransporter(outboundTransporter)
-      transportServiceFindSessionMock.mockReturnValue(sessionWithoutKeys)
-
-      await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrow(
-        `There are no keys for the given http transport session.`
-      )
-    })
-
     test('call send message when session send method fails', async () => {
       messageSender.setOutboundTransporter(outboundTransporter)
       transportServiceFindSessionMock.mockReturnValue(session)
@@ -153,9 +135,28 @@ describe('MessageSender', () => {
       expect(sendMessageSpy).toHaveBeenCalledTimes(1)
     })
 
+    test('call send message when session send method fails with missing keys', async () => {
+      messageSender.setOutboundTransporter(outboundTransporter)
+      transportServiceFindSessionMock.mockReturnValue(sessionWithoutKeys)
+
+      messageSender.setOutboundTransporter(outboundTransporter)
+      const sendMessageSpy = jest.spyOn(outboundTransporter, 'sendMessage')
+
+      await messageSender.sendMessage(outboundMessage)
+
+      expect(sendMessageSpy).toHaveBeenCalledWith({
+        connection,
+        payload: wireMessage,
+        endpoint: firstDidCommService.serviceEndpoint,
+        responseRequested: false,
+      })
+      expect(sendMessageSpy).toHaveBeenCalledTimes(1)
+    })
+
     test('call send message on session when there is a session for a given connection', async () => {
       messageSender.setOutboundTransporter(outboundTransporter)
       const sendMessageSpy = jest.spyOn(outboundTransporter, 'sendMessage')
+      session.connection = connection
       transportServiceFindSessionMock.mockReturnValue(session)
 
       await messageSender.sendMessage(outboundMessage)

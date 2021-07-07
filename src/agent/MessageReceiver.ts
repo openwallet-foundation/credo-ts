@@ -94,7 +94,8 @@ export class MessageReceiver {
       }
       session.keys = keys
       session.inboundMessage = message
-      this.transportService.saveSession(connection.id, session)
+      session.connection = connection
+      this.transportService.saveSession(session)
     }
 
     return await this.dispatcher.dispatch(messageContext)

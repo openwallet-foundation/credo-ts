@@ -11,17 +11,20 @@ import { Agent, AriesFrameworkError } from '../src'
 import testLogger from '../src/__tests__/logger'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
 import { DidCommMimeType } from '../src/types'
+import { uuid } from '../src/utils/uuid'
 
 import config from './config'
 
 const logger = testLogger
 
 class HttpTransportSession implements TransportSession {
+  public id: string
   public readonly type = 'http'
   public req: Request
   public res: Response
 
-  public constructor(req: Request, res: Response) {
+  public constructor(id: string, req: Request, res: Response) {
+    this.id = id
     this.req = req
     this.res = res
   }
@@ -30,7 +33,7 @@ class HttpTransportSession implements TransportSession {
     logger.debug(`Sending outbound message via ${this.type} transport session`)
 
     if (this.res.headersSent) {
-      throw new Error(`${this.type} transport session has been closed.`)
+      throw new AriesFrameworkError(`${this.type} transport session has been closed.`)
     }
 
     this.res.status(200).json(outboundMessage.payload).end()
@@ -50,15 +53,16 @@ class HttpInboundTransporter implements InboundTransporter {
         const message = req.body
         const packedMessage = JSON.parse(message)
 
-        const session = new HttpTransportSession(req, res)
+        const session = new HttpTransportSession(uuid(), req, res)
         await agent.receiveMessage(packedMessage, session)
 
         // If agent did not use session when processing message we need to send response here.
         if (!res.headersSent) {
           res.status(200).end()
         }
+        agent.closeSession(session)
       } catch (error) {
-        logger.error(error)
+        logger.error(`Error processing message in mediator: ${error.message}`, error)
         res.status(500).send('Error processing message')
       }
     })

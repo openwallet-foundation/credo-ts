@@ -3,31 +3,33 @@ import type { OutboundPackage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
 
-import { Lifecycle, scoped, inject } from 'tsyringe'
+import { Lifecycle, scoped } from 'tsyringe'
 
-import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
-import { Logger } from '../logger'
+import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { ConnectionRole, DidCommService } from '../modules/connections/models'
 
 @scoped(Lifecycle.ContainerScoped)
 export class TransportService {
   private transportSessionTable: TransportSessionTable = {}
-  private logger: Logger
 
-  public constructor(@inject(InjectionSymbols.Logger) logger: Logger) {
-    this.logger = logger
+  public saveSession(session: TransportSession) {
+    this.transportSessionTable[session.id] = session
   }
 
-  public saveSession(connectionId: string, transport: TransportSession) {
-    this.transportSessionTable[connectionId] = transport
+  public findSessionByConnectionId(connectionId: string) {
+    return Object.values(this.transportSessionTable).find((session) => session.connection?.id === connectionId)
+  }
+
+  public findSessionById(sessionId: string) {
+    return this.transportSessionTable[sessionId]
+  }
+
+  public removeSession(session: TransportSession) {
+    delete this.transportSessionTable[session.id]
   }
 
   public hasInboundEndpoint(connection: ConnectionRecord) {
     return connection.didDoc.didCommServices.find((s) => s.serviceEndpoint !== DID_COMM_TRANSPORT_QUEUE)
-  }
-
-  public findSession(connectionId: string) {
-    return this.transportSessionTable[connectionId]
   }
 
   public findDidCommServices(connection: ConnectionRecord): DidCommService[] {
@@ -52,12 +54,14 @@ export class TransportService {
 }
 
 interface TransportSessionTable {
-  [connectionRecordId: string]: TransportSession
+  [sessionId: string]: TransportSession
 }
 
 export interface TransportSession {
+  id: string
   type: string
   keys?: EnvelopeKeys
   inboundMessage?: AgentMessage
+  connection?: ConnectionRecord
   send(outboundMessage: OutboundPackage): Promise<void>
 }

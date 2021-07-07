@@ -135,10 +135,12 @@ export async function waitForBasicMessage(agent: Agent, { content }: { content?:
 }
 
 class SubjectTransportSession implements TransportSession {
+  public id: string
   public readonly type = 'subject'
   private theirSubject: Subject<WireMessage>
 
-  public constructor(theirSubject: Subject<WireMessage>) {
+  public constructor(id: string, theirSubject: Subject<WireMessage>) {
+    this.id = id
     this.theirSubject = theirSubject
   }
 
@@ -164,7 +166,7 @@ export class SubjectInboundTransporter implements InboundTransporter {
   private subscribe(agent: Agent) {
     this.subject.subscribe({
       next: async (message: WireMessage) => {
-        const session = new SubjectTransportSession(this.theirSubject)
+        const session = new SubjectTransportSession('subject-session-1', this.theirSubject)
         await agent.receiveMessage(message, session)
       },
     })

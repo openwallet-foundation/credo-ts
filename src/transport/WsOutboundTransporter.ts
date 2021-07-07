@@ -1,5 +1,4 @@
 import type { Agent } from '../agent/Agent'
-import type { TransportSession } from '../agent/TransportService'
 import type { Logger } from '../logger'
 import type { ConnectionRecord } from '../modules/connections'
 import type { OutboundPackage } from '../types'
@@ -7,23 +6,6 @@ import type { OutboundTransporter } from './OutboundTransporter'
 
 import { InjectionSymbols } from '../constants'
 import { WebSocket } from '../utils/ws'
-
-export class WebSocketTransportSession implements TransportSession {
-  public readonly type = 'websocket'
-  public socket: WebSocket
-
-  public constructor(socket: WebSocket) {
-    this.socket = socket
-  }
-
-  public async send(outboundMessage: OutboundPackage): Promise<void> {
-    // logger.debug(`Sending outbound message via ${this.type} transport session`)
-    if (this.socket.readyState !== WebSocket.OPEN) {
-      throw new Error(`${this.type} transport session has been closed.`)
-    }
-    this.socket.send(JSON.stringify(outboundMessage.payload))
-  }
-}
 
 export class WsOutboundTransporter implements OutboundTransporter {
   private transportTable: Map<string, WebSocket> = new Map<string, WebSocket>()
