@@ -56,7 +56,7 @@ class WsInboundTransporter implements InboundTransporter {
         this.listenOnWebSocketMessages(agent, socket, session)
         socket.on('close', () => {
           logger.debug('Socket closed.')
-          agent.closeSession(session)
+          agent.removeSession(session)
         })
       } else {
         logger.debug(`Socket with id ${socketId} already exists.`)

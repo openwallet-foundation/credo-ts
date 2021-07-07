@@ -184,7 +184,7 @@ export class Agent {
     await this.wallet.delete()
   }
 
-  public closeSession(session: TransportSession) {
+  public removeSession(session: TransportSession) {
     this.transportService.removeSession(session)
   }
 

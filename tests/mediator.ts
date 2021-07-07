@@ -49,21 +49,21 @@ class HttpInboundTransporter implements InboundTransporter {
 
   public async start(agent: Agent) {
     this.app.post('/msg', async (req, res) => {
+      const session = new HttpTransportSession(uuid(), req, res)
       try {
         const message = req.body
         const packedMessage = JSON.parse(message)
-
-        const session = new HttpTransportSession(uuid(), req, res)
         await agent.receiveMessage(packedMessage, session)
 
         // If agent did not use session when processing message we need to send response here.
         if (!res.headersSent) {
           res.status(200).end()
         }
-        agent.closeSession(session)
       } catch (error) {
         logger.error(`Error processing message in mediator: ${error.message}`, error)
         res.status(500).send('Error processing message')
+      } finally {
+        agent.removeSession(session)
       }
     })
   }
