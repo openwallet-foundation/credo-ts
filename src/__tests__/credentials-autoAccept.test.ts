@@ -2,12 +2,12 @@ import type { Agent } from '../agent/Agent'
 import type { ConnectionRecord } from '../modules/connections'
 
 import {
+  AutoAcceptCredential,
   CredentialPreview,
   CredentialPreviewAttribute,
   CredentialRecord,
   CredentialState,
 } from '../modules/credentials'
-import { AutoAcceptCredential } from '../types'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { sleep } from '../utils/sleep'
 

@@ -3,8 +3,8 @@ import type { CredentialRecord } from './repository'
 import { scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
-import { AutoAcceptCredential } from '../../types'
 
+import { AutoAcceptCredential } from './CredentialAutoAcceptType'
 import { CredentialUtils } from './CredentialUtils'
 
 /**
@@ -24,10 +24,6 @@ export class CredentialResponseCoordinator {
    *	- The record config takes first priority
    *	- Otherwise the agent config
    *	- Otherwise {@link AutoAcceptCredential.Never} is returned
-   *
-   * @param recordConfig The auto accept config for the record
-   * @param agentConfig The auto accept config for the agent
-   * @returns the auto accept config
    */
   private static composeAutoAccept(
     recordConfig: AutoAcceptCredential | undefined,
@@ -38,10 +34,6 @@ export class CredentialResponseCoordinator {
 
   /**
    * Checks whether it should automatically respond to a proposal
-   *
-   * @param credentialRecord The credentialRecord that contains the message(s) to respond to
-   * @param agentAutoAccept The configuration on the agent whether to auto accept
-   * @returns a message that will be send to the other agent
    */
   public async shoudlAutoRespondToProposal(credentialRecord: CredentialRecord) {
     const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
@@ -81,10 +73,6 @@ export class CredentialResponseCoordinator {
 
   /**
    * Checks whether it should automatically respond to an offer
-   *
-   * @param credentialRecord The credentialRecord that contains the message(s) to respond to
-   * @param agentAutoAccept The configuration on the agent whether to auto accept
-   * @returns a message that will be send to the other agent
    */
   public async shouldAutoRespondToOffer(credentialRecord: CredentialRecord) {
     const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
@@ -124,10 +112,6 @@ export class CredentialResponseCoordinator {
 
   /**
    * Checks whether it should automatically respond to a request
-   *
-   * @param credentialRecord The credentialRecord that contains the message(s) to respond to
-   * @param agentAutoAccept The configuration on the agent whether to auto accept
-   * @returns a message that will be send to the other agent
    */
   public async shouldAutoRespondToRequest(credentialRecord: CredentialRecord) {
     const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
@@ -153,10 +137,6 @@ export class CredentialResponseCoordinator {
 
   /**
    * Checks whether it should automatically respond to the issuance of a credential
-   *
-   * @param credentialRecord The credentialRecord that contains the message(s) to respond to
-   * @param agentAutoAccept The configuration on the agent whether to auto accept
-   * @returns a message that will be send to the other agent
    */
   public async shouldAutoRespondToIssue(credentialRecord: CredentialRecord) {
     const autoAccept = CredentialResponseCoordinator.composeAutoAccept(

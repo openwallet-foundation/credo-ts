@@ -4,7 +4,7 @@ import type { CredDefId } from 'indy-sdk'
 import { Subject } from 'rxjs'
 
 import { Agent } from '../agent/Agent'
-import { CredentialPreview, CredentialPreviewAttribute } from '../modules/credentials'
+import { AutoAcceptCredential, CredentialPreview, CredentialPreviewAttribute } from '../modules/credentials'
 import {
   PredicateType,
   PresentationPreview,
@@ -15,7 +15,6 @@ import {
   AttributeFilter,
   ProofPredicateInfo,
 } from '../modules/proofs'
-import { AutoAcceptCredential } from '../types'
 
 import {
   ensurePublicDidIsOnLedger,

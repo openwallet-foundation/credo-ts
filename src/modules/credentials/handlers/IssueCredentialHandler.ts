@@ -32,10 +32,6 @@ export class IssueCredentialHandler implements Handler {
 
   /**
    * Sends an acknowledgement message to the other agent
-   *
-   * @param credentialRecord The credentialRecord that contains the message(s) to respond to
-   * @param messageContext The context that is needed to respond on
-   * @returns a message that will be send to the other agent
    */
   private async sendAck(
     credentialRecord: CredentialRecord,

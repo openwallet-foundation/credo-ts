@@ -32,10 +32,6 @@ export class ProposeCredentialHandler implements Handler {
 
   /**
    * Sends an offer message to the other agent
-   *
-   * @param credentialRecord The credentialRecord that contains the message(s) to respond to
-   * @param messageContext The context that is needed to respond on
-   * @returns a message that will be send to the other agent
    */
   private async sendOffer(
     credentialRecord: CredentialRecord,

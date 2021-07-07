@@ -1,5 +1,5 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { AutoAcceptCredential } from '../../../types'
+import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialState } from '../CredentialState'
 
 import { Type } from 'class-transformer'

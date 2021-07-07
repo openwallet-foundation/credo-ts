@@ -1,4 +1,4 @@
-import type { AutoAcceptCredential } from '../../types'
+import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
 import type { CredentialPreview } from './messages'
 import type { CredentialRecord } from './repository/CredentialRecord'
 import type { CredentialOfferTemplate, CredentialProposeOptions } from './services'
