@@ -8,6 +8,7 @@ import WebSocket from 'ws'
 
 import { Agent, WsOutboundTransporter, AriesFrameworkError } from '../src'
 import testLogger from '../src/__tests__/logger'
+import { TransportService } from '../src/agent/TransportService'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
 import { DidCommMimeType } from '../src/types'
 import { uuid } from '../src/utils/uuid'
@@ -46,6 +47,8 @@ class WsInboundTransporter implements InboundTransporter {
   }
 
   public async start(agent: Agent) {
+    const transportService = agent.injectionContainer.resolve(TransportService)
+
     this.socketServer.on('connection', (socket: WebSocket, _: Express.Request, socketId: string) => {
       logger.debug('Socket connected.')
 
@@ -56,7 +59,7 @@ class WsInboundTransporter implements InboundTransporter {
         this.listenOnWebSocketMessages(agent, socket, session)
         socket.on('close', () => {
           logger.debug('Socket closed.')
-          agent.removeSession(session)
+          transportService.removeSession(session)
         })
       } else {
         logger.debug(`Socket with id ${socketId} already exists.`)
