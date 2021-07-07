@@ -1,5 +1,5 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { AutoAcceptProof } from '../../../types'
+import type { AutoAcceptProof } from '../ProofAutoAcceptType'
 import type { ProofState } from '../ProofState'
 
 import { Type } from 'class-transformer'

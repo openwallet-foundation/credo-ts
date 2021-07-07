@@ -54,6 +54,7 @@ export class ProposePresentationHandler implements Handler {
         version: '1.0',
       }
     )
+
     const { message } = await this.proofService.createRequestAsResponse(proofRecord, proofRequest)
 
     return createOutboundMessage(messageContext.connection, message)

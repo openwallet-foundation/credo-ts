@@ -3,7 +3,8 @@ import type { ProofRecord } from './repository'
 import { scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
-import { AutoAcceptProof } from '../../types'
+
+import { AutoAcceptProof } from './ProofAutoAcceptType'
 
 /**
  * This class handles all the automation with all the messages in the present proof protocol
@@ -22,10 +23,6 @@ export class ProofResponseCoordinator {
    *	- The record config takes first priority
    *	- Otherwise the agent config
    *	- Otherwise {@link AutoAcceptProof.Never} is returned
-   *
-   * @param recordConfig The auto accept config for the record
-   * @param agentConfig The auto accept config for the agent
-   * @returns the auto accept config
    */
   private static composeAutoAccept(
     recordConfig: AutoAcceptProof | undefined,
@@ -36,9 +33,6 @@ export class ProofResponseCoordinator {
 
   /**
    * Checks whether it should automatically respond to a proposal
-   *
-   * @param proofRecord The proofrecord that contains the message(s) to respond to
-   * @returns a boolean whether it should automatically accept the proposal
    */
   public shoudlAutoRespondToProposal(proofRecord: ProofRecord) {
     const autoAccept = ProofResponseCoordinator.composeAutoAccept(
@@ -54,11 +48,8 @@ export class ProofResponseCoordinator {
 
   /**
    * Checks whether it should automatically respond to a request
-   *
-   * @param proofRecord The proofrecord that contains the message(s) to respond to
-   * @returns a boolean whether it should automatically accept the request
    */
-  public async shouldAutoRespondToRequest(proofRecord: ProofRecord) {
+  public shouldAutoRespondToRequest(proofRecord: ProofRecord) {
     const autoAccept = ProofResponseCoordinator.composeAutoAccept(
       proofRecord.autoAcceptProof,
       this.agentConfig.autoAcceptProofs
@@ -76,11 +67,8 @@ export class ProofResponseCoordinator {
 
   /**
    * Checks whether it should automatically respond to a presention of proof
-   *
-   * @param proofRecord The proofrecord that contains the message(s) to respond to
-   * @returns a boolean whether it should automatically accept the presentation
    */
-  public async shouldAutoRespondToPresentation(proofRecord: ProofRecord) {
+  public shouldAutoRespondToPresentation(proofRecord: ProofRecord) {
     const autoAccept = ProofResponseCoordinator.composeAutoAccept(
       proofRecord.autoAcceptProof,
       this.agentConfig.autoAcceptProofs

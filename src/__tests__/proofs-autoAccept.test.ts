@@ -3,8 +3,14 @@ import type { ConnectionRecord } from '../modules/connections'
 import type { PresentationPreview } from '../modules/proofs'
 import type { CredDefId } from 'indy-sdk'
 
-import { AttributeFilter, PredicateType, ProofAttributeInfo, ProofPredicateInfo, ProofState } from '../modules/proofs'
-import { AutoAcceptProof } from '../types'
+import {
+  AutoAcceptProof,
+  AttributeFilter,
+  PredicateType,
+  ProofAttributeInfo,
+  ProofPredicateInfo,
+  ProofState,
+} from '../modules/proofs'
 
 import { setupProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'

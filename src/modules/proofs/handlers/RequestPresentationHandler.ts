@@ -58,6 +58,7 @@ export class RequestPresentationHandler implements Handler {
     const requestedCredentials = this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)
 
     const { message } = await this.proofService.createPresentation(proofRecord, requestedCredentials)
+
     return createOutboundMessage(messageContext.connection, message)
   }
 }

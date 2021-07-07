@@ -30,9 +30,8 @@ export class PresentationHandler implements Handler {
       return await this.sendAck(proofRecord, messageContext)
     }
   }
-  private async sendAck(proofRecord: ProofRecord, messageContext: HandlerInboundMessage<PresentationHandler>) {
-    const { message } = await this.proofService.createAck(proofRecord)
 
+  private async sendAck(proofRecord: ProofRecord, messageContext: HandlerInboundMessage<PresentationHandler>) {
     this.agentConfig.logger.info(
       `Automatically sending acknowledgement with autoAccept on ${this.agentConfig.autoAcceptProofs}`
     )
@@ -41,6 +40,8 @@ export class PresentationHandler implements Handler {
       this.agentConfig.logger.error('No connection on the messageContext')
       return
     }
+
+    const { message } = await this.proofService.createAck(proofRecord)
 
     return createOutboundMessage(messageContext.connection, message)
   }

@@ -2,9 +2,9 @@ import type { BasicMessage, BasicMessageReceivedEvent } from '../modules/basic-m
 import type { ConnectionRecordProps } from '../modules/connections'
 import type { CredentialRecord, CredentialOfferTemplate, CredentialStateChangedEvent } from '../modules/credentials'
 import type { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/ledger'
-import type { ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
+import type { AutoAcceptProof, ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
 import type { InboundTransporter, OutboundTransporter } from '../transport'
-import type { AutoAcceptProof, InitConfig, OutboundPackage, WireMessage } from '../types'
+import type { InitConfig, OutboundPackage, WireMessage } from '../types'
 import type { Schema, CredDef, Did } from 'indy-sdk'
 
 import indy from 'indy-sdk'
