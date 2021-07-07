@@ -6,12 +6,14 @@ import type { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/le
 import type { ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
 import type { InboundTransporter, OutboundTransporter } from '../transport'
 import type { InitConfig, OutboundPackage, WireMessage } from '../types'
+import type { Wallet } from '../wallet/Wallet'
 import type { Schema, CredDef, Did } from 'indy-sdk'
 import type { Subject } from 'rxjs'
 
 import indy from 'indy-sdk'
 import path from 'path'
 
+import { InjectionSymbols } from '../constants'
 import { BasicMessageEventTypes } from '../modules/basic-messages'
 import {
   ConnectionInvitationMessage,
@@ -49,6 +51,12 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
   }
 
   return config
+}
+
+export async function closeAndDeleteWallet(agent: Agent) {
+  const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+
+  await wallet.delete()
 }
 
 export async function waitForProofRecord(
