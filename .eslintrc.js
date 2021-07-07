@@ -4,27 +4,32 @@ module.exports = {
     'eslint:recommended',
     'plugin:import/recommended',
     'plugin:import/typescript',
-    'plugin:@typescript-eslint/recommended', // Uses the recommended rules from the @typescript-eslint/eslint-plugin
-    'plugin:prettier/recommended', // Enables eslint-plugin-prettier and displays prettier errors as ESLint errors. Make sure this is always the last configuration in the extends array.
+    'plugin:@typescript-eslint/recommended',
+    'plugin:prettier/recommended',
   ],
   parserOptions: {
     tsconfigRootDir: __dirname,
-    project: ['./tsconfig.json'],
+    project: ['./tsconfig.eslint.json'],
   },
   settings: {
     'import/extensions': ['.js', '.ts'],
+    'import/parsers': {
+      '@typescript-eslint/parser': ['.ts', '.tsx'],
+    },
+    'import/resolver': {
+      typescript: {
+        project: 'packages/*/tsconfig.json',
+        alwaysTryTypes: true,
+      },
+    },
   },
-  plugins: ['@typescript-eslint'],
   rules: {
-    // Type is enforced by callers. Not entirely, but it's good enough.
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
-    // Aries protocol defines attributes with snake case.
     '@typescript-eslint/camelcase': 'off',
     '@typescript-eslint/no-use-before-define': ['error', { functions: false, classes: false, variables: true }],
     '@typescript-eslint/explicit-member-accessibility': 'error',
     'no-console': 'error',
-    // Because of early development, we only warn on ts-ignore. In future we want to move to error
     '@typescript-eslint/ban-ts-comment': 'warn',
     '@typescript-eslint/consistent-type-imports': 'error',
     'import/no-cycle': 'error',
@@ -38,19 +43,33 @@ module.exports = {
         'newlines-between': 'always',
       },
     ],
+    'import/no-extraneous-dependencies': [
+      'error',
+      {
+        devDependencies: false,
+      },
+    ],
   },
   overrides: [
     {
-      files: ['*.test.*'],
-      rules: {
-        'no-console': 'off',
-        '@typescript-eslint/no-non-null-assertion': 'off',
+      files: ['jest.config.ts', '.eslintrc.js'],
+      env: {
+        node: true,
       },
     },
     {
-      files: ['jest.config.js', '.eslintrc.js'],
+      files: ['*.test.ts', '**/__tests__/**', '**/tests/**', 'jest.*.ts'],
       env: {
-        node: true,
+        jest: true,
+        node: false,
+      },
+      rules: {
+        'import/no-extraneous-dependencies': [
+          'error',
+          {
+            devDependencies: true,
+          },
+        ],
       },
     },
   ],

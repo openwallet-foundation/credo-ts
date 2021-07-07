@@ -1,18 +1,22 @@
-import type { InboundTransporter } from '../src'
-import type { TransportSession } from '../src/agent/TransportService'
-import type { OutboundPackage } from '../src/types'
+import type { InboundTransporter, OutboundPackage } from '@aries-framework/core'
+import type { TransportSession } from 'packages/core/src/agent/TransportService'
 
 import cors from 'cors'
-import express from 'express'
-import WebSocket from 'ws'
+import express, { text } from 'express'
+import { v4 as uuid } from 'uuid'
+import WebSocket, { Server } from 'ws'
 
-import { Agent, WsOutboundTransporter, AriesFrameworkError } from '../src'
-import testLogger from '../src/__tests__/logger'
-import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
-import { DidCommMimeType } from '../src/types'
-import { uuid } from '../src/utils/uuid'
+import testLogger from '../packages/core/tests/logger'
 
-import config from './config'
+import config, { agentDependencies } from './config'
+
+import {
+  AriesFrameworkError,
+  Agent,
+  WsOutboundTransporter,
+  DidCommMimeType,
+  InMemoryMessageRepository,
+} from '@aries-framework/core'
 
 const logger = testLogger
 
@@ -78,19 +82,19 @@ const app = express()
 
 app.use(cors())
 app.use(
-  express.text({
+  text({
     type: [DidCommMimeType.V0, DidCommMimeType.V1],
   })
 )
 app.set('json spaces', 2)
 
-const socketServer = new WebSocket.Server({ noServer: true })
+const socketServer = new Server({ noServer: true })
 // TODO Remove when mediation protocol is implemented
 // This endpoint is used in all invitations created by this mediator agent.
 config.endpoint = `ws://localhost:${PORT}`
 
 const messageRepository = new InMemoryMessageRepository()
-const agent = new Agent(config, messageRepository)
+const agent = new Agent(config, agentDependencies, messageRepository)
 const messageSender = new WsOutboundTransporter(agent)
 const messageReceiver = new WsInboundTransporter(socketServer)
 agent.setInboundTransporter(messageReceiver)

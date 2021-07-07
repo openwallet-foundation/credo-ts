@@ -5,12 +5,6 @@ on:
     branches: [main]
   push:
     branches: [main]
-  workflow_dispatch:
-    inputs:
-      releaseType:
-        description: The type of release. Should be one of "major", "minor", "patch"
-        required: true
-        default: 'patch'
 
 env:
   TEST_AGENT_PUBLIC_DID_SEED: 000000000000000000000000Trustee9
@@ -62,7 +56,7 @@ jobs:
         run: yarn check-format
 
       - name: Compile
-        run: yarn compile
+        run: yarn check-types
 
   integration-test:
     runs-on: ubuntu-20.04
@@ -129,26 +123,24 @@ jobs:
       - uses: codecov/codecov-action@v1
         if: always()
 
-  release:
+  release-canary:
     runs-on: ubuntu-20.04
-    name: Release
+    name: Release Canary
     needs: [integration-test, validate]
-    # Only run on push or workflow dispatch to main branch
-    if: (github.ref == 'refs/heads/main' && github.repository == 'hyperledger/aries-framework-javascript') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: github.ref == 'refs/heads/main' && github.repository == 'hyperledger/aries-framework-javascript' && github.event_name == 'push'
     steps:
       - name: Checkout aries-framework-javascript
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
 
       # setup dependencies
       - name: Setup Libindy
         uses: ./.github/actions/setup-libindy
 
-      - name: git config
-        run: |
-          git config user.name "@github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Setup node v16
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+          registry-url: 'https://registry.npmjs.org/'
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
@@ -162,40 +154,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
 
-      - name: Setup node v16
-        uses: actions/setup-node@v2
-        with:
-          node-version: 16
-
-      - name: Install dependencies
-        run: yarn install
-
-      # https://github.com/yarnpkg/yarn/issues/6617#issuecomment-436222106
-      - name: Prepend Node path
-        run: npm config set scripts-prepend-node-path true
-
-      - name: Set Verbose Logging
-        run: npm config set loglevel verbose --global
-
-      - name: Set NPM config
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${{secrets.NPM_TOKEN}}" >> .npmrc
-          echo "registry=https://registry.npmjs.org/" >> .npmrc
-          echo "always-auth=true" >> .npmrc
-
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      # On push to master, release unstable version
+      # On push to main, release unstable version
       - name: Release Unstable
-        if: github.event_name == 'push'
+        run: yarn lerna publish --loglevel=verbose --canary minor --exact --force-publish --yes --no-verify-access --dist-tag latest
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: yarn release patch --preRelease=unstable -VV
-
-      # On manual workflow dispatch release stable version
-      - name: Release Stable
-        if: github.event_name == 'workflow_dispatch'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: yarn release ${{ github.event.inputs.releaseType }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

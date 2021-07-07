@@ -5,10 +5,10 @@
 To start using Aries Framework JavaScript in React Native some platform specific dependencies are required.
 
 1. Follow the [React Native Setup](https://reactnative.dev/docs/environment-setup) guide to set up your environment.
-2. Add `rn-indy-sdk` and `aries-framework` to your project.
+2. Add `@aries-framework/core` and `@aries-framework/react-native` to your project.
 
 ```bash
-yarn add aries-framework rn-indy-sdk
+yarn add @aries-framework/core @aries-framework/react-native
 ```
 
 3. Install [Libindy](https://github.com/hyperledger/indy-sdk) for iOS and Android:
@@ -77,20 +77,18 @@ module.exports = {
 Initializing the Agent also requires some React Native specific setup, mainly for the Indy SDK and File System. Below is a sample config, see the [README](../README.md#getting-started) for an overview of getting started guides. If you want to jump right in, check the [Getting Started: Agent](./getting-started/0-agent.md) guide.
 
 ```ts
-import { Agent } from 'aries-framework'
-
-// Import rn-indy-sdk and File System for React Native
-import indy from 'rn-indy-sdk'
-import { ReactNativeFileSystem } from 'aries-framework/build/src/storage/fs/ReactNativeFileSystem'
+import { Agent } from 'aries-framework/core'
+import { agentDependencies } from '@aries-framework/react-native'
 
 // This creates an agent with all the specified configuration data
-const agent = new Agent({
-  label: 'my-agent',
-  walletConfig: { id: 'walletId' },
-  walletCredentials: { key: 'testkey0000000000000000000000000' },
-  indy,
-  fileSystem: new ReactNativeFileSystem(),
-})
+const agent = new Agent(
+  {
+    label: 'my-agent',
+    walletConfig: { id: 'walletId' },
+    walletCredentials: { key: 'testkey0000000000000000000000000' },
+  },
+  agentDependencies
+)
 
 // Make sure to initialize the agent before using it.
 try {
