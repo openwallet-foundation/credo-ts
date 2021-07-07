@@ -73,10 +73,6 @@ export class MessageReceiver {
       }
     }
 
-    if (connection && session) {
-      this.transportService.saveSession(connection.id, session)
-    }
-
     this.logger.info(`Received message with type '${unpackedMessage.message['@type']}'`, unpackedMessage.message)
 
     const message = await this.transformMessage(unpackedMessage)
@@ -85,6 +81,22 @@ export class MessageReceiver {
       senderVerkey: senderKey,
       recipientVerkey: unpackedMessage.recipient_verkey,
     })
+
+    // We want to save a session if there is a chance of returning outbound message via inbound transport.
+    // That can happen when inbound message has `return_route` set to `all` or `thread`.
+    // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
+    if (connection && message.hasAnyReturnRoute() && session) {
+      const keys = {
+        // TODO handle the case when senderKey is missing
+        recipientKeys: senderKey ? [senderKey] : [],
+        routingKeys: [],
+        senderKey: connection?.verkey || null,
+      }
+      session.keys = keys
+      session.inboundMessage = message
+      session.connection = connection
+      this.transportService.saveSession(session)
+    }
 
     return await this.dispatcher.dispatch(messageContext)
   }

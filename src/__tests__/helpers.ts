@@ -1,4 +1,5 @@
 import type { Agent } from '../agent/Agent'
+import type { TransportSession } from '../agent/TransportService'
 import type { BasicMessage, BasicMessageReceivedEvent } from '../modules/basic-messages'
 import type { ConnectionRecordProps } from '../modules/connections'
 import type { CredentialRecord, CredentialOfferTemplate, CredentialStateChangedEvent } from '../modules/credentials'
@@ -133,6 +134,22 @@ export async function waitForBasicMessage(agent: Agent, { content }: { content?:
   })
 }
 
+class SubjectTransportSession implements TransportSession {
+  public id: string
+  public readonly type = 'subject'
+  private theirSubject: Subject<WireMessage>
+
+  public constructor(id: string, theirSubject: Subject<WireMessage>) {
+    this.id = id
+    this.theirSubject = theirSubject
+  }
+
+  public send(outboundMessage: OutboundPackage): Promise<void> {
+    this.theirSubject.next(outboundMessage.payload)
+    return Promise.resolve()
+  }
+}
+
 export class SubjectInboundTransporter implements InboundTransporter {
   private subject: Subject<WireMessage>
   private theirSubject: Subject<WireMessage>
@@ -149,10 +166,8 @@ export class SubjectInboundTransporter implements InboundTransporter {
   private subscribe(agent: Agent) {
     this.subject.subscribe({
       next: async (message: WireMessage) => {
-        const outboundMessage = await agent.receiveMessage(message)
-        if (outboundMessage) {
-          this.theirSubject.next(outboundMessage.payload)
-        }
+        const session = new SubjectTransportSession('subject-session-1', this.theirSubject)
+        await agent.receiveMessage(message, session)
       },
     })
   }

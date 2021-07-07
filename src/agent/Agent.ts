@@ -30,6 +30,7 @@ import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes } from './Events'
 import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
+import { TransportService } from './TransportService'
 
 export class Agent {
   protected agentConfig: AgentConfig
@@ -38,6 +39,7 @@ export class Agent {
   protected eventEmitter: EventEmitter
   protected wallet: Wallet
   protected messageReceiver: MessageReceiver
+  protected transportService: TransportService
   protected messageSender: MessageSender
   public inboundTransporter?: InboundTransporter
   private _isInitialized = false
@@ -96,6 +98,7 @@ export class Agent {
     this.eventEmitter = this.container.resolve(EventEmitter)
     this.messageSender = this.container.resolve(MessageSender)
     this.messageReceiver = this.container.resolve(MessageReceiver)
+    this.transportService = this.container.resolve(TransportService)
     this.wallet = this.container.resolve(InjectionSymbols.Wallet)
 
     // We set the modules in the constructor because that allows to set them as read-only
@@ -174,6 +177,15 @@ export class Agent {
 
   public async receiveMessage(inboundPackedMessage: unknown, session?: TransportSession) {
     return await this.messageReceiver.receiveMessage(inboundPackedMessage, session)
+  }
+
+  public async closeAndDeleteWallet() {
+    await this.wallet.close()
+    await this.wallet.delete()
+  }
+
+  public removeSession(session: TransportSession) {
+    this.transportService.removeSession(session)
   }
 
   public get injectionContainer() {

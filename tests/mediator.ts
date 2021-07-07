@@ -1,7 +1,8 @@
 import type { InboundTransporter, OutboundTransporter } from '../src'
+import type { TransportSession } from '../src/agent/TransportService'
 import type { MessageRepository } from '../src/storage/MessageRepository'
 import type { OutboundPackage } from '../src/types'
-import type { Express } from 'express'
+import type { Express, Request, Response } from 'express'
 
 import cors from 'cors'
 import express from 'express'
@@ -10,8 +11,34 @@ import { Agent, AriesFrameworkError } from '../src'
 import testLogger from '../src/__tests__/logger'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
 import { DidCommMimeType } from '../src/types'
+import { uuid } from '../src/utils/uuid'
 
 import config from './config'
+
+const logger = testLogger
+
+class HttpTransportSession implements TransportSession {
+  public id: string
+  public readonly type = 'http'
+  public req: Request
+  public res: Response
+
+  public constructor(id: string, req: Request, res: Response) {
+    this.id = id
+    this.req = req
+    this.res = res
+  }
+
+  public async send(outboundMessage: OutboundPackage): Promise<void> {
+    logger.debug(`Sending outbound message via ${this.type} transport session`)
+
+    if (this.res.headersSent) {
+      throw new AriesFrameworkError(`${this.type} transport session has been closed.`)
+    }
+
+    this.res.status(200).json(outboundMessage.payload).end()
+  }
+}
 
 class HttpInboundTransporter implements InboundTransporter {
   private app: Express
@@ -22,18 +49,21 @@ class HttpInboundTransporter implements InboundTransporter {
 
   public async start(agent: Agent) {
     this.app.post('/msg', async (req, res) => {
+      const session = new HttpTransportSession(uuid(), req, res)
       try {
         const message = req.body
         const packedMessage = JSON.parse(message)
+        await agent.receiveMessage(packedMessage, session)
 
-        const outboundMessage = await agent.receiveMessage(packedMessage)
-        if (outboundMessage) {
-          res.status(200).json(outboundMessage.payload).end()
-        } else {
+        // If agent did not use session when processing message we need to send response here.
+        if (!res.headersSent) {
           res.status(200).end()
         }
-      } catch {
+      } catch (error) {
+        logger.error(`Error processing message in mediator: ${error.message}`, error)
         res.status(500).send('Error processing message')
+      } finally {
+        agent.removeSession(session)
       }
     })
   }
@@ -67,7 +97,7 @@ class StorageOutboundTransporter implements OutboundTransporter {
       throw new AriesFrameworkError('Trying to save message without theirKey!')
     }
 
-    testLogger.debug('Storing message', { connection, payload })
+    logger.debug('Storing message', { connection, payload })
 
     this.messageRepository.save(connection.theirKey, payload)
   }
@@ -125,5 +155,5 @@ app.get('/api/routes', async (req, res) => {
 app.listen(PORT, async () => {
   await agent.initialize()
   messageReceiver.start(agent)
-  testLogger.info(`Application started on port ${PORT}`)
+  logger.info(`Application started on port ${PORT}`)
 })
