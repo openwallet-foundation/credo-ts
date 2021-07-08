@@ -19,6 +19,7 @@ export interface ConnectionRecordProps {
   verkey: Verkey
   theirDid?: Did
   theirDidDoc?: DidDoc
+  theirLabel?: string
   invitation?: ConnectionInvitationMessage
   state: ConnectionState
   role: ConnectionRole
@@ -53,6 +54,7 @@ export class ConnectionRecord
   @Type(() => DidDoc)
   public theirDidDoc?: DidDoc
   public theirDid?: string
+  public theirLabel?: string
 
   @Type(() => ConnectionInvitationMessage)
   public invitation?: ConnectionInvitationMessage
@@ -75,6 +77,7 @@ export class ConnectionRecord
       this.verkey = props.verkey
       this.theirDid = props.theirDid
       this.theirDidDoc = props.theirDidDoc
+      this.theirLabel = props.theirLabel
       this.state = props.state
       this.role = props.role
       this.alias = props.alias
