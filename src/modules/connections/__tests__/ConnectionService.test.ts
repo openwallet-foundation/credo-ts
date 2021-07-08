@@ -125,7 +125,7 @@ describe('ConnectionService', () => {
 
   describe('processInvitation', () => {
     it('returns a connection record containing the information from the connection invitation', async () => {
-      expect.assertions(9)
+      expect.assertions(10)
 
       const recipientKey = 'key-1'
       const invitation = new ConnectionInvitationMessage({
@@ -137,6 +137,7 @@ describe('ConnectionService', () => {
       const connection = await connectionService.processInvitation(invitation)
       const connectionAlias = await connectionService.processInvitation(invitation, { alias: 'test-alias' })
 
+      expect(connection.theirLabel).toBe(connection.invitation?.label)
       expect(connection.role).toBe(ConnectionRole.Invitee)
       expect(connection.state).toBe(ConnectionState.Invited)
       expect(connection.autoAcceptConnection).toBeUndefined()

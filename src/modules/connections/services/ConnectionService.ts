@@ -473,6 +473,7 @@ export class ConnectionService {
       invitation: options.invitation,
       alias: options.alias,
       autoAcceptConnection: options.autoAcceptConnection,
+      theirLabel: options.invitation?.label,
     })
 
     await this.connectionRepository.save(connectionRecord)
