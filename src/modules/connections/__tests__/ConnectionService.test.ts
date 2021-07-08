@@ -125,7 +125,7 @@ describe('ConnectionService', () => {
 
   describe('processInvitation', () => {
     it('returns a connection record containing the information from the connection invitation', async () => {
-      expect.assertions(9)
+      expect.assertions(10)
 
       const recipientKey = 'key-1'
       const invitation = new ConnectionInvitationMessage({
@@ -151,6 +151,7 @@ describe('ConnectionService', () => {
       expect(connection.invitation).toMatchObject(invitation)
       expect(connection.alias).toBeUndefined()
       expect(connectionAlias.alias).toBe('test-alias')
+      expect(connection.theirLabel).toBe('test label')
     })
 
     it('returns a connection record with the autoAcceptConnection parameter from the config', async () => {
@@ -235,7 +236,7 @@ describe('ConnectionService', () => {
 
   describe('processRequest', () => {
     it('returns a connection record containing the information from the connection request', async () => {
-      expect.assertions(5)
+      expect.assertions(6)
 
       const connectionRecord = getMockConnection({
         state: ConnectionState.Invited,
@@ -276,6 +277,7 @@ describe('ConnectionService', () => {
       expect(processedConnection.theirDid).toBe(theirDid)
       expect(processedConnection.theirDidDoc).toEqual(theirDidDoc)
       expect(processedConnection.theirKey).toBe(theirVerkey)
+      expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
     })
 
