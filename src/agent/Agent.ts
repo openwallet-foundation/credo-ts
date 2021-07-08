@@ -184,10 +184,6 @@ export class Agent {
     await this.wallet.delete()
   }
 
-  public removeSession(session: TransportSession) {
-    this.transportService.removeSession(session)
-  }
-
   public get injectionContainer() {
     return this.container
   }

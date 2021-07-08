@@ -9,6 +9,7 @@ import express from 'express'
 
 import { Agent, AriesFrameworkError } from '../src'
 import testLogger from '../src/__tests__/logger'
+import { TransportService } from '../src/agent/TransportService'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
 import { DidCommMimeType } from '../src/types'
 import { uuid } from '../src/utils/uuid'
@@ -48,6 +49,8 @@ class HttpInboundTransporter implements InboundTransporter {
   }
 
   public async start(agent: Agent) {
+    const transportService = agent.injectionContainer.resolve(TransportService)
+
     this.app.post('/msg', async (req, res) => {
       const session = new HttpTransportSession(uuid(), req, res)
       try {
@@ -63,7 +66,7 @@ class HttpInboundTransporter implements InboundTransporter {
         logger.error(`Error processing message in mediator: ${error.message}`, error)
         res.status(500).send('Error processing message')
       } finally {
-        agent.removeSession(session)
+        transportService.removeSession(session)
       }
     })
   }
