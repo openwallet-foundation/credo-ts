@@ -248,7 +248,6 @@ export function getMockConnection({
     tags,
     verkey,
     invitation,
-    theirLabel: invitation.label,
   })
 }
 
