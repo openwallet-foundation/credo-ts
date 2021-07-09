@@ -60,8 +60,9 @@ export class HttpOutboundTransporter implements OutboundTransporter {
         this.agent.receiveMessage(wireMessage)
       }
     } catch (error) {
-      this.logger.error(`Error sending message to ${endpoint}`, {
+      this.logger.error(`Error sending message to ${endpoint}: ${error.message}`, {
         error,
+        message: error.message,
         body: payload,
         didCommMimeType: this.agentConfig.didCommMimeType,
       })
