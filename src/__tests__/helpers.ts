@@ -1,4 +1,5 @@
 import type { Agent } from '../agent/Agent'
+import type { TransportSession } from '../agent/TransportService'
 import type { BasicMessage, BasicMessageReceivedEvent } from '../modules/basic-messages'
 import type { ConnectionRecordProps } from '../modules/connections'
 import type { CredentialRecord, CredentialOfferTemplate, CredentialStateChangedEvent } from '../modules/credentials'
@@ -6,12 +7,14 @@ import type { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/le
 import type { ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
 import type { InboundTransporter, OutboundTransporter } from '../transport'
 import type { InitConfig, OutboundPackage, WireMessage } from '../types'
+import type { Wallet } from '../wallet/Wallet'
 import type { Schema, CredDef, Did } from 'indy-sdk'
 import type { Subject } from 'rxjs'
 
 import indy from 'indy-sdk'
 import path from 'path'
 
+import { InjectionSymbols } from '../constants'
 import { BasicMessageEventTypes } from '../modules/basic-messages'
 import {
   ConnectionInvitationMessage,
@@ -49,6 +52,12 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
   }
 
   return config
+}
+
+export async function closeAndDeleteWallet(agent: Agent) {
+  const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+
+  await wallet.delete()
 }
 
 export async function waitForProofRecord(
@@ -125,6 +134,22 @@ export async function waitForBasicMessage(agent: Agent, { content }: { content?:
   })
 }
 
+class SubjectTransportSession implements TransportSession {
+  public id: string
+  public readonly type = 'subject'
+  private theirSubject: Subject<WireMessage>
+
+  public constructor(id: string, theirSubject: Subject<WireMessage>) {
+    this.id = id
+    this.theirSubject = theirSubject
+  }
+
+  public send(outboundMessage: OutboundPackage): Promise<void> {
+    this.theirSubject.next(outboundMessage.payload)
+    return Promise.resolve()
+  }
+}
+
 export class SubjectInboundTransporter implements InboundTransporter {
   private subject: Subject<WireMessage>
   private theirSubject: Subject<WireMessage>
@@ -141,10 +166,8 @@ export class SubjectInboundTransporter implements InboundTransporter {
   private subscribe(agent: Agent) {
     this.subject.subscribe({
       next: async (message: WireMessage) => {
-        const outboundMessage = await agent.receiveMessage(message)
-        if (outboundMessage) {
-          this.theirSubject.next(outboundMessage.payload)
-        }
+        const session = new SubjectTransportSession('subject-session-1', this.theirSubject)
+        await agent.receiveMessage(message, session)
       },
     })
   }

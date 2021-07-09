@@ -26,13 +26,13 @@ describe('BasicMessageService', () => {
   let storageService: StorageService<BasicMessageRecord>
 
   beforeAll(async () => {
-    wallet = new IndyWallet(new AgentConfig(getBaseConfig('BasicMessageServiceTest')))
-    await wallet.init()
+    const config = new AgentConfig(getBaseConfig('BasicMessageServiceTest'))
+    wallet = new IndyWallet(config)
+    await wallet.initialize(config.walletConfig!, config.walletCredentials!)
     storageService = new IndyStorageService(wallet)
   })
 
   afterAll(async () => {
-    await wallet.close()
     await wallet.delete()
   })
 

@@ -6,7 +6,6 @@ import { Equals, IsOptional, IsString, ValidateNested } from 'class-validator'
 import { AgentMessage } from '../../../agent/AgentMessage'
 
 import { CredentialPreview } from './CredentialPreview'
-import { IssueCredentialMessageType } from './IssueCredentialMessageType'
 
 export interface ProposeCredentialMessageOptions {
   id?: string
@@ -46,7 +45,7 @@ export class ProposeCredentialMessage extends AgentMessage {
 
   @Equals(ProposeCredentialMessage.type)
   public readonly type = ProposeCredentialMessage.type
-  public static readonly type = IssueCredentialMessageType.ProposeCredential
+  public static readonly type = 'https://didcomm.org/issue-credential/1.0/propose-credential'
 
   /**
    * Human readable information about this Credential Proposal,

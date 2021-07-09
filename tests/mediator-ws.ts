@@ -1,18 +1,40 @@
 import type { InboundTransporter } from '../src'
+import type { TransportSession } from '../src/agent/TransportService'
+import type { OutboundPackage } from '../src/types'
 
 import cors from 'cors'
 import express from 'express'
-import { v4 as uuid } from 'uuid'
 import WebSocket from 'ws'
 
-import { Agent, WebSocketTransportSession, WsOutboundTransporter } from '../src'
+import { Agent, WsOutboundTransporter, AriesFrameworkError } from '../src'
 import testLogger from '../src/__tests__/logger'
+import { TransportService } from '../src/agent/TransportService'
 import { InMemoryMessageRepository } from '../src/storage/InMemoryMessageRepository'
 import { DidCommMimeType } from '../src/types'
+import { uuid } from '../src/utils/uuid'
 
 import config from './config'
 
 const logger = testLogger
+
+class WebSocketTransportSession implements TransportSession {
+  public id: string
+  public readonly type = 'websocket'
+  public socket: WebSocket
+
+  public constructor(id: string, socket: WebSocket) {
+    this.id = id
+    this.socket = socket
+  }
+
+  public async send(outboundMessage: OutboundPackage): Promise<void> {
+    // logger.debug(`Sending outbound message via ${this.type} transport session`)
+    if (this.socket.readyState !== WebSocket.OPEN) {
+      throw new AriesFrameworkError(`${this.type} transport session has been closed.`)
+    }
+    this.socket.send(JSON.stringify(outboundMessage.payload))
+  }
+}
 
 class WsInboundTransporter implements InboundTransporter {
   private socketServer: WebSocket.Server
@@ -25,30 +47,31 @@ class WsInboundTransporter implements InboundTransporter {
   }
 
   public async start(agent: Agent) {
+    const transportService = agent.injectionContainer.resolve(TransportService)
+
     this.socketServer.on('connection', (socket: WebSocket, _: Express.Request, socketId: string) => {
       logger.debug('Socket connected.')
 
       if (!this.socketIds[socketId]) {
         logger.debug(`Saving new socket with id ${socketId}.`)
         this.socketIds[socketId] = socket
-        this.listenOnWebSocketMessages(agent, socket)
-        socket.on('close', () => logger.debug('Socket closed.'))
+        const session = new WebSocketTransportSession(socketId, socket)
+        this.listenOnWebSocketMessages(agent, socket, session)
+        socket.on('close', () => {
+          logger.debug('Socket closed.')
+          transportService.removeSession(session)
+        })
       } else {
         logger.debug(`Socket with id ${socketId} already exists.`)
       }
     })
   }
 
-  private listenOnWebSocketMessages(agent: Agent, socket: WebSocket) {
+  private listenOnWebSocketMessages(agent: Agent, socket: WebSocket, session: TransportSession) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     socket.addEventListener('message', async (event: any) => {
       logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
-      // @ts-expect-error Property 'dispatchEvent' is missing in type WebSocket imported from 'ws' module but required in type 'WebSocket'.
-      const session = new WebSocketTransportSession(socket)
-      const outboundMessage = await agent.receiveMessage(JSON.parse(event.data), session)
-      if (outboundMessage) {
-        socket.send(JSON.stringify(outboundMessage.payload))
-      }
+      await agent.receiveMessage(JSON.parse(event.data), session)
     })
   }
 }
@@ -108,7 +131,7 @@ app.get('/api/routes', async (req, res) => {
 })
 
 const server = app.listen(PORT, async () => {
-  await agent.init()
+  await agent.initialize()
   messageReceiver.start(agent)
   logger.info(`WebSockets application started on port ${PORT}`)
 })

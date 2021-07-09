@@ -253,7 +253,7 @@ export class CredentialService {
 
   /**
    * Create a {@link OfferCredentialMessage} not bound to an existing credential exchange.
-   * To create an offer as response to an existing credential exchange, use {@link ProofService#createOfferAsResponse}.
+   * To create an offer as response to an existing credential exchange, use {@link CredentialService#createOfferAsResponse}.
    *
    * @param connectionRecord The connection for which to create the credential offer
    * @param credentialTemplate The credential template to use for the offer

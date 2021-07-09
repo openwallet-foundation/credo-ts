@@ -7,8 +7,6 @@ import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { ProofRequest } from '../models'
 
-import { PresentProofMessageType } from './PresentProofMessageType'
-
 export interface RequestPresentationOptions {
   id?: string
   comment?: string
@@ -35,7 +33,7 @@ export class RequestPresentationMessage extends AgentMessage {
 
   @Equals(RequestPresentationMessage.type)
   public readonly type = RequestPresentationMessage.type
-  public static readonly type = PresentProofMessageType.RequestPresentation
+  public static readonly type = 'https://didcomm.org/present-proof/1.0/request-presentation'
 
   /**
    *  Provides some human readable information about this request for a presentation.

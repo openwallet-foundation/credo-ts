@@ -41,12 +41,12 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
   let wallet: IndyWallet
 
   beforeAll(async () => {
-    wallet = new IndyWallet(new AgentConfig(getBaseConfig('SignatureDecoratorUtilsTest')))
-    await wallet.init()
+    const config = new AgentConfig(getBaseConfig('SignatureDecoratorUtilsTest'))
+    wallet = new IndyWallet(config)
+    await wallet.initialize(config.walletConfig!, config.walletCredentials!)
   })
 
   afterAll(async () => {
-    await wallet.close()
     await wallet.delete()
   })
 

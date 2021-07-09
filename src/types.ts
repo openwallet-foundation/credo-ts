@@ -22,8 +22,8 @@ export interface InitConfig {
   label: string
   publicDidSeed?: string
   mediatorUrl?: string
-  walletConfig: WalletConfig
-  walletCredentials: WalletCredentials
+  walletConfig?: WalletConfig
+  walletCredentials?: WalletCredentials
   autoAcceptConnections?: boolean
   poolName?: string
   logger?: Logger

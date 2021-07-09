@@ -4,8 +4,6 @@ import { Equals } from 'class-validator'
 
 import { AckMessage } from '../../common'
 
-import { PresentProofMessageType } from './PresentProofMessageType'
-
 export type PresentationAckMessageOptions = AckMessageOptions
 
 /**
@@ -18,5 +16,5 @@ export class PresentationAckMessage extends AckMessage {
 
   @Equals(PresentationAckMessage.type)
   public readonly type = PresentationAckMessage.type
-  public static readonly type = PresentProofMessageType.PresentationAck
+  public static readonly type = 'https://didcomm.org/present-proof/1.0/ack'
 }

@@ -7,8 +7,6 @@ import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 
-import { IssueCredentialMessageType } from './IssueCredentialMessageType'
-
 export const INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID = 'libindy-cred-request-0'
 
 interface RequestCredentialMessageOptions {
@@ -32,7 +30,7 @@ export class RequestCredentialMessage extends AgentMessage {
 
   @Equals(RequestCredentialMessage.type)
   public readonly type = RequestCredentialMessage.type
-  public static readonly type = IssueCredentialMessageType.RequestCredential
+  public static readonly type = 'https://didcomm.org/issue-credential/1.0/request-credential'
 
   @IsString()
   public comment?: string

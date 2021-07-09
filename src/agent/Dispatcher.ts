@@ -1,4 +1,3 @@
-import type { OutboundMessage, OutboundPackage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { Handler } from './Handler'
 import type { InboundMessageContext } from './models/InboundMessageContext'
@@ -26,7 +25,7 @@ class Dispatcher {
     this.handlers.push(handler)
   }
 
-  public async dispatch(messageContext: InboundMessageContext): Promise<OutboundMessage | OutboundPackage | undefined> {
+  public async dispatch(messageContext: InboundMessageContext): Promise<void> {
     const message = messageContext.message
     const handler = this.getHandlerForType(message.type)
 
@@ -37,22 +36,9 @@ class Dispatcher {
     const outboundMessage = await handler.handle(messageContext)
 
     if (outboundMessage) {
-      const threadId = outboundMessage.payload.threadId
-
       if (!this.transportService.hasInboundEndpoint(outboundMessage.connection)) {
         outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
       }
-
-      // Check for return routing, with thread id
-      if (message.hasReturnRouting(threadId)) {
-        const keys = {
-          recipientKeys: messageContext.senderVerkey ? [messageContext.senderVerkey] : [],
-          routingKeys: [],
-          senderKey: messageContext.connection?.verkey || null,
-        }
-        return await this.messageSender.packMessage(outboundMessage, keys)
-      }
-
       await this.messageSender.sendMessage(outboundMessage)
     }
   }
