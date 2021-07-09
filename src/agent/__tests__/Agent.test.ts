@@ -1,4 +1,6 @@
-import { getBaseConfig } from '../../__tests__/helpers'
+import type { Wallet } from '../../wallet/Wallet'
+
+import { closeAndDeleteWallet, getBaseConfig } from '../../__tests__/helpers'
 import { InjectionSymbols } from '../../constants'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
 import { BasicMessagesModule } from '../../modules/basic-messages/BasicMessagesModule'
@@ -20,6 +22,7 @@ import { RoutingModule } from '../../modules/routing/RoutingModule'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../../storage/IndyStorageService'
 import { IndyWallet } from '../../wallet/IndyWallet'
+import { WalletError } from '../../wallet/error'
 import { Agent } from '../Agent'
 import { Dispatcher } from '../Dispatcher'
 import { EnvelopeService } from '../EnvelopeService'
@@ -30,13 +33,60 @@ const config = getBaseConfig('Agent Class Test')
 
 describe('Agent', () => {
   describe('Initialization', () => {
+    let agent: Agent
+
+    afterEach(async () => {
+      const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+
+      if (wallet.isInitialized) {
+        await closeAndDeleteWallet(agent)
+      }
+    })
+
     it('isInitialized should only return true after initialization', async () => {
       expect.assertions(2)
 
-      const agent = new Agent(config)
+      agent = new Agent(config)
 
       expect(agent.isInitialized).toBe(false)
-      await agent.init()
+      await agent.initialize()
+      expect(agent.isInitialized).toBe(true)
+    })
+
+    it('wallet isInitialized should return true after agent initialization if wallet config is set in agent constructor', async () => {
+      expect.assertions(4)
+
+      agent = new Agent(config)
+      const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+
+      expect(agent.isInitialized).toBe(false)
+      expect(wallet.isInitialized).toBe(false)
+      await agent.initialize()
+      expect(agent.isInitialized).toBe(true)
+      expect(wallet.isInitialized).toBe(true)
+    })
+
+    it('wallet must be initialized if wallet config is not set before agent can be initialized', async () => {
+      expect.assertions(9)
+
+      const { walletConfig, walletCredentials, ...withoutWalletConfig } = config
+      agent = new Agent(withoutWalletConfig)
+
+      const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+
+      expect(agent.isInitialized).toBe(false)
+      expect(wallet.isInitialized).toBe(false)
+
+      expect(agent.initialize()).rejects.toThrowError(WalletError)
+      expect(agent.isInitialized).toBe(false)
+      expect(wallet.isInitialized).toBe(false)
+
+      await wallet.initialize(walletConfig!, walletCredentials!)
+      expect(agent.isInitialized).toBe(false)
+      expect(wallet.isInitialized).toBe(true)
+
+      await agent.initialize()
+      expect(wallet.isInitialized).toBe(true)
       expect(agent.isInitialized).toBe(true)
     })
   })
