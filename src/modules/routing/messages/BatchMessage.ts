@@ -7,8 +7,6 @@ import { AgentMessage } from '../../../agent/AgentMessage'
 import { MessageIdRegExp } from '../../../agent/BaseMessage'
 import { uuid } from '../../../utils/uuid'
 
-import { RoutingMessageType as MessageType } from './RoutingMessageType'
-
 export interface BatchMessageOptions {
   id?: string
   messages: BatchMessageMessage[]
@@ -31,7 +29,7 @@ export class BatchMessage extends AgentMessage {
 
   @Equals(BatchMessage.type)
   public readonly type = BatchMessage.type
-  public static readonly type = MessageType.Batch
+  public static readonly type = 'https://didcomm.org/messagepickup/1.0/batch'
 
   @Type(() => BatchMessageMessage)
   @IsArray()

@@ -117,6 +117,7 @@ export class ConnectionService {
       role: ConnectionRole.Invitee,
       state: ConnectionState.Invited,
       alias: config?.alias,
+      theirLabel: invitation.label,
       autoAcceptConnection: config?.autoAcceptConnection,
       invitation,
       tags: {
@@ -190,6 +191,7 @@ export class ConnectionService {
 
     connectionRecord.theirDid = message.connection.did
     connectionRecord.theirDidDoc = message.connection.didDoc
+    connectionRecord.theirLabel = message.label
     connectionRecord.threadId = message.id
 
     if (!connectionRecord.theirKey) {
@@ -423,6 +425,7 @@ export class ConnectionService {
     state: ConnectionState
     invitation?: ConnectionInvitationMessage
     alias?: string
+    theirLabel?: string
     autoAcceptConnection?: boolean
     tags?: CustomConnectionTags
   }): Promise<ConnectionRecord> {
@@ -472,6 +475,7 @@ export class ConnectionService {
       tags: options.tags,
       invitation: options.invitation,
       alias: options.alias,
+      theirLabel: options.theirLabel,
       autoAcceptConnection: options.autoAcceptConnection,
     })
 

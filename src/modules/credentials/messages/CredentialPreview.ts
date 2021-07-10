@@ -3,8 +3,6 @@ import { Equals, ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 
-import { IssueCredentialMessageType } from './IssueCredentialMessageType'
-
 export interface CredentialPreviewOptions {
   attributes: CredentialPreviewAttribute[]
 }
@@ -26,7 +24,7 @@ export class CredentialPreview {
   @Expose({ name: '@type' })
   @Equals(CredentialPreview.type)
   public readonly type = CredentialPreview.type
-  public static readonly type = IssueCredentialMessageType.CredentialPreview
+  public static readonly type = 'https://didcomm.org/issue-credential/1.0/credential-preview'
 
   @Type(() => CredentialPreviewAttribute)
   @ValidateNested({ each: true })

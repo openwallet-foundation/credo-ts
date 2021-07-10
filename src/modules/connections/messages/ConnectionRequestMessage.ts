@@ -6,8 +6,6 @@ import { Equals, IsString, ValidateNested } from 'class-validator'
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Connection } from '../models'
 
-import { ConnectionMessageType } from './ConnectionMessageType'
-
 export interface ConnectionRequestMessageOptions {
   id?: string
   label: string
@@ -41,7 +39,7 @@ export class ConnectionRequestMessage extends AgentMessage {
 
   @Equals(ConnectionRequestMessage.type)
   public readonly type = ConnectionRequestMessage.type
-  public static readonly type = ConnectionMessageType.ConnectionRequest
+  public static readonly type = 'https://didcomm.org/connections/1.0/request'
 
   @IsString()
   public label!: string

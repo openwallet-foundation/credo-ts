@@ -29,6 +29,7 @@ import {
   issueCredential,
   waitForProofRecord,
   getBaseConfig,
+  closeAndDeleteWallet,
 } from './helpers'
 import testLogger from './logger'
 
@@ -65,12 +66,12 @@ describe('Present Proof', () => {
     faberAgent = new Agent(faberConfig)
     faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages, aliceMessages))
     faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages))
-    await faberAgent.init()
+    await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceConfig)
     aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages, faberMessages))
     aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages))
-    await aliceAgent.init()
+    await aliceAgent.initialize()
 
     const schemaTemplate = {
       name: `test-schema-${Date.now()}`,
@@ -147,8 +148,8 @@ describe('Present Proof', () => {
   })
 
   afterAll(async () => {
-    await faberAgent.closeAndDeleteWallet()
-    await aliceAgent.closeAndDeleteWallet()
+    await closeAndDeleteWallet(aliceAgent)
+    await closeAndDeleteWallet(faberAgent)
   })
 
   test('Alice starts with proof proposal to Faber', async () => {

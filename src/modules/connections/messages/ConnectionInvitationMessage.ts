@@ -7,8 +7,6 @@ import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 
-import { ConnectionMessageType } from './ConnectionMessageType'
-
 // TODO: improve typing of `DIDInvitationData` and `InlineInvitationData` so properties can't be mixed
 export interface InlineInvitationData {
   recipientKeys: string[]
@@ -60,7 +58,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
     toClassOnly: true,
   })
   public readonly type = ConnectionInvitationMessage.type
-  public static readonly type = ConnectionMessageType.ConnectionInvitation
+  public static readonly type = 'https://didcomm.org/connections/1.0/invitation'
 
   @IsString()
   public label!: string

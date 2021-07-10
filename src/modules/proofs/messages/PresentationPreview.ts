@@ -4,8 +4,6 @@ import { Equals, IsEnum, IsInt, IsString, ValidateIf, ValidateNested } from 'cla
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { PredicateType } from '../models/PredicateType'
 
-import { PresentProofMessageType } from './PresentProofMessageType'
-
 export interface PresentationPreviewOptions {
   attributes?: PresentationPreviewAttribute[]
   predicates?: PresentationPreviewPredicate[]
@@ -29,7 +27,7 @@ export class PresentationPreview {
   @Expose({ name: '@type' })
   @Equals(PresentationPreview.type)
   public readonly type = PresentationPreview.type
-  public static readonly type = PresentProofMessageType.PresentationPreview
+  public static readonly type = 'https://didcomm.org/present-proof/1.0/presentation-preview'
 
   @Type(() => PresentationPreviewAttribute)
   @ValidateNested({ each: true })

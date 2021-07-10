@@ -4,7 +4,13 @@ import { Subject } from 'rxjs'
 
 import { Agent } from '../agent/Agent'
 
-import { SubjectInboundTransporter, SubjectOutboundTransporter, waitForBasicMessage, getBaseConfig } from './helpers'
+import {
+  SubjectInboundTransporter,
+  SubjectOutboundTransporter,
+  waitForBasicMessage,
+  getBaseConfig,
+  closeAndDeleteWallet,
+} from './helpers'
 
 const aliceConfig = getBaseConfig('Agents Alice')
 const bobConfig = getBaseConfig('Agents Bob')
@@ -16,8 +22,8 @@ describe('agents', () => {
   let bobConnection: ConnectionRecord
 
   afterAll(async () => {
-    await aliceAgent.closeAndDeleteWallet()
-    await bobAgent.closeAndDeleteWallet()
+    await closeAndDeleteWallet(aliceAgent)
+    await closeAndDeleteWallet(bobAgent)
   })
 
   test('make a connection between agents', async () => {
@@ -27,12 +33,12 @@ describe('agents', () => {
     aliceAgent = new Agent(aliceConfig)
     aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages, bobMessages))
     aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(bobMessages))
-    await aliceAgent.init()
+    await aliceAgent.initialize()
 
     bobAgent = new Agent(bobConfig)
     bobAgent.setInboundTransporter(new SubjectInboundTransporter(bobMessages, aliceMessages))
     bobAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages))
-    await bobAgent.init()
+    await bobAgent.initialize()
 
     const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection()
     const bobConnectionAtBobAlice = await bobAgent.connections.receiveInvitation(aliceConnectionAtAliceBob.invitation)

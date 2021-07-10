@@ -46,7 +46,7 @@ For testing we've added a setup to this repo that allows you to quickly setup an
 
 ```sh
 # Build indy pool
-docker build -f network/indy-pool.dockerfile -t indy-pool .
+docker build -f network/indy-pool.dockerfile -t indy-pool . --platform linux/amd64
 
 # Start indy pool
 docker run -d --rm --name indy-pool -p 9701-9708:9701-9708 indy-pool
