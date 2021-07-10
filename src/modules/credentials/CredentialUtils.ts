@@ -1,12 +1,44 @@
-import type { CredentialPreviewAttribute } from './messages/CredentialPreview'
+import type { LinkedAttachment } from '../../utils/LinkedAttachment'
 import type { CredValues } from 'indy-sdk'
 
 import BigNumber from 'bn.js'
 import { sha256 } from 'js-sha256'
 
+import { AriesFrameworkError } from '../../error/AriesFrameworkError'
+import { encodeAttachment } from '../../utils/attachment'
 import { isBoolean, isNumber, isString } from '../../utils/type'
 
+import { CredentialPreview, CredentialPreviewAttribute } from './messages/CredentialPreview'
+
 export class CredentialUtils {
+  /**
+   * Adds attribute(s) to the credential preview that is linked to the given attachment(s)
+   *
+   * @param attachments a list of the attachments that need to be linked to a credential
+   * @param preview the credential previews where the new linked credential has to be appended to
+   *
+   * @returns a modified version of the credential preview with the linked credentials
+   * */
+  public static createAndLinkAttachmentsToPreview(attachments: LinkedAttachment[], preview: CredentialPreview) {
+    const credentialPreview = new CredentialPreview({ attributes: [...preview.attributes] })
+    const credentialPreviewAttributenNames = credentialPreview.attributes.map((attribute) => attribute.name)
+    attachments.forEach((linkedAttachment) => {
+      if (credentialPreviewAttributenNames.includes(linkedAttachment.attributeName)) {
+        throw new AriesFrameworkError(
+          `linkedAttachment ${linkedAttachment.attributeName} already exists in the preview`
+        )
+      }
+      const credentialPreviewAttribute = new CredentialPreviewAttribute({
+        name: linkedAttachment.attributeName,
+        mimeType: linkedAttachment.attachment.mimeType,
+        value: encodeAttachment(linkedAttachment.attachment),
+      })
+      credentialPreview.attributes.push(credentialPreviewAttribute)
+    })
+
+    return credentialPreview
+  }
+
   /**
    * Converts int value to string
    * Converts string value:

@@ -1,6 +1,6 @@
 import multihash from 'multihashes'
 
-export class MultihashEncoder {
+export class MultiHashEncoder {
   /**
    *
    * Encodes a buffer into a hash

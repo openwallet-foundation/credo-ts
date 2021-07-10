@@ -13,6 +13,7 @@ export interface PresentationOptions {
   id?: string
   comment?: string
   presentationAttachments: Attachment[]
+  attachments?: Attachment[]
 }
 
 /**
@@ -29,6 +30,7 @@ export class PresentationMessage extends AgentMessage {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
       this.presentationAttachments = options.presentationAttachments
+      this.attachments = options.attachments
     }
   }
 

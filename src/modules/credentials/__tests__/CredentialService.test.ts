@@ -20,15 +20,15 @@ import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
 import {
-  OfferCredentialMessage,
+  CredentialAckMessage,
   CredentialPreview,
   CredentialPreviewAttribute,
-  RequestCredentialMessage,
-  IssueCredentialMessage,
-  CredentialAckMessage,
-  INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
-  INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_ATTACHMENT_ID,
+  INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
+  INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
+  IssueCredentialMessage,
+  OfferCredentialMessage,
+  RequestCredentialMessage,
 } from '../messages'
 import { CredentialRecord } from '../repository/CredentialRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'

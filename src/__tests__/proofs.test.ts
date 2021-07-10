@@ -4,6 +4,7 @@ import type { CredDefId } from 'indy-sdk'
 import { Subject } from 'rxjs'
 
 import { Agent } from '../agent/Agent'
+import { Attachment, AttachmentData } from '../decorators/attachment/Attachment'
 import { CredentialPreview, CredentialPreviewAttribute } from '../modules/credentials'
 import {
   PredicateType,
@@ -15,6 +16,7 @@ import {
   AttributeFilter,
   ProofPredicateInfo,
 } from '../modules/proofs'
+import { LinkedAttachment } from '../utils/LinkedAttachment'
 
 import {
   ensurePublicDidIsOnLedger,
@@ -73,7 +75,7 @@ describe('Present Proof', () => {
 
     const schemaTemplate = {
       name: `test-schema-${Date.now()}`,
-      attributes: ['name', 'age'],
+      attributes: ['name', 'age', 'image_0', 'image_1'],
       version: '1.0',
     }
     const schema = await registerSchema(faberAgent, schemaTemplate)
@@ -102,6 +104,10 @@ describe('Present Proof', () => {
           referent: '0',
           value: 'John',
         }),
+        new PresentationPreviewAttribute({
+          name: 'image_0',
+          credentialDefinitionId: credDefId,
+        }),
       ],
       predicates: [
         new PresentationPreviewPredicate({
@@ -121,6 +127,22 @@ describe('Present Proof', () => {
         credentialDefinitionId: credDefId,
         comment: 'some comment about credential',
         preview: credentialPreview,
+        linkedAttachments: [
+          new LinkedAttachment({
+            name: 'image_0',
+            attachment: new Attachment({
+              filename: 'picture-of-a-cat.png',
+              data: new AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
+            }),
+          }),
+          new LinkedAttachment({
+            name: 'image_1',
+            attachment: new Attachment({
+              filename: 'picture-of-a-dog.png',
+              data: new AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
+            }),
+          }),
+        ],
       },
     })
   })
@@ -183,6 +205,22 @@ describe('Present Proof', () => {
     const attributes = {
       name: new ProofAttributeInfo({
         name: 'name',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+      image_0: new ProofAttributeInfo({
+        name: 'image_0',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+      image_1: new ProofAttributeInfo({
+        name: 'image_1',
         restrictions: [
           new AttributeFilter({
             credentialDefinitionId: credDefId,
