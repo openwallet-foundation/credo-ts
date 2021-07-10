@@ -5,7 +5,6 @@ import { AriesFrameworkError } from '../error/AriesFrameworkError'
 
 import { BufferEncoder } from './BufferEncoder'
 import { HashlinkEncoder } from './HashlinkEncoder'
-import { JsonEncoder } from './JsonEncoder'
 
 /**
  * Encodes an attachment based on the `data` property
@@ -25,7 +24,9 @@ export function encodeAttachment(
   } else if (attachment.data.base64) {
     return HashlinkEncoder.encode(BufferEncoder.fromBase64(attachment.data.base64), hashAlgorithm, baseName)
   } else if (attachment.data.json) {
-    return HashlinkEncoder.encode(JsonEncoder.toBuffer(attachment.data.json), hashAlgorithm, baseName)
+    throw new AriesFrameworkError(
+      `Attachment: (${attachment.id}) has json encoded data. This is currently not supported`
+    )
   } else {
     throw new AriesFrameworkError(`Attachment: (${attachment.id}) has no data to create a link with`)
   }
