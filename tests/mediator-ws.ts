@@ -137,7 +137,7 @@ const server = app.listen(PORT, async () => {
 })
 
 server.on('upgrade', (request, socket, head) => {
-  socketServer.handleUpgrade(request, socket, head, (socketParam: any) => {
+  socketServer.handleUpgrade(request, socket, head, (socketParam) => {
     const socketId = uuid()
     socketServer.emit('connection', socketParam, request, socketId)
   })

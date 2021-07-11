@@ -8,7 +8,7 @@ import { InjectionSymbols } from '../constants'
 import { WebSocket } from '../utils/ws'
 
 export class WsOutboundTransporter implements OutboundTransporter {
-  private transportTable: Map<string, any> = new Map<string, any>()
+  private transportTable: Map<string, WebSocket> = new Map<string, WebSocket>()
   private agent: Agent
   private logger: Logger
 
@@ -65,11 +65,11 @@ export class WsOutboundTransporter implements OutboundTransporter {
     this.agent.receiveMessage(JSON.parse(event.data))
   }
 
-  private listenOnWebSocketMessages(socket: any) {
+  private listenOnWebSocketMessages(socket: WebSocket) {
     socket.addEventListener('message', this.handleMessageEvent)
   }
 
-  private createSocketConnection(endpoint: string): Promise<any> {
+  private createSocketConnection(endpoint: string): Promise<WebSocket> {
     return new Promise((resolve, reject) => {
       this.logger.debug(`Connecting to WebSocket ${endpoint}`)
       const socket = new WebSocket(endpoint)
@@ -79,7 +79,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
         resolve(socket)
       }
 
-      socket.onerror = (error: any) => {
+      socket.onerror = (error) => {
         this.logger.debug(`Error while connecting to WebSocket ${endpoint}`, {
           error,
         })

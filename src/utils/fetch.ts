@@ -2,7 +2,24 @@
 
 import { isNodeJS, isReactNative } from './environment'
 
-let fetch: any
+// TODO: we can't depend on @types/node-fetch because it depends on @types/node
+// But it would be good to not have to define this type ourselves
+type FetchResponse = {
+  text(): Promise<string>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  json(): Promise<any>
+}
+
+type FetchFunction = (
+  url: string,
+  init?: {
+    method?: 'POST' | 'GET'
+    body?: string
+    headers?: { [key: string]: string }
+  }
+) => Promise<FetchResponse>
+
+let fetch: FetchFunction
 let Headers
 let Request
 let Response
