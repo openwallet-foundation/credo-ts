@@ -3,6 +3,9 @@
   "compilerOptions": {
     "types": ["jest"]
   },
+  "ts-node": {
+    "files": true
+  },
   "include": ["src", "types", "tests", "*.config.js"],
   "exclude": ["node_modules", "build", "**/node_modules", "**/node_modules/**"]
 }
