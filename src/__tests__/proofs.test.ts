@@ -30,7 +30,6 @@ import {
   issueCredential,
   waitForProofRecord,
   getBaseConfig,
-  closeAndDeleteWallet,
 } from './helpers'
 import testLogger from './logger'
 
@@ -155,8 +154,12 @@ describe('Present Proof', () => {
   })
 
   afterAll(async () => {
-    await closeAndDeleteWallet(aliceAgent)
-    await closeAndDeleteWallet(faberAgent)
+    await aliceAgent.shutdown({
+      deleteWallet: true,
+    })
+    await faberAgent.shutdown({
+      deleteWallet: true,
+    })
   })
 
   test('Alice starts with proof proposal to Faber', async () => {

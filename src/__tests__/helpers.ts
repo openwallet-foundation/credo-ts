@@ -6,13 +6,11 @@ import type { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/le
 import type { ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
 import type { InboundTransporter, OutboundTransporter } from '../transport'
 import type { InitConfig } from '../types'
-import type { Wallet } from '../wallet/Wallet'
 import type { CredDef, Did, Schema } from 'indy-sdk'
 
 import indy from 'indy-sdk'
 import path from 'path'
 
-import { InjectionSymbols } from '../constants'
 import { LogLevel } from '../logger/Logger'
 import { BasicMessageEventTypes } from '../modules/basic-messages'
 import {
@@ -43,19 +41,13 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
     publicDidSeed,
     autoAcceptConnections: true,
     poolName: `pool-${name.toLowerCase()}`,
-    logger: new TestLogger(LogLevel.error, name),
+    logger: new TestLogger(LogLevel.test, name),
     indy,
     fileSystem: new NodeFileSystem(),
     ...extraConfig,
   }
 
   return config
-}
-
-export async function closeAndDeleteWallet(agent: Agent) {
-  const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-
-  await wallet.delete()
 }
 
 export async function waitForProofRecord(

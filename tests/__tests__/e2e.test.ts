@@ -1,7 +1,7 @@
 import WebSocket from 'ws'
 
 import { HttpOutboundTransporter, Agent, MediationState, WsOutboundTransporter } from '../../src'
-import { closeAndDeleteWallet, getBaseConfig, makeConnection, makeTransport } from '../../src/__tests__/helpers'
+import { getBaseConfig, makeConnection, makeTransport } from '../../src/__tests__/helpers'
 import { HttpInboundTransporter } from '../transport/HttpInboundTransport'
 import { WsInboundTransporter } from '../transport/WsInboundTransport'
 
@@ -22,15 +22,8 @@ describe('mediator establishment', () => {
   })
 
   afterEach(async () => {
-    // Close and delete wallets
-    await closeAndDeleteWallet(recipientAgent)
-    await closeAndDeleteWallet(mediatorAgent)
-
-    // Stop all transports
-    await recipientAgent.outboundTransporter?.stop()
-    await recipientAgent.inboundTransporter?.stop()
-    await mediatorAgent.outboundTransporter?.stop()
-    await mediatorAgent.inboundTransporter?.stop()
+    await recipientAgent.shutdown({ deleteWallet: true })
+    await recipientAgent.shutdown({ deleteWallet: true })
   })
 
   test('recipient and mediator establish a connection and granted mediation with HTTP', async () => {

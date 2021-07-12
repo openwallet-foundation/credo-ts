@@ -1,6 +1,6 @@
 import type { Wallet } from '../../wallet/Wallet'
 
-import { closeAndDeleteWallet, getBaseConfig } from '../../__tests__/helpers'
+import { getBaseConfig } from '../../__tests__/helpers'
 import { InjectionSymbols } from '../../constants'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
 import { BasicMessagesModule } from '../../modules/basic-messages/BasicMessagesModule'
@@ -41,7 +41,7 @@ describe('Agent', () => {
       const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
 
       if (wallet.isInitialized) {
-        await closeAndDeleteWallet(agent)
+        await wallet.delete()
       }
     })
 

@@ -24,7 +24,6 @@ import {
   registerDefinition,
   registerSchema,
   waitForCredentialRecord,
-  closeAndDeleteWallet,
 } from './helpers'
 import testLogger from './logger'
 
@@ -106,8 +105,12 @@ describe('credentials', () => {
   })
 
   afterAll(async () => {
-    await closeAndDeleteWallet(aliceAgent)
-    await closeAndDeleteWallet(faberAgent)
+    await aliceAgent.shutdown({
+      deleteWallet: true,
+    })
+    await faberAgent.shutdown({
+      deleteWallet: true,
+    })
   })
 
   test('Alice starts with credential proposal to Faber', async () => {
