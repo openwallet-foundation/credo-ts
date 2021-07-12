@@ -59,19 +59,23 @@ describe('Present Proof', () => {
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
   let presentationPreview: PresentationPreview
-
+  
   beforeAll(async () => {
     const faberMessages = new Subject<WireMessage>()
     const aliceMessages = new Subject<WireMessage>()
-
+    
+    const subjectMap = {
+      'rxjs:alice': faberMessages,
+      'rxjs:bob': aliceMessages,
+    }
     faberAgent = new Agent(faberConfig)
-    faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages, aliceMessages))
-    faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages))
+    faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
+    faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
     await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceConfig)
-    aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages, faberMessages))
-    aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages))
+    aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
+    aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
     await aliceAgent.initialize()
 
     const schemaTemplate = {
@@ -93,6 +97,8 @@ describe('Present Proof', () => {
     const publicDid = faberAgent.publicDid?.did
     await ensurePublicDidIsOnLedger(faberAgent, publicDid!)
     const { agentAConnection, agentBConnection } = await makeConnection(faberAgent, aliceAgent)
+    expect(agentAConnection.isReady).toBe(true)
+    expect(agentBConnection.isReady).toBe(true)
 
     faberConnection = agentAConnection
     aliceConnection = agentBConnection
@@ -155,6 +161,7 @@ describe('Present Proof', () => {
 
   test('Alice starts with proof proposal to Faber', async () => {
     testLogger.test('Alice sends presentation proposal to Faber')
+    console.log(aliceConnection)
     let aliceProofRecord = await aliceAgent.proofs.proposeProof(aliceConnection.id, presentationPreview)
 
     testLogger.test('Faber waits for presentation proposal from Alice')

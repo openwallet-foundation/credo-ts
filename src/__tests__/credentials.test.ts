@@ -64,15 +64,18 @@ describe('credentials', () => {
   beforeAll(async () => {
     const faberMessages = new Subject<WireMessage>()
     const aliceMessages = new Subject<WireMessage>()
-
+    const subjectMap = {
+      'rxjs:alice': faberMessages,
+      'rxjs:bob': aliceMessages,
+    }
     faberAgent = new Agent(faberConfig)
-    faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages, aliceMessages))
-    faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages))
+    faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
+    faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages,subjectMap))
     await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceConfig)
-    aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages, faberMessages))
-    aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages))
+    aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
+    aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages,subjectMap))
     await aliceAgent.initialize()
 
     const schemaTemplate = {
