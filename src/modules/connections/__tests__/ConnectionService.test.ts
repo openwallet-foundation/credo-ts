@@ -1,6 +1,8 @@
 import type { Wallet } from '../../../wallet/Wallet'
 import type { Did } from 'indy-sdk'
 
+import { Subject } from 'rxjs'
+
 import { getBaseConfig, getMockConnection, mockFunction } from '../../../__tests__/helpers'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -50,7 +52,7 @@ describe('ConnectionService', () => {
   })
 
   beforeEach(async () => {
-    eventEmitter = new EventEmitter()
+    eventEmitter = new EventEmitter(new Subject<boolean>())
     connectionRepository = new ConnectionRepositoryMock()
     connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, eventEmitter)
     myRouting = { did: 'fakeDid', verkey: 'fakeVerkey', endpoint: agentConfig.getEndpoint(), routingKeys: [] }
@@ -84,7 +86,7 @@ describe('ConnectionService', () => {
           label: initConfig.label,
           recipientKeys: [expect.any(String)],
           routingKeys: [],
-          serviceEndpoint: `${initConfig.host}:${initConfig.port}/msg`,
+          serviceEndpoint: `${initConfig.host}:${initConfig.port}`,
         })
       )
     })

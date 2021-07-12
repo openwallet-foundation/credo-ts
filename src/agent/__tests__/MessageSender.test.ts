@@ -1,4 +1,5 @@
 import type { ConnectionRecord } from '../../modules/connections'
+import type { MessageRepository } from '../../storage/MessageRepository'
 import type { OutboundTransporter } from '../../transport'
 import type { OutboundMessage } from '../../types'
 
@@ -6,6 +7,7 @@ import { getMockConnection, mockFunction } from '../../__tests__/helpers'
 import testLogger from '../../__tests__/logger'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { DidCommService } from '../../modules/connections'
+import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { AgentMessage } from '../AgentMessage'
 import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { MessageSender } from '../MessageSender'
@@ -13,8 +15,6 @@ import { TransportService } from '../TransportService'
 import { createOutboundMessage } from '../helpers'
 
 import { DummyTransportSession } from './stubs'
-import { MessageRepository } from '../../storage/MessageRepository'
-import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 
 jest.mock('../TransportService')
 jest.mock('../EnvelopeService')

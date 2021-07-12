@@ -1,6 +1,5 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { InboundConnection, WireMessage } from '../../../types'
-import type { ConnectionRecord } from '../../connections'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
