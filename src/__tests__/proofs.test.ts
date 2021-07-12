@@ -59,11 +59,11 @@ describe('Present Proof', () => {
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
   let presentationPreview: PresentationPreview
-  
+
   beforeAll(async () => {
     const faberMessages = new Subject<WireMessage>()
     const aliceMessages = new Subject<WireMessage>()
-    
+
     const subjectMap = {
       'rxjs:alice': faberMessages,
       'rxjs:bob': aliceMessages,

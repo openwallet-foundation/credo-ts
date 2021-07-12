@@ -70,12 +70,12 @@ describe('credentials', () => {
     }
     faberAgent = new Agent(faberConfig)
     faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
-    faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages,subjectMap))
+    faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
     await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceConfig)
     aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
-    aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages,subjectMap))
+    aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
     await aliceAgent.initialize()
 
     const schemaTemplate = {
