@@ -41,7 +41,7 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
     publicDidSeed,
     autoAcceptConnections: true,
     poolName: `pool-${name.toLowerCase()}`,
-    logger: new TestLogger(LogLevel.test, name),
+    logger: new TestLogger(LogLevel.error, name),
     indy,
     fileSystem: new NodeFileSystem(),
     ...extraConfig,
