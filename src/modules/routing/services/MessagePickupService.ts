@@ -1,11 +1,11 @@
-import type { InboundConnection } from '../../../types'
+import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { InboundConnection, WireMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { InjectionSymbols } from '../../../constants'
-import { AriesFrameworkError } from '../../../error'
 import { MessageRepository } from '../../../storage/MessageRepository'
 import { BatchMessage, BatchMessageMessage, BatchPickupMessage } from '../messages'
 
@@ -25,16 +25,13 @@ export class MessagePickupService {
     return createOutboundMessage(inboundConnection.connection, batchPickupMessage)
   }
 
-  // TODO: add support for batchSize property
-  public async batch(connection: ConnectionRecord) {
-    if (!this.messageRepository) {
-      throw new AriesFrameworkError('There is no message repository.')
-    }
-    if (!connection.theirKey) {
-      throw new AriesFrameworkError('Trying to find messages to connection without theirKey!')
-    }
+  public async batch(messageContext: InboundMessageContext<BatchPickupMessage>) {
+    // Assert ready connection
+    const connection = messageContext.assertReadyConnection()
 
-    const messages = this.messageRepository.findByVerkey(connection.theirKey)
+    const { message } = messageContext
+    const messages = this.messageRepository.takeFromQueue(connection.id, message.batchSize)
+
     // TODO: each message should be stored with an id. to be able to conform to the id property
     // of batch message
     const batchMessages = messages.map(
@@ -48,7 +45,10 @@ export class MessagePickupService {
       messages: batchMessages,
     })
 
-    await this.messageRepository.deleteAllByVerkey(connection.theirKey) // TODO Maybe, don't delete, but just marked them as read
     return createOutboundMessage(connection, batchMessage)
+  }
+
+  public queueMessage(connectionId: string, message: WireMessage) {
+    this.messageRepository.add(connectionId, message)
   }
 }

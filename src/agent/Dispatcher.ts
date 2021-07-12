@@ -4,7 +4,6 @@ import type { InboundMessageContext } from './models/InboundMessageContext'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
-import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 
 import { MessageSender } from './MessageSender'
@@ -36,9 +35,6 @@ class Dispatcher {
     const outboundMessage = await handler.handle(messageContext)
 
     if (outboundMessage) {
-      if (!this.transportService.hasInboundEndpoint(outboundMessage.connection)) {
-        outboundMessage.payload.setReturnRouting(ReturnRouteTypes.all)
-      }
       await this.messageSender.sendMessage(outboundMessage)
     }
   }

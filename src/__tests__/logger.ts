@@ -26,10 +26,11 @@ export class TestLogger extends BaseLogger {
     [LogLevel.fatal]: 'fatal',
   } as const
 
-  public constructor(logLevel: LogLevel) {
+  public constructor(logLevel: LogLevel, name?: string) {
     super(logLevel)
 
     this.logger = new Logger({
+      name,
       minLevel: this.logLevel == LogLevel.off ? undefined : this.tsLogLevelMap[this.logLevel],
       ignoreStackLevels: 5,
       attachedTransports: [
@@ -89,6 +90,6 @@ export class TestLogger extends BaseLogger {
   }
 }
 
-const testLogger = new TestLogger(LogLevel.error)
+const testLogger = new TestLogger(LogLevel.test)
 
 export default testLogger

@@ -1,3 +1,4 @@
+import type { DidDoc } from '../modules/connections/models'
 import type { ConnectionRecord } from '../modules/connections/repository'
 import type { OutboundPackage } from '../types'
 import type { AgentMessage } from './AgentMessage'
@@ -20,16 +21,16 @@ export class TransportService {
     return Object.values(this.transportSessionTable).find((session) => session.connection?.id === connectionId)
   }
 
+  public hasInboundEndpoint(didDoc: DidDoc): boolean {
+    return Boolean(didDoc.didCommServices.find((s) => s.serviceEndpoint !== DID_COMM_TRANSPORT_QUEUE))
+  }
+
   public findSessionById(sessionId: string) {
     return this.transportSessionTable[sessionId]
   }
 
   public removeSession(session: TransportSession) {
     delete this.transportSessionTable[session.id]
-  }
-
-  public hasInboundEndpoint(connection: ConnectionRecord) {
-    return connection.didDoc.didCommServices.find((s) => s.serviceEndpoint !== DID_COMM_TRANSPORT_QUEUE)
   }
 
   public findDidCommServices(connection: ConnectionRecord): DidCommService[] {

@@ -24,6 +24,7 @@ const agentConfig: InitConfig = {
   walletConfig: { id: 'walletId' },
   walletCredentials: { key: 'testKey0000000000000000000000000' },
   indy,
+  fileSystem: new NodeFileSystem(),
 }
 
 const agent = new Agent(agentConfig)
@@ -34,15 +35,14 @@ const agent = new Agent(agentConfig)
 The agent currently supports the following configuration options. Fields marked with a **\*** are required. Other parts of this documentation go into more depth on the different configuration options.
 
 - `label`\*: The label to use for invitations.
-- `walletConfig`\*: The wallet config to use for creating and unlocking the wallet
-- `walletCredentials`\*: The wallet credentials to use for creating and unlocking the wallet
 - `indy`\*: The indy sdk to use for indy operations. This is different for NodeJS / React Native
 - `fileSystem`\*: The file system instance used for reading and writing files.
+- `walletConfig`: The wallet config to use for creating and unlocking the wallet
+- `walletCredentials`: The wallet credentials to use for creating and unlocking the wallet
 - `host`: The host to use for invitations.
 - `post`: The port to append to host for invitations.
 - `endpoint`: The endpoint (host + port) to use for invitations. Has priority over `host` and `port.
 - `publicDidSeed`: The seed to use for initializing the public did of the agent. This does not register the DID on the ledger.
-- `mediatorUrl`: The url of the mediator to use for inbound routing
 - `autoAcceptConnections`: Whether to auto accept all incoming connections. Default false
 - `genesisPath`: The path to the genesis file to use for connecting to an Indy ledger.
 - `genesisTransactions`: String of genesis transactions to use for connecting to an Indy ledger.
@@ -51,3 +51,7 @@ The agent currently supports the following configuration options. Fields marked 
 - `didCommMimeType`: The mime-type to use for sending and receiving messages.
   - `DidCommMimeType.V0`: "application/ssi-agent-wire"
   - `DidCommMimeType.V1`: "application/didcomm-envelope-enc"
+- `autoAcceptMediationRequests` - As a mediator, whether to auto accept mediation requests. If not enabled requests should be accepted manually on the mediator module
+- `mediationConnectionsInvitation` - Connection invitation to use for default mediator. If specified the agent will create a connection, request mediation and store the mediator as default for all connections.
+- `defaultMediatorId` - Mediator id to use as default mediator. Use this if you want to override the currently default mediator.
+- `clearDefaultMediator` - Will clear the default mediator

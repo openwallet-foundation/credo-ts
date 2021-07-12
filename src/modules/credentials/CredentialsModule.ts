@@ -8,7 +8,7 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { isLinkedAttachment } from '../../utils/attachment'
-import { ConnectionService } from '../connections'
+import { ConnectionService } from '../connections/services/ConnectionService'
 
 import {
   CredentialAckHandler,

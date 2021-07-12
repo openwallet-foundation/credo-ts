@@ -3,8 +3,11 @@ import type { Logger } from '../logger'
 import type { OutboundPackage } from '../types'
 import type { OutboundTransporter } from './OutboundTransporter'
 
+import { AbortController } from 'abort-controller'
+
 import { AgentConfig } from '../agent/AgentConfig'
 import { InjectionSymbols } from '../constants'
+import { AriesFrameworkError } from '../error'
 import { fetch } from '../utils/fetch'
 
 export class HttpOutboundTransporter implements OutboundTransporter {
@@ -33,31 +36,44 @@ export class HttpOutboundTransporter implements OutboundTransporter {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
-    const { payload, endpoint, responseRequested } = outboundPackage
+    const { connection, payload, endpoint } = outboundPackage
 
     if (!endpoint) {
-      throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
+      throw new AriesFrameworkError(`Missing endpoint. I don't know how and where to send the message.`)
     }
 
-    this.logger.debug(
-      `Sending outbound message to connection ${outboundPackage.connection.id}`,
-      outboundPackage.payload
-    )
+    this.logger.debug(`Sending outbound message to connection ${connection.id}`, {
+      outboundPackage: payload,
+      endpoint: endpoint,
+    })
 
     try {
+      const abortController = new AbortController()
+      const id = setTimeout(() => abortController.abort(), 15000)
+
       const response = await fetch(endpoint, {
         method: 'POST',
         body: JSON.stringify(payload),
         headers: { 'Content-Type': this.agentConfig.didCommMimeType },
+        signal: abortController.signal,
       })
+      clearTimeout(id)
+
       const responseMessage = await response.text()
 
-      // TODO: do we just want to ignore messages that were
-      // returned if we didn't request it?
-      if (responseMessage && responseRequested) {
-        this.logger.debug(`Response received:\n ${response}`)
-        const wireMessage = JSON.parse(responseMessage)
-        this.agent.receiveMessage(wireMessage)
+      // TODO: do we just want to ignore messages that were returned if we didn't request it?
+      // TODO: check response header type (and also update inbound transports to use the correct headers types)
+      if (responseMessage) {
+        this.logger.debug(`Response received`, { responseMessage, status: response.status })
+
+        try {
+          const wireMessage = JSON.parse(responseMessage)
+          this.agent.receiveMessage(wireMessage)
+        } catch (error) {
+          this.logger.debug('Unable to parse response message')
+        }
+      } else {
+        this.logger.debug(`No response received.`)
       }
     } catch (error) {
       this.logger.error(`Error sending message to ${endpoint}: ${error.message}`, {

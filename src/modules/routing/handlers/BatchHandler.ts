@@ -21,7 +21,6 @@ export class BatchHandler implements Handler {
 
     const { message } = messageContext
     const forwardedMessages = message.messages
-
     forwardedMessages.forEach((message) => {
       this.eventEmitter.emit<AgentMessageReceivedEvent>({
         type: AgentEventTypes.AgentMessageReceived,

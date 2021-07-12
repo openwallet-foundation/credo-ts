@@ -5,6 +5,7 @@ import type { OutboundPackage } from '../types'
 import type { OutboundTransporter } from './OutboundTransporter'
 
 import { InjectionSymbols } from '../constants'
+import { AriesFrameworkError } from '../error'
 import { WebSocket } from '../utils/ws'
 
 export class WsOutboundTransporter implements OutboundTransporter {
@@ -33,25 +34,38 @@ export class WsOutboundTransporter implements OutboundTransporter {
   public async sendMessage(outboundPackage: OutboundPackage) {
     const { connection, payload, endpoint } = outboundPackage
     this.logger.debug(`Sending outbound message to connection ${connection.id} over websocket transport.`, payload)
+    const isNewSocket = this.hasOpenSocket(connection.id)
     const socket = await this.resolveSocket(connection, endpoint)
     socket.send(JSON.stringify(payload))
+
+    // If the socket was created for this message and we don't have return routing enabled
+    // We can close the socket as it shouldn't return messages anymore
+    if (isNewSocket && !outboundPackage.responseRequested) {
+      socket.close()
+    }
+  }
+
+  private hasOpenSocket(socketId: string) {
+    return this.transportTable.get(socketId) !== undefined
   }
 
   private async resolveSocket(connection: ConnectionRecord, endpoint?: string) {
+    const socketId = connection.id
+
     // If we already have a socket connection use it
-    let socket = this.transportTable.get(connection.id)
+    let socket = this.transportTable.get(socketId)
 
     if (!socket) {
       if (!endpoint) {
-        throw new Error(`Missing endpoint. I don't know how and where to send the message.`)
+        throw new AriesFrameworkError(`Missing endpoint. I don't know how and where to send the message.`)
       }
-      socket = await this.createSocketConnection(endpoint)
-      this.transportTable.set(connection.id, socket)
+      socket = await this.createSocketConnection(endpoint, socketId)
+      this.transportTable.set(socketId, socket)
       this.listenOnWebSocketMessages(socket)
     }
 
     if (socket.readyState !== WebSocket.OPEN) {
-      throw new Error('Socket is not open.')
+      throw new AriesFrameworkError('Socket is not open.')
     }
 
     return socket
@@ -69,7 +83,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
     socket.addEventListener('message', this.handleMessageEvent)
   }
 
-  private createSocketConnection(endpoint: string): Promise<WebSocket> {
+  private createSocketConnection(endpoint: string, socketId: string): Promise<WebSocket> {
     return new Promise((resolve, reject) => {
       this.logger.debug(`Connecting to WebSocket ${endpoint}`)
       const socket = new WebSocket(endpoint)
@@ -84,6 +98,11 @@ export class WsOutboundTransporter implements OutboundTransporter {
           error,
         })
         reject(error)
+      }
+
+      socket.onclose = () => {
+        socket.removeEventListener('message', this.handleMessageEvent)
+        this.transportTable.delete(socketId)
       }
     })
   }

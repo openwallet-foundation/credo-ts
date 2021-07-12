@@ -43,7 +43,6 @@ class EnvelopeService {
           to: recipientKey,
           message: wireMessage,
         })
-
         this.logger.debug('Forward message created', forwardMessage)
         wireMessage = await this.wallet.pack(forwardMessage.toJSON(), [routingKey], senderVk)
       }

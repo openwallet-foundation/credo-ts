@@ -1,4 +1,5 @@
 import type { ConnectionRecord } from '../modules/connections'
+import type { WireMessage } from '../types'
 import type { CredDefId } from 'indy-sdk'
 
 import { Subject } from 'rxjs'
@@ -60,8 +61,8 @@ describe('Present Proof', () => {
   let presentationPreview: PresentationPreview
 
   beforeAll(async () => {
-    const faberMessages = new Subject()
-    const aliceMessages = new Subject()
+    const faberMessages = new Subject<WireMessage>()
+    const aliceMessages = new Subject<WireMessage>()
 
     faberAgent = new Agent(faberConfig)
     faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages, aliceMessages))

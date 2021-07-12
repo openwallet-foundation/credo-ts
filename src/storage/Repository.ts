@@ -1,6 +1,5 @@
 import type { BaseRecord } from './BaseRecord'
-import type { BaseRecordConstructor, StorageService } from './StorageService'
-import type { WalletQuery } from 'indy-sdk'
+import type { BaseRecordConstructor, Query, StorageService } from './StorageService'
 
 import { RecordDuplicateError, RecordNotFoundError } from '../error'
 
@@ -55,7 +54,7 @@ export class Repository<T extends BaseRecord<any, any>> {
   }
 
   /** @inheritDoc {StorageService#findByQuery} */
-  public async findByQuery(query: WalletQuery): Promise<T[]> {
+  public async findByQuery(query: Query<T>): Promise<T[]> {
     return this.storageService.findByQuery(this.recordClass, query)
   }
 
@@ -65,7 +64,7 @@ export class Repository<T extends BaseRecord<any, any>> {
    * @returns the record, or null if not found
    * @throws {RecordDuplicateError} if multiple records are found for the given query
    */
-  public async findSingleByQuery(query: WalletQuery): Promise<T | null> {
+  public async findSingleByQuery(query: Query<T>): Promise<T | null> {
     const records = await this.findByQuery(query)
 
     if (records.length > 1) {
@@ -88,7 +87,7 @@ export class Repository<T extends BaseRecord<any, any>> {
    * @throws {RecordDuplicateError} if multiple records are found for the given query
    * @throws {RecordNotFoundError} if no record is found for the given query
    */
-  public async getSingleByQuery(query: WalletQuery): Promise<T> {
+  public async getSingleByQuery(query: Query<T>): Promise<T> {
     const record = await this.findSingleByQuery(query)
 
     if (!record) {

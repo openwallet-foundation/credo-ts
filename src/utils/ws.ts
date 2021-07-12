@@ -6,6 +6,7 @@ import { isNodeJS, isReactNative } from './environment'
 interface WebSocket {
   onopen: () => void
   onerror: (error: any) => void
+  onclose: () => void
   addEventListener(name: string, handler: (event: any) => void): void
   removeEventListener(name: string, handler: (event: any) => void): void
   close(code?: number, data?: string): void

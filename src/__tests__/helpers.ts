@@ -1,20 +1,22 @@
 import type { Agent } from '../agent/Agent'
-import type { TransportSession } from '../agent/TransportService'
 import type { BasicMessage, BasicMessageReceivedEvent } from '../modules/basic-messages'
 import type { ConnectionRecordProps } from '../modules/connections'
 import type { CredentialRecord, CredentialOfferTemplate, CredentialStateChangedEvent } from '../modules/credentials'
 import type { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/ledger'
 import type { ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
 import type { InboundTransporter, OutboundTransporter } from '../transport'
-import type { InitConfig, OutboundPackage, WireMessage } from '../types'
+import type { InitConfig } from '../types'
 import type { Wallet } from '../wallet/Wallet'
-import type { Schema, CredDef, Did } from 'indy-sdk'
-import type { Subject } from 'rxjs'
+import type { CredDef, Did, Schema } from 'indy-sdk'
 
+import cors from 'cors'
+import express from 'express'
 import indy from 'indy-sdk'
 import path from 'path'
 
+import { HttpInboundTransporter } from '../../tests/transport/HttpInboundTransport'
 import { InjectionSymbols } from '../constants'
+import { LogLevel } from '../logger/Logger'
 import { BasicMessageEventTypes } from '../modules/basic-messages'
 import {
   ConnectionInvitationMessage,
@@ -24,11 +26,12 @@ import {
   DidCommService,
   DidDoc,
 } from '../modules/connections'
-import { CredentialState, CredentialEventTypes } from '../modules/credentials'
+import { CredentialEventTypes, CredentialState } from '../modules/credentials'
 import { ProofEventTypes } from '../modules/proofs'
 import { NodeFileSystem } from '../storage/fs/NodeFileSystem'
+import { DidCommMimeType } from '../types'
 
-import testLogger from './logger'
+import testLogger, { TestLogger } from './logger'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
@@ -39,13 +42,12 @@ export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '00000000
 export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
   const config: InitConfig = {
     label: `Agent: ${name}`,
-    mediatorUrl: 'http://localhost:3001',
     walletConfig: { id: `Wallet: ${name}` },
     walletCredentials: { key: `Key: ${name}` },
     publicDidSeed,
     autoAcceptConnections: true,
     poolName: `pool-${name.toLowerCase()}`,
-    logger: testLogger,
+    logger: new TestLogger(LogLevel.error, name),
     indy,
     fileSystem: new NodeFileSystem(),
     ...extraConfig,
@@ -134,69 +136,6 @@ export async function waitForBasicMessage(agent: Agent, { content }: { content?:
   })
 }
 
-class SubjectTransportSession implements TransportSession {
-  public id: string
-  public readonly type = 'subject'
-  private theirSubject: Subject<WireMessage>
-
-  public constructor(id: string, theirSubject: Subject<WireMessage>) {
-    this.id = id
-    this.theirSubject = theirSubject
-  }
-
-  public send(outboundMessage: OutboundPackage): Promise<void> {
-    this.theirSubject.next(outboundMessage.payload)
-    return Promise.resolve()
-  }
-}
-
-export class SubjectInboundTransporter implements InboundTransporter {
-  private subject: Subject<WireMessage>
-  private theirSubject: Subject<WireMessage>
-
-  public constructor(subject: Subject<WireMessage>, theirSubject: Subject<WireMessage>) {
-    this.subject = subject
-    this.theirSubject = theirSubject
-  }
-
-  public async start(agent: Agent) {
-    this.subscribe(agent)
-  }
-
-  private subscribe(agent: Agent) {
-    this.subject.subscribe({
-      next: async (message: WireMessage) => {
-        const session = new SubjectTransportSession('subject-session-1', this.theirSubject)
-        await agent.receiveMessage(message, session)
-      },
-    })
-  }
-}
-
-export class SubjectOutboundTransporter implements OutboundTransporter {
-  private subject: Subject<WireMessage>
-
-  public supportedSchemes = []
-
-  public constructor(subject: Subject<WireMessage>) {
-    this.subject = subject
-  }
-
-  public async start(): Promise<void> {
-    // Nothing required to start
-  }
-
-  public async stop(): Promise<void> {
-    // Nothing required to stop
-  }
-
-  public async sendMessage(outboundPackage: OutboundPackage) {
-    testLogger.test(`Sending outbound message to connection ${outboundPackage.connection.id}`)
-    const { payload } = outboundPackage
-    this.subject.next(payload)
-  }
-}
-
 export function getMockConnection({
   state = ConnectionState.Invited,
   role = ConnectionRole.Invitee,
@@ -251,9 +190,17 @@ export function getMockConnection({
   })
 }
 
-export async function makeConnection(agentA: Agent, agentB: Agent) {
+export async function makeConnection(
+  agentA: Agent,
+  agentB: Agent,
+  config?: {
+    autoAcceptConnection?: boolean
+    alias?: string
+    mediatorId?: string
+  }
+) {
   // eslint-disable-next-line prefer-const
-  let { invitation, connectionRecord: agentAConnection } = await agentA.connections.createConnection()
+  let { invitation, connectionRecord: agentAConnection } = await agentA.connections.createConnection(config)
   let agentBConnection = await agentB.connections.receiveInvitation(invitation)
 
   agentAConnection = await agentA.connections.returnWhenIsConnected(agentAConnection.id)
@@ -263,6 +210,33 @@ export async function makeConnection(agentA: Agent, agentB: Agent) {
     agentAConnection,
     agentBConnection,
   }
+}
+
+export async function makeTransport({
+  agent,
+  inboundTransporter,
+  outboundTransporter,
+}: {
+  agent: Agent
+  outboundTransporter?: OutboundTransporter
+  inboundTransporter?: InboundTransporter
+}) {
+  if (inboundTransporter) agent.setInboundTransporter(inboundTransporter)
+  if (outboundTransporter) agent.setOutboundTransporter(outboundTransporter)
+  await agent.initialize()
+}
+
+export function makeHttpInBoundTransporter(path = '/') {
+  const app = express()
+  app.use(cors())
+  app.use(express.json())
+  app.use(
+    express.text({
+      type: [DidCommMimeType.V0, DidCommMimeType.V1],
+    })
+  )
+  app.set('json spaces', 2)
+  return new HttpInboundTransporter(app, path)
 }
 
 export async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<Schema> {

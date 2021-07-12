@@ -1,4 +1,4 @@
-import type { ConnectionService } from '../../connections'
+import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialRecordMetadata, CustomCredentialTags } from '../repository/CredentialRecord'
