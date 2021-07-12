@@ -4,7 +4,6 @@ import type { ConnectionRecordProps } from '../modules/connections'
 import type { CredentialRecord, CredentialOfferTemplate, CredentialStateChangedEvent } from '../modules/credentials'
 import type { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/ledger'
 import type { ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
-import type { InboundTransporter, OutboundTransporter } from '../transport'
 import type { InitConfig } from '../types'
 import type { CredDef, Did, Schema } from 'indy-sdk'
 
@@ -198,20 +197,6 @@ export async function makeConnection(
     agentAConnection,
     agentBConnection,
   }
-}
-
-export async function makeTransport({
-  agent,
-  inboundTransporter,
-  outboundTransporter,
-}: {
-  agent: Agent
-  outboundTransporter?: OutboundTransporter
-  inboundTransporter?: InboundTransporter
-}) {
-  if (inboundTransporter) agent.setInboundTransporter(inboundTransporter)
-  if (outboundTransporter) agent.setOutboundTransporter(outboundTransporter)
-  await agent.initialize()
 }
 
 export async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<Schema> {

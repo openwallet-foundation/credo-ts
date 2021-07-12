@@ -1,16 +1,16 @@
-import type { Agent, InboundTransporter, OutboundPackage } from '../../src'
+import type { Agent, InboundTransporter, Logger, OutboundPackage } from '../../src'
 import type { TransportSession } from '../../src/agent/TransportService'
 
 import WebSocket from 'ws'
 
 import { AriesFrameworkError } from '../../src'
-import logger from '../../src/__tests__/logger'
 import { AgentConfig } from '../../src/agent/AgentConfig'
 import { TransportService } from '../../src/agent/TransportService'
 import { uuid } from '../../src/utils/uuid'
 
 export class WsInboundTransporter implements InboundTransporter {
   private socketServer: WebSocket.Server
+  private logger!: Logger
 
   // We're using a `socketId` just for the prevention of calling the connection handler twice.
   private socketIds: Record<string, unknown> = {}
@@ -23,32 +23,34 @@ export class WsInboundTransporter implements InboundTransporter {
     const transportService = agent.injectionContainer.resolve(TransportService)
     const config = agent.injectionContainer.resolve(AgentConfig)
 
-    config.logger.debug(`Starting HTTP inbound transporter`, {
+    this.logger = config.logger
+
+    this.logger.debug(`Starting HTTP inbound transporter`, {
       port: config.port,
       endpoint: config.getEndpoint(),
     })
 
-    this.socketServer.on('connection', (_: WebSocket.Server, socket: WebSocket) => {
+    this.socketServer.on('connection', (socket: WebSocket) => {
       const socketId = uuid()
-      logger.debug('Socket connected.')
+      this.logger.debug('Socket connected.')
 
       if (!this.socketIds[socketId]) {
-        logger.debug(`Saving new socket with id ${socketId}.`)
+        this.logger.debug(`Saving new socket with id ${socketId}.`)
         this.socketIds[socketId] = socket
         const session = new WebSocketTransportSession(socketId, socket)
         this.listenOnWebSocketMessages(agent, socket, session)
         socket.on('close', () => {
-          logger.debug('Socket closed.')
+          this.logger.debug('Socket closed.')
           transportService.removeSession(session)
         })
       } else {
-        logger.debug(`Socket with id ${socketId} already exists.`)
+        this.logger.debug(`Socket with id ${socketId} already exists.`)
       }
     })
   }
 
   public async stop() {
-    logger.debug('Closing WebSocket Server')
+    this.logger.debug('Closing WebSocket Server')
 
     return new Promise<void>((resolve, reject) => {
       this.socketServer.close((error) => {
@@ -64,11 +66,11 @@ export class WsInboundTransporter implements InboundTransporter {
   private listenOnWebSocketMessages(agent: Agent, socket: WebSocket, session: TransportSession) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     socket.addEventListener('message', async (event: any) => {
-      logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
+      this.logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
       try {
         await agent.receiveMessage(JSON.parse(event.data), session)
       } catch (error) {
-        logger.error('Error processing message')
+        this.logger.error('Error processing message')
       }
     })
   }

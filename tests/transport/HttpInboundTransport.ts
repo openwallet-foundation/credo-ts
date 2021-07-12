@@ -38,10 +38,11 @@ export class HttpInboundTransporter implements InboundTransporter {
     }
 
     const path = url.pathname
+    const port = url.port
 
     config.logger.debug(`Starting HTTP inbound transporter`, {
       path,
-      port: config.port,
+      port,
       endpoint: config.getEndpoint(),
     })
 
@@ -64,7 +65,7 @@ export class HttpInboundTransporter implements InboundTransporter {
       }
     })
 
-    this.server = this.app.listen(config.port)
+    this.server = this.app.listen(port)
   }
 
   public async stop(): Promise<void> {
