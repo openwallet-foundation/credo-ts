@@ -18,7 +18,6 @@ import { LinkedAttachment } from '../utils/LinkedAttachment'
 
 import {
   ensurePublicDidIsOnLedger,
-  genesisPath,
   getBaseConfig,
   makeConnection,
   registerDefinition,
@@ -28,12 +27,10 @@ import {
 import testLogger from './logger'
 
 const faberConfig = getBaseConfig('Faber Credentials', {
-  genesisPath,
   endpoint: 'rxjs:faber',
 })
 
 const aliceConfig = getBaseConfig('Alice Credentials', {
-  genesisPath,
   endpoint: 'rxjs:alice',
 })
 
@@ -99,7 +96,7 @@ describe('credentials', () => {
     const publicDid = faberAgent.publicDid?.did
 
     await ensurePublicDidIsOnLedger(faberAgent, publicDid!)
-    const { agentAConnection, agentBConnection } = await makeConnection(faberAgent, aliceAgent)
+    const [agentAConnection, agentBConnection] = await makeConnection(faberAgent, aliceAgent)
     faberConnection = agentAConnection
     aliceConnection = agentBConnection
   })

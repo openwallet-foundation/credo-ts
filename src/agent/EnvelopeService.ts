@@ -31,7 +31,7 @@ class EnvelopeService {
     const { routingKeys, recipientKeys, senderKey: senderVk } = keys
     const message = payload.toJSON()
 
-    this.logger.debug('Pack outbound message', { message })
+    this.logger.debug(`Pack outbound message ${payload.type}`)
 
     let wireMessage = await this.wallet.pack(message, recipientKeys, senderVk)
 

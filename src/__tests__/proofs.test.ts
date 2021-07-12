@@ -26,15 +26,14 @@ import {
   makeConnection,
   registerDefinition,
   registerSchema,
-  genesisPath,
   issueCredential,
   waitForProofRecord,
   getBaseConfig,
 } from './helpers'
 import testLogger from './logger'
 
-const faberConfig = getBaseConfig('Faber Proofs', { genesisPath, endpoint: 'rxjs:faber' })
-const aliceConfig = getBaseConfig('Alice Proofs', { genesisPath, endpoint: 'rxjs:alice' })
+const faberConfig = getBaseConfig('Faber Proofs', { endpoint: 'rxjs:faber' })
+const aliceConfig = getBaseConfig('Alice Proofs', { endpoint: 'rxjs:alice' })
 
 const credentialPreview = new CredentialPreview({
   attributes: [
@@ -95,7 +94,7 @@ describe('Present Proof', () => {
 
     const publicDid = faberAgent.publicDid?.did
     await ensurePublicDidIsOnLedger(faberAgent, publicDid!)
-    const { agentAConnection, agentBConnection } = await makeConnection(faberAgent, aliceAgent)
+    const [agentAConnection, agentBConnection] = await makeConnection(faberAgent, aliceAgent)
     expect(agentAConnection.isReady).toBe(true)
     expect(agentBConnection.isReady).toBe(true)
 
@@ -164,7 +163,6 @@ describe('Present Proof', () => {
 
   test('Alice starts with proof proposal to Faber', async () => {
     testLogger.test('Alice sends presentation proposal to Faber')
-    console.log(aliceConnection)
     let aliceProofRecord = await aliceAgent.proofs.proposeProof(aliceConnection.id, presentationPreview)
 
     testLogger.test('Faber waits for presentation proposal from Alice')

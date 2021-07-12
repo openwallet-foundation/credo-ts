@@ -3,13 +3,14 @@ import type { BasicMessage, BasicMessageReceivedEvent } from '../modules/basic-m
 import type { ConnectionRecordProps } from '../modules/connections'
 import type { CredentialRecord, CredentialOfferTemplate, CredentialStateChangedEvent } from '../modules/credentials'
 import type { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/ledger'
-import type { ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
+import type { ProofAttributeInfo, ProofPredicateInfo, ProofRecord, ProofStateChangedEvent } from '../modules/proofs'
 import type { InitConfig } from '../types'
 import type { CredDef, Did, Schema } from 'indy-sdk'
 
 import indy from 'indy-sdk'
 import path from 'path'
 
+import { AriesFrameworkError } from '../error'
 import { LogLevel } from '../logger/Logger'
 import { BasicMessageEventTypes } from '../modules/basic-messages'
 import {
@@ -20,9 +21,15 @@ import {
   DidCommService,
   DidDoc,
 } from '../modules/connections'
-import { CredentialEventTypes, CredentialState } from '../modules/credentials'
-import { ProofEventTypes } from '../modules/proofs'
+import {
+  CredentialPreview,
+  CredentialPreviewAttribute,
+  CredentialEventTypes,
+  CredentialState,
+} from '../modules/credentials'
+import { ProofEventTypes, ProofState } from '../modules/proofs'
 import { NodeFileSystem } from '../storage/fs/NodeFileSystem'
+import { uuid } from '../utils/uuid'
 
 import testLogger, { TestLogger } from './logger'
 
@@ -40,6 +47,7 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
     publicDidSeed,
     autoAcceptConnections: true,
     poolName: `pool-${name.toLowerCase()}`,
+    genesisPath,
     logger: new TestLogger(LogLevel.error, name),
     indy,
     fileSystem: new NodeFileSystem(),
@@ -193,10 +201,7 @@ export async function makeConnection(
   agentAConnection = await agentA.connections.returnWhenIsConnected(agentAConnection.id)
   agentBConnection = await agentB.connections.returnWhenIsConnected(agentBConnection.id)
 
-  return {
-    agentAConnection,
-    agentBConnection,
-  }
+  return [agentAConnection, agentBConnection]
 }
 
 export async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<Schema> {
@@ -214,6 +219,47 @@ export async function registerDefinition(
   return credentialDefinition
 }
 
+export function previewFromAttributes(attributes: Record<string, string>): CredentialPreview {
+  return new CredentialPreview({
+    attributes: Object.entries(attributes).map(
+      ([name, value]) =>
+        new CredentialPreviewAttribute({
+          name,
+          value,
+        })
+    ),
+  })
+}
+
+export async function prepareForIssuance(agent: Agent, attributes: string[]) {
+  const publicDid = agent.publicDid?.did
+
+  if (!publicDid) {
+    throw new AriesFrameworkError('No public did')
+  }
+
+  await ensurePublicDidIsOnLedger(agent, publicDid)
+
+  const schema = await registerSchema(agent, {
+    attributes,
+    name: `schema-${uuid()}`,
+    version: '1.0',
+  })
+
+  const definition = await registerDefinition(agent, {
+    schema,
+    signatureType: 'CL',
+    supportRevocation: false,
+    tag: 'default',
+  })
+
+  return {
+    schema,
+    definition,
+    publicDid,
+  }
+}
+
 export async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: Did) {
   try {
     testLogger.test(`Ensure test DID ${publicDid} is written to ledger`)
@@ -221,7 +267,7 @@ export async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: Did) {
   } catch (error) {
     // Unfortunately, this won't prevent from the test suite running because of Jest runner runs all tests
     // regardless of thrown errors. We're more explicit about the problem with this error handling.
-    throw new Error(`Test DID ${publicDid} is not written on ledger or ledger is not available.`)
+    throw new Error(`Test DID ${publicDid} is not written on ledger or ledger is not available: ${error.message}`)
   }
 }
 
@@ -243,30 +289,85 @@ export async function issueCredential({
     state: CredentialState.OfferReceived,
   })
 
-  holderCredentialRecord = await holderAgent.credentials.acceptOffer(holderCredentialRecord.id)
-
-  issuerCredentialRecord = await waitForCredentialRecord(issuerAgent, {
+  let issuerCredentialRecordPromise = waitForCredentialRecord(issuerAgent, {
     threadId: holderCredentialRecord.threadId,
     state: CredentialState.RequestReceived,
   })
+  holderCredentialRecord = await holderAgent.credentials.acceptOffer(holderCredentialRecord.id)
+  issuerCredentialRecord = await issuerCredentialRecordPromise
 
-  issuerCredentialRecord = await issuerAgent.credentials.acceptRequest(issuerCredentialRecord.id)
-
-  holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
+  const holderCredentialRecordPromise = waitForCredentialRecord(holderAgent, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.CredentialReceived,
   })
+  issuerCredentialRecord = await issuerAgent.credentials.acceptRequest(issuerCredentialRecord.id)
+  await holderCredentialRecordPromise
 
-  holderCredentialRecord = await holderAgent.credentials.acceptCredential(holderCredentialRecord.id)
-
-  issuerCredentialRecord = await waitForCredentialRecord(issuerAgent, {
+  issuerCredentialRecordPromise = waitForCredentialRecord(issuerAgent, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.Done,
   })
+  holderCredentialRecord = await holderAgent.credentials.acceptCredential(holderCredentialRecord.id)
+
+  issuerCredentialRecord = await issuerCredentialRecordPromise
 
   return {
     issuerCredential: issuerCredentialRecord,
     holderCredential: holderCredentialRecord,
+  }
+}
+
+export async function presentProof({
+  verifierAgent,
+  verifierConnectionId,
+  holderAgent,
+  presentationTemplate: { attributes, predicates },
+}: {
+  verifierAgent: Agent
+  verifierConnectionId: string
+  holderAgent: Agent
+  presentationTemplate: {
+    attributes?: Record<string, ProofAttributeInfo>
+    predicates?: Record<string, ProofPredicateInfo>
+  }
+}) {
+  let verifierRecord = await verifierAgent.proofs.requestProof(verifierConnectionId, {
+    name: 'test-proof-request',
+    requestedAttributes: attributes,
+    requestedPredicates: predicates,
+  })
+
+  let holderRecord = await waitForProofRecord(holderAgent, {
+    threadId: verifierRecord.threadId,
+    state: ProofState.RequestReceived,
+  })
+
+  const verifierRecordPromise = waitForProofRecord(verifierAgent, {
+    threadId: holderRecord.threadId,
+    state: ProofState.PresentationReceived,
+  })
+
+  const indyProofRequest = holderRecord.requestMessage?.indyProofRequest
+  const retrievedCredentials = await holderAgent.proofs.getRequestedCredentialsForProofRequest(indyProofRequest!)
+  const requestedCredentials = holderAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
+  await holderAgent.proofs.acceptRequest(holderRecord.id, requestedCredentials)
+
+  verifierRecord = await verifierRecordPromise
+
+  // assert presentation is valid
+  expect(verifierRecord.isVerified).toBe(true)
+
+  const holderRecordPromise = waitForProofRecord(holderAgent, {
+    threadId: holderRecord.threadId,
+    state: ProofState.Done,
+  })
+
+  verifierRecord = await verifierAgent.proofs.acceptPresentation(verifierRecord.id)
+  holderRecord = await holderRecordPromise
+
+  return {
+    verifierProof: verifierRecord,
+    holderProof: holderRecord,
   }
 }
 

@@ -25,7 +25,7 @@ export class HttpOutboundTransporter implements OutboundTransporter {
   }
 
   public async stop(): Promise<void> {
-    this.logger.debug('Starting HTTP outbound transport')
+    this.logger.debug('Stopping HTTP outbound transport')
     // Nothing required to stop HTTP
   }
 
@@ -36,8 +36,7 @@ export class HttpOutboundTransporter implements OutboundTransporter {
       throw new AriesFrameworkError(`Missing endpoint. I don't know how and where to send the message.`)
     }
 
-    this.logger.debug(`Sending outbound message to connection ${connection.id}`, {
-      outboundPackage: payload,
+    this.logger.debug(`Sending outbound message to connection ${connection.id} (${connection.theirLabel})`, {
       endpoint: endpoint,
     })
 
