@@ -4,6 +4,8 @@ import type { CredDefId } from 'indy-sdk'
 
 import { Subject } from 'rxjs'
 
+import { SubjectInboundTransporter } from '../../tests/transport/SubjectInboundTransport'
+import { SubjectOutboundTransporter } from '../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../agent/Agent'
 import { Attachment, AttachmentData } from '../decorators/attachment/Attachment'
 import { CredentialPreview, CredentialPreviewAttribute } from '../modules/credentials'
@@ -30,8 +32,6 @@ import {
   getBaseConfig,
   closeAndDeleteWallet,
 } from './helpers'
-import { SubjectInboundTransporter } from '../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransporter } from '../../tests/transport/SubjectOutboundTransport'
 import testLogger from './logger'
 
 const faberConfig = getBaseConfig('Faber Proofs', { genesisPath })

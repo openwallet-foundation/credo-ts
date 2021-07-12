@@ -3,17 +3,16 @@ import type { Wallet } from '../../../wallet/Wallet'
 import { assert } from 'console'
 import { Subject } from 'rxjs'
 
-import { getBaseConfig, mockFunction } from '../../../__tests__/helpers'
+import { getBaseConfig } from '../../../__tests__/helpers'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { MessageSender as MessageSenderImpl } from '../../../agent/MessageSender'
 import { IndyWallet } from '../../../wallet/IndyWallet'
+import { ConnectionService as ConnectionServiceImpl } from '../../connections/services/ConnectionService'
 import { MediationRole, MediationState } from '../models'
 import { MediationRecord } from '../repository'
 import { MediationRepository } from '../repository/MediationRepository'
 import { RecipientService } from '../services/RecipientService'
-import { TransportService } from '../../../agent/TransportService'
-import { MessageSender as MessageSenderImpl } from '../../../agent/MessageSender'
-import { ConnectionService as ConnectionServiceImpl } from '../../connections/services/ConnectionService'
 jest.mock('../services/RecipientService')
 jest.mock('./../../../storage/Repository')
 const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
@@ -46,7 +45,10 @@ describe('Recipient', () => {
       wallet,
       new ConnectionService(),
       new MessageSender(),
-      agentConfig,mediationRepository, eventEmitter)
+      agentConfig,
+      mediationRepository,
+      eventEmitter
+    )
   })
 
   describe('MediationRecord test', () => {
