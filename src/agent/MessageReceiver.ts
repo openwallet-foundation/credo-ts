@@ -1,5 +1,5 @@
 import type { Logger } from '../logger'
-import type { UnpackedMessageContext, UnpackedMessage } from '../types'
+import type { UnpackedMessageContext, UnpackedMessage, PackedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { TransportSession } from './TransportService'
 
@@ -128,7 +128,7 @@ export class MessageReceiver {
         this.logger.debug('unpacking forwarded message', unpackedMessage)
 
         try {
-          unpackedMessage = await this.envelopeService.unpackMessage(unpackedMessage.message.msg as JsonWebKey)
+          unpackedMessage = await this.envelopeService.unpackMessage(unpackedMessage.message.msg as PackedMessage)
         } catch {
           // To check whether the `to` field is a key belonging to us could be done in two ways.
           // We now just try to unpack, if it errors it means we don't have the key to unpack the message

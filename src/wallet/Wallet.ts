@@ -1,4 +1,5 @@
-import type { UnpackedMessageContext } from '../types'
+import type { PackedMessage, UnpackedMessageContext } from '../types'
+import type { Buffer } from '../utils/buffer'
 import type {
   DidConfig,
   Did,
@@ -22,8 +23,8 @@ export interface Wallet {
 
   initPublicDid(didConfig: DidConfig): Promise<void>
   createDid(didConfig?: DidConfig): Promise<[Did, Verkey]>
-  pack(payload: Record<string, unknown>, recipientKeys: Verkey[], senderVk: Verkey | null): Promise<JsonWebKey>
-  unpack(messagePackage: JsonWebKey): Promise<UnpackedMessageContext>
+  pack(payload: Record<string, unknown>, recipientKeys: Verkey[], senderVk: Verkey | null): Promise<PackedMessage>
+  unpack(messagePackage: PackedMessage): Promise<UnpackedMessageContext>
   sign(data: Buffer, verkey: Verkey): Promise<Buffer>
   verify(signerVerkey: Verkey, data: Buffer, signature: Buffer): Promise<boolean>
   addWalletRecord(type: string, id: string, value: string, tags: Record<string, string | undefined>): Promise<void>

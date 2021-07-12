@@ -81,7 +81,7 @@ import { Agent } from 'aries-framework'
 
 // Import rn-indy-sdk and File System for React Native
 import indy from 'rn-indy-sdk'
-import { ReactNativeFileSystem } from 'aries-framework/build/src/storage/fs/ReactNativeFileSystem'
+import { ReactNativeFileSystem } from 'aries-framework/build/storage/fs/ReactNativeFileSystem'
 
 // This creates an agent with all the specified configuration data
 const agent = new Agent({
