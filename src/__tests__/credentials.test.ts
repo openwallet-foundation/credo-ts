@@ -21,11 +21,11 @@ import {
   makeConnection,
   registerDefinition,
   registerSchema,
-  SubjectInboundTransporter,
-  SubjectOutboundTransporter,
   waitForCredentialRecord,
   closeAndDeleteWallet,
 } from './helpers'
+import { SubjectInboundTransporter } from '../../tests/transport/SubjectInboundTransport'
+import { SubjectOutboundTransporter } from '../../tests/transport/SubjectOutboundTransport'
 import testLogger from './logger'
 
 const faberConfig = getBaseConfig('Faber Credentials', {
