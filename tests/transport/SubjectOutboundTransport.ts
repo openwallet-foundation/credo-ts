@@ -1,14 +1,13 @@
+import type { Agent, Logger } from '../../src'
 import type { OutboundTransporter } from '../../src/transport/OutboundTransporter'
 import type { OutboundPackage } from '../../src/types'
 import type { SubjectMessage } from './SubjectInboundTransport'
 import type { Subject } from 'rxjs'
 
-import { AriesFrameworkError } from '../../src'
-import testLogger from '../../src/__tests__/logger'
-
-const logger = testLogger
+import { InjectionSymbols, AriesFrameworkError } from '../../src'
 
 export class SubjectOutboundTransporter implements OutboundTransporter {
+  private logger!: Logger
   private ourSubject: Subject<SubjectMessage>
   private subjectMap: { [key: string]: Subject<SubjectMessage> | undefined }
 
@@ -22,8 +21,8 @@ export class SubjectOutboundTransporter implements OutboundTransporter {
     this.subjectMap = subjectMap
   }
 
-  public async start(): Promise<void> {
-    // Nothing required to start
+  public async start(agent: Agent): Promise<void> {
+    this.logger = agent.injectionContainer.resolve(InjectionSymbols.Logger)
   }
 
   public async stop(): Promise<void> {
@@ -31,7 +30,9 @@ export class SubjectOutboundTransporter implements OutboundTransporter {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
-    logger.debug(`Sending outbound message to connection ${outboundPackage.connection.id}`)
+    this.logger.debug(`Sending outbound message to connection ${outboundPackage.connection.id}`, {
+      endpoint: outboundPackage.endpoint,
+    })
     const { payload, endpoint } = outboundPackage
 
     if (!endpoint) {

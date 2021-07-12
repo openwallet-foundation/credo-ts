@@ -83,8 +83,6 @@ jobs:
         uses: ./.github/actions/setup-indy-pool
         with:
           seed: ${TEST_AGENT_PUBLIC_DID_SEED}
-      - name: Run mediator agents
-        uses: ./.github/actions/run-mediator-agents
 
       # TODO: move to action once https://github.com/actions/runner/issues/646 is resolved
       - name: Get yarn cache directory path

@@ -24,16 +24,17 @@ import {
   registerDefinition,
   registerSchema,
   waitForCredentialRecord,
-  closeAndDeleteWallet,
 } from './helpers'
 import testLogger from './logger'
 
 const faberConfig = getBaseConfig('Faber Credentials', {
   genesisPath,
+  endpoint: 'rxjs:faber',
 })
 
 const aliceConfig = getBaseConfig('Alice Credentials', {
   genesisPath,
+  endpoint: 'rxjs:alice',
 })
 
 const credentialPreview = new CredentialPreview({
@@ -65,8 +66,8 @@ describe('credentials', () => {
     const faberMessages = new Subject<WireMessage>()
     const aliceMessages = new Subject<WireMessage>()
     const subjectMap = {
-      'rxjs:alice': faberMessages,
-      'rxjs:bob': aliceMessages,
+      'rxjs:faber': faberMessages,
+      'rxjs:alice': aliceMessages,
     }
     faberAgent = new Agent(faberConfig)
     faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
@@ -104,8 +105,12 @@ describe('credentials', () => {
   })
 
   afterAll(async () => {
-    await closeAndDeleteWallet(aliceAgent)
-    await closeAndDeleteWallet(faberAgent)
+    await aliceAgent.shutdown({
+      deleteWallet: true,
+    })
+    await faberAgent.shutdown({
+      deleteWallet: true,
+    })
   })
 
   test('Alice starts with credential proposal to Faber', async () => {

@@ -4,18 +4,12 @@ import type { ConnectionRecordProps } from '../modules/connections'
 import type { CredentialRecord, CredentialOfferTemplate, CredentialStateChangedEvent } from '../modules/credentials'
 import type { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/ledger'
 import type { ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
-import type { InboundTransporter, OutboundTransporter } from '../transport'
 import type { InitConfig } from '../types'
-import type { Wallet } from '../wallet/Wallet'
 import type { CredDef, Did, Schema } from 'indy-sdk'
 
-import cors from 'cors'
-import express from 'express'
 import indy from 'indy-sdk'
 import path from 'path'
 
-import { HttpInboundTransporter } from '../../tests/transport/HttpInboundTransport'
-import { InjectionSymbols } from '../constants'
 import { LogLevel } from '../logger/Logger'
 import { BasicMessageEventTypes } from '../modules/basic-messages'
 import {
@@ -29,7 +23,6 @@ import {
 import { CredentialEventTypes, CredentialState } from '../modules/credentials'
 import { ProofEventTypes } from '../modules/proofs'
 import { NodeFileSystem } from '../storage/fs/NodeFileSystem'
-import { DidCommMimeType } from '../types'
 
 import testLogger, { TestLogger } from './logger'
 
@@ -54,12 +47,6 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
   }
 
   return config
-}
-
-export async function closeAndDeleteWallet(agent: Agent) {
-  const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-
-  await wallet.delete()
 }
 
 export async function waitForProofRecord(
@@ -210,33 +197,6 @@ export async function makeConnection(
     agentAConnection,
     agentBConnection,
   }
-}
-
-export async function makeTransport({
-  agent,
-  inboundTransporter,
-  outboundTransporter,
-}: {
-  agent: Agent
-  outboundTransporter?: OutboundTransporter
-  inboundTransporter?: InboundTransporter
-}) {
-  if (inboundTransporter) agent.setInboundTransporter(inboundTransporter)
-  if (outboundTransporter) agent.setOutboundTransporter(outboundTransporter)
-  await agent.initialize()
-}
-
-export function makeHttpInBoundTransporter(path = '/') {
-  const app = express()
-  app.use(cors())
-  app.use(express.json())
-  app.use(
-    express.text({
-      type: [DidCommMimeType.V0, DidCommMimeType.V1],
-    })
-  )
-  app.set('json spaces', 2)
-  return new HttpInboundTransporter(app, path)
 }
 
 export async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<Schema> {

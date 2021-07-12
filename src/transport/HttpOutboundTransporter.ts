@@ -6,32 +6,26 @@ import type { OutboundTransporter } from './OutboundTransporter'
 import { AbortController } from 'abort-controller'
 
 import { AgentConfig } from '../agent/AgentConfig'
-import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
 import { fetch } from '../utils/fetch'
 
 export class HttpOutboundTransporter implements OutboundTransporter {
-  private agent: Agent
-  private logger: Logger
-  private agentConfig: AgentConfig
+  private agent!: Agent
+  private logger!: Logger
+  private agentConfig!: AgentConfig
 
   public supportedSchemes = ['http', 'https']
 
-  public constructor(agent: Agent) {
-    // TODO: maybe we can let the transport constructed using
-    // the dependency injection container. For now just
-    // just resolve the dependency from the agent
-
+  public async start(agent: Agent): Promise<void> {
     this.agent = agent
     this.agentConfig = agent.injectionContainer.resolve(AgentConfig)
-    this.logger = agent.injectionContainer.resolve(InjectionSymbols.Logger)
-  }
+    this.logger = this.agentConfig.logger
 
-  public async start(): Promise<void> {
-    // Nothing required to start HTTP
+    this.logger.debug('Starting HTTP outbound transport')
   }
 
   public async stop(): Promise<void> {
+    this.logger.debug('Starting HTTP outbound transport')
     // Nothing required to stop HTTP
   }
 

@@ -1,5 +1,4 @@
 import type { Logger } from '../logger'
-import type { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import type { InboundTransporter } from '../transport/InboundTransporter'
 import type { OutboundTransporter } from '../transport/OutboundTransporter'
 import type { InitConfig } from '../types'
@@ -17,6 +16,7 @@ import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
+import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
@@ -103,6 +103,7 @@ export class Agent {
 
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.container.resolve(ConnectionsModule)
+    this.credentials = this.container.resolve(CredentialsModule)
     this.proofs = this.container.resolve(ProofsModule)
     this.mediator = this.container.resolve(MediatorModule)
     this.mediationRecipient = this.container.resolve(RecipientModule)
@@ -165,6 +166,10 @@ export class Agent {
 
     if (this.inboundTransporter) {
       await this.inboundTransporter.start(this)
+    }
+
+    if (this.outboundTransporter) {
+      await this.outboundTransporter.start(this)
     }
 
     // Connect to mediator through provided invitation if provided in config

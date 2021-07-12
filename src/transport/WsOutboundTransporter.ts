@@ -10,21 +10,20 @@ import { WebSocket } from '../utils/ws'
 
 export class WsOutboundTransporter implements OutboundTransporter {
   private transportTable: Map<string, WebSocket> = new Map<string, WebSocket>()
-  private agent: Agent
-  private logger: Logger
+  private agent!: Agent
+  private logger!: Logger
 
   public supportedSchemes = ['ws', 'wss']
 
-  public constructor(agent: Agent) {
+  public async start(agent: Agent): Promise<void> {
     this.agent = agent
     this.logger = agent.injectionContainer.resolve(InjectionSymbols.Logger)
-  }
-
-  public async start(): Promise<void> {
-    // Nothing required to start WS
+    this.logger.debug('Starting WS outbound transport')
   }
 
   public async stop() {
+    this.logger.debug('Stopping WS outbound transport')
+
     this.transportTable.forEach((socket) => {
       socket.removeEventListener('message', this.handleMessageEvent)
       socket.close()

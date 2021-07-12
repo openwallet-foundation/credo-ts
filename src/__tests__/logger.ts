@@ -90,6 +90,6 @@ export class TestLogger extends BaseLogger {
   }
 }
 
-const testLogger = new TestLogger(LogLevel.test)
+const testLogger = new TestLogger(LogLevel.error)
 
 export default testLogger
