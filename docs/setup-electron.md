@@ -75,7 +75,7 @@ const agent = new Agent({
 
 // Here we try to initialize the agent for usage
 try {
-  await agent.init()
+  await agent.initialize()
   console.log('Initialized agent!')
 } catch (error) {
   console.log(error)
