@@ -108,22 +108,6 @@ jobs:
       - name: Run tests
         run: TEST_AGENT_PUBLIC_DID_SEED=${TEST_AGENT_PUBLIC_DID_SEED} GENESIS_TXN_PATH=${GENESIS_TXN_PATH} yarn test --coverage
 
-      - name: Export logs
-        if: always()
-        run: |
-          mkdir logs
-          docker cp alice-mediator:/www/logs.txt ./logs/alice-mediator.txt
-          docker cp bob-mediator:/www/logs.txt ./logs/bob-mediator.txt
-          docker cp alice-ws-mediator:/www/logs.txt ./logs/alice-ws-mediator.txt
-          docker cp bob-ws-mediator:/www/logs.txt ./logs/bob-ws-mediator.txt
-
-      - name: Upload docker logs
-        uses: actions/upload-artifact@v1
-        if: always()
-        with:
-          name: docker-logs
-          path: logs
-
       - uses: codecov/codecov-action@v1
         if: always()
 
