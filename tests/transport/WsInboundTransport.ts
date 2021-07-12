@@ -5,7 +5,9 @@ import WebSocket from 'ws'
 
 import { AriesFrameworkError } from '../../src'
 import logger from '../../src/__tests__/logger'
+import { AgentConfig } from '../../src/agent/AgentConfig'
 import { TransportService } from '../../src/agent/TransportService'
+import { uuid } from '../../src/utils/uuid'
 
 export class WsInboundTransporter implements InboundTransporter {
   private socketServer: WebSocket.Server
@@ -19,8 +21,15 @@ export class WsInboundTransporter implements InboundTransporter {
 
   public async start(agent: Agent) {
     const transportService = agent.injectionContainer.resolve(TransportService)
+    const config = agent.injectionContainer.resolve(AgentConfig)
 
-    this.socketServer.on('connection', (socket: WebSocket, _: Express.Request, socketId: string) => {
+    config.logger.debug(`Starting HTTP inbound transporter`, {
+      port: config.port,
+      endpoint: config.getEndpoint(),
+    })
+
+    this.socketServer.on('connection', (_: WebSocket.Server, socket: WebSocket) => {
+      const socketId = uuid()
       logger.debug('Socket connected.')
 
       if (!this.socketIds[socketId]) {

@@ -30,10 +30,12 @@ import testLogger from './logger'
 
 const faberConfig = getBaseConfig('Faber Credentials', {
   genesisPath,
+  endpoint: 'rxjs:faber',
 })
 
 const aliceConfig = getBaseConfig('Alice Credentials', {
   genesisPath,
+  endpoint: 'rxjs:alice',
 })
 
 const credentialPreview = new CredentialPreview({
@@ -65,8 +67,8 @@ describe('credentials', () => {
     const faberMessages = new Subject<WireMessage>()
     const aliceMessages = new Subject<WireMessage>()
     const subjectMap = {
-      'rxjs:alice': faberMessages,
-      'rxjs:bob': aliceMessages,
+      'rxjs:faber': faberMessages,
+      'rxjs:alice': aliceMessages,
     }
     faberAgent = new Agent(faberConfig)
     faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))

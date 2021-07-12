@@ -1,13 +1,8 @@
 import WebSocket from 'ws'
 
 import { HttpOutboundTransporter, Agent, MediationState, WsOutboundTransporter } from '../../src'
-import {
-  closeAndDeleteWallet,
-  getBaseConfig,
-  makeConnection,
-  makeHttpInBoundTransporter,
-  makeTransport,
-} from '../../src/__tests__/helpers'
+import { closeAndDeleteWallet, getBaseConfig, makeConnection, makeTransport } from '../../src/__tests__/helpers'
+import { HttpInboundTransporter } from '../transport/HttpInboundTransport'
 import { WsInboundTransporter } from '../transport/WsInboundTransport'
 
 const recipientConfig = getBaseConfig('recipient')
@@ -39,11 +34,11 @@ describe('mediator establishment', () => {
   })
 
   test('recipient and mediator establish a connection and granted mediation with HTTP', async () => {
-    await makeTransport({ agent: recipientAgent, outboundTransporter: new HttpOutboundTransporter(recipientAgent) })
+    await makeTransport({ agent: recipientAgent, outboundTransporter: new HttpOutboundTransporter() })
     await makeTransport({
       agent: mediatorAgent,
-      inboundTransporter: makeHttpInBoundTransporter(),
-      outboundTransporter: new HttpOutboundTransporter(mediatorAgent),
+      inboundTransporter: new HttpInboundTransporter(),
+      outboundTransporter: new HttpOutboundTransporter(),
     })
 
     const { agentAConnection: mediatorAgentConnection, agentBConnection: recipientAgentConnection } =
@@ -60,14 +55,14 @@ describe('mediator establishment', () => {
   test('recipient and mediator establish a connection and granted mediation with WebSockets', async () => {
     await makeTransport({
       agent: recipientAgent,
-      outboundTransporter: new WsOutboundTransporter(recipientAgent),
+      outboundTransporter: new WsOutboundTransporter(),
     })
 
     const mediatorSocketServer = new WebSocket.Server({ noServer: false, port: 3002 })
     await makeTransport({
       agent: mediatorAgent,
       inboundTransporter: new WsInboundTransporter(mediatorSocketServer),
-      outboundTransporter: new WsOutboundTransporter(mediatorAgent),
+      outboundTransporter: new WsOutboundTransporter(),
     })
 
     const { agentAConnection: mediatorAgentConnection, agentBConnection: recipientAgentConnection } =

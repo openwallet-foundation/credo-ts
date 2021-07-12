@@ -167,6 +167,10 @@ export class Agent {
       await this.inboundTransporter.start(this)
     }
 
+    if (this.outboundTransporter) {
+      await this.outboundTransporter.start(this)
+    }
+
     // Connect to mediator through provided invitation if provided in config
     // Also requests mediation ans sets as default mediator
     // Because this requires the connections module, we do this in the agent constructor

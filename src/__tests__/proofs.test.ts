@@ -34,8 +34,8 @@ import {
 } from './helpers'
 import testLogger from './logger'
 
-const faberConfig = getBaseConfig('Faber Proofs', { genesisPath })
-const aliceConfig = getBaseConfig('Alice Proofs', { genesisPath })
+const faberConfig = getBaseConfig('Faber Proofs', { genesisPath, endpoint: 'rxjs:faber' })
+const aliceConfig = getBaseConfig('Alice Proofs', { genesisPath, endpoint: 'rxjs:alice' })
 
 const credentialPreview = new CredentialPreview({
   attributes: [
@@ -65,8 +65,8 @@ describe('Present Proof', () => {
     const aliceMessages = new Subject<WireMessage>()
 
     const subjectMap = {
-      'rxjs:alice': faberMessages,
-      'rxjs:bob': aliceMessages,
+      'rxjs:faber': faberMessages,
+      'rxjs:alice': aliceMessages,
     }
     faberAgent = new Agent(faberConfig)
     faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))

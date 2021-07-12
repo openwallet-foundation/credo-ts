@@ -15,6 +15,8 @@ import { TransportService } from '../TransportService'
 import { createOutboundMessage } from '../helpers'
 
 import { DummyTransportSession } from './stubs'
+import { MessageRepository } from '../../storage/MessageRepository'
+import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 
 jest.mock('../TransportService')
 jest.mock('../EnvelopeService')
