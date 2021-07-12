@@ -52,7 +52,7 @@
     "@types/bn.js": "^5.1.0",
     "@types/cors": "^2.8.10",
     "@types/express": "4.17.8",
-    "@types/indy-sdk": "^1.16.4",
+    "@types/indy-sdk": "^1.16.5",
     "@types/jest": "^26.0.20",
     "@types/node-fetch": "^2.5.10",
     "@types/object-inspect": "^1.8.0",
