@@ -7,7 +7,7 @@ import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import { MediationRecipientService as MediationRecipientService } from '../routing/services/MediationRecipientService'
+import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 
 import {
   ConnectionRequestHandler,
