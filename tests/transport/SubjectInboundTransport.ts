@@ -1,10 +1,10 @@
-import type { InboundTransporter, Agent } from '../../src'
-import type { TransportSession } from '../../src/agent/TransportService'
-import type { OutboundPackage, WireMessage } from '../../src/types'
+import type { InboundTransporter, Agent } from '../../packages/core/src'
+import type { TransportSession } from '../../packages/core/src/agent/TransportService'
+import type { OutboundPackage, WireMessage } from '../../packages/core/src/types'
 import type { Subject, Subscription } from 'rxjs'
 
-import { AgentConfig } from '../../src/agent/AgentConfig'
-import { uuid } from '../../src/utils/uuid'
+import { AgentConfig } from '../../packages/core/src/agent/AgentConfig'
+import { uuid } from '../../packages/core/src/utils/uuid'
 
 export type SubjectMessage = { message: WireMessage; replySubject?: Subject<WireMessage> }
 

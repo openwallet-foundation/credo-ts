@@ -1,14 +1,13 @@
-import { agentDependencies } from '@aries-framework/node'
-
-import { getAgentConfig, getBaseConfig } from '../../tests/helpers'
-import { AgentConfig } from '../agent/AgentConfig'
+import { getAgentConfig } from '../../tests/helpers'
 
 import { IndyWallet } from './IndyWallet'
 
 describe('Wallet', () => {
-  const wallet = new IndyWallet(getAgentConfig('WalletTest'))
+  const config = getAgentConfig('WalletTest')
+  const wallet = new IndyWallet(config)
 
   test('initialize public did', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.initialize(config.walletConfig!, config.walletCredentials!)
 
     await wallet.initPublicDid({ seed: '00000000000000000000000Forward01' })

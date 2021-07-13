@@ -1,12 +1,12 @@
-import type { Agent, InboundTransporter, Logger, OutboundPackage } from '../../src'
-import type { TransportSession } from '../../src/agent/TransportService'
+import type { Agent, InboundTransporter, Logger, OutboundPackage } from '../../packages/core/src'
+import type { TransportSession } from '../../packages/core/src/agent/TransportService'
 
 import WebSocket from 'ws'
 
-import { AriesFrameworkError } from '../../src'
-import { AgentConfig } from '../../src/agent/AgentConfig'
-import { TransportService } from '../../src/agent/TransportService'
-import { uuid } from '../../src/utils/uuid'
+import { AriesFrameworkError } from '../../packages/core/src'
+import { AgentConfig } from '../../packages/core/src/agent/AgentConfig'
+import { TransportService } from '../../packages/core/src/agent/TransportService'
+import { uuid } from '../../packages/core/src/utils/uuid'
 
 export class WsInboundTransporter implements InboundTransporter {
   private socketServer: WebSocket.Server

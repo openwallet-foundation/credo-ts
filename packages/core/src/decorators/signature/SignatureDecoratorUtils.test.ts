@@ -1,5 +1,4 @@
-import { getBaseConfig } from '../../../tests/helpers'
-import { AgentConfig } from '../../agent/AgentConfig'
+import { getAgentConfig } from '../../../tests/helpers'
 import { IndyWallet } from '../../wallet/IndyWallet'
 
 import { SignatureDecorator } from './SignatureDecorator'
@@ -41,8 +40,9 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
   let wallet: IndyWallet
 
   beforeAll(async () => {
-    const { config, agentDependencies: dependencies } = getBaseConfig('SignatureDecoratorUtilsTest')
-    wallet = new IndyWallet(new AgentConfig(config), dependencies.indy)
+    const config = getAgentConfig('SignatureDecoratorUtilsTest')
+    wallet = new IndyWallet(config)
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.initialize(config.walletConfig!, config.walletCredentials!)
   })
 

@@ -5,8 +5,7 @@ import type { BasicMessageReceivedEvent } from '../BasicMessageEvents'
 import { EventEmitter as NativeEventEmitter } from 'events'
 import { Subject } from 'rxjs'
 
-import { getBaseConfig, getMockConnection } from '../../../../tests/helpers'
-import { AgentConfig } from '../../../agent/AgentConfig'
+import { getAgentConfig, getMockConnection } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { IndyStorageService } from '../../../storage/IndyStorageService'
@@ -29,8 +28,9 @@ describe('BasicMessageService', () => {
   let storageService: StorageService<BasicMessageRecord>
 
   beforeAll(async () => {
-    const { config, agentDependencies: dependencies } = getBaseConfig('BasicMessageServiceTest')
-    wallet = new IndyWallet(new AgentConfig(config), dependencies.indy)
+    const config = getAgentConfig('BasicMessageServiceTest')
+    wallet = new IndyWallet(config)
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.initialize(config.walletConfig!, config.walletCredentials!)
     storageService = new IndyStorageService(wallet)
   })

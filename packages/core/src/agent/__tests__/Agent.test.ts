@@ -83,6 +83,7 @@ describe('Agent', () => {
       expect(agent.isInitialized).toBe(false)
       expect(wallet.isInitialized).toBe(false)
 
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       await wallet.initialize(walletConfig!, walletCredentials!)
       expect(agent.isInitialized).toBe(false)
       expect(wallet.isInitialized).toBe(true)
@@ -132,10 +133,6 @@ describe('Agent', () => {
       expect(container.resolve(InjectionSymbols.StorageService)).toBeInstanceOf(IndyStorageService)
 
       // Symbols, platform specific dependencies
-      expect(container.resolve(InjectionSymbols.Indy)).toBe(dependencies.indy)
-      expect(container.resolve(InjectionSymbols.Fetch)).toBe(dependencies.fetch)
-      expect(container.resolve(InjectionSymbols.WebSocket)).toBe(dependencies.WebSocket)
-      expect(container.resolve(InjectionSymbols.NativeEventEmitter)).toBe(dependencies.NativeEventEmitter)
       expect(container.resolve(InjectionSymbols.FileSystem)).toBeInstanceOf(dependencies.FileSystem)
 
       // Agent
@@ -187,12 +184,6 @@ describe('Agent', () => {
       )
 
       // Symbols, platform specific dependencies
-      expect(container.resolve(InjectionSymbols.Indy)).toBe(container.resolve(InjectionSymbols.Indy))
-      expect(container.resolve(InjectionSymbols.Fetch)).toBe(container.resolve(InjectionSymbols.Fetch))
-      expect(container.resolve(InjectionSymbols.WebSocket)).toBe(container.resolve(InjectionSymbols.WebSocket))
-      expect(container.resolve(InjectionSymbols.NativeEventEmitter)).toBe(
-        container.resolve(InjectionSymbols.NativeEventEmitter)
-      )
       expect(container.resolve(InjectionSymbols.FileSystem)).toBe(container.resolve(InjectionSymbols.FileSystem))
 
       // Agent

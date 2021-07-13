@@ -1,9 +1,10 @@
 import type { Wallet } from '../../../wallet/Wallet'
 
 import { assert } from 'console'
+import { EventEmitter as NativeEventEmitter } from 'events'
 import { Subject } from 'rxjs'
 
-import { getBaseConfig } from '../../../__tests__/helpers'
+import { getBaseConfig } from '../../../../tests/helpers'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender as MessageSenderImpl } from '../../../agent/MessageSender'
@@ -29,9 +30,10 @@ describe('Recipient', () => {
   let eventEmitter: EventEmitter
 
   beforeAll(async () => {
-    agentConfig = new AgentConfig(initConfig)
+    agentConfig = new AgentConfig(initConfig.config, initConfig.agentDependencies)
     wallet = new IndyWallet(agentConfig)
-    await wallet.initialize(initConfig.walletConfig!, initConfig.walletCredentials!)
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    await wallet.initialize(initConfig.config.walletConfig!, initConfig.config.walletCredentials!)
   })
 
   afterAll(async () => {
@@ -40,7 +42,7 @@ describe('Recipient', () => {
 
   beforeEach(() => {
     mediationRepository = new MediationRepositoryMock()
-    eventEmitter = new EventEmitter(new Subject<boolean>())
+    eventEmitter = new EventEmitter(new Subject<boolean>(), NativeEventEmitter)
     recipientService = new RecipientService(
       wallet,
       new ConnectionService(),

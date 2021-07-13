@@ -1,15 +1,15 @@
-import type { InboundTransporter, Agent, OutboundPackage } from '../../src'
-import type { TransportSession } from '../../src/agent/TransportService'
+import type { InboundTransporter, Agent, OutboundPackage } from '../../packages/core/src'
+import type { TransportSession } from '../../packages/core/src/agent/TransportService'
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
-import express from 'express'
+import express, { text } from 'express'
 import { URL } from 'url'
 
-import { DidCommMimeType, AriesFrameworkError } from '../../src'
-import { AgentConfig } from '../../src/agent/AgentConfig'
-import { TransportService } from '../../src/agent/TransportService'
-import { uuid } from '../../src/utils/uuid'
+import { DidCommMimeType, AriesFrameworkError } from '../../packages/core/src'
+import { AgentConfig } from '../../packages/core/src/agent/AgentConfig'
+import { TransportService } from '../../packages/core/src/agent/TransportService'
+import { uuid } from '../../packages/core/src/utils/uuid'
 
 export class HttpInboundTransporter implements InboundTransporter {
   public readonly app: Express
@@ -20,7 +20,7 @@ export class HttpInboundTransporter implements InboundTransporter {
     this.app = express()
 
     this.app.use(
-      express.text({
+      text({
         type: [DidCommMimeType.V0, DidCommMimeType.V1],
         limit: '5mb',
       })

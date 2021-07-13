@@ -1,7 +1,6 @@
 import type { TagsBase } from '../BaseRecord'
 
-import { getBaseConfig } from '../../../tests/helpers'
-import { AgentConfig } from '../../agent/AgentConfig'
+import { getAgentConfig } from '../../../tests/helpers'
 import { RecordDuplicateError, RecordNotFoundError } from '../../error'
 import { IndyWallet } from '../../wallet/IndyWallet'
 import { IndyStorageService } from '../IndyStorageService'
@@ -13,8 +12,9 @@ describe('IndyStorageService', () => {
   let storageService: IndyStorageService<TestRecord>
 
   beforeEach(async () => {
-    const { config, agentDependencies: dependencies } = getBaseConfig('IndyStorageServiceTest')
-    wallet = new IndyWallet(new AgentConfig(config), dependencies.indy)
+    const config = getAgentConfig('IndyStorageServiceTest')
+    wallet = new IndyWallet(config)
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.initialize(config.walletConfig!, config.walletCredentials!)
     storageService = new IndyStorageService<TestRecord>(wallet)
   })

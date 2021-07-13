@@ -1,11 +1,11 @@
+import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Wallet } from '../../../wallet/Wallet'
 import type { Did } from 'indy-sdk'
 
 import { EventEmitter as NativeEventEmitter } from 'events'
 import { Subject } from 'rxjs'
 
-import { getBaseConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
-import { AgentConfig } from '../../../agent/AgentConfig'
+import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
@@ -30,7 +30,7 @@ jest.mock('../repository/ConnectionRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
 
 describe('ConnectionService', () => {
-  const { config, agentDependencies: dependencies } = getBaseConfig('ConnectionServiceTest', {
+  const config = getAgentConfig('ConnectionServiceTest', {
     host: 'http://agent.com',
     port: 8080,
   })
@@ -43,9 +43,9 @@ describe('ConnectionService', () => {
   let myRouting: { did: Did; verkey: string; endpoint: string; routingKeys: string[] }
 
   beforeAll(async () => {
-    agentConfig = new AgentConfig(config)
-    wallet = new IndyWallet(agentConfig, dependencies.indy)
-    await wallet.initialize(agentConfig.walletConfig!, agentConfig.walletCredentials!)
+    wallet = new IndyWallet(config)
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    await wallet.initialize(config.walletConfig!, config.walletCredentials!)
   })
 
   afterAll(async () => {
@@ -87,7 +87,7 @@ describe('ConnectionService', () => {
           label: config.label,
           recipientKeys: [expect.any(String)],
           routingKeys: [],
-          serviceEndpoint: `${config.host}:${config.port}`,
+          serviceEndpoint: config.getEndpoint(),
         })
       )
     })

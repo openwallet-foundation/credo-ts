@@ -2,9 +2,9 @@ import type { WireMessage } from '../../../types'
 
 import { Subject } from 'rxjs'
 
-import { SubjectInboundTransporter } from '../../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransporter } from '../../../../tests/transport/SubjectOutboundTransport'
-import { getBaseConfig, waitForBasicMessage } from '../../../__tests__/helpers'
+import { SubjectInboundTransporter } from '../../../../../../tests/transport/SubjectInboundTransport'
+import { SubjectOutboundTransporter } from '../../../../../../tests/transport/SubjectOutboundTransport'
+import { getBaseConfig, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { ConnectionRecord } from '../../connections'
 import { MediationState } from '../models/MediationState'
@@ -54,7 +54,7 @@ describe('mediator establishment', () => {
     }
 
     // Initialize mediatorReceived message
-    mediatorAgent = new Agent(mediatorConfig)
+    mediatorAgent = new Agent(mediatorConfig.config, recipientConfig.agentDependencies)
     mediatorAgent.setOutboundTransporter(new SubjectOutboundTransporter(mediatorMessages, subjectMap))
     mediatorAgent.setInboundTransporter(new SubjectInboundTransporter(mediatorMessages))
     await mediatorAgent.initialize()
@@ -68,13 +68,16 @@ describe('mediator establishment', () => {
     })
 
     // Initialize recipient with mediation connections invitation
-    recipientAgent = new Agent({ ...recipientConfig, mediatorConnectionsInvite: mediatorInvitation.toUrl() })
+    recipientAgent = new Agent(
+      { ...recipientConfig.config, mediatorConnectionsInvite: mediatorInvitation.toUrl() },
+      recipientConfig.agentDependencies
+    )
     recipientAgent.setOutboundTransporter(new SubjectOutboundTransporter(recipientMessages, subjectMap))
     recipientAgent.setInboundTransporter(new SubjectInboundTransporter(recipientMessages))
     await recipientAgent.initialize()
 
     const recipientMediator = await recipientAgent.mediationRecipient.findDefaultMediator()
-    // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
+    // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain, @typescript-eslint/no-non-null-assertion
     const recipientMediatorConnection = await recipientAgent.connections.getById(recipientMediator?.connectionId!)
 
     expect(recipientMediatorConnection).toBeInstanceOf(ConnectionRecord)
@@ -83,13 +86,14 @@ describe('mediator establishment', () => {
     const mediatorRecipientConnection = await mediatorAgent.connections.getById(mediatorRecipientConnectionId)
     expect(mediatorRecipientConnection.isReady).toBe(true)
 
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     expect(mediatorRecipientConnection).toBeConnectedWith(recipientMediatorConnection!)
     expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection)
 
     expect(recipientMediator?.state).toBe(MediationState.Granted)
 
     // Initialize sender agent
-    senderAgent = new Agent(senderConfig)
+    senderAgent = new Agent(senderConfig.config, senderConfig.agentDependencies)
     senderAgent.setOutboundTransporter(new SubjectOutboundTransporter(senderMessages, subjectMap))
     senderAgent.setInboundTransporter(new SubjectInboundTransporter(senderMessages))
     await senderAgent.initialize()
@@ -101,11 +105,13 @@ describe('mediator establishment', () => {
       autoAcceptConnection: true,
     })
 
-    expect(recipientInvitation.serviceEndpoint).toBe(mediatorConfig.endpoint)
+    expect(recipientInvitation.serviceEndpoint).toBe(mediatorConfig.config.endpoint)
 
     let senderRecipientConnection = await senderAgent.connections.receiveInvitationFromUrl(
       recipientInvitation.toUrl(),
-      { autoAcceptConnection: true }
+      {
+        autoAcceptConnection: true,
+      }
     )
 
     const recipientSenderConnection = await recipientAgent.connections.returnWhenIsConnected(

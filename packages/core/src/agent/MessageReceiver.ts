@@ -1,5 +1,5 @@
 import type { Logger } from '../logger'
-import type { UnpackedMessageContext, UnpackedMessage, JsonWebKey } from '../types'
+import type { UnpackedMessageContext, UnpackedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { TransportSession } from './TransportService'
 
