@@ -2,7 +2,7 @@ import multibase from 'multibase'
 
 export type BaseName = multibase.BaseName
 
-export class MultibaseEncoder {
+export class MultiBaseEncoder {
   /**
    *
    * Encodes a buffer into a multibase

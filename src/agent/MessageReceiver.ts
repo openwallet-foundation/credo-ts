@@ -1,5 +1,5 @@
 import type { Logger } from '../logger'
-import type { UnpackedMessageContext, UnpackedMessage } from '../types'
+import type { UnpackedMessageContext, UnpackedMessage, PackedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { TransportSession } from './TransportService'
 
@@ -73,10 +73,6 @@ export class MessageReceiver {
       }
     }
 
-    if (connection && session) {
-      this.transportService.saveSession(connection.id, session)
-    }
-
     this.logger.info(`Received message with type '${unpackedMessage.message['@type']}'`, unpackedMessage.message)
 
     const message = await this.transformMessage(unpackedMessage)
@@ -85,6 +81,22 @@ export class MessageReceiver {
       senderVerkey: senderKey,
       recipientVerkey: unpackedMessage.recipient_verkey,
     })
+
+    // We want to save a session if there is a chance of returning outbound message via inbound transport.
+    // That can happen when inbound message has `return_route` set to `all` or `thread`.
+    // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
+    if (connection && message.hasAnyReturnRoute() && session) {
+      const keys = {
+        // TODO handle the case when senderKey is missing
+        recipientKeys: senderKey ? [senderKey] : [],
+        routingKeys: [],
+        senderKey: connection?.verkey || null,
+      }
+      session.keys = keys
+      session.inboundMessage = message
+      session.connection = connection
+      this.transportService.saveSession(session)
+    }
 
     return await this.dispatcher.dispatch(messageContext)
   }
@@ -116,7 +128,7 @@ export class MessageReceiver {
         this.logger.debug('unpacking forwarded message', unpackedMessage)
 
         try {
-          unpackedMessage = await this.envelopeService.unpackMessage(unpackedMessage.message.msg as JsonWebKey)
+          unpackedMessage = await this.envelopeService.unpackMessage(unpackedMessage.message.msg as PackedMessage)
         } catch {
           // To check whether the `to` field is a key belonging to us could be done in two ways.
           // We now just try to unpack, if it errors it means we don't have the key to unpack the message

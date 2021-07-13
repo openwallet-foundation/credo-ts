@@ -99,7 +99,7 @@ agent.setInboundTransporter(httpInboundTransport)
 
 // Listen on port, initialize agent, start inbound transport
 app.listen(agentConfig.port, async () => {
-  await agent.init()
+  await agent.initialize()
   httpInboundTransport.start(agent)
 })
 ```

@@ -23,8 +23,8 @@ export interface InitConfig {
   label: string
   publicDidSeed?: string
   mediatorUrl?: string
-  walletConfig: WalletConfig
-  walletCredentials: WalletCredentials
+  walletConfig?: WalletConfig
+  walletCredentials?: WalletCredentials
   autoAcceptConnections?: boolean
   autoAcceptProofs?: AutoAcceptProof
   poolName?: string
@@ -48,6 +48,8 @@ export interface UnpackedMessageContext {
   sender_verkey?: Verkey
   recipient_verkey?: Verkey
 }
+
+export type PackedMessage = Record<string, unknown>
 
 export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
   connection: ConnectionRecord

@@ -26,7 +26,7 @@ import { Agent } from 'aries-framework'
 
 // Import indy-sdk and File System for NodeJS
 import indy from 'indy-sdk'
-import { NodeFileSystem } from 'aries-framework/build/src/storage/fs/NodeFileSystem'
+import { NodeFileSystem } from 'aries-framework/build/storage/fs/NodeFileSystem'
 
 // This creates an agent with all the specified configuration data
 const agent = new Agent({
@@ -39,7 +39,7 @@ const agent = new Agent({
 
 // Make sure to initialize the agent before using it.
 try {
-  await agent.init()
+  await agent.initialize()
   console.log('Initialized agent!')
 } catch (error) {
   console.log(error)

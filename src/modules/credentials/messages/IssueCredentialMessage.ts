@@ -13,6 +13,7 @@ interface IssueCredentialMessageOptions {
   id?: string
   comment?: string
   credentialAttachments: Attachment[]
+  attachments?: Attachment[]
 }
 
 export class IssueCredentialMessage extends AgentMessage {
@@ -23,6 +24,7 @@ export class IssueCredentialMessage extends AgentMessage {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
       this.credentialAttachments = options.credentialAttachments
+      this.attachments = options.attachments
     }
   }
 

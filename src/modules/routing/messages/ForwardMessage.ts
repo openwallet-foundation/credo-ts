@@ -2,11 +2,12 @@ import { Expose } from 'class-transformer'
 import { Equals, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { PackedMessage } from '../../../types'
 
 export interface ForwardMessageOptions {
   id?: string
   to: string
-  message: JsonWebKey
+  message: PackedMessage
 }
 
 /**
@@ -36,5 +37,5 @@ export class ForwardMessage extends AgentMessage {
   public to!: string
 
   @Expose({ name: 'msg' })
-  public message!: JsonWebKey
+  public message!: PackedMessage
 }

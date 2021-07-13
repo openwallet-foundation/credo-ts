@@ -16,6 +16,7 @@ export interface OfferCredentialMessageOptions {
   comment?: string
   offerAttachments: Attachment[]
   credentialPreview: CredentialPreview
+  attachments?: Attachment[]
 }
 
 /**
@@ -32,6 +33,7 @@ export class OfferCredentialMessage extends AgentMessage {
       this.comment = options.comment
       this.credentialPreview = options.credentialPreview
       this.offerAttachments = options.offerAttachments
+      this.attachments = options.attachments
     }
   }
 

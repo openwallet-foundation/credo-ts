@@ -1,4 +1,5 @@
 import { BufferEncoder } from '../BufferEncoder'
+import { Buffer } from '../buffer'
 
 describe('BufferEncoder', () => {
   const mockCredentialRequestBuffer = Buffer.from(
