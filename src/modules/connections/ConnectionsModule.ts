@@ -7,7 +7,7 @@ import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import { RecipientService as MediationRecipientService } from '../routing/services/RecipientService'
+import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 
 import {
   ConnectionRequestHandler,
@@ -26,20 +26,20 @@ export class ConnectionsModule {
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private trustPingService: TrustPingService
-  private recipientService: MediationRecipientService
+  private mediationRecipientService: MediationRecipientService
 
   public constructor(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
     trustPingService: TrustPingService,
-    recipientService: MediationRecipientService,
+    mediationRecipientService: MediationRecipientService,
     messageSender: MessageSender
   ) {
     this.agentConfig = agentConfig
     this.connectionService = connectionService
     this.trustPingService = trustPingService
-    this.recipientService = recipientService
+    this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
     this.registerHandlers(dispatcher)
   }
@@ -52,8 +52,8 @@ export class ConnectionsModule {
     invitation: ConnectionInvitationMessage
     connectionRecord: ConnectionRecord
   }> {
-    const mediationRecord = await this.recipientService.discoverMediation(config?.mediatorId)
-    const myRouting = await this.recipientService.getRouting(mediationRecord)
+    const mediationRecord = await this.mediationRecipientService.discoverMediation(config?.mediatorId)
+    const myRouting = await this.mediationRecipientService.getRouting(mediationRecord)
 
     const { connectionRecord: connectionRecord, message: invitation } = await this.connectionService.createInvitation({
       autoAcceptConnection: config?.autoAcceptConnection,
@@ -81,8 +81,8 @@ export class ConnectionsModule {
       mediatorId?: string
     }
   ): Promise<ConnectionRecord> {
-    const mediationRecord = await this.recipientService.discoverMediation(config?.mediatorId)
-    const myRouting = await this.recipientService.getRouting(mediationRecord)
+    const mediationRecord = await this.mediationRecipientService.discoverMediation(config?.mediatorId)
+    const myRouting = await this.mediationRecipientService.getRouting(mediationRecord)
 
     let connection = await this.connectionService.processInvitation(invitation, {
       autoAcceptConnection: config?.autoAcceptConnection,

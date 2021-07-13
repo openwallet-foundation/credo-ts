@@ -1,3 +1,3 @@
 export * from './MessagePickupService'
-export * from './RecipientService'
+export * from './MediationRecipientService'
 export * from './MediatorService'

@@ -25,7 +25,7 @@ import { MediationRecord } from '../repository/MediationRecord'
 import { MediationRepository } from '../repository/MediationRepository'
 
 @scoped(Lifecycle.ContainerScoped)
-export class RecipientService {
+export class MediationRecipientService {
   private wallet: Wallet
   private mediatorRepository: MediationRepository
   private eventEmitter: EventEmitter

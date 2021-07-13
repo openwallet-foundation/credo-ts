@@ -1,20 +1,20 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { RecipientService } from '../services'
+import type { MediationRecipientService } from '../services'
 
 import { KeylistUpdateResponseMessage } from '../messages'
 
 export class KeylistUpdateResponseHandler implements Handler {
-  public recipientService: RecipientService
+  public mediationRecipientService: MediationRecipientService
   public supportedMessages = [KeylistUpdateResponseMessage]
 
-  public constructor(recipientService: RecipientService) {
-    this.recipientService = recipientService
+  public constructor(mediationRecipientService: MediationRecipientService) {
+    this.mediationRecipientService = mediationRecipientService
   }
 
   public async handle(messageContext: HandlerInboundMessage<KeylistUpdateResponseHandler>) {
     if (!messageContext.connection) {
       throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
-    return await this.recipientService.processKeylistUpdateResults(messageContext)
+    return await this.mediationRecipientService.processKeylistUpdateResults(messageContext)
   }
 }

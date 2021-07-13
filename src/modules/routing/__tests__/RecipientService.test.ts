@@ -12,20 +12,20 @@ import { ConnectionService as ConnectionServiceImpl } from '../../connections/se
 import { MediationRole, MediationState } from '../models'
 import { MediationRecord } from '../repository'
 import { MediationRepository } from '../repository/MediationRepository'
-import { RecipientService } from '../services/RecipientService'
-jest.mock('../services/RecipientService')
+import { MediationRecipientService } from '../services/MediationRecipientService'
+jest.mock('../services/MediationRecipientService')
 jest.mock('./../../../storage/Repository')
 const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
 
 describe('Recipient', () => {
   const ConnectionService = <jest.Mock<ConnectionServiceImpl>>(<unknown>ConnectionServiceImpl)
   const MessageSender = <jest.Mock<MessageSenderImpl>>(<unknown>MessageSenderImpl)
-  const initConfig = getBaseConfig('RecipientService')
+  const initConfig = getBaseConfig('MediationRecipientService')
 
   let wallet: Wallet
   let agentConfig: AgentConfig
   let mediationRepository: MediationRepository
-  let recipientService: RecipientService
+  let mediationRecipientService: MediationRecipientService
   let eventEmitter: EventEmitter
 
   beforeAll(async () => {
@@ -41,7 +41,7 @@ describe('Recipient', () => {
   beforeEach(() => {
     mediationRepository = new MediationRepositoryMock()
     eventEmitter = new EventEmitter(new Subject<boolean>())
-    recipientService = new RecipientService(
+    mediationRecipientService = new MediationRecipientService(
       wallet,
       new ConnectionService(),
       new MessageSender(),
@@ -83,22 +83,43 @@ describe('Recipient', () => {
   })
   describe('Recipient service tests', () => {
     it('validate service class signiture', () => {
-      assert(recipientService.setDefaultMediator, 'Expected RecipientService to have a `setDefaultMediator` method')
-      assert(recipientService.findDefaultMediator, 'Expected RecipientService to have a `getDefaultMediator` method')
-      assert(recipientService.getMediators, 'Expected RecipientService to have a `getMediators` method')
-      assert(recipientService.clearDefaultMediator, 'Expected RecipientService to have a `clearDefaultMediator` method')
-      assert(recipientService.findByConnectionId, 'Expected RecipientService to have a `findByConnectionId` method')
-      assert(recipientService.processMediationDeny, 'Expected RecipientService to have a `processMediationDeny` method')
       assert(
-        recipientService.processMediationGrant,
-        'Expected RecipientService to have a `processMediationGrant` method'
+        mediationRecipientService.setDefaultMediator,
+        'Expected MediationRecipientService to have a `setDefaultMediator` method'
       )
       assert(
-        recipientService.processKeylistUpdateResults,
-        'Expected RecipientService to have a `processKeylistUpdateResults` method'
+        mediationRecipientService.findDefaultMediator,
+        'Expected MediationRecipientService to have a `getDefaultMediator` method'
       )
-      assert(recipientService.createRequest, 'Expected RecipientService to have a `createRequest` method')
-      //assert(service.createRecord, 'Expected RecipientService to have a `createRecord` method')
+      assert(
+        mediationRecipientService.getMediators,
+        'Expected MediationRecipientService to have a `getMediators` method'
+      )
+      assert(
+        mediationRecipientService.clearDefaultMediator,
+        'Expected MediationRecipientService to have a `clearDefaultMediator` method'
+      )
+      assert(
+        mediationRecipientService.findByConnectionId,
+        'Expected MediationRecipientService to have a `findByConnectionId` method'
+      )
+      assert(
+        mediationRecipientService.processMediationDeny,
+        'Expected MediationRecipientService to have a `processMediationDeny` method'
+      )
+      assert(
+        mediationRecipientService.processMediationGrant,
+        'Expected MediationRecipientService to have a `processMediationGrant` method'
+      )
+      assert(
+        mediationRecipientService.processKeylistUpdateResults,
+        'Expected MediationRecipientService to have a `processKeylistUpdateResults` method'
+      )
+      assert(
+        mediationRecipientService.createRequest,
+        'Expected MediationRecipientService to have a `createRequest` method'
+      )
+      //assert(service.createRecord, 'Expected MediationRecipientService to have a `createRecord` method')
     })
     it('setDefaultMediator adds changes tags on mediation records', () => {
       expect(true) //throw 'not implemented'
