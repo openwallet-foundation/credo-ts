@@ -8,16 +8,15 @@ import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { InjectionSymbols } from '../constants'
 
+import { AgentConfig } from './AgentConfig'
+
 @scoped(Lifecycle.ContainerScoped)
 export class EventEmitter {
   private eventEmitter: NativeEventEmitter
   private $stop: Observable<boolean>
 
-  public constructor(
-    @inject(InjectionSymbols.$Stop) $stop: Subject<boolean>,
-    @inject(InjectionSymbols.NativeEventEmitter) NativeEventEmitterClass: typeof NativeEventEmitter
-  ) {
-    this.eventEmitter = new NativeEventEmitterClass()
+  public constructor(@inject(InjectionSymbols.$Stop) $stop: Subject<boolean>, agentConfig: AgentConfig) {
+    this.eventEmitter = new agentConfig.agentDependencies.NativeEventEmitter()
     this.$stop = $stop
   }
 

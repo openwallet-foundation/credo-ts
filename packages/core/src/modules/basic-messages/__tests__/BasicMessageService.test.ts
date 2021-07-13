@@ -1,8 +1,8 @@
 import type { StorageService } from '../../../storage/StorageService'
 import type { Wallet } from '../../../wallet/Wallet'
 import type { BasicMessageReceivedEvent } from '../BasicMessageEvents'
+import type { AgentConfig } from 'packages/core/src/agent/AgentConfig'
 
-import { EventEmitter as NativeEventEmitter } from 'events'
 import { Subject } from 'rxjs'
 
 import { getAgentConfig, getMockConnection } from '../../../../tests/helpers'
@@ -26,12 +26,13 @@ describe('BasicMessageService', () => {
 
   let wallet: Wallet
   let storageService: StorageService<BasicMessageRecord>
+  let agentConfig: AgentConfig
 
   beforeAll(async () => {
-    const config = getAgentConfig('BasicMessageServiceTest')
-    wallet = new IndyWallet(config)
+    agentConfig = getAgentConfig('BasicMessageServiceTest')
+    wallet = new IndyWallet(agentConfig)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.initialize(config.walletConfig!, config.walletCredentials!)
+    await wallet.initialize(agentConfig.walletConfig!, agentConfig.walletCredentials!)
     storageService = new IndyStorageService(wallet)
   })
 
@@ -46,7 +47,7 @@ describe('BasicMessageService', () => {
 
     beforeEach(() => {
       basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService)
-      eventEmitter = new EventEmitter(new Subject<boolean>(), NativeEventEmitter)
+      eventEmitter = new EventEmitter(new Subject<boolean>(), agentConfig)
       basicMessageService = new BasicMessageService(basicMessageRepository, eventEmitter)
     })
 

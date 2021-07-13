@@ -4,11 +4,9 @@ import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialRecordMetadata, CustomCredentialTags } from '../repository/CredentialRecord'
 import type { CredentialOfferTemplate } from '../services'
 
-import { EventEmitter as NativeEventEmitter } from 'events'
 import { Subject } from 'rxjs'
 
-import { getBaseConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
-import { AgentConfig } from '../../../agent/AgentConfig'
+import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
@@ -147,17 +145,18 @@ describe('CredentialService', () => {
   let eventEmitter: EventEmitter
 
   beforeEach(() => {
+    const agentConfig = getAgentConfig('CredentialServiceTest')
     credentialRepository = new CredentialRepositoryMock()
     indyIssuerService = new IndyIssuerServiceMock()
     indyHolderService = new IndyHolderServiceMock()
     ledgerService = new LedgerServiceMock()
-    eventEmitter = new EventEmitter(new Subject<boolean>(), NativeEventEmitter)
+    eventEmitter = new EventEmitter(new Subject<boolean>(), agentConfig)
 
     credentialService = new CredentialService(
       credentialRepository,
       { getById: () => Promise.resolve(connection) } as unknown as ConnectionService,
       ledgerService,
-      new AgentConfig(getBaseConfig('CredentialServiceTest').config),
+      agentConfig,
       indyIssuerService,
       indyHolderService,
       eventEmitter

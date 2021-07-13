@@ -1,17 +1,18 @@
 import type * as Indy from 'indy-sdk'
 
-import { inject, Lifecycle, scoped } from 'tsyringe'
+import { Lifecycle, scoped } from 'tsyringe'
 
-import { InjectionSymbols } from '../../../constants'
 import { IndyWallet } from '../../../wallet/IndyWallet'
+
+import { AgentConfig } from 'packages/core/src/agent/AgentConfig'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyVerifierService {
   private indy: typeof Indy
   private indyWallet: IndyWallet
 
-  public constructor(@inject(InjectionSymbols.Indy) indy: typeof Indy, indyWallet: IndyWallet) {
-    this.indy = indy
+  public constructor(agentConfig: AgentConfig, indyWallet: IndyWallet) {
+    this.indy = agentConfig.agentDependencies.indy
     this.indyWallet = indyWallet
   }
 

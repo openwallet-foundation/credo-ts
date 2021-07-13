@@ -18,6 +18,8 @@ import { FileSystem } from '../../../storage/FileSystem'
 import { getDirFromFilePath } from '../../../utils/path'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 
+import { AgentConfig } from 'packages/core/src/agent/AgentConfig'
+
 @scoped(Lifecycle.ContainerScoped)
 export class IndyIssuerService {
   private indy: typeof Indy
@@ -25,11 +27,11 @@ export class IndyIssuerService {
   private fileSystem: FileSystem
 
   public constructor(
-    @inject(InjectionSymbols.Indy) indy: typeof Indy,
+    agentConfig: AgentConfig,
     indyWallet: IndyWallet,
     @inject(InjectionSymbols.FileSystem) fileSystem: FileSystem
   ) {
-    this.indy = indy
+    this.indy = agentConfig.agentDependencies.indy
     this.indyWallet = indyWallet
     this.fileSystem = fileSystem
   }

@@ -1,8 +1,6 @@
-import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Wallet } from '../../../wallet/Wallet'
 import type { Did } from 'indy-sdk'
 
-import { EventEmitter as NativeEventEmitter } from 'events'
 import { Subject } from 'rxjs'
 
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
@@ -36,7 +34,6 @@ describe('ConnectionService', () => {
   })
 
   let wallet: Wallet
-  let agentConfig: AgentConfig
   let connectionRepository: ConnectionRepository
   let connectionService: ConnectionService
   let eventEmitter: EventEmitter
@@ -53,10 +50,10 @@ describe('ConnectionService', () => {
   })
 
   beforeEach(async () => {
-    eventEmitter = new EventEmitter(new Subject<boolean>(), NativeEventEmitter)
+    eventEmitter = new EventEmitter(new Subject<boolean>(), config)
     connectionRepository = new ConnectionRepositoryMock()
-    connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, eventEmitter)
-    myRouting = { did: 'fakeDid', verkey: 'fakeVerkey', endpoint: agentConfig.getEndpoint(), routingKeys: [] }
+    connectionService = new ConnectionService(wallet, config, connectionRepository, eventEmitter)
+    myRouting = { did: 'fakeDid', verkey: 'fakeVerkey', endpoint: config.getEndpoint(), routingKeys: [] }
   })
 
   describe('createConnectionWithInvitation', () => {

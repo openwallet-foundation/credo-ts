@@ -2139,12 +2139,12 @@
   dependencies:
     "@types/node" "*"
 
-"@types/indy-sdk@^1.15.3", "@types/rn-indy-sdk@npm:@types/indy-sdk@^1.16.1":
-  version "1.16.1"
-  resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.16.1.tgz#cfb1216d5a3361eb981f83b6ae614d567aa028cd"
-  integrity sha512-Y84hePLKymeGxUvAmNgl7viKFRyEtL1/5Ih9EUr7mPeKDyBHEcX6n0DMecr5GINXq4ePUa47ZFKxPolW4eyNIA==
+"@types/indy-sdk@^1.16.5", "@types/rn-indy-sdk@npm:@types/indy-sdk@^1.16.5":
+  version "1.16.5"
+  resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.16.5.tgz#e9b6b917f8a95b5782d9eb7bc8be713c0f971b21"
+  integrity sha512-eDY2RIUdHIhVytx1k9u2mQgXfw1Fs3sW05kP8h3TDXl8mVXsxQyGs336z2GIApUux8vftsQOVEhrX13OinUmwQ==
   dependencies:
-    "@types/node" "*"
+    buffer "^6.0.0"
 
 "@types/istanbul-lib-coverage@*", "@types/istanbul-lib-coverage@^2.0.0", "@types/istanbul-lib-coverage@^2.0.1":
   version "2.0.3"
@@ -3083,7 +3083,7 @@ buffer-from@1.x, buffer-from@^1.0.0:
   resolved "https://registry.yarnpkg.com/buffer-from/-/buffer-from-1.1.1.tgz#32713bc028f75c02fdb710d7c7bcec1f2c6070ef"
   integrity sha512-MQcXEUbCKtEo7bhqEs6560Hyd4XaovZlO/k9V3hjVUF/zwW7KBVdSK4gIt/bzwS9MbR5qob+F5jusZsb0YQK2A==
 
-buffer@^6.0.2, buffer@^6.0.3:
+buffer@^6.0.0, buffer@^6.0.2, buffer@^6.0.3:
   version "6.0.3"
   resolved "https://registry.yarnpkg.com/buffer/-/buffer-6.0.3.tgz#2ace578459cc8fbe2a70aaa8f52ee63b6a74c6c6"
   integrity sha512-FTiCpNxtwiZZHEZbcbTIcZjERVICn9yq/pDFkTl95/AxzD1naBctN7YO68riM/gLSDY7sdrMby8hofADYuuqOA==
