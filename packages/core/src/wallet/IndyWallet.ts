@@ -1,5 +1,5 @@
 import type { Logger } from '../logger'
-import type { JsonWebKey, UnpackedMessageContext } from '../types'
+import type { PackedMessage, UnpackedMessageContext } from '../types'
 import type { Buffer } from '../utils/buffer'
 import type { Wallet, DidInfo } from './Wallet'
 import type {
@@ -16,10 +16,9 @@ import type {
   WalletSearchOptions,
 } from 'indy-sdk'
 
-import { inject, Lifecycle, scoped } from 'tsyringe'
+import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../agent/AgentConfig'
-import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
 import { JsonEncoder } from '../utils/JsonEncoder'
 import { isIndyError } from '../utils/indyError'
@@ -41,9 +40,9 @@ export class IndyWallet implements Wallet {
   private publicDidInfo: DidInfo | undefined
   private indy: typeof Indy
 
-  public constructor(agentConfig: AgentConfig, @inject(InjectionSymbols.Indy) indy: typeof Indy) {
+  public constructor(agentConfig: AgentConfig) {
     this.logger = agentConfig.logger
-    this.indy = indy
+    this.indy = agentConfig.agentDependencies.indy
   }
 
   public get isInitialized() {
@@ -291,13 +290,17 @@ export class IndyWallet implements Wallet {
     return this.indy.createAndStoreMyDid(this.walletHandle, didConfig || {})
   }
 
-  public async pack(payload: Record<string, unknown>, recipientKeys: Verkey[], senderVk: Verkey): Promise<JsonWebKey> {
+  public async pack(
+    payload: Record<string, unknown>,
+    recipientKeys: Verkey[],
+    senderVk: Verkey
+  ): Promise<PackedMessage> {
     const messageRaw = JsonEncoder.toBuffer(payload)
     const packedMessage = await this.indy.packMessage(this.walletHandle, messageRaw, recipientKeys, senderVk)
     return JsonEncoder.fromBuffer(packedMessage)
   }
 
-  public async unpack(messagePackage: JsonWebKey): Promise<UnpackedMessageContext> {
+  public async unpack(messagePackage: PackedMessage): Promise<UnpackedMessageContext> {
     const unpackedMessageBuffer = await this.indy.unpackMessage(this.walletHandle, JsonEncoder.toBuffer(messagePackage))
     const unpackedMessage = JsonEncoder.fromBuffer(unpackedMessageBuffer)
     return {

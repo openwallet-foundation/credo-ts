@@ -6,7 +6,6 @@
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0160-connection-protocol/README.md#states
  */
 export enum ConnectionState {
-  Init = 'init',
   Invited = 'invited',
   Requested = 'requested',
   Responded = 'responded',

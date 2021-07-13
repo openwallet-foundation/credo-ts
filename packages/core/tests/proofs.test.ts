@@ -1,9 +1,13 @@
+import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { ConnectionRecord } from '../src/modules/connections'
 import type { CredDefId } from 'indy-sdk'
 
 import { Subject } from 'rxjs'
 
+import { SubjectInboundTransporter } from '../../../tests/transport/SubjectInboundTransport'
+import { SubjectOutboundTransporter } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
+import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { CredentialPreview, CredentialPreviewAttribute } from '../src/modules/credentials'
 import {
   PredicateType,
@@ -15,24 +19,21 @@ import {
   AttributeFilter,
   ProofPredicateInfo,
 } from '../src/modules/proofs'
+import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 
 import {
   ensurePublicDidIsOnLedger,
   makeConnection,
   registerDefinition,
   registerSchema,
-  SubjectInboundTransporter,
-  SubjectOutboundTransporter,
-  genesisPath,
   issueCredential,
   waitForProofRecord,
   getBaseConfig,
-  closeAndDeleteWallet,
 } from './helpers'
 import testLogger from './logger'
 
-const faberConfig = getBaseConfig('Faber Proofs', { genesisPath })
-const aliceConfig = getBaseConfig('Alice Proofs', { genesisPath })
+const faberConfig = getBaseConfig('Faber Proofs', { endpoint: 'rxjs:faber' })
+const aliceConfig = getBaseConfig('Alice Proofs', { endpoint: 'rxjs:alice' })
 
 const credentialPreview = new CredentialPreview({
   attributes: [
@@ -58,22 +59,26 @@ describe('Present Proof', () => {
   let presentationPreview: PresentationPreview
 
   beforeAll(async () => {
-    const faberMessages = new Subject()
-    const aliceMessages = new Subject()
+    const faberMessages = new Subject<SubjectMessage>()
+    const aliceMessages = new Subject<SubjectMessage>()
 
+    const subjectMap = {
+      'rxjs:faber': faberMessages,
+      'rxjs:alice': aliceMessages,
+    }
     faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
-    faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages, aliceMessages))
-    faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages))
+    faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
+    faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
     await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
-    aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages, faberMessages))
-    aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages))
+    aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
+    aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
     await aliceAgent.initialize()
 
     const schemaTemplate = {
       name: `test-schema-${Date.now()}`,
-      attributes: ['name', 'age'],
+      attributes: ['name', 'age', 'image_0', 'image_1'],
       version: '1.0',
     }
     const schema = await registerSchema(faberAgent, schemaTemplate)
@@ -90,7 +95,9 @@ describe('Present Proof', () => {
     const publicDid = faberAgent.publicDid?.did
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await ensurePublicDidIsOnLedger(faberAgent, publicDid!)
-    const { agentAConnection, agentBConnection } = await makeConnection(faberAgent, aliceAgent)
+    const [agentAConnection, agentBConnection] = await makeConnection(faberAgent, aliceAgent)
+    expect(agentAConnection.isReady).toBe(true)
+    expect(agentBConnection.isReady).toBe(true)
 
     faberConnection = agentAConnection
     aliceConnection = agentBConnection
@@ -102,6 +109,10 @@ describe('Present Proof', () => {
           credentialDefinitionId: credDefId,
           referent: '0',
           value: 'John',
+        }),
+        new PresentationPreviewAttribute({
+          name: 'image_0',
+          credentialDefinitionId: credDefId,
         }),
       ],
       predicates: [
@@ -122,13 +133,33 @@ describe('Present Proof', () => {
         credentialDefinitionId: credDefId,
         comment: 'some comment about credential',
         preview: credentialPreview,
+        linkedAttachments: [
+          new LinkedAttachment({
+            name: 'image_0',
+            attachment: new Attachment({
+              filename: 'picture-of-a-cat.png',
+              data: new AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
+            }),
+          }),
+          new LinkedAttachment({
+            name: 'image_1',
+            attachment: new Attachment({
+              filename: 'picture-of-a-dog.png',
+              data: new AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
+            }),
+          }),
+        ],
       },
     })
   })
 
   afterAll(async () => {
-    await closeAndDeleteWallet(aliceAgent)
-    await closeAndDeleteWallet(faberAgent)
+    await aliceAgent.shutdown({
+      deleteWallet: true,
+    })
+    await faberAgent.shutdown({
+      deleteWallet: true,
+    })
   })
 
   test('Alice starts with proof proposal to Faber', async () => {
@@ -185,6 +216,22 @@ describe('Present Proof', () => {
     const attributes = {
       name: new ProofAttributeInfo({
         name: 'name',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+      image_0: new ProofAttributeInfo({
+        name: 'image_0',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+      image_1: new ProofAttributeInfo({
+        name: 'image_1',
         restrictions: [
           new AttributeFilter({
             credentialDefinitionId: credDefId,

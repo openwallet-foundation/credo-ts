@@ -1,12 +1,13 @@
 import { Exclude, Type } from 'class-transformer'
 
-export type TagValue = string | boolean | undefined
+export type TagValue = string | boolean | undefined | Array<string>
 export type TagsBase = {
   [key: string]: TagValue
   [key: number]: never
 }
 
 export type Tags<DefaultTags extends TagsBase, CustomTags extends TagsBase> = CustomTags & DefaultTags
+export type RecordTags<Record extends BaseRecord> = ReturnType<Record['getTags']>
 
 export abstract class BaseRecord<DefaultTags extends TagsBase = TagsBase, CustomTags extends TagsBase = TagsBase> {
   @Exclude()

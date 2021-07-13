@@ -7,6 +7,9 @@ expect.extend({ toBeConnectedWith })
 
 // Custom matchers which can be used to extend Jest matchers via extend, e. g. `expect.extend({ toBeConnectedWith })`.
 function toBeConnectedWith(received: ConnectionRecord, connection: ConnectionRecord) {
+  received.assertReady()
+  connection.assertReady()
+
   const pass = received.theirDid === connection.did && received.theirKey === connection.verkey
   if (pass) {
     return {

@@ -1,35 +1,9 @@
-import { getBaseConfig, getMockConnection } from '../../../tests/helpers'
-import { DidCommService, DidDoc } from '../../modules/connections'
+import { getBaseConfig } from '../../../tests/helpers'
 import { AgentConfig } from '../AgentConfig'
 
 describe('AgentConfig', () => {
   describe('getEndpoint', () => {
-    it('should return the service endpoint of the inbound connection available', () => {
-      const agentConfig = new AgentConfig(getBaseConfig('AgentConfig Test').config)
-
-      const endpoint = 'https://mediator-url.com'
-      agentConfig.establishInbound({
-        verkey: 'test',
-        connection: getMockConnection({
-          theirDidDoc: new DidDoc({
-            id: 'test',
-            publicKey: [],
-            authentication: [],
-            service: [
-              new DidCommService({
-                id: `test;indy`,
-                serviceEndpoint: endpoint,
-                recipientKeys: [],
-              }),
-            ],
-          }),
-        }),
-      })
-
-      expect(agentConfig.getEndpoint()).toBe(endpoint)
-    })
-
-    it('should return the config endpoint + /msg if no inbound connection is available', () => {
+    it('should return the config endpoint if no inbound connection is available', () => {
       const endpoint = 'https://local-url.com'
 
       const agentConfig = new AgentConfig(
@@ -38,22 +12,24 @@ describe('AgentConfig', () => {
         }).config
       )
 
-      expect(agentConfig.getEndpoint()).toBe(endpoint + '/msg')
+      expect(agentConfig.getEndpoint()).toBe(endpoint)
     })
 
-    it('should return the config host + /msg if no inbound connection or config endpoint is available', () => {
+    it('should return the config host if no inbound connection or config endpoint is available', () => {
       const host = 'https://local-url.com'
+      const port = '3001'
 
       const agentConfig = new AgentConfig(
         getBaseConfig('AgentConfig Test', {
           host,
+          port,
         }).config
       )
 
-      expect(agentConfig.getEndpoint()).toBe(host + '/msg')
+      expect(agentConfig.getEndpoint()).toBe(host + ':' + port)
     })
 
-    it('should return the config host and port + /msg if no inbound connection or config endpoint is available', () => {
+    it('should return the config host and port if no inbound connection or config endpoint is available', () => {
       const host = 'https://local-url.com'
       const port = 8080
 
@@ -64,11 +40,11 @@ describe('AgentConfig', () => {
         }).config
       )
 
-      expect(agentConfig.getEndpoint()).toBe(`${host}:${port}/msg`)
+      expect(agentConfig.getEndpoint()).toBe(`${host}:${port}`)
     })
 
     // added because on first implementation this is what it did. Never again!
-    it('should return the endpoint + /msg without port if the endpoint and port are available', () => {
+    it('should return the endpoint without port if the endpoint and port are available', () => {
       const endpoint = 'https://local-url.com'
       const port = 8080
 
@@ -79,7 +55,7 @@ describe('AgentConfig', () => {
         }).config
       )
 
-      expect(agentConfig.getEndpoint()).toBe(`${endpoint}/msg`)
+      expect(agentConfig.getEndpoint()).toBe(`${endpoint}`)
     })
 
     it("should return 'didcomm:transport/queue' if no inbound connection or config endpoint or host/port is available", () => {

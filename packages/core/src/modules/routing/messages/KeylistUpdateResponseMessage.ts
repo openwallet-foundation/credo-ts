@@ -7,7 +7,8 @@ import { KeylistUpdateAction } from './KeylistUpdateMessage'
 
 export interface KeylistUpdateResponseMessageOptions {
   id?: string
-  updated: KeylistUpdated[]
+  keylist: KeylistUpdated[]
+  threadId: string
 }
 
 /**
@@ -21,7 +22,10 @@ export class KeylistUpdateResponseMessage extends AgentMessage {
 
     if (options) {
       this.id = options.id || this.generateId()
-      this.updated = options.updated
+      this.updated = options.keylist
+      this.setThread({
+        threadId: options.threadId,
+      })
     }
   }
 
@@ -47,6 +51,7 @@ export class KeylistUpdated {
     if (options) {
       this.recipientKey = options.recipientKey
       this.action = options.action
+      this.result = options.result
     }
   }
 

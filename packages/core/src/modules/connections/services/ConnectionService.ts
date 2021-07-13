@@ -3,7 +3,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { AckMessage } from '../../common'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
-import type { Verkey } from 'indy-sdk'
+import type { Did, Verkey } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
 import { inject, scoped, Lifecycle } from 'tsyringe'
@@ -33,8 +33,8 @@ import {
   DidCommService,
   IndyAgentService,
 } from '../models'
-import { ConnectionRepository } from '../repository'
 import { ConnectionRecord } from '../repository/ConnectionRecord'
+import { ConnectionRepository } from '../repository/ConnectionRepository'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ConnectionService {
@@ -61,7 +61,8 @@ export class ConnectionService {
    * @param config config for creation of connection and invitation
    * @returns new connection record
    */
-  public async createInvitation(config?: {
+  public async createInvitation(config: {
+    routing: Routing
     autoAcceptConnection?: boolean
     alias?: string
   }): Promise<ConnectionProtocolMsgReturnType<ConnectionInvitationMessage>> {
@@ -70,6 +71,7 @@ export class ConnectionService {
       role: ConnectionRole.Inviter,
       state: ConnectionState.Invited,
       alias: config?.alias,
+      routing: config.routing,
       autoAcceptConnection: config?.autoAcceptConnection,
     })
 
@@ -108,7 +110,13 @@ export class ConnectionService {
    */
   public async processInvitation(
     invitation: ConnectionInvitationMessage,
-    config?: {
+    config: {
+      routing: {
+        endpoint: string
+        verkey: string
+        did: Did
+        routingKeys: string[]
+      }
       autoAcceptConnection?: boolean
       alias?: string
     }
@@ -117,13 +125,14 @@ export class ConnectionService {
       role: ConnectionRole.Invitee,
       state: ConnectionState.Invited,
       alias: config?.alias,
+      theirLabel: invitation.label,
       autoAcceptConnection: config?.autoAcceptConnection,
+      routing: config.routing,
       invitation,
       tags: {
         invitationKey: invitation.recipientKeys && invitation.recipientKeys[0],
       },
     })
-
     await this.connectionRepository.update(connectionRecord)
     this.eventEmitter.emit<ConnectionStateChangedEvent>({
       type: ConnectionEventTypes.ConnectionStateChanged,
@@ -179,7 +188,6 @@ export class ConnectionService {
     if (!connectionRecord) {
       throw new AriesFrameworkError(`Connection for verkey ${recipientVerkey} not found!`)
     }
-
     connectionRecord.assertState(ConnectionState.Invited)
     connectionRecord.assertRole(ConnectionRole.Inviter)
 
@@ -188,9 +196,10 @@ export class ConnectionService {
       throw new AriesFrameworkError('Invalid message')
     }
 
-    connectionRecord.theirDid = message.connection.did
     connectionRecord.theirDidDoc = message.connection.didDoc
+    connectionRecord.theirLabel = message.label
     connectionRecord.threadId = message.id
+    connectionRecord.theirDid = message.connection.did
 
     if (!connectionRecord.theirKey) {
       throw new AriesFrameworkError(`Connection with id ${connectionRecord.id} has no recipient keys.`)
@@ -423,12 +432,15 @@ export class ConnectionService {
     state: ConnectionState
     invitation?: ConnectionInvitationMessage
     alias?: string
+    routing: Routing
+    theirLabel?: string
     autoAcceptConnection?: boolean
     tags?: CustomConnectionTags
   }): Promise<ConnectionRecord> {
-    const [did, verkey] = await this.wallet.createDid()
+    const { endpoint, did, verkey, routingKeys } = options.routing
 
     const publicKey = new Ed25119Sig2018({
+      // TODO: shouldn't this name be ED25519
       id: `${did}#1`,
       controller: did,
       publicKeyBase58: verkey,
@@ -439,15 +451,15 @@ export class ConnectionService {
     // Include both for better interoperability
     const indyAgentService = new IndyAgentService({
       id: `${did}#IndyAgentService`,
-      serviceEndpoint: this.config.getEndpoint(),
+      serviceEndpoint: endpoint,
       recipientKeys: [verkey],
-      routingKeys: this.config.getRoutingKeys(),
+      routingKeys: routingKeys,
     })
     const didCommService = new DidCommService({
       id: `${did}#did-communication`,
-      serviceEndpoint: this.config.getEndpoint(),
+      serviceEndpoint: endpoint,
       recipientKeys: [verkey],
-      routingKeys: this.config.getRoutingKeys(),
+      routingKeys: routingKeys,
       // Prefer DidCommService over IndyAgentService
       priority: 1,
     })
@@ -472,6 +484,7 @@ export class ConnectionService {
       tags: options.tags,
       invitation: options.invitation,
       alias: options.alias,
+      theirLabel: options.theirLabel,
       autoAcceptConnection: options.autoAcceptConnection,
     })
 
@@ -497,11 +510,18 @@ export class ConnectionService {
 
     // Check if already done
     const connection = await this.connectionRepository.findById(connectionId)
-    if (connection && isConnected(connection)) return connection
+    if (connection && isConnected(connection)) return connection //TODO: check if this leaves trailing listeners behind?
 
     // return listener
     return promise
   }
+}
+
+export interface Routing {
+  endpoint: string
+  verkey: string
+  did: Did
+  routingKeys: string[]
 }
 
 export interface ConnectionProtocolMsgReturnType<MessageType extends AgentMessage> {

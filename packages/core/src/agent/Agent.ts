@@ -1,5 +1,4 @@
 import type { Logger } from '../logger'
-import type { MessageRepository } from '../storage/MessageRepository'
 import type { InboundTransporter } from '../transport/InboundTransporter'
 import type { OutboundTransporter } from '../transport/OutboundTransporter'
 import type { InitConfig } from '../types'
@@ -10,7 +9,8 @@ import type { TransportSession } from './TransportService'
 import type { Subscription } from 'rxjs'
 import type { DependencyContainer } from 'tsyringe'
 
-import { concatMap } from 'rxjs/operators'
+import { Subject } from 'rxjs'
+import { concatMap, takeUntil } from 'rxjs/operators'
 import { container as baseContainer } from 'tsyringe'
 
 import { InjectionSymbols } from '../constants'
@@ -20,7 +20,8 @@ import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
-import { RoutingModule } from '../modules/routing/RoutingModule'
+import { MediatorModule } from '../modules/routing/MediatorModule'
+import { RecipientModule } from '../modules/routing/RecipientModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
 import { IndyWallet } from '../wallet/IndyWallet'
@@ -35,7 +36,6 @@ import { TransportService } from './TransportService'
 
 export class Agent {
   protected agentConfig: AgentConfig
-  protected dependencies: AgentDependencies
   protected logger: Logger
   protected container: DependencyContainer
   protected eventEmitter: EventEmitter
@@ -49,44 +49,34 @@ export class Agent {
 
   public readonly connections!: ConnectionsModule
   public readonly proofs!: ProofsModule
-  public readonly routing!: RoutingModule
   public readonly basicMessages!: BasicMessagesModule
   public readonly ledger!: LedgerModule
   public readonly credentials!: CredentialsModule
+  public readonly mediationRecipient!: RecipientModule
+  public readonly mediator!: MediatorModule
 
-  public constructor(
-    initialConfig: InitConfig,
-    dependencies: AgentDependencies,
-    messageRepository?: MessageRepository
-  ) {
+  public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
     // Create child container so we don't interfere with anything outside of this agent
     this.container = baseContainer.createChildContainer()
 
-    this.agentConfig = new AgentConfig(initialConfig)
-    this.dependencies = dependencies
+    this.agentConfig = new AgentConfig(initialConfig, dependencies)
     this.logger = this.agentConfig.logger
 
     // Bind class based instances
     this.container.registerInstance(AgentConfig, this.agentConfig)
 
+    // $stop is used for agent shutdown signal
+    const $stop = new Subject<boolean>()
+    this.container.registerInstance(InjectionSymbols.$Stop, $stop)
+
     // Based on interfaces. Need to register which class to use
     this.container.registerInstance(InjectionSymbols.Logger, this.logger)
     this.container.register(InjectionSymbols.Wallet, { useToken: IndyWallet })
     this.container.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
+    this.container.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
 
     // Platform specific dependencies
-    this.container.registerInstance(InjectionSymbols.Indy, this.dependencies.indy)
-    this.container.registerInstance(InjectionSymbols.NativeEventEmitter, this.dependencies.NativeEventEmitter)
-    this.container.registerInstance(InjectionSymbols.Fetch, this.dependencies.fetch)
-    this.container.registerInstance(InjectionSymbols.WebSocket, this.dependencies.WebSocket)
-    this.container.registerInstance(InjectionSymbols.FileSystem, new this.dependencies.FileSystem())
-
-    // TODO: do not make messageRepository input parameter
-    if (messageRepository) {
-      this.container.registerInstance(InjectionSymbols.MessageRepository, messageRepository)
-    } else {
-      this.container.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
-    }
+    this.container.registerInstance(InjectionSymbols.FileSystem, new dependencies.FileSystem())
 
     this.logger.info('Creating agent with config', {
       ...initialConfig,
@@ -114,14 +104,18 @@ export class Agent {
     this.connections = this.container.resolve(ConnectionsModule)
     this.credentials = this.container.resolve(CredentialsModule)
     this.proofs = this.container.resolve(ProofsModule)
-    this.routing = this.container.resolve(RoutingModule)
+    this.mediator = this.container.resolve(MediatorModule)
+    this.mediationRecipient = this.container.resolve(RecipientModule)
     this.basicMessages = this.container.resolve(BasicMessagesModule)
     this.ledger = this.container.resolve(LedgerModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
     this.messageSubscription = this.eventEmitter
       .observable<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived)
-      .pipe(concatMap((e) => this.messageReceiver.receiveMessage(e.payload.message)))
+      .pipe(
+        takeUntil($stop),
+        concatMap((e) => this.messageReceiver.receiveMessage(e.payload.message))
+      )
       .subscribe()
   }
 
@@ -146,7 +140,7 @@ export class Agent {
   }
 
   public async initialize() {
-    const { publicDidSeed, walletConfig, walletCredentials } = this.agentConfig
+    const { publicDidSeed, walletConfig, walletCredentials, mediatorConnectionsInvite } = this.agentConfig
 
     if (this._isInitialized) {
       throw new AriesFrameworkError(
@@ -173,28 +167,56 @@ export class Agent {
       await this.inboundTransporter.start(this)
     }
 
+    if (this.outboundTransporter) {
+      await this.outboundTransporter.start(this)
+    }
+
+    // Connect to mediator through provided invitation if provided in config
+    // Also requests mediation ans sets as default mediator
+    // Because this requires the connections module, we do this in the agent constructor
+    if (mediatorConnectionsInvite) {
+      // Assumption: processInvitation is a URL-encoded invitation
+      let connectionRecord = await this.connections.receiveInvitationFromUrl(mediatorConnectionsInvite, {
+        autoAcceptConnection: true,
+      })
+
+      // TODO: add timeout to returnWhenIsConnected
+      connectionRecord = await this.connections.returnWhenIsConnected(connectionRecord.id)
+      const mediationRecord = await this.mediationRecipient.requestAndAwaitGrant(connectionRecord, 60000) // TODO: put timeout as a config parameter
+      await this.mediationRecipient.setDefaultMediator(mediationRecord)
+    }
+
+    await this.mediationRecipient.initialize()
+
     this._isInitialized = true
+  }
+
+  public async shutdown({ deleteWallet = false }: { deleteWallet?: boolean } = {}) {
+    // Stop transports
+    await this.outboundTransporter?.stop()
+    await this.inboundTransporter?.stop()
+
+    // close/delete wallet if still initialized
+    if (this.wallet.isInitialized) {
+      if (deleteWallet) {
+        await this.wallet.delete()
+      } else {
+        await this.wallet.close()
+      }
+    }
+
+    // All observables use takeUntil with the $stop observable
+    // this means all observables will stop running if a value is emitted on this observable
+    const $stop = this.container.resolve<Subject<boolean>>(InjectionSymbols.$Stop)
+    $stop.next(true)
   }
 
   public get publicDid() {
     return this.wallet.publicDid
   }
 
-  public getMediatorUrl() {
-    return this.agentConfig.mediatorUrl
-  }
-
   public async receiveMessage(inboundPackedMessage: unknown, session?: TransportSession) {
     return await this.messageReceiver.receiveMessage(inboundPackedMessage, session)
-  }
-
-  public async closeAndDeleteWallet() {
-    await this.wallet.close()
-    await this.wallet.delete()
-  }
-
-  public removeSession(session: TransportSession) {
-    this.transportService.removeSession(session)
   }
 
   public get injectionContainer() {

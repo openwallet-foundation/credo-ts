@@ -1,5 +1,5 @@
 import type { ConnectionRecord } from '../connections'
-import type { WalletQuery } from 'indy-sdk'
+import type { BasicMessageTags } from './repository/BasicMessageRecord'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -25,7 +25,7 @@ export class BasicMessagesModule {
     await this.messageSender.sendMessage(outboundMessage)
   }
 
-  public async findAllByQuery(query: WalletQuery) {
+  public async findAllByQuery(query: Partial<BasicMessageTags>) {
     return this.basicMessageService.findAllByQuery(query)
   }
 

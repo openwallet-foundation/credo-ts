@@ -3,6 +3,7 @@ import type { Wallet } from '../../../wallet/Wallet'
 import type { BasicMessageReceivedEvent } from '../BasicMessageEvents'
 
 import { EventEmitter as NativeEventEmitter } from 'events'
+import { Subject } from 'rxjs'
 
 import { getBaseConfig, getMockConnection } from '../../../../tests/helpers'
 import { AgentConfig } from '../../../agent/AgentConfig'
@@ -45,7 +46,7 @@ describe('BasicMessageService', () => {
 
     beforeEach(() => {
       basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService)
-      eventEmitter = new EventEmitter(NativeEventEmitter)
+      eventEmitter = new EventEmitter(new Subject<boolean>(), NativeEventEmitter)
       basicMessageService = new BasicMessageService(basicMessageRepository, eventEmitter)
     })
 

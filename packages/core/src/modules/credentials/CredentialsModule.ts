@@ -1,21 +1,23 @@
-import type { ProposeCredentialMessageOptions } from './messages'
 import type { CredentialRecord } from './repository/CredentialRecord'
-import type { CredentialOfferTemplate } from './services'
+import type { CredentialOfferTemplate, CredentialProposeOptions } from './services'
 
-import { Lifecycle, scoped } from 'tsyringe'
+import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
+import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
-import { ConnectionService } from '../connections'
+import { Logger } from '../../logger'
+import { isLinkedAttachment } from '../../utils/attachment'
+import { ConnectionService } from '../connections/services/ConnectionService'
 
 import {
-  ProposeCredentialHandler,
-  OfferCredentialHandler,
-  RequestCredentialHandler,
-  IssueCredentialHandler,
   CredentialAckHandler,
+  IssueCredentialHandler,
+  OfferCredentialHandler,
+  ProposeCredentialHandler,
+  RequestCredentialHandler,
 } from './handlers'
 import { CredentialService } from './services'
 
@@ -24,16 +26,19 @@ export class CredentialsModule {
   private connectionService: ConnectionService
   private credentialService: CredentialService
   private messageSender: MessageSender
+  private logger: Logger
 
   public constructor(
     dispatcher: Dispatcher,
     connectionService: ConnectionService,
     credentialService: CredentialService,
-    messageSender: MessageSender
+    messageSender: MessageSender,
+    @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.connectionService = connectionService
     this.credentialService = credentialService
     this.messageSender = messageSender
+    this.logger = logger
     this.registerHandlers(dispatcher)
   }
 
@@ -45,7 +50,7 @@ export class CredentialsModule {
    * @param config Additional configuration to use for the proposal
    * @returns Credential record associated with the sent proposal message
    */
-  public async proposeCredential(connectionId: string, config?: Omit<ProposeCredentialMessageOptions, 'id'>) {
+  public async proposeCredential(connectionId: string, config?: CredentialProposeOptions) {
     const connection = await this.connectionService.getById(connectionId)
 
     const { message, credentialRecord } = await this.credentialService.createProposal(connection, config)
@@ -85,6 +90,10 @@ export class CredentialsModule {
 
     const credentialDefinitionId = config?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
 
+    credentialRecord.linkedAttachments = credentialProposalMessage.attachments?.filter((attachment) =>
+      isLinkedAttachment(attachment)
+    )
+
     if (!credentialDefinitionId) {
       throw new AriesFrameworkError(
         'Missing required credential definition id. If credential proposal message contains no credential definition id it must be passed to config.'
@@ -96,6 +105,7 @@ export class CredentialsModule {
       preview: credentialProposalMessage.credentialProposal,
       credentialDefinitionId,
       comment: config?.comment,
+      attachments: credentialRecord.linkedAttachments,
     })
 
     const outboundMessage = createOutboundMessage(connection, message)
@@ -159,6 +169,8 @@ export class CredentialsModule {
   public async acceptRequest(credentialRecordId: string, config?: { comment?: string }) {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
+
+    this.logger.info(`Accepting request for credential record ${credentialRecordId}`)
 
     const { message } = await this.credentialService.createCredential(credentialRecord, config)
     const outboundMessage = createOutboundMessage(connection, message)

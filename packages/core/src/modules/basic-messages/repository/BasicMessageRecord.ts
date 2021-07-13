@@ -1,4 +1,4 @@
-import type { TagsBase } from '../../../storage/BaseRecord'
+import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
 import type { BasicMessageRole } from '../BasicMessageRole'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
@@ -9,6 +9,8 @@ export type DefaultBasicMessageTags = {
   connectionId: string
   role: BasicMessageRole
 }
+
+export type BasicMessageTags = RecordTags<BasicMessageRecord>
 
 export interface BasicMessageStorageProps {
   id?: string

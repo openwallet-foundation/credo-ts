@@ -1,16 +1,16 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { ProviderRoutingService } from '../services'
+import type { MediatorService } from '../services/MediatorService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
 import { KeylistUpdateMessage } from '../messages'
 
 export class KeylistUpdateHandler implements Handler {
-  private routingService: ProviderRoutingService
+  private mediatorService: MediatorService
   public supportedMessages = [KeylistUpdateMessage]
 
-  public constructor(routingService: ProviderRoutingService) {
-    this.routingService = routingService
+  public constructor(mediatorService: MediatorService) {
+    this.mediatorService = mediatorService
   }
 
   public async handle(messageContext: HandlerInboundMessage<KeylistUpdateHandler>) {
@@ -18,7 +18,7 @@ export class KeylistUpdateHandler implements Handler {
       throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
 
-    const message = this.routingService.updateRoutes(messageContext)
-    return createOutboundMessage(messageContext.connection, message)
+    const response = await this.mediatorService.processKeylistUpdateRequest(messageContext)
+    return createOutboundMessage(messageContext.connection, response)
   }
 }

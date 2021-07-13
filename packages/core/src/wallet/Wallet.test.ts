@@ -1,11 +1,12 @@
-import { getBaseConfig } from '../../tests/helpers'
+import { agentDependencies } from '@aries-framework/node'
+
+import { getAgentConfig, getBaseConfig } from '../../tests/helpers'
 import { AgentConfig } from '../agent/AgentConfig'
 
 import { IndyWallet } from './IndyWallet'
 
 describe('Wallet', () => {
-  const { config, agentDependencies: dependencies } = getBaseConfig('WalletTest')
-  const wallet = new IndyWallet(new AgentConfig(config), dependencies.indy)
+  const wallet = new IndyWallet(getAgentConfig('WalletTest'))
 
   test('initialize public did', async () => {
     await wallet.initialize(config.walletConfig!, config.walletCredentials!)

@@ -1,10 +1,11 @@
-import type { ConnectionService } from '../../connections'
+import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialRecordMetadata, CustomCredentialTags } from '../repository/CredentialRecord'
 import type { CredentialOfferTemplate } from '../services'
 
 import { EventEmitter as NativeEventEmitter } from 'events'
+import { Subject } from 'rxjs'
 
 import { getBaseConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { AgentConfig } from '../../../agent/AgentConfig'
@@ -22,15 +23,15 @@ import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
 import {
-  OfferCredentialMessage,
+  CredentialAckMessage,
   CredentialPreview,
   CredentialPreviewAttribute,
-  RequestCredentialMessage,
-  IssueCredentialMessage,
-  CredentialAckMessage,
-  INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
-  INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_ATTACHMENT_ID,
+  INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
+  INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
+  IssueCredentialMessage,
+  OfferCredentialMessage,
+  RequestCredentialMessage,
 } from '../messages'
 import { CredentialRecord } from '../repository/CredentialRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
@@ -150,7 +151,7 @@ describe('CredentialService', () => {
     indyIssuerService = new IndyIssuerServiceMock()
     indyHolderService = new IndyHolderServiceMock()
     ledgerService = new LedgerServiceMock()
-    eventEmitter = new EventEmitter(NativeEventEmitter)
+    eventEmitter = new EventEmitter(new Subject<boolean>(), NativeEventEmitter)
 
     credentialService = new CredentialService(
       credentialRepository,

@@ -4,10 +4,10 @@ import type { Logger } from '../../../logger'
 import type { ConnectionRecord } from '../../connections'
 import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { PresentationPreview, PresentationPreviewAttribute } from '../messages'
-import type { IndyProof, Schema, CredDef } from 'indy-sdk'
+import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
-import { inject, scoped, Lifecycle } from 'tsyringe'
+import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -19,27 +19,27 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { Wallet } from '../../../wallet/Wallet'
 import { AckStatus } from '../../common'
-import { CredentialUtils, Credential } from '../../credentials'
+import { Credential, CredentialRepository, CredentialUtils } from '../../credentials'
 import { IndyHolderService, IndyVerifierService } from '../../indy'
 import { LedgerService } from '../../ledger/services/LedgerService'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofState } from '../ProofState'
 import {
+  INDY_PROOF_ATTACHMENT_ID,
+  INDY_PROOF_REQUEST_ATTACHMENT_ID,
+  PresentationAckMessage,
   PresentationMessage,
   ProposePresentationMessage,
   RequestPresentationMessage,
-  PresentationAckMessage,
-  INDY_PROOF_REQUEST_ATTACHMENT_ID,
-  INDY_PROOF_ATTACHMENT_ID,
 } from '../messages'
 import {
+  AttributeFilter,
   PartialProof,
   ProofAttributeInfo,
-  AttributeFilter,
   ProofPredicateInfo,
   ProofRequest,
-  RequestedCredentials,
   RequestedAttribute,
+  RequestedCredentials,
   RequestedPredicate,
   RetrievedCredentials,
 } from '../models'
@@ -54,6 +54,7 @@ import { ProofRecord } from '../repository/ProofRecord'
 @scoped(Lifecycle.ContainerScoped)
 export class ProofService {
   private proofRepository: ProofRepository
+  private credentialRepository: CredentialRepository
   private ledgerService: LedgerService
   private wallet: Wallet
   private logger: Logger
@@ -68,9 +69,11 @@ export class ProofService {
     agentConfig: AgentConfig,
     indyHolderService: IndyHolderService,
     indyVerifierService: IndyVerifierService,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    credentialRepository: CredentialRepository
   ) {
     this.proofRepository = proofRepository
+    this.credentialRepository = credentialRepository
     this.ledgerService = ledgerService
     this.wallet = wallet
     this.logger = agentConfig.logger
@@ -395,6 +398,12 @@ export class ProofService {
       )
     }
 
+    // Get the matching attachments to the requested credentials
+    const attachments = await this.getRequestedAttachmentsForRequestedCredentials(
+      indyProofRequest,
+      requestedCredentials
+    )
+
     // Create proof
     const proof = await this.createProof(indyProofRequest, requestedCredentials)
 
@@ -406,9 +415,11 @@ export class ProofService {
         base64: JsonEncoder.toBase64(proof),
       }),
     })
+
     const presentationMessage = new PresentationMessage({
       comment: config?.comment,
       presentationAttachments: [attachment],
+      attachments,
     })
     presentationMessage.setThread({ threadId: proofRecord.threadId })
 
@@ -609,6 +620,62 @@ export class ProofService {
     }
 
     return proofRequest
+  }
+
+  /**
+   * Retreives the linked attachments for an {@link indyProofRequest}
+   * @param indyProofRequest The proof request for which the linked attachments have to be found
+   * @param requestedCredentials The requested credentials
+   * @returns a list of attachments that are linked to the requested credentials
+   */
+  public async getRequestedAttachmentsForRequestedCredentials(
+    indyProofRequest: ProofRequest,
+    requestedCredentials: RequestedCredentials
+  ): Promise<Attachment[] | undefined> {
+    const attachments: Attachment[] = []
+    const credentialIds = new Set<string>()
+    const requestedAttributesNames: (string | undefined)[] = []
+
+    // Get the credentialIds if it contains a hashlink
+    for (const [referent, requestedAttribute] of Object.entries(requestedCredentials.requestedAttributes)) {
+      // Find the requested Attributes
+      const requestedAttributes = indyProofRequest.requestedAttributes[referent]
+
+      // List the requested attributes
+      requestedAttributesNames.push(...(requestedAttributes.names ?? [requestedAttributes.name]))
+
+      // Find the attributes that have a hashlink as a value
+      for (const attribute of Object.values(requestedAttribute.credentialInfo.attributes)) {
+        if (attribute.toLowerCase().startsWith('hl:')) {
+          credentialIds.add(requestedAttribute.credentialId)
+        }
+      }
+    }
+
+    // Only continues if there is an attribute value that contains a hashlink
+    for (const credentialId of credentialIds) {
+      // Get the credentialRecord that matches the ID
+      const credentialRecord = await this.credentialRepository.getSingleByQuery({ credentialId })
+
+      if (credentialRecord.linkedAttachments) {
+        // Get the credentials that have a hashlink as value and are requested
+        const requestedCredentials = credentialRecord.credentialAttributes?.filter(
+          (credential) =>
+            credential.value.toLowerCase().startsWith('hl:') && requestedAttributesNames.includes(credential.name)
+        )
+
+        // Get the linked attachments that match the requestedCredentials
+        const linkedAttachments = credentialRecord.linkedAttachments.filter((attachment) =>
+          requestedCredentials?.map((credential) => credential.value.split(':')[1]).includes(attachment.id)
+        )
+
+        if (linkedAttachments) {
+          attachments.push(...linkedAttachments)
+        }
+      }
+    }
+
+    return attachments.length ? attachments : undefined
   }
 
   /**

@@ -2,6 +2,7 @@
 import 'reflect-metadata'
 
 export { Agent } from './agent/Agent'
+export { AgentConfig } from './agent/AgentConfig'
 export { AgentDependencies } from './agent/AgentDependencies'
 export { InitConfig, OutboundPackage, DidCommMimeType } from './types'
 export { FileSystem } from './storage/FileSystem'
