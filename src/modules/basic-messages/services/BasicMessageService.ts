@@ -2,7 +2,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { OutboundMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
 import type { BasicMessageReceivedEvent } from '../BasicMessageEvents'
-import type { WalletQuery } from 'indy-sdk'
+import type { BasicMessageTags } from '../repository'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -59,7 +59,7 @@ export class BasicMessageService {
     })
   }
 
-  public async findAllByQuery(query: WalletQuery) {
+  public async findAllByQuery(query: Partial<BasicMessageTags>) {
     return this.basicMessageRepository.findByQuery(query)
   }
 }

@@ -1,6 +1,7 @@
 import type { Constructor } from '../utils/mixins'
 import type { BaseRecord } from './BaseRecord'
-import type { WalletQuery } from 'indy-sdk'
+
+export type Query<T extends BaseRecord> = Partial<ReturnType<T['getTags']>>
 
 export interface BaseRecordConstructor<T> extends Constructor<T> {
   type: string
@@ -54,5 +55,5 @@ export interface StorageService<T extends BaseRecord<any, any>> {
    * @param recordClass the record class to find records for
    * @param query the query to use for finding records
    */
-  findByQuery(recordClass: BaseRecordConstructor<T>, query: WalletQuery): Promise<T[]>
+  findByQuery(recordClass: BaseRecordConstructor<T>, query: Query<T>): Promise<T[]>
 }

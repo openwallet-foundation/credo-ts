@@ -7,10 +7,10 @@ import { Agent } from '../agent/Agent'
 import { DID_IDENTIFIER_REGEX, VERKEY_REGEX, isFullVerkey, isAbbreviatedVerkey } from '../utils/did'
 import { sleep } from '../utils/sleep'
 
-import { closeAndDeleteWallet, genesisPath, getBaseConfig } from './helpers'
+import { genesisPath, getBaseConfig } from './helpers'
 import testLogger from './logger'
 
-const faberConfig = getBaseConfig('Faber Ledger', { genesisPath })
+const faberConfig = getBaseConfig('Faber Ledger')
 
 describe('ledger', () => {
   let faberAgent: Agent
@@ -22,7 +22,9 @@ describe('ledger', () => {
   })
 
   afterAll(async () => {
-    await closeAndDeleteWallet(faberAgent)
+    await faberAgent.shutdown({
+      deleteWallet: true,
+    })
   })
 
   test(`initialization of agent's public DID`, async () => {

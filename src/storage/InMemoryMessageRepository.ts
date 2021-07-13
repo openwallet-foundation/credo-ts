@@ -1,25 +1,36 @@
+import type { Logger } from '../logger'
 import type { WireMessage } from '../types'
 import type { MessageRepository } from './MessageRepository'
-import type { Verkey } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
+import { AgentConfig } from '../agent/AgentConfig'
+
 @scoped(Lifecycle.ContainerScoped)
 export class InMemoryMessageRepository implements MessageRepository {
-  private messages: { [key: string]: WireMessage } = {}
+  private logger: Logger
+  private messages: { [key: string]: WireMessage[] } = {}
 
-  public findByVerkey(theirKey: Verkey): WireMessage[] {
-    return this.messages[theirKey] ?? []
+  public constructor(agentConfig: AgentConfig) {
+    this.logger = agentConfig.logger
   }
 
-  public deleteAllByVerkey(theirKey: Verkey): void {
-    this.messages[theirKey] = []
-  }
-
-  public save(theirKey: Verkey, payload: WireMessage) {
-    if (!this.messages[theirKey]) {
-      this.messages[theirKey] = []
+  public takeFromQueue(connectionId: string, limit?: number) {
+    if (!this.messages[connectionId]) {
+      return []
     }
-    this.messages[theirKey].push(payload)
+
+    const messagesToTake = limit ?? this.messages[connectionId].length
+    this.logger.debug(`Taking ${messagesToTake} messages from queue for connection ${connectionId}`)
+
+    return this.messages[connectionId].splice(0, messagesToTake)
+  }
+
+  public add(connectionId: string, payload: WireMessage) {
+    if (!this.messages[connectionId]) {
+      this.messages[connectionId] = []
+    }
+
+    this.messages[connectionId].push(payload)
   }
 }
