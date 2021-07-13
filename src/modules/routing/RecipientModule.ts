@@ -22,12 +22,12 @@ import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
 import { BatchPickupMessage } from './messages/BatchPickupMessage'
 import { MediationState } from './models/MediationState'
-import { RecipientService } from './services/RecipientService'
+import { MediationRecipientService } from './services/MediationRecipientService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class RecipientModule {
   private agentConfig: AgentConfig
-  private recipientService: RecipientService
+  private mediationRecipientService: MediationRecipientService
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
@@ -36,7 +36,7 @@ export class RecipientModule {
   public constructor(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
-    recipientService: RecipientService,
+    mediationRecipientService: MediationRecipientService,
     connectionService: ConnectionService,
     messageSender: MessageSender,
     eventEmitter: EventEmitter,
@@ -44,7 +44,7 @@ export class RecipientModule {
   ) {
     this.agentConfig = agentConfig
     this.connectionService = connectionService
-    this.recipientService = recipientService
+    this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.registerHandlers(dispatcher)
@@ -56,12 +56,12 @@ export class RecipientModule {
 
     // Set default mediator by id
     if (defaultMediatorId) {
-      const mediatorRecord = await this.recipientService.getById(defaultMediatorId)
-      await this.recipientService.setDefaultMediator(mediatorRecord)
+      const mediatorRecord = await this.mediationRecipientService.getById(defaultMediatorId)
+      await this.mediationRecipientService.setDefaultMediator(mediatorRecord)
     }
     // Clear the stored default mediator
     else if (clearDefaultMediator) {
-      await this.recipientService.clearDefaultMediator()
+      await this.mediationRecipientService.clearDefaultMediator()
     }
 
     // Poll for messages from mediator
@@ -102,7 +102,7 @@ export class RecipientModule {
   }
 
   public async discoverMediation() {
-    return this.recipientService.discoverMediation()
+    return this.mediationRecipientService.discoverMediation()
   }
 
   public async pickupMessages(mediatorConnection: ConnectionRecord) {
@@ -114,33 +114,33 @@ export class RecipientModule {
   }
 
   public async setDefaultMediator(mediatorRecord: MediationRecord) {
-    return this.recipientService.setDefaultMediator(mediatorRecord)
+    return this.mediationRecipientService.setDefaultMediator(mediatorRecord)
   }
 
   public async requestMediation(connection: ConnectionRecord): Promise<MediationRecord> {
-    const { mediationRecord, message } = await this.recipientService.createRequest(connection)
+    const { mediationRecord, message } = await this.mediationRecipientService.createRequest(connection)
     const outboundMessage = createOutboundMessage(connection, message)
     await this.messageSender.sendMessage(outboundMessage)
     return mediationRecord
   }
 
   public async notifyKeylistUpdate(connection: ConnectionRecord, verkey: Verkey) {
-    const message = this.recipientService.createKeylistUpdateMessage(verkey)
+    const message = this.mediationRecipientService.createKeylistUpdateMessage(verkey)
     const outboundMessage = createOutboundMessage(connection, message)
     const response = await this.messageSender.sendMessage(outboundMessage)
     return response
   }
 
   public async findByConnectionId(connectionId: string) {
-    return await this.recipientService.findByConnectionId(connectionId)
+    return await this.mediationRecipientService.findByConnectionId(connectionId)
   }
 
   public async getMediators() {
-    return await this.recipientService.getMediators()
+    return await this.mediationRecipientService.getMediators()
   }
 
   public async findDefaultMediator(): Promise<MediationRecord | null> {
-    return this.recipientService.findDefaultMediator()
+    return this.mediationRecipientService.findDefaultMediator()
   }
 
   public async findDefaultMediatorConnection(): Promise<ConnectionRecord | null> {
@@ -154,7 +154,7 @@ export class RecipientModule {
   }
 
   public async requestAndAwaitGrant(connection: ConnectionRecord, timeoutMs = 10000): Promise<MediationRecord> {
-    const { mediationRecord, message } = await this.recipientService.createRequest(connection)
+    const { mediationRecord, message } = await this.mediationRecipientService.createRequest(connection)
 
     // Create observable for event
     const observable = this.eventEmitter.observable<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged)
@@ -185,9 +185,9 @@ export class RecipientModule {
 
   // Register handlers for the several messages for the mediator.
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.recipientService))
-    dispatcher.registerHandler(new MediationGrantHandler(this.recipientService))
-    dispatcher.registerHandler(new MediationDenyHandler(this.recipientService))
-    //dispatcher.registerHandler(new KeylistListHandler(this.recipientService)) // TODO: write this
+    dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
+    dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
+    dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
+    //dispatcher.registerHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
   }
 }

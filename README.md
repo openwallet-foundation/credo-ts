@@ -65,7 +65,7 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
 - ✅ HTTP Transport
 - 🚧 Revocation of Indy Credentials
 - 🚧 Electron
-- 🚧 Mediator Coordination Protocol ([RFC 0211](https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md))
+- ✅ Mediator Coordination Protocol ([RFC 0211](https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md))
 - 🚧 WebSocket Transport
 - ❌ Browser
 - ❌ Connection-less Issuance and Verification
