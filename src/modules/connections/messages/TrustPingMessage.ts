@@ -5,8 +5,6 @@ import { Equals, IsString, IsBoolean } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 
-import { ConnectionMessageType } from './ConnectionMessageType'
-
 export interface TrustPingMessageOptions {
   comment?: string
   id?: string
@@ -45,7 +43,7 @@ export class TrustPingMessage extends AgentMessage {
 
   @Equals(TrustPingMessage.type)
   public readonly type = TrustPingMessage.type
-  public static readonly type = ConnectionMessageType.TrustPingMessage
+  public static readonly type = 'https://didcomm.org/trust_ping/1.0/ping'
 
   @IsString()
   public comment?: string

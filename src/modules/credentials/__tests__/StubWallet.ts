@@ -1,17 +1,30 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-import type { UnpackedMessageContext } from '../../../types'
+import type { PackedMessage, UnpackedMessageContext } from '../../../types'
+import type { Buffer } from '../../../utils/buffer'
 import type { Wallet } from '../../../wallet/Wallet'
-import type { DidConfig, WalletRecordOptions, WalletRecord, WalletQuery, LedgerRequest } from 'indy-sdk'
+import type {
+  DidConfig,
+  WalletRecordOptions,
+  WalletRecord,
+  WalletQuery,
+  LedgerRequest,
+  WalletConfig,
+  WalletCredentials,
+} from 'indy-sdk'
 
 export class StubWallet implements Wallet {
+  public get isInitialized() {
+    return true
+  }
+
   public get walletHandle() {
     return 0
   }
   public get publicDid() {
     return undefined
   }
-  public init(): Promise<void> {
+  public initialize(walletConfig: WalletConfig, walletCredentials: WalletCredentials): Promise<void> {
     return Promise.resolve()
   }
   public close(): Promise<void> {
@@ -28,10 +41,14 @@ export class StubWallet implements Wallet {
     throw new Error('Method not implemented.')
   }
 
-  public pack(payload: Record<string, unknown>, recipientKeys: string[], senderVk: string | null): Promise<JsonWebKey> {
+  public pack(
+    payload: Record<string, unknown>,
+    recipientKeys: string[],
+    senderVk: string | null
+  ): Promise<PackedMessage> {
     throw new Error('Method not implemented.')
   }
-  public unpack(messagePackage: JsonWebKey): Promise<UnpackedMessageContext> {
+  public unpack(messagePackage: PackedMessage): Promise<UnpackedMessageContext> {
     throw new Error('Method not implemented.')
   }
   public sign(data: Buffer, verkey: string): Promise<Buffer> {

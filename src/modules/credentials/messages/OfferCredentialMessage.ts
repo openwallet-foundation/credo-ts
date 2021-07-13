@@ -8,7 +8,6 @@ import { Attachment } from '../../../decorators/attachment/Attachment'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 
 import { CredentialPreview } from './CredentialPreview'
-import { IssueCredentialMessageType } from './IssueCredentialMessageType'
 
 export const INDY_CREDENTIAL_OFFER_ATTACHMENT_ID = 'libindy-cred-offer-0'
 
@@ -17,6 +16,7 @@ export interface OfferCredentialMessageOptions {
   comment?: string
   offerAttachments: Attachment[]
   credentialPreview: CredentialPreview
+  attachments?: Attachment[]
 }
 
 /**
@@ -33,12 +33,13 @@ export class OfferCredentialMessage extends AgentMessage {
       this.comment = options.comment
       this.credentialPreview = options.credentialPreview
       this.offerAttachments = options.offerAttachments
+      this.attachments = options.attachments
     }
   }
 
   @Equals(OfferCredentialMessage.type)
   public readonly type = OfferCredentialMessage.type
-  public static readonly type = IssueCredentialMessageType.OfferCredential
+  public static readonly type = 'https://didcomm.org/issue-credential/1.0/offer-credential'
 
   @IsString()
   public comment?: string

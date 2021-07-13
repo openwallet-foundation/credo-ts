@@ -8,7 +8,7 @@ import { Attachment } from './Attachment'
 export function AttachmentDecorated<T extends BaseMessageConstructor>(Base: T) {
   class AttachmentDecoratorExtension extends Base {
     /**
-     * The ~attach decorator is required for appending attachments to a credential
+     * The ~attach decorator is required for appending attachments to a preview
      */
     @Expose({ name: '~attach' })
     @Type(() => Attachment)

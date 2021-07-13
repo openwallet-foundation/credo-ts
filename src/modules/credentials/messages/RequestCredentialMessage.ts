@@ -7,14 +7,13 @@ import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 
-import { IssueCredentialMessageType } from './IssueCredentialMessageType'
-
 export const INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID = 'libindy-cred-request-0'
 
 interface RequestCredentialMessageOptions {
   id?: string
   comment?: string
   requestAttachments: Attachment[]
+  attachments?: Attachment[]
 }
 
 export class RequestCredentialMessage extends AgentMessage {
@@ -25,12 +24,13 @@ export class RequestCredentialMessage extends AgentMessage {
       this.id = options.id || this.generateId()
       this.comment = options.comment
       this.requestAttachments = options.requestAttachments
+      this.attachments = options.attachments
     }
   }
 
   @Equals(RequestCredentialMessage.type)
   public readonly type = RequestCredentialMessage.type
-  public static readonly type = IssueCredentialMessageType.RequestCredential
+  public static readonly type = 'https://didcomm.org/issue-credential/1.0/request-credential'
 
   @IsString()
   public comment?: string

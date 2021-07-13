@@ -1,10 +1,11 @@
+import type { Attachment } from '../../../decorators/attachment/Attachment'
+
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 
 import { CredentialPreview } from './CredentialPreview'
-import { IssueCredentialMessageType } from './IssueCredentialMessageType'
 
 export interface ProposeCredentialMessageOptions {
   id?: string
@@ -16,6 +17,7 @@ export interface ProposeCredentialMessageOptions {
   schemaVersion?: string
   credentialDefinitionId?: string
   issuerDid?: string
+  attachments?: Attachment[]
 }
 
 /**
@@ -37,12 +39,13 @@ export class ProposeCredentialMessage extends AgentMessage {
       this.schemaVersion = options.schemaVersion
       this.credentialDefinitionId = options.credentialDefinitionId
       this.issuerDid = options.issuerDid
+      this.attachments = options.attachments
     }
   }
 
   @Equals(ProposeCredentialMessage.type)
   public readonly type = ProposeCredentialMessage.type
-  public static readonly type = IssueCredentialMessageType.ProposeCredential
+  public static readonly type = 'https://didcomm.org/issue-credential/1.0/propose-credential'
 
   /**
    * Human readable information about this Credential Proposal,

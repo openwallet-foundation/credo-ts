@@ -10,15 +10,16 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
+import { isLinkedAttachment } from '../../utils/attachment'
 import { ConnectionService } from '../connections/services/ConnectionService'
 
 import { CredentialResponseCoordinator } from './CredentialResponseCoordinator'
 import {
-  ProposeCredentialHandler,
-  OfferCredentialHandler,
-  RequestCredentialHandler,
-  IssueCredentialHandler,
   CredentialAckHandler,
+  IssueCredentialHandler,
+  OfferCredentialHandler,
+  ProposeCredentialHandler,
+  RequestCredentialHandler,
 } from './handlers'
 import { CredentialService } from './services'
 
@@ -95,6 +96,10 @@ export class CredentialsModule {
 
     const credentialDefinitionId = config?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
 
+    credentialRecord.linkedAttachments = credentialProposalMessage.attachments?.filter((attachment) =>
+      isLinkedAttachment(attachment)
+    )
+
     if (!credentialDefinitionId) {
       throw new AriesFrameworkError(
         'Missing required credential definition id. If credential proposal message contains no credential definition id it must be passed to config.'
@@ -158,6 +163,7 @@ export class CredentialsModule {
       credentialDefinitionId,
       comment: config?.comment,
       autoAcceptCredential: config?.autoAcceptCredential,
+      attachments: credentialRecord.linkedAttachments,
     })
 
     const outboundMessage = createOutboundMessage(connection, message)

@@ -1,5 +1,5 @@
 import type { Logger } from '../logger'
-import type { UnpackedMessageContext } from '../types'
+import type { PackedMessage, UnpackedMessageContext } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { Verkey } from 'indy-sdk'
 
@@ -27,7 +27,7 @@ class EnvelopeService {
     this.logger = agentConfig.logger
   }
 
-  public async packMessage(payload: AgentMessage, keys: EnvelopeKeys): Promise<JsonWebKey> {
+  public async packMessage(payload: AgentMessage, keys: EnvelopeKeys): Promise<PackedMessage> {
     const { routingKeys, recipientKeys, senderKey: senderVk } = keys
     const message = payload.toJSON()
 
@@ -51,7 +51,7 @@ class EnvelopeService {
     return wireMessage
   }
 
-  public async unpackMessage(packedMessage: JsonWebKey): Promise<UnpackedMessageContext> {
+  public async unpackMessage(packedMessage: PackedMessage): Promise<UnpackedMessageContext> {
     return this.wallet.unpack(packedMessage)
   }
 }

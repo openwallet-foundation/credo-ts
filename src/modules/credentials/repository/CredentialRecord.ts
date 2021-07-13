@@ -4,6 +4,7 @@ import type { CredentialState } from '../CredentialState'
 
 import { Type } from 'class-transformer'
 
+import { Attachment } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
@@ -38,6 +39,7 @@ export interface CredentialRecordProps {
   credentialMessage?: IssueCredentialMessage
   credentialAttributes?: CredentialPreviewAttribute[]
   autoAcceptCredential?: AutoAcceptCredential
+  linkedAttachments?: Attachment[]
 }
 
 export type CustomCredentialTags = TagsBase
@@ -45,6 +47,7 @@ export type DefaultCredentialTags = {
   threadId: string
   connectionId: string
   state: CredentialState
+  credentialId?: string
 }
 
 export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCredentialTags> {
@@ -68,6 +71,9 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
   @Type(() => CredentialPreviewAttribute)
   public credentialAttributes?: CredentialPreviewAttribute[]
 
+  @Type(() => Attachment)
+  public linkedAttachments?: Attachment[]
+
   public static readonly type = 'CredentialRecord'
   public readonly type = CredentialRecord.type
 
@@ -90,6 +96,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       this.credentialMessage = props.credentialMessage
       this.credentialAttributes = props.credentialAttributes
       this.autoAcceptCredential = props.autoAcceptCredential
+      this.linkedAttachments = props.linkedAttachments
     }
   }
 
@@ -99,6 +106,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       threadId: this.threadId,
       connectionId: this.connectionId,
       state: this.state,
+      credentialId: this.credentialId,
     }
   }
 
@@ -115,6 +123,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
 
     return new CredentialInfo({
       claims,
+      attachments: this.linkedAttachments,
       metadata: {
         credentialDefinitionId: this.metadata.credentialDefinitionId,
         schemaId: this.metadata.schemaId,

@@ -14,7 +14,7 @@ You can set up an agent by importing the `Agent` class. It requires you to pass 
 
 ```ts
 import indy from 'indy-sdk'
-import { NodeFileSystem } from 'aries-framework/build/src/storage/fs/NodeFileSystem'
+import { NodeFileSystem } from 'aries-framework/build/storage/fs/NodeFileSystem'
 
 import { Agent, InitConfig } from 'aries-framework'
 

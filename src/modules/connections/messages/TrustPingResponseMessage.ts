@@ -4,8 +4,6 @@ import { Equals, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 
-import { ConnectionMessageType } from './ConnectionMessageType'
-
 export interface TrustPingResponseMessageOptions {
   comment?: string
   id?: string
@@ -45,8 +43,8 @@ export class TrustPingResponseMessage extends AgentMessage {
   }
 
   @Equals(TrustPingResponseMessage.type)
-  public static readonly type = ConnectionMessageType.TrustPingResponseMessage
   public readonly type = TrustPingResponseMessage.type
+  public static readonly type = 'https://didcomm.org/trust_ping/1.0/ping_response'
 
   @IsString()
   public comment?: string

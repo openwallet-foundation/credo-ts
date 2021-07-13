@@ -2,13 +2,12 @@ import { Expose } from 'class-transformer'
 import { Equals, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-
-import { RoutingMessageType as MessageType } from './RoutingMessageType'
+import { PackedMessage } from '../../../types'
 
 export interface ForwardMessageOptions {
   id?: string
   to: string
-  message: JsonWebKey
+  message: PackedMessage
 }
 
 /**
@@ -32,11 +31,11 @@ export class ForwardMessage extends AgentMessage {
 
   @Equals(ForwardMessage.type)
   public readonly type = ForwardMessage.type
-  public static readonly type = MessageType.ForwardMessage
+  public static readonly type = 'https://didcomm.org/routing/1.0/forward'
 
   @IsString()
   public to!: string
 
   @Expose({ name: 'msg' })
-  public message!: JsonWebKey
+  public message!: PackedMessage
 }

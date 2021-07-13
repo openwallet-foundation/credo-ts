@@ -125,7 +125,7 @@ export class LedgerService {
 
       return schema
     } catch (error) {
-      this.logger.error(`Error registering schema for did '${did}' on ledger`, {
+      this.logger.error(`Error registering schema for did '${did}' on ledger:`, {
         error,
         did,
         poolHandle: await this.getPoolHandle(),

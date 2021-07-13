@@ -31,6 +31,11 @@ export function TransportDecorated<T extends BaseMessageConstructor>(Base: T) {
       // transport is thread but threadId is either missing or doesn't match. Return false
       return false
     }
+
+    public hasAnyReturnRoute() {
+      const returnRoute = this.transport?.returnRoute
+      return returnRoute && (returnRoute === ReturnRouteTypes.all || returnRoute === ReturnRouteTypes.thread)
+    }
   }
 
   return TransportDecoratorExtension

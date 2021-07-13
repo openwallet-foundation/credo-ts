@@ -6,11 +6,14 @@ import type { InitConfig } from '../types'
 import type { Wallet } from '../wallet/Wallet'
 import type { AgentMessageReceivedEvent } from './Events'
 import type { TransportSession } from './TransportService'
+import type { Subscription } from 'rxjs'
 import type { DependencyContainer } from 'tsyringe'
 
+import { concatMap } from 'rxjs/operators'
 import { container as baseContainer } from 'tsyringe'
 
 import { InjectionSymbols } from '../constants'
+import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
@@ -20,12 +23,14 @@ import { RoutingModule } from '../modules/routing/RoutingModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
 import { IndyWallet } from '../wallet/IndyWallet'
+import { WalletError } from '../wallet/error'
 
 import { AgentConfig } from './AgentConfig'
 import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes } from './Events'
 import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
+import { TransportService } from './TransportService'
 
 export class Agent {
   protected agentConfig: AgentConfig
@@ -34,9 +39,11 @@ export class Agent {
   protected eventEmitter: EventEmitter
   protected wallet: Wallet
   protected messageReceiver: MessageReceiver
+  protected transportService: TransportService
   protected messageSender: MessageSender
   public inboundTransporter?: InboundTransporter
   private _isInitialized = false
+  public messageSubscription: Subscription
 
   public readonly connections!: ConnectionsModule
   public readonly proofs!: ProofsModule
@@ -79,10 +86,19 @@ export class Agent {
       logger: initialConfig.logger != undefined,
     })
 
+    if (!this.agentConfig.walletConfig || !this.agentConfig.walletCredentials) {
+      this.logger.warn(
+        'Wallet config and/or credentials have not been set on the agent config. ' +
+          'Make sure to initialize the wallet yourself before initializing the agent, ' +
+          'or provide the required wallet configuration in the agent constructor'
+      )
+    }
+
     // Resolve instances after everything is registered
     this.eventEmitter = this.container.resolve(EventEmitter)
     this.messageSender = this.container.resolve(MessageSender)
     this.messageReceiver = this.container.resolve(MessageReceiver)
+    this.transportService = this.container.resolve(TransportService)
     this.wallet = this.container.resolve(InjectionSymbols.Wallet)
 
     // We set the modules in the constructor because that allows to set them as read-only
@@ -94,13 +110,10 @@ export class Agent {
     this.ledger = this.container.resolve(LedgerModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
-    this.listenForMessages()
-  }
-
-  private listenForMessages() {
-    this.eventEmitter.on<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived, async (event) => {
-      await this.receiveMessage(event.payload.message)
-    })
+    this.messageSubscription = this.eventEmitter
+      .observable<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived)
+      .pipe(concatMap((e) => this.messageReceiver.receiveMessage(e.payload.message)))
+      .subscribe()
   }
 
   public setInboundTransporter(inboundTransporter: InboundTransporter) {
@@ -120,13 +133,28 @@ export class Agent {
   }
 
   public get isInitialized() {
-    return this._isInitialized
+    return this._isInitialized && this.wallet.isInitialized
   }
 
-  public async init() {
-    await this.wallet.init()
+  public async initialize() {
+    const { publicDidSeed, walletConfig, walletCredentials } = this.agentConfig
 
-    const { publicDidSeed } = this.agentConfig
+    if (this._isInitialized) {
+      throw new AriesFrameworkError(
+        'Agent already initialized. Currently it is not supported to re-initialize an already initialized agent.'
+      )
+    }
+
+    if (!this.wallet.isInitialized && walletConfig && walletCredentials) {
+      await this.wallet.initialize(walletConfig, walletCredentials)
+    } else if (!this.wallet.isInitialized) {
+      throw new WalletError(
+        'Wallet config and/or credentials have not been set on the agent config. ' +
+          'Make sure to initialize the wallet yourself before initializing the agent, ' +
+          'or provide the required wallet configuration in the agent constructor'
+      )
+    }
+
     if (publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
       await this.wallet.initPublicDid({ seed: publicDidSeed })
