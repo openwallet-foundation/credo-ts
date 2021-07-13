@@ -12,6 +12,7 @@ import type {
   LedgerWriteReplyResponse,
 } from 'indy-sdk'
 
+import { Subject } from 'rxjs'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
@@ -36,7 +37,8 @@ export class LedgerService {
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
     agentConfig: AgentConfig,
     indyIssuer: IndyIssuerService,
-    @inject(InjectionSymbols.FileSystem) fileSystem: FileSystem
+    @inject(InjectionSymbols.FileSystem) fileSystem: FileSystem,
+    @inject(InjectionSymbols.$Stop) $stop: Subject<boolean>
   ) {
     this.wallet = wallet
     this.agentConfig = agentConfig
@@ -44,6 +46,13 @@ export class LedgerService {
     this.logger = agentConfig.logger
     this.indyIssuer = indyIssuer
     this.fileSystem = fileSystem
+
+    // Listen to $stop (shutdown) and close pool
+    $stop.subscribe(async () => {
+      if (this._poolHandle) {
+        await this.close()
+      }
+    })
   }
 
   private async getPoolHandle() {
@@ -52,6 +61,26 @@ export class LedgerService {
     }
 
     return this._poolHandle
+  }
+
+  public async close() {
+    // FIXME: Add type to indy-sdk
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    await this.indy.closePoolLedger(this._poolHandle)
+    this._poolHandle = undefined
+  }
+
+  public async delete() {
+    // Close the pool if currently open
+    if (this._poolHandle) {
+      await this.close()
+    }
+
+    // FIXME: Add type to indy-sdk
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    await this.indy.deletePoolLedgerConfig(this.agentConfig.poolName)
   }
 
   public async connect() {

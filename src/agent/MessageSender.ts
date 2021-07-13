@@ -96,7 +96,9 @@ export class MessageSender {
       throw new AriesFrameworkError(`Connection with id ${connection.id} has no service!`)
     }
 
-    this.logger.debug(`Found ${services.length} services for message to connection '${connection.id}'`)
+    this.logger.debug(
+      `Found ${services.length} services for message to connection '${connection.id}' (${connection.theirLabel})`
+    )
 
     for await (const service of services) {
       // We can't send message to didcomm:transport/queue
@@ -147,15 +149,17 @@ export class MessageSender {
 
     // We didn't succeed to send the message over open session, or directly to serviceEndpoint
     // If the other party shared a queue service endpoint in their did doc we queue the message
-    const { theirDidDoc } = outboundMessage.connection
+    const queueService = services.find((s) => s.serviceEndpoint === DID_COMM_TRANSPORT_QUEUE)
     if (
-      theirDidDoc &&
-      this.transportService.hasInboundEndpoint(theirDidDoc) &&
+      queueService &&
       // FIXME: we can't currently add unpacked message to the queue. This is good for now
       // as forward messages are always packed. Allowing unpacked messages means
       // we can queue undeliverable messages
       !isUnpackedPackedMessage(outboundMessage)
     ) {
+      this.logger.debug(
+        `Queue message for connection ${outboundMessage.connection.id} (${outboundMessage.connection.theirLabel})`
+      )
       this.messageRepository.add(outboundMessage.connection.id, outboundMessage.payload)
     }
   }

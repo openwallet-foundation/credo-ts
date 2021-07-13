@@ -10,7 +10,7 @@ import { sleep } from '../utils/sleep'
 import { genesisPath, getBaseConfig } from './helpers'
 import testLogger from './logger'
 
-const faberConfig = getBaseConfig('Faber Ledger', { genesisPath })
+const faberConfig = getBaseConfig('Faber Ledger')
 
 describe('ledger', () => {
   let faberAgent: Agent

@@ -32,7 +32,10 @@ export class WsOutboundTransporter implements OutboundTransporter {
 
   public async sendMessage(outboundPackage: OutboundPackage) {
     const { connection, payload, endpoint } = outboundPackage
-    this.logger.debug(`Sending outbound message to connection ${connection.id} over websocket transport.`, payload)
+    this.logger.debug(
+      `Sending outbound message to connection ${connection.id}  (${connection.theirLabel}) over websocket transport.`,
+      payload
+    )
     const isNewSocket = this.hasOpenSocket(connection.id)
     const socket = await this.resolveSocket(connection, endpoint)
     socket.send(JSON.stringify(payload))

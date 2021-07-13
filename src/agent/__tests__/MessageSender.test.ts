@@ -3,11 +3,12 @@ import type { MessageRepository } from '../../storage/MessageRepository'
 import type { OutboundTransporter } from '../../transport'
 import type { OutboundMessage } from '../../types'
 
-import { getMockConnection, mockFunction } from '../../__tests__/helpers'
+import { getBaseConfig, getMockConnection, mockFunction } from '../../__tests__/helpers'
 import testLogger from '../../__tests__/logger'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { DidCommService } from '../../modules/connections'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
+import { AgentConfig } from '../AgentConfig'
 import { AgentMessage } from '../AgentMessage'
 import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { MessageSender } from '../MessageSender'
@@ -96,7 +97,7 @@ describe('MessageSender', () => {
       TransportServiceMock.mockClear()
       transportServiceHasInboundEndpoint.mockReturnValue(true)
       outboundTransporter = new DummyOutboundTransporter()
-      messageRepository = new InMemoryMessageRepository()
+      messageRepository = new InMemoryMessageRepository(new AgentConfig(getBaseConfig('MessageSender')))
       messageSender = new MessageSender(enveloperService, transportService, messageRepository, logger)
       connection = getMockConnection({ id: 'test-123' })
 
@@ -230,7 +231,7 @@ describe('MessageSender', () => {
   describe('packMessage', () => {
     beforeEach(() => {
       outboundTransporter = new DummyOutboundTransporter()
-      messageRepository = new InMemoryMessageRepository()
+      messageRepository = new InMemoryMessageRepository(new AgentConfig(getBaseConfig('PackMessage')))
       messageSender = new MessageSender(enveloperService, transportService, messageRepository, logger)
       connection = getMockConnection({ id: 'test-123' })
 

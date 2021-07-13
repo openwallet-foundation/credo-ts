@@ -51,7 +51,7 @@ export class MessageReceiver {
       throw new AriesFrameworkError('Invalid message received. Message should be object')
     }
 
-    this.logger.debug(`Agent ${this.config.label} received message:`, inboundPackedMessage)
+    this.logger.debug(`Agent ${this.config.label} received message`)
 
     const unpackedMessage = await this.unpackMessage(inboundPackedMessage as Record<string, unknown>)
     const senderKey = unpackedMessage.sender_verkey
@@ -71,7 +71,10 @@ export class MessageReceiver {
       }
     }
 
-    this.logger.info(`Received message with type '${unpackedMessage.message['@type']}'`, unpackedMessage.message)
+    this.logger.info(
+      `Received message with type '${unpackedMessage.message['@type']}' from connection ${connection?.id} (${connection?.theirLabel})`,
+      unpackedMessage.message
+    )
 
     const message = await this.transformMessage(unpackedMessage)
     const messageContext = new InboundMessageContext(message, {
