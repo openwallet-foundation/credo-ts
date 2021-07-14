@@ -34,11 +34,11 @@ import testLogger from './logger'
 
 const faberConfig = getBaseConfig('Faber Proofs', {
   endpoint: 'rxjs:faber',
-  autoAcceptCredentials: AutoAcceptCredential.Always,
+  autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
 })
 const aliceConfig = getBaseConfig('Alice Proofs', {
   endpoint: 'rxjs:alice',
-  autoAcceptCredentials: AutoAcceptCredential.Always,
+  autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
 })
 
 const credentialPreview = new CredentialPreview({

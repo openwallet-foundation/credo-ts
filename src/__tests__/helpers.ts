@@ -279,6 +279,9 @@ export async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: Did) {
   }
 }
 
+/**
+ * Assumes that the autoAcceptCredential is set to {@link AutoAcceptCredential.ContentApproved}
+ */
 export async function issueCredential({
   issuerAgent,
   issuerConnectionId,
@@ -292,7 +295,14 @@ export async function issueCredential({
 }) {
   let issuerCredentialRecord = await issuerAgent.credentials.offerCredential(issuerConnectionId, credentialTemplate)
 
-  const holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
+  let holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
+    threadId: issuerCredentialRecord.threadId,
+    state: CredentialState.OfferReceived,
+  })
+
+  await holderAgent.credentials.acceptOffer(holderCredentialRecord.id)
+
+  holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.Done,
   })
