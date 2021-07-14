@@ -13,12 +13,11 @@ import type {
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
+import { AgentConfig } from '../../../agent/AgentConfig'
 import { InjectionSymbols } from '../../../constants'
 import { FileSystem } from '../../../storage/FileSystem'
 import { getDirFromFilePath } from '../../../utils/path'
 import { IndyWallet } from '../../../wallet/IndyWallet'
-
-import { AgentConfig } from 'packages/core/src/agent/AgentConfig'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyIssuerService {

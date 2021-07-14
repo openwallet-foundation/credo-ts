@@ -2,9 +2,8 @@ import type * as Indy from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
+import { AgentConfig } from '../../../agent/AgentConfig'
 import { IndyWallet } from '../../../wallet/IndyWallet'
-
-import { AgentConfig } from 'packages/core/src/agent/AgentConfig'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyHolderService {

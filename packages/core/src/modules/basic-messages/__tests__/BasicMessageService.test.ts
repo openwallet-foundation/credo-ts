@@ -1,7 +1,7 @@
+import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { StorageService } from '../../../storage/StorageService'
 import type { Wallet } from '../../../wallet/Wallet'
 import type { BasicMessageReceivedEvent } from '../BasicMessageEvents'
-import type { AgentConfig } from 'packages/core/src/agent/AgentConfig'
 
 import { Subject } from 'rxjs'
 
