@@ -3,16 +3,13 @@ import type * as Indy from 'indy-sdk'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { IndyWallet } from '../../../wallet/IndyWallet'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyVerifierService {
   private indy: typeof Indy
-  private indyWallet: IndyWallet
 
-  public constructor(agentConfig: AgentConfig, indyWallet: IndyWallet) {
+  public constructor(agentConfig: AgentConfig) {
     this.indy = agentConfig.agentDependencies.indy
-    this.indyWallet = indyWallet
   }
 
   public verifyProof({
