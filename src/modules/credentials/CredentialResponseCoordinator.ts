@@ -35,7 +35,7 @@ export class CredentialResponseCoordinator {
   /**
    * Checks whether it should automatically respond to a proposal
    */
-  public async shoudlAutoRespondToProposal(credentialRecord: CredentialRecord) {
+  public shoudlAutoRespondToProposal(credentialRecord: CredentialRecord) {
     const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
       credentialRecord.autoAcceptCredential,
       this.agentConfig.autoAcceptCredentials
@@ -54,7 +54,7 @@ export class CredentialResponseCoordinator {
   /**
    * Checks whether it should automatically respond to an offer
    */
-  public async shouldAutoRespondToOffer(credentialRecord: CredentialRecord) {
+  public shouldAutoRespondToOffer(credentialRecord: CredentialRecord) {
     const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
       credentialRecord.autoAcceptCredential,
       this.agentConfig.autoAcceptCredentials
@@ -88,7 +88,7 @@ export class CredentialResponseCoordinator {
   /**
    * Checks whether it should automatically respond to the issuance of a credential
    */
-  public async shouldAutoRespondToIssue(credentialRecord: CredentialRecord) {
+  public shouldAutoRespondToIssue(credentialRecord: CredentialRecord) {
     const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
       credentialRecord.autoAcceptCredential,
       this.agentConfig.autoAcceptCredentials

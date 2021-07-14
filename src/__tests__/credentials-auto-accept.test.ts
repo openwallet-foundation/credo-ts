@@ -69,8 +69,12 @@ describe('auto accept credentials', () => {
     })
 
     afterAll(async () => {
-      await faberAgent.closeAndDeleteWallet()
-      await aliceAgent.closeAndDeleteWallet()
+      await aliceAgent.shutdown({
+        deleteWallet: true,
+      })
+      await faberAgent.shutdown({
+        deleteWallet: true,
+      })
     })
 
     test('Alice starts with credential proposal to Faber, both with autoAcceptCredential on `always`', async () => {
@@ -173,8 +177,12 @@ describe('auto accept credentials', () => {
     })
 
     afterAll(async () => {
-      await faberAgent.closeAndDeleteWallet()
-      await aliceAgent.closeAndDeleteWallet()
+      await aliceAgent.shutdown({
+        deleteWallet: true,
+      })
+      await faberAgent.shutdown({
+        deleteWallet: true,
+      })
     })
 
     test('Alice starts with credential proposal to Faber, both with autoAcceptCredential on `contentApproved`', async () => {

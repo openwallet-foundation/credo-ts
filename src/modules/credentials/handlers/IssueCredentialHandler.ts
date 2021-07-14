@@ -25,7 +25,7 @@ export class IssueCredentialHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<IssueCredentialHandler>) {
     const credentialRecord = await this.credentialService.processCredential(messageContext)
-    if (await this.credentialResponseCoordinator.shouldAutoRespondToIssue(credentialRecord)) {
+    if (this.credentialResponseCoordinator.shouldAutoRespondToIssue(credentialRecord)) {
       return await this.createAck(credentialRecord, messageContext)
     }
   }

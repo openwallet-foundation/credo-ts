@@ -8,7 +8,7 @@ import type {
 } from '../modules/credentials'
 import type { CredentialDefinitionTemplate, SchemaTemplate } from '../modules/ledger'
 import type { ProofAttributeInfo, ProofPredicateInfo, ProofRecord, ProofStateChangedEvent } from '../modules/proofs'
-import type { InitConfig } from '../types'
+import type { InitConfig, WireMessage } from '../types'
 import type { CredDef, Did, Schema } from 'indy-sdk'
 
 import indy from 'indy-sdk'
@@ -292,32 +292,15 @@ export async function issueCredential({
 }) {
   let issuerCredentialRecord = await issuerAgent.credentials.offerCredential(issuerConnectionId, credentialTemplate)
 
-  let holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
-    threadId: issuerCredentialRecord.threadId,
-    state: CredentialState.OfferReceived,
-  })
-
-  let issuerCredentialRecordPromise = waitForCredentialRecord(issuerAgent, {
-    threadId: holderCredentialRecord.threadId,
-    state: CredentialState.RequestReceived,
-  })
-  holderCredentialRecord = await holderAgent.credentials.acceptOffer(holderCredentialRecord.id)
-  issuerCredentialRecord = await issuerCredentialRecordPromise
-
-  const holderCredentialRecordPromise = waitForCredentialRecord(holderAgent, {
-    threadId: issuerCredentialRecord.threadId,
-    state: CredentialState.CredentialReceived,
-  })
-  issuerCredentialRecord = await issuerAgent.credentials.acceptRequest(issuerCredentialRecord.id)
-  await holderCredentialRecordPromise
-
-  issuerCredentialRecordPromise = waitForCredentialRecord(issuerAgent, {
+  const holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.Done,
   })
-  holderCredentialRecord = await holderAgent.credentials.acceptCredential(holderCredentialRecord.id)
 
-  issuerCredentialRecord = await issuerCredentialRecordPromise
+  issuerCredentialRecord = await waitForCredentialRecord(issuerAgent, {
+    threadId: issuerCredentialRecord.threadId,
+    state: CredentialState.Done,
+  })
 
   return {
     issuerCredential: issuerCredentialRecord,
@@ -399,32 +382,36 @@ export async function setupCredentialTests(
   aliceName: string,
   autoAcceptCredentials?: AutoAcceptCredential
 ) {
-  const faberMessages = new Subject()
-  const aliceMessages = new Subject()
-
+  const faberMessages = new Subject<WireMessage>()
+  const aliceMessages = new Subject<WireMessage>()
+  const subjectMap = {
+    'rxjs:faber': faberMessages,
+    'rxjs:alice': aliceMessages,
+  }
   const faberConfig = getBaseConfig(faberName, {
     genesisPath,
+    endpoint: 'rxjs:faber',
     autoAcceptCredentials,
   })
 
   const aliceConfig = getBaseConfig(aliceName, {
     genesisPath,
+    endpoint: 'rxjs:alice',
     autoAcceptCredentials,
   })
-
   const faberAgent = new Agent(faberConfig)
-  faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages, aliceMessages))
-  faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages))
+  faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
+  faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
   await faberAgent.initialize()
 
   const aliceAgent = new Agent(aliceConfig)
-  aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages, faberMessages))
-  aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages))
+  aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
+  aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
   await aliceAgent.initialize()
 
   const schemaTemplate = {
     name: `test-schema-${Date.now()}`,
-    attributes: ['name', 'age', 'lastname'],
+    attributes: ['name', 'age', 'profile_picture', 'x-ray'],
     version: '1.0',
   }
   const schema = await registerSchema(faberAgent, schemaTemplate)
@@ -443,7 +430,7 @@ export async function setupCredentialTests(
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   await ensurePublicDidIsOnLedger(faberAgent, publicDid!)
-  const { agentAConnection, agentBConnection } = await makeConnection(faberAgent, aliceAgent)
+  const [agentAConnection, agentBConnection] = await makeConnection(faberAgent, aliceAgent)
   const faberConnection = agentAConnection
   const aliceConnection = agentBConnection
 
