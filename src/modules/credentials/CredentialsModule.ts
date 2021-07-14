@@ -112,6 +112,7 @@ export class CredentialsModule {
       credentialDefinitionId,
       comment: config?.comment,
       autoAcceptCredential: config?.autoAcceptCredential,
+      attachments: credentialRecord.linkedAttachments,
     })
 
     const outboundMessage = createOutboundMessage(connection, message)

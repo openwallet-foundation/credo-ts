@@ -8,6 +8,6 @@ export enum AutoAcceptCredential {
   // Needs one acceptation and the rest will be automated if nothing changes
   ContentApproved = 'contentApproved',
 
-  // DEFAULT: Never auto accept a credential
+  // Never auto accept a credential
   Never = 'never',
 }

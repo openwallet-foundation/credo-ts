@@ -44,29 +44,9 @@ export class CredentialResponseCoordinator {
     if (autoAccept === AutoAcceptCredential.Always) {
       return true
     } else if (autoAccept === AutoAcceptCredential.ContentApproved) {
-      if (
-        credentialRecord.proposalMessage &&
-        credentialRecord.offerMessage &&
-        credentialRecord.proposalMessage.credentialProposal &&
-        credentialRecord.credentialAttributes
-      ) {
-        const proposalValues = CredentialUtils.convertAttributesToValues(
-          credentialRecord.proposalMessage.credentialProposal.attributes
-        )
-
-        const proposalCredentialDefinitionId = credentialRecord.proposalMessage.credentialDefinitionId
-
-        const defaultValues = CredentialUtils.convertAttributesToValues(credentialRecord.credentialAttributes)
-
-        const offerCredentialDefinitionId = credentialRecord.offerMessage.indyCredentialOffer?.cred_def_id
-
-        if (
-          CredentialUtils.checkValuesMatch(proposalValues, defaultValues) &&
-          proposalCredentialDefinitionId === offerCredentialDefinitionId
-        ) {
-          return true
-        }
-      }
+      return (
+        this.areProposalValuesValid(credentialRecord) && this.areProposalAndOfferDefinitionIdEqual(credentialRecord)
+      )
     }
     return false
   }
@@ -83,29 +63,7 @@ export class CredentialResponseCoordinator {
     if (autoAccept === AutoAcceptCredential.Always) {
       return true
     } else if (autoAccept === AutoAcceptCredential.ContentApproved) {
-      if (
-        credentialRecord.proposalMessage &&
-        credentialRecord.offerMessage &&
-        credentialRecord.proposalMessage.credentialProposal &&
-        credentialRecord.credentialAttributes
-      ) {
-        const defaultValues = CredentialUtils.convertAttributesToValues(credentialRecord.credentialAttributes)
-
-        const proposalCredentialDefinitionId = credentialRecord.proposalMessage.credentialDefinitionId
-
-        const offerValues = CredentialUtils.convertAttributesToValues(
-          credentialRecord.offerMessage.credentialPreview.attributes
-        )
-
-        const offerCredentialDefinitionId = credentialRecord.offerMessage.indyCredentialOffer?.cred_def_id
-
-        if (
-          CredentialUtils.checkValuesMatch(defaultValues, offerValues) &&
-          proposalCredentialDefinitionId === offerCredentialDefinitionId
-        ) {
-          return true
-        }
-      }
+      return this.areOfferValuesValid(credentialRecord) && this.areProposalAndOfferDefinitionIdEqual(credentialRecord)
     }
     return false
   }
@@ -113,7 +71,7 @@ export class CredentialResponseCoordinator {
   /**
    * Checks whether it should automatically respond to a request
    */
-  public async shouldAutoRespondToRequest(credentialRecord: CredentialRecord) {
+  public shouldAutoRespondToRequest(credentialRecord: CredentialRecord) {
     const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
       credentialRecord.autoAcceptCredential,
       this.agentConfig.autoAcceptCredentials
@@ -122,15 +80,7 @@ export class CredentialResponseCoordinator {
     if (autoAccept === AutoAcceptCredential.Always) {
       return true
     } else if (autoAccept === AutoAcceptCredential.ContentApproved) {
-      if (credentialRecord.proposalMessage || credentialRecord.offerMessage) {
-        const previousCredentialDefinitionId =
-          credentialRecord.offerMessage?.indyCredentialOffer?.cred_def_id ??
-          credentialRecord.proposalMessage?.credentialDefinitionId
-
-        if (previousCredentialDefinitionId === credentialRecord.requestMessage?.indyCredentialRequest?.cred_def_id) {
-          return true
-        }
-      }
+      return this.isRequestDefinitionIdValid(credentialRecord)
     }
     return false
   }
@@ -147,20 +97,70 @@ export class CredentialResponseCoordinator {
     if (autoAccept === AutoAcceptCredential.Always) {
       return true
     } else if (autoAccept === AutoAcceptCredential.ContentApproved) {
-      if (credentialRecord.credentialAttributes && credentialRecord.credentialMessage) {
-        const indyCredential = credentialRecord.credentialMessage.indyCredential
+      return this.areCredentialValuesValid(credentialRecord)
+    }
+    return false
+  }
 
-        if (!indyCredential) {
-          this.agentConfig.logger.error(`Missing required base64 encoded attachment data for credential`)
-          return false
-        }
+  private areProposalValuesValid(credentialRecord: CredentialRecord) {
+    const { proposalMessage, credentialAttributes } = credentialRecord
 
-        const credentialMessageValues = indyCredential.values
-        const defaultValues = CredentialUtils.convertAttributesToValues(credentialRecord.credentialAttributes)
+    if (proposalMessage && proposalMessage.credentialProposal && credentialAttributes) {
+      const proposalValues = CredentialUtils.convertAttributesToValues(proposalMessage.credentialProposal.attributes)
+      const defaultValues = CredentialUtils.convertAttributesToValues(credentialAttributes)
+      if (CredentialUtils.checkValuesMatch(proposalValues, defaultValues)) {
+        return true
+      }
+    }
+    return false
+  }
 
-        if (CredentialUtils.checkValuesMatch(credentialMessageValues, defaultValues)) {
-          return true
-        }
+  private areOfferValuesValid(credentialRecord: CredentialRecord) {
+    const { offerMessage, credentialAttributes } = credentialRecord
+
+    if (offerMessage && credentialAttributes) {
+      const offerValues = CredentialUtils.convertAttributesToValues(offerMessage.credentialPreview.attributes)
+      const defaultValues = CredentialUtils.convertAttributesToValues(credentialAttributes)
+      if (CredentialUtils.checkValuesMatch(offerValues, defaultValues)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  private areCredentialValuesValid(credentialRecord: CredentialRecord) {
+    if (credentialRecord.credentialAttributes && credentialRecord.credentialMessage) {
+      const indyCredential = credentialRecord.credentialMessage.indyCredential
+
+      if (!indyCredential) {
+        this.agentConfig.logger.error(`Missing required base64 encoded attachment data for credential`)
+        return false
+      }
+
+      const credentialMessageValues = indyCredential.values
+      const defaultValues = CredentialUtils.convertAttributesToValues(credentialRecord.credentialAttributes)
+
+      if (CredentialUtils.checkValuesMatch(credentialMessageValues, defaultValues)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  private areProposalAndOfferDefinitionIdEqual(credentialRecord: CredentialRecord) {
+    const proposalCredentialDefinitionId = credentialRecord.proposalMessage?.credentialDefinitionId
+    const offerCredentialDefinitionId = credentialRecord.offerMessage?.indyCredentialOffer?.cred_def_id
+    return proposalCredentialDefinitionId === offerCredentialDefinitionId
+  }
+
+  private isRequestDefinitionIdValid(credentialRecord: CredentialRecord) {
+    if (credentialRecord.proposalMessage || credentialRecord.offerMessage) {
+      const previousCredentialDefinitionId =
+        credentialRecord.offerMessage?.indyCredentialOffer?.cred_def_id ??
+        credentialRecord.proposalMessage?.credentialDefinitionId
+
+      if (previousCredentialDefinitionId === credentialRecord.requestMessage?.indyCredentialRequest?.cred_def_id) {
+        return true
       }
     }
     return false

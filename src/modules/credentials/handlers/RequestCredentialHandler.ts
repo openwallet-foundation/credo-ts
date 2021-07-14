@@ -26,14 +26,11 @@ export class RequestCredentialHandler implements Handler {
   public async handle(messageContext: HandlerInboundMessage<RequestCredentialHandler>) {
     const credentialRecord = await this.credentialService.processRequest(messageContext)
     if (await this.credentialResponseCoordinator.shouldAutoRespondToRequest(credentialRecord)) {
-      return await this.sendCredential(credentialRecord, messageContext)
+      return await this.createCredential(credentialRecord, messageContext)
     }
   }
 
-  /**
-   * Sends a credential message to the other agent
-   */
-  private async sendCredential(
+  private async createCredential(
     credentialRecord: CredentialRecord,
     messageContext: HandlerInboundMessage<RequestCredentialHandler>
   ) {

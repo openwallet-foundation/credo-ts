@@ -27,14 +27,11 @@ export class OfferCredentialHandler implements Handler {
     const credentialRecord = await this.credentialService.processOffer(messageContext)
 
     if (await this.credentialReponseCoordinator.shouldAutoRespondToOffer(credentialRecord)) {
-      return await this.sendRequest(credentialRecord, messageContext)
+      return await this.createRequest(credentialRecord, messageContext)
     }
   }
 
-  /**
-   * Sends a request to the other agent
-   */
-  private async sendRequest(
+  private async createRequest(
     credentialRecord: CredentialRecord,
     messageContext: HandlerInboundMessage<OfferCredentialHandler>
   ) {

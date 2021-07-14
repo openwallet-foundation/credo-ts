@@ -360,7 +360,6 @@ export class CredentialService {
       credentialRecord.assertState(CredentialState.ProposalSent)
 
       credentialRecord.offerMessage = credentialOfferMessage
-      credentialRecord.credentialAttributes = credentialOfferMessage.credentialPreview.attributes
       credentialRecord.linkedAttachments = credentialOfferMessage.attachments?.filter((attachment) =>
         isLinkedAttachment(attachment)
       )
