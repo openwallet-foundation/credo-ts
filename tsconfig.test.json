@@ -10,5 +10,5 @@
     },
     "types": ["jest", "node"]
   },
-  "include": ["tests"]
+  "include": ["tests", "samples"]
 }

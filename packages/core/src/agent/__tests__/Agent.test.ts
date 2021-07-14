@@ -19,7 +19,7 @@ import {
   RecipientModule,
   MediationRepository,
   MediatorService,
-  RecipientService,
+  MediationRecipientService,
 } from '../../modules/routing'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../../storage/IndyStorageService'
@@ -121,7 +121,7 @@ describe('Agent', () => {
       expect(container.resolve(RecipientModule)).toBeInstanceOf(RecipientModule)
       expect(container.resolve(MediationRepository)).toBeInstanceOf(MediationRepository)
       expect(container.resolve(MediatorService)).toBeInstanceOf(MediatorService)
-      expect(container.resolve(RecipientService)).toBeInstanceOf(RecipientService)
+      expect(container.resolve(MediationRecipientService)).toBeInstanceOf(MediationRecipientService)
 
       expect(container.resolve(LedgerModule)).toBeInstanceOf(LedgerModule)
       expect(container.resolve(LedgerService)).toBeInstanceOf(LedgerService)
@@ -168,7 +168,7 @@ describe('Agent', () => {
       expect(container.resolve(RecipientModule)).toBe(container.resolve(RecipientModule))
       expect(container.resolve(MediationRepository)).toBe(container.resolve(MediationRepository))
       expect(container.resolve(MediatorService)).toBe(container.resolve(MediatorService))
-      expect(container.resolve(RecipientService)).toBe(container.resolve(RecipientService))
+      expect(container.resolve(MediationRecipientService)).toBe(container.resolve(MediationRecipientService))
 
       expect(container.resolve(LedgerModule)).toBe(container.resolve(LedgerModule))
       expect(container.resolve(LedgerService)).toBe(container.resolve(LedgerService))
