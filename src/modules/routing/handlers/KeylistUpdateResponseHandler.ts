@@ -1,11 +1,20 @@
-import type { Handler } from '../../../agent/Handler'
+import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MediationRecipientService } from '../services'
 
 import { KeylistUpdateResponseMessage } from '../messages'
 
 export class KeylistUpdateResponseHandler implements Handler {
+  public mediationRecipientService: MediationRecipientService
   public supportedMessages = [KeylistUpdateResponseMessage]
 
-  public async handle() {
-    // TODO It should handle the response when agent calls `await this.consumerRoutingService.createRoute(connectionRecord.verkey)` and notify about the result.
+  public constructor(mediationRecipientService: MediationRecipientService) {
+    this.mediationRecipientService = mediationRecipientService
+  }
+
+  public async handle(messageContext: HandlerInboundMessage<KeylistUpdateResponseHandler>) {
+    if (!messageContext.connection) {
+      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+    }
+    return await this.mediationRecipientService.processKeylistUpdateResults(messageContext)
   }
 }

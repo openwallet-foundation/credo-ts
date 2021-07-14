@@ -1,7 +1,10 @@
 import type { ConnectionRecord } from '../modules/connections'
+import type { WireMessage } from '../types'
 
 import { Subject } from 'rxjs'
 
+import { SubjectInboundTransporter } from '../../tests/transport/SubjectInboundTransport'
+import { SubjectOutboundTransporter } from '../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../agent/Agent'
 import { Attachment, AttachmentData } from '../decorators/attachment/Attachment'
 import {
@@ -15,24 +18,20 @@ import { LinkedAttachment } from '../utils/LinkedAttachment'
 
 import {
   ensurePublicDidIsOnLedger,
-  genesisPath,
   getBaseConfig,
   makeConnection,
   registerDefinition,
   registerSchema,
-  SubjectInboundTransporter,
-  SubjectOutboundTransporter,
   waitForCredentialRecord,
-  closeAndDeleteWallet,
 } from './helpers'
 import testLogger from './logger'
 
 const faberConfig = getBaseConfig('Faber Credentials', {
-  genesisPath,
+  endpoint: 'rxjs:faber',
 })
 
 const aliceConfig = getBaseConfig('Alice Credentials', {
-  genesisPath,
+  endpoint: 'rxjs:alice',
 })
 
 const credentialPreview = new CredentialPreview({
@@ -61,17 +60,20 @@ describe('credentials', () => {
   let aliceCredentialRecord: CredentialRecord
 
   beforeAll(async () => {
-    const faberMessages = new Subject()
-    const aliceMessages = new Subject()
-
+    const faberMessages = new Subject<WireMessage>()
+    const aliceMessages = new Subject<WireMessage>()
+    const subjectMap = {
+      'rxjs:faber': faberMessages,
+      'rxjs:alice': aliceMessages,
+    }
     faberAgent = new Agent(faberConfig)
-    faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages, aliceMessages))
-    faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages))
+    faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
+    faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
     await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceConfig)
-    aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages, faberMessages))
-    aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages))
+    aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
+    aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
     await aliceAgent.initialize()
 
     const schemaTemplate = {
@@ -94,14 +96,18 @@ describe('credentials', () => {
     const publicDid = faberAgent.publicDid?.did
 
     await ensurePublicDidIsOnLedger(faberAgent, publicDid!)
-    const { agentAConnection, agentBConnection } = await makeConnection(faberAgent, aliceAgent)
+    const [agentAConnection, agentBConnection] = await makeConnection(faberAgent, aliceAgent)
     faberConnection = agentAConnection
     aliceConnection = agentBConnection
   })
 
   afterAll(async () => {
-    await closeAndDeleteWallet(aliceAgent)
-    await closeAndDeleteWallet(faberAgent)
+    await aliceAgent.shutdown({
+      deleteWallet: true,
+    })
+    await faberAgent.shutdown({
+      deleteWallet: true,
+    })
   })
 
   test('Alice starts with credential proposal to Faber', async () => {

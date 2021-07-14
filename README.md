@@ -63,9 +63,9 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
 - ✅ Basic Message Protocol ([RFC 0095](https://github.com/hyperledger/aries-rfcs/blob/master/features/0095-basic-message/README.md))
 - ✅ Indy Credentials (with `did:sov` support)
 - ✅ HTTP Transport
+- ✅ Mediator Coordination Protocol ([RFC 0211](https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md))
 - 🚧 Revocation of Indy Credentials
 - 🚧 Electron
-- 🚧 Mediator Coordination Protocol ([RFC 0211](https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md))
 - 🚧 WebSocket Transport
 - ❌ Browser
 - ❌ Connection-less Issuance and Verification

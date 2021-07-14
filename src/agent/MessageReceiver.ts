@@ -1,13 +1,12 @@
 import type { Logger } from '../logger'
-import type { UnpackedMessageContext, UnpackedMessage, PackedMessage } from '../types'
+import type { UnpackedMessageContext, UnpackedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { TransportSession } from './TransportService'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../error'
-import { ConnectionService } from '../modules/connections'
-import { ForwardMessage } from '../modules/routing'
+import { ConnectionService } from '../modules/connections/services/ConnectionService'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
@@ -52,10 +51,9 @@ export class MessageReceiver {
       throw new AriesFrameworkError('Invalid message received. Message should be object')
     }
 
-    this.logger.debug(`Agent ${this.config.label} received message:`, inboundPackedMessage)
+    this.logger.debug(`Agent ${this.config.label} received message`)
 
     const unpackedMessage = await this.unpackMessage(inboundPackedMessage as Record<string, unknown>)
-
     const senderKey = unpackedMessage.sender_verkey
     let connection = undefined
     if (senderKey && unpackedMessage.recipient_verkey) {
@@ -73,7 +71,10 @@ export class MessageReceiver {
       }
     }
 
-    this.logger.info(`Received message with type '${unpackedMessage.message['@type']}'`, unpackedMessage.message)
+    this.logger.info(
+      `Received message with type '${unpackedMessage.message['@type']}' from connection ${connection?.id} (${connection?.theirLabel})`,
+      unpackedMessage.message
+    )
 
     const message = await this.transformMessage(unpackedMessage)
     const messageContext = new InboundMessageContext(message, {
@@ -102,7 +103,7 @@ export class MessageReceiver {
   }
 
   /**
-   * Unpack a message using the envelope service. Will perform extra unpacking steps for forward messages.
+   * Unpack a message using the envelope service.
    * If message is not packed, it will be returned as is, but in the unpacked message structure
    *
    * @param packedMessage the received, probably packed, message to unpack
@@ -111,36 +112,18 @@ export class MessageReceiver {
     // If the inbound message has no @type field we assume
     // the message is packed and must be unpacked first
     if (!this.isUnpackedMessage(packedMessage)) {
-      let unpackedMessage: UnpackedMessageContext
       try {
-        // TODO: handle when the unpacking fails. At the moment this will throw a cryptic
-        // indy-sdk error. Eventually we should create a problem report message
-        unpackedMessage = await this.envelopeService.unpackMessage(packedMessage)
+        return await this.envelopeService.unpackMessage(packedMessage)
       } catch (error) {
-        this.logger.error('error while unpacking message', error)
+        this.logger.error('error while unpacking message', {
+          error,
+          packedMessage,
+          errorMessage: error.message,
+        })
         throw error
       }
-
-      // if the message is of type forward we should check whether the
-      //  - forward message is intended for us (so unpack inner `msg` and pass that to dispatcher)
-      //  - or that the message should be forwarded (pass unpacked forward message with packed `msg` to dispatcher)
-      if (unpackedMessage.message['@type'] === ForwardMessage.type) {
-        this.logger.debug('unpacking forwarded message', unpackedMessage)
-
-        try {
-          unpackedMessage = await this.envelopeService.unpackMessage(unpackedMessage.message.msg as PackedMessage)
-        } catch {
-          // To check whether the `to` field is a key belonging to us could be done in two ways.
-          // We now just try to unpack, if it errors it means we don't have the key to unpack the message
-          // if we can unpack the message we certainly are the owner of the key in the to field.
-          // Another approach is to first check whether the key belongs to us and only unpack if so.
-          // I think this approach is better, but for now the current approach is easier
-          // It is thus okay to silently ignore this error
-        }
-      }
-
-      return unpackedMessage
     }
+
     // If the message does have an @type field we assume
     // the message is already unpacked an use it directly
     else {

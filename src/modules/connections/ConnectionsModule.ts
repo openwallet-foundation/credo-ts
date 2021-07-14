@@ -7,7 +7,7 @@ import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import { ConsumerRoutingService } from '../routing/services/ConsumerRoutingService'
+import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 
 import {
   ConnectionRequestHandler,
@@ -17,46 +17,49 @@ import {
   TrustPingResponseMessageHandler,
 } from './handlers'
 import { ConnectionInvitationMessage } from './messages'
-import { ConnectionService, TrustPingService } from './services'
+import { ConnectionService } from './services/ConnectionService'
+import { TrustPingService } from './services/TrustPingService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ConnectionsModule {
   private agentConfig: AgentConfig
   private connectionService: ConnectionService
-  private consumerRoutingService: ConsumerRoutingService
   private messageSender: MessageSender
   private trustPingService: TrustPingService
+  private mediationRecipientService: MediationRecipientService
 
   public constructor(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
     trustPingService: TrustPingService,
-    consumerRoutingService: ConsumerRoutingService,
+    mediationRecipientService: MediationRecipientService,
     messageSender: MessageSender
   ) {
     this.agentConfig = agentConfig
     this.connectionService = connectionService
     this.trustPingService = trustPingService
-    this.consumerRoutingService = consumerRoutingService
+    this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
     this.registerHandlers(dispatcher)
   }
 
-  public async createConnection(config?: { autoAcceptConnection?: boolean; alias?: string }): Promise<{
+  public async createConnection(config?: {
+    autoAcceptConnection?: boolean
+    alias?: string
+    mediatorId?: string
+  }): Promise<{
     invitation: ConnectionInvitationMessage
     connectionRecord: ConnectionRecord
   }> {
+    const mediationRecord = await this.mediationRecipientService.discoverMediation(config?.mediatorId)
+    const myRouting = await this.mediationRecipientService.getRouting(mediationRecord)
+
     const { connectionRecord: connectionRecord, message: invitation } = await this.connectionService.createInvitation({
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
+      routing: myRouting,
     })
-
-    // If agent has inbound connection, which means it's using a mediator, we need to create a route for newly created
-    // connection verkey at mediator.
-    if (this.agentConfig.inboundConnection) {
-      this.consumerRoutingService.createRoute(connectionRecord.verkey)
-    }
 
     return { connectionRecord, invitation }
   }
@@ -75,19 +78,22 @@ export class ConnectionsModule {
     config?: {
       autoAcceptConnection?: boolean
       alias?: string
+      mediatorId?: string
     }
   ): Promise<ConnectionRecord> {
+    const mediationRecord = await this.mediationRecipientService.discoverMediation(config?.mediatorId)
+    const myRouting = await this.mediationRecipientService.getRouting(mediationRecord)
+
     let connection = await this.connectionService.processInvitation(invitation, {
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
+      routing: myRouting,
     })
-
     // if auto accept is enabled (either on the record or the global agent config)
     // we directly send a connection request
     if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
       connection = await this.acceptInvitation(connection.id)
     }
-
     return connection
   }
 
@@ -105,6 +111,7 @@ export class ConnectionsModule {
     config?: {
       autoAcceptConnection?: boolean
       alias?: string
+      mediatorId?: string
     }
   ): Promise<ConnectionRecord> {
     const invitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
@@ -120,13 +127,6 @@ export class ConnectionsModule {
    */
   public async acceptInvitation(connectionId: string): Promise<ConnectionRecord> {
     const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(connectionId)
-
-    // If agent has inbound connection, which means it's using a mediator,
-    // we need to create a route for newly created connection verkey at mediator.
-    if (this.agentConfig.inboundConnection) {
-      await this.consumerRoutingService.createRoute(connectionRecord.verkey)
-    }
-
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)
 

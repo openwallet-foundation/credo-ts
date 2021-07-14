@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 
+import type { AbortSignal } from 'abort-controller'
+
 import { isNodeJS, isReactNative } from './environment'
 
 // TODO: we can't depend on @types/node-fetch because it depends on @types/node
@@ -8,6 +10,7 @@ type FetchResponse = {
   text(): Promise<string>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   json(): Promise<any>
+  status: number
 }
 
 type FetchFunction = (
@@ -16,6 +19,7 @@ type FetchFunction = (
     method?: 'POST' | 'GET'
     body?: string
     headers?: { [key: string]: string }
+    signal: AbortSignal
   }
 ) => Promise<FetchResponse>
 

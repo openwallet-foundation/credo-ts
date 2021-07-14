@@ -1,8 +1,11 @@
 import type { ConnectionRecord } from '../modules/connections'
+import type { WireMessage } from '../types'
 import type { CredDefId } from 'indy-sdk'
 
 import { Subject } from 'rxjs'
 
+import { SubjectInboundTransporter } from '../../tests/transport/SubjectInboundTransport'
+import { SubjectOutboundTransporter } from '../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../agent/Agent'
 import { Attachment, AttachmentData } from '../decorators/attachment/Attachment'
 import { AutoAcceptCredential, CredentialPreview, CredentialPreviewAttribute } from '../modules/credentials'
@@ -23,18 +26,20 @@ import {
   makeConnection,
   registerDefinition,
   registerSchema,
-  SubjectInboundTransporter,
-  SubjectOutboundTransporter,
-  genesisPath,
   issueCredential,
   waitForProofRecord,
   getBaseConfig,
-  closeAndDeleteWallet,
 } from './helpers'
 import testLogger from './logger'
 
-const faberConfig = getBaseConfig('Faber Proofs', { genesisPath, autoAcceptCredentials: AutoAcceptCredential.Always })
-const aliceConfig = getBaseConfig('Alice Proofs', { genesisPath, autoAcceptCredentials: AutoAcceptCredential.Always })
+const faberConfig = getBaseConfig('Faber Proofs', {
+  endpoint: 'rxjs:faber',
+  autoAcceptCredentials: AutoAcceptCredential.Always,
+})
+const aliceConfig = getBaseConfig('Alice Proofs', {
+  endpoint: 'rxjs:alice',
+  autoAcceptCredentials: AutoAcceptCredential.Always,
+})
 
 const credentialPreview = new CredentialPreview({
   attributes: [
@@ -60,17 +65,21 @@ describe('Present Proof', () => {
   let presentationPreview: PresentationPreview
 
   beforeAll(async () => {
-    const faberMessages = new Subject()
-    const aliceMessages = new Subject()
+    const faberMessages = new Subject<WireMessage>()
+    const aliceMessages = new Subject<WireMessage>()
 
+    const subjectMap = {
+      'rxjs:faber': faberMessages,
+      'rxjs:alice': aliceMessages,
+    }
     faberAgent = new Agent(faberConfig)
-    faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages, aliceMessages))
-    faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages))
+    faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
+    faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
     await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceConfig)
-    aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages, faberMessages))
-    aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages))
+    aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
+    aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
     await aliceAgent.initialize()
 
     const schemaTemplate = {
@@ -91,7 +100,9 @@ describe('Present Proof', () => {
 
     const publicDid = faberAgent.publicDid?.did
     await ensurePublicDidIsOnLedger(faberAgent, publicDid!)
-    const { agentAConnection, agentBConnection } = await makeConnection(faberAgent, aliceAgent)
+    const [agentAConnection, agentBConnection] = await makeConnection(faberAgent, aliceAgent)
+    expect(agentAConnection.isReady).toBe(true)
+    expect(agentBConnection.isReady).toBe(true)
 
     faberConnection = agentAConnection
     aliceConnection = agentBConnection
@@ -148,8 +159,12 @@ describe('Present Proof', () => {
   })
 
   afterAll(async () => {
-    await closeAndDeleteWallet(aliceAgent)
-    await closeAndDeleteWallet(faberAgent)
+    await aliceAgent.shutdown({
+      deleteWallet: true,
+    })
+    await faberAgent.shutdown({
+      deleteWallet: true,
+    })
   })
 
   test('Alice starts with proof proposal to Faber', async () => {

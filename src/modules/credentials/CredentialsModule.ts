@@ -3,13 +3,15 @@ import type { CredentialPreview } from './messages'
 import type { CredentialRecord } from './repository/CredentialRecord'
 import type { CredentialOfferTemplate, CredentialProposeOptions } from './services'
 
-import { Lifecycle, scoped } from 'tsyringe'
+import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
+import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
+import { Logger } from '../../logger'
 import { isLinkedAttachment } from '../../utils/attachment'
 import { ConnectionService } from '../connections/services/ConnectionService'
 
@@ -30,6 +32,7 @@ export class CredentialsModule {
   private messageSender: MessageSender
   private agentConfig: AgentConfig
   private credentialResponseCoordinator: CredentialResponseCoordinator
+  private logger: Logger
 
   public constructor(
     dispatcher: Dispatcher,
@@ -37,13 +40,15 @@ export class CredentialsModule {
     credentialService: CredentialService,
     messageSender: MessageSender,
     agentConfig: AgentConfig,
-    credentialResponseCoordinator: CredentialResponseCoordinator
+    credentialResponseCoordinator: CredentialResponseCoordinator,
+    @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.connectionService = connectionService
     this.credentialService = credentialService
     this.messageSender = messageSender
     this.agentConfig = agentConfig
     this.credentialResponseCoordinator = credentialResponseCoordinator
+    this.logger = logger
     this.registerHandlers(dispatcher)
   }
 
@@ -263,6 +268,8 @@ export class CredentialsModule {
   ) {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
+
+    this.logger.info(`Accepting request for credential record ${credentialRecordId}`)
 
     const { message } = await this.credentialService.createCredential(credentialRecord, config)
     const outboundMessage = createOutboundMessage(connection, message)
