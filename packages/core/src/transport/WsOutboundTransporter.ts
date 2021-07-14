@@ -17,12 +17,12 @@ export class WsOutboundTransporter implements OutboundTransporter {
   public supportedSchemes = ['ws', 'wss']
 
   public async start(agent: Agent): Promise<void> {
-    this.logger.debug('Starting WS outbound transport')
     this.agent = agent
 
     const agentConfig = agent.injectionContainer.resolve(AgentConfig)
 
     this.logger = agentConfig.logger
+    this.logger.debug('Starting WS outbound transport')
     this.WebSocket = agentConfig.agentDependencies.WebSocket
   }
 

@@ -15,6 +15,7 @@ import {
   CredentialState,
   ProofState,
 } from '../packages/core/src'
+import { uuid } from '../packages/core/src/utils/uuid'
 import {
   getBaseConfig,
   issueCredential,
@@ -29,22 +30,23 @@ import { SubjectInboundTransporter } from './transport/SubjectInboundTransport'
 import { SubjectOutboundTransporter } from './transport/SubjectOutboundTransport'
 import { WsInboundTransporter } from './transport/WsInboundTransport'
 
-const recipientConfig = getBaseConfig('E2E Recipient')
-const mediatorConfig = getBaseConfig('E2E Mediator', {
-  endpoint: 'http://localhost:3002',
-  autoAcceptMediationRequests: true,
-})
-const senderConfig = getBaseConfig('E2E Sender', {
-  endpoint: 'http://localhost:3003',
-  mediatorPollingInterval: 1000,
-})
-
 describe('E2E tests', () => {
   let recipientAgent: Agent
   let mediatorAgent: Agent
   let senderAgent: Agent
 
   beforeEach(async () => {
+    const random = uuid()
+    const recipientConfig = getBaseConfig(`E2E Recipient ${random}`)
+    const mediatorConfig = getBaseConfig(`E2E Mediator ${random}`, {
+      endpoint: 'http://localhost:3002',
+      autoAcceptMediationRequests: true,
+    })
+    const senderConfig = getBaseConfig(`E2E Sender ${random}`, {
+      endpoint: 'http://localhost:3003',
+      mediatorPollingInterval: 1000,
+    })
+
     recipientAgent = new Agent(recipientConfig.config, recipientConfig.agentDependencies)
     mediatorAgent = new Agent(mediatorConfig.config, mediatorConfig.agentDependencies)
     senderAgent = new Agent(senderConfig.config, senderConfig.agentDependencies)
