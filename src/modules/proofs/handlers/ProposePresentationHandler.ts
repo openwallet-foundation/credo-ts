@@ -27,11 +27,11 @@ export class ProposePresentationHandler implements Handler {
     const proofRecord = await this.proofService.processProposal(messageContext)
 
     if (this.proofResponseCoordinator.shoudlAutoRespondToProposal(proofRecord)) {
-      return await this.sendRequest(proofRecord, messageContext)
+      return await this.createRequest(proofRecord, messageContext)
     }
   }
 
-  private async sendRequest(
+  private async createRequest(
     proofRecord: ProofRecord,
     messageContext: HandlerInboundMessage<ProposePresentationHandler>
   ) {
