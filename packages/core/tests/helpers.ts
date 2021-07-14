@@ -47,6 +47,7 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
     walletCredentials: { key: `Key: ${name}` },
     publicDidSeed,
     autoAcceptConnections: true,
+    genesisPath,
     poolName: `pool-${name.toLowerCase()}`,
     logger: new TestLogger(LogLevel.error, name),
     ...extraConfig,
