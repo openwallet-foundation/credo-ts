@@ -3,6 +3,7 @@ import type { TransportSession } from './agent/TransportService'
 import type { Logger } from './logger'
 import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptProof } from './modules/proofs'
+import type { MediatorPickupStrategy } from './modules/routing'
 import type { FileSystem } from './storage/fs/FileSystem'
 import type { default as Indy, WalletConfig, WalletCredentials, Verkey } from 'indy-sdk'
 
@@ -22,7 +23,7 @@ export interface InitConfig {
   endpoint?: string
   label: string
   publicDidSeed?: string
-  mediatorUrl?: string
+  mediatorRecordId?: string
   walletConfig?: WalletConfig
   walletCredentials?: WalletCredentials
   autoAcceptConnections?: boolean
@@ -36,6 +37,13 @@ export interface InitConfig {
   // Either path or transactions string can be provided
   genesisPath?: string
   genesisTransactions?: string
+
+  autoAcceptMediationRequests?: boolean
+  mediatorConnectionsInvite?: string
+  defaultMediatorId?: string
+  clearDefaultMediator?: boolean
+  mediatorPollingInterval?: number
+  mediatorPickupStrategy?: MediatorPickupStrategy
 }
 
 export interface UnpackedMessage {

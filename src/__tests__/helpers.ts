@@ -1,20 +1,27 @@
-import type { TransportSession } from '../agent/TransportService'
 import type { BasicMessage, BasicMessageReceivedEvent } from '../modules/basic-messages'
 import type { ConnectionRecordProps } from '../modules/connections'
-import type { CredentialRecord, CredentialOfferTemplate, CredentialStateChangedEvent } from '../modules/credentials'
-import type { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/ledger'
-import type { AutoAcceptProof, ProofRecord, ProofState, ProofStateChangedEvent } from '../modules/proofs'
-import type { InboundTransporter, OutboundTransporter } from '../transport'
-import type { InitConfig, OutboundPackage, WireMessage } from '../types'
-import type { Wallet } from '../wallet/Wallet'
-import type { Schema, CredDef, Did } from 'indy-sdk'
+import type { CredentialOfferTemplate, CredentialRecord, CredentialStateChangedEvent } from '../modules/credentials'
+import type { CredentialDefinitionTemplate, SchemaTemplate } from '../modules/ledger'
+import type {
+  AutoAcceptProof,
+  ProofAttributeInfo,
+  ProofPredicateInfo,
+  ProofRecord,
+  ProofStateChangedEvent,
+} from '../modules/proofs'
+import type { InitConfig, WireMessage } from '../types'
+import type { CredDef, Did, Schema } from 'indy-sdk'
 
 import indy from 'indy-sdk'
 import path from 'path'
 import { Subject } from 'rxjs'
 
+import { SubjectInboundTransporter } from '../../tests/transport/SubjectInboundTransport'
+import { SubjectOutboundTransporter } from '../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../agent/Agent'
-import { InjectionSymbols } from '../constants'
+import { Attachment, AttachmentData } from '../decorators/attachment/Attachment'
+import { AriesFrameworkError } from '../error'
+import { LogLevel } from '../logger/Logger'
 import { BasicMessageEventTypes } from '../modules/basic-messages'
 import {
   ConnectionInvitationMessage,
@@ -25,10 +32,10 @@ import {
   DidDoc,
 } from '../modules/connections'
 import {
+  CredentialEventTypes,
   CredentialPreview,
   CredentialPreviewAttribute,
   CredentialState,
-  CredentialEventTypes,
 } from '../modules/credentials'
 import {
   PredicateType,
@@ -36,10 +43,13 @@ import {
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
   ProofEventTypes,
+  ProofState,
 } from '../modules/proofs'
 import { NodeFileSystem } from '../storage/fs/NodeFileSystem'
+import { LinkedAttachment } from '../utils/LinkedAttachment'
+import { uuid } from '../utils/uuid'
 
-import testLogger from './logger'
+import testLogger, { TestLogger } from './logger'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
@@ -50,25 +60,19 @@ export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '00000000
 export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
   const config: InitConfig = {
     label: `Agent: ${name}`,
-    mediatorUrl: 'http://localhost:3001',
     walletConfig: { id: `Wallet: ${name}` },
     walletCredentials: { key: `Key: ${name}` },
     publicDidSeed,
     autoAcceptConnections: true,
     poolName: `pool-${name.toLowerCase()}`,
-    logger: testLogger,
+    genesisPath,
+    logger: new TestLogger(LogLevel.error, name),
     indy,
     fileSystem: new NodeFileSystem(),
     ...extraConfig,
   }
 
   return config
-}
-
-export async function closeAndDeleteWallet(agent: Agent) {
-  const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-
-  await wallet.delete()
 }
 
 export async function waitForProofRecord(
@@ -145,69 +149,6 @@ export async function waitForBasicMessage(agent: Agent, { content }: { content?:
   })
 }
 
-class SubjectTransportSession implements TransportSession {
-  public id: string
-  public readonly type = 'subject'
-  private theirSubject: Subject<WireMessage>
-
-  public constructor(id: string, theirSubject: Subject<WireMessage>) {
-    this.id = id
-    this.theirSubject = theirSubject
-  }
-
-  public send(outboundMessage: OutboundPackage): Promise<void> {
-    this.theirSubject.next(outboundMessage.payload)
-    return Promise.resolve()
-  }
-}
-
-export class SubjectInboundTransporter implements InboundTransporter {
-  private subject: Subject<WireMessage>
-  private theirSubject: Subject<WireMessage>
-
-  public constructor(subject: Subject<WireMessage>, theirSubject: Subject<WireMessage>) {
-    this.subject = subject
-    this.theirSubject = theirSubject
-  }
-
-  public async start(agent: Agent) {
-    this.subscribe(agent)
-  }
-
-  private subscribe(agent: Agent) {
-    this.subject.subscribe({
-      next: async (message: WireMessage) => {
-        const session = new SubjectTransportSession('subject-session-1', this.theirSubject)
-        await agent.receiveMessage(message, session)
-      },
-    })
-  }
-}
-
-export class SubjectOutboundTransporter implements OutboundTransporter {
-  private subject: Subject<WireMessage>
-
-  public supportedSchemes = []
-
-  public constructor(subject: Subject<WireMessage>) {
-    this.subject = subject
-  }
-
-  public async start(): Promise<void> {
-    // Nothing required to start
-  }
-
-  public async stop(): Promise<void> {
-    // Nothing required to stop
-  }
-
-  public async sendMessage(outboundPackage: OutboundPackage) {
-    testLogger.test(`Sending outbound message to connection ${outboundPackage.connection.id}`)
-    const { payload } = outboundPackage
-    this.subject.next(payload)
-  }
-}
-
 export function getMockConnection({
   state = ConnectionState.Invited,
   role = ConnectionRole.Invitee,
@@ -262,18 +203,23 @@ export function getMockConnection({
   })
 }
 
-export async function makeConnection(agentA: Agent, agentB: Agent) {
+export async function makeConnection(
+  agentA: Agent,
+  agentB: Agent,
+  config?: {
+    autoAcceptConnection?: boolean
+    alias?: string
+    mediatorId?: string
+  }
+) {
   // eslint-disable-next-line prefer-const
-  let { invitation, connectionRecord: agentAConnection } = await agentA.connections.createConnection()
+  let { invitation, connectionRecord: agentAConnection } = await agentA.connections.createConnection(config)
   let agentBConnection = await agentB.connections.receiveInvitation(invitation)
 
   agentAConnection = await agentA.connections.returnWhenIsConnected(agentAConnection.id)
   agentBConnection = await agentB.connections.returnWhenIsConnected(agentBConnection.id)
 
-  return {
-    agentAConnection,
-    agentBConnection,
-  }
+  return [agentAConnection, agentBConnection]
 }
 
 export async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<Schema> {
@@ -291,6 +237,47 @@ export async function registerDefinition(
   return credentialDefinition
 }
 
+export function previewFromAttributes(attributes: Record<string, string>): CredentialPreview {
+  return new CredentialPreview({
+    attributes: Object.entries(attributes).map(
+      ([name, value]) =>
+        new CredentialPreviewAttribute({
+          name,
+          value,
+        })
+    ),
+  })
+}
+
+export async function prepareForIssuance(agent: Agent, attributes: string[]) {
+  const publicDid = agent.publicDid?.did
+
+  if (!publicDid) {
+    throw new AriesFrameworkError('No public did')
+  }
+
+  await ensurePublicDidIsOnLedger(agent, publicDid)
+
+  const schema = await registerSchema(agent, {
+    attributes,
+    name: `schema-${uuid()}`,
+    version: '1.0',
+  })
+
+  const definition = await registerDefinition(agent, {
+    schema,
+    signatureType: 'CL',
+    supportRevocation: false,
+    tag: 'default',
+  })
+
+  return {
+    schema,
+    definition,
+    publicDid,
+  }
+}
+
 export async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: Did) {
   try {
     testLogger.test(`Ensure test DID ${publicDid} is written to ledger`)
@@ -298,7 +285,7 @@ export async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: Did) {
   } catch (error) {
     // Unfortunately, this won't prevent from the test suite running because of Jest runner runs all tests
     // regardless of thrown errors. We're more explicit about the problem with this error handling.
-    throw new Error(`Test DID ${publicDid} is not written on ledger or ledger is not available.`)
+    throw new Error(`Test DID ${publicDid} is not written on ledger or ledger is not available: ${error.message}`)
   }
 }
 
@@ -320,30 +307,88 @@ export async function issueCredential({
     state: CredentialState.OfferReceived,
   })
 
-  holderCredentialRecord = await holderAgent.credentials.acceptOffer(holderCredentialRecord.id)
-
-  issuerCredentialRecord = await waitForCredentialRecord(issuerAgent, {
+  let issuerCredentialRecordPromise = waitForCredentialRecord(issuerAgent, {
     threadId: holderCredentialRecord.threadId,
     state: CredentialState.RequestReceived,
   })
+  holderCredentialRecord = await holderAgent.credentials.acceptOffer(holderCredentialRecord.id)
+  issuerCredentialRecord = await issuerCredentialRecordPromise
 
-  issuerCredentialRecord = await issuerAgent.credentials.acceptRequest(issuerCredentialRecord.id)
-
-  holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
+  const holderCredentialRecordPromise = waitForCredentialRecord(holderAgent, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.CredentialReceived,
   })
+  issuerCredentialRecord = await issuerAgent.credentials.acceptRequest(issuerCredentialRecord.id)
+  await holderCredentialRecordPromise
 
-  holderCredentialRecord = await holderAgent.credentials.acceptCredential(holderCredentialRecord.id)
-
-  issuerCredentialRecord = await waitForCredentialRecord(issuerAgent, {
+  issuerCredentialRecordPromise = waitForCredentialRecord(issuerAgent, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.Done,
   })
+  holderCredentialRecord = await holderAgent.credentials.acceptCredential(holderCredentialRecord.id)
+
+  issuerCredentialRecord = await issuerCredentialRecordPromise
 
   return {
     issuerCredential: issuerCredentialRecord,
     holderCredential: holderCredentialRecord,
+  }
+}
+
+export async function presentProof({
+  verifierAgent,
+  verifierConnectionId,
+  holderAgent,
+  presentationTemplate: { attributes, predicates },
+}: {
+  verifierAgent: Agent
+  verifierConnectionId: string
+  holderAgent: Agent
+  presentationTemplate: {
+    attributes?: Record<string, ProofAttributeInfo>
+    predicates?: Record<string, ProofPredicateInfo>
+  }
+}) {
+  let verifierRecord = await verifierAgent.proofs.requestProof(verifierConnectionId, {
+    name: 'test-proof-request',
+    requestedAttributes: attributes,
+    requestedPredicates: predicates,
+  })
+
+  let holderRecord = await waitForProofRecord(holderAgent, {
+    threadId: verifierRecord.threadId,
+    state: ProofState.RequestReceived,
+  })
+
+  const verifierRecordPromise = waitForProofRecord(verifierAgent, {
+    threadId: holderRecord.threadId,
+    state: ProofState.PresentationReceived,
+  })
+
+  const indyProofRequest = holderRecord.requestMessage?.indyProofRequest
+  if (!indyProofRequest) {
+    throw new Error('indyProofRequest missing')
+  }
+  const retrievedCredentials = await holderAgent.proofs.getRequestedCredentialsForProofRequest(indyProofRequest)
+  const requestedCredentials = holderAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
+  await holderAgent.proofs.acceptRequest(holderRecord.id, requestedCredentials)
+
+  verifierRecord = await verifierRecordPromise
+
+  // assert presentation is valid
+  expect(verifierRecord.isVerified).toBe(true)
+
+  const holderRecordPromise = waitForProofRecord(holderAgent, {
+    threadId: holderRecord.threadId,
+    state: ProofState.Done,
+  })
+
+  verifierRecord = await verifierAgent.proofs.acceptPresentation(verifierRecord.id)
+  holderRecord = await holderRecordPromise
+
+  return {
+    verifierProof: verifierRecord,
+    holderProof: holderRecord,
   }
 }
 
@@ -359,7 +404,7 @@ export function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.Moc
   return fn as jest.MockedFunction<T>
 }
 
-export async function setupProofsTest(faberName: string, aliceName: string, autoAcceptProofs: AutoAcceptProof) {
+export async function setupProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {
   const credentialPreview = new CredentialPreview({
     attributes: [
       new CredentialPreviewAttribute({
@@ -375,32 +420,38 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
     ],
   })
 
-  const faberMessages = new Subject()
-  const aliceMessages = new Subject()
-
   const faberConfig = getBaseConfig(faberName, {
     genesisPath,
     autoAcceptProofs,
+    endpoint: 'rxjs:faber',
   })
 
   const aliceConfig = getBaseConfig(aliceName, {
     genesisPath,
     autoAcceptProofs,
+    endpoint: 'rxjs:alice',
   })
 
+  const faberMessages = new Subject<WireMessage>()
+  const aliceMessages = new Subject<WireMessage>()
+
+  const subjectMap = {
+    'rxjs:faber': faberMessages,
+    'rxjs:alice': aliceMessages,
+  }
   const faberAgent = new Agent(faberConfig)
-  faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages, aliceMessages))
-  faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages))
+  faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
+  faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
   await faberAgent.initialize()
 
   const aliceAgent = new Agent(aliceConfig)
-  aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages, faberMessages))
-  aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages))
+  aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
+  aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
   await aliceAgent.initialize()
 
   const schemaTemplate = {
     name: `test-schema-${Date.now()}`,
-    attributes: ['name', 'age'],
+    attributes: ['name', 'age', 'image_0', 'image_1'],
     version: '1.0',
   }
   const schema = await registerSchema(faberAgent, schemaTemplate)
@@ -417,7 +468,9 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
   const publicDid = faberAgent.publicDid?.did
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   await ensurePublicDidIsOnLedger(faberAgent, publicDid!)
-  const { agentAConnection, agentBConnection } = await makeConnection(faberAgent, aliceAgent)
+  const [agentAConnection, agentBConnection] = await makeConnection(faberAgent, aliceAgent)
+  expect(agentAConnection.isReady).toBe(true)
+  expect(agentBConnection.isReady).toBe(true)
 
   const faberConnection = agentAConnection
   const aliceConnection = agentBConnection
@@ -429,6 +482,10 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
         credentialDefinitionId: credDefId,
         referent: '0',
         value: 'John',
+      }),
+      new PresentationPreviewAttribute({
+        name: 'image_0',
+        credentialDefinitionId: credDefId,
       }),
     ],
     predicates: [
@@ -449,7 +506,24 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
       credentialDefinitionId: credDefId,
       comment: 'some comment about credential',
       preview: credentialPreview,
+      linkedAttachments: [
+        new LinkedAttachment({
+          name: 'image_0',
+          attachment: new Attachment({
+            filename: 'picture-of-a-cat.png',
+            data: new AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
+          }),
+        }),
+        new LinkedAttachment({
+          name: 'image_1',
+          attachment: new Attachment({
+            filename: 'picture-of-a-dog.png',
+            data: new AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
+          }),
+        }),
+      ],
     },
   })
-  return { faberAgent, aliceAgent, faberConnection, aliceConnection, presentationPreview }
+
+  return { faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview }
 }

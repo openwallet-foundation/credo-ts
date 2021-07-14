@@ -61,12 +61,12 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
 - ✅ Present Proof Protocol ([RFC 0037](https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof/README.md))
 - ✅ Connection Protocol ([RFC 0160](https://github.com/hyperledger/aries-rfcs/blob/master/features/0160-connection-protocol/README.md))
 - ✅ Basic Message Protocol ([RFC 0095](https://github.com/hyperledger/aries-rfcs/blob/master/features/0095-basic-message/README.md))
+- ✅ Mediator Coordination Protocol ([RFC 0211](https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md))
 - ✅ Indy Credentials (with `did:sov` support)
 - ✅ HTTP Transport
 - ✅ Auto accept proofs
 - 🚧 Revocation of Indy Credentials
 - 🚧 Electron
-- 🚧 Mediator Coordination Protocol ([RFC 0211](https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md))
 - 🚧 WebSocket Transport
 - ❌ Browser
 - ❌ Connection-less Issuance and Verification

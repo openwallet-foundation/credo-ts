@@ -3,27 +3,27 @@ version: '3'
 # This file extends docker-compose-mediators.yml
 
 services:
-  alice-mediator:
+  http-mediator:
     environment:
-      NGROK_NAME: alice-ngrok
+      NGROK_NAME: http-mediator-ngrok
     entrypoint: ./scripts/ngrok-wait.sh
-    depends_on: [alice-ngrok]
+    depends_on: [http-mediator-ngrok]
 
-  alice-ngrok:
+  http-mediator-ngrok:
     image: wernight/ngrok
-    command: ngrok http -bind-tls=true --log stdout alice-mediator:3001
+    command: ngrok http -bind-tls=true --log stdout http-mediator:3001
     networks:
       - hyperledger
 
-  bob-mediator:
+  ws-mediator:
     environment:
-      NGROK_NAME: bob-ngrok
+      NGROK_NAME: ws-mediator-ngrok
     entrypoint: ./scripts/ngrok-wait.sh
-    depends_on: [bob-ngrok]
+    depends_on: [ws-mediator-ngrok]
 
-  bob-ngrok:
+  ws-mediator-ngrok:
     image: wernight/ngrok
-    command: ngrok http -bind-tls=true --log stdout bob-mediator:3002
+    command: ngrok http -bind-tls=true --log stdout ws-mediator:3002
     networks:
       - hyperledger
 

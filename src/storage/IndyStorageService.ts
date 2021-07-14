@@ -1,6 +1,6 @@
 import type { BaseRecord, TagsBase } from './BaseRecord'
 import type { StorageService, BaseRecordConstructor } from './StorageService'
-import type { WalletQuery, WalletRecord } from 'indy-sdk'
+import type { WalletRecord } from 'indy-sdk'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
@@ -29,7 +29,17 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     for (const [key, value] of Object.entries(tags)) {
       // If the value is a boolean string ('1' or '0')
       // use the boolean val
-      if (value === '1' || value === '0') {
+      if (value === '1' && value?.includes(':')) {
+        const [tagName, tagValue] = value.split(':')
+
+        const transformedValue = transformedTags[tagName]
+
+        if (Array.isArray(transformedValue)) {
+          transformedTags[tagName] = [...transformedValue, tagValue]
+        } else {
+          transformedTags[tagName] = [tagValue]
+        }
+      } else if (value === '1' || value === '0') {
         transformedTags[key] = value === '1'
       }
       // Otherwise just use the value
@@ -49,6 +59,14 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
       // '1' or '0' syntax
       if (isBoolean(value)) {
         transformedTags[key] = value ? '1' : '0'
+      }
+      // If the value is an array we create a tag for each array
+      // item ("tagName:arrayItem" = "1")
+      else if (Array.isArray(value)) {
+        value.forEach((item) => {
+          const tagName = `${key}:${item}`
+          transformedTags[tagName] = '1'
+        })
       }
       // Otherwise just use the value
       else {
@@ -164,8 +182,17 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   }
 
   /** @inheritDoc {StorageService#findByQuery} */
-  public async findByQuery(recordClass: BaseRecordConstructor<T>, query: WalletQuery): Promise<T[]> {
-    const recordIterator = await this.wallet.search(recordClass.type, query, IndyStorageService.DEFAULT_QUERY_OPTIONS)
+  public async findByQuery(
+    recordClass: BaseRecordConstructor<T>,
+    query: Partial<ReturnType<T['getTags']>>
+  ): Promise<T[]> {
+    const indyQuery = this.transformFromRecordTagValues(query as unknown as TagsBase)
+
+    const recordIterator = await this.wallet.search(
+      recordClass.type,
+      indyQuery,
+      IndyStorageService.DEFAULT_QUERY_OPTIONS
+    )
     const records = []
     for await (const record of recordIterator) {
       records.push(this.recordToInstance(record, recordClass))

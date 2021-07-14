@@ -1,14 +1,16 @@
 import type { CredentialRecord } from './repository/CredentialRecord'
 import type { CredentialOfferTemplate, CredentialProposeOptions } from './services'
 
-import { Lifecycle, scoped } from 'tsyringe'
+import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
+import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
+import { Logger } from '../../logger'
 import { isLinkedAttachment } from '../../utils/attachment'
-import { ConnectionService } from '../connections'
+import { ConnectionService } from '../connections/services/ConnectionService'
 
 import {
   CredentialAckHandler,
@@ -24,16 +26,19 @@ export class CredentialsModule {
   private connectionService: ConnectionService
   private credentialService: CredentialService
   private messageSender: MessageSender
+  private logger: Logger
 
   public constructor(
     dispatcher: Dispatcher,
     connectionService: ConnectionService,
     credentialService: CredentialService,
-    messageSender: MessageSender
+    messageSender: MessageSender,
+    @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.connectionService = connectionService
     this.credentialService = credentialService
     this.messageSender = messageSender
+    this.logger = logger
     this.registerHandlers(dispatcher)
   }
 
@@ -164,6 +169,8 @@ export class CredentialsModule {
   public async acceptRequest(credentialRecordId: string, config?: { comment?: string }) {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
+
+    this.logger.info(`Accepting request for credential record ${credentialRecordId}`)
 
     const { message } = await this.credentialService.createCredential(credentialRecord, config)
     const outboundMessage = createOutboundMessage(connection, message)

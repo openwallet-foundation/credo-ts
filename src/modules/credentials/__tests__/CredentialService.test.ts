@@ -1,8 +1,10 @@
-import type { ConnectionService } from '../../connections'
+import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialRecordMetadata, CustomCredentialTags } from '../repository/CredentialRecord'
 import type { CredentialOfferTemplate } from '../services'
+
+import { Subject } from 'rxjs'
 
 import { getMockConnection, getBaseConfig, mockFunction } from '../../../__tests__/helpers'
 import { AgentConfig } from '../../../agent/AgentConfig'
@@ -148,7 +150,7 @@ describe('CredentialService', () => {
     indyIssuerService = new IndyIssuerServiceMock()
     indyHolderService = new IndyHolderServiceMock()
     ledgerService = new LedgerServiceMock()
-    eventEmitter = new EventEmitter()
+    eventEmitter = new EventEmitter(new Subject<boolean>())
 
     credentialService = new CredentialService(
       credentialRepository,
