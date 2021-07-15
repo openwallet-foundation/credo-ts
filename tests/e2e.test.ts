@@ -1,7 +1,21 @@
-import type { WireMessage } from '../src/types'
+import type { SubjectMessage } from './transport/SubjectInboundTransport'
 
 import { Subject } from 'rxjs'
-import WebSocket from 'ws'
+import { Server } from 'ws'
+
+import {
+  getBaseConfig,
+  issueCredential,
+  makeConnection,
+  prepareForIssuance,
+  presentProof,
+  previewFromAttributes,
+} from '../packages/core/tests/helpers'
+
+import { HttpInboundTransporter } from './transport/HttpInboundTransport'
+import { SubjectInboundTransporter } from './transport/SubjectInboundTransport'
+import { SubjectOutboundTransporter } from './transport/SubjectOutboundTransport'
+import { WsInboundTransporter } from './transport/WsInboundTransport'
 
 import {
   HttpOutboundTransporter,
@@ -15,20 +29,7 @@ import {
   CredentialState,
   ProofState,
   AutoAcceptCredential,
-} from '../src'
-import {
-  getBaseConfig,
-  issueCredential,
-  makeConnection,
-  prepareForIssuance,
-  presentProof,
-  previewFromAttributes,
-} from '../src/__tests__/helpers'
-
-import { HttpInboundTransporter } from './transport/HttpInboundTransport'
-import { SubjectInboundTransporter } from './transport/SubjectInboundTransport'
-import { SubjectOutboundTransporter } from './transport/SubjectOutboundTransport'
-import { WsInboundTransporter } from './transport/WsInboundTransport'
+} from '@aries-framework/core'
 
 const recipientConfig = getBaseConfig('E2E Recipient', {
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
@@ -49,9 +50,9 @@ describe('E2E tests', () => {
   let senderAgent: Agent
 
   beforeEach(async () => {
-    recipientAgent = new Agent(recipientConfig)
-    mediatorAgent = new Agent(mediatorConfig)
-    senderAgent = new Agent(senderConfig)
+    recipientAgent = new Agent(recipientConfig.config, recipientConfig.agentDependencies)
+    mediatorAgent = new Agent(mediatorConfig.config, mediatorConfig.agentDependencies)
+    senderAgent = new Agent(senderConfig.config, senderConfig.agentDependencies)
   })
 
   afterEach(async () => {
@@ -66,12 +67,12 @@ describe('E2E tests', () => {
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.setInboundTransporter(new HttpInboundTransporter())
+    mediatorAgent.setInboundTransporter(new HttpInboundTransporter({ port: 3002 }))
     mediatorAgent.setOutboundTransporter(new HttpOutboundTransporter())
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.setInboundTransporter(new HttpInboundTransporter())
+    senderAgent.setInboundTransporter(new HttpInboundTransporter({ port: 3003 }))
     senderAgent.setOutboundTransporter(new HttpOutboundTransporter())
     await senderAgent.initialize()
 
@@ -88,13 +89,13 @@ describe('E2E tests', () => {
     await recipientAgent.initialize()
 
     // Mediator Setup
-    const mediatorSocketServer = new WebSocket.Server({ port: 3002 })
+    const mediatorSocketServer = new Server({ port: 3002 })
     mediatorAgent.setInboundTransporter(new WsInboundTransporter(mediatorSocketServer))
     mediatorAgent.setOutboundTransporter(new WsOutboundTransporter())
     await mediatorAgent.initialize()
 
     // Sender Setup
-    const senderSocketServer = new WebSocket.Server({ port: 3003 })
+    const senderSocketServer = new Server({ port: 3003 })
     senderAgent.setInboundTransporter(new WsInboundTransporter(senderSocketServer))
     senderAgent.setOutboundTransporter(new WsOutboundTransporter())
     await senderAgent.initialize()
@@ -107,9 +108,9 @@ describe('E2E tests', () => {
   })
 
   test('Full Subject flow (connect, request mediation, issue, verify)', async () => {
-    const mediatorMessages = new Subject<WireMessage>()
-    const recipientMessages = new Subject<WireMessage>()
-    const senderMessages = new Subject<WireMessage>()
+    const mediatorMessages = new Subject<SubjectMessage>()
+    const recipientMessages = new Subject<SubjectMessage>()
+    const senderMessages = new Subject<SubjectMessage>()
 
     const subjectMap = {
       'http://localhost:3002': mediatorMessages,
@@ -186,6 +187,7 @@ async function e2eTest({
   expect(holderCredential.state).toBe(CredentialState.Done)
   expect(issuerCredential.state).toBe(CredentialState.Done)
 
+  // Present Proof from recipient to sender
   const definitionRestriction = [
     new AttributeFilter({
       credentialDefinitionId: definition.id,
