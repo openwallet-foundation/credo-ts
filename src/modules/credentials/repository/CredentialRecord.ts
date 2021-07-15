@@ -1,4 +1,5 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
+import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialState } from '../CredentialState'
 
 import { Type } from 'class-transformer'
@@ -37,6 +38,7 @@ export interface CredentialRecordProps {
   requestMessage?: RequestCredentialMessage
   credentialMessage?: IssueCredentialMessage
   credentialAttributes?: CredentialPreviewAttribute[]
+  autoAcceptCredential?: AutoAcceptCredential
   linkedAttachments?: Attachment[]
 }
 
@@ -54,6 +56,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
   public credentialId?: string
   public state!: CredentialState
   public metadata!: CredentialRecordMetadata
+  public autoAcceptCredential?: AutoAcceptCredential
 
   // message data
   @Type(() => ProposeCredentialMessage)
@@ -92,6 +95,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       this.requestMessage = props.requestMessage
       this.credentialMessage = props.credentialMessage
       this.credentialAttributes = props.credentialAttributes
+      this.autoAcceptCredential = props.autoAcceptCredential
       this.linkedAttachments = props.linkedAttachments
     }
   }

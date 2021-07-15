@@ -8,7 +8,7 @@ import { SubjectInboundTransporter } from '../../tests/transport/SubjectInboundT
 import { SubjectOutboundTransporter } from '../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../agent/Agent'
 import { Attachment, AttachmentData } from '../decorators/attachment/Attachment'
-import { CredentialPreview, CredentialPreviewAttribute } from '../modules/credentials'
+import { AutoAcceptCredential, CredentialPreview, CredentialPreviewAttribute } from '../modules/credentials'
 import {
   PredicateType,
   PresentationPreview,
@@ -32,8 +32,14 @@ import {
 } from './helpers'
 import testLogger from './logger'
 
-const faberConfig = getBaseConfig('Faber Proofs', { endpoint: 'rxjs:faber' })
-const aliceConfig = getBaseConfig('Alice Proofs', { endpoint: 'rxjs:alice' })
+const faberConfig = getBaseConfig('Faber Proofs', {
+  endpoint: 'rxjs:faber',
+  autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+})
+const aliceConfig = getBaseConfig('Alice Proofs', {
+  endpoint: 'rxjs:alice',
+  autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+})
 
 const credentialPreview = new CredentialPreview({
   attributes: [

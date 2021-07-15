@@ -1,15 +1,23 @@
-import type { Agent } from '../agent/Agent'
 import type { BasicMessage, BasicMessageReceivedEvent } from '../modules/basic-messages'
 import type { ConnectionRecordProps } from '../modules/connections'
-import type { CredentialRecord, CredentialOfferTemplate, CredentialStateChangedEvent } from '../modules/credentials'
-import type { SchemaTemplate, CredentialDefinitionTemplate } from '../modules/ledger'
+import type {
+  AutoAcceptCredential,
+  CredentialOfferTemplate,
+  CredentialRecord,
+  CredentialStateChangedEvent,
+} from '../modules/credentials'
+import type { CredentialDefinitionTemplate, SchemaTemplate } from '../modules/ledger'
 import type { ProofAttributeInfo, ProofPredicateInfo, ProofRecord, ProofStateChangedEvent } from '../modules/proofs'
-import type { InitConfig } from '../types'
+import type { InitConfig, WireMessage } from '../types'
 import type { CredDef, Did, Schema } from 'indy-sdk'
 
 import indy from 'indy-sdk'
 import path from 'path'
+import { Subject } from 'rxjs'
 
+import { SubjectInboundTransporter } from '../../tests/transport/SubjectInboundTransport'
+import { SubjectOutboundTransporter } from '../../tests/transport/SubjectOutboundTransport'
+import { Agent } from '../agent/Agent'
 import { AriesFrameworkError } from '../error'
 import { LogLevel } from '../logger/Logger'
 import { BasicMessageEventTypes } from '../modules/basic-messages'
@@ -22,9 +30,9 @@ import {
   DidDoc,
 } from '../modules/connections'
 import {
+  CredentialEventTypes,
   CredentialPreview,
   CredentialPreviewAttribute,
-  CredentialEventTypes,
   CredentialState,
 } from '../modules/credentials'
 import { ProofEventTypes, ProofState } from '../modules/proofs'
@@ -271,6 +279,9 @@ export async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: Did) {
   }
 }
 
+/**
+ * Assumes that the autoAcceptCredential is set to {@link AutoAcceptCredential.ContentApproved}
+ */
 export async function issueCredential({
   issuerAgent,
   issuerConnectionId,
@@ -289,27 +300,17 @@ export async function issueCredential({
     state: CredentialState.OfferReceived,
   })
 
-  let issuerCredentialRecordPromise = waitForCredentialRecord(issuerAgent, {
-    threadId: holderCredentialRecord.threadId,
-    state: CredentialState.RequestReceived,
-  })
-  holderCredentialRecord = await holderAgent.credentials.acceptOffer(holderCredentialRecord.id)
-  issuerCredentialRecord = await issuerCredentialRecordPromise
+  await holderAgent.credentials.acceptOffer(holderCredentialRecord.id)
 
-  const holderCredentialRecordPromise = waitForCredentialRecord(holderAgent, {
-    threadId: issuerCredentialRecord.threadId,
-    state: CredentialState.CredentialReceived,
-  })
-  issuerCredentialRecord = await issuerAgent.credentials.acceptRequest(issuerCredentialRecord.id)
-  await holderCredentialRecordPromise
-
-  issuerCredentialRecordPromise = waitForCredentialRecord(issuerAgent, {
+  holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.Done,
   })
-  holderCredentialRecord = await holderAgent.credentials.acceptCredential(holderCredentialRecord.id)
 
-  issuerCredentialRecord = await issuerCredentialRecordPromise
+  issuerCredentialRecord = await waitForCredentialRecord(issuerAgent, {
+    threadId: issuerCredentialRecord.threadId,
+    state: CredentialState.Done,
+  })
 
   return {
     issuerCredential: issuerCredentialRecord,
@@ -384,4 +385,64 @@ export async function presentProof({
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.MockedFunction<T> {
   return fn as jest.MockedFunction<T>
+}
+
+export async function setupCredentialTests(
+  faberName: string,
+  aliceName: string,
+  autoAcceptCredentials?: AutoAcceptCredential
+) {
+  const faberMessages = new Subject<WireMessage>()
+  const aliceMessages = new Subject<WireMessage>()
+  const subjectMap = {
+    'rxjs:faber': faberMessages,
+    'rxjs:alice': aliceMessages,
+  }
+  const faberConfig = getBaseConfig(faberName, {
+    genesisPath,
+    endpoint: 'rxjs:faber',
+    autoAcceptCredentials,
+  })
+
+  const aliceConfig = getBaseConfig(aliceName, {
+    genesisPath,
+    endpoint: 'rxjs:alice',
+    autoAcceptCredentials,
+  })
+  const faberAgent = new Agent(faberConfig)
+  faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
+  faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
+  await faberAgent.initialize()
+
+  const aliceAgent = new Agent(aliceConfig)
+  aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
+  aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
+  await aliceAgent.initialize()
+
+  const schemaTemplate = {
+    name: `test-schema-${Date.now()}`,
+    attributes: ['name', 'age', 'profile_picture', 'x-ray'],
+    version: '1.0',
+  }
+  const schema = await registerSchema(faberAgent, schemaTemplate)
+  const schemaId = schema.id
+
+  const definitionTemplate = {
+    schema,
+    tag: 'TAG',
+    signatureType: 'CL' as const,
+    supportRevocation: false,
+  }
+  const credentialDefinition = await registerDefinition(faberAgent, definitionTemplate)
+  const credDefId = credentialDefinition.id
+
+  const publicDid = faberAgent.publicDid?.did
+
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  await ensurePublicDidIsOnLedger(faberAgent, publicDid!)
+  const [agentAConnection, agentBConnection] = await makeConnection(faberAgent, aliceAgent)
+  const faberConnection = agentAConnection
+  const aliceConnection = agentBConnection
+
+  return { faberAgent, aliceAgent, credDefId, schemaId, faberConnection, aliceConnection }
 }

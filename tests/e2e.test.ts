@@ -14,6 +14,7 @@ import {
   PredicateType,
   CredentialState,
   ProofState,
+  AutoAcceptCredential,
 } from '../src'
 import {
   getBaseConfig,
@@ -29,7 +30,9 @@ import { SubjectInboundTransporter } from './transport/SubjectInboundTransport'
 import { SubjectOutboundTransporter } from './transport/SubjectOutboundTransport'
 import { WsInboundTransporter } from './transport/WsInboundTransport'
 
-const recipientConfig = getBaseConfig('E2E Recipient')
+const recipientConfig = getBaseConfig('E2E Recipient', {
+  autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+})
 const mediatorConfig = getBaseConfig('E2E Mediator', {
   endpoint: 'http://localhost:3002',
   autoAcceptMediationRequests: true,
@@ -37,6 +40,7 @@ const mediatorConfig = getBaseConfig('E2E Mediator', {
 const senderConfig = getBaseConfig('E2E Sender', {
   endpoint: 'http://localhost:3003',
   mediatorPollingInterval: 1000,
+  autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
 })
 
 describe('E2E tests', () => {

@@ -1,8 +1,11 @@
+import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
+import type { CredentialPreview } from './messages'
 import type { CredentialRecord } from './repository/CredentialRecord'
 import type { CredentialOfferTemplate, CredentialProposeOptions } from './services'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
+import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
@@ -12,6 +15,7 @@ import { Logger } from '../../logger'
 import { isLinkedAttachment } from '../../utils/attachment'
 import { ConnectionService } from '../connections/services/ConnectionService'
 
+import { CredentialResponseCoordinator } from './CredentialResponseCoordinator'
 import {
   CredentialAckHandler,
   IssueCredentialHandler,
@@ -26,6 +30,8 @@ export class CredentialsModule {
   private connectionService: ConnectionService
   private credentialService: CredentialService
   private messageSender: MessageSender
+  private agentConfig: AgentConfig
+  private credentialResponseCoordinator: CredentialResponseCoordinator
   private logger: Logger
 
   public constructor(
@@ -33,11 +39,15 @@ export class CredentialsModule {
     connectionService: ConnectionService,
     credentialService: CredentialService,
     messageSender: MessageSender,
+    agentConfig: AgentConfig,
+    credentialResponseCoordinator: CredentialResponseCoordinator,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.connectionService = connectionService
     this.credentialService = credentialService
     this.messageSender = messageSender
+    this.agentConfig = agentConfig
+    this.credentialResponseCoordinator = credentialResponseCoordinator
     this.logger = logger
     this.registerHandlers(dispatcher)
   }
@@ -75,6 +85,7 @@ export class CredentialsModule {
     config?: {
       comment?: string
       credentialDefinitionId?: string
+      autoAcceptCredential?: AutoAcceptCredential
     }
   ) {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)
@@ -105,6 +116,59 @@ export class CredentialsModule {
       preview: credentialProposalMessage.credentialProposal,
       credentialDefinitionId,
       comment: config?.comment,
+      autoAcceptCredential: config?.autoAcceptCredential,
+      attachments: credentialRecord.linkedAttachments,
+    })
+
+    const outboundMessage = createOutboundMessage(connection, message)
+    await this.messageSender.sendMessage(outboundMessage)
+
+    return credentialRecord
+  }
+
+  /**
+   * Negotiate a credential proposal as issuer (by sending a credential offer message) to the connection
+   * associated with the credential record.
+   *
+   * @param credentialRecordId The id of the credential record for which to accept the proposal
+   * @param preview The new preview for negotiation
+   * @param config Additional configuration to use for the offer
+   * @returns Credential record associated with the credential offer
+   *
+   */
+  public async negotiateProposal(
+    credentialRecordId: string,
+    preview: CredentialPreview,
+    config?: {
+      comment?: string
+      credentialDefinitionId?: string
+      autoAcceptCredential?: AutoAcceptCredential
+    }
+  ) {
+    const credentialRecord = await this.credentialService.getById(credentialRecordId)
+    const connection = await this.connectionService.getById(credentialRecord.connectionId)
+
+    const credentialProposalMessage = credentialRecord.proposalMessage
+
+    if (!credentialProposalMessage?.credentialProposal) {
+      throw new AriesFrameworkError(
+        `Credential record with id ${credentialRecordId} is missing required credential proposal`
+      )
+    }
+
+    const credentialDefinitionId = config?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
+
+    if (!credentialDefinitionId) {
+      throw new AriesFrameworkError(
+        'Missing required credential definition id. If credential proposal message contains no credential definition id it must be passed to config.'
+      )
+    }
+
+    const { message } = await this.credentialService.createOfferAsResponse(credentialRecord, {
+      preview,
+      credentialDefinitionId,
+      comment: config?.comment,
+      autoAcceptCredential: config?.autoAcceptCredential,
       attachments: credentialRecord.linkedAttachments,
     })
 
@@ -145,11 +209,43 @@ export class CredentialsModule {
    * @returns Credential record associated with the sent credential request message
    *
    */
-  public async acceptOffer(credentialRecordId: string, config?: { comment?: string }) {
+  public async acceptOffer(
+    credentialRecordId: string,
+    config?: { comment?: string; autoAcceptCredential?: AutoAcceptCredential }
+  ) {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
     const { message } = await this.credentialService.createRequest(credentialRecord, config)
+
+    const outboundMessage = createOutboundMessage(connection, message)
+    await this.messageSender.sendMessage(outboundMessage)
+
+    return credentialRecord
+  }
+
+  /**
+   * Negotiate a credential offer as holder (by sending a credential proposal message) to the connection
+   * associated with the credential record.
+   *
+   * @param credentialRecordId The id of the credential record for which to accept the offer
+   * @param preview The new preview for negotiation
+   * @param config Additional configuration to use for the request
+   * @returns Credential record associated with the sent credential request message
+   *
+   */
+  public async negotiateOffer(
+    credentialRecordId: string,
+    preview: CredentialPreview,
+    config?: { comment?: string; autoAcceptCredential?: AutoAcceptCredential }
+  ) {
+    const credentialRecord = await this.credentialService.getById(credentialRecordId)
+    const connection = await this.connectionService.getById(credentialRecord.connectionId)
+
+    const { message } = await this.credentialService.createProposalAsResponse(credentialRecord, {
+      ...config,
+      credentialProposal: preview,
+    })
 
     const outboundMessage = createOutboundMessage(connection, message)
     await this.messageSender.sendMessage(outboundMessage)
@@ -166,7 +262,10 @@ export class CredentialsModule {
    * @returns Credential record associated with the sent presentation message
    *
    */
-  public async acceptRequest(credentialRecordId: string, config?: { comment?: string }) {
+  public async acceptRequest(
+    credentialRecordId: string,
+    config?: { comment?: string; autoAcceptCredential?: AutoAcceptCredential }
+  ) {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
@@ -243,10 +342,18 @@ export class CredentialsModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new ProposeCredentialHandler(this.credentialService))
-    dispatcher.registerHandler(new OfferCredentialHandler(this.credentialService))
-    dispatcher.registerHandler(new RequestCredentialHandler(this.credentialService))
-    dispatcher.registerHandler(new IssueCredentialHandler(this.credentialService))
+    dispatcher.registerHandler(
+      new ProposeCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
+    )
+    dispatcher.registerHandler(
+      new OfferCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
+    )
+    dispatcher.registerHandler(
+      new RequestCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
+    )
+    dispatcher.registerHandler(
+      new IssueCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
+    )
     dispatcher.registerHandler(new CredentialAckHandler(this.credentialService))
   }
 }

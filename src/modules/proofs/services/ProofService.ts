@@ -655,6 +655,7 @@ export class ProofService {
     // Only continues if there is an attribute value that contains a hashlink
     for (const credentialId of credentialIds) {
       // Get the credentialRecord that matches the ID
+
       const credentialRecord = await this.credentialRepository.getSingleByQuery({ credentialId })
 
       if (credentialRecord.linkedAttachments) {

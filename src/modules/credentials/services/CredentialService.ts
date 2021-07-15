@@ -3,6 +3,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { Logger } from '../../../logger'
 import type { LinkedAttachment } from '../../../utils/LinkedAttachment'
 import type { ConnectionRecord } from '../../connections'
+import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { ProposeCredentialMessageOptions } from '../messages'
 import type { CredDefId } from 'indy-sdk'
@@ -103,6 +104,7 @@ export class CredentialService {
       proposalMessage,
       linkedAttachments: config?.linkedAttachments?.map((linkedAttachment) => linkedAttachment.attachment),
       credentialAttributes: proposalMessage.credentialProposal?.attributes,
+      autoAcceptCredential: config?.autoAcceptCredential,
     })
     await this.credentialRepository.save(credentialRecord)
     this.eventEmitter.emit<CredentialStateChangedEvent>({
@@ -127,7 +129,7 @@ export class CredentialService {
    */
   public async createProposalAsResponse(
     credentialRecord: CredentialRecord,
-    config?: Omit<ProposeCredentialMessageOptions, 'id'>
+    config?: CredentialProposeOptions
   ): Promise<CredentialProtocolMsgReturnType<ProposeCredentialMessage>> {
     // Assert
     credentialRecord.assertState(CredentialState.OfferReceived)
@@ -177,7 +179,6 @@ export class CredentialService {
 
       // Update record
       credentialRecord.proposalMessage = proposalMessage
-      credentialRecord.credentialAttributes = proposalMessage.credentialProposal?.attributes
       await this.updateState(credentialRecord, CredentialState.ProposalReceived)
     } catch {
       // No credential record exists with thread id
@@ -246,6 +247,9 @@ export class CredentialService {
     credentialRecord.metadata.credentialDefinitionId = credOffer.cred_def_id
     credentialRecord.metadata.schemaId = credOffer.schema_id
     credentialRecord.linkedAttachments = attachments?.filter((attachment) => isLinkedAttachment(attachment))
+    credentialRecord.autoAcceptCredential =
+      credentialTemplate.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
+
     await this.updateState(credentialRecord, CredentialState.OfferSent)
 
     return { message: credentialOfferMessage, credentialRecord }
@@ -303,6 +307,7 @@ export class CredentialService {
         schemaId: credOffer.schema_id,
       },
       state: CredentialState.OfferSent,
+      autoAcceptCredential: credentialTemplate.autoAcceptCredential,
     })
 
     await this.credentialRepository.save(credentialRecord)
@@ -355,7 +360,6 @@ export class CredentialService {
       credentialRecord.assertState(CredentialState.ProposalSent)
 
       credentialRecord.offerMessage = credentialOfferMessage
-      credentialRecord.credentialAttributes = credentialOfferMessage.credentialPreview.attributes
       credentialRecord.linkedAttachments = credentialOfferMessage.attachments?.filter((attachment) =>
         isLinkedAttachment(attachment)
       )
@@ -400,7 +404,7 @@ export class CredentialService {
    */
   public async createRequest(
     credentialRecord: CredentialRecord,
-    options: CredentialRequestOptions = {}
+    options?: CredentialRequestOptions
   ): Promise<CredentialProtocolMsgReturnType<RequestCredentialMessage>> {
     // Assert credential
     credentialRecord.assertState(CredentialState.OfferReceived)
@@ -432,9 +436,8 @@ export class CredentialService {
       }),
     })
 
-    const { comment } = options
     const credentialRequest = new RequestCredentialMessage({
-      comment,
+      comment: options?.comment,
       requestAttachments: [requestAttachment],
       attachments: credentialRecord.offerMessage?.attachments?.filter((attachment) => isLinkedAttachment(attachment)),
     })
@@ -442,6 +445,8 @@ export class CredentialService {
 
     credentialRecord.metadata.requestMetadata = credReqMetadata
     credentialRecord.requestMessage = credentialRequest
+    credentialRecord.autoAcceptCredential = options?.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
+
     credentialRecord.linkedAttachments = credentialRecord.offerMessage?.attachments?.filter((attachment) =>
       isLinkedAttachment(attachment)
     )
@@ -502,7 +507,7 @@ export class CredentialService {
    */
   public async createCredential(
     credentialRecord: CredentialRecord,
-    options: CredentialResponseOptions = {}
+    options?: CredentialResponseOptions
   ): Promise<CredentialProtocolMsgReturnType<IssueCredentialMessage>> {
     // Assert
     credentialRecord.assertState(CredentialState.RequestReceived)
@@ -555,10 +560,8 @@ export class CredentialService {
       }),
     })
 
-    const { comment } = options
-
     const issueCredentialMessage = new IssueCredentialMessage({
-      comment,
+      comment: options?.comment,
       credentialAttachments: [credentialAttachment],
       attachments:
         offerMessage?.attachments?.filter((attachment) => isLinkedAttachment(attachment)) ||
@@ -570,6 +573,7 @@ export class CredentialService {
     issueCredentialMessage.setPleaseAck()
 
     credentialRecord.credentialMessage = issueCredentialMessage
+    credentialRecord.autoAcceptCredential = options?.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
     await this.updateState(credentialRecord, CredentialState.CredentialIssued)
 
@@ -612,18 +616,6 @@ export class CredentialService {
     if (!indyCredential) {
       throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for credential with thread id ${issueCredentialMessage.threadId}`
-      )
-    }
-
-    // Assert the values in the received credential match the values
-    // that were negotiated in the credential exchange
-    // TODO: Ideally we don't throw here, but instead store that it's not equal.
-    // the credential may still have value, and we could just respond with an ack
-    // status of fail
-    if (credentialRecord.credentialAttributes) {
-      CredentialUtils.assertValuesMatch(
-        indyCredential.values,
-        CredentialUtils.convertAttributesToValues(credentialRecord.credentialAttributes)
       )
     }
 
@@ -772,18 +764,22 @@ export interface CredentialOfferTemplate {
   credentialDefinitionId: CredDefId
   comment?: string
   preview: CredentialPreview
+  autoAcceptCredential?: AutoAcceptCredential
   attachments?: Attachment[]
   linkedAttachments?: LinkedAttachment[]
 }
 
 export interface CredentialRequestOptions {
   comment?: string
+  autoAcceptCredential?: AutoAcceptCredential
 }
 
 export interface CredentialResponseOptions {
   comment?: string
+  autoAcceptCredential?: AutoAcceptCredential
 }
 
 export type CredentialProposeOptions = Omit<ProposeCredentialMessageOptions, 'id'> & {
   linkedAttachments?: LinkedAttachment[]
+  autoAcceptCredential?: AutoAcceptCredential
 }
