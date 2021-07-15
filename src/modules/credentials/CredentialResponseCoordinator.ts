@@ -35,7 +35,7 @@ export class CredentialResponseCoordinator {
   /**
    * Checks whether it should automatically respond to a proposal
    */
-  public shoudlAutoRespondToProposal(credentialRecord: CredentialRecord) {
+  public shouldAutoRespondToProposal(credentialRecord: CredentialRecord) {
     const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
       credentialRecord.autoAcceptCredential,
       this.agentConfig.autoAcceptCredentials

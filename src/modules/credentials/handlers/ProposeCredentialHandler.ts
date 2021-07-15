@@ -25,7 +25,7 @@ export class ProposeCredentialHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<ProposeCredentialHandler>) {
     const credentialRecord = await this.credentialService.processProposal(messageContext)
-    if (this.credentialAutoResponseCoordinator.shoudlAutoRespondToProposal(credentialRecord)) {
+    if (this.credentialAutoResponseCoordinator.shouldAutoRespondToProposal(credentialRecord)) {
       return await this.createOffer(credentialRecord, messageContext)
     }
   }
