@@ -3,8 +3,6 @@ import type { StorageService } from '../../../storage/StorageService'
 import type { Wallet } from '../../../wallet/Wallet'
 import type { BasicMessageReceivedEvent } from '../BasicMessageEvents'
 
-import { Subject } from 'rxjs'
-
 import { getAgentConfig, getMockConnection } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'

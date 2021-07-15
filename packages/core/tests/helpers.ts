@@ -4,7 +4,7 @@ import type { ConnectionRecordProps } from '../src/modules/connections'
 import type { CredentialRecord, CredentialOfferTemplate, CredentialStateChangedEvent } from '../src/modules/credentials'
 import type { SchemaTemplate, CredentialDefinitionTemplate } from '../src/modules/ledger'
 import type { ProofAttributeInfo, ProofPredicateInfo, ProofRecord, ProofStateChangedEvent } from '../src/modules/proofs'
-import type { InitConfig, WireMessage } from '../src/types'
+import type { InitConfig } from '../src/types'
 import type { Schema, CredDef, Did } from 'indy-sdk'
 
 import path from 'path'

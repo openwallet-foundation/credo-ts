@@ -86,27 +86,14 @@ export class AgentConfig {
   }
 
   public getEndpoint() {
-    // Otherwise we check if an endpoint is set
-    if (this.initConfig.endpoint) return this.initConfig.endpoint
-
-    // Otherwise we'll try to construct it from the host/port
-    let hostEndpoint = this.initConfig.host
-    if (hostEndpoint) {
-      if (this.initConfig.port) hostEndpoint += `:${this.initConfig.port}`
-      return hostEndpoint
+    // If we have an endpoint set, use it
+    if (this.initConfig.endpoint) {
+      return this.initConfig.endpoint
     }
 
-    // If we still don't have an endpoint, return didcomm:transport/queue
+    // Otherwise, return didcomm:transport/queue
     // https://github.com/hyperledger/aries-rfcs/issues/405#issuecomment-582612875
     return DID_COMM_TRANSPORT_QUEUE
-  }
-
-  public get port() {
-    return this.initConfig.port
-  }
-
-  public get host() {
-    return this.initConfig.host
   }
 
   public get mediatorConnectionsInvite() {

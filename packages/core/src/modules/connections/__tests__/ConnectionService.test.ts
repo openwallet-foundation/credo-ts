@@ -1,8 +1,6 @@
 import type { Wallet } from '../../../wallet/Wallet'
 import type { Did } from 'indy-sdk'
 
-import { Subject } from 'rxjs'
-
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
@@ -29,8 +27,7 @@ const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRep
 
 describe('ConnectionService', () => {
   const config = getAgentConfig('ConnectionServiceTest', {
-    host: 'http://agent.com',
-    port: 8080,
+    endpoint: 'http://agent.com:8080',
   })
 
   let wallet: Wallet

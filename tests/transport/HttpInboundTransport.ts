@@ -12,11 +12,14 @@ import { uuid } from '../../packages/core/src/utils/uuid'
 
 export class HttpInboundTransporter implements InboundTransporter {
   public readonly app: Express
+  private port: number
   private server?: Server
 
-  public constructor() {
+  public constructor({ app, port }: { app?: Express; port: number }) {
+    this.port = port
+
     // Create Express App
-    this.app = express()
+    this.app = app ?? express()
 
     this.app.use(
       text({
@@ -31,8 +34,7 @@ export class HttpInboundTransporter implements InboundTransporter {
     const config = agent.injectionContainer.resolve(AgentConfig)
 
     config.logger.debug(`Starting HTTP inbound transporter`, {
-      host: config.host,
-      port: config.port,
+      port: this.port,
       endpoint: config.getEndpoint(),
     })
 
@@ -55,7 +57,7 @@ export class HttpInboundTransporter implements InboundTransporter {
       }
     })
 
-    this.server = this.app.listen(config.port)
+    this.server = this.app.listen(this.port)
   }
 
   public async stop(): Promise<void> {

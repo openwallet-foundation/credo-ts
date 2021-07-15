@@ -14,6 +14,11 @@ const config: Config.InitialOptions = {
       '<rootDir>/packages/$1/src',
     ],
   },
+  globals: {
+    'ts-jest': {
+      isolatedModules: true,
+    },
+  },
 }
 
 export default config

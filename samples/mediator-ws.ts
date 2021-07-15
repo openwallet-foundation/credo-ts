@@ -7,10 +7,10 @@ import { WsInboundTransporter } from '../tests/transport/WsInboundTransport'
 import { WsOutboundTransporter, Agent, ConnectionInvitationMessage, LogLevel, AgentConfig } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 
+const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3002
+
 const agentConfig = {
-  host: process.env.AGENT_HOST || 'ws://localhost',
-  port: process.env.AGENT_PORT || 3002,
-  endpoint: process.env.AGENT_ENDPOINT?.replace('http', 'ws'),
+  endpoint: process.env.AGENT_ENDPOINT?.replace('http', 'ws') || `ws://localhost:${port}`,
   label: process.env.AGENT_LABEL || 'Aries Framework JavaScript Mediator',
   walletConfig: { id: process.env.WALLET_NAME || 'AriesFrameworkJavaScript' },
   walletCredentials: { key: process.env.WALLET_KEY || 'AriesFrameworkJavaScript' },
@@ -42,7 +42,7 @@ app.get('/invitation', async (req, res) => {
   }
 })
 
-const server = app.listen(agentConfig.port, async () => {
+const server = app.listen(port, async () => {
   await agent.initialize()
 })
 

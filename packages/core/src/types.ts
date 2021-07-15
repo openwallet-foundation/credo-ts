@@ -17,8 +17,6 @@ export enum DidCommMimeType {
 }
 
 export interface InitConfig {
-  host?: string
-  port?: string | number
   endpoint?: string
   label: string
   publicDidSeed?: string

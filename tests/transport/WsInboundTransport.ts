@@ -26,7 +26,6 @@ export class WsInboundTransporter implements InboundTransporter {
     this.logger = config.logger
 
     this.logger.debug(`Starting HTTP inbound transporter`, {
-      port: config.port,
       endpoint: config.getEndpoint(),
     })
 

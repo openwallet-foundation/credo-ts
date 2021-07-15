@@ -1,11 +1,6 @@
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { Agent } from '../src/agent/Agent'
 import type { ConnectionRecord } from '../src/modules/connections'
 
-import { Subject } from 'rxjs'
-
-import { SubjectInboundTransporter } from '../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransporter } from '../../../tests/transport/SubjectOutboundTransport'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import {
   CredentialPreview,

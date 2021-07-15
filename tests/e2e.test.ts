@@ -67,12 +67,12 @@ describe('E2E tests', () => {
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.setInboundTransporter(new HttpInboundTransporter())
+    mediatorAgent.setInboundTransporter(new HttpInboundTransporter({ port: 3002 }))
     mediatorAgent.setOutboundTransporter(new HttpOutboundTransporter())
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.setInboundTransporter(new HttpInboundTransporter())
+    senderAgent.setInboundTransporter(new HttpInboundTransporter({ port: 3003 }))
     senderAgent.setOutboundTransporter(new HttpOutboundTransporter())
     await senderAgent.initialize()
 
