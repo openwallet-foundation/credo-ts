@@ -4,19 +4,6 @@ import { Subject } from 'rxjs'
 import { Server } from 'ws'
 
 import {
-  HttpOutboundTransporter,
-  Agent,
-  MediationState,
-  WsOutboundTransporter,
-  ProofAttributeInfo,
-  AttributeFilter,
-  ProofPredicateInfo,
-  PredicateType,
-  CredentialState,
-  ProofState,
-} from '../packages/core/src'
-import { uuid } from '../packages/core/src/utils/uuid'
-import {
   getBaseConfig,
   issueCredential,
   makeConnection,
@@ -29,6 +16,19 @@ import { HttpInboundTransporter } from './transport/HttpInboundTransport'
 import { SubjectInboundTransporter } from './transport/SubjectInboundTransport'
 import { SubjectOutboundTransporter } from './transport/SubjectOutboundTransport'
 import { WsInboundTransporter } from './transport/WsInboundTransport'
+
+import {
+  HttpOutboundTransporter,
+  Agent,
+  MediationState,
+  WsOutboundTransporter,
+  ProofAttributeInfo,
+  AttributeFilter,
+  ProofPredicateInfo,
+  PredicateType,
+  CredentialState,
+  ProofState,
+} from '@aries-framework/core'
 
 const recipientConfig = getBaseConfig('E2E Recipient')
 const mediatorConfig = getBaseConfig('E2E Mediator', {

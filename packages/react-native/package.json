@@ -24,8 +24,10 @@
   },
   "dependencies": {
     "@aries-framework/core": "*",
+    "@azure/core-asynciterator-polyfill": "^1.0.0",
     "events": "^3.3.0",
     "react-native-fs": "^2.18.0",
+    "react-native-get-random-values": "^1.7.0",
     "rn-indy-sdk": "^0.1.11"
   },
   "devDependencies": {

@@ -50,7 +50,7 @@ describe('ConnectionService', () => {
   })
 
   beforeEach(async () => {
-    eventEmitter = new EventEmitter(new Subject<boolean>(), config)
+    eventEmitter = new EventEmitter(config)
     connectionRepository = new ConnectionRepositoryMock()
     connectionService = new ConnectionService(wallet, config, connectionRepository, eventEmitter)
     myRouting = { did: 'fakeDid', verkey: 'fakeVerkey', endpoint: config.getEndpoint(), routingKeys: [] }

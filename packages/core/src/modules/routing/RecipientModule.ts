@@ -3,16 +3,15 @@ import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './index'
 import type { Verkey } from 'indy-sdk'
 
-import { firstValueFrom, interval, ReplaySubject, Subject } from 'rxjs'
+import { firstValueFrom, interval, ReplaySubject } from 'rxjs'
 import { filter, first, takeUntil, timeout } from 'rxjs/operators'
-import { inject, Lifecycle, scoped } from 'tsyringe'
+import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import { InjectionSymbols } from '../../constants'
 import { ConnectionService } from '../connections/services'
 
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
@@ -31,7 +30,6 @@ export class RecipientModule {
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
-  private $stop: Subject<boolean>
 
   public constructor(
     dispatcher: Dispatcher,
@@ -39,8 +37,7 @@ export class RecipientModule {
     mediationRecipientService: MediationRecipientService,
     connectionService: ConnectionService,
     messageSender: MessageSender,
-    eventEmitter: EventEmitter,
-    @inject(InjectionSymbols.$Stop) $stop: Subject<boolean>
+    eventEmitter: EventEmitter
   ) {
     this.agentConfig = agentConfig
     this.connectionService = connectionService
@@ -48,7 +45,6 @@ export class RecipientModule {
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.registerHandlers(dispatcher)
-    this.$stop = $stop
   }
 
   public async initialize() {
@@ -80,7 +76,7 @@ export class RecipientModule {
     if (mediatorPickupStrategy === MediatorPickupStrategy.Explicit) {
       this.agentConfig.logger.info(`Starting explicit (batch) pickup of messages from mediator '${mediator.id}'`)
       const subscription = interval(mediatorPollingInterval)
-        .pipe(takeUntil(this.$stop))
+        .pipe(takeUntil(this.agentConfig.stop$))
         .subscribe(async () => {
           await this.pickupMessages(mediatorConnection)
         })

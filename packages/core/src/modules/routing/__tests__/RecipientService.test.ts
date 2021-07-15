@@ -1,7 +1,6 @@
 import type { Wallet } from '../../../wallet/Wallet'
 
 import { assert } from 'console'
-import { Subject } from 'rxjs'
 
 import { getBaseConfig } from '../../../../tests/helpers'
 import { AgentConfig } from '../../../agent/AgentConfig'
@@ -41,7 +40,7 @@ describe('Recipient', () => {
 
   beforeEach(() => {
     mediationRepository = new MediationRepositoryMock()
-    eventEmitter = new EventEmitter(new Subject<boolean>(), agentConfig)
+    eventEmitter = new EventEmitter(agentConfig)
     mediationRecipientService = new MediationRecipientService(
       wallet,
       new ConnectionService(),

@@ -12,7 +12,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
   private transportTable: Map<string, WebSocket> = new Map<string, WebSocket>()
   private agent!: Agent
   private logger!: Logger
-  private WebSocket!: typeof WebSocket
+  private WebSocketClass!: typeof WebSocket
 
   public supportedSchemes = ['ws', 'wss']
 
@@ -23,7 +23,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
 
     this.logger = agentConfig.logger
     this.logger.debug('Starting WS outbound transport')
-    this.WebSocket = agentConfig.agentDependencies.WebSocket
+    this.WebSocketClass = agentConfig.agentDependencies.WebSocketClass
   }
 
   public async stop() {
@@ -71,7 +71,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
       this.listenOnWebSocketMessages(socket)
     }
 
-    if (socket.readyState !== this.WebSocket.OPEN) {
+    if (socket.readyState !== this.WebSocketClass.OPEN) {
       throw new AriesFrameworkError('Socket is not open.')
     }
 
@@ -93,7 +93,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
   private createSocketConnection(endpoint: string, socketId: string): Promise<WebSocket> {
     return new Promise((resolve, reject) => {
       this.logger.debug(`Connecting to WebSocket ${endpoint}`)
-      const socket = new this.WebSocket(endpoint)
+      const socket = new this.WebSocketClass(endpoint)
 
       socket.onopen = () => {
         this.logger.debug(`Successfully connected to WebSocket ${endpoint}`)

@@ -9,7 +9,6 @@ import type { TransportSession } from './TransportService'
 import type { Subscription } from 'rxjs'
 import type { DependencyContainer } from 'tsyringe'
 
-import { Subject } from 'rxjs'
 import { concatMap, takeUntil } from 'rxjs/operators'
 import { container as baseContainer } from 'tsyringe'
 
@@ -65,18 +64,11 @@ export class Agent {
     // Bind class based instances
     this.container.registerInstance(AgentConfig, this.agentConfig)
 
-    // $stop is used for agent shutdown signal
-    const $stop = new Subject<boolean>()
-    this.container.registerInstance(InjectionSymbols.$Stop, $stop)
-
     // Based on interfaces. Need to register which class to use
     this.container.registerInstance(InjectionSymbols.Logger, this.logger)
     this.container.register(InjectionSymbols.Wallet, { useToken: IndyWallet })
     this.container.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
     this.container.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
-
-    // Platform specific dependencies
-    this.container.registerInstance(InjectionSymbols.FileSystem, new dependencies.FileSystem())
 
     this.logger.info('Creating agent with config', {
       ...initialConfig,
@@ -113,7 +105,7 @@ export class Agent {
     this.messageSubscription = this.eventEmitter
       .observable<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived)
       .pipe(
-        takeUntil($stop),
+        takeUntil(this.agentConfig.stop$),
         concatMap((e) => this.messageReceiver.receiveMessage(e.payload.message))
       )
       .subscribe()
@@ -205,10 +197,9 @@ export class Agent {
       }
     }
 
-    // All observables use takeUntil with the $stop observable
+    // All observables use takeUntil with the stop$ observable
     // this means all observables will stop running if a value is emitted on this observable
-    const $stop = this.container.resolve<Subject<boolean>>(InjectionSymbols.$Stop)
-    $stop.next(true)
+    this.agentConfig.stop$.next(true)
   }
 
   public get publicDid() {

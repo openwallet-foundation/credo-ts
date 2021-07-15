@@ -4,7 +4,6 @@ import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
 import express, { text } from 'express'
-import { URL } from 'url'
 
 import { DidCommMimeType, AriesFrameworkError } from '../../packages/core/src'
 import { AgentConfig } from '../../packages/core/src/agent/AgentConfig'
@@ -31,22 +30,13 @@ export class HttpInboundTransporter implements InboundTransporter {
     const transportService = agent.injectionContainer.resolve(TransportService)
     const config = agent.injectionContainer.resolve(AgentConfig)
 
-    const url = new URL(config.getEndpoint())
-
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-      throw new AriesFrameworkError('Cannot start http inbound transport without HTTP endpoint')
-    }
-
-    const path = url.pathname
-    const port = url.port
-
     config.logger.debug(`Starting HTTP inbound transporter`, {
-      path,
-      port,
+      host: config.host,
+      port: config.port,
       endpoint: config.getEndpoint(),
     })
 
-    this.app.post(path, async (req, res) => {
+    this.app.post('/', async (req, res) => {
       const session = new HttpTransportSession(uuid(), req, res)
       try {
         const message = req.body
@@ -65,7 +55,7 @@ export class HttpInboundTransporter implements InboundTransporter {
       }
     })
 
-    this.server = this.app.listen(port)
+    this.server = this.app.listen(config.port)
   }
 
   public async stop(): Promise<void> {

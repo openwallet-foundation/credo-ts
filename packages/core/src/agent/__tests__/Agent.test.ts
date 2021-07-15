@@ -132,9 +132,6 @@ describe('Agent', () => {
       expect(container.resolve(InjectionSymbols.MessageRepository)).toBeInstanceOf(InMemoryMessageRepository)
       expect(container.resolve(InjectionSymbols.StorageService)).toBeInstanceOf(IndyStorageService)
 
-      // Symbols, platform specific dependencies
-      expect(container.resolve(InjectionSymbols.FileSystem)).toBeInstanceOf(dependencies.FileSystem)
-
       // Agent
       expect(container.resolve(MessageSender)).toBeInstanceOf(MessageSender)
       expect(container.resolve(MessageReceiver)).toBeInstanceOf(MessageReceiver)
@@ -182,9 +179,6 @@ describe('Agent', () => {
       expect(container.resolve(InjectionSymbols.StorageService)).toBe(
         container.resolve(InjectionSymbols.StorageService)
       )
-
-      // Symbols, platform specific dependencies
-      expect(container.resolve(InjectionSymbols.FileSystem)).toBe(container.resolve(InjectionSymbols.FileSystem))
 
       // Agent
       expect(container.resolve(MessageSender)).toBe(container.resolve(MessageSender))

@@ -1,6 +1,9 @@
 import type { Logger } from '../logger'
+import type { FileSystem } from '../storage/FileSystem'
 import type { InitConfig } from '../types'
 import type { AgentDependencies } from './AgentDependencies'
+
+import { Subject } from 'rxjs'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { AriesFrameworkError } from '../error'
@@ -12,11 +15,16 @@ export class AgentConfig {
   private initConfig: InitConfig
   public logger: Logger
   public readonly agentDependencies: AgentDependencies
+  public readonly fileSystem: FileSystem
+
+  // $stop is used for agent shutdown signal
+  public readonly stop$ = new Subject<boolean>()
 
   public constructor(initConfig: InitConfig, agentDependencies: AgentDependencies) {
     this.initConfig = initConfig
     this.logger = initConfig.logger ?? new ConsoleLogger(LogLevel.off)
     this.agentDependencies = agentDependencies
+    this.fileSystem = new agentDependencies.FileSystem()
 
     const { mediatorConnectionsInvite, clearDefaultMediator, defaultMediatorId } = this.initConfig
 
@@ -90,6 +98,10 @@ export class AgentConfig {
 
   public get port() {
     return this.initConfig.port
+  }
+
+  public get host() {
+    return this.initConfig.host
   }
 
   public get mediatorConnectionsInvite() {

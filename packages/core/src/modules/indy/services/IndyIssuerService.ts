@@ -1,3 +1,4 @@
+import type { FileSystem } from '../../../storage/FileSystem'
 import type {
   default as Indy,
   CredDef,
@@ -11,11 +12,9 @@ import type {
   BlobReaderHandle,
 } from 'indy-sdk'
 
-import { inject, Lifecycle, scoped } from 'tsyringe'
+import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { InjectionSymbols } from '../../../constants'
-import { FileSystem } from '../../../storage/FileSystem'
 import { getDirFromFilePath } from '../../../utils/path'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 
@@ -25,14 +24,10 @@ export class IndyIssuerService {
   private indyWallet: IndyWallet
   private fileSystem: FileSystem
 
-  public constructor(
-    agentConfig: AgentConfig,
-    indyWallet: IndyWallet,
-    @inject(InjectionSymbols.FileSystem) fileSystem: FileSystem
-  ) {
+  public constructor(agentConfig: AgentConfig, indyWallet: IndyWallet) {
     this.indy = agentConfig.agentDependencies.indy
     this.indyWallet = indyWallet
-    this.fileSystem = fileSystem
+    this.fileSystem = agentConfig.fileSystem
   }
 
   /**

@@ -1,4 +1,5 @@
 import type { Logger } from '../../../logger'
+import type { FileSystem } from '../../../storage/FileSystem'
 import type {
   default as Indy,
   CredDef,
@@ -12,12 +13,10 @@ import type {
   LedgerWriteReplyResponse,
 } from 'indy-sdk'
 
-import { Subject } from 'rxjs'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { InjectionSymbols } from '../../../constants'
-import { FileSystem } from '../../../storage/FileSystem'
 import { isIndyError } from '../../../utils/indyError'
 import { Wallet } from '../../../wallet/Wallet'
 import { IndyIssuerService } from '../../indy'
@@ -36,19 +35,17 @@ export class LedgerService {
   public constructor(
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
     agentConfig: AgentConfig,
-    indyIssuer: IndyIssuerService,
-    @inject(InjectionSymbols.FileSystem) fileSystem: FileSystem,
-    @inject(InjectionSymbols.$Stop) $stop: Subject<boolean>
+    indyIssuer: IndyIssuerService
   ) {
     this.wallet = wallet
     this.agentConfig = agentConfig
     this.indy = agentConfig.agentDependencies.indy
     this.logger = agentConfig.logger
     this.indyIssuer = indyIssuer
-    this.fileSystem = fileSystem
+    this.fileSystem = agentConfig.fileSystem
 
-    // Listen to $stop (shutdown) and close pool
-    $stop.subscribe(async () => {
+    // Listen to stop$ (shutdown) and close pool
+    agentConfig.stop$.subscribe(async () => {
       if (this._poolHandle) {
         await this.close()
       }

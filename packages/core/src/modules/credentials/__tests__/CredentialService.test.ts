@@ -4,8 +4,6 @@ import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialRecordMetadata, CustomCredentialTags } from '../repository/CredentialRecord'
 import type { CredentialOfferTemplate } from '../services'
 
-import { Subject } from 'rxjs'
-
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
@@ -150,7 +148,7 @@ describe('CredentialService', () => {
     indyIssuerService = new IndyIssuerServiceMock()
     indyHolderService = new IndyHolderServiceMock()
     ledgerService = new LedgerServiceMock()
-    eventEmitter = new EventEmitter(new Subject<boolean>(), agentConfig)
+    eventEmitter = new EventEmitter(agentConfig)
 
     credentialService = new CredentialService(
       credentialRepository,

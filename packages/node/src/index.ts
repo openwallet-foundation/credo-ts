@@ -10,8 +10,8 @@ import { NodeFileSystem } from './NodeFileSystem'
 const agentDependencies: AgentDependencies = {
   FileSystem: NodeFileSystem,
   fetch,
-  NativeEventEmitter: EventEmitter,
-  WebSocket,
+  EventEmitterClass: EventEmitter,
+  WebSocketClass: WebSocket,
   indy,
 }
 

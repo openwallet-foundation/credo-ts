@@ -20,25 +20,6 @@ yarn add @aries-framework/core @aries-framework/react-native
 
    - Indy SDK [issue](https://github.com/hyperledger/indy-sdk/issues/2346#issuecomment-841000640)
 
-5. Install React Native polyfills and import them in the `index.js` file:
-
-```bash
-yarn add react-native-get-random-values @azure/core-asynciterator-polyfill
-```
-
-```js
-import 'react-native-get-random-values'
-import '@azure/core-asynciterator-polyfill'
-```
-
-## TypeScript
-
-If you're using TypeScript in your React Native project you need to install `indy-sdk` types both with and without alias. This is to make sure you have types when importing `rn-indy-sdk`, but also for `indy-sdk` types used by the framework.
-
-```
-yarn add -D @types/rn-indy-sdk@npm:@types/indy-sdk @types/indy-sdk
-```
-
 ### Using decorators
 
 If you intend to extend the core framework capabilities good change you will need to use decorators. In this case you need to enable support for decorators in both TypeScript and Babel.

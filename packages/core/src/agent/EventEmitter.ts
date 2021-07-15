@@ -1,23 +1,20 @@
 import type { BaseEvent } from './Events'
 import type { EventEmitter as NativeEventEmitter } from 'events'
-import type { Observable } from 'rxjs'
 
-import { fromEventPattern, Subject } from 'rxjs'
+import { fromEventPattern } from 'rxjs'
 import { takeUntil } from 'rxjs/operators'
-import { inject, Lifecycle, scoped } from 'tsyringe'
-
-import { InjectionSymbols } from '../constants'
+import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from './AgentConfig'
 
 @scoped(Lifecycle.ContainerScoped)
 export class EventEmitter {
+  private agentConfig: AgentConfig
   private eventEmitter: NativeEventEmitter
-  private $stop: Observable<boolean>
 
-  public constructor(@inject(InjectionSymbols.$Stop) $stop: Subject<boolean>, agentConfig: AgentConfig) {
-    this.eventEmitter = new agentConfig.agentDependencies.NativeEventEmitter()
-    this.$stop = $stop
+  public constructor(agentConfig: AgentConfig) {
+    this.agentConfig = agentConfig
+    this.eventEmitter = new agentConfig.agentDependencies.EventEmitterClass()
   }
 
   public emit<T extends BaseEvent>(data: T) {
@@ -36,6 +33,6 @@ export class EventEmitter {
     return fromEventPattern<T>(
       (handler) => this.on(event, handler),
       (handler) => this.off(event, handler)
-    ).pipe(takeUntil(this.$stop))
+    ).pipe(takeUntil(this.agentConfig.stop$))
   }
 }
