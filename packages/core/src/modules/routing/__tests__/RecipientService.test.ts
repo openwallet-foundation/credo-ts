@@ -121,44 +121,18 @@ describe('Recipient', () => {
       )
       //assert(service.createRecord, 'Expected MediationRecipientService to have a `createRecord` method')
     })
-    it('setDefaultMediator adds changes tags on mediation records', () => {
-      expect(true) //throw 'not implemented'
-    })
-    it('getDefaultMediator returns mediation record with default tag set to "true"', () => {
-      expect(true) //throw 'not implemented'
-    })
-    it('getDefaultMediatorId returns id of the mediation record with default tag set to "true"', () => {
-      expect(true) //throw 'not implemented'
-    })
-    it('getMediators returns all mediation records', () => {
-      expect(true) //throw 'not implemented'
-    })
-    it('clearDefaultMediator sets all mediation record tags to "false"', () => {
-      expect(true) //throw 'not implemented'
-    })
-    it('findByConnectionId returns mediation record given a connectionId', () => {
-      expect(true) //throw 'not implemented'
-    })
-    it('findById returns mediation record given mediationId', () => {
-      expect(true) //throw 'not implemented'
-    })
-    it('processMediationDeny...', () => {
-      expect(true) //throw 'not implemented'
-    })
-    it('processMediationGrant...', () => {
-      expect(true) //throw 'not implemented'
-    })
-    it('processKeylistUpdateResults...', () => {
-      expect(true) //throw 'not implemented'
-    })
-    it('createKeylistQuery...', () => {
-      expect(true) //throw 'not implemented'
-    })
-    it('createRequest...', () => {
-      expect(true) //throw 'not implemented'
-    })
-    it('createRecord...', () => {
-      expect(true) //throw 'not implemented'
-    })
+    it.todo('setDefaultMediator adds changes tags on mediation records')
+    it.todo('getDefaultMediator returns mediation record with default tag set to "true"')
+    it.todo('getDefaultMediatorId returns id of the mediation record with default tag set to "true"')
+    it.todo('getMediators returns all mediation records')
+    it.todo('clearDefaultMediator sets all mediation record tags to "false"')
+    it.todo('findByConnectionId returns mediation record given a connectionId')
+    it.todo('findById returns mediation record given mediationId')
+    it.todo('processMediationDeny...')
+    it.todo('processMediationGrant...')
+    it.todo('processKeylistUpdateResults...')
+    it.todo('createKeylistQuery...')
+    it.todo('createRequest...')
+    it.todo('createRecord...')
   })
 })
