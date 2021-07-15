@@ -8,7 +8,7 @@ import { SubjectInboundTransporter } from '../../../tests/transport/SubjectInbou
 import { SubjectOutboundTransporter } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
-import { CredentialPreview, CredentialPreviewAttribute } from '../src/modules/credentials'
+import { AutoAcceptCredential, CredentialPreview, CredentialPreviewAttribute } from '../src/modules/credentials'
 import {
   PredicateType,
   PresentationPreview,
@@ -21,19 +21,17 @@ import {
 } from '../src/modules/proofs'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 
-import {
-  ensurePublicDidIsOnLedger,
-  makeConnection,
-  registerDefinition,
-  registerSchema,
-  issueCredential,
-  waitForProofRecord,
-  getBaseConfig,
-} from './helpers'
+import { makeConnection, issueCredential, waitForProofRecord, getBaseConfig, prepareForIssuance } from './helpers'
 import testLogger from './logger'
 
-const faberConfig = getBaseConfig('Faber Proofs', { endpoint: 'rxjs:faber' })
-const aliceConfig = getBaseConfig('Alice Proofs', { endpoint: 'rxjs:alice' })
+const faberConfig = getBaseConfig('Faber Proofs', {
+  endpoint: 'rxjs:faber',
+  autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+})
+const aliceConfig = getBaseConfig('Alice Proofs', {
+  endpoint: 'rxjs:alice',
+  autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+})
 
 const credentialPreview = new CredentialPreview({
   attributes: [
@@ -76,25 +74,9 @@ describe('Present Proof', () => {
     aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
     await aliceAgent.initialize()
 
-    const schemaTemplate = {
-      name: `test-schema-${Date.now()}`,
-      attributes: ['name', 'age', 'image_0', 'image_1'],
-      version: '1.0',
-    }
-    const schema = await registerSchema(faberAgent, schemaTemplate)
+    const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])
+    credDefId = definition.id
 
-    const definitionTemplate = {
-      schema,
-      tag: 'TAG',
-      signatureType: 'CL' as const,
-      supportRevocation: false,
-    }
-    const credentialDefinition = await registerDefinition(faberAgent, definitionTemplate)
-    credDefId = credentialDefinition.id
-
-    const publicDid = faberAgent.publicDid?.did
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await ensurePublicDidIsOnLedger(faberAgent, publicDid!)
     const [agentAConnection, agentBConnection] = await makeConnection(faberAgent, aliceAgent)
     expect(agentAConnection.isReady).toBe(true)
     expect(agentBConnection.isReady).toBe(true)

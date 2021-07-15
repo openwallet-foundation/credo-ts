@@ -1,38 +1,23 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
+import type { Agent } from '../src/agent/Agent'
 import type { ConnectionRecord } from '../src/modules/connections'
 
 import { Subject } from 'rxjs'
 
 import { SubjectInboundTransporter } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransporter } from '../../../tests/transport/SubjectOutboundTransport'
-import { Agent } from '../src/agent/Agent'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import {
-  CredentialRecord,
-  CredentialState,
   CredentialPreview,
   CredentialPreviewAttribute,
+  CredentialRecord,
+  CredentialState,
 } from '../src/modules/credentials'
 import { JsonTransformer } from '../src/utils/JsonTransformer'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 
-import {
-  ensurePublicDidIsOnLedger,
-  getBaseConfig,
-  makeConnection,
-  registerDefinition,
-  registerSchema,
-  waitForCredentialRecord,
-} from './helpers'
+import { setupCredentialTests, waitForCredentialRecord } from './helpers'
 import testLogger from './logger'
-
-const faberConfig = getBaseConfig('Faber Credentials', {
-  endpoint: 'rxjs:faber',
-})
-
-const aliceConfig = getBaseConfig('Alice Credentials', {
-  endpoint: 'rxjs:alice',
-})
 
 const credentialPreview = new CredentialPreview({
   attributes: [
@@ -60,46 +45,10 @@ describe('credentials', () => {
   let aliceCredentialRecord: CredentialRecord
 
   beforeAll(async () => {
-    const faberMessages = new Subject<SubjectMessage>()
-    const aliceMessages = new Subject<SubjectMessage>()
-    const subjectMap = {
-      'rxjs:faber': faberMessages,
-      'rxjs:alice': aliceMessages,
-    }
-    faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
-    faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
-    faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
-    await faberAgent.initialize()
-
-    aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
-    aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
-    aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
-    await aliceAgent.initialize()
-
-    const schemaTemplate = {
-      name: `test-schema-${Date.now()}`,
-      attributes: ['name', 'age', 'profile_picture', 'x-ray'],
-      version: '1.0',
-    }
-    const schema = await registerSchema(faberAgent, schemaTemplate)
-    schemaId = schema.id
-
-    const definitionTemplate = {
-      schema,
-      tag: 'TAG',
-      signatureType: 'CL' as const,
-      supportRevocation: false,
-    }
-    const credentialDefinition = await registerDefinition(faberAgent, definitionTemplate)
-    credDefId = credentialDefinition.id
-
-    const publicDid = faberAgent.publicDid?.did
-
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await ensurePublicDidIsOnLedger(faberAgent, publicDid!)
-    const [agentAConnection, agentBConnection] = await makeConnection(faberAgent, aliceAgent)
-    faberConnection = agentAConnection
-    aliceConnection = agentBConnection
+    ;({ faberAgent, aliceAgent, credDefId, schemaId, faberConnection, aliceConnection } = await setupCredentialTests(
+      'Faber Agent Credentials',
+      'Alice Agent Credential'
+    ))
   })
 
   afterAll(async () => {

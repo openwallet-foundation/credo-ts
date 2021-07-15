@@ -28,9 +28,12 @@ import {
   PredicateType,
   CredentialState,
   ProofState,
+  AutoAcceptCredential,
 } from '@aries-framework/core'
 
-const recipientConfig = getBaseConfig('E2E Recipient')
+const recipientConfig = getBaseConfig('E2E Recipient', {
+  autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+})
 const mediatorConfig = getBaseConfig('E2E Mediator', {
   endpoint: 'http://localhost:3002',
   autoAcceptMediationRequests: true,
@@ -38,6 +41,7 @@ const mediatorConfig = getBaseConfig('E2E Mediator', {
 const senderConfig = getBaseConfig('E2E Sender', {
   endpoint: 'http://localhost:3003',
   mediatorPollingInterval: 1000,
+  autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
 })
 
 describe('E2E tests', () => {
@@ -183,6 +187,7 @@ async function e2eTest({
   expect(holderCredential.state).toBe(CredentialState.Done)
   expect(issuerCredential.state).toBe(CredentialState.Done)
 
+  // Present Proof from recipient to sender
   const definitionRestriction = [
     new AttributeFilter({
       credentialDefinitionId: definition.id,

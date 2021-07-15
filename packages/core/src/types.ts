@@ -2,8 +2,9 @@ import type { AgentMessage } from './agent/AgentMessage'
 import type { TransportSession } from './agent/TransportService'
 import type { Logger } from './logger'
 import type { ConnectionRecord } from './modules/connections'
+import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
 import type { MediatorPickupStrategy } from './modules/routing'
-import type { WalletConfig, WalletCredentials, Verkey } from 'indy-sdk'
+import type { Verkey, WalletConfig, WalletCredentials } from 'indy-sdk'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type $FixMe = any
@@ -25,6 +26,7 @@ export interface InitConfig {
   walletConfig?: WalletConfig
   walletCredentials?: WalletCredentials
   autoAcceptConnections?: boolean
+  autoAcceptCredentials?: AutoAcceptCredential
   poolName?: string
   logger?: Logger
   didCommMimeType?: DidCommMimeType
