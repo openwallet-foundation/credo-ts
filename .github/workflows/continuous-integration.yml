@@ -24,9 +24,6 @@ jobs:
     steps:
       - name: Checkout aries-framework-javascript
         uses: actions/checkout@v2
-        with:
-          # pulls all commits (needed for lerna to correctly version)
-          fetch-depth: 0
 
       # setup dependencies
       - name: Setup Libindy
@@ -116,6 +113,9 @@ jobs:
     steps:
       - name: Checkout aries-framework-javascript
         uses: actions/checkout@v2
+        with:
+          # pulls all commits (needed for lerna to correctly version)
+          fetch-depth: 0
 
       # setup dependencies
       - name: Setup Libindy
