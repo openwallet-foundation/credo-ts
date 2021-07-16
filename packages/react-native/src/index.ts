@@ -4,7 +4,10 @@ import '@azure/core-asynciterator-polyfill'
 import type { AgentDependencies } from '@aries-framework/core'
 
 import { EventEmitter } from 'events'
-import * as indy from 'rn-indy-sdk'
+// Eslint complains rn-indy-sdk has no default export
+// But that's not true
+// eslint-disable-next-line import/default
+import indy from 'rn-indy-sdk'
 
 import { ReactNativeFileSystem } from './ReactNativeFileSystem'
 
