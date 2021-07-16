@@ -261,7 +261,7 @@ export class LedgerService {
     }
   }
 
-  public async getRevocRegDef(revocRegDefId:Indy.RevRegId){
+  public async getRevocRegDef(revocRegDefId: Indy.RevRegId) {
     try {
       this.logger.debug(`Get revocation registry definition '${revocRegDefId}' from ledger`)
 
@@ -290,10 +290,10 @@ export class LedgerService {
   }
 
   public async getRevocRegDelta(
-    revRegId:Indy.RevRegId, 
-    from:number = 0, 
-    to:number = new Date().getTime()
-  ):Promise<ParseRevRegDeltaResult>{
+    revRegId: Indy.RevRegId,
+    from: number = 0,
+    to: number = new Date().getTime()
+  ): Promise<ParseRevRegDeltaResult> {
     try {
       this.logger.debug(`Get revocation registry delta '${revRegId}' from ledger`)
 
@@ -310,8 +310,7 @@ export class LedgerService {
         revocRegDelta,
       })
 
-      return {revocRegDelta, deltaTimestamp}
-
+      return { revocRegDelta, deltaTimestamp }
     } catch (error) {
       this.logger.error(`Error retrieving revocation registry delta '${revRegId}' from ledger`, {
         error,
@@ -429,6 +428,11 @@ export interface CredentialDefinitionTemplate {
   supportRevocation: boolean
 }
 
+export interface ParseRevRegDeltaResult {
+  revocRegDelta: Indy.RevocRegDelta
+  deltaTimestamp: number
+}
+
 interface AuthorAgreement {
   digest: string
   version: string
@@ -441,9 +445,4 @@ interface AcceptanceMechanisms {
   aml: Record<string, string>
   amlContext: string
   version: string
-}
-
-interface ParseRevRegDeltaResult {
-  revocRegDelta: Indy.RevocRegDelta,
-  deltaTimestamp: number
 }

@@ -27,4 +27,7 @@ export class RequestedPredicate {
 
   @Exclude({ toPlainOnly: true })
   public credentialInfo!: IndyCredentialInfo
+
+  @Exclude({ toPlainOnly: true })
+  public revoked?: boolean
 }

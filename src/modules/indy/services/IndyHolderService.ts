@@ -29,7 +29,7 @@ export class IndyHolderService {
   }
 
   public async createProof({ proofRequest, requestedCredentials, schemas, credentialDefinitions }: CreateProofOptions) {
-    let revocationStates:Indy.RevStates = {}
+    let revocationStates: Indy.RevStates = {}
 
     if (proofRequest.non_revoked) {
       //Create array of credential info
@@ -51,12 +51,12 @@ export class IndyHolderService {
 
           if (cachedRevDefinitions[revRegId]) {
             revocRegDef = cachedRevDefinitions[revRegId]
-          }else{
+          } else {
             revocRegDef = await this.ledgerService.getRevocRegDef(revRegId)
             cachedRevDefinitions[revRegId] = revocRegDef
           }
 
-          const {revocRegDelta, deltaTimestamp} = await this.ledgerService.getRevocRegDelta(
+          const { revocRegDelta, deltaTimestamp } = await this.ledgerService.getRevocRegDelta(
             revRegId,
             proofRequest.non_revoked?.from,
             proofRequest.non_revoked?.to
@@ -67,10 +67,10 @@ export class IndyHolderService {
             tails,
             revocRegDef,
             revocRegDelta,
-            deltaTimestamp, 
+            deltaTimestamp,
             requestedCredential.credentialRevocationId
           )
-          revocationStates[revRegId] = {[deltaTimestamp]: revocationState}
+          revocationStates[revRegId] = { [deltaTimestamp]: revocationState }
         }
       }
     }
