@@ -25,10 +25,7 @@
   "dependencies": {
     "@aries-framework/core": "*",
     "@azure/core-asynciterator-polyfill": "^1.0.0",
-    "events": "^3.3.0",
-    "react-native-fs": "^2.18.0",
-    "react-native-get-random-values": "^1.7.0",
-    "rn-indy-sdk": "^0.1.11"
+    "events": "^3.3.0"
   },
   "devDependencies": {
     "@types/react-native": "^0.64.10",
@@ -36,6 +33,14 @@
     "react": "17.0.1",
     "react-native": "0.64.2",
     "rimraf": "~3.0.2",
-    "typescript": "~4.3.0"
+    "typescript": "~4.3.0",
+    "rn-indy-sdk": "^0.1.11",
+    "react-native-get-random-values": "^1.7.0",
+    "react-native-fs": "^2.18.0"
+  },
+  "peerDependencies": {
+    "rn-indy-sdk": ">= 0.1.11",
+    "react-native-get-random-values": "^1.7.0",
+    "react-native-fs": "^2.18.0"
   }
 }
