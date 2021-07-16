@@ -1,15 +1,19 @@
-import indy from 'indy-sdk'
-
-import { HttpOutboundTransporter, Agent, ConnectionInvitationMessage, LogLevel } from '../src'
-import { TestLogger } from '../src/__tests__/logger'
-import { AgentConfig } from '../src/agent/AgentConfig'
-import { NodeFileSystem } from '../src/storage/fs/NodeFileSystem'
+import { TestLogger } from '../packages/core/tests/logger'
 import { HttpInboundTransporter } from '../tests/transport/HttpInboundTransport'
 
+import {
+  HttpOutboundTransporter,
+  Agent,
+  ConnectionInvitationMessage,
+  LogLevel,
+  AgentConfig,
+} from '@aries-framework/core'
+import { agentDependencies } from '@aries-framework/node'
+
+const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3001
+
 const agentConfig = {
-  host: process.env.AGENT_HOST || 'http://localhost',
-  port: process.env.AGENT_PORT || 3001,
-  endpoint: process.env.AGENT_ENDPOINT || undefined,
+  endpoint: process.env.AGENT_ENDPOINT || `http://localhost:${port}`,
   label: process.env.AGENT_LABEL || 'Aries Framework JavaScript Mediator',
   walletConfig: { id: process.env.WALLET_NAME || 'AriesFrameworkJavaScript' },
   walletCredentials: { key: process.env.WALLET_KEY || 'AriesFrameworkJavaScript' },
@@ -17,14 +21,12 @@ const agentConfig = {
   autoAcceptConnections: true,
   autoAcceptMediationRequests: true,
   logger: new TestLogger(LogLevel.debug),
-  indy,
-  fileSystem: new NodeFileSystem(),
 }
 
 // Set up agent
-const agent = new Agent(agentConfig)
+const agent = new Agent(agentConfig, agentDependencies)
 const config = agent.injectionContainer.resolve(AgentConfig)
-const inboundTransporter = new HttpInboundTransporter()
+const inboundTransporter = new HttpInboundTransporter({ port })
 const outboundTransporter = new HttpOutboundTransporter()
 
 agent.setInboundTransporter(inboundTransporter)

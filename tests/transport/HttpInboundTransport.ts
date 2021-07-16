@@ -1,26 +1,28 @@
-import type { InboundTransporter, Agent, OutboundPackage } from '../../src'
-import type { TransportSession } from '../../src/agent/TransportService'
+import type { InboundTransporter, Agent, OutboundPackage } from '../../packages/core/src'
+import type { TransportSession } from '../../packages/core/src/agent/TransportService'
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
-import express from 'express'
-import { URL } from 'url'
+import express, { text } from 'express'
 
-import { DidCommMimeType, AriesFrameworkError } from '../../src'
-import { AgentConfig } from '../../src/agent/AgentConfig'
-import { TransportService } from '../../src/agent/TransportService'
-import { uuid } from '../../src/utils/uuid'
+import { DidCommMimeType, AriesFrameworkError } from '../../packages/core/src'
+import { AgentConfig } from '../../packages/core/src/agent/AgentConfig'
+import { TransportService } from '../../packages/core/src/agent/TransportService'
+import { uuid } from '../../packages/core/src/utils/uuid'
 
 export class HttpInboundTransporter implements InboundTransporter {
   public readonly app: Express
+  private port: number
   private server?: Server
 
-  public constructor() {
+  public constructor({ app, port }: { app?: Express; port: number }) {
+    this.port = port
+
     // Create Express App
-    this.app = express()
+    this.app = app ?? express()
 
     this.app.use(
-      express.text({
+      text({
         type: [DidCommMimeType.V0, DidCommMimeType.V1],
         limit: '5mb',
       })
@@ -31,22 +33,12 @@ export class HttpInboundTransporter implements InboundTransporter {
     const transportService = agent.injectionContainer.resolve(TransportService)
     const config = agent.injectionContainer.resolve(AgentConfig)
 
-    const url = new URL(config.getEndpoint())
-
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-      throw new AriesFrameworkError('Cannot start http inbound transport without HTTP endpoint')
-    }
-
-    const path = url.pathname
-    const port = url.port
-
     config.logger.debug(`Starting HTTP inbound transporter`, {
-      path,
-      port,
+      port: this.port,
       endpoint: config.getEndpoint(),
     })
 
-    this.app.post(path, async (req, res) => {
+    this.app.post('/', async (req, res) => {
       const session = new HttpTransportSession(uuid(), req, res)
       try {
         const message = req.body
@@ -65,7 +57,7 @@ export class HttpInboundTransporter implements InboundTransporter {
       }
     })
 
-    this.server = this.app.listen(port)
+    this.server = this.app.listen(this.port)
   }
 
   public async stop(): Promise<void> {

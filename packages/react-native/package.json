@@ -1,0 +1,46 @@
+{
+  "name": "@aries-framework/react-native",
+  "main": "build/index",
+  "types": "build/index",
+  "version": "0.0.0",
+  "files": [
+    "build"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/react-native",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "directory": "packages/react-native"
+  },
+  "scripts": {
+    "build": "yarn run clean && yarn run compile",
+    "clean": "rimraf -rf ./build",
+    "compile": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "yarn run build",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@aries-framework/core": "*",
+    "@azure/core-asynciterator-polyfill": "^1.0.0",
+    "events": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/react-native": "^0.64.10",
+    "@types/rn-indy-sdk": "npm:@types/indy-sdk@^1.16.5",
+    "react": "17.0.1",
+    "react-native": "0.64.2",
+    "rimraf": "~3.0.2",
+    "typescript": "~4.3.0",
+    "rn-indy-sdk": "^0.1.11",
+    "react-native-get-random-values": "^1.7.0",
+    "react-native-fs": "^2.18.0"
+  },
+  "peerDependencies": {
+    "rn-indy-sdk": ">= 0.1.11",
+    "react-native-get-random-values": "^1.7.0",
+    "react-native-fs": "^2.18.0"
+  }
+}

@@ -1,17 +1,16 @@
 import express from 'express'
-import indy from 'indy-sdk'
-import WebSocket from 'ws'
+import { Server } from 'ws'
 
-import { Agent, ConnectionInvitationMessage, LogLevel, WsOutboundTransporter } from '../src'
-import { TestLogger } from '../src/__tests__/logger'
-import { AgentConfig } from '../src/agent/AgentConfig'
-import { NodeFileSystem } from '../src/storage/fs/NodeFileSystem'
+import { TestLogger } from '../packages/core/tests/logger'
 import { WsInboundTransporter } from '../tests/transport/WsInboundTransport'
 
+import { WsOutboundTransporter, Agent, ConnectionInvitationMessage, LogLevel, AgentConfig } from '@aries-framework/core'
+import { agentDependencies } from '@aries-framework/node'
+
+const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3002
+
 const agentConfig = {
-  host: process.env.AGENT_HOST || 'ws://localhost',
-  port: process.env.AGENT_PORT || 3002,
-  endpoint: process.env.AGENT_ENDPOINT?.replace('http', 'ws'),
+  endpoint: process.env.AGENT_ENDPOINT?.replace('http', 'ws') || `ws://localhost:${port}`,
   label: process.env.AGENT_LABEL || 'Aries Framework JavaScript Mediator',
   walletConfig: { id: process.env.WALLET_NAME || 'AriesFrameworkJavaScript' },
   walletCredentials: { key: process.env.WALLET_KEY || 'AriesFrameworkJavaScript' },
@@ -19,14 +18,12 @@ const agentConfig = {
   autoAcceptConnections: true,
   autoAcceptMediationRequests: true,
   logger: new TestLogger(LogLevel.debug),
-  indy,
-  fileSystem: new NodeFileSystem(),
 }
 
 const app = express()
-const socketServer = new WebSocket.Server({ noServer: true })
+const socketServer = new Server({ noServer: true })
 
-const agent = new Agent(agentConfig)
+const agent = new Agent(agentConfig, agentDependencies)
 const config = agent.injectionContainer.resolve(AgentConfig)
 const messageSender = new WsOutboundTransporter()
 const messageReceiver = new WsInboundTransporter(socketServer)
@@ -45,7 +42,7 @@ app.get('/invitation', async (req, res) => {
   }
 })
 
-const server = app.listen(agentConfig.port, async () => {
+const server = app.listen(port, async () => {
   await agent.initialize()
 })
 

@@ -1,11 +1,15 @@
 {
   "extends": "./tsconfig.build.json",
-  "compilerOptions": {
-    "types": ["jest"]
-  },
   "ts-node": {
+    "require": ["tsconfig-paths/register"],
     "files": true
   },
-  "include": ["src", "types", "tests", "samples", "*.config.js"],
-  "exclude": ["node_modules", "build", "**/node_modules", "**/node_modules/**"]
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@aries-framework/*": ["packages/*/src"]
+    },
+    "types": ["jest", "node"]
+  },
+  "exclude": ["node_modules", "build"]
 }

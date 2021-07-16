@@ -34,14 +34,8 @@ FROM base as final
 WORKDIR /www
 ENV RUN_MODE="docker"
 
-COPY package.json package.json
-COPY yarn.lock yarn.lock
-
-# Run install after copying only depdendency file
-# to make use of docker layer caching
-RUN yarn install
-
-# Copy other depdencies
+# Copy dependencies
 COPY . . 
 
-RUN yarn compile
+RUN yarn install
+RUN yarn build
