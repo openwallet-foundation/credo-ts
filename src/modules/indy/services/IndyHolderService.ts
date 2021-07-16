@@ -5,27 +5,79 @@ import { inject, Lifecycle, scoped } from 'tsyringe'
 import { InjectionSymbols } from '../../../constants'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 
+import { LedgerService } from '../../ledger'
+import { RequestedCredentials } from '../../proofs'
+import { IndyUtilitesService } from './indyUtilitiesService'
+
 @scoped(Lifecycle.ContainerScoped)
 export class IndyHolderService {
   private indy: typeof Indy
   private indyWallet: IndyWallet
+  private ledgerService: LedgerService
+  private indyUtilitesService: IndyUtilitesService
 
-  public constructor(@inject(InjectionSymbols.Indy) indy: typeof Indy, indyWallet: IndyWallet) {
+  public constructor(
+    @inject(InjectionSymbols.Indy) indy: typeof Indy,
+    indyWallet: IndyWallet,
+    ledgerService: LedgerService,
+    indyUtilitesService: IndyUtilitesService
+  ) {
     this.indy = indy
     this.indyWallet = indyWallet
+    this.ledgerService = ledgerService
+    this.indyUtilitesService = indyUtilitesService
   }
 
-  public async createProof({
-    proofRequest,
-    requestedCredentials,
-    schemas,
-    credentialDefinitions,
-    revocationStates = {},
-  }: CreateProofOptions) {
+  public async createProof({ proofRequest, requestedCredentials, schemas, credentialDefinitions }: CreateProofOptions) {
+    let revocationStates:Indy.RevStates = {}
+
+    if (proofRequest.non_revoked) {
+      //Create array of credential info
+      const credentialObjects = [
+        ...Object.values(requestedCredentials.requestedAttributes),
+        ...Object.values(requestedCredentials.requestedPredicates),
+      ].map((c) => c.credentialInfo)
+
+      //Cache object to prevent redundancy
+      let cachedRevDefinitions: {
+        [revRegId: string]: Indy.RevocRegDef
+      } = {}
+
+      //Create revocation state of each revocable credential
+      for (const requestedCredential of credentialObjects) {
+        const revRegId = requestedCredential.revocationRegistryId
+        if (revRegId && requestedCredential.credentialRevocationId) {
+          let revocRegDef: Indy.RevocRegDef
+
+          if (cachedRevDefinitions[revRegId]) {
+            revocRegDef = cachedRevDefinitions[revRegId]
+          }else{
+            revocRegDef = await this.ledgerService.getRevocRegDef(revRegId)
+            cachedRevDefinitions[revRegId] = revocRegDef
+          }
+
+          const {revocRegDelta, deltaTimestamp} = await this.ledgerService.getRevocRegDelta(
+            revRegId,
+            proofRequest.non_revoked?.from,
+            proofRequest.non_revoked?.to
+          )
+
+          const tails = await this.indyUtilitesService.getTailsFile(revRegId, revocRegDef.value.tailsLocation)
+          const revocationState = await this.indy.createRevocationState(
+            tails,
+            revocRegDef,
+            revocRegDelta,
+            deltaTimestamp, 
+            requestedCredential.credentialRevocationId
+          )
+          revocationStates[revRegId] = {[deltaTimestamp]: revocationState}
+        }
+      }
+    }
     return this.indy.proverCreateProof(
       this.indyWallet.walletHandle,
       proofRequest,
-      requestedCredentials,
+      requestedCredentials.toJSON(),
       this.indyWallet.masterSecretId,
       schemas,
       credentialDefinitions,
@@ -176,8 +228,7 @@ export interface StoreCredentialOptions {
 
 export interface CreateProofOptions {
   proofRequest: Indy.IndyProofRequest
-  requestedCredentials: Indy.IndyRequestedCredentials
+  requestedCredentials: RequestedCredentials
   schemas: Indy.Schemas
   credentialDefinitions: Indy.CredentialDefs
-  revocationStates?: Indy.RevStates
 }

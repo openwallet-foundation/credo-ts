@@ -886,14 +886,12 @@ export class ProofService {
       new Set(credentialObjects.map((c) => c.credentialDefinitionId))
     )
 
-    const proof = await this.indyHolderService.createProof({
+    return this.indyHolderService.createProof({
       proofRequest: proofRequest.toJSON(),
-      requestedCredentials: requestedCredentials.toJSON(),
+      requestedCredentials: requestedCredentials,
       schemas,
       credentialDefinitions,
     })
-
-    return proof
   }
 
   private async getCredentialsForProofRequest(

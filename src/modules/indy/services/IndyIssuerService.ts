@@ -8,30 +8,28 @@ import type {
   CredReq,
   CredRevocId,
   CredValues,
-  BlobReaderHandle,
 } from 'indy-sdk'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { InjectionSymbols } from '../../../constants'
-import { FileSystem } from '../../../storage/fs/FileSystem'
-import { getDirFromFilePath } from '../../../utils/path'
 import { IndyWallet } from '../../../wallet/IndyWallet'
+import { IndyUtilitesService } from './indyUtilitiesService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyIssuerService {
   private indy: typeof Indy
   private indyWallet: IndyWallet
-  private fileSystem: FileSystem
+  private indyUtilitiesService: IndyUtilitesService
 
   public constructor(
     @inject(InjectionSymbols.Indy) indy: typeof Indy,
     indyWallet: IndyWallet,
-    @inject(InjectionSymbols.FileSystem) fileSystem: FileSystem
+    indyUtilitiesService: IndyUtilitesService
   ) {
     this.indy = indy
     this.indyWallet = indyWallet
-    this.fileSystem = fileSystem
+    this.indyUtilitiesService = indyUtilitiesService
   }
 
   /**
@@ -94,7 +92,7 @@ export class IndyIssuerService {
     tailsFilePath,
   }: CreateCredentialOptions): Promise<[Cred, CredRevocId]> {
     // Indy SDK requires tailsReaderHandle. Use null if no tailsFilePath is present
-    const tailsReaderHandle = tailsFilePath ? await this.createTailsReader(tailsFilePath) : 0
+    const tailsReaderHandle = tailsFilePath ? await this.indyUtilitiesService.createTailsReader(tailsFilePath) : 0
 
     if (revocationRegistryId || tailsFilePath) {
       throw new Error('Revocation not supported yet')
@@ -110,29 +108,6 @@ export class IndyIssuerService {
     )
 
     return [credential, credentialRevocationId]
-  }
-
-  /**
-   * Get a handler for the blob storage tails file reader.
-   *
-   * @param tailsFilePath The path of the tails file
-   * @returns The blob storage reader handle
-   */
-  private async createTailsReader(tailsFilePath: string): Promise<BlobReaderHandle> {
-    const tailsFileExists = await this.fileSystem.exists(tailsFilePath)
-
-    // Extract directory from path (should also work with windows paths)
-    const dirname = getDirFromFilePath(tailsFilePath)
-
-    if (!tailsFileExists) {
-      throw new Error(`Tails file does not exist at path ${tailsFilePath}`)
-    }
-
-    const tailsReaderConfig = {
-      base_dir: dirname,
-    }
-
-    return this.indy.openBlobStorageReader('default', tailsReaderConfig)
   }
 }
 
