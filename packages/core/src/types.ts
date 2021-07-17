@@ -1,7 +1,6 @@
 import type { AgentMessage } from './agent/AgentMessage'
-import type { InboundMessageContext } from './agent/models/InboundMessageContext'
 import type { Logger } from './logger'
-import type { ConnectionRecord } from './modules/connections'
+import type { ConnectionRecord, DidCommService } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
 import type { MediatorPickupStrategy } from './modules/routing'
 import type { Verkey, WalletConfig, WalletCredentials } from 'indy-sdk'
@@ -57,7 +56,12 @@ export interface UnpackedMessageContext {
 export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
   payload: T
   connection: ConnectionRecord
-  replyTo?: InboundMessageContext
+}
+
+export interface OutboundServiceMessage<T extends AgentMessage = AgentMessage> {
+  payload: T
+  service: DidCommService
+  senderKey: string
 }
 
 export interface OutboundPackage {

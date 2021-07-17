@@ -368,11 +368,11 @@ export class ConnectionService {
     // Check if we have a ready connection. Verification is already done somewhere else. Return
     if (connection) {
       connection.assertReady()
-      this.logger.trace(`Processing message with id ${message.id} and connection id ${connection.id}`, {
+      this.logger.debug(`Processing message with id ${message.id} and connection id ${connection.id}`, {
         type: message.type,
       })
     } else {
-      this.logger.trace(`Processing connection-less message with id ${message.id}`, {
+      this.logger.debug(`Processing connection-less message with id ${message.id}`, {
         type: message.type,
       })
 

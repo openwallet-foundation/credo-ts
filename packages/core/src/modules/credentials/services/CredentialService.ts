@@ -728,6 +728,10 @@ export class CredentialService {
     })
   }
 
+  public update(credentialRecord: CredentialRecord) {
+    return this.credentialRepository.update(credentialRecord)
+  }
+
   /**
    * Update the record to a new state and emit an state changed event. Also updates the record
    * in storage.

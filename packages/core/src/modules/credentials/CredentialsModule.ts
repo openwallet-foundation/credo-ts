@@ -470,7 +470,12 @@ export class CredentialsModule {
       new ProposeCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
     )
     dispatcher.registerHandler(
-      new OfferCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
+      new OfferCredentialHandler(
+        this.credentialService,
+        this.agentConfig,
+        this.credentialResponseCoordinator,
+        this.mediationRecipientService
+      )
     )
     dispatcher.registerHandler(
       new RequestCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)

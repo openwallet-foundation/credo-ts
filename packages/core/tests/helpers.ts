@@ -55,7 +55,7 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
     autoAcceptConnections: true,
     genesisPath,
     poolName: `pool-${name.toLowerCase()}`,
-    logger: new TestLogger(LogLevel.error, name),
+    logger: new TestLogger(LogLevel.test, name),
     ...extraConfig,
   }
 
@@ -171,6 +171,7 @@ export function getMockConnection({
     ],
   }),
   tags = {},
+  theirLabel,
   invitation = new ConnectionInvitationMessage({
     label: 'test',
     recipientKeys: [verkey],
@@ -202,6 +203,7 @@ export function getMockConnection({
     tags,
     verkey,
     invitation,
+    theirLabel,
   })
 }
 

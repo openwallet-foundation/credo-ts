@@ -7,6 +7,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 
 import { MessageSender } from './MessageSender'
+import { isOutboundServiceMessage } from './helpers'
 
 @scoped(Lifecycle.ContainerScoped)
 class Dispatcher {
@@ -31,7 +32,14 @@ class Dispatcher {
 
     const outboundMessage = await handler.handle(messageContext)
 
-    if (outboundMessage) {
+    if (outboundMessage && isOutboundServiceMessage(outboundMessage)) {
+      await this.messageSender.sendMessageToService({
+        message: outboundMessage.payload,
+        service: outboundMessage.service,
+        senderKey: outboundMessage.senderKey,
+        returnRoute: true,
+      })
+    } else if (outboundMessage) {
       await this.messageSender.sendMessage(outboundMessage)
     }
   }

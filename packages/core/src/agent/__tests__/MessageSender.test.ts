@@ -96,7 +96,7 @@ describe('MessageSender', () => {
       outboundTransporter = new DummyOutboundTransporter()
       messageRepository = new InMemoryMessageRepository(getAgentConfig('MessageSender'))
       messageSender = new MessageSender(enveloperService, transportService, messageRepository, logger)
-      connection = getMockConnection({ id: 'test-123' })
+      connection = getMockConnection({ id: 'test-123', theirLabel: 'Test 123' })
 
       outboundMessage = createOutboundMessage(connection, new AgentMessage())
 
@@ -112,12 +112,12 @@ describe('MessageSender', () => {
       await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrow(`Agent has no outbound transporter!`)
     })
 
-    test('throw error when there is no service', async () => {
+    test('throw error when there is no service or queue', async () => {
       messageSender.setOutboundTransporter(outboundTransporter)
       transportServiceFindServicesMock.mockReturnValue([])
 
       await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrow(
-        `Connection with id test-123 has no service!`
+        `Message is undeliverable to connection test-123 (Test 123)`
       )
     })
 
@@ -132,7 +132,6 @@ describe('MessageSender', () => {
       await messageSender.sendMessage(outboundMessage)
 
       expect(sendMessageSpy).toHaveBeenCalledWith({
-        connection,
         payload: wireMessage,
         endpoint: firstDidCommService.serviceEndpoint,
         responseRequested: false,
@@ -150,7 +149,6 @@ describe('MessageSender', () => {
       await messageSender.sendMessage(outboundMessage)
 
       expect(sendMessageSpy).toHaveBeenCalledWith({
-        connection,
         payload: wireMessage,
         endpoint: firstDidCommService.serviceEndpoint,
         responseRequested: false,
@@ -166,17 +164,16 @@ describe('MessageSender', () => {
       await messageSender.sendMessage(outboundMessage)
 
       expect(sendMessageToServiceSpy).toHaveBeenCalledWith({
-        connection,
         message: outboundMessage.payload,
         senderKey: connection.verkey,
         service: firstDidCommService,
-        session,
+        returnRoute: false,
       })
       expect(sendMessageToServiceSpy).toHaveBeenCalledTimes(1)
       expect(sendMessageSpy).toHaveBeenCalledTimes(1)
     })
 
-    test('calls sendMessageToService with connection, payload and endpoint from second DidComm service when the first fails', async () => {
+    test('calls sendMessageToService with payload and endpoint from second DidComm service when the first fails', async () => {
       messageSender.setOutboundTransporter(outboundTransporter)
       const sendMessageSpy = jest.spyOn(outboundTransporter, 'sendMessage')
       const sendMessageToServiceSpy = jest.spyOn(messageSender, 'sendMessageToService')
@@ -187,11 +184,10 @@ describe('MessageSender', () => {
       await messageSender.sendMessage(outboundMessage)
 
       expect(sendMessageToServiceSpy).toHaveBeenNthCalledWith(2, {
-        connection,
         message: outboundMessage.payload,
         senderKey: connection.verkey,
         service: secondDidCommService,
-        session,
+        returnRoute: false,
       })
       expect(sendMessageToServiceSpy).toHaveBeenCalledTimes(2)
       expect(sendMessageSpy).toHaveBeenCalledTimes(2)

@@ -88,11 +88,11 @@ export class MessageReceiver {
     // We want to save a session if there is a chance of returning outbound message via inbound transport.
     // That can happen when inbound message has `return_route` set to `all` or `thread`.
     // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
-    if (senderKey && message.hasAnyReturnRoute() && session) {
+    if (senderKey && recipientKey && message.hasAnyReturnRoute() && session) {
       const keys = {
         recipientKeys: [senderKey],
         routingKeys: [],
-        senderKey,
+        senderKey: recipientKey,
       }
       session.keys = keys
       session.inboundMessage = message
