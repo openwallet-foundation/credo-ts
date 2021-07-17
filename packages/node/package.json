@@ -1,0 +1,38 @@
+{
+  "name": "@aries-framework/node",
+  "main": "build/index",
+  "types": "build/index",
+  "version": "0.0.0",
+  "files": [
+    "build"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/node",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "directory": "packages/node"
+  },
+  "scripts": {
+    "build": "yarn run clean && yarn run compile",
+    "clean": "rimraf -rf ./build",
+    "compile": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "yarn run build",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@aries-framework/core": "*",
+    "indy-sdk": "^1.16.0-dev-1634",
+    "node-fetch": "^2.6.1",
+    "ws": "^7.4.6"
+  },
+  "devDependencies": {
+    "@types/node": "^15.14.1",
+    "@types/node-fetch": "^2.5.10",
+    "@types/ws": "^7.4.4",
+    "rimraf": "~3.0.2",
+    "typescript": "~4.3.0"
+  }
+}
