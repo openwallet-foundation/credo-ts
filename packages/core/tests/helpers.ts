@@ -55,7 +55,7 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
     autoAcceptConnections: true,
     genesisPath,
     poolName: `pool-${name.toLowerCase()}`,
-    logger: new TestLogger(LogLevel.test, name),
+    logger: new TestLogger(LogLevel.error, name),
     ...extraConfig,
   }
 
