@@ -8,7 +8,6 @@ import { SubjectInboundTransporter } from '../../../tests/transport/SubjectInbou
 import { SubjectOutboundTransporter } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
-import { AutoAcceptCredential } from '../src/modules/credentials'
 import {
   PredicateType,
   PresentationPreview,

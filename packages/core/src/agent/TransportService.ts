@@ -1,6 +1,6 @@
 import type { DidDoc } from '../modules/connections/models'
 import type { ConnectionRecord } from '../modules/connections/repository'
-import type { OutboundPackage, WireMessage } from '../types'
+import type { WireMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
 

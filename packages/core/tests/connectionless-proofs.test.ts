@@ -147,6 +147,7 @@ describe('Present Proof', () => {
     testLogger.test('Alice accepts presentation request from Faber')
     const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest
     const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       indyProofRequest!,
       presentationPreview
     )
