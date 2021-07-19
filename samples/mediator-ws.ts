@@ -2,10 +2,9 @@ import express from 'express'
 import { Server } from 'ws'
 
 import { TestLogger } from '../packages/core/tests/logger'
-import { WsInboundTransporter } from '../tests/transport/WsInboundTransport'
 
 import { WsOutboundTransporter, Agent, ConnectionInvitationMessage, LogLevel, AgentConfig } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
+import { WsInboundTransport, agentDependencies } from '@aries-framework/node'
 
 const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3002
 
@@ -26,7 +25,7 @@ const socketServer = new Server({ noServer: true })
 const agent = new Agent(agentConfig, agentDependencies)
 const config = agent.injectionContainer.resolve(AgentConfig)
 const messageSender = new WsOutboundTransporter()
-const messageReceiver = new WsInboundTransporter(socketServer)
+const messageReceiver = new WsInboundTransport({ server: socketServer })
 agent.setInboundTransporter(messageReceiver)
 agent.setOutboundTransporter(messageSender)
 

@@ -6,6 +6,8 @@ import fetch from 'node-fetch'
 import WebSocket from 'ws'
 
 import { NodeFileSystem } from './NodeFileSystem'
+import { HttpInboundTransport } from './transport/HttpInboundTransport'
+import { WsInboundTransport } from './transport/WsInboundTransport'
 
 const agentDependencies: AgentDependencies = {
   FileSystem: NodeFileSystem,
@@ -15,4 +17,4 @@ const agentDependencies: AgentDependencies = {
   indy,
 }
 
-export { agentDependencies }
+export { agentDependencies, HttpInboundTransport, WsInboundTransport }
