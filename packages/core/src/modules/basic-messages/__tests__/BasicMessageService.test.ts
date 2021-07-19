@@ -29,8 +29,8 @@ describe('BasicMessageService', () => {
     agentConfig = getAgentConfig('BasicMessageServiceTest')
     wallet = new IndyWallet(agentConfig)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.initialize(agentConfig.walletConfig!, agentConfig.walletCredentials!)
-    storageService = new IndyStorageService(wallet, agentConfig.agentDependencies.indy)
+    await wallet.initialize(agentConfig.walletConfig!)
+    storageService = new IndyStorageService(wallet, agentConfig)
   })
 
   afterAll(async () => {

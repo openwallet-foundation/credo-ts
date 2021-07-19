@@ -71,7 +71,7 @@ describe('Agent', () => {
     it('wallet must be initialized if wallet config is not set before agent can be initialized', async () => {
       expect.assertions(9)
 
-      const { walletConfig, walletCredentials, ...withoutWalletConfig } = config
+      const { walletConfig, ...withoutWalletConfig } = config
       agent = new Agent(withoutWalletConfig, dependencies)
 
       const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
@@ -84,7 +84,7 @@ describe('Agent', () => {
       expect(wallet.isInitialized).toBe(false)
 
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      await wallet.initialize(walletConfig!, walletCredentials!)
+      await wallet.initialize(walletConfig!)
       expect(agent.isInitialized).toBe(false)
       expect(wallet.isInitialized).toBe(true)
 

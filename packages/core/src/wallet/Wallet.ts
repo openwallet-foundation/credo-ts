@@ -1,25 +1,28 @@
-import type { PackedMessage, UnpackedMessageContext } from '../types'
+import type { PackedMessage, UnpackedMessageContext, WalletConfig } from '../types'
 import type { Buffer } from '../utils/buffer'
-import type { DidConfig, Did, Verkey, WalletConfig, WalletCredentials } from 'indy-sdk'
 
 export interface Wallet {
   publicDid: DidInfo | undefined
   isInitialized: boolean
 
-  initialize(walletConfig: WalletConfig, walletCredentials: WalletCredentials): Promise<void>
+  initialize(walletConfig: WalletConfig): Promise<void>
   close(): Promise<void>
   delete(): Promise<void>
 
   initPublicDid(didConfig: DidConfig): Promise<void>
-  createDid(didConfig?: DidConfig): Promise<[Did, Verkey]>
-  pack(payload: Record<string, unknown>, recipientKeys: Verkey[], senderVk: Verkey | null): Promise<PackedMessage>
+  createDid(didConfig?: DidConfig): Promise<DidInfo>
+  pack(payload: Record<string, unknown>, recipientKeys: string[], senderVerkey?: string | null): Promise<PackedMessage>
   unpack(messagePackage: PackedMessage): Promise<UnpackedMessageContext>
-  sign(data: Buffer, verkey: Verkey): Promise<Buffer>
-  verify(signerVerkey: Verkey, data: Buffer, signature: Buffer): Promise<boolean>
+  sign(data: Buffer, verkey: string): Promise<Buffer>
+  verify(signerVerkey: string, data: Buffer, signature: Buffer): Promise<boolean>
   generateNonce(): Promise<string>
 }
 
 export interface DidInfo {
-  did: Did
-  verkey: Verkey
+  did: string
+  verkey: string
+}
+
+export interface DidConfig {
+  seed?: string
 }

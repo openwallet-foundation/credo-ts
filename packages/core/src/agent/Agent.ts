@@ -56,7 +56,7 @@ export class Agent {
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
     const credentialSupported = false
-    
+
     // Create child container so we don't interfere with anything outside of this agent
     this.container = baseContainer.createChildContainer()
 
@@ -79,7 +79,7 @@ export class Agent {
       logger: initialConfig.logger != undefined,
     })
 
-    if (!this.agentConfig.walletConfig || !this.agentConfig.walletCredentials) {
+    if (!this.agentConfig.walletConfig) {
       this.logger.warn(
         'Wallet config and/or credentials have not been set on the agent config. ' +
           'Make sure to initialize the wallet yourself before initializing the agent, ' +
@@ -97,7 +97,6 @@ export class Agent {
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.container.resolve(ConnectionsModule)
 
-    if (this.)
     this.credentials = this.container.resolve(CredentialsModule)
     this.proofs = this.container.resolve(ProofsModule)
     this.mediator = this.container.resolve(MediatorModule)
@@ -136,7 +135,7 @@ export class Agent {
   }
 
   public async initialize() {
-    const { publicDidSeed, walletConfig, walletCredentials, mediatorConnectionsInvite } = this.agentConfig
+    const { publicDidSeed, walletConfig, mediatorConnectionsInvite } = this.agentConfig
 
     if (this._isInitialized) {
       throw new AriesFrameworkError(
@@ -144,11 +143,11 @@ export class Agent {
       )
     }
 
-    if (!this.wallet.isInitialized && walletConfig && walletCredentials) {
-      await this.wallet.initialize(walletConfig, walletCredentials)
+    if (!this.wallet.isInitialized && walletConfig) {
+      await this.wallet.initialize(walletConfig)
     } else if (!this.wallet.isInitialized) {
       throw new WalletError(
-        'Wallet config and/or credentials have not been set on the agent config. ' +
+        'Wallet config has not been set on the agent config. ' +
           'Make sure to initialize the wallet yourself before initializing the agent, ' +
           'or provide the required wallet configuration in the agent constructor'
       )
