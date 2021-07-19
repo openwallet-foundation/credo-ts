@@ -12,6 +12,9 @@ export { getDirFromFilePath } from './utils/path'
 export { InjectionSymbols } from './constants'
 export type { Wallet } from './wallet/Wallet'
 export type { TransportSession } from './agent/TransportService'
+export { TransportService } from './agent/TransportService'
+
+import { uuid } from './utils/uuid'
 
 export * from './transport'
 export * from './modules/basic-messages'
@@ -23,3 +26,9 @@ export * from './modules/routing'
 export * from './utils/JsonTransformer'
 export * from './logger'
 export * from './error'
+
+const utils = {
+  uuid,
+}
+
+export { utils }

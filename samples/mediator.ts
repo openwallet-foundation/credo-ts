@@ -1,5 +1,4 @@
 import { TestLogger } from '../packages/core/tests/logger'
-import { HttpInboundTransporter } from '../tests/transport/HttpInboundTransport'
 
 import {
   HttpOutboundTransporter,
@@ -8,7 +7,7 @@ import {
   LogLevel,
   AgentConfig,
 } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
+import { HttpInboundTransport, agentDependencies } from '@aries-framework/node'
 
 const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3001
 
@@ -26,7 +25,7 @@ const agentConfig = {
 // Set up agent
 const agent = new Agent(agentConfig, agentDependencies)
 const config = agent.injectionContainer.resolve(AgentConfig)
-const inboundTransporter = new HttpInboundTransporter({ port })
+const inboundTransporter = new HttpInboundTransport({ port })
 const outboundTransporter = new HttpOutboundTransporter()
 
 agent.setInboundTransporter(inboundTransporter)
