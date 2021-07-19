@@ -1,6 +1,6 @@
 import type { IndyRequestedCredentials } from 'indy-sdk'
 
-import { Expose, Type } from 'class-transformer'
+import { Expose } from 'class-transformer'
 import { ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
@@ -36,7 +36,6 @@ export class RequestedCredentials {
 
   @Expose({ name: 'requested_predicates' })
   @ValidateNested({ each: true })
-  @Type(() => RequestedPredicate)
   @RecordTransformer(RequestedPredicate)
   public requestedPredicates!: Record<string, RequestedPredicate>
 
