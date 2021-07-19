@@ -1,10 +1,20 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { BasicMessage, BasicMessageReceivedEvent } from '../src/modules/basic-messages'
-import type { ConnectionRecordProps } from '../src/modules/connections'
-import type { CredentialRecord, CredentialOfferTemplate, CredentialStateChangedEvent } from '../src/modules/credentials'
-import type { SchemaTemplate, CredentialDefinitionTemplate } from '../src/modules/ledger'
-import type { ProofAttributeInfo, ProofPredicateInfo, ProofRecord, ProofStateChangedEvent } from '../src/modules/proofs'
-import type { InitConfig } from '../src/types'
+import type {
+  InitConfig,
+  ProofRecord,
+  ProofStateChangedEvent,
+  CredentialRecord,
+  CredentialStateChangedEvent,
+  BasicMessage,
+  BasicMessageReceivedEvent,
+  ConnectionRecordProps,
+  SchemaTemplate,
+  CredentialDefinitionTemplate,
+  CredentialOfferTemplate,
+  ProofAttributeInfo,
+  ProofPredicateInfo,
+  AutoAcceptProof,
+} from '../src'
 import type { Schema, CredDef, Did } from 'indy-sdk'
 
 import path from 'path'
@@ -13,31 +23,35 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransporter } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransporter } from '../../../tests/transport/SubjectOutboundTransport'
 import { agentDependencies } from '../../node/src'
-import { Agent } from '../src/agent/Agent'
-import { AgentConfig } from '../src/agent/AgentConfig'
-import { LogLevel } from '../src/logger/Logger'
-import { BasicMessageEventTypes } from '../src/modules/basic-messages'
 import {
-  ConnectionInvitationMessage,
-  ConnectionRecord,
-  ConnectionRole,
-  ConnectionState,
-  DidCommService,
-  DidDoc,
-} from '../src/modules/connections'
-import {
+  LogLevel,
+  AgentConfig,
+  ProofState,
+  ProofEventTypes,
   CredentialState,
   CredentialEventTypes,
+  BasicMessageEventTypes,
+  ConnectionState,
+  ConnectionRole,
+  DidDoc,
+  DidCommService,
+  ConnectionInvitationMessage,
+  ConnectionRecord,
   CredentialPreview,
   CredentialPreviewAttribute,
-} from '../src/modules/credentials'
-import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
-import { ProofEventTypes, ProofState } from '../src/modules/proofs'
+  AriesFrameworkError,
+  AutoAcceptCredential,
+  PresentationPreview,
+  PresentationPreviewAttribute,
+  PresentationPreviewPredicate,
+  PredicateType,
+  Agent,
+} from '../src'
+import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
+import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
 import testLogger, { TestLogger } from './logger'
-
-import { AriesFrameworkError } from '@aries-framework/core'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
@@ -433,4 +447,128 @@ export async function setupCredentialTests(
   const [faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
 
   return { faberAgent, aliceAgent, credDefId, schemaId, faberConnection, aliceConnection }
+}
+
+export async function setupProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {
+  const credentialPreview = new CredentialPreview({
+    attributes: [
+      new CredentialPreviewAttribute({
+        name: 'name',
+        mimeType: 'text/plain',
+        value: 'John',
+      }),
+      new CredentialPreviewAttribute({
+        name: 'age',
+        mimeType: 'text/plain',
+        value: '99',
+      }),
+    ],
+  })
+
+  const faberConfig = getBaseConfig(faberName, {
+    genesisPath,
+    autoAcceptProofs,
+    endpoint: 'rxjs:faber',
+  })
+
+  const aliceConfig = getBaseConfig(aliceName, {
+    genesisPath,
+    autoAcceptProofs,
+    endpoint: 'rxjs:alice',
+  })
+
+  const faberMessages = new Subject<SubjectMessage>()
+  const aliceMessages = new Subject<SubjectMessage>()
+
+  const subjectMap = {
+    'rxjs:faber': faberMessages,
+    'rxjs:alice': aliceMessages,
+  }
+  const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
+  faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
+  faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
+  await faberAgent.initialize()
+
+  const aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+  aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
+  aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
+  await aliceAgent.initialize()
+
+  const schemaTemplate = {
+    name: `test-schema-${Date.now()}`,
+    attributes: ['name', 'age', 'image_0', 'image_1'],
+    version: '1.0',
+  }
+  const schema = await registerSchema(faberAgent, schemaTemplate)
+
+  const definitionTemplate = {
+    schema,
+    tag: 'TAG',
+    signatureType: 'CL' as const,
+    supportRevocation: false,
+  }
+  const credentialDefinition = await registerDefinition(faberAgent, definitionTemplate)
+  const credDefId = credentialDefinition.id
+
+  const publicDid = faberAgent.publicDid?.did
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  await ensurePublicDidIsOnLedger(faberAgent, publicDid!)
+  const [agentAConnection, agentBConnection] = await makeConnection(faberAgent, aliceAgent)
+  expect(agentAConnection.isReady).toBe(true)
+  expect(agentBConnection.isReady).toBe(true)
+
+  const faberConnection = agentAConnection
+  const aliceConnection = agentBConnection
+
+  const presentationPreview = new PresentationPreview({
+    attributes: [
+      new PresentationPreviewAttribute({
+        name: 'name',
+        credentialDefinitionId: credDefId,
+        referent: '0',
+        value: 'John',
+      }),
+      new PresentationPreviewAttribute({
+        name: 'image_0',
+        credentialDefinitionId: credDefId,
+      }),
+    ],
+    predicates: [
+      new PresentationPreviewPredicate({
+        name: 'age',
+        credentialDefinitionId: credDefId,
+        predicate: PredicateType.GreaterThanOrEqualTo,
+        threshold: 50,
+      }),
+    ],
+  })
+
+  await issueCredential({
+    issuerAgent: faberAgent,
+    issuerConnectionId: faberConnection.id,
+    holderAgent: aliceAgent,
+    credentialTemplate: {
+      credentialDefinitionId: credDefId,
+      comment: 'some comment about credential',
+      preview: credentialPreview,
+      linkedAttachments: [
+        new LinkedAttachment({
+          name: 'image_0',
+          attachment: new Attachment({
+            filename: 'picture-of-a-cat.png',
+            data: new AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
+          }),
+        }),
+        new LinkedAttachment({
+          name: 'image_1',
+          attachment: new Attachment({
+            filename: 'picture-of-a-dog.png',
+            data: new AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
+          }),
+        }),
+      ],
+    },
+  })
+
+  return { faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview }
 }

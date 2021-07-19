@@ -9,6 +9,7 @@ import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { AriesFrameworkError } from '../error'
 import { ConsoleLogger, LogLevel } from '../logger'
 import { AutoAcceptCredential } from '../modules/credentials/CredentialAutoAcceptType'
+import { AutoAcceptProof } from '../modules/proofs/ProofAutoAcceptType'
 import { MediatorPickupStrategy } from '../modules/routing/MediatorPickupStrategy'
 import { DidCommMimeType } from '../types'
 
@@ -67,6 +68,10 @@ export class AgentConfig {
 
   public get autoAcceptConnections() {
     return this.initConfig.autoAcceptConnections ?? false
+  }
+
+  public get autoAcceptProofs() {
+    return this.initConfig.autoAcceptProofs ?? AutoAcceptProof.Never
   }
 
   public get autoAcceptCredentials() {

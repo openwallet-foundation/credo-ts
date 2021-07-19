@@ -62,8 +62,8 @@ describe('auto accept credentials', () => {
   describe('Auto accept on `always`', () => {
     beforeAll(async () => {
       ;({ faberAgent, aliceAgent, credDefId, schemaId, faberConnection, aliceConnection } = await setupCredentialTests(
-        'faber agent always',
-        'alice agent always',
+        'faber agent: always',
+        'alice agent: always',
         AutoAcceptCredential.Always
       ))
     })
@@ -170,8 +170,8 @@ describe('auto accept credentials', () => {
   describe('Auto accept on `contentApproved`', () => {
     beforeAll(async () => {
       ;({ faberAgent, aliceAgent, credDefId, schemaId, faberConnection, aliceConnection } = await setupCredentialTests(
-        'faber agent contentApproved',
-        'alice agent contentApproved',
+        'faber agent: contentApproved',
+        'alice agent: contentApproved',
         AutoAcceptCredential.ContentApproved
       ))
     })

@@ -3,6 +3,7 @@ import type { TransportSession } from './agent/TransportService'
 import type { Logger } from './logger'
 import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
+import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
 import type { Verkey, WalletConfig, WalletCredentials } from 'indy-sdk'
 
@@ -24,6 +25,7 @@ export interface InitConfig {
   walletConfig?: WalletConfig
   walletCredentials?: WalletCredentials
   autoAcceptConnections?: boolean
+  autoAcceptProofs?: AutoAcceptProof
   autoAcceptCredentials?: AutoAcceptCredential
   poolName?: string
   logger?: Logger
