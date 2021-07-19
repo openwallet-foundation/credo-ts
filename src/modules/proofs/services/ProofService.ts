@@ -769,7 +769,7 @@ export class ProofService {
     //Object we will be returning
     const newRetrievedCredentials = new RetrievedCredentials()
 
-    //Object to cache deltas
+    //TODO - Replace with long term cache in LedgerService
     const deltaCache: { [revRegId: string]: RevocRegDelta } = {}
 
     //Arrays of attribute/predicate names
@@ -779,10 +779,14 @@ export class ProofService {
     //Time stamps to check revocation status
     const { from, to } = proofRequest.nonRevoked
 
-    //Function to prevent redundancy
-    const checkCredentialRevoked = async (
-      requestedCredential: RequestedPredicate | RequestedAttribute
-    ): Promise<any> => {
+    /**Nested function to prevent redundancy
+     * 
+     * @param requestedCredential Either a {@link RequestedAttribute} or {@link RequestedPredicate}
+     * @returns requestedCredential with revocation status if one could be found
+     */
+    const checkCredentialRevoked = async(
+      requestedCredential: RequestedAttribute | RequestedPredicate,
+    ): Promise<RequestedAttribute | RequestedPredicate> => {
       const revRegId = requestedCredential.credentialInfo.revocationRegistryId!
       const credRevId = requestedCredential.credentialInfo.credentialRevocationId!
 
@@ -811,7 +815,7 @@ export class ProofService {
       const attributeArray = retrievedCredentials.requestedAttributes[attributeName]
       for (const requestedAttribute of attributeArray) {
         //Push to newRetrievedCredentials
-        const checkedAttribute: RequestedAttribute = await checkCredentialRevoked(requestedAttribute)
+        const checkedAttribute = await checkCredentialRevoked(requestedAttribute) as RequestedAttribute
         newRetrievedCredentials.requestedAttributes[attributeName].push(checkedAttribute)
       }
     }
@@ -822,7 +826,7 @@ export class ProofService {
       const predicateArray = retrievedCredentials.requestedPredicates[predicateName]
       for (const requestedPredicate of predicateArray) {
         //Push to newRetrievedCredentials
-        const checkedPredicate: RequestedPredicate = await checkCredentialRevoked(requestedPredicate)
+        const checkedPredicate = await checkCredentialRevoked(requestedPredicate) as RequestedPredicate
         newRetrievedCredentials.requestedPredicates[predicateName].push(checkedPredicate)
       }
     }

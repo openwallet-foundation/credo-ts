@@ -294,6 +294,7 @@ export class LedgerService {
     from: number = 0,
     to: number = new Date().getTime()
   ): Promise<ParseRevRegDeltaResult> {
+    //TODO - implement a long term cache here
     try {
       this.logger.debug(`Get revocation registry delta '${revRegId}' from ledger`)
 
