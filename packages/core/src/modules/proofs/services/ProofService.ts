@@ -2,6 +2,7 @@ import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { ConnectionRecord } from '../../connections'
+import type { AutoAcceptProof } from '../ProofAutoAcceptType'
 import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { PresentationPreview, PresentationPreviewAttribute } from '../messages'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
@@ -101,6 +102,7 @@ export class ProofService {
     presentationProposal: PresentationPreview,
     config?: {
       comment?: string
+      autoAcceptProof?: AutoAcceptProof
     }
   ): Promise<ProofProtocolMsgReturnType<ProposePresentationMessage>> {
     // Assert
@@ -118,6 +120,7 @@ export class ProofService {
       threadId: proposalMessage.threadId,
       state: ProofState.ProposalSent,
       proposalMessage,
+      autoAcceptProof: config?.autoAcceptProof,
     })
     await this.proofRepository.save(proofRecord)
     this.eventEmitter.emit<ProofStateChangedEvent>({
@@ -273,8 +276,12 @@ export class ProofService {
    *
    */
   public async createRequest(
-    proofRequestTemplate: ProofRequestTemplate,
-    connectionRecord?: ConnectionRecord
+    proofRequest: ProofRequest,
+    connectionRecord?: ConnectionRecord,
+    config?: {
+      comment?: string
+      autoAcceptProof?: AutoAcceptProof
+    }
   ): Promise<ProofProtocolMsgReturnType<RequestPresentationMessage>> {
     this.logger.debug(`Creating proof request`)
 
@@ -286,11 +293,11 @@ export class ProofService {
       id: INDY_PROOF_REQUEST_ATTACHMENT_ID,
       mimeType: 'application/json',
       data: new AttachmentData({
-        base64: JsonEncoder.toBase64(proofRequestTemplate.proofRequest),
+        base64: JsonEncoder.toBase64(proofRequest),
       }),
     })
     const requestPresentationMessage = new RequestPresentationMessage({
-      comment: proofRequestTemplate?.comment,
+      comment: config?.comment,
       requestPresentationAttachments: [attachment],
     })
 
@@ -300,6 +307,7 @@ export class ProofService {
       threadId: requestPresentationMessage.threadId,
       requestMessage: requestPresentationMessage,
       state: ProofState.RequestSent,
+      autoAcceptProof: config?.autoAcceptProof,
     })
 
     await this.proofRepository.save(proofRecord)
@@ -629,7 +637,7 @@ export class ProofService {
   }
 
   /**
-   * Retreives the linked attachments for an {@link indyProofRequest}
+   * Retrieves the linked attachments for an {@link indyProofRequest}
    * @param indyProofRequest The proof request for which the linked attachments have to be found
    * @param requestedCredentials The requested credentials
    * @returns a list of attachments that are linked to the requested credentials

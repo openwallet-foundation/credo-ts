@@ -1,3 +1,4 @@
+import type { AutoAcceptProof } from './ProofAutoAcceptType'
 import type { PresentationPreview, RequestPresentationMessage } from './messages'
 import type { RequestedCredentials, RetrievedCredentials } from './models'
 import type { ProofRecord } from './repository/ProofRecord'
@@ -69,6 +70,7 @@ export class ProofsModule {
     presentationProposal: PresentationPreview,
     config?: {
       comment?: string
+      autoAcceptProof?: AutoAcceptProof
     }
   ): Promise<ProofRecord> {
     const connection = await this.connectionService.getById(connectionId)
@@ -141,7 +143,11 @@ export class ProofsModule {
    * @returns Proof record associated with the sent request message
    *
    */
-  public async requestProof(connectionId: string, proofRequestOptions: ProofRequestOptions): Promise<ProofRecord> {
+  public async requestProof(
+    connectionId: string,
+    proofRequestOptions: ProofRequestOptions,
+    config?: ProofRequestConfig
+  ): Promise<ProofRecord> {
     const connection = await this.connectionService.getById(connectionId)
 
     const nonce = proofRequestOptions.nonce ?? (await this.proofService.generateProofRequestNonce())
@@ -154,10 +160,7 @@ export class ProofsModule {
       requestedPredicates: proofRequestOptions.requestedPredicates,
     })
 
-    const { message, proofRecord } = await this.proofService.createRequest(
-      { proofRequest, comment: proofRequestOptions.comment },
-      connection
-    )
+    const { message, proofRecord } = await this.proofService.createRequest(proofRequest, connection, config)
 
     const outboundMessage = createOutboundMessage(connection, message)
     await this.messageSender.sendMessage(outboundMessage)
@@ -173,7 +176,10 @@ export class ProofsModule {
    * @returns The proof record and proof request message
    *
    */
-  public async createOutOfBandRequest(proofRequestOptions: ProofRequestOptions): Promise<{
+  public async createOutOfBandRequest(
+    proofRequestOptions: ProofRequestOptions,
+    config: ProofRequestConfig
+  ): Promise<{
     requestMessage: RequestPresentationMessage
     proofRecord: ProofRecord
   }> {
@@ -187,10 +193,7 @@ export class ProofsModule {
       requestedPredicates: proofRequestOptions.requestedPredicates,
     })
 
-    const { message, proofRecord } = await this.proofService.createRequest({
-      proofRequest,
-      comment: proofRequestOptions.comment,
-    })
+    const { message, proofRecord } = await this.proofService.createRequest(proofRequest, undefined, config)
 
     // Create and set ~service decorator
     const routing = await this.mediationRecipientService.getRouting()
@@ -394,7 +397,11 @@ export class ProofsModule {
   }
 }
 
-export interface ProofRequestOptions
-  extends Partial<Pick<ProofRequest, 'name' | 'nonce' | 'requestedAttributes' | 'requestedPredicates'>> {
+export type ProofRequestOptions = Partial<
+  Pick<ProofRequest, 'name' | 'nonce' | 'requestedAttributes' | 'requestedPredicates'>
+>
+
+export interface ProofRequestConfig {
   comment?: string
+  autoAcceptProof?: AutoAcceptProof
 }
