@@ -565,25 +565,8 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
   aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
   await aliceAgent.initialize()
 
-  const schemaTemplate = {
-    name: `test-schema-${Date.now()}`,
-    attributes: ['name', 'age', 'image_0', 'image_1'],
-    version: '1.0',
-  }
-  const schema = await registerSchema(faberAgent, schemaTemplate)
+  const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])
 
-  const definitionTemplate = {
-    schema,
-    tag: 'TAG',
-    signatureType: 'CL' as const,
-    supportRevocation: false,
-  }
-  const credentialDefinition = await registerDefinition(faberAgent, definitionTemplate)
-  const credDefId = credentialDefinition.id
-
-  const publicDid = faberAgent.publicDid?.did
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  await ensurePublicDidIsOnLedger(faberAgent, publicDid!)
   const [agentAConnection, agentBConnection] = await makeConnection(faberAgent, aliceAgent)
   expect(agentAConnection.isReady).toBe(true)
   expect(agentBConnection.isReady).toBe(true)
@@ -595,19 +578,19 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
     attributes: [
       new PresentationPreviewAttribute({
         name: 'name',
-        credentialDefinitionId: credDefId,
+        credentialDefinitionId: definition.id,
         referent: '0',
         value: 'John',
       }),
       new PresentationPreviewAttribute({
         name: 'image_0',
-        credentialDefinitionId: credDefId,
+        credentialDefinitionId: definition.id,
       }),
     ],
     predicates: [
       new PresentationPreviewPredicate({
         name: 'age',
-        credentialDefinitionId: credDefId,
+        credentialDefinitionId: definition.id,
         predicate: PredicateType.GreaterThanOrEqualTo,
         threshold: 50,
       }),
@@ -619,7 +602,7 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
     issuerConnectionId: faberConnection.id,
     holderAgent: aliceAgent,
     credentialTemplate: {
-      credentialDefinitionId: credDefId,
+      credentialDefinitionId: definition.id,
       comment: 'some comment about credential',
       preview: credentialPreview,
       linkedAttachments: [
@@ -641,5 +624,20 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
     },
   })
 
-  return { faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview }
+  const faberReplay = new ReplaySubject<ProofStateChangedEvent>()
+  const aliceReplay = new ReplaySubject<ProofStateChangedEvent>()
+
+  faberAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(faberReplay)
+  aliceAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(aliceReplay)
+
+  return {
+    faberAgent,
+    aliceAgent,
+    credDefId: definition.id,
+    faberConnection,
+    aliceConnection,
+    presentationPreview,
+    faberReplay,
+    aliceReplay,
+  }
 }

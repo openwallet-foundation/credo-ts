@@ -1,116 +1,22 @@
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { ProofStateChangedEvent } from '../src/modules/proofs'
-import type { CredDefId } from 'indy-sdk'
-
-import { ReplaySubject, Subject } from 'rxjs'
-
-import { SubjectInboundTransporter } from '../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransporter } from '../../../tests/transport/SubjectOutboundTransport'
-import { Agent } from '../src/agent/Agent'
 import {
   PredicateType,
-  PresentationPreview,
-  PresentationPreviewAttribute,
-  PresentationPreviewPredicate,
   ProofState,
   ProofAttributeInfo,
   AttributeFilter,
   ProofPredicateInfo,
-  ProofEventTypes,
+  AutoAcceptProof,
 } from '../src/modules/proofs'
 
-import {
-  getBaseConfig,
-  issueConnectionLessCredential,
-  prepareForIssuance,
-  previewFromAttributes,
-  waitForProofRecordSubject,
-} from './helpers'
+import { setupProofsTest, waitForProofRecordSubject } from './helpers'
 import testLogger from './logger'
 
-const faberConfig = getBaseConfig('Faber connection-less Proofs', {
-  endpoint: 'rxjs:faber',
-})
-const aliceConfig = getBaseConfig('Alice connection-less Proofs', {
-  endpoint: 'rxjs:alice',
-})
-
-const credentialPreview = previewFromAttributes({
-  name: 'John',
-  age: '99',
-})
-
 describe('Present Proof', () => {
-  let faberAgent: Agent
-  let aliceAgent: Agent
-  let faberReplay: ReplaySubject<ProofStateChangedEvent>
-  let aliceReplay: ReplaySubject<ProofStateChangedEvent>
-  let credDefId: CredDefId
-  let presentationPreview: PresentationPreview
-
-  beforeEach(async () => {
-    const faberMessages = new Subject<SubjectMessage>()
-    const aliceMessages = new Subject<SubjectMessage>()
-
-    const subjectMap = {
-      'rxjs:faber': faberMessages,
-      'rxjs:alice': aliceMessages,
-    }
-    faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
-    faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
-    faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
-    await faberAgent.initialize()
-
-    aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
-    aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
-    aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
-    await aliceAgent.initialize()
-
-    const { definition } = await prepareForIssuance(faberAgent, ['name', 'age'])
-    credDefId = definition.id
-
-    faberReplay = new ReplaySubject<ProofStateChangedEvent>()
-    aliceReplay = new ReplaySubject<ProofStateChangedEvent>()
-
-    faberAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(faberReplay)
-    aliceAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(aliceReplay)
-
-    presentationPreview = new PresentationPreview({
-      attributes: [
-        new PresentationPreviewAttribute({
-          name: 'name',
-          credentialDefinitionId: credDefId,
-          referent: '0',
-          value: 'John',
-        }),
-      ],
-      predicates: [
-        new PresentationPreviewPredicate({
-          name: 'age',
-          credentialDefinitionId: credDefId,
-          predicate: PredicateType.GreaterThanOrEqualTo,
-          threshold: 50,
-        }),
-      ],
-    })
-
-    await issueConnectionLessCredential({
-      issuerAgent: faberAgent,
-      holderAgent: aliceAgent,
-      credentialTemplate: {
-        credentialDefinitionId: credDefId,
-        comment: 'some comment about credential',
-        preview: credentialPreview,
-      },
-    })
-  })
-
-  afterEach(async () => {
-    await faberAgent.shutdown({ deleteWallet: true })
-    await aliceAgent.shutdown({ deleteWallet: true })
-  })
-
   test('Faber starts with connection-less proof requests to Alice', async () => {
+    const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay, presentationPreview } = await setupProofsTest(
+      'Faber connection-less Proofs',
+      'Alice connection-less Proofs',
+      AutoAcceptProof.Never
+    )
     testLogger.test('Faber sends presentation request to Alice')
 
     const attributes = {
@@ -177,6 +83,64 @@ describe('Present Proof', () => {
     // Alice waits till it receives presentation ack
     aliceProofRecord = await waitForProofRecordSubject(aliceReplay, {
       threadId: aliceProofRecord.threadId,
+      state: ProofState.Done,
+    })
+  })
+
+  test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
+    testLogger.test('Faber sends presentation request to Alice')
+
+    const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay } = await setupProofsTest(
+      'Faber connection-less Proofs - Auto Accept',
+      'Alice connection-less Proofs - Auto Accept',
+      AutoAcceptProof.Always
+    )
+
+    const attributes = {
+      name: new ProofAttributeInfo({
+        name: 'name',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    const predicates = {
+      age: new ProofPredicateInfo({
+        name: 'age',
+        predicateType: PredicateType.GreaterThanOrEqualTo,
+        predicateValue: 50,
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    // eslint-disable-next-line prefer-const
+    let { proofRecord: faberProofRecord, requestMessage } = await faberAgent.proofs.createOutOfBandRequest(
+      {
+        name: 'test-proof-request',
+        requestedAttributes: attributes,
+        requestedPredicates: predicates,
+      },
+      {
+        autoAcceptProof: AutoAcceptProof.ContentApproved,
+      }
+    )
+
+    await aliceAgent.receiveMessage(requestMessage.toJSON())
+
+    await waitForProofRecordSubject(aliceReplay, {
+      threadId: faberProofRecord.threadId,
+      state: ProofState.Done,
+    })
+
+    await waitForProofRecordSubject(faberReplay, {
+      threadId: faberProofRecord.threadId,
       state: ProofState.Done,
     })
   })

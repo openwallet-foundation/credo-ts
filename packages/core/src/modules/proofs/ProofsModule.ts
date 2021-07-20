@@ -178,7 +178,7 @@ export class ProofsModule {
    */
   public async createOutOfBandRequest(
     proofRequestOptions: ProofRequestOptions,
-    config: ProofRequestConfig
+    config?: ProofRequestConfig
   ): Promise<{
     requestMessage: RequestPresentationMessage
     proofRecord: ProofRecord
