@@ -1,17 +1,11 @@
-import type { InboundTransporter, Agent } from '../../packages/core/src'
-import type { TransportSession } from '../../packages/core/src/agent/TransportService'
-import type { WireMessage } from '../../packages/core/src/types'
+import type { InboundTransporter, Agent, TransportSession, WireMessage } from '@aries-framework/core'
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
+import { DidCommMimeType, AriesFrameworkError, AgentConfig, TransportService, utils } from '@aries-framework/core'
 import express, { text } from 'express'
 
-import { DidCommMimeType, AriesFrameworkError } from '../../packages/core/src'
-import { AgentConfig } from '../../packages/core/src/agent/AgentConfig'
-import { TransportService } from '../../packages/core/src/agent/TransportService'
-import { uuid } from '../../packages/core/src/utils/uuid'
-
-export class HttpInboundTransporter implements InboundTransporter {
+export class HttpInboundTransport implements InboundTransporter {
   public readonly app: Express
   private port: number
   private server?: Server
@@ -40,7 +34,7 @@ export class HttpInboundTransporter implements InboundTransporter {
     })
 
     this.app.post('/', async (req, res) => {
-      const session = new HttpTransportSession(uuid(), req, res)
+      const session = new HttpTransportSession(utils.uuid(), req, res)
       try {
         const message = req.body
         const packedMessage = JSON.parse(message)

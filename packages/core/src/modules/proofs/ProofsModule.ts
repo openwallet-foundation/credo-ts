@@ -4,6 +4,7 @@ import type { ProofRecord } from './repository/ProofRecord'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
+import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
@@ -12,6 +13,7 @@ import { AriesFrameworkError } from '../../error'
 import { ConnectionService } from '../connections/services/ConnectionService'
 import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 
+import { ProofResponseCoordinator } from './ProofResponseCoordinator'
 import {
   ProposePresentationHandler,
   RequestPresentationHandler,
@@ -29,21 +31,26 @@ export class ProofsModule {
   private proofRepository: ProofRepository
   private messageSender: MessageSender
   private mediationRecipientService: MediationRecipientService
+  private agentConfig: AgentConfig
+  private proofResponseCoordinator: ProofResponseCoordinator
 
   public constructor(
     dispatcher: Dispatcher,
     proofService: ProofService,
     connectionService: ConnectionService,
     proofRepository: ProofRepository,
+    mediationRecipientService: MediationRecipientService,
+    agentConfig: AgentConfig,
     messageSender: MessageSender,
-    mediationRecipientService: MediationRecipientService
+    proofResponseCoordinator: ProofResponseCoordinator
   ) {
     this.proofService = proofService
     this.connectionService = connectionService
     this.proofRepository = proofRepository
     this.messageSender = messageSender
     this.mediationRecipientService = mediationRecipientService
-
+    this.agentConfig = agentConfig
+    this.proofResponseCoordinator = proofResponseCoordinator
     this.registerHandlers(dispatcher)
   }
 
@@ -369,9 +376,15 @@ export class ProofsModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new ProposePresentationHandler(this.proofService))
-    dispatcher.registerHandler(new RequestPresentationHandler(this.proofService))
-    dispatcher.registerHandler(new PresentationHandler(this.proofService))
+    dispatcher.registerHandler(
+      new ProposePresentationHandler(this.proofService, this.agentConfig, this.proofResponseCoordinator)
+    )
+    dispatcher.registerHandler(
+      new RequestPresentationHandler(this.proofService, this.agentConfig, this.proofResponseCoordinator)
+    )
+    dispatcher.registerHandler(
+      new PresentationHandler(this.proofService, this.agentConfig, this.proofResponseCoordinator)
+    )
     dispatcher.registerHandler(new PresentationAckHandler(this.proofService))
   }
 }

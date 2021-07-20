@@ -1,23 +1,17 @@
-import type { Agent, InboundTransporter, Logger } from '../../packages/core/src'
-import type { TransportSession } from '../../packages/core/src/agent/TransportService'
-import type { WireMessage } from '../../packages/core/src/types'
+import type { Agent, InboundTransporter, Logger, TransportSession, WireMessage } from '@aries-framework/core'
 
-import WebSocket from 'ws'
+import { AriesFrameworkError, AgentConfig, TransportService, utils } from '@aries-framework/core'
+import WebSocket, { Server } from 'ws'
 
-import { AriesFrameworkError } from '../../packages/core/src'
-import { AgentConfig } from '../../packages/core/src/agent/AgentConfig'
-import { TransportService } from '../../packages/core/src/agent/TransportService'
-import { uuid } from '../../packages/core/src/utils/uuid'
-
-export class WsInboundTransporter implements InboundTransporter {
-  private socketServer: WebSocket.Server
+export class WsInboundTransport implements InboundTransporter {
+  private socketServer: Server
   private logger!: Logger
 
   // We're using a `socketId` just for the prevention of calling the connection handler twice.
   private socketIds: Record<string, unknown> = {}
 
-  public constructor(socketServer: WebSocket.Server) {
-    this.socketServer = socketServer
+  public constructor({ server, port }: { server: Server; port?: undefined } | { server?: undefined; port: number }) {
+    this.socketServer = server ?? new Server({ port })
   }
 
   public async start(agent: Agent) {
@@ -31,7 +25,7 @@ export class WsInboundTransporter implements InboundTransporter {
     })
 
     this.socketServer.on('connection', (socket: WebSocket) => {
-      const socketId = uuid()
+      const socketId = utils.uuid()
       this.logger.debug('Socket connected.')
 
       if (!this.socketIds[socketId]) {

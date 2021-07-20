@@ -1,46 +1,10 @@
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { ConnectionRecord } from '../src/modules/connections'
+import type { Agent, ConnectionRecord, PresentationPreview } from '../src'
 import type { CredDefId } from 'indy-sdk'
 
-import { Subject } from 'rxjs'
+import { ProofState, ProofAttributeInfo, AttributeFilter, ProofPredicateInfo, PredicateType } from '../src'
 
-import { SubjectInboundTransporter } from '../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransporter } from '../../../tests/transport/SubjectOutboundTransport'
-import { Agent } from '../src/agent/Agent'
-import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
-import {
-  PredicateType,
-  PresentationPreview,
-  PresentationPreviewAttribute,
-  PresentationPreviewPredicate,
-  ProofState,
-  ProofAttributeInfo,
-  AttributeFilter,
-  ProofPredicateInfo,
-} from '../src/modules/proofs'
-import { LinkedAttachment } from '../src/utils/LinkedAttachment'
-
-import {
-  makeConnection,
-  issueCredential,
-  waitForProofRecord,
-  getBaseConfig,
-  prepareForIssuance,
-  previewFromAttributes,
-} from './helpers'
+import { setupProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'
-
-const faberConfig = getBaseConfig('Faber Proofs', {
-  endpoint: 'rxjs:faber',
-})
-const aliceConfig = getBaseConfig('Alice Proofs', {
-  endpoint: 'rxjs:alice',
-})
-
-const credentialPreview = previewFromAttributes({
-  name: 'John',
-  age: '99',
-})
 
 describe('Present Proof', () => {
   let faberAgent: Agent
@@ -51,82 +15,8 @@ describe('Present Proof', () => {
   let presentationPreview: PresentationPreview
 
   beforeAll(async () => {
-    const faberMessages = new Subject<SubjectMessage>()
-    const aliceMessages = new Subject<SubjectMessage>()
-
-    const subjectMap = {
-      'rxjs:faber': faberMessages,
-      'rxjs:alice': aliceMessages,
-    }
-    faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
-    faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
-    faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
-    await faberAgent.initialize()
-
-    aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
-    aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
-    aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
-    await aliceAgent.initialize()
-
-    const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])
-    credDefId = definition.id
-
-    const [agentAConnection, agentBConnection] = await makeConnection(faberAgent, aliceAgent)
-    expect(agentAConnection.isReady).toBe(true)
-    expect(agentBConnection.isReady).toBe(true)
-
-    faberConnection = agentAConnection
-    aliceConnection = agentBConnection
-
-    presentationPreview = new PresentationPreview({
-      attributes: [
-        new PresentationPreviewAttribute({
-          name: 'name',
-          credentialDefinitionId: credDefId,
-          referent: '0',
-          value: 'John',
-        }),
-        new PresentationPreviewAttribute({
-          name: 'image_0',
-          credentialDefinitionId: credDefId,
-        }),
-      ],
-      predicates: [
-        new PresentationPreviewPredicate({
-          name: 'age',
-          credentialDefinitionId: credDefId,
-          predicate: PredicateType.GreaterThanOrEqualTo,
-          threshold: 50,
-        }),
-      ],
-    })
-
-    await issueCredential({
-      issuerAgent: faberAgent,
-      issuerConnectionId: faberConnection.id,
-      holderAgent: aliceAgent,
-      credentialTemplate: {
-        credentialDefinitionId: credDefId,
-        comment: 'some comment about credential',
-        preview: credentialPreview,
-        linkedAttachments: [
-          new LinkedAttachment({
-            name: 'image_0',
-            attachment: new Attachment({
-              filename: 'picture-of-a-cat.png',
-              data: new AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
-            }),
-          }),
-          new LinkedAttachment({
-            name: 'image_1',
-            attachment: new Attachment({
-              filename: 'picture-of-a-dog.png',
-              data: new AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
-            }),
-          }),
-        ],
-      },
-    })
+    ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
+      await setupProofsTest('faber agent', 'alice agent'))
   })
 
   afterAll(async () => {

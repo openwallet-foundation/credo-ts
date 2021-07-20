@@ -2,6 +2,7 @@ import type { AgentMessage } from './agent/AgentMessage'
 import type { Logger } from './logger'
 import type { ConnectionRecord, DidCommService } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
+import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
 import type { Verkey, WalletConfig, WalletCredentials } from 'indy-sdk'
 
@@ -25,6 +26,7 @@ export interface InitConfig {
   walletConfig?: WalletConfig
   walletCredentials?: WalletCredentials
   autoAcceptConnections?: boolean
+  autoAcceptProofs?: AutoAcceptProof
   autoAcceptCredentials?: AutoAcceptCredential
   poolName?: string
   logger?: Logger

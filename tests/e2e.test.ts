@@ -1,7 +1,6 @@
 import type { SubjectMessage } from './transport/SubjectInboundTransport'
 
 import { Subject } from 'rxjs'
-import { Server } from 'ws'
 
 import { sleep } from '../packages/core/src/utils/sleep'
 import {
@@ -13,10 +12,8 @@ import {
   previewFromAttributes,
 } from '../packages/core/tests/helpers'
 
-import { HttpInboundTransporter } from './transport/HttpInboundTransport'
 import { SubjectInboundTransporter } from './transport/SubjectInboundTransport'
 import { SubjectOutboundTransporter } from './transport/SubjectOutboundTransport'
-import { WsInboundTransporter } from './transport/WsInboundTransport'
 
 import {
   HttpOutboundTransporter,
@@ -31,6 +28,7 @@ import {
   ProofState,
   AutoAcceptCredential,
 } from '@aries-framework/core'
+import { HttpInboundTransport, WsInboundTransport } from '@aries-framework/node'
 
 const recipientConfig = getBaseConfig('E2E Recipient', {
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
@@ -72,12 +70,12 @@ describe('E2E tests', () => {
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.setInboundTransporter(new HttpInboundTransporter({ port: 3002 }))
+    mediatorAgent.setInboundTransporter(new HttpInboundTransport({ port: 3002 }))
     mediatorAgent.setOutboundTransporter(new HttpOutboundTransporter())
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.setInboundTransporter(new HttpInboundTransporter({ port: 3003 }))
+    senderAgent.setInboundTransporter(new HttpInboundTransport({ port: 3003 }))
     senderAgent.setOutboundTransporter(new HttpOutboundTransporter())
     await senderAgent.initialize()
 
@@ -94,14 +92,12 @@ describe('E2E tests', () => {
     await recipientAgent.initialize()
 
     // Mediator Setup
-    const mediatorSocketServer = new Server({ port: 3002 })
-    mediatorAgent.setInboundTransporter(new WsInboundTransporter(mediatorSocketServer))
+    mediatorAgent.setInboundTransporter(new WsInboundTransport({ port: 3002 }))
     mediatorAgent.setOutboundTransporter(new WsOutboundTransporter())
     await mediatorAgent.initialize()
 
     // Sender Setup
-    const senderSocketServer = new Server({ port: 3003 })
-    senderAgent.setInboundTransporter(new WsInboundTransporter(senderSocketServer))
+    senderAgent.setInboundTransporter(new WsInboundTransport({ port: 3003 }))
     senderAgent.setOutboundTransporter(new WsOutboundTransporter())
     await senderAgent.initialize()
 
