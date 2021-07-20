@@ -14,10 +14,11 @@ import type {
   SchemaTemplate,
 } from '../src'
 import type { Schema, CredDef, Did } from 'indy-sdk'
+import type { Observable } from 'rxjs'
 
 import path from 'path'
-import { firstValueFrom, Subject } from 'rxjs'
-import { catchError, filter, first, map, timeout } from 'rxjs/operators'
+import { firstValueFrom, Subject, ReplaySubject } from 'rxjs'
+import { catchError, filter, map, timeout } from 'rxjs/operators'
 
 import { SubjectInboundTransporter } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransporter } from '../../../tests/transport/SubjectOutboundTransport'
@@ -81,6 +82,20 @@ export function getAgentConfig(name: string, extraConfig: Partial<InitConfig> = 
 
 export async function waitForProofRecord(
   agent: Agent,
+  options: {
+    threadId?: string
+    state?: ProofState
+    previousState?: ProofState | null
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged)
+
+  return waitForProofRecordSubject(observable, options)
+}
+
+export function waitForProofRecordSubject(
+  subject: ReplaySubject<ProofStateChangedEvent> | Observable<ProofStateChangedEvent>,
   {
     threadId,
     state,
@@ -93,27 +108,27 @@ export async function waitForProofRecord(
     timeoutMs?: number
   }
 ) {
-  const observable = agent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).pipe(
-    filter((e) => previousState === undefined || e.payload.previousState === previousState),
-    filter((e) => threadId === undefined || e.payload.proofRecord.threadId === threadId),
-    filter((e) => state === undefined || e.payload.proofRecord.state === state),
-    timeout(timeoutMs),
-    catchError(() => {
-      throw new Error(`ProofStateChanged event not emitted within specified timeout: {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return firstValueFrom(
+    observable.pipe(
+      filter((e) => previousState === undefined || e.payload.previousState === previousState),
+      filter((e) => threadId === undefined || e.payload.proofRecord.threadId === threadId),
+      filter((e) => state === undefined || e.payload.proofRecord.state === state),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(`ProofStateChangedEvent event not emitted within specified timeout: {
   previousState: ${previousState},
   threadId: ${threadId},
   state: ${state}
 }`)
-    }),
-    first(),
-    map((e) => e.payload.proofRecord)
+      }),
+      map((e) => e.payload.proofRecord)
+    )
   )
-
-  return firstValueFrom(observable)
 }
 
-export async function waitForCredentialRecord(
-  agent: Agent,
+export function waitForCredentialRecordSubject(
+  subject: ReplaySubject<CredentialStateChangedEvent> | Observable<CredentialStateChangedEvent>,
   {
     threadId,
     state,
@@ -126,9 +141,9 @@ export async function waitForCredentialRecord(
     timeoutMs?: number
   }
 ) {
-  const observable = agent.events
-    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
-    .pipe(
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return firstValueFrom(
+    observable.pipe(
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
       filter((e) => threadId === undefined || e.payload.credentialRecord.threadId === threadId),
       filter((e) => state === undefined || e.payload.credentialRecord.state === state),
@@ -140,11 +155,23 @@ export async function waitForCredentialRecord(
   state: ${state}
 }`)
       }),
-      first(),
       map((e) => e.payload.credentialRecord)
     )
+  )
+}
 
-  return firstValueFrom(observable)
+export async function waitForCredentialRecord(
+  agent: Agent,
+  options: {
+    threadId?: string
+    state?: CredentialState
+    previousState?: CredentialState | null
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+
+  return waitForCredentialRecordSubject(observable, options)
 }
 
 export async function waitForBasicMessage(agent: Agent, { content }: { content?: string }): Promise<BasicMessage> {

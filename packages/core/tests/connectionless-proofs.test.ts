@@ -1,7 +1,8 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
+import type { ProofStateChangedEvent } from '../src/modules/proofs'
 import type { CredDefId } from 'indy-sdk'
 
-import { Subject } from 'rxjs'
+import { ReplaySubject, Subject } from 'rxjs'
 
 import { SubjectInboundTransporter } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransporter } from '../../../tests/transport/SubjectOutboundTransport'
@@ -15,14 +16,15 @@ import {
   ProofAttributeInfo,
   AttributeFilter,
   ProofPredicateInfo,
+  ProofEventTypes,
 } from '../src/modules/proofs'
 
 import {
-  waitForProofRecord,
   getBaseConfig,
   issueConnectionLessCredential,
   prepareForIssuance,
   previewFromAttributes,
+  waitForProofRecordSubject,
 } from './helpers'
 import testLogger from './logger'
 
@@ -41,10 +43,12 @@ const credentialPreview = previewFromAttributes({
 describe('Present Proof', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
+  let faberReplay: ReplaySubject<ProofStateChangedEvent>
+  let aliceReplay: ReplaySubject<ProofStateChangedEvent>
   let credDefId: CredDefId
   let presentationPreview: PresentationPreview
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     const faberMessages = new Subject<SubjectMessage>()
     const aliceMessages = new Subject<SubjectMessage>()
 
@@ -64,6 +68,12 @@ describe('Present Proof', () => {
 
     const { definition } = await prepareForIssuance(faberAgent, ['name', 'age'])
     credDefId = definition.id
+
+    faberReplay = new ReplaySubject<ProofStateChangedEvent>()
+    aliceReplay = new ReplaySubject<ProofStateChangedEvent>()
+
+    faberAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(faberReplay)
+    aliceAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(aliceReplay)
 
     presentationPreview = new PresentationPreview({
       attributes: [
@@ -95,12 +105,12 @@ describe('Present Proof', () => {
     })
   })
 
-  afterAll(async () => {
+  afterEach(async () => {
     await faberAgent.shutdown({ deleteWallet: true })
     await aliceAgent.shutdown({ deleteWallet: true })
   })
 
-  test('Faber starts with proof requests to Alice', async () => {
+  test('Faber starts with connection-less proof requests to Alice', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
     const attributes = {
@@ -134,15 +144,13 @@ describe('Present Proof', () => {
       requestedPredicates: predicates,
     })
 
-    const aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
-      threadId: faberProofRecord.threadId,
-      state: ProofState.RequestReceived,
-    })
-
     await aliceAgent.receiveMessage(requestMessage.toJSON())
 
     testLogger.test('Alice waits for presentation request from Faber')
-    let aliceProofRecord = await aliceProofRecordPromise
+    let aliceProofRecord = await waitForProofRecordSubject(aliceReplay, {
+      threadId: faberProofRecord.threadId,
+      state: ProofState.RequestReceived,
+    })
 
     testLogger.test('Alice accepts presentation request from Faber')
     const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest
@@ -155,7 +163,7 @@ describe('Present Proof', () => {
     await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
 
     testLogger.test('Faber waits for presentation from Alice')
-    faberProofRecord = await waitForProofRecord(faberAgent, {
+    faberProofRecord = await waitForProofRecordSubject(faberReplay, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.PresentationReceived,
     })
@@ -167,7 +175,7 @@ describe('Present Proof', () => {
     await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
 
     // Alice waits till it receives presentation ack
-    aliceProofRecord = await waitForProofRecord(aliceAgent, {
+    aliceProofRecord = await waitForProofRecordSubject(aliceReplay, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.Done,
     })

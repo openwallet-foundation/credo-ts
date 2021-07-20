@@ -380,7 +380,12 @@ export class ProofsModule {
       new ProposePresentationHandler(this.proofService, this.agentConfig, this.proofResponseCoordinator)
     )
     dispatcher.registerHandler(
-      new RequestPresentationHandler(this.proofService, this.agentConfig, this.proofResponseCoordinator)
+      new RequestPresentationHandler(
+        this.proofService,
+        this.agentConfig,
+        this.proofResponseCoordinator,
+        this.mediationRecipientService
+      )
     )
     dispatcher.registerHandler(
       new PresentationHandler(this.proofService, this.agentConfig, this.proofResponseCoordinator)

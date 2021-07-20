@@ -872,6 +872,10 @@ export class ProofService {
     return this.proofRepository.getSingleByQuery({ threadId, connectionId })
   }
 
+  public update(proofRecord: ProofRecord) {
+    return this.proofRepository.update(proofRecord)
+  }
+
   /**
    * Create indy proof from a given proof request and requested credential object.
    *
