@@ -308,7 +308,8 @@ export class IndyWallet implements Wallet {
       )
       const unpackedMessage = JsonEncoder.fromBuffer(unpackedMessageBuffer)
       return {
-        ...unpackedMessage,
+        senderVerkey: unpackedMessage.sender_verkey,
+        recipientVerkey: unpackedMessage.recipient_verkey,
         message: JsonEncoder.fromString(unpackedMessage.message),
       }
     } catch (error) {
