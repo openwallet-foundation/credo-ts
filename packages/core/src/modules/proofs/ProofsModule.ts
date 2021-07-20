@@ -1,3 +1,4 @@
+import type { AutoAcceptProof } from './ProofAutoAcceptType'
 import type { PresentationPreview } from './messages'
 import type { RequestedCredentials, RetrievedCredentials } from './models'
 import type { ProofRecord } from './repository/ProofRecord'
@@ -60,6 +61,7 @@ export class ProofsModule {
     presentationProposal: PresentationPreview,
     config?: {
       comment?: string
+      autoAcceptProof?: AutoAcceptProof
     }
   ): Promise<ProofRecord> {
     const connection = await this.connectionService.getById(connectionId)
@@ -131,6 +133,7 @@ export class ProofsModule {
     proofRequestOptions: Partial<Pick<ProofRequest, 'name' | 'nonce' | 'requestedAttributes' | 'requestedPredicates'>>,
     config?: {
       comment?: string
+      autoAcceptProof?: AutoAcceptProof
     }
   ): Promise<ProofRecord> {
     const connection = await this.connectionService.getById(connectionId)

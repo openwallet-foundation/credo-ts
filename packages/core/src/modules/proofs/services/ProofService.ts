@@ -2,6 +2,7 @@ import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { ConnectionRecord } from '../../connections'
+import type { AutoAcceptProof } from '../ProofAutoAcceptType'
 import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { PresentationPreview, PresentationPreviewAttribute } from '../messages'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
@@ -97,6 +98,7 @@ export class ProofService {
     presentationProposal: PresentationPreview,
     config?: {
       comment?: string
+      autoAcceptProof?: AutoAcceptProof
     }
   ): Promise<ProofProtocolMsgReturnType<ProposePresentationMessage>> {
     // Assert
@@ -114,6 +116,7 @@ export class ProofService {
       threadId: proposalMessage.threadId,
       state: ProofState.ProposalSent,
       proposalMessage,
+      autoAcceptProof: config?.autoAcceptProof,
     })
     await this.proofRepository.save(proofRecord)
     this.eventEmitter.emit<ProofStateChangedEvent>({
@@ -273,6 +276,7 @@ export class ProofService {
     proofRequest: ProofRequest,
     config?: {
       comment?: string
+      autoAcceptProof?: AutoAcceptProof
     }
   ): Promise<ProofProtocolMsgReturnType<RequestPresentationMessage>> {
     // Assert
@@ -297,6 +301,7 @@ export class ProofService {
       threadId: requestPresentationMessage.threadId,
       requestMessage: requestPresentationMessage,
       state: ProofState.RequestSent,
+      autoAcceptProof: config?.autoAcceptProof,
     })
 
     await this.proofRepository.save(proofRecord)
