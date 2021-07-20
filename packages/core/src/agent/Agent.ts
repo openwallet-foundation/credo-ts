@@ -55,8 +55,6 @@ export class Agent {
   public readonly mediator!: MediatorModule
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
-    const credentialSupported = false
-
     // Create child container so we don't interfere with anything outside of this agent
     this.container = baseContainer.createChildContainer()
 
