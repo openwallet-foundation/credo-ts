@@ -1,5 +1,3 @@
-import type { SchemaId } from 'indy-sdk'
-
 import { promises } from 'fs'
 import * as indy from 'indy-sdk'
 
@@ -14,7 +12,7 @@ const { config: faberConfig, agentDependencies: faberDependencies } = getBaseCon
 
 describe('ledger', () => {
   let faberAgent: Agent
-  let schemaId: SchemaId
+  let schemaId: indy.SchemaId
 
   beforeAll(async () => {
     faberAgent = new Agent(faberConfig, faberDependencies)
@@ -57,9 +55,24 @@ describe('ledger', () => {
       expect.objectContaining({
         did: faberAgent.publicDid.did,
         verkey: verkey,
-        role: '101',
+        role: '0',
       })
     )
+  })
+
+  test('register public DID on ledger', async () => {
+    if (!faberAgent.publicDid) {
+      throw new Error('Agent does not have public did.')
+    }
+
+    const targetDid = 'PNQm3CwyXbN5e39Rw3dXYx'
+    const targetVerkey = '~AHtGeRXtGjVfXALtXP9WiX'
+
+    const result = await faberAgent.ledger.registerPublicDid(targetDid, targetVerkey, 'alias', 'TRUST_ANCHOR')
+
+    await sleep(2000)
+
+    expect(result).toEqual(targetDid)
   })
 
   test('register schema on ledger', async () => {
