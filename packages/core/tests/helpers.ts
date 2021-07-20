@@ -74,7 +74,7 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
     ...extraConfig,
   }
 
-  return { config, agentDependencies: agentDependencies } as const
+  return { config, agentDependencies } as const
 }
 
 export function getAgentConfig(name: string, extraConfig: Partial<InitConfig> = {}) {

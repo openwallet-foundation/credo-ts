@@ -15,6 +15,7 @@ describe('IndyStorageService', () => {
 
   beforeEach(async () => {
     const config = getAgentConfig('IndyStorageServiceTest')
+    indy = config.agentDependencies.indy
     wallet = new IndyWallet(config)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.initialize(config.walletConfig!)
