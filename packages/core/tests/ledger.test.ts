@@ -70,8 +70,6 @@ describe('ledger', () => {
 
     const result = await faberAgent.ledger.registerPublicDid(targetDid, targetVerkey, 'alias', 'TRUST_ANCHOR')
 
-    await sleep(2000)
-
     expect(result).toEqual(targetDid)
   })
 
