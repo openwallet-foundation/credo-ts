@@ -1,4 +1,4 @@
-import type { DidCommService, ConnectionRecord } from '..'
+import type { DidCommService, ConnectionRecord } from '../modules/connections'
 import type { OutboundTransporter } from '../transport/OutboundTransporter'
 import type { OutboundMessage, OutboundPackage, WireMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'

@@ -352,6 +352,7 @@ export class ConnectionService {
    * or has everything correctly set up for connection-less exchange.
    *
    * @param messageContext - the inbound message context
+   * @param previousRespondence - previous sent and received message to determine if a valid service decorator is present
    */
   public assertConnectionOrServiceDecorator(
     messageContext: InboundMessageContext,

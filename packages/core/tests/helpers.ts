@@ -116,11 +116,13 @@ export function waitForProofRecordSubject(
       filter((e) => state === undefined || e.payload.proofRecord.state === state),
       timeout(timeoutMs),
       catchError(() => {
-        throw new Error(`ProofStateChangedEvent event not emitted within specified timeout: {
+        throw new Error(
+          `ProofStateChangedEvent event not emitted within specified timeout: {
   previousState: ${previousState},
   threadId: ${threadId},
   state: ${state}
-}`)
+}`
+        )
       }),
       map((e) => e.payload.proofRecord)
     )
@@ -536,13 +538,15 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
     age: '99',
   })
 
-  const faberConfig = getBaseConfig(faberName, {
+  const unique = uuid().substring(0, 4)
+
+  const faberConfig = getBaseConfig(`${faberName}-${unique}`, {
     genesisPath,
     autoAcceptProofs,
     endpoint: 'rxjs:faber',
   })
 
-  const aliceConfig = getBaseConfig(aliceName, {
+  const aliceConfig = getBaseConfig(`${aliceName}-${unique}`, {
     genesisPath,
     autoAcceptProofs,
     endpoint: 'rxjs:alice',

@@ -22,14 +22,12 @@ import {
   PresentationHandler,
 } from './handlers'
 import { ProofRequest } from './models/ProofRequest'
-import { ProofRepository } from './repository'
 import { ProofService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ProofsModule {
   private proofService: ProofService
   private connectionService: ConnectionService
-  private proofRepository: ProofRepository
   private messageSender: MessageSender
   private mediationRecipientService: MediationRecipientService
   private agentConfig: AgentConfig
@@ -39,7 +37,6 @@ export class ProofsModule {
     dispatcher: Dispatcher,
     proofService: ProofService,
     connectionService: ConnectionService,
-    proofRepository: ProofRepository,
     mediationRecipientService: MediationRecipientService,
     agentConfig: AgentConfig,
     messageSender: MessageSender,
@@ -47,7 +44,6 @@ export class ProofsModule {
   ) {
     this.proofService = proofService
     this.connectionService = connectionService
-    this.proofRepository = proofRepository
     this.messageSender = messageSender
     this.mediationRecipientService = mediationRecipientService
     this.agentConfig = agentConfig
@@ -205,7 +201,7 @@ export class ProofsModule {
 
     // Save ~service decorator to record (to remember our verkey)
     proofRecord.requestMessage = message
-    await this.proofRepository.update(proofRecord)
+    await this.proofService.update(proofRecord)
 
     return { proofRecord, requestMessage: message }
   }
@@ -254,7 +250,7 @@ export class ProofsModule {
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
       proofRecord.presentationMessage = message
-      await this.proofRepository.update(proofRecord)
+      await this.proofService.update(proofRecord)
 
       await this.messageSender.sendMessageToService({
         message,

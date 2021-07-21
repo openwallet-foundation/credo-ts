@@ -23,13 +23,11 @@ import {
   ProposeCredentialHandler,
   RequestCredentialHandler,
 } from './handlers'
-import { CredentialRepository } from './repository/CredentialRepository'
 import { CredentialService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialsModule {
   private connectionService: ConnectionService
-  private credentialRepository: CredentialRepository
   private credentialService: CredentialService
   private messageSender: MessageSender
   private agentConfig: AgentConfig
@@ -39,7 +37,6 @@ export class CredentialsModule {
   public constructor(
     dispatcher: Dispatcher,
     connectionService: ConnectionService,
-    credentialRepository: CredentialRepository,
     credentialService: CredentialService,
     messageSender: MessageSender,
     agentConfig: AgentConfig,
@@ -48,7 +45,6 @@ export class CredentialsModule {
   ) {
     this.connectionService = connectionService
     this.credentialService = credentialService
-    this.credentialRepository = credentialRepository
     this.messageSender = messageSender
     this.agentConfig = agentConfig
     this.credentialResponseCoordinator = credentialResponseCoordinator
@@ -238,7 +234,7 @@ export class CredentialsModule {
 
     // Save ~service decorator to record (to remember our verkey)
     credentialRecord.offerMessage = message
-    await this.credentialRepository.update(credentialRecord)
+    await this.credentialService.update(credentialRecord)
 
     return { credentialRecord, offerMessage: message }
   }
@@ -290,7 +286,7 @@ export class CredentialsModule {
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
       credentialRecord.requestMessage = message
-      await this.credentialRepository.update(credentialRecord)
+      await this.credentialService.update(credentialRecord)
 
       await this.messageSender.sendMessageToService({
         message,
@@ -375,7 +371,7 @@ export class CredentialsModule {
       // Set ~service, update message in record (for later use)
       message.setService(ourService)
       credentialRecord.credentialMessage = message
-      await this.credentialRepository.update(credentialRecord)
+      await this.credentialService.update(credentialRecord)
 
       await this.messageSender.sendMessageToService({
         message,
