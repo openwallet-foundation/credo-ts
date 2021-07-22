@@ -1,4 +1,4 @@
-import type { DidDoc } from '../modules/connections/models'
+import type { DidDoc, IndyAgentService } from '../modules/connections/models'
 import type { ConnectionRecord } from '../modules/connections/repository'
 import type { OutboundPackage } from '../types'
 import type { AgentMessage } from './AgentMessage'
@@ -33,7 +33,7 @@ export class TransportService {
     delete this.transportSessionTable[session.id]
   }
 
-  public findDidCommServices(connection: ConnectionRecord): DidCommService[] {
+  public findDidCommServices(connection: ConnectionRecord): Array<DidCommService | IndyAgentService> {
     if (connection.theirDidDoc) {
       return connection.theirDidDoc.didCommServices
     }
