@@ -187,6 +187,10 @@ export class Agent {
   }
 
   public async shutdown({ deleteWallet = false }: { deleteWallet?: boolean } = {}) {
+    // All observables use takeUntil with the stop$ observable
+    // this means all observables will stop running if a value is emitted on this observable
+    this.agentConfig.stop$.next(true)
+
     // Stop transports
     await this.outboundTransporter?.stop()
     await this.inboundTransporter?.stop()
@@ -199,10 +203,6 @@ export class Agent {
         await this.wallet.close()
       }
     }
-
-    // All observables use takeUntil with the stop$ observable
-    // this means all observables will stop running if a value is emitted on this observable
-    this.agentConfig.stop$.next(true)
   }
 
   public get publicDid() {

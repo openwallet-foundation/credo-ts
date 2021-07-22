@@ -1,24 +1,24 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type {
-  InitConfig,
-  ProofRecord,
-  ProofStateChangedEvent,
-  CredentialRecord,
-  CredentialStateChangedEvent,
+  AutoAcceptProof,
   BasicMessage,
   BasicMessageReceivedEvent,
   ConnectionRecordProps,
-  SchemaTemplate,
   CredentialDefinitionTemplate,
   CredentialOfferTemplate,
+  CredentialStateChangedEvent,
+  InitConfig,
   ProofAttributeInfo,
   ProofPredicateInfo,
-  AutoAcceptProof,
+  ProofStateChangedEvent,
+  SchemaTemplate,
 } from '../src'
 import type { Schema, CredDef, Did } from 'indy-sdk'
+import type { Observable } from 'rxjs'
 
 import path from 'path'
-import { Subject } from 'rxjs'
+import { firstValueFrom, Subject, ReplaySubject } from 'rxjs'
+import { catchError, filter, map, timeout } from 'rxjs/operators'
 
 import { SubjectInboundTransporter } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransporter } from '../../../tests/transport/SubjectOutboundTransport'
@@ -26,28 +26,28 @@ import { agentDependencies } from '../../node/src'
 import {
   LogLevel,
   AgentConfig,
-  ProofState,
-  ProofEventTypes,
-  CredentialState,
-  CredentialEventTypes,
+  AriesFrameworkError,
   BasicMessageEventTypes,
-  ConnectionState,
-  ConnectionRole,
-  DidDoc,
-  DidCommService,
   ConnectionInvitationMessage,
   ConnectionRecord,
+  ConnectionRole,
+  ConnectionState,
+  CredentialEventTypes,
   CredentialPreview,
   CredentialPreviewAttribute,
-  AriesFrameworkError,
-  AutoAcceptCredential,
+  CredentialState,
+  DidCommService,
+  DidDoc,
+  PredicateType,
   PresentationPreview,
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
-  PredicateType,
+  ProofEventTypes,
+  ProofState,
   Agent,
 } from '../src'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
+import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -82,60 +82,98 @@ export function getAgentConfig(name: string, extraConfig: Partial<InitConfig> = 
 
 export async function waitForProofRecord(
   agent: Agent,
+  options: {
+    threadId?: string
+    state?: ProofState
+    previousState?: ProofState | null
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged)
+
+  return waitForProofRecordSubject(observable, options)
+}
+
+export function waitForProofRecordSubject(
+  subject: ReplaySubject<ProofStateChangedEvent> | Observable<ProofStateChangedEvent>,
   {
     threadId,
     state,
     previousState,
+    timeoutMs = 5000,
   }: {
     threadId?: string
     state?: ProofState
     previousState?: ProofState | null
+    timeoutMs?: number
   }
-): Promise<ProofRecord> {
-  return new Promise((resolve) => {
-    const listener = (event: ProofStateChangedEvent) => {
-      const previousStateMatches = previousState === undefined || event.payload.previousState === previousState
-      const threadIdMatches = threadId === undefined || event.payload.proofRecord.threadId === threadId
-      const stateMatches = state === undefined || event.payload.proofRecord.state === state
-
-      if (previousStateMatches && threadIdMatches && stateMatches) {
-        agent.events.off<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged, listener)
-
-        resolve(event.payload.proofRecord)
-      }
-    }
-
-    agent.events.on<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged, listener)
-  })
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return firstValueFrom(
+    observable.pipe(
+      filter((e) => previousState === undefined || e.payload.previousState === previousState),
+      filter((e) => threadId === undefined || e.payload.proofRecord.threadId === threadId),
+      filter((e) => state === undefined || e.payload.proofRecord.state === state),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(
+          `ProofStateChangedEvent event not emitted within specified timeout: {
+  previousState: ${previousState},
+  threadId: ${threadId},
+  state: ${state}
+}`
+        )
+      }),
+      map((e) => e.payload.proofRecord)
+    )
+  )
 }
 
-export async function waitForCredentialRecord(
-  agent: Agent,
+export function waitForCredentialRecordSubject(
+  subject: ReplaySubject<CredentialStateChangedEvent> | Observable<CredentialStateChangedEvent>,
   {
     threadId,
     state,
     previousState,
+    timeoutMs = 5000,
   }: {
     threadId?: string
     state?: CredentialState
     previousState?: CredentialState | null
+    timeoutMs?: number
   }
-): Promise<CredentialRecord> {
-  return new Promise((resolve) => {
-    const listener = (event: CredentialStateChangedEvent) => {
-      const previousStateMatches = previousState === undefined || event.payload.previousState === previousState
-      const threadIdMatches = threadId === undefined || event.payload.credentialRecord.threadId === threadId
-      const stateMatches = state === undefined || event.payload.credentialRecord.state === state
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return firstValueFrom(
+    observable.pipe(
+      filter((e) => previousState === undefined || e.payload.previousState === previousState),
+      filter((e) => threadId === undefined || e.payload.credentialRecord.threadId === threadId),
+      filter((e) => state === undefined || e.payload.credentialRecord.state === state),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(`CredentialStateChanged event not emitted within specified timeout: {
+  previousState: ${previousState},
+  threadId: ${threadId},
+  state: ${state}
+}`)
+      }),
+      map((e) => e.payload.credentialRecord)
+    )
+  )
+}
 
-      if (previousStateMatches && threadIdMatches && stateMatches) {
-        agent.events.off<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, listener)
+export async function waitForCredentialRecord(
+  agent: Agent,
+  options: {
+    threadId?: string
+    state?: CredentialState
+    previousState?: CredentialState | null
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
 
-        resolve(event.payload.credentialRecord)
-      }
-    }
-
-    agent.events.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, listener)
-  })
+  return waitForCredentialRecordSubject(observable, options)
 }
 
 export async function waitForBasicMessage(agent: Agent, { content }: { content?: string }): Promise<BasicMessage> {
@@ -174,6 +212,7 @@ export function getMockConnection({
     ],
   }),
   tags = {},
+  theirLabel,
   invitation = new ConnectionInvitationMessage({
     label: 'test',
     recipientKeys: [verkey],
@@ -205,6 +244,7 @@ export function getMockConnection({
     tags,
     verkey,
     invitation,
+    theirLabel,
   })
 }
 
@@ -338,6 +378,49 @@ export async function issueCredential({
   }
 }
 
+export async function issueConnectionLessCredential({
+  issuerAgent,
+  holderAgent,
+  credentialTemplate,
+}: {
+  issuerAgent: Agent
+  holderAgent: Agent
+  credentialTemplate: Omit<CredentialOfferTemplate, 'autoAcceptCredential'>
+}) {
+  // eslint-disable-next-line prefer-const
+  let { credentialRecord: issuerCredentialRecord, offerMessage } = await issuerAgent.credentials.createOutOfBandOffer({
+    ...credentialTemplate,
+    autoAcceptCredential: AutoAcceptCredential.ContentApproved,
+  })
+
+  const credentialRecordPromise = waitForCredentialRecord(holderAgent, {
+    threadId: issuerCredentialRecord.threadId,
+    state: CredentialState.OfferReceived,
+  })
+
+  await holderAgent.receiveMessage(offerMessage.toJSON())
+  let holderCredentialRecord = await credentialRecordPromise
+
+  holderCredentialRecord = await holderAgent.credentials.acceptOffer(holderCredentialRecord.id, {
+    autoAcceptCredential: AutoAcceptCredential.ContentApproved,
+  })
+
+  holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
+    threadId: issuerCredentialRecord.threadId,
+    state: CredentialState.Done,
+  })
+
+  issuerCredentialRecord = await waitForCredentialRecord(issuerAgent, {
+    threadId: issuerCredentialRecord.threadId,
+    state: CredentialState.Done,
+  })
+
+  return {
+    issuerCredential: issuerCredentialRecord,
+    holderCredential: holderCredentialRecord,
+  }
+}
+
 export async function presentProof({
   verifierAgent,
   verifierConnectionId,
@@ -450,28 +533,20 @@ export async function setupCredentialTests(
 }
 
 export async function setupProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {
-  const credentialPreview = new CredentialPreview({
-    attributes: [
-      new CredentialPreviewAttribute({
-        name: 'name',
-        mimeType: 'text/plain',
-        value: 'John',
-      }),
-      new CredentialPreviewAttribute({
-        name: 'age',
-        mimeType: 'text/plain',
-        value: '99',
-      }),
-    ],
+  const credentialPreview = previewFromAttributes({
+    name: 'John',
+    age: '99',
   })
 
-  const faberConfig = getBaseConfig(faberName, {
+  const unique = uuid().substring(0, 4)
+
+  const faberConfig = getBaseConfig(`${faberName}-${unique}`, {
     genesisPath,
     autoAcceptProofs,
     endpoint: 'rxjs:faber',
   })
 
-  const aliceConfig = getBaseConfig(aliceName, {
+  const aliceConfig = getBaseConfig(`${aliceName}-${unique}`, {
     genesisPath,
     autoAcceptProofs,
     endpoint: 'rxjs:alice',
@@ -494,25 +569,8 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
   aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
   await aliceAgent.initialize()
 
-  const schemaTemplate = {
-    name: `test-schema-${Date.now()}`,
-    attributes: ['name', 'age', 'image_0', 'image_1'],
-    version: '1.0',
-  }
-  const schema = await registerSchema(faberAgent, schemaTemplate)
+  const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])
 
-  const definitionTemplate = {
-    schema,
-    tag: 'TAG',
-    signatureType: 'CL' as const,
-    supportRevocation: false,
-  }
-  const credentialDefinition = await registerDefinition(faberAgent, definitionTemplate)
-  const credDefId = credentialDefinition.id
-
-  const publicDid = faberAgent.publicDid?.did
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  await ensurePublicDidIsOnLedger(faberAgent, publicDid!)
   const [agentAConnection, agentBConnection] = await makeConnection(faberAgent, aliceAgent)
   expect(agentAConnection.isReady).toBe(true)
   expect(agentBConnection.isReady).toBe(true)
@@ -524,19 +582,19 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
     attributes: [
       new PresentationPreviewAttribute({
         name: 'name',
-        credentialDefinitionId: credDefId,
+        credentialDefinitionId: definition.id,
         referent: '0',
         value: 'John',
       }),
       new PresentationPreviewAttribute({
         name: 'image_0',
-        credentialDefinitionId: credDefId,
+        credentialDefinitionId: definition.id,
       }),
     ],
     predicates: [
       new PresentationPreviewPredicate({
         name: 'age',
-        credentialDefinitionId: credDefId,
+        credentialDefinitionId: definition.id,
         predicate: PredicateType.GreaterThanOrEqualTo,
         threshold: 50,
       }),
@@ -548,7 +606,7 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
     issuerConnectionId: faberConnection.id,
     holderAgent: aliceAgent,
     credentialTemplate: {
-      credentialDefinitionId: credDefId,
+      credentialDefinitionId: definition.id,
       comment: 'some comment about credential',
       preview: credentialPreview,
       linkedAttachments: [
@@ -570,5 +628,20 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
     },
   })
 
-  return { faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview }
+  const faberReplay = new ReplaySubject<ProofStateChangedEvent>()
+  const aliceReplay = new ReplaySubject<ProofStateChangedEvent>()
+
+  faberAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(faberReplay)
+  aliceAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(aliceReplay)
+
+  return {
+    faberAgent,
+    aliceAgent,
+    credDefId: definition.id,
+    faberConnection,
+    aliceConnection,
+    presentationPreview,
+    faberReplay,
+    aliceReplay,
+  }
 }

@@ -10,6 +10,7 @@ import { AriesFrameworkError } from '../error/AriesFrameworkError'
 import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes } from './Events'
 import { MessageSender } from './MessageSender'
+import { isOutboundServiceMessage } from './helpers'
 
 @scoped(Lifecycle.ContainerScoped)
 class Dispatcher {
@@ -36,6 +37,17 @@ class Dispatcher {
 
     const outboundMessage = await handler.handle(messageContext)
 
+    if (outboundMessage && isOutboundServiceMessage(outboundMessage)) {
+      await this.messageSender.sendMessageToService({
+        message: outboundMessage.payload,
+        service: outboundMessage.service,
+        senderKey: outboundMessage.senderKey,
+        returnRoute: true,
+      })
+    } else if (outboundMessage) {
+      await this.messageSender.sendMessage(outboundMessage)
+    }
+
     // Emit event that allows to hook into received messages
     this.eventEmitter.emit<AgentMessageProcessedEvent>({
       type: AgentEventTypes.AgentMessageProcessed,
@@ -44,10 +56,6 @@ class Dispatcher {
         connection: messageContext.connection,
       },
     })
-
-    if (outboundMessage) {
-      await this.messageSender.sendMessage(outboundMessage)
-    }
   }
 
   private getHandlerForType(messageType: string): Handler | undefined {
