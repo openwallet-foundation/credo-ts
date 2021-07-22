@@ -29,17 +29,17 @@
   },
   "devDependencies": {
     "@types/react-native": "^0.64.10",
-    "@types/rn-indy-sdk": "npm:@types/indy-sdk@^1.16.5",
+    "@types/indy-sdk-react-native": "npm:@types/indy-sdk@^1.16.6",
     "react": "17.0.1",
     "react-native": "0.64.2",
     "rimraf": "~3.0.2",
     "typescript": "~4.3.0",
-    "rn-indy-sdk": "^0.1.11",
+    "indy-sdk-react-native": ">= 0.1.13",
     "react-native-get-random-values": "^1.7.0",
     "react-native-fs": "^2.18.0"
   },
   "peerDependencies": {
-    "rn-indy-sdk": ">= 0.1.11",
+    "indy-sdk-react-native": ">= 0.1.13",
     "react-native-get-random-values": "^1.7.0",
     "react-native-fs": "^2.18.0"
   }
