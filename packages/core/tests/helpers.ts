@@ -348,12 +348,22 @@ export async function issueCredential({
   holderAgent: Agent
   credentialTemplate: Omit<CredentialOfferTemplate, 'autoAcceptCredential'>
 }) {
+  const issuerReplay = new ReplaySubject<CredentialStateChangedEvent>()
+  const holderReplay = new ReplaySubject<CredentialStateChangedEvent>()
+
+  issuerAgent.events
+    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+    .subscribe(issuerReplay)
+  holderAgent.events
+    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+    .subscribe(holderReplay)
+
   let issuerCredentialRecord = await issuerAgent.credentials.offerCredential(issuerConnectionId, {
     ...credentialTemplate,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   })
 
-  let holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
+  let holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.OfferReceived,
   })
@@ -362,12 +372,12 @@ export async function issueCredential({
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   })
 
-  holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
+  holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.Done,
   })
 
-  issuerCredentialRecord = await waitForCredentialRecord(issuerAgent, {
+  issuerCredentialRecord = await waitForCredentialRecordSubject(issuerReplay, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.Done,
   })
@@ -387,30 +397,39 @@ export async function issueConnectionLessCredential({
   holderAgent: Agent
   credentialTemplate: Omit<CredentialOfferTemplate, 'autoAcceptCredential'>
 }) {
+  const issuerReplay = new ReplaySubject<CredentialStateChangedEvent>()
+  const holderReplay = new ReplaySubject<CredentialStateChangedEvent>()
+
+  issuerAgent.events
+    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+    .subscribe(issuerReplay)
+  holderAgent.events
+    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+    .subscribe(holderReplay)
+
   // eslint-disable-next-line prefer-const
   let { credentialRecord: issuerCredentialRecord, offerMessage } = await issuerAgent.credentials.createOutOfBandOffer({
     ...credentialTemplate,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   })
 
-  const credentialRecordPromise = waitForCredentialRecord(holderAgent, {
+  await holderAgent.receiveMessage(offerMessage.toJSON())
+
+  let holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.OfferReceived,
   })
-
-  await holderAgent.receiveMessage(offerMessage.toJSON())
-  let holderCredentialRecord = await credentialRecordPromise
 
   holderCredentialRecord = await holderAgent.credentials.acceptOffer(holderCredentialRecord.id, {
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   })
 
-  holderCredentialRecord = await waitForCredentialRecord(holderAgent, {
+  holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.Done,
   })
 
-  issuerCredentialRecord = await waitForCredentialRecord(issuerAgent, {
+  issuerCredentialRecord = await waitForCredentialRecordSubject(issuerReplay, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.Done,
   })
@@ -435,20 +454,21 @@ export async function presentProof({
     predicates?: Record<string, ProofPredicateInfo>
   }
 }) {
+  const verifierReplay = new ReplaySubject<ProofStateChangedEvent>()
+  const holderReplay = new ReplaySubject<ProofStateChangedEvent>()
+
+  verifierAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(verifierReplay)
+  holderAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(holderReplay)
+
   let verifierRecord = await verifierAgent.proofs.requestProof(verifierConnectionId, {
     name: 'test-proof-request',
     requestedAttributes: attributes,
     requestedPredicates: predicates,
   })
 
-  let holderRecord = await waitForProofRecord(holderAgent, {
+  let holderRecord = await waitForProofRecordSubject(holderReplay, {
     threadId: verifierRecord.threadId,
     state: ProofState.RequestReceived,
-  })
-
-  const verifierRecordPromise = waitForProofRecord(verifierAgent, {
-    threadId: holderRecord.threadId,
-    state: ProofState.PresentationReceived,
   })
 
   const indyProofRequest = holderRecord.requestMessage?.indyProofRequest
@@ -459,18 +479,19 @@ export async function presentProof({
   const requestedCredentials = holderAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
   await holderAgent.proofs.acceptRequest(holderRecord.id, requestedCredentials)
 
-  verifierRecord = await verifierRecordPromise
+  verifierRecord = await waitForProofRecordSubject(verifierReplay, {
+    threadId: holderRecord.threadId,
+    state: ProofState.PresentationReceived,
+  })
 
   // assert presentation is valid
   expect(verifierRecord.isVerified).toBe(true)
 
-  const holderRecordPromise = waitForProofRecord(holderAgent, {
+  verifierRecord = await verifierAgent.proofs.acceptPresentation(verifierRecord.id)
+  holderRecord = await waitForProofRecordSubject(holderReplay, {
     threadId: holderRecord.threadId,
     state: ProofState.Done,
   })
-
-  verifierRecord = await verifierAgent.proofs.acceptPresentation(verifierRecord.id)
-  holderRecord = await holderRecordPromise
 
   return {
     verifierProof: verifierRecord,
