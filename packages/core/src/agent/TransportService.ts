@@ -35,7 +35,28 @@ export class TransportService {
 
   public findDidCommServices(connection: ConnectionRecord): DidCommService[] {
     if (connection.theirDidDoc) {
-      return connection.theirDidDoc.didCommServices
+      // supplied list of supported protocols in preferred order
+      const supportedProtocols = ['wss', 'ws', 'https', 'http', 'didcomm'] // TODO: move to config
+      // map for efficient lookup of sortIndex
+      const supportedProtocolsIndexTable = new Map(supportedProtocols.map((v, i) => [v, i]))
+      const services = connection.theirDidDoc.didCommServices
+      // filter out any un-supported
+      const filteredServices = services.filter((service) =>
+        supportedProtocols.includes(service.serviceEndpoint.split(':')[0])
+      )
+      // sort by protocol, if same protocol, sort by priority
+      filteredServices.sort(function (
+        serviceA: { serviceEndpoint: string; priority: number },
+        serviceB: { serviceEndpoint: string; priority: number }
+      ) {
+        const protocolA = serviceA.serviceEndpoint.split(':')[0] || ''
+        const protocolB = serviceB.serviceEndpoint.split(':')[0] || ''
+        const preferred =
+          (supportedProtocolsIndexTable.get(protocolA) || 0) - (supportedProtocolsIndexTable.get(protocolB) || 0)
+        const priority = serviceA.priority - serviceB.priority
+        return preferred || priority
+      })
+      return filteredServices
     }
 
     if (connection.role === ConnectionRole.Invitee && connection.invitation) {

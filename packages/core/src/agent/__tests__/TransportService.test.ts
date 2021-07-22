@@ -10,16 +10,28 @@ describe('TransportService', () => {
     let theirDidDoc: DidDoc
     const testDidCommService = new DidCommService({
       id: `<did>;indy`,
+      priority: 1,
       serviceEndpoint: 'https://example.com',
       recipientKeys: ['verkey'],
     })
-
+    const testDidCommServiceWs = new DidCommService({
+      id: `<did>;indy`,
+      priority: 2,
+      serviceEndpoint: 'ws://example.com',
+      recipientKeys: ['verkey'],
+    })
+    const testDidCommServiceWws = new DidCommService({
+      id: `<did>;indy`,
+      priority: 0,
+      serviceEndpoint: 'wss://example.com',
+      recipientKeys: ['verkey'],
+    })
     beforeEach(() => {
       theirDidDoc = new DidDoc({
         id: 'test-456',
         publicKey: [],
         authentication: [],
-        service: [testDidCommService],
+        service: [testDidCommService, testDidCommServiceWs, testDidCommServiceWws],
       })
 
       transportService = new TransportService()
@@ -39,8 +51,12 @@ describe('TransportService', () => {
     })
 
     test(`returns service from their DidDoc`, () => {
-      const connection = getMockConnection({ id: 'test-123', theirDidDoc })
-      expect(transportService.findDidCommServices(connection)).toEqual([testDidCommService])
+      const connection = getMockConnection({ id: 'test-456', theirDidDoc })
+      expect(transportService.findDidCommServices(connection)).toEqual([
+        testDidCommServiceWws,
+        testDidCommServiceWs,
+        testDidCommService,
+      ])
     })
 
     test(`returns service from invitation when there is no their DidDoc and role is ${ConnectionRole.Invitee}`, () => {
