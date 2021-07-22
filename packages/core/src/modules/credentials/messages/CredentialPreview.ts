@@ -53,7 +53,7 @@ export class CredentialPreviewAttribute {
   public name!: string
 
   @Expose({ name: 'mime-type' })
-  public mimeType?: string
+  public mimeType?: string = 'text/plain'
 
   public value!: string
 

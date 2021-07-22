@@ -31,7 +31,6 @@ import {
   Ed25119Sig2018,
   authenticationTypes,
   ReferencedAuthentication,
-  DidCommService,
   IndyAgentService,
 } from '../models'
 import { ConnectionRecord } from '../repository/ConnectionRecord'
@@ -535,14 +534,6 @@ export class ConnectionService {
       recipientKeys: [verkey],
       routingKeys: routingKeys,
     })
-    const didCommService = new DidCommService({
-      id: `${did}#did-communication`,
-      serviceEndpoint: endpoint,
-      recipientKeys: [verkey],
-      routingKeys: routingKeys,
-      // Prefer DidCommService over IndyAgentService
-      priority: 1,
-    })
 
     // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
     // inferred from the publicKey class instance
@@ -551,7 +542,7 @@ export class ConnectionService {
     const didDoc = new DidDoc({
       id: did,
       authentication: [auth],
-      service: [didCommService, indyAgentService],
+      service: [indyAgentService],
       publicKey: [publicKey],
     })
 
