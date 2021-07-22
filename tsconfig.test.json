@@ -10,5 +10,5 @@
     },
     "types": ["jest", "node"]
   },
-  "include": ["tests", "samples"]
+  "include": ["tests", "samples", "packages/core/types/jest.d.ts"]
 }
