@@ -100,7 +100,7 @@ export function waitForProofRecordSubject(
     threadId,
     state,
     previousState,
-    timeoutMs = 5000,
+    timeoutMs = 10000,
   }: {
     threadId?: string
     state?: ProofState
@@ -135,7 +135,7 @@ export function waitForCredentialRecordSubject(
     threadId,
     state,
     previousState,
-    timeoutMs = 5000,
+    timeoutMs = 10000,
   }: {
     threadId?: string
     state?: CredentialState
@@ -372,6 +372,8 @@ export async function issueCredential({
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   })
 
+  // Because we use auto-accept it can take a while to have the whole credential flow finished
+  // Both parties need to interact with the ledger and sign/verify the credential
   holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.Done,
