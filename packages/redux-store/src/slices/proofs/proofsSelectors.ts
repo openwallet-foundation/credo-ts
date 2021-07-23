@@ -28,7 +28,7 @@ const ProofsSelectors = {
   /**
    * Selector that fetches a ProofRecord by id from the state.
    */
-  connectionRecordByIdSelector: (proofRecordId: string) => (state: PartialProofsState) =>
+  proofRecordByIdSelector: (proofRecordId: string) => (state: PartialProofsState) =>
     state.proofs.proofs.records.find((x) => x.id === proofRecordId),
 }
 
