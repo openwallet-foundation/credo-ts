@@ -65,7 +65,7 @@ Aries Framework JavaScript is a framework written in TypeScript for building **S
     <td>Node</td>
     <td>
       <a href="https://npmjs.com/package/@aries-framework/node">
-        <img alt="@aries-framework/core version" src="https://img.shields.io/npm/v/@aries-framework/node"/>
+        <img alt="@aries-framework/node version" src="https://img.shields.io/npm/v/@aries-framework/node"/>
       </a>
     </td>
   </tr>
@@ -73,7 +73,7 @@ Aries Framework JavaScript is a framework written in TypeScript for building **S
     <td>React-Native</td>
     <td>
       <a href="https://npmjs.com/package/@aries-framework/react-native">
-        <img alt="@aries-framework/core version" src="https://img.shields.io/npm/v/@aries-framework/react-native"/>
+        <img alt="@aries-framework/react-native version" src="https://img.shields.io/npm/v/@aries-framework/react-native"/>
       </a>
     </td>
   </tr>
@@ -81,7 +81,7 @@ Aries Framework JavaScript is a framework written in TypeScript for building **S
     <td>Redux-Store</td>
     <td>
       <a href="https://npmjs.com/package/@aries-framework/redux-store">
-        <img alt="@aries-framework/core version" src="https://img.shields.io/npm/v/@aries-framework/redux-store"/>
+        <img alt="@aries-framework/redux-store version" src="https://img.shields.io/npm/v/@aries-framework/redux-store"/>
       </a>
     </td>
   </tr>
