@@ -29,11 +29,6 @@
       alt="License"
       src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"
   /></a>
-  <a href="https://npmjs.com/package/aries-framework"
-    ><img
-      alt="aries-framework-javascript npm version"
-      src="https://img.shields.io/npm/v/aries-framework"
-  /></a>
   <a href="https://www.typescriptlang.org/"
     ><img
       alt="typescript"
@@ -51,6 +46,49 @@
 
 Aries Framework JavaScript is a framework written in TypeScript for building **SSI Agents and DIDComm services** that aims to be **compliant and interoperable** with the standards defined in the [Aries RFCs](https://github.com/hyperledger/aries-rfcs).
 
+## Packages
+
+Since this is a monorepo, it contains multiple packages.
+
+<table>
+  <tr>
+    <th><b>Package</b></th>
+    <th><b>Version</b></th>
+  </tr>
+  <tr>
+    <td>Core</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/core">
+        <img alt="@aries-framework/core version" src="https://img.shields.io/npm/v/@aries-framework/core"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>Node</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/node">
+        <img alt="@aries-framework/core version" src="https://img.shields.io/npm/v/@aries-framework/node"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>React-Native</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/react-native">
+        <img alt="@aries-framework/core version" src="https://img.shields.io/npm/v/@aries-framework/react-native"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>Redux-Store</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/redux-store">
+        <img alt="@aries-framework/core version" src="https://img.shields.io/npm/v/@aries-framework/redux-store"/>
+      </a>
+    </td>
+  </tr>
+</table>
+
 ## Features
 
 Some features are not yet supported, but are on our roadmap. Check [the roadmap](https://github.com/hyperledger/aries-framework-javascript/issues/39) for more information.
@@ -62,10 +100,10 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
 - ✅ Connection Protocol ([RFC 0160](https://github.com/hyperledger/aries-rfcs/blob/master/features/0160-connection-protocol/README.md))
 - ✅ Basic Message Protocol ([RFC 0095](https://github.com/hyperledger/aries-rfcs/blob/master/features/0095-basic-message/README.md))
 - ✅ Mediator Coordination Protocol ([RFC 0211](https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md))
+- ✅ Mediator Coordination Protocol ([RFC 0211](https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md))
 - ✅ Indy Credentials (with `did:sov` support)
 - ✅ HTTP Transport
 - ✅ Connection-less Issuance and Verification
-- ✅ Mediator Coordination Protocol ([RFC 0211](https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md))
 - ✅ Smart Auto Acceptance of Connections, Credentials and Proofs
 - 🚧 Revocation of Indy Credentials
 - 🚧 Electron
