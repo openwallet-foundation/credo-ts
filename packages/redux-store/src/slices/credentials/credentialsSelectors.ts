@@ -28,7 +28,7 @@ const CredentialsSelectors = {
   /**
    * Selector that fetches a CredentialRecord by id from the state.
    */
-  connectionRecordByIdSelector: (credentialRecordId: string) => (state: PartialCredentialState) =>
+  credentialRecordByIdSelector: (credentialRecordId: string) => (state: PartialCredentialState) =>
     state.credentials.credentials.records.find((x) => x.id === credentialRecordId),
 }
 
