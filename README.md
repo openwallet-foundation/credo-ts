@@ -48,8 +48,6 @@ Aries Framework JavaScript is a framework written in TypeScript for building **S
 
 ## Packages
 
-Since this is a monorepo, it contains multiple packages.
-
 <table>
   <tr>
     <th><b>Package</b></th>
