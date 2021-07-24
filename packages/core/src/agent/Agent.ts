@@ -46,7 +46,6 @@ export class Agent {
   public inboundTransporter?: InboundTransporter
   private _isInitialized = false
   public messageSubscription: Subscription
-
   public readonly connections!: ConnectionsModule
   public readonly proofs!: ProofsModule
   public readonly basicMessages!: BasicMessagesModule
@@ -118,12 +117,12 @@ export class Agent {
     this.inboundTransporter = inboundTransporter
   }
 
-  public setOutboundTransporter(outboundTransporter: OutboundTransporter) {
-    this.messageSender.setOutboundTransporter(outboundTransporter)
+  public registerOutboundTransporter(outboundTransporter: OutboundTransporter, priority: number) {
+    this.messageSender.registerOutboundTransporter(outboundTransporter, priority)
   }
 
-  public get outboundTransporter() {
-    return this.messageSender.outboundTransporter
+  public get outboundTransporters() {
+    return this.messageSender.outboundTransporters
   }
 
   public get events() {
@@ -162,8 +161,8 @@ export class Agent {
       await this.inboundTransporter.start(this)
     }
 
-    if (this.outboundTransporter) {
-      await this.outboundTransporter.start(this)
+    for (const transport of this.messageSender.outboundTransporters || []) {
+      transport[0]?.start(this)
     }
 
     // Connect to mediator through provided invitation if provided in config
@@ -188,7 +187,9 @@ export class Agent {
 
   public async shutdown({ deleteWallet = false }: { deleteWallet?: boolean } = {}) {
     // Stop transports
-    await this.outboundTransporter?.stop()
+    for (const transport of this.messageSender.outboundTransporters || []) {
+      transport[0]?.stop()
+    }
     await this.inboundTransporter?.stop()
 
     // close/delete wallet if still initialized

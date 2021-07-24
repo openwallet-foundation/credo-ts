@@ -115,7 +115,7 @@ describe('MessageSender', () => {
     })
 
     test('throw error when there is no service', async () => {
-      messageSender.setOutboundTransporter(outboundTransporter)
+      messageSender.registerOutboundTransporter(outboundTransporter, 0)
       transportServiceFindServicesMock.mockReturnValue([])
 
       await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrow(
@@ -124,11 +124,11 @@ describe('MessageSender', () => {
     })
 
     test('call send message when session send method fails', async () => {
-      messageSender.setOutboundTransporter(outboundTransporter)
+      messageSender.registerOutboundTransporter(outboundTransporter, 0)
       transportServiceFindSessionMock.mockReturnValue(session)
       session.send = jest.fn().mockRejectedValue(new Error('some error'))
 
-      messageSender.setOutboundTransporter(outboundTransporter)
+      messageSender.registerOutboundTransporter(outboundTransporter, 0)
       const sendMessageSpy = jest.spyOn(outboundTransporter, 'sendMessage')
 
       await messageSender.sendMessage(outboundMessage)
@@ -143,10 +143,10 @@ describe('MessageSender', () => {
     })
 
     test('call send message when session send method fails with missing keys', async () => {
-      messageSender.setOutboundTransporter(outboundTransporter)
+      messageSender.registerOutboundTransporter(outboundTransporter, 0)
       transportServiceFindSessionMock.mockReturnValue(sessionWithoutKeys)
 
-      messageSender.setOutboundTransporter(outboundTransporter)
+      messageSender.registerOutboundTransporter(outboundTransporter, 0)
       const sendMessageSpy = jest.spyOn(outboundTransporter, 'sendMessage')
 
       await messageSender.sendMessage(outboundMessage)
@@ -161,7 +161,7 @@ describe('MessageSender', () => {
     })
 
     test('call send message on session when there is a session for a given connection', async () => {
-      messageSender.setOutboundTransporter(outboundTransporter)
+      messageSender.registerOutboundTransporter(outboundTransporter, 0)
       const sendMessageSpy = jest.spyOn(outboundTransporter, 'sendMessage')
       session.connection = connection
       transportServiceFindSessionMock.mockReturnValue(session)
@@ -176,7 +176,7 @@ describe('MessageSender', () => {
     })
 
     test('call send message with connection, payload and endpoint from first DidComm service', async () => {
-      messageSender.setOutboundTransporter(outboundTransporter)
+      messageSender.registerOutboundTransporter(outboundTransporter, 0)
       const sendMessageSpy = jest.spyOn(outboundTransporter, 'sendMessage')
 
       await messageSender.sendMessage(outboundMessage)
@@ -190,7 +190,7 @@ describe('MessageSender', () => {
     })
 
     test('call send message with connection, payload and endpoint from second DidComm service when the first fails', async () => {
-      messageSender.setOutboundTransporter(outboundTransporter)
+      messageSender.registerOutboundTransporter(outboundTransporter, 0)
       const sendMessageSpy = jest.spyOn(outboundTransporter, 'sendMessage')
 
       // Simulate the case when the first call fails
@@ -208,7 +208,7 @@ describe('MessageSender', () => {
     })
 
     test('call send message with responseRequested when message has return route', async () => {
-      messageSender.setOutboundTransporter(outboundTransporter)
+      messageSender.registerOutboundTransporter(outboundTransporter, 0)
       const sendMessageSpy = jest.spyOn(outboundTransporter, 'sendMessage')
 
       const message = new AgentMessage()

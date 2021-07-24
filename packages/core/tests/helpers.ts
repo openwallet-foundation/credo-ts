@@ -431,12 +431,12 @@ export async function setupCredentialTests(
   })
   const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
   faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
-  faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
+  faberAgent.registerOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap), 0)
   await faberAgent.initialize()
 
   const aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
   aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
-  aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
+  aliceAgent.registerOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap), 0)
   await aliceAgent.initialize()
 
   const {
@@ -486,12 +486,12 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
   }
   const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
   faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
-  faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
+  faberAgent.registerOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap), 0)
   await faberAgent.initialize()
 
   const aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
   aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
-  aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
+  aliceAgent.registerOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap), 0)
   await aliceAgent.initialize()
 
   const schemaTemplate = {

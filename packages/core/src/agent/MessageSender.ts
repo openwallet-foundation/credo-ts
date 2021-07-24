@@ -20,7 +20,7 @@ export class MessageSender {
   private transportService: TransportService
   private messageRepository: MessageRepository
   private logger: Logger
-  private _outboundTransporter?: OutboundTransporter
+  private outboundTransports?: [OutboundTransporter, number][]
 
   public constructor(
     envelopeService: EnvelopeService,
@@ -32,14 +32,38 @@ export class MessageSender {
     this.transportService = transportService
     this.messageRepository = messageRepository
     this.logger = logger
+    this.outboundTransports = []
   }
 
-  public setOutboundTransporter(outboundTransporter: OutboundTransporter) {
-    this._outboundTransporter = outboundTransporter
+  public registerOutboundTransporter(outboundTransporter: OutboundTransporter, priority: number) {
+    if (!this.outboundTransports) {
+      this.outboundTransports = [[outboundTransporter, priority]]
+    } else {
+      this.outboundTransports.push([outboundTransporter, priority])
+    }
   }
 
-  public get outboundTransporter() {
-    return this._outboundTransporter
+  public get supportedTransports() {
+    // sort all transporters by priority
+    // map all supported schema into a new list
+    // reduce the list of listed schemas into a single list
+    // remove duplicates by creating a new set and spreading it into a list
+    return [
+      ...new Set(
+        (this.outboundTransporters || [])
+          .sort((a, b) => {
+            return a[1] - b[1]
+          })
+          .map((transportTuple) => transportTuple[0].supportedSchemes)
+          .reduce((prev, cur) => {
+            return prev.concat(cur)
+          })
+      ),
+    ]
+  }
+
+  public get outboundTransporters() {
+    return this.outboundTransports
   }
 
   public async packMessage(outboundMessage: OutboundMessage, keys: EnvelopeKeys): Promise<OutboundPackage> {
@@ -49,7 +73,7 @@ export class MessageSender {
   }
 
   public async sendMessage(outboundMessage: OutboundMessage | OutboundPackage) {
-    if (!this.outboundTransporter) {
+    if (!this.outboundTransports || this.outboundTransports.length === 0) {
       throw new AriesFrameworkError('Agent has no outbound transporter!')
     }
 
@@ -90,8 +114,8 @@ export class MessageSender {
         this.logger.info(`Sending an outbound message via session failed with error: ${error.message}.`, error)
       }
     }
-
-    const services = this.transportService.findDidCommServices(connection)
+    const supportedProtocols = this.supportedTransports
+    const services = this.transportService.findDidCommServices(connection, supportedProtocols)
     if (services.length === 0) {
       throw new AriesFrameworkError(`Connection with id ${connection.id} has no service!`)
     }
@@ -133,7 +157,13 @@ export class MessageSender {
         }
 
         outboundPackage.endpoint = service.serviceEndpoint
-        await this.outboundTransporter.sendMessage(outboundPackage)
+        const protocol = outboundPackage.endpoint.split(':')[0]
+        for (const transport of this.outboundTransporters || []) {
+          if (transport[0].supportedSchemes.includes(protocol)) {
+            await transport[0].sendMessage(outboundPackage)
+            break
+          }
+        }
 
         return
       } catch (error) {

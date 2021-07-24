@@ -33,10 +33,8 @@ export class TransportService {
     delete this.transportSessionTable[session.id]
   }
 
-  public findDidCommServices(connection: ConnectionRecord): DidCommService[] {
+  public findDidCommServices(connection: ConnectionRecord, supportedProtocols: string[]): DidCommService[] {
     if (connection.theirDidDoc) {
-      // supplied list of supported protocols in preferred order
-      const supportedProtocols = ['wss', 'ws', 'https', 'http', 'didcomm'] // TODO: move to config
       // map for efficient lookup of sortIndex
       const supportedProtocolsIndexTable = new Map(supportedProtocols.map((v, i) => [v, i]))
       const services = connection.theirDidDoc.didCommServices

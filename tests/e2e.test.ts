@@ -1,19 +1,5 @@
 import type { SubjectMessage } from './transport/SubjectInboundTransport'
 
-import { Subject } from 'rxjs'
-
-import {
-  getBaseConfig,
-  issueCredential,
-  makeConnection,
-  prepareForIssuance,
-  presentProof,
-  previewFromAttributes,
-} from '../packages/core/tests/helpers'
-
-import { SubjectInboundTransporter } from './transport/SubjectInboundTransport'
-import { SubjectOutboundTransporter } from './transport/SubjectOutboundTransport'
-
 import {
   HttpOutboundTransporter,
   Agent,
@@ -28,6 +14,19 @@ import {
   AutoAcceptCredential,
 } from '@aries-framework/core'
 import { HttpInboundTransport, WsInboundTransport } from '@aries-framework/node'
+import { Subject } from 'rxjs'
+
+import {
+  getBaseConfig,
+  issueCredential,
+  makeConnection,
+  prepareForIssuance,
+  presentProof,
+  previewFromAttributes,
+} from '../packages/core/tests/helpers'
+
+import { SubjectInboundTransporter } from './transport/SubjectInboundTransport'
+import { SubjectOutboundTransporter } from './transport/SubjectOutboundTransport'
 
 const recipientConfig = getBaseConfig('E2E Recipient', {
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
@@ -61,17 +60,17 @@ describe('E2E tests', () => {
 
   test('Full HTTP flow (connect, request mediation, issue, verify)', async () => {
     // Recipient Setup
-    recipientAgent.setOutboundTransporter(new HttpOutboundTransporter())
+    recipientAgent.registerOutboundTransporter(new HttpOutboundTransporter(), 0)
     await recipientAgent.initialize()
 
     // Mediator Setup
     mediatorAgent.setInboundTransporter(new HttpInboundTransport({ port: 3002 }))
-    mediatorAgent.setOutboundTransporter(new HttpOutboundTransporter())
+    mediatorAgent.registerOutboundTransporter(new HttpOutboundTransporter(), 0)
     await mediatorAgent.initialize()
 
     // Sender Setup
     senderAgent.setInboundTransporter(new HttpInboundTransport({ port: 3003 }))
-    senderAgent.setOutboundTransporter(new HttpOutboundTransporter())
+    senderAgent.registerOutboundTransporter(new HttpOutboundTransporter(), 0)
     await senderAgent.initialize()
 
     await e2eTest({
@@ -83,17 +82,17 @@ describe('E2E tests', () => {
 
   test('Full WS flow (connect, request mediation, issue, verify)', async () => {
     // Recipient Setup
-    recipientAgent.setOutboundTransporter(new WsOutboundTransporter())
+    recipientAgent.registerOutboundTransporter(new WsOutboundTransporter(), 0)
     await recipientAgent.initialize()
 
     // Mediator Setup
     mediatorAgent.setInboundTransporter(new WsInboundTransport({ port: 3002 }))
-    mediatorAgent.setOutboundTransporter(new WsOutboundTransporter())
+    mediatorAgent.registerOutboundTransporter(new WsOutboundTransporter(), 0)
     await mediatorAgent.initialize()
 
     // Sender Setup
     senderAgent.setInboundTransporter(new WsInboundTransport({ port: 3003 }))
-    senderAgent.setOutboundTransporter(new WsOutboundTransporter())
+    senderAgent.registerOutboundTransporter(new WsOutboundTransporter(), 0)
     await senderAgent.initialize()
 
     await e2eTest({
@@ -114,17 +113,17 @@ describe('E2E tests', () => {
     }
 
     // Recipient Setup
-    recipientAgent.setOutboundTransporter(new SubjectOutboundTransporter(recipientMessages, subjectMap))
+    recipientAgent.registerOutboundTransporter(new SubjectOutboundTransporter(recipientMessages, subjectMap), 0)
     recipientAgent.setInboundTransporter(new SubjectInboundTransporter(recipientMessages))
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.setOutboundTransporter(new SubjectOutboundTransporter(mediatorMessages, subjectMap))
+    mediatorAgent.registerOutboundTransporter(new SubjectOutboundTransporter(mediatorMessages, subjectMap), 0)
     mediatorAgent.setInboundTransporter(new SubjectInboundTransporter(mediatorMessages))
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.setOutboundTransporter(new SubjectOutboundTransporter(senderMessages, subjectMap))
+    senderAgent.registerOutboundTransporter(new SubjectOutboundTransporter(senderMessages, subjectMap), 0)
     senderAgent.setInboundTransporter(new SubjectInboundTransporter(senderMessages))
     await senderAgent.initialize()
 
