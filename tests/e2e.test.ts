@@ -60,17 +60,17 @@ describe('E2E tests', () => {
 
   test('Full HTTP flow (connect, request mediation, issue, verify)', async () => {
     // Recipient Setup
-    recipientAgent.registerOutboundTransporter(new HttpOutboundTransporter(), 0)
+    recipientAgent.registerOutboundTransporter(new HttpOutboundTransporter())
     await recipientAgent.initialize()
 
     // Mediator Setup
     mediatorAgent.setInboundTransporter(new HttpInboundTransport({ port: 3002 }))
-    mediatorAgent.registerOutboundTransporter(new HttpOutboundTransporter(), 0)
+    mediatorAgent.registerOutboundTransporter(new HttpOutboundTransporter())
     await mediatorAgent.initialize()
 
     // Sender Setup
     senderAgent.setInboundTransporter(new HttpInboundTransport({ port: 3003 }))
-    senderAgent.registerOutboundTransporter(new HttpOutboundTransporter(), 0)
+    senderAgent.registerOutboundTransporter(new HttpOutboundTransporter())
     await senderAgent.initialize()
 
     await e2eTest({
@@ -82,17 +82,17 @@ describe('E2E tests', () => {
 
   test('Full WS flow (connect, request mediation, issue, verify)', async () => {
     // Recipient Setup
-    recipientAgent.registerOutboundTransporter(new WsOutboundTransporter(), 0)
+    recipientAgent.registerOutboundTransporter(new WsOutboundTransporter())
     await recipientAgent.initialize()
 
     // Mediator Setup
     mediatorAgent.setInboundTransporter(new WsInboundTransport({ port: 3002 }))
-    mediatorAgent.registerOutboundTransporter(new WsOutboundTransporter(), 0)
+    mediatorAgent.registerOutboundTransporter(new WsOutboundTransporter())
     await mediatorAgent.initialize()
 
     // Sender Setup
     senderAgent.setInboundTransporter(new WsInboundTransport({ port: 3003 }))
-    senderAgent.registerOutboundTransporter(new WsOutboundTransporter(), 0)
+    senderAgent.registerOutboundTransporter(new WsOutboundTransporter())
     await senderAgent.initialize()
 
     await e2eTest({
@@ -113,17 +113,17 @@ describe('E2E tests', () => {
     }
 
     // Recipient Setup
-    recipientAgent.registerOutboundTransporter(new SubjectOutboundTransporter(recipientMessages, subjectMap), 0)
+    recipientAgent.registerOutboundTransporter(new SubjectOutboundTransporter(recipientMessages, subjectMap))
     recipientAgent.setInboundTransporter(new SubjectInboundTransporter(recipientMessages))
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.registerOutboundTransporter(new SubjectOutboundTransporter(mediatorMessages, subjectMap), 0)
+    mediatorAgent.registerOutboundTransporter(new SubjectOutboundTransporter(mediatorMessages, subjectMap))
     mediatorAgent.setInboundTransporter(new SubjectInboundTransporter(mediatorMessages))
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.registerOutboundTransporter(new SubjectOutboundTransporter(senderMessages, subjectMap), 0)
+    senderAgent.registerOutboundTransporter(new SubjectOutboundTransporter(senderMessages, subjectMap))
     senderAgent.setInboundTransporter(new SubjectInboundTransporter(senderMessages))
     await senderAgent.initialize()
 

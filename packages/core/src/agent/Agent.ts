@@ -117,7 +117,7 @@ export class Agent {
     this.inboundTransporter = inboundTransporter
   }
 
-  public registerOutboundTransporter(outboundTransporter: OutboundTransporter, priority: number) {
+  public registerOutboundTransporter(outboundTransporter: OutboundTransporter, priority?: number) {
     this.messageSender.registerOutboundTransporter(outboundTransporter, priority)
   }
 
@@ -161,8 +161,8 @@ export class Agent {
       await this.inboundTransporter.start(this)
     }
 
-    for (const transport of this.messageSender.outboundTransporters || []) {
-      transport[0]?.start(this)
+    for (const transport of this.messageSender.outboundTransporters) {
+      transport?.start(this)
     }
 
     // Connect to mediator through provided invitation if provided in config
@@ -187,8 +187,8 @@ export class Agent {
 
   public async shutdown({ deleteWallet = false }: { deleteWallet?: boolean } = {}) {
     // Stop transports
-    for (const transport of this.messageSender.outboundTransporters || []) {
-      transport[0]?.stop()
+    for (const transport of this.messageSender.outboundTransporters) {
+      transport?.stop()
     }
     await this.inboundTransporter?.stop()
 

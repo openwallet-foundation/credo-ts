@@ -43,12 +43,12 @@ describe('agents', () => {
 
     aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
     aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
-    aliceAgent.registerOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap), 0)
+    aliceAgent.registerOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
     await aliceAgent.initialize()
 
     bobAgent = new Agent(bobConfig.config, bobConfig.agentDependencies)
     bobAgent.setInboundTransporter(new SubjectInboundTransporter(bobMessages))
-    bobAgent.registerOutboundTransporter(new SubjectOutboundTransporter(bobMessages, subjectMap), 0)
+    bobAgent.registerOutboundTransporter(new SubjectOutboundTransporter(bobMessages, subjectMap))
     await bobAgent.initialize()
 
     const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection()

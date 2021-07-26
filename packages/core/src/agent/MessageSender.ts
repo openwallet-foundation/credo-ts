@@ -20,7 +20,7 @@ export class MessageSender {
   private transportService: TransportService
   private messageRepository: MessageRepository
   private logger: Logger
-  private outboundTransports?: [OutboundTransporter, number][]
+  private outboundTransports: OutboundTransporter[] = []
 
   public constructor(
     envelopeService: EnvelopeService,
@@ -35,26 +35,22 @@ export class MessageSender {
     this.outboundTransports = []
   }
 
-  public registerOutboundTransporter(outboundTransporter: OutboundTransporter, priority: number) {
-    if (!this.outboundTransports) {
-      this.outboundTransports = [[outboundTransporter, priority]]
+  public registerOutboundTransporter(outboundTransporter: OutboundTransporter, priority?: number) {
+    if (priority && priority >= 0) {
+      this.outboundTransporters.splice(priority, 0, outboundTransporter)
     } else {
-      this.outboundTransports.push([outboundTransporter, priority])
+      this.outboundTransports.push(outboundTransporter)
     }
   }
 
   public get supportedTransports() {
-    // sort all transporters by priority
     // map all supported schema into a new list
     // reduce the list of listed schemas into a single list
     // remove duplicates by creating a new set and spreading it into a list
     return [
       ...new Set(
         (this.outboundTransporters || [])
-          .sort((a, b) => {
-            return a[1] - b[1]
-          })
-          .map((transportTuple) => transportTuple[0].supportedSchemes)
+          .map((transportTuple) => transportTuple.supportedSchemes)
           .reduce((prev, cur) => {
             return prev.concat(cur)
           })
@@ -73,7 +69,7 @@ export class MessageSender {
   }
 
   public async sendMessage(outboundMessage: OutboundMessage | OutboundPackage) {
-    if (!this.outboundTransports || this.outboundTransports.length === 0) {
+    if (this.outboundTransports.length === 0) {
       throw new AriesFrameworkError('Agent has no outbound transporter!')
     }
 
@@ -158,9 +154,9 @@ export class MessageSender {
 
         outboundPackage.endpoint = service.serviceEndpoint
         const protocol = outboundPackage.endpoint.split(':')[0]
-        for (const transport of this.outboundTransporters || []) {
-          if (transport[0].supportedSchemes.includes(protocol)) {
-            await transport[0].sendMessage(outboundPackage)
+        for (const transport of this.outboundTransporters) {
+          if (transport.supportedSchemes.includes(protocol)) {
+            await transport.sendMessage(outboundPackage)
             break
           }
         }

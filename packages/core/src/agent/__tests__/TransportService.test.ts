@@ -28,7 +28,7 @@ describe('TransportService', () => {
     })
     beforeEach(() => {
       theirDidDoc = new DidDoc({
-        id: 'test-456',
+        id: 'test-123',
         publicKey: [],
         authentication: [],
         service: [testDidCommService, testDidCommServiceWs, testDidCommServiceWws],
@@ -51,7 +51,7 @@ describe('TransportService', () => {
     })
 
     test(`returns service from their DidDoc`, () => {
-      const connection = getMockConnection({ id: 'test-456', theirDidDoc })
+      const connection = getMockConnection({ id: 'test-123', theirDidDoc })
       expect(transportService.findDidCommServices(connection, ['wss', 'ws', 'https', 'http', 'didcomm'])).toEqual([
         testDidCommServiceWws,
         testDidCommServiceWs,

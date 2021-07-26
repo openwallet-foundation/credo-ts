@@ -27,7 +27,7 @@ const config = agent.injectionContainer.resolve(AgentConfig)
 const messageSender = new WsOutboundTransporter()
 const messageReceiver = new WsInboundTransport({ server: socketServer })
 agent.setInboundTransporter(messageReceiver)
-agent.registerOutboundTransporter(messageSender, 0)
+agent.registerOutboundTransporter(messageSender)
 
 // Allow to create invitation, no other way to ask for invitation yet
 app.get('/invitation', async (req, res) => {

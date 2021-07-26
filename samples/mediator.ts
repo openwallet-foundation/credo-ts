@@ -29,7 +29,7 @@ const inboundTransporter = new HttpInboundTransport({ port })
 const outboundTransporter = new HttpOutboundTransporter()
 
 agent.setInboundTransporter(inboundTransporter)
-agent.registerOutboundTransporter(outboundTransporter, 0)
+agent.registerOutboundTransporter(outboundTransporter)
 
 // Allow to create invitation, no other way to ask for invitation yet
 inboundTransporter.app.get('/invitation', async (req, res) => {
