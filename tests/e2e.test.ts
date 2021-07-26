@@ -1,5 +1,19 @@
 import type { SubjectMessage } from './transport/SubjectInboundTransport'
 
+import { Subject } from 'rxjs'
+
+import {
+  getBaseConfig,
+  issueCredential,
+  makeConnection,
+  prepareForIssuance,
+  presentProof,
+  previewFromAttributes,
+} from '../packages/core/tests/helpers'
+
+import { SubjectInboundTransporter } from './transport/SubjectInboundTransport'
+import { SubjectOutboundTransporter } from './transport/SubjectOutboundTransport'
+
 import {
   HttpOutboundTransporter,
   Agent,
@@ -14,19 +28,6 @@ import {
   AutoAcceptCredential,
 } from '@aries-framework/core'
 import { HttpInboundTransport, WsInboundTransport } from '@aries-framework/node'
-import { Subject } from 'rxjs'
-
-import {
-  getBaseConfig,
-  issueCredential,
-  makeConnection,
-  prepareForIssuance,
-  presentProof,
-  previewFromAttributes,
-} from '../packages/core/tests/helpers'
-
-import { SubjectInboundTransporter } from './transport/SubjectInboundTransport'
-import { SubjectOutboundTransporter } from './transport/SubjectOutboundTransport'
 
 const recipientConfig = getBaseConfig('E2E Recipient', {
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
