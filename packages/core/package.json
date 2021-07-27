@@ -22,7 +22,7 @@
     "prepublishOnly": "yarn run build"
   },
   "dependencies": {
-    "@types/indy-sdk": "^1.16.5",
+    "@types/indy-sdk": "^1.16.6",
     "abort-controller": "^3.0.0",
     "bn.js": "^5.2.0",
     "borc": "^3.0.0",

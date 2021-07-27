@@ -2154,6 +2154,13 @@
   dependencies:
     "@types/node" "*"
 
+"@types/indy-sdk@^1.16.6", "@types/rn-indy-sdk@npm:@types/indy-sdk@^1.16.6":
+  version "1.16.6"
+  resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.16.6.tgz#ec8df3dd70cb939c85caa6ebcc32d851e2f3c454"
+  integrity sha512-BhmqsM2z65aOrg6Hum7YICX02dQA2OS05BjEypdoScmPO3ySsZ5QXngeh6pAi+se5yGYp+cL5msoTqldAhlOGA==
+  dependencies:
+    buffer "^6.0.0"
+
 "@types/hoist-non-react-statics@^3.3.0":
   version "3.3.1"
   resolved "https://registry.yarnpkg.com/@types/hoist-non-react-statics/-/hoist-non-react-statics-3.3.1.tgz#1124aafe5118cb591977aeb1ceaaed1070eb039f"
@@ -2161,13 +2168,6 @@
   dependencies:
     "@types/react" "*"
     hoist-non-react-statics "^3.3.0"
-
-"@types/indy-sdk@^1.16.5", "@types/rn-indy-sdk@npm:@types/indy-sdk@^1.16.5":
-  version "1.16.5"
-  resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.16.5.tgz#e9b6b917f8a95b5782d9eb7bc8be713c0f971b21"
-  integrity sha512-eDY2RIUdHIhVytx1k9u2mQgXfw1Fs3sW05kP8h3TDXl8mVXsxQyGs336z2GIApUux8vftsQOVEhrX13OinUmwQ==
-  dependencies:
-    buffer "^6.0.0"
 
 "@types/istanbul-lib-coverage@*", "@types/istanbul-lib-coverage@^2.0.0", "@types/istanbul-lib-coverage@^2.0.1":
   version "2.0.3"
