@@ -34,12 +34,12 @@
     "react-native": "0.64.2",
     "rimraf": "~3.0.2",
     "typescript": "~4.3.0",
-    "indy-sdk-react-native": ">= 0.1.13",
+    "indy-sdk-react-native": "^0.1.13",
     "react-native-get-random-values": "^1.7.0",
     "react-native-fs": "^2.18.0"
   },
   "peerDependencies": {
-    "indy-sdk-react-native": ">= 0.1.13",
+    "indy-sdk-react-native": "^0.1.13",
     "react-native-get-random-values": "^1.7.0",
     "react-native-fs": "^2.18.0"
   }
