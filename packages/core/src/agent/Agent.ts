@@ -184,7 +184,7 @@ export class Agent {
             } a connection`
           )
           if (connection.isReady) {
-            const mediators = await this.mediationRecipient.getMediators()
+            const mediator = await this.mediationRecipient.findByConnectionId(connection.id)
             for (const mediator of mediators) {
               if (connection.id === mediator.connectionId) {
                 this.logger.warn(
