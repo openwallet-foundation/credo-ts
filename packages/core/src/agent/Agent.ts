@@ -16,6 +16,7 @@ import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
+import { ConnectionInvitationMessage } from '../modules/connections/messages/ConnectionInvitationMessage'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
@@ -33,7 +34,6 @@ import { AgentEventTypes } from './Events'
 import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
-import { ConnectionInvitationMessage } from '../modules/connections/messages/ConnectionInvitationMessage'
 
 export class Agent {
   protected agentConfig: AgentConfig
