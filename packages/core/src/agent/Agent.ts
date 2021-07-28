@@ -180,7 +180,7 @@ export class Agent {
         if (connection.invitation === invitation) {
           this.logger.warn(
             `Mediator Invitation in configuration has already been used to ${
-              connection.isReady ? 'make' : 'initialized'
+              connection.isReady ? 'make' : 'initialize'
             } a connection`
           )
           if (connection.isReady) {
