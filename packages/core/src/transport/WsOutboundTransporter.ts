@@ -82,8 +82,10 @@ export class WsOutboundTransporter implements OutboundTransporter {
   // so 'this' is scoped to the 'WsOutboundTransporter' class instance
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private handleMessageEvent = (event: any) => {
-    this.logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
-    this.agent.receiveMessage(JSON.parse(event.data))
+    this.logger.trace('WebSocket message event received.', { url: event.target.url, data: event.data })
+    const payload = JSON.parse(Buffer.from(event.data).toString('utf-8'))
+    this.logger.debug('Payload received from mediator:', payload)
+    this.agent.receiveMessage(payload)
   }
 
   private listenOnWebSocketMessages(socket: WebSocket) {
