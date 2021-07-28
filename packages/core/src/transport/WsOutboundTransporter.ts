@@ -43,8 +43,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
     )
     const isNewSocket = this.hasOpenSocket(connection.id)
     const socket = await this.resolveSocket(connection, endpoint)
-    socket.send(JSON.stringify(payload))
-
+    socket.send(Buffer.from(JSON.stringify(payload)))
     // If the socket was created for this message and we don't have return routing enabled
     // We can close the socket as it shouldn't return messages anymore
     if (isNewSocket && !outboundPackage.responseRequested) {
