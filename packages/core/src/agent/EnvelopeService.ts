@@ -27,12 +27,12 @@ class EnvelopeService {
   }
 
   public async packMessage(payload: AgentMessage, keys: EnvelopeKeys): Promise<WireMessage> {
-    const { routingKeys, recipientKeys, senderKey: senderVerkey } = keys
+    const { routingKeys, recipientKeys, senderKey } = keys
     const message = payload.toJSON()
 
     this.logger.debug(`Pack outbound message ${payload.type}`)
 
-    let wireMessage = await this.wallet.pack(message, recipientKeys, senderVerkey)
+    let wireMessage = await this.wallet.pack(message, recipientKeys, senderKey ?? undefined)
 
     if (routingKeys && routingKeys.length > 0) {
       for (const routingKey of routingKeys) {
@@ -43,7 +43,7 @@ class EnvelopeService {
           message: wireMessage,
         })
         this.logger.debug('Forward message created', forwardMessage)
-        wireMessage = await this.wallet.pack(forwardMessage.toJSON(), [routingKey], senderVerkey)
+        wireMessage = await this.wallet.pack(forwardMessage.toJSON(), [routingKey], senderKey ?? undefined)
       }
     }
     return wireMessage

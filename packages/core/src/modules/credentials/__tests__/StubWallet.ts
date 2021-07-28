@@ -32,11 +32,7 @@ export class StubWallet implements Wallet {
     throw new Error('Method not implemented.')
   }
 
-  public pack(
-    payload: Record<string, unknown>,
-    recipientKeys: string[],
-    senderVerkey?: string | null
-  ): Promise<WireMessage> {
+  public pack(payload: Record<string, unknown>, recipientKeys: string[], senderVerkey?: string): Promise<WireMessage> {
     throw new Error('Method not implemented.')
   }
   public unpack(messagePackage: WireMessage): Promise<UnpackedMessageContext> {

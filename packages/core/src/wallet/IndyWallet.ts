@@ -284,7 +284,7 @@ export class IndyWallet implements Wallet {
   public async pack(
     payload: Record<string, unknown>,
     recipientKeys: string[],
-    senderVerkey?: string | null
+    senderVerkey?: string
   ): Promise<WireMessage> {
     try {
       const messageRaw = JsonEncoder.toBuffer(payload)
@@ -319,9 +319,7 @@ export class IndyWallet implements Wallet {
 
   public async sign(data: Buffer, verkey: string): Promise<Buffer> {
     try {
-      const signatureBuffer = await this.indy.cryptoSign(this.walletHandle, verkey, data)
-
-      return signatureBuffer
+      return await this.indy.cryptoSign(this.walletHandle, verkey, data)
     } catch (error) {
       throw new WalletError(`Error signing data with verkey ${verkey}`, { cause: error })
     }

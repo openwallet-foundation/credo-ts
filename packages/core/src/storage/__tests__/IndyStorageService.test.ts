@@ -48,12 +48,12 @@ describe('IndyStorageService', () => {
         },
       })
 
-      const got = await indy.getWalletRecord(wallet.walletHandle, record.type, record.id, {
+      const retrieveRecord = await indy.getWalletRecord(wallet.walletHandle, record.type, record.id, {
         retrieveType: true,
         retrieveTags: true,
       })
 
-      expect(got.tags).toEqual({
+      expect(retrieveRecord.tags).toEqual({
         someBoolean: '1',
         someOtherBoolean: '0',
         someStringValue: 'string',
@@ -125,8 +125,8 @@ describe('IndyStorageService', () => {
       record.foo = 'foobaz'
       await storageService.update(record)
 
-      const got = await storageService.getById(TestRecord, record.id)
-      expect(got).toEqual(record)
+      const retrievedRecord = await storageService.getById(TestRecord, record.id)
+      expect(retrievedRecord).toEqual(record)
     })
   })
 

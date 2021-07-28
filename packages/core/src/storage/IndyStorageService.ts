@@ -187,7 +187,7 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   ): Promise<T[]> {
     const indyQuery = this.transformFromRecordTagValues(query as unknown as TagsBase)
 
-    const recordIterator = await this.search(recordClass.type, indyQuery, IndyStorageService.DEFAULT_QUERY_OPTIONS)
+    const recordIterator = this.search(recordClass.type, indyQuery, IndyStorageService.DEFAULT_QUERY_OPTIONS)
     const records = []
     for await (const record of recordIterator) {
       records.push(this.recordToInstance(record, recordClass))

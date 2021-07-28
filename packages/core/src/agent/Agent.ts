@@ -81,7 +81,7 @@ export class Agent {
 
     if (!this.agentConfig.walletConfig) {
       this.logger.warn(
-        'Wallet config and/or credentials have not been set on the agent config. ' +
+        'Wallet config has not been set on the agent config. ' +
           'Make sure to initialize the wallet yourself before initializing the agent, ' +
           'or provide the required wallet configuration in the agent constructor'
       )
@@ -96,7 +96,6 @@ export class Agent {
 
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.container.resolve(ConnectionsModule)
-
     this.credentials = this.container.resolve(CredentialsModule)
     this.proofs = this.container.resolve(ProofsModule)
     this.mediator = this.container.resolve(MediatorModule)
