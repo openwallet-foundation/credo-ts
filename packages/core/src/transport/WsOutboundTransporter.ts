@@ -16,6 +16,22 @@ export class WsOutboundTransporter implements OutboundTransporter {
   private continue!: boolean
   public supportedSchemes = ['ws', 'wss']
 
+  public recursiveBackOff = async (endpoint: string, socketId: string, depth = 0) => {
+    // check completion
+    await this.createSocketConnection(endpoint, socketId)
+    if (this.hasOpenSocket(socketId)) {
+      return
+    } else {
+      // unfinished
+      if (depth > 7) {
+        throw new AriesFrameworkError('Socket is not connecting, check network connection.')
+      }
+      await wait(2 ** depth * 10)
+
+      this.recursiveBackOff(endpoint, socketId, depth + 1)
+    }
+  }
+
   public async start(agent: Agent): Promise<void> {
     this.agent = agent
     this.continue = true
@@ -115,7 +131,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
           const mediators = await this.agent.mediationRecipient.getMediators()
           const mediatorConnIds = mediators.map((mediator) => mediator.connectionId)
           if (mediatorConnIds.includes(socketId)) {
-            this.createSocketConnection(endpoint, socketId)
+            await this.recursiveBackOff(endpoint, socketId, 5)
             // send trustPing to mediator to open socket
             this.agent.connections.acceptResponse(socketId)
           }
@@ -123,4 +139,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
       }
     })
   }
+}
+function wait(arg0: number) {
+  throw new Error('Function not implemented.')
 }
