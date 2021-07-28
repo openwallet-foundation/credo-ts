@@ -26,9 +26,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
       if (depth > 7) {
         throw new AriesFrameworkError('Socket is not connecting, check network connection.')
       }
-      await wait(2 ** depth * 10)
-
-      this.recursiveBackOff(endpoint, socketId, depth + 1)
+      setTimeout(() => this.recursiveBackOff(endpoint, socketId, depth + 1), 2 ** depth * 10)
     }
   }
 
@@ -139,7 +137,4 @@ export class WsOutboundTransporter implements OutboundTransporter {
       }
     })
   }
-}
-function wait(arg0: number) {
-  throw new Error('Function not implemented.')
 }
