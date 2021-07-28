@@ -14,7 +14,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
   private logger!: Logger
   private WebSocketClass!: typeof WebSocket
   private continue!: boolean
-  private recursiveBackOff = 100
+  private recursiveBackOff: { [socketId: string]: number } = {}
   public supportedSchemes = ['ws', 'wss']
 
   public async start(agent: Agent): Promise<void> {
@@ -119,13 +119,17 @@ export class WsOutboundTransporter implements OutboundTransporter {
           if (mediatorConnIds.includes(socketId)) {
             this.logger.debug(`WebSocket attempting to reconnect to ${endpoint}`)
             // send trustPing to mediator to open socket
+            let interval = 100
+            if (this.recursiveBackOff[socketId as string]) {
+              interval = this.recursiveBackOff[socketId]
+            }
             setTimeout(
               () => {
                 this.agent.connections.acceptResponse(socketId)
               },
-              this.recursiveBackOff < 1000 ? this.recursiveBackOff : 1000
+              interval < 1000 ? interval : 1000
             )
-            this.recursiveBackOff = this.recursiveBackOff * 2
+            this.recursiveBackOff[socketId] = interval * 2
           }
         }
       }
