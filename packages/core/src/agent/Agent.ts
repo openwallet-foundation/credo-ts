@@ -176,7 +176,7 @@ export class Agent {
       const connections = await this.connections.getAll()
       let defaultMediatorBootstrapped = false
       for (const connection of connections) {
-        if (connection.invitation === invitation) {
+        if (connection.invitation?.id === invitation.id) {
           this.logger.warn(
             `Mediator Invitation in configuration has already been used to ${
               connection.isReady ? 'make' : 'initialize'
