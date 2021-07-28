@@ -14,21 +14,8 @@ export class WsOutboundTransporter implements OutboundTransporter {
   private logger!: Logger
   private WebSocketClass!: typeof WebSocket
   private continue!: boolean
+  private recursiveBackOff = 100
   public supportedSchemes = ['ws', 'wss']
-
-  public recursiveBackOff = async (endpoint: string, socketId: string, depth = 0) => {
-    // check completion
-    await this.createSocketConnection(endpoint, socketId)
-    if (this.hasOpenSocket(socketId)) {
-      return
-    } else {
-      // unfinished
-      if (depth > 7) {
-        throw new AriesFrameworkError('Socket is not connecting, check network connection.')
-      }
-      setTimeout(() => this.recursiveBackOff(endpoint, socketId, depth + 1), 2 ** depth * 10)
-    }
-  }
 
   public async start(agent: Agent): Promise<void> {
     this.agent = agent
@@ -131,9 +118,14 @@ export class WsOutboundTransporter implements OutboundTransporter {
           const mediatorConnIds = mediators.map((mediator) => mediator.connectionId)
           if (mediatorConnIds.includes(socketId)) {
             this.logger.debug(`WebSocket attempting to reconnect to ${endpoint}`)
-            await this.recursiveBackOff(endpoint, socketId)
             // send trustPing to mediator to open socket
-            this.agent.connections.acceptResponse(socketId)
+            setTimeout(
+              () => {
+                this.agent.connections.acceptResponse(socketId)
+              },
+              this.recursiveBackOff < 1000 ? this.recursiveBackOff : 1000
+            )
+            this.recursiveBackOff = this.recursiveBackOff * 2
           }
         }
       }
