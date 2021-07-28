@@ -123,12 +123,14 @@ export class WsOutboundTransporter implements OutboundTransporter {
       }
 
       socket.onclose = async () => {
+        this.logger.debug(`WebSocket closing to ${endpoint}`)
         socket.removeEventListener('message', this.handleMessageEvent)
         this.transportTable.delete(socketId)
         if (this.continue) {
           const mediators = await this.agent.mediationRecipient.getMediators()
           const mediatorConnIds = mediators.map((mediator) => mediator.connectionId)
           if (mediatorConnIds.includes(socketId)) {
+            this.logger.debug(`WebSocket attempting to reconnect to ${endpoint}`)
             await this.recursiveBackOff(endpoint, socketId)
             // send trustPing to mediator to open socket
             this.agent.connections.acceptResponse(socketId)
