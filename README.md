@@ -46,47 +46,6 @@
 
 Aries Framework JavaScript is a framework written in TypeScript for building **SSI Agents and DIDComm services** that aims to be **compliant and interoperable** with the standards defined in the [Aries RFCs](https://github.com/hyperledger/aries-rfcs).
 
-## Packages
-
-<table>
-  <tr>
-    <th><b>Package</b></th>
-    <th><b>Version</b></th>
-  </tr>
-  <tr>
-    <td>Core</td>
-    <td>
-      <a href="https://npmjs.com/package/@aries-framework/core">
-        <img alt="@aries-framework/core version" src="https://img.shields.io/npm/v/@aries-framework/core"/>
-      </a>
-    </td>
-  </tr>
-  <tr>
-    <td>Node</td>
-    <td>
-      <a href="https://npmjs.com/package/@aries-framework/node">
-        <img alt="@aries-framework/node version" src="https://img.shields.io/npm/v/@aries-framework/node"/>
-      </a>
-    </td>
-  </tr>
-  <tr>
-    <td>React-Native</td>
-    <td>
-      <a href="https://npmjs.com/package/@aries-framework/react-native">
-        <img alt="@aries-framework/react-native version" src="https://img.shields.io/npm/v/@aries-framework/react-native"/>
-      </a>
-    </td>
-  </tr>
-  <tr>
-    <td>Redux-Store</td>
-    <td>
-      <a href="https://npmjs.com/package/@aries-framework/redux-store">
-        <img alt="@aries-framework/redux-store version" src="https://img.shields.io/npm/v/@aries-framework/redux-store"/>
-      </a>
-    </td>
-  </tr>
-</table>
-
 ## Features
 
 Some features are not yet supported, but are on our roadmap. Check [the roadmap](https://github.com/hyperledger/aries-framework-javascript/issues/39) for more information.
@@ -108,6 +67,47 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
 - ❌ Browser
 - ❌ Issue Credential V2, Present Proof V2, DID Exchange Protocol, Out-Of-Band
 - ❌ W3C Linked Data VCs, BBS+ Signatures
+
+### Packages
+
+<table>
+  <tr>
+    <th><b>Package</b></th>
+    <th><b>Version</b></th>
+  </tr>
+  <tr>
+    <td>@aries-framework/core</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/core">
+        <img alt="@aries-framework/core version" src="https://img.shields.io/npm/v/@aries-framework/core"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>@aries-framework/node</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/node">
+        <img alt="@aries-framework/node version" src="https://img.shields.io/npm/v/@aries-framework/node"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>@aries-framework/react-Native</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/react-native">
+        <img alt="@aries-framework/react-native version" src="https://img.shields.io/npm/v/@aries-framework/react-native"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>@aries-framework/redux-Store</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/redux-store">
+        <img alt="@aries-framework/redux-store version" src="https://img.shields.io/npm/v/@aries-framework/redux-store"/>
+      </a>
+    </td>
+  </tr>
+</table>
 
 ## Getting Started
 
