@@ -29,7 +29,7 @@ export class LedgerModule {
     return this.ledgerService.registerPublicDid(myPublicDid, did, verkey, alias, role)
   }
 
-  public async getPublicDid(did: Did) {
+  public async getPublicDid(did: string) {
     return this.ledgerService.getPublicDid(did)
   }
 
