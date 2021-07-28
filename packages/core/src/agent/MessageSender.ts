@@ -36,8 +36,8 @@ export class MessageSender {
   }
 
   public registerOutboundTransporter(outboundTransporter: OutboundTransporter, priority?: number) {
-    if (priority && priority >= 0) {
-      this.outboundTransporters.splice(priority, 0, outboundTransporter)
+    if (typeof priority != 'undefined' && priority >= 0 && priority < this.outboundTransports.length) {
+      this.outboundTransports.splice(priority, 0, outboundTransporter)
     } else {
       this.outboundTransports.push(outboundTransporter)
     }
