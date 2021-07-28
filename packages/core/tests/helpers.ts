@@ -13,7 +13,7 @@ import type {
   ProofStateChangedEvent,
   SchemaTemplate,
 } from '../src'
-import type { Schema, CredDef, Did } from 'indy-sdk'
+import type { Schema, CredDef } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
 import path from 'path'
@@ -325,7 +325,7 @@ export async function prepareForIssuance(agent: Agent, attributes: string[]) {
   }
 }
 
-export async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: Did) {
+export async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: string) {
   try {
     testLogger.test(`Ensure test DID ${publicDid} is written to ledger`)
     await agent.ledger.getPublicDid(publicDid)

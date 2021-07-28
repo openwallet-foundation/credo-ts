@@ -3,7 +3,6 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { ConnectionRecord } from '../../connections'
 import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
 import type { MediationGrantMessage, MediationDenyMessage, KeylistUpdateResponseMessage } from '../messages'
-import type { Verkey } from 'indy-sdk'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
@@ -143,7 +142,7 @@ export class MediationRecipientService {
     return keylistUpdate.payload.mediationRecord
   }
 
-  public createKeylistUpdateMessage(verkey: Verkey): KeylistUpdateMessage {
+  public createKeylistUpdateMessage(verkey: string): KeylistUpdateMessage {
     const keylistUpdateMessage = new KeylistUpdateMessage({
       updates: [
         new KeylistUpdate({
@@ -172,12 +171,12 @@ export class MediationRecipientService {
     return { mediationRecord, endpoint, routingKeys, did, verkey }
   }
 
-  public async saveRoute(recipientKey: Verkey, mediationRecord: MediationRecord) {
+  public async saveRoute(recipientKey: string, mediationRecord: MediationRecord) {
     mediationRecord.recipientKeys.push(recipientKey)
     this.mediatorRepository.update(mediationRecord)
   }
 
-  public async removeRoute(recipientKey: Verkey, mediationRecord: MediationRecord) {
+  public async removeRoute(recipientKey: string, mediationRecord: MediationRecord) {
     const index = mediationRecord.recipientKeys.indexOf(recipientKey, 0)
     if (index > -1) {
       mediationRecord.recipientKeys.splice(index, 1)

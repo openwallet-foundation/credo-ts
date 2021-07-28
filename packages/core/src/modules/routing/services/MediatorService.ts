@@ -2,7 +2,6 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { WireMessage } from '../../../types'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
 import type { ForwardMessage, KeylistUpdateMessage, MediationRequestMessage } from '../messages'
-import type { Verkey } from 'indy-sdk'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
@@ -30,7 +29,7 @@ export class MediatorService {
   private mediationRepository: MediationRepository
   private wallet: Wallet
   private eventEmitter: EventEmitter
-  private routingKeys: Verkey[]
+  private routingKeys: string[]
 
   public constructor(
     mediationRepository: MediationRepository,
@@ -93,7 +92,7 @@ export class MediatorService {
     return new KeylistUpdateResponseMessage({ keylist, threadId: message.threadId })
   }
 
-  public async saveRoute(recipientKey: Verkey, mediationRecord: MediationRecord) {
+  public async saveRoute(recipientKey: string, mediationRecord: MediationRecord) {
     try {
       mediationRecord.recipientKeys.push(recipientKey)
       this.mediationRepository.update(mediationRecord)
@@ -106,7 +105,7 @@ export class MediatorService {
     }
   }
 
-  public async removeRoute(recipientKey: Verkey, mediationRecord: MediationRecord) {
+  public async removeRoute(recipientKey: string, mediationRecord: MediationRecord) {
     try {
       const index = mediationRecord.recipientKeys.indexOf(recipientKey, 0)
       if (index > -1) {

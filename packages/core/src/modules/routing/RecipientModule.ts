@@ -1,7 +1,6 @@
 import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './index'
-import type { Verkey } from 'indy-sdk'
 
 import { firstValueFrom, interval, ReplaySubject } from 'rxjs'
 import { filter, first, takeUntil, timeout } from 'rxjs/operators'
@@ -120,7 +119,7 @@ export class RecipientModule {
     return mediationRecord
   }
 
-  public async notifyKeylistUpdate(connection: ConnectionRecord, verkey: Verkey) {
+  public async notifyKeylistUpdate(connection: ConnectionRecord, verkey: string) {
     const message = this.mediationRecipientService.createKeylistUpdateMessage(verkey)
     const outboundMessage = createOutboundMessage(connection, message)
     const response = await this.messageSender.sendMessage(outboundMessage)

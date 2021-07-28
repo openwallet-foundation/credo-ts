@@ -6,7 +6,6 @@ import type { ConnectionRecord } from '../../connections'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { ProposeCredentialMessageOptions } from '../messages'
-import type { CredDefId } from 'indy-sdk'
 
 import { scoped, Lifecycle } from 'tsyringe'
 
@@ -761,7 +760,7 @@ export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessag
 }
 
 export interface CredentialOfferTemplate {
-  credentialDefinitionId: CredDefId
+  credentialDefinitionId: string
   comment?: string
   preview: CredentialPreview
   autoAcceptCredential?: AutoAcceptCredential

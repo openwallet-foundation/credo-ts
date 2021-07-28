@@ -1,5 +1,5 @@
 import type { SchemaTemplate, CredentialDefinitionTemplate } from './services'
-import type { CredDefId, Did, NymRole, SchemaId } from 'indy-sdk'
+import type { NymRole } from 'indy-sdk'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
@@ -19,7 +19,7 @@ export class LedgerModule {
     this.wallet = wallet
   }
 
-  public async registerPublicDid(did: Did, verkey: string, alias: string, role?: NymRole) {
+  public async registerPublicDid(did: string, verkey: string, alias: string, role?: NymRole) {
     const myPublicDid = this.wallet.publicDid?.did
 
     if (!myPublicDid) {
@@ -43,7 +43,7 @@ export class LedgerModule {
     return this.ledgerService.registerSchema(did, schema)
   }
 
-  public async getSchema(id: SchemaId) {
+  public async getSchema(id: string) {
     return this.ledgerService.getSchema(id)
   }
 
@@ -57,7 +57,7 @@ export class LedgerModule {
     return this.ledgerService.registerCredentialDefinition(did, credentialDefinitionTemplate)
   }
 
-  public async getCredentialDefinition(id: CredDefId) {
+  public async getCredentialDefinition(id: string) {
     return this.ledgerService.getCredentialDefinition(id)
   }
 }

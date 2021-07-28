@@ -3,14 +3,12 @@ import type { FileSystem } from '../../../storage/FileSystem'
 import type {
   default as Indy,
   CredDef,
-  CredDefId,
-  Did,
   LedgerRequest,
   PoolHandle,
   Schema,
-  SchemaId,
   LedgerReadReplyResponse,
   LedgerWriteReplyResponse,
+  NymRole,
 } from 'indy-sdk'
 
 import { scoped, Lifecycle } from 'tsyringe'
@@ -113,7 +111,41 @@ export class IndyLedgerService {
     }
   }
 
-  public async getPublicDid(did: Did) {
+  public async registerPublicDid(
+    submitterDid: string,
+    targetDid: string,
+    verkey: string,
+    alias: string,
+    role?: NymRole
+  ) {
+    try {
+      this.logger.debug(`Register public did on ledger '${targetDid}'`)
+
+      const request = await this.indy.buildNymRequest(submitterDid, targetDid, verkey, alias, role || null)
+
+      const response = await this.submitWriteRequest(request, submitterDid)
+
+      this.logger.debug(`Registered public did '${targetDid}' on ledger`, {
+        response,
+      })
+
+      return targetDid
+    } catch (error) {
+      this.logger.error(`Error registering public did '${targetDid}' on ledger`, {
+        error,
+        submitterDid,
+        targetDid,
+        verkey,
+        alias,
+        role,
+        poolHandle: await this.getPoolHandle(),
+      })
+
+      throw error
+    }
+  }
+
+  public async getPublicDid(did: string) {
     try {
       this.logger.debug(`Get public did '${did}' from ledger`)
       const request = await this.indy.buildGetNymRequest(null, did)
@@ -136,7 +168,7 @@ export class IndyLedgerService {
     }
   }
 
-  public async registerSchema(did: Did, schemaTemplate: SchemaTemplate): Promise<Schema> {
+  public async registerSchema(did: string, schemaTemplate: SchemaTemplate): Promise<Schema> {
     try {
       this.logger.debug(`Register schema on ledger with did '${did}'`, schemaTemplate)
       const { name, attributes, version } = schemaTemplate
@@ -165,7 +197,7 @@ export class IndyLedgerService {
     }
   }
 
-  public async getSchema(schemaId: SchemaId) {
+  public async getSchema(schemaId: string) {
     try {
       this.logger.debug(`Get schema '${schemaId}' from ledger`)
 
@@ -193,7 +225,7 @@ export class IndyLedgerService {
   }
 
   public async registerCredentialDefinition(
-    did: Did,
+    did: string,
     credentialDefinitionTemplate: CredentialDefinitionTemplate
   ): Promise<CredDef> {
     try {
@@ -233,7 +265,7 @@ export class IndyLedgerService {
     }
   }
 
-  public async getCredentialDefinition(credentialDefinitionId: CredDefId) {
+  public async getCredentialDefinition(credentialDefinitionId: string) {
     try {
       this.logger.debug(`Get credential definition '${credentialDefinitionId}' from ledger`)
 
@@ -293,7 +325,7 @@ export class IndyLedgerService {
     }
   }
 
-  private async signRequest(did: Did, request: LedgerRequest): Promise<LedgerRequest> {
+  private async signRequest(did: string, request: LedgerRequest): Promise<LedgerRequest> {
     try {
       return this.indy.signRequest(this.wallet.walletHandle, did, request)
     } catch (error) {

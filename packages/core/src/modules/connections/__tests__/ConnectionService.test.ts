@@ -1,5 +1,4 @@
 import type { Wallet } from '../../../wallet/Wallet'
-import type { Did } from 'indy-sdk'
 
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { AgentMessage } from '../../../agent/AgentMessage'
@@ -34,7 +33,7 @@ describe('ConnectionService', () => {
   let connectionRepository: ConnectionRepository
   let connectionService: ConnectionService
   let eventEmitter: EventEmitter
-  let myRouting: { did: Did; verkey: string; endpoint: string; routingKeys: string[] }
+  let myRouting: { did: string; verkey: string; endpoint: string; routingKeys: string[] }
 
   beforeAll(async () => {
     wallet = new IndyWallet(config)
