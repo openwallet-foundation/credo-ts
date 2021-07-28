@@ -13,12 +13,12 @@ export class WsOutboundTransporter implements OutboundTransporter {
   private agent!: Agent
   private logger!: Logger
   private WebSocketClass!: typeof WebSocket
-
+  private continue!: boolean
   public supportedSchemes = ['ws', 'wss']
 
   public async start(agent: Agent): Promise<void> {
     this.agent = agent
-
+    this.continue = true
     const agentConfig = agent.injectionContainer.resolve(AgentConfig)
 
     this.logger = agentConfig.logger
@@ -28,7 +28,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
 
   public async stop() {
     this.logger.debug('Stopping WS outbound transport')
-
+    this.continue = false
     this.transportTable.forEach((socket) => {
       socket.removeEventListener('message', this.handleMessageEvent)
       socket.close()
@@ -108,9 +108,18 @@ export class WsOutboundTransporter implements OutboundTransporter {
         reject(error)
       }
 
-      socket.onclose = () => {
+      socket.onclose = async () => {
         socket.removeEventListener('message', this.handleMessageEvent)
         this.transportTable.delete(socketId)
+        if (this.continue) {
+          const mediators = await this.agent.mediationRecipient.getMediators()
+          const mediatorConnIds = mediators.map((mediator) => mediator.connectionId)
+          if (mediatorConnIds.includes(socketId)) {
+            this.createSocketConnection(endpoint, socketId)
+            // send trustPing to mediator to open socket
+            this.agent.connections.acceptResponse(socketId)
+          }
+        }
       }
     })
   }
