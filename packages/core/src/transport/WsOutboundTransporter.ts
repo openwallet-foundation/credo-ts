@@ -129,7 +129,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
           const mediators = await this.agent.mediationRecipient.getMediators()
           const mediatorConnIds = mediators.map((mediator) => mediator.connectionId)
           if (mediatorConnIds.includes(socketId)) {
-            await this.recursiveBackOff(endpoint, socketId, 5)
+            await this.recursiveBackOff(endpoint, socketId)
             // send trustPing to mediator to open socket
             this.agent.connections.acceptResponse(socketId)
           }
