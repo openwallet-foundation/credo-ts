@@ -11,6 +11,7 @@ import type {
   SchemaId,
   LedgerReadReplyResponse,
   LedgerWriteReplyResponse,
+  NymRole,
 } from 'indy-sdk'
 
 import { scoped, Lifecycle } from 'tsyringe'
@@ -109,6 +110,34 @@ export class IndyLedgerService {
       return this._poolHandle
     } catch (error) {
       throw isIndyError(error) ? new IndySdkError(error) : error
+    }
+  }
+
+  public async registerPublicDid(submitterDid: Did, targetDid: Did, verkey: string, alias: string, role?: NymRole) {
+    try {
+      this.logger.debug(`Register public did on ledger '${targetDid}'`)
+
+      const request = await this.indy.buildNymRequest(submitterDid, targetDid, verkey, alias, role || null)
+
+      const response = await this.submitWriteRequest(request, submitterDid)
+
+      this.logger.debug(`Registered public did '${targetDid}' on ledger`, {
+        response,
+      })
+
+      return targetDid
+    } catch (error) {
+      this.logger.error(`Error registering public did '${targetDid}' on ledger`, {
+        error,
+        submitterDid,
+        targetDid,
+        verkey,
+        alias,
+        role,
+        poolHandle: await this.getPoolHandle(),
+      })
+
+      throw error
     }
   }
 

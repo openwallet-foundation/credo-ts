@@ -17,6 +17,7 @@ import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
+import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
@@ -53,6 +54,7 @@ export class Agent {
   public readonly credentials!: CredentialsModule
   public readonly mediationRecipient!: RecipientModule
   public readonly mediator!: MediatorModule
+  public readonly discovery!: DiscoverFeaturesModule
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
     // Create child container so we don't interfere with anything outside of this agent
@@ -101,6 +103,7 @@ export class Agent {
     this.mediationRecipient = this.container.resolve(RecipientModule)
     this.basicMessages = this.container.resolve(BasicMessagesModule)
     this.ledger = this.container.resolve(LedgerModule)
+    this.discovery = this.container.resolve(DiscoverFeaturesModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
     this.messageSubscription = this.eventEmitter
@@ -185,6 +188,10 @@ export class Agent {
   }
 
   public async shutdown({ deleteWallet = false }: { deleteWallet?: boolean } = {}) {
+    // All observables use takeUntil with the stop$ observable
+    // this means all observables will stop running if a value is emitted on this observable
+    this.agentConfig.stop$.next(true)
+
     // Stop transports
     await this.outboundTransporter?.stop()
     await this.inboundTransporter?.stop()
@@ -197,10 +204,6 @@ export class Agent {
         await this.wallet.close()
       }
     }
-
-    // All observables use takeUntil with the stop$ observable
-    // this means all observables will stop running if a value is emitted on this observable
-    this.agentConfig.stop$.next(true)
   }
 
   public get publicDid() {

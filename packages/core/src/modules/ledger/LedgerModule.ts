@@ -1,5 +1,5 @@
 import type { SchemaTemplate, CredentialDefinitionTemplate } from './services'
-import type { CredDefId, Did, SchemaId } from 'indy-sdk'
+import type { CredDefId, Did, NymRole, SchemaId } from 'indy-sdk'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
@@ -19,8 +19,14 @@ export class LedgerModule {
     this.wallet = wallet
   }
 
-  public async registerPublicDid() {
-    throw new AriesFrameworkError('registerPublicDid not implemented.')
+  public async registerPublicDid(did: Did, verkey: string, alias: string, role?: NymRole) {
+    const myPublicDid = this.wallet.publicDid?.did
+
+    if (!myPublicDid) {
+      throw new AriesFrameworkError('Agent has no public DID.')
+    }
+
+    return this.ledgerService.registerPublicDid(myPublicDid, did, verkey, alias, role)
   }
 
   public async getPublicDid(did: Did) {

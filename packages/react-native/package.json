@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@types/react-native": "^0.64.10",
-    "@types/rn-indy-sdk": "npm:@types/indy-sdk@^1.16.5",
+    "@types/rn-indy-sdk": "npm:@types/indy-sdk@^1.16.6",
     "react": "17.0.1",
     "react-native": "0.64.2",
     "rimraf": "~3.0.2",
