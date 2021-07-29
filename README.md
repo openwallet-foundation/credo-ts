@@ -65,7 +65,6 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
 - ✅ Indy Credentials (with `did:sov` support)
 - ✅ HTTP Transport
 - ✅ Connection-less Issuance and Verification
-- ✅ Mediator Coordination Protocol ([RFC 0211](https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md))
 - ✅ Smart Auto Acceptance of Connections, Credentials and Proofs
 - 🚧 Revocation of Indy Credentials
 - 🚧 Electron
