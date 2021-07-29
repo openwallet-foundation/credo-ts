@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@types/express": "^4.17.13",
-    "@types/node": "^15.14.1",
+    "@types/node": "^15.14.4",
     "@types/node-fetch": "^2.5.10",
     "@types/ws": "^7.4.6",
     "rimraf": "~3.0.2",
