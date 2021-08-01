@@ -123,14 +123,15 @@ In order to use Aries Framework JavaScript some platform specific dependencies a
 
 Now that your project is setup and everything seems to be working, it is time to start building! Follow these guides below to get started!
 
-0. [Agent](/docs/getting-started/0-agent.md)
-1. [Transports](/docs/getting-started/1-transports.md)
-2. [Connections](/docs/getting-started/2-connections.md)
-3. [Routing](/docs/getting-started/3-routing.md)
-4. [Ledger](/docs/getting-started/4-ledger.md)
-5. [Credentials](/docs/getting-started/5-credentials.md)
-6. [Proofs](/docs/getting-started/6-proofs.md)
-7. [Logging](/docs/getting-started/7-logging.md)
+0. [Overview](/docs/getting-started/overview.md)
+1. [Agent](/docs/getting-started/0-agent.md)
+2. [Transports](/docs/getting-started/1-transports.md)
+3. [Connections](/docs/getting-started/2-connections.md)
+4. [Routing](/docs/getting-started/3-routing.md)
+5. [Ledger](/docs/getting-started/4-ledger.md)
+6. [Credentials](/docs/getting-started/5-credentials.md)
+7. [Proofs](/docs/getting-started/6-proofs.md)
+8. [Logging](/docs/getting-started/7-logging.md)
 
 ## Contributing
 
