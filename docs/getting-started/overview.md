@@ -6,7 +6,7 @@ This is an overview of how agents communicate with each other as compared to reg
 
 In most applications, the client communicates with the server using http protocol where a request is made to the server and the client awaits the response from the server with a specific timeout after which a timeout exception is raised if we didn’t get any response from server.
 
-[http request](../images/dcd1.png)
+![http request](../images/dcd1.png)
 
 # Agent to agent communication
 
@@ -18,7 +18,7 @@ On the other hand, agents communicate using [didcomm](https://github.com/hyperle
 5- Agent Alice process the message (under the hood through Aries) and raises an event with attached data relevant to communication context
 6- The controller (your app) receives the data using a subscribed callback to the corresponding event types and act upon it
 
-[agents communication](../images/dcd2.png)
+![agents communication](../images/dcd2.png)
 
 So to wrap things up, as a developer for a controller app that will use the Aries framework you will not worry about most of that scenarios and negotiations going under the hood, the only thing that you will do as a controller is initiate the connection and wait for an event to be raised that has the parameters you are waiting for to see if the connection succeeded or the a specific credential have been received.
 
