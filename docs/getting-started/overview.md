@@ -31,7 +31,7 @@ The main object that holds the core functionalities of the Aries framework.
 
 ## Event handlers
 
-A call back methods passed to the agent event handler to be called on different events such as 
+A callback method passed to the agent event handler to be called on different events such as 
 - Message received from other agent
 - A recent connection with other agent has changed state
 - A credential received or has a state changed
