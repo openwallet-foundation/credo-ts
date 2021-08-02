@@ -23,7 +23,7 @@ On the other hand, agents communicate using [DIDComm](https://github.com/hyperle
 
 So to wrap things up, as a developer for a controller app that will use the Aries framework you will not worry about most of these scenarios and negotiations going on under the hood. The only thing that you will do as a controller is initiate the connection and wait for an event with specific parameters to be raised to see if the connection succeeded or the specific credential has been received.
 
-From the previous diagrams the normal controller(app) structure would consist of
+From the previous diagrams the normal controller (app) structure would consist of
 
 ## [Agent](0-agent.md)
 
