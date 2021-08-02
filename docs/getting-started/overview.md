@@ -38,6 +38,6 @@ A call back methods passed to the agent event handler to be called on different 
 
 ## [Transporters](transports.md)
 
-Services that will handle the outbound and in-bound transports. Remember we mentioned that unlike http request which happens on one channel, the connection here has two ways one outgoing using the out-bound transporter and one incoming using the inbound transporter
+Services that will handle the outbound and inbound transports. Remember we mentioned that unlike http request which happens on one channel, the connection here has two ways one outgoing using the outbound transporter and one incoming using the inbound transporter
 
 Those are the main components that you as a developer will need to care about.
