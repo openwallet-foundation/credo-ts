@@ -984,10 +984,10 @@ describe('CredentialService', () => {
 
     test(`emits stateChange event from ${CredentialState.OfferReceived} to ${CredentialState.OfferDeclinedSent}`, async () => {
       const eventListenerMock = jest.fn()
-      credentialService.on(CredentialEventType.StateChanged, eventListenerMock)
+      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
       // given
-      repositoryFindMock.mockReturnValue(Promise.resolve(credential))
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
 
       // when
       await credentialService.declineOffer(credential)
