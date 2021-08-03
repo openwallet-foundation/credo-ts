@@ -1,10 +1,12 @@
 import type { default as Indy, BlobReaderHandle, RevRegId } from 'indy-sdk'
+
+import { AbortController } from 'abort-controller'
 import { scoped, inject, Lifecycle } from 'tsyringe'
+
 import { InjectionSymbols } from '../../../constants'
 import { FileSystem } from '../../../storage/fs/FileSystem'
-import { getDirFromFilePath } from '../../../utils/path'
 import { fetch } from '../../../utils/fetch'
-import { AbortController } from 'abort-controller'
+import { getDirFromFilePath } from '../../../utils/path'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyUtilitesService {

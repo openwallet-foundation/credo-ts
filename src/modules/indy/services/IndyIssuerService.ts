@@ -14,6 +14,7 @@ import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { InjectionSymbols } from '../../../constants'
 import { IndyWallet } from '../../../wallet/IndyWallet'
+
 import { IndyUtilitesService } from './indyUtilitiesService'
 
 @scoped(Lifecycle.ContainerScoped)

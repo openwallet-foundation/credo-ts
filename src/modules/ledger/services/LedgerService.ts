@@ -20,7 +20,7 @@ import { InjectionSymbols } from '../../../constants'
 import { FileSystem } from '../../../storage/fs/FileSystem'
 import { isIndyError } from '../../../utils/indyError'
 import { Wallet } from '../../../wallet/Wallet'
-import { IndyIssuerService } from '../../indy'
+import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class LedgerService {
@@ -291,7 +291,7 @@ export class LedgerService {
 
   public async getRevocRegDelta(
     revRegId: Indy.RevRegId,
-    from: number = 0,
+    from = 0,
     to: number = new Date().getTime()
   ): Promise<ParseRevRegDeltaResult> {
     //TODO - implement a long term cache here

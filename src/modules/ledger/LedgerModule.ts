@@ -59,7 +59,7 @@ export class LedgerModule {
     return this.ledgerService.getRevocRegDef(revocRegDefId)
   }
 
-  public async getRevocRegDelta(revRegId: RevRegId, from: number = 0, to: number = new Date().getTime()) {
+  public async getRevocRegDelta(revRegId: RevRegId, from = 0, to = new Date().getTime()) {
     return this.ledgerService.getRevocRegDelta(revRegId, from, to)
   }
 }

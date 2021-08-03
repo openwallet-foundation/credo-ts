@@ -722,7 +722,7 @@ export class ProofService {
 
           // Check if credentials matches all parameters from proposal
           return names.every((name) =>
-            config.presentationProposal!.attributes.find(
+            config.presentationProposal?.attributes.find(
               (a) =>
                 a.name === name &&
                 a.credentialDefinitionId === credentialDefinitionId &&
@@ -793,8 +793,13 @@ export class ProofService {
     const checkCredentialRevoked = async (
       requestedCredential: RequestedAttribute | RequestedPredicate
     ): Promise<RequestedAttribute | RequestedPredicate> => {
-      const revRegId = requestedCredential.credentialInfo!.revocationRegistryId!
-      const credRevId = requestedCredential.credentialInfo!.credentialRevocationId!
+      const revRegId = requestedCredential.credentialInfo?.revocationRegistryId
+      const credRevId = requestedCredential.credentialInfo?.credentialRevocationId
+
+      //Ensure revRegId and credRevId are defined
+      if (!revRegId || !credRevId) {
+        return requestedCredential
+      }
 
       //Check if delta has already been fetched
       let revocRegDelta: RevocRegDelta

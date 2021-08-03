@@ -1,13 +1,12 @@
+import type { RequestedCredentials } from '../../proofs'
 import type Indy from 'indy-sdk'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { InjectionSymbols } from '../../../constants'
 import { IndyWallet } from '../../../wallet/IndyWallet'
-import { IndyCredentialInfo } from '../../credentials'
-
 import { LedgerService } from '../../ledger'
-import { RequestedCredentials } from '../../proofs'
+
 import { IndyUtilitesService } from './indyUtilitiesService'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -30,24 +29,27 @@ export class IndyHolderService {
   }
 
   public async createProof({ proofRequest, requestedCredentials, schemas, credentialDefinitions }: CreateProofOptions) {
-    let revocationStates: Indy.RevStates = {}
+    const revocationStates: Indy.RevStates = {}
 
     if (proofRequest.non_revoked) {
       //Create array of credential info
-      const credentialObjects:IndyCredentialInfo[] = [
+      const credentialObjects = [
         ...Object.values(requestedCredentials.requestedAttributes),
         ...Object.values(requestedCredentials.requestedPredicates),
-      ].filter((c)=> !!c.credentialInfo).map((c) => c.credentialInfo!)
+      ]
+        .filter((c) => !!c.credentialInfo)
+        .map((c) => c.credentialInfo)
 
       //Cache object to prevent redundancy
-      let cachedRevDefinitions: {
+      const cachedRevDefinitions: {
         [revRegId: string]: Indy.RevocRegDef
       } = {}
 
       //Create revocation state of each revocable credential
       for (const requestedCredential of credentialObjects) {
-        const revRegId = requestedCredential.revocationRegistryId
-        if (revRegId && requestedCredential.credentialRevocationId) {
+        const revRegId = requestedCredential?.revocationRegistryId
+        const credRevId = requestedCredential?.credentialRevocationId
+        if (revRegId && credRevId) {
           let revocRegDef: Indy.RevocRegDef
 
           if (cachedRevDefinitions[revRegId]) {
@@ -69,7 +71,7 @@ export class IndyHolderService {
             revocRegDef,
             revocRegDelta,
             deltaTimestamp,
-            requestedCredential.credentialRevocationId.toString()
+            credRevId.toString()
           )
           revocationStates[revRegId] = { [deltaTimestamp]: revocationState }
         }
