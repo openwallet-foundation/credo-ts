@@ -4,6 +4,7 @@ import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { InjectionSymbols } from '../../../constants'
 import { IndyWallet } from '../../../wallet/IndyWallet'
+import { IndyCredentialInfo } from '../../credentials'
 
 import { LedgerService } from '../../ledger'
 import { RequestedCredentials } from '../../proofs'
@@ -33,10 +34,10 @@ export class IndyHolderService {
 
     if (proofRequest.non_revoked) {
       //Create array of credential info
-      const credentialObjects = [
+      const credentialObjects:IndyCredentialInfo[] = [
         ...Object.values(requestedCredentials.requestedAttributes),
         ...Object.values(requestedCredentials.requestedPredicates),
-      ].map((c) => c.credentialInfo)
+      ].filter((c)=> !!c.credentialInfo).map((c) => c.credentialInfo!)
 
       //Cache object to prevent redundancy
       let cachedRevDefinitions: {
@@ -68,7 +69,7 @@ export class IndyHolderService {
             revocRegDef,
             revocRegDelta,
             deltaTimestamp,
-            requestedCredential.credentialRevocationId
+            requestedCredential.credentialRevocationId.toString()
           )
           revocationStates[revRegId] = { [deltaTimestamp]: revocationState }
         }

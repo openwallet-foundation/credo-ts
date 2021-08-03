@@ -184,7 +184,7 @@ describe('Present Proof', () => {
     const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest
     const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
       indyProofRequest!,
-      presentationPreview
+      {presentationProposal: presentationPreview}
     )
     const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
     await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
@@ -267,7 +267,7 @@ describe('Present Proof', () => {
     const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest
     const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
       indyProofRequest!,
-      presentationPreview
+      {presentationProposal: presentationPreview}
     )
     const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
     await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
