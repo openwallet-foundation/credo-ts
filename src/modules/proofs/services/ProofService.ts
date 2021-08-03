@@ -19,7 +19,7 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { Wallet } from '../../../wallet/Wallet'
 import { AckStatus } from '../../common'
-import { Credential, CredentialRepository, CredentialUtils } from '../../credentials'
+import { Credential, CredentialRepository, CredentialUtils, IndyCredentialInfo } from '../../credentials'
 import { IndyHolderService, IndyVerifierService } from '../../indy'
 import { LedgerService } from '../../ledger/services/LedgerService'
 import { ProofEventTypes } from '../ProofEvents'
@@ -644,6 +644,12 @@ export class ProofService {
       // List the requested attributes
       requestedAttributesNames.push(...(requestedAttributes.names ?? [requestedAttributes.name]))
 
+      //Get credentialInfo
+      if (!requestedAttribute.credentialInfo) {
+        const indyCredentialInfo = await this.indyHolderService.getCredential(requestedAttribute.credentialId)
+        requestedAttribute.credentialInfo = JsonTransformer.fromJSON(indyCredentialInfo, IndyCredentialInfo)
+      }
+
       // Find the attributes that have a hashlink as a value
       for (const attribute of Object.values(requestedAttribute.credentialInfo.attributes)) {
         if (attribute.toLowerCase().startsWith('hl:')) {
@@ -780,15 +786,15 @@ export class ProofService {
     const { from, to } = proofRequest.nonRevoked
 
     /**Nested function to prevent redundancy
-     * 
+     *
      * @param requestedCredential Either a {@link RequestedAttribute} or {@link RequestedPredicate}
      * @returns requestedCredential with revocation status if one could be found
      */
-    const checkCredentialRevoked = async(
-      requestedCredential: RequestedAttribute | RequestedPredicate,
+    const checkCredentialRevoked = async (
+      requestedCredential: RequestedAttribute | RequestedPredicate
     ): Promise<RequestedAttribute | RequestedPredicate> => {
-      const revRegId = requestedCredential.credentialInfo.revocationRegistryId!
-      const credRevId = requestedCredential.credentialInfo.credentialRevocationId!
+      const revRegId = requestedCredential.credentialInfo!.revocationRegistryId!
+      const credRevId = requestedCredential.credentialInfo!.credentialRevocationId!
 
       //Check if delta has already been fetched
       let revocRegDelta: RevocRegDelta
@@ -815,7 +821,7 @@ export class ProofService {
       const attributeArray = retrievedCredentials.requestedAttributes[attributeName]
       for (const requestedAttribute of attributeArray) {
         //Push to newRetrievedCredentials
-        const checkedAttribute = await checkCredentialRevoked(requestedAttribute) as RequestedAttribute
+        const checkedAttribute = (await checkCredentialRevoked(requestedAttribute)) as RequestedAttribute
         newRetrievedCredentials.requestedAttributes[attributeName].push(checkedAttribute)
       }
     }
@@ -826,7 +832,7 @@ export class ProofService {
       const predicateArray = retrievedCredentials.requestedPredicates[predicateName]
       for (const requestedPredicate of predicateArray) {
         //Push to newRetrievedCredentials
-        const checkedPredicate = await checkCredentialRevoked(requestedPredicate) as RequestedPredicate
+        const checkedPredicate = (await checkCredentialRevoked(requestedPredicate)) as RequestedPredicate
         newRetrievedCredentials.requestedPredicates[predicateName].push(checkedPredicate)
       }
     }
@@ -965,10 +971,18 @@ export class ProofService {
     proofRequest: ProofRequest,
     requestedCredentials: RequestedCredentials
   ): Promise<IndyProof> {
-    const credentialObjects = [
-      ...Object.values(requestedCredentials.requestedAttributes),
-      ...Object.values(requestedCredentials.requestedPredicates),
-    ].map((c) => c.credentialInfo)
+    const credentialObjects = await Promise.all(
+      [
+        ...Object.values(requestedCredentials.requestedAttributes),
+        ...Object.values(requestedCredentials.requestedPredicates),
+      ].map(async (c) => {
+        if (c.credentialInfo) {
+          return c.credentialInfo
+        }
+        const credentialInfo = await this.indyHolderService.getCredential(c.credentialId)
+        return JsonTransformer.fromJSON(credentialInfo, IndyCredentialInfo)
+      })
+    )
 
     const schemas = await this.getSchemas(new Set(credentialObjects.map((c) => c.schemaId)))
     const credentialDefinitions = await this.getCredentialDefinitions(
