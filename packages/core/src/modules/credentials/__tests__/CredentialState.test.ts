@@ -6,6 +6,8 @@ describe('CredentialState', () => {
     expect(CredentialState.ProposalReceived).toBe('proposal-received')
     expect(CredentialState.OfferSent).toBe('offer-sent')
     expect(CredentialState.OfferReceived).toBe('offer-received')
+    expect(CredentialState.OfferDeclinedReceived).toBe('offer-declined-received')
+    expect(CredentialState.OfferDeclinedSent).toBe('offer-declined-sent')
     expect(CredentialState.RequestSent).toBe('request-sent')
     expect(CredentialState.RequestReceived).toBe('request-received')
     expect(CredentialState.CredentialIssued).toBe('credential-issued')
