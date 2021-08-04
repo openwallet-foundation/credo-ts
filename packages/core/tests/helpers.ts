@@ -13,7 +13,7 @@ import type {
   ProofStateChangedEvent,
   SchemaTemplate,
 } from '../src'
-import type { Schema, CredDef, Did } from 'indy-sdk'
+import type { Schema, CredDef } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
 import path from 'path'
@@ -62,8 +62,10 @@ export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '00000000
 export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
   const config: InitConfig = {
     label: `Agent: ${name}`,
-    walletConfig: { id: `Wallet: ${name}` },
-    walletCredentials: { key: `Key: ${name}` },
+    walletConfig: {
+      id: `Wallet: ${name}`,
+      key: `Key: ${name}`,
+    },
     publicDidSeed,
     autoAcceptConnections: true,
     genesisPath,
@@ -72,7 +74,7 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
     ...extraConfig,
   }
 
-  return { config, agentDependencies: agentDependencies } as const
+  return { config, agentDependencies } as const
 }
 
 export function getAgentConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
@@ -323,7 +325,7 @@ export async function prepareForIssuance(agent: Agent, attributes: string[]) {
   }
 }
 
-export async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: Did) {
+export async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: string) {
   try {
     testLogger.test(`Ensure test DID ${publicDid} is written to ledger`)
     await agent.ledger.getPublicDid(publicDid)

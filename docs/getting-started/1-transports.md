@@ -10,7 +10,7 @@ An agent needs an inbound and outbound transporter. At this current time, the ou
 Outbound transports allow you to send messages to other agents. Currently, only a single outbound transport can be used. See [Issue 268: Add support for multiple transports](https://github.com/hyperledger/aries-framework-javascript/issues/268) for progress on supporting multiple outbound transports.
 
 ```ts
-import { HttpOutboundTransporter, WsOutboundTransporter Agent } from 'aries-framework'
+import { HttpOutboundTransporter, WsOutboundTransporter Agent } from '@aries-framework/core'
 
 const agent = new Agent({
   /* config */

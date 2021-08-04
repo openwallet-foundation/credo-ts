@@ -1,5 +1,4 @@
 import type { MediationRole } from '../models/MediationRole'
-import type { Verkey } from 'indy-sdk'
 
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
@@ -14,8 +13,8 @@ export interface MediationRecordProps {
   connectionId: string
   threadId: string
   endpoint?: string
-  recipientKeys?: Verkey[]
-  routingKeys?: Verkey[]
+  recipientKeys?: string[]
+  routingKeys?: string[]
   tags?: CustomMediationTags
 }
 
@@ -39,8 +38,8 @@ export class MediationRecord
   public connectionId!: string
   public threadId!: string
   public endpoint?: string
-  public recipientKeys!: Verkey[]
-  public routingKeys!: Verkey[]
+  public recipientKeys!: string[]
+  public routingKeys!: string[]
 
   public static readonly type = 'MediationRecord'
   public readonly type = MediationRecord.type

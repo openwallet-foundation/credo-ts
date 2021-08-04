@@ -5,7 +5,7 @@
 To enable logging inside the framework a logger must be passed to the agent config. A simple `ConsoleLogger` can be imported from the framework.
 
 ```ts
-import { ConsoleLogger, LogLevel } from 'aries-framework'
+import { ConsoleLogger, LogLevel } from '@aries-framework/core'
 
 const agentConfig = {
   // ... other config properties ...
@@ -18,7 +18,7 @@ const agentConfig = {
 For more advanced use cases the `Logger` interface can be implemented. See the example below.
 
 ```ts
-import { Logger, LogLevel } from 'aries-framework'
+import { Logger, LogLevel } from '@aries-framework/core'
 
 class MyCustomLogger implements Logger {
   public logLevel: LogLevel

@@ -6,7 +6,6 @@ import type { ConnectionRecord } from '../../connections'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { ProposeCredentialMessageOptions } from '../messages'
-import type { CredDefId } from 'indy-sdk'
 
 import { scoped, Lifecycle } from 'tsyringe'
 
@@ -20,7 +19,7 @@ import { uuid } from '../../../utils/uuid'
 import { AckStatus } from '../../common'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { IndyIssuerService, IndyHolderService } from '../../indy'
-import { LedgerService } from '../../ledger/services/LedgerService'
+import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
@@ -42,7 +41,7 @@ import { CredentialRecord } from '../repository/CredentialRecord'
 export class CredentialService {
   private credentialRepository: CredentialRepository
   private connectionService: ConnectionService
-  private ledgerService: LedgerService
+  private ledgerService: IndyLedgerService
   private logger: Logger
   private indyIssuerService: IndyIssuerService
   private indyHolderService: IndyHolderService
@@ -51,7 +50,7 @@ export class CredentialService {
   public constructor(
     credentialRepository: CredentialRepository,
     connectionService: ConnectionService,
-    ledgerService: LedgerService,
+    ledgerService: IndyLedgerService,
     agentConfig: AgentConfig,
     indyIssuerService: IndyIssuerService,
     indyHolderService: IndyHolderService,
@@ -761,7 +760,7 @@ export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessag
 }
 
 export interface CredentialOfferTemplate {
-  credentialDefinitionId: CredDefId
+  credentialDefinitionId: string
   comment?: string
   preview: CredentialPreview
   autoAcceptCredential?: AutoAcceptCredential

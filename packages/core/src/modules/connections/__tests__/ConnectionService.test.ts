@@ -1,5 +1,4 @@
 import type { Wallet } from '../../../wallet/Wallet'
-import type { Did } from 'indy-sdk'
 
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { AgentMessage } from '../../../agent/AgentMessage'
@@ -34,12 +33,12 @@ describe('ConnectionService', () => {
   let connectionRepository: ConnectionRepository
   let connectionService: ConnectionService
   let eventEmitter: EventEmitter
-  let myRouting: { did: Did; verkey: string; endpoint: string; routingKeys: string[] }
+  let myRouting: { did: string; verkey: string; endpoint: string; routingKeys: string[] }
 
   beforeAll(async () => {
     wallet = new IndyWallet(config)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.initialize(config.walletConfig!, config.walletCredentials!)
+    await wallet.initialize(config.walletConfig!)
   })
 
   afterAll(async () => {
@@ -372,7 +371,7 @@ describe('ConnectionService', () => {
       expect.assertions(2)
 
       // Needed for signing connection~sig
-      const [did, verkey] = await wallet.createDid()
+      const { did, verkey } = await wallet.createDid()
       const mockConnection = getMockConnection({
         did,
         verkey,
@@ -431,8 +430,8 @@ describe('ConnectionService', () => {
     it('returns a connection record containing the information from the connection response', async () => {
       expect.assertions(3)
 
-      const [did, verkey] = await wallet.createDid()
-      const [theirDid, theirVerkey] = await wallet.createDid()
+      const { did, verkey } = await wallet.createDid()
+      const { did: theirDid, verkey: theirVerkey } = await wallet.createDid()
 
       const connectionRecord = getMockConnection({
         did,
@@ -505,8 +504,8 @@ describe('ConnectionService', () => {
     it('throws an error when the connection sig is not signed with the same key as the recipient key from the invitation', async () => {
       expect.assertions(1)
 
-      const [did, verkey] = await wallet.createDid()
-      const [theirDid, theirVerkey] = await wallet.createDid()
+      const { did, verkey } = await wallet.createDid()
+      const { did: theirDid, verkey: theirVerkey } = await wallet.createDid()
       const connectionRecord = getMockConnection({
         did,
         verkey,
@@ -579,8 +578,8 @@ describe('ConnectionService', () => {
     it('throws an error when the message does not contain a did doc with any recipientKeys', async () => {
       expect.assertions(1)
 
-      const [did, verkey] = await wallet.createDid()
-      const [theirDid, theirVerkey] = await wallet.createDid()
+      const { did, verkey } = await wallet.createDid()
+      const { did: theirDid, verkey: theirVerkey } = await wallet.createDid()
       const connectionRecord = getMockConnection({
         did,
         verkey,

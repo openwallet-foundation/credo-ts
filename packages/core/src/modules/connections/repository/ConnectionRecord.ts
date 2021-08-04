@@ -1,6 +1,5 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { ConnectionRole } from '../models/ConnectionRole'
-import type { Did, Verkey } from 'indy-sdk'
 
 import { Type } from 'class-transformer'
 
@@ -14,10 +13,10 @@ import { DidDoc } from '../models/did/DidDoc'
 export interface ConnectionRecordProps {
   id?: string
   createdAt?: Date
-  did: Did
+  did: string
   didDoc: DidDoc
-  verkey: Verkey
-  theirDid?: Did
+  verkey: string
+  theirDid?: string
   theirDidDoc?: DidDoc
   theirLabel?: string
   invitation?: ConnectionInvitationMessage
