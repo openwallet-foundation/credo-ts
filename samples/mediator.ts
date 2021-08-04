@@ -15,8 +15,8 @@ const agentConfig = {
   endpoint: process.env.AGENT_ENDPOINT || `http://localhost:${port}`,
   label: process.env.AGENT_LABEL || 'Aries Framework JavaScript Mediator',
   walletConfig: {
-    walletId: process.env.WALLET_NAME || 'AriesFrameworkJavaScript',
-    walletKey: process.env.WALLET_KEY || 'AriesFrameworkJavaScript',
+    id: process.env.WALLET_NAME || 'AriesFrameworkJavaScript',
+    key: process.env.WALLET_KEY || 'AriesFrameworkJavaScript',
   },
   publicDidSeed: process.env.PUBLIC_DID_SEED || '000000000000000000HTTPMediator02',
   autoAcceptConnections: true,

@@ -98,7 +98,7 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     const tags = this.transformFromRecordTagValues(record.getTags()) as Record<string, string>
 
     try {
-      await this.indy.addWalletRecord(this.wallet.walletHandle, record.type, record.id, value, tags)
+      await this.indy.addWalletRecord(this.wallet.handle, record.type, record.id, value, tags)
     } catch (error) {
       // Record already exists
       if (isIndyError(error, 'WalletItemAlreadyExists')) {
@@ -116,8 +116,8 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     const tags = this.transformFromRecordTagValues(record.getTags()) as Record<string, string>
 
     try {
-      await this.indy.updateWalletRecordValue(this.wallet.walletHandle, record.type, record.id, value)
-      await this.indy.updateWalletRecordTags(this.wallet.walletHandle, record.type, record.id, tags)
+      await this.indy.updateWalletRecordValue(this.wallet.handle, record.type, record.id, value)
+      await this.indy.updateWalletRecordTags(this.wallet.handle, record.type, record.id, tags)
     } catch (error) {
       // Record does not exist
       if (isIndyError(error, 'WalletItemNotFound')) {
@@ -134,7 +134,7 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   /** @inheritDoc */
   public async delete(record: T) {
     try {
-      await this.indy.deleteWalletRecord(this.wallet.walletHandle, record.type, record.id)
+      await this.indy.deleteWalletRecord(this.wallet.handle, record.type, record.id)
     } catch (error) {
       // Record does not exist
       if (isIndyError(error, 'WalletItemNotFound')) {
@@ -152,7 +152,7 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   public async getById(recordClass: BaseRecordConstructor<T>, id: string): Promise<T> {
     try {
       const record = await this.indy.getWalletRecord(
-        this.wallet.walletHandle,
+        this.wallet.handle,
         recordClass.type,
         id,
         IndyStorageService.DEFAULT_QUERY_OPTIONS
@@ -201,7 +201,7 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     { limit = Infinity, ...options }: WalletSearchOptions & { limit?: number }
   ) {
     try {
-      const searchHandle = await this.indy.openWalletSearch(this.wallet.walletHandle, type, query, options)
+      const searchHandle = await this.indy.openWalletSearch(this.wallet.handle, type, query, options)
 
       let records: Indy.WalletRecord[] = []
 
@@ -211,7 +211,7 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
       // Loop while limit not reached (or no limit specified)
       while (!limit || records.length < limit) {
         // Retrieve records
-        const recordsJson = await this.indy.fetchWalletSearchNextRecords(this.wallet.walletHandle, searchHandle, chunk)
+        const recordsJson = await this.indy.fetchWalletSearchNextRecords(this.wallet.handle, searchHandle, chunk)
 
         // FIXME: update @types/indy-sdk: records can be null (if last reached)
         if (recordsJson.records) {

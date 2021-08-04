@@ -41,7 +41,7 @@ export class IndyWallet implements Wallet {
     return this.publicDidInfo
   }
 
-  public get walletHandle() {
+  public get handle() {
     if (!this.isInitialized || !this.openWalletInfo) {
       throw new AriesFrameworkError('Wallet has not been initialized yet')
     }
@@ -58,7 +58,7 @@ export class IndyWallet implements Wallet {
   }
 
   public async initialize(walletConfig: WalletConfig) {
-    this.logger.info(`Initializing wallet '${walletConfig.walletId}'`, walletConfig)
+    this.logger.info(`Initializing wallet '${walletConfig.id}'`, walletConfig)
 
     if (this.isInitialized) {
       throw new WalletError(
@@ -79,7 +79,7 @@ export class IndyWallet implements Wallet {
       }
     }
 
-    this.logger.debug(`Wallet '${walletConfig.walletId}' initialized with handle '${this.walletHandle}'`)
+    this.logger.debug(`Wallet '${walletConfig.id}' initialized with handle '${this.handle}'`)
   }
 
   /**
@@ -87,13 +87,13 @@ export class IndyWallet implements Wallet {
    * @throws {WalletError} if another error occurs
    */
   public async create(walletConfig: WalletConfig): Promise<void> {
-    this.logger.debug(`Creating wallet '${walletConfig.walletId}' using SQLite storage`)
+    this.logger.debug(`Creating wallet '${walletConfig.id}' using SQLite storage`)
 
     try {
-      await this.indy.createWallet({ id: walletConfig.walletId }, { key: walletConfig.walletKey })
+      await this.indy.createWallet({ id: walletConfig.id }, { key: walletConfig.key })
     } catch (error) {
       if (isIndyError(error, 'WalletAlreadyExistsError')) {
-        const errorMessage = `Wallet '${walletConfig.walletId}' already exists`
+        const errorMessage = `Wallet '${walletConfig.id}' already exists`
         this.logger.debug(errorMessage)
 
         throw new WalletDuplicateError(errorMessage, {
@@ -101,7 +101,7 @@ export class IndyWallet implements Wallet {
           cause: error,
         })
       } else {
-        const errorMessage = `Error creating wallet '${walletConfig.walletId}'`
+        const errorMessage = `Error creating wallet '${walletConfig.id}'`
         this.logger.error(errorMessage, {
           error,
           errorMessage: error.message,
@@ -124,18 +124,18 @@ export class IndyWallet implements Wallet {
     }
 
     try {
-      const walletHandle = await this.indy.openWallet({ id: walletConfig.walletId }, { key: walletConfig.walletKey })
-      const masterSecretId = await this.createMasterSecret(walletHandle, walletConfig.walletId)
+      const walletHandle = await this.indy.openWallet({ id: walletConfig.id }, { key: walletConfig.key })
+      const masterSecretId = await this.createMasterSecret(walletHandle, walletConfig.id)
 
       this.openWalletInfo = {
-        walletConfig: { id: walletConfig.walletId },
-        walletCredentials: { key: walletConfig.walletKey },
+        walletConfig: { id: walletConfig.id },
+        walletCredentials: { key: walletConfig.key },
         walletHandle,
         masterSecretId,
       }
     } catch (error) {
       if (isIndyError(error, 'WalletNotFoundError')) {
-        const errorMessage = `Wallet '${walletConfig.walletId}' not found`
+        const errorMessage = `Wallet '${walletConfig.id}' not found`
         this.logger.debug(errorMessage)
 
         throw new WalletNotFoundError(errorMessage, {
@@ -143,7 +143,7 @@ export class IndyWallet implements Wallet {
           cause: error,
         })
       } else {
-        const errorMessage = `Error opening wallet '${walletConfig.walletId}'`
+        const errorMessage = `Error opening wallet '${walletConfig.id}'`
         this.logger.error(errorMessage, {
           error,
           errorMessage: error.message,
@@ -199,7 +199,7 @@ export class IndyWallet implements Wallet {
    */
   public async close(): Promise<void> {
     try {
-      await this.indy.closeWallet(this.walletHandle)
+      await this.indy.closeWallet(this.handle)
       this.openWalletInfo = undefined
       this.publicDidInfo = undefined
     } catch (error) {
@@ -273,7 +273,7 @@ export class IndyWallet implements Wallet {
 
   public async createDid(didConfig?: DidConfig): Promise<DidInfo> {
     try {
-      const [did, verkey] = await this.indy.createAndStoreMyDid(this.walletHandle, didConfig || {})
+      const [did, verkey] = await this.indy.createAndStoreMyDid(this.handle, didConfig || {})
 
       return { did, verkey }
     } catch (error) {
@@ -288,12 +288,7 @@ export class IndyWallet implements Wallet {
   ): Promise<WireMessage> {
     try {
       const messageRaw = JsonEncoder.toBuffer(payload)
-      const packedMessage = await this.indy.packMessage(
-        this.walletHandle,
-        messageRaw,
-        recipientKeys,
-        senderVerkey ?? null
-      )
+      const packedMessage = await this.indy.packMessage(this.handle, messageRaw, recipientKeys, senderVerkey ?? null)
       return JsonEncoder.fromBuffer(packedMessage)
     } catch (error) {
       throw new WalletError('Error packing message', { cause: error })
@@ -302,10 +297,7 @@ export class IndyWallet implements Wallet {
 
   public async unpack(messagePackage: WireMessage): Promise<UnpackedMessageContext> {
     try {
-      const unpackedMessageBuffer = await this.indy.unpackMessage(
-        this.walletHandle,
-        JsonEncoder.toBuffer(messagePackage)
-      )
+      const unpackedMessageBuffer = await this.indy.unpackMessage(this.handle, JsonEncoder.toBuffer(messagePackage))
       const unpackedMessage = JsonEncoder.fromBuffer(unpackedMessageBuffer)
       return {
         senderVerkey: unpackedMessage.sender_verkey,
@@ -319,7 +311,7 @@ export class IndyWallet implements Wallet {
 
   public async sign(data: Buffer, verkey: string): Promise<Buffer> {
     try {
-      return await this.indy.cryptoSign(this.walletHandle, verkey, data)
+      return await this.indy.cryptoSign(this.handle, verkey, data)
     } catch (error) {
       throw new WalletError(`Error signing data with verkey ${verkey}`, { cause: error })
     }
@@ -332,7 +324,7 @@ export class IndyWallet implements Wallet {
 
       return isValid
     } catch (error) {
-      throw new WalletError(`Error signing data with verkey ${signerVerkey}`, { cause: error })
+      throw new WalletError(`Error verifying signature of data signed with verkey ${signerVerkey}`, { cause: error })
     }
   }
 

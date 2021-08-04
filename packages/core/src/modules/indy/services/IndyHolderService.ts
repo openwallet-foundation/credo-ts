@@ -10,11 +10,11 @@ import { IndyWallet } from '../../../wallet/IndyWallet'
 @scoped(Lifecycle.ContainerScoped)
 export class IndyHolderService {
   private indy: typeof Indy
-  private indyWallet: IndyWallet
+  private wallet: IndyWallet
 
-  public constructor(agentConfig: AgentConfig, indyWallet: IndyWallet) {
+  public constructor(agentConfig: AgentConfig, wallet: IndyWallet) {
     this.indy = agentConfig.agentDependencies.indy
-    this.indyWallet = indyWallet
+    this.wallet = wallet
   }
 
   public async createProof({
@@ -26,10 +26,10 @@ export class IndyHolderService {
   }: CreateProofOptions) {
     try {
       return await this.indy.proverCreateProof(
-        this.indyWallet.walletHandle,
+        this.wallet.handle,
         proofRequest,
         requestedCredentials,
-        this.indyWallet.masterSecretId,
+        this.wallet.masterSecretId,
         schemas,
         credentialDefinitions,
         revocationStates
@@ -53,7 +53,7 @@ export class IndyHolderService {
   }: StoreCredentialOptions): Promise<Indy.CredentialId> {
     try {
       return await this.indy.proverStoreCredential(
-        this.indyWallet.walletHandle,
+        this.wallet.handle,
         credentialId ?? null,
         credentialRequestMetadata,
         credential,
@@ -76,7 +76,7 @@ export class IndyHolderService {
    */
   public async getCredential(credentialId: Indy.CredentialId): Promise<Indy.IndyCredentialInfo> {
     try {
-      return await this.indy.proverGetCredential(this.indyWallet.walletHandle, credentialId)
+      return await this.indy.proverGetCredential(this.wallet.handle, credentialId)
     } catch (error) {
       throw new IndySdkError(error)
     }
@@ -94,11 +94,11 @@ export class IndyHolderService {
   }: CreateCredentialRequestOptions): Promise<[Indy.CredReq, Indy.CredReqMetadata]> {
     try {
       return await this.indy.proverCreateCredentialReq(
-        this.indyWallet.walletHandle,
+        this.wallet.handle,
         holderDid,
         credentialOffer,
         credentialDefinition,
-        this.indyWallet.masterSecretId
+        this.wallet.masterSecretId
       )
     } catch (error) {
       throw new IndySdkError(error)
@@ -126,7 +126,7 @@ export class IndyHolderService {
     try {
       // Open indy credential search
       const searchHandle = await this.indy.proverSearchCredentialsForProofReq(
-        this.indyWallet.walletHandle,
+        this.wallet.handle,
         proofRequest,
         extraQuery ?? null
       )

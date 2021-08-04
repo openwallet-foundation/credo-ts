@@ -6,8 +6,8 @@ import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
 
 export interface WalletConfig {
-  walletId: string
-  walletKey: string
+  id: string
+  key: string
 }
 
 export type WireMessage = {

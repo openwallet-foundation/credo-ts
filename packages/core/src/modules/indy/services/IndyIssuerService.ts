@@ -24,12 +24,12 @@ import { IndyWallet } from '../../../wallet/IndyWallet'
 @scoped(Lifecycle.ContainerScoped)
 export class IndyIssuerService {
   private indy: typeof Indy
-  private indyWallet: IndyWallet
+  private wallet: IndyWallet
   private fileSystem: FileSystem
 
-  public constructor(agentConfig: AgentConfig, indyWallet: IndyWallet) {
+  public constructor(agentConfig: AgentConfig, wallet: IndyWallet) {
     this.indy = agentConfig.agentDependencies.indy
-    this.indyWallet = indyWallet
+    this.wallet = wallet
     this.fileSystem = agentConfig.fileSystem
   }
 
@@ -62,7 +62,7 @@ export class IndyIssuerService {
   }: CreateCredentialDefinitionOptions): Promise<CredDef> {
     try {
       const [, credentialDefinition] = await this.indy.issuerCreateAndStoreCredentialDef(
-        this.indyWallet.walletHandle,
+        this.wallet.handle,
         issuerDid,
         schema,
         tag,
@@ -86,7 +86,7 @@ export class IndyIssuerService {
    */
   public async createCredentialOffer(credentialDefinitionId: CredDefId) {
     try {
-      return await this.indy.issuerCreateCredentialOffer(this.indyWallet.walletHandle, credentialDefinitionId)
+      return await this.indy.issuerCreateCredentialOffer(this.wallet.handle, credentialDefinitionId)
     } catch (error) {
       throw new IndySdkError(error)
     }
@@ -113,7 +113,7 @@ export class IndyIssuerService {
       }
 
       const [credential, credentialRevocationId] = await this.indy.issuerCreateCredential(
-        this.indyWallet.walletHandle,
+        this.wallet.handle,
         credentialOffer,
         credentialRequest,
         credentialValues,

@@ -63,8 +63,8 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
   const config: InitConfig = {
     label: `Agent: ${name}`,
     walletConfig: {
-      walletId: `Wallet: ${name}`,
-      walletKey: `Key: ${name}`,
+      id: `Wallet: ${name}`,
+      key: `Key: ${name}`,
     },
     publicDidSeed,
     autoAcceptConnections: true,

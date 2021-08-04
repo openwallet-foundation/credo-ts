@@ -325,7 +325,7 @@ export class IndyLedgerService {
 
   private async signRequest(did: string, request: LedgerRequest): Promise<LedgerRequest> {
     try {
-      return this.indy.signRequest(this.wallet.walletHandle, did, request)
+      return this.indy.signRequest(this.wallet.handle, did, request)
     } catch (error) {
       throw isIndyError(error) ? new IndySdkError(error) : error
     }
