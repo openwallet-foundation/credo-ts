@@ -65,8 +65,10 @@ const indyWithErrorHandling = Object.fromEntries(
 // This creates an agent with all the specified configuration data
 const agent = new Agent({
   label: 'my-agent',
-  walletConfig: { id: 'walletId' },
-  walletCredentials: { key: 'testkey0000000000000000000000000' },
+  walletConfig: {
+    id: 'walletId',
+    key: 'testkey0000000000000000000000000',
+  },
   // used custom indyWithErrorHandling created above
   indy: indyWithErrorHandling as unknown as typeof Indy,
   // Use fs exposed on window from main world
