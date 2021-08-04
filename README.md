@@ -29,11 +29,6 @@
       alt="License"
       src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"
   /></a>
-  <a href="https://npmjs.com/package/aries-framework"
-    ><img
-      alt="aries-framework-javascript npm version"
-      src="https://img.shields.io/npm/v/aries-framework"
-  /></a>
   <a href="https://www.typescriptlang.org/"
     ><img
       alt="typescript"
@@ -72,6 +67,47 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
 - ❌ Browser
 - ❌ Issue Credential V2, Present Proof V2, DID Exchange Protocol, Out-Of-Band
 - ❌ W3C Linked Data VCs, BBS+ Signatures
+
+### Packages
+
+<table>
+  <tr>
+    <th><b>Package</b></th>
+    <th><b>Version</b></th>
+  </tr>
+  <tr>
+    <td>@aries-framework/core</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/core">
+        <img alt="@aries-framework/core version" src="https://img.shields.io/npm/v/@aries-framework/core"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>@aries-framework/node</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/node">
+        <img alt="@aries-framework/node version" src="https://img.shields.io/npm/v/@aries-framework/node"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>@aries-framework/react-Native</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/react-native">
+        <img alt="@aries-framework/react-native version" src="https://img.shields.io/npm/v/@aries-framework/react-native"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>@aries-framework/redux-Store</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/redux-store">
+        <img alt="@aries-framework/redux-store version" src="https://img.shields.io/npm/v/@aries-framework/redux-store"/>
+      </a>
+    </td>
+  </tr>
+</table>
 
 ## Getting Started
 
