@@ -1,3 +1,4 @@
+import type { Agent } from '@aries-framework/core'
 import type { AgentThunkApiConfig } from '../utils'
 import type { SerializedError } from '@reduxjs/toolkit'
 
@@ -16,10 +17,13 @@ const initialState: AgentState = {
 }
 
 const AgentThunks = {
-  initializeAgent: createAsyncThunk<boolean, void, AgentThunkApiConfig>('agent/initialize', async (_, thunkApi) => {
-    await thunkApi.extra.agent.initialize()
-    return true
-  }),
+  initializeAgent: createAsyncThunk<boolean, Agent, AgentThunkApiConfig>(
+    'agent/initialize',
+    async (agent, thunkApi) => {
+      await agent.initialize()
+      return true
+    }
+  ),
 }
 const agentSlice = createSlice({
   name: 'agent',

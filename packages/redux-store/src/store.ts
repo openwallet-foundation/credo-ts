@@ -16,14 +16,14 @@ const rootReducer = combineReducers({
 type RootState = ReturnType<typeof rootReducer>
 const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
 
-const initializeStore = (agent: Agent) => {
+const initializeStore = () => {
   const store = configureStore({
     reducer: rootReducer,
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
         thunk: {
           extraArgument: {
-            agent,
+            // agent,
           },
         },
       }),
