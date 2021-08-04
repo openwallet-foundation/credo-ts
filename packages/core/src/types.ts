@@ -4,7 +4,11 @@ import type { ConnectionRecord, DidCommService } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
-import type { Verkey, WalletConfig, WalletCredentials } from 'indy-sdk'
+
+export interface WalletConfig {
+  id: string
+  key: string
+}
 
 export type WireMessage = {
   protected: unknown
@@ -24,7 +28,6 @@ export interface InitConfig {
   publicDidSeed?: string
   mediatorRecordId?: string
   walletConfig?: WalletConfig
-  walletCredentials?: WalletCredentials
   autoAcceptConnections?: boolean
   autoAcceptProofs?: AutoAcceptProof
   autoAcceptCredentials?: AutoAcceptCredential
@@ -51,8 +54,8 @@ export interface UnpackedMessage {
 
 export interface UnpackedMessageContext {
   message: UnpackedMessage
-  senderVerkey?: Verkey
-  recipientVerkey?: Verkey
+  senderVerkey?: string
+  recipientVerkey?: string
 }
 
 export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
@@ -70,9 +73,4 @@ export interface OutboundPackage {
   payload: WireMessage
   responseRequested?: boolean
   endpoint?: string
-}
-
-export interface InboundConnection {
-  verkey: Verkey
-  connection: ConnectionRecord
 }

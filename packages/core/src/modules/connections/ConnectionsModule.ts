@@ -1,5 +1,4 @@
 import type { ConnectionRecord } from './repository/ConnectionRecord'
-import type { Verkey } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -207,7 +206,7 @@ export class ConnectionsModule {
    * @returns the connection record, or null if not found
    * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
    */
-  public findByVerkey(verkey: Verkey): Promise<ConnectionRecord | null> {
+  public findByVerkey(verkey: string): Promise<ConnectionRecord | null> {
     return this.connectionService.findByVerkey(verkey)
   }
 
@@ -218,7 +217,7 @@ export class ConnectionsModule {
    * @returns the connection record, or null if not found
    * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
    */
-  public findByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
+  public findByTheirKey(verkey: string): Promise<ConnectionRecord | null> {
     return this.connectionService.findByTheirKey(verkey)
   }
 

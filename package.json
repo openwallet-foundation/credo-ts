@@ -30,7 +30,7 @@
     "@types/eslint": "^7.2.13",
     "@types/express": "^4.17.13",
     "@types/jest": "^26.0.23",
-    "@types/node": "^15.14.1",
+    "@types/node": "^15.14.4",
     "@types/uuid": "^8.3.1",
     "@types/ws": "^7.4.6",
     "@typescript-eslint/eslint-plugin": "^4.26.1",
@@ -53,6 +53,9 @@
     "tsconfig-paths": "^3.9.0",
     "typescript": "^4.3.0",
     "ws": "^7.4.6"
+  },
+  "resolutions": {
+    "@types/node": "^15.14.4"
   },
   "engines": {
     "node": ">= 12"

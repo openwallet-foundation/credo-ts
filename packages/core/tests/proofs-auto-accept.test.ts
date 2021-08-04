@@ -1,5 +1,4 @@
 import type { Agent, ConnectionRecord, PresentationPreview } from '../src'
-import type { CredDefId } from 'indy-sdk'
 
 import {
   AutoAcceptProof,
@@ -16,7 +15,7 @@ import testLogger from './logger'
 describe('Auto accept present proof', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
-  let credDefId: CredDefId
+  let credDefId: string
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
   let presentationPreview: PresentationPreview

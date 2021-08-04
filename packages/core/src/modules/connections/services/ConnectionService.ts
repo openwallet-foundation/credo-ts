@@ -4,7 +4,6 @@ import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
-import type { Did, Verkey } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
 import { inject, scoped, Lifecycle } from 'tsyringe'
@@ -116,7 +115,7 @@ export class ConnectionService {
       routing: {
         endpoint: string
         verkey: string
-        did: Did
+        did: string
         routingKeys: string[]
       }
       autoAcceptConnection?: boolean
@@ -475,7 +474,7 @@ export class ConnectionService {
    * @returns the connection record, or null if not found
    * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
    */
-  public findByVerkey(verkey: Verkey): Promise<ConnectionRecord | null> {
+  public findByVerkey(verkey: string): Promise<ConnectionRecord | null> {
     return this.connectionRepository.findSingleByQuery({
       verkey,
     })
@@ -488,7 +487,7 @@ export class ConnectionService {
    * @returns the connection record, or null if not found
    * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
    */
-  public findByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
+  public findByTheirKey(verkey: string): Promise<ConnectionRecord | null> {
     return this.connectionRepository.findSingleByQuery({
       theirKey: verkey,
     })
@@ -591,7 +590,7 @@ export class ConnectionService {
 export interface Routing {
   endpoint: string
   verkey: string
-  did: Did
+  did: string
   routingKeys: string[]
 }
 

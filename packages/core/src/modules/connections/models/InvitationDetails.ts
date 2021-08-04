@@ -1,8 +1,6 @@
-import type { Verkey } from 'indy-sdk'
-
 export interface InvitationDetails {
   label: string
-  recipientKeys: Verkey[]
+  recipientKeys: string[]
   serviceEndpoint: string
-  routingKeys: Verkey[]
+  routingKeys: string[]
 }
