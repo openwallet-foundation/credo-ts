@@ -661,7 +661,7 @@ export class CredentialService {
   public async declineOffer(credentialRecord: CredentialRecord): Promise<void> {
     credentialRecord.assertState(CredentialState.OfferReceived)
 
-    await this.updateState(credentialRecord, CredentialState.OfferDeclinedSent)
+    await this.updateState(credentialRecord, CredentialState.Declined)
   }
 
   /**

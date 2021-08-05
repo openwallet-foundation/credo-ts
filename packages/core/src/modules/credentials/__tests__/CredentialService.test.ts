@@ -967,7 +967,7 @@ describe('CredentialService', () => {
       })
     })
 
-    test(`updates state to ${CredentialState.OfferDeclinedSent}`, async () => {
+    test(`updates state to ${CredentialState.Declined}`, async () => {
       // given
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
 
@@ -976,13 +976,12 @@ describe('CredentialService', () => {
 
       // then
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
-      const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
-      expect(updatedCredentialRecord).toMatchObject({
-        state: CredentialState.OfferDeclinedSent,
+      expect(repositoryUpdateSpy).toHaveBeenNthCalledWith(1, {
+        state: CredentialState.Declined,
       })
     })
 
-    test(`emits stateChange event from ${CredentialState.OfferReceived} to ${CredentialState.OfferDeclinedSent}`, async () => {
+    test(`emits stateChange event from ${CredentialState.OfferReceived} to ${CredentialState.Declined}`, async () => {
       const eventListenerMock = jest.fn()
       eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
@@ -998,7 +997,7 @@ describe('CredentialService', () => {
       expect(event).toMatchObject({
         previousState: CredentialState.OfferReceived,
         credentialRecord: {
-          state: CredentialState.OfferDeclinedSent,
+          state: CredentialState.Declined,
         },
       })
     })
