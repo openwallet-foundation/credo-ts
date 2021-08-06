@@ -41,9 +41,9 @@ export class IndyCredentialInfo {
   public revocationRegistryId?: string
 
   @Expose({ name: 'cred_rev_id' })
-  @IsNumber()
+  @IsString()
   @IsOptional()
-  public credentialRevocationId?: number
+  public credentialRevocationId?: string
 
   public toJSON(): IndySDKCredentialInfo {
     return JsonTransformer.toJSON(this) as unknown as IndySDKCredentialInfo

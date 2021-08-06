@@ -800,16 +800,11 @@ export class ProofService {
       requestedCredential: RequestedAttribute | RequestedPredicate
     ): Promise<RequestedAttribute | RequestedPredicate> => {
       const revRegId = requestedCredential.credentialInfo?.revocationRegistryId
-      let credRevId: number | string | undefined = requestedCredential.credentialInfo?.credentialRevocationId
+      let credRevId: string | undefined = requestedCredential.credentialInfo?.credentialRevocationId
 
       //Ensure revRegId and credRevId are defined
       if (!revRegId || !credRevId) {
         return requestedCredential
-      }
-
-      //Ensure credRevId is a number
-      if(typeof credRevId === 'string'){
-        credRevId = parseInt(credRevId);
       }
       
       //Check if delta has already been fetched
@@ -825,8 +820,8 @@ export class ProofService {
       //Check if credRevId is in revokedArray
       const revokedArray = revocRegDelta.value.revoked
       if (revokedArray) {
-        requestedCredential.revoked = revokedArray.includes(credRevId) //Set revoked boolean
-      }
+        requestedCredential.revoked = revokedArray.includes(parseInt(credRevId)) //Set revoked boolean
+      } 
 
       //Return the modified requestedCredential
       return requestedCredential
