@@ -17,8 +17,8 @@ export class IndyHolderService {
   private indyUtilitesService: IndyUtilitesService
 
   public constructor(
-    agentConfig: AgentConfig, 
-    indyWallet: IndyWallet, 
+    agentConfig: AgentConfig,
+    indyWallet: IndyWallet,
     ledgerService: LedgerService,
     indyUtilitesService: IndyUtilitesService
   ) {
@@ -65,7 +65,7 @@ export class IndyHolderService {
             proofRequest.non_revoked?.to
           )
 
-          const {tailsLocation, tailsHash} = revocRegDef.value;
+          const { tailsLocation, tailsHash } = revocRegDef.value
           const tails = await this.indyUtilitesService.downloadTails(tailsHash, tailsLocation)
           const revocationState = await this.indy.createRevocationState(
             tails,

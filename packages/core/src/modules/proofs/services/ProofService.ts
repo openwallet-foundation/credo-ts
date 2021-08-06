@@ -806,7 +806,7 @@ export class ProofService {
       if (!revRegId || !credRevId) {
         return requestedCredential
       }
-      
+
       //Check if delta has already been fetched
       let revocRegDelta: RevocRegDelta
       if (deltaCache[revRegId]) {
@@ -821,7 +821,7 @@ export class ProofService {
       const revokedArray = revocRegDelta.value.revoked
       if (revokedArray) {
         requestedCredential.revoked = revokedArray.includes(parseInt(credRevId)) //Set revoked boolean
-      } 
+      }
 
       //Return the modified requestedCredential
       return requestedCredential
@@ -829,7 +829,7 @@ export class ProofService {
 
     //Loop through keys of attributeNames
     for (const attributeName of attributeNames) {
-      const newAttributes:RequestedAttribute[] = []
+      const newAttributes: RequestedAttribute[] = []
       //Loop through each requestedAttribute
       const attributeArray = retrievedCredentials.requestedAttributes[attributeName]
       for (const requestedAttribute of attributeArray) {
@@ -841,8 +841,8 @@ export class ProofService {
     }
 
     //Loop through keys of predicateNames
-    for (const predicateName of predicateNames) { 
-      const newPredicates:RequestedPredicate[] = []
+    for (const predicateName of predicateNames) {
+      const newPredicates: RequestedPredicate[] = []
       //Loop through each requestedPredicate
       const predicateArray = retrievedCredentials.requestedPredicates[predicateName]
       for (const requestedPredicate of predicateArray) {

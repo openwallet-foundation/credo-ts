@@ -14,10 +14,7 @@ export class IndyUtilitesService {
   private fileSystem: FileSystem
   private fetch
 
-  public constructor(
-    agentConfig: AgentConfig,
-    indyWallet: IndyWallet,
-  ) {
+  public constructor(agentConfig: AgentConfig, indyWallet: IndyWallet) {
     this.indy = agentConfig.agentDependencies.indy
     this.fileSystem = agentConfig.fileSystem
     this.fetch = agentConfig.agentDependencies.fetch

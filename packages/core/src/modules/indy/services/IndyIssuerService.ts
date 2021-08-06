@@ -27,11 +27,7 @@ export class IndyIssuerService {
   private indyUtilitiesService: IndyUtilitesService
   private fileSystem: FileSystem
 
-  public constructor(
-    agentConfig: AgentConfig,
-    indyWallet: IndyWallet,
-    indyUtilitiesService: IndyUtilitesService
-  ) {
+  public constructor(agentConfig: AgentConfig, indyWallet: IndyWallet, indyUtilitiesService: IndyUtilitesService) {
     this.indy = agentConfig.agentDependencies.indy
     this.indyWallet = indyWallet
     this.indyUtilitiesService = indyUtilitiesService

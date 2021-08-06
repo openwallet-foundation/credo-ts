@@ -52,10 +52,9 @@ export class RequestPresentationHandler implements Handler {
       return
     }
 
-    const retrievedCredentials = await this.proofService.getRequestedCredentialsForProofRequest(
-      indyProofRequest,
-      {presentationProposal: presentationProposal}
-    )
+    const retrievedCredentials = await this.proofService.getRequestedCredentialsForProofRequest(indyProofRequest, {
+      presentationProposal: presentationProposal,
+    })
 
     const requestedCredentials = this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)
 
