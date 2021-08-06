@@ -19,7 +19,7 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { InjectionSymbols } from '../../../constants'
 import { isIndyError } from '../../../utils/indyError'
 import { Wallet } from '../../../wallet/Wallet'
-import { IndyIssuerService } from '../../indy'
+import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class LedgerService {
@@ -258,6 +258,67 @@ export class LedgerService {
     }
   }
 
+  public async getRevocRegDef(revocRegDefId: Indy.RevRegId) {
+    try {
+      this.logger.debug(`Get revocation registry definition '${revocRegDefId}' from ledger`)
+
+      const request = await this.indy.buildGetRevocRegDefRequest(null, revocRegDefId)
+
+      this.logger.debug(
+        `Submitting get revocation registry definition request for revocation registry definition '${revocRegDefId}' to ledger`
+      )
+      const response = await this.submitReadRequest(request)
+
+      const [, revocRegDef] = await this.indy.parseGetRevocRegDefResponse(response)
+      this.logger.debug(`Got revocation registry definition '${revocRegDefId}' from ledger`, {
+        response,
+        revocRegDef,
+      })
+
+      return revocRegDef
+    } catch (error) {
+      this.logger.error(`Error retrieving revocation registry definition '${revocRegDefId}' from ledger`, {
+        error,
+        revocationRegistryDefinitionId: revocRegDefId,
+        poolHandle: await this.getPoolHandle(),
+      })
+      throw error
+    }
+  }
+
+  public async getRevocRegDelta(
+    revRegId: Indy.RevRegId,
+    from = 0,
+    to: number = new Date().getTime()
+  ): Promise<ParseRevRegDeltaResult> {
+    //TODO - implement a long term cache here
+    try {
+      this.logger.debug(`Get revocation registry delta '${revRegId}' from ledger`)
+
+      const request = await this.indy.buildGetRevocRegDeltaRequest(null, revRegId, from, to)
+
+      this.logger.debug(
+        `Submitting get revocation registry delta request for revocation registry delta '${revRegId}' to ledger`
+      )
+      const response = await this.submitReadRequest(request)
+
+      const [, revocRegDelta, deltaTimestamp] = await this.indy.parseGetRevocRegDeltaResponse(response)
+      this.logger.debug(`Got revocation registry delta '${revRegId}' from ledger`, {
+        response,
+        revocRegDelta,
+      })
+
+      return { revocRegDelta, deltaTimestamp }
+    } catch (error) {
+      this.logger.error(`Error retrieving revocation registry delta '${revRegId}' from ledger`, {
+        error,
+        revocationRegistryId: revRegId,
+        poolHandle: await this.getPoolHandle(),
+      })
+      throw error
+    }
+  }
+
   private async submitWriteRequest(request: LedgerRequest, signDid: string): Promise<LedgerWriteReplyResponse> {
     const requestWithTaa = await this.appendTaa(request)
     const signedRequestWithTaa = await this.wallet.signRequest(signDid, requestWithTaa)
@@ -363,6 +424,11 @@ export interface CredentialDefinitionTemplate {
   tag: string
   signatureType: 'CL'
   supportRevocation: boolean
+}
+
+export interface ParseRevRegDeltaResult {
+  revocRegDelta: Indy.RevocRegDelta
+  deltaTimestamp: number
 }
 
 interface AuthorAgreement {

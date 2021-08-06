@@ -5,7 +5,7 @@ import type { ConnectionRecord } from '../../connections'
 import type { AutoAcceptProof } from '../ProofAutoAcceptType'
 import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { PresentationPreview, PresentationPreviewAttribute } from '../messages'
-import type { CredDef, IndyProof, Schema } from 'indy-sdk'
+import type { CredDef, IndyProof, RevocRegDelta, Schema } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
 import { inject, Lifecycle, scoped } from 'tsyringe'
@@ -20,7 +20,7 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { Wallet } from '../../../wallet/Wallet'
 import { AckStatus } from '../../common'
-import { Credential, CredentialRepository, CredentialUtils } from '../../credentials'
+import { Credential, CredentialRepository, CredentialUtils, IndyCredentialInfo } from '../../credentials'
 import { IndyHolderService, IndyVerifierService } from '../../indy'
 import { LedgerService } from '../../ledger/services/LedgerService'
 import { ProofEventTypes } from '../ProofEvents'
@@ -649,6 +649,12 @@ export class ProofService {
       // List the requested attributes
       requestedAttributesNames.push(...(requestedAttributes.names ?? [requestedAttributes.name]))
 
+      //Get credentialInfo
+      if (!requestedAttribute.credentialInfo) {
+        const indyCredentialInfo = await this.indyHolderService.getCredential(requestedAttribute.credentialId)
+        requestedAttribute.credentialInfo = JsonTransformer.fromJSON(indyCredentialInfo, IndyCredentialInfo)
+      }
+
       // Find the attributes that have a hashlink as a value
       for (const attribute of Object.values(requestedAttribute.credentialInfo.attributes)) {
         if (attribute.toLowerCase().startsWith('hl:')) {
@@ -696,7 +702,10 @@ export class ProofService {
    */
   public async getRequestedCredentialsForProofRequest(
     proofRequest: ProofRequest,
-    presentationProposal?: PresentationPreview
+    config: {
+      presentationProposal?: PresentationPreview
+      checkRevoked?: boolean
+    } = {}
   ): Promise<RetrievedCredentials> {
     const retrievedCredentials = new RetrievedCredentials({})
 
@@ -706,7 +715,7 @@ export class ProofService {
 
       // If we have exactly one credential, or no proposal to pick preferences
       // on the credentials to use, we will use the first one
-      if (credentials.length === 1 || !presentationProposal) {
+      if (credentials.length === 1 || !config.presentationProposal) {
         credentialMatch = credentials
       }
       // If we have a proposal we will use that to determine the credentials to use
@@ -719,7 +728,7 @@ export class ProofService {
 
           // Check if credentials matches all parameters from proposal
           return names.every((name) =>
-            presentationProposal.attributes.find(
+            config.presentationProposal?.attributes.find(
               (a) =>
                 a.name === name &&
                 a.credentialDefinitionId === credentialDefinitionId &&
@@ -749,7 +758,108 @@ export class ProofService {
       })
     }
 
-    return retrievedCredentials
+    //If checkRevoked is true then get revocation status, else return retrievedCredentials
+    return config.checkRevoked ? this.checkRevoked(retrievedCredentials, proofRequest) : retrievedCredentials
+  }
+
+  /**
+   * Takes {@link RetrievedCredentials} and {@link ProofRequest} to check each credential's revocation status
+   *
+   * @param retrievedCredentials The retrieved credentials that you are checking for revoked status of
+   *
+   * @returns RetrievedCredentials object with each attribute/predicate stating the revocation status as a boolean
+   */
+  private async checkRevoked(
+    retrievedCredentials: RetrievedCredentials,
+    proofRequest: ProofRequest
+  ): Promise<RetrievedCredentials> {
+    if (!proofRequest.nonRevoked) {
+      //Could not check if credential is revoked, returned without the revoked boolean
+      return retrievedCredentials
+    }
+
+    //Object we will be returning
+    const newRetrievedCredentials = new RetrievedCredentials()
+
+    //TODO - Replace with long term cache in LedgerService
+    const deltaCache: { [revRegId: string]: RevocRegDelta } = {}
+
+    //Arrays of attribute/predicate names
+    const attributeNames = Object.keys(retrievedCredentials.requestedAttributes)
+    const predicateNames = Object.keys(retrievedCredentials.requestedPredicates)
+
+    //Time stamps to check revocation status
+    const { from, to } = proofRequest.nonRevoked
+
+    /**Nested function to prevent redundancy
+     *
+     * @param requestedCredential Either a {@link RequestedAttribute} or {@link RequestedPredicate}
+     * @returns requestedCredential with revocation status if one could be found
+     */
+    const checkCredentialRevoked = async (
+      requestedCredential: RequestedAttribute | RequestedPredicate
+    ): Promise<RequestedAttribute | RequestedPredicate> => {
+      const revRegId = requestedCredential.credentialInfo?.revocationRegistryId
+      let credRevId: number | string | undefined = requestedCredential.credentialInfo?.credentialRevocationId
+
+      //Ensure revRegId and credRevId are defined
+      if (!revRegId || !credRevId) {
+        return requestedCredential
+      }
+
+      //Ensure credRevId is a number
+      if(typeof credRevId === 'string'){
+        credRevId = parseInt(credRevId);
+      }
+      
+      //Check if delta has already been fetched
+      let revocRegDelta: RevocRegDelta
+      if (deltaCache[revRegId]) {
+        revocRegDelta = deltaCache[revRegId]
+      } else {
+        const result = await this.ledgerService.getRevocRegDelta(revRegId, from, to)
+        revocRegDelta = result.revocRegDelta
+        deltaCache[revRegId] = revocRegDelta
+      }
+
+      //Check if credRevId is in revokedArray
+      const revokedArray = revocRegDelta.value.revoked
+      if (revokedArray) {
+        requestedCredential.revoked = revokedArray.includes(credRevId) //Set revoked boolean
+      }
+
+      //Return the modified requestedCredential
+      return requestedCredential
+    }
+
+    //Loop through keys of attributeNames
+    for (const attributeName of attributeNames) {
+      const newAttributes:RequestedAttribute[] = []
+      //Loop through each requestedAttribute
+      const attributeArray = retrievedCredentials.requestedAttributes[attributeName]
+      for (const requestedAttribute of attributeArray) {
+        //Push to newRetrievedCredentials
+        const checkedAttribute = (await checkCredentialRevoked(requestedAttribute)) as RequestedAttribute
+        newAttributes.push(checkedAttribute)
+      }
+      newRetrievedCredentials.requestedAttributes[attributeName] = newAttributes
+    }
+
+    //Loop through keys of predicateNames
+    for (const predicateName of predicateNames) { 
+      const newPredicates:RequestedPredicate[] = []
+      //Loop through each requestedPredicate
+      const predicateArray = retrievedCredentials.requestedPredicates[predicateName]
+      for (const requestedPredicate of predicateArray) {
+        //Push to newRetrievedCredentials
+        const checkedPredicate = (await checkCredentialRevoked(requestedPredicate)) as RequestedPredicate
+        newPredicates.push(checkedPredicate)
+      }
+      newRetrievedCredentials.requestedPredicates[predicateName] = newPredicates
+    }
+
+    //Return retrievedCredentials with the revoked booleans
+    return newRetrievedCredentials
   }
 
   /**
@@ -882,24 +992,30 @@ export class ProofService {
     proofRequest: ProofRequest,
     requestedCredentials: RequestedCredentials
   ): Promise<IndyProof> {
-    const credentialObjects = [
-      ...Object.values(requestedCredentials.requestedAttributes),
-      ...Object.values(requestedCredentials.requestedPredicates),
-    ].map((c) => c.credentialInfo)
+    const credentialObjects = await Promise.all(
+      [
+        ...Object.values(requestedCredentials.requestedAttributes),
+        ...Object.values(requestedCredentials.requestedPredicates),
+      ].map(async (c) => {
+        if (c.credentialInfo) {
+          return c.credentialInfo
+        }
+        const credentialInfo = await this.indyHolderService.getCredential(c.credentialId)
+        return JsonTransformer.fromJSON(credentialInfo, IndyCredentialInfo)
+      })
+    )
 
     const schemas = await this.getSchemas(new Set(credentialObjects.map((c) => c.schemaId)))
     const credentialDefinitions = await this.getCredentialDefinitions(
       new Set(credentialObjects.map((c) => c.credentialDefinitionId))
     )
 
-    const proof = await this.indyHolderService.createProof({
+    return this.indyHolderService.createProof({
       proofRequest: proofRequest.toJSON(),
-      requestedCredentials: requestedCredentials.toJSON(),
+      requestedCredentials: requestedCredentials,
       schemas,
       credentialDefinitions,
     })
-
-    return proof
   }
 
   private async getCredentialsForProofRequest(

@@ -1,5 +1,5 @@
 import type { SchemaTemplate, CredentialDefinitionTemplate } from './services'
-import type { CredDefId, Did, SchemaId } from 'indy-sdk'
+import type { CredDefId, Did, SchemaId, RevRegId } from 'indy-sdk'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
@@ -53,5 +53,13 @@ export class LedgerModule {
 
   public async getCredentialDefinition(id: CredDefId) {
     return this.ledgerService.getCredentialDefinition(id)
+  }
+
+  public async getRevocRegDef(revocRegDefId: RevRegId) {
+    return this.ledgerService.getRevocRegDef(revocRegDefId)
+  }
+
+  public async getRevocRegDelta(revRegId: RevRegId, from = 0, to = new Date().getTime()) {
+    return this.ledgerService.getRevocRegDelta(revRegId, from, to)
   }
 }

@@ -215,9 +215,12 @@ export class ProofsModule {
    */
   public async getRequestedCredentialsForProofRequest(
     proofRequest: ProofRequest,
-    presentationProposal?: PresentationPreview
+    config: {
+      presentationProposal?: PresentationPreview
+      checkRevoked?: boolean
+    } = {}
   ): Promise<RetrievedCredentials> {
-    return this.proofService.getRequestedCredentialsForProofRequest(proofRequest, presentationProposal)
+    return this.proofService.getRequestedCredentialsForProofRequest(proofRequest, config)
   }
 
   /**

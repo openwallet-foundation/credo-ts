@@ -1,7 +1,7 @@
 import type { IndyCredentialInfo as IndySDKCredentialInfo } from 'indy-sdk'
 
 import { Expose } from 'class-transformer'
-import { IsOptional, IsString } from 'class-validator'
+import { IsNumber, IsOptional, IsString } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 
@@ -41,9 +41,9 @@ export class IndyCredentialInfo {
   public revocationRegistryId?: string
 
   @Expose({ name: 'cred_rev_id' })
-  @IsString()
+  @IsNumber()
   @IsOptional()
-  public credentialRevocationId?: string
+  public credentialRevocationId?: number
 
   public toJSON(): IndySDKCredentialInfo {
     return JsonTransformer.toJSON(this) as unknown as IndySDKCredentialInfo

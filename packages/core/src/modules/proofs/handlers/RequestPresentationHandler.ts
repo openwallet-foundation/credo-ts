@@ -36,6 +36,7 @@ export class RequestPresentationHandler implements Handler {
     messageContext: HandlerInboundMessage<RequestPresentationHandler>
   ) {
     const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
+    const presentationProposal = proofRecord.proposalMessage?.presentationProposal
 
     this.agentConfig.logger.info(
       `Automatically sending presentation with autoAccept on ${this.agentConfig.autoAcceptProofs}`
@@ -47,12 +48,13 @@ export class RequestPresentationHandler implements Handler {
     }
 
     if (!indyProofRequest) {
+      this.agentConfig.logger.error('Proof request is undefined.')
       return
     }
 
     const retrievedCredentials = await this.proofService.getRequestedCredentialsForProofRequest(
       indyProofRequest,
-      proofRecord.proposalMessage?.presentationProposal
+      {presentationProposal: presentationProposal}
     )
 
     const requestedCredentials = this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)

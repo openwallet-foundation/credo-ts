@@ -30,5 +30,8 @@ export class RequestedAttribute {
   public revealed!: boolean
 
   @Exclude({ toPlainOnly: true })
-  public credentialInfo!: IndyCredentialInfo
+  public credentialInfo?: IndyCredentialInfo
+
+  @Exclude({ toPlainOnly: true })
+  public revoked?: boolean
 }
