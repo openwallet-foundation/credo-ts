@@ -975,10 +975,11 @@ describe('CredentialService', () => {
       await credentialService.declineOffer(credential)
 
       // then
-      expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
-      expect(repositoryUpdateSpy).toHaveBeenNthCalledWith(1, {
+      const expectedCredentialState = {
         state: CredentialState.Declined,
-      })
+      }
+      expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
+      expect(repositoryUpdateSpy).toHaveBeenNthCalledWith(1, expect.objectContaining(expectedCredentialState))
     })
 
     test(`emits stateChange event from ${CredentialState.OfferReceived} to ${CredentialState.Declined}`, async () => {
@@ -995,9 +996,12 @@ describe('CredentialService', () => {
       expect(eventListenerMock).toHaveBeenCalledTimes(1)
       const [[event]] = eventListenerMock.mock.calls
       expect(event).toMatchObject({
-        previousState: CredentialState.OfferReceived,
-        credentialRecord: {
-          state: CredentialState.Declined,
+        type: 'CredentialStateChanged',
+        payload: {
+          previousState: CredentialState.OfferReceived,
+          credentialRecord: expect.objectContaining({
+            state: CredentialState.Declined,
+          }),
         },
       })
     })
