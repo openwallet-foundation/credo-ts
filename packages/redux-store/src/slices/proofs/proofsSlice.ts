@@ -81,6 +81,12 @@ const proofsSlice = createSlice({
       .addCase(ProofsThunks.autoSelectCredentialsForProofRequest.rejected, (state, action) => {
         state.error = action.error
       })
+      // deleteProof
+      .addCase(ProofsThunks.deletCredential.fulfilled, (state, action) => {
+        const proofId = action.payload.id
+        const index = state.proofs.records.findIndex((record) => record.id == proofId)
+        state.proofs.records.splice(index, 1)
+      })
   },
 })
 

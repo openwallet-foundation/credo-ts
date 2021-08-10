@@ -77,6 +77,12 @@ const credentialsSlice = createSlice({
       .addCase(CredentialsThunks.acceptCredential.rejected, (state, action) => {
         state.error = action.error
       })
+      // deleteCredential
+      .addCase(CredentialsThunks.deletCredential.fulfilled, (state, action) => {
+        const credentialId = action.payload.id
+        const index = state.credentials.records.findIndex((record) => record.id == credentialId)
+        state.credentials.records.splice(index, 1)
+      })
   },
 })
 

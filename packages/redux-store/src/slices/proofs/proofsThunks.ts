@@ -1,6 +1,8 @@
 import type { ClassMethodParameters } from '../../utils'
 import type { RequestedCredentials, ProofsModule, RetrievedCredentials } from '@aries-framework/core'
 
+import { ProofRepository } from '@aries-framework/core'
+
 import { createAsyncAgentThunk } from '../../utils'
 
 /**
@@ -142,6 +144,15 @@ const ProofsThunks = {
       return thunkApi.extra.agent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
     }
   ),
+  /**
+   * Deletes a proofRecord in the proof repository.
+   */
+  deletCredential: createAsyncAgentThunk('proofs/deleteProof', async (proofId: string, thunkApi) => {
+    const proofRepository = thunkApi.extra.agent.injectionContainer.resolve(ProofRepository)
+    const proofRecord = await proofRepository.getById(proofId)
+    await proofRepository.delete(proofRecord)
+    return proofRecord
+  }),
 }
 
 export { ProofsThunks }
