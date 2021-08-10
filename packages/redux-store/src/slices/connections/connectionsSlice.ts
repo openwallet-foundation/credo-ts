@@ -111,6 +111,7 @@ const connectionsSlice = createSlice({
       .addCase(ConnectionThunks.acceptInvitation.fulfilled, (state) => {
         state.invitation.isLoading = false
       })
+      // deleteConnection
       .addCase(ConnectionThunks.deleteConnection.fulfilled, (state, action) => {
         const connectionId = action.payload.id
         const index = state.connections.records.findIndex((connectionRecord) => connectionRecord.id === connectionId)

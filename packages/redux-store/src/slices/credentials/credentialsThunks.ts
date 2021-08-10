@@ -1,6 +1,8 @@
 import type { ClassMethodParameters } from '../../utils'
 import type { CredentialsModule } from '@aries-framework/core'
 
+import { CredentialRepository } from '@aries-framework/core'
+
 import { createAsyncAgentThunk } from '../../utils'
 
 /**
@@ -120,6 +122,16 @@ const CredentialsThunks = {
    */
   acceptCredential: createAsyncAgentThunk('credentials/acceptCredential', async (credentialId: string, thunkApi) => {
     return thunkApi.extra.agent.credentials.acceptCredential(credentialId)
+  }),
+
+  /**
+   * Deletes a credentialRecord in the credential repository.
+   */
+  deletCredential: createAsyncAgentThunk('credentials/deleteCredential', async (credentialId: string, thunkApi) => {
+    const credentialRepository = thunkApi.extra.agent.injectionContainer.resolve(CredentialRepository)
+    const credentialRecord = await credentialRepository.getById(credentialId)
+    await credentialRepository.delete(credentialRecord)
+    return credentialRecord
   }),
 }
 

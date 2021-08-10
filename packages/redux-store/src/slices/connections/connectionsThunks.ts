@@ -97,7 +97,7 @@ const ConnectionThunks = {
   ),
 
   /**
-   * Deletes a connectionRecord in the connectionRepository
+   * Deletes a connectionRecord in the connectionRepository.
    */
   deleteConnection: createAsyncAgentThunk('connections/deleteConnection', async (connectionId: string, thunksApi) => {
     const connectionRepository = thunksApi.extra.agent.injectionContainer.resolve(ConnectionRepository)
