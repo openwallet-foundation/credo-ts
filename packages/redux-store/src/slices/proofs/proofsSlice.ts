@@ -82,7 +82,7 @@ const proofsSlice = createSlice({
         state.error = action.error
       })
       // deleteProof
-      .addCase(ProofsThunks.deletCredential.fulfilled, (state, action) => {
+      .addCase(ProofsThunks.deleteProof.fulfilled, (state, action) => {
         const proofId = action.payload.id
         const index = state.proofs.records.findIndex((record) => record.id == proofId)
         state.proofs.records.splice(index, 1)

@@ -147,7 +147,7 @@ const ProofsThunks = {
   /**
    * Deletes a proofRecord in the proof repository.
    */
-  deletCredential: createAsyncAgentThunk('proofs/deleteProof', async (proofId: string, thunkApi) => {
+  deleteProof: createAsyncAgentThunk('proofs/deleteProof', async (proofId: string, thunkApi) => {
     const proofRepository = thunkApi.extra.agent.injectionContainer.resolve(ProofRepository)
     const proofRecord = await proofRepository.getById(proofId)
     await proofRepository.delete(proofRecord)
