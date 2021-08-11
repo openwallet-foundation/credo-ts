@@ -67,6 +67,7 @@ export class IndyHolderService {
 
           const { tailsLocation, tailsHash } = revocRegDef.value
           const tails = await this.indyUtilitesService.downloadTails(tailsHash, tailsLocation)
+          // @ts-ignore TODO: Remove upon DefinitelyTyped types updated
           const revocationState = await this.indy.createRevocationState(
             tails,
             JSON.stringify(revocRegDef),
