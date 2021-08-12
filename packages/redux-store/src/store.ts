@@ -4,13 +4,14 @@ import type { TypedUseSelectorHook } from 'react-redux'
 import { combineReducers, configureStore } from '@reduxjs/toolkit'
 import { useDispatch, useSelector } from 'react-redux'
 
-import { credentialsSlice, proofsSlice, connectionsSlice, agentSlice } from './slices'
+import { credentialsSlice, proofsSlice, connectionsSlice, agentSlice, mediationSlice } from './slices'
 
 const rootReducer = combineReducers({
   agent: agentSlice.reducer,
   connections: connectionsSlice.reducer,
   credentials: credentialsSlice.reducer,
   proofs: proofsSlice.reducer,
+  mediation: mediationSlice.reducer,
 })
 
 type RootState = ReturnType<typeof rootReducer>
