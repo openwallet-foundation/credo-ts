@@ -955,4 +955,67 @@ describe('CredentialService', () => {
       expect(result).toEqual(expect.arrayContaining(expected))
     })
   })
+
+  describe('declineOffer', () => {
+    const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249754'
+    let credential: CredentialRecord
+
+    beforeEach(() => {
+      credential = mockCredentialRecord({
+        state: CredentialState.OfferReceived,
+        tags: { threadId },
+      })
+    })
+
+    test(`updates state to ${CredentialState.Declined}`, async () => {
+      // given
+      const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
+
+      // when
+      await credentialService.declineOffer(credential)
+
+      // then
+      const expectedCredentialState = {
+        state: CredentialState.Declined,
+      }
+      expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
+      expect(repositoryUpdateSpy).toHaveBeenNthCalledWith(1, expect.objectContaining(expectedCredentialState))
+    })
+
+    test(`emits stateChange event from ${CredentialState.OfferReceived} to ${CredentialState.Declined}`, async () => {
+      const eventListenerMock = jest.fn()
+      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
+
+      // given
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
+
+      // when
+      await credentialService.declineOffer(credential)
+
+      // then
+      expect(eventListenerMock).toHaveBeenCalledTimes(1)
+      const [[event]] = eventListenerMock.mock.calls
+      expect(event).toMatchObject({
+        type: 'CredentialStateChanged',
+        payload: {
+          previousState: CredentialState.OfferReceived,
+          credentialRecord: expect.objectContaining({
+            state: CredentialState.Declined,
+          }),
+        },
+      })
+    })
+
+    const validState = CredentialState.OfferReceived
+    const invalidCredentialStates = Object.values(CredentialState).filter((state) => state !== validState)
+    test(`throws an error when state transition is invalid`, async () => {
+      await Promise.all(
+        invalidCredentialStates.map(async (state) => {
+          await expect(
+            credentialService.declineOffer(mockCredentialRecord({ state, tags: { threadId } }))
+          ).rejects.toThrowError(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
+        })
+      )
+    })
+  })
 })
