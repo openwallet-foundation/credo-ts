@@ -55,7 +55,7 @@ import RNFS from 'react-native-fs'
 ### 2- Download genesis file (Optional)
 
 When working with an Indy network, the ledger’s genesis file contains the information necessary for an agent to connect to that ledger.  In other words, the genesis file contains the schema (like a DB schema) of the target Indy node ledger you are attempting to connect to. 
-When will you need genesis file?, you will need the genesis file of the indy ledger you will connect to, to accept/verify credentials.
+You will need the genesis file of the Indy ledger you are connecting to, to accept/verify credentials.
 Example: Lets say your agent will accept a verifiable credential from trinsic.id, you will probably need to download the genesis file for Sovrin network
 
 
