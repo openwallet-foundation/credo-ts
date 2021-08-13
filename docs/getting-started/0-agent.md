@@ -206,7 +206,7 @@ agent.events.on<ConnectionStateChangedEvent>(
 );
 ```
 
-Example: This sample Credential callback shows how to detect that a credential is received and show the user the credential asserts and give the option to accept/reject the offered credential
+Example: This sample credential callback shows how to detect that a credential is received, show the user the credential asserts and give the option to accept/reject the offered credential.
 
 ```ts
 const handleCredentialStateChange = async (
