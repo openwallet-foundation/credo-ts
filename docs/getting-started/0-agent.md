@@ -32,7 +32,7 @@ const agent = new Agent(agentConfig, agentDependencies)
 This is the optimal initialization code for a scenario where complete functionality is needed.
 We will consider the following steps to initialize the agent with full capabilities
 
-### 1- Import statments
+### 1- Import statements
 ```ts
 import {
   Agent,
