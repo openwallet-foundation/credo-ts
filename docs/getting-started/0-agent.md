@@ -29,7 +29,7 @@ const agent = new Agent(agentConfig, agentDependencies)
 ```
 ## Complete Agent Initialization
 
-This is the optimal initialization code for a scenario where a complete functionality needed.
+This is the optimal initialization code for a scenario where complete functionality is needed.
 We will consider the following steps to initialize the agent with full capabilities
 
 ### 1- Import statments
