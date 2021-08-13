@@ -235,7 +235,7 @@ const handleCredentialStateChange = async (
 };
 ```
 
-More about [Credentials](5-credentials.md)
+More about [Credentials](5-credentials.md).
 See [Overview](overview.md) for more information on how event handlers work.
 
 Thats it, you are good to go with the Agent.
