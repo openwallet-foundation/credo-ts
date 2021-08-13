@@ -53,7 +53,7 @@ describe('Present Proof', () => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       indyProofRequest!,
       {
-        presentationProposal: presentationPreview,
+        presentationPreview,
       }
     )
     const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
@@ -139,7 +139,7 @@ describe('Present Proof', () => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       indyProofRequest!,
       {
-        presentationProposal: presentationPreview,
+        presentationPreview,
       }
     )
     const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)

@@ -185,7 +185,7 @@ describe('Auto accept present proof', () => {
       const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         indyProofRequest!,
-        presentationPreview
+        { presentationPreview }
       )
       const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
       await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)

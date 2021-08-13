@@ -14,8 +14,6 @@ import type {
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { getDirFromFilePath } from '../../../utils/path'
-import { InjectionSymbols } from '../../../constants'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 
 import { IndyUtilitesService } from './indyUtilitiesService'

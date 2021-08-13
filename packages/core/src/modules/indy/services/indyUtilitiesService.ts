@@ -1,27 +1,23 @@
-import type { default as Indy, BlobReaderHandle } from 'indy-sdk'
-import axios from 'axios'
 import type { Logger } from '../../../logger'
+import type { FileSystem } from '../../../storage/FileSystem'
+import type { default as Indy, BlobReaderHandle } from 'indy-sdk'
 
+import axios from 'axios'
 import { scoped, Lifecycle } from 'tsyringe'
 
-import { getDirFromFilePath } from '../../../utils/path'
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { FileSystem } from '../../../storage/FileSystem'
-import { IndyWallet } from '../../../wallet/IndyWallet'
-
+import { getDirFromFilePath } from '../../../utils/path'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyUtilitesService {
   private indy: typeof Indy
   private logger: Logger
   private fileSystem: FileSystem
-  private fetch
 
-  public constructor(agentConfig: AgentConfig, indyWallet: IndyWallet) {
+  public constructor(agentConfig: AgentConfig) {
     this.indy = agentConfig.agentDependencies.indy
     this.logger = agentConfig.logger
     this.fileSystem = agentConfig.fileSystem
-    this.fetch = agentConfig.agentDependencies.fetch
   }
 
   /**
@@ -54,28 +50,26 @@ export class IndyUtilitesService {
     try {
       this.logger.debug(`Checking to see if tails file for URL ${tailsLocation} has been stored in the FileSystem`)
       const filePath = `${this.fileSystem.basePath}/afj/tails/${hash}`
-      
+
       const tailsExists = await this.fileSystem.exists(filePath)
       this.logger.debug(`Tails file for ${tailsLocation} ${tailsExists ? 'is stored' : 'is not stored'} at ${filePath}`)
-
       if (!tailsExists) {
         this.logger.debug(`Retrieving tails file from URL ${tailsLocation}`)
 
         const response = await axios.get(tailsLocation, {
-          responseType:'arraybuffer', 
-          timeout: 15000
+          responseType: 'arraybuffer',
+          timeout: 15000,
         })
 
-        if(response.data){
+        if (response.data) {
           this.logger.debug(`Retrieved tails file from URL ${tailsLocation}, writing to FileSystem at path ${filePath}`)
           await this.fileSystem.write(filePath, Buffer.from(response.data).toString())
           this.logger.debug(`Saved tails file to FileSystem at path ${filePath}`)
-        } 
-        else{
+        } else {
           throw new Error('Fetched empty tails file data, unable to save tails file')
         }
       }
-       
+
       this.logger.debug(`Tails file for URL ${tailsLocation} is stored in the FileSystem, opening tails reader`)
       return this.createTailsReader(filePath)
     } catch (error) {

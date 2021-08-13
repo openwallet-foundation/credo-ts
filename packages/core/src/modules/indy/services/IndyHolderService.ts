@@ -1,6 +1,6 @@
-import type * as Indy from 'indy-sdk'
 import type { Logger } from '../../../logger'
 import type { RequestedCredentials } from '../../proofs'
+import type * as Indy from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -43,8 +43,13 @@ export class IndyHolderService {
    *
    * @todo support attribute non_revoked fields
    */
-  public async createProof({ proofRequest, requestedCredentials, schemas, credentialDefinitions }: CreateProofOptions):Promise<Indy.IndyProof> {
-    try{
+  public async createProof({
+    proofRequest,
+    requestedCredentials,
+    schemas,
+    credentialDefinitions,
+  }: CreateProofOptions): Promise<Indy.IndyProof> {
+    try {
       this.logger.debug('Creating Indy Proof')
       const revocationStates: Indy.RevStates = {}
 
@@ -97,7 +102,7 @@ export class IndyHolderService {
           }
         }
       }
-      const indyProof:Indy.IndyProof = await this.indy.proverCreateProof(
+      const indyProof: Indy.IndyProof = await this.indy.proverCreateProof(
         this.indyWallet.walletHandle,
         proofRequest,
         requestedCredentials.toJSON(),
@@ -108,7 +113,7 @@ export class IndyHolderService {
       )
       this.logger.debug('Created Indy Proof')
       return indyProof
-    } catch(error) {
+    } catch (error) {
       this.logger.error(`Error while creating indy proof`, {
         error,
         errorMessage: error.message,

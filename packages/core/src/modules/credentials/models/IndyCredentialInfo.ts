@@ -1,7 +1,7 @@
 import type { IndyCredentialInfo as IndySDKCredentialInfo } from 'indy-sdk'
 
 import { Expose } from 'class-transformer'
-import { IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsOptional, IsString } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 

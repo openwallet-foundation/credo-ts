@@ -800,7 +800,7 @@ export class ProofService {
       requestedCredential: RequestedAttribute | RequestedPredicate
     ): Promise<RequestedAttribute | RequestedPredicate> => {
       const revRegId = requestedCredential.credentialInfo?.revocationRegistryId
-      let credRevId: string | undefined = requestedCredential.credentialInfo?.credentialRevocationId
+      const credRevId: string | undefined = requestedCredential.credentialInfo?.credentialRevocationId
 
       //Ensure revRegId and credRevId are defined
       if (!revRegId || !credRevId) {
