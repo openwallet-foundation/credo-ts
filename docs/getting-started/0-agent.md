@@ -163,7 +163,7 @@ More about [Transports](1-transports.md)
 
 ### 6- Init Agent
 
-After creating the Agent object and configuring it with all configuration, we initialize the Agent
+After creating the Agent object and configuring it, we initialize the Agent.
 
 ```ts
 
