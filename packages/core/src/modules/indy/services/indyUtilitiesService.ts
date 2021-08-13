@@ -1,6 +1,7 @@
-import type { default as Indy, BlobReaderHandle, RevRegId } from 'indy-sdk'
+import type { default as Indy, BlobReaderHandle } from 'indy-sdk'
+import axios from 'axios'
+import type { Logger } from '../../../logger'
 
-import { AbortController } from 'abort-controller'
 import { scoped, Lifecycle } from 'tsyringe'
 
 import { getDirFromFilePath } from '../../../utils/path'
@@ -8,14 +9,17 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { FileSystem } from '../../../storage/FileSystem'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 
+
 @scoped(Lifecycle.ContainerScoped)
 export class IndyUtilitesService {
   private indy: typeof Indy
+  private logger: Logger
   private fileSystem: FileSystem
   private fetch
 
   public constructor(agentConfig: AgentConfig, indyWallet: IndyWallet) {
     this.indy = agentConfig.agentDependencies.indy
+    this.logger = agentConfig.logger
     this.fileSystem = agentConfig.fileSystem
     this.fetch = agentConfig.agentDependencies.fetch
   }
@@ -27,6 +31,7 @@ export class IndyUtilitesService {
    * @returns The blob storage reader handle
    */
   public async createTailsReader(tailsFilePath: string): Promise<BlobReaderHandle> {
+    this.logger.debug(`Opening tails reader at path ${tailsFilePath}`)
     const tailsFileExists = await this.fileSystem.exists(tailsFilePath)
 
     // Extract directory from path (should also work with windows paths)
@@ -40,26 +45,45 @@ export class IndyUtilitesService {
       base_dir: dirname,
     }
 
-    return this.indy.openBlobStorageReader('default', tailsReaderConfig)
+    const tailsReader = await this.indy.openBlobStorageReader('default', tailsReaderConfig)
+    this.logger.debug(`Opened tails reader at path ${tailsFilePath}`)
+    return tailsReader
   }
 
-  public async downloadTails(hash: string, tailsLocation: string) {
-    const filePath = `${this.fileSystem.basePath}/afj/tails/${hash}`
-    if (!(await this.fileSystem.exists(filePath))) {
-      const abortController = new AbortController()
-      const id = setTimeout(() => abortController.abort(), 15000)
-      const data = await this.fetch(tailsLocation, {
-        method: 'GET',
-        signal: abortController.signal,
-      })
-      clearTimeout(id)
-      if (data) {
-        await this.fileSystem.write(filePath, await data.text())
-      } else {
-        throw new Error(`Could not retrieve tails file from URL ${tailsLocation}`)
-      }
-    }
+  public async downloadTails(hash: string, tailsLocation: string): Promise<BlobReaderHandle> {
+    try {
+      this.logger.debug(`Checking to see if tails file for URL ${tailsLocation} has been stored in the FileSystem`)
+      const filePath = `${this.fileSystem.basePath}/afj/tails/${hash}`
+      
+      const tailsExists = await this.fileSystem.exists(filePath)
+      this.logger.debug(`Tails file for ${tailsLocation} ${tailsExists ? 'is stored' : 'is not stored'} at ${filePath}`)
 
-    return this.createTailsReader(filePath)
+      if (!tailsExists) {
+        this.logger.debug(`Retrieving tails file from URL ${tailsLocation}`)
+
+        const response = await axios.get(tailsLocation, {
+          responseType:'arraybuffer', 
+          timeout: 15000
+        })
+
+        if(response.data){
+          this.logger.debug(`Retrieved tails file from URL ${tailsLocation}, writing to FileSystem at path ${filePath}`)
+          await this.fileSystem.write(filePath, Buffer.from(response.data).toString())
+          this.logger.debug(`Saved tails file to FileSystem at path ${filePath}`)
+        } 
+        else{
+          throw new Error('Fetched empty tails file data, unable to save tails file')
+        }
+      }
+       
+      this.logger.debug(`Tails file for URL ${tailsLocation} is stored in the FileSystem, opening tails reader`)
+      return this.createTailsReader(filePath)
+    } catch (error) {
+      this.logger.error(`Error while retrieving tails file from URL ${tailsLocation}`, {
+        error,
+        errorMessage: error.message,
+      })
+      throw error
+    }
   }
 }

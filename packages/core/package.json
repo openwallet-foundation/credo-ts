@@ -2,7 +2,7 @@
   "name": "@aries-framework/core",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.1.0-alpha.232-recipient-revocation.2",
+  "version": "0.0.0",
   "files": [
     "build"
   ],
@@ -24,6 +24,7 @@
   "dependencies": {
     "@types/indy-sdk": "^1.16.5",
     "abort-controller": "^3.0.0",
+    "axios": "^0.21.1",
     "bn.js": "^5.2.0",
     "borc": "^3.0.0",
     "buffer": "^6.0.3",
