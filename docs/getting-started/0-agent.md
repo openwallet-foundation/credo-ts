@@ -158,7 +158,7 @@ After creating the Agent object, we need to create and set the Inbound/Outbound 
   //Inbound transport are currently built-in and you don't need to create it
 ```
 
-More about [Transports](1-transports.md)
+More about [Transports](1-transports.md).
 
 
 ### 6- Init Agent
