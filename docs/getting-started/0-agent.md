@@ -180,7 +180,7 @@ try
 
 ### 6- Handling State Changes
 
-After you successfully initialize your Agent, you will notice most of the hard work is done by the underlying Aries/Indy framework however, you as a controller need to intercept at some situations lets say when you need to accept an offered credential or reject/accept an incoming connection request. This is done through state change handlers
+After you successfully initialize your Agent, you will notice that most of the hard work is being done by the underlying Aries/Indy framework. However, you as a controller will need to intercept in some situations when there is a state change (like when you need to accept an offered credential or reject/accept an incoming connection request). This is done through state change handlers.
 
 #### Creating Event(State) Handlers 
 
