@@ -208,7 +208,7 @@ export class RecipientModule {
         routing,
       })
       this.logger.debug('Processed mediation invitation', {
-      	connectionId: invitationConnectionRecord
+        connectionId: invitationConnectionRecord,
       })
       const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(
         invitationConnectionRecord.id
