@@ -45,12 +45,12 @@ export class MessageSender {
     // map all supported schema into a new list
     // reduce the list of listed schemas into a single list
     // remove duplicates by creating a new set and spreading it into a list
-	const schemeTuples = outboundTransporters.map(transport => transport.supportedSchemes)
-    
+    const schemeTuples = this.outboundTransporters.map((transport) => transport.supportedSchemes)
+
     const allSchemes = new Array<string>().concat(...schemeTuples)
-	const uniqueSchemes = [...new Set(allSchemes)]
-		
-	return uniqueSchemes
+    const uniqueSchemes = [...new Set(allSchemes)]
+
+    return uniqueSchemes
   }
 
   public get outboundTransporters() {
