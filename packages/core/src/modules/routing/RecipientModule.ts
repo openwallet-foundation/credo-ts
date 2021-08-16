@@ -196,7 +196,7 @@ export class RecipientModule {
     const invitation = await ConnectionInvitationMessage.fromUrl(mediatorConnInvite)
     // Check if invitation has been used already
     if (!invitation || !invitation.recipientKeys || !invitation.recipientKeys[0]) {
-      throw new Error(`Invalid mediation invitation`)
+      throw new AriesFrameworkError(`Invalid mediation invitation. Invitation must have at least one recipient key.`)
     }
     const connection = await this.connectionService.findByInvitationKey(invitation.recipientKeys[0])
     if (!connection) {
