@@ -31,7 +31,7 @@ class DummyOutboundTransporter implements OutboundTransporter {
     throw new Error('Method not implemented.')
   }
 
-  public supportedSchemes: string[] = []
+  public supportedSchemes: string[] = ['https']
 
   public sendMessage() {
     return Promise.resolve()
@@ -109,11 +109,11 @@ describe('MessageSender', () => {
     })
 
     test('throw error when there is no outbound transport', async () => {
-      await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrow(`Agent has no outbound transporter!`)
+      await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrow(/Message is undeliverable to connection/)
     })
 
     test('throw error when there is no service or queue', async () => {
-      messageSender.setOutboundTransporter(outboundTransporter)
+      messageSender.registerOutboundTransporter(outboundTransporter)
       transportServiceFindServicesMock.mockReturnValue([])
 
       await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrow(
@@ -122,11 +122,11 @@ describe('MessageSender', () => {
     })
 
     test('call send message when session send method fails', async () => {
-      messageSender.setOutboundTransporter(outboundTransporter)
+      messageSender.registerOutboundTransporter(outboundTransporter)
       transportServiceFindSessionMock.mockReturnValue(session)
       session.send = jest.fn().mockRejectedValue(new Error('some error'))
 
-      messageSender.setOutboundTransporter(outboundTransporter)
+      messageSender.registerOutboundTransporter(outboundTransporter)
       const sendMessageSpy = jest.spyOn(outboundTransporter, 'sendMessage')
 
       await messageSender.sendMessage(outboundMessage)
@@ -140,10 +140,10 @@ describe('MessageSender', () => {
     })
 
     test('call send message when session send method fails with missing keys', async () => {
-      messageSender.setOutboundTransporter(outboundTransporter)
+      messageSender.registerOutboundTransporter(outboundTransporter)
       transportServiceFindSessionMock.mockReturnValue(sessionWithoutKeys)
 
-      messageSender.setOutboundTransporter(outboundTransporter)
+      messageSender.registerOutboundTransporter(outboundTransporter)
       const sendMessageSpy = jest.spyOn(outboundTransporter, 'sendMessage')
 
       await messageSender.sendMessage(outboundMessage)
@@ -157,7 +157,7 @@ describe('MessageSender', () => {
     })
 
     test('call send message on session when there is a session for a given connection', async () => {
-      messageSender.setOutboundTransporter(outboundTransporter)
+      messageSender.registerOutboundTransporter(outboundTransporter)
       const sendMessageSpy = jest.spyOn(outboundTransporter, 'sendMessage')
       const sendMessageToServiceSpy = jest.spyOn(messageSender, 'sendMessageToService')
 
@@ -174,7 +174,7 @@ describe('MessageSender', () => {
     })
 
     test('calls sendMessageToService with payload and endpoint from second DidComm service when the first fails', async () => {
-      messageSender.setOutboundTransporter(outboundTransporter)
+      messageSender.registerOutboundTransporter(outboundTransporter)
       const sendMessageSpy = jest.spyOn(outboundTransporter, 'sendMessage')
       const sendMessageToServiceSpy = jest.spyOn(messageSender, 'sendMessageToService')
 
@@ -229,7 +229,7 @@ describe('MessageSender', () => {
     })
 
     test('calls send message with payload and endpoint from DIDComm service', async () => {
-      messageSender.setOutboundTransporter(outboundTransporter)
+      messageSender.registerOutboundTransporter(outboundTransporter)
       const sendMessageSpy = jest.spyOn(outboundTransporter, 'sendMessage')
 
       await messageSender.sendMessageToService({
@@ -247,7 +247,7 @@ describe('MessageSender', () => {
     })
 
     test('call send message with responseRequested when message has return route', async () => {
-      messageSender.setOutboundTransporter(outboundTransporter)
+      messageSender.registerOutboundTransporter(outboundTransporter)
       const sendMessageSpy = jest.spyOn(outboundTransporter, 'sendMessage')
 
       const message = new AgentMessage()

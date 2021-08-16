@@ -18,11 +18,11 @@ const agent = new Agent({
 
 // Use HTTP as outbound transporter
 const httpOutboundTransporter = new HttpOutboundTransporter()
-agent.setOutboundTransporter(httpOutboundTransporter)
+agent.registerOutboundTransporter(httpOutboundTransporter)
 
 // Or use WebSocket instead
 const wsOutboundTransporter = new WsOutboundTransporter()
-agent.setOutboundTransporter(wsOutboundTransporter)
+agent.registerOutboundTransporter(wsOutboundTransporter)
 ```
 
 ## Inbound Transport

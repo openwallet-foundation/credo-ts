@@ -118,12 +118,12 @@ export class Agent {
     this.inboundTransporter = inboundTransporter
   }
 
-  public setOutboundTransporter(outboundTransporter: OutboundTransporter) {
-    this.messageSender.setOutboundTransporter(outboundTransporter)
+  public registerOutboundTransporter(outboundTransporter: OutboundTransporter) {
+    this.messageSender.registerOutboundTransporter(outboundTransporter)
   }
 
-  public get outboundTransporter() {
-    return this.messageSender.outboundTransporter
+  public get outboundTransporters() {
+    return this.messageSender.outboundTransporters
   }
 
   public get events() {
@@ -162,23 +162,15 @@ export class Agent {
       await this.inboundTransporter.start(this)
     }
 
-    if (this.outboundTransporter) {
-      await this.outboundTransporter.start(this)
+    for (const transport of this.messageSender.outboundTransporters) {
+      transport.start(this)
     }
 
     // Connect to mediator through provided invitation if provided in config
     // Also requests mediation ans sets as default mediator
     // Because this requires the connections module, we do this in the agent constructor
     if (mediatorConnectionsInvite) {
-      // Assumption: processInvitation is a URL-encoded invitation
-      let connectionRecord = await this.connections.receiveInvitationFromUrl(mediatorConnectionsInvite, {
-        autoAcceptConnection: true,
-      })
-
-      // TODO: add timeout to returnWhenIsConnected
-      connectionRecord = await this.connections.returnWhenIsConnected(connectionRecord.id)
-      const mediationRecord = await this.mediationRecipient.requestAndAwaitGrant(connectionRecord, 60000) // TODO: put timeout as a config parameter
-      await this.mediationRecipient.setDefaultMediator(mediationRecord)
+      await this.mediationRecipient.provision(mediatorConnectionsInvite)
     }
 
     await this.mediationRecipient.initialize()
@@ -192,7 +184,9 @@ export class Agent {
     this.agentConfig.stop$.next(true)
 
     // Stop transports
-    await this.outboundTransporter?.stop()
+    for (const transport of this.messageSender.outboundTransporters) {
+      transport.stop()
+    }
     await this.inboundTransporter?.stop()
 
     // close/delete wallet if still initialized

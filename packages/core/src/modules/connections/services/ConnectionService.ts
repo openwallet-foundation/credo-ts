@@ -494,6 +494,19 @@ export class ConnectionService {
   }
 
   /**
+   * Find connection by invitation key.
+   *
+   * @param key the invitation key to search for
+   * @returns the connection record, or null if not found
+   * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
+   */
+  public findByInvitationKey(key: string): Promise<ConnectionRecord | null> {
+    return this.connectionRepository.findSingleByQuery({
+      invitationKey: key,
+    })
+  }
+
+  /**
    * Retrieve a connection record by thread id
    *
    * @param threadId The thread id
@@ -567,6 +580,10 @@ export class ConnectionService {
       return connection.id === connectionId && connection.state === ConnectionState.Complete
     }
 
+    // Check if already done
+    const connection = await this.connectionRepository.findById(connectionId)
+    if (connection && isConnected(connection)) return connection //TODO: check if this leaves trailing listeners behind?
+
     const promise = new Promise<ConnectionRecord>((resolve) => {
       const listener = ({ payload: { connectionRecord } }: ConnectionStateChangedEvent) => {
         if (isConnected(connectionRecord)) {
@@ -577,10 +594,6 @@ export class ConnectionService {
 
       this.eventEmitter.on<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged, listener)
     })
-
-    // Check if already done
-    const connection = await this.connectionRepository.findById(connectionId)
-    if (connection && isConnected(connection)) return connection //TODO: check if this leaves trailing listeners behind?
 
     // return listener
     return promise

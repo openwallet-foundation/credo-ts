@@ -31,7 +31,7 @@ export class KeylistUpdateResponseMessage extends AgentMessage {
 
   @Equals(KeylistUpdateResponseMessage.type)
   public readonly type = KeylistUpdateResponseMessage.type
-  public static readonly type = 'https://didcomm.org/coordinatemediation/1.0/keylist-update-response'
+  public static readonly type = 'https://didcomm.org/coordinate-mediation/1.0/keylist-update-response'
 
   @Type(() => KeylistUpdated)
   @IsArray()

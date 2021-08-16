@@ -46,12 +46,12 @@ describe('credentials', () => {
     }
     faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
     faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
-    faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
+    faberAgent.registerOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
     await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
     aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
-    aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
+    aliceAgent.registerOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
     await aliceAgent.initialize()
 
     const { definition } = await prepareForIssuance(faberAgent, ['name', 'age'])
