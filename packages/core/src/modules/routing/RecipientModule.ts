@@ -185,13 +185,8 @@ export class RecipientModule {
 
   public async provision(mediatorConnInvite: string) {
     this.logger.debug('Provision Mediation with invitation', { invite: mediatorConnInvite })
-    if (!mediatorConnInvite) {
-      throw new AriesFrameworkError('Mediation provision requires an invitation to be passed')
-    }
-    // Connect to mediator through provided invitation if provided in config
-    // Also requests mediation ans sets as default mediator
-    // Because this requires the connections module, we do this in the agent constructor
-
+    // Connect to mediator through provided invitation
+    // Also requests mediation and sets as default mediator
     // Assumption: processInvitation is a URL-encoded invitation
     const invitation = await ConnectionInvitationMessage.fromUrl(mediatorConnInvite)
     // Check if invitation has been used already
@@ -210,9 +205,7 @@ export class RecipientModule {
       this.logger.debug('Processed mediation invitation', {
         connectionId: invitationConnectionRecord,
       })
-      const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(
-        invitationConnectionRecord.id
-      )
+      const { message, connectionRecord } = await this.connectionService.createRequest(invitationConnectionRecord.id)
       const outbound = createOutboundMessage(connectionRecord, message)
       await this.messageSender.sendMessage(outbound)
 

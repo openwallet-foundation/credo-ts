@@ -580,10 +580,6 @@ export class ConnectionService {
       return connection.id === connectionId && connection.state === ConnectionState.Complete
     }
 
-    // Check if already done
-    const connection = await this.connectionRepository.findById(connectionId)
-    if (connection && isConnected(connection)) return connection //TODO: check if this leaves trailing listeners behind?
-
     const promise = new Promise<ConnectionRecord>((resolve) => {
       const listener = ({ payload: { connectionRecord } }: ConnectionStateChangedEvent) => {
         if (isConnected(connectionRecord)) {
@@ -594,6 +590,10 @@ export class ConnectionService {
 
       this.eventEmitter.on<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged, listener)
     })
+
+    // Check if already done
+    const connection = await this.connectionRepository.findById(connectionId)
+    if (connection && isConnected(connection)) return connection //TODO: check if this leaves trailing listeners behind?
 
     // return listener
     return promise

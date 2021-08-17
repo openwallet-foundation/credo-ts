@@ -1,4 +1,4 @@
-import type { DidCommService, ConnectionRecord, Connection } from '../modules/connections'
+import type { DidCommService, ConnectionRecord } from '../modules/connections'
 import type { OutboundTransporter } from '../transport/OutboundTransporter'
 import type { OutboundMessage, OutboundPackage, WireMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
@@ -111,9 +111,8 @@ export class MessageSender {
     for await (const service of services) {
       this.logger.debug(`Sending outbound message to service:`, { service })
       try {
-        const protocol = service.serviceEndpoint.split(':')[0]
         for (const transport of this.outboundTransporters) {
-          if (transport.supportedSchemes.includes(protocol)) {
+          if (transport.supportedSchemes.includes(service.protocolScheme)) {
             await transport.sendMessage({
               payload: packedMessage,
               endpoint: service.serviceEndpoint,
@@ -254,9 +253,8 @@ export class MessageSender {
 
     const outboundPackage = await this.packMessage({ message, keys, endpoint: service.serviceEndpoint })
     outboundPackage.endpoint = service.serviceEndpoint
-    const protocol = outboundPackage.endpoint.split(':')[0]
     for (const transport of this.outboundTransporters) {
-      if (transport.supportedSchemes.includes(protocol)) {
+      if (transport.supportedSchemes.includes(service.protocolScheme)) {
         await transport.sendMessage(outboundPackage)
         break
       }
@@ -283,7 +281,7 @@ export class MessageSender {
     //If restrictive will remove services not listed in schemes list
     if (transportPriority?.restrictive) {
       services.filter((service) => {
-        const serviceSchema = service.serviceEndpoint.split(':')[0]
+        const serviceSchema = service.protocolScheme
         return transportPriority.schemes.includes(serviceSchema)
       })
     }
@@ -291,8 +289,8 @@ export class MessageSender {
     //If transport priority is set we will sort services by our priority
     if (transportPriority?.schemes) {
       services.sort(function (a, b) {
-        const aScheme = a.serviceEndpoint.split(':')[0]
-        const bScheme = b.serviceEndpoint.split(':')[0]
+        const aScheme = a.protocolScheme
+        const bScheme = b.protocolScheme
         return transportPriority?.schemes.indexOf(aScheme) - transportPriority?.schemes.indexOf(bScheme)
       })
     }
