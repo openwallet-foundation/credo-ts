@@ -93,7 +93,9 @@ export class RecipientModule {
     else if (mediatorPickupStrategy === MediatorPickupStrategy.Implicit) {
       this.agentConfig.logger.info(`Starting implicit pickup of messages from mediator '${mediator.id}'`)
       const { message, connectionRecord } = await this.connectionService.createTrustPing(mediatorConnection.id)
-      await this.messageSender.sendMessage(createOutboundMessage(connectionRecord, message))
+      await this.messageSender.sendMessage(createOutboundMessage(connectionRecord, message), {
+        transportPriority: { schemes: ['wss', 'ws'] },
+      })
     } else {
       this.agentConfig.logger.info(
         `Skipping pickup of messages from mediator '${mediator.id}' due to pickup strategy none`
@@ -110,7 +112,9 @@ export class RecipientModule {
 
     const batchPickupMessage = new BatchPickupMessage({ batchSize: 10 })
     const outboundMessage = createOutboundMessage(mediatorConnection, batchPickupMessage)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendMessage(outboundMessage, {
+      transportPriority: { schemes: ['wss', 'ws'] },
+    })
   }
 
   public async setDefaultMediator(mediatorRecord: MediationRecord) {
@@ -120,14 +124,18 @@ export class RecipientModule {
   public async requestMediation(connection: ConnectionRecord): Promise<MediationRecord> {
     const { mediationRecord, message } = await this.mediationRecipientService.createRequest(connection)
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendMessage(outboundMessage, {
+      transportPriority: { schemes: ['wss', 'ws'] },
+    })
     return mediationRecord
   }
 
   public async notifyKeylistUpdate(connection: ConnectionRecord, verkey: string) {
     const message = this.mediationRecipientService.createKeylistUpdateMessage(verkey)
     const outboundMessage = createOutboundMessage(connection, message)
-    const response = await this.messageSender.sendMessage(outboundMessage)
+    const response = await this.messageSender.sendMessage(outboundMessage, {
+      transportPriority: { schemes: ['wss', 'ws'] },
+    })
     return response
   }
 
@@ -177,7 +185,9 @@ export class RecipientModule {
 
     // Send mediation request message
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendMessage(outboundMessage, {
+      transportPriority: { schemes: ['wss', 'ws'] },
+    })
 
     const event = await firstValueFrom(subject)
     return event.payload.mediationRecord
@@ -207,7 +217,9 @@ export class RecipientModule {
       })
       const { message, connectionRecord } = await this.connectionService.createRequest(invitationConnectionRecord.id)
       const outbound = createOutboundMessage(connectionRecord, message)
-      await this.messageSender.sendMessage(outbound)
+      await this.messageSender.sendMessage(outbound, {
+        transportPriority: { schemes: ['wss', 'ws'] },
+      })
 
       // TODO: add timeout to returnWhenIsConnected
       const completedConnectionRecord = await this.connectionService.returnWhenIsConnected(connectionRecord.id)
