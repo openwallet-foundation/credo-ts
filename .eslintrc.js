@@ -1,4 +1,5 @@
 module.exports = {
+  plugins: ['eslint-plugin-tsdoc'],
   parser: '@typescript-eslint/parser',
   extends: [
     'eslint:recommended',
@@ -48,6 +49,7 @@ module.exports = {
         devDependencies: false,
       },
     ],
+    'tsdoc/syntax': 'warn',
   },
   overrides: [
     {
