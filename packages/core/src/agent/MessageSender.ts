@@ -266,10 +266,10 @@ export class MessageSender {
     transportPriority?: TransportPriorityOptions
   ) {
     this.logger.debug(
-      `Retrieving services for connection '${connection.id}'${' (' && connection.theirLabel && ')'}${
-        (transportPriority?.restrictive && ' restrictively ',
-        transportPriority && ' by priority of the follow schemes: ' + transportPriority.schemes)
-      }`
+      `Retrieving services for connection '${connection.id}' (${connection.theirLabel})`,
+      {
+      	transportPriority
+      }
     )
     // Retrieve DIDComm services
     const allServices = this.transportService.findDidCommServices(connection)
