@@ -22,6 +22,18 @@ import { BatchPickupMessage } from './messages/BatchPickupMessage'
 import { MediationState } from './models/MediationState'
 import { MediationRecipientService } from './services/MediationRecipientService'
 
+/**
+ *
+ * Represents a recipient of a Mediation relationship.
+ *
+ * @remarks
+ *
+ * Recipient is the client supporting code that enables agents to request
+ * mediation and use the granted mediation information for future connections.
+ * The RecipientModule class implements the needed code to not only retrieve messages
+ * but to also have messages stored for later retrieval.
+ * @public
+ */
 @scoped(Lifecycle.ContainerScoped)
 export class RecipientModule {
   private agentConfig: AgentConfig
@@ -30,6 +42,15 @@ export class RecipientModule {
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
 
+  /**
+   * Creates an instance of RecipientModule.
+   * @typeParam dispatcher - dispatcher registers handlers
+   * @typeParam agentConfig - config from startup
+   * @typeParam mediationRecipientService - service for recipient models
+   * @typeParam connectionService - service for connection models
+   * @typeParam messageSender - message sender that calls registered transport send message
+   * @typeParam eventEmitter - event emitter
+   */
   public constructor(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
@@ -46,6 +67,11 @@ export class RecipientModule {
     this.registerHandlers(dispatcher)
   }
 
+  /**
+   *
+   *
+   * @memberof RecipientModule
+   */
   public async initialize() {
     const { defaultMediatorId, clearDefaultMediator } = this.agentConfig
 
@@ -66,6 +92,13 @@ export class RecipientModule {
     }
   }
 
+  /**
+   *
+   *
+   * @param {MediationRecord} mediator
+   * @return {*}
+   * @memberof RecipientModule
+   */
   public async initiateMessagePickup(mediator: MediationRecord) {
     const { mediatorPickupStrategy, mediatorPollingInterval } = this.agentConfig
 
@@ -96,10 +129,22 @@ export class RecipientModule {
     }
   }
 
+  /**
+   *
+   *
+   * @return {*}
+   * @memberof RecipientModule
+   */
   public async discoverMediation() {
     return this.mediationRecipientService.discoverMediation()
   }
 
+  /**
+   *
+   *
+   * @param {ConnectionRecord} mediatorConnection
+   * @memberof RecipientModule
+   */
   public async pickupMessages(mediatorConnection: ConnectionRecord) {
     mediatorConnection.assertReady()
 
@@ -108,10 +153,24 @@ export class RecipientModule {
     await this.messageSender.sendMessage(outboundMessage)
   }
 
+  /**
+   *
+   *
+   * @param {MediationRecord} mediatorRecord
+   * @return {*}
+   * @memberof RecipientModule
+   */
   public async setDefaultMediator(mediatorRecord: MediationRecord) {
     return this.mediationRecipientService.setDefaultMediator(mediatorRecord)
   }
 
+  /**
+   *
+   *
+   * @param {ConnectionRecord} connection
+   * @return {*}  {Promise<MediationRecord>}
+   * @memberof RecipientModule
+   */
   public async requestMediation(connection: ConnectionRecord): Promise<MediationRecord> {
     const { mediationRecord, message } = await this.mediationRecipientService.createRequest(connection)
     const outboundMessage = createOutboundMessage(connection, message)
@@ -119,6 +178,14 @@ export class RecipientModule {
     return mediationRecord
   }
 
+  /**
+   *
+   *
+   * @param {ConnectionRecord} connection
+   * @param {string} verkey
+   * @return {*}
+   * @memberof RecipientModule
+   */
   public async notifyKeylistUpdate(connection: ConnectionRecord, verkey: string) {
     const message = this.mediationRecipientService.createKeylistUpdateMessage(verkey)
     const outboundMessage = createOutboundMessage(connection, message)
@@ -126,18 +193,43 @@ export class RecipientModule {
     return response
   }
 
+  /**
+   *
+   *
+   * @param {string} connectionId
+   * @return {*}
+   * @memberof RecipientModule
+   */
   public async findByConnectionId(connectionId: string) {
     return await this.mediationRecipientService.findByConnectionId(connectionId)
   }
 
+  /**
+   *
+   *
+   * @return {*}
+   * @memberof RecipientModule
+   */
   public async getMediators() {
     return await this.mediationRecipientService.getMediators()
   }
 
+  /**
+   *
+   *
+   * @return {*}  {(Promise<MediationRecord | null>)}
+   * @memberof RecipientModule
+   */
   public async findDefaultMediator(): Promise<MediationRecord | null> {
     return this.mediationRecipientService.findDefaultMediator()
   }
 
+  /**
+   *
+   *
+   * @return {*}  {(Promise<ConnectionRecord | null>)}
+   * @memberof RecipientModule
+   */
   public async findDefaultMediatorConnection(): Promise<ConnectionRecord | null> {
     const mediatorRecord = await this.findDefaultMediator()
 
@@ -148,6 +240,14 @@ export class RecipientModule {
     return null
   }
 
+  /**
+   *
+   *
+   * @param {ConnectionRecord} connection
+   * @param {number} [timeoutMs=10000]
+   * @return {*}  {Promise<MediationRecord>}
+   * @memberof RecipientModule
+   */
   public async requestAndAwaitGrant(connection: ConnectionRecord, timeoutMs = 10000): Promise<MediationRecord> {
     const { mediationRecord, message } = await this.mediationRecipientService.createRequest(connection)
 
@@ -178,8 +278,15 @@ export class RecipientModule {
     return event.payload.mediationRecord
   }
 
-  // Register handlers for the several messages for the mediator.
+  /**
+   *
+   *
+   * @private
+   * @param {Dispatcher} dispatcher
+   * @memberof RecipientModule
+   */
   private registerHandlers(dispatcher: Dispatcher) {
+    // Register handlers for the several messages for the mediator.
     dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
