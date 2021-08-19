@@ -12,12 +12,13 @@ export class WsOutboundTransporter implements OutboundTransporter {
   private agent!: Agent
   private logger!: Logger
   private WebSocketClass!: typeof WebSocket
-
+  private continue!: boolean
+  private recursiveBackOff: { [socketId: string]: number } = {}
   public supportedSchemes = ['ws', 'wss']
 
   public async start(agent: Agent): Promise<void> {
     this.agent = agent
-
+    this.continue = true
     const agentConfig = agent.injectionContainer.resolve(AgentConfig)
 
     this.logger = agentConfig.logger
@@ -27,7 +28,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
 
   public async stop() {
     this.logger.debug('Stopping WS outbound transport')
-
+    this.continue = false
     this.transportTable.forEach((socket) => {
       socket.removeEventListener('message', this.handleMessageEvent)
       socket.close()
@@ -47,7 +48,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
     const isNewSocket = this.hasOpenSocket(endpoint)
     const socket = await this.resolveSocket(endpoint, endpoint)
 
-    socket.send(JSON.stringify(payload))
+    socket.send(Buffer.from(JSON.stringify(payload)))
 
     // If the socket was created for this message and we don't have return routing enabled
     // We can close the socket as it shouldn't return messages anymore
@@ -84,8 +85,10 @@ export class WsOutboundTransporter implements OutboundTransporter {
   // so 'this' is scoped to the 'WsOutboundTransporter' class instance
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private handleMessageEvent = (event: any) => {
-    this.logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
-    this.agent.receiveMessage(JSON.parse(event.data))
+    this.logger.trace('WebSocket message event received.', { url: event.target.url, data: event.data })
+    const payload = JSON.parse(Buffer.from(event.data).toString('utf-8'))
+    this.logger.debug('Payload received from mediator:', payload)
+    this.agent.receiveMessage(payload)
   }
 
   private listenOnWebSocketMessages(socket: WebSocket) {
@@ -109,9 +112,29 @@ export class WsOutboundTransporter implements OutboundTransporter {
         reject(error)
       }
 
-      socket.onclose = () => {
+      socket.onclose = async () => {
+        this.logger.debug(`WebSocket closing to ${endpoint}`)
         socket.removeEventListener('message', this.handleMessageEvent)
         this.transportTable.delete(socketId)
+        if (this.continue) {
+          const mediators = await this.agent.mediationRecipient.getMediators()
+          const mediatorConnIds = mediators.map((mediator) => mediator.connectionId)
+          if (mediatorConnIds.includes(socketId)) {
+            this.logger.debug(`WebSocket attempting to reconnect to ${endpoint}`)
+            // send trustPing to mediator to open socket
+            let interval = 100
+            if (this.recursiveBackOff[socketId as string]) {
+              interval = this.recursiveBackOff[socketId]
+            }
+            setTimeout(
+              () => {
+                this.agent.connections.acceptResponse(socketId)
+              },
+              interval < 1000 ? interval : 1000
+            )
+            this.recursiveBackOff[socketId] = interval * 2
+          }
+        }
       }
     })
   }

@@ -51,17 +51,17 @@ describe('E2E Subject tests', () => {
     }
 
     // Recipient Setup
-    recipientAgent.setOutboundTransporter(new SubjectOutboundTransporter(recipientMessages, subjectMap))
+    recipientAgent.registerOutboundTransporter(new SubjectOutboundTransporter(recipientMessages, subjectMap))
     recipientAgent.setInboundTransporter(new SubjectInboundTransporter(recipientMessages))
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.setOutboundTransporter(new SubjectOutboundTransporter(mediatorMessages, subjectMap))
+    mediatorAgent.registerOutboundTransporter(new SubjectOutboundTransporter(mediatorMessages, subjectMap))
     mediatorAgent.setInboundTransporter(new SubjectInboundTransporter(mediatorMessages))
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.setOutboundTransporter(new SubjectOutboundTransporter(senderMessages, subjectMap))
+    senderAgent.registerOutboundTransporter(new SubjectOutboundTransporter(senderMessages, subjectMap))
     senderAgent.setInboundTransporter(new SubjectInboundTransporter(senderMessages))
     await senderAgent.initialize()
 

@@ -41,17 +41,17 @@ describe('E2E WS tests', () => {
 
   test('Full WS flow (connect, request mediation, issue, verify)', async () => {
     // Recipient Setup
-    recipientAgent.setOutboundTransporter(new WsOutboundTransporter())
+    recipientAgent.registerOutboundTransporter(new WsOutboundTransporter())
     await recipientAgent.initialize()
 
     // Mediator Setup
     mediatorAgent.setInboundTransporter(new WsInboundTransport({ port: mediatorPort }))
-    mediatorAgent.setOutboundTransporter(new WsOutboundTransporter())
+    mediatorAgent.registerOutboundTransporter(new WsOutboundTransporter())
     await mediatorAgent.initialize()
 
     // Sender Setup
     senderAgent.setInboundTransporter(new WsInboundTransport({ port: senderPort }))
-    senderAgent.setOutboundTransporter(new WsOutboundTransporter())
+    senderAgent.registerOutboundTransporter(new WsOutboundTransporter())
     await senderAgent.initialize()
 
     await e2eTest({
