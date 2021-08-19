@@ -1,4 +1,4 @@
-import { Expose, Transform, Type } from 'class-transformer'
+import { Expose, Transform } from 'class-transformer'
 import { Equals, IsDate, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
