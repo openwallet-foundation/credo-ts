@@ -34,7 +34,6 @@ import {
   ConnectionState,
   CredentialEventTypes,
   CredentialPreview,
-  CredentialPreviewAttribute,
   CredentialState,
   DidCommService,
   DidDoc,

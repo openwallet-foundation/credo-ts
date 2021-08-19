@@ -43,7 +43,7 @@ export class CredentialPreview {
    *   age: "20"
    * })
    */
-  public fromRecord(record: Record<string, string>) {
+  public static fromRecord(record: Record<string, string>) {
     const attributes = Object.entries(record).map(
       ([name, value]) =>
         new CredentialPreviewAttribute({
