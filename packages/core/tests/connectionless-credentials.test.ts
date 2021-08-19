@@ -7,13 +7,14 @@ import { SubjectInboundTransporter } from '../../../tests/transport/SubjectInbou
 import { SubjectOutboundTransporter } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import {
+  CredentialPreview,
   AutoAcceptCredential,
   CredentialEventTypes,
   CredentialRecord,
   CredentialState,
 } from '../src/modules/credentials'
 
-import { getBaseConfig, previewFromAttributes, prepareForIssuance, waitForCredentialRecordSubject } from './helpers'
+import { getBaseConfig, prepareForIssuance, waitForCredentialRecordSubject } from './helpers'
 import testLogger from './logger'
 
 const faberConfig = getBaseConfig('Faber connection-less Credentials', {
@@ -24,7 +25,7 @@ const aliceConfig = getBaseConfig('Alice connection-less Credentials', {
   endpoint: 'rxjs:alice',
 })
 
-const credentialPreview = previewFromAttributes({
+const credentialPreview = CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
 })

@@ -284,18 +284,6 @@ export async function registerDefinition(
   return credentialDefinition
 }
 
-export function previewFromAttributes(attributes: Record<string, string>): CredentialPreview {
-  return new CredentialPreview({
-    attributes: Object.entries(attributes).map(
-      ([name, value]) =>
-        new CredentialPreviewAttribute({
-          name,
-          value,
-        })
-    ),
-  })
-}
-
 export async function prepareForIssuance(agent: Agent, attributes: string[]) {
   const publicDid = agent.publicDid?.did
 
@@ -558,7 +546,7 @@ export async function setupCredentialTests(
 }
 
 export async function setupProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {
-  const credentialPreview = previewFromAttributes({
+  const credentialPreview = CredentialPreview.fromRecord({
     name: 'John',
     age: '99',
   })
