@@ -2,7 +2,7 @@ import { getBaseConfig } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
 
-import { HttpOutboundTransporter, Agent, AutoAcceptCredential } from '@aries-framework/core'
+import { HttpOutboundTransport, Agent, AutoAcceptCredential } from '@aries-framework/core'
 import { HttpInboundTransport } from '@aries-framework/node'
 
 const recipientConfig = getBaseConfig('E2E HTTP Recipient', {
@@ -41,17 +41,17 @@ describe('E2E HTTP tests', () => {
 
   test('Full HTTP flow (connect, request mediation, issue, verify)', async () => {
     // Recipient Setup
-    recipientAgent.registerOutboundTransporter(new HttpOutboundTransporter())
+    recipientAgent.registerOutboundTransport(new HttpOutboundTransport())
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.setInboundTransporter(new HttpInboundTransport({ port: mediatorPort }))
-    mediatorAgent.registerOutboundTransporter(new HttpOutboundTransporter())
+    mediatorAgent.registerInboundTransport(new HttpInboundTransport({ port: mediatorPort }))
+    mediatorAgent.registerOutboundTransport(new HttpOutboundTransport())
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.setInboundTransporter(new HttpInboundTransport({ port: senderPort }))
-    senderAgent.registerOutboundTransporter(new HttpOutboundTransporter())
+    senderAgent.registerInboundTransport(new HttpInboundTransport({ port: senderPort }))
+    senderAgent.registerOutboundTransport(new HttpOutboundTransport())
     await senderAgent.initialize()
 
     await e2eTest({

@@ -3,17 +3,17 @@ import type { ConnectionRecord } from '../src/modules/connections'
 
 import { Subject } from 'rxjs'
 
-import { SubjectInboundTransporter } from '../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransporter } from '../../../tests/transport/SubjectOutboundTransport'
+import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
+import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 
 import { waitForBasicMessage, getBaseConfig } from './helpers'
 
 const aliceConfig = getBaseConfig('Agents Alice', {
-  endpoint: 'rxjs:alice',
+  endpoints: ['rxjs:alice'],
 })
 const bobConfig = getBaseConfig('Agents Bob', {
-  endpoint: 'rxjs:bob',
+  endpoints: ['rxjs:bob'],
 })
 
 describe('agents', () => {
@@ -42,13 +42,13 @@ describe('agents', () => {
     }
 
     aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
-    aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
-    aliceAgent.registerOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
+    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
     await aliceAgent.initialize()
 
     bobAgent = new Agent(bobConfig.config, bobConfig.agentDependencies)
-    bobAgent.setInboundTransporter(new SubjectInboundTransporter(bobMessages))
-    bobAgent.registerOutboundTransporter(new SubjectOutboundTransporter(bobMessages, subjectMap))
+    bobAgent.registerInboundTransport(new SubjectInboundTransport(bobMessages))
+    bobAgent.registerOutboundTransport(new SubjectOutboundTransport(bobMessages, subjectMap))
     await bobAgent.initialize()
 
     const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection()

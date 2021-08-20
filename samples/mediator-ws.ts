@@ -3,7 +3,7 @@ import { Server } from 'ws'
 
 import { TestLogger } from '../packages/core/tests/logger'
 
-import { WsOutboundTransporter, Agent, ConnectionInvitationMessage, LogLevel, AgentConfig } from '@aries-framework/core'
+import { WsOutboundTransport, Agent, ConnectionInvitationMessage, LogLevel, AgentConfig } from '@aries-framework/core'
 import { WsInboundTransport, agentDependencies } from '@aries-framework/node'
 
 const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3002
@@ -26,10 +26,10 @@ const socketServer = new Server({ noServer: true })
 
 const agent = new Agent(agentConfig, agentDependencies)
 const config = agent.injectionContainer.resolve(AgentConfig)
-const messageSender = new WsOutboundTransporter()
+const messageSender = new WsOutboundTransport()
 const messageReceiver = new WsInboundTransport({ server: socketServer })
-agent.setInboundTransporter(messageReceiver)
-agent.registerOutboundTransporter(messageSender)
+agent.registerInboundTransport(messageReceiver)
+agent.registerOutboundTransport(messageSender)
 
 // Allow to create invitation, no other way to ask for invitation yet
 app.get('/invitation', async (req, res) => {
@@ -39,7 +39,8 @@ app.get('/invitation', async (req, res) => {
   } else {
     const { invitation } = await agent.connections.createConnection()
 
-    res.send(invitation.toUrl(config.getEndpoint() + '/invitation'))
+    const httpEndpoint = config.endpoints.find((e) => e.startsWith('http'))
+    res.send(invitation.toUrl(httpEndpoint + '/invitation'))
   }
 })
 

@@ -1,4 +1,5 @@
 import type { Wallet } from '../../../wallet/Wallet'
+import type { Routing } from '../services/ConnectionService'
 
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { AgentMessage } from '../../../agent/AgentMessage'
@@ -26,14 +27,14 @@ const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRep
 
 describe('ConnectionService', () => {
   const config = getAgentConfig('ConnectionServiceTest', {
-    endpoint: 'http://agent.com:8080',
+    endpoints: ['http://agent.com:8080'],
   })
 
   let wallet: Wallet
   let connectionRepository: ConnectionRepository
   let connectionService: ConnectionService
   let eventEmitter: EventEmitter
-  let myRouting: { did: string; verkey: string; endpoint: string; routingKeys: string[] }
+  let myRouting: Routing
 
   beforeAll(async () => {
     wallet = new IndyWallet(config)
@@ -49,7 +50,7 @@ describe('ConnectionService', () => {
     eventEmitter = new EventEmitter(config)
     connectionRepository = new ConnectionRepositoryMock()
     connectionService = new ConnectionService(wallet, config, connectionRepository, eventEmitter)
-    myRouting = { did: 'fakeDid', verkey: 'fakeVerkey', endpoint: config.getEndpoint(), routingKeys: [] }
+    myRouting = { did: 'fakeDid', verkey: 'fakeVerkey', endpoints: config.endpoints ?? [], routingKeys: [] }
   })
 
   describe('createConnectionWithInvitation', () => {
@@ -80,7 +81,7 @@ describe('ConnectionService', () => {
           label: config.label,
           recipientKeys: [expect.any(String)],
           routingKeys: [],
-          serviceEndpoint: config.getEndpoint(),
+          serviceEndpoint: config.endpoints[0],
         })
       )
     })

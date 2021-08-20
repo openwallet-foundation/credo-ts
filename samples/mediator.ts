@@ -1,12 +1,6 @@
 import { TestLogger } from '../packages/core/tests/logger'
 
-import {
-  HttpOutboundTransporter,
-  Agent,
-  ConnectionInvitationMessage,
-  LogLevel,
-  AgentConfig,
-} from '@aries-framework/core'
+import { HttpOutboundTransport, Agent, ConnectionInvitationMessage, LogLevel, AgentConfig } from '@aries-framework/core'
 import { HttpInboundTransport, agentDependencies } from '@aries-framework/node'
 
 const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3001
@@ -27,21 +21,22 @@ const agentConfig = {
 // Set up agent
 const agent = new Agent(agentConfig, agentDependencies)
 const config = agent.injectionContainer.resolve(AgentConfig)
-const inboundTransporter = new HttpInboundTransport({ port })
-const outboundTransporter = new HttpOutboundTransporter()
+const inboundTransport = new HttpInboundTransport({ port })
+const outboundTransport = new HttpOutboundTransport()
 
-agent.setInboundTransporter(inboundTransporter)
-agent.registerOutboundTransporter(outboundTransporter)
+agent.registerInboundTransport(inboundTransport)
+agent.registerOutboundTransport(outboundTransport)
 
 // Allow to create invitation, no other way to ask for invitation yet
-inboundTransporter.app.get('/invitation', async (req, res) => {
+inboundTransport.app.get('/invitation', async (req, res) => {
   if (typeof req.query.c_i === 'string') {
     const invitation = await ConnectionInvitationMessage.fromUrl(req.url)
     res.send(invitation.toJSON())
   } else {
     const { invitation } = await agent.connections.createConnection()
 
-    res.send(invitation.toUrl(config.getEndpoint() + '/invitation'))
+    const httpEndpoint = config.endpoints.find((e) => e.startsWith('http'))
+    res.send(invitation.toUrl(httpEndpoint + '/invitation'))
   }
 })
 

@@ -3,8 +3,8 @@ import type { CredentialStateChangedEvent } from '../src/modules/credentials'
 
 import { ReplaySubject, Subject } from 'rxjs'
 
-import { SubjectInboundTransporter } from '../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransporter } from '../../../tests/transport/SubjectOutboundTransport'
+import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
+import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import {
   AutoAcceptCredential,
@@ -17,11 +17,11 @@ import { getBaseConfig, previewFromAttributes, prepareForIssuance, waitForCreden
 import testLogger from './logger'
 
 const faberConfig = getBaseConfig('Faber connection-less Credentials', {
-  endpoint: 'rxjs:faber',
+  endpoints: ['rxjs:faber'],
 })
 
 const aliceConfig = getBaseConfig('Alice connection-less Credentials', {
-  endpoint: 'rxjs:alice',
+  endpoints: ['rxjs:alice'],
 })
 
 const credentialPreview = previewFromAttributes({
@@ -45,13 +45,13 @@ describe('credentials', () => {
       'rxjs:alice': aliceMessages,
     }
     faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
-    faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
-    faberAgent.registerOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
+    faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
+    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
     await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
-    aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
-    aliceAgent.registerOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
+    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(faberMessages, subjectMap))
     await aliceAgent.initialize()
 
     const { definition } = await prepareForIssuance(faberAgent, ['name', 'age'])

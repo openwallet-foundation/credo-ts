@@ -1,13 +1,13 @@
 import type { Agent } from '../agent/Agent'
 import type { Logger } from '../logger'
 import type { OutboundPackage } from '../types'
-import type { OutboundTransporter } from './OutboundTransporter'
+import type { OutboundTransport } from './OutboundTransport'
 import type WebSocket from 'ws'
 
 import { AgentConfig } from '../agent/AgentConfig'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 
-export class WsOutboundTransporter implements OutboundTransporter {
+export class WsOutboundTransport implements OutboundTransport {
   private transportTable: Map<string, WebSocket> = new Map<string, WebSocket>()
   private agent!: Agent
   private logger!: Logger
@@ -82,7 +82,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
   }
 
   // NOTE: Because this method is passed to the event handler this must be a lambda method
-  // so 'this' is scoped to the 'WsOutboundTransporter' class instance
+  // so 'this' is scoped to the 'WsOutboundTransport' class instance
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private handleMessageEvent = (event: any) => {
     this.logger.trace('WebSocket message event received.', { url: event.target.url, data: event.data })

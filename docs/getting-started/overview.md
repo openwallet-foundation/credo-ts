@@ -12,8 +12,8 @@ In most applications, the client communicates with the server using http protoco
 
 On the other hand, agents communicate using [DIDComm](https://github.com/hyperledger/aries-rfcs/tree/master/concepts/0005-didcomm) communication protocols. While protocols have much more to talk about the most important concern here is how the communication flow goes. For the sake of demonstration, lets assume 2 agents want to communicate, Agent Alice and Agent Bob.
 
-1. Agent Alice will send a connection request to Agent Bob either directly or through a mediator (another routing agent) using outbound transporter
-2. Agent Bob receives the message (through inbound transporter) and process the message
+1. Agent Alice will send a connection request to Agent Bob either directly or through a mediator (another routing agent) using outbound transport
+2. Agent Bob receives the message (through inbound transport) and process the message
 3. Agent Bob sends the response in a new request (using outbound TP) sent back to agent Alice
 4. Agent Alice receives the message through the inbound TP
 5. Agent Alice process the message (under the hood through Aries) and raises an event with attached data relevant to communication context
@@ -37,8 +37,8 @@ A callback method passed to the agent event handler to be called on different ev
 - A recent connection with other agent has changed state
 - A credential received or has a state changed
 
-## [Transporters](transports.md)
+## [Transports](transports.md)
 
-Services that will handle the outbound and inbound transports. Remember we mentioned that unlike http request which happens on one channel, the connection here has two ways one outgoing using the outbound transporter and one incoming using the inbound transporter
+Services that will handle the outbound and inbound transports. Remember we mentioned that unlike http request which happens on one channel, the connection here has two ways one outgoing using the outbound transport and one incoming using the inbound transport
 
 Those are the main components that you as a developer will need to care about.

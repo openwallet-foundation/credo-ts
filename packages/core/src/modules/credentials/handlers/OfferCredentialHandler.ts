@@ -50,7 +50,7 @@ export class OfferCredentialHandler implements Handler {
     } else if (record.offerMessage?.service) {
       const routing = await this.mediationRecipientService.getRouting()
       const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoint,
+        serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.verkey],
         routingKeys: routing.routingKeys,
       })

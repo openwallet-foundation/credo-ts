@@ -5,8 +5,8 @@ import { Subject } from 'rxjs'
 import { getBaseConfig } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
-import { SubjectInboundTransporter } from './transport/SubjectInboundTransport'
-import { SubjectOutboundTransporter } from './transport/SubjectOutboundTransport'
+import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
+import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
 import { Agent, AutoAcceptCredential } from '@aries-framework/core'
 
@@ -14,11 +14,11 @@ const recipientConfig = getBaseConfig('E2E Subject Recipient', {
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
 })
 const mediatorConfig = getBaseConfig('E2E Subject Mediator', {
-  endpoint: 'rxjs:mediator',
+  endpoints: ['rxjs:mediator'],
   autoAcceptMediationRequests: true,
 })
 const senderConfig = getBaseConfig('E2E Subject Sender', {
-  endpoint: 'rxjs:sender',
+  endpoints: ['rxjs:sender'],
   mediatorPollingInterval: 1000,
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
 })
@@ -51,18 +51,18 @@ describe('E2E Subject tests', () => {
     }
 
     // Recipient Setup
-    recipientAgent.registerOutboundTransporter(new SubjectOutboundTransporter(recipientMessages, subjectMap))
-    recipientAgent.setInboundTransporter(new SubjectInboundTransporter(recipientMessages))
+    recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(recipientMessages, subjectMap))
+    recipientAgent.registerInboundTransport(new SubjectInboundTransport(recipientMessages))
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.registerOutboundTransporter(new SubjectOutboundTransporter(mediatorMessages, subjectMap))
-    mediatorAgent.setInboundTransporter(new SubjectInboundTransporter(mediatorMessages))
+    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(mediatorMessages, subjectMap))
+    mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.registerOutboundTransporter(new SubjectOutboundTransporter(senderMessages, subjectMap))
-    senderAgent.setInboundTransporter(new SubjectInboundTransporter(senderMessages))
+    senderAgent.registerOutboundTransport(new SubjectOutboundTransport(senderMessages, subjectMap))
+    senderAgent.registerInboundTransport(new SubjectInboundTransport(senderMessages))
     await senderAgent.initialize()
 
     await e2eTest({
