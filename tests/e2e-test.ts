@@ -1,14 +1,9 @@
 import type { Agent } from '@aries-framework/core'
 
-import {
-  issueCredential,
-  makeConnection,
-  prepareForIssuance,
-  presentProof,
-  previewFromAttributes,
-} from '../packages/core/tests/helpers'
+import { issueCredential, makeConnection, prepareForIssuance, presentProof } from '../packages/core/tests/helpers'
 
 import {
+  CredentialPreview,
   AttributeFilter,
   CredentialState,
   MediationState,
@@ -53,7 +48,7 @@ export async function e2eTest({
     issuerConnectionId: senderRecipientConnection.id,
     credentialTemplate: {
       credentialDefinitionId: definition.id,
-      preview: previewFromAttributes({
+      preview: CredentialPreview.fromRecord({
         name: 'John',
         age: '25',
         // year month day

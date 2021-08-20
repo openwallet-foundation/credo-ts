@@ -1,6 +1,7 @@
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
+import type { CredentialPreviewAttribute } from '../messages'
 import type { CredentialRecordMetadata, CustomCredentialTags } from '../repository/CredentialRecord'
 import type { CredentialOfferTemplate } from '../services'
 
@@ -21,7 +22,6 @@ import { CredentialUtils } from '../CredentialUtils'
 import {
   CredentialAckMessage,
   CredentialPreview,
-  CredentialPreviewAttribute,
   INDY_CREDENTIAL_ATTACHMENT_ID,
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
@@ -52,19 +52,9 @@ const connection = getMockConnection({
   state: ConnectionState.Complete,
 })
 
-const credentialPreview = new CredentialPreview({
-  attributes: [
-    new CredentialPreviewAttribute({
-      name: 'name',
-      mimeType: 'text/plain',
-      value: 'John',
-    }),
-    new CredentialPreviewAttribute({
-      name: 'age',
-      mimeType: 'text/plain',
-      value: '99',
-    }),
-  ],
+const credentialPreview = CredentialPreview.fromRecord({
+  name: 'John',
+  age: '99',
 })
 
 const offerAttachment = new Attachment({

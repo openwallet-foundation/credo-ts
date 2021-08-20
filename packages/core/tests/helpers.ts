@@ -34,7 +34,6 @@ import {
   ConnectionState,
   CredentialEventTypes,
   CredentialPreview,
-  CredentialPreviewAttribute,
   CredentialState,
   DidCommService,
   DidDoc,
@@ -282,18 +281,6 @@ export async function registerDefinition(
   const credentialDefinition = await agent.ledger.registerCredentialDefinition(definitionTemplate)
   testLogger.test(`created credential definition with id ${credentialDefinition.id}`, credentialDefinition)
   return credentialDefinition
-}
-
-export function previewFromAttributes(attributes: Record<string, string>): CredentialPreview {
-  return new CredentialPreview({
-    attributes: Object.entries(attributes).map(
-      ([name, value]) =>
-        new CredentialPreviewAttribute({
-          name,
-          value,
-        })
-    ),
-  })
 }
 
 export async function prepareForIssuance(agent: Agent, attributes: string[]) {
@@ -558,7 +545,7 @@ export async function setupCredentialTests(
 }
 
 export async function setupProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {
-  const credentialPreview = previewFromAttributes({
+  const credentialPreview = CredentialPreview.fromRecord({
     name: 'John',
     age: '99',
   })
