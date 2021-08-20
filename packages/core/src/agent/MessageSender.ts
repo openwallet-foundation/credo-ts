@@ -116,6 +116,7 @@ export class MessageSender {
             await transport.sendMessage({
               payload: packedMessage,
               endpoint: service.serviceEndpoint,
+              connection,
             })
             break
           }
