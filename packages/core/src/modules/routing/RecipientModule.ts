@@ -241,10 +241,14 @@ export class RecipientModule {
     // Also requests mediation and sets as default mediator
     // Assumption: processInvitation is a URL-encoded invitation
     const invitation = await ConnectionInvitationMessage.fromUrl(mediatorConnInvite)
+
     // Check if invitation has been used already
     if (!invitation || !invitation.recipientKeys || !invitation.recipientKeys[0]) {
       throw new AriesFrameworkError(`Invalid mediation invitation. Invitation must have at least one recipient key.`)
     }
+
+    let mediationRecord: MediationRecord | null = null
+
     const connection = await this.connectionService.findByInvitationKey(invitation.recipientKeys[0])
     if (!connection) {
       this.logger.debug('Mediation Connection does not exist, creating connection')
@@ -263,20 +267,20 @@ export class RecipientModule {
 
       const completedConnectionRecord = await this.connectionService.returnWhenIsConnected(connectionRecord.id)
       this.logger.debug('Connection completed, requesting mediation')
-      const mediationRecord = await this.requestAndAwaitGrant(completedConnectionRecord, 60000) // TODO: put timeout as a config parameter
+      mediationRecord = await this.requestAndAwaitGrant(completedConnectionRecord, 60000) // TODO: put timeout as a config parameter
       this.logger.debug('Mediation Granted, setting as default mediator')
       await this.setDefaultMediator(mediationRecord)
       this.logger.debug('Default mediator set')
     } else if (connection && !connection.isReady) {
       const connectionRecord = await this.connectionService.returnWhenIsConnected(connection.id)
-      const mediationRecord = await this.requestAndAwaitGrant(connectionRecord, 60000) // TODO: put timeout as a config parameter
+      mediationRecord = await this.requestAndAwaitGrant(connectionRecord, 60000) // TODO: put timeout as a config parameter
       await this.setDefaultMediator(mediationRecord)
-    } else if (connection.isReady) {
+    } else {
       this.agentConfig.logger.warn('Mediator Invitation in configuration has already been used to create a connection.')
       const mediator = await this.findByConnectionId(connection.id)
       if (!mediator) {
         this.agentConfig.logger.warn('requesting mediation over connection.')
-        const mediationRecord = await this.requestAndAwaitGrant(connection, 60000) // TODO: put timeout as a config parameter
+        mediationRecord = await this.requestAndAwaitGrant(connection, 60000) // TODO: put timeout as a config parameter
         await this.setDefaultMediator(mediationRecord)
       } else {
         this.agentConfig.logger.warn(
@@ -286,6 +290,8 @@ export class RecipientModule {
         )
       }
     }
+
+    return mediationRecord
   }
 
   // Register handlers for the several messages for the mediator.
