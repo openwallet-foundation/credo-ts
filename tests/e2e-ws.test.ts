@@ -11,13 +11,13 @@ const recipientConfig = getBaseConfig('E2E WS Recipient ', {
 
 const mediatorPort = 4000
 const mediatorConfig = getBaseConfig('E2E WS Mediator', {
-  endpoint: `ws://localhost:${mediatorPort}`,
+  endpoints: [`ws://localhost:${mediatorPort}`],
   autoAcceptMediationRequests: true,
 })
 
 const senderPort = 4001
 const senderConfig = getBaseConfig('E2E WS Sender', {
-  endpoint: `ws://localhost:${senderPort}`,
+  endpoints: [`ws://localhost:${senderPort}`],
   mediatorPollingInterval: 1000,
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
 })
