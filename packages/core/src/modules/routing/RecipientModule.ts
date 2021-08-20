@@ -1,4 +1,5 @@
 import type { Logger } from '../../logger'
+import type { OutboundMessage } from '../../types'
 import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './index'
@@ -24,7 +25,6 @@ import { MediationGrantHandler } from './handlers/MediationGrantHandler'
 import { BatchPickupMessage } from './messages/BatchPickupMessage'
 import { MediationState } from './models/MediationState'
 import { MediationRecipientService } from './services/MediationRecipientService'
-import { OutboundMessage } from '../../types'
 
 @scoped(Lifecycle.ContainerScoped)
 export class RecipientModule {
@@ -94,7 +94,7 @@ export class RecipientModule {
     else if (mediatorPickupStrategy === MediatorPickupStrategy.Implicit) {
       this.agentConfig.logger.info(`Starting implicit pickup of messages from mediator '${mediator.id}'`)
       const { message, connectionRecord } = await this.connectionService.createTrustPing(mediatorConnection.id)
-      await this.sendMessage({payload: message, connection: connectionRecord})
+      await this.sendMessage({ payload: message, connection: connectionRecord })
     } else {
       this.agentConfig.logger.info(
         `Skipping pickup of messages from mediator '${mediator.id}' due to pickup strategy none`
@@ -121,7 +121,7 @@ export class RecipientModule {
   public async requestMediation(connection: ConnectionRecord): Promise<MediationRecord> {
     const { mediationRecord, message } = await this.mediationRecipientService.createRequest(connection)
     const outboundMessage = createOutboundMessage(connection, message)
-    
+
     await this.sendMessage(outboundMessage)
     return mediationRecord
   }
@@ -134,10 +134,13 @@ export class RecipientModule {
 
   private async sendMessage(outboundMessage: OutboundMessage) {
     const { mediatorPickupStrategy } = this.agentConfig
-    const transportPriority = (mediatorPickupStrategy === MediatorPickupStrategy.Implicit) ? { schemes: ['wss', 'ws'], restrictive: true } : undefined
-    
+    const transportPriority =
+      mediatorPickupStrategy === MediatorPickupStrategy.Implicit
+        ? { schemes: ['wss', 'ws'], restrictive: true }
+        : undefined
+
     await this.messageSender.sendMessage(outboundMessage, {
-      transportPriority
+      transportPriority,
     })
   }
 
