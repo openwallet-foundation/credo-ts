@@ -272,12 +272,12 @@ export class MessageSender {
     const allServices = this.transportService.findDidCommServices(connection)
 
     //Separate queue service out
-    const services = allServices.filter((s) => !isDidCommTransportQueue(s.serviceEndpoint))
+    let services = allServices.filter((s) => !isDidCommTransportQueue(s.serviceEndpoint))
     const queueService = allServices.find((s) => isDidCommTransportQueue(s.serviceEndpoint))
 
     //If restrictive will remove services not listed in schemes list
     if (transportPriority?.restrictive) {
-      services.filter((service) => {
+      services = services.filter((service) => {
         const serviceSchema = service.protocolScheme
         return transportPriority.schemes.includes(serviceSchema)
       })
@@ -285,7 +285,7 @@ export class MessageSender {
 
     //If transport priority is set we will sort services by our priority
     if (transportPriority?.schemes) {
-      services.sort(function (a, b) {
+      services = services.sort(function (a, b) {
         const aScheme = a.protocolScheme
         const bScheme = b.protocolScheme
         return transportPriority?.schemes.indexOf(aScheme) - transportPriority?.schemes.indexOf(bScheme)
