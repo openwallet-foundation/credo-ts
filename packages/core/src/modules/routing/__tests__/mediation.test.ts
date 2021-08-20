@@ -135,4 +135,107 @@ describe('mediator establishment', () => {
 
     expect(basicMessage.content).toBe(message)
   })
+
+  test('restart recipient agent and create connection through mediator after recipient agent is restarted', async () => {
+    const mediatorMessages = new Subject<SubjectMessage>()
+    const recipientMessages = new Subject<SubjectMessage>()
+    const senderMessages = new Subject<SubjectMessage>()
+
+    const subjectMap = {
+      'rxjs:mediator': mediatorMessages,
+      'rxjs:sender': senderMessages,
+    }
+
+    // Initialize mediator
+    mediatorAgent = new Agent(mediatorConfig.config, recipientConfig.agentDependencies)
+    mediatorAgent.registerOutboundTransporter(new SubjectOutboundTransporter(mediatorMessages, subjectMap))
+    mediatorAgent.setInboundTransporter(new SubjectInboundTransporter(mediatorMessages))
+    await mediatorAgent.initialize()
+
+    // Create connection to use for recipient
+    const {
+      invitation: mediatorInvitation,
+      connectionRecord: { id: mediatorRecipientConnectionId },
+    } = await mediatorAgent.connections.createConnection({
+      autoAcceptConnection: true,
+    })
+
+    // Initialize recipient with mediation connections invitation
+    recipientAgent = new Agent(
+      { ...recipientConfig.config, mediatorConnectionsInvite: mediatorInvitation.toUrl() },
+      recipientConfig.agentDependencies
+    )
+    recipientAgent.registerOutboundTransporter(new SubjectOutboundTransporter(recipientMessages, subjectMap))
+    recipientAgent.setInboundTransporter(new SubjectInboundTransporter(recipientMessages))
+    await recipientAgent.initialize()
+
+    const recipientMediator = await recipientAgent.mediationRecipient.findDefaultMediator()
+    // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain, @typescript-eslint/no-non-null-assertion
+    const recipientMediatorConnection = await recipientAgent.connections.getById(recipientMediator?.connectionId!)
+
+    expect(recipientMediatorConnection).toBeInstanceOf(ConnectionRecord)
+    expect(recipientMediatorConnection?.isReady).toBe(true)
+
+    const mediatorRecipientConnection = await mediatorAgent.connections.getById(mediatorRecipientConnectionId)
+    expect(mediatorRecipientConnection.isReady).toBe(true)
+
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    expect(mediatorRecipientConnection).toBeConnectedWith(recipientMediatorConnection!)
+    expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection)
+
+    expect(recipientMediator?.state).toBe(MediationState.Granted)
+
+    // Restart recipient agent
+    await recipientAgent.shutdown()
+    recipientAgent = new Agent(
+      { ...recipientConfig.config, mediatorConnectionsInvite: mediatorInvitation.toUrl() },
+      recipientConfig.agentDependencies
+    )
+    recipientAgent.registerOutboundTransporter(new SubjectOutboundTransporter(recipientMessages, subjectMap))
+    recipientAgent.setInboundTransporter(new SubjectInboundTransporter(recipientMessages))
+    await recipientAgent.initialize()
+
+    // Initialize sender agent
+    senderAgent = new Agent(senderConfig.config, senderConfig.agentDependencies)
+    senderAgent.registerOutboundTransporter(new SubjectOutboundTransporter(senderMessages, subjectMap))
+    senderAgent.setInboundTransporter(new SubjectInboundTransporter(senderMessages))
+    await senderAgent.initialize()
+
+    const {
+      invitation: recipientInvitation,
+      connectionRecord: { id: recipientSenderConnectionId },
+    } = await recipientAgent.connections.createConnection({
+      autoAcceptConnection: true,
+    })
+
+    expect(recipientInvitation.serviceEndpoint).toBe(mediatorConfig.config.endpoint)
+
+    let senderRecipientConnection = await senderAgent.connections.receiveInvitationFromUrl(
+      recipientInvitation.toUrl(),
+      {
+        autoAcceptConnection: true,
+      }
+    )
+
+    const recipientSenderConnection = await recipientAgent.connections.returnWhenIsConnected(
+      recipientSenderConnectionId
+    )
+
+    senderRecipientConnection = await senderAgent.connections.getById(senderRecipientConnection.id)
+
+    expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
+    expect(senderRecipientConnection).toBeConnectedWith(recipientSenderConnection)
+
+    expect(recipientSenderConnection.isReady).toBe(true)
+    expect(senderRecipientConnection.isReady).toBe(true)
+
+    const message = 'hello, world'
+    await senderAgent.basicMessages.sendMessage(senderRecipientConnection, message)
+
+    const basicMessage = await waitForBasicMessage(recipientAgent, {
+      content: message,
+    })
+
+    expect(basicMessage.content).toBe(message)
+  })
 })
