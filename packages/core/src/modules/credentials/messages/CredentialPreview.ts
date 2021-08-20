@@ -48,6 +48,7 @@ export class CredentialPreview {
       ([name, value]) =>
         new CredentialPreviewAttribute({
           name,
+          mimeType: 'text/plain',
           value,
         })
     )
