@@ -21,7 +21,7 @@ export class IndyHolderService {
   private indyUtilitesService: IndyUtilitesService
 
   public constructor(
-    agentConfig: AgentConfig, 
+    agentConfig: AgentConfig,
     wallet: IndyWallet,
     ledgerService: IndyLedgerService,
     indyUtilitesService: IndyUtilitesService
@@ -113,7 +113,7 @@ export class IndyHolderService {
         credentialDefinitions,
         revocationStates
       )
-      
+
       this.logger.debug('Created Indy Proof')
       return indyProof
     } catch (error) {

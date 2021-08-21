@@ -292,7 +292,7 @@ export class IndyLedgerService {
     }
   }
 
-  public async getRevocRegDef(revocRegDefId: Indy.RevRegId) {
+  public async getRevocRegDef(revocRegDefId: string) {
     try {
       this.logger.debug(`Get revocation registry definition '${revocRegDefId}' from ledger`)
 
@@ -321,7 +321,7 @@ export class IndyLedgerService {
   }
 
   public async getRevocRegDelta(
-    revRegId: Indy.RevRegId,
+    revRegId: string,
     from = 0,
     to: number = new Date().getTime()
   ): Promise<ParseRevRegDeltaResult> {

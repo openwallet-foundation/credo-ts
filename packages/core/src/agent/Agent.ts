@@ -16,7 +16,6 @@ import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
-import { ConnectionInvitationMessage } from '../modules/connections/messages/ConnectionInvitationMessage'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
@@ -47,6 +46,7 @@ export class Agent {
   public inboundTransporter?: InboundTransporter
   private _isInitialized = false
   public messageSubscription: Subscription
+
   public readonly connections!: ConnectionsModule
   public readonly proofs!: ProofsModule
   public readonly basicMessages!: BasicMessagesModule
