@@ -6,16 +6,16 @@ describe('AgentConfig', () => {
       const endpoint = 'https://local-url.com'
 
       const agentConfig = getAgentConfig('AgentConfig Test', {
-        endpoint,
+        endpoints: [endpoint],
       })
 
-      expect(agentConfig.getEndpoint()).toBe(endpoint)
+      expect(agentConfig.endpoints).toEqual([endpoint])
     })
 
-    it("should return 'didcomm:transport/queue' if no inbound connection or config endpoint or host/port is available", () => {
+    it("should return ['didcomm:transport/queue'] if no inbound connection or config endpoint or host/port is available", () => {
       const agentConfig = getAgentConfig('AgentConfig Test')
 
-      expect(agentConfig.getEndpoint()).toBe('didcomm:transport/queue')
+      expect(agentConfig.endpoints).toStrictEqual(['didcomm:transport/queue'])
     })
   })
 })

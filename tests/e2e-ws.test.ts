@@ -2,7 +2,7 @@ import { getBaseConfig } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
 
-import { Agent, WsOutboundTransporter, AutoAcceptCredential } from '@aries-framework/core'
+import { Agent, WsOutboundTransport, AutoAcceptCredential } from '@aries-framework/core'
 import { WsInboundTransport } from '@aries-framework/node'
 
 const recipientConfig = getBaseConfig('E2E WS Recipient ', {
@@ -11,13 +11,13 @@ const recipientConfig = getBaseConfig('E2E WS Recipient ', {
 
 const mediatorPort = 4000
 const mediatorConfig = getBaseConfig('E2E WS Mediator', {
-  endpoint: `ws://localhost:${mediatorPort}`,
+  endpoints: [`ws://localhost:${mediatorPort}`],
   autoAcceptMediationRequests: true,
 })
 
 const senderPort = 4001
 const senderConfig = getBaseConfig('E2E WS Sender', {
-  endpoint: `ws://localhost:${senderPort}`,
+  endpoints: [`ws://localhost:${senderPort}`],
   mediatorPollingInterval: 1000,
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
 })
@@ -41,17 +41,17 @@ describe('E2E WS tests', () => {
 
   test('Full WS flow (connect, request mediation, issue, verify)', async () => {
     // Recipient Setup
-    recipientAgent.registerOutboundTransporter(new WsOutboundTransporter())
+    recipientAgent.registerOutboundTransport(new WsOutboundTransport())
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.setInboundTransporter(new WsInboundTransport({ port: mediatorPort }))
-    mediatorAgent.registerOutboundTransporter(new WsOutboundTransporter())
+    mediatorAgent.registerInboundTransport(new WsInboundTransport({ port: mediatorPort }))
+    mediatorAgent.registerOutboundTransport(new WsOutboundTransport())
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.setInboundTransporter(new WsInboundTransport({ port: senderPort }))
-    senderAgent.registerOutboundTransporter(new WsOutboundTransporter())
+    senderAgent.registerInboundTransport(new WsInboundTransport({ port: senderPort }))
+    senderAgent.registerOutboundTransport(new WsOutboundTransport())
     await senderAgent.initialize()
 
     await e2eTest({
