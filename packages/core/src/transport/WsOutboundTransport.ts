@@ -2,33 +2,35 @@ import type { Agent } from '../agent/Agent'
 import type { Logger } from '../logger'
 import type { OutboundPackage } from '../types'
 import type { OutboundTransport } from './OutboundTransport'
+import type { OutboundWebSocketClosedEvent } from './TransportEventTypes'
 import type WebSocket from 'ws'
 
 import { AgentConfig } from '../agent/AgentConfig'
+import { EventEmitter } from '../agent/EventEmitter'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
+
+import { TransportEventTypes } from './TransportEventTypes'
 
 export class WsOutboundTransport implements OutboundTransport {
   private transportTable: Map<string, WebSocket> = new Map<string, WebSocket>()
   private agent!: Agent
   private logger!: Logger
+  private eventEmitter!: EventEmitter
   private WebSocketClass!: typeof WebSocket
-  private continue!: boolean
-  private recursiveBackOff: { [socketId: string]: number } = {}
   public supportedSchemes = ['ws', 'wss']
 
   public async start(agent: Agent): Promise<void> {
     this.agent = agent
-    this.continue = true
     const agentConfig = agent.injectionContainer.resolve(AgentConfig)
 
     this.logger = agentConfig.logger
+    this.eventEmitter = agent.injectionContainer.resolve(EventEmitter)
     this.logger.debug('Starting WS outbound transport')
     this.WebSocketClass = agentConfig.agentDependencies.WebSocketClass
   }
 
   public async stop() {
     this.logger.debug('Stopping WS outbound transport')
-    this.continue = false
     this.transportTable.forEach((socket) => {
       socket.removeEventListener('message', this.handleMessageEvent)
       socket.close()
@@ -36,7 +38,7 @@ export class WsOutboundTransport implements OutboundTransport {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
-    const { payload, endpoint } = outboundPackage
+    const { payload, endpoint, connectionId } = outboundPackage
     this.logger.debug(`Sending outbound message to endpoint '${endpoint}' over WebSocket transport.`, {
       payload,
     })
@@ -46,7 +48,7 @@ export class WsOutboundTransport implements OutboundTransport {
     }
 
     const isNewSocket = this.hasOpenSocket(endpoint)
-    const socket = await this.resolveSocket(endpoint, endpoint)
+    const socket = await this.resolveSocket({ socketId: endpoint, endpoint, connectionId })
 
     socket.send(Buffer.from(JSON.stringify(payload)))
 
@@ -61,16 +63,28 @@ export class WsOutboundTransport implements OutboundTransport {
     return this.transportTable.get(socketId) !== undefined
   }
 
-  private async resolveSocket(socketIdentifier: string, endpoint?: string) {
+  private async resolveSocket({
+    socketId,
+    endpoint,
+    connectionId,
+  }: {
+    socketId: string
+    endpoint?: string
+    connectionId?: string
+  }) {
     // If we already have a socket connection use it
-    let socket = this.transportTable.get(socketIdentifier)
+    let socket = this.transportTable.get(socketId)
 
     if (!socket) {
       if (!endpoint) {
         throw new AriesFrameworkError(`Missing endpoint. I don't know how and where to send the message.`)
       }
-      socket = await this.createSocketConnection(endpoint, socketIdentifier)
-      this.transportTable.set(socketIdentifier, socket)
+      socket = await this.createSocketConnection({
+        endpoint,
+        socketId,
+        connectionId,
+      })
+      this.transportTable.set(socketId, socket)
       this.listenOnWebSocketMessages(socket)
     }
 
@@ -95,7 +109,15 @@ export class WsOutboundTransport implements OutboundTransport {
     socket.addEventListener('message', this.handleMessageEvent)
   }
 
-  private createSocketConnection(endpoint: string, socketId: string): Promise<WebSocket> {
+  private createSocketConnection({
+    socketId,
+    endpoint,
+    connectionId,
+  }: {
+    socketId: string
+    endpoint: string
+    connectionId?: string
+  }): Promise<WebSocket> {
     return new Promise((resolve, reject) => {
       this.logger.debug(`Connecting to WebSocket ${endpoint}`)
       const socket = new this.WebSocketClass(endpoint)
@@ -116,25 +138,14 @@ export class WsOutboundTransport implements OutboundTransport {
         this.logger.debug(`WebSocket closing to ${endpoint}`)
         socket.removeEventListener('message', this.handleMessageEvent)
         this.transportTable.delete(socketId)
-        if (this.continue) {
-          const mediators = await this.agent.mediationRecipient.getMediators()
-          const mediatorConnIds = mediators.map((mediator) => mediator.connectionId)
-          if (mediatorConnIds.includes(socketId)) {
-            this.logger.debug(`WebSocket attempting to reconnect to ${endpoint}`)
-            // send trustPing to mediator to open socket
-            let interval = 100
-            if (this.recursiveBackOff[socketId as string]) {
-              interval = this.recursiveBackOff[socketId]
-            }
-            setTimeout(
-              () => {
-                this.agent.connections.acceptResponse(socketId)
-              },
-              interval < 1000 ? interval : 1000
-            )
-            this.recursiveBackOff[socketId] = interval * 2
-          }
-        }
+
+        this.eventEmitter.emit<OutboundWebSocketClosedEvent>({
+          type: TransportEventTypes.OutboundWebSocketClosedEvent,
+          payload: {
+            socketId,
+            connectionId: connectionId,
+          },
+        })
       }
     })
   }

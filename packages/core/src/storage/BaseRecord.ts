@@ -11,7 +11,7 @@ export type RecordTags<Record extends BaseRecord> = ReturnType<Record['getTags']
 
 export abstract class BaseRecord<DefaultTags extends TagsBase = TagsBase, CustomTags extends TagsBase = TagsBase> {
   @Exclude()
-  protected _tags!: CustomTags
+  protected _tags: CustomTags = {} as CustomTags
 
   @Exclude()
   public id!: string
