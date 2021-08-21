@@ -8,7 +8,11 @@ import express, { text } from 'express'
 export class HttpInboundTransport implements InboundTransport {
   public readonly app: Express
   private port: number
-  private server?: Server
+  private _server?: Server
+
+  public get server() {
+    return this._server
+  }
 
   public constructor({ app, port }: { app?: Express; port: number }) {
     this.port = port
@@ -51,11 +55,11 @@ export class HttpInboundTransport implements InboundTransport {
       }
     })
 
-    this.server = this.app.listen(this.port)
+    this._server = this.app.listen(this.port)
   }
 
   public async stop(): Promise<void> {
-    this.server?.close()
+    this._server?.close()
   }
 }
 

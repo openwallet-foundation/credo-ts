@@ -22,8 +22,7 @@
     "lint": "eslint --ignore-path .gitignore .",
     "validate": "yarn lint && yarn check-types && yarn check-format",
     "prepare": "husky install",
-    "run-mediator": "ts-node ./samples/mediator.ts",
-    "run-mediator-ws": "ts-node ./samples/mediator-ws.ts"
+    "run-mediator": "ts-node ./samples/mediator.ts"
   },
   "devDependencies": {
     "@types/cors": "^2.8.10",
