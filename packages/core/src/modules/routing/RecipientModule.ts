@@ -77,8 +77,9 @@ export class RecipientModule {
     const { message, connectionRecord } = await this.connectionService.createTrustPing(mediator.connectionId)
 
     const websocketSchemes = ['ws', 'wss']
-    const hasWebSocketTransport =
-      connectionRecord.didDoc.didCommServices.filter((s) => websocketSchemes.includes(s.protocolScheme)).length > 0
+    const hasWebSocketTransport = connectionRecord.theirDidDoc?.didCommServices?.some((s) =>
+      websocketSchemes.includes(s.protocolScheme)
+    )
 
     if (!hasWebSocketTransport) {
       throw new AriesFrameworkError('Cannot open websocket to connection without websocket service endpoint')
