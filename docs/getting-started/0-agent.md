@@ -13,21 +13,19 @@ Before initializing your agent, make sure you have followed the setup guide for 
 You can set up an agent by importing the `Agent` class. It requires you to pass in a JSON object to configure the agent. The following is an example with only the required configuration options specified. The agent by itself can't do much yet, we need [transports](1-transports.md) to be able to interact with other agents.
 
 ```ts
-import indy from 'indy-sdk'
-import { NodeFileSystem } from 'aries-framework/build/storage/fs/NodeFileSystem'
-
-import { Agent, InitConfig } from 'aries-framework'
+import { Agent, InitConfig } from '@aries-framework/core'
+import { agentDependencies } from '@aries-framework/node'
 
 const agentConfig: InitConfig = {
   // The label is used for communication with other
   label: 'My Agent',
-  walletConfig: { id: 'walletId' },
-  walletCredentials: { key: 'testKey0000000000000000000000000' },
-  indy,
-  fileSystem: new NodeFileSystem(),
+  walletConfig: {
+    id: 'walletId',
+    key: 'testKey0000000000000000000000000',
+  },
 }
 
-const agent = new Agent(agentConfig)
+const agent = new Agent(agentConfig, agentDependencies)
 ```
 
 ## Configuration Options
@@ -35,15 +33,9 @@ const agent = new Agent(agentConfig)
 The agent currently supports the following configuration options. Fields marked with a **\*** are required. Other parts of this documentation go into more depth on the different configuration options.
 
 - `label`\*: The label to use for invitations.
-- `indy`\*: The indy sdk to use for indy operations. This is different for NodeJS / React Native
-- `fileSystem`\*: The file system instance used for reading and writing files.
-- `walletConfig`: The wallet config to use for creating and unlocking the wallet
-- `walletCredentials`: The wallet credentials to use for creating and unlocking the wallet
-- `host`: The host to use for invitations.
-- `post`: The port to append to host for invitations.
-- `endpoint`: The endpoint (host + port) to use for invitations. Has priority over `host` and `port.
+- `walletConfig`: The wallet config to use for creating and unlocking the wallet. Not required, but requires extra setup if not passed in constructor
+- `endpoint`: The endpoint (schema + host + port) to use for invitations.
 - `publicDidSeed`: The seed to use for initializing the public did of the agent. This does not register the DID on the ledger.
-- `autoAcceptConnections`: Whether to auto accept all incoming connections. Default false
 - `genesisPath`: The path to the genesis file to use for connecting to an Indy ledger.
 - `genesisTransactions`: String of genesis transactions to use for connecting to an Indy ledger.
 - `poolName`: The name of the pool to use for the specified `genesisPath`. Default `default-pool`
@@ -55,3 +47,12 @@ The agent currently supports the following configuration options. Fields marked 
 - `mediationConnectionsInvitation` - Connection invitation to use for default mediator. If specified the agent will create a connection, request mediation and store the mediator as default for all connections.
 - `defaultMediatorId` - Mediator id to use as default mediator. Use this if you want to override the currently default mediator.
 - `clearDefaultMediator` - Will clear the default mediator
+- `autoAcceptConnections`: Whether to auto accept all incoming connections. Default false
+- `autoAcceptProofs`: Whether to auto accept all incoming proofs:
+  - `AutoAcceptProof.Always`: Always auto accepts the proof no matter if it changed in subsequent steps
+  - `AutoAcceptProof.ContentApproved`: Needs one acceptation and the rest will be automated if nothing changes
+  - `AutoAcceptProof.Never`: Default. Never auto accept a proof
+- `autoAcceptCredentials`: Whether to auto accept all incoming proofs:
+  - `AutoAcceptCredential.Always`: Always auto accepts the credential no matter if it changed in subsequent steps
+  - `AutoAcceptCredential.ContentApproved`: Needs one acceptation and the rest will be automated if nothing changes
+  - `AutoAcceptCredential.Never`: Default. Never auto accept a credential

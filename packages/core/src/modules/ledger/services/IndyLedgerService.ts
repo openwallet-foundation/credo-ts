@@ -3,27 +3,26 @@ import type { FileSystem } from '../../../storage/FileSystem'
 import type {
   default as Indy,
   CredDef,
-  CredDefId,
-  Did,
   LedgerRequest,
   PoolHandle,
   Schema,
-  SchemaId,
   LedgerReadReplyResponse,
   LedgerWriteReplyResponse,
+  NymRole,
 } from 'indy-sdk'
 
-import { inject, scoped, Lifecycle } from 'tsyringe'
+import { scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { InjectionSymbols } from '../../../constants'
+import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
+import { IndySdkError } from '../../../error/IndySdkError'
 import { isIndyError } from '../../../utils/indyError'
-import { Wallet } from '../../../wallet/Wallet'
-import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
+import { IndyWallet } from '../../../wallet/IndyWallet'
+import { IndyIssuerService } from '../../indy'
 
 @scoped(Lifecycle.ContainerScoped)
-export class LedgerService {
-  private wallet: Wallet
+export class IndyLedgerService {
+  private wallet: IndyWallet
   private indy: typeof Indy
   private logger: Logger
   private _poolHandle?: PoolHandle
@@ -32,11 +31,7 @@ export class LedgerService {
   private agentConfig: AgentConfig
   private fileSystem: FileSystem
 
-  public constructor(
-    @inject(InjectionSymbols.Wallet) wallet: Wallet,
-    agentConfig: AgentConfig,
-    indyIssuer: IndyIssuerService
-  ) {
+  public constructor(wallet: IndyWallet, agentConfig: AgentConfig, indyIssuer: IndyIssuerService) {
     this.wallet = wallet
     this.agentConfig = agentConfig
     this.indy = agentConfig.agentDependencies.indy
@@ -98,19 +93,57 @@ export class LedgerService {
           indyError: 'PoolLedgerConfigAlreadyExistsError',
         })
       } else {
-        throw error
+        throw isIndyError(error) ? new IndySdkError(error) : error
       }
     }
 
-    this.logger.debug('Setting ledger protocol version to 2')
-    await this.indy.setProtocolVersion(2)
+    try {
+      this.logger.debug('Setting ledger protocol version to 2')
+      await this.indy.setProtocolVersion(2)
 
-    this.logger.debug(`Opening pool ${poolName}`)
-    this._poolHandle = await this.indy.openPoolLedger(poolName)
-    return this._poolHandle
+      this.logger.debug(`Opening pool ${poolName}`)
+      this._poolHandle = await this.indy.openPoolLedger(poolName)
+      return this._poolHandle
+    } catch (error) {
+      throw isIndyError(error) ? new IndySdkError(error) : error
+    }
   }
 
-  public async getPublicDid(did: Did) {
+  public async registerPublicDid(
+    submitterDid: string,
+    targetDid: string,
+    verkey: string,
+    alias: string,
+    role?: NymRole
+  ) {
+    try {
+      this.logger.debug(`Register public did on ledger '${targetDid}'`)
+
+      const request = await this.indy.buildNymRequest(submitterDid, targetDid, verkey, alias, role || null)
+
+      const response = await this.submitWriteRequest(request, submitterDid)
+
+      this.logger.debug(`Registered public did '${targetDid}' on ledger`, {
+        response,
+      })
+
+      return targetDid
+    } catch (error) {
+      this.logger.error(`Error registering public did '${targetDid}' on ledger`, {
+        error,
+        submitterDid,
+        targetDid,
+        verkey,
+        alias,
+        role,
+        poolHandle: await this.getPoolHandle(),
+      })
+
+      throw error
+    }
+  }
+
+  public async getPublicDid(did: string) {
     try {
       this.logger.debug(`Get public did '${did}' from ledger`)
       const request = await this.indy.buildGetNymRequest(null, did)
@@ -129,11 +162,11 @@ export class LedgerService {
         poolHandle: await this.getPoolHandle(),
       })
 
-      throw error
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 
-  public async registerSchema(did: Did, schemaTemplate: SchemaTemplate): Promise<Schema> {
+  public async registerSchema(did: string, schemaTemplate: SchemaTemplate): Promise<Schema> {
     try {
       this.logger.debug(`Register schema on ledger with did '${did}'`, schemaTemplate)
       const { name, attributes, version } = schemaTemplate
@@ -158,11 +191,11 @@ export class LedgerService {
         schemaTemplate,
       })
 
-      throw error
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 
-  public async getSchema(schemaId: SchemaId) {
+  public async getSchema(schemaId: string) {
     try {
       this.logger.debug(`Get schema '${schemaId}' from ledger`)
 
@@ -185,12 +218,12 @@ export class LedgerService {
         poolHandle: await this.getPoolHandle(),
       })
 
-      throw error
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 
   public async registerCredentialDefinition(
-    did: Did,
+    did: string,
     credentialDefinitionTemplate: CredentialDefinitionTemplate
   ): Promise<CredDef> {
     try {
@@ -226,11 +259,11 @@ export class LedgerService {
         }
       )
 
-      throw error
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 
-  public async getCredentialDefinition(credentialDefinitionId: CredDefId) {
+  public async getCredentialDefinition(credentialDefinitionId: string) {
     try {
       this.logger.debug(`Get credential definition '${credentialDefinitionId}' from ledger`)
 
@@ -254,7 +287,8 @@ export class LedgerService {
         credentialDefinitionId: credentialDefinitionId,
         poolHandle: await this.getPoolHandle(),
       })
-      throw error
+
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 
@@ -320,75 +354,99 @@ export class LedgerService {
   }
 
   private async submitWriteRequest(request: LedgerRequest, signDid: string): Promise<LedgerWriteReplyResponse> {
-    const requestWithTaa = await this.appendTaa(request)
-    const signedRequestWithTaa = await this.wallet.signRequest(signDid, requestWithTaa)
+    try {
+      const requestWithTaa = await this.appendTaa(request)
+      const signedRequestWithTaa = await this.signRequest(signDid, requestWithTaa)
 
-    const response = await this.indy.submitRequest(await this.getPoolHandle(), signedRequestWithTaa)
+      const response = await this.indy.submitRequest(await this.getPoolHandle(), signedRequestWithTaa)
 
-    if (response.op === 'REJECT') {
-      throw Error(`Ledger rejected transaction request: ${response.reason}`)
+      if (response.op === 'REJECT') {
+        throw new AriesFrameworkError(`Ledger rejected transaction request: ${response.reason}`)
+      }
+
+      return response as LedgerWriteReplyResponse
+    } catch (error) {
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
-
-    return response as LedgerWriteReplyResponse
   }
 
   private async submitReadRequest(request: LedgerRequest): Promise<LedgerReadReplyResponse> {
-    const response = await this.indy.submitRequest(await this.getPoolHandle(), request)
+    try {
+      const response = await this.indy.submitRequest(await this.getPoolHandle(), request)
 
-    if (response.op === 'REJECT') {
-      throw Error(`Ledger rejected transaction request: ${response.reason}`)
+      if (response.op === 'REJECT') {
+        throw Error(`Ledger rejected transaction request: ${response.reason}`)
+      }
+
+      return response as LedgerReadReplyResponse
+    } catch (error) {
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
+  }
 
-    return response as LedgerReadReplyResponse
+  private async signRequest(did: string, request: LedgerRequest): Promise<LedgerRequest> {
+    try {
+      return this.indy.signRequest(this.wallet.handle, did, request)
+    } catch (error) {
+      throw isIndyError(error) ? new IndySdkError(error) : error
+    }
   }
 
   private async appendTaa(request: LedgerRequest) {
-    const authorAgreement = await this.getTransactionAuthorAgreement()
+    try {
+      const authorAgreement = await this.getTransactionAuthorAgreement()
 
-    // If ledger does not have TAA, we can just send request
-    if (authorAgreement == null) {
-      return request
+      // If ledger does not have TAA, we can just send request
+      if (authorAgreement == null) {
+        return request
+      }
+
+      const requestWithTaa = await this.indy.appendTxnAuthorAgreementAcceptanceToRequest(
+        request,
+        authorAgreement.text,
+        authorAgreement.version,
+        authorAgreement.digest,
+        this.getFirstAcceptanceMechanism(authorAgreement),
+        // Current time since epoch
+        // We can't use ratification_ts, as it must be greater than 1499906902
+        Math.floor(new Date().getTime() / 1000)
+      )
+
+      return requestWithTaa
+    } catch (error) {
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
-
-    const requestWithTaa = await this.indy.appendTxnAuthorAgreementAcceptanceToRequest(
-      request,
-      authorAgreement.text,
-      authorAgreement.version,
-      authorAgreement.digest,
-      this.getFirstAcceptanceMechanism(authorAgreement),
-      // Current time since epoch
-      // We can't use ratification_ts, as it must be greater than 1499906902
-      Math.floor(new Date().getTime() / 1000)
-    )
-
-    return requestWithTaa
   }
 
   private async getTransactionAuthorAgreement(): Promise<AuthorAgreement | null> {
-    // TODO Replace this condition with memoization
-    if (this.authorAgreement !== undefined) {
+    try {
+      // TODO Replace this condition with memoization
+      if (this.authorAgreement !== undefined) {
+        return this.authorAgreement
+      }
+
+      const taaRequest = await this.indy.buildGetTxnAuthorAgreementRequest(null)
+      const taaResponse = await this.submitReadRequest(taaRequest)
+      const acceptanceMechanismRequest = await this.indy.buildGetAcceptanceMechanismsRequest(null)
+      const acceptanceMechanismResponse = await this.submitReadRequest(acceptanceMechanismRequest)
+
+      // TAA can be null
+      if (taaResponse.result.data == null) {
+        this.authorAgreement = null
+        return null
+      }
+
+      // If TAA is not null, we can be sure AcceptanceMechanisms is also not null
+      const authorAgreement = taaResponse.result.data as AuthorAgreement
+      const acceptanceMechanisms = acceptanceMechanismResponse.result.data as AcceptanceMechanisms
+      this.authorAgreement = {
+        ...authorAgreement,
+        acceptanceMechanisms,
+      }
       return this.authorAgreement
+    } catch (error) {
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
-
-    const taaRequest = await this.indy.buildGetTxnAuthorAgreementRequest(null)
-    const taaResponse = await this.submitReadRequest(taaRequest)
-    const acceptanceMechanismRequest = await this.indy.buildGetAcceptanceMechanismsRequest(null)
-    const acceptanceMechanismResponse = await this.submitReadRequest(acceptanceMechanismRequest)
-
-    // TAA can be null
-    if (taaResponse.result.data == null) {
-      this.authorAgreement = null
-      return null
-    }
-
-    // If TAA is not null, we can be sure AcceptanceMechanisms is also not null
-    const authorAgreement = taaResponse.result.data as AuthorAgreement
-    const acceptanceMechanisms = acceptanceMechanismResponse.result.data as AcceptanceMechanisms
-    this.authorAgreement = {
-      ...authorAgreement,
-      acceptanceMechanisms,
-    }
-    return this.authorAgreement
   }
 
   private getFirstAcceptanceMechanism(authorAgreement: AuthorAgreement) {

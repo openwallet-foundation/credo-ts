@@ -22,7 +22,7 @@
     "prepublishOnly": "yarn run build"
   },
   "dependencies": {
-    "@types/indy-sdk": "^1.16.5",
+    "@types/indy-sdk": "^1.16.6",
     "abort-controller": "^3.0.0",
     "axios": "^0.21.1",
     "bn.js": "^5.2.0",
@@ -50,8 +50,5 @@
     "rimraf": "~3.0.2",
     "tslog": "^3.2.0",
     "typescript": "~4.3.0"
-  },
-  "resolutions": {
-    "@types/node": "^15.14.1"
   }
 }

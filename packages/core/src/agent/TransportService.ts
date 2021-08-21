@@ -1,6 +1,6 @@
-import type { DidDoc } from '../modules/connections/models'
+import type { DidDoc, IndyAgentService } from '../modules/connections/models'
 import type { ConnectionRecord } from '../modules/connections/repository'
-import type { OutboundPackage } from '../types'
+import type { WireMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
 
@@ -33,28 +33,9 @@ export class TransportService {
     delete this.transportSessionTable[session.id]
   }
 
-  public findDidCommServices(connection: ConnectionRecord, supportedProtocols: string[]): DidCommService[] {
+  public findDidCommServices(connection: ConnectionRecord): Array<DidCommService | IndyAgentService> {
     if (connection.theirDidDoc) {
-      // map for efficient lookup of sortIndex
-      const supportedProtocolsIndexTable = new Map(supportedProtocols.map((v, i) => [v, i]))
-      const services = connection.theirDidDoc.didCommServices
-      // filter out any un-supported
-      const filteredServices = services.filter((service) =>
-        supportedProtocols.includes(service.serviceEndpoint.split(':')[0])
-      )
-      // sort by protocol, if same protocol, sort by priority
-      filteredServices.sort(function (
-        serviceA: { serviceEndpoint: string; priority: number },
-        serviceB: { serviceEndpoint: string; priority: number }
-      ) {
-        const protocolA = serviceA.serviceEndpoint.split(':')[0] || ''
-        const protocolB = serviceB.serviceEndpoint.split(':')[0] || ''
-        const preferred =
-          (supportedProtocolsIndexTable.get(protocolA) || 0) - (supportedProtocolsIndexTable.get(protocolB) || 0)
-        const priority = serviceA.priority - serviceB.priority
-        return preferred || priority
-      })
-      return filteredServices
+      return connection.theirDidDoc.didCommServices
     }
 
     if (connection.role === ConnectionRole.Invitee && connection.invitation) {
@@ -83,5 +64,5 @@ export interface TransportSession {
   keys?: EnvelopeKeys
   inboundMessage?: AgentMessage
   connection?: ConnectionRecord
-  send(outboundMessage: OutboundPackage): Promise<void>
+  send(wireMessage: WireMessage): Promise<void>
 }

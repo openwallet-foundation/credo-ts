@@ -1,5 +1,5 @@
 import type { SchemaTemplate, CredentialDefinitionTemplate } from './services'
-import type { CredDefId, Did, SchemaId, RevRegId } from 'indy-sdk'
+import type { NymRole } from 'indy-sdk'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
@@ -7,23 +7,29 @@ import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
 import { Wallet } from '../../wallet/Wallet'
 
-import { LedgerService } from './services'
+import { IndyLedgerService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
 export class LedgerModule {
-  private ledgerService: LedgerService
+  private ledgerService: IndyLedgerService
   private wallet: Wallet
 
-  public constructor(@inject(InjectionSymbols.Wallet) wallet: Wallet, ledgerService: LedgerService) {
+  public constructor(@inject(InjectionSymbols.Wallet) wallet: Wallet, ledgerService: IndyLedgerService) {
     this.ledgerService = ledgerService
     this.wallet = wallet
   }
 
-  public async registerPublicDid() {
-    throw new AriesFrameworkError('registerPublicDid not implemented.')
+  public async registerPublicDid(did: string, verkey: string, alias: string, role?: NymRole) {
+    const myPublicDid = this.wallet.publicDid?.did
+
+    if (!myPublicDid) {
+      throw new AriesFrameworkError('Agent has no public DID.')
+    }
+
+    return this.ledgerService.registerPublicDid(myPublicDid, did, verkey, alias, role)
   }
 
-  public async getPublicDid(did: Did) {
+  public async getPublicDid(did: string) {
     return this.ledgerService.getPublicDid(did)
   }
 
@@ -37,29 +43,34 @@ export class LedgerModule {
     return this.ledgerService.registerSchema(did, schema)
   }
 
-  public async getSchema(id: SchemaId) {
+  public async getSchema(id: string) {
     return this.ledgerService.getSchema(id)
   }
 
-  public async registerCredentialDefinition(credentialDefinitionTemplate: CredentialDefinitionTemplate) {
+  public async registerCredentialDefinition(
+    credentialDefinitionTemplate: Omit<CredentialDefinitionTemplate, 'signatureType'>
+  ) {
     const did = this.wallet.publicDid?.did
 
     if (!did) {
       throw new AriesFrameworkError('Agent has no public DID.')
     }
 
-    return this.ledgerService.registerCredentialDefinition(did, credentialDefinitionTemplate)
+    return this.ledgerService.registerCredentialDefinition(did, {
+      ...credentialDefinitionTemplate,
+      signatureType: 'CL',
+    })
   }
 
-  public async getCredentialDefinition(id: CredDefId) {
+  public async getCredentialDefinition(id: string) {
     return this.ledgerService.getCredentialDefinition(id)
   }
 
-  public async getRevocRegDef(revocRegDefId: RevRegId) {
+  public async getRevocRegDef(revocRegDefId: string) {
     return this.ledgerService.getRevocRegDef(revocRegDefId)
   }
 
-  public async getRevocRegDelta(revRegId: RevRegId, from = 0, to = new Date().getTime()) {
+  public async getRevocRegDelta(revRegId: string, from = 0, to = new Date().getTime()) {
     return this.ledgerService.getRevocRegDelta(revRegId, from, to)
   }
 }

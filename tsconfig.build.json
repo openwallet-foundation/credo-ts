@@ -14,5 +14,5 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },
-  "exclude": ["node_modules", "build", "**/*.test.ts", "**/__tests__/*.ts", "**/__mocks__/*.ts"]
+  "exclude": ["node_modules", "build", "**/*.test.ts", "**/__tests__/*.ts", "**/__mocks__/*.ts", "**/build/**"]
 }

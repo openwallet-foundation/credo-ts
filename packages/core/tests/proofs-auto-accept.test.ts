@@ -1,5 +1,4 @@
 import type { Agent, ConnectionRecord, PresentationPreview } from '../src'
-import type { CredDefId } from 'indy-sdk'
 
 import {
   AutoAcceptProof,
@@ -16,7 +15,7 @@ import testLogger from './logger'
 describe('Auto accept present proof', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
-  let credDefId: CredDefId
+  let credDefId: string
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
   let presentationPreview: PresentationPreview
@@ -24,7 +23,11 @@ describe('Auto accept present proof', () => {
   describe('Auto accept on `always`', () => {
     beforeAll(async () => {
       ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
-        await setupProofsTest('faber agent always', 'alice agent always', AutoAcceptProof.Always))
+        await setupProofsTest(
+          'Faber Auto Accept Always Proofs',
+          'Alice Auto Accept Always Proofs',
+          AutoAcceptProof.Always
+        ))
     })
 
     afterAll(async () => {
@@ -103,7 +106,11 @@ describe('Auto accept present proof', () => {
   describe('Auto accept on `contentApproved`', () => {
     beforeAll(async () => {
       ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
-        await setupProofsTest('faber agent', 'alice agent', AutoAcceptProof.ContentApproved))
+        await setupProofsTest(
+          'Faber Auto Accept Content Approved Proofs',
+          'Alice Auto Accept Content Approved Proofs',
+          AutoAcceptProof.ContentApproved
+        ))
     })
 
     afterAll(async () => {

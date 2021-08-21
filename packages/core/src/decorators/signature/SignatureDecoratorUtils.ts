@@ -1,5 +1,4 @@
 import type { Wallet } from '../../wallet/Wallet'
-import type { Verkey } from 'indy-sdk'
 
 import { AriesFrameworkError } from '../../error'
 import { BufferEncoder } from '../../utils/BufferEncoder'
@@ -46,7 +45,7 @@ export async function unpackAndVerifySignatureDecorator(
  *
  * @returns Resulting signature decorator.
  */
-export async function signData(data: unknown, wallet: Wallet, signerKey: Verkey): Promise<SignatureDecorator> {
+export async function signData(data: unknown, wallet: Wallet, signerKey: string): Promise<SignatureDecorator> {
   const dataBuffer = Buffer.concat([timestamp(), JsonEncoder.toBuffer(data)])
 
   const signatureBuffer = await wallet.sign(dataBuffer, signerKey)

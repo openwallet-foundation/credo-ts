@@ -10,7 +10,7 @@ const config: Config.InitialOptions = {
   displayName: packageJson.name,
   moduleNameMapper: {
     ...base.moduleNameMapper,
-    'rn-indy-sdk': 'indy-sdk',
+    'indy-sdk-react-native': 'indy-sdk',
   },
 }
 

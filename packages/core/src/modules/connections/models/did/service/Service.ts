@@ -9,6 +9,10 @@ export class Service {
     }
   }
 
+  public get protocolScheme(): string {
+    return this.serviceEndpoint.split(':')[0]
+  }
+
   @IsString()
   public id!: string
 

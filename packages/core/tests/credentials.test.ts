@@ -2,31 +2,16 @@ import type { Agent } from '../src/agent/Agent'
 import type { ConnectionRecord } from '../src/modules/connections'
 
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
-import {
-  CredentialPreview,
-  CredentialPreviewAttribute,
-  CredentialRecord,
-  CredentialState,
-} from '../src/modules/credentials'
+import { CredentialPreview, CredentialRecord, CredentialState } from '../src/modules/credentials'
 import { JsonTransformer } from '../src/utils/JsonTransformer'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 
 import { setupCredentialTests, waitForCredentialRecord } from './helpers'
 import testLogger from './logger'
 
-const credentialPreview = new CredentialPreview({
-  attributes: [
-    new CredentialPreviewAttribute({
-      name: 'name',
-      mimeType: 'text/plain',
-      value: 'John',
-    }),
-    new CredentialPreviewAttribute({
-      name: 'age',
-      mimeType: 'text/plain',
-      value: '99',
-    }),
-  ],
+const credentialPreview = CredentialPreview.fromRecord({
+  name: 'John',
+  age: '99',
 })
 
 describe('credentials', () => {

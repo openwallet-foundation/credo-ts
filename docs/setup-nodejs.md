@@ -27,8 +27,10 @@ import { agentDependencies } from '@aries-framework/node'
 const agent = new Agent(
   {
     label: 'my-agent',
-    walletConfig: { id: 'walletId' },
-    walletCredentials: { key: 'testkey0000000000000000000000000' },
+    walletConfig: {
+      id: 'walletId',
+      key: 'testkey0000000000000000000000000',
+    },
   },
   agentDependencies
 )

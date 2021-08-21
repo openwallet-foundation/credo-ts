@@ -1,9 +1,9 @@
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
-import type { Did, Verkey } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
 import { inject, scoped, Lifecycle } from 'tsyringe'
@@ -30,7 +30,6 @@ import {
   Ed25119Sig2018,
   authenticationTypes,
   ReferencedAuthentication,
-  DidCommService,
   IndyAgentService,
 } from '../models'
 import { ConnectionRecord } from '../repository/ConnectionRecord'
@@ -42,6 +41,7 @@ export class ConnectionService {
   private config: AgentConfig
   private connectionRepository: ConnectionRepository
   private eventEmitter: EventEmitter
+  private logger: Logger
 
   public constructor(
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
@@ -53,6 +53,7 @@ export class ConnectionService {
     this.config = config
     this.connectionRepository = connectionRepository
     this.eventEmitter = eventEmitter
+    this.logger = config.logger
   }
 
   /**
@@ -114,7 +115,7 @@ export class ConnectionService {
       routing: {
         endpoint: string
         verkey: string
-        did: Did
+        did: string
         routingKeys: string[]
       }
       autoAcceptConnection?: boolean
@@ -344,6 +345,83 @@ export class ConnectionService {
     return connection
   }
 
+  /**
+   * Assert that an inbound message either has a connection associated with it,
+   * or has everything correctly set up for connection-less exchange.
+   *
+   * @param messageContext - the inbound message context
+   * @param previousRespondence - previous sent and received message to determine if a valid service decorator is present
+   */
+  public assertConnectionOrServiceDecorator(
+    messageContext: InboundMessageContext,
+    {
+      previousSentMessage,
+      previousReceivedMessage,
+    }: {
+      previousSentMessage?: AgentMessage
+      previousReceivedMessage?: AgentMessage
+    } = {}
+  ) {
+    const { connection, message } = messageContext
+
+    // Check if we have a ready connection. Verification is already done somewhere else. Return
+    if (connection) {
+      connection.assertReady()
+      this.logger.debug(`Processing message with id ${message.id} and connection id ${connection.id}`, {
+        type: message.type,
+      })
+    } else {
+      this.logger.debug(`Processing connection-less message with id ${message.id}`, {
+        type: message.type,
+      })
+
+      if (previousSentMessage) {
+        // If we have previously sent a message, it is not allowed to receive an OOB/unpacked message
+        if (!messageContext.recipientVerkey) {
+          throw new AriesFrameworkError(
+            'Cannot verify service without recipientKey on incoming message (received unpacked message)'
+          )
+        }
+
+        // Check if the inbound message recipient key is present
+        // in the recipientKeys of previously sent message ~service decorator
+        if (
+          !previousSentMessage?.service ||
+          !previousSentMessage.service.recipientKeys.includes(messageContext.recipientVerkey)
+        ) {
+          throw new AriesFrameworkError(
+            'Previously sent message ~service recipientKeys does not include current received message recipient key'
+          )
+        }
+      }
+
+      if (previousReceivedMessage) {
+        // If we have previously received a message, it is not allowed to receive an OOB/unpacked/AnonCrypt message
+        if (!messageContext.senderVerkey) {
+          throw new AriesFrameworkError(
+            'Cannot verify service without senderKey on incoming message (received AnonCrypt or unpacked message)'
+          )
+        }
+
+        // Check if the inbound message sender key is present
+        // in the recipientKeys of previously received message ~service decorator
+        if (
+          !previousReceivedMessage.service ||
+          !previousReceivedMessage.service.recipientKeys.includes(messageContext.senderVerkey)
+        ) {
+          throw new AriesFrameworkError(
+            'Previously received message ~service recipientKeys does not include current received message sender key'
+          )
+        }
+      }
+
+      // If message is received unpacked/, we need to make sure it included a ~service decorator
+      if (!message.service && (!messageContext.senderVerkey || !messageContext.recipientVerkey)) {
+        throw new AriesFrameworkError('Message without senderKey and recipientKey must have ~service decorator')
+      }
+    }
+  }
+
   public async updateState(connectionRecord: ConnectionRecord, newState: ConnectionState) {
     const previousState = connectionRecord.state
     connectionRecord.state = newState
@@ -396,7 +474,7 @@ export class ConnectionService {
    * @returns the connection record, or null if not found
    * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
    */
-  public findByVerkey(verkey: Verkey): Promise<ConnectionRecord | null> {
+  public findByVerkey(verkey: string): Promise<ConnectionRecord | null> {
     return this.connectionRepository.findSingleByQuery({
       verkey,
     })
@@ -409,9 +487,22 @@ export class ConnectionService {
    * @returns the connection record, or null if not found
    * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
    */
-  public findByTheirKey(verkey: Verkey): Promise<ConnectionRecord | null> {
+  public findByTheirKey(verkey: string): Promise<ConnectionRecord | null> {
     return this.connectionRepository.findSingleByQuery({
       theirKey: verkey,
+    })
+  }
+
+  /**
+   * Find connection by invitation key.
+   *
+   * @param key the invitation key to search for
+   * @returns the connection record, or null if not found
+   * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
+   */
+  public findByInvitationKey(key: string): Promise<ConnectionRecord | null> {
+    return this.connectionRepository.findSingleByQuery({
+      invitationKey: key,
     })
   }
 
@@ -455,14 +546,6 @@ export class ConnectionService {
       recipientKeys: [verkey],
       routingKeys: routingKeys,
     })
-    const didCommService = new DidCommService({
-      id: `${did}#did-communication`,
-      serviceEndpoint: endpoint,
-      recipientKeys: [verkey],
-      routingKeys: routingKeys,
-      // Prefer DidCommService over IndyAgentService
-      priority: 1,
-    })
 
     // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
     // inferred from the publicKey class instance
@@ -471,7 +554,7 @@ export class ConnectionService {
     const didDoc = new DidDoc({
       id: did,
       authentication: [auth],
-      service: [didCommService, indyAgentService],
+      service: [indyAgentService],
       publicKey: [publicKey],
     })
 
@@ -520,7 +603,7 @@ export class ConnectionService {
 export interface Routing {
   endpoint: string
   verkey: string
-  did: Did
+  did: string
   routingKeys: string[]
 }
 

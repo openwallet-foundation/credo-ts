@@ -20,9 +20,10 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { Wallet } from '../../../wallet/Wallet'
 import { AckStatus } from '../../common'
-import { Credential, CredentialRepository, CredentialUtils, IndyCredentialInfo } from '../../credentials'
+import { ConnectionService } from '../../connections'
+import { CredentialUtils, Credential, CredentialRepository, IndyCredentialInfo } from '../../credentials'
 import { IndyHolderService, IndyVerifierService } from '../../indy'
-import { LedgerService } from '../../ledger/services/LedgerService'
+import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofState } from '../ProofState'
 import {
@@ -56,20 +57,22 @@ import { ProofRecord } from '../repository/ProofRecord'
 export class ProofService {
   private proofRepository: ProofRepository
   private credentialRepository: CredentialRepository
-  private ledgerService: LedgerService
+  private ledgerService: IndyLedgerService
   private wallet: Wallet
   private logger: Logger
   private indyHolderService: IndyHolderService
   private indyVerifierService: IndyVerifierService
+  private connectionService: ConnectionService
   private eventEmitter: EventEmitter
 
   public constructor(
     proofRepository: ProofRepository,
-    ledgerService: LedgerService,
+    ledgerService: IndyLedgerService,
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
     agentConfig: AgentConfig,
     indyHolderService: IndyHolderService,
     indyVerifierService: IndyVerifierService,
+    connectionService: ConnectionService,
     eventEmitter: EventEmitter,
     credentialRepository: CredentialRepository
   ) {
@@ -80,12 +83,13 @@ export class ProofService {
     this.logger = agentConfig.logger
     this.indyHolderService = indyHolderService
     this.indyVerifierService = indyVerifierService
+    this.connectionService = connectionService
     this.eventEmitter = eventEmitter
   }
 
   /**
    * Create a {@link ProposePresentationMessage} not bound to an existing presentation exchange.
-   * To create a proposal as response to an existing presentation exchange, use {@link ProofService#createProposalAsResponse}.
+   * To create a proposal as response to an existing presentation exchange, use {@link ProofService.createProposalAsResponse}.
    *
    * @param connectionRecord The connection for which to create the presentation proposal
    * @param presentationProposal The presentation proposal to include in the message
@@ -129,7 +133,7 @@ export class ProofService {
 
   /**
    * Create a {@link ProposePresentationMessage} as response to a received presentation request.
-   * To create a proposal not bound to an existing presentation exchange, use {@link ProofService#createProposal}.
+   * To create a proposal not bound to an existing presentation exchange, use {@link ProofService.createProposal}.
    *
    * @param proofRecord The proof record for which to create the presentation proposal
    * @param presentationProposal The presentation proposal to include in the message
@@ -164,7 +168,7 @@ export class ProofService {
   /**
    * Process a received {@link ProposePresentationMessage}. This will not accept the presentation proposal
    * or send a presentation request. It will only create a new, or update the existing proof record with
-   * the information from the presentation proposal message. Use {@link ProofService#createRequestAsResponse}
+   * the information from the presentation proposal message. Use {@link ProofService.createRequestAsResponse}
    * after calling this method to create a presentation request.
    *
    * @param messageContext The message context containing a presentation proposal message
@@ -177,20 +181,18 @@ export class ProofService {
     let proofRecord: ProofRecord
     const { message: proposalMessage, connection } = messageContext
 
-    // Assert connection
-    connection?.assertReady()
-    if (!connection) {
-      throw new AriesFrameworkError(
-        `No connection associated with incoming presentation proposal message with thread id ${proposalMessage.threadId}`
-      )
-    }
+    this.logger.debug(`Processing presentation proposal with id ${proposalMessage.id}`)
 
     try {
       // Proof record already exists
-      proofRecord = await this.getByConnectionAndThreadId(connection.id, proposalMessage.threadId)
+      proofRecord = await this.getByThreadAndConnectionId(proposalMessage.threadId, connection?.id)
 
       // Assert
       proofRecord.assertState(ProofState.RequestSent)
+      this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
+        previousReceivedMessage: proofRecord.proposalMessage,
+        previousSentMessage: proofRecord.requestMessage,
+      })
 
       // Update record
       proofRecord.proposalMessage = proposalMessage
@@ -198,11 +200,14 @@ export class ProofService {
     } catch {
       // No proof record exists with thread id
       proofRecord = new ProofRecord({
-        connectionId: connection.id,
+        connectionId: connection?.id,
         threadId: proposalMessage.threadId,
         proposalMessage,
         state: ProofState.ProposalReceived,
       })
+
+      // Assert
+      this.connectionService.assertConnectionOrServiceDecorator(messageContext)
 
       // Save record
       await this.proofRepository.save(proofRecord)
@@ -220,7 +225,7 @@ export class ProofService {
 
   /**
    * Create a {@link RequestPresentationMessage} as response to a received presentation proposal.
-   * To create a request not bound to an existing presentation exchange, use {@link ProofService#createRequest}.
+   * To create a request not bound to an existing presentation exchange, use {@link ProofService.createRequest}.
    *
    * @param proofRecord The proof record for which to create the presentation request
    * @param proofRequest The proof request to include in the message
@@ -265,22 +270,23 @@ export class ProofService {
    * Create a {@link RequestPresentationMessage} not bound to an existing presentation exchange.
    * To create a request as response to an existing presentation exchange, use {@link ProofService#createRequestAsResponse}.
    *
+   * @param proofRequestTemplate The proof request template
    * @param connectionRecord The connection for which to create the presentation request
-   * @param proofRequest The proof request to include in the message
-   * @param config Additional configuration to use for the request
    * @returns Object containing request message and associated proof record
    *
    */
   public async createRequest(
-    connectionRecord: ConnectionRecord,
     proofRequest: ProofRequest,
+    connectionRecord?: ConnectionRecord,
     config?: {
       comment?: string
       autoAcceptProof?: AutoAcceptProof
     }
   ): Promise<ProofProtocolMsgReturnType<RequestPresentationMessage>> {
+    this.logger.debug(`Creating proof request`)
+
     // Assert
-    connectionRecord.assertReady()
+    connectionRecord?.assertReady()
 
     // Create message
     const attachment = new Attachment({
@@ -297,7 +303,7 @@ export class ProofService {
 
     // Create record
     const proofRecord = new ProofRecord({
-      connectionId: connectionRecord.id,
+      connectionId: connectionRecord?.id,
       threadId: requestPresentationMessage.threadId,
       requestMessage: requestPresentationMessage,
       state: ProofState.RequestSent,
@@ -316,7 +322,7 @@ export class ProofService {
   /**
    * Process a received {@link RequestPresentationMessage}. This will not accept the presentation request
    * or send a presentation. It will only create a new, or update the existing proof record with
-   * the information from the presentation request message. Use {@link ProofService#createPresentation}
+   * the information from the presentation request message. Use {@link ProofService.createPresentation}
    * after calling this method to create a presentation.
    *
    * @param messageContext The message context containing a presentation request message
@@ -327,13 +333,7 @@ export class ProofService {
     let proofRecord: ProofRecord
     const { message: proofRequestMessage, connection } = messageContext
 
-    // Assert connection
-    connection?.assertReady()
-    if (!connection) {
-      throw new AriesFrameworkError(
-        `No connection associated with incoming presentation request message with thread id ${proofRequestMessage.threadId}`
-      )
-    }
+    this.logger.debug(`Processing presentation request with id ${proofRequestMessage.id}`)
 
     const proofRequest = proofRequestMessage.indyProofRequest
 
@@ -349,10 +349,14 @@ export class ProofService {
 
     try {
       // Proof record already exists
-      proofRecord = await this.getByConnectionAndThreadId(connection.id, proofRequestMessage.threadId)
+      proofRecord = await this.getByThreadAndConnectionId(proofRequestMessage.threadId, connection?.id)
 
       // Assert
       proofRecord.assertState(ProofState.ProposalSent)
+      this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
+        previousReceivedMessage: proofRecord.requestMessage,
+        previousSentMessage: proofRecord.proposalMessage,
+      })
 
       // Update record
       proofRecord.requestMessage = proofRequestMessage
@@ -360,11 +364,14 @@ export class ProofService {
     } catch {
       // No proof record exists with thread id
       proofRecord = new ProofRecord({
-        connectionId: connection.id,
+        connectionId: connection?.id,
         threadId: proofRequestMessage.threadId,
         requestMessage: proofRequestMessage,
         state: ProofState.RequestReceived,
       })
+
+      // Assert
+      this.connectionService.assertConnectionOrServiceDecorator(messageContext)
 
       // Save in repository
       await this.proofRepository.save(proofRecord)
@@ -393,6 +400,8 @@ export class ProofService {
       comment?: string
     }
   ): Promise<ProofProtocolMsgReturnType<PresentationMessage>> {
+    this.logger.debug(`Creating presentation for proof record with id ${proofRecord.id}`)
+
     // Assert
     proofRecord.assertState(ProofState.RequestReceived)
 
@@ -438,7 +447,7 @@ export class ProofService {
   /**
    * Process a received {@link PresentationMessage}. This will not accept the presentation
    * or send a presentation acknowledgement. It will only update the existing proof record with
-   * the information from the presentation message. Use {@link ProofService#createAck}
+   * the information from the presentation message. Use {@link ProofService.createAck}
    * after calling this method to create a presentation acknowledgement.
    *
    * @param messageContext The message context containing a presentation message
@@ -448,17 +457,16 @@ export class ProofService {
   public async processPresentation(messageContext: InboundMessageContext<PresentationMessage>): Promise<ProofRecord> {
     const { message: presentationMessage, connection } = messageContext
 
-    // Assert connection
-    connection?.assertReady()
-    if (!connection) {
-      throw new AriesFrameworkError(
-        `No connection associated with incoming presentation message with thread id ${presentationMessage.threadId}`
-      )
-    }
+    this.logger.debug(`Processing presentation with id ${presentationMessage.id}`)
 
-    // Assert proof record
-    const proofRecord = await this.getByConnectionAndThreadId(connection.id, presentationMessage.threadId)
+    const proofRecord = await this.getByThreadAndConnectionId(presentationMessage.threadId, connection?.id)
+
+    // Assert
     proofRecord.assertState(ProofState.RequestSent)
+    this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      previousReceivedMessage: proofRecord.proposalMessage,
+      previousSentMessage: proofRecord.requestMessage,
+    })
 
     // TODO: add proof class with validator
     const indyProofJson = presentationMessage.indyProof
@@ -494,6 +502,8 @@ export class ProofService {
    *
    */
   public async createAck(proofRecord: ProofRecord): Promise<ProofProtocolMsgReturnType<PresentationAckMessage>> {
+    this.logger.debug(`Creating presentation ack for proof record with id ${proofRecord.id}`)
+
     // Assert
     proofRecord.assertState(ProofState.PresentationReceived)
 
@@ -519,17 +529,16 @@ export class ProofService {
   public async processAck(messageContext: InboundMessageContext<PresentationAckMessage>): Promise<ProofRecord> {
     const { message: presentationAckMessage, connection } = messageContext
 
-    // Assert connection
-    connection?.assertReady()
-    if (!connection) {
-      throw new AriesFrameworkError(
-        `No connection associated with incoming presentation acknowledgement message with thread id ${presentationAckMessage.threadId}`
-      )
-    }
+    this.logger.debug(`Processing presentation ack with id ${presentationAckMessage.id}`)
 
-    // Assert proof record
-    const proofRecord = await this.getByConnectionAndThreadId(connection.id, presentationAckMessage.threadId)
+    const proofRecord = await this.getByThreadAndConnectionId(presentationAckMessage.threadId, connection?.id)
+
+    // Assert
     proofRecord.assertState(ProofState.PresentationSent)
+    this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      previousReceivedMessage: proofRecord.requestMessage,
+      previousSentMessage: proofRecord.presentationMessage,
+    })
 
     // Update record
     await this.updateState(proofRecord, ProofState.Done)
@@ -543,7 +552,7 @@ export class ProofService {
 
   /**
    * Create a {@link ProofRequest} from a presentation proposal. This method can be used to create the
-   * proof request from a received proposal for use in {@link ProofService#createRequestAsResponse}
+   * proof request from a received proposal for use in {@link ProofService.createRequestAsResponse}
    *
    * @param presentationProposal The presentation proposal to create a proof request from
    * @param config Additional configuration to use for the proof request
@@ -628,7 +637,7 @@ export class ProofService {
   }
 
   /**
-   * Retreives the linked attachments for an {@link indyProofRequest}
+   * Retrieves the linked attachments for an {@link indyProofRequest}
    * @param indyProofRequest The proof request for which the linked attachments have to be found
    * @param requestedCredentials The requested credentials
    * @returns a list of attachments that are linked to the requested credentials
@@ -972,8 +981,12 @@ export class ProofService {
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The proof record
    */
-  public async getByConnectionAndThreadId(connectionId: string, threadId: string): Promise<ProofRecord> {
+  public async getByThreadAndConnectionId(threadId: string, connectionId?: string): Promise<ProofRecord> {
     return this.proofRepository.getSingleByQuery({ threadId, connectionId })
+  }
+
+  public update(proofRecord: ProofRecord) {
+    return this.proofRepository.update(proofRecord)
   }
 
   /**
@@ -1083,6 +1096,11 @@ export class ProofService {
 
     return credentialDefinitions
   }
+}
+
+export interface ProofRequestTemplate {
+  proofRequest: ProofRequest
+  comment?: string
 }
 
 export interface ProofProtocolMsgReturnType<MessageType extends AgentMessage> {

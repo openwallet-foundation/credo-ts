@@ -14,6 +14,9 @@ import type {
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
+import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
+import { IndySdkError } from '../../../error/IndySdkError'
+import { isIndyError } from '../../../utils/indyError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 
 import { IndyUtilitesService } from './indyUtilitiesService'
@@ -21,13 +24,13 @@ import { IndyUtilitesService } from './indyUtilitiesService'
 @scoped(Lifecycle.ContainerScoped)
 export class IndyIssuerService {
   private indy: typeof Indy
-  private indyWallet: IndyWallet
+  private wallet: IndyWallet
   private indyUtilitiesService: IndyUtilitesService
   private fileSystem: FileSystem
 
-  public constructor(agentConfig: AgentConfig, indyWallet: IndyWallet, indyUtilitiesService: IndyUtilitesService) {
+  public constructor(agentConfig: AgentConfig, wallet: IndyWallet, indyUtilitiesService: IndyUtilitesService) {
     this.indy = agentConfig.agentDependencies.indy
-    this.indyWallet = indyWallet
+    this.wallet = wallet
     this.indyUtilitiesService = indyUtilitiesService
     this.fileSystem = agentConfig.fileSystem
   }
@@ -38,9 +41,13 @@ export class IndyIssuerService {
    * @returns the schema.
    */
   public async createSchema({ originDid, name, version, attributes }: CreateSchemaOptions): Promise<Schema> {
-    const [, schema] = await this.indy.issuerCreateSchema(originDid, name, version, attributes)
+    try {
+      const [, schema] = await this.indy.issuerCreateSchema(originDid, name, version, attributes)
 
-    return schema
+      return schema
+    } catch (error) {
+      throw new IndySdkError(error)
+    }
   }
 
   /**
@@ -55,18 +62,22 @@ export class IndyIssuerService {
     signatureType = 'CL',
     supportRevocation = false,
   }: CreateCredentialDefinitionOptions): Promise<CredDef> {
-    const [, credentialDefinition] = await this.indy.issuerCreateAndStoreCredentialDef(
-      this.indyWallet.walletHandle,
-      issuerDid,
-      schema,
-      tag,
-      signatureType,
-      {
-        support_revocation: supportRevocation,
-      }
-    )
+    try {
+      const [, credentialDefinition] = await this.indy.issuerCreateAndStoreCredentialDef(
+        this.wallet.handle,
+        issuerDid,
+        schema,
+        tag,
+        signatureType,
+        {
+          support_revocation: supportRevocation,
+        }
+      )
 
-    return credentialDefinition
+      return credentialDefinition
+    } catch (error) {
+      throw new IndySdkError(error)
+    }
   }
 
   /**
@@ -76,7 +87,11 @@ export class IndyIssuerService {
    * @returns The created credential offer
    */
   public async createCredentialOffer(credentialDefinitionId: CredDefId) {
-    return this.indy.issuerCreateCredentialOffer(this.indyWallet.walletHandle, credentialDefinitionId)
+    try {
+      return await this.indy.issuerCreateCredentialOffer(this.wallet.handle, credentialDefinitionId)
+    } catch (error) {
+      throw new IndySdkError(error)
+    }
   }
 
   /**
@@ -91,23 +106,31 @@ export class IndyIssuerService {
     revocationRegistryId,
     tailsFilePath,
   }: CreateCredentialOptions): Promise<[Cred, CredRevocId]> {
-    // Indy SDK requires tailsReaderHandle. Use null if no tailsFilePath is present
-    const tailsReaderHandle = tailsFilePath ? await this.indyUtilitiesService.createTailsReader(tailsFilePath) : 0
+    try {
+      // Indy SDK requires tailsReaderHandle. Use null if no tailsFilePath is present
+      const tailsReaderHandle = tailsFilePath ? await this.indyUtilitiesService.createTailsReader(tailsFilePath) : 0
 
-    if (revocationRegistryId || tailsFilePath) {
-      throw new Error('Revocation not supported yet')
+      if (revocationRegistryId || tailsFilePath) {
+        throw new AriesFrameworkError('Revocation not supported yet')
+      }
+
+      const [credential, credentialRevocationId] = await this.indy.issuerCreateCredential(
+        this.wallet.handle,
+        credentialOffer,
+        credentialRequest,
+        credentialValues,
+        revocationRegistryId ?? null,
+        tailsReaderHandle
+      )
+
+      return [credential, credentialRevocationId]
+    } catch (error) {
+      if (isIndyError(error)) {
+        throw new IndySdkError(error)
+      }
+
+      throw error
     }
-
-    const [credential, credentialRevocationId] = await this.indy.issuerCreateCredential(
-      this.indyWallet.walletHandle,
-      credentialOffer,
-      credentialRequest,
-      credentialValues,
-      revocationRegistryId ?? null,
-      tailsReaderHandle
-    )
-
-    return [credential, credentialRevocationId]
   }
 }
 

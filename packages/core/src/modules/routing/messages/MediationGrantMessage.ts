@@ -1,5 +1,3 @@
-import type { Verkey } from 'indy-sdk'
-
 import { Expose } from 'class-transformer'
 import { Equals, IsArray, IsNotEmpty, IsString } from 'class-validator'
 
@@ -8,7 +6,7 @@ import { AgentMessage } from '../../../agent/AgentMessage'
 export interface MediationGrantMessageOptions {
   id?: string
   endpoint: string
-  routingKeys: Verkey[]
+  routingKeys: string[]
   threadId: string
 }
 
@@ -39,7 +37,7 @@ export class MediationGrantMessage extends AgentMessage {
   @IsNotEmpty()
   @IsArray()
   @Expose({ name: 'routing_keys' })
-  public routingKeys!: Verkey[]
+  public routingKeys!: string[]
 
   @IsNotEmpty()
   @IsString()

@@ -79,9 +79,9 @@ export class Agent {
       logger: initialConfig.logger != undefined,
     })
 
-    if (!this.agentConfig.walletConfig || !this.agentConfig.walletCredentials) {
+    if (!this.agentConfig.walletConfig) {
       this.logger.warn(
-        'Wallet config and/or credentials have not been set on the agent config. ' +
+        'Wallet config has not been set on the agent config. ' +
           'Make sure to initialize the wallet yourself before initializing the agent, ' +
           'or provide the required wallet configuration in the agent constructor'
       )
@@ -118,8 +118,8 @@ export class Agent {
     this.inboundTransporter = inboundTransporter
   }
 
-  public registerOutboundTransporter(outboundTransporter: OutboundTransporter, priority?: number) {
-    this.messageSender.registerOutboundTransporter(outboundTransporter, priority)
+  public registerOutboundTransporter(outboundTransporter: OutboundTransporter) {
+    this.messageSender.registerOutboundTransporter(outboundTransporter)
   }
 
   public get outboundTransporters() {
@@ -135,7 +135,7 @@ export class Agent {
   }
 
   public async initialize() {
-    const { publicDidSeed, walletConfig, walletCredentials, mediatorConnectionsInvite } = this.agentConfig
+    const { publicDidSeed, walletConfig, mediatorConnectionsInvite } = this.agentConfig
 
     if (this._isInitialized) {
       throw new AriesFrameworkError(
@@ -143,11 +143,11 @@ export class Agent {
       )
     }
 
-    if (!this.wallet.isInitialized && walletConfig && walletCredentials) {
-      await this.wallet.initialize(walletConfig, walletCredentials)
+    if (!this.wallet.isInitialized && walletConfig) {
+      await this.wallet.initialize(walletConfig)
     } else if (!this.wallet.isInitialized) {
       throw new WalletError(
-        'Wallet config and/or credentials have not been set on the agent config. ' +
+        'Wallet config has not been set on the agent config. ' +
           'Make sure to initialize the wallet yourself before initializing the agent, ' +
           'or provide the required wallet configuration in the agent constructor'
       )
@@ -163,50 +163,14 @@ export class Agent {
     }
 
     for (const transport of this.messageSender.outboundTransporters) {
-      transport?.start(this)
+      transport.start(this)
     }
 
     // Connect to mediator through provided invitation if provided in config
     // Also requests mediation ans sets as default mediator
     // Because this requires the connections module, we do this in the agent constructor
     if (mediatorConnectionsInvite) {
-      // Assumption: processInvitation is a URL-encoded invitation
-      const invitation = await ConnectionInvitationMessage.fromUrl(mediatorConnectionsInvite)
-      // Check if invitation has been used already
-      const connections = await this.connections.getAll()
-      let defaultMediatorBootstrapped = false
-      for (const connection of connections) {
-        if (connection.invitation?.id === invitation.id) {
-          this.logger.warn(
-            `Mediator Invitation in configuration has already been used to ${
-              connection.isReady ? 'make' : 'initialize'
-            } a connection`
-          )
-          if (connection.isReady) {
-            const mediator = await this.mediationRecipient.findByConnectionId(connection.id)
-            if (mediator) {
-              this.logger.warn(
-                `Mediator Invitation in configuration has already been ${
-                  mediator.isReady ? 'granted' : 'requested'
-                } mediation`
-              )
-              if (mediator.isReady) {
-                defaultMediatorBootstrapped = true
-              }
-            }
-          }
-          break
-        }
-      }
-      if (!defaultMediatorBootstrapped) {
-        let connectionRecord = await this.connections.receiveInvitation(invitation, {
-          autoAcceptConnection: true,
-        })
-        // TODO: add timeout to returnWhenIsConnected
-        connectionRecord = await this.connections.returnWhenIsConnected(connectionRecord.id)
-        const mediationRecord = await this.mediationRecipient.requestAndAwaitGrant(connectionRecord, 60000) // TODO: put timeout as a config parameter
-        await this.mediationRecipient.setDefaultMediator(mediationRecord)
-      }
+      await this.mediationRecipient.provision(mediatorConnectionsInvite)
     }
 
     await this.mediationRecipient.initialize()
@@ -215,9 +179,13 @@ export class Agent {
   }
 
   public async shutdown({ deleteWallet = false }: { deleteWallet?: boolean } = {}) {
+    // All observables use takeUntil with the stop$ observable
+    // this means all observables will stop running if a value is emitted on this observable
+    this.agentConfig.stop$.next(true)
+
     // Stop transports
     for (const transport of this.messageSender.outboundTransporters) {
-      transport?.stop()
+      transport.stop()
     }
     await this.inboundTransporter?.stop()
 
@@ -229,10 +197,6 @@ export class Agent {
         await this.wallet.close()
       }
     }
-
-    // All observables use takeUntil with the stop$ observable
-    // this means all observables will stop running if a value is emitted on this observable
-    this.agentConfig.stop$.next(true)
   }
 
   public get publicDid() {

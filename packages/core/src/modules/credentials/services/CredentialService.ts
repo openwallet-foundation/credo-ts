@@ -6,7 +6,6 @@ import type { ConnectionRecord } from '../../connections'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { ProposeCredentialMessageOptions } from '../messages'
-import type { CredDefId } from 'indy-sdk'
 
 import { scoped, Lifecycle } from 'tsyringe'
 
@@ -20,7 +19,7 @@ import { uuid } from '../../../utils/uuid'
 import { AckStatus } from '../../common'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { IndyIssuerService, IndyHolderService } from '../../indy'
-import { LedgerService } from '../../ledger/services/LedgerService'
+import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
@@ -42,7 +41,7 @@ import { CredentialRecord } from '../repository/CredentialRecord'
 export class CredentialService {
   private credentialRepository: CredentialRepository
   private connectionService: ConnectionService
-  private ledgerService: LedgerService
+  private ledgerService: IndyLedgerService
   private logger: Logger
   private indyIssuerService: IndyIssuerService
   private indyHolderService: IndyHolderService
@@ -51,7 +50,7 @@ export class CredentialService {
   public constructor(
     credentialRepository: CredentialRepository,
     connectionService: ConnectionService,
-    ledgerService: LedgerService,
+    ledgerService: IndyLedgerService,
     agentConfig: AgentConfig,
     indyIssuerService: IndyIssuerService,
     indyHolderService: IndyHolderService,
@@ -162,20 +161,18 @@ export class CredentialService {
     let credentialRecord: CredentialRecord
     const { message: proposalMessage, connection } = messageContext
 
-    // Assert connection
-    connection?.assertReady()
-    if (!connection) {
-      throw new AriesFrameworkError(
-        `No connection associated with incoming credential proposal message with thread id ${proposalMessage.threadId}`
-      )
-    }
+    this.logger.debug(`Processing credential proposal with id ${proposalMessage.id}`)
 
     try {
       // Credential record already exists
-      credentialRecord = await this.getByConnectionAndThreadId(connection.id, proposalMessage.threadId)
+      credentialRecord = await this.getByThreadAndConnectionId(proposalMessage.threadId, connection?.id)
 
       // Assert
       credentialRecord.assertState(CredentialState.OfferSent)
+      this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
+        previousReceivedMessage: credentialRecord.proposalMessage,
+        previousSentMessage: credentialRecord.offerMessage,
+      })
 
       // Update record
       credentialRecord.proposalMessage = proposalMessage
@@ -183,12 +180,15 @@ export class CredentialService {
     } catch {
       // No credential record exists with thread id
       credentialRecord = new CredentialRecord({
-        connectionId: connection.id,
+        connectionId: connection?.id,
         threadId: proposalMessage.threadId,
         proposalMessage,
         credentialAttributes: proposalMessage.credentialProposal?.attributes,
         state: CredentialState.ProposalReceived,
       })
+
+      // Assert
+      this.connectionService.assertConnectionOrServiceDecorator(messageContext)
 
       // Save record
       await this.credentialRepository.save(credentialRecord)
@@ -265,11 +265,11 @@ export class CredentialService {
    *
    */
   public async createOffer(
-    connectionRecord: ConnectionRecord,
-    credentialTemplate: CredentialOfferTemplate
+    credentialTemplate: CredentialOfferTemplate,
+    connectionRecord?: ConnectionRecord
   ): Promise<CredentialProtocolMsgReturnType<OfferCredentialMessage>> {
     // Assert
-    connectionRecord.assertReady()
+    connectionRecord?.assertReady()
 
     // Create message
     const { credentialDefinitionId, comment, preview, linkedAttachments } = credentialTemplate
@@ -297,7 +297,7 @@ export class CredentialService {
 
     // Create record
     const credentialRecord = new CredentialRecord({
-      connectionId: connectionRecord.id,
+      connectionId: connectionRecord?.id,
       threadId: credentialOfferMessage.id,
       offerMessage: credentialOfferMessage,
       credentialAttributes: credentialPreview.attributes,
@@ -336,16 +336,9 @@ export class CredentialService {
     let credentialRecord: CredentialRecord
     const { message: credentialOfferMessage, connection } = messageContext
 
-    // Assert connection
-    connection?.assertReady()
-    if (!connection) {
-      throw new AriesFrameworkError(
-        `No connection associated with incoming credential offer message with thread id ${credentialOfferMessage.threadId}`
-      )
-    }
+    this.logger.debug(`Processing credential offer with id ${credentialOfferMessage.id}`)
 
     const indyCredentialOffer = credentialOfferMessage.indyCredentialOffer
-
     if (!indyCredentialOffer) {
       throw new AriesFrameworkError(
         `Missing required base64 encoded attachment data for credential offer with thread id ${credentialOfferMessage.threadId}`
@@ -354,10 +347,14 @@ export class CredentialService {
 
     try {
       // Credential record already exists
-      credentialRecord = await this.getByConnectionAndThreadId(connection.id, credentialOfferMessage.threadId)
+      credentialRecord = await this.getByThreadAndConnectionId(credentialOfferMessage.threadId, connection?.id)
 
       // Assert
       credentialRecord.assertState(CredentialState.ProposalSent)
+      this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
+        previousReceivedMessage: credentialRecord.offerMessage,
+        previousSentMessage: credentialRecord.proposalMessage,
+      })
 
       credentialRecord.offerMessage = credentialOfferMessage
       credentialRecord.linkedAttachments = credentialOfferMessage.attachments?.filter((attachment) =>
@@ -369,7 +366,7 @@ export class CredentialService {
     } catch {
       // No credential record exists with thread id
       credentialRecord = new CredentialRecord({
-        connectionId: connection.id,
+        connectionId: connection?.id,
         threadId: credentialOfferMessage.id,
         offerMessage: credentialOfferMessage,
         credentialAttributes: credentialOfferMessage.credentialPreview.attributes,
@@ -379,6 +376,9 @@ export class CredentialService {
         },
         state: CredentialState.OfferReceived,
       })
+
+      // Assert
+      this.connectionService.assertConnectionOrServiceDecorator(messageContext)
 
       // Save in repository
       await this.credentialRepository.save(credentialRecord)
@@ -404,13 +404,10 @@ export class CredentialService {
    */
   public async createRequest(
     credentialRecord: CredentialRecord,
-    options?: CredentialRequestOptions
+    options: CredentialRequestOptions
   ): Promise<CredentialProtocolMsgReturnType<RequestCredentialMessage>> {
     // Assert credential
     credentialRecord.assertState(CredentialState.OfferReceived)
-
-    const connection = await this.connectionService.getById(credentialRecord.connectionId)
-    const holderDid = connection.did
 
     const credentialOffer = credentialRecord.offerMessage?.indyCredentialOffer
 
@@ -423,7 +420,7 @@ export class CredentialService {
     const credentialDefinition = await this.ledgerService.getCredentialDefinition(credentialOffer.cred_def_id)
 
     const [credReq, credReqMetadata] = await this.indyHolderService.createCredentialRequest({
-      holderDid,
+      holderDid: options.holderDid,
       credentialOffer,
       credentialDefinition,
     })
@@ -470,13 +467,7 @@ export class CredentialService {
   ): Promise<CredentialRecord> {
     const { message: credentialRequestMessage, connection } = messageContext
 
-    // Assert connection
-    connection?.assertReady()
-    if (!connection) {
-      throw new AriesFrameworkError(
-        `No connection associated with incoming credential request message with thread id ${credentialRequestMessage.threadId}`
-      )
-    }
+    this.logger.debug(`Processing credential request with id ${credentialRequestMessage.id}`)
 
     const indyCredentialRequest = credentialRequestMessage?.indyCredentialRequest
 
@@ -486,8 +477,14 @@ export class CredentialService {
       )
     }
 
-    const credentialRecord = await this.getByConnectionAndThreadId(connection.id, credentialRequestMessage.threadId)
+    const credentialRecord = await this.getByThreadAndConnectionId(credentialRequestMessage.threadId, connection?.id)
+
+    // Assert
     credentialRecord.assertState(CredentialState.OfferSent)
+    this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      previousReceivedMessage: credentialRecord.proposalMessage,
+      previousSentMessage: credentialRecord.offerMessage,
+    })
 
     this.logger.debug('Credential record found when processing credential request', credentialRecord)
 
@@ -596,17 +593,16 @@ export class CredentialService {
   ): Promise<CredentialRecord> {
     const { message: issueCredentialMessage, connection } = messageContext
 
-    // Assert connection
-    connection?.assertReady()
-    if (!connection) {
-      throw new AriesFrameworkError(
-        `No connection associated with incoming presentation message with thread id ${issueCredentialMessage.threadId}`
-      )
-    }
+    this.logger.debug(`Processing credential with id ${issueCredentialMessage.id}`)
 
-    // Assert credential record
-    const credentialRecord = await this.getByConnectionAndThreadId(connection.id, issueCredentialMessage.threadId)
+    const credentialRecord = await this.getByThreadAndConnectionId(issueCredentialMessage.threadId, connection?.id)
+
+    // Assert
     credentialRecord.assertState(CredentialState.RequestSent)
+    this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      previousReceivedMessage: credentialRecord.offerMessage,
+      previousSentMessage: credentialRecord.requestMessage,
+    })
 
     if (!credentialRecord.metadata.requestMetadata) {
       throw new AriesFrameworkError(`Missing required request metadata for credential with id ${credentialRecord.id}`)
@@ -658,6 +654,18 @@ export class CredentialService {
   }
 
   /**
+   * Decline a credential offer
+   * @param credentialRecord The credential to be declined
+   */
+  public async declineOffer(credentialRecord: CredentialRecord): Promise<CredentialRecord> {
+    credentialRecord.assertState(CredentialState.OfferReceived)
+
+    await this.updateState(credentialRecord, CredentialState.Declined)
+
+    return credentialRecord
+  }
+
+  /**
    * Process a received {@link CredentialAckMessage}.
    *
    * @param messageContext The message context containing a credential acknowledgement message
@@ -667,17 +675,16 @@ export class CredentialService {
   public async processAck(messageContext: InboundMessageContext<CredentialAckMessage>): Promise<CredentialRecord> {
     const { message: credentialAckMessage, connection } = messageContext
 
-    // Assert connection
-    connection?.assertReady()
-    if (!connection) {
-      throw new AriesFrameworkError(
-        `No connection associated with incoming presentation acknowledgement message with thread id ${credentialAckMessage.threadId}`
-      )
-    }
+    this.logger.debug(`Processing credential ack with id ${credentialAckMessage.id}`)
 
-    // Assert credential record
-    const credentialRecord = await this.getByConnectionAndThreadId(connection.id, credentialAckMessage.threadId)
+    const credentialRecord = await this.getByThreadAndConnectionId(credentialAckMessage.threadId, connection?.id)
+
+    // Assert
     credentialRecord.assertState(CredentialState.CredentialIssued)
+    this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      previousReceivedMessage: credentialRecord.requestMessage,
+      previousSentMessage: credentialRecord.credentialMessage,
+    })
 
     // Update record
     await this.updateState(credentialRecord, CredentialState.Done)
@@ -725,11 +732,15 @@ export class CredentialService {
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The credential record
    */
-  public getByConnectionAndThreadId(connectionId: string, threadId: string): Promise<CredentialRecord> {
+  public getByThreadAndConnectionId(threadId: string, connectionId?: string): Promise<CredentialRecord> {
     return this.credentialRepository.getSingleByQuery({
-      threadId,
       connectionId,
+      threadId,
     })
+  }
+
+  public update(credentialRecord: CredentialRecord) {
+    return this.credentialRepository.update(credentialRecord)
   }
 
   /**
@@ -761,7 +772,7 @@ export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessag
 }
 
 export interface CredentialOfferTemplate {
-  credentialDefinitionId: CredDefId
+  credentialDefinitionId: string
   comment?: string
   preview: CredentialPreview
   autoAcceptCredential?: AutoAcceptCredential
@@ -770,6 +781,7 @@ export interface CredentialOfferTemplate {
 }
 
 export interface CredentialRequestOptions {
+  holderDid: string
   comment?: string
   autoAcceptCredential?: AutoAcceptCredential
 }

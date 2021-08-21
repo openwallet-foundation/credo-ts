@@ -8,6 +8,7 @@ export enum CredentialState {
   ProposalReceived = 'proposal-received',
   OfferSent = 'offer-sent',
   OfferReceived = 'offer-received',
+  Declined = 'declined',
   RequestSent = 'request-sent',
   RequestReceived = 'request-received',
   CredentialIssued = 'credential-issued',

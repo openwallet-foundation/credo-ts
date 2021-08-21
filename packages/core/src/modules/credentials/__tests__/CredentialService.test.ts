@@ -1,6 +1,7 @@
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
+import type { CredentialPreviewAttribute } from '../messages'
 import type { CredentialRecordMetadata, CustomCredentialTags } from '../repository/CredentialRecord'
 import type { CredentialOfferTemplate } from '../services'
 
@@ -14,14 +15,13 @@ import { AckStatus } from '../../common'
 import { ConnectionState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
-import { LedgerService } from '../../ledger/services'
+import { IndyLedgerService } from '../../ledger/services'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
 import {
   CredentialAckMessage,
   CredentialPreview,
-  CredentialPreviewAttribute,
   INDY_CREDENTIAL_ATTACHMENT_ID,
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
@@ -37,13 +37,13 @@ import { credDef, credOffer, credReq } from './fixtures'
 
 // Mock classes
 jest.mock('../repository/CredentialRepository')
-jest.mock('../../../modules/ledger/services/LedgerService')
+jest.mock('../../../modules/ledger/services/IndyLedgerService')
 jest.mock('../../indy/services/IndyHolderService')
 jest.mock('../../indy/services/IndyIssuerService')
 
 // Mock typed object
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
-const LedgerServiceMock = LedgerService as jest.Mock<LedgerService>
+const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 const IndyHolderServiceMock = IndyHolderService as jest.Mock<IndyHolderService>
 const IndyIssuerServiceMock = IndyIssuerService as jest.Mock<IndyIssuerService>
 
@@ -52,19 +52,9 @@ const connection = getMockConnection({
   state: ConnectionState.Complete,
 })
 
-const credentialPreview = new CredentialPreview({
-  attributes: [
-    new CredentialPreviewAttribute({
-      name: 'name',
-      mimeType: 'text/plain',
-      value: 'John',
-    }),
-    new CredentialPreviewAttribute({
-      name: 'age',
-      mimeType: 'text/plain',
-      value: '99',
-    }),
-  ],
+const credentialPreview = CredentialPreview.fromRecord({
+  name: 'John',
+  age: '99',
 })
 
 const offerAttachment = new Attachment({
@@ -137,7 +127,7 @@ const mockCredentialRecord = ({
 describe('CredentialService', () => {
   let credentialRepository: CredentialRepository
   let credentialService: CredentialService
-  let ledgerService: LedgerService
+  let ledgerService: IndyLedgerService
   let indyIssuerService: IndyIssuerService
   let indyHolderService: IndyHolderService
   let eventEmitter: EventEmitter
@@ -147,12 +137,15 @@ describe('CredentialService', () => {
     credentialRepository = new CredentialRepositoryMock()
     indyIssuerService = new IndyIssuerServiceMock()
     indyHolderService = new IndyHolderServiceMock()
-    ledgerService = new LedgerServiceMock()
+    ledgerService = new IndyLedgerServiceMock()
     eventEmitter = new EventEmitter(agentConfig)
 
     credentialService = new CredentialService(
       credentialRepository,
-      { getById: () => Promise.resolve(connection) } as unknown as ConnectionService,
+      {
+        getById: () => Promise.resolve(connection),
+        assertConnectionOrServiceDecorator: () => true,
+      } as unknown as ConnectionService,
       ledgerService,
       agentConfig,
       indyIssuerService,
@@ -179,7 +172,7 @@ describe('CredentialService', () => {
       const repositorySaveSpy = jest.spyOn(credentialRepository, 'save')
 
       // when
-      const { message: credentialOffer } = await credentialService.createOffer(connection, credentialTemplate)
+      const { message: credentialOffer } = await credentialService.createOffer(credentialTemplate, connection)
 
       // then
       expect(repositorySaveSpy).toHaveBeenCalledTimes(1)
@@ -199,7 +192,7 @@ describe('CredentialService', () => {
       const eventListenerMock = jest.fn()
       eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
-      await credentialService.createOffer(connection, credentialTemplate)
+      await credentialService.createOffer(credentialTemplate, connection)
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'CredentialStateChanged',
@@ -213,7 +206,7 @@ describe('CredentialService', () => {
     })
 
     test('returns credential offer message', async () => {
-      const { message: credentialOffer } = await credentialService.createOffer(connection, credentialTemplate)
+      const { message: credentialOffer } = await credentialService.createOffer(credentialTemplate, connection)
 
       expect(credentialOffer.toJSON()).toMatchObject({
         '@id': expect.any(String),
@@ -320,7 +313,9 @@ describe('CredentialService', () => {
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
 
       // when
-      await credentialService.createRequest(credentialRecord)
+      await credentialService.createRequest(credentialRecord, {
+        holderDid: connection.did,
+      })
 
       // then
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
@@ -336,7 +331,9 @@ describe('CredentialService', () => {
       eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
       // when
-      await credentialService.createRequest(credentialRecord)
+      await credentialService.createRequest(credentialRecord, {
+        holderDid: connection.did,
+      })
 
       // then
       expect(eventListenerMock).toHaveBeenCalledWith({
@@ -357,6 +354,7 @@ describe('CredentialService', () => {
       // when
       const { message: credentialRequest } = await credentialService.createRequest(credentialRecord, {
         comment,
+        holderDid: connection.did,
       })
 
       // then
@@ -384,9 +382,9 @@ describe('CredentialService', () => {
     test(`throws an error when state transition is invalid`, async () => {
       await Promise.all(
         invalidCredentialStates.map(async (state) => {
-          await expect(credentialService.createRequest(mockCredentialRecord({ state }))).rejects.toThrowError(
-            `Credential record is in invalid state ${state}. Valid states are: ${validState}.`
-          )
+          await expect(
+            credentialService.createRequest(mockCredentialRecord({ state }), { holderDid: connection.id })
+          ).rejects.toThrowError(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
         })
       )
     })
@@ -919,7 +917,7 @@ describe('CredentialService', () => {
     it('getById should return value from credentialRepository.getSingleByQuery', async () => {
       const expected = mockCredentialRecord()
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(expected))
-      const result = await credentialService.getByConnectionAndThreadId('connectionId', 'threadId')
+      const result = await credentialService.getByThreadAndConnectionId('threadId', 'connectionId')
       expect(credentialRepository.getSingleByQuery).toBeCalledWith({
         threadId: 'threadId',
         connectionId: 'connectionId',
@@ -945,6 +943,69 @@ describe('CredentialService', () => {
       expect(credentialRepository.getAll).toBeCalledWith()
 
       expect(result).toEqual(expect.arrayContaining(expected))
+    })
+  })
+
+  describe('declineOffer', () => {
+    const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249754'
+    let credential: CredentialRecord
+
+    beforeEach(() => {
+      credential = mockCredentialRecord({
+        state: CredentialState.OfferReceived,
+        tags: { threadId },
+      })
+    })
+
+    test(`updates state to ${CredentialState.Declined}`, async () => {
+      // given
+      const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
+
+      // when
+      await credentialService.declineOffer(credential)
+
+      // then
+      const expectedCredentialState = {
+        state: CredentialState.Declined,
+      }
+      expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
+      expect(repositoryUpdateSpy).toHaveBeenNthCalledWith(1, expect.objectContaining(expectedCredentialState))
+    })
+
+    test(`emits stateChange event from ${CredentialState.OfferReceived} to ${CredentialState.Declined}`, async () => {
+      const eventListenerMock = jest.fn()
+      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
+
+      // given
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
+
+      // when
+      await credentialService.declineOffer(credential)
+
+      // then
+      expect(eventListenerMock).toHaveBeenCalledTimes(1)
+      const [[event]] = eventListenerMock.mock.calls
+      expect(event).toMatchObject({
+        type: 'CredentialStateChanged',
+        payload: {
+          previousState: CredentialState.OfferReceived,
+          credentialRecord: expect.objectContaining({
+            state: CredentialState.Declined,
+          }),
+        },
+      })
+    })
+
+    const validState = CredentialState.OfferReceived
+    const invalidCredentialStates = Object.values(CredentialState).filter((state) => state !== validState)
+    test(`throws an error when state transition is invalid`, async () => {
+      await Promise.all(
+        invalidCredentialStates.map(async (state) => {
+          await expect(
+            credentialService.declineOffer(mockCredentialRecord({ state, tags: { threadId } }))
+          ).rejects.toThrowError(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
+        })
+      )
     })
   })
 })

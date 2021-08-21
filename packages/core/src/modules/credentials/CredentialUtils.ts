@@ -21,9 +21,9 @@ export class CredentialUtils {
    * */
   public static createAndLinkAttachmentsToPreview(attachments: LinkedAttachment[], preview: CredentialPreview) {
     const credentialPreview = new CredentialPreview({ attributes: [...preview.attributes] })
-    const credentialPreviewAttributenNames = credentialPreview.attributes.map((attribute) => attribute.name)
+    const credentialPreviewAttributeNames = credentialPreview.attributes.map((attribute) => attribute.name)
     attachments.forEach((linkedAttachment) => {
-      if (credentialPreviewAttributenNames.includes(linkedAttachment.attributeName)) {
+      if (credentialPreviewAttributeNames.includes(linkedAttachment.attributeName)) {
         throw new AriesFrameworkError(
           `linkedAttachment ${linkedAttachment.attributeName} already exists in the preview`
         )
