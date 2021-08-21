@@ -20,9 +20,9 @@ export class WsInboundTransport implements InboundTransport {
 
     this.logger = config.logger
 
-    const httpEndpoint = config.endpoints.find((e) => e.startsWith('http'))
-    this.logger.debug(`Starting HTTP inbound transport`, {
-      endpoint: httpEndpoint,
+    const wsEndpoint = config.endpoints.find((e) => e.startsWith('ws'))
+    this.logger.debug(`Starting WS inbound transport`, {
+      endpoint: wsEndpoint,
     })
 
     this.socketServer.on('connection', (socket: WebSocket) => {
