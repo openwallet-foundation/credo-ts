@@ -123,7 +123,7 @@ Example: If you are testing VC related functionality and need a mediator, you ca
 - Copy mediator invite url and save it (i.e. MEDIATOR_INVITE = "url").
 
 Note: If the invite url uses insecure http you will have to adjust your code to allow for insecure traffic.
-- Instructions for [iOS](https://stackoverflow.com/questions/31254725/transport-security-has-blocked-a-cleartext-http)
+- Instructions for [iOS](https://stackoverflow.com/questions/31254725/transport-security-has-blocked-a-cleartext-http).
 - Instructions for [Android](https://stackoverflow.com/questions/51902629/how-to-allow-all-network-connection-types-http-and-https-in-android-9-pie).
 
 More about [Mediators](3-routing.md).
