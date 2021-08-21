@@ -1,5 +1,5 @@
 import type { DidCommService, ConnectionRecord } from '../modules/connections'
-import type { OutboundTransporter } from '../transport/OutboundTransporter'
+import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { OutboundMessage, OutboundPackage, WireMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
@@ -27,7 +27,7 @@ export class MessageSender {
   private transportService: TransportService
   private messageRepository: MessageRepository
   private logger: Logger
-  private outboundTransports: OutboundTransporter[] = []
+  public readonly outboundTransports: OutboundTransport[] = []
 
   public constructor(
     envelopeService: EnvelopeService,
@@ -42,12 +42,8 @@ export class MessageSender {
     this.outboundTransports = []
   }
 
-  public registerOutboundTransporter(outboundTransporter: OutboundTransporter) {
-    this.outboundTransports.push(outboundTransporter)
-  }
-
-  public get outboundTransporters() {
-    return this.outboundTransports
+  public registerOutboundTransport(outboundTransport: OutboundTransport) {
+    this.outboundTransports.push(outboundTransport)
   }
 
   public async packMessage({
@@ -103,15 +99,15 @@ export class MessageSender {
     // Retrieve DIDComm services
     const { services, queueService } = await this.retrieveServicesByConnection(connection, options?.transportPriority)
 
-    if (this.outboundTransporters.length === 0 && !queueService) {
-      throw new AriesFrameworkError('Agent has no outbound transporter!')
+    if (this.outboundTransports.length === 0 && !queueService) {
+      throw new AriesFrameworkError('Agent has no outbound transport!')
     }
 
     // Loop trough all available services and try to send the message
     for await (const service of services) {
       this.logger.debug(`Sending outbound message to service:`, { service })
       try {
-        for (const transport of this.outboundTransporters) {
+        for (const transport of this.outboundTransports) {
           if (transport.supportedSchemes.includes(service.protocolScheme)) {
             await transport.sendMessage({
               payload: packedMessage,
@@ -236,7 +232,7 @@ export class MessageSender {
     returnRoute?: boolean
   }) {
     if (this.outboundTransports.length === 0) {
-      throw new AriesFrameworkError('Agent has no outbound transporter!')
+      throw new AriesFrameworkError('Agent has no outbound transport!')
     }
 
     this.logger.debug(`Sending outbound message to service:`, { messageId: message.id, service })
@@ -254,7 +250,7 @@ export class MessageSender {
 
     const outboundPackage = await this.packMessage({ message, keys, endpoint: service.serviceEndpoint })
     outboundPackage.endpoint = service.serviceEndpoint
-    for (const transport of this.outboundTransporters) {
+    for (const transport of this.outboundTransports) {
       if (transport.supportedSchemes.includes(service.protocolScheme)) {
         await transport.sendMessage(outboundPackage)
         break

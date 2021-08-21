@@ -114,12 +114,7 @@ export class ConnectionService {
   public async processInvitation(
     invitation: ConnectionInvitationMessage,
     config: {
-      routing: {
-        endpoint: string
-        verkey: string
-        did: string
-        routingKeys: string[]
-      }
+      routing: Routing
       autoAcceptConnection?: boolean
       alias?: string
     }
@@ -530,7 +525,7 @@ export class ConnectionService {
     autoAcceptConnection?: boolean
     tags?: CustomConnectionTags
   }): Promise<ConnectionRecord> {
-    const { endpoint, did, verkey, routingKeys } = options.routing
+    const { endpoints, did, verkey, routingKeys } = options.routing
 
     const publicKey = new Ed25119Sig2018({
       // TODO: shouldn't this name be ED25519
@@ -540,14 +535,17 @@ export class ConnectionService {
     })
 
     // IndyAgentService is old service type
-    // DidCommService is new service type
-    // Include both for better interoperability
-    const indyAgentService = new IndyAgentService({
-      id: `${did}#IndyAgentService`,
-      serviceEndpoint: endpoint,
-      recipientKeys: [verkey],
-      routingKeys: routingKeys,
-    })
+    const services = endpoints.map(
+      (endpoint, index) =>
+        new IndyAgentService({
+          id: `${did}#IndyAgentService`,
+          serviceEndpoint: endpoint,
+          recipientKeys: [verkey],
+          routingKeys: routingKeys,
+          // Order of endpoint determines priority
+          priority: index,
+        })
+    )
 
     // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
     // inferred from the publicKey class instance
@@ -556,7 +554,7 @@ export class ConnectionService {
     const didDoc = new DidDoc({
       id: did,
       authentication: [auth],
-      service: [indyAgentService],
+      service: services,
       publicKey: [publicKey],
     })
 
@@ -605,7 +603,7 @@ export class ConnectionService {
 }
 
 export interface Routing {
-  endpoint: string
+  endpoints: string[]
   verkey: string
   did: string
   routingKeys: string[]

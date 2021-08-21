@@ -2,8 +2,8 @@ import type { SubjectMessage } from '../../../../../../tests/transport/SubjectIn
 
 import { Subject } from 'rxjs'
 
-import { SubjectInboundTransporter } from '../../../../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransporter } from '../../../../../../tests/transport/SubjectOutboundTransport'
+import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
+import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { getBaseConfig, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { ConnectionRecord } from '../../connections'
@@ -12,11 +12,11 @@ import { MediationState } from '../models/MediationState'
 const recipientConfig = getBaseConfig('Mediation: Recipient')
 const mediatorConfig = getBaseConfig('Mediation: Mediator', {
   autoAcceptMediationRequests: true,
-  endpoint: 'rxjs:mediator',
+  endpoints: ['rxjs:mediator'],
 })
 
 const senderConfig = getBaseConfig('Mediation: Sender', {
-  endpoint: 'rxjs:sender',
+  endpoints: ['rxjs:sender'],
 })
 
 describe('mediator establishment', () => {
@@ -55,8 +55,8 @@ describe('mediator establishment', () => {
 
     // Initialize mediatorReceived message
     mediatorAgent = new Agent(mediatorConfig.config, recipientConfig.agentDependencies)
-    mediatorAgent.registerOutboundTransporter(new SubjectOutboundTransporter(mediatorMessages, subjectMap))
-    mediatorAgent.setInboundTransporter(new SubjectInboundTransporter(mediatorMessages))
+    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(mediatorMessages, subjectMap))
+    mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
     // Create connection to use for recipient
@@ -72,8 +72,8 @@ describe('mediator establishment', () => {
       { ...recipientConfig.config, mediatorConnectionsInvite: mediatorInvitation.toUrl() },
       recipientConfig.agentDependencies
     )
-    recipientAgent.registerOutboundTransporter(new SubjectOutboundTransporter(recipientMessages, subjectMap))
-    recipientAgent.setInboundTransporter(new SubjectInboundTransporter(recipientMessages))
+    recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(recipientMessages, subjectMap))
+    recipientAgent.registerInboundTransport(new SubjectInboundTransport(recipientMessages))
     await recipientAgent.initialize()
 
     const recipientMediator = await recipientAgent.mediationRecipient.findDefaultMediator()
@@ -94,8 +94,8 @@ describe('mediator establishment', () => {
 
     // Initialize sender agent
     senderAgent = new Agent(senderConfig.config, senderConfig.agentDependencies)
-    senderAgent.registerOutboundTransporter(new SubjectOutboundTransporter(senderMessages, subjectMap))
-    senderAgent.setInboundTransporter(new SubjectInboundTransporter(senderMessages))
+    senderAgent.registerOutboundTransport(new SubjectOutboundTransport(senderMessages, subjectMap))
+    senderAgent.registerInboundTransport(new SubjectInboundTransport(senderMessages))
     await senderAgent.initialize()
 
     const {
@@ -105,7 +105,8 @@ describe('mediator establishment', () => {
       autoAcceptConnection: true,
     })
 
-    expect(recipientInvitation.serviceEndpoint).toBe(mediatorConfig.config.endpoint)
+    const endpoints = mediatorConfig.config.endpoints ?? []
+    expect(recipientInvitation.serviceEndpoint).toBe(endpoints[0])
 
     let senderRecipientConnection = await senderAgent.connections.receiveInvitationFromUrl(
       recipientInvitation.toUrl(),

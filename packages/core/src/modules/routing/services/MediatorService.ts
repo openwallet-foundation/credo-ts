@@ -167,7 +167,7 @@ export class MediatorService {
     await this.mediationRepository.update(mediationRecord)
 
     const message = new MediationGrantMessage({
-      endpoint: this.agentConfig.getEndpoint(),
+      endpoint: this.agentConfig.endpoints[0],
       routingKeys: await this.getRoutingKeys(),
       threadId: mediationRecord.threadId,
     })

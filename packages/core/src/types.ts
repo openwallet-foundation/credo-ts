@@ -23,7 +23,7 @@ export enum DidCommMimeType {
 }
 
 export interface InitConfig {
-  endpoint?: string
+  endpoints?: string[]
   label: string
   publicDidSeed?: string
   mediatorRecordId?: string
