@@ -73,5 +73,5 @@ export interface OutboundPackage {
   payload: WireMessage
   responseRequested?: boolean
   endpoint?: string
-  connection?: ConnectionRecord
+  connectionId?: string
 }

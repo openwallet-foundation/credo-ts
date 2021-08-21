@@ -1,6 +1,5 @@
 import type { Agent } from '../agent/Agent'
 import type { Logger } from '../logger'
-import type { ConnectionRecord } from '../modules/connections'
 import type { OutboundPackage } from '../types'
 import type { OutboundTransporter } from './OutboundTransporter'
 import type { OutboundWebSocketClosedEvent } from './TransportEventTypes'
@@ -39,7 +38,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
-    const { payload, endpoint, connection } = outboundPackage
+    const { payload, endpoint, connectionId } = outboundPackage
     this.logger.debug(`Sending outbound message to endpoint '${endpoint}' over WebSocket transport.`, {
       payload,
     })
@@ -49,7 +48,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
     }
 
     const isNewSocket = this.hasOpenSocket(endpoint)
-    const socket = await this.resolveSocket({ socketId: endpoint, endpoint, connection })
+    const socket = await this.resolveSocket({ socketId: endpoint, endpoint, connectionId })
 
     socket.send(Buffer.from(JSON.stringify(payload)))
 
@@ -67,11 +66,11 @@ export class WsOutboundTransporter implements OutboundTransporter {
   private async resolveSocket({
     socketId,
     endpoint,
-    connection,
+    connectionId,
   }: {
     socketId: string
     endpoint?: string
-    connection?: ConnectionRecord
+    connectionId?: string
   }) {
     // If we already have a socket connection use it
     let socket = this.transportTable.get(socketId)
@@ -83,7 +82,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
       socket = await this.createSocketConnection({
         endpoint,
         socketId,
-        connection,
+        connectionId,
       })
       this.transportTable.set(socketId, socket)
       this.listenOnWebSocketMessages(socket)
@@ -113,11 +112,11 @@ export class WsOutboundTransporter implements OutboundTransporter {
   private createSocketConnection({
     socketId,
     endpoint,
-    connection,
+    connectionId,
   }: {
     socketId: string
     endpoint: string
-    connection?: ConnectionRecord
+    connectionId?: string
   }): Promise<WebSocket> {
     return new Promise((resolve, reject) => {
       this.logger.debug(`Connecting to WebSocket ${endpoint}`)
@@ -144,7 +143,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
           type: TransportEventTypes.OutboundWebSocketClosedEvent,
           payload: {
             socketId,
-            connectionId: connection?.id,
+            connectionId: connectionId,
           },
         })
       }
