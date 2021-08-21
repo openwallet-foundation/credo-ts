@@ -13,6 +13,7 @@ import { ReactNativeFileSystem } from './ReactNativeFileSystem'
 
 const fetch = global.fetch as unknown as AgentDependencies['fetch']
 const WebSocket = global.WebSocket as unknown as AgentDependencies['WebSocketClass']
+global.Buffer = global.Buffer || require('buffer').Buffer;
 
 const agentDependencies: AgentDependencies = {
   FileSystem: ReactNativeFileSystem,
