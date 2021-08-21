@@ -56,22 +56,22 @@ import RNFS from 'react-native-fs'
 
 When working with an Indy network, the ledger’s genesis file contains the information necessary for an agent to connect to that ledger.  In other words, the genesis file contains the schema (like a DB schema) of the target Indy node ledger you are attempting to connect to. 
 You will need the genesis file of the Indy ledger you are connecting to, to accept/verify credentials.
-Example: Lets say your agent will accept a verifiable credential from trinsic.id, you will probably need to download the genesis file for Sovrin network
+For example, lets say your agent will need to accept a verifiable credential from trinsic.id, you will probably need to download the genesis file for the Sovrin network.
 
 
-- Sovrin Mainnet: https://github.com/sovrin-foundation/sovrin/blob/master/sovrin/pool_transactions_live_genesis
-- Sovrin Stagingnet: https://github.com/sovrin-foundation/sovrin/blob/master/sovrin/pool_transactions_sandbox_genesis
-- Sovrin Buildernet: https://github.com/sovrin-foundation/sovrin/blob/master/sovrin/pool_transactions_builder_genesis
+- [Sovrin Mainnet](https://github.com/sovrin-foundation/sovrin/blob/master/sovrin/pool_transactions_live_genesis)
+- [Sovrin Stagingnet](https://github.com/sovrin-foundation/sovrin/blob/master/sovrin/pool_transactions_sandbox_genesis)
+- [Sovrin Buildernet](https://github.com/sovrin-foundation/sovrin/blob/master/sovrin/pool_transactions_builder_genesis)
 
 More to find [here](https://github.com/sovrin-foundation/sovrin/tree/stable/sovrin)
 
 
 Other 
-- Indicio TestNet: https://raw.githubusercontent.com/Indicio-tech/indicio-network/main/genesis_files/pool_transactions_testnet_genesis
+- [Indicio TestNet](https://raw.githubusercontent.com/Indicio-tech/indicio-network/main/genesis_files/pool_transactions_testnet_genesis)
 
 #### Local network: 
 
-If you are going to test with local network you have to download the genesis file corresponding to the network local ledger
+If you are going to test with a local network you have to download the genesis file corresponding to the networks local ledger.
 Example: [DTS Verifiable Credential Issuer Service](https://github.com/bcgov/dts-vc-issuer-service)
 Corresponding genesis file: http://test.bcovrin.vonx.io/genesis
 
@@ -111,22 +111,22 @@ const genesisPath = await storeGenesis(genesisString, 'genesis.txn');
 
 ```
 
-Note: You do not need genesis file if you are creating a connection between your agent and other agent for exchanging simple messages.
+Note: You do not need the genesis file if you are creating a connection between your Agent and another Agent for exchanging simple messages.
 
 ### 3- Get Mediator Connection URL (Optional)
 
 Mediators (Routing Agents) are Agents that serve as intermediaries to facilitate the flow of messages between other types of agents.
-You will need mediator agent if you are going to deal with VC (Verifiable Credentials), however, you can ignore the mediator step if you are creating an Agent for merely connecting directly to other Agent for exchanging messages.
+You will need a mediator Agent if you are going to deal with VC (Verifiable Credentials), however, you can ignore the mediator step if you are creating an Agent for the sole purpose of exchanging messages with another Agent. 
 
-Example: If you are testing with VCs, you can use [Indicio Public Mediator](https://indicio-tech.github.io/mediator/)
-- Head to [Indicio Public Mediator](https://indicio-tech.github.io/mediator/)
-- Copy mediator invite url and save it (i.e. MEDIATOR_INVITE = "url")
+Example: If you are testing VC related functionality and need a mediator, you can use the [Indicio Public Mediator](https://indicio-tech.github.io/mediator/).
+- Head to [Indicio Public Mediator](https://indicio-tech.github.io/mediator/).
+- Copy mediator invite url and save it (i.e. MEDIATOR_INVITE = "url").
 
-Note: if the invite url use insecure http you will have to adjust your code to allow insecure traffic
+Note: If the invite url uses insecure http you will have to adjust your code to allow for insecure traffic.
 - Instructions for [iOS](https://stackoverflow.com/questions/31254725/transport-security-has-blocked-a-cleartext-http)
-- Instructions for [Android](https://stackoverflow.com/questions/51902629/how-to-allow-all-network-connection-types-http-and-https-in-android-9-pie)
+- Instructions for [Android](https://stackoverflow.com/questions/51902629/how-to-allow-all-network-connection-types-http-and-https-in-android-9-pie).
 
-More about [Mediators](3-routing.md)
+More about [Mediators](3-routing.md).
 
 ### 4- Create Agent
 
@@ -155,7 +155,7 @@ After creating the Agent object, we need to create and set the Inbound/Outbound 
   const httpOutboundTransporter = new HttpOutboundTransporter();
   agent.setOutboundTransporter(httpOutboundTransporter);
 
-  //Inbound transport are currently built-in and you don't need to create it
+  //Inbound transports are currently built-in, you don't need to create them.
 ```
 
 More about [Transports](1-transports.md).
