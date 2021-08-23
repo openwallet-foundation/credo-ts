@@ -218,7 +218,7 @@ const handleCredentialStateChange = async (
     `>> Credential state changed: ${event.payload.credentialRecord.id}, previous state -> ${event.payload.previousState} new state: ${event.payload.credentialRecord.state}`,
   );
 
-  if (event.payload.credentialRecord.state === 'offer-received') {
+  if (event.payload.credentialRecord.state === CredentialState.OfferReceived) {
     console.log(`>> Received offer, should display credential to user`);
     
     // Display offer to user 
