@@ -187,25 +187,22 @@ After you successfully initialize your Agent, you will notice that most of the h
 #### Creating Event(State) Handlers 
 
 ```ts
-
-agent.events.on(
-      AgentEventTypes.AgentMessageReceived,
-      handleBasicMessageReceive,
-);
+agent.events.on<BasicMessageReceivedEvent>(
+	AgentEventTypes.AgentMessageReceived,
+    handleBasicMessageReceive
+)
 
 agent.events.on<CredentialStateChangedEvent>(
   CredentialEventTypes.CredentialStateChanged,
-  event => {
-    handleCredentialStateChange(event); //custom callback for handling any state change when offering/receiving VCs
-  },
-);
+  // Custom callback for handling any state change when offering/receiving VCs
+  handleCredentialStateChange
+)
 
 agent.events.on<ConnectionStateChangedEvent>(
   ConnectionEventTypes.ConnectionStateChanged,
-  event => {
-    handleConnectionStateChange(event); //custom callback for handling any state change when offering/receiving a connection
-  },
-);
+  // Custom callback for handling any state change when offering/receiving a connection
+  handleConnectionStateChange(event)
+)
 ```
 
 Example: This sample credential callback shows how to detect that a credential is received, show the user the credential asserts and give the option to accept/reject the offered credential.
