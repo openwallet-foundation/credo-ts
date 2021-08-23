@@ -171,7 +171,7 @@ After creating the Agent object and configuring it, we initialize the Agent.
 
 ```ts
 
-//Its highly recommended to wrap the initialization flow in a try/catch block 
+// It's highly recommended to wrap the initialization flow in a try/catch block 
 try
 {
   await agent.initialize();
