@@ -139,8 +139,8 @@ const agentConfig: InitConfig = {
       autoAcceptConnections: true,
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       autoAcceptProofs: AutoAcceptProof.ContentApproved,
-      poolName: 'test-193',
-      genesisPath,
+      poolName: 'BCovrin Test',
+      genesisTransactions: BCOVRIN_TEST_GENESIS,
       logger: new ConsoleLogger(LogLevel.debug),
     };
 
