@@ -134,8 +134,10 @@ More about [Mediators](3-routing.md).
 const agentConfig: InitConfig = {
       label: 'My Agent',
       mediatorConnectionsInvite: MEDIATOR_INVITE,
-      walletConfig: {id: 'walletId10'},
-      walletCredentials: {key: 'testkey0230482304823042304244'},
+      walletConfig: {
+      	id: 'WalletId',
+      	key: 'TestKey',
+      },
       autoAcceptConnections: true,
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       autoAcceptProofs: AutoAcceptProof.ContentApproved,
