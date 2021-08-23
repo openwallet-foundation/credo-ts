@@ -219,9 +219,8 @@ const handleCredentialStateChange = async (
   if (event.payload.credentialRecord.state === 'offer-received') {
     console.log(`>> Received offer, should display credential to user`);
     
-    //Display offer to user 
-    //..
-    //On user click "Accept"
+    // Display offer to user 
+    // On user click "Accept"
     console.log(`>>ACCEPTING OFFER`);
     agent.credentials.acceptOffer(event.payload.credentialRecord.id);
 
