@@ -132,7 +132,7 @@ More about [Mediators](3-routing.md).
 
 ```ts
 const agentConfig: InitConfig = {
-      label: 'my-agent9',
+      label: 'My Agent',
       mediatorConnectionsInvite: MEDIATOR_INVITE,
       walletConfig: {id: 'walletId10'},
       walletCredentials: {key: 'testkey0230482304823042304244'},
