@@ -17,7 +17,7 @@ import { Agent, InitConfig } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 
 const agentConfig: InitConfig = {
-  // The label is used for communication with other
+  // The label is used for communication with other agents
   label: 'My Agent',
   walletConfig: {
     id: 'walletId',
