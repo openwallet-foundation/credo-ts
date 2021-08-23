@@ -137,6 +137,8 @@ const agentConfig: InitConfig = {
       walletConfig: {id: 'walletId10'},
       walletCredentials: {key: 'testkey0230482304823042304244'},
       autoAcceptConnections: true,
+      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+      autoAcceptProofs: AutoAcceptProof.ContentApproved,
       poolName: 'test-193',
       genesisPath,
       logger: new ConsoleLogger(LogLevel.debug),
