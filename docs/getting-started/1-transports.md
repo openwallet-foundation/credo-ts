@@ -28,5 +28,6 @@ agent.registerOutboundTransport(wsOutboundTransporter)
 ## Inbound Transport
 
 > TODO:
+>
 > - inbound
 > - priority transport interface
