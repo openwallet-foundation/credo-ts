@@ -20,8 +20,8 @@ import path from 'path'
 import { firstValueFrom, Subject, ReplaySubject } from 'rxjs'
 import { catchError, filter, map, timeout } from 'rxjs/operators'
 
-import { SubjectInboundTransporter } from '../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransporter } from '../../../tests/transport/SubjectOutboundTransport'
+import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
+import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { agentDependencies } from '../../node/src'
 import {
   LogLevel,
@@ -34,7 +34,6 @@ import {
   ConnectionState,
   CredentialEventTypes,
   CredentialPreview,
-  CredentialPreviewAttribute,
   CredentialState,
   DidCommService,
   DidDoc,
@@ -284,18 +283,6 @@ export async function registerDefinition(
   return credentialDefinition
 }
 
-export function previewFromAttributes(attributes: Record<string, string>): CredentialPreview {
-  return new CredentialPreview({
-    attributes: Object.entries(attributes).map(
-      ([name, value]) =>
-        new CredentialPreviewAttribute({
-          name,
-          value,
-        })
-    ),
-  })
-}
-
 export async function prepareForIssuance(agent: Agent, attributes: string[]) {
   const publicDid = agent.publicDid?.did
 
@@ -528,23 +515,23 @@ export async function setupCredentialTests(
   }
   const faberConfig = getBaseConfig(faberName, {
     genesisPath,
-    endpoint: 'rxjs:faber',
+    endpoints: ['rxjs:faber'],
     autoAcceptCredentials,
   })
 
   const aliceConfig = getBaseConfig(aliceName, {
     genesisPath,
-    endpoint: 'rxjs:alice',
+    endpoints: ['rxjs:alice'],
     autoAcceptCredentials,
   })
   const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
-  faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
-  faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
+  faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
+  faberAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
   await faberAgent.initialize()
 
   const aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
-  aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
-  aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
+  aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+  aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(faberMessages, subjectMap))
   await aliceAgent.initialize()
 
   const {
@@ -558,7 +545,7 @@ export async function setupCredentialTests(
 }
 
 export async function setupProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {
-  const credentialPreview = previewFromAttributes({
+  const credentialPreview = CredentialPreview.fromRecord({
     name: 'John',
     age: '99',
   })
@@ -568,13 +555,13 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
   const faberConfig = getBaseConfig(`${faberName}-${unique}`, {
     genesisPath,
     autoAcceptProofs,
-    endpoint: 'rxjs:faber',
+    endpoints: ['rxjs:faber'],
   })
 
   const aliceConfig = getBaseConfig(`${aliceName}-${unique}`, {
     genesisPath,
     autoAcceptProofs,
-    endpoint: 'rxjs:alice',
+    endpoints: ['rxjs:alice'],
   })
 
   const faberMessages = new Subject<SubjectMessage>()
@@ -585,13 +572,13 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
     'rxjs:alice': aliceMessages,
   }
   const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
-  faberAgent.setInboundTransporter(new SubjectInboundTransporter(faberMessages))
-  faberAgent.setOutboundTransporter(new SubjectOutboundTransporter(aliceMessages, subjectMap))
+  faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
+  faberAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
   await faberAgent.initialize()
 
   const aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
-  aliceAgent.setInboundTransporter(new SubjectInboundTransporter(aliceMessages))
-  aliceAgent.setOutboundTransporter(new SubjectOutboundTransporter(faberMessages, subjectMap))
+  aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+  aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(faberMessages, subjectMap))
   await aliceAgent.initialize()
 
   const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])

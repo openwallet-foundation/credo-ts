@@ -1,9 +1,9 @@
-import type { Agent, InboundTransporter, Logger, TransportSession, WireMessage } from '@aries-framework/core'
+import type { Agent, InboundTransport, Logger, TransportSession, WireMessage } from '@aries-framework/core'
 
 import { AriesFrameworkError, AgentConfig, TransportService, utils } from '@aries-framework/core'
 import WebSocket, { Server } from 'ws'
 
-export class WsInboundTransport implements InboundTransporter {
+export class WsInboundTransport implements InboundTransport {
   private socketServer: Server
   private logger!: Logger
 
@@ -20,8 +20,9 @@ export class WsInboundTransport implements InboundTransporter {
 
     this.logger = config.logger
 
-    this.logger.debug(`Starting HTTP inbound transporter`, {
-      endpoint: config.getEndpoint(),
+    const wsEndpoint = config.endpoints.find((e) => e.startsWith('ws'))
+    this.logger.debug(`Starting WS inbound transport`, {
+      endpoint: wsEndpoint,
     })
 
     this.socketServer.on('connection', (socket: WebSocket) => {

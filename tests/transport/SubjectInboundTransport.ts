@@ -1,4 +1,4 @@
-import type { InboundTransporter, Agent } from '../../packages/core/src'
+import type { InboundTransport, Agent } from '../../packages/core/src'
 import type { TransportSession } from '../../packages/core/src/agent/TransportService'
 import type { WireMessage } from '../../packages/core/src/types'
 import type { Subject, Subscription } from 'rxjs'
@@ -8,7 +8,7 @@ import { uuid } from '../../packages/core/src/utils/uuid'
 
 export type SubjectMessage = { message: WireMessage; replySubject?: Subject<SubjectMessage> }
 
-export class SubjectInboundTransporter implements InboundTransporter {
+export class SubjectInboundTransport implements InboundTransport {
   private subject: Subject<SubjectMessage>
   private subscription?: Subscription
 

@@ -222,6 +222,17 @@ export class ConnectionsModule {
   }
 
   /**
+   * Find connection by Invitation key.
+   *
+   * @param key the invitation key to search for
+   * @returns the connection record, or null if not found
+   * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
+   */
+  public findByInvitationKey(key: string): Promise<ConnectionRecord | null> {
+    return this.connectionService.findByInvitationKey(key)
+  }
+
+  /**
    * Retrieve a connection record by thread id
    *
    * @param threadId The thread id

@@ -1,6 +1,6 @@
 import type { Logger } from '../logger'
-import type { InboundTransporter } from '../transport/InboundTransporter'
-import type { OutboundTransporter } from '../transport/OutboundTransporter'
+import type { InboundTransport } from '../transport/InboundTransport'
+import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { InitConfig } from '../types'
 import type { Wallet } from '../wallet/Wallet'
 import type { AgentDependencies } from './AgentDependencies'
@@ -43,7 +43,6 @@ export class Agent {
   protected messageReceiver: MessageReceiver
   protected transportService: TransportService
   protected messageSender: MessageSender
-  public inboundTransporter?: InboundTransporter
   private _isInitialized = false
   public messageSubscription: Subscription
 
@@ -114,16 +113,20 @@ export class Agent {
       .subscribe()
   }
 
-  public setInboundTransporter(inboundTransporter: InboundTransporter) {
-    this.inboundTransporter = inboundTransporter
+  public registerInboundTransport(inboundTransport: InboundTransport) {
+    this.messageReceiver.registerInboundTransport(inboundTransport)
   }
 
-  public setOutboundTransporter(outboundTransporter: OutboundTransporter) {
-    this.messageSender.setOutboundTransporter(outboundTransporter)
+  public get inboundTransports() {
+    return this.messageReceiver.inboundTransports
   }
 
-  public get outboundTransporter() {
-    return this.messageSender.outboundTransporter
+  public registerOutboundTransport(outboundTransport: OutboundTransport) {
+    this.messageSender.registerOutboundTransport(outboundTransport)
+  }
+
+  public get outboundTransports() {
+    return this.messageSender.outboundTransports
   }
 
   public get events() {
@@ -158,27 +161,19 @@ export class Agent {
       await this.wallet.initPublicDid({ seed: publicDidSeed })
     }
 
-    if (this.inboundTransporter) {
-      await this.inboundTransporter.start(this)
+    for (const transport of this.inboundTransports) {
+      transport.start(this)
     }
 
-    if (this.outboundTransporter) {
-      await this.outboundTransporter.start(this)
+    for (const transport of this.outboundTransports) {
+      transport.start(this)
     }
 
     // Connect to mediator through provided invitation if provided in config
     // Also requests mediation ans sets as default mediator
     // Because this requires the connections module, we do this in the agent constructor
     if (mediatorConnectionsInvite) {
-      // Assumption: processInvitation is a URL-encoded invitation
-      let connectionRecord = await this.connections.receiveInvitationFromUrl(mediatorConnectionsInvite, {
-        autoAcceptConnection: true,
-      })
-
-      // TODO: add timeout to returnWhenIsConnected
-      connectionRecord = await this.connections.returnWhenIsConnected(connectionRecord.id)
-      const mediationRecord = await this.mediationRecipient.requestAndAwaitGrant(connectionRecord, 60000) // TODO: put timeout as a config parameter
-      await this.mediationRecipient.setDefaultMediator(mediationRecord)
+      await this.mediationRecipient.provision(mediatorConnectionsInvite)
     }
 
     await this.mediationRecipient.initialize()
@@ -192,8 +187,12 @@ export class Agent {
     this.agentConfig.stop$.next(true)
 
     // Stop transports
-    await this.outboundTransporter?.stop()
-    await this.inboundTransporter?.stop()
+    for (const transport of this.outboundTransports) {
+      transport.stop()
+    }
+    for (const transport of this.inboundTransports) {
+      transport.stop()
+    }
 
     // close/delete wallet if still initialized
     if (this.wallet.isInitialized) {

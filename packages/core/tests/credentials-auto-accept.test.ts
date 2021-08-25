@@ -1,19 +1,19 @@
 import type { Agent } from '../src/agent/Agent'
 import type { ConnectionRecord } from '../src/modules/connections'
 
-import { AutoAcceptCredential, CredentialRecord, CredentialState } from '../src/modules/credentials'
+import { AutoAcceptCredential, CredentialPreview, CredentialRecord, CredentialState } from '../src/modules/credentials'
 import { JsonTransformer } from '../src/utils/JsonTransformer'
 import { sleep } from '../src/utils/sleep'
 
-import { previewFromAttributes, setupCredentialTests, waitForCredentialRecord } from './helpers'
+import { setupCredentialTests, waitForCredentialRecord } from './helpers'
 import testLogger from './logger'
 
-const credentialPreview = previewFromAttributes({
+const credentialPreview = CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
 })
 
-const newCredentialPreview = previewFromAttributes({
+const newCredentialPreview = CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
   lastname: 'Appleseed',

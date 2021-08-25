@@ -1,9 +1,11 @@
+import type { Logger } from '../../logger'
+import type { OutboundWebSocketClosedEvent } from '../../transport'
 import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './index'
 
 import { firstValueFrom, interval, ReplaySubject } from 'rxjs'
-import { filter, first, takeUntil, timeout } from 'rxjs/operators'
+import { filter, first, takeUntil, throttleTime, timeout, delay, tap } from 'rxjs/operators'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
@@ -11,6 +13,9 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
+import { AriesFrameworkError } from '../../error'
+import { TransportEventTypes } from '../../transport'
+import { ConnectionInvitationMessage } from '../connections'
 import { ConnectionService } from '../connections/services'
 
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
@@ -46,6 +51,7 @@ export class RecipientModule {
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
+  private logger: Logger
 
   /**
    * Creates an instance of RecipientModule.
@@ -69,6 +75,7 @@ export class RecipientModule {
     this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
+    this.logger = agentConfig.logger
     this.registerHandlers(dispatcher)
   }
 
@@ -101,6 +108,58 @@ export class RecipientModule {
     if (defaultMediator) {
       await this.initiateMessagePickup(defaultMediator)
     }
+  }
+
+  private async openMediationWebSocket(mediator: MediationRecord) {
+    const { message, connectionRecord } = await this.connectionService.createTrustPing(mediator.connectionId)
+
+    const websocketSchemes = ['ws', 'wss']
+    const hasWebSocketTransport = connectionRecord.theirDidDoc?.didCommServices?.some((s) =>
+      websocketSchemes.includes(s.protocolScheme)
+    )
+
+    if (!hasWebSocketTransport) {
+      throw new AriesFrameworkError('Cannot open websocket to connection without websocket service endpoint')
+    }
+
+    await this.messageSender.sendMessage(createOutboundMessage(connectionRecord, message), {
+      transportPriority: {
+        schemes: websocketSchemes,
+        restrictive: true,
+        // TODO: add keepAlive: true to enforce through the public api
+        // we need to keep the socket alive. It already works this way, but would
+        // be good to make more explicit from the public facing API.
+        // This would also make it easier to change the internal API later on.
+        // keepAlive: true,
+      },
+    })
+  }
+
+  private async initiateImplicitPickup(mediator: MediationRecord) {
+    let interval = 50
+
+    // Listens to Outbound websocket closed events and will reopen the websocket connection
+    // in a recursive back off strategy if it matches the following criteria:
+    // - Agent is not shutdown
+    // - Socket was for current mediator connection id
+    this.eventEmitter
+      .observable<OutboundWebSocketClosedEvent>(TransportEventTypes.OutboundWebSocketClosedEvent)
+      .pipe(
+        // Stop when the agent shuts down
+        takeUntil(this.agentConfig.stop$),
+        filter((e) => e.payload.connectionId === mediator.connectionId),
+        // Make sure we're not reconnecting multiple times
+        throttleTime(interval),
+        // Increase the interval (recursive back-off)
+        tap(() => (interval *= 2)),
+        // Wait for interval time before reconnecting
+        delay(interval)
+      )
+      .subscribe(() => {
+        this.openMediationWebSocket(mediator)
+      })
+
+    await this.openMediationWebSocket(mediator)
   }
 
   /**
@@ -140,8 +199,7 @@ export class RecipientModule {
     // such as WebSockets to work
     else if (mediatorPickupStrategy === MediatorPickupStrategy.Implicit) {
       this.agentConfig.logger.info(`Starting implicit pickup of messages from mediator '${mediator.id}'`)
-      const { message, connectionRecord } = await this.connectionService.createTrustPing(mediatorConnection.id)
-      await this.messageSender.sendMessage(createOutboundMessage(connectionRecord, message))
+      await this.initiateImplicitPickup(mediator)
     } else {
       this.agentConfig.logger.info(
         `Skipping pickup of messages from mediator '${mediator.id}' due to pickup strategy none`
@@ -344,6 +402,75 @@ export class RecipientModule {
 
     const event = await firstValueFrom(subject)
     return event.payload.mediationRecord
+  }
+
+  /**
+   * provision a recipient with a mediator
+   *
+   * @remarks
+   * Provided a connection invitation, establishes a connection, request mediation and then sets as default mediator.
+   *
+   * @example
+   *
+   * @returns mediation record
+   */
+  public async provision(mediatorConnInvite: string) {
+    this.logger.debug('Provision Mediation with invitation', { invite: mediatorConnInvite })
+    // Connect to mediator through provided invitation
+    // Also requests mediation and sets as default mediator
+    // Assumption: processInvitation is a URL-encoded invitation
+    const invitation = await ConnectionInvitationMessage.fromUrl(mediatorConnInvite)
+
+    // Check if invitation has been used already
+    if (!invitation || !invitation.recipientKeys || !invitation.recipientKeys[0]) {
+      throw new AriesFrameworkError(`Invalid mediation invitation. Invitation must have at least one recipient key.`)
+    }
+
+    let mediationRecord: MediationRecord | null = null
+
+    const connection = await this.connectionService.findByInvitationKey(invitation.recipientKeys[0])
+    if (!connection) {
+      this.logger.debug('Mediation Connection does not exist, creating connection')
+      const routing = await this.mediationRecipientService.getRouting()
+
+      const invitationConnectionRecord = await this.connectionService.processInvitation(invitation, {
+        autoAcceptConnection: true,
+        routing,
+      })
+      this.logger.debug('Processed mediation invitation', {
+        connectionId: invitationConnectionRecord,
+      })
+      const { message, connectionRecord } = await this.connectionService.createRequest(invitationConnectionRecord.id)
+      const outbound = createOutboundMessage(connectionRecord, message)
+      await this.messageSender.sendMessage(outbound)
+
+      const completedConnectionRecord = await this.connectionService.returnWhenIsConnected(connectionRecord.id)
+      this.logger.debug('Connection completed, requesting mediation')
+      mediationRecord = await this.requestAndAwaitGrant(completedConnectionRecord, 60000) // TODO: put timeout as a config parameter
+      this.logger.debug('Mediation Granted, setting as default mediator')
+      await this.setDefaultMediator(mediationRecord)
+      this.logger.debug('Default mediator set')
+    } else if (connection && !connection.isReady) {
+      const connectionRecord = await this.connectionService.returnWhenIsConnected(connection.id)
+      mediationRecord = await this.requestAndAwaitGrant(connectionRecord, 60000) // TODO: put timeout as a config parameter
+      await this.setDefaultMediator(mediationRecord)
+    } else {
+      this.agentConfig.logger.warn('Mediator Invitation in configuration has already been used to create a connection.')
+      const mediator = await this.findByConnectionId(connection.id)
+      if (!mediator) {
+        this.agentConfig.logger.warn('requesting mediation over connection.')
+        mediationRecord = await this.requestAndAwaitGrant(connection, 60000) // TODO: put timeout as a config parameter
+        await this.setDefaultMediator(mediationRecord)
+      } else {
+        this.agentConfig.logger.warn(
+          `Mediator Invitation in configuration has already been ${
+            mediator.isReady ? 'granted' : 'requested'
+          } mediation`
+        )
+      }
+    }
+
+    return mediationRecord
   }
 
   /**

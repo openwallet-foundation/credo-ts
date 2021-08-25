@@ -33,6 +33,30 @@ export class CredentialPreview {
   public toJSON(): Record<string, unknown> {
     return JsonTransformer.toJSON(this)
   }
+
+  /**
+   * Create a credential preview from a record with name and value entries.
+   *
+   * @example
+   * const preview = CredentialPreview.fromRecord({
+   *   name: "Bob",
+   *   age: "20"
+   * })
+   */
+  public static fromRecord(record: Record<string, string>) {
+    const attributes = Object.entries(record).map(
+      ([name, value]) =>
+        new CredentialPreviewAttribute({
+          name,
+          mimeType: 'text/plain',
+          value,
+        })
+    )
+
+    return new CredentialPreview({
+      attributes,
+    })
+  }
 }
 
 interface CredentialPreviewAttributeOptions {

@@ -1,33 +1,36 @@
 import type { Agent } from '../agent/Agent'
 import type { Logger } from '../logger'
 import type { OutboundPackage } from '../types'
-import type { OutboundTransporter } from './OutboundTransporter'
+import type { OutboundTransport } from './OutboundTransport'
+import type { OutboundWebSocketClosedEvent } from './TransportEventTypes'
 import type WebSocket from 'ws'
 
 import { AgentConfig } from '../agent/AgentConfig'
+import { EventEmitter } from '../agent/EventEmitter'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 
-export class WsOutboundTransporter implements OutboundTransporter {
+import { TransportEventTypes } from './TransportEventTypes'
+
+export class WsOutboundTransport implements OutboundTransport {
   private transportTable: Map<string, WebSocket> = new Map<string, WebSocket>()
   private agent!: Agent
   private logger!: Logger
+  private eventEmitter!: EventEmitter
   private WebSocketClass!: typeof WebSocket
-
   public supportedSchemes = ['ws', 'wss']
 
   public async start(agent: Agent): Promise<void> {
     this.agent = agent
-
     const agentConfig = agent.injectionContainer.resolve(AgentConfig)
 
     this.logger = agentConfig.logger
+    this.eventEmitter = agent.injectionContainer.resolve(EventEmitter)
     this.logger.debug('Starting WS outbound transport')
     this.WebSocketClass = agentConfig.agentDependencies.WebSocketClass
   }
 
   public async stop() {
     this.logger.debug('Stopping WS outbound transport')
-
     this.transportTable.forEach((socket) => {
       socket.removeEventListener('message', this.handleMessageEvent)
       socket.close()
@@ -35,7 +38,7 @@ export class WsOutboundTransporter implements OutboundTransporter {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
-    const { payload, endpoint } = outboundPackage
+    const { payload, endpoint, connectionId } = outboundPackage
     this.logger.debug(`Sending outbound message to endpoint '${endpoint}' over WebSocket transport.`, {
       payload,
     })
@@ -45,9 +48,9 @@ export class WsOutboundTransporter implements OutboundTransporter {
     }
 
     const isNewSocket = this.hasOpenSocket(endpoint)
-    const socket = await this.resolveSocket(endpoint, endpoint)
+    const socket = await this.resolveSocket({ socketId: endpoint, endpoint, connectionId })
 
-    socket.send(JSON.stringify(payload))
+    socket.send(Buffer.from(JSON.stringify(payload)))
 
     // If the socket was created for this message and we don't have return routing enabled
     // We can close the socket as it shouldn't return messages anymore
@@ -60,16 +63,28 @@ export class WsOutboundTransporter implements OutboundTransporter {
     return this.transportTable.get(socketId) !== undefined
   }
 
-  private async resolveSocket(socketIdentifier: string, endpoint?: string) {
+  private async resolveSocket({
+    socketId,
+    endpoint,
+    connectionId,
+  }: {
+    socketId: string
+    endpoint?: string
+    connectionId?: string
+  }) {
     // If we already have a socket connection use it
-    let socket = this.transportTable.get(socketIdentifier)
+    let socket = this.transportTable.get(socketId)
 
     if (!socket) {
       if (!endpoint) {
         throw new AriesFrameworkError(`Missing endpoint. I don't know how and where to send the message.`)
       }
-      socket = await this.createSocketConnection(endpoint, socketIdentifier)
-      this.transportTable.set(socketIdentifier, socket)
+      socket = await this.createSocketConnection({
+        endpoint,
+        socketId,
+        connectionId,
+      })
+      this.transportTable.set(socketId, socket)
       this.listenOnWebSocketMessages(socket)
     }
 
@@ -81,18 +96,28 @@ export class WsOutboundTransporter implements OutboundTransporter {
   }
 
   // NOTE: Because this method is passed to the event handler this must be a lambda method
-  // so 'this' is scoped to the 'WsOutboundTransporter' class instance
+  // so 'this' is scoped to the 'WsOutboundTransport' class instance
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private handleMessageEvent = (event: any) => {
-    this.logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
-    this.agent.receiveMessage(JSON.parse(event.data))
+    this.logger.trace('WebSocket message event received.', { url: event.target.url, data: event.data })
+    const payload = JSON.parse(Buffer.from(event.data).toString('utf-8'))
+    this.logger.debug('Payload received from mediator:', payload)
+    this.agent.receiveMessage(payload)
   }
 
   private listenOnWebSocketMessages(socket: WebSocket) {
     socket.addEventListener('message', this.handleMessageEvent)
   }
 
-  private createSocketConnection(endpoint: string, socketId: string): Promise<WebSocket> {
+  private createSocketConnection({
+    socketId,
+    endpoint,
+    connectionId,
+  }: {
+    socketId: string
+    endpoint: string
+    connectionId?: string
+  }): Promise<WebSocket> {
     return new Promise((resolve, reject) => {
       this.logger.debug(`Connecting to WebSocket ${endpoint}`)
       const socket = new this.WebSocketClass(endpoint)
@@ -109,9 +134,18 @@ export class WsOutboundTransporter implements OutboundTransporter {
         reject(error)
       }
 
-      socket.onclose = () => {
+      socket.onclose = async () => {
+        this.logger.debug(`WebSocket closing to ${endpoint}`)
         socket.removeEventListener('message', this.handleMessageEvent)
         this.transportTable.delete(socketId)
+
+        this.eventEmitter.emit<OutboundWebSocketClosedEvent>({
+          type: TransportEventTypes.OutboundWebSocketClosedEvent,
+          payload: {
+            socketId,
+            connectionId: connectionId,
+          },
+        })
       }
     })
   }

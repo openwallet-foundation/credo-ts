@@ -1,5 +1,5 @@
 import type { DidCommService, ConnectionRecord } from '../modules/connections'
-import type { OutboundTransporter } from '../transport/OutboundTransporter'
+import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { OutboundMessage, OutboundPackage, WireMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
@@ -16,13 +16,18 @@ import { MessageRepository } from '../storage/MessageRepository'
 import { EnvelopeService } from './EnvelopeService'
 import { TransportService } from './TransportService'
 
+export interface TransportPriorityOptions {
+  schemes: string[]
+  restrictive?: boolean
+}
+
 @scoped(Lifecycle.ContainerScoped)
 export class MessageSender {
   private envelopeService: EnvelopeService
   private transportService: TransportService
   private messageRepository: MessageRepository
   private logger: Logger
-  private _outboundTransporter?: OutboundTransporter
+  public readonly outboundTransports: OutboundTransport[] = []
 
   public constructor(
     envelopeService: EnvelopeService,
@@ -34,14 +39,11 @@ export class MessageSender {
     this.transportService = transportService
     this.messageRepository = messageRepository
     this.logger = logger
+    this.outboundTransports = []
   }
 
-  public setOutboundTransporter(outboundTransporter: OutboundTransporter) {
-    this._outboundTransporter = outboundTransporter
-  }
-
-  public get outboundTransporter() {
-    return this._outboundTransporter
+  public registerOutboundTransport(outboundTransport: OutboundTransport) {
+    this.outboundTransports.push(outboundTransport)
   }
 
   public async packMessage({
@@ -77,9 +79,11 @@ export class MessageSender {
   public async sendPackage({
     connection,
     packedMessage,
+    options,
   }: {
     connection: ConnectionRecord
     packedMessage: WireMessage
+    options?: { transportPriority?: TransportPriorityOptions }
   }) {
     // Try to send to already open session
     const session = this.transportService.findSessionByConnectionId(connection.id)
@@ -93,26 +97,26 @@ export class MessageSender {
     }
 
     // Retrieve DIDComm services
-    const allServices = this.transportService.findDidCommServices(connection)
-    const reachableServices = allServices.filter((s) => !isDidCommTransportQueue(s.serviceEndpoint))
-    const queueService = allServices.find((s) => isDidCommTransportQueue(s.serviceEndpoint))
+    const { services, queueService } = await this.retrieveServicesByConnection(connection, options?.transportPriority)
 
-    this.logger.debug(
-      `Found ${allServices.length} services for message to connection '${connection.id}' (${connection.theirLabel})`
-    )
-
-    if (!this.outboundTransporter) {
-      throw new AriesFrameworkError('Agent has no outbound transporter!')
+    if (this.outboundTransports.length === 0 && !queueService) {
+      throw new AriesFrameworkError('Agent has no outbound transport!')
     }
 
     // Loop trough all available services and try to send the message
-    for await (const service of reachableServices) {
+    for await (const service of services) {
       this.logger.debug(`Sending outbound message to service:`, { service })
       try {
-        await this.outboundTransporter.sendMessage({
-          payload: packedMessage,
-          endpoint: service.serviceEndpoint,
-        })
+        for (const transport of this.outboundTransports) {
+          if (transport.supportedSchemes.includes(service.protocolScheme)) {
+            await transport.sendMessage({
+              payload: packedMessage,
+              endpoint: service.serviceEndpoint,
+              connectionId: connection.id,
+            })
+            break
+          }
+        }
         return
       } catch (error) {
         this.logger.debug(
@@ -141,11 +145,12 @@ export class MessageSender {
     throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
   }
 
-  public async sendMessage(outboundMessage: OutboundMessage) {
-    if (!this.outboundTransporter) {
-      throw new AriesFrameworkError('Agent has no outbound transporter!')
+  public async sendMessage(
+    outboundMessage: OutboundMessage,
+    options?: {
+      transportPriority?: TransportPriorityOptions
     }
-
+  ) {
     const { connection, payload } = outboundMessage
 
     this.logger.debug('Send outbound message', {
@@ -165,16 +170,10 @@ export class MessageSender {
     }
 
     // Retrieve DIDComm services
-    const allServices = this.transportService.findDidCommServices(connection)
-    const reachableServices = allServices.filter((s) => !isDidCommTransportQueue(s.serviceEndpoint))
-    const queueService = allServices.find((s) => isDidCommTransportQueue(s.serviceEndpoint))
-
-    this.logger.debug(
-      `Found ${allServices.length} services for message to connection '${connection.id}' (${connection.theirLabel})`
-    )
+    const { services, queueService } = await this.retrieveServicesByConnection(connection, options?.transportPriority)
 
     // Loop trough all available services and try to send the message
-    for await (const service of reachableServices) {
+    for await (const service of services) {
       try {
         // Enable return routing if the
         const shouldUseReturnRoute = !this.transportService.hasInboundEndpoint(connection.didDoc)
@@ -232,8 +231,8 @@ export class MessageSender {
     senderKey: string
     returnRoute?: boolean
   }) {
-    if (!this.outboundTransporter) {
-      throw new AriesFrameworkError('Agent has no outbound transporter!')
+    if (this.outboundTransports.length === 0) {
+      throw new AriesFrameworkError('Agent has no outbound transport!')
     }
 
     this.logger.debug(`Sending outbound message to service:`, { messageId: message.id, service })
@@ -250,7 +249,50 @@ export class MessageSender {
     }
 
     const outboundPackage = await this.packMessage({ message, keys, endpoint: service.serviceEndpoint })
-    await this.outboundTransporter.sendMessage(outboundPackage)
+    outboundPackage.endpoint = service.serviceEndpoint
+    for (const transport of this.outboundTransports) {
+      if (transport.supportedSchemes.includes(service.protocolScheme)) {
+        await transport.sendMessage(outboundPackage)
+        break
+      }
+    }
+  }
+
+  private async retrieveServicesByConnection(
+    connection: ConnectionRecord,
+    transportPriority?: TransportPriorityOptions
+  ) {
+    this.logger.debug(`Retrieving services for connection '${connection.id}' (${connection.theirLabel})`, {
+      transportPriority,
+    })
+    // Retrieve DIDComm services
+    const allServices = this.transportService.findDidCommServices(connection)
+
+    //Separate queue service out
+    let services = allServices.filter((s) => !isDidCommTransportQueue(s.serviceEndpoint))
+    const queueService = allServices.find((s) => isDidCommTransportQueue(s.serviceEndpoint))
+
+    //If restrictive will remove services not listed in schemes list
+    if (transportPriority?.restrictive) {
+      services = services.filter((service) => {
+        const serviceSchema = service.protocolScheme
+        return transportPriority.schemes.includes(serviceSchema)
+      })
+    }
+
+    //If transport priority is set we will sort services by our priority
+    if (transportPriority?.schemes) {
+      services = services.sort(function (a, b) {
+        const aScheme = a.protocolScheme
+        const bScheme = b.protocolScheme
+        return transportPriority?.schemes.indexOf(aScheme) - transportPriority?.schemes.indexOf(bScheme)
+      })
+    }
+
+    this.logger.debug(
+      `Retrieved ${services.length} services for message to connection '${connection.id}'(${connection.theirLabel})'`
+    )
+    return { services, queueService }
   }
 }
 

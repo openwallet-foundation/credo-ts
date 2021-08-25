@@ -47,14 +47,19 @@ export class LedgerModule {
     return this.ledgerService.getSchema(id)
   }
 
-  public async registerCredentialDefinition(credentialDefinitionTemplate: CredentialDefinitionTemplate) {
+  public async registerCredentialDefinition(
+    credentialDefinitionTemplate: Omit<CredentialDefinitionTemplate, 'signatureType'>
+  ) {
     const did = this.wallet.publicDid?.did
 
     if (!did) {
       throw new AriesFrameworkError('Agent has no public DID.')
     }
 
-    return this.ledgerService.registerCredentialDefinition(did, credentialDefinitionTemplate)
+    return this.ledgerService.registerCredentialDefinition(did, {
+      ...credentialDefinitionTemplate,
+      signatureType: 'CL',
+    })
   }
 
   public async getCredentialDefinition(id: string) {

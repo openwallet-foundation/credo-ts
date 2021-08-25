@@ -1,6 +1,6 @@
 # Transports
 
-An agent needs an inbound and outbound transporter. At this current time, the outbound transporter is already built-in and can be used. The inbound transporter is a tad bit more complicated and has to be added manually.
+An agent needs an inbound and outbound transport. At this current time, the outbound transport is already built-in and can be used. The inbound transport is a tad bit more complicated and has to be added manually.
 
 - [Aries RFC 0025: DIComm Transports](https://github.com/hyperledger/aries-rfcs/blob/master/features/0025-didcomm-transports/README.md)
 - [Aries RFC 0005: DID Communication](https://github.com/hyperledger/aries-rfcs/blob/master/concepts/0005-didcomm/README.md)
@@ -16,13 +16,13 @@ const agent = new Agent({
   /* config */
 })
 
-// Use HTTP as outbound transporter
-const httpOutboundTransporter = new HttpOutboundTransport()
-agent.registerOutboundTransport(httpOutboundTransporter)
+// Use HTTP as outbound transport
+const httpOutboundTransport = new HttpOutboundTransport()
+agent.registerOutboundTransport(httpOutboundTransport)
 
 // Or use WebSocket instead
-const wsOutboundTransporter = new WsOutboundTransport()
-agent.registerOutboundTransport(wsOutboundTransporter)
+const wsOutboundTransport = new WsOutboundTransport()
+agent.registerOutboundTransport(wsOutboundTransport)
 ```
 
 ## Inbound Transport
