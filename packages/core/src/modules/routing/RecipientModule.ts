@@ -1,6 +1,6 @@
 import type { Logger } from '../../logger'
-import type { OutboundMessage } from '../../types'
 import type { OutboundWebSocketClosedEvent } from '../../transport'
+import type { OutboundMessage } from '../../types'
 import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './index'
