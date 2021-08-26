@@ -77,6 +77,7 @@ export class HttpOutboundTransport implements OutboundTransport {
         body: payload,
         didCommMimeType: this.agentConfig.didCommMimeType,
       })
+      throw new AriesFrameworkError(`Error sending message to ${endpoint}: ${error.message}`, { cause: error })
     }
   }
 }
