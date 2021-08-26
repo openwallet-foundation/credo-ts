@@ -1,12 +1,12 @@
 import type { Agent, Logger } from '../../packages/core/src'
-import type { OutboundTransporter } from '../../packages/core/src/transport/OutboundTransporter'
+import type { OutboundTransport } from '../../packages/core/src/transport/OutboundTransport'
 import type { OutboundPackage } from '../../packages/core/src/types'
 import type { SubjectMessage } from './SubjectInboundTransport'
 import type { Subject } from 'rxjs'
 
 import { InjectionSymbols, AriesFrameworkError } from '../../packages/core/src'
 
-export class SubjectOutboundTransporter implements OutboundTransporter {
+export class SubjectOutboundTransport implements OutboundTransport {
   private logger!: Logger
   private ourSubject: Subject<SubjectMessage>
   private subjectMap: { [key: string]: Subject<SubjectMessage> | undefined }

@@ -23,7 +23,7 @@ export enum DidCommMimeType {
 }
 
 export interface InitConfig {
-  endpoint?: string
+  endpoints?: string[]
   label: string
   publicDidSeed?: string
   mediatorRecordId?: string
@@ -73,4 +73,5 @@ export interface OutboundPackage {
   payload: WireMessage
   responseRequested?: boolean
   endpoint?: string
+  connectionId?: string
 }

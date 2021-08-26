@@ -194,7 +194,7 @@ export class ProofsModule {
     // Create and set ~service decorator
     const routing = await this.mediationRecipientService.getRouting()
     message.service = new ServiceDecorator({
-      serviceEndpoint: routing.endpoint,
+      serviceEndpoint: routing.endpoints[0],
       recipientKeys: [routing.verkey],
       routingKeys: routing.routingKeys,
     })
@@ -240,7 +240,7 @@ export class ProofsModule {
       // Create ~service decorator
       const routing = await this.mediationRecipientService.getRouting()
       const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoint,
+        serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.verkey],
         routingKeys: routing.routingKeys,
       })

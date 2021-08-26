@@ -6,6 +6,8 @@ import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
 
 import { validateOrReject } from 'class-validator'
+import { firstValueFrom, ReplaySubject } from 'rxjs'
+import { first, map, timeout } from 'rxjs/operators'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
@@ -112,12 +114,7 @@ export class ConnectionService {
   public async processInvitation(
     invitation: ConnectionInvitationMessage,
     config: {
-      routing: {
-        endpoint: string
-        verkey: string
-        did: string
-        routingKeys: string[]
-      }
+      routing: Routing
       autoAcceptConnection?: boolean
       alias?: string
     }
@@ -528,7 +525,7 @@ export class ConnectionService {
     autoAcceptConnection?: boolean
     tags?: CustomConnectionTags
   }): Promise<ConnectionRecord> {
-    const { endpoint, did, verkey, routingKeys } = options.routing
+    const { endpoints, did, verkey, routingKeys } = options.routing
 
     const publicKey = new Ed25119Sig2018({
       // TODO: shouldn't this name be ED25519
@@ -538,14 +535,17 @@ export class ConnectionService {
     })
 
     // IndyAgentService is old service type
-    // DidCommService is new service type
-    // Include both for better interoperability
-    const indyAgentService = new IndyAgentService({
-      id: `${did}#IndyAgentService`,
-      serviceEndpoint: endpoint,
-      recipientKeys: [verkey],
-      routingKeys: routingKeys,
-    })
+    const services = endpoints.map(
+      (endpoint, index) =>
+        new IndyAgentService({
+          id: `${did}#IndyAgentService`,
+          serviceEndpoint: endpoint,
+          recipientKeys: [verkey],
+          routingKeys: routingKeys,
+          // Order of endpoint determines priority
+          priority: index,
+        })
+    )
 
     // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
     // inferred from the publicKey class instance
@@ -554,7 +554,7 @@ export class ConnectionService {
     const didDoc = new DidDoc({
       id: did,
       authentication: [auth],
-      service: [indyAgentService],
+      service: services,
       publicKey: [publicKey],
     })
 
@@ -575,33 +575,35 @@ export class ConnectionService {
     return connectionRecord
   }
 
-  public async returnWhenIsConnected(connectionId: string): Promise<ConnectionRecord> {
+  public async returnWhenIsConnected(connectionId: string, timeoutMs = 20000): Promise<ConnectionRecord> {
     const isConnected = (connection: ConnectionRecord) => {
       return connection.id === connectionId && connection.state === ConnectionState.Complete
     }
 
-    const promise = new Promise<ConnectionRecord>((resolve) => {
-      const listener = ({ payload: { connectionRecord } }: ConnectionStateChangedEvent) => {
-        if (isConnected(connectionRecord)) {
-          this.eventEmitter.off<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged, listener)
-          resolve(connectionRecord)
-        }
-      }
+    const observable = this.eventEmitter.observable<ConnectionStateChangedEvent>(
+      ConnectionEventTypes.ConnectionStateChanged
+    )
+    const subject = new ReplaySubject<ConnectionRecord>(1)
 
-      this.eventEmitter.on<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged, listener)
-    })
+    observable
+      .pipe(
+        map((e) => e.payload.connectionRecord),
+        first(isConnected), // Do not wait for longer than specified timeout
+        timeout(timeoutMs)
+      )
+      .subscribe(subject)
 
-    // Check if already done
-    const connection = await this.connectionRepository.findById(connectionId)
-    if (connection && isConnected(connection)) return connection //TODO: check if this leaves trailing listeners behind?
+    const connection = await this.getById(connectionId)
+    if (isConnected(connection)) {
+      subject.next(connection)
+    }
 
-    // return listener
-    return promise
+    return firstValueFrom(subject)
   }
 }
 
 export interface Routing {
-  endpoint: string
+  endpoints: string[]
   verkey: string
   did: string
   routingKeys: string[]

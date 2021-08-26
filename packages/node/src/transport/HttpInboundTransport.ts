@@ -1,14 +1,18 @@
-import type { InboundTransporter, Agent, TransportSession, WireMessage } from '@aries-framework/core'
+import type { InboundTransport, Agent, TransportSession, WireMessage } from '@aries-framework/core'
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
 import { DidCommMimeType, AriesFrameworkError, AgentConfig, TransportService, utils } from '@aries-framework/core'
 import express, { text } from 'express'
 
-export class HttpInboundTransport implements InboundTransporter {
+export class HttpInboundTransport implements InboundTransport {
   public readonly app: Express
   private port: number
-  private server?: Server
+  private _server?: Server
+
+  public get server() {
+    return this._server
+  }
 
   public constructor({ app, port }: { app?: Express; port: number }) {
     this.port = port
@@ -28,9 +32,8 @@ export class HttpInboundTransport implements InboundTransporter {
     const transportService = agent.injectionContainer.resolve(TransportService)
     const config = agent.injectionContainer.resolve(AgentConfig)
 
-    config.logger.debug(`Starting HTTP inbound transporter`, {
+    config.logger.debug(`Starting HTTP inbound transport`, {
       port: this.port,
-      endpoint: config.getEndpoint(),
     })
 
     this.app.post('/', async (req, res) => {
@@ -52,11 +55,11 @@ export class HttpInboundTransport implements InboundTransporter {
       }
     })
 
-    this.server = this.app.listen(this.port)
+    this._server = this.app.listen(this.port)
   }
 
   public async stop(): Promise<void> {
-    this.server?.close()
+    this._server?.close()
   }
 }
 

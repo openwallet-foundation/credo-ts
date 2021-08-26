@@ -1,6 +1,6 @@
 import type { Logger } from '../logger'
-import type { InboundTransporter } from '../transport/InboundTransporter'
-import type { OutboundTransporter } from '../transport/OutboundTransporter'
+import type { InboundTransport } from '../transport/InboundTransport'
+import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { InitConfig } from '../types'
 import type { Wallet } from '../wallet/Wallet'
 import type { AgentDependencies } from './AgentDependencies'
@@ -43,7 +43,6 @@ export class Agent {
   protected messageReceiver: MessageReceiver
   protected transportService: TransportService
   protected messageSender: MessageSender
-  public inboundTransporter?: InboundTransporter
   private _isInitialized = false
   public messageSubscription: Subscription
 
@@ -114,16 +113,20 @@ export class Agent {
       .subscribe()
   }
 
-  public setInboundTransporter(inboundTransporter: InboundTransporter) {
-    this.inboundTransporter = inboundTransporter
+  public registerInboundTransport(inboundTransport: InboundTransport) {
+    this.messageReceiver.registerInboundTransport(inboundTransport)
   }
 
-  public registerOutboundTransporter(outboundTransporter: OutboundTransporter) {
-    this.messageSender.registerOutboundTransporter(outboundTransporter)
+  public get inboundTransports() {
+    return this.messageReceiver.inboundTransports
   }
 
-  public get outboundTransporters() {
-    return this.messageSender.outboundTransporters
+  public registerOutboundTransport(outboundTransport: OutboundTransport) {
+    this.messageSender.registerOutboundTransport(outboundTransport)
+  }
+
+  public get outboundTransports() {
+    return this.messageSender.outboundTransports
   }
 
   public get events() {
@@ -158,11 +161,11 @@ export class Agent {
       await this.wallet.initPublicDid({ seed: publicDidSeed })
     }
 
-    if (this.inboundTransporter) {
-      await this.inboundTransporter.start(this)
+    for (const transport of this.inboundTransports) {
+      transport.start(this)
     }
 
-    for (const transport of this.messageSender.outboundTransporters) {
+    for (const transport of this.outboundTransports) {
       transport.start(this)
     }
 
@@ -184,10 +187,12 @@ export class Agent {
     this.agentConfig.stop$.next(true)
 
     // Stop transports
-    for (const transport of this.messageSender.outboundTransporters) {
+    for (const transport of this.outboundTransports) {
       transport.stop()
     }
-    await this.inboundTransporter?.stop()
+    for (const transport of this.inboundTransports) {
+      transport.stop()
+    }
 
     // close/delete wallet if still initialized
     if (this.wallet.isInitialized) {

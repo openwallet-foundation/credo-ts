@@ -1,4 +1,5 @@
 import type { Logger } from '../logger'
+import type { InboundTransport } from '../transport'
 import type { UnpackedMessageContext, UnpackedMessage, WireMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { TransportSession } from './TransportService'
@@ -24,6 +25,7 @@ export class MessageReceiver {
   private connectionService: ConnectionService
   private dispatcher: Dispatcher
   private logger: Logger
+  public readonly inboundTransports: InboundTransport[] = []
 
   public constructor(
     config: AgentConfig,
@@ -38,6 +40,10 @@ export class MessageReceiver {
     this.connectionService = connectionService
     this.dispatcher = dispatcher
     this.logger = this.config.logger
+  }
+
+  public registerInboundTransport(inboundTransport: InboundTransport) {
+    this.inboundTransports.push(inboundTransport)
   }
 
   /**
