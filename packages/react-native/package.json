@@ -39,7 +39,6 @@
     "typescript": "~4.3.0"
   },
   "peerDependencies": {
-    "buffer": "^6.0.3",
     "indy-sdk-react-native": "^0.1.13",
     "react-native-fs": "^2.18.0",
     "react-native-get-random-values": "^1.7.0"
