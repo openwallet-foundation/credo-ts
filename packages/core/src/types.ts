@@ -45,6 +45,8 @@ export interface InitConfig {
   clearDefaultMediator?: boolean
   mediatorPollingInterval?: number
   mediatorPickupStrategy?: MediatorPickupStrategy
+
+  useLegacyDidSovPrefix?: boolean
 }
 
 export interface UnpackedMessage {

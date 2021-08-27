@@ -6,6 +6,7 @@ import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { InjectionSymbols } from '../constants'
 import { ForwardMessage } from '../modules/routing/messages'
+import { replaceNewDidCommPrefixWithLegacyDidSovOnMessage } from '../utils/messageType'
 import { Wallet } from '../wallet/Wallet'
 
 import { AgentConfig } from './AgentConfig'
@@ -20,15 +21,21 @@ export interface EnvelopeKeys {
 class EnvelopeService {
   private wallet: Wallet
   private logger: Logger
+  private config: AgentConfig
 
   public constructor(@inject(InjectionSymbols.Wallet) wallet: Wallet, agentConfig: AgentConfig) {
     this.wallet = wallet
     this.logger = agentConfig.logger
+    this.config = agentConfig
   }
 
   public async packMessage(payload: AgentMessage, keys: EnvelopeKeys): Promise<WireMessage> {
     const { routingKeys, recipientKeys, senderKey } = keys
     const message = payload.toJSON()
+
+    if (this.config.useLegacyDidSovPrefix) {
+      replaceNewDidCommPrefixWithLegacyDidSovOnMessage(message)
+    }
 
     this.logger.debug(`Pack outbound message ${payload.type}`)
 
