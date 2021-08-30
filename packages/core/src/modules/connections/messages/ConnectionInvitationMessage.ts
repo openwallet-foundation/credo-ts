@@ -91,13 +91,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
    * @param domain domain name to use for invitation url
    * @returns invitation url with base64 encoded invitation
    */
-  public toUrl({
-    domain = 'https://example.com/ssi',
-    useLegacyDidSovPrefix = false,
-  }: {
-    domain: string
-    useLegacyDidSovPrefix?: boolean
-  }) {
+  public toUrl({ domain, useLegacyDidSovPrefix = false }: { domain: string; useLegacyDidSovPrefix?: boolean }) {
     const invitationJson = this.toJSON()
 
     if (useLegacyDidSovPrefix) {
