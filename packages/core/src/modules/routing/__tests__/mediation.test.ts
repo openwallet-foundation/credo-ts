@@ -69,7 +69,12 @@ describe('mediator establishment', () => {
 
     // Initialize recipient with mediation connections invitation
     recipientAgent = new Agent(
-      { ...recipientConfig.config, mediatorConnectionsInvite: mediatorInvitation.toUrl() },
+      {
+        ...recipientConfig.config,
+        mediatorConnectionsInvite: mediatorInvitation.toUrl({
+          domain: 'https://example.com/ssi',
+        }),
+      },
       recipientConfig.agentDependencies
     )
     recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(recipientMessages, subjectMap))
@@ -109,7 +114,9 @@ describe('mediator establishment', () => {
     expect(recipientInvitation.serviceEndpoint).toBe(endpoints[0])
 
     let senderRecipientConnection = await senderAgent.connections.receiveInvitationFromUrl(
-      recipientInvitation.toUrl(),
+      recipientInvitation.toUrl({
+        domain: 'https://example.com/ssi',
+      }),
       {
         autoAcceptConnection: true,
       }
@@ -163,7 +170,10 @@ describe('mediator establishment', () => {
 
     // Initialize recipient with mediation connections invitation
     recipientAgent = new Agent(
-      { ...recipientConfig.config, mediatorConnectionsInvite: mediatorInvitation.toUrl() },
+      {
+        ...recipientConfig.config,
+        mediatorConnectionsInvite: mediatorInvitation.toUrl({ domain: 'https://example.com/ssi' }),
+      },
       recipientConfig.agentDependencies
     )
     recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(recipientMessages, subjectMap))
@@ -189,7 +199,12 @@ describe('mediator establishment', () => {
     // Restart recipient agent
     await recipientAgent.shutdown()
     recipientAgent = new Agent(
-      { ...recipientConfig.config, mediatorConnectionsInvite: mediatorInvitation.toUrl() },
+      {
+        ...recipientConfig.config,
+        mediatorConnectionsInvite: mediatorInvitation.toUrl({
+          domain: 'https://example.com/ssi',
+        }),
+      },
       recipientConfig.agentDependencies
     )
     recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(recipientMessages, subjectMap))
@@ -213,7 +228,9 @@ describe('mediator establishment', () => {
     expect(recipientInvitation.serviceEndpoint).toBe(endpoints[0])
 
     let senderRecipientConnection = await senderAgent.connections.receiveInvitationFromUrl(
-      recipientInvitation.toUrl(),
+      recipientInvitation.toUrl({
+        domain: 'https://example.com/ssi',
+      }),
       {
         autoAcceptConnection: true,
       }

@@ -5,7 +5,7 @@ import { AgentMessage } from '../../../agent/AgentMessage'
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
+import { replaceLegacyDidSovPrefix, replaceNewDidCommPrefixWithLegacyDidSovOnMessage } from '../../../utils/messageType'
 
 // TODO: improve typing of `DIDInvitationData` and `InlineInvitationData` so properties can't be mixed
 export interface InlineInvitationData {
@@ -91,8 +91,19 @@ export class ConnectionInvitationMessage extends AgentMessage {
    * @param domain domain name to use for invitation url
    * @returns invitation url with base64 encoded invitation
    */
-  public toUrl(domain = 'https://example.com/ssi') {
+  public toUrl({
+    domain = 'https://example.com/ssi',
+    useLegacyDidSovPrefix = false,
+  }: {
+    domain: string
+    useLegacyDidSovPrefix?: boolean
+  }) {
     const invitationJson = this.toJSON()
+
+    if (useLegacyDidSovPrefix) {
+      replaceNewDidCommPrefixWithLegacyDidSovOnMessage(invitationJson)
+    }
+
     const encodedInvitation = JsonEncoder.toBase64URL(invitationJson)
     const invitationUrl = `${domain}?c_i=${encodedInvitation}`
 
