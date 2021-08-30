@@ -26,6 +26,7 @@ export * from './modules/routing'
 export * from './utils/JsonTransformer'
 export * from './logger'
 export * from './error'
+export * from './wallet/error'
 
 const utils = {
   uuid,
