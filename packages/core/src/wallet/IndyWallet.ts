@@ -12,6 +12,7 @@ import { JsonEncoder } from '../utils/JsonEncoder'
 import { isIndyError } from '../utils/indyError'
 
 import { WalletDuplicateError, WalletNotFoundError, WalletError } from './error'
+import { WalletInvalidKeyError } from './error/WalletInvalidKeyError'
 
 export interface IndyOpenWallet {
   walletHandle: number
@@ -139,6 +140,13 @@ export class IndyWallet implements Wallet {
         this.logger.debug(errorMessage)
 
         throw new WalletNotFoundError(errorMessage, {
+          walletType: 'IndyWallet',
+          cause: error,
+        })
+      } else if (isIndyError(error, 'WalletAccessFailed')) {
+        const errorMessage = `Incorrect key for wallet '${walletConfig.id}'`
+        this.logger.debug(errorMessage)
+        throw new WalletInvalidKeyError(errorMessage, {
           walletType: 'IndyWallet',
           cause: error,
         })
