@@ -6,7 +6,6 @@ import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { InjectionSymbols } from '../constants'
 import { ForwardMessage } from '../modules/routing/messages'
-import { replaceNewDidCommPrefixWithLegacyDidSovOnMessage } from '../utils/messageType'
 import { Wallet } from '../wallet/Wallet'
 
 import { AgentConfig } from './AgentConfig'
@@ -32,12 +31,9 @@ class EnvelopeService {
   public async packMessage(payload: AgentMessage, keys: EnvelopeKeys): Promise<WireMessage> {
     const { routingKeys, senderKey } = keys
     let recipientKeys = keys.recipientKeys
-    const message = payload.toJSON()
 
-    // If global config to use legacy did sov prefix is enabled, transform the message
-    if (this.config.useLegacyDidSovPrefix) {
-      replaceNewDidCommPrefixWithLegacyDidSovOnMessage(message)
-    }
+    // pass whether we want to use legacy did sov prefix
+    const message = payload.toJSON({ useLegacyDidSovPrefix: this.config.useLegacyDidSovPrefix })
 
     this.logger.debug(`Pack outbound message ${message['@type']}`)
 
@@ -52,8 +48,11 @@ class EnvelopeService {
       })
       recipientKeys = [routingKey]
       this.logger.debug('Forward message created', forwardMessage)
+
+      const forwardJson = forwardMessage.toJSON({ useLegacyDidSovPrefix: this.config.useLegacyDidSovPrefix })
+
       // Forward messages are anon packed
-      wireMessage = await this.wallet.pack(forwardMessage.toJSON(), [routingKey], undefined)
+      wireMessage = await this.wallet.pack(forwardJson, [routingKey], undefined)
     }
 
     return wireMessage
