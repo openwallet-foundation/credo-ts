@@ -465,6 +465,16 @@ export class ConnectionService {
   }
 
   /**
+   * Delete a connection record by id
+   *
+   * @param connectionId the connection record id
+   */
+  public async deleteById(connectionId: string) {
+    const connectionRecord = await this.getById(connectionId)
+    return this.connectionRepository.delete(connectionRecord)
+  }
+
+  /**
    * Find connection by verkey.
    *
    * @param verkey the verkey to search for

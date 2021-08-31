@@ -472,6 +472,15 @@ export class CredentialsModule {
     return this.credentialService.findById(connectionId)
   }
 
+  /**
+   * Delete a credential record by id
+   *
+   * @param credentialId the credential record id
+   */
+  public async deleteById(credentialId: string) {
+    return this.credentialService.deleteById(credentialId)
+  }
+
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(
       new ProposeCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
