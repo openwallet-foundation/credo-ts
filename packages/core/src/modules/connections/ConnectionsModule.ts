@@ -200,6 +200,15 @@ export class ConnectionsModule {
   }
 
   /**
+   * Delete a connection record by id
+   *
+   * @param connectionId the connection record id
+   */
+  public async deleteById(connectionId: string) {
+    return this.connectionService.deleteById(connectionId)
+  }
+
+  /**
    * Find connection by verkey.
    *
    * @param verkey the verkey to search for

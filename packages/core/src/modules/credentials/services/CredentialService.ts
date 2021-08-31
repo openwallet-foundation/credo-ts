@@ -724,6 +724,16 @@ export class CredentialService {
   }
 
   /**
+   * Delete a credential record by id
+   *
+   * @param credentialId the credential record id
+   */
+  public async deleteById(credentialId: string) {
+    const credentialRecord = await this.getById(credentialId)
+    return this.credentialRepository.delete(credentialRecord)
+  }
+
+  /**
    * Retrieve a credential record by connection id and thread id
    *
    * @param connectionId The connection id
