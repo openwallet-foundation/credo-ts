@@ -99,14 +99,6 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
       </a>
     </td>
   </tr>
-  <tr>
-    <td>@aries-framework/redux-Store</td>
-    <td>
-      <a href="https://npmjs.com/package/@aries-framework/redux-store">
-        <img alt="@aries-framework/redux-store version" src="https://img.shields.io/npm/v/@aries-framework/redux-store"/>
-      </a>
-    </td>
-  </tr>
 </table>
 
 ## Getting Started
