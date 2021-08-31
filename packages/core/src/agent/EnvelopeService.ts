@@ -30,29 +30,32 @@ class EnvelopeService {
   }
 
   public async packMessage(payload: AgentMessage, keys: EnvelopeKeys): Promise<WireMessage> {
-    const { routingKeys, recipientKeys, senderKey } = keys
+    const { routingKeys, senderKey } = keys
+    let recipientKeys = keys.recipientKeys
     const message = payload.toJSON()
 
+    // If global config to use legacy did sov prefix is enabled, transform the message
     if (this.config.useLegacyDidSovPrefix) {
       replaceNewDidCommPrefixWithLegacyDidSovOnMessage(message)
     }
 
-    this.logger.debug(`Pack outbound message ${payload.type}`)
+    this.logger.debug(`Pack outbound message ${message['@type']}`)
 
     let wireMessage = await this.wallet.pack(message, recipientKeys, senderKey ?? undefined)
 
-    if (routingKeys && routingKeys.length > 0) {
-      for (const routingKey of routingKeys) {
-        const [recipientKey] = recipientKeys
-
-        const forwardMessage = new ForwardMessage({
-          to: recipientKey,
-          message: wireMessage,
-        })
-        this.logger.debug('Forward message created', forwardMessage)
-        wireMessage = await this.wallet.pack(forwardMessage.toJSON(), [routingKey], senderKey ?? undefined)
-      }
+    // If the message has routing keys (mediator) pack for each mediator
+    for (const routingKey of routingKeys) {
+      const forwardMessage = new ForwardMessage({
+        // Forward to first recipient key
+        to: recipientKeys[0],
+        message: wireMessage,
+      })
+      recipientKeys = [routingKey]
+      this.logger.debug('Forward message created', forwardMessage)
+      // Forward messages are anon packed
+      wireMessage = await this.wallet.pack(forwardMessage.toJSON(), [routingKey], undefined)
     }
+
     return wireMessage
   }
 
