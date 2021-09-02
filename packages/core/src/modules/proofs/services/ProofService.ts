@@ -659,9 +659,11 @@ export class ProofService {
       requestedAttributesNames.push(...(requestedAttributes.names ?? [requestedAttributes.name]))
 
       // Find the attributes that have a hashlink as a value
-      for (const attribute of Object.values(requestedAttribute.credentialInfo.attributes)) {
-        if (attribute.toLowerCase().startsWith('hl:')) {
-          credentialIds.add(requestedAttribute.credentialId)
+      if (requestedAttribute) {
+        for (const attribute of Object.values(requestedAttribute.credentialInfo.attributes)) {
+          if (attribute.toLowerCase().startsWith('hl:')) {
+            credentialIds.add(requestedAttribute.credentialId)
+          }
         }
       }
     }
@@ -908,7 +910,9 @@ export class ProofService {
     const credentialObjects = [
       ...Object.values(requestedCredentials.requestedAttributes),
       ...Object.values(requestedCredentials.requestedPredicates),
-    ].map((c) => c.credentialInfo)
+    ]
+      .filter(Boolean)
+      .map((c) => c.credentialInfo)
 
     const schemas = await this.getSchemas(new Set(credentialObjects.map((c) => c.schemaId)))
     const credentialDefinitions = await this.getCredentialDefinitions(
