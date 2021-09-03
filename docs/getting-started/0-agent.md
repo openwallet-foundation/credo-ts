@@ -30,12 +30,14 @@ const agentConfig: InitConfig = {
 
 const agent = new Agent(agentConfig, agentDependencies)
 ```
+
 ## Complete Agent Initialization
 
 This is the optimal initialization code for a scenario where complete functionality is needed.
 We will walk through the following steps to initialize the agent with full capabilities.
 
 ### 1 - Import statements
+
 ```ts
 import {
   Agent,
@@ -53,16 +55,15 @@ import {
   InitConfig,
   LogLevel,
 } from '@aries-framework/core'
-import {agentDependencies} from '@aries-framework/react-native'
+import { agentDependencies } from '@aries-framework/react-native'
 ```
 
 ### 2- Download genesis file (Optional)
 
-####Mobile agent context: 
-When working with an Indy network, the ledger’s genesis file contains the information necessary for an agent to connect to that ledger.  In other words, the genesis file contains the schema (like a DB schema) of the target Indy node ledger you are attempting to connect to. 
+####Mobile agent context:
+When working with an Indy network, the ledger’s genesis file contains the information necessary for an agent to connect to that ledger. In other words, the genesis file contains the schema (like a DB schema) of the target Indy node ledger you are attempting to connect to.
 You will need the genesis file of the Indy ledger you are connecting to, to issue, accept, prove, and verify credentials.
 For example, lets say your agent will need to accept a verifiable credential from trinsic.id, you will probably need to download the genesis file for the Sovrin network.
-
 
 - [Sovrin Mainnet](https://github.com/sovrin-foundation/sovrin/blob/master/sovrin/pool_transactions_live_genesis)
 - [Sovrin Stagingnet](https://github.com/sovrin-foundation/sovrin/blob/master/sovrin/pool_transactions_sandbox_genesis)
@@ -70,11 +71,11 @@ For example, lets say your agent will need to accept a verifiable credential fro
 
 More to find [here](https://github.com/sovrin-foundation/sovrin/tree/stable/sovrin)
 
+Other
 
-Other 
 - [Indicio TestNet](https://raw.githubusercontent.com/Indicio-tech/indicio-network/main/genesis_files/pool_transactions_testnet_genesis)
 
-#### Local network: 
+#### Local network:
 
 Example: [DTS Verifiable Credential Issuer Service](https://github.com/bcgov/dts-vc-issuer-service)
 Corresponding genesis file: http://test.bcovrin.vonx.io/genesis
@@ -100,13 +101,15 @@ Note: You do not need the genesis file if you are creating a connection between 
 ### 3- Get Mediator Connection URL (Optional)
 
 Mediators (Routing Agents) are Agents that serve as intermediaries to facilitate the flow of messages between other types of agents.
-You will need a mediator Agent if you are going to deal with VC (Verifiable Credentials), however, you can ignore the mediator step if you are creating an Agent for the sole purpose of exchanging messages with another Agent. 
+You will need a mediator Agent if you are going to deal with VC (Verifiable Credentials), however, you can ignore the mediator step if you are creating an Agent for the sole purpose of exchanging messages with another Agent.
 
 Example: If you are testing VC related functionality and need a mediator, you can use the [Indicio Public Mediator](https://indicio-tech.github.io/mediator/).
+
 - Head to [Indicio Public Mediator](https://indicio-tech.github.io/mediator/).
 - Copy mediator invite url and save it (i.e. MEDIATOR_INVITE = "url").
 
 Note: If the invite url uses insecure http you will have to adjust your code to allow for insecure traffic.
+
 - Instructions for [iOS](https://stackoverflow.com/questions/31254725/transport-security-has-blocked-a-cleartext-http).
 - Instructions for [Android](https://stackoverflow.com/questions/51902629/how-to-allow-all-network-connection-types-http-and-https-in-android-9-pie).
 
@@ -116,67 +119,58 @@ More about [Mediators](3-routing.md).
 
 ```ts
 const agentConfig: InitConfig = {
-      label: 'My Agent',
-      mediatorConnectionsInvite: MEDIATOR_INVITE,
-      walletConfig: {
-      	id: 'WalletId',
-      	key: 'TestKey',
-      },
-      autoAcceptConnections: true,
-      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-      autoAcceptProofs: AutoAcceptProof.ContentApproved,
-      poolName: 'BCovrin Test',
-      genesisTransactions: BCOVRIN_TEST_GENESIS,
-      logger: new ConsoleLogger(LogLevel.debug),
-    };
+  label: 'My Agent',
+  mediatorConnectionsInvite: MEDIATOR_INVITE,
+  walletConfig: {
+    id: 'WalletId',
+    key: 'TestKey',
+  },
+  autoAcceptConnections: true,
+  autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  autoAcceptProofs: AutoAcceptProof.ContentApproved,
+  poolName: 'BCovrin Test',
+  genesisTransactions: BCOVRIN_TEST_GENESIS,
+  logger: new ConsoleLogger(LogLevel.debug),
+}
 
-    const agent = new Agent(agentConfig, agentDependencies);
-
+const agent = new Agent(agentConfig, agentDependencies)
 ```
 
 ### 5- Create Transports
 
 After creating the Agent object, we need to create and set the Inbound/Outbound transports that will handle traffic to/from the Agent.
 
-
 ```ts
-  const httpOutboundTransporter = new HttpOutboundTransporter();
-  agent.registerOutboundTransport(httpOutboundTransporter);
+const httpOutboundTransporter = new HttpOutboundTransporter()
+agent.registerOutboundTransport(httpOutboundTransporter)
 
-  //Inbound transports are currently built-in, you don't need to create them.
+//Inbound transports are currently built-in, you don't need to create them.
 ```
 
 More about [Transports](1-transports.md).
-
 
 ### 6- Init Agent
 
 After creating the Agent object and configuring it, we initialize the Agent.
 
 ```ts
-
-// It's highly recommended to wrap the initialization flow in a try/catch block 
-try
-{
-  await agent.initialize();
-  console.log('Initialized agent!');
-}catch(e){
-  console.log(`Agent init error:${e}`);
+// It's highly recommended to wrap the initialization flow in a try/catch block
+try {
+  await agent.initialize()
+  console.log('Initialized agent!')
+} catch (e) {
+  console.log(`Agent init error:${e}`)
 }
 ```
-
 
 ### 7- Handling State Changes
 
 After you successfully initialize your Agent, you will notice that most of the hard work is being done by the underlying Aries/Indy framework. However, you as a controller will need to intercept in some situations when there is a state change (like when you need to accept an offered credential or reject/accept an incoming connection request). This is done through state change handlers.
 
-#### Creating Event(State) Handlers 
+#### Creating Event(State) Handlers
 
 ```ts
-agent.events.on<AgentMessageReceivedEvent>(
-	AgentEventTypes.AgentMessageReceived,
-    handleBasicMessageReceive
-)
+agent.events.on<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived, handleBasicMessageReceive)
 
 agent.events.on<CredentialStateChangedEvent>(
   CredentialEventTypes.CredentialStateChanged,
@@ -194,27 +188,22 @@ agent.events.on<ConnectionStateChangedEvent>(
 Example: This sample credential callback shows how to detect that a credential is received, show the user the credential asserts and give the option to accept/reject the offered credential.
 
 ```ts
-const handleCredentialStateChange = async (
-  event: CredentialStateChangedEvent,
-) => {
+const handleCredentialStateChange = async (event: CredentialStateChangedEvent) => {
   console.log(
-    `>> Credential state changed: ${event.payload.credentialRecord.id}, previous state -> ${event.payload.previousState} new state: ${event.payload.credentialRecord.state}`,
-  );
+    `>> Credential state changed: ${event.payload.credentialRecord.id}, previous state -> ${event.payload.previousState} new state: ${event.payload.credentialRecord.state}`
+  )
 
   if (event.payload.credentialRecord.state === CredentialState.OfferReceived) {
-    console.log(`>> Received offer, should display credential to user`);
-    
-    // Display offer to user 
+    console.log(`>> Received offer, should display credential to user`)
+
+    // Display offer to user
     // On user click "Accept"
-    console.log(`>>ACCEPTING OFFER`);
-    agent.credentials.acceptOffer(event.payload.credentialRecord.id);
-
+    console.log(`>>ACCEPTING OFFER`)
+    agent.credentials.acceptOffer(event.payload.credentialRecord.id)
   } else if (event.payload.credentialRecord.state === CredentialState.Done) {
-
-    Alert.alert('Credentail Saved');
-
+    Alert.alert('Credentail Saved')
   }
-};
+}
 ```
 
 More about [Credentials](5-credentials.md).
