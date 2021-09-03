@@ -103,15 +103,14 @@ Note: You do not need the genesis file if you are creating a connection between 
 Mediators (Routing Agents) are Agents that serve as intermediaries to facilitate the flow of messages between other types of agents.
 You will need a mediator Agent if you are going to deal with VC (Verifiable Credentials), however, you can ignore the mediator step if you are creating an Agent for the sole purpose of exchanging messages with another Agent.
 
-Example: If you are testing VC related functionality and need a mediator, you can use the [Indicio Public Mediator](https://indicio-tech.github.io/mediator/).
+Example: If you are testing VC related functionality and need a mediator, you can use the [Animoo Public Mediator](https://mediator.animo.id/invitation).
 
-- Head to [Indicio Public Mediator](https://indicio-tech.github.io/mediator/).
+- Head to [Animoo Public Mediator](https://mediator.animo.id/invitation).
 - Copy mediator invite url and save it (i.e. MEDIATOR_INVITE = "url").
 
-Note: If the invite url uses insecure http you will have to adjust your code to allow for insecure traffic.
+Other alternatives:
 
-- Instructions for [iOS](https://stackoverflow.com/questions/31254725/transport-security-has-blocked-a-cleartext-http).
-- Instructions for [Android](https://stackoverflow.com/questions/51902629/how-to-allow-all-network-connection-types-http-and-https-in-android-9-pie).
+- [Indicio Public Mediator](https://indicio-tech.github.io/mediator/).
 
 More about [Mediators](3-routing.md).
 
