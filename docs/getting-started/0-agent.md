@@ -103,9 +103,9 @@ Note: You do not need the genesis file if you are creating a connection between 
 Mediators (Routing Agents) are Agents that serve as intermediaries to facilitate the flow of messages between other types of agents.
 You will need a mediator Agent if you are going to deal with VC (Verifiable Credentials), however, you can ignore the mediator step if you are creating an Agent for the sole purpose of exchanging messages with another Agent.
 
-Example: If you are testing VC related functionality and need a mediator, you can use the [Animoo Public Mediator](https://mediator.animo.id/invitation).
+Example: If you are testing VC related functionality and need a mediator, you can use the [Animo Public Mediator](https://mediator.animo.id/invitation).
 
-- Head to [Animoo Public Mediator](https://mediator.animo.id/invitation).
+- Head to [Animo Public Mediator](https://mediator.animo.id/invitation).
 - Copy mediator invite url and save it (i.e. MEDIATOR_INVITE = "url").
 
 Other alternatives:
