@@ -1,5 +1,7 @@
 import { Exclude, Type } from 'class-transformer'
 
+import { JsonTransformer } from '../utils/JsonTransformer'
+
 export type TagValue = string | boolean | undefined | Array<string>
 export type TagsBase = {
   [key: string]: TagValue
@@ -68,5 +70,9 @@ export abstract class BaseRecord<DefaultTags extends TagsBase = TagsBase, Custom
    */
   public replaceTags(tags: CustomTags & Partial<DefaultTags>) {
     this._tags = tags
+  }
+
+  public toJSON(): Record<string, unknown> {
+    return JsonTransformer.toJSON(this)
   }
 }
