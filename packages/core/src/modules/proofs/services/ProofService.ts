@@ -911,7 +911,7 @@ export class ProofService {
       ...Object.values(requestedCredentials.requestedAttributes),
       ...Object.values(requestedCredentials.requestedPredicates),
     ]
-      .filter(Boolean)
+      .filter((c) => c !== undefined && c !== null)
       .map((c) => c.credentialInfo)
 
     const schemas = await this.getSchemas(new Set(credentialObjects.map((c) => c.schemaId)))
