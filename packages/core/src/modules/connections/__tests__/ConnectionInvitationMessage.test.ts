@@ -103,10 +103,10 @@ describe('ConnectionInvitationMessage', () => {
       await expect(validateOrReject(invitation)).resolves.toBeUndefined()
     })
 
-    it('should throw error if url does not contain `c_i` or `d_m`', () => {
+    it('should throw error if url does not contain `c_i` or `d_m`', async () => {
       const invitationUrl = 'https://example.com?param=123'
 
-      expect(async () => await ConnectionInvitationMessage.fromUrl(invitationUrl)).rejects.toThrowError()
+      await expect(ConnectionInvitationMessage.fromUrl(invitationUrl)).rejects.toThrowError()
     })
   })
 })

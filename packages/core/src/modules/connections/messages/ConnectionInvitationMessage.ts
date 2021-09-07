@@ -1,6 +1,6 @@
 import { Transform } from 'class-transformer'
 import { Equals, IsString, ValidateIf, IsArray, IsOptional, validateOrReject } from 'class-validator'
-import { URL, URLSearchParams } from 'url'
+import { URL } from 'url'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { AriesFrameworkError } from '../../../error'
