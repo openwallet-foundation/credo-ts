@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer'
 import { Equals, IsString, ValidateIf, IsArray, IsOptional, validateOrReject } from 'class-validator'
+import { URL, URLSearchParams } from 'url'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { AriesFrameworkError } from '../../../error'
@@ -12,6 +13,7 @@ export interface InlineInvitationData {
   recipientKeys: string[]
   serviceEndpoint: string
   routingKeys?: string[]
+  imageUrl?: string
 }
 
 export interface DIDInvitationData {
@@ -41,6 +43,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
         this.recipientKeys = options.recipientKeys
         this.serviceEndpoint = options.serviceEndpoint
         this.routingKeys = options.routingKeys
+        this.imageUrl = options.imageUrl
       }
 
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -85,6 +88,10 @@ export class ConnectionInvitationMessage extends AgentMessage {
   @ValidateIf((o: ConnectionInvitationMessage) => o.did === undefined)
   public routingKeys?: string[]
 
+  @IsOptional()
+  @IsString()
+  public imageUrl?: string
+
   /**
    * Create an invitation url from this instance
    *
@@ -101,23 +108,30 @@ export class ConnectionInvitationMessage extends AgentMessage {
   }
 
   /**
-   * Create a `ConnectionInvitationMessage` instance from the `c_i` parameter of an URL
+   * Create a `ConnectionInvitationMessage` instance from the `c_i` or `d_m` parameter of an URL
    *
-   * @param invitationUrl invitation url containing c_i parameter
+   * @param invitationUrl invitation url containing c_i or d_m parameter
    *
    * @throws Error when url can not be decoded to JSON, or decoded message is not a valid `ConnectionInvitationMessage`
+   * @throws Error when the url does not contain c_i or d_m as parameter
    */
   public static async fromUrl(invitationUrl: string) {
-    // TODO: properly extract c_i param from invitation URL
-    const [, encodedInvitation] = invitationUrl.split('c_i=')
-    const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
+    const urlSearchParameters = new URL(invitationUrl).searchParams
+    const encodedInvitation = urlSearchParameters.get('c_i') ?? urlSearchParameters.get('d_m')
 
-    const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
+    if (encodedInvitation) {
+      const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
+      const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
 
-    // TODO: should validation happen here?
-    await validateOrReject(invitation)
+      // TODO: should validation happen here?
+      await validateOrReject(invitation)
 
-    return invitation
+      return invitation
+    } else {
+      throw new AriesFrameworkError(
+        'InvitationUrl is invalid. It needs to contain one of the following parameters; `c_i` or `d_m`'
+      )
+    }
   }
 }
 
