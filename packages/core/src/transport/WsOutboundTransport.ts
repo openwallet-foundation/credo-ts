@@ -136,7 +136,7 @@ export class WsOutboundTransport implements OutboundTransport {
       }
 
       socket.onclose = async (event: WebSocket.CloseEvent) => {
-        this.logger.debug(`WebSocket closing to ${endpoint}`, {event})
+        this.logger.debug(`WebSocket closing to ${endpoint}`, { event })
         socket.removeEventListener('message', this.handleMessageEvent)
         this.transportTable.delete(socketId)
 
