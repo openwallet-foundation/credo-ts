@@ -103,7 +103,21 @@ export class RecipientModule {
       throw new AriesFrameworkError('Cannot open websocket to connection without websocket service endpoint')
     }
 
-    await this.sendMessage(createOutboundMessage(connectionRecord, message))
+    try {
+      await this.messageSender.sendMessage(createOutboundMessage(connectionRecord, message), {
+        transportPriority: {
+          schemes: websocketSchemes,
+          restrictive: true,
+          // TODO: add keepAlive: true to enforce through the public api
+          // we need to keep the socket alive. It already works this way, but would
+          // be good to make more explicit from the public facing API.
+          // This would also make it easier to change the internal API later on.
+          // keepAlive: true,
+        },
+      })
+    } catch (error) {
+      this.logger.warn('Unable to open websocket connection to mediator', { error })
+    }
   }
 
   private async initiateImplicitPickup(mediator: MediationRecord) {
@@ -126,7 +140,10 @@ export class RecipientModule {
         // Wait for interval time before reconnecting
         delay(interval)
       )
-      .subscribe(() => {
+      .subscribe(async () => {
+        this.logger.warn(
+          `Websocket connection to mediator with connectionId '${mediator.connectionId}' is closed, attempting to reconnect...`
+        )
         this.openMediationWebSocket(mediator)
       })
 
