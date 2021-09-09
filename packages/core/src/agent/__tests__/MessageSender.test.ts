@@ -132,6 +132,7 @@ describe('MessageSender', () => {
       await messageSender.sendMessage(outboundMessage)
 
       expect(sendMessageSpy).toHaveBeenCalledWith({
+        connectionId: 'test-123',
         payload: wireMessage,
         endpoint: firstDidCommService.serviceEndpoint,
         responseRequested: false,
@@ -149,6 +150,7 @@ describe('MessageSender', () => {
       await messageSender.sendMessage(outboundMessage)
 
       expect(sendMessageSpy).toHaveBeenCalledWith({
+        connectionId: 'test-123',
         payload: wireMessage,
         endpoint: firstDidCommService.serviceEndpoint,
         responseRequested: false,
@@ -164,6 +166,7 @@ describe('MessageSender', () => {
       await messageSender.sendMessage(outboundMessage)
 
       expect(sendMessageToServiceSpy).toHaveBeenCalledWith({
+        connectionId: 'test-123',
         message: outboundMessage.payload,
         senderKey: connection.verkey,
         service: firstDidCommService,
@@ -184,6 +187,7 @@ describe('MessageSender', () => {
       await messageSender.sendMessage(outboundMessage)
 
       expect(sendMessageToServiceSpy).toHaveBeenNthCalledWith(2, {
+        connectionId: 'test-123',
         message: outboundMessage.payload,
         senderKey: connection.verkey,
         service: secondDidCommService,
