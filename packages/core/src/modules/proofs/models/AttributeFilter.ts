@@ -3,15 +3,17 @@ import { IsOptional, IsString, ValidateNested } from 'class-validator'
 
 export class AttributeValue {
   public constructor(options: AttributeValue) {
-    this.name = options.name
-    this.value = options.value
+    if (options) {
+      this.name = options.name
+      this.value = options.value
+    }
   }
 
   @IsString()
-  public name: string
+  public name!: string
 
   @IsString()
-  public value: string
+  public value!: string
 }
 
 export class AttributeFilter {

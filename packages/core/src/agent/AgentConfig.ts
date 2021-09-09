@@ -111,4 +111,8 @@ export class AgentConfig {
   public get clearDefaultMediator() {
     return this.initConfig.clearDefaultMediator ?? false
   }
+
+  public get useLegacyDidSovPrefix() {
+    return this.initConfig.useLegacyDidSovPrefix ?? false
+  }
 }

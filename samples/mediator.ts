@@ -77,7 +77,7 @@ httpInboundTransport.app.get('/invitation', async (req, res) => {
     const { invitation } = await agent.connections.createConnection()
 
     const httpEndpoint = config.endpoints.find((e) => e.startsWith('http'))
-    res.send(invitation.toUrl(httpEndpoint + '/invitation'))
+    res.send(invitation.toUrl({ domain: httpEndpoint + '/invitation' }))
   }
 })
 

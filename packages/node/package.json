@@ -6,6 +6,7 @@
   "files": [
     "build"
   ],
+  "license": "Apache-2.0",
   "publishConfig": {
     "access": "public"
   },

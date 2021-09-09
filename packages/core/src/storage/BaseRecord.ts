@@ -1,5 +1,7 @@
 import { Exclude, Type } from 'class-transformer'
 
+import { JsonTransformer } from '../utils/JsonTransformer'
+
 export type TagValue = string | boolean | undefined | Array<string>
 export type TagsBase = {
   [key: string]: TagValue
@@ -10,10 +12,8 @@ export type Tags<DefaultTags extends TagsBase, CustomTags extends TagsBase> = Cu
 export type RecordTags<Record extends BaseRecord> = ReturnType<Record['getTags']>
 
 export abstract class BaseRecord<DefaultTags extends TagsBase = TagsBase, CustomTags extends TagsBase = TagsBase> {
-  @Exclude()
   protected _tags: CustomTags = {} as CustomTags
 
-  @Exclude()
   public id!: string
 
   @Type(() => Date)
@@ -70,5 +70,9 @@ export abstract class BaseRecord<DefaultTags extends TagsBase = TagsBase, Custom
    */
   public replaceTags(tags: CustomTags & Partial<DefaultTags>) {
     this._tags = tags
+  }
+
+  public toJSON(): Record<string, unknown> {
+    return JsonTransformer.toJSON(this)
   }
 }

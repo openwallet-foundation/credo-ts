@@ -374,6 +374,15 @@ export class ProofsModule {
     return this.proofService.findById(proofRecordId)
   }
 
+  /**
+   * Delete a proof record by id
+   *
+   * @param proofId the proof record id
+   */
+  public async deleteById(proofId: string) {
+    return this.proofService.deleteById(proofId)
+  }
+
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(
       new ProposePresentationHandler(this.proofService, this.agentConfig, this.proofResponseCoordinator)

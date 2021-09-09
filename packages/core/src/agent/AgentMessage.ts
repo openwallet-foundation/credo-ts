@@ -6,6 +6,7 @@ import { ThreadDecorated } from '../decorators/thread/ThreadDecoratorExtension'
 import { TimingDecorated } from '../decorators/timing/TimingDecoratorExtension'
 import { TransportDecorated } from '../decorators/transport/TransportDecoratorExtension'
 import { JsonTransformer } from '../utils/JsonTransformer'
+import { replaceNewDidCommPrefixWithLegacyDidSovOnMessage } from '../utils/messageType'
 import { Compose } from '../utils/mixins'
 
 import { BaseMessage } from './BaseMessage'
@@ -21,8 +22,14 @@ const DefaultDecorators = [
 ]
 
 export class AgentMessage extends Compose(BaseMessage, DefaultDecorators) {
-  public toJSON(): Record<string, unknown> {
-    return JsonTransformer.toJSON(this)
+  public toJSON({ useLegacyDidSovPrefix = false }: { useLegacyDidSovPrefix?: boolean } = {}): Record<string, unknown> {
+    const json = JsonTransformer.toJSON(this)
+
+    if (useLegacyDidSovPrefix) {
+      replaceNewDidCommPrefixWithLegacyDidSovOnMessage(json)
+    }
+
+    return json
   }
 
   public is<C extends typeof AgentMessage>(Class: C): this is InstanceType<C> {
