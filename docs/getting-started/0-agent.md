@@ -200,7 +200,7 @@ const handleCredentialStateChange = async (event: CredentialStateChangedEvent) =
     console.log(`>>ACCEPTING OFFER`)
     agent.credentials.acceptOffer(event.payload.credentialRecord.id)
   } else if (event.payload.credentialRecord.state === CredentialState.Done) {
-    Alert.alert('Credentail Saved')
+    Alert.alert('Credential Saved')
   }
 }
 ```
