@@ -140,7 +140,6 @@ export class MessageSender {
     // Message is undeliverable
     this.logger.error(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`, {
       message: packedMessage,
-      connection,
     })
     throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
   }
