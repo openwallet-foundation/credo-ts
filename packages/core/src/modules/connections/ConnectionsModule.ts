@@ -15,7 +15,7 @@ import {
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
 } from './handlers'
-import { ConnectionInvitationMessage } from './messages'
+import { ConnectionInvitationMessage, TrustPingMessageOptions } from './messages'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
 
@@ -156,7 +156,23 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
-    const { message, connectionRecord: connectionRecord } = await this.connectionService.createTrustPing(connectionId)
+    const { message, connectionRecord: connectionRecord } = await this.connectionService.createAck(connectionId)
+
+    const outbound = createOutboundMessage(connectionRecord, message)
+    await this.messageSender.sendMessage(outbound)
+
+    return connectionRecord
+  }
+
+  /**
+   * Send a trust ping to a connection with the specified connection id.
+   *
+   * @param connectionId the id of the connection for which to accept the response
+   * @param options optional trust ping options
+   * @returns connection record
+   */
+  public async sendTrustPing(connectionId: string, options: TrustPingMessageOptions = {}): Promise<ConnectionRecord> {
+    const { message, connectionRecord: connectionRecord } = await this.connectionService.createTrustPing(connectionId, options)
 
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)

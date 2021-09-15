@@ -23,6 +23,7 @@ import {
   ConnectionRequestMessage,
   ConnectionResponseMessage,
   TrustPingMessage,
+  TrustPingMessageOptions
 } from '../messages'
 import {
   Connection,
@@ -295,12 +296,13 @@ export class ConnectionService {
   }
 
   /**
-   * Create a trust ping message for the connection with the specified connection id.
+   * Create an ack using a trust ping message for the connection with the specified connection id.
    *
    * @param connectionId the id of the connection for which to create a trust ping message
+   * @param options optional trust ping options
    * @returns outbound message containing trust ping message
    */
-  public async createTrustPing(connectionId: string): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
+   public async createAck(connectionId: string, options: TrustPingMessageOptions = {}): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
     const connectionRecord = await this.connectionRepository.getById(connectionId)
 
     connectionRecord.assertState([ConnectionState.Responded, ConnectionState.Complete])
@@ -309,9 +311,31 @@ export class ConnectionService {
     //  - create ack message
     //  - allow for options
     //  - maybe this shouldn't be in the connection service?
-    const trustPing = new TrustPingMessage()
+    const trustPing = new TrustPingMessage(options)
 
     await this.updateState(connectionRecord, ConnectionState.Complete)
+
+    return {
+      connectionRecord: connectionRecord,
+      message: trustPing,
+    }
+  }
+
+  /**
+   * Create a trust ping message for the connection with the specified connection id.
+   *
+   * @param connectionId the id of the connection for which to create a trust ping message
+   * @param options optional trust ping options
+   * @returns outbound message containing trust ping message
+   */
+  public async createTrustPing(connectionId: string, options: TrustPingMessageOptions = {}): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
+    const connectionRecord = await this.connectionRepository.getById(connectionId)
+
+    // TODO:
+    //  - create ack message
+    //  - allow for options
+    //  - maybe this shouldn't be in the connection service?
+    const trustPing = new TrustPingMessage(options)
 
     return {
       connectionRecord: connectionRecord,
