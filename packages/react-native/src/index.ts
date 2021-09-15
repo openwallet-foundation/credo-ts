@@ -1,5 +1,6 @@
 import 'react-native-get-random-values'
 import '@azure/core-asynciterator-polyfill'
+import 'react-native-url-polyfill/auto'
 
 import type { AgentDependencies } from '@aries-framework/core'
 
