@@ -61,6 +61,7 @@ import { agentDependencies } from '@aries-framework/react-native'
 ### 2. Download genesis file (Optional)
 
 #### Mobile agent context
+
 You will need the [genesis](https://hyperledger-indy.readthedocs.io/projects/node/en/latest/transactions.html#genesis-transactions) file of the Indy ledger you are connecting to, to issue, accept, prove, and verify credentials.
 For example, lets say your agent will need to accept a verifiable credential from trinsic.id, you will probably need to download the genesis file for the Sovrin network.
 
