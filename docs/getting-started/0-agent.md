@@ -36,7 +36,7 @@ const agent = new Agent(agentConfig, agentDependencies)
 This is the optimal initialization code for a scenario where complete functionality is needed.
 We will walk through the following steps to initialize the agent with full capabilities.
 
-### 1 - Import statements
+### 1. Import statements
 
 ```ts
 import {
@@ -58,11 +58,10 @@ import {
 import { agentDependencies } from '@aries-framework/react-native'
 ```
 
-### 2- Download genesis file (Optional)
+### 2. Download genesis file (Optional)
 
 ####Mobile agent context:
-When working with an Indy network, the ledger’s genesis file contains the information necessary for an agent to connect to that ledger. In other words, the genesis file contains the schema (like a DB schema) of the target Indy node ledger you are attempting to connect to.
-You will need the genesis file of the Indy ledger you are connecting to, to issue, accept, prove, and verify credentials.
+You will need the [genesis](https://hyperledger-indy.readthedocs.io/projects/node/en/latest/transactions.html#genesis-transactions) file of the Indy ledger you are connecting to, to issue, accept, prove, and verify credentials.
 For example, lets say your agent will need to accept a verifiable credential from trinsic.id, you will probably need to download the genesis file for the Sovrin network.
 
 - [Sovrin Mainnet](https://github.com/sovrin-foundation/sovrin/blob/master/sovrin/pool_transactions_live_genesis)
@@ -98,7 +97,7 @@ const agentConfig = {
 
 Note: You do not need the genesis file if you are creating a connection between your Agent and another Agent for exchanging simple messages.
 
-### 3- Get Mediator Connection URL (Optional)
+### 3. Get Mediator Connection URL (Optional)
 
 Mediators (Routing Agents) are Agents that serve as intermediaries to facilitate the flow of messages between other types of agents.
 You will need a mediator Agent if you are going to deal with VC (Verifiable Credentials), however, you can ignore the mediator step if you are creating an Agent for the sole purpose of exchanging messages with another Agent.
@@ -114,7 +113,7 @@ Other alternatives:
 
 More about [Mediators](3-routing.md).
 
-### 4- Create Agent
+### 4. Create Agent
 
 ```ts
 const agentConfig: InitConfig = {
@@ -135,7 +134,7 @@ const agentConfig: InitConfig = {
 const agent = new Agent(agentConfig, agentDependencies)
 ```
 
-### 5- Create Transports
+### 5. Create Transports
 
 After creating the Agent object, we need to create and set the Inbound/Outbound transports that will handle traffic to/from the Agent.
 
@@ -148,7 +147,7 @@ agent.registerOutboundTransport(httpOutboundTransporter)
 
 More about [Transports](1-transports.md).
 
-### 6- Init Agent
+### 6. Init Agent
 
 After creating the Agent object and configuring it, we initialize the Agent.
 
