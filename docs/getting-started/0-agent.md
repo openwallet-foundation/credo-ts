@@ -142,7 +142,7 @@ After creating the Agent object, we need to create and set the Inbound/Outbound 
 const httpOutboundTransporter = new HttpOutboundTransporter()
 agent.registerOutboundTransport(httpOutboundTransporter)
 
-//Inbound transports are currently built-in, you don't need to create them.
+// Inbound transports are currently built-in, you don't need to create them.
 ```
 
 More about [Transports](1-transports.md).
