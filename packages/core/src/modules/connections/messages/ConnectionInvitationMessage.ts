@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer'
 import { Equals, IsString, ValidateIf, IsArray, IsOptional, validateOrReject } from 'class-validator'
+import { parseUrl } from 'query-string'
 import { URL } from 'url'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
@@ -116,10 +117,10 @@ export class ConnectionInvitationMessage extends AgentMessage {
    * @throws Error when the url does not contain c_i or d_m as parameter
    */
   public static async fromUrl(invitationUrl: string) {
-    const urlSearchParameters = new URL(invitationUrl).searchParams
-    const encodedInvitation = urlSearchParameters.get('c_i') ?? urlSearchParameters.get('d_m')
+    const parsedUrl = parseUrl(invitationUrl).query
+    const encodedInvitation = parsedUrl['c_i'] ?? parsedUrl['d_m']
 
-    if (encodedInvitation) {
+    if (typeof encodedInvitation === 'string') {
       const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
       const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
 
@@ -129,7 +130,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
       return invitation
     } else {
       throw new AriesFrameworkError(
-        'InvitationUrl is invalid. It needs to contain one of the following parameters; `c_i` or `d_m`'
+        'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters; `c_i` or `d_m`'
       )
     }
   }
