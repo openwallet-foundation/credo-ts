@@ -1,5 +1,5 @@
 import { validateOrReject } from 'class-validator'
-import { URL } from 'url'
+import { parseUrl } from 'query-string'
 
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
@@ -77,8 +77,9 @@ describe('ConnectionInvitationMessage', () => {
         useLegacyDidSovPrefix: true,
       })
 
-      const urlSearchParameters = new URL(invitationUrl).searchParams
-      const encodedInvitation = urlSearchParameters.get('c_i') as string
+      const parsedUrl = parseUrl(invitationUrl).query
+      const encodedInvitation = (parsedUrl['c_i'] ?? parsedUrl['d_m']) as string
+
       expect(JsonEncoder.fromBase64(encodedInvitation)['@type']).toBe(
         'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation'
       )
