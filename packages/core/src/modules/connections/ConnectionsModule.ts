@@ -1,3 +1,4 @@
+import type { TrustPingMessageOptions } from './messages'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -15,7 +16,7 @@ import {
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
 } from './handlers'
-import { ConnectionInvitationMessage, TrustPingMessageOptions } from './messages'
+import { ConnectionInvitationMessage } from './messages'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
 
@@ -172,7 +173,10 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async sendTrustPing(connectionId: string, options: TrustPingMessageOptions = {}): Promise<ConnectionRecord> {
-    const { message, connectionRecord: connectionRecord } = await this.connectionService.createTrustPing(connectionId, options)
+    const { message, connectionRecord: connectionRecord } = await this.connectionService.createTrustPing(
+      connectionId,
+      options
+    )
 
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)

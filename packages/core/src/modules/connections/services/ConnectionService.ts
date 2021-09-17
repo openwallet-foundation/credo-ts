@@ -3,6 +3,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
+import type { TrustPingMessageOptions } from '../messages'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
 
 import { validateOrReject } from 'class-validator'
@@ -23,7 +24,6 @@ import {
   ConnectionRequestMessage,
   ConnectionResponseMessage,
   TrustPingMessage,
-  TrustPingMessageOptions
 } from '../messages'
 import {
   Connection,
@@ -302,7 +302,10 @@ export class ConnectionService {
    * @param options optional trust ping options
    * @returns outbound message containing trust ping message
    */
-   public async createAck(connectionId: string, options: TrustPingMessageOptions = {}): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
+  public async createAck(
+    connectionId: string,
+    options: TrustPingMessageOptions = {}
+  ): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
     const connectionRecord = await this.connectionRepository.getById(connectionId)
 
     connectionRecord.assertState([ConnectionState.Responded, ConnectionState.Complete])
@@ -328,7 +331,10 @@ export class ConnectionService {
    * @param options optional trust ping options
    * @returns outbound message containing trust ping message
    */
-  public async createTrustPing(connectionId: string, options: TrustPingMessageOptions = {}): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
+  public async createTrustPing(
+    connectionId: string,
+    options: TrustPingMessageOptions = {}
+  ): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
     const connectionRecord = await this.connectionRepository.getById(connectionId)
 
     // TODO:
