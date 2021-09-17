@@ -183,6 +183,7 @@ export class MessageSender {
           service,
           senderKey: connection.verkey,
           returnRoute: shouldUseReturnRoute,
+          connectionId: connection.id,
         })
         return
       } catch (error) {
@@ -225,11 +226,13 @@ export class MessageSender {
     service,
     senderKey,
     returnRoute,
+    connectionId,
   }: {
     message: AgentMessage
     service: DidCommService
     senderKey: string
     returnRoute?: boolean
+    connectionId?: string
   }) {
     if (this.outboundTransports.length === 0) {
       throw new AriesFrameworkError('Agent has no outbound transport!')
@@ -250,6 +253,7 @@ export class MessageSender {
 
     const outboundPackage = await this.packMessage({ message, keys, endpoint: service.serviceEndpoint })
     outboundPackage.endpoint = service.serviceEndpoint
+    outboundPackage.connectionId = connectionId
     for (const transport of this.outboundTransports) {
       if (transport.supportedSchemes.includes(service.protocolScheme)) {
         await transport.sendMessage(outboundPackage)

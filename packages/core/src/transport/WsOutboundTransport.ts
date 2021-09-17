@@ -8,6 +8,7 @@ import type WebSocket from 'ws'
 import { AgentConfig } from '../agent/AgentConfig'
 import { EventEmitter } from '../agent/EventEmitter'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { Buffer } from '../utils/buffer'
 
 import { TransportEventTypes } from './TransportEventTypes'
 
@@ -134,8 +135,8 @@ export class WsOutboundTransport implements OutboundTransport {
         reject(error)
       }
 
-      socket.onclose = async () => {
-        this.logger.debug(`WebSocket closing to ${endpoint}`)
+      socket.onclose = async (event: WebSocket.CloseEvent) => {
+        this.logger.debug(`WebSocket closing to ${endpoint}`, { event })
         socket.removeEventListener('message', this.handleMessageEvent)
         this.transportTable.delete(socketId)
 

@@ -1,5 +1,6 @@
 import type { Logger } from '../../logger'
 import type { OutboundWebSocketClosedEvent } from '../../transport'
+import type { OutboundMessage } from '../../types'
 import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './index'
@@ -73,6 +74,23 @@ export class RecipientModule {
     }
   }
 
+  private async sendMessage(outboundMessage: OutboundMessage) {
+    const { mediatorPickupStrategy } = this.agentConfig
+    const transportPriority =
+      mediatorPickupStrategy === MediatorPickupStrategy.Implicit
+        ? { schemes: ['wss', 'ws'], restrictive: true }
+        : undefined
+
+    await this.messageSender.sendMessage(outboundMessage, {
+      transportPriority,
+      // TODO: add keepAlive: true to enforce through the public api
+      // we need to keep the socket alive. It already works this way, but would
+      // be good to make more explicit from the public facing API.
+      // This would also make it easier to change the internal API later on.
+      // keepAlive: true,
+    })
+  }
+
   private async openMediationWebSocket(mediator: MediationRecord) {
     const { message, connectionRecord } = await this.connectionService.createTrustPing(mediator.connectionId)
 
@@ -85,17 +103,21 @@ export class RecipientModule {
       throw new AriesFrameworkError('Cannot open websocket to connection without websocket service endpoint')
     }
 
-    await this.messageSender.sendMessage(createOutboundMessage(connectionRecord, message), {
-      transportPriority: {
-        schemes: websocketSchemes,
-        restrictive: true,
-        // TODO: add keepAlive: true to enforce through the public api
-        // we need to keep the socket alive. It already works this way, but would
-        // be good to make more explicit from the public facing API.
-        // This would also make it easier to change the internal API later on.
-        // keepAlive: true,
-      },
-    })
+    try {
+      await this.messageSender.sendMessage(createOutboundMessage(connectionRecord, message), {
+        transportPriority: {
+          schemes: websocketSchemes,
+          restrictive: true,
+          // TODO: add keepAlive: true to enforce through the public api
+          // we need to keep the socket alive. It already works this way, but would
+          // be good to make more explicit from the public facing API.
+          // This would also make it easier to change the internal API later on.
+          // keepAlive: true,
+        },
+      })
+    } catch (error) {
+      this.logger.warn('Unable to open websocket connection to mediator', { error })
+    }
   }
 
   private async initiateImplicitPickup(mediator: MediationRecord) {
@@ -118,7 +140,10 @@ export class RecipientModule {
         // Wait for interval time before reconnecting
         delay(interval)
       )
-      .subscribe(() => {
+      .subscribe(async () => {
+        this.logger.warn(
+          `Websocket connection to mediator with connectionId '${mediator.connectionId}' is closed, attempting to reconnect...`
+        )
         this.openMediationWebSocket(mediator)
       })
 
@@ -163,7 +188,7 @@ export class RecipientModule {
 
     const batchPickupMessage = new BatchPickupMessage({ batchSize: 10 })
     const outboundMessage = createOutboundMessage(mediatorConnection, batchPickupMessage)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.sendMessage(outboundMessage)
   }
 
   public async setDefaultMediator(mediatorRecord: MediationRecord) {
@@ -173,15 +198,15 @@ export class RecipientModule {
   public async requestMediation(connection: ConnectionRecord): Promise<MediationRecord> {
     const { mediationRecord, message } = await this.mediationRecipientService.createRequest(connection)
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+
+    await this.sendMessage(outboundMessage)
     return mediationRecord
   }
 
   public async notifyKeylistUpdate(connection: ConnectionRecord, verkey: string) {
     const message = this.mediationRecipientService.createKeylistUpdateMessage(verkey)
     const outboundMessage = createOutboundMessage(connection, message)
-    const response = await this.messageSender.sendMessage(outboundMessage)
-    return response
+    await this.sendMessage(outboundMessage)
   }
 
   public async findByConnectionId(connectionId: string) {
@@ -230,7 +255,7 @@ export class RecipientModule {
 
     // Send mediation request message
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.sendMessage(outboundMessage)
 
     const event = await firstValueFrom(subject)
     return event.payload.mediationRecord
