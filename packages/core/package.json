@@ -38,6 +38,7 @@
     "multibase": "^4.0.4",
     "multihashes": "^4.0.2",
     "object-inspect": "^1.10.3",
+    "query-string": "^7.0.1",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.1.0",
     "tsyringe": "^4.5.0",
