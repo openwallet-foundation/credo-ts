@@ -67,14 +67,15 @@ export class MessageReceiver {
 
     let connection: ConnectionRecord | null = null
 
-    if (senderKey) {
-      // Only fetch connection if senderKey (their key) is present (AuthCrypt)
-      const retrievedConnection = await this.connectionService.findByTheirKey(senderKey)
+    // Only fetch connection if recipientKey and senderKey are present (AuthCrypt)
+    if (senderKey && recipientKey) {
+      connection = await this.connectionService.findByVerkey(recipientKey)
 
-      // Only attach a connection if connection is ready and recipient key (ourKey)
-      // matches the verkey of the connection record.
-      if (retrievedConnection?.isReady && retrievedConnection.verkey === recipientKey) {
-        connection = retrievedConnection
+      // Throw error if the recipient key (ourKey) does not match the key of the connection record
+      if (connection && connection.theirKey != null && connection.theirKey != senderKey) {
+        throw new AriesFrameworkError(
+          `Inbound message senderKey '${senderKey}' is different from connection.theirKey '${connection.theirKey}'`
+        )
       }
     }
 
@@ -96,7 +97,10 @@ export class MessageReceiver {
     }
 
     const messageContext = new InboundMessageContext(message, {
-      connection: connection ?? undefined,
+      // Only make the connection available in message context if the connection is ready
+      // To prevent unwanted usage of unready connections. Connections can still be retrieved from
+      // Storage if the specific protocol allows an unready connection to be used.
+      connection: connection?.isReady ? connection : undefined,
       senderVerkey: senderKey,
       recipientVerkey: recipientKey,
     })
@@ -105,6 +109,7 @@ export class MessageReceiver {
     // That can happen when inbound message has `return_route` set to `all` or `thread`.
     // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
     if (senderKey && recipientKey && message.hasAnyReturnRoute() && session) {
+      this.logger.debug(`Storing session for inbound message '${message.id}'`)
       const keys = {
         recipientKeys: [senderKey],
         routingKeys: [],
@@ -112,6 +117,9 @@ export class MessageReceiver {
       }
       session.keys = keys
       session.inboundMessage = message
+      // We allow unready connections to be attached to the session as we want to be able to
+      // use return routing to make connections. This is especially useful for creating connections
+      // with mediators when you don't have a public endpoint yet.
       session.connection = connection ?? undefined
       this.transportService.saveSession(session)
     }
