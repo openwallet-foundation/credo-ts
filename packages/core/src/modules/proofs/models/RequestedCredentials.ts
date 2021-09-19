@@ -1,7 +1,7 @@
 import type { IndyRequestedCredentials } from 'indy-sdk'
 
-import { Expose, Type } from 'class-transformer'
-import { IsInstance, IsObject, IsString, ValidateNested } from 'class-validator'
+import { Expose } from 'class-transformer'
+import { ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { RecordTransformer } from '../../../utils/transformers'

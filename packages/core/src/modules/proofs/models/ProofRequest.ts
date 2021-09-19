@@ -4,6 +4,7 @@ import { Expose, Type } from 'class-transformer'
 import { IsString, ValidateNested, IsOptional, IsIn, IsInstance } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { RecordTransformer } from '../../../utils/transformers'
 import { RevocationInterval } from '../../credentials'
 
 import { ProofAttributeInfo } from './ProofAttributeInfo'
@@ -30,16 +31,10 @@ export class ProofRequest {
       this.name = options.name
       this.version = options.version
       this.nonce = options.nonce
+      this.requestedAttributes = options.requestedAttributes ?? {}
+      this.requestedPredicates = options.requestedPredicates ?? {}
       this.nonRevoked = options.nonRevoked
       this.ver = options.ver
-
-      // For convenience we allow records to be passed instead of maps
-      this.requestedAttributes = options.requestedAttributes
-        ? new Map(Object.entries(options.requestedAttributes))
-        : new Map()
-      this.requestedPredicates = options.requestedPredicates
-        ? new Map(Object.entries(options.requestedPredicates))
-        : new Map()
     }
   }
 
@@ -54,16 +49,13 @@ export class ProofRequest {
 
   @Expose({ name: 'requested_attributes' })
   @ValidateNested({ each: true })
-  @Type(() => ProofAttributeInfo)
-  @IsInstance(ProofAttributeInfo, { each: true })
-  public requestedAttributes!: Map<string, ProofAttributeInfo>
+  @RecordTransformer(ProofAttributeInfo)
+  public requestedAttributes!: Record<string, ProofAttributeInfo>
 
   @Expose({ name: 'requested_predicates' })
   @ValidateNested({ each: true })
-  @Type(() => ProofPredicateInfo)
-  @IsInstance(ProofPredicateInfo, { each: true })
-  public requestedPredicates!: Map<string, ProofPredicateInfo>
-
+  @RecordTransformer(ProofPredicateInfo)
+  public requestedPredicates!: Record<string, ProofPredicateInfo>
   @Expose({ name: 'non_revoked' })
   @ValidateNested()
   @Type(() => RevocationInterval)

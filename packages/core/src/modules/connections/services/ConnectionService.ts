@@ -5,7 +5,6 @@ import type { AckMessage } from '../../common'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
 
-import { validateOrReject } from 'class-validator'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
 import { inject, scoped, Lifecycle } from 'tsyringe'

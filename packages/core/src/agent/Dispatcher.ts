@@ -5,7 +5,7 @@ import type { AgentMessageProcessedEvent } from './Events'
 import type { Handler } from './Handler'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
-import { inject, Lifecycle, scoped } from 'tsyringe'
+import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../agent/AgentConfig'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
