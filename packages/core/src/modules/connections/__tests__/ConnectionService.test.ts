@@ -53,7 +53,7 @@ describe('ConnectionService', () => {
     myRouting = { did: 'fakeDid', verkey: 'fakeVerkey', endpoints: config.endpoints ?? [], routingKeys: [] }
   })
 
-  describe('createConnectionWithInvitation', () => {
+  describe('createInvitation', () => {
     it('returns a connection record with values set', async () => {
       expect.assertions(7)
       const { connectionRecord: connectionRecord } = await connectionService.createInvitation({ routing: myRouting })
@@ -125,6 +125,20 @@ describe('ConnectionService', () => {
 
       expect(aliasDefined.alias).toBe('test-alias')
       expect(aliasUndefined.alias).toBeUndefined()
+    })
+
+    it('returns a connection record with the multiUseInvitation parameter from the config', async () => {
+      expect.assertions(2)
+
+      const { connectionRecord: multiUseDefined } = await connectionService.createInvitation({
+        multiUseInvitation: true,
+        routing: myRouting,
+      })
+      const { connectionRecord: multiUseUndefined } = await connectionService.createInvitation({ routing: myRouting })
+
+      expect(multiUseDefined.multiUseInvitation).toBe(true)
+      // Defaults to false
+      expect(multiUseUndefined.multiUseInvitation).toBe(false)
     })
   })
 
@@ -291,6 +305,59 @@ describe('ConnectionService', () => {
       expect(processedConnection.threadId).toBe(connectionRequest.id)
     })
 
+    it('returns a new connection record containing the information from the connection request when multiUseInvitation is enabled on the connection', async () => {
+      expect.assertions(10)
+
+      const connectionRecord = getMockConnection({
+        id: 'test',
+        state: ConnectionState.Invited,
+        verkey: 'my-key',
+        role: ConnectionRole.Inviter,
+        multiUseInvitation: true,
+      })
+
+      const theirDid = 'their-did'
+      const theirVerkey = 'their-verkey'
+      const theirDidDoc = new DidDoc({
+        id: theirDid,
+        publicKey: [],
+        authentication: [],
+        service: [
+          new DidCommService({
+            id: `${theirDid};indy`,
+            serviceEndpoint: 'https://endpoint.com',
+            recipientKeys: [theirVerkey],
+          }),
+        ],
+      })
+
+      const connectionRequest = new ConnectionRequestMessage({
+        did: theirDid,
+        didDoc: theirDidDoc,
+        label: 'test-label',
+      })
+
+      const messageContext = new InboundMessageContext(connectionRequest, {
+        connection: connectionRecord,
+        senderVerkey: theirVerkey,
+        recipientVerkey: 'my-key',
+      })
+
+      const processedConnection = await connectionService.processRequest(messageContext, myRouting)
+
+      expect(processedConnection.state).toBe(ConnectionState.Requested)
+      expect(processedConnection.theirDid).toBe(theirDid)
+      expect(processedConnection.theirDidDoc).toEqual(theirDidDoc)
+      expect(processedConnection.theirKey).toBe(theirVerkey)
+      expect(processedConnection.theirLabel).toBe('test-label')
+      expect(processedConnection.threadId).toBe(connectionRequest.id)
+
+      expect(connectionRepository.save).toHaveBeenCalledTimes(1)
+      expect(processedConnection.id).not.toBe(connectionRecord.id)
+      expect(connectionRecord.id).toBe('test')
+      expect(connectionRecord.state).toBe(ConnectionState.Invited)
+    })
+
     it('throws an error when the message context does not have a connection', async () => {
       expect.assertions(1)
 
@@ -363,6 +430,38 @@ describe('ConnectionService', () => {
 
       return expect(connectionService.processRequest(messageContext)).rejects.toThrowError(
         `Connection with id ${connection.id} has no recipient keys.`
+      )
+    })
+
+    it('throws an error when a request for a multi use invitation is processed without routing provided', async () => {
+      const connectionRecord = getMockConnection({
+        state: ConnectionState.Invited,
+        verkey: 'my-key',
+        role: ConnectionRole.Inviter,
+        multiUseInvitation: true,
+      })
+
+      const theirDidDoc = new DidDoc({
+        id: 'their-did',
+        publicKey: [],
+        authentication: [],
+        service: [],
+      })
+
+      const connectionRequest = new ConnectionRequestMessage({
+        did: 'their-did',
+        didDoc: theirDidDoc,
+        label: 'test-label',
+      })
+
+      const messageContext = new InboundMessageContext(connectionRequest, {
+        connection: connectionRecord,
+        senderVerkey: 'their-verkey',
+        recipientVerkey: 'my-key',
+      })
+
+      expect(connectionService.processRequest(messageContext)).rejects.toThrowError(
+        'Cannot process request for multi-use invitation without routing object. Make sure to call processRequest with the routing parameter provided.'
       )
     })
   })

@@ -68,14 +68,16 @@ export class ConnectionService {
     routing: Routing
     autoAcceptConnection?: boolean
     alias?: string
+    multiUseInvitation?: boolean
   }): Promise<ConnectionProtocolMsgReturnType<ConnectionInvitationMessage>> {
-    // TODO: public did, multi use
+    // TODO: public did
     const connectionRecord = await this.createConnection({
       role: ConnectionRole.Inviter,
       state: ConnectionState.Invited,
       alias: config?.alias,
       routing: config.routing,
       autoAcceptConnection: config?.autoAcceptConnection,
+      multiUseInvitation: config.multiUseInvitation ?? false,
     })
 
     const { didDoc } = connectionRecord
@@ -130,6 +132,7 @@ export class ConnectionService {
       tags: {
         invitationKey: invitation.recipientKeys && invitation.recipientKeys[0],
       },
+      multiUseInvitation: false,
     })
     await this.connectionRepository.update(connectionRecord)
     this.eventEmitter.emit<ConnectionStateChangedEvent>({
@@ -179,9 +182,11 @@ export class ConnectionService {
    * @returns updated connection record
    */
   public async processRequest(
-    messageContext: InboundMessageContext<ConnectionRequestMessage>
+    messageContext: InboundMessageContext<ConnectionRequestMessage>,
+    routing?: Routing
   ): Promise<ConnectionRecord> {
-    const { message, connection: connectionRecord, recipientVerkey } = messageContext
+    const { message, recipientVerkey } = messageContext
+    let connectionRecord = messageContext.connection
 
     if (!connectionRecord) {
       throw new AriesFrameworkError(`Connection for verkey ${recipientVerkey} not found!`)
@@ -192,6 +197,25 @@ export class ConnectionService {
     // TODO: validate using class-validator
     if (!message.connection) {
       throw new AriesFrameworkError('Invalid message')
+    }
+
+    // Create new connection if using a multi use invitation
+    if (connectionRecord.multiUseInvitation) {
+      if (!routing) {
+        throw new AriesFrameworkError(
+          'Cannot process request for multi-use invitation without routing object. Make sure to call processRequest with the routing parameter provided.'
+        )
+      }
+
+      connectionRecord = await this.createConnection({
+        role: connectionRecord.role,
+        state: connectionRecord.state,
+        multiUseInvitation: false,
+        routing,
+        autoAcceptConnection: connectionRecord.autoAcceptConnection,
+        invitation: connectionRecord.invitation,
+        tags: connectionRecord.getTags(),
+      })
     }
 
     connectionRecord.theirDidDoc = message.connection.didDoc
@@ -233,9 +257,12 @@ export class ConnectionService {
       throw new AriesFrameworkError(`Connection record with id ${connectionId} does not have a thread id`)
     }
 
+    // Use invitationKey by default, fall back to verkey
+    const signingKey = (connectionRecord.getTag('invitationKey') as string) ?? connectionRecord.verkey
+
     const connectionResponse = new ConnectionResponseMessage({
       threadId: connectionRecord.threadId,
-      connectionSig: await signData(connectionJson, this.wallet, connectionRecord.verkey),
+      connectionSig: await signData(connectionJson, this.wallet, signingKey),
     })
 
     await this.updateState(connectionRecord, ConnectionState.Responded)
@@ -533,6 +560,7 @@ export class ConnectionService {
     routing: Routing
     theirLabel?: string
     autoAcceptConnection?: boolean
+    multiUseInvitation: boolean
     tags?: CustomConnectionTags
   }): Promise<ConnectionRecord> {
     const { endpoints, did, verkey, routingKeys } = options.routing
@@ -579,6 +607,7 @@ export class ConnectionService {
       alias: options.alias,
       theirLabel: options.theirLabel,
       autoAcceptConnection: options.autoAcceptConnection,
+      multiUseInvitation: options.multiUseInvitation,
     })
 
     await this.connectionRepository.save(connectionRecord)
