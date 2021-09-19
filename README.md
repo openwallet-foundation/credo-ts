@@ -29,11 +29,6 @@
       alt="License"
       src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"
   /></a>
-  <a href="https://npmjs.com/package/aries-framework"
-    ><img
-      alt="aries-framework-javascript npm version"
-      src="https://img.shields.io/npm/v/aries-framework"
-  /></a>
   <a href="https://www.typescriptlang.org/"
     ><img
       alt="typescript"
@@ -61,16 +56,50 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
 - ✅ Present Proof Protocol ([RFC 0037](https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof/README.md))
 - ✅ Connection Protocol ([RFC 0160](https://github.com/hyperledger/aries-rfcs/blob/master/features/0160-connection-protocol/README.md))
 - ✅ Basic Message Protocol ([RFC 0095](https://github.com/hyperledger/aries-rfcs/blob/master/features/0095-basic-message/README.md))
+- ✅ Mediator Coordination Protocol ([RFC 0211](https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md))
 - ✅ Indy Credentials (with `did:sov` support)
 - ✅ HTTP Transport
+- ✅ Connection-less Issuance and Verification
+- ✅ Smart Auto Acceptance of Connections, Credentials and Proofs
 - 🚧 Revocation of Indy Credentials
 - 🚧 Electron
-- 🚧 Mediator Coordination Protocol ([RFC 0211](https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md))
 - 🚧 WebSocket Transport
 - ❌ Browser
-- ❌ Connection-less Issuance and Verification
 - ❌ Issue Credential V2, Present Proof V2, DID Exchange Protocol, Out-Of-Band
 - ❌ W3C Linked Data VCs, BBS+ Signatures
+
+### Packages
+
+<table>
+  <tr>
+    <th><b>Package</b></th>
+    <th><b>Version</b></th>
+  </tr>
+  <tr>
+    <td>@aries-framework/core</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/core">
+        <img alt="@aries-framework/core version" src="https://img.shields.io/npm/v/@aries-framework/core"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>@aries-framework/node</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/node">
+        <img alt="@aries-framework/node version" src="https://img.shields.io/npm/v/@aries-framework/node"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>@aries-framework/react-Native</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/react-native">
+        <img alt="@aries-framework/react-native version" src="https://img.shields.io/npm/v/@aries-framework/react-native"/>
+      </a>
+    </td>
+  </tr>
+</table>
 
 ## Getting Started
 
@@ -86,18 +115,21 @@ In order to use Aries Framework JavaScript some platform specific dependencies a
 
 Now that your project is setup and everything seems to be working, it is time to start building! Follow these guides below to get started!
 
-0. [Agent](/docs/getting-started/0-agent.md)
-1. [Transports](/docs/getting-started/1-transports.md)
-2. [Connections](/docs/getting-started/2-connections.md)
-3. [Routing](/docs/getting-started/3-routing.md)
-4. [Ledger](/docs/getting-started/4-ledger.md)
-5. [Credentials](/docs/getting-started/5-credentials.md)
-6. [Proofs](/docs/getting-started/6-proofs.md)
-7. [Logging](/docs/getting-started/7-logging.md)
+0. [Overview](/docs/getting-started/overview.md)
+1. [Agent](/docs/getting-started/0-agent.md)
+2. [Transports](/docs/getting-started/1-transports.md)
+3. [Connections](/docs/getting-started/2-connections.md)
+4. [Routing](/docs/getting-started/3-routing.md)
+5. [Ledger](/docs/getting-started/4-ledger.md)
+6. [Credentials](/docs/getting-started/5-credentials.md)
+7. [Proofs](/docs/getting-started/6-proofs.md)
+8. [Logging](/docs/getting-started/7-logging.md)
 
 ## Contributing
 
 If you would like to contribute to the framework, please read the [Framework Developers README](/DEVREADME.md) and the [CONTRIBUTING](/CONTRIBUTING.md) guidelines. These documents will provide more information to get you started!
+
+The Aries Framework JavaScript call takes place every week at Thursday, 14:00 UTC via [Zoom](https://zoom.us/j/92215586249?pwd=Vm5ZTGV4T0cwVEl4blh3MjBzYjVYZz09). This meeting is for contributors to groom and plan the backlog, and discuss issues. Feel free to join!
 
 ## License
 

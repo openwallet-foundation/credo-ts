@@ -54,8 +54,8 @@ docker run -d --rm --name indy-pool -p 9701-9708:9701-9708 indy-pool
 # Setup CLI. This creates a wallet, connects to the ledger and sets the Transaction Author Agreement
 docker exec indy-pool indy-cli-setup
 
-#  DID and Verkey from seed
-docker exec indy-pool add-did-from-seed 000000000000000000000000Trustee9
+#  DID and Verkey from seed. Set 'Trustee' role in order to be able to register public DIDs
+docker exec indy-pool add-did-from-seed 000000000000000000000000Trustee9 TRUSTEE
 
 # If you want to register using the DID/Verkey you can use
 # docker exec indy-pool add-did "NkGXDEPgpFGjQKMYmz6SyF" "CrSA1WbYYWLJoHm16Xw1VEeWxFvXtWjtsfEzMsjB5vDT"

@@ -1,49 +1,16 @@
 version: '3'
 
 services:
-  alice-mediator:
+  mediator:
     build: ..
     image: aries-framework-javascript
-    container_name: alice-mediator
-    command: ./scripts/run-mediator.sh alice
+    container_name: afj-mediator
+    command: yarn run-mediator
     platform: linux/amd64
     networks:
       - hyperledger
     ports:
       - 3001:3001
-
-  bob-mediator:
-    build: ..
-    image: aries-framework-javascript
-    container_name: bob-mediator
-    command: ./scripts/run-mediator.sh bob
-    platform: linux/amd64
-    networks:
-      - hyperledger
-    ports:
-      - 3002:3002
-
-  alice-ws-mediator:
-    build: ..
-    image: aries-framework-javascript
-    container_name: alice-ws-mediator
-    command: ./scripts/run-mediator.sh alice-ws
-    platform: linux/amd64
-    networks:
-      - hyperledger
-    ports:
-      - 3003:3003
-
-  bob-ws-mediator:
-    build: ..
-    image: aries-framework-javascript
-    container_name: bob-ws-mediator
-    command: ./scripts/run-mediator.sh bob-ws
-    platform: linux/amd64
-    networks:
-      - hyperledger
-    ports:
-      - 3004:3004
 
 networks:
   hyperledger:

@@ -13,7 +13,7 @@ Because Electron is like a browser-environment, some additional work has to be d
 
 const { contextBridge } = require('electron')
 const indy = require('indy-sdk')
-const NodeFileSystem = require('aries-framework/build/src/storage/fs/NodeFileSystem').NodeFileSystem
+const NodeFileSystem = require('aries-framework/build/storage/fs/NodeFileSystem').NodeFileSystem
 
 // fs is not available in the browser, so we initialize it in the main world
 const fs = new NodeFileSystem()
@@ -65,8 +65,10 @@ const indyWithErrorHandling = Object.fromEntries(
 // This creates an agent with all the specified configuration data
 const agent = new Agent({
   label: 'my-agent',
-  walletConfig: { id: 'walletId' },
-  walletCredentials: { key: 'testkey0000000000000000000000000' },
+  walletConfig: {
+    id: 'walletId',
+    key: 'testkey0000000000000000000000000',
+  },
   // used custom indyWithErrorHandling created above
   indy: indyWithErrorHandling as unknown as typeof Indy,
   // Use fs exposed on window from main world
@@ -75,7 +77,7 @@ const agent = new Agent({
 
 // Here we try to initialize the agent for usage
 try {
-  await agent.init()
+  await agent.initialize()
   console.log('Initialized agent!')
 } catch (error) {
   console.log(error)
