@@ -91,8 +91,6 @@ export class IndyLedgerService {
         this.logger.debug(`Pool '${poolName}' already exists`, {
           indyError: 'PoolLedgerConfigAlreadyExistsError',
         })
-      } else if (isIndyError(error)) {
-        throw new IndySdkError(error)
       } else {
         throw isIndyError(error) ? new IndySdkError(error) : error
       }
