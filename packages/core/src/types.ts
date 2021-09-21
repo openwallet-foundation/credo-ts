@@ -47,6 +47,7 @@ export interface InitConfig {
   mediatorPickupStrategy?: MediatorPickupStrategy
 
   useLegacyDidSovPrefix?: boolean
+  connectionImageUrl?: string
 }
 
 export interface UnpackedMessage {

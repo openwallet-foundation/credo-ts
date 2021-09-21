@@ -1,7 +1,6 @@
 import { Transform } from 'class-transformer'
-import { Equals, IsString, ValidateIf, IsArray, IsOptional, validateOrReject } from 'class-validator'
+import { Equals, IsString, ValidateIf, IsArray, IsOptional, validateOrReject, IsUrl } from 'class-validator'
 import { parseUrl } from 'query-string'
-import { URL } from 'url'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { AriesFrameworkError } from '../../../error'
@@ -9,15 +8,19 @@ import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 
-// TODO: improve typing of `DIDInvitationData` and `InlineInvitationData` so properties can't be mixed
-export interface InlineInvitationData {
-  recipientKeys: string[]
-  serviceEndpoint: string
-  routingKeys?: string[]
+export interface BaseInvitationOptions {
+  id?: string
+  label: string
   imageUrl?: string
 }
 
-export interface DIDInvitationData {
+export interface InlineInvitationOptions {
+  recipientKeys: string[]
+  serviceEndpoint: string
+  routingKeys?: string[]
+}
+
+export interface DIDInvitationOptions {
   did: string
 }
 
@@ -31,12 +34,13 @@ export class ConnectionInvitationMessage extends AgentMessage {
    * Create new ConnectionInvitationMessage instance.
    * @param options
    */
-  public constructor(options: { id?: string; label: string } & (DIDInvitationData | InlineInvitationData)) {
+  public constructor(options: BaseInvitationOptions & (DIDInvitationOptions | InlineInvitationOptions)) {
     super()
 
     if (options) {
       this.id = options.id || this.generateId()
       this.label = options.label
+      this.imageUrl = options.imageUrl
 
       if (isDidInvitation(options)) {
         this.did = options.did
@@ -44,7 +48,6 @@ export class ConnectionInvitationMessage extends AgentMessage {
         this.recipientKeys = options.recipientKeys
         this.serviceEndpoint = options.serviceEndpoint
         this.routingKeys = options.routingKeys
-        this.imageUrl = options.imageUrl
       }
 
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -90,7 +93,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
   public routingKeys?: string[]
 
   @IsOptional()
-  @IsString()
+  @IsUrl()
   public imageUrl?: string
 
   /**
@@ -141,6 +144,8 @@ export class ConnectionInvitationMessage extends AgentMessage {
  *
  * @param invitation invitation object
  */
-function isDidInvitation(invitation: InlineInvitationData | DIDInvitationData): invitation is DIDInvitationData {
-  return (invitation as DIDInvitationData).did !== undefined
+function isDidInvitation(
+  invitation: InlineInvitationOptions | DIDInvitationOptions
+): invitation is DIDInvitationOptions {
+  return (invitation as DIDInvitationOptions).did !== undefined
 }
