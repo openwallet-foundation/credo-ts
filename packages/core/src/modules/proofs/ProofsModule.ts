@@ -142,7 +142,7 @@ export class ProofsModule {
    */
   public async requestProof(
     connectionId: string,
-    proofRequestOptions: RequestProofOptions,
+    proofRequestOptions: CreateProofRequestOptions,
     config?: ProofRequestConfig
   ): Promise<ProofRecord> {
     const connection = await this.connectionService.getById(connectionId)
@@ -174,7 +174,7 @@ export class ProofsModule {
    *
    */
   public async createOutOfBandRequest(
-    proofRequestOptions: RequestProofOptions,
+    proofRequestOptions: CreateProofRequestOptions,
     config?: ProofRequestConfig
   ): Promise<{
     requestMessage: RequestPresentationMessage
@@ -403,7 +403,7 @@ export class ProofsModule {
   }
 }
 
-export type RequestProofOptions = Partial<
+export type CreateProofRequestOptions = Partial<
   Pick<ProofRequestOptions, 'name' | 'nonce' | 'requestedAttributes' | 'requestedPredicates'>
 >
 

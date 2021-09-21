@@ -3,10 +3,12 @@ import { MessageValidator } from '../../utils/MessageValidator'
 
 import { TransportDecorator, ReturnRouteTypes } from './TransportDecorator'
 
-const validTransport = (obj: Record<string, unknown>) =>
-  MessageValidator.validate(JsonTransformer.fromJSON(obj, TransportDecorator))
-const expectValid = (obj: Record<string, unknown>) => expect(validTransport(obj)).resolves.toBeUndefined()
-const expectInvalid = (obj: Record<string, unknown>) => expect(validTransport(obj)).rejects.not.toBeNull()
+const validTransport = (transportJson: Record<string, unknown>) =>
+  MessageValidator.validate(JsonTransformer.fromJSON(transportJson, TransportDecorator))
+const expectValid = (transportJson: Record<string, unknown>) =>
+  expect(validTransport(transportJson)).resolves.toBeUndefined()
+const expectInvalid = (transportJson: Record<string, unknown>) =>
+  expect(validTransport(transportJson)).rejects.not.toBeNull()
 
 const valid = {
   all: {

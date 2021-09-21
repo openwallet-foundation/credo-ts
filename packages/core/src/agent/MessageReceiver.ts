@@ -72,7 +72,7 @@ export class MessageReceiver {
       connection = await this.connectionService.findByVerkey(recipientKey)
 
       // Throw error if the recipient key (ourKey) does not match the key of the connection record
-      if (connection && connection.theirKey != null && connection.theirKey != senderKey) {
+      if (connection && connection.theirKey !== null && connection.theirKey !== senderKey) {
         throw new AriesFrameworkError(
           `Inbound message senderKey '${senderKey}' is different from connection.theirKey '${connection.theirKey}'`
         )
