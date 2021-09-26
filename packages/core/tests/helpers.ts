@@ -67,8 +67,13 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
     },
     publicDidSeed,
     autoAcceptConnections: true,
-    genesisPath,
-    poolName: `pool-${name.toLowerCase()}`,
+    indyLedgers: [
+      {
+        id: `pool-${name}`,
+        isProduction: false,
+        genesisPath,
+      },
+    ],
     logger: new TestLogger(LogLevel.error, name),
     ...extraConfig,
   }
@@ -514,13 +519,11 @@ export async function setupCredentialTests(
     'rxjs:alice': aliceMessages,
   }
   const faberConfig = getBaseConfig(faberName, {
-    genesisPath,
     endpoints: ['rxjs:faber'],
     autoAcceptCredentials,
   })
 
   const aliceConfig = getBaseConfig(aliceName, {
-    genesisPath,
     endpoints: ['rxjs:alice'],
     autoAcceptCredentials,
   })
@@ -553,13 +556,11 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
   const unique = uuid().substring(0, 4)
 
   const faberConfig = getBaseConfig(`${faberName}-${unique}`, {
-    genesisPath,
     autoAcceptProofs,
     endpoints: ['rxjs:faber'],
   })
 
   const aliceConfig = getBaseConfig(`${aliceName}-${unique}`, {
-    genesisPath,
     autoAcceptProofs,
     endpoints: ['rxjs:alice'],
   })

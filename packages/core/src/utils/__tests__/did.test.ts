@@ -1,4 +1,4 @@
-import { isAbbreviatedVerkey, isDid, isDidIdentifier, isFullVerkey, isVerkey } from '../did'
+import { isAbbreviatedVerkey, isDid, isDidIdentifier, isFullVerkey, isSelfCertifiedDid, isVerkey } from '../did'
 
 const validAbbreviatedVerkeys = [
   '~PKAYz8Ev4yoQgr2LaMAWFx',
@@ -81,6 +81,20 @@ const invalidDidIdentifiers = [
 ]
 
 describe('Utils | Did', () => {
+  describe('isSelfCertifiedDid()', () => {
+    test('returns true if the verkey is abbreviated', () => {
+      expect(isSelfCertifiedDid('PW8ZHpNupeWXbmpPWog6Ki', '~QQ5jiH1dgXPAnvHdJvazn9')).toBe(true)
+    })
+
+    test('returns true if the verkey is not abbreviated and the did is generated from the verkey', () => {
+      expect(isSelfCertifiedDid('Y8q4Aq6gRAcmB6jjKk3Z7t', 'HyEoPRNvC7q4jj5joUo8AWYtxbNccbEnTAeuMYkpmNS2')).toBe(true)
+    })
+
+    test('returns false if the verkey is not abbreviated and the did is not generated from the verkey', () => {
+      expect(isSelfCertifiedDid('Y8q4Aq6gRAcmB6jjKk3Z7t', 'AcU7DnRqoXGYATD6VqsRq4eHuz55gdM3uzFBEhFd6rGh')).toBe(false)
+    })
+  })
+
   describe('isAbbreviatedVerkey()', () => {
     test.each(validAbbreviatedVerkeys)('returns true when valid abbreviated verkey "%s" is passed in', (verkey) => {
       expect(isAbbreviatedVerkey(verkey)).toBe(true)

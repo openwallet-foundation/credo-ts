@@ -5236,7 +5236,7 @@ indy-sdk-react-native@^0.1.13:
   dependencies:
     buffer "^6.0.2"
 
-indy-sdk@^1.16.0-dev-1634:
+indy-sdk@^1.16.0-dev-1636:
   version "1.16.0-dev-1636"
   resolved "https://registry.yarnpkg.com/indy-sdk/-/indy-sdk-1.16.0-dev-1636.tgz#e53b719a6ce536459b356dbf32b9a7cb18ca59e8"
   integrity sha512-1SYJWdf0xCr+Yd7zTLzYxS7i/j/H2dmBj9C5muPPSdh5XPkL133L0QxZ0NmVdciUY4J5TAyyCjdDgvji1ZSwAw==

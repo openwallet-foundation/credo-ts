@@ -23,6 +23,7 @@
     "prepublishOnly": "yarn run build"
   },
   "dependencies": {
+    "@multiformats/base-x": "^4.0.1",
     "@types/indy-sdk": "^1.16.6",
     "@types/node-fetch": "^2.5.10",
     "@types/ws": "^7.4.4",
