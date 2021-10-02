@@ -4,7 +4,7 @@ import type { MediationRecipientService } from '../../routing/services/Mediation
 import type { ConnectionService, Routing } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
-import { AriesFrameworkError } from '../../../error'
+import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { ConnectionRequestMessage } from '../messages'
 
 export class ConnectionRequestHandler implements Handler {
@@ -24,7 +24,12 @@ export class ConnectionRequestHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<ConnectionRequestHandler>) {
-    if (!messageContext.connection) {
+    if (!messageContext.recipientVerkey || !messageContext.senderVerkey) {
+      throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
+    }
+
+    let connectionRecord = await this.connectionService.findByVerkey(messageContext.recipientVerkey)
+    if (!connectionRecord) {
       throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
 
@@ -32,16 +37,16 @@ export class ConnectionRequestHandler implements Handler {
 
     // routing object is required for multi use invitation, because we're creating a
     // new keypair that possibly needs to be registered at a mediator
-    if (messageContext.connection.multiUseInvitation) {
+    if (connectionRecord.multiUseInvitation) {
       const mediationRecord = await this.mediationRecipientService.discoverMediation()
       routing = await this.mediationRecipientService.getRouting(mediationRecord)
     }
 
-    const connection = await this.connectionService.processRequest(messageContext, routing)
+    connectionRecord = await this.connectionService.processRequest(messageContext, routing)
 
-    if (connection?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      const { message } = await this.connectionService.createResponse(connection.id)
-      return createOutboundMessage(connection, message)
+    if (connectionRecord?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
+      const { message } = await this.connectionService.createResponse(connectionRecord.id)
+      return createOutboundMessage(connectionRecord, message)
     }
   }
 }

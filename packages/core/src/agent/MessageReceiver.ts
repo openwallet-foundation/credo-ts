@@ -1,4 +1,5 @@
 import type { Logger } from '../logger'
+import type { ConnectionRecord } from '../modules/connections'
 import type { InboundTransport } from '../transport'
 import type { UnpackedMessageContext, UnpackedMessage, WireMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
@@ -9,6 +10,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AriesFrameworkError } from '../error'
 import { ConnectionService } from '../modules/connections/services/ConnectionService'
 import { JsonTransformer } from '../utils/JsonTransformer'
+import { MessageValidator } from '../utils/MessageValidator'
 import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
 import { AgentConfig } from './AgentConfig'
@@ -63,18 +65,16 @@ export class MessageReceiver {
     const senderKey = unpackedMessage.senderVerkey
     const recipientKey = unpackedMessage.recipientVerkey
 
-    let connection = undefined
-    if (senderKey && recipientKey) {
-      // TODO: only attach if theirKey is present. Otherwise a connection that may not be complete, validated or correct will
-      // be attached to the message context. See #76
-      connection = (await this.connectionService.findByVerkey(recipientKey)) || undefined
+    let connection: ConnectionRecord | null = null
 
-      // We check whether the sender key is the same as the key we have stored in the connection
-      // otherwise everyone could send messages to our key and we would just accept
-      // it as if it was send by the key of the connection.
-      if (connection && connection.theirKey != null && connection.theirKey != senderKey) {
+    // Only fetch connection if recipientKey and senderKey are present (AuthCrypt)
+    if (senderKey && recipientKey) {
+      connection = await this.connectionService.findByVerkey(recipientKey)
+
+      // Throw error if the recipient key (ourKey) does not match the key of the connection record
+      if (connection && connection.theirKey !== null && connection.theirKey !== senderKey) {
         throw new AriesFrameworkError(
-          `Inbound message 'sender_key' ${senderKey} is different from connection.theirKey ${connection.theirKey}`
+          `Inbound message senderKey '${senderKey}' is different from connection.theirKey '${connection.theirKey}'`
         )
       }
     }
@@ -85,8 +85,22 @@ export class MessageReceiver {
     )
 
     const message = await this.transformMessage(unpackedMessage)
+    try {
+      await MessageValidator.validate(message)
+    } catch (error) {
+      this.logger.error(`Error validating message ${message.type}`, {
+        errors: error,
+        message: message.toJSON(),
+      })
+
+      throw error
+    }
+
     const messageContext = new InboundMessageContext(message, {
-      connection,
+      // Only make the connection available in message context if the connection is ready
+      // To prevent unwanted usage of unready connections. Connections can still be retrieved from
+      // Storage if the specific protocol allows an unready connection to be used.
+      connection: connection?.isReady ? connection : undefined,
       senderVerkey: senderKey,
       recipientVerkey: recipientKey,
     })
@@ -95,6 +109,7 @@ export class MessageReceiver {
     // That can happen when inbound message has `return_route` set to `all` or `thread`.
     // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
     if (senderKey && recipientKey && message.hasAnyReturnRoute() && session) {
+      this.logger.debug(`Storing session for inbound message '${message.id}'`)
       const keys = {
         recipientKeys: [senderKey],
         routingKeys: [],
@@ -102,7 +117,10 @@ export class MessageReceiver {
       }
       session.keys = keys
       session.inboundMessage = message
-      session.connection = connection
+      // We allow unready connections to be attached to the session as we want to be able to
+      // use return routing to make connections. This is especially useful for creating connections
+      // with mediators when you don't have a public endpoint yet.
+      session.connection = connection ?? undefined
       this.transportService.saveSession(session)
     }
 
@@ -125,7 +143,7 @@ export class MessageReceiver {
         this.logger.error('error while unpacking message', {
           error,
           packedMessage,
-          errorMessage: error.message,
+          errorMessage: error instanceof Error ? error.message : error,
         })
         throw error
       }
@@ -156,7 +174,7 @@ export class MessageReceiver {
     const MessageClass = this.dispatcher.getMessageClassForType(messageType)
 
     if (!MessageClass) {
-      throw new AriesFrameworkError(`No handler for message type "${messageType}" found`)
+      throw new AriesFrameworkError(`No message class found for message type "${messageType}"`)
     }
 
     // Cast the plain JSON object to specific instance of Message extended from AgentMessage

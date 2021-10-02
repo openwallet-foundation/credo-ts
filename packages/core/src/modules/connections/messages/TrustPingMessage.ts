@@ -1,7 +1,7 @@
 import type { TimingDecorator } from '../../../decorators/timing/TimingDecorator'
 
 import { Expose } from 'class-transformer'
-import { Equals, IsString, IsBoolean } from 'class-validator'
+import { Equals, IsString, IsBoolean, IsOptional } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 
@@ -23,7 +23,7 @@ export class TrustPingMessage extends AgentMessage {
    * responseRequested will be true if not passed
    * @param options
    */
-  public constructor(options?: TrustPingMessageOptions) {
+  public constructor(options: TrustPingMessageOptions) {
     super()
 
     if (options) {
@@ -46,6 +46,7 @@ export class TrustPingMessage extends AgentMessage {
   public static readonly type = 'https://didcomm.org/trust_ping/1.0/ping'
 
   @IsString()
+  @IsOptional()
   public comment?: string
 
   @IsBoolean()

@@ -161,6 +161,7 @@ export class MessageSender {
     // Try to send to already open session
     const session = this.transportService.findSessionByConnectionId(connection.id)
     if (session?.inboundMessage?.hasReturnRouting(payload.threadId)) {
+      this.logger.debug(`Found session with return routing for message '${payload.id}' (connection '${connection.id}'`)
       try {
         await this.sendMessageToSession(session, payload)
         return

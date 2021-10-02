@@ -5,7 +5,6 @@ import type { AckMessage } from '../../common'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
 
-import { validateOrReject } from 'class-validator'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
 import { inject, scoped, Lifecycle } from 'tsyringe'
@@ -16,6 +15,7 @@ import { InjectionSymbols } from '../../../constants'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import {
@@ -107,7 +107,7 @@ export class ConnectionService {
   /**
    * Process a received invitation message. This will not accept the invitation
    * or send an invitation request message. It will only create a connection record
-   * with all the information about the invitation stored. Use {@link ConnectionService#createRequest}
+   * with all the information about the invitation stored. Use {@link ConnectionService.createRequest}
    * after calling this function to create a connection request.
    *
    * @param invitation the invitation message to process
@@ -175,7 +175,7 @@ export class ConnectionService {
   /**
    * Process a received connection request message. This will not accept the connection request
    * or send a connection response message. It will only update the existing connection record
-   * with all the new information from the connection request message. Use {@link ConnectionService#createResponse}
+   * with all the new information from the connection request message. Use {@link ConnectionService.createResponse}
    * after calling this function to create a connection response.
    *
    * @param messageContext the message context containing a connection request message
@@ -185,18 +185,23 @@ export class ConnectionService {
     messageContext: InboundMessageContext<ConnectionRequestMessage>,
     routing?: Routing
   ): Promise<ConnectionRecord> {
-    const { message, recipientVerkey } = messageContext
-    let connectionRecord = messageContext.connection
+    const { message, recipientVerkey, senderVerkey } = messageContext
 
+    if (!recipientVerkey || !senderVerkey) {
+      throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
+    }
+
+    let connectionRecord = await this.findByVerkey(recipientVerkey)
     if (!connectionRecord) {
-      throw new AriesFrameworkError(`Connection for verkey ${recipientVerkey} not found!`)
+      throw new AriesFrameworkError(
+        `Unable to process connection request: connection for verkey ${recipientVerkey} not found`
+      )
     }
     connectionRecord.assertState(ConnectionState.Invited)
     connectionRecord.assertRole(ConnectionRole.Inviter)
 
-    // TODO: validate using class-validator
-    if (!message.connection) {
-      throw new AriesFrameworkError('Invalid message')
+    if (!message.connection.didDoc) {
+      throw new AriesFrameworkError('Public DIDs are not supported yet')
     }
 
     // Create new connection if using a multi use invitation
@@ -276,7 +281,7 @@ export class ConnectionService {
   /**
    * Process a received connection response message. This will not accept the connection request
    * or send a connection acknowledgement message. It will only update the existing connection record
-   * with all the new information from the connection response message. Use {@link ConnectionService#createTrustPing}
+   * with all the new information from the connection response message. Use {@link ConnectionService.createTrustPing}
    * after calling this function to create a trust ping message.
    *
    * @param messageContext the message context containing a connection response message
@@ -285,19 +290,27 @@ export class ConnectionService {
   public async processResponse(
     messageContext: InboundMessageContext<ConnectionResponseMessage>
   ): Promise<ConnectionRecord> {
-    const { message, connection: connectionRecord, recipientVerkey } = messageContext
+    const { message, recipientVerkey, senderVerkey } = messageContext
+
+    if (!recipientVerkey || !senderVerkey) {
+      throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
+    }
+
+    const connectionRecord = await this.findByVerkey(recipientVerkey)
 
     if (!connectionRecord) {
-      throw new AriesFrameworkError(`Connection for verkey ${recipientVerkey} not found!`)
+      throw new AriesFrameworkError(
+        `Unable to process connection response: connection for verkey ${recipientVerkey} not found`
+      )
     }
+
     connectionRecord.assertState(ConnectionState.Requested)
     connectionRecord.assertRole(ConnectionRole.Invitee)
 
     const connectionJson = await unpackAndVerifySignatureDecorator(message.connectionSig, this.wallet)
 
     const connection = JsonTransformer.fromJSON(connectionJson, Connection)
-    // TODO: throw framework error stating the connection object is invalid
-    await validateOrReject(connection)
+    await MessageValidator.validate(connection)
 
     // Per the Connection RFC we must check if the key used to sign the connection~sig is the same key
     // as the recipient key(s) in the connection invitation message
@@ -305,7 +318,7 @@ export class ConnectionService {
     const invitationKey = connectionRecord.getTags().invitationKey
     if (signerVerkey !== invitationKey) {
       throw new AriesFrameworkError(
-        'Connection in connection response is not signed with same key as recipient key in invitation'
+        'Connection object in connection response message is not signed with same key as recipient key in invitation'
       )
     }
 
@@ -336,7 +349,7 @@ export class ConnectionService {
     //  - create ack message
     //  - allow for options
     //  - maybe this shouldn't be in the connection service?
-    const trustPing = new TrustPingMessage()
+    const trustPing = new TrustPingMessage({})
 
     await this.updateState(connectionRecord, ConnectionState.Complete)
 
@@ -354,10 +367,12 @@ export class ConnectionService {
    * @returns updated connection record
    */
   public async processAck(messageContext: InboundMessageContext<AckMessage>): Promise<ConnectionRecord> {
-    const connection = messageContext.connection
+    const { connection, recipientVerkey } = messageContext
 
     if (!connection) {
-      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found`)
+      throw new AriesFrameworkError(
+        `Unable to process connection ack: connection for verkey ${recipientVerkey} not found`
+      )
     }
 
     // TODO: This is better addressed in a middleware of some kind because
@@ -566,7 +581,6 @@ export class ConnectionService {
     const { endpoints, did, verkey, routingKeys } = options.routing
 
     const publicKey = new Ed25119Sig2018({
-      // TODO: shouldn't this name be ED25519
       id: `${did}#1`,
       controller: did,
       publicKeyBase58: verkey,
