@@ -334,6 +334,7 @@ describe('ConnectionService', () => {
         role: ConnectionRole.Inviter,
         multiUseInvitation: true,
       })
+      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(connectionRecord))
 
       const theirDid = 'their-did'
       const theirVerkey = 'their-verkey'
@@ -434,6 +435,7 @@ describe('ConnectionService', () => {
         role: ConnectionRole.Inviter,
         multiUseInvitation: true,
       })
+      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(connectionRecord))
 
       const theirDidDoc = new DidDoc({
         id: 'their-did',
