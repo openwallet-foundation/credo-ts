@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer'
-import { IsInt, IsPositive, IsString } from 'class-validator'
+import { IsInt, IsString } from 'class-validator'
 
 export class ProofAttribute {
   public constructor(options: ProofAttribute) {
@@ -12,7 +12,6 @@ export class ProofAttribute {
 
   @Expose({ name: 'sub_proof_index' })
   @IsInt()
-  @IsPositive()
   public subProofIndex!: number
 
   @IsString()
