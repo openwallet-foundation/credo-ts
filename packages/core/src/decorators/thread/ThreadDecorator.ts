@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer'
-import { IsInt, IsOptional, IsPositive, Matches } from 'class-validator'
+import { IsInt, IsOptional, Matches } from 'class-validator'
 
 import { MessageIdRegExp } from '../../agent/BaseMessage'
 
@@ -37,7 +37,6 @@ export class ThreadDecorator {
   @Expose({ name: 'sender_order' })
   @IsOptional()
   @IsInt()
-  @IsPositive()
   public senderOrder?: number
 
   /**

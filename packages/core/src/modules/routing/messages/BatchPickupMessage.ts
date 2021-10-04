@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer'
-import { Equals, IsInt, IsPositive } from 'class-validator'
+import { Equals, IsInt } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 
@@ -34,6 +34,5 @@ export class BatchPickupMessage extends AgentMessage {
 
   @IsInt()
   @Expose({ name: 'batch_size' })
-  @IsPositive()
   public batchSize!: number
 }
