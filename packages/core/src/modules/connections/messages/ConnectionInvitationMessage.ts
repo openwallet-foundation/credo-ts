@@ -1,11 +1,12 @@
 import { Transform } from 'class-transformer'
-import { Equals, IsString, ValidateIf, IsArray, IsOptional, validateOrReject, IsUrl } from 'class-validator'
+import { ArrayNotEmpty, Equals, IsArray, IsOptional, IsString, IsUrl, ValidateIf } from 'class-validator'
 import { parseUrl } from 'query-string'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { MessageValidator } from '../../../utils/MessageValidator'
 import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 
 export interface BaseInvitationOptions {
@@ -79,6 +80,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
   })
   @IsArray()
   @ValidateIf((o: ConnectionInvitationMessage) => o.did === undefined)
+  @ArrayNotEmpty()
   public recipientKeys?: string[]
 
   @IsString()
@@ -88,8 +90,8 @@ export class ConnectionInvitationMessage extends AgentMessage {
   @IsString({
     each: true,
   })
-  @IsOptional()
   @ValidateIf((o: ConnectionInvitationMessage) => o.did === undefined)
+  @IsOptional()
   public routingKeys?: string[]
 
   @IsOptional()
@@ -127,8 +129,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
       const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
       const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
 
-      // TODO: should validation happen here?
-      await validateOrReject(invitation)
+      await MessageValidator.validate(invitation)
 
       return invitation
     } else {

@@ -1,5 +1,5 @@
 import type { TagsBase } from '../BaseRecord'
-import type { default as Indy } from 'indy-sdk'
+import type * as Indy from 'indy-sdk'
 
 import { getAgentConfig } from '../../../tests/helpers'
 import { RecordDuplicateError, RecordNotFoundError } from '../../error'

@@ -1,6 +1,7 @@
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
 import type { PresentationPreview, RequestPresentationMessage } from './messages'
 import type { RequestedCredentials, RetrievedCredentials } from './models'
+import type { ProofRequestOptions } from './models/ProofRequest'
 import type { ProofRecord } from './repository/ProofRecord'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -141,7 +142,7 @@ export class ProofsModule {
    */
   public async requestProof(
     connectionId: string,
-    proofRequestOptions: ProofRequestOptions,
+    proofRequestOptions: CreateProofRequestOptions,
     config?: ProofRequestConfig
   ): Promise<ProofRecord> {
     const connection = await this.connectionService.getById(connectionId)
@@ -173,7 +174,7 @@ export class ProofsModule {
    *
    */
   public async createOutOfBandRequest(
-    proofRequestOptions: ProofRequestOptions,
+    proofRequestOptions: CreateProofRequestOptions,
     config?: ProofRequestConfig
   ): Promise<{
     requestMessage: RequestPresentationMessage
@@ -402,8 +403,8 @@ export class ProofsModule {
   }
 }
 
-export type ProofRequestOptions = Partial<
-  Pick<ProofRequest, 'name' | 'nonce' | 'requestedAttributes' | 'requestedPredicates'>
+export type CreateProofRequestOptions = Partial<
+  Pick<ProofRequestOptions, 'name' | 'nonce' | 'requestedAttributes' | 'requestedPredicates'>
 >
 
 export interface ProofRequestConfig {

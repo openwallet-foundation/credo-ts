@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer'
-import { Equals, IsString } from 'class-validator'
+import { Equals, IsObject, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { WireMessage } from '../../../types'
@@ -37,5 +37,6 @@ export class ForwardMessage extends AgentMessage {
   public to!: string
 
   @Expose({ name: 'msg' })
+  @IsObject()
   public message!: WireMessage
 }

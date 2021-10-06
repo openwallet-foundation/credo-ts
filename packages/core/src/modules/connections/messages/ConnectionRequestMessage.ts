@@ -1,7 +1,7 @@
 import type { DidDoc } from '../models'
 
 import { Type } from 'class-transformer'
-import { Equals, IsOptional, IsString, IsUrl, ValidateNested } from 'class-validator'
+import { Equals, IsInstance, IsOptional, IsString, IsUrl, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Connection } from '../models'
@@ -48,6 +48,7 @@ export class ConnectionRequestMessage extends AgentMessage {
 
   @Type(() => Connection)
   @ValidateNested()
+  @IsInstance(Connection)
   public connection!: Connection
 
   @IsOptional()

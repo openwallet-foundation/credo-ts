@@ -17,5 +17,5 @@ done
 
 echo "fetched end point [$ENDPOINT]"
 
-export AGENT_ENDPOINT=$ENDPOINT
+export AGENT_ENDPOINTS=$ENDPOINT
 exec "$@"

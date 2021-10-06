@@ -1,5 +1,5 @@
 import { Type, Expose } from 'class-transformer'
-import { Equals, ValidateNested } from 'class-validator'
+import { Equals, IsInstance, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
@@ -37,6 +37,7 @@ export class ConnectionResponseMessage extends AgentMessage {
 
   @Type(() => SignatureDecorator)
   @ValidateNested()
+  @IsInstance(SignatureDecorator)
   @Expose({ name: 'connection~sig' })
   public connectionSig!: SignatureDecorator
 }
