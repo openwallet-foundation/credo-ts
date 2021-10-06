@@ -14,11 +14,13 @@ export class KeylistUpdateHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<KeylistUpdateHandler>) {
-    if (!messageContext.connection) {
-      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+    const { message, connection } = messageContext
+
+    if (!connection) {
+      throw new AriesFrameworkError(`No connection associated with incoming message with id ${message.id}`)
     }
 
     const response = await this.mediatorService.processKeylistUpdateRequest(messageContext)
-    return createOutboundMessage(messageContext.connection, response)
+    return createOutboundMessage(connection, response)
   }
 }

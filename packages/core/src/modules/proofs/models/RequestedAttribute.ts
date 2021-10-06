@@ -1,5 +1,5 @@
 import { Exclude, Expose } from 'class-transformer'
-import { IsBoolean, IsInt, IsOptional, IsPositive, IsString } from 'class-validator'
+import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator'
 
 import { IndyCredentialInfo } from '../../credentials'
 
@@ -21,7 +21,6 @@ export class RequestedAttribute {
   public credentialId!: string
 
   @Expose({ name: 'timestamp' })
-  @IsPositive()
   @IsInt()
   @IsOptional()
   public timestamp?: number

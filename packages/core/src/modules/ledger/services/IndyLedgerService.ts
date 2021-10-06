@@ -3,14 +3,14 @@ import type { AcceptanceMechanisms, AuthorAgreement, IndyPool } from '../IndyPoo
 import type {
   default as Indy,
   CredDef,
-  LedgerRequest,
-  Schema,
   LedgerReadReplyResponse,
+  LedgerRequest,
   LedgerWriteReplyResponse,
   NymRole,
+  Schema,
 } from 'indy-sdk'
 
-import { scoped, Lifecycle } from 'tsyringe'
+import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { IndySdkError } from '../../../error/IndySdkError'

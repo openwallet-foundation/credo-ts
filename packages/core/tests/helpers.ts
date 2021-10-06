@@ -237,6 +237,7 @@ export function getMockConnection({
       }),
     ],
   }),
+  multiUseInvitation = false,
 }: Partial<ConnectionRecordProps> = {}) {
   return new ConnectionRecord({
     did,
@@ -251,6 +252,7 @@ export function getMockConnection({
     verkey,
     invitation,
     theirLabel,
+    multiUseInvitation,
   })
 }
 
