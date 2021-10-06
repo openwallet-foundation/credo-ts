@@ -63,7 +63,7 @@ export class PersistedLruCache<CacheValue> {
   private async persistCache() {
     const cache = await this.getCache()
 
-    await this.cacheRepository.save(
+    await this.cacheRepository.update(
       new CacheRecord({
         entries: cache.toJSON(),
         id: this.cacheId,

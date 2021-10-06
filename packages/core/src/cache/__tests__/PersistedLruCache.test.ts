@@ -36,10 +36,10 @@ describe('PersistedLruCache', () => {
   })
 
   it('should set the value in the persisted record', async () => {
-    const saveMock = mockFunction(cacheRepository.save).mockResolvedValue()
+    const updateMock = mockFunction(cacheRepository.update).mockResolvedValue()
 
     await cache.set('test', 'somevalue')
-    const [, [cacheRecord]] = saveMock.mock.calls
+    const [[cacheRecord]] = updateMock.mock.calls
 
     expect(cacheRecord.entries.length).toBe(1)
     expect(cacheRecord.entries[0].key).toBe('test')

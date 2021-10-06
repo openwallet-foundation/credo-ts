@@ -235,7 +235,7 @@ describe('InyLedgerService', () => {
         })
       )
 
-      const spy = mockFunction(cacheRepository.save).mockResolvedValue()
+      const spy = mockFunction(cacheRepository.update).mockResolvedValue()
 
       poolService = new IndyPoolService(config, cacheRepository)
       poolService.pools.forEach((pool, index) => {
