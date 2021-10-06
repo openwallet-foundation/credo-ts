@@ -1,14 +1,20 @@
 import type { IndyPoolConfig } from '../IndyPool'
+import type { CachedDidResponse } from '../services/IndyPoolService'
 
-import { IndyPoolService } from '..'
-import { getAgentConfig } from '../../../../tests/helpers'
+import { getAgentConfig, mockFunction } from '../../../../tests/helpers'
+import { CacheRecord } from '../../../cache'
+import { CacheRepository } from '../../../cache/CacheRepository'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { LedgerError } from '../error/LedgerError'
 import { LedgerNotConfiguredError } from '../error/LedgerNotConfiguredError'
 import { LedgerNotFoundError } from '../error/LedgerNotFoundError'
+import { DID_POOL_CACHE_ID, IndyPoolService } from '../services/IndyPoolService'
 
 import { getDidResponsesForDid } from './didResponses'
+
+jest.mock('../../../cache/CacheRepository')
+const CacheRepositoryMock = CacheRepository as jest.Mock<CacheRepository>
 
 const pools: IndyPoolConfig[] = [
   {
@@ -44,6 +50,7 @@ describe('InyLedgerService', () => {
   })
   let wallet: IndyWallet
   let poolService: IndyPoolService
+  let cacheRepository: CacheRepository
 
   beforeAll(async () => {
     wallet = new IndyWallet(config)
@@ -56,7 +63,10 @@ describe('InyLedgerService', () => {
   })
 
   beforeEach(async () => {
-    poolService = new IndyPoolService(config)
+    cacheRepository = new CacheRepositoryMock()
+    mockFunction(cacheRepository.findById).mockResolvedValue(null)
+
+    poolService = new IndyPoolService(config, cacheRepository)
   })
 
   describe('ledgerWritePool', () => {
@@ -66,7 +76,7 @@ describe('InyLedgerService', () => {
 
     it('should throw a LedgerNotConfiguredError error if no pools are configured on the agent', async () => {
       const config = getAgentConfig('IndyLedgerServiceTest', { indyLedgers: [] })
-      poolService = new IndyPoolService(config)
+      poolService = new IndyPoolService(config, cacheRepository)
 
       expect(() => poolService.ledgerWritePool).toThrow(LedgerNotConfiguredError)
     })
@@ -75,7 +85,7 @@ describe('InyLedgerService', () => {
   describe('getPoolForDid', () => {
     it('should throw a LedgerNotConfiguredError error if no pools are configured on the agent', async () => {
       const config = getAgentConfig('IndyLedgerServiceTest', { indyLedgers: [] })
-      poolService = new IndyPoolService(config)
+      poolService = new IndyPoolService(config, cacheRepository)
 
       expect(poolService.getPoolForDid('some-did')).rejects.toThrow(LedgerNotConfiguredError)
     })
@@ -174,6 +184,80 @@ describe('InyLedgerService', () => {
       const { pool } = await poolService.getPoolForDid(did)
 
       expect(pool.config.id).toBe('sovrinBuilder')
+    })
+
+    it('should return the pool from the cache if the did was found in the cache', async () => {
+      const did = 'HEi9QViXNThGQaDsQ3ptcw'
+
+      const expectedPool = pools[3]
+
+      const didResponse: CachedDidResponse = {
+        nymResponse: {
+          did,
+          role: 'ENDORSER',
+          verkey: '~M9kv2Ez61cur7X39DXWh8W',
+        },
+        poolId: expectedPool.id,
+      }
+
+      const cachedEntries = [
+        {
+          key: did,
+          value: didResponse,
+        },
+      ]
+
+      mockFunction(cacheRepository.findById).mockResolvedValue(
+        new CacheRecord({
+          id: DID_POOL_CACHE_ID,
+          entries: cachedEntries,
+        })
+      )
+
+      poolService = new IndyPoolService(config, cacheRepository)
+
+      const { pool } = await poolService.getPoolForDid(did)
+
+      expect(pool.config.id).toBe(pool.id)
+    })
+
+    it('should set the poolId in the cache if the did was not found in the cache, but resolved later on', async () => {
+      const did = 'HEi9QViXNThGQaDsQ3ptcw'
+      // Found on one ledger
+      const responses = getDidResponsesForDid(did, pools, {
+        sovrinBuilder: '~M9kv2Ez61cur7X39DXWh8W',
+      })
+
+      mockFunction(cacheRepository.findById).mockResolvedValue(
+        new CacheRecord({
+          id: DID_POOL_CACHE_ID,
+          entries: [],
+        })
+      )
+
+      const spy = mockFunction(cacheRepository.save).mockResolvedValue()
+
+      poolService = new IndyPoolService(config, cacheRepository)
+      poolService.pools.forEach((pool, index) => {
+        const spy = jest.spyOn(pool, 'submitReadRequest')
+        spy.mockImplementationOnce(responses[index])
+      })
+
+      const { pool } = await poolService.getPoolForDid(did)
+
+      expect(pool.config.id).toBe('sovrinBuilder')
+
+      const cacheRecord = spy.mock.calls[0][0]
+      expect(cacheRecord.entries.length).toBe(1)
+      expect(cacheRecord.entries[0].key).toBe(did)
+      expect(cacheRecord.entries[0].value).toEqual({
+        nymResponse: {
+          did,
+          verkey: '~M9kv2Ez61cur7X39DXWh8W',
+          role: '0',
+        },
+        poolId: 'sovrinBuilder',
+      })
     })
   })
 })

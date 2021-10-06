@@ -4,6 +4,7 @@ import type * as Indy from 'indy-sdk'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
+import { PersistedLruCache, CacheRepository } from '../../../cache'
 import { IndySdkError } from '../../../error/IndySdkError'
 import { isSelfCertifiedDid } from '../../../utils/did'
 import { isIndyError } from '../../../utils/indyError'
@@ -13,17 +14,26 @@ import { LedgerError } from '../error/LedgerError'
 import { LedgerNotConfiguredError } from '../error/LedgerNotConfiguredError'
 import { LedgerNotFoundError } from '../error/LedgerNotFoundError'
 
+export const DID_POOL_CACHE_ID = 'DID_POOL_CACHE'
+export const DID_POOL_CACHE_LIMIT = 500
+export interface CachedDidResponse {
+  nymResponse: Indy.GetNymResponse
+  poolId: string
+}
+
 @scoped(Lifecycle.ContainerScoped)
 export class IndyPoolService {
   public readonly pools: IndyPool[]
   private logger: Logger
   private indy: typeof Indy
+  private didCache: PersistedLruCache<CachedDidResponse>
 
-  // TODO: caching
-  public constructor(agentConfig: AgentConfig) {
+  public constructor(agentConfig: AgentConfig, cacheRepository: CacheRepository) {
     this.pools = agentConfig.indyLedgers.map((poolConfig) => new IndyPool(agentConfig, poolConfig))
     this.logger = agentConfig.logger
     this.indy = agentConfig.agentDependencies.indy
+
+    this.didCache = new PersistedLruCache(DID_POOL_CACHE_ID, DID_POOL_CACHE_LIMIT, cacheRepository)
   }
 
   /**
@@ -51,6 +61,15 @@ export class IndyPoolService {
       throw new LedgerNotConfiguredError(
         "No indy ledgers configured. Provide at least one pool configuration in the 'indyLedgers' agent configuration"
       )
+    }
+
+    const cachedNymResponse = await this.didCache.get(did)
+    const pool = this.pools.find((pool) => pool.id === cachedNymResponse?.poolId)
+
+    // If we have the nym response with associated pool in the cache, we'll use that
+    if (cachedNymResponse && pool) {
+      this.logger.trace(`Found ledger id '${pool.id}' for did '${did}' in cache`)
+      return { did: cachedNymResponse.nymResponse, pool }
     }
 
     const { successful, rejected } = await this.getSettledDidResponsesFromPools(did, pools)
@@ -89,8 +108,14 @@ export class IndyPoolService {
     // non self-certifying DID on another ledger?
     const remaining = selfCertifying.length >= 1 ? selfCertifying : productionOrNonProduction
 
-    // Return the first pool in the remaining array.
-    return { pool: remaining[0].value.pool, did: remaining[0].value.did }
+    // Use first value in the remaining array as the 'chosen' did response
+    const value = remaining[0].value
+
+    await this.didCache.set(did, {
+      nymResponse: value.did,
+      poolId: value.pool.id,
+    })
+    return { pool: value.pool, did: value.did }
   }
 
   private async getSettledDidResponsesFromPools(did: string, pools: IndyPool[]) {
