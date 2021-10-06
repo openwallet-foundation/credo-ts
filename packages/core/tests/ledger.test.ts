@@ -153,6 +153,7 @@ describe('ledger', () => {
       ],
     })
     const agent = new Agent(config, dependencies)
+    await agent.initialize()
 
     if (!faberAgent.publicDid?.did) {
       throw new Error('No public did')
