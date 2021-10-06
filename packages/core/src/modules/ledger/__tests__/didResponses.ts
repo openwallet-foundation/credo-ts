@@ -6,11 +6,11 @@ import type * as Indy from 'indy-sdk'
 // eslint-disable-next-line import/no-extraneous-dependencies
 import IndyError from 'indy-sdk/src/IndyError'
 
-export function getDidResponse({ did, txnTime, verkey }: { did: string; txnTime: number; verkey: string }) {
+export function getDidResponse({ did, verkey }: { did: string; verkey: string }) {
   const response: Indy.LedgerReadReplyResponse = {
     op: 'REPLY',
     result: {
-      txnTime: txnTime,
+      txnTime: 1632680963,
       reqId: 1632681194706196000,
       state_proof: {
         multi_signature: {
@@ -19,7 +19,7 @@ export function getDidResponse({ did, txnTime, verkey }: { did: string; txnTime:
             state_root_hash: 'AqMNuzJHeHduhggd8URobGyc1W89oGEjmohRXkB66JZo',
             ledger_id: 1,
             pool_state_root_hash: 'NCGqbfRWDWtLB2bDuL6TC5BhrRdQMc5MyKdXQqXii44',
-            timestamp: txnTime,
+            timestamp: 1632680963,
             txn_root_hash: 'AxqfyyDFuY74kiXcfvkYCWCVrHsrQutKaoi3ao4Vp8K7',
           },
           signature:
@@ -32,7 +32,7 @@ export function getDidResponse({ did, txnTime, verkey }: { did: string; txnTime:
       seqNo: 11,
       identifier: 'LibindyDid111111111111',
       dest: did,
-      data: `{"dest":"${did}","identifier":"V4SGRU86Z58d6TV7PBUe6f","role":"0","seqNo":11,"txnTime":${txnTime},"verkey":"${verkey}"}`,
+      data: `{"dest":"${did}","identifier":"V4SGRU86Z58d6TV7PBUe6f","role":"0","seqNo":11,"txnTime":1632680963,"verkey":"${verkey}"}`,
       type: '105',
     },
   }
@@ -43,13 +43,13 @@ export function getDidResponse({ did, txnTime, verkey }: { did: string; txnTime:
 export function getDidResponsesForDid(
   did: string,
   pools: IndyPoolConfig[],
-  responses: { [key: string]: { txnTime: number; verkey: string } | undefined }
+  responses: { [key: string]: string | undefined }
 ) {
   return pools.map((pool) => {
-    const response = responses[pool.id]
+    const verkey = responses[pool.id]
 
-    if (response) {
-      return () => Promise.resolve(getDidResponse({ did, verkey: response.verkey, txnTime: response.txnTime }))
+    if (verkey) {
+      return () => Promise.resolve(getDidResponse({ did, verkey }))
     }
 
     // LedgerNotFound

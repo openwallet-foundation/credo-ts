@@ -21,7 +21,6 @@ const pools: IndyPoolConfig[] = [
     isProduction: false,
     genesisTransactions: 'xxx',
   },
-
   {
     id: 'sovrinStaging',
     isProduction: false,
@@ -81,7 +80,7 @@ describe('InyLedgerService', () => {
       expect(poolService.getPoolForDid('some-did')).rejects.toThrow(LedgerNotConfiguredError)
     })
 
-    it('should throw a LedgerError if one of the ledger requests throws an error other than NotFoundError', async () => {
+    it('should throw a LedgerError if all ledger requests throw an error other than NotFoundError', async () => {
       const did = 'Y5bj4SjCiTM9PgeheKAiXx'
 
       poolService.pools.forEach((pool) => {
@@ -109,10 +108,7 @@ describe('InyLedgerService', () => {
       const did = 'TL1EaPFCZ8Si5aUrqScBDt'
       // Only found on one ledger
       const responses = getDidResponsesForDid(did, pools, {
-        sovrinMain: {
-          txnTime: 1632680963,
-          verkey: '~43X4NhAFqREffK7eWdKgFH',
-        },
+        sovrinMain: '~43X4NhAFqREffK7eWdKgFH',
       })
 
       poolService.pools.forEach((pool, index) => {
@@ -129,14 +125,8 @@ describe('InyLedgerService', () => {
       const did = 'V6ty6ttM3EjuCtosH6sGtW'
       // Found on one production and one non production ledger
       const responses = getDidResponsesForDid(did, pools, {
-        indicioMain: {
-          txnTime: 1632680963,
-          verkey: '~43X4NhAFqREffK7eWdKgFH',
-        },
-        sovrinBuilder: {
-          txnTime: 1632680963,
-          verkey: '~43X4NhAFqREffK7eWdKgFH',
-        },
+        indicioMain: '~43X4NhAFqREffK7eWdKgFH',
+        sovrinBuilder: '~43X4NhAFqREffK7eWdKgFH',
       })
 
       poolService.pools.forEach((pool, index) => {
@@ -153,14 +143,8 @@ describe('InyLedgerService', () => {
       const did = 'VsKV7grR1BUE29mG2Fm2kX'
       // Found on two production ledgers. Sovrin is self certified
       const responses = getDidResponsesForDid(did, pools, {
-        sovrinMain: {
-          txnTime: 1632680963,
-          verkey: '~43X4NhAFqREffK7eWdKgFH',
-        },
-        indicioMain: {
-          txnTime: 1632680963,
-          verkey: 'kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn',
-        },
+        sovrinMain: '~43X4NhAFqREffK7eWdKgFH',
+        indicioMain: 'kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn',
       })
 
       poolService.pools.forEach((pool, index) => {
@@ -173,43 +157,13 @@ describe('InyLedgerService', () => {
       expect(pool.config.id).toBe('sovrinMain')
     })
 
-    it('should return the pool with the did with the earlier txnTime if the did was found on two production ledgers where both DIDs are self certified', async () => {
-      const did = 'JHVT5Zv86TrJUJYysET4ij'
-      // Found on two production ledgers. Indicio txnTime is earlier than
-      // Sovrin txnTime
-      const responses = getDidResponsesForDid(did, pools, {
-        sovrinMain: {
-          txnTime: 1632680963,
-          verkey: '~QTQYRnDeYdbo8NDEkWC2Bt',
-        },
-        indicioMain: {
-          txnTime: 1632680000,
-          verkey: '~QTQYRnDeYdbo8NDEkWC2Bt',
-        },
-      })
-
-      poolService.pools.forEach((pool, index) => {
-        const spy = jest.spyOn(pool, 'submitReadRequest')
-        spy.mockImplementationOnce(responses[index])
-      })
-
-      const { pool } = await poolService.getPoolForDid(did)
-
-      expect(pool.config.id).toBe('indicioMain')
-    })
-
-    it('should return the pool with the self certified did if the did was found on two non production ledgers where one did is self certified', async () => {
+    it('should return the first pool with a self certified did if the did was found on three non production ledgers where two DIDs are self certified', async () => {
       const did = 'HEi9QViXNThGQaDsQ3ptcw'
       // Found on two non production ledgers. Sovrin is self certified
       const responses = getDidResponsesForDid(did, pools, {
-        sovrinBuilder: {
-          txnTime: 1632680963,
-          verkey: '~M9kv2Ez61cur7X39DXWh8W',
-        },
-        bcovrinTest: {
-          txnTime: 1632680963,
-          verkey: '3SeuRm3uYuQDYmHeuMLu1xNHozNTtzS3kbZRFMMCWrX4',
-        },
+        sovrinBuilder: '~M9kv2Ez61cur7X39DXWh8W',
+        sovrinStaging: '~M9kv2Ez61cur7X39DXWh8W',
+        bcovrinTest: '3SeuRm3uYuQDYmHeuMLu1xNHozNTtzS3kbZRFMMCWrX4',
       })
 
       poolService.pools.forEach((pool, index) => {

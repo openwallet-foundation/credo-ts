@@ -55,20 +55,20 @@ export class IndyPoolService {
 
     const { successful, rejected } = await this.getSettledDidResponsesFromPools(did, pools)
 
-    // This means there is a rejected response besides not found.
-    // For now we're really strict, and if one request fails, the whole
-    // request will fail. We may loosen this is the future if we see fit
-    const rejectedOtherThanNotFound = rejected.filter((e) => !(e.reason instanceof LedgerNotFoundError))
-    if (rejectedOtherThanNotFound.length > 0) {
+    if (successful.length === 0) {
+      const allNotFound = rejected.every((e) => e.reason instanceof LedgerNotFoundError)
+      const rejectedOtherThanNotFound = rejected.filter((e) => !(e.reason instanceof LedgerNotFoundError))
+
+      // All ledgers returned response that the did was not found
+      if (allNotFound) {
+        throw new LedgerNotFoundError(`Did '${did}' not found on any of the ledgers (total ${this.pools.length}).`)
+      }
+
+      // one or more of the ledgers returned an unknown error
       throw new LedgerError(
         `Unknown error retrieving did '${did}' from '${rejectedOtherThanNotFound.length}' of '${pools.length}' ledgers`,
         { cause: rejectedOtherThanNotFound[0].reason }
       )
-    }
-
-    // If the successful is empty at this stage, it means all ledgers did not have the did
-    if (successful.length === 0) {
-      throw new LedgerNotFoundError(`Did '${did}' not found on any of the ledgers (total ${this.pools.length}).`)
     }
 
     // Split between production and nonProduction ledgers. If there is at least one
@@ -76,30 +76,21 @@ export class IndyPoolService {
     // otherwise we only keep the non production ledgers.
     const production = successful.filter((s) => s.value.pool.config.isProduction)
     const nonProduction = successful.filter((s) => !s.value.pool.config.isProduction)
-    const remaining = production.length >= 1 ? production : nonProduction
+    const productionOrNonProduction = production.length >= 1 ? production : nonProduction
 
-    // If there's only one successful response in this group (production / nonProduction), return it
-    if (remaining.length === 1) {
-      return { pool: remaining[0].value.pool, did: remaining[0].value.did }
-    }
-
-    // If there are multiple successful responses in this group check only one of them is
-    // self-certifying. Return if this is the case
-    const selfCertifying = remaining.filter((response) =>
+    // If there are self certified DIDs we always prefer it over non self certified DIDs
+    const selfCertifying = productionOrNonProduction.filter((response) =>
       isSelfCertifiedDid(response.value.did.did, response.value.did.verkey)
     )
-    if (selfCertifying.length === 1) {
-      return { pool: selfCertifying[0].value.pool, did: selfCertifying[0].value.did }
-    }
 
-    // FIXME: ACA-Py doc mentions txnTime, but doc from Stephen mentions that it is not
-    // possible to get when the did was created (it is updated when the did is rotated probably)
-    const sortedByTxnTime = [...remaining].sort(
-      (first, second) =>
-        (first.value.response as Indy.LedgerReadReplyResponse).result.txnTime -
-        (second.value.response as Indy.LedgerReadReplyResponse).result.txnTime
-    )
-    return { pool: sortedByTxnTime[0].value.pool, did: sortedByTxnTime[0].value.did }
+    // If there are any self certified DIDs, use that as the remaining options for the pool
+    // Otherwise take the production/non-production array as the remaining list of options
+    // FIXME: shouldn't we also prefer a self-certifying DID on a non-production ledger over a
+    // non self-certifying DID on another ledger?
+    const remaining = selfCertifying.length >= 1 ? selfCertifying : productionOrNonProduction
+
+    // Return the first pool in the remaining array.
+    return { pool: remaining[0].value.pool, did: remaining[0].value.did }
   }
 
   private async getSettledDidResponsesFromPools(did: string, pools: IndyPool[]) {
