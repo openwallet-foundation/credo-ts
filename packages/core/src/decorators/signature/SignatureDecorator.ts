@@ -1,7 +1,8 @@
-import { Expose } from 'class-transformer'
+import { Expose, Transform } from 'class-transformer'
 import { IsString, Matches } from 'class-validator'
 
 import { MessageTypeRegExp } from '../../agent/BaseMessage'
+import { replaceLegacyDidSovPrefix } from '../../utils/messageType'
 
 /**
  * Represents `[field]~sig` decorator
@@ -18,6 +19,9 @@ export class SignatureDecorator {
   }
 
   @Expose({ name: '@type' })
+  @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
+    toClassOnly: true,
+  })
   @Matches(MessageTypeRegExp)
   public signatureType!: string
 
