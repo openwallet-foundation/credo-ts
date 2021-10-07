@@ -2,8 +2,7 @@ import { Expose, Transform, Type } from 'class-transformer'
 import { Equals, IsInstance, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-
-import { replaceLegacyDidSovPrefix } from 'packages/core/src/utils/messageType'
+import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 
 interface CredentialPreviewAttributeOptions {
   name: string

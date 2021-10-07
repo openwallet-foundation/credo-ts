@@ -12,9 +12,8 @@ import {
 } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 import { PredicateType } from '../models/PredicateType'
-
-import { replaceLegacyDidSovPrefix } from 'packages/core/src/utils/messageType'
 
 export interface PresentationPreviewAttributeOptions {
   name: string
