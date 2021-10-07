@@ -1,4 +1,4 @@
-import { Expose, Type } from 'class-transformer'
+import { Expose, Transform, Type } from 'class-transformer'
 import {
   Equals,
   IsEnum,
@@ -13,6 +13,8 @@ import {
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { PredicateType } from '../models/PredicateType'
+
+import { replaceLegacyDidSovPrefix } from 'packages/core/src/utils/messageType'
 
 export interface PresentationPreviewAttributeOptions {
   name: string
@@ -115,6 +117,9 @@ export class PresentationPreview {
 
   @Expose({ name: '@type' })
   @Equals(PresentationPreview.type)
+  @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
+    toClassOnly: true,
+  })
   public readonly type = PresentationPreview.type
   public static readonly type = 'https://didcomm.org/present-proof/1.0/presentation-preview'
 

@@ -1,7 +1,9 @@
-import { Expose, Type } from 'class-transformer'
+import { Expose, Transform, Type } from 'class-transformer'
 import { Equals, IsInstance, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+
+import { replaceLegacyDidSovPrefix } from 'packages/core/src/utils/messageType'
 
 interface CredentialPreviewAttributeOptions {
   name: string
@@ -54,6 +56,9 @@ export class CredentialPreview {
 
   @Expose({ name: '@type' })
   @Equals(CredentialPreview.type)
+  @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
+    toClassOnly: true,
+  })
   public readonly type = CredentialPreview.type
   public static readonly type = 'https://didcomm.org/issue-credential/1.0/credential-preview'
 
