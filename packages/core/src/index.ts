@@ -3,6 +3,7 @@ import 'reflect-metadata'
 
 export { Agent } from './agent/Agent'
 export { AgentConfig } from './agent/AgentConfig'
+export { AgentMessage } from './agent/AgentMessage'
 export type { AgentDependencies } from './agent/AgentDependencies'
 export type { InitConfig, OutboundPackage, WireMessage } from './types'
 export { DidCommMimeType } from './types'
