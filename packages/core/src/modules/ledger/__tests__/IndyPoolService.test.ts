@@ -131,12 +131,31 @@ describe('InyLedgerService', () => {
       expect(pool.config.id).toBe('sovrinMain')
     })
 
-    it('should return the production pool if the did was found on one production and one non production ledger', async () => {
+    it('should return the first pool with a self certifying DID if at least one did is self certifying ', async () => {
       const did = 'V6ty6ttM3EjuCtosH6sGtW'
       // Found on one production and one non production ledger
       const responses = getDidResponsesForDid(did, pools, {
         indicioMain: '~43X4NhAFqREffK7eWdKgFH',
+        bcovrinTest: '43X4NhAFqREffK7eWdKgFH43X4NhAFqREffK7eWdKgFH',
         sovrinBuilder: '~43X4NhAFqREffK7eWdKgFH',
+      })
+
+      poolService.pools.forEach((pool, index) => {
+        const spy = jest.spyOn(pool, 'submitReadRequest')
+        spy.mockImplementationOnce(responses[index])
+      })
+
+      const { pool } = await poolService.getPoolForDid(did)
+
+      expect(pool.config.id).toBe('sovrinBuilder')
+    })
+
+    it('should return the production pool if the did was found on one production and one non production ledger and both DIDs are not self certifying', async () => {
+      const did = 'V6ty6ttM3EjuCtosH6sGtW'
+      // Found on one production and one non production ledger
+      const responses = getDidResponsesForDid(did, pools, {
+        indicioMain: '43X4NhAFqREffK7eWdKgFH43X4NhAFqREffK7eWdKgFH',
+        sovrinBuilder: '43X4NhAFqREffK7eWdKgFH43X4NhAFqREffK7eWdKgFH',
       })
 
       poolService.pools.forEach((pool, index) => {

@@ -90,26 +90,25 @@ export class IndyPoolService {
       )
     }
 
-    // Split between production and nonProduction ledgers. If there is at least one
-    // successful response from a production ledger, only keep production ledgers
-    // otherwise we only keep the non production ledgers.
-    const production = successful.filter((s) => s.value.pool.config.isProduction)
-    const nonProduction = successful.filter((s) => !s.value.pool.config.isProduction)
-    const productionOrNonProduction = production.length >= 1 ? production : nonProduction
-
     // If there are self certified DIDs we always prefer it over non self certified DIDs
-    const selfCertifying = productionOrNonProduction.filter((response) =>
+    // We take the first self certifying DID as we take the order in the
+    // indyLedgers config as the order of preference of ledgers
+    let value = successful.find((response) =>
       isSelfCertifiedDid(response.value.did.did, response.value.did.verkey)
-    )
+    )?.value
 
-    // If there are any self certified DIDs, use that as the remaining options for the pool
-    // Otherwise take the production/non-production array as the remaining list of options
-    // FIXME: shouldn't we also prefer a self-certifying DID on a non-production ledger over a
-    // non self-certifying DID on another ledger?
-    const remaining = selfCertifying.length >= 1 ? selfCertifying : productionOrNonProduction
+    if (!value) {
+      // Split between production and nonProduction ledgers. If there is at least one
+      // successful response from a production ledger, only keep production ledgers
+      // otherwise we only keep the non production ledgers.
+      const production = successful.filter((s) => s.value.pool.config.isProduction)
+      const nonProduction = successful.filter((s) => !s.value.pool.config.isProduction)
+      const productionOrNonProduction = production.length >= 1 ? production : nonProduction
 
-    // Use first value in the remaining array as the 'chosen' did response
-    const value = remaining[0].value
+      // We take the first value as we take the order in the indyLedgers config as
+      // the order of preference of ledgers
+      value = productionOrNonProduction[0].value
+    }
 
     await this.didCache.set(did, {
       nymResponse: value.did,
