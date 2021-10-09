@@ -44,7 +44,7 @@ const pools: IndyPoolConfig[] = [
   },
 ]
 
-describe('InyLedgerService', () => {
+describe('IndyLedgerService', () => {
   const config = getAgentConfig('IndyLedgerServiceTest', {
     indyLedgers: pools,
   })

@@ -90,9 +90,11 @@ const BCOVRIN_TEST_GENESIS = `{"reqSignature":{},"txn":{"data":{"data":{"alias":
 
 const agentConfig = {
   indyLedgers: [
-    'id': 'BCovrin Test',
-    genesisTransactions: BCOVRIN_TEST_GENESIS,
-    isProduction: false
+    {
+      id: 'BCovrin Test',
+      genesisTransactions: BCOVRIN_TEST_GENESIS,
+      isProduction: false,
+    },
   ],
 }
 ```
@@ -129,9 +131,11 @@ const agentConfig: InitConfig = {
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
   autoAcceptProofs: AutoAcceptProof.ContentApproved,
   indyLedgers: [
-    id: 'BCovrin Test',
-    genesisTransactions: BCOVRIN_TEST_GENESIS,
-    isProduction: false
+    {
+      id: 'BCovrin Test',
+      genesisTransactions: BCOVRIN_TEST_GENESIS,
+      isProduction: false,
+    },
   ],
   logger: new ConsoleLogger(LogLevel.debug),
 }
