@@ -159,4 +159,60 @@ describe('Present Proof', () => {
       state: ProofState.Done,
     })
   })
+
+  test('Faber starts with a proof request to Alice, without attributes', async () => {
+    testLogger.test('Faber sends presentation request to Alice')
+
+    const predicates = {
+      age: new ProofPredicateInfo({
+        name: 'age',
+        predicateType: PredicateType.GreaterThanOrEqualTo,
+        predicateValue: 50,
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    let faberProofRecord = await faberAgent.proofs.requestProof(faberConnection.id, {
+      name: 'test-proof-request',
+      requestedPredicates: predicates,
+    })
+
+    testLogger.test('Alice waits for presentation request from Faber')
+    let aliceProofRecord = await waitForProofRecord(aliceAgent, {
+      threadId: faberProofRecord.threadId,
+      state: ProofState.RequestReceived,
+    })
+
+    testLogger.test('Alice accepts presentation request from Faber')
+    const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest
+    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      indyProofRequest!,
+      presentationPreview
+    )
+    const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
+    await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
+
+    testLogger.test('Faber waits for presentation from Alice')
+    faberProofRecord = await waitForProofRecord(faberAgent, {
+      threadId: aliceProofRecord.threadId,
+      state: ProofState.PresentationReceived,
+    })
+
+    // assert presentation is valid
+    expect(faberProofRecord.isVerified).toBe(true)
+
+    // Faber accepts presentation
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
+
+    // Alice waits till it receives presentation ack
+    aliceProofRecord = await waitForProofRecord(aliceAgent, {
+      threadId: aliceProofRecord.threadId,
+      state: ProofState.Done,
+    })
+  })
 })

@@ -911,7 +911,13 @@ export class ProofService {
       ...Object.values(requestedCredentials.requestedAttributes),
       ...Object.values(requestedCredentials.requestedPredicates),
     ]
-      .filter((c) => c !== undefined && c !== null)
+      .filter((c) => {
+        const isDefined = c !== undefined && c !== null
+        if (!isDefined) {
+          this.logger.warn('Received an undefined attribute or predicate')
+        }
+        return isDefined
+      })
       .map((c) => c.credentialInfo)
 
     const schemas = await this.getSchemas(new Set(credentialObjects.map((c) => c.schemaId)))
