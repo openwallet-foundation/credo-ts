@@ -228,7 +228,7 @@ The agent currently supports the following configuration options. Fields marked 
 - `publicDidSeed`: The seed to use for initializing the public did of the agent. This does not register the DID on the ledger.
 - `genesisPath`: The path to the genesis file to use for connecting to an Indy ledger.
 - `genesisTransactions`: String of genesis transactions to use for connecting to an Indy ledger.
-- `indyLedgers`: The indy ledgers to connect to. This is an array of objects with the following properties. Either `genesisPath` or `genesisTransactions` must be set, but not both.
+- `indyLedgers`: The indy ledgers to connect to. This is an array of objects with the following properties. Either `genesisPath` or `genesisTransactions` must be set, but not both. See [4. Ledger](./4-ledger.md) for more information.
   - `id`\*: The id (or name) of the ledger, also used as the pool name
   - `isProduction`\*: Whether the ledger is a production ledger. This is used by the pool selector algorithm to know which ledger to use for certain interactions (i.e. prefer production ledgers over non-production ledgers)
   - `genesisPath`: The path to the genesis file to use for connecting to an Indy ledger.
