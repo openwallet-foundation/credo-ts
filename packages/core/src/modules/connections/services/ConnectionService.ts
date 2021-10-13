@@ -318,7 +318,7 @@ export class ConnectionService {
     const invitationKey = connectionRecord.getTags().invitationKey
     if (signerVerkey !== invitationKey) {
       throw new AriesFrameworkError(
-        'Connection object in connection response message is not signed with same key as recipient key in invitation'
+        `Connection object in connection response message is not signed with same key as recipient key in invitation expected='${invitationKey}' received='${signerVerkey}'`
       )
     }
 
