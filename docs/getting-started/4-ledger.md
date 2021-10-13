@@ -13,7 +13,7 @@ Ledgers to be used by the agent can be specified in the agent configuration usin
 - `genesisTransactions`: String of genesis transactions to use for connecting to an Indy ledger.
 
 ```ts
-const config = {
+const agentConfig: InitConfig = {
   indyLedgers: [
     {
       id: 'sovrin-main',
