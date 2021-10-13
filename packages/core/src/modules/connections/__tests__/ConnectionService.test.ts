@@ -649,7 +649,9 @@ describe('ConnectionService', () => {
       })
 
       return expect(connectionService.processResponse(messageContext)).rejects.toThrowError(
-        'Connection object in connection response message is not signed with same key as recipient key in invitation'
+        new RegExp(
+          'Connection object in connection response message is not signed with same key as recipient key in invitation'
+        )
       )
     })
 
