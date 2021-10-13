@@ -2,84 +2,153 @@
 
 <p style="text-align: center">⚠ Electron has not been tested in a production build, be cautious of errors ⚠</p>
 
-To start using Electron, the same setup as NodeJS is required. Please follow the [NodeJS Prerequisites](./setup-nodejs.md#Prerequisites).
+> If you run into any issues regarding this setup or using the agent afterwards, please open an issue [here](https://github.com/hyperledger/aries-framework-javascript/issues/new).
 
-> At this point aries-framework and the indy-sdk are installed in your Electron project.
+To start using Electron, the prerequisites of NodeJS are required. Please follow the [NodeJS Prerequisites](./setup-nodejs.md#Prerequisites).
+
+> At this point it is assumed that you have a working electron project without Indy or Aries.
+
+To add the aries framework and indy to your project execute the following:
+
+```sh
+yarn add @aries-framework/core @aries-framework/node indy-sdk
+
+# Additional for typescript
+yarn add --dev @types/indy-sdk
+```
 
 Because Electron is like a browser-environment, some additional work has to be done to get it working. The indy-sdk is used to make calls to `libindy`. Since `libindy` is not build for browser environments, a binding for the indy-sdk has to be created from the browser to the NodeJS environment in the `public/preload.js` file.
 
 ```ts
-// public/Preload.js
+// public/preload.js
 
 const { contextBridge } = require('electron')
 const indy = require('indy-sdk')
-const NodeFileSystem = require('aries-framework/build/storage/fs/NodeFileSystem').NodeFileSystem
+const NodeFileSystem = require('@aries-framework/node').agentDependencies.FileSystem
 
-// fs is not available in the browser, so we initialize it in the main world
 const fs = new NodeFileSystem()
 
-// This exposes the indy sdk to the main world over a bridge
+// Exposes indy to the main world
 contextBridge.exposeInMainWorld('indy', indy)
 
-// This exposes the NodeFileSystem to the main world over a bridge
+// Exposes the filesystem, created by @aries-framework/node, to the main world
 contextBridge.exposeInMainWorld('fs', {
   write: fs.write,
   read: fs.read,
-  exists: fs.exists,
   basePath: fs.basePath,
+  exists: fs.exists,
+})
+```
+
+This custom `preload.js` would also mean a slightly different `main.js`. It has to be stated that the exact security concerns of exposing this functionality to the `mainWorld` have not been researched extensively yet.
+
+```ts
+// public/main.js
+
+const electron = require('electron')
+const path = require('path')
+const isDev = require('electron-is-dev')
+
+const app = electron.app
+const BrowserWindow = electron.BrowserWindow
+let mainWindow
+
+const createWindow = () => {
+  mainWindow = new BrowserWindow({
+    width: 900,
+    height: 680,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+    },
+  })
+  mainWindow.loadURL(isDev ? 'http://localhost:3000' : `file://${path.join(__dirname, '../build/index.html')}`)
+  mainWindow.on('closed', () => (mainWindow = null))
+}
+
+app.allowRendererProcessReuse = false
+
+app.on('ready', () => {
+  createWindow()
+})
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+
+app.on('activate', () => {
+  if (mainWindow === null) {
+    createWindow()
+  }
 })
 ```
 
 Now that indy is exposed in the main world, we can start using the framework on the browser side. Initializing the Agent requires some Electron specific setup, mainly for the Indy SDK and File System. Below is a sample config, see the [README](../README.md#getting-started) for an overview of getting started guides. If you want to jump right in, check the [Getting Started: Agent](./getting-started/0-agent.md) guide.
 
 ```ts
-import { Agent } from 'aries-framework'
-import type Indy from 'indy-sdk'
+import { Agent, AriesFrameworkError, ConsoleLogger, FileSystem, IndySdkError, LogLevel } from '@aries-framework/core'
+import fetch from 'electron-fetch'
+import events from 'events'
+import Indy from 'indy-sdk'
+import nodeFetch from 'node-fetch'
+import ws from 'ws'
 
-// Here we add indy and fs to our window (on window we can access the exposed libraries)
-declare global {
-  interface Window {
-    indy: typeof Indy
-    fs: FileSystem
-  }
+// agentDependencies in the config requires filesystem to a class instance
+class ElectronFileSystem implements FileSystem {
+  basePath = window.fs.basePath
+  exists = window.fs.exists
+  read = window.fs.read
+  write = window.fs.write
 }
 
-// This function adds error-handling with the indy-sdk
-function wrapIndyCallWithErrorHandling(func: any) {
+const wrapIndyCallWithErrorHandling = (func: any) => {
   return async (...args: any[]) => {
     try {
       return await func(...args)
     } catch (e) {
-      e.name = 'IndyError'
-      e.indyName = e.message
-      throw e
+      if (e instanceof Error || e instanceof AriesFrameworkError || e instanceof IndySdkError) {
+        const error = {
+          name: 'IndyError',
+          indyName: e.message,
+          message: e.message,
+          stack: e.stack,
+        }
+        throw error
+      }
     }
   }
 }
 
-// This adds the error-handling to each function
 const indyWithErrorHandling = Object.fromEntries(
   Object.entries(window.indy).map(([funcName, funcImpl]) => [funcName, wrapIndyCallWithErrorHandling(funcImpl)])
 )
 
-// This creates an agent with all the specified configuration data
-const agent = new Agent({
-  label: 'my-agent',
-  walletConfig: {
-    id: 'walletId',
-    key: 'testkey0000000000000000000000000',
-  },
-  // used custom indyWithErrorHandling created above
-  indy: indyWithErrorHandling as unknown as typeof Indy,
-  // Use fs exposed on window from main world
-  fileSystem: window.fs,
-})
+export const setupAndInitializeAgent = async (label = 'test agent') => {
+  // Electron specific agent dependencies
+  const electronAgentDependencies = {
+    indy: indyWithErrorHandling as unknown as typeof Indy,
+    FileSystem: ElectronFileSystem,
+    fetch: fetch as unknown as typeof nodeFetch,
+    EventEmitterClass: events.EventEmitter,
+    WebSocketClass: ws,
+  }
 
-// Here we try to initialize the agent for usage
-try {
+  const agent = new Agent(
+    { label, walletConfig: { id: label, key: label }, logger: new ConsoleLogger(LogLevel.test) },
+    electronAgentDependencies
+  )
+
   await agent.initialize()
-  console.log('Initialized agent!')
-} catch (error) {
-  console.log(error)
+
+  return agent
 }
 ```
+
+This might look like some complicated boilerplate, but it is all required for an agent to work completely.
+
+Since we can not expose classes to the `mainWorld` from the `public/preload.js`, we have to create a class, here called `ElectronFileSystem` to use in our `agentDependencies`.
+
+Since we expose indy which uses a custom Error class `IndySdkError` for handling errors, and we lose that with exposing it to the `mainWorld`, we have to add it back. This is done via the `indyWithErrorHandling() -> wrapIndyCallWithErrorHandling()`
+
+All this configuration allows us to access all of the indy methods, allows the agent to access all of the indy methods correctly, allows the agent to access your filesystem for storage, etc. and most importantly it allows you to access the agent.
