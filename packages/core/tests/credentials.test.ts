@@ -400,7 +400,7 @@ describe('credentials', () => {
           name: 'x-ray',
           attachment: new Attachment({
             data: new AttachmentData({
-              base64: 'secondbase64encodedpic',
+              base64: 'c2Vjb25kYmFzZTY0ZW5jb2RlZHBpYw==',
             }),
           }),
         }),
@@ -434,11 +434,11 @@ describe('credentials', () => {
             },
             {
               name: 'x-ray',
-              value: 'hl:zQmVYZR9aDF47we8cmAaCP1vpXNoF1R5whSwaQUmVAZAjnG',
+              value: 'hl:zQmdsy1SSKztP7CGRiP2SuMV41Xxy9g69QswhUiSeo3d4pH',
             },
           ],
         },
-        '~attach': [{ '@id': 'zQmVYZR9aDF47we8cmAaCP1vpXNoF1R5whSwaQUmVAZAjnG' }],
+        '~attach': [{ '@id': 'zQmdsy1SSKztP7CGRiP2SuMV41Xxy9g69QswhUiSeo3d4pH' }],
         'offers~attach': expect.any(Array),
       },
       state: CredentialState.OfferReceived,

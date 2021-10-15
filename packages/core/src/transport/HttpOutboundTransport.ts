@@ -1,7 +1,7 @@
 import type { Agent } from '../agent/Agent'
 import type { Logger } from '../logger'
 import type { OutboundPackage } from '../types'
-import type { OutboundTransporter } from './OutboundTransporter'
+import type { OutboundTransport } from './OutboundTransport'
 import type fetch from 'node-fetch'
 
 import { AbortController } from 'abort-controller'
@@ -9,7 +9,7 @@ import { AbortController } from 'abort-controller'
 import { AgentConfig } from '../agent/AgentConfig'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 
-export class HttpOutboundTransporter implements OutboundTransporter {
+export class HttpOutboundTransport implements OutboundTransport {
   private agent!: Agent
   private logger!: Logger
   private agentConfig!: AgentConfig
@@ -77,6 +77,7 @@ export class HttpOutboundTransporter implements OutboundTransporter {
         body: payload,
         didCommMimeType: this.agentConfig.didCommMimeType,
       })
+      throw new AriesFrameworkError(`Error sending message to ${endpoint}: ${error.message}`, { cause: error })
     }
   }
 }

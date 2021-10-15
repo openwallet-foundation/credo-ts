@@ -1,4 +1,5 @@
 import type { Wallet } from '../../../wallet/Wallet'
+import type { Routing } from '../services/ConnectionService'
 
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { AgentMessage } from '../../../agent/AgentMessage'
@@ -26,14 +27,14 @@ const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRep
 
 describe('ConnectionService', () => {
   const config = getAgentConfig('ConnectionServiceTest', {
-    endpoint: 'http://agent.com:8080',
+    endpoints: ['http://agent.com:8080'],
   })
 
   let wallet: Wallet
   let connectionRepository: ConnectionRepository
   let connectionService: ConnectionService
   let eventEmitter: EventEmitter
-  let myRouting: { did: string; verkey: string; endpoint: string; routingKeys: string[] }
+  let myRouting: Routing
 
   beforeAll(async () => {
     wallet = new IndyWallet(config)
@@ -49,10 +50,10 @@ describe('ConnectionService', () => {
     eventEmitter = new EventEmitter(config)
     connectionRepository = new ConnectionRepositoryMock()
     connectionService = new ConnectionService(wallet, config, connectionRepository, eventEmitter)
-    myRouting = { did: 'fakeDid', verkey: 'fakeVerkey', endpoint: config.getEndpoint(), routingKeys: [] }
+    myRouting = { did: 'fakeDid', verkey: 'fakeVerkey', endpoints: config.endpoints ?? [], routingKeys: [] }
   })
 
-  describe('createConnectionWithInvitation', () => {
+  describe('createInvitation', () => {
     it('returns a connection record with values set', async () => {
       expect.assertions(7)
       const { connectionRecord: connectionRecord } = await connectionService.createInvitation({ routing: myRouting })
@@ -80,7 +81,7 @@ describe('ConnectionService', () => {
           label: config.label,
           recipientKeys: [expect.any(String)],
           routingKeys: [],
-          serviceEndpoint: config.getEndpoint(),
+          serviceEndpoint: config.endpoints[0],
         })
       )
     })
@@ -124,6 +125,20 @@ describe('ConnectionService', () => {
 
       expect(aliasDefined.alias).toBe('test-alias')
       expect(aliasUndefined.alias).toBeUndefined()
+    })
+
+    it('returns a connection record with the multiUseInvitation parameter from the config', async () => {
+      expect.assertions(2)
+
+      const { connectionRecord: multiUseDefined } = await connectionService.createInvitation({
+        multiUseInvitation: true,
+        routing: myRouting,
+      })
+      const { connectionRecord: multiUseUndefined } = await connectionService.createInvitation({ routing: myRouting })
+
+      expect(multiUseDefined.multiUseInvitation).toBe(true)
+      // Defaults to false
+      expect(multiUseUndefined.multiUseInvitation).toBe(false)
     })
   })
 
@@ -252,6 +267,74 @@ describe('ConnectionService', () => {
         verkey: 'my-key',
         role: ConnectionRole.Inviter,
       })
+      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(connectionRecord))
+
+      const theirDid = 'their-did'
+      const theirVerkey = 'their-verkey'
+      const theirDidDoc = new DidDoc({
+        id: theirDid,
+        publicKey: [],
+        authentication: [],
+        service: [
+          new DidCommService({
+            id: `${theirDid};indy`,
+            serviceEndpoint: 'https://endpoint.com',
+            recipientKeys: [theirVerkey],
+          }),
+        ],
+      })
+
+      const connectionRequest = new ConnectionRequestMessage({
+        did: theirDid,
+        didDoc: theirDidDoc,
+        label: 'test-label',
+      })
+
+      const messageContext = new InboundMessageContext(connectionRequest, {
+        senderVerkey: theirVerkey,
+        recipientVerkey: 'my-key',
+      })
+
+      const processedConnection = await connectionService.processRequest(messageContext)
+
+      expect(processedConnection.state).toBe(ConnectionState.Requested)
+      expect(processedConnection.theirDid).toBe(theirDid)
+      expect(processedConnection.theirDidDoc).toEqual(theirDidDoc)
+      expect(processedConnection.theirKey).toBe(theirVerkey)
+      expect(processedConnection.theirLabel).toBe('test-label')
+      expect(processedConnection.threadId).toBe(connectionRequest.id)
+    })
+
+    it('throws an error when the connection cannot be found by verkey', async () => {
+      expect.assertions(1)
+
+      const connectionRequest = new ConnectionRequestMessage({
+        did: 'did',
+        label: 'test-label',
+      })
+
+      const messageContext = new InboundMessageContext(connectionRequest, {
+        recipientVerkey: 'test-verkey',
+        senderVerkey: 'sender-verkey',
+      })
+
+      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(null))
+      return expect(connectionService.processRequest(messageContext)).rejects.toThrowError(
+        'Unable to process connection request: connection for verkey test-verkey not found'
+      )
+    })
+
+    it('returns a new connection record containing the information from the connection request when multiUseInvitation is enabled on the connection', async () => {
+      expect.assertions(10)
+
+      const connectionRecord = getMockConnection({
+        id: 'test',
+        state: ConnectionState.Invited,
+        verkey: 'my-key',
+        role: ConnectionRole.Inviter,
+        multiUseInvitation: true,
+      })
+      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(connectionRecord))
 
       const theirDid = 'their-did'
       const theirVerkey = 'their-verkey'
@@ -280,7 +363,7 @@ describe('ConnectionService', () => {
         recipientVerkey: 'my-key',
       })
 
-      const processedConnection = await connectionService.processRequest(messageContext)
+      const processedConnection = await connectionService.processRequest(messageContext, myRouting)
 
       expect(processedConnection.state).toBe(ConnectionState.Requested)
       expect(processedConnection.theirDid).toBe(theirDid)
@@ -288,54 +371,23 @@ describe('ConnectionService', () => {
       expect(processedConnection.theirKey).toBe(theirVerkey)
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
-    })
 
-    it('throws an error when the message context does not have a connection', async () => {
-      expect.assertions(1)
-
-      const connectionRequest = new ConnectionRequestMessage({
-        did: 'did',
-        label: 'test-label',
-      })
-
-      const messageContext = new InboundMessageContext(connectionRequest, {
-        recipientVerkey: 'test-verkey',
-      })
-
-      return expect(connectionService.processRequest(messageContext)).rejects.toThrowError(
-        'Connection for verkey test-verkey not found'
-      )
-    })
-
-    it('throws an error when the message does not contain a connection parameter', async () => {
-      expect.assertions(1)
-
-      const connection = getMockConnection({
-        role: ConnectionRole.Inviter,
-      })
-
-      const connectionRequest = new ConnectionRequestMessage({
-        did: 'did',
-        label: 'test-label',
-      })
-
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      delete connectionRequest.connection
-
-      const messageContext = new InboundMessageContext(connectionRequest, {
-        connection,
-        recipientVerkey: 'test-verkey',
-      })
-
-      return expect(connectionService.processRequest(messageContext)).rejects.toThrowError('Invalid message')
+      expect(connectionRepository.save).toHaveBeenCalledTimes(1)
+      expect(processedConnection.id).not.toBe(connectionRecord.id)
+      expect(connectionRecord.id).toBe('test')
+      expect(connectionRecord.state).toBe(ConnectionState.Invited)
     })
 
     it(`throws an error when connection role is ${ConnectionRole.Invitee} and not ${ConnectionRole.Inviter}`, async () => {
       expect.assertions(1)
 
+      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(
+        Promise.resolve(getMockConnection({ role: ConnectionRole.Invitee }))
+      )
+
       const inboundMessage = new InboundMessageContext(jest.fn()(), {
-        connection: getMockConnection({ role: ConnectionRole.Invitee }),
+        senderVerkey: 'senderVerkey',
+        recipientVerkey: 'recipientVerkey',
       })
 
       return expect(connectionService.processRequest(inboundMessage)).rejects.toThrowError(
@@ -346,22 +398,66 @@ describe('ConnectionService', () => {
     it('throws an error when the message does not contain a did doc with any recipientKeys', async () => {
       expect.assertions(1)
 
+      const recipientVerkey = 'test-verkey'
+
       const connection = getMockConnection({
         role: ConnectionRole.Inviter,
+        verkey: recipientVerkey,
       })
+
+      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(connection))
 
       const connectionRequest = new ConnectionRequestMessage({
         did: 'did',
         label: 'test-label',
+        didDoc: new DidDoc({
+          id: 'did:test',
+          publicKey: [],
+          service: [],
+          authentication: [],
+        }),
       })
 
       const messageContext = new InboundMessageContext(connectionRequest, {
-        connection,
-        recipientVerkey: 'test-verkey',
+        recipientVerkey,
+        senderVerkey: 'sender-verkey',
       })
 
       return expect(connectionService.processRequest(messageContext)).rejects.toThrowError(
         `Connection with id ${connection.id} has no recipient keys.`
+      )
+    })
+
+    it('throws an error when a request for a multi use invitation is processed without routing provided', async () => {
+      const connectionRecord = getMockConnection({
+        state: ConnectionState.Invited,
+        verkey: 'my-key',
+        role: ConnectionRole.Inviter,
+        multiUseInvitation: true,
+      })
+      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(connectionRecord))
+
+      const theirDidDoc = new DidDoc({
+        id: 'their-did',
+        publicKey: [],
+        authentication: [],
+        service: [],
+      })
+
+      const connectionRequest = new ConnectionRequestMessage({
+        did: 'their-did',
+        didDoc: theirDidDoc,
+        label: 'test-label',
+      })
+
+      const messageContext = new InboundMessageContext(connectionRequest, {
+        connection: connectionRecord,
+        senderVerkey: 'their-verkey',
+        recipientVerkey: 'my-key',
+      })
+
+      expect(connectionService.processRequest(messageContext)).rejects.toThrowError(
+        'Cannot process request for multi-use invitation without routing object. Make sure to call processRequest with the routing parameter provided.'
       )
     })
   })
@@ -445,6 +541,7 @@ describe('ConnectionService', () => {
           serviceEndpoint: 'test',
         }),
       })
+      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(connectionRecord))
 
       const otherPartyConnection = new Connection({
         did: theirDid,
@@ -482,7 +579,6 @@ describe('ConnectionService', () => {
 
       expect(processedConnection.state).toBe(ConnectionState.Responded)
       expect(processedConnection.theirDid).toBe(theirDid)
-      // TODO: we should transform theirDidDoc to didDoc instance after retrieving from persistence
       expect(processedConnection.theirDidDoc).toEqual(otherPartyConnection.didDoc)
     })
 
@@ -490,11 +586,18 @@ describe('ConnectionService', () => {
       expect.assertions(1)
 
       const inboundMessage = new InboundMessageContext(jest.fn()(), {
-        connection: getMockConnection({
-          role: ConnectionRole.Inviter,
-          state: ConnectionState.Requested,
-        }),
+        senderVerkey: 'senderVerkey',
+        recipientVerkey: 'recipientVerkey',
       })
+
+      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(
+        Promise.resolve(
+          getMockConnection({
+            role: ConnectionRole.Inviter,
+            state: ConnectionState.Requested,
+          })
+        )
+      )
 
       return expect(connectionService.processResponse(inboundMessage)).rejects.toThrowError(
         `Connection record has invalid role ${ConnectionRole.Inviter}. Expected role ${ConnectionRole.Invitee}.`
@@ -511,11 +614,8 @@ describe('ConnectionService', () => {
         verkey,
         role: ConnectionRole.Invitee,
         state: ConnectionState.Requested,
-        tags: {
-          // processResponse checks wether invitation key is same as signing key for connetion~sig
-          invitationKey: 'some-random-key',
-        },
       })
+      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(connectionRecord))
 
       const otherPartyConnection = new Connection({
         did: theirDid,
@@ -549,11 +649,13 @@ describe('ConnectionService', () => {
       })
 
       return expect(connectionService.processResponse(messageContext)).rejects.toThrowError(
-        'Connection in connection response is not signed with same key as recipient key in invitation'
+        new RegExp(
+          'Connection object in connection response message is not signed with same key as recipient key in invitation'
+        )
       )
     })
 
-    it('throws an error when the message context does not have a connection', async () => {
+    it('throws an error when the connection cannot be found by verkey', async () => {
       expect.assertions(1)
 
       const connectionResponse = new ConnectionResponseMessage({
@@ -568,10 +670,12 @@ describe('ConnectionService', () => {
 
       const messageContext = new InboundMessageContext(connectionResponse, {
         recipientVerkey: 'test-verkey',
+        senderVerkey: 'sender-verkey',
       })
+      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(null))
 
       return expect(connectionService.processResponse(messageContext)).rejects.toThrowError(
-        'Connection for verkey test-verkey not found'
+        'Unable to process connection response: connection for verkey test-verkey not found'
       )
     })
 
@@ -593,6 +697,7 @@ describe('ConnectionService', () => {
         theirDid: undefined,
         theirDidDoc: undefined,
       })
+      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(connectionRecord))
 
       const otherPartyConnection = new Connection({
         did: theirDid,
@@ -606,7 +711,8 @@ describe('ConnectionService', () => {
       })
 
       const messageContext = new InboundMessageContext(connectionResponse, {
-        connection: connectionRecord,
+        senderVerkey: 'senderVerkey',
+        recipientVerkey: 'recipientVerkey',
       })
 
       return expect(connectionService.processResponse(messageContext)).rejects.toThrowError(
@@ -658,7 +764,7 @@ describe('ConnectionService', () => {
       })
 
       return expect(connectionService.processAck(messageContext)).rejects.toThrowError(
-        'Connection for verkey test-verkey not found'
+        'Unable to process connection ack: connection for verkey test-verkey not found'
       )
     })
 

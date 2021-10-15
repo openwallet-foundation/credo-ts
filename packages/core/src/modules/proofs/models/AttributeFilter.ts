@@ -1,17 +1,19 @@
 import { Expose, Transform, TransformationType, Type } from 'class-transformer'
-import { IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 export class AttributeValue {
   public constructor(options: AttributeValue) {
-    this.name = options.name
-    this.value = options.value
+    if (options) {
+      this.name = options.name
+      this.value = options.value
+    }
   }
 
   @IsString()
-  public name: string
+  public name!: string
 
   @IsString()
-  public value: string
+  public value!: string
 }
 
 export class AttributeFilter {
@@ -60,11 +62,12 @@ export class AttributeFilter {
   @IsOptional()
   @Type(() => AttributeValue)
   @ValidateNested()
+  @IsInstance(AttributeValue)
   public attributeValue?: AttributeValue
 }
 
 /**
- * Decorator that transforms attribute filter to corresonding class instances.
+ * Decorator that transforms attribute filter to corresponding class instances.
  * Needed for transformation of attribute value filter.
  *
  * Transforms attribute value between these formats:

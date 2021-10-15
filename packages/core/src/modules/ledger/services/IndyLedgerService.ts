@@ -1,21 +1,20 @@
 import type { Logger } from '../../../logger'
 import type { FileSystem } from '../../../storage/FileSystem'
 import type {
-  default as Indy,
   CredDef,
-  LedgerRequest,
-  PoolHandle,
-  Schema,
+  default as Indy,
   LedgerReadReplyResponse,
+  LedgerRequest,
   LedgerWriteReplyResponse,
   NymRole,
+  PoolHandle,
+  Schema,
 } from 'indy-sdk'
 
-import { scoped, Lifecycle } from 'tsyringe'
+import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
-import { IndySdkError } from '../../../error/IndySdkError'
+import { AriesFrameworkError, IndySdkError } from '../../../error'
 import { isIndyError } from '../../../utils/indyError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { IndyIssuerService } from '../../indy'

@@ -1,3 +1,5 @@
+import type { Logger } from '../logger'
+import type { OutboundMessage, OutboundServiceMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { AgentMessageProcessedEvent } from './Events'
 import type { Handler } from './Handler'
@@ -5,6 +7,7 @@ import type { InboundMessageContext } from './models/InboundMessageContext'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
+import { AgentConfig } from '../agent/AgentConfig'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 
 import { EventEmitter } from './EventEmitter'
@@ -17,10 +20,12 @@ class Dispatcher {
   private handlers: Handler[] = []
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
+  private logger: Logger
 
-  public constructor(messageSender: MessageSender, eventEmitter: EventEmitter) {
+  public constructor(messageSender: MessageSender, eventEmitter: EventEmitter, agentConfig: AgentConfig) {
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
+    this.logger = agentConfig.logger
   }
 
   public registerHandler(handler: Handler) {
@@ -35,7 +40,20 @@ class Dispatcher {
       throw new AriesFrameworkError(`No handler for message type "${message.type}" found`)
     }
 
-    const outboundMessage = await handler.handle(messageContext)
+    let outboundMessage: OutboundMessage<AgentMessage> | OutboundServiceMessage<AgentMessage> | void
+
+    try {
+      outboundMessage = await handler.handle(messageContext)
+    } catch (error) {
+      this.logger.error(`Error handling message with type ${message.type}`, {
+        message: message.toJSON(),
+        senderVerkey: messageContext.senderVerkey,
+        recipientVerkey: messageContext.recipientVerkey,
+        connectionId: messageContext.connection?.id,
+      })
+
+      throw error
+    }
 
     if (outboundMessage && isOutboundServiceMessage(outboundMessage)) {
       await this.messageSender.sendMessageToService({

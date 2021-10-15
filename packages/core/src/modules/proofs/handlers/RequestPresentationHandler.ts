@@ -66,7 +66,7 @@ export class RequestPresentationHandler implements Handler {
       // Create ~service decorator
       const routing = await this.mediationRecipientService.getRouting()
       const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoint,
+        serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.verkey],
         routingKeys: routing.routingKeys,
       })

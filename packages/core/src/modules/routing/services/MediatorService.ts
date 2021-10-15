@@ -20,28 +20,62 @@ import {
 } from '../messages'
 import { MediationRole } from '../models/MediationRole'
 import { MediationState } from '../models/MediationState'
+import { MediatorRoutingRecord } from '../repository'
 import { MediationRecord } from '../repository/MediationRecord'
 import { MediationRepository } from '../repository/MediationRepository'
+import { MediatorRoutingRepository } from '../repository/MediatorRoutingRepository'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MediatorService {
   private agentConfig: AgentConfig
   private mediationRepository: MediationRepository
+  private mediatorRoutingRepository: MediatorRoutingRepository
   private wallet: Wallet
   private eventEmitter: EventEmitter
-  private routingKeys: string[]
+  private _mediatorRoutingRecord?: MediatorRoutingRecord
 
   public constructor(
     mediationRepository: MediationRepository,
+    mediatorRoutingRepository: MediatorRoutingRepository,
     agentConfig: AgentConfig,
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
     eventEmitter: EventEmitter
   ) {
     this.mediationRepository = mediationRepository
+    this.mediatorRoutingRepository = mediatorRoutingRepository
     this.agentConfig = agentConfig
     this.wallet = wallet
     this.eventEmitter = eventEmitter
-    this.routingKeys = []
+  }
+
+  private async getRoutingKeys() {
+    this.agentConfig.logger.debug('Retrieving mediator routing keys')
+    // If the routing record is not loaded yet, retrieve it from storage
+    if (!this._mediatorRoutingRecord) {
+      this.agentConfig.logger.debug('Mediator routing record not loaded yet, retrieving from storage')
+      let routingRecord = await this.mediatorRoutingRepository.findById(
+        this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID
+      )
+
+      // If we don't have a routing record yet, create it
+      if (!routingRecord) {
+        this.agentConfig.logger.debug('Mediator routing record does not exist yet, creating routing keys and record')
+        const { verkey } = await this.wallet.createDid()
+
+        routingRecord = new MediatorRoutingRecord({
+          id: this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID,
+          routingKeys: [verkey],
+        })
+
+        await this.mediatorRoutingRepository.save(routingRecord)
+      }
+
+      this._mediatorRoutingRecord = routingRecord
+    }
+
+    // Return the routing keys
+    this.agentConfig.logger.debug(`Returning mediator routing keys ${this._mediatorRoutingRecord.routingKeys}`)
+    return this._mediatorRoutingRecord.routingKeys
   }
 
   public async processForwardMessage(
@@ -129,18 +163,12 @@ export class MediatorService {
     mediationRecord.assertState(MediationState.Requested)
     mediationRecord.assertRole(MediationRole.Mediator)
 
-    // TODO: this doesn't persist the routing did between agent startup
-    if (this.routingKeys.length === 0) {
-      const { verkey } = await this.wallet.createDid()
-      this.routingKeys = [verkey]
-    }
-
     mediationRecord.state = MediationState.Granted
     await this.mediationRepository.update(mediationRecord)
 
     const message = new MediationGrantMessage({
-      endpoint: this.agentConfig.getEndpoint(),
-      routingKeys: this.routingKeys,
+      endpoint: this.agentConfig.endpoints[0],
+      routingKeys: await this.getRoutingKeys(),
       threadId: mediationRecord.threadId,
     })
 

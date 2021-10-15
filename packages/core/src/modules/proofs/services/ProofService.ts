@@ -973,6 +973,16 @@ export class ProofService {
   }
 
   /**
+   * Delete a proof record by id
+   *
+   * @param proofId the proof record id
+   */
+  public async deleteById(proofId: string) {
+    const proofRecord = await this.getById(proofId)
+    return this.proofRepository.delete(proofRecord)
+  }
+
+  /**
    * Retrieve a proof record by connection id and thread id
    *
    * @param connectionId The connection id

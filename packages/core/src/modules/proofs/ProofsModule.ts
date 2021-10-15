@@ -1,6 +1,7 @@
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
 import type { PresentationPreview, RequestPresentationMessage } from './messages'
 import type { RequestedCredentials, RetrievedCredentials } from './models'
+import type { ProofRequestOptions } from './models/ProofRequest'
 import type { ProofRecord } from './repository/ProofRecord'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -141,7 +142,7 @@ export class ProofsModule {
    */
   public async requestProof(
     connectionId: string,
-    proofRequestOptions: ProofRequestOptions,
+    proofRequestOptions: CreateProofRequestOptions,
     config?: ProofRequestConfig
   ): Promise<ProofRecord> {
     const connection = await this.connectionService.getById(connectionId)
@@ -173,7 +174,7 @@ export class ProofsModule {
    *
    */
   public async createOutOfBandRequest(
-    proofRequestOptions: ProofRequestOptions,
+    proofRequestOptions: CreateProofRequestOptions,
     config?: ProofRequestConfig
   ): Promise<{
     requestMessage: RequestPresentationMessage
@@ -194,7 +195,7 @@ export class ProofsModule {
     // Create and set ~service decorator
     const routing = await this.mediationRecipientService.getRouting()
     message.service = new ServiceDecorator({
-      serviceEndpoint: routing.endpoint,
+      serviceEndpoint: routing.endpoints[0],
       recipientKeys: [routing.verkey],
       routingKeys: routing.routingKeys,
     })
@@ -240,7 +241,7 @@ export class ProofsModule {
       // Create ~service decorator
       const routing = await this.mediationRecipientService.getRouting()
       const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoint,
+        serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.verkey],
         routingKeys: routing.routingKeys,
       })
@@ -377,6 +378,15 @@ export class ProofsModule {
     return this.proofService.findById(proofRecordId)
   }
 
+  /**
+   * Delete a proof record by id
+   *
+   * @param proofId the proof record id
+   */
+  public async deleteById(proofId: string) {
+    return this.proofService.deleteById(proofId)
+  }
+
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(
       new ProposePresentationHandler(this.proofService, this.agentConfig, this.proofResponseCoordinator)
@@ -396,8 +406,8 @@ export class ProofsModule {
   }
 }
 
-export type ProofRequestOptions = Partial<
-  Pick<ProofRequest, 'name' | 'nonce' | 'requestedAttributes' | 'requestedPredicates'>
+export type CreateProofRequestOptions = Partial<
+  Pick<ProofRequestOptions, 'name' | 'nonce' | 'requestedAttributes' | 'requestedPredicates'>
 >
 
 export interface ProofRequestConfig {

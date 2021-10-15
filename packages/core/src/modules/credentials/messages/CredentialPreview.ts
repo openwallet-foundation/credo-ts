@@ -1,7 +1,39 @@
-import { Expose, Type } from 'class-transformer'
-import { Equals, ValidateNested } from 'class-validator'
+import { Expose, Transform, Type } from 'class-transformer'
+import { Equals, IsInstance, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
+
+interface CredentialPreviewAttributeOptions {
+  name: string
+  mimeType?: string
+  value: string
+}
+
+export class CredentialPreviewAttribute {
+  public constructor(options: CredentialPreviewAttributeOptions) {
+    if (options) {
+      this.name = options.name
+      this.mimeType = options.mimeType
+      this.value = options.value
+    }
+  }
+
+  @IsString()
+  public name!: string
+
+  @Expose({ name: 'mime-type' })
+  @IsOptional()
+  @IsMimeType()
+  public mimeType?: string = 'text/plain'
+
+  @IsString()
+  public value!: string
+
+  public toJSON(): Record<string, unknown> {
+    return JsonTransformer.toJSON(this)
+  }
+}
 
 export interface CredentialPreviewOptions {
   attributes: CredentialPreviewAttribute[]
@@ -23,11 +55,15 @@ export class CredentialPreview {
 
   @Expose({ name: '@type' })
   @Equals(CredentialPreview.type)
+  @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
+    toClassOnly: true,
+  })
   public readonly type = CredentialPreview.type
   public static readonly type = 'https://didcomm.org/issue-credential/1.0/credential-preview'
 
   @Type(() => CredentialPreviewAttribute)
   @ValidateNested({ each: true })
+  @IsInstance(CredentialPreviewAttribute, { each: true })
   public attributes!: CredentialPreviewAttribute[]
 
   public toJSON(): Record<string, unknown> {
@@ -56,32 +92,5 @@ export class CredentialPreview {
     return new CredentialPreview({
       attributes,
     })
-  }
-}
-
-interface CredentialPreviewAttributeOptions {
-  name: string
-  mimeType?: string
-  value: string
-}
-
-export class CredentialPreviewAttribute {
-  public constructor(options: CredentialPreviewAttributeOptions) {
-    if (options) {
-      this.name = options.name
-      this.mimeType = options.mimeType
-      this.value = options.value
-    }
-  }
-
-  public name!: string
-
-  @Expose({ name: 'mime-type' })
-  public mimeType?: string = 'text/plain'
-
-  public value!: string
-
-  public toJSON(): Record<string, unknown> {
-    return JsonTransformer.toJSON(this)
   }
 }

@@ -1,10 +1,12 @@
 import { Transform } from 'class-transformer'
-import { Equals, IsString, ValidateIf, IsArray, IsOptional, validateOrReject } from 'class-validator'
+import { ArrayNotEmpty, Equals, IsArray, IsOptional, IsString, ValidateIf } from 'class-validator'
+import { parseUrl } from 'query-string'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { MessageValidator } from '../../../utils/MessageValidator'
 import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 
 // TODO: improve typing of `DIDInvitationData` and `InlineInvitationData` so properties can't be mixed
@@ -12,6 +14,7 @@ export interface InlineInvitationData {
   recipientKeys: string[]
   serviceEndpoint: string
   routingKeys?: string[]
+  imageUrl?: string
 }
 
 export interface DIDInvitationData {
@@ -41,6 +44,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
         this.recipientKeys = options.recipientKeys
         this.serviceEndpoint = options.serviceEndpoint
         this.routingKeys = options.routingKeys
+        this.imageUrl = options.imageUrl
       }
 
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -72,6 +76,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
   })
   @IsArray()
   @ValidateIf((o: ConnectionInvitationMessage) => o.did === undefined)
+  @ArrayNotEmpty()
   public recipientKeys?: string[]
 
   @IsString()
@@ -81,9 +86,13 @@ export class ConnectionInvitationMessage extends AgentMessage {
   @IsString({
     each: true,
   })
-  @IsOptional()
   @ValidateIf((o: ConnectionInvitationMessage) => o.did === undefined)
+  @IsOptional()
   public routingKeys?: string[]
+
+  @IsOptional()
+  @IsString()
+  public imageUrl?: string
 
   /**
    * Create an invitation url from this instance
@@ -91,8 +100,9 @@ export class ConnectionInvitationMessage extends AgentMessage {
    * @param domain domain name to use for invitation url
    * @returns invitation url with base64 encoded invitation
    */
-  public toUrl(domain = 'https://example.com/ssi') {
-    const invitationJson = this.toJSON()
+  public toUrl({ domain, useLegacyDidSovPrefix = false }: { domain: string; useLegacyDidSovPrefix?: boolean }) {
+    const invitationJson = this.toJSON({ useLegacyDidSovPrefix })
+
     const encodedInvitation = JsonEncoder.toBase64URL(invitationJson)
     const invitationUrl = `${domain}?c_i=${encodedInvitation}`
 
@@ -100,23 +110,29 @@ export class ConnectionInvitationMessage extends AgentMessage {
   }
 
   /**
-   * Create a `ConnectionInvitationMessage` instance from the `c_i` parameter of an URL
+   * Create a `ConnectionInvitationMessage` instance from the `c_i` or `d_m` parameter of an URL
    *
-   * @param invitationUrl invitation url containing c_i parameter
+   * @param invitationUrl invitation url containing c_i or d_m parameter
    *
    * @throws Error when url can not be decoded to JSON, or decoded message is not a valid `ConnectionInvitationMessage`
+   * @throws Error when the url does not contain c_i or d_m as parameter
    */
   public static async fromUrl(invitationUrl: string) {
-    // TODO: properly extract c_i param from invitation URL
-    const [, encodedInvitation] = invitationUrl.split('c_i=')
-    const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
+    const parsedUrl = parseUrl(invitationUrl).query
+    const encodedInvitation = parsedUrl['c_i'] ?? parsedUrl['d_m']
 
-    const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
+    if (typeof encodedInvitation === 'string') {
+      const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
+      const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
 
-    // TODO: should validation happen here?
-    await validateOrReject(invitation)
+      await MessageValidator.validate(invitation)
 
-    return invitation
+      return invitation
+    } else {
+      throw new AriesFrameworkError(
+        'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters; `c_i` or `d_m`'
+      )
+    }
   }
 }
 

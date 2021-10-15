@@ -227,7 +227,7 @@ export class CredentialsModule {
     // Create and set ~service decorator
     const routing = await this.mediationRecipientService.getRouting()
     message.service = new ServiceDecorator({
-      serviceEndpoint: routing.endpoint,
+      serviceEndpoint: routing.endpoints[0],
       recipientKeys: [routing.verkey],
       routingKeys: routing.routingKeys,
     })
@@ -272,7 +272,7 @@ export class CredentialsModule {
       // Create ~service decorator
       const routing = await this.mediationRecipientService.getRouting()
       const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoint,
+        serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.verkey],
         routingKeys: routing.routingKeys,
       })
@@ -470,6 +470,15 @@ export class CredentialsModule {
    */
   public findById(connectionId: string): Promise<CredentialRecord | null> {
     return this.credentialService.findById(connectionId)
+  }
+
+  /**
+   * Delete a credential record by id
+   *
+   * @param credentialId the credential record id
+   */
+  public async deleteById(credentialId: string) {
+    return this.credentialService.deleteById(credentialId)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {

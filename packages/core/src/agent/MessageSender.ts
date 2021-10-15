@@ -1,5 +1,5 @@
 import type { DidCommService, ConnectionRecord } from '../modules/connections'
-import type { OutboundTransporter } from '../transport/OutboundTransporter'
+import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { OutboundMessage, OutboundPackage, WireMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
@@ -27,7 +27,7 @@ export class MessageSender {
   private transportService: TransportService
   private messageRepository: MessageRepository
   private logger: Logger
-  private outboundTransports: OutboundTransporter[] = []
+  public readonly outboundTransports: OutboundTransport[] = []
 
   public constructor(
     envelopeService: EnvelopeService,
@@ -42,12 +42,8 @@ export class MessageSender {
     this.outboundTransports = []
   }
 
-  public registerOutboundTransporter(outboundTransporter: OutboundTransporter) {
-    this.outboundTransports.push(outboundTransporter)
-  }
-
-  public get outboundTransporters() {
-    return this.outboundTransports
+  public registerOutboundTransport(outboundTransport: OutboundTransport) {
+    this.outboundTransports.push(outboundTransport)
   }
 
   public async packMessage({
@@ -103,19 +99,20 @@ export class MessageSender {
     // Retrieve DIDComm services
     const { services, queueService } = await this.retrieveServicesByConnection(connection, options?.transportPriority)
 
-    if (this.outboundTransporters.length === 0 && !queueService) {
-      throw new AriesFrameworkError('Agent has no outbound transporter!')
+    if (this.outboundTransports.length === 0 && !queueService) {
+      throw new AriesFrameworkError('Agent has no outbound transport!')
     }
 
     // Loop trough all available services and try to send the message
     for await (const service of services) {
       this.logger.debug(`Sending outbound message to service:`, { service })
       try {
-        for (const transport of this.outboundTransporters) {
+        for (const transport of this.outboundTransports) {
           if (transport.supportedSchemes.includes(service.protocolScheme)) {
             await transport.sendMessage({
               payload: packedMessage,
               endpoint: service.serviceEndpoint,
+              connectionId: connection.id,
             })
             break
           }
@@ -164,6 +161,7 @@ export class MessageSender {
     // Try to send to already open session
     const session = this.transportService.findSessionByConnectionId(connection.id)
     if (session?.inboundMessage?.hasReturnRouting(payload.threadId)) {
+      this.logger.debug(`Found session with return routing for message '${payload.id}' (connection '${connection.id}'`)
       try {
         await this.sendMessageToSession(session, payload)
         return
@@ -186,6 +184,7 @@ export class MessageSender {
           service,
           senderKey: connection.verkey,
           returnRoute: shouldUseReturnRoute,
+          connectionId: connection.id,
         })
         return
       } catch (error) {
@@ -228,14 +227,16 @@ export class MessageSender {
     service,
     senderKey,
     returnRoute,
+    connectionId,
   }: {
     message: AgentMessage
     service: DidCommService
     senderKey: string
     returnRoute?: boolean
+    connectionId?: string
   }) {
     if (this.outboundTransports.length === 0) {
-      throw new AriesFrameworkError('Agent has no outbound transporter!')
+      throw new AriesFrameworkError('Agent has no outbound transport!')
     }
 
     this.logger.debug(`Sending outbound message to service:`, { messageId: message.id, service })
@@ -253,7 +254,8 @@ export class MessageSender {
 
     const outboundPackage = await this.packMessage({ message, keys, endpoint: service.serviceEndpoint })
     outboundPackage.endpoint = service.serviceEndpoint
-    for (const transport of this.outboundTransporters) {
+    outboundPackage.connectionId = connectionId
+    for (const transport of this.outboundTransports) {
       if (transport.supportedSchemes.includes(service.protocolScheme)) {
         await transport.sendMessage(outboundPackage)
         break
@@ -272,12 +274,12 @@ export class MessageSender {
     const allServices = this.transportService.findDidCommServices(connection)
 
     //Separate queue service out
-    const services = allServices.filter((s) => !isDidCommTransportQueue(s.serviceEndpoint))
+    let services = allServices.filter((s) => !isDidCommTransportQueue(s.serviceEndpoint))
     const queueService = allServices.find((s) => isDidCommTransportQueue(s.serviceEndpoint))
 
     //If restrictive will remove services not listed in schemes list
     if (transportPriority?.restrictive) {
-      services.filter((service) => {
+      services = services.filter((service) => {
         const serviceSchema = service.protocolScheme
         return transportPriority.schemes.includes(serviceSchema)
       })
@@ -285,7 +287,7 @@ export class MessageSender {
 
     //If transport priority is set we will sort services by our priority
     if (transportPriority?.schemes) {
-      services.sort(function (a, b) {
+      services = services.sort(function (a, b) {
         const aScheme = a.protocolScheme
         const bScheme = b.protocolScheme
         return transportPriority?.schemes.indexOf(aScheme) - transportPriority?.schemes.indexOf(bScheme)

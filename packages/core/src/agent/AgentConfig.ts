@@ -86,15 +86,14 @@ export class AgentConfig {
     return this.initConfig.mediatorPickupStrategy ?? MediatorPickupStrategy.Explicit
   }
 
-  public getEndpoint() {
-    // If we have an endpoint set, use it
-    if (this.initConfig.endpoint) {
-      return this.initConfig.endpoint
+  public get endpoints(): [string, ...string[]] {
+    // if endpoints is not set, return queue endpoint
+    // https://github.com/hyperledger/aries-rfcs/issues/405#issuecomment-582612875
+    if (!this.initConfig.endpoints || this.initConfig.endpoints.length === 0) {
+      return [DID_COMM_TRANSPORT_QUEUE]
     }
 
-    // Otherwise, return didcomm:transport/queue
-    // https://github.com/hyperledger/aries-rfcs/issues/405#issuecomment-582612875
-    return DID_COMM_TRANSPORT_QUEUE
+    return this.initConfig.endpoints as [string, ...string[]]
   }
 
   public get mediatorConnectionsInvite() {
@@ -111,5 +110,9 @@ export class AgentConfig {
 
   public get clearDefaultMediator() {
     return this.initConfig.clearDefaultMediator ?? false
+  }
+
+  public get useLegacyDidSovPrefix() {
+    return this.initConfig.useLegacyDidSovPrefix ?? false
   }
 }

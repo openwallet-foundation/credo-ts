@@ -5,10 +5,10 @@
 To start using Aries Framework JavaScript in React Native some platform specific dependencies are required.
 
 1. Follow the [React Native Setup](https://reactnative.dev/docs/environment-setup) guide to set up your environment.
-2. Add `@aries-framework/core` and `@aries-framework/react-native` to your project.
+2. Add `@aries-framework/core`, `@aries-framework/react-native`, `react-native-fs`, and `react-native-get-random-values` to your project.
 
 ```bash
-yarn add @aries-framework/core @aries-framework/react-native
+yarn add @aries-framework/core @aries-framework/react-native react-native-fs react-native-get-random-values
 ```
 
 3. Install [Libindy](https://github.com/hyperledger/indy-sdk) for iOS and Android:
