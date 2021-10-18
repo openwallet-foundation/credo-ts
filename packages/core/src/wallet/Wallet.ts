@@ -4,8 +4,11 @@ import type { Buffer } from '../utils/buffer'
 export interface Wallet {
   publicDid: DidInfo | undefined
   isInitialized: boolean
+  isCreated: boolean
 
   initialize(walletConfig: WalletConfig): Promise<void>
+  create(walletConfig: WalletConfig): Promise<void>
+  open(walletConfig: WalletConfig): Promise<void>
   close(): Promise<void>
   delete(): Promise<void>
 
