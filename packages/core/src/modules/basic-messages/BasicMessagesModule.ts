@@ -4,6 +4,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
+import { createOutboundMessage } from '../../agent/helpers'
 import { ConnectionService } from '../connections'
 
 import { BasicMessageHandler } from './handlers'
@@ -30,7 +31,8 @@ export class BasicMessagesModule {
   public async sendMessage(connectionId: string, message: string) {
     const connection = await this.connectionService.getById(connectionId)
 
-    const outboundMessage = await this.basicMessageService.send(message, connection)
+    const basicMessage = await this.basicMessageService.createMessage(message, connection)
+    const outboundMessage = createOutboundMessage(connection, basicMessage)
     await this.messageSender.sendMessage(outboundMessage)
   }
 
