@@ -7,9 +7,9 @@ import { scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { getDirFromFilePath } from '../../../utils/path'
-import { AriesFrameworkError } from 'packages/core/src/error'
-import { isIndyError } from 'packages/core/src/utils/indyError'
-import { IndySdkError } from 'packages/core/src/error/IndySdkError'
+import { AriesFrameworkError } from '../../../error'
+import { isIndyError } from '../../../utils/indyError'
+import { IndySdkError } from '../../../error/IndySdkError'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyUtilitesService {
