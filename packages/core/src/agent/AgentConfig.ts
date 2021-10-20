@@ -46,16 +46,8 @@ export class AgentConfig {
     return this.initConfig.publicDidSeed
   }
 
-  public get poolName() {
-    return this.initConfig.poolName ?? 'default-pool'
-  }
-
-  public get genesisPath() {
-    return this.initConfig.genesisPath
-  }
-
-  public get genesisTransactions() {
-    return this.initConfig.genesisTransactions
+  public get indyLedgers() {
+    return this.initConfig.indyLedgers ?? []
   }
 
   public get walletConfig() {

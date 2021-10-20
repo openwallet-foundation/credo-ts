@@ -2,8 +2,9 @@ import { promises } from 'fs'
 import * as indy from 'indy-sdk'
 
 import { Agent } from '../src/agent/Agent'
-import { DID_IDENTIFIER_REGEX, VERKEY_REGEX, isFullVerkey, isAbbreviatedVerkey } from '../src/utils/did'
+import { DID_IDENTIFIER_REGEX, isAbbreviatedVerkey, isFullVerkey, VERKEY_REGEX } from '../src/utils/did'
 import { sleep } from '../src/utils/sleep'
+import { IndyWallet } from '../src/wallet/IndyWallet'
 
 import { genesisPath, getBaseConfig } from './helpers'
 import testLogger from './logger'
@@ -65,12 +66,12 @@ describe('ledger', () => {
       throw new Error('Agent does not have public did.')
     }
 
-    const targetDid = 'PNQm3CwyXbN5e39Rw3dXYx'
-    const targetVerkey = '~AHtGeRXtGjVfXALtXP9WiX'
+    const faberWallet = faberAgent.injectionContainer.resolve(IndyWallet)
+    const didInfo = await faberWallet.createDid()
 
-    const result = await faberAgent.ledger.registerPublicDid(targetDid, targetVerkey, 'alias', 'TRUST_ANCHOR')
+    const result = await faberAgent.ledger.registerPublicDid(didInfo.did, didInfo.verkey, 'alias', 'TRUST_ANCHOR')
 
-    expect(result).toEqual(targetDid)
+    expect(result).toEqual(didInfo.did)
   })
 
   test('register schema on ledger', async () => {
@@ -143,9 +144,16 @@ describe('ledger', () => {
   it('should correctly store the genesis file if genesis transactions is passed', async () => {
     const genesisTransactions = await promises.readFile(genesisPath, { encoding: 'utf-8' })
     const { config, agentDependencies: dependencies } = getBaseConfig('Faber Ledger Genesis Transactions', {
-      genesisTransactions,
+      indyLedgers: [
+        {
+          id: 'pool-Faber Ledger Genesis Transactions',
+          isProduction: false,
+          genesisTransactions,
+        },
+      ],
     })
     const agent = new Agent(config, dependencies)
+    await agent.initialize()
 
     if (!faberAgent.publicDid?.did) {
       throw new Error('No public did')

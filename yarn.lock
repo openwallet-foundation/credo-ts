@@ -5236,7 +5236,7 @@ indy-sdk-react-native@^0.1.13:
   dependencies:
     buffer "^6.0.2"
 
-indy-sdk@^1.16.0-dev-1634:
+indy-sdk@^1.16.0-dev-1636:
   version "1.16.0-dev-1636"
   resolved "https://registry.yarnpkg.com/indy-sdk/-/indy-sdk-1.16.0-dev-1636.tgz#e53b719a6ce536459b356dbf32b9a7cb18ca59e8"
   integrity sha512-1SYJWdf0xCr+Yd7zTLzYxS7i/j/H2dmBj9C5muPPSdh5XPkL133L0QxZ0NmVdciUY4J5TAyyCjdDgvji1ZSwAw==
@@ -6603,6 +6603,11 @@ lru-cache@^6.0.0:
   integrity sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==
   dependencies:
     yallist "^4.0.0"
+
+lru_map@^0.4.1:
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/lru_map/-/lru_map-0.4.1.tgz#f7b4046283c79fb7370c36f8fca6aee4324b0a98"
+  integrity sha512-I+lBvqMMFfqaV8CJCISjI3wbjmwVu/VyOoU7+qtu9d7ioW5klMgsTTiUOUp+DJvfTTzKXoPbyC6YfgkNcyPSOg==
 
 luxon@^1.27.0:
   version "1.28.0"
