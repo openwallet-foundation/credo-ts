@@ -74,7 +74,7 @@ describe('out of band', () => {
     const { outOfBandMessage, connectionRecord } = await outOfBandModule.createInvitation()
 
     // eslint-disable-next-line no-console
-    console.log(outOfBandMessage.toJSON())
+    console.log('outOfBandMessage.toJSON()', outOfBandMessage.toJSON())
 
     // expect supported handshake protocols
     expect(outOfBandMessage.handshakeProtocols).toContain('https://didcomm.org/connections/1.0')
@@ -95,6 +95,36 @@ describe('out of band', () => {
     // expect OutOfBandRecord in `init` state
     const createdConnectionRecord = await connectionService.findById(connectionRecord.id)
     expect((createdConnectionRecord?.didDoc.service[0] as DidCommService).recipientKeys).toEqual(service.recipientKeys)
+    // TODO Should we also check routingKeys?
+  })
+
+  test('receive OOB connection invitaion', async () => {
+    const faberOutOfBandModule = faberAgent.injectionContainer.resolve(OutOfBandModule)
+    const { outOfBandMessage } = await faberOutOfBandModule.createInvitation()
+
+    const outOfBandModule = aliceAgent.injectionContainer.resolve(OutOfBandModule)
+    const connectionService = aliceAgent.injectionContainer.resolve(ConnectionService)
+
+    const connectionRecord = await outOfBandModule.receiveInvitation(outOfBandMessage)
+
+    // expect contains services
+    const [service] = outOfBandMessage.services
+    expect(service).toMatchObject(
+      new IndyAgentService({
+        id: expect.any(String),
+        serviceEndpoint: 'rxjs:faber',
+        priority: 0,
+        recipientKeys: [expect.any(String)],
+        routingKeys: [],
+      })
+    )
+
+    // expect connection, how to identify connection?, maybe via OutOfBandRecord
+    // expect OutOfBandRecord in `init` state
+    const createdConnectionRecord = await connectionService.findById(connectionRecord.id)
+    expect(createdConnectionRecord?.invitation?.serviceEndpoint).toEqual(service.serviceEndpoint)
+    expect(createdConnectionRecord?.invitation?.recipientKeys).toEqual(service.recipientKeys)
+    expect(createdConnectionRecord?.invitation?.routingKeys).toEqual(service.routingKeys)
     // TODO Should we also check routingKeys?
   })
 
