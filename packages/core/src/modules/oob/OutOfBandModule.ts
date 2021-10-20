@@ -6,7 +6,9 @@ import { Equals } from 'class-validator'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentMessage } from '../../agent/AgentMessage'
-import { ConnectionService } from '../connections'
+import { MessageSender } from '../../agent/MessageSender'
+import { createOutboundMessage } from '../../agent/helpers'
+import { ConnectionService, ConnectionInvitationMessage } from '../connections'
 import { DiscoverFeaturesQueryMessage, DiscoverFeaturesService } from '../discover-features'
 import { MediationRecipientService } from '../routing'
 
@@ -56,15 +58,18 @@ export class OutOfBandModule {
   private connectionService: ConnectionService
   private mediationRecipientService: MediationRecipientService
   private disoverFeaturesService: DiscoverFeaturesService
+  private messageSender: MessageSender
 
   public constructor(
     connectionService: ConnectionService,
     mediationRecipientService: MediationRecipientService,
-    disoverFeaturesService: DiscoverFeaturesService
+    disoverFeaturesService: DiscoverFeaturesService,
+    messageSender: MessageSender
   ) {
     this.connectionService = connectionService
     this.mediationRecipientService = mediationRecipientService
     this.disoverFeaturesService = disoverFeaturesService
+    this.messageSender = messageSender
   }
 
   public async createInvitation(): Promise<{ outOfBandMessage: OutOfBandMessage; connectionRecord: ConnectionRecord }> {
@@ -107,5 +112,22 @@ export class OutOfBandModule {
     supportedHandshakeProtocols.forEach((p) => outOfBandMessage.handshakeProtocols.push(p))
 
     return { outOfBandMessage, connectionRecord }
+  }
+
+  public async receiveInvitation(outOfBandMessage: OutOfBandMessage) {
+    const mediationRecord = await this.mediationRecipientService.discoverMediation()
+    const routing = await this.mediationRecipientService.getRouting(mediationRecord)
+    const invitation = new ConnectionInvitationMessage({ label: 'connection label', ...outOfBandMessage.services[0] })
+    const connectionRecord = await this.connectionService.processInvitation(invitation, { routing })
+    // connectionRecord = await this.acceptInvitation(connectionRecord.id)
+    return connectionRecord
+  }
+
+  // TODO This is copy-pasted from ConnectionModule because we can't call module from other module
+  public async acceptInvitation(connectionId: string): Promise<ConnectionRecord> {
+    const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(connectionId)
+    const outbound = createOutboundMessage(connectionRecord, message)
+    await this.messageSender.sendMessage(outbound)
+    return connectionRecord
   }
 }
