@@ -135,7 +135,7 @@ describe('mediator establishment', () => {
     expect(senderRecipientConnection.isReady).toBe(true)
 
     const message = 'hello, world'
-    await senderAgent.basicMessages.sendMessage(senderRecipientConnection, message)
+    await senderAgent.basicMessages.sendMessage(senderRecipientConnection.id, message)
 
     const basicMessage = await waitForBasicMessage(recipientAgent, {
       content: message,
@@ -249,7 +249,7 @@ describe('mediator establishment', () => {
     expect(senderRecipientConnection.isReady).toBe(true)
 
     const message = 'hello, world'
-    await senderAgent.basicMessages.sendMessage(senderRecipientConnection, message)
+    await senderAgent.basicMessages.sendMessage(senderRecipientConnection.id, message)
 
     const basicMessage = await waitForBasicMessage(recipientAgent, {
       content: message,
