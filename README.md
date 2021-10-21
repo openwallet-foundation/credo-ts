@@ -61,9 +61,9 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
 - ✅ HTTP Transport
 - ✅ Connection-less Issuance and Verification
 - ✅ Smart Auto Acceptance of Connections, Credentials and Proofs
+- ✅ WebSocket Transport
 - 🚧 Revocation of Indy Credentials
 - 🚧 Electron
-- 🚧 WebSocket Transport
 - ❌ Browser
 - ❌ Issue Credential V2, Present Proof V2, DID Exchange Protocol, Out-Of-Band
 - ❌ W3C Linked Data VCs, BBS+ Signatures
