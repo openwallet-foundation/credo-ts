@@ -27,6 +27,7 @@ export interface ConnectionRecordProps {
   threadId?: string
   tags?: CustomConnectionTags
   multiUseInvitation: boolean
+  mediatorId?: string
 }
 
 export type CustomConnectionTags = TagsBase
@@ -37,6 +38,7 @@ export type DefaultConnectionTags = {
   threadId?: string
   verkey?: string
   theirKey?: string
+  mediatorId?: string
 }
 
 export class ConnectionRecord
@@ -63,6 +65,7 @@ export class ConnectionRecord
   public multiUseInvitation!: boolean
 
   public threadId?: string
+  public mediatorId?: string
 
   public static readonly type = 'ConnectionRecord'
   public readonly type = ConnectionRecord.type
@@ -87,6 +90,7 @@ export class ConnectionRecord
       this.invitation = props.invitation
       this.threadId = props.threadId
       this.multiUseInvitation = props.multiUseInvitation
+      this.mediatorId = props.mediatorId
     }
   }
 
@@ -101,6 +105,7 @@ export class ConnectionRecord
       threadId: this.threadId,
       verkey: this.verkey,
       theirKey: this.theirKey || undefined,
+      mediatorId: this.mediatorId,
     }
   }
 

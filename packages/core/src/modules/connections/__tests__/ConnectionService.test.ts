@@ -50,12 +50,18 @@ describe('ConnectionService', () => {
     eventEmitter = new EventEmitter(config)
     connectionRepository = new ConnectionRepositoryMock()
     connectionService = new ConnectionService(wallet, config, connectionRepository, eventEmitter)
-    myRouting = { did: 'fakeDid', verkey: 'fakeVerkey', endpoints: config.endpoints ?? [], routingKeys: [] }
+    myRouting = {
+      did: 'fakeDid',
+      verkey: 'fakeVerkey',
+      endpoints: config.endpoints ?? [],
+      routingKeys: [],
+      mediatorId: 'fakeMediatorId',
+    }
   })
 
   describe('createInvitation', () => {
     it('returns a connection record with values set', async () => {
-      expect.assertions(7)
+      expect.assertions(8)
       const { connectionRecord: connectionRecord } = await connectionService.createInvitation({ routing: myRouting })
 
       expect(connectionRecord.type).toBe('ConnectionRecord')
@@ -64,6 +70,7 @@ describe('ConnectionService', () => {
       expect(connectionRecord.autoAcceptConnection).toBeUndefined()
       expect(connectionRecord.id).toEqual(expect.any(String))
       expect(connectionRecord.verkey).toEqual(expect.any(String))
+      expect(connectionRecord.mediatorId).toEqual('fakeMediatorId')
       expect(connectionRecord.getTags()).toEqual(
         expect.objectContaining({
           verkey: connectionRecord.verkey,
@@ -144,7 +151,7 @@ describe('ConnectionService', () => {
 
   describe('processInvitation', () => {
     it('returns a connection record containing the information from the connection invitation', async () => {
-      expect.assertions(10)
+      expect.assertions(11)
 
       const recipientKey = 'key-1'
       const invitation = new ConnectionInvitationMessage({
@@ -164,6 +171,7 @@ describe('ConnectionService', () => {
       expect(connection.autoAcceptConnection).toBeUndefined()
       expect(connection.id).toEqual(expect.any(String))
       expect(connection.verkey).toEqual(expect.any(String))
+      expect(connection.mediatorId).toEqual('fakeMediatorId')
       expect(connection.getTags()).toEqual(
         expect.objectContaining({
           verkey: connection.verkey,
