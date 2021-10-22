@@ -1,6 +1,8 @@
-import { Exclude, Type } from 'class-transformer'
+import { Exclude, Transform, TransformationType, Type } from 'class-transformer'
 
 import { JsonTransformer } from '../utils/JsonTransformer'
+
+import { Metadata } from './metadata/Metadata'
 
 export type TagValue = string | boolean | undefined | Array<string>
 export type TagsBase = {
@@ -9,7 +11,22 @@ export type TagsBase = {
 }
 
 export type Tags<DefaultTags extends TagsBase, CustomTags extends TagsBase> = CustomTags & DefaultTags
+
 export type RecordTags<Record extends BaseRecord> = ReturnType<Record['getTags']>
+
+export function MetadataTransformer() {
+  return Transform(({ value, type }) => {
+    switch (type) {
+      case TransformationType.CLASS_TO_PLAIN:
+        return value.data
+
+      case TransformationType.PLAIN_TO_CLASS:
+        return new Metadata(value)
+      default:
+        return value
+    }
+  })
+}
 
 export abstract class BaseRecord<DefaultTags extends TagsBase = TagsBase, CustomTags extends TagsBase = TagsBase> {
   protected _tags: CustomTags = {} as CustomTags
@@ -25,6 +42,9 @@ export abstract class BaseRecord<DefaultTags extends TagsBase = TagsBase, Custom
   @Exclude()
   public readonly type = BaseRecord.type
   public static readonly type: string = 'BaseRecord'
+
+  @MetadataTransformer()
+  public readonly metadata!: Metadata
 
   /**
    * Get all tags. This is includes custom and default tags
