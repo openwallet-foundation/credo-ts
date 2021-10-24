@@ -89,11 +89,14 @@ const BCOVRIN_TEST_GENESIS = `{"reqSignature":{},"txn":{"data":{"data":{"alias":
 {"reqSignature":{},"txn":{"data":{"data":{"alias":"Node4","blskey":"2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw","blskey_pop":"RPLagxaR5xdimFzwmzYnz4ZhWtYQEj8iR5ZU53T2gitPCyCHQneUn2Huc4oeLd2B2HzkGnjAff4hWTJT6C7qHYB1Mv2wU5iHHGFWkhnTX9WsEAbunJCV2qcaXScKj4tTfvdDKfLiVuU2av6hbsMztirRze7LvYBkRHV3tGwyCptsrP","client_ip":"138.197.138.255","client_port":9708,"node_ip":"138.197.138.255","node_port":9707,"services":["VALIDATOR"]},"dest":"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA"},"metadata":{"from":"TWwCRQRZ2ZHMJFn9TzLp7W"},"type":"0"},"txnMetadata":{"seqNo":4,"txnId":"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008"},"ver":"1"}`
 
 const agentConfig = {
-   poolName: 'BCovrin Test'
-   genesisTransactions: BCOVRIN_TEST_GENESIS
+  indyLedgers: [
+    {
+      id: 'BCovrin Test',
+      genesisTransactions: BCOVRIN_TEST_GENESIS,
+      isProduction: false,
+    },
+  ],
 }
-
-
 ```
 
 Note: You do not need the genesis file if you are creating a connection between your Agent and another Agent for exchanging simple messages.
@@ -127,8 +130,13 @@ const agentConfig: InitConfig = {
   autoAcceptConnections: true,
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
   autoAcceptProofs: AutoAcceptProof.ContentApproved,
-  poolName: 'BCovrin Test',
-  genesisTransactions: BCOVRIN_TEST_GENESIS,
+  indyLedgers: [
+    {
+      id: 'BCovrin Test',
+      genesisTransactions: BCOVRIN_TEST_GENESIS,
+      isProduction: false,
+    },
+  ],
   logger: new ConsoleLogger(LogLevel.debug),
 }
 
@@ -220,7 +228,11 @@ The agent currently supports the following configuration options. Fields marked 
 - `publicDidSeed`: The seed to use for initializing the public did of the agent. This does not register the DID on the ledger.
 - `genesisPath`: The path to the genesis file to use for connecting to an Indy ledger.
 - `genesisTransactions`: String of genesis transactions to use for connecting to an Indy ledger.
-- `poolName`: The name of the pool to use for the specified `genesisPath`. Default `default-pool`
+- `indyLedgers`: The indy ledgers to connect to. This is an array of objects with the following properties. Either `genesisPath` or `genesisTransactions` must be set, but not both. See [4. Ledger](./4-ledger.md) for more information.
+  - `id`\*: The id (or name) of the ledger, also used as the pool name
+  - `isProduction`\*: Whether the ledger is a production ledger. This is used by the pool selector algorithm to know which ledger to use for certain interactions (i.e. prefer production ledgers over non-production ledgers)
+  - `genesisPath`: The path to the genesis file to use for connecting to an Indy ledger.
+  - `genesisTransactions`: String of genesis transactions to use for connecting to an Indy ledger.
 - `logger`: The logger instance to use. Must implement `Logger` interface
 - `didCommMimeType`: The mime-type to use for sending and receiving messages.
   - `DidCommMimeType.V0`: "application/ssi-agent-wire"

@@ -15,11 +15,56 @@
  *  https://github.com/hyperledger/aries-framework-dotnet/blob/f90eaf9db8548f6fc831abea917e906201755763/src/Hyperledger.Aries/Ledger/DefaultLedgerService.cs#L139-L147
  */
 
+import { BufferEncoder } from './BufferEncoder'
+
 export const FULL_VERKEY_REGEX = /^[1-9A-HJ-NP-Za-km-z]{43,44}$/
 export const ABBREVIATED_VERKEY_REGEX = /^~[1-9A-HJ-NP-Za-km-z]{21,22}$/
 export const VERKEY_REGEX = new RegExp(`${FULL_VERKEY_REGEX.source}|${ABBREVIATED_VERKEY_REGEX.source}`)
 export const DID_REGEX = /^did:([a-z]+):([a-zA-z\d]+)/
 export const DID_IDENTIFIER_REGEX = /^[a-zA-z\d-]+$/
+
+/**
+ * Check whether the did is a self certifying did. If the verkey is abbreviated this method
+ * will always return true. Make sure that the verkey you pass in this method belongs to the
+ * did passed in
+ *
+ * @return Boolean indicating whether the did is self certifying
+ */
+export function isSelfCertifiedDid(did: string, verkey: string): boolean {
+  // If the verkey is Abbreviated, it means the full verkey
+  // is the did + the verkey
+  if (isAbbreviatedVerkey(verkey)) {
+    return true
+  }
+
+  const buffer = BufferEncoder.fromBase58(verkey)
+
+  const didFromVerkey = BufferEncoder.toBase58(buffer.slice(0, 16))
+
+  if (didFromVerkey === did) {
+    return true
+  }
+
+  return false
+}
+
+/**
+ * Extract did from credential definition id
+ */
+export function didFromCredentialDefinitionId(credentialDefinitionId: string) {
+  const [did] = credentialDefinitionId.split(':')
+
+  return did
+}
+
+/**
+ * Extract did from schema id
+ */
+export function didFromSchemaId(schemaId: string) {
+  const [did] = schemaId.split(':')
+
+  return did
+}
 
 /**
  * Check a base58 encoded string against a regex expression to determine if it is a full valid verkey
