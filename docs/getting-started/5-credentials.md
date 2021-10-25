@@ -81,7 +81,7 @@ const handleCredentialStateChange = async (agent: Agent, event: CredentialStateC
       message += `${credAttribute.name}: ${credAttribute.value}\n`
     }
 
-    //Confirm accepting offer
+    // Confirm accepting offer
     Alert.alert('Attention!', message, [
       {
         text: 'Accept',
