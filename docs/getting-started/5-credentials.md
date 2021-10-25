@@ -75,7 +75,7 @@ const handleCredentialStateChange = async (agent: Agent, event: CredentialStateC
     const previewAttributes: CredentialPreviewAttribute[] =
       event.payload.credentialRecord.offerMessage?.credentialPreview.attributes || []
 
-    //You can construct a list to display on some UI
+    // You can construct a list to display on some UI
     var message = '>> Offer Recieved <<\n'
     for (const credAttribute of previewAttributes) {
       message += `${credAttribute.name}: ${credAttribute.value}\n`
