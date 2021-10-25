@@ -126,7 +126,7 @@ You can access the list of saved credentials on the wallet using the following e
 
 ```ts
 const getAllCredentials = async (agent: Agent) => {
-  const credentials: CredentialRecord[] = await agent.credentials.getAll()
+  const credentials = await agent.credentials.getAll()
   //Loop through credentials and create a list to display
 
   //To get specific credential details
