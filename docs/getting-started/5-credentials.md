@@ -109,10 +109,9 @@ According to RFCs [Issue Credential Protocol 1.0](https://github.com/hyperledger
 In this example we will follow the typical scenario of starting the process by scanning a QR Code on the issuer agent.
 
 ```ts
-const handleQRCodeScanned = async (agent: Agent, code: string) => {
+const handleQRCodeScanned = async (agent: Agent, invitationUrl: string) => {
   console.log('Decoding connection Invitation from URL:', code)
-  const decodedInvitation = await ConnectionInvitationMessage.fromUrl(code)
-  const connectionRecord = await agent.connections.receiveInvitation(decodedInvitation, {
+  const connectionRecord = await agent.connections.receiveInvitationFromUrl(invitationUrl, {
     autoAcceptConnection: true,
   })
   console.log(`Received invitation connection record:${connectionRecord}`)
