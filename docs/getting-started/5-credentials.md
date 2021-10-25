@@ -40,8 +40,8 @@ As per the recent figures, working with VCs requires some extra configuration wh
     ...
     autoAcceptConnections: true,
     autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-    //This is just a sample, you will have to consult with issuers
-    //to construct list of genesis paths
+    // This is just a sample, you will have to consult with issuers
+    // to construct list of genesis paths
     indyLedgers: [
         {
         id: 'sovrin-main',
