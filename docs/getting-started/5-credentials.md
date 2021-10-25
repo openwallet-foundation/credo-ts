@@ -97,7 +97,7 @@ const handleCredentialStateChange = async (agent: Agent, event: CredentialStateC
       },
     ])
   } else if (event.payload.credentialRecord.state === CredentialState.Done) {
-    Alert.alert('Credentail Recieved')
+    Alert.alert('Credential Received')
   }
 }
 ```
