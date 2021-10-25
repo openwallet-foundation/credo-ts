@@ -74,7 +74,6 @@ const handleCredentialStateChange = async (agent: Agent, event: CredentialStateC
   if (event.payload.credentialRecord.state === CredentialState.OfferReceived) {
     const previewAttributes: CredentialPreviewAttribute[] =
       event.payload.credentialRecord.offerMessage?.credentialPreview.attributes || []
-    var counter = 0
 
     //You can construct a list to display on some UI
     var message = '>> Offer Recieved <<\n'
