@@ -33,7 +33,7 @@ Follow these steps to use AFJ in a mobile app to receive VCs
 
 Please make sure you reviewed the [agent setup overview](../0-agent.md).
 
-As per the recent figures, working with VCs require some extra configuration when initializing your agent.
+As per the recent figures, working with VCs requires some extra configuration when initializing your agent.
 
 ```ts
  const agentConfig: InitConfig = {
