@@ -135,7 +135,7 @@ const getAllCredentials = async (agent: Agent) => {
   const previewAttributes: CredentialPreviewAttribute[] =
     lastCredentailRecord.offerMessage?.credentialPreview.attributes || []
 
-  const someVar = ''
+  let someVar = ''
   for (const credAttribute of previewAttributes) {
     someVar += `${credAttribute.name}: ${credAttribute.value}\n`
   }
