@@ -106,7 +106,7 @@ const handleCredentialStateChange = async (agent: Agent, event: CredentialStateC
 
 According to RFCs [Issue Credential Protocol 1.0](https://github.com/hyperledger/aries-rfcs/blob/main/features/0036-issue-credential/README.md), There are two ways for receiving a credential. Either you as a receiver will initiate a request and the issuer respond or the issuer initiates the process and you receive the credential by scanning a QRCode on the issuer agent side.
 
-In this example we will follow the typical scenario of starting the process by scanning a QR Code on the issuer agent.
+In this example we will follow the typical scenario of starting the process by showing a QR as the issuer (e.g. on a website), and the holder agent scanning the QR code.
 
 ```ts
 const handleQRCodeScanned = async (agent: Agent, invitationUrl: string) => {
