@@ -2,7 +2,7 @@ import { Exclude, Transform, TransformationType, Type } from 'class-transformer'
 
 import { JsonTransformer } from '../utils/JsonTransformer'
 
-import { Metadata } from './metadata/Metadata'
+import { Metadata } from './Metadata'
 
 export type TagValue = string | boolean | undefined | Array<string>
 export type TagsBase = {
@@ -43,8 +43,9 @@ export abstract class BaseRecord<DefaultTags extends TagsBase = TagsBase, Custom
   public readonly type = BaseRecord.type
   public static readonly type: string = 'BaseRecord'
 
+  /** @inheritdoc {Metadata#Metadata} */
   @MetadataTransformer()
-  public readonly metadata!: Metadata
+  public metadata: Metadata = new Metadata({})
 
   /**
    * Get all tags. This is includes custom and default tags
