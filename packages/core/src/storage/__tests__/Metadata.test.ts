@@ -23,6 +23,15 @@ describe('Metadata', () => {
     })
   })
 
+  test('add() ', () => {
+    testRecord.metadata.set('sample', { foo: 'bar' })
+    testRecord.metadata.add('sample', { baz: 'foo' })
+
+    expect(testRecord.toJSON()).toMatchObject({
+      metadata: { sample: { foo: 'bar', baz: 'foo' } },
+    })
+  })
+
   test('get()', () => {
     const record = testRecord.metadata.get<{ baz: 'foo' }>('bar')
 

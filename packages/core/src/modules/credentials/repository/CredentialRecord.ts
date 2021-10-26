@@ -55,7 +55,6 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
   public threadId!: string
   public credentialId?: string
   public state!: CredentialState
-  public metadata!: CredentialRecordMetadata
   public autoAcceptCredential?: AutoAcceptCredential
 
   // message data
@@ -85,7 +84,6 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       this.createdAt = props.createdAt ?? new Date()
       this.state = props.state
       this.connectionId = props.connectionId
-      this.metadata = props.metadata ?? {}
       this.credentialId = props.credentialId
       this.threadId = props.threadId
       this._tags = props.tags ?? {}
@@ -97,6 +95,22 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       this.credentialAttributes = props.credentialAttributes
       this.autoAcceptCredential = props.autoAcceptCredential
       this.linkedAttachments = props.linkedAttachments
+
+      if (props.metadata) {
+        if (props.metadata.requestMetadata) {
+          this.metadata.set('requestMetadata', props.metadata.requestMetadata)
+        }
+        if (props.metadata.schemaId) {
+          this.metadata.add('schemaAndCredentialDefinitionId', {
+            schemaId: props.metadata.schemaId,
+          })
+        }
+        if (props.metadata.credentialDefinitionId) {
+          this.metadata.add('schemaAndCredentialDefinitionId', {
+            schemaId: props.metadata.schemaId,
+          })
+        }
+      }
     }
   }
 

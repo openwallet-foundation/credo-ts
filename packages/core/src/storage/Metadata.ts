@@ -47,6 +47,19 @@ export class Metadata {
   }
 
   /**
+   * Adds a record to a metadata key
+   *
+   * @param key the key to add the metadata at
+   * @param value the value to add in the metadata
+   */
+  public add(key: string, value: Record<string, unknown>): void {
+    this.data[key] = {
+      ...this.data[key],
+      ...value,
+    }
+  }
+
+  /**
    * Retrieves all the metadata for a record
    *
    * @returns all the metadata that exists on the record
