@@ -1,6 +1,7 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialState } from '../CredentialState'
+import type { IndyCredentialMetadata } from '../models/CredentialInfo'
 
 import { Type } from 'class-transformer'
 
@@ -101,13 +102,13 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
           this.metadata.set('requestMetadata', props.metadata.requestMetadata)
         }
         if (props.metadata.schemaId) {
-          this.metadata.add('schemaAndCredentialDefinitionId', {
+          this.metadata.add('indyCredentialMetadata', {
             schemaId: props.metadata.schemaId,
           })
         }
         if (props.metadata.credentialDefinitionId) {
-          this.metadata.add('schemaAndCredentialDefinitionId', {
-            schemaId: props.metadata.schemaId,
+          this.metadata.add('indyCredentialMetadata', {
+            credentialDefinitionId: props.metadata.credentialDefinitionId,
           })
         }
       }
@@ -135,13 +136,13 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       {}
     )
 
+    const indyCredentialMetadata =
+      this.metadata.get<{ schemaId: string; credentialDefinitionId: string }>('indyCredentialMetadata') ?? undefined
+
     return new CredentialInfo({
       claims,
       attachments: this.linkedAttachments,
-      metadata: {
-        credentialDefinitionId: this.metadata.credentialDefinitionId,
-        schemaId: this.metadata.schemaId,
-      },
+      metadata: indyCredentialMetadata,
     })
   }
 

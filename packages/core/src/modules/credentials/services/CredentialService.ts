@@ -6,6 +6,7 @@ import type { ConnectionRecord } from '../../connections'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { ProposeCredentialMessageOptions } from '../messages'
+import type { CredReqMetadata } from 'indy-sdk'
 
 import { scoped, Lifecycle } from 'tsyringe'
 
@@ -244,8 +245,10 @@ export class CredentialService {
 
     credentialRecord.offerMessage = credentialOfferMessage
     credentialRecord.credentialAttributes = preview.attributes
-    credentialRecord.metadata.credentialDefinitionId = credOffer.cred_def_id
-    credentialRecord.metadata.schemaId = credOffer.schema_id
+    credentialRecord.metadata.set('indyCredentialMetadata', {
+      schemaId: credOffer.schema_id,
+      credentialDefinitionId: credOffer.cred_def_id,
+    })
     credentialRecord.linkedAttachments = attachments?.filter((attachment) => isLinkedAttachment(attachment))
     credentialRecord.autoAcceptCredential =
       credentialTemplate.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
@@ -357,11 +360,13 @@ export class CredentialService {
       })
 
       credentialRecord.offerMessage = credentialOfferMessage
-      credentialRecord.linkedAttachments = credentialOfferMessage.attachments?.filter((attachment) =>
-        isLinkedAttachment(attachment)
-      )
-      credentialRecord.metadata.credentialDefinitionId = indyCredentialOffer.cred_def_id
-      credentialRecord.metadata.schemaId = indyCredentialOffer.schema_id
+      credentialRecord.linkedAttachments = credentialOfferMessage.attachments?.filter(isLinkedAttachment)
+
+      credentialRecord.metadata.set('indyCredentialMetadata', {
+        schemaId: indyCredentialOffer.schema_id,
+        credentialDefinitionId: indyCredentialOffer.cred_def_id,
+      })
+
       await this.updateState(credentialRecord, CredentialState.OfferReceived)
     } catch {
       // No credential record exists with thread id
@@ -440,7 +445,7 @@ export class CredentialService {
     })
     credentialRequest.setThread({ threadId: credentialRecord.threadId })
 
-    credentialRecord.metadata.requestMetadata = credReqMetadata
+    credentialRecord.metadata.set('requestMetadata', credReqMetadata)
     credentialRecord.requestMessage = credentialRequest
     credentialRecord.autoAcceptCredential = options?.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
@@ -604,7 +609,9 @@ export class CredentialService {
       previousSentMessage: credentialRecord.requestMessage,
     })
 
-    if (!credentialRecord.metadata.requestMetadata) {
+    const credentialRequestMetadata = credentialRecord.metadata.get<CredReqMetadata>('requestMetadata')
+
+    if (!credentialRequestMetadata) {
       throw new AriesFrameworkError(`Missing required request metadata for credential with id ${credentialRecord.id}`)
     }
 
@@ -619,7 +626,7 @@ export class CredentialService {
 
     const credentialId = await this.indyHolderService.storeCredential({
       credentialId: uuid(),
-      credentialRequestMetadata: credentialRecord.metadata.requestMetadata,
+      credentialRequestMetadata,
       credential: indyCredential,
       credentialDefinition,
     })
