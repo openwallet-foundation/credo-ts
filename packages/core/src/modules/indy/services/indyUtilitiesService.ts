@@ -12,7 +12,7 @@ import { isIndyError } from '../../../utils/indyError'
 import { IndySdkError } from '../../../error/IndySdkError'
 
 @scoped(Lifecycle.ContainerScoped)
-export class IndyUtilitesService {
+export class IndyUtilitiesService {
   private indy: typeof Indy
   private logger: Logger
   private fileSystem: FileSystem
@@ -29,7 +29,7 @@ export class IndyUtilitesService {
    * @param tailsFilePath The path of the tails file
    * @returns The blob storage reader handle
    */
-  public async createTailsReader(tailsFilePath: string): Promise<BlobReaderHandle> {
+   public async createTailsReader(tailsFilePath: string): Promise<BlobReaderHandle> {
     try {
       this.logger.debug(`Opening tails reader at path ${tailsFilePath}`)
       const tailsFileExists = await this.fileSystem.exists(tailsFilePath)
@@ -86,9 +86,8 @@ export class IndyUtilitesService {
     } catch (error) {
       this.logger.error(`Error while retrieving tails file from URL ${tailsLocation}`, {
         error,
-        errorMessage: error.message,
-      })
-      throw error
+      }) 
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 }

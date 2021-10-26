@@ -17,7 +17,7 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { AriesFrameworkError, IndySdkError } from '../../../error'
 import { isIndyError } from '../../../utils/indyError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
-import { IndyIssuerService } from '../../indy'
+import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyLedgerService {

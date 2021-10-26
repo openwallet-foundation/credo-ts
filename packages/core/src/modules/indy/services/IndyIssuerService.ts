@@ -19,16 +19,16 @@ import { IndySdkError } from '../../../error/IndySdkError'
 import { isIndyError } from '../../../utils/indyError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 
-import { IndyUtilitesService } from './indyUtilitiesService'
+import { IndyUtilitiesService } from './IndyUtilitiesService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyIssuerService {
   private indy: typeof Indy
   private wallet: IndyWallet
-  private indyUtilitiesService: IndyUtilitesService
+  private indyUtilitiesService: IndyUtilitiesService
   private fileSystem: FileSystem
 
-  public constructor(agentConfig: AgentConfig, wallet: IndyWallet, indyUtilitiesService: IndyUtilitesService) {
+  public constructor(agentConfig: AgentConfig, wallet: IndyWallet, indyUtilitiesService: IndyUtilitiesService) {
     this.indy = agentConfig.agentDependencies.indy
     this.wallet = wallet
     this.indyUtilitiesService = indyUtilitiesService
@@ -46,7 +46,7 @@ export class IndyIssuerService {
 
       return schema
     } catch (error) {
-      throw new IndySdkError(error)
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 
@@ -76,7 +76,7 @@ export class IndyIssuerService {
 
       return credentialDefinition
     } catch (error) {
-      throw new IndySdkError(error)
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 
@@ -90,7 +90,7 @@ export class IndyIssuerService {
     try {
       return await this.indy.issuerCreateCredentialOffer(this.wallet.handle, credentialDefinitionId)
     } catch (error) {
-      throw new IndySdkError(error)
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 
@@ -125,11 +125,7 @@ export class IndyIssuerService {
 
       return [credential, credentialRevocationId]
     } catch (error) {
-      if (isIndyError(error)) {
-        throw new IndySdkError(error)
-      }
-
-      throw error
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 }

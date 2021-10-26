@@ -8,29 +8,24 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { IndySdkError } from '../../../error/IndySdkError'
 import { isIndyError } from '../../../utils/indyError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
-import { IndyLedgerService } from '../../ledger'
-
-import { IndyUtilitesService } from './indyUtilitiesService'
+import { IndyRevocationService } from './IndyRevocationService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyHolderService {
   private indy: typeof Indy
   private logger: Logger
   private wallet: IndyWallet
-  private ledgerService: IndyLedgerService
-  private indyUtilitesService: IndyUtilitesService
+  private indyRevocationService: IndyRevocationService
 
   public constructor(
     agentConfig: AgentConfig,
+    indyRevocationService: IndyRevocationService,
     wallet: IndyWallet,
-    ledgerService: IndyLedgerService,
-    indyUtilitesService: IndyUtilitesService
   ) {
     this.indy = agentConfig.agentDependencies.indy
     this.wallet = wallet
-    this.ledgerService = ledgerService
+    this.indyRevocationService = indyRevocationService
     this.logger = agentConfig.logger
-    this.indyUtilitesService = indyUtilitesService
   }
 
   /**
@@ -53,57 +48,8 @@ export class IndyHolderService {
   }: CreateProofOptions): Promise<Indy.IndyProof> {
     try {
       this.logger.debug('Creating Indy Proof')
-      const revocationStates: Indy.RevStates = {}
-
-      if (proofRequest.non_revoked) {
-        this.logger.debug('Proof request includes a non-revocation, creating revocation state(s)')
-        //Create array of credential info
-        const credentialObjects = [
-          ...Object.values(requestedCredentials.requestedAttributes),
-          ...Object.values(requestedCredentials.requestedPredicates),
-        ]
-          .filter((c) => !!c.credentialInfo)
-          .map((c) => c.credentialInfo)
-
-        //Cache object to prevent redundancy
-        const cachedRevDefinitions: {
-          [revRegId: string]: Indy.RevocRegDef
-        } = {}
-
-        //Create revocation state of each revocable credential
-        for (const requestedCredential of credentialObjects) {
-          const revRegId = requestedCredential?.revocationRegistryId
-          const credRevId = requestedCredential?.credentialRevocationId
-          if (revRegId && credRevId) {
-            let revocRegDef: Indy.RevocRegDef
-
-            if (cachedRevDefinitions[revRegId]) {
-              revocRegDef = cachedRevDefinitions[revRegId]
-            } else {
-              revocRegDef = await this.ledgerService.getRevocRegDef(revRegId)
-              cachedRevDefinitions[revRegId] = revocRegDef
-            }
-
-            const { revocRegDelta, deltaTimestamp } = await this.ledgerService.getRevocRegDelta(
-              revRegId,
-              proofRequest.non_revoked?.from,
-              proofRequest.non_revoked?.to
-            )
-
-            const { tailsLocation, tailsHash } = revocRegDef.value
-            const tails = await this.indyUtilitesService.downloadTails(tailsHash, tailsLocation)
-            // @ts-ignore TODO: Remove upon DefinitelyTyped types updated
-            const revocationState = await this.indy.createRevocationState(
-              tails,
-              JSON.stringify(revocRegDef),
-              JSON.stringify(revocRegDelta),
-              deltaTimestamp,
-              credRevId.toString()
-            )
-            revocationStates[revRegId] = { [deltaTimestamp]: revocationState }
-          }
-        }
-      }
+      const revocationStates: Indy.RevStates = await this.indyRevocationService.createRevocationState(proofRequest, requestedCredentials)
+      
       const indyProof: Indy.IndyProof = await this.indy.proverCreateProof(
         this.wallet.handle,
         proofRequest,
@@ -117,7 +63,13 @@ export class IndyHolderService {
       this.logger.debug('Created Indy Proof')
       return indyProof
     } catch (error) {
-      throw new IndySdkError(error)
+      this.logger.error(`Error creating Indy Proof`, {
+        error,
+        proofRequest,
+        requestedCredentials,
+      })
+
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 
@@ -143,7 +95,11 @@ export class IndyHolderService {
         revocationRegistryDefinitions ?? null
       )
     } catch (error) {
-      throw new IndySdkError(error)
+      this.logger.error(`Error storing Indy Credential '${credentialId}'`, {
+        error,
+      })
+
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 
@@ -160,7 +116,11 @@ export class IndyHolderService {
     try {
       return await this.indy.proverGetCredential(this.wallet.handle, credentialId)
     } catch (error) {
-      throw new IndySdkError(error)
+      this.logger.error(`Error getting Indy Credential '${credentialId}'`, {
+        error,
+      })
+
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 
@@ -183,7 +143,12 @@ export class IndyHolderService {
         this.wallet.masterSecretId
       )
     } catch (error) {
-      throw new IndySdkError(error)
+      this.logger.error(`Error creating Indy Credential Request`, {
+        error,
+        credentialOffer
+      })
+
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 
@@ -259,7 +224,11 @@ export class IndyHolderService {
 
       return credentials
     } catch (error) {
-      throw new IndySdkError(error)
+      this.logger.error(`Error Fetching Indy Credentials For Referent`, {
+        error,
+      })
+
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 }
