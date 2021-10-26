@@ -320,7 +320,7 @@ describe('CredentialService', () => {
       // then
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
-      expect(updatedCredentialRecord).toMatchObject({
+      expect(updatedCredentialRecord.toJSON()).toMatchObject({
         metadata: { requestMetadata: { cred_req: 'meta-data' } },
         state: CredentialState.RequestSent,
       })

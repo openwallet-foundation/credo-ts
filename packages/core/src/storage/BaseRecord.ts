@@ -18,7 +18,7 @@ export function MetadataTransformer() {
   return Transform(({ value, type }) => {
     switch (type) {
       case TransformationType.CLASS_TO_PLAIN:
-        return value.data
+        return { ...value.data }
 
       case TransformationType.PLAIN_TO_CLASS:
         return new Metadata(value)
