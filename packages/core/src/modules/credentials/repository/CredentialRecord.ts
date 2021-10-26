@@ -1,7 +1,6 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialState } from '../CredentialState'
-import type { IndyCredentialMetadata } from '../models/CredentialInfo'
 
 import { Type } from 'class-transformer'
 
@@ -10,11 +9,11 @@ import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 import {
-  ProposeCredentialMessage,
-  IssueCredentialMessage,
-  RequestCredentialMessage,
-  OfferCredentialMessage,
   CredentialPreviewAttribute,
+  IssueCredentialMessage,
+  OfferCredentialMessage,
+  ProposeCredentialMessage,
+  RequestCredentialMessage,
 } from '../messages'
 import { CredentialInfo } from '../models/CredentialInfo'
 
