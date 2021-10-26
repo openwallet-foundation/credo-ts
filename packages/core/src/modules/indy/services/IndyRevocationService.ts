@@ -1,18 +1,16 @@
 import type { Logger } from '../../../logger'
-import type { RequestedCredentials } from '../../proofs'
 import type { FileSystem } from '../../../storage/FileSystem'
-import type { default as Indy, BlobReaderHandle } from 'indy-sdk'
+import type { RequestedCredentials } from '../../proofs'
+import type { default as Indy, } from 'indy-sdk'
 
-import axios from 'axios'
 import { scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { AriesFrameworkError } from '../../../error'
 import { IndySdkError } from '../../../error/IndySdkError'
 import { isIndyError } from '../../../utils/indyError'
-import { getDirFromFilePath } from '../../../utils/path'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { IndyLedgerService } from '../../ledger'
+
 import { IndyUtilitiesService } from './IndyUtilitiesService'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -28,7 +26,7 @@ export class IndyRevocationService {
     agentConfig: AgentConfig,
     indyUtilitiesService: IndyUtilitiesService,
     ledgerService: IndyLedgerService,
-    wallet: IndyWallet,
+    wallet: IndyWallet
   ) {
     this.fileSystem = agentConfig.fileSystem
     this.indy = agentConfig.agentDependencies.indy
@@ -40,9 +38,9 @@ export class IndyRevocationService {
 
   public async createRevocationState(
     proofRequest: Indy.IndyProofRequest,
-    requestedCredentials: RequestedCredentials,
+    requestedCredentials: RequestedCredentials
   ): Promise<Indy.RevStates> {
-    try{
+    try {
       const revocationStates: Indy.RevStates = {}
       if (proofRequest.non_revoked) {
         this.logger.debug('Proof request requires proof of non-revocation, creating revocation state(s)')
@@ -95,7 +93,7 @@ export class IndyRevocationService {
       }
 
       return revocationStates
-    } catch (error){
+    } catch (error) {
       this.logger.error(`Error creating Indy Revocation State for Proof Request`, {
         error,
         proofRequest,

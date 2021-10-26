@@ -6,10 +6,10 @@ import axios from 'axios'
 import { scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { getDirFromFilePath } from '../../../utils/path'
 import { AriesFrameworkError } from '../../../error'
-import { isIndyError } from '../../../utils/indyError'
 import { IndySdkError } from '../../../error/IndySdkError'
+import { isIndyError } from '../../../utils/indyError'
+import { getDirFromFilePath } from '../../../utils/path'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyUtilitiesService {
@@ -29,7 +29,7 @@ export class IndyUtilitiesService {
    * @param tailsFilePath The path of the tails file
    * @returns The blob storage reader handle
    */
-   public async createTailsReader(tailsFilePath: string): Promise<BlobReaderHandle> {
+  public async createTailsReader(tailsFilePath: string): Promise<BlobReaderHandle> {
     try {
       this.logger.debug(`Opening tails reader at path ${tailsFilePath}`)
       const tailsFileExists = await this.fileSystem.exists(tailsFilePath)
@@ -86,7 +86,7 @@ export class IndyUtilitiesService {
     } catch (error) {
       this.logger.error(`Error while retrieving tails file from URL ${tailsLocation}`, {
         error,
-      }) 
+      })
       throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }

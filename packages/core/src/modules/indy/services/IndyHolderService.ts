@@ -8,6 +8,7 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { IndySdkError } from '../../../error/IndySdkError'
 import { isIndyError } from '../../../utils/indyError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
+
 import { IndyRevocationService } from './IndyRevocationService'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -17,11 +18,7 @@ export class IndyHolderService {
   private wallet: IndyWallet
   private indyRevocationService: IndyRevocationService
 
-  public constructor(
-    agentConfig: AgentConfig,
-    indyRevocationService: IndyRevocationService,
-    wallet: IndyWallet,
-  ) {
+  public constructor(agentConfig: AgentConfig, indyRevocationService: IndyRevocationService, wallet: IndyWallet) {
     this.indy = agentConfig.agentDependencies.indy
     this.wallet = wallet
     this.indyRevocationService = indyRevocationService
@@ -48,8 +45,11 @@ export class IndyHolderService {
   }: CreateProofOptions): Promise<Indy.IndyProof> {
     try {
       this.logger.debug('Creating Indy Proof')
-      const revocationStates: Indy.RevStates = await this.indyRevocationService.createRevocationState(proofRequest, requestedCredentials)
-      
+      const revocationStates: Indy.RevStates = await this.indyRevocationService.createRevocationState(
+        proofRequest,
+        requestedCredentials
+      )
+
       const indyProof: Indy.IndyProof = await this.indy.proverCreateProof(
         this.wallet.handle,
         proofRequest,
@@ -145,7 +145,7 @@ export class IndyHolderService {
     } catch (error) {
       this.logger.error(`Error creating Indy Credential Request`, {
         error,
-        credentialOffer
+        credentialOffer,
       })
 
       throw isIndyError(error) ? new IndySdkError(error) : error
