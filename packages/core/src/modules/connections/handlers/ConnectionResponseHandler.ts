@@ -27,7 +27,7 @@ export class ConnectionResponseHandler implements Handler {
     // In AATH we have a separate step to send the ping. So for now we'll only do it
     // if auto accept is enable
     if (messageContext.connection?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      const { message } = await this.connectionService.createAck(messageContext.connection.id)
+      const { message } = await this.connectionService.createTrustPingAck(messageContext.connection.id)
       return createOutboundMessage(messageContext.connection, message)
     }
   }

@@ -1,11 +1,11 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { TrustPingMessage } from '../messages'
+import type { TrustPingMessageOptions } from '../messages'
 import type { ConnectionRecord } from '../repository/ConnectionRecord'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { createOutboundMessage } from '../../../agent/helpers'
-import { TrustPingResponseMessage } from '../messages'
+import { TrustPingMessage, TrustPingResponseMessage } from '../messages'
 
 @scoped(Lifecycle.ContainerScoped)
 export class TrustPingService {
@@ -17,6 +17,16 @@ export class TrustPingService {
 
       return createOutboundMessage(connection, response)
     }
+  }
+
+  /**
+   * Create a trust ping message for the connection with the specified connection id.
+   *
+   * @param options optional trust ping options
+   * @returns outbound message containing trust ping message
+   */
+  public async createTrustPing(options: TrustPingMessageOptions = {}): Promise<TrustPingMessage> {
+    return new TrustPingMessage(options)
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

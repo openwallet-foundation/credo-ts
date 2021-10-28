@@ -21,6 +21,7 @@ import { Connection, ConnectionState, ConnectionRole, DidDoc, DidCommService } f
 import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
 import { ConnectionService } from '../services/ConnectionService'
+import { TrustPingService } from '../services/TrustPingService'
 
 jest.mock('../repository/ConnectionRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
@@ -35,6 +36,7 @@ describe('ConnectionService', () => {
   let connectionService: ConnectionService
   let eventEmitter: EventEmitter
   let myRouting: Routing
+  let trustPingService: TrustPingService
 
   beforeAll(async () => {
     wallet = new IndyWallet(config)
@@ -49,7 +51,8 @@ describe('ConnectionService', () => {
   beforeEach(async () => {
     eventEmitter = new EventEmitter(config)
     connectionRepository = new ConnectionRepositoryMock()
-    connectionService = new ConnectionService(wallet, config, connectionRepository, eventEmitter)
+    trustPingService = new TrustPingService()
+    connectionService = new ConnectionService(wallet, config, connectionRepository, trustPingService, eventEmitter)
     myRouting = { did: 'fakeDid', verkey: 'fakeVerkey', endpoints: config.endpoints ?? [], routingKeys: [] }
   })
 
@@ -625,7 +628,7 @@ describe('ConnectionService', () => {
       })
       mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(mockConnection))
 
-      const { message, connectionRecord: connectionRecord } = await connectionService.createAck('test')
+      const { message, connectionRecord: connectionRecord } = await connectionService.createTrustPingAck('test')
 
       expect(connectionRecord.state).toBe(ConnectionState.Complete)
       expect(message).toEqual(expect.any(TrustPingMessage))
@@ -638,36 +641,7 @@ describe('ConnectionService', () => {
         expect.assertions(1)
 
         mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(getMockConnection({ state })))
-        return expect(connectionService.createAck('test')).rejects.toThrowError(
-          `Connection record is in invalid state ${state}. Valid states are: ${ConnectionState.Responded}, ${ConnectionState.Complete}.`
-        )
-      }
-    )
-  })
-
-  describe('createTrustPing', () => {
-    it('returns a trust ping message', async () => {
-      expect.assertions(2)
-
-      const mockConnection = getMockConnection({
-        state: ConnectionState.Complete,
-      })
-      mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(mockConnection))
-
-      const { message, connectionRecord: connectionRecord } = await connectionService.createTrustPing('test')
-
-      expect(connectionRecord.state).toBe(ConnectionState.Complete)
-      expect(message).toEqual(expect.any(TrustPingMessage))
-    })
-
-    const invalidConnectionStates = [ConnectionState.Invited, ConnectionState.Requested]
-    test.each(invalidConnectionStates)(
-      `throws an error when connection state is %s and not ${ConnectionState.Responded} or ${ConnectionState.Complete}`,
-      (state) => {
-        expect.assertions(1)
-
-        mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(getMockConnection({ state })))
-        return expect(connectionService.createTrustPing('test')).rejects.toThrowError(
+        return expect(connectionService.createTrustPingAck('test')).rejects.toThrowError(
           `Connection record is in invalid state ${state}. Valid states are: ${ConnectionState.Responded}, ${ConnectionState.Complete}.`
         )
       }

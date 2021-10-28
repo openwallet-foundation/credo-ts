@@ -157,7 +157,9 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
-    const { message, connectionRecord: connectionRecord } = await this.connectionService.createAck(connectionId)
+    const { message, connectionRecord: connectionRecord } = await this.connectionService.createTrustPingAck(
+      connectionId
+    )
 
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)
@@ -173,10 +175,8 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async sendTrustPing(connectionId: string, options: TrustPingMessageOptions = {}): Promise<ConnectionRecord> {
-    const { message, connectionRecord: connectionRecord } = await this.connectionService.createTrustPing(
-      connectionId,
-      options
-    )
+    const connectionRecord = await this.connectionService.getById(connectionId)
+    const message = await this.trustPingService.createTrustPing(options)
 
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)

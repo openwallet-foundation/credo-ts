@@ -17,7 +17,7 @@ import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { TransportEventTypes } from '../../transport'
 import { ConnectionInvitationMessage } from '../connections'
-import { ConnectionService } from '../connections/services'
+import { ConnectionService, TrustPingService } from '../connections/services'
 
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
 import { RoutingEventTypes } from './RoutingEvents'
@@ -33,6 +33,7 @@ export class RecipientModule {
   private agentConfig: AgentConfig
   private mediationRecipientService: MediationRecipientService
   private connectionService: ConnectionService
+  private trustPingService: TrustPingService
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
   private logger: Logger
@@ -42,11 +43,13 @@ export class RecipientModule {
     agentConfig: AgentConfig,
     mediationRecipientService: MediationRecipientService,
     connectionService: ConnectionService,
+    trustPingService: TrustPingService,
     messageSender: MessageSender,
     eventEmitter: EventEmitter
   ) {
     this.agentConfig = agentConfig
     this.connectionService = connectionService
+    this.trustPingService = trustPingService
     this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
@@ -92,8 +95,9 @@ export class RecipientModule {
   }
 
   private async openMediationWebSocket(mediator: MediationRecord) {
+    const connectionRecord = await this.connectionService.getById(mediator.connectionId)
     //Send responseRequested: false in order to trigger delivery of queued messages
-    const { message, connectionRecord } = await this.connectionService.createTrustPing(mediator.connectionId, {
+    const message = await this.trustPingService.createTrustPing({
       responseRequested: false,
     })
 
