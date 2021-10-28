@@ -48,6 +48,7 @@ export class ConnectionsModule {
     autoAcceptConnection?: boolean
     alias?: string
     mediatorId?: string
+    multiUseInvitation?: boolean
   }): Promise<{
     invitation: ConnectionInvitationMessage
     connectionRecord: ConnectionRecord
@@ -59,6 +60,7 @@ export class ConnectionsModule {
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
       routing: myRouting,
+      multiUseInvitation: config?.multiUseInvitation,
     })
 
     return { connectionRecord, invitation }
@@ -274,7 +276,9 @@ export class ConnectionsModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new ConnectionRequestHandler(this.connectionService, this.agentConfig))
+    dispatcher.registerHandler(
+      new ConnectionRequestHandler(this.connectionService, this.agentConfig, this.mediationRecipientService)
+    )
     dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService, this.agentConfig))
     dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
     dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))

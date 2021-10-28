@@ -63,7 +63,7 @@ describe('agents', () => {
 
   test('send a message to connection', async () => {
     const message = 'hello, world'
-    await aliceAgent.basicMessages.sendMessage(aliceConnection, message)
+    await aliceAgent.basicMessages.sendMessage(aliceConnection.id, message)
 
     const basicMessage = await waitForBasicMessage(bobAgent, {
       content: message,

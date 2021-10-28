@@ -2,6 +2,7 @@ import type { AgentMessage } from './agent/AgentMessage'
 import type { Logger } from './logger'
 import type { ConnectionRecord, DidCommService } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
+import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
 
@@ -31,13 +32,10 @@ export interface InitConfig {
   autoAcceptConnections?: boolean
   autoAcceptProofs?: AutoAcceptProof
   autoAcceptCredentials?: AutoAcceptCredential
-  poolName?: string
   logger?: Logger
   didCommMimeType?: DidCommMimeType
 
-  // Either path or transactions string can be provided
-  genesisPath?: string
-  genesisTransactions?: string
+  indyLedgers?: IndyPoolConfig[]
 
   autoAcceptMediationRequests?: boolean
   mediatorConnectionsInvite?: string
@@ -47,6 +45,7 @@ export interface InitConfig {
   mediatorPickupStrategy?: MediatorPickupStrategy
 
   useLegacyDidSovPrefix?: boolean
+  connectionImageUrl?: string
 }
 
 export interface UnpackedMessage {

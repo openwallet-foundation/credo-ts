@@ -58,12 +58,11 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
 - ✅ Basic Message Protocol ([RFC 0095](https://github.com/hyperledger/aries-rfcs/blob/master/features/0095-basic-message/README.md))
 - ✅ Mediator Coordination Protocol ([RFC 0211](https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md))
 - ✅ Indy Credentials (with `did:sov` support)
-- ✅ HTTP Transport
+- ✅ HTTP & WebSocket Transport
 - ✅ Connection-less Issuance and Verification
 - ✅ Smart Auto Acceptance of Connections, Credentials and Proofs
 - 🚧 Revocation of Indy Credentials
 - 🚧 Electron
-- 🚧 WebSocket Transport
 - ❌ Browser
 - ❌ Issue Credential V2, Present Proof V2, DID Exchange Protocol, Out-Of-Band
 - ❌ W3C Linked Data VCs, BBS+ Signatures
@@ -125,11 +124,22 @@ Now that your project is setup and everything seems to be working, it is time to
 7. [Proofs](/docs/getting-started/6-proofs.md)
 8. [Logging](/docs/getting-started/7-logging.md)
 
+### Divergence from Aries RFCs
+
+Although Aries Framework JavaScript tries to follow the standards as described in the Aries RFCs as much as possible, some features in AFJ slightly diverge from the written spec. Below is an overview of the features that diverge from the spec, their impact and the reasons for diverging.
+
+| Feature                                                                          | Impact                                                                                                                                                                                                                                                                               | Reason                                                                                                                                                                  |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Support for `imageUrl` attribute in connection invitation and connection request | Properties that are not recognized should be ignored, meaning this shouldn't limit interoperability between agents. As the image url is self-attested it could give a false sense of trust. Better, credential based, method for visually identifying an entity are not present yet. | Even though not documented, almost all agents support this feature. Not including this feature means AFJ is lacking in features in comparison to other implementations. |
+
 ## Contributing
 
 If you would like to contribute to the framework, please read the [Framework Developers README](/DEVREADME.md) and the [CONTRIBUTING](/CONTRIBUTING.md) guidelines. These documents will provide more information to get you started!
 
-The Aries Framework JavaScript call takes place every week at Thursday, 14:00 UTC via [Zoom](https://zoom.us/j/92215586249?pwd=Vm5ZTGV4T0cwVEl4blh3MjBzYjVYZz09). This meeting is for contributors to groom and plan the backlog, and discuss issues. Feel free to join!
+The Aries Framework JavaScript call takes place every week at Thursday, 14:00 UTC via [Zoom](https://zoom.us/j/92215586249?pwd=Vm5ZTGV4T0cwVEl4blh3MjBzYjVYZz09).
+This meeting is for contributors to groom and plan the backlog, and discuss issues.
+Meeting agendas and recordings can be found [here](https://wiki.hyperledger.org/display/ARIES/Framework+JS+Meetings).
+Feel free to join!
 
 ## License
 

@@ -1,7 +1,7 @@
 import type { DidDoc } from '../models'
 
 import { Type } from 'class-transformer'
-import { Equals, IsString, ValidateNested } from 'class-validator'
+import { Equals, IsInstance, IsOptional, IsString, IsUrl, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Connection } from '../models'
@@ -11,10 +11,11 @@ export interface ConnectionRequestMessageOptions {
   label: string
   did: string
   didDoc?: DidDoc
+  imageUrl?: string
 }
 
 /**
- * Message to communicate the DID document to the other agent when creating a connectino
+ * Message to communicate the DID document to the other agent when creating a connection
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0160-connection-protocol/README.md#1-connection-request
  */
@@ -29,6 +30,7 @@ export class ConnectionRequestMessage extends AgentMessage {
     if (options) {
       this.id = options.id || this.generateId()
       this.label = options.label
+      this.imageUrl = options.imageUrl
 
       this.connection = new Connection({
         did: options.did,
@@ -46,5 +48,10 @@ export class ConnectionRequestMessage extends AgentMessage {
 
   @Type(() => Connection)
   @ValidateNested()
+  @IsInstance(Connection)
   public connection!: Connection
+
+  @IsOptional()
+  @IsUrl()
+  public imageUrl?: string
 }

@@ -1,9 +1,37 @@
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsArray, ValidateNested, IsString, IsEnum } from 'class-validator'
+import { Equals, IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'class-validator'
+import { Verkey } from 'indy-sdk'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 
 import { KeylistUpdateAction } from './KeylistUpdateMessage'
+
+export enum KeylistUpdateResult {
+  ClientError = 'client_error',
+  ServerError = 'server_error',
+  NoChange = 'no_change',
+  Success = 'success',
+}
+
+export class KeylistUpdated {
+  public constructor(options: { recipientKey: Verkey; action: KeylistUpdateAction; result: KeylistUpdateResult }) {
+    if (options) {
+      this.recipientKey = options.recipientKey
+      this.action = options.action
+      this.result = options.result
+    }
+  }
+
+  @IsString()
+  @Expose({ name: 'recipient_key' })
+  public recipientKey!: Verkey
+
+  @IsEnum(KeylistUpdateAction)
+  public action!: KeylistUpdateAction
+
+  @IsEnum(KeylistUpdateResult)
+  public result!: KeylistUpdateResult
+}
 
 export interface KeylistUpdateResponseMessageOptions {
   id?: string
@@ -36,32 +64,6 @@ export class KeylistUpdateResponseMessage extends AgentMessage {
   @Type(() => KeylistUpdated)
   @IsArray()
   @ValidateNested()
+  @IsInstance(KeylistUpdated, { each: true })
   public updated!: KeylistUpdated[]
-}
-
-export enum KeylistUpdateResult {
-  ClientError = 'client_error',
-  ServerError = 'server_error',
-  NoChange = 'no_change',
-  Success = 'success',
-}
-
-export class KeylistUpdated {
-  public constructor(options: { recipientKey: string; action: KeylistUpdateAction; result: KeylistUpdateResult }) {
-    if (options) {
-      this.recipientKey = options.recipientKey
-      this.action = options.action
-      this.result = options.result
-    }
-  }
-
-  @IsString()
-  @Expose({ name: 'recipient_key' })
-  public recipientKey!: string
-
-  @IsEnum(KeylistUpdateAction)
-  public action!: KeylistUpdateAction
-
-  @IsEnum(KeylistUpdateResult)
-  public result!: KeylistUpdateResult
 }
