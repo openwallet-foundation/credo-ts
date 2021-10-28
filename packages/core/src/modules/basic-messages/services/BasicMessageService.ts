@@ -1,6 +1,6 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
-import type { BasicMessageReceivedEvent } from '../BasicMessageEvents'
+import type { BasicMessageReceivedEvent, BasicMessageSentEvent } from '../BasicMessageEvents'
 import type { BasicMessageTags } from '../repository'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -33,6 +33,10 @@ export class BasicMessageService {
     })
 
     await this.basicMessageRepository.save(basicMessageRecord)
+    this.eventEmitter.emit<BasicMessageSentEvent>({
+      type: BasicMessageEventTypes.BasicMessageSent,
+      payload: { message: basicMessage, basicMessageRecord },
+    })
 
     return basicMessage
   }
