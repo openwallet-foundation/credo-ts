@@ -26,6 +26,7 @@ export interface ConnectionRecordProps {
   autoAcceptConnection?: boolean
   threadId?: string
   tags?: CustomConnectionTags
+  imageUrl?: string
   multiUseInvitation: boolean
 }
 
@@ -60,6 +61,7 @@ export class ConnectionRecord
   public invitation?: ConnectionInvitationMessage
   public alias?: string
   public autoAcceptConnection?: boolean
+  public imageUrl?: string
   public multiUseInvitation!: boolean
 
   public threadId?: string
@@ -86,6 +88,7 @@ export class ConnectionRecord
       this._tags = props.tags ?? {}
       this.invitation = props.invitation
       this.threadId = props.threadId
+      this.imageUrl = props.imageUrl
       this.multiUseInvitation = props.multiUseInvitation
     }
   }

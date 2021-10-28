@@ -107,4 +107,8 @@ export class AgentConfig {
   public get useLegacyDidSovPrefix() {
     return this.initConfig.useLegacyDidSovPrefix ?? false
   }
+
+  public get connectionImageUrl() {
+    return this.initConfig.connectionImageUrl
+  }
 }
