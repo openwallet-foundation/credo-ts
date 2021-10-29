@@ -2,7 +2,7 @@ import type { BaseEvent } from '../../agent/Events'
 import type { BasicMessage } from './messages'
 import type { BasicMessageRecord } from './repository'
 
-export declare enum BasicMessageEventTypes {
+export enum BasicMessageEventTypes {
   BasicMessageReceived = 'BasicMessageReceived',
   BasicMessageSent = 'BasicMessageSent',
 }
