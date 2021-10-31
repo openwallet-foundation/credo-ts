@@ -64,7 +64,7 @@ describe('ConnectionService', () => {
 
   describe('createInvitation', () => {
     it('returns a connection record with values set', async () => {
-      expect.assertions(8)
+      expect.assertions(9)
       const { connectionRecord, message } = await connectionService.createInvitation({ routing: myRouting })
 
       expect(connectionRecord.type).toBe('ConnectionRecord')
@@ -155,7 +155,7 @@ describe('ConnectionService', () => {
 
   describe('processInvitation', () => {
     it('returns a connection record containing the information from the connection invitation', async () => {
-      expect.assertions(11)
+      expect.assertions(12)
 
       const recipientKey = 'key-1'
       const invitation = new ConnectionInvitationMessage({
