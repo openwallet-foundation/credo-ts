@@ -1,6 +1,5 @@
 {
   "name": "@aries-framework/core",
-  "version": "0.0.6-unstable",
   "main": "build/index",
   "types": "build/index",
   "version": "0.0.0",
