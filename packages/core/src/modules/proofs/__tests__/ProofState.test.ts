@@ -8,6 +8,7 @@ describe('ProofState', () => {
     expect(ProofState.RequestReceived).toBe('request-received')
     expect(ProofState.PresentationSent).toBe('presentation-sent')
     expect(ProofState.PresentationReceived).toBe('presentation-received')
+    expect(ProofState.Declined).toBe('declined')
     expect(ProofState.Done).toBe('done')
   })
 })

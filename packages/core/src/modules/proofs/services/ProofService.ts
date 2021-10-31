@@ -165,6 +165,18 @@ export class ProofService {
     return { message: proposalMessage, proofRecord }
   }
 
+    /**
+   * Decline a proof request
+   * @param proofRecord The proof request to be declined
+   */
+     public async declineRequest(proofRecord: ProofRecord): Promise<ProofRecord> {
+      proofRecord.assertState(ProofState.RequestReceived)
+  
+      await this.updateState(proofRecord, ProofState.Declined)
+  
+      return proofRecord
+    }  
+
   /**
    * Process a received {@link ProposePresentationMessage}. This will not accept the presentation proposal
    * or send a presentation request. It will only create a new, or update the existing proof record with
