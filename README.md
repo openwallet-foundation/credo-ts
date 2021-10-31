@@ -58,12 +58,11 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
 - ✅ Basic Message Protocol ([RFC 0095](https://github.com/hyperledger/aries-rfcs/blob/master/features/0095-basic-message/README.md))
 - ✅ Mediator Coordination Protocol ([RFC 0211](https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md))
 - ✅ Indy Credentials (with `did:sov` support)
-- ✅ HTTP Transport
+- ✅ HTTP & WebSocket Transport
 - ✅ Connection-less Issuance and Verification
 - ✅ Smart Auto Acceptance of Connections, Credentials and Proofs
 - 🚧 Revocation of Indy Credentials
 - 🚧 Electron
-- 🚧 WebSocket Transport
 - ❌ Browser
 - ❌ Issue Credential V2, Present Proof V2, DID Exchange Protocol, Out-Of-Band
 - ❌ W3C Linked Data VCs, BBS+ Signatures
@@ -124,6 +123,14 @@ Now that your project is setup and everything seems to be working, it is time to
 6. [Credentials](/docs/getting-started/5-credentials.md)
 7. [Proofs](/docs/getting-started/6-proofs.md)
 8. [Logging](/docs/getting-started/7-logging.md)
+
+### Divergence from Aries RFCs
+
+Although Aries Framework JavaScript tries to follow the standards as described in the Aries RFCs as much as possible, some features in AFJ slightly diverge from the written spec. Below is an overview of the features that diverge from the spec, their impact and the reasons for diverging.
+
+| Feature                                                                          | Impact                                                                                                                                                                                                                                                                               | Reason                                                                                                                                                                  |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Support for `imageUrl` attribute in connection invitation and connection request | Properties that are not recognized should be ignored, meaning this shouldn't limit interoperability between agents. As the image url is self-attested it could give a false sense of trust. Better, credential based, method for visually identifying an entity are not present yet. | Even though not documented, almost all agents support this feature. Not including this feature means AFJ is lacking in features in comparison to other implementations. |
 
 ## Contributing
 

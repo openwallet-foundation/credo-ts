@@ -87,6 +87,7 @@ export class ConnectionService {
       recipientKeys: service.recipientKeys,
       serviceEndpoint: service.serviceEndpoint,
       routingKeys: service.routingKeys,
+      imageUrl: this.config.connectionImageUrl,
     })
 
     connectionRecord.invitation = invitation
@@ -129,6 +130,7 @@ export class ConnectionService {
       autoAcceptConnection: config?.autoAcceptConnection,
       routing: config.routing,
       invitation,
+      imageUrl: invitation.imageUrl,
       tags: {
         invitationKey: invitation.recipientKeys && invitation.recipientKeys[0],
       },
@@ -162,6 +164,7 @@ export class ConnectionService {
       label: this.config.label,
       did: connectionRecord.did,
       didDoc: connectionRecord.didDoc,
+      imageUrl: this.config.connectionImageUrl,
     })
 
     await this.updateState(connectionRecord, ConnectionState.Requested)
@@ -227,6 +230,7 @@ export class ConnectionService {
     connectionRecord.theirLabel = message.label
     connectionRecord.threadId = message.id
     connectionRecord.theirDid = message.connection.did
+    connectionRecord.imageUrl = message.imageUrl
 
     if (!connectionRecord.theirKey) {
       throw new AriesFrameworkError(`Connection with id ${connectionRecord.id} has no recipient keys.`)
@@ -577,6 +581,7 @@ export class ConnectionService {
     autoAcceptConnection?: boolean
     multiUseInvitation: boolean
     tags?: CustomConnectionTags
+    imageUrl?: string
   }): Promise<ConnectionRecord> {
     const { endpoints, did, verkey, routingKeys, mediatorId } = options.routing
 
@@ -621,6 +626,7 @@ export class ConnectionService {
       alias: options.alias,
       theirLabel: options.theirLabel,
       autoAcceptConnection: options.autoAcceptConnection,
+      imageUrl: options.imageUrl,
       multiUseInvitation: options.multiUseInvitation,
       mediatorId,
     })

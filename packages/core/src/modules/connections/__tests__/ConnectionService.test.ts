@@ -25,9 +25,12 @@ import { ConnectionService } from '../services/ConnectionService'
 jest.mock('../repository/ConnectionRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
 
+const connectionImageUrl = 'https://example.com/image.png'
+
 describe('ConnectionService', () => {
   const config = getAgentConfig('ConnectionServiceTest', {
     endpoints: ['http://agent.com:8080'],
+    connectionImageUrl,
   })
 
   let wallet: Wallet
@@ -62,7 +65,7 @@ describe('ConnectionService', () => {
   describe('createInvitation', () => {
     it('returns a connection record with values set', async () => {
       expect.assertions(8)
-      const { connectionRecord: connectionRecord } = await connectionService.createInvitation({ routing: myRouting })
+      const { connectionRecord, message } = await connectionService.createInvitation({ routing: myRouting })
 
       expect(connectionRecord.type).toBe('ConnectionRecord')
       expect(connectionRecord.role).toBe(ConnectionRole.Inviter)
@@ -71,6 +74,7 @@ describe('ConnectionService', () => {
       expect(connectionRecord.id).toEqual(expect.any(String))
       expect(connectionRecord.verkey).toEqual(expect.any(String))
       expect(connectionRecord.mediatorId).toEqual('fakeMediatorId')
+      expect(message.imageUrl).toBe(connectionImageUrl)
       expect(connectionRecord.getTags()).toEqual(
         expect.objectContaining({
           verkey: connectionRecord.verkey,
@@ -158,6 +162,7 @@ describe('ConnectionService', () => {
         label: 'test label',
         recipientKeys: [recipientKey],
         serviceEndpoint: 'https://test.com/msg',
+        imageUrl: connectionImageUrl,
       })
 
       const connection = await connectionService.processInvitation(invitation, { routing: myRouting })
@@ -182,6 +187,7 @@ describe('ConnectionService', () => {
       expect(connection.alias).toBeUndefined()
       expect(connectionAlias.alias).toBe('test-alias')
       expect(connection.theirLabel).toBe('test label')
+      expect(connection.imageUrl).toBe(connectionImageUrl)
     })
 
     it('returns a connection record with the autoAcceptConnection parameter from the config', async () => {
@@ -228,7 +234,7 @@ describe('ConnectionService', () => {
 
   describe('createRequest', () => {
     it('returns a connection request message containing the information from the connection record', async () => {
-      expect.assertions(4)
+      expect.assertions(5)
 
       const connection = getMockConnection()
       mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(connection))
@@ -239,6 +245,7 @@ describe('ConnectionService', () => {
       expect(message.label).toBe(config.label)
       expect(message.connection.did).toBe('test-did')
       expect(message.connection.didDoc).toEqual(connection.didDoc)
+      expect(message.imageUrl).toBe(connectionImageUrl)
     })
 
     it(`throws an error when connection role is ${ConnectionRole.Inviter} and not ${ConnectionRole.Invitee}`, async () => {
@@ -268,7 +275,7 @@ describe('ConnectionService', () => {
 
   describe('processRequest', () => {
     it('returns a connection record containing the information from the connection request', async () => {
-      expect.assertions(6)
+      expect.assertions(7)
 
       const connectionRecord = getMockConnection({
         state: ConnectionState.Invited,
@@ -296,6 +303,7 @@ describe('ConnectionService', () => {
         did: theirDid,
         didDoc: theirDidDoc,
         label: 'test-label',
+        imageUrl: connectionImageUrl,
       })
 
       const messageContext = new InboundMessageContext(connectionRequest, {
@@ -311,6 +319,7 @@ describe('ConnectionService', () => {
       expect(processedConnection.theirKey).toBe(theirVerkey)
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
+      expect(processedConnection.imageUrl).toBe(connectionImageUrl)
     })
 
     it('throws an error when the connection cannot be found by verkey', async () => {
