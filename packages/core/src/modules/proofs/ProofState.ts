@@ -10,5 +10,6 @@ export enum ProofState {
   RequestReceived = 'request-received',
   PresentationSent = 'presentation-sent',
   PresentationReceived = 'presentation-received',
+  Declined = 'declined',
   Done = 'done',
 }

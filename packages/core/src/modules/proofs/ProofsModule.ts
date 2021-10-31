@@ -271,6 +271,17 @@ export class ProofsModule {
   }
 
   /**
+   * Declines a proof request as holder
+   * @param proofRecordId the id of the proof request to be declined
+   * @returns proof record that was declined
+   */
+  public async declineRequest(proofRecordId: string) {
+    const proofRecord = await this.proofService.getById(proofRecordId)
+    await this.proofService.declineRequest(proofRecord)
+    return proofRecord
+  }
+
+  /**
    * Accept a presentation as prover (by sending a presentation acknowledgement message) to the connection
    * associated with the proof record.
    *
