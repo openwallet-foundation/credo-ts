@@ -583,7 +583,7 @@ export class ConnectionService {
     tags?: CustomConnectionTags
     imageUrl?: string
   }): Promise<ConnectionRecord> {
-    const { endpoints, did, verkey, routingKeys } = options.routing
+    const { endpoints, did, verkey, routingKeys, mediatorId } = options.routing
 
     const publicKey = new Ed25119Sig2018({
       id: `${did}#1`,
@@ -628,6 +628,7 @@ export class ConnectionService {
       autoAcceptConnection: options.autoAcceptConnection,
       imageUrl: options.imageUrl,
       multiUseInvitation: options.multiUseInvitation,
+      mediatorId,
     })
 
     await this.connectionRepository.save(connectionRecord)
@@ -666,6 +667,7 @@ export interface Routing {
   verkey: string
   did: string
   routingKeys: string[]
+  mediatorId?: string
 }
 
 export interface ConnectionProtocolMsgReturnType<MessageType extends AgentMessage> {
