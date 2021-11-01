@@ -1,13 +1,14 @@
 # Setup Libindy for MacOS
 
-> NOTE: If these steps do not work, or you want to do a manual install, refer to [here](https://github.com/hyperledger/indy-sdk#ios)
+> NOTE: If these steps do not work, or you want to do a manual install, refer to [here](https://github.com/hyperledger/indy-sdk#macos)
 
-To see if Libindy is already installed, execute the following command:
+To see if Libindy is correctly installed for javascript usage, execute the following command:
 
-```bash
-ls /usr/local/lib/libindy.dylib
-# ✅ /usr/local/lib/libindy.dylib
-# ❌ ls: /usr/local/lib/libindy.dylib : No such file or directory
+```ts
+npx -p @aries-framework/node is-indy-installed
+
+# output
+# Libindy was installed correctly
 ```
 
 ## MacOS
@@ -19,6 +20,10 @@ It is now possible to install libindy and all its dependencies with homebrew!
 ```bash
 brew tap blu3beri/homebrew-libindy
 brew install libindy
+
+# If any issues occur that indynode.nodejs could not find libindy or libsodium
+mv /usr/local/opt/libsodium/lib/libsodium.dylib /usr/local/opt/libsodium/lib/libsodium.18.dylib
+mv /usr/local/Cellar/libindy/1.16.0.reinstall/lib/libindy.dylib /usr/local/lib/
 ```
 
 If this does not work, you could also use the old steps to install libindy.
@@ -35,3 +40,7 @@ ln -sfn /usr/local/Cellar/openssl@1.0/1.0.2t /usr/local/opt/openssl
 ```
 
 3. You now have libindy installed for macOS. You can continue with the [NodeJS Setup](./../setup-nodejs.md)
+
+### Apple Silicon
+
+Homebrew for Apple silicon does not use the `/usr/local/lib` anymore. This means that when `node-gyp` is looking for `/usr/local/lib/libindy.dylib`, it can not find it. There is currently a draft pr open [here](https://github.com/hyperledger/indy-sdk/pull/2428) to fix this.
