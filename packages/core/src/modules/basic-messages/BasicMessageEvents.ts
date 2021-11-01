@@ -3,11 +3,10 @@ import type { BasicMessage } from './messages'
 import type { BasicMessageRecord } from './repository'
 
 export enum BasicMessageEventTypes {
-  BasicMessageReceived = 'BasicMessageReceived',
+  BasicMessageStateChanged = 'BasicMessageStateChanged',
 }
-
-export interface BasicMessageReceivedEvent extends BaseEvent {
-  type: typeof BasicMessageEventTypes.BasicMessageReceived
+export interface BasicMessageStateChangedEvent extends BaseEvent {
+  type: typeof BasicMessageEventTypes.BasicMessageStateChanged
   payload: {
     message: BasicMessage
     basicMessageRecord: BasicMessageRecord
