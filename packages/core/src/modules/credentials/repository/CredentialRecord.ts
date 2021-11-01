@@ -95,22 +95,6 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       this.credentialAttributes = props.credentialAttributes
       this.autoAcceptCredential = props.autoAcceptCredential
       this.linkedAttachments = props.linkedAttachments
-
-      if (props.metadata) {
-        if (props.metadata.requestMetadata) {
-          this.metadata.set('requestMetadata', props.metadata.requestMetadata)
-        }
-        if (props.metadata.schemaId) {
-          this.metadata.add('indyCredentialMetadata', {
-            schemaId: props.metadata.schemaId,
-          })
-        }
-        if (props.metadata.credentialDefinitionId) {
-          this.metadata.add('indyCredentialMetadata', {
-            credentialDefinitionId: props.metadata.credentialDefinitionId,
-          })
-        }
-      }
     }
   }
 

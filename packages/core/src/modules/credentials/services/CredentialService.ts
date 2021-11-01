@@ -445,7 +445,7 @@ export class CredentialService {
     })
     credentialRequest.setThread({ threadId: credentialRecord.threadId })
 
-    credentialRecord.metadata.set('requestMetadata', credReqMetadata)
+    credentialRecord.metadata.set('indyRequestMetadata', credReqMetadata)
     credentialRecord.requestMessage = credentialRequest
     credentialRecord.autoAcceptCredential = options?.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
@@ -609,7 +609,7 @@ export class CredentialService {
       previousSentMessage: credentialRecord.requestMessage,
     })
 
-    const credentialRequestMetadata = credentialRecord.metadata.get<CredReqMetadata>('requestMetadata')
+    const credentialRequestMetadata = credentialRecord.metadata.get<CredReqMetadata>('indyRequestMetadata')
 
     if (!credentialRequestMetadata) {
       throw new AriesFrameworkError(`Missing required request metadata for credential with id ${credentialRecord.id}`)

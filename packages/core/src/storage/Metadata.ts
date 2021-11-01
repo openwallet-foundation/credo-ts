@@ -1,5 +1,21 @@
+import { Transform, TransformationType } from 'class-transformer'
+
 export type MetadataBase = {
   [key: string]: Record<string, unknown>
+}
+
+export function MetadataTransformer() {
+  return Transform(({ value, type }) => {
+    switch (type) {
+      case TransformationType.CLASS_TO_PLAIN:
+        return { ...value.data }
+
+      case TransformationType.PLAIN_TO_CLASS:
+        return new Metadata(value)
+      default:
+        return value
+    }
+  })
 }
 
 /**
@@ -8,7 +24,7 @@ export type MetadataBase = {
  *
  * set will override the previous value if it already exists
  *
- * note: To add in-memory persistence to these records, you have to
+ * note: To add persistence to these records, you have to
  * update the record in the correct repository
  *
  * @example
