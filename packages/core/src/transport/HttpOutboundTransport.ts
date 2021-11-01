@@ -46,19 +46,33 @@ export class HttpOutboundTransport implements OutboundTransport {
       const abortController = new AbortController()
       const id = setTimeout(() => abortController.abort(), 15000)
 
-      const response = await this.fetch(endpoint, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-        headers: { 'Content-Type': this.agentConfig.didCommMimeType },
-        signal: abortController.signal,
-      })
-      clearTimeout(id)
-
-      const responseMessage = await response.text()
+      let response
+      let responseMessage
+      try {
+        response = await this.fetch(endpoint, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+          headers: { 'Content-Type': this.agentConfig.didCommMimeType },
+          signal: abortController.signal,
+        })
+        clearTimeout(id)
+        responseMessage = await response.text()
+      } catch (error) {
+        // Request is aborted after 15 seconds, but that doesn't necessarily mean the request
+        // went wrong. ACA-Py keeps the socket alive until it has a response message. So we assume
+        // that if the error was aborted and we had return routing enabled, we should ignore the error.
+        if (error.name == 'AbortError' && outboundPackage.responseRequested) {
+          this.logger.debug(
+            'Request was aborted due to timeout. Not throwing error due to return routing on sent message'
+          )
+        } else {
+          throw error
+        }
+      }
 
       // TODO: do we just want to ignore messages that were returned if we didn't request it?
       // TODO: check response header type (and also update inbound transports to use the correct headers types)
-      if (responseMessage) {
+      if (response && responseMessage) {
         this.logger.debug(`Response received`, { responseMessage, status: response.status })
 
         try {
