@@ -104,7 +104,7 @@ const handleCredentialStateChange = async (agent: Agent, event: CredentialStateC
 
 ### 3. Start by scanning QRCode
 
-According to RFC [Issue Credential Protocol 1.0](https://github.com/hyperledger/aries-rfcs/blob/main/features/0036-issue-credential/README.md), there are two ways for receiving a credential. Either you as a receiver will initiate a request and the issuer responds, or the issuer initiates the process and you receive the credential by scanning a QRCode on the issuer agent side.
+According to RFC [Issue Credential Protocol 1.0](https://github.com/hyperledger/aries-rfcs/blob/main/features/0036-issue-credential/README.md), there are two ways for receiving a VC process to start. Either you as a holder will start the process by initiating a request and the issuer responds, or the issuer initiates the process and you scan a QRCode to continue the process.
 
 In this example we will follow the typical scenario of starting the process by showing a QR as the issuer (e.g. on a website), and the holder agent scanning the QR code.
 
