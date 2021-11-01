@@ -53,7 +53,7 @@ As per the recent figures, working with VCs requires some extra configuration wh
 };
 ```
 
-- `autoAcceptConnections`: This will auto-accept the connection so it will automate first step for you.
+- `autoAcceptConnections`: By setting the flag to true the controller doesn't have to go through manually accepting the connection when first scanning the QRCode.
 - `autoAcceptCredentials`:
   - `AutoAcceptCredential.Always`: Always auto accepts the credential no matter if it changed in subsequent steps
   - `AutoAcceptCredential.ContentApproved` (Recommended): Needs one acceptation and the rest will be automated if nothing changes
