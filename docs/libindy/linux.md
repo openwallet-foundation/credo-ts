@@ -1,11 +1,14 @@
 # Setup Libindy for Linux
 
-To see if Libindy is already installed, execute the following command:
+> NOTE: If these steps do not work, or you want to do a manual install, refer to [here](https://github.com/hyperledger/indy-sdk#ubuntu-based-distributions-ubuntu-1604-and-1804)
 
-```bash
-ls /usr/lib/libindy.so
-# ✅ /usr/lib/libindy.so
-# ❌ ls: /usr/lib/libindy.so: No such file or directory
+To see if Libindy is correctly installed for javascript usage, execute the following command:
+
+```ts
+npx -p @aries-framework/node is-indy-installed
+
+# output
+# Libindy was installed correctly
 ```
 
 The easiest way to install libindy for all linux platforms is by building libindy yourself. For Ubuntu based distributions you can also follow the install guide in the [Indy SDK docs](https://github.com/hyperledger/indy-sdk#ubuntu-based-distributions-ubuntu-1604-and-1804)

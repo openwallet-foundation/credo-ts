@@ -1,23 +1,14 @@
 # Setup Libindy for MacOS
 
-> NOTE: If these steps do not work, or you want to do a manual install, refer to [here](https://github.com/hyperledger/indy-sdk#ios)
+> NOTE: If these steps do not work, or you want to do a manual install, refer to [here](https://github.com/hyperledger/indy-sdk#macos)
 
-To see if Libindy is already installed, execute the following command:
+To see if Libindy is correctly installed for javascript usage, execute the following command:
 
-> A better test would be to clone the [indy-sdk](https://github.com/hyperledger/indy-sdk/) and run:
->
-> ```
-> cd indy-cli
-> cargo build --release
-> cd ./target/release/
-> ./indy-cli
-> wallet create 123 key
-> ```
+```ts
+npx -p @aries-framework/node is-indy-installed
 
-```bash
-ls /usr/local/lib/libindy.dylib
-# ✅ /usr/local/lib/libindy.dylib
-# ❌ ls: /usr/local/lib/libindy.dylib : No such file or directory
+# output
+# Libindy was installed correctly
 ```
 
 ## MacOS
