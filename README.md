@@ -124,6 +124,8 @@ Now that your project is setup and everything seems to be working, it is time to
 7. [Proofs](/docs/getting-started/6-proofs.md)
 8. [Logging](/docs/getting-started/7-logging.md)
 
+Also check out [Aries Framework JavaScript Extensions](https://github.com/hyperledger/aries-framework-javascript-ext), for several useful wrappers and plugins.
+
 ### Divergence from Aries RFCs
 
 Although Aries Framework JavaScript tries to follow the standards as described in the Aries RFCs as much as possible, some features in AFJ slightly diverge from the written spec. Below is an overview of the features that diverge from the spec, their impact and the reasons for diverging.
