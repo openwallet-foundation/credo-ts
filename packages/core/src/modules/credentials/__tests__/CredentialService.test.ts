@@ -111,7 +111,7 @@ const mockCredentialRecord = ({
     offerAttachments: [offerAttachment],
   })
 
-  return new CredentialRecord({
+  const credentialRecord = new CredentialRecord({
     offerMessage,
     id,
     credentialAttributes: credentialAttributes || credentialPreview.attributes,
@@ -122,6 +122,16 @@ const mockCredentialRecord = ({
     connectionId: connectionId ?? '123',
     tags,
   })
+
+  if (metadata?.requestMetadata) {
+    credentialRecord.metadata.set('indyRequestMetadata', { requestMetadata: metadata?.requestMetadata })
+  }
+  credentialRecord.metadata.set('indyCredentialMetadata', {
+    credentialDefinitionId: metadata?.credentialDefinitionId,
+    schemaId: metadata?.schemaId,
+  })
+
+  return credentialRecord
 }
 
 describe('CredentialService', () => {
@@ -321,7 +331,7 @@ describe('CredentialService', () => {
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
       expect(updatedCredentialRecord.toJSON()).toMatchObject({
-        metadata: { requestMetadata: { cred_req: 'meta-data' } },
+        metadata: { indyRequestMetadata: { cred_req: 'meta-data' } },
         state: CredentialState.RequestSent,
       })
     })
@@ -636,7 +646,7 @@ describe('CredentialService', () => {
 
       expect(storeCredentialMock).toHaveBeenNthCalledWith(1, {
         credentialId: expect.any(String),
-        credentialRequestMetadata: { cred_req: 'meta-data' },
+        credentialRequestMetadata: { requestMetadata: { cred_req: 'meta-data' } },
         credential: messageContext.message.indyCredential,
         credentialDefinition: credDef,
       })

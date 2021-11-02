@@ -106,6 +106,13 @@ export class CredentialService {
       credentialAttributes: proposalMessage.credentialProposal?.attributes,
       autoAcceptCredential: config?.autoAcceptCredential,
     })
+
+    // Set the metadata
+    credentialRecord.metadata.set('indyCredentialMetadata', {
+      schemaId: options.schemaId,
+      credentialDefinintionId: options.credentialDefinitionId,
+    })
+
     await this.credentialRepository.save(credentialRecord)
     this.eventEmitter.emit<CredentialStateChangedEvent>({
       type: CredentialEventTypes.CredentialStateChanged,
@@ -186,6 +193,11 @@ export class CredentialService {
         proposalMessage,
         credentialAttributes: proposalMessage.credentialProposal?.attributes,
         state: CredentialState.ProposalReceived,
+      })
+
+      credentialRecord.metadata.set('indyCredentialMetadata', {
+        schemaId: proposalMessage.schemaId,
+        credentialDefinitionId: proposalMessage.credentialDefinitionId,
       })
 
       // Assert
@@ -305,12 +317,13 @@ export class CredentialService {
       offerMessage: credentialOfferMessage,
       credentialAttributes: credentialPreview.attributes,
       linkedAttachments: linkedAttachments?.map((linkedAttachments) => linkedAttachments.attachment),
-      metadata: {
-        credentialDefinitionId: credOffer.cred_def_id,
-        schemaId: credOffer.schema_id,
-      },
       state: CredentialState.OfferSent,
       autoAcceptCredential: credentialTemplate.autoAcceptCredential,
+    })
+
+    credentialRecord.metadata.set('indyCredentialMetadata', {
+      credentialDefinitionId: credOffer.cred_def_id,
+      schemaId: credOffer.schema_id,
     })
 
     await this.credentialRepository.save(credentialRecord)
@@ -375,11 +388,12 @@ export class CredentialService {
         threadId: credentialOfferMessage.id,
         offerMessage: credentialOfferMessage,
         credentialAttributes: credentialOfferMessage.credentialPreview.attributes,
-        metadata: {
-          credentialDefinitionId: indyCredentialOffer.cred_def_id,
-          schemaId: indyCredentialOffer.schema_id,
-        },
         state: CredentialState.OfferReceived,
+      })
+
+      credentialRecord.metadata.set('indyCredentialMetadata', {
+        credentialDefinitionId: indyCredentialOffer.cred_def_id,
+        schemaId: indyCredentialOffer.schema_id,
       })
 
       // Assert

@@ -74,7 +74,7 @@ describe('auto accept credentials', () => {
         requestMessage: expect.any(Object),
         metadata: {
           data: {
-            requestMetadata: expect.any(Object),
+            indyRequestMetadata: expect.any(Object),
             indyCredentialMetadata: {
               schemaId,
               credentialDefinitionId: credDefId,
@@ -131,7 +131,7 @@ describe('auto accept credentials', () => {
         requestMessage: expect.any(Object),
         metadata: {
           data: {
-            requestMetadata: expect.any(Object),
+            indyRequestMetadata: expect.any(Object),
             indyCredentialMetadata: {
               schemaId,
               credentialDefinitionId: credDefId,
@@ -207,7 +207,7 @@ describe('auto accept credentials', () => {
         requestMessage: expect.any(Object),
         metadata: {
           data: {
-            requestMetadata: expect.any(Object),
+            indyRequestMetadata: expect.any(Object),
             indyCredentialMetadata: {
               schemaId,
               credentialDefinitionId: credDefId,
@@ -304,7 +304,7 @@ describe('auto accept credentials', () => {
         requestMessage: expect.any(Object),
         metadata: {
           data: {
-            requestMetadata: expect.any(Object),
+            indyRequestMetadata: expect.any(Object),
             indyCredentialMetadata: {
               schemaId,
               credentialDefinitionId: credDefId,

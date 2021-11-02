@@ -134,15 +134,6 @@ describe('credentials', () => {
       connectionId: expect.any(String),
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
-      metadata: {
-        data: {
-          requestMetadata: expect.any(Object),
-          indyCredentialMetadata: {
-            schemaId,
-            credentialDefinitionId: credDefId,
-          },
-        },
-      },
       credentialId: expect.any(String),
       state: CredentialState.Done,
     })
@@ -153,14 +144,6 @@ describe('credentials', () => {
       createdAt: expect.any(Date),
       threadId: expect.any(String),
       connectionId: expect.any(String),
-      metadata: {
-        data: {
-          indyCredentialMetadata: {
-            schemaId,
-            credentialDefinitionId: credDefId,
-          },
-        },
-      },
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
       state: CredentialState.Done,
@@ -249,15 +232,7 @@ describe('credentials', () => {
       createdAt: expect.any(Date),
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
-      metadata: {
-        data: {
-          requestMetadata: expect.any(Object),
-          indyCredentialMetadata: {
-            schemaId,
-            credentialDefinitionId: credDefId,
-          },
-        },
-      },
+      metadata: expect.any(Object),
       credentialId: expect.any(String),
       state: CredentialState.Done,
       threadId: expect.any(String),
@@ -268,6 +243,7 @@ describe('credentials', () => {
       id: expect.any(String),
       createdAt: expect.any(Date),
       offerMessage: expect.any(Object),
+      metadata: expect.any(Object),
       requestMessage: expect.any(Object),
       state: CredentialState.Done,
       threadId: expect.any(String),
@@ -380,17 +356,9 @@ describe('credentials', () => {
       type: CredentialRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
+      metadata: expect.any(Object),
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
-      metadata: {
-        data: {
-          requestMetadata: expect.any(Object),
-          indyCredentialMetadata: {
-            schemaId,
-            credentialDefinitionId: credDefId,
-          },
-        },
-      },
       credentialId: expect.any(String),
       state: CredentialState.Done,
     })
@@ -399,14 +367,7 @@ describe('credentials', () => {
       type: CredentialRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      metadata: {
-        data: {
-          indyCredentialMetadata: {
-            schemaId,
-            credentialDefinitionId: credDefId,
-          },
-        },
-      },
+      metadata: expect.any(Object),
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
       state: CredentialState.Done,
@@ -509,15 +470,6 @@ describe('credentials', () => {
       id: expect.any(String),
       createdAt: expect.any(Date),
       requestMessage: expect.any(Object),
-      metadata: {
-        data: {
-          requestMetadata: expect.any(Object),
-          indyCredentialMetadata: {
-            schemaId,
-            credentialDefinitionId: credDefId,
-          },
-        },
-      },
       credentialId: expect.any(String),
       state: CredentialState.Done,
     })

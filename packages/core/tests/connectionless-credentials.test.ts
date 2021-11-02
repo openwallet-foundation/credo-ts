@@ -125,7 +125,6 @@ describe('credentials', () => {
       requestMessage: expect.any(Object),
       metadata: {
         data: {
-          requestMetadata: expect.any(Object),
           indyCredentialMetadata: {
             credentialDefinitionId: credDefId,
           },
@@ -142,6 +141,13 @@ describe('credentials', () => {
       createdAt: expect.any(Date),
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
+      metadata: {
+        data: {
+          indyCredentialMetadata: {
+            credentialDefinitionId: credDefId,
+          },
+        },
+      },
       state: CredentialState.Done,
       threadId: expect.any(String),
     })
