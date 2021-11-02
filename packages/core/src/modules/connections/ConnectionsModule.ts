@@ -48,6 +48,7 @@ export class ConnectionsModule {
     alias?: string
     mediatorId?: string
     multiUseInvitation?: boolean
+    myLabel?: string
   }): Promise<{
     invitation: ConnectionInvitationMessage
     connectionRecord: ConnectionRecord
@@ -60,6 +61,7 @@ export class ConnectionsModule {
       alias: config?.alias,
       routing: myRouting,
       multiUseInvitation: config?.multiUseInvitation,
+      myLabel: config?.myLabel,
     })
 
     return { connectionRecord, invitation }
