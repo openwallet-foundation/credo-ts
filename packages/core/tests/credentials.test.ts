@@ -18,14 +18,13 @@ describe('credentials', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
   let credDefId: string
-  let schemaId: string
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
   let faberCredentialRecord: CredentialRecord
   let aliceCredentialRecord: CredentialRecord
 
   beforeAll(async () => {
-    ;({ faberAgent, aliceAgent, credDefId, schemaId, faberConnection, aliceConnection } = await setupCredentialTests(
+    ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
       'Faber Agent Credentials',
       'Alice Agent Credential'
     ))
