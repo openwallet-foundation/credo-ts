@@ -215,4 +215,8 @@ export class Agent {
   public get injectionContainer() {
     return this.container
   }
+
+  public get config() {
+    return this.agentConfig
+  }
 }

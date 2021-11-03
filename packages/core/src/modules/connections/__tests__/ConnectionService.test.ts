@@ -151,6 +151,43 @@ describe('ConnectionService', () => {
       // Defaults to false
       expect(multiUseUndefined.multiUseInvitation).toBe(false)
     })
+
+    it('returns a connection record with the custom label from the config', async () => {
+      expect.assertions(1)
+
+      const { message: invitation } = await connectionService.createInvitation({
+        routing: myRouting,
+        myLabel: 'custom-label',
+      })
+
+      expect(invitation).toEqual(
+        expect.objectContaining({
+          label: 'custom-label',
+          recipientKeys: [expect.any(String)],
+          routingKeys: [],
+          serviceEndpoint: config.endpoints[0],
+        })
+      )
+    })
+
+    it('returns a connection record with the custom image url from the config', async () => {
+      expect.assertions(1)
+
+      const { message: invitation } = await connectionService.createInvitation({
+        routing: myRouting,
+        myImageUrl: 'custom-image-url',
+      })
+
+      expect(invitation).toEqual(
+        expect.objectContaining({
+          label: config.label,
+          imageUrl: 'custom-image-url',
+          recipientKeys: [expect.any(String)],
+          routingKeys: [],
+          serviceEndpoint: config.endpoints[0],
+        })
+      )
+    })
   })
 
   describe('processInvitation', () => {
@@ -246,6 +283,28 @@ describe('ConnectionService', () => {
       expect(message.connection.did).toBe('test-did')
       expect(message.connection.didDoc).toEqual(connection.didDoc)
       expect(message.imageUrl).toBe(connectionImageUrl)
+    })
+
+    it('returns a connection request message containing a custom label', async () => {
+      expect.assertions(1)
+
+      const connection = getMockConnection()
+      mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(connection))
+
+      const { message } = await connectionService.createRequest('test', { myLabel: 'custom-label' })
+
+      expect(message.label).toBe('custom-label')
+    })
+
+    it('returns a connection request message containing a custom image url', async () => {
+      expect.assertions(1)
+
+      const connection = getMockConnection()
+      mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(connection))
+
+      const { message } = await connectionService.createRequest('test', { myImageUrl: 'custom-image-url' })
+
+      expect(message.imageUrl).toBe('custom-image-url')
     })
 
     it(`throws an error when connection role is ${ConnectionRole.Inviter} and not ${ConnectionRole.Invitee}`, async () => {

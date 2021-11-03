@@ -69,6 +69,8 @@ export class ConnectionService {
     autoAcceptConnection?: boolean
     alias?: string
     multiUseInvitation?: boolean
+    myLabel?: string
+    myImageUrl?: string
   }): Promise<ConnectionProtocolMsgReturnType<ConnectionInvitationMessage>> {
     // TODO: public did
     const connectionRecord = await this.createConnection({
@@ -83,11 +85,11 @@ export class ConnectionService {
     const { didDoc } = connectionRecord
     const [service] = didDoc.didCommServices
     const invitation = new ConnectionInvitationMessage({
-      label: this.config.label,
+      label: config?.myLabel ?? this.config.label,
       recipientKeys: service.recipientKeys,
       serviceEndpoint: service.serviceEndpoint,
       routingKeys: service.routingKeys,
-      imageUrl: this.config.connectionImageUrl,
+      imageUrl: config?.myImageUrl ?? this.config.connectionImageUrl,
     })
 
     connectionRecord.invitation = invitation
@@ -152,19 +154,26 @@ export class ConnectionService {
    * Create a connection request message for the connection with the specified connection id.
    *
    * @param connectionId the id of the connection for which to create a connection request
+   * @param config config for creation of connection request
    * @returns outbound message containing connection request
    */
-  public async createRequest(connectionId: string): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
+  public async createRequest(
+    connectionId: string,
+    config?: {
+      myLabel?: string
+      myImageUrl?: string
+    }
+  ): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
     const connectionRecord = await this.connectionRepository.getById(connectionId)
 
     connectionRecord.assertState(ConnectionState.Invited)
     connectionRecord.assertRole(ConnectionRole.Invitee)
 
     const connectionRequest = new ConnectionRequestMessage({
-      label: this.config.label,
+      label: config?.myLabel ?? this.config.label,
       did: connectionRecord.did,
       didDoc: connectionRecord.didDoc,
-      imageUrl: this.config.connectionImageUrl,
+      imageUrl: config?.myImageUrl ?? this.config.connectionImageUrl,
     })
 
     await this.updateState(connectionRecord, ConnectionState.Requested)
