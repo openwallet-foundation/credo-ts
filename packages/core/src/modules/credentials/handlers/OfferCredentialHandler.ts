@@ -29,7 +29,13 @@ export class OfferCredentialHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<OfferCredentialHandler>) {
+    // eslint-disable-next-line no-console
+    console.log('Credential offer handler started', messageContext)
+
     const credentialRecord = await this.credentialService.processOffer(messageContext)
+
+    // eslint-disable-next-line no-console
+    console.log('Credential offer processed', messageContext)
 
     if (this.credentialResponseCoordinator.shouldAutoRespondToOffer(credentialRecord)) {
       return await this.createRequest(credentialRecord, messageContext)
