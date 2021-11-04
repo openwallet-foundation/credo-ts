@@ -1,57 +1,22 @@
+import type { AgentMessage } from '../../agent/AgentMessage'
 import type { ConnectionRecord } from '../../modules/connections'
-import type { DidCommService } from '../connections/models/did/service/DidCommService'
+import type { UnpackedMessageContext } from '../../types'
 
-import { Expose } from 'class-transformer'
-import { Equals } from 'class-validator'
 import { Lifecycle, scoped } from 'tsyringe'
 
-import { AgentMessage } from '../../agent/AgentMessage'
+import { Dispatcher } from '../../agent/Dispatcher'
+import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
+import { InboundMessageContext } from '../../agent/models/InboundMessageContext'
+import { AriesFrameworkError } from '../../error'
+import { JsonTransformer } from '../../utils/JsonTransformer'
+import { replaceLegacyDidSovPrefixOnMessage } from '../../utils/messageType'
 import { ConnectionService, ConnectionInvitationMessage } from '../connections'
 import { DiscoverFeaturesQueryMessage, DiscoverFeaturesService } from '../discover-features'
 import { MediationRecipientService } from '../routing'
 
-const VERSION = '1.1'
-
-interface OutOfBandMessageOptions {
-  id?: string
-  label?: string
-  goalCode?: string
-  goal?: string
-}
-
-export class OutOfBandMessage extends AgentMessage {
-  public constructor(options: OutOfBandMessageOptions) {
-    super()
-    if (options) {
-      this.id = options.id ?? this.generateId()
-      this.label = options.label
-      this.goalCode = options.goalCode
-      this.goal = options.goal
-    }
-  }
-
-  @Equals(OutOfBandMessage.type)
-  public readonly type = OutOfBandMessage.type
-  public static readonly type = `https://didcomm.org/out-of-band/${VERSION}/invitation`
-
-  public readonly label?: string
-
-  @Expose({ name: 'goal_code' })
-  public readonly goalCode?: string
-
-  public readonly goal?: string
-
-  // TODO what type is it, is there any enum or should we create a new one
-  public readonly accept: string[] = []
-
-  // TODO what type is it, should we create an enum
-  @Expose({ name: 'handshake_protocols' })
-  public readonly handshakeProtocols: string[] = []
-
-  public readonly services: DidCommService[] = []
-}
+import { OutOfBandMessage } from './OutOfBandMessage'
 
 @scoped(Lifecycle.ContainerScoped)
 export class OutOfBandModule {
@@ -59,17 +24,23 @@ export class OutOfBandModule {
   private mediationRecipientService: MediationRecipientService
   private disoverFeaturesService: DiscoverFeaturesService
   private messageSender: MessageSender
+  private eventEmitter: EventEmitter
+  private dispatcher: Dispatcher
 
   public constructor(
     connectionService: ConnectionService,
     mediationRecipientService: MediationRecipientService,
     disoverFeaturesService: DiscoverFeaturesService,
-    messageSender: MessageSender
+    messageSender: MessageSender,
+    eventEmitter: EventEmitter,
+    dispatcher: Dispatcher
   ) {
     this.connectionService = connectionService
     this.mediationRecipientService = mediationRecipientService
     this.disoverFeaturesService = disoverFeaturesService
     this.messageSender = messageSender
+    this.eventEmitter = eventEmitter
+    this.dispatcher = dispatcher
   }
 
   public async createInvitation(): Promise<{ outOfBandMessage: OutOfBandMessage; connectionRecord: ConnectionRecord }> {
@@ -114,20 +85,80 @@ export class OutOfBandModule {
     return { outOfBandMessage, connectionRecord }
   }
 
-  public async receiveInvitation(outOfBandMessage: OutOfBandMessage) {
+  public async receiveInvitation(outOfBandMessage: OutOfBandMessage, config: { autoAccept: boolean }) {
     const mediationRecord = await this.mediationRecipientService.discoverMediation()
     const routing = await this.mediationRecipientService.getRouting(mediationRecord)
     const invitation = new ConnectionInvitationMessage({ label: 'connection label', ...outOfBandMessage.services[0] })
-    const connectionRecord = await this.connectionService.processInvitation(invitation, { routing })
-    // connectionRecord = await this.acceptInvitation(connectionRecord.id)
+
+    let connectionRecord = await this.connectionService.processInvitation(invitation, { routing })
+    if (config.autoAccept) {
+      connectionRecord = await this.acceptInvitation(connectionRecord.id)
+    }
+
+    this.connectionService
+      .returnWhenIsConnected(connectionRecord.id)
+      .then((connection) => {
+        const messages = outOfBandMessage.getRequests()
+        messages.forEach(async (unpackedMessage) => {
+          // We can't use event emitter because it will pass unpacked message into MessageReceiver without keys therefore we won't be able to find the connection created in previous step
+          // this.eventEmitter.emit<AgentMessageReceivedEvent>({
+          //   type: AgentEventTypes.AgentMessageReceived,
+          //   payload: {
+          //     message,
+          //   },
+          // })
+          try {
+            const message = await this.transformMessage({ message: unpackedMessage })
+            const messageContext = new InboundMessageContext(message, {
+              // Only make the connection available in message context if the connection is ready
+              // To prevent unwanted usage of unready connections. Connections can still be retrieved from
+              // Storage if the specific protocol allows an unready connection to be used.
+              connection: connection?.isReady ? connection : undefined,
+              // senderVerkey: senderKey,
+              // recipientVerkey: recipientKey,
+            })
+            await this.dispatcher.dispatch(messageContext)
+          } catch (error: any) {
+            // eslint-disable-next-line no-console
+            console.error('message dispatch error', error, error.message)
+          }
+        })
+      })
+      .catch((error) => {
+        // eslint-disable-next-line no-console
+        console.error('error', error, error.message)
+      })
+
     return connectionRecord
   }
 
-  // TODO This is copy-pasted from ConnectionModule because we can't call module from other module
-  public async acceptInvitation(connectionId: string): Promise<ConnectionRecord> {
+  // TODO This is copy-pasted from ConnectionModule
+  private async acceptInvitation(connectionId: string): Promise<ConnectionRecord> {
     const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(connectionId)
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)
     return connectionRecord
+  }
+
+  /**
+   * Transform an unpacked DIDComm message into it's corresponding message class. Will look at all message types in the registered handlers.
+   *
+   * @param unpackedMessage the unpacked message for which to transform the message in to a class instance
+   */
+  private async transformMessage(unpackedMessage: UnpackedMessageContext): Promise<AgentMessage> {
+    // replace did:sov:BzCbsNYhMrjHiqZDTUASHg;spec prefix for message type with https://didcomm.org
+    replaceLegacyDidSovPrefixOnMessage(unpackedMessage.message)
+
+    const messageType = unpackedMessage.message['@type']
+    const MessageClass = this.dispatcher.getMessageClassForType(messageType)
+
+    if (!MessageClass) {
+      throw new AriesFrameworkError(`No message class found for message type "${messageType}"`)
+    }
+
+    // Cast the plain JSON object to specific instance of Message extended from AgentMessage
+    const message = JsonTransformer.fromJSON(unpackedMessage.message, MessageClass)
+
+    return message
   }
 }

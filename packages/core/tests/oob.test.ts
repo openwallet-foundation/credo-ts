@@ -1,5 +1,6 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { DidCommService } from '../src/modules/connections/models/did/service'
+import type { CredentialRecord } from '../src/modules/credentials'
 
 import { Subject } from 'rxjs'
 
@@ -8,16 +9,27 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { Agent } from '../src/agent/Agent'
 import { OutOfBandModule } from '../src/modules/oob/OutOfBandModule'
 
-import { getBaseConfig } from './helpers'
+import { getBaseConfig, prepareForIssuance } from './helpers'
+import { TestLogger } from './logger'
 
-// Maybe it's not bad to import from package?
-import { ConnectionService, IndyAgentService } from '@aries-framework/core'
+import {
+  AutoAcceptCredential,
+  ConnectionService,
+  ConnectionState,
+  CredentialPreview,
+  CredentialService,
+  CredentialState,
+  IndyAgentService,
+  LogLevel,
+} from '@aries-framework/core' // Maybe it's not bad to import from package?
 
 const faberConfig = getBaseConfig('Faber Agent Connections', {
   endpoints: ['rxjs:faber'],
+  logger: new TestLogger(LogLevel.debug, 'rxjs:faber'),
 })
 const aliceConfig = getBaseConfig('Alice Agent Connections', {
   endpoints: ['rxjs:alice'],
+  logger: new TestLogger(LogLevel.debug, 'rxjs:alice'),
 })
 
 describe('out of band', () => {
@@ -105,7 +117,7 @@ describe('out of band', () => {
     const outOfBandModule = aliceAgent.injectionContainer.resolve(OutOfBandModule)
     const connectionService = aliceAgent.injectionContainer.resolve(ConnectionService)
 
-    const connectionRecord = await outOfBandModule.receiveInvitation(outOfBandMessage)
+    const connectionRecord = await outOfBandModule.receiveInvitation(outOfBandMessage, { autoAccept: false })
 
     // expect contains services
     const [service] = outOfBandMessage.services
@@ -128,26 +140,84 @@ describe('out of band', () => {
     // TODO Should we also check routingKeys?
   })
 
-  // test('make a connection based on OOB invitation', async () => {
-  //   const {
-  //     invitation,
-  //     connectionRecord: { id: faberAliceConnectionId },
-  //   } = await faberAgent.oob.createInvitation()
+  test('make a connection based on OOB invitation', async () => {
+    const faberOutOfBandModule = faberAgent.injectionContainer.resolve(OutOfBandModule)
+    // eslint-disable-next-line prefer-const
+    let { outOfBandMessage, connectionRecord: faberAliceConnection } = await faberOutOfBandModule.createInvitation()
 
-  //   const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
+    const outOfBandModule = aliceAgent.injectionContainer.resolve(OutOfBandModule)
 
-  //   // Create first connection
-  //   let aliceFaberConnection = await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl)
-  //   aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection.id)
-  //   expect(aliceFaberConnection.state).toBe(ConnectionState.Complete)
+    let aliceFaberConnection = await outOfBandModule.receiveInvitation(outOfBandMessage, { autoAccept: true })
 
-  //   const faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnectionId)
-  //   expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
-  //   expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
+    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection.id)
+    expect(aliceFaberConnection.state).toBe(ConnectionState.Complete)
 
-  //   expect(faberAliceConnection.state).toBe(ConnectionState.Complete)
-  // })
+    faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection.id)
+    expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
+    expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
+
+    expect(faberAliceConnection.state).toBe(ConnectionState.Complete)
+  })
+
+  test('make a connection and credential offer requests based on OOB invitation', async () => {
+    const {
+      schema: { id: schemaId },
+      definition: { id: credDefId },
+    } = await prepareForIssuance(faberAgent, ['name', 'age', 'profile_picture', 'x-ray'])
+
+    // eslint-disable-next-line no-console
+    console.log('issuance has been prepared')
+
+    const faberOutOfBandModule = faberAgent.injectionContainer.resolve(OutOfBandModule)
+    const aliceOutOfBandModule = aliceAgent.injectionContainer.resolve(OutOfBandModule)
+    // eslint-disable-next-line prefer-const
+    let { outOfBandMessage, connectionRecord: faberAliceConnection } = await faberOutOfBandModule.createInvitation()
+
+    // eslint-disable-next-line no-console
+    console.log('invitation created', outOfBandMessage)
+
+    // add credential request to out of band message
+    const credentialService = faberAgent.injectionContainer.resolve(CredentialService)
+    const credentialTemplate = {
+      credentialDefinitionId: credDefId,
+      preview: CredentialPreview.fromRecord({}),
+      autoAcceptCredential: AutoAcceptCredential.Never,
+    }
+    const { message, credentialRecord } = await credentialService.createOffer(credentialTemplate)
+
+    // eslint-disable-next-line no-console
+    console.log('offer created', message)
+
+    outOfBandMessage.addRequest(message)
+
+    const aliceFaberConnection = await aliceOutOfBandModule.receiveInvitation(outOfBandMessage, { autoAccept: true })
+    await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection.id)
+    await faberAgent.connections.returnWhenIsConnected(faberAliceConnection.id)
+
+    let credentials: CredentialRecord[] = []
+    while (credentials.length === 0) {
+      // eslint-disable-next-line no-console
+      console.log('get credentials')
+      credentials = await aliceAgent.credentials.getAll()
+      await wait(200)
+    }
+
+    // eslint-disable-next-line no-console
+    console.log('credentials', credentials)
+
+    expect(credentials).toHaveLength(1)
+
+    const [credential] = credentials
+    expect(credential.state).toBe(CredentialState.OfferReceived)
+  })
 
   // test('make new connection based on OOB invitation', () => {})
   // test('re-use existing connection based on OOB invitation', () => {})
 })
+
+function wait(ms = 1000) {
+  return new Promise((resolve) => {
+    // console.log(`waiting ${ms} ms...`)
+    setTimeout(resolve, ms)
+  })
+}
