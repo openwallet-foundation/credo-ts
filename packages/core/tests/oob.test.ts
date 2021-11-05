@@ -7,17 +7,15 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
-import { OutOfBandModule } from '../src/modules/oob/OutOfBandModule'
 
 import { getBaseConfig, prepareForIssuance } from './helpers'
 import { TestLogger } from './logger'
 
 import {
+  AriesFrameworkError,
   AutoAcceptCredential,
-  ConnectionService,
   ConnectionState,
   CredentialPreview,
-  CredentialService,
   CredentialState,
   IndyAgentService,
   LogLevel,
@@ -35,6 +33,7 @@ const aliceConfig = getBaseConfig('Alice Agent Connections', {
 describe('out of band', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
+  let credDefId: string
 
   beforeAll(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -53,6 +52,9 @@ describe('out of band', () => {
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(faberMessages, subjectMap))
     await aliceAgent.initialize()
+
+    const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'profile_picture', 'x-ray'])
+    credDefId = definition.id
   })
 
   afterAll(async () => {
@@ -79,11 +81,8 @@ describe('out of band', () => {
   // Where/How to start when developing new feature, e2e test, module, service, something else?
   // What about a constraint for the usage of service from another service?
 
-  test('create OOB connection invitaion', async () => {
-    const outOfBandModule = faberAgent.injectionContainer.resolve(OutOfBandModule)
-    const connectionService = faberAgent.injectionContainer.resolve(ConnectionService)
-
-    const { outOfBandMessage, connectionRecord } = await outOfBandModule.createInvitation()
+  test('create OOB connection invitation', async () => {
+    const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createInvitation()
 
     // eslint-disable-next-line no-console
     console.log('outOfBandMessage.toJSON()', outOfBandMessage.toJSON())
@@ -103,21 +102,15 @@ describe('out of band', () => {
       })
     )
 
-    // expect connection, how to identify connection?, maybe via OutOfBandRecord
-    // expect OutOfBandRecord in `init` state
-    const createdConnectionRecord = await connectionService.findById(connectionRecord.id)
+    const createdConnectionRecord = await faberAgent.connections.findById(connectionRecord.id)
     expect((createdConnectionRecord?.didDoc.service[0] as DidCommService).recipientKeys).toEqual(service.recipientKeys)
     // TODO Should we also check routingKeys?
   })
 
-  test('receive OOB connection invitaion', async () => {
-    const faberOutOfBandModule = faberAgent.injectionContainer.resolve(OutOfBandModule)
-    const { outOfBandMessage } = await faberOutOfBandModule.createInvitation()
+  test('receive OOB connection invitation', async () => {
+    const { outOfBandMessage } = await faberAgent.oob.createInvitation()
 
-    const outOfBandModule = aliceAgent.injectionContainer.resolve(OutOfBandModule)
-    const connectionService = aliceAgent.injectionContainer.resolve(ConnectionService)
-
-    const connectionRecord = await outOfBandModule.receiveInvitation(outOfBandMessage, { autoAccept: false })
+    const connectionRecord = await aliceAgent.oob.receiveInvitation(outOfBandMessage, { autoAccept: false })
 
     // expect contains services
     const [service] = outOfBandMessage.services
@@ -131,9 +124,7 @@ describe('out of band', () => {
       })
     )
 
-    // expect connection, how to identify connection?, maybe via OutOfBandRecord
-    // expect OutOfBandRecord in `init` state
-    const createdConnectionRecord = await connectionService.findById(connectionRecord.id)
+    const createdConnectionRecord = await aliceAgent.connections.findById(connectionRecord.id)
     expect(createdConnectionRecord?.invitation?.serviceEndpoint).toEqual(service.serviceEndpoint)
     expect(createdConnectionRecord?.invitation?.recipientKeys).toEqual(service.recipientKeys)
     expect(createdConnectionRecord?.invitation?.routingKeys).toEqual(service.routingKeys)
@@ -141,13 +132,10 @@ describe('out of band', () => {
   })
 
   test('make a connection based on OOB invitation', async () => {
-    const faberOutOfBandModule = faberAgent.injectionContainer.resolve(OutOfBandModule)
     // eslint-disable-next-line prefer-const
-    let { outOfBandMessage, connectionRecord: faberAliceConnection } = await faberOutOfBandModule.createInvitation()
+    let { outOfBandMessage, connectionRecord: faberAliceConnection } = await faberAgent.oob.createInvitation()
 
-    const outOfBandModule = aliceAgent.injectionContainer.resolve(OutOfBandModule)
-
-    let aliceFaberConnection = await outOfBandModule.receiveInvitation(outOfBandMessage, { autoAccept: true })
+    let aliceFaberConnection = await aliceAgent.oob.receiveInvitation(outOfBandMessage, { autoAccept: true })
 
     aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection.id)
     expect(aliceFaberConnection.state).toBe(ConnectionState.Complete)
@@ -159,65 +147,66 @@ describe('out of band', () => {
     expect(faberAliceConnection.state).toBe(ConnectionState.Complete)
   })
 
-  test('make a connection and credential offer requests based on OOB invitation', async () => {
-    const {
-      schema: { id: schemaId },
-      definition: { id: credDefId },
-    } = await prepareForIssuance(faberAgent, ['name', 'age', 'profile_picture', 'x-ray'])
+  test('throw an error when the OOB invitation contains requests', async () => {
+    const { outOfBandMessage } = await faberAgent.oob.createInvitation()
 
-    // eslint-disable-next-line no-console
-    console.log('issuance has been prepared')
-
-    const faberOutOfBandModule = faberAgent.injectionContainer.resolve(OutOfBandModule)
-    const aliceOutOfBandModule = aliceAgent.injectionContainer.resolve(OutOfBandModule)
-    // eslint-disable-next-line prefer-const
-    let { outOfBandMessage, connectionRecord: faberAliceConnection } = await faberOutOfBandModule.createInvitation()
-
-    // eslint-disable-next-line no-console
-    console.log('invitation created', outOfBandMessage)
-
-    // add credential request to out of band message
-    const credentialService = faberAgent.injectionContainer.resolve(CredentialService)
     const credentialTemplate = {
       credentialDefinitionId: credDefId,
       preview: CredentialPreview.fromRecord({}),
       autoAcceptCredential: AutoAcceptCredential.Never,
     }
-    const { message, credentialRecord } = await credentialService.createOffer(credentialTemplate)
+    const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
 
-    // eslint-disable-next-line no-console
-    console.log('offer created', message)
+    // Adding a request here should cause an error
+    outOfBandMessage.addRequest(offerMessage)
 
-    outOfBandMessage.addRequest(message)
+    await expect(aliceAgent.oob.receiveInvitation(outOfBandMessage, { autoAccept: true })).rejects.toEqual(
+      new AriesFrameworkError('OOB invitation contains unsupported `request~attach` attribute.')
+    )
+  })
 
-    const aliceFaberConnection = await aliceOutOfBandModule.receiveInvitation(outOfBandMessage, { autoAccept: true })
-    await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection.id)
-    await faberAgent.connections.returnWhenIsConnected(faberAliceConnection.id)
+  test('process credential offer requests based on OOB message', async () => {
+    const credentialTemplate = {
+      credentialDefinitionId: credDefId,
+      preview: CredentialPreview.fromRecord({}),
+      autoAcceptCredential: AutoAcceptCredential.Never,
+    }
+    const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
+    const outOfBandMessage = await faberAgent.oob.createOobMessage(offerMessage)
+
+    await aliceAgent.oob.receiveOobMessage(outOfBandMessage)
 
     let credentials: CredentialRecord[] = []
-    while (credentials.length === 0) {
-      // eslint-disable-next-line no-console
-      console.log('get credentials')
+    while (credentials.length < 1) {
       credentials = await aliceAgent.credentials.getAll()
-      await wait(200)
+      await wait(100)
     }
 
-    // eslint-disable-next-line no-console
-    console.log('credentials', credentials)
-
     expect(credentials).toHaveLength(1)
-
     const [credential] = credentials
     expect(credential.state).toBe(CredentialState.OfferReceived)
   })
 
-  // test('make new connection based on OOB invitation', () => {})
-  // test('re-use existing connection based on OOB invitation', () => {})
+  test('throw an error when the OOB message contains handshake protocols', async () => {
+    const credentialTemplate = {
+      credentialDefinitionId: credDefId,
+      preview: CredentialPreview.fromRecord({}),
+      autoAcceptCredential: AutoAcceptCredential.Never,
+    }
+    const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
+    const outOfBandMessage = await faberAgent.oob.createOobMessage(offerMessage)
+
+    // Adding a protocol here should cause an error
+    outOfBandMessage.handshakeProtocols.push('https://didcomm.org/connections')
+
+    await expect(aliceAgent.oob.receiveOobMessage(outOfBandMessage)).rejects.toEqual(
+      new AriesFrameworkError('OOB message contains unsupported `handshake_protocols` attribute.')
+    )
+  })
 })
 
 function wait(ms = 1000) {
   return new Promise((resolve) => {
-    // console.log(`waiting ${ms} ms...`)
     setTimeout(resolve, ms)
   })
 }
