@@ -1,8 +1,13 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
+<<<<<<< HEAD
 import type { Logger } from '../../logger'
 import type { PlaintextMessage } from '../../types'
 import type { ConnectionRecord, HandshakeProtocol } from '../connections'
+=======
+import type { ConnectionRecord } from '../../modules/connections'
+import type { UnpackedMessageContext } from '../../types'
+>>>>>>> 519d188 (Separate OOB invitation and OOB message handling)
 
 import { parseUrl } from 'query-string'
 import { EmptyError } from 'rxjs'
@@ -233,6 +238,7 @@ export class OutOfBandModule {
     return { outOfBandRecord }
   }
 
+<<<<<<< HEAD
   public async acceptMessage(
     outOfBandRecord: OutOfBandRecord,
     config: {
@@ -364,6 +370,71 @@ export class OutOfBandModule {
             existingConnection = await this.connectionsModule.findByDid(theirDidRecord.id)
           }
         }
+=======
+  public async createOobMessage(message: AgentMessage) {
+    if (!message.service) {
+      throw new AriesFrameworkError(
+        `Out of band message with id ${message.id} and type ${message.type} does not have a ~service decorator`
+      )
+    }
+
+    const outOfBandMessage = new OutOfBandMessage({
+      goal: 'To issue a Faber College Graduate credential',
+      goalCode: 'issue-vc',
+      label: 'Faber College',
+    })
+
+    outOfBandMessage.accept.push('didcomm/aip2;env=rfc587')
+    outOfBandMessage.accept.push('didcomm/aip2;env=rfc19')
+
+    // Protocol compatibilty!
+    // To support newer OOB messages we need to add service from message and then remove `~service` attribute from message
+    outOfBandMessage.services.push(message.service.toDidCommService())
+    message.service = undefined
+    outOfBandMessage.addRequest(message)
+
+    return outOfBandMessage
+  }
+
+  public async receiveOobMessage(outOfBandMessage: OutOfBandMessage) {
+    if (outOfBandMessage.handshakeProtocols.length > 0) {
+      throw new AriesFrameworkError('OOB message contains unsupported `handshake_protocols` attribute.')
+    }
+    const messages = outOfBandMessage.getRequests()
+    messages.forEach(async (unpackedMessage) => {
+      try {
+        // Protocol compatibilty!
+        // To support older OOB messages we need to decorate message with `~service` attribute
+        const message = await this.transformMessage({ message: unpackedMessage })
+        message.setService(outOfBandMessage.services[0])
+
+        this.eventEmitter.emit<AgentMessageReceivedEvent>({
+          type: AgentEventTypes.AgentMessageReceived,
+          payload: {
+            message: message.toJSON(),
+          },
+        })
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('error', error)
+      }
+    })
+  }
+
+  public async receiveInvitation(outOfBandMessage: OutOfBandMessage, config: { autoAccept: boolean }) {
+    const mediationRecord = await this.mediationRecipientService.discoverMediation()
+    const routing = await this.mediationRecipientService.getRouting(mediationRecord)
+    const invitation = new ConnectionInvitationMessage({ label: 'connection label', ...outOfBandMessage.services[0] })
+
+    let connectionRecord = await this.connectionService.processInvitation(invitation, { routing })
+    if (config.autoAccept) {
+      connectionRecord = await this.acceptInvitation(connectionRecord.id)
+    }
+
+    if (outOfBandMessage.getRequests().length > 0) {
+      throw new AriesFrameworkError('OOB invitation contains unsupported `request~attach` attribute.')
+    }
+>>>>>>> 519d188 (Separate OOB invitation and OOB message handling)
 
         return existingConnection
       }
