@@ -20,6 +20,7 @@ import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
+import { OutOfBandModule } from '../modules/oob/OutOfBandModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
@@ -56,6 +57,7 @@ export class Agent {
   public readonly discovery: DiscoverFeaturesModule
   public readonly dids: DidsModule
   public readonly wallet: Wallet
+  public readonly oob!: OutOfBandModule
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
     // Create child container so we don't interfere with anything outside of this agent
@@ -105,6 +107,7 @@ export class Agent {
     this.ledger = this.container.resolve(LedgerModule)
     this.discovery = this.container.resolve(DiscoverFeaturesModule)
     this.dids = this.container.resolve(DidsModule)
+    this.oob = this.container.resolve(OutOfBandModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
     this.messageSubscription = this.eventEmitter
