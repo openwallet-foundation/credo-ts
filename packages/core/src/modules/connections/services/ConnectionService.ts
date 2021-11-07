@@ -350,19 +350,25 @@ export class ConnectionService {
   /**
    * Create a trust ping message for the connection with the specified connection id.
    *
+   * By default a trust ping message should elicit a response. If this is not desired the
+   * `config.responseRequested` property can be set to `false`.
+   *
    * @param connectionId the id of the connection for which to create a trust ping message
+   * @param config the config for the trust ping message
    * @returns outbound message containing trust ping message
    */
-  public async createTrustPing(connectionId: string): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
+  public async createTrustPing(
+    connectionId: string,
+    config: { responseRequested?: boolean; comment?: string } = {}
+  ): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
     const connectionRecord = await this.connectionRepository.getById(connectionId)
 
     connectionRecord.assertState([ConnectionState.Responded, ConnectionState.Complete])
 
     // TODO:
     //  - create ack message
-    //  - allow for options
     //  - maybe this shouldn't be in the connection service?
-    const trustPing = new TrustPingMessage({})
+    const trustPing = new TrustPingMessage(config)
 
     await this.updateState(connectionRecord, ConnectionState.Complete)
 
