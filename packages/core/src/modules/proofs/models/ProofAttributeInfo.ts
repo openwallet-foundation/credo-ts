@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer'
-import { IsString, IsOptional, IsArray, ValidateNested, IsInstance } from 'class-validator'
+import { IsString, IsOptional, IsArray, ValidateNested, IsInstance, ValidateIf, ArrayNotEmpty } from 'class-validator'
 
 import { RevocationInterval } from '../../credentials'
 
@@ -16,12 +16,13 @@ export class ProofAttributeInfo {
   }
 
   @IsString()
-  @IsOptional()
+  @ValidateIf((o: ProofAttributeInfo) => o.names === undefined)
   public name?: string
 
   @IsArray()
   @IsString({ each: true })
-  @IsOptional()
+  @ValidateIf((o: ProofAttributeInfo) => o.name === undefined)
+  @ArrayNotEmpty()
   public names?: string[]
 
   @Expose({ name: 'non_revoked' })

@@ -1,4 +1,7 @@
+import type { ValidationOptions } from 'class-validator'
+
 import { Transform, TransformationType } from 'class-transformer'
+import { ValidateBy, buildMessage } from 'class-validator'
 import { DateTime } from 'luxon'
 
 import { JsonTransformer } from './JsonTransformer'
@@ -54,4 +57,20 @@ export function DateParser(value: string): Date {
     return new Date(luxonDate.toString())
   }
   return new Date()
+}
+
+/**
+ * Checks if a given value is a Map
+ */
+export function IsMap(validationOptions?: ValidationOptions): PropertyDecorator {
+  return ValidateBy(
+    {
+      name: 'isMap',
+      validator: {
+        validate: (value: unknown): boolean => value instanceof Map,
+        defaultMessage: buildMessage((eachPrefix) => eachPrefix + '$property must be a Map', validationOptions),
+      },
+    },
+    validationOptions
+  )
 }

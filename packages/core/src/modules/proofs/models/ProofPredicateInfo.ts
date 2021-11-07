@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer'
-import { IsEnum, IsInstance, IsInt, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsArray, IsEnum, IsInstance, IsInt, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { RevocationInterval } from '../../credentials'
 
@@ -39,5 +39,6 @@ export class ProofPredicateInfo {
   @Type(() => AttributeFilter)
   @IsOptional()
   @IsInstance(AttributeFilter, { each: true })
+  @IsArray()
   public restrictions?: AttributeFilter[]
 }
