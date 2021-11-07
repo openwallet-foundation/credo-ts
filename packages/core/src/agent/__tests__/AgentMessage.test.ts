@@ -1,8 +1,4 @@
-import { AgentMessage } from '../AgentMessage'
-
-class TestMessage extends AgentMessage {
-  public readonly type = 'https://didcomm.org/connections/1.0/invitation'
-}
+import { TestMessage } from '../../../tests/TestMessage'
 
 describe('AgentMessage', () => {
   describe('toJSON', () => {

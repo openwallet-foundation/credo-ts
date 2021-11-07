@@ -12,6 +12,7 @@ import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
 import { MessageRepository } from '../storage/MessageRepository'
+import { MessageValidator } from '../utils/MessageValidator'
 
 import { EnvelopeService } from './EnvelopeService'
 import { TransportService } from './TransportService'
@@ -250,6 +251,20 @@ export class MessageSender {
     // Set return routing for message if requested
     if (returnRoute) {
       message.setReturnRouting(ReturnRouteTypes.all)
+    }
+
+    try {
+      await MessageValidator.validate(message)
+    } catch (error) {
+      this.logger.error(
+        `Aborting sending outbound message ${message.type} to ${service.serviceEndpoint}. Message validation failed`,
+        {
+          errors: error,
+          message: message.toJSON(),
+        }
+      )
+
+      throw error
     }
 
     const outboundPackage = await this.packMessage({ message, keys, endpoint: service.serviceEndpoint })
