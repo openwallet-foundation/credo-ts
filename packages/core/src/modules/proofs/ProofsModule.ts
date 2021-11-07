@@ -328,15 +328,30 @@ export class ProofsModule {
    * If restrictions allow, self attested attributes will be used.
    *
    *
-   * @param proofRequest The proof request to build the requested credentials object from
-   * @param presentationProposal Optional presentation proposal to improve credential selection algorithm
+   * @param proofRecordId the id of the proof request to get the matching credentials for
+   * @param config optional configuration for credential selection process. Use `filterByPresentationPreview` (default `true`) to only include
+   *  credentials that match the presentation preview from the presentation proposal (if available).
+
    * @returns RetrievedCredentials object
    */
   public async getRequestedCredentialsForProofRequest(
-    proofRequest: ProofRequest,
-    presentationProposal?: PresentationPreview
+    proofRecordId: string,
+    config?: GetRequestedCredentialsConfig
   ): Promise<RetrievedCredentials> {
-    return this.proofService.getRequestedCredentialsForProofRequest(proofRequest, presentationProposal)
+    const proofRecord = await this.proofService.getById(proofRecordId)
+
+    const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
+    const presentationPreview = config?.filterByPresentationPreview
+      ? proofRecord.proposalMessage?.presentationProposal
+      : undefined
+
+    if (!indyProofRequest) {
+      throw new AriesFrameworkError(
+        'Unable to get requested credentials for proof request. No proof request message was found or the proof request message does not contain an indy proof request.'
+      )
+    }
+
+    return this.proofService.getRequestedCredentialsForProofRequest(indyProofRequest, presentationPreview)
   }
 
   /**
@@ -421,4 +436,13 @@ export type CreateProofRequestOptions = Partial<
 export interface ProofRequestConfig {
   comment?: string
   autoAcceptProof?: AutoAcceptProof
+}
+
+export interface GetRequestedCredentialsConfig {
+  /**
+   * Whether to filter the retrieved credentials using the presentation preview.
+   * This configuration will only have effect if a presentation proposal message is available
+   * containing a presentation preview.
+   */
+  filterByPresentationPreview?: boolean
 }

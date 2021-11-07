@@ -12,7 +12,7 @@ import testLogger from './logger'
 
 describe('Present Proof', () => {
   test('Faber starts with connection-less proof requests to Alice', async () => {
-    const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay, presentationPreview } = await setupProofsTest(
+    const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay } = await setupProofsTest(
       'Faber connection-less Proofs',
       'Alice connection-less Proofs',
       AutoAcceptProof.Never
@@ -59,12 +59,9 @@ describe('Present Proof', () => {
     })
 
     testLogger.test('Alice accepts presentation request from Faber')
-    const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest
-    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      indyProofRequest!,
-      presentationPreview
-    )
+    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(aliceProofRecord.id, {
+      filterByPresentationPreview: true,
+    })
     const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
     await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
 
