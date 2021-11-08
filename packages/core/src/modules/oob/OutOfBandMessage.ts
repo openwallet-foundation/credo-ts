@@ -28,7 +28,13 @@ export class OutOfBandMessage extends AgentMessage {
     }
   }
 
+  public addHandshakeProtocol(protocol: string) {
+    if (!this.handshakeProtocols) this.handshakeProtocols = []
+    this.handshakeProtocols.push(protocol)
+  }
+
   public addRequest(message: AgentMessage) {
+    if (!this.requests) this.requests = []
     const requestAttachment = new Attachment({
       id: 'request-0',
       mimeType: 'application/json',
@@ -39,14 +45,18 @@ export class OutOfBandMessage extends AgentMessage {
     this.requests.push(requestAttachment)
   }
 
-  public getRequests(): UnpackedMessage[] {
-    return this.requests.map((request) => {
+  public getRequests(): UnpackedMessage[] | undefined {
+    return this.requests?.map((request) => {
       if (request.data.base64) {
         return JsonEncoder.fromBase64(request.data.base64)
       } else {
         throw new Error('There is no base64 encoded data in attachment')
       }
     })
+  }
+
+  public addService(service: DidCommService) {
+    this.services.push(service)
   }
 
   @Equals(OutOfBandMessage.type)
@@ -65,9 +75,7 @@ export class OutOfBandMessage extends AgentMessage {
 
   // TODO what type is it, should we create an enum
   @Expose({ name: 'handshake_protocols' })
-  public readonly handshakeProtocols: string[] = []
-
-  public readonly services: DidCommService[] = []
+  public handshakeProtocols?: string[]
 
   @Expose({ name: 'requests~attach' })
   @Type(() => Attachment)
@@ -76,5 +84,7 @@ export class OutOfBandMessage extends AgentMessage {
     each: true,
   })
   @IsInstance(Attachment, { each: true })
-  private readonly requests: Attachment[] = []
+  private requests?: Attachment[]
+
+  public readonly services: DidCommService[] = []
 }
