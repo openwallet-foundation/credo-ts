@@ -188,12 +188,9 @@ describe('Auto accept present proof', () => {
       })
 
       testLogger.test('Alice accepts presentation request from Faber')
-      const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest
-      const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        indyProofRequest!,
-        presentationPreview
-      )
+      const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(aliceProofRecord.id, {
+        filterByPresentationPreview: true,
+      })
       const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
       await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
 

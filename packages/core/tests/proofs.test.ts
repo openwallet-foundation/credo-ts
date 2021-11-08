@@ -1,4 +1,4 @@
-import type { Agent, ConnectionRecord, PresentationPreview, ProofRequest } from '../src'
+import type { Agent, ConnectionRecord, PresentationPreview } from '../src'
 import type { CredDefId } from 'indy-sdk'
 
 import {
@@ -95,11 +95,9 @@ describe('Present Proof', () => {
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
-    const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest as ProofRequest
-    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
-      indyProofRequest,
-      presentationPreview
-    )
+    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(aliceProofRecord.id, {
+      filterByPresentationPreview: true,
+    })
     const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
     await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
 
@@ -254,11 +252,9 @@ describe('Present Proof', () => {
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
-    const indyProofRequest = aliceProofRecord.requestMessage?.indyProofRequest as ProofRequest
-    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
-      indyProofRequest,
-      presentationPreview
-    )
+    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(aliceProofRecord.id, {
+      filterByPresentationPreview: true,
+    })
     const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
     await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
 

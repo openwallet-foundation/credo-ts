@@ -469,11 +469,7 @@ export async function presentProof({
     state: ProofState.RequestReceived,
   })
 
-  const indyProofRequest = holderRecord.requestMessage?.indyProofRequest
-  if (!indyProofRequest) {
-    throw new Error('indyProofRequest missing')
-  }
-  const retrievedCredentials = await holderAgent.proofs.getRequestedCredentialsForProofRequest(indyProofRequest)
+  const retrievedCredentials = await holderAgent.proofs.getRequestedCredentialsForProofRequest(holderRecord.id)
   const requestedCredentials = holderAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
   await holderAgent.proofs.acceptRequest(holderRecord.id, requestedCredentials)
 
