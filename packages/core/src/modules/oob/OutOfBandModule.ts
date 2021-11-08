@@ -1,24 +1,23 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
 import type { ConnectionRecord } from '../../modules/connections'
-import type { UnpackedMessageContext } from '../../types'
+import type { OutOfBandMessageOptions } from './OutOfBandMessage'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
-import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import { AriesFrameworkError } from '../../error'
-import { JsonTransformer } from '../../utils/JsonTransformer'
-import { replaceLegacyDidSovPrefixOnMessage } from '../../utils/messageType'
 import { ConnectionService, ConnectionInvitationMessage } from '../connections'
 import { DiscoverFeaturesQueryMessage, DiscoverFeaturesService } from '../discover-features'
 import { MediationRecipientService } from '../routing'
 
 import { OutOfBandMessage } from './OutOfBandMessage'
+
+// TODO
+// handshake and requests-attach can be undefined
 
 @scoped(Lifecycle.ContainerScoped)
 export class OutOfBandModule {
@@ -27,25 +26,24 @@ export class OutOfBandModule {
   private disoverFeaturesService: DiscoverFeaturesService
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
-  private dispatcher: Dispatcher
 
   public constructor(
     connectionService: ConnectionService,
     mediationRecipientService: MediationRecipientService,
     disoverFeaturesService: DiscoverFeaturesService,
     messageSender: MessageSender,
-    eventEmitter: EventEmitter,
-    dispatcher: Dispatcher
+    eventEmitter: EventEmitter
   ) {
     this.connectionService = connectionService
     this.mediationRecipientService = mediationRecipientService
     this.disoverFeaturesService = disoverFeaturesService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
-    this.dispatcher = dispatcher
   }
 
-  public async createInvitation(): Promise<{ outOfBandMessage: OutOfBandMessage; connectionRecord: ConnectionRecord }> {
+  public async createInvitation(
+    options: OutOfBandMessageOptions
+  ): Promise<{ outOfBandMessage: OutOfBandMessage; connectionRecord: ConnectionRecord }> {
     // Discover what handshake protocols are supported by calling discover service.
     // Other option could be that connection service would say what protocols it supports.
     // However, that would expanded service responsibility.
@@ -72,12 +70,7 @@ export class OutOfBandModule {
       routing,
     })
 
-    const outOfBandMessage = new OutOfBandMessage({
-      goal: 'To issue a Faber College Graduate credential',
-      goalCode: 'issue-vc',
-      label: 'Faber College',
-    })
-
+    const outOfBandMessage = new OutOfBandMessage(options)
     outOfBandMessage.accept.push('didcomm/aip2;env=rfc587')
     outOfBandMessage.accept.push('didcomm/aip2;env=rfc19')
 
@@ -85,56 +78,6 @@ export class OutOfBandModule {
     supportedHandshakeProtocols.forEach((p) => outOfBandMessage.handshakeProtocols.push(p))
 
     return { outOfBandMessage, connectionRecord }
-  }
-
-  public async createOobMessage(message: AgentMessage) {
-    if (!message.service) {
-      throw new AriesFrameworkError(
-        `Out of band message with id ${message.id} and type ${message.type} does not have a ~service decorator`
-      )
-    }
-
-    const outOfBandMessage = new OutOfBandMessage({
-      goal: 'To issue a Faber College Graduate credential',
-      goalCode: 'issue-vc',
-      label: 'Faber College',
-    })
-
-    outOfBandMessage.accept.push('didcomm/aip2;env=rfc587')
-    outOfBandMessage.accept.push('didcomm/aip2;env=rfc19')
-
-    // Protocol compatibilty!
-    // To support newer OOB messages we need to add service from message and then remove `~service` attribute from message
-    outOfBandMessage.services.push(message.service.toDidCommService())
-    message.service = undefined
-    outOfBandMessage.addRequest(message)
-
-    return outOfBandMessage
-  }
-
-  public async receiveOobMessage(outOfBandMessage: OutOfBandMessage) {
-    if (outOfBandMessage.handshakeProtocols.length > 0) {
-      throw new AriesFrameworkError('OOB message contains unsupported `handshake_protocols` attribute.')
-    }
-    const messages = outOfBandMessage.getRequests()
-    messages.forEach(async (unpackedMessage) => {
-      try {
-        // Protocol compatibilty!
-        // To support older OOB messages we need to decorate message with `~service` attribute
-        const message = await this.transformMessage({ message: unpackedMessage })
-        message.setService(outOfBandMessage.services[0])
-
-        this.eventEmitter.emit<AgentMessageReceivedEvent>({
-          type: AgentEventTypes.AgentMessageReceived,
-          payload: {
-            message: message.toJSON(),
-          },
-        })
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('error', error)
-      }
-    })
   }
 
   public async receiveInvitation(outOfBandMessage: OutOfBandMessage, config: { autoAccept: boolean }) {
@@ -154,33 +97,50 @@ export class OutOfBandModule {
     return connectionRecord
   }
 
+  public async createOobMessage(message: AgentMessage, options: OutOfBandMessageOptions) {
+    if (!message.service) {
+      throw new AriesFrameworkError(
+        `Out of band message with id ${message.id} and type ${message.type} does not have a ~service decorator`
+      )
+    }
+
+    const outOfBandMessage = new OutOfBandMessage(options)
+    outOfBandMessage.accept.push('didcomm/aip2;env=rfc587')
+    outOfBandMessage.accept.push('didcomm/aip2;env=rfc19')
+
+    // To support newer OOB messages we need to add service from message and then remove `~service` attribute from message
+    outOfBandMessage.services.push(message.service.toDidCommService())
+    message.service = undefined
+    outOfBandMessage.addRequest(message)
+
+    return outOfBandMessage
+  }
+
+  public async receiveOobMessage(outOfBandMessage: OutOfBandMessage) {
+    if (outOfBandMessage.handshakeProtocols.length > 0) {
+      throw new AriesFrameworkError('OOB message contains unsupported `handshake_protocols` attribute.')
+    }
+
+    const messages = outOfBandMessage.getRequests()
+    for (const unpackedMessage of messages) {
+      // To support older OOB messages we need to decorate message with `~service` attribute
+      const [service] = outOfBandMessage.services
+      unpackedMessage['~service'] = service
+
+      this.eventEmitter.emit<AgentMessageReceivedEvent>({
+        type: AgentEventTypes.AgentMessageReceived,
+        payload: {
+          message: unpackedMessage,
+        },
+      })
+    }
+  }
+
   // TODO This is copy-pasted from ConnectionModule
   private async acceptInvitation(connectionId: string): Promise<ConnectionRecord> {
     const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(connectionId)
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)
     return connectionRecord
-  }
-
-  /**
-   * Transform an unpacked DIDComm message into it's corresponding message class. Will look at all message types in the registered handlers.
-   *
-   * @param unpackedMessage the unpacked message for which to transform the message in to a class instance
-   */
-  private async transformMessage(unpackedMessage: UnpackedMessageContext): Promise<AgentMessage> {
-    // replace did:sov:BzCbsNYhMrjHiqZDTUASHg;spec prefix for message type with https://didcomm.org
-    replaceLegacyDidSovPrefixOnMessage(unpackedMessage.message)
-
-    const messageType = unpackedMessage.message['@type']
-    const MessageClass = this.dispatcher.getMessageClassForType(messageType)
-
-    if (!MessageClass) {
-      throw new AriesFrameworkError(`No message class found for message type "${messageType}"`)
-    }
-
-    // Cast the plain JSON object to specific instance of Message extended from AgentMessage
-    const message = JsonTransformer.fromJSON(unpackedMessage.message, MessageClass)
-
-    return message
   }
 }
