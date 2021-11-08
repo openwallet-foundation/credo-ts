@@ -112,13 +112,10 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       {}
     )
 
-    const indyCredentialMetadata =
-      this.metadata.get<{ schemaId: string; credentialDefinitionId: string }>('indyCredentialMetadata') ?? undefined
-
     return new CredentialInfo({
       claims,
       attachments: this.linkedAttachments,
-      metadata: indyCredentialMetadata,
+      metadata: this.metadata.data,
     })
   }
 

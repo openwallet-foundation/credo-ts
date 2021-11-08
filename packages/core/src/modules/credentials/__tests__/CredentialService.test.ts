@@ -99,7 +99,7 @@ const mockCredentialRecord = ({
 }: {
   state?: CredentialState
   requestMessage?: RequestCredentialMessage
-  metadata?: IndyCredentialMetadata & { indyRequestMetadata: { cred_req: string } }
+  metadata?: IndyCredentialMetadata & { indyRequest: { cred_req: string } }
   tags?: CustomCredentialTags
   threadId?: string
   connectionId?: string
@@ -123,18 +123,18 @@ const mockCredentialRecord = ({
     tags,
   })
 
-  if (metadata?.indyRequestMetadata) {
-    credentialRecord.metadata.set('indyRequestMetadata', { ...metadata.indyRequestMetadata })
+  if (metadata?.indyRequest) {
+    credentialRecord.metadata.set('indyRequest', { ...metadata.indyRequest })
   }
 
   if (metadata?.schemaId) {
-    credentialRecord.metadata.set('indyCredentialMetadata', {
+    credentialRecord.metadata.add('indyCredential', {
       schemaId: metadata.schemaId,
     })
   }
 
   if (metadata?.credentialDefinitionId) {
-    credentialRecord.metadata.set('indyCredentialMetadata', {
+    credentialRecord.metadata.add('indyCredential', {
       credentialDefinitionId: metadata.credentialDefinitionId,
     })
   }
@@ -339,7 +339,7 @@ describe('CredentialService', () => {
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
       expect(updatedCredentialRecord.toJSON()).toMatchObject({
-        metadata: { indyRequestMetadata: { cred_req: 'meta-data' } },
+        metadata: { indyRequest: { cred_req: 'meta-data' } },
         state: CredentialState.RequestSent,
       })
     })
@@ -621,7 +621,7 @@ describe('CredentialService', () => {
         requestMessage: new RequestCredentialMessage({
           requestAttachments: [requestAttachment],
         }),
-        metadata: { indyRequestMetadata: { cred_req: 'meta-data' } },
+        metadata: { indyRequest: { cred_req: 'meta-data' } },
       })
 
       const credentialResponse = new IssueCredentialMessage({
@@ -743,7 +743,7 @@ describe('CredentialService', () => {
             Promise.resolve(
               mockCredentialRecord({
                 state,
-                metadata: { indyRequestMetadata: { cred_req: 'meta-data' } },
+                metadata: { indyRequest: { cred_req: 'meta-data' } },
               })
             )
           )

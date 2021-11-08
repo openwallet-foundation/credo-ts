@@ -125,7 +125,7 @@ describe('credentials', () => {
       requestMessage: expect.any(Object),
       metadata: {
         data: {
-          indyCredentialMetadata: {
+          indyCredential: {
             credentialDefinitionId: credDefId,
           },
         },
@@ -143,7 +143,7 @@ describe('credentials', () => {
       requestMessage: expect.any(Object),
       metadata: {
         data: {
-          indyCredentialMetadata: {
+          indyCredential: {
             credentialDefinitionId: credDefId,
           },
         },
@@ -193,7 +193,7 @@ describe('credentials', () => {
       requestMessage: expect.any(Object),
       metadata: {
         data: {
-          indyCredentialMetadata: {
+          indyCredential: {
             credentialDefinitionId: credDefId,
           },
         },

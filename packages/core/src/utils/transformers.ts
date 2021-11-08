@@ -45,21 +45,30 @@ export function RecordTransformer<T>(Class: { new (...args: any[]): T }) {
 /*
  * Decorator that transforms to and from a metadata instance.
  *
+ * @todo remove the conversion at 0.1.0 release via a migration script
  */
 export function MetadataTransformer() {
   return Transform(({ value, type }) => {
-    switch (type) {
-      case TransformationType.CLASS_TO_PLAIN:
-        return { ...value.data }
+    if (type === TransformationType.CLASS_TO_PLAIN) {
+      return { ...value.data }
+    }
 
-      case TransformationType.PLAIN_TO_CLASS:
-        // TODO: Remove conversion in 0.1.0 via a migration script
-        JsonTransformer.renameKey('requestMetadata', 'indyRequestMetadata', value)
-        JsonTransformer.renameKey('credentialMetadata', 'indyCredentialMetadata', value)
+    if (type === TransformationType.PLAIN_TO_CLASS) {
+      const { requestMetadata, schemaId, credentialDefinitionId, ...rest } = value
+      const metadata = new Metadata(rest)
 
-        return new Metadata(value)
-      default:
-        return value
+      if (requestMetadata) metadata.add('indyRequest', { ...value.requestMetadata })
+
+      if (schemaId) metadata.add('indyCredential', { schemaId: value.schemaId })
+
+      if (credentialDefinitionId)
+        metadata.add('indyCredential', { credentialDefinitionId: value.credentialDefinitionId })
+
+      return metadata
+    }
+
+    if (type === TransformationType.CLASS_TO_CLASS) {
+      return value
     }
   })
 }
