@@ -146,7 +146,7 @@ export class MessageSender {
       errors,
       connection,
     })
-    throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})}`)
+    throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
   }
 
   public async sendMessage(
