@@ -115,7 +115,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
     return new CredentialInfo({
       claims,
       attachments: this.linkedAttachments,
-      metadata: this.metadata.data,
+      metadata: this.metadata.getAll(),
     })
   }
 

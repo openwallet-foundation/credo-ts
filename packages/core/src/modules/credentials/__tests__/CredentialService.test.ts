@@ -99,7 +99,7 @@ const mockCredentialRecord = ({
 }: {
   state?: CredentialState
   requestMessage?: RequestCredentialMessage
-  metadata?: IndyCredentialMetadata & { indyRequest: { cred_req: string } }
+  metadata?: IndyCredentialMetadata & { indyRequest: Record<string, unknown> }
   tags?: CustomCredentialTags
   threadId?: string
   connectionId?: string

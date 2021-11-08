@@ -23,14 +23,16 @@ describe('CredentialRecord', () => {
       })
 
       const credentialInfo = credentialRecord.getCredentialInfo()
-      expect(credentialInfo?.claims).toEqual({
-        age: '25',
-      })
 
-      expect(credentialInfo?.metadata).toEqual({
-        indyCredential: {
-          credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
-          schemaId: 'TL1EaPFCZ8Si5aUrqScBDt:2:test-schema-1599055118161:1.0',
+      expect(credentialInfo).toEqual({
+        claims: {
+          age: '25',
+        },
+        metadata: {
+          indyCredential: {
+            credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
+            schemaId: 'TL1EaPFCZ8Si5aUrqScBDt:2:test-schema-1599055118161:1.0',
+          },
         },
       })
     })
