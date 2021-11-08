@@ -31,6 +31,18 @@ const aliceConfig = getBaseConfig('Alice Agent Connections', {
 })
 
 describe('out of band', () => {
+  const makeConnectionOptions = {
+    goal: 'To make a connection',
+    goalCode: 'p2p-messaging',
+    label: 'Faber College',
+  }
+
+  const issueCredentialOptions = {
+    goal: 'To issue a credential',
+    goalCode: 'issue-vc',
+    label: 'Faber College',
+  }
+
   let faberAgent: Agent
   let aliceAgent: Agent
   let credDefId: string
@@ -82,7 +94,7 @@ describe('out of band', () => {
   // What about a constraint for the usage of service from another service?
 
   test('create OOB connection invitation', async () => {
-    const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createInvitation()
+    const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createInvitation(makeConnectionOptions)
 
     // eslint-disable-next-line no-console
     console.log('outOfBandMessage.toJSON()', outOfBandMessage.toJSON())
@@ -108,7 +120,7 @@ describe('out of band', () => {
   })
 
   test('receive OOB connection invitation', async () => {
-    const { outOfBandMessage } = await faberAgent.oob.createInvitation()
+    const { outOfBandMessage } = await faberAgent.oob.createInvitation(makeConnectionOptions)
 
     const connectionRecord = await aliceAgent.oob.receiveInvitation(outOfBandMessage, { autoAccept: false })
 
@@ -133,7 +145,9 @@ describe('out of band', () => {
 
   test('make a connection based on OOB invitation', async () => {
     // eslint-disable-next-line prefer-const
-    let { outOfBandMessage, connectionRecord: faberAliceConnection } = await faberAgent.oob.createInvitation()
+    let { outOfBandMessage, connectionRecord: faberAliceConnection } = await faberAgent.oob.createInvitation(
+      makeConnectionOptions
+    )
 
     let aliceFaberConnection = await aliceAgent.oob.receiveInvitation(outOfBandMessage, { autoAccept: true })
 
@@ -148,7 +162,7 @@ describe('out of band', () => {
   })
 
   test('throw an error when the OOB invitation contains requests', async () => {
-    const { outOfBandMessage } = await faberAgent.oob.createInvitation()
+    const { outOfBandMessage } = await faberAgent.oob.createInvitation(makeConnectionOptions)
 
     const credentialTemplate = {
       credentialDefinitionId: credDefId,
@@ -172,7 +186,7 @@ describe('out of band', () => {
       autoAcceptCredential: AutoAcceptCredential.Never,
     }
     const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
-    const outOfBandMessage = await faberAgent.oob.createOobMessage(offerMessage)
+    const outOfBandMessage = await faberAgent.oob.createOobMessage(offerMessage, issueCredentialOptions)
 
     await aliceAgent.oob.receiveOobMessage(outOfBandMessage)
 
@@ -194,7 +208,7 @@ describe('out of band', () => {
       autoAcceptCredential: AutoAcceptCredential.Never,
     }
     const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
-    const outOfBandMessage = await faberAgent.oob.createOobMessage(offerMessage)
+    const outOfBandMessage = await faberAgent.oob.createOobMessage(offerMessage, issueCredentialOptions)
 
     // Adding a protocol here should cause an error
     outOfBandMessage.handshakeProtocols.push('https://didcomm.org/connections')
