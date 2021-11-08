@@ -37,14 +37,9 @@ class Dispatcher {
     const message = messageContext.message
     const handler = this.getHandlerForType(message.type)
 
-    this.logger.debug(`Before Handler for message type ${message.type} has been found.`)
-    // this.logger.debug(`handlers`, this.handlers)
-
     if (!handler) {
       throw new AriesFrameworkError(`No handler for message type "${message.type}" found`)
     }
-
-    this.logger.debug(`Handler for message type ${message.type} has been found.`)
 
     let outboundMessage: OutboundMessage<AgentMessage> | OutboundServiceMessage<AgentMessage> | void
 
