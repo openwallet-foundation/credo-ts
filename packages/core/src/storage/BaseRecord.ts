@@ -1,8 +1,9 @@
 import { Exclude, Type } from 'class-transformer'
 
 import { JsonTransformer } from '../utils/JsonTransformer'
+import { MetadataTransformer } from '../utils/transformers'
 
-import { Metadata, MetadataTransformer } from './Metadata'
+import { Metadata } from './Metadata'
 
 export type TagValue = string | boolean | undefined | Array<string>
 export type TagsBase = {

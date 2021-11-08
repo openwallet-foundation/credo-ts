@@ -2,7 +2,8 @@ import type { ConnectionService } from '../../connections/services/ConnectionSer
 import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialPreviewAttribute } from '../messages'
-import type { CredentialRecordMetadata, CustomCredentialTags } from '../repository/CredentialRecord'
+import type { IndyCredentialMetadata } from '../models/CredentialInfo'
+import type { CustomCredentialTags } from '../repository/CredentialRecord'
 import type { CredentialOfferTemplate } from '../services'
 
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
@@ -98,7 +99,7 @@ const mockCredentialRecord = ({
 }: {
   state?: CredentialState
   requestMessage?: RequestCredentialMessage
-  metadata?: CredentialRecordMetadata
+  metadata?: IndyCredentialMetadata & { indyRequestMetadata: { cred_req: string } }
   tags?: CustomCredentialTags
   threadId?: string
   connectionId?: string
@@ -116,20 +117,27 @@ const mockCredentialRecord = ({
     id,
     credentialAttributes: credentialAttributes || credentialPreview.attributes,
     requestMessage,
-    metadata,
     state: state || CredentialState.OfferSent,
     threadId: threadId ?? offerMessage.id,
     connectionId: connectionId ?? '123',
     tags,
   })
 
-  if (metadata?.requestMetadata) {
-    credentialRecord.metadata.set('indyRequestMetadata', { requestMetadata: metadata?.requestMetadata })
+  if (metadata?.indyRequestMetadata) {
+    credentialRecord.metadata.set('indyRequestMetadata', { ...metadata.indyRequestMetadata })
   }
-  credentialRecord.metadata.set('indyCredentialMetadata', {
-    credentialDefinitionId: metadata?.credentialDefinitionId,
-    schemaId: metadata?.schemaId,
-  })
+
+  if (metadata?.schemaId) {
+    credentialRecord.metadata.set('indyCredentialMetadata', {
+      schemaId: metadata.schemaId,
+    })
+  }
+
+  if (metadata?.credentialDefinitionId) {
+    credentialRecord.metadata.set('indyCredentialMetadata', {
+      credentialDefinitionId: metadata.credentialDefinitionId,
+    })
+  }
 
   return credentialRecord
 }
@@ -613,7 +621,7 @@ describe('CredentialService', () => {
         requestMessage: new RequestCredentialMessage({
           requestAttachments: [requestAttachment],
         }),
-        metadata: { requestMetadata: { cred_req: 'meta-data' } },
+        metadata: { indyRequestMetadata: { cred_req: 'meta-data' } },
       })
 
       const credentialResponse = new IssueCredentialMessage({
@@ -646,7 +654,7 @@ describe('CredentialService', () => {
 
       expect(storeCredentialMock).toHaveBeenNthCalledWith(1, {
         credentialId: expect.any(String),
-        credentialRequestMetadata: { requestMetadata: { cred_req: 'meta-data' } },
+        credentialRequestMetadata: { cred_req: 'meta-data' },
         credential: messageContext.message.indyCredential,
         credentialDefinition: credDef,
       })
@@ -735,7 +743,7 @@ describe('CredentialService', () => {
             Promise.resolve(
               mockCredentialRecord({
                 state,
-                metadata: { requestMetadata: { cred_req: 'meta-data' } },
+                metadata: { indyRequestMetadata: { cred_req: 'meta-data' } },
               })
             )
           )

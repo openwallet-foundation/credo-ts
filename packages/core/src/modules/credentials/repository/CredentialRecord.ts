@@ -17,12 +17,6 @@ import {
 } from '../messages'
 import { CredentialInfo } from '../models/CredentialInfo'
 
-export interface CredentialRecordMetadata {
-  requestMetadata?: Record<string, unknown>
-  credentialDefinitionId?: string
-  schemaId?: string
-}
-
 export interface CredentialRecordProps {
   id?: string
   createdAt?: Date
@@ -31,7 +25,6 @@ export interface CredentialRecordProps {
   threadId: string
 
   credentialId?: string
-  metadata?: CredentialRecordMetadata
   tags?: CustomCredentialTags
   proposalMessage?: ProposeCredentialMessage
   offerMessage?: OfferCredentialMessage

@@ -77,4 +77,21 @@ describe('JsonTransformer', () => {
       expect(connection.didDoc).toBeInstanceOf(DidDoc)
     })
   })
+
+  describe('rename a key on a simple JSON object', () => {
+    it('renames a key when it is there', () => {
+      const sampleObject = { foo: 'bar' }
+
+      const renamedObject = JsonTransformer.renameKey('foo', 'baz', sampleObject)
+
+      expect(renamedObject).toEqual({ baz: 'bar' })
+    })
+    it('does not rename a key when it is not there', () => {
+      const sampleObject = { foo: 'bar' }
+
+      const renamedObject = JsonTransformer.renameKey('baz' as 'foo', 'baz', sampleObject)
+
+      expect(renamedObject).toEqual({ foo: 'bar' })
+    })
+  })
 })
