@@ -1,4 +1,4 @@
-import type { UnpackedMessage, UnpackedMessageContext } from '../../types'
+import type { UnpackedMessage } from '../../types'
 import type { DidCommService } from '../connections/models/did/service/DidCommService'
 
 import { Expose, Type } from 'class-transformer'
@@ -10,7 +10,7 @@ import { JsonEncoder } from '../../utils/JsonEncoder'
 
 const VERSION = '1.1'
 
-interface OutOfBandMessageOptions {
+export interface OutOfBandMessageOptions {
   id?: string
   label?: string
   goalCode?: string
