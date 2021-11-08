@@ -86,6 +86,8 @@ export class MessageSender {
     packedMessage: WireMessage
     options?: { transportPriority?: TransportPriorityOptions }
   }) {
+    const errors: Error[] = []
+
     // Try to send to already open session
     const session = this.transportService.findSessionByConnectionId(connection.id)
     if (session?.inboundMessage?.hasReturnRouting()) {
@@ -93,7 +95,8 @@ export class MessageSender {
         await session.send(packedMessage)
         return
       } catch (error) {
-        this.logger.info(`Sending packed message via session failed with error: ${error.message}.`, error)
+        errors.push(error)
+        this.logger.debug(`Sending packed message via session failed with error: ${error.message}.`, error)
       }
     }
 
@@ -141,6 +144,7 @@ export class MessageSender {
     // Message is undeliverable
     this.logger.error(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`, {
       message: packedMessage,
+      errors,
       connection,
     })
     throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
@@ -153,6 +157,7 @@ export class MessageSender {
     }
   ) {
     const { connection, payload } = outboundMessage
+    const errors: Error[] = []
 
     this.logger.debug('Send outbound message', {
       message: payload,
@@ -167,7 +172,8 @@ export class MessageSender {
         await this.sendMessageToSession(session, payload)
         return
       } catch (error) {
-        this.logger.info(`Sending an outbound message via session failed with error: ${error.message}.`, error)
+        errors.push(error)
+        this.logger.debug(`Sending an outbound message via session failed with error: ${error.message}.`, error)
       }
     }
 
@@ -189,6 +195,7 @@ export class MessageSender {
         })
         return
       } catch (error) {
+        errors.push(error)
         this.logger.debug(
           `Sending outbound message to service with id ${service.id} failed with the following error:`,
           {
@@ -218,6 +225,7 @@ export class MessageSender {
     // Message is undeliverable
     this.logger.error(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`, {
       message: payload,
+      errors,
       connection,
     })
     throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
