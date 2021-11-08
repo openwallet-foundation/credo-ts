@@ -16,9 +16,6 @@ import { MediationRecipientService } from '../routing'
 
 import { OutOfBandMessage } from './OutOfBandMessage'
 
-// TODO
-// handshake and requests-attach can be undefined
-
 @scoped(Lifecycle.ContainerScoped)
 export class OutOfBandModule {
   private connectionService: ConnectionService
@@ -41,13 +38,17 @@ export class OutOfBandModule {
     this.eventEmitter = eventEmitter
   }
 
+  /**
+   * Creates new connection record and use its keys for out-of-band message that works as a connection invitation.
+   * It uses discover features to find out what handshake protocols the agent supports.
+   *
+   * @param options Optinal attributes contained in out-of-band message
+   * @returns Created connection record and out-of-band message
+   */
   public async createInvitation(
     options: OutOfBandMessageOptions
   ): Promise<{ outOfBandMessage: OutOfBandMessage; connectionRecord: ConnectionRecord }> {
-    // Discover what handshake protocols are supported by calling discover service.
-    // Other option could be that connection service would say what protocols it supports.
-    // However, that would expanded service responsibility.
-
+    // Discover what handshake protocols are supported
     const queryMessage = new DiscoverFeaturesQueryMessage({
       query: `*`,
     })
@@ -60,8 +61,12 @@ export class OutOfBandModule {
       .map((p) => p.protocolId.slice(0, -1))
       .filter((pId) => handshakeProtocols.find((hp) => pId.startsWith(hp)))
 
-    // Create connection
-    // It's a question if we need to create connection here. We could create just OutOfBand record.
+    if (supportedHandshakeProtocols.length === 0) {
+      throw new AriesFrameworkError('There is no handshake protocol supported. Agent can not create a connection.')
+    }
+
+    // Create connection.
+    // Eventually, we can create just an OutOfBand record here.
     // The OOB record can be also used for connection-less communication in general.
     // Either way, we need to get routing
     const mediationRecord = await this.mediationRecipientService.discoverMediation()
@@ -73,14 +78,27 @@ export class OutOfBandModule {
     const outOfBandMessage = new OutOfBandMessage(options)
     outOfBandMessage.accept.push('didcomm/aip2;env=rfc587')
     outOfBandMessage.accept.push('didcomm/aip2;env=rfc19')
-
-    connectionRecord.didDoc.didCommServices.forEach((s) => outOfBandMessage.services.push(s))
-    supportedHandshakeProtocols.forEach((p) => outOfBandMessage.handshakeProtocols.push(p))
+    supportedHandshakeProtocols.forEach((p) => outOfBandMessage.addHandshakeProtocol(p))
+    connectionRecord.didDoc.didCommServices.forEach((s) => outOfBandMessage.addService(s))
 
     return { outOfBandMessage, connectionRecord }
   }
 
-  public async receiveInvitation(outOfBandMessage: OutOfBandMessage, config: { autoAccept: boolean }) {
+  /**
+   * Creates a connection record based on out-of-band message.
+   *
+   * @param outOfBandMessage
+   * @param config
+   * @returns Connection record
+   */
+  public async receiveInvitation(
+    outOfBandMessage: OutOfBandMessage,
+    config: { autoAccept: boolean }
+  ): Promise<ConnectionRecord> {
+    if (!outOfBandMessage.handshakeProtocols || outOfBandMessage.handshakeProtocols.length === 0) {
+      throw new AriesFrameworkError('Missing required `handshake_protocols` attribute in OOB message.')
+    }
+
     const mediationRecord = await this.mediationRecipientService.discoverMediation()
     const routing = await this.mediationRecipientService.getRouting(mediationRecord)
     const invitation = new ConnectionInvitationMessage({ label: 'connection label', ...outOfBandMessage.services[0] })
@@ -90,13 +108,20 @@ export class OutOfBandModule {
       connectionRecord = await this.acceptInvitation(connectionRecord.id)
     }
 
-    if (outOfBandMessage.getRequests().length > 0) {
+    if (outOfBandMessage.getRequests()) {
       throw new AriesFrameworkError('OOB invitation contains unsupported `request~attach` attribute.')
     }
 
     return connectionRecord
   }
 
+  /**
+   * Creates an out-of-band message and adds given agent message to `requests~attach` attribute.
+   *
+   * @param message A message that will be send inside out-of-band message
+   * @param options Optinal attributes contained in out-of-band message
+   * @returns Out-of-band message
+   */
   public async createOobMessage(message: AgentMessage, options: OutOfBandMessageOptions) {
     if (!message.service) {
       throw new AriesFrameworkError(
@@ -116,12 +141,22 @@ export class OutOfBandModule {
     return outOfBandMessage
   }
 
-  public async receiveOobMessage(outOfBandMessage: OutOfBandMessage) {
-    if (outOfBandMessage.handshakeProtocols.length > 0) {
+  /**
+   * Takes all messages from `requests~attach` attribute and pass them to the agent via event emitter.
+   *
+   * @param outOfBandMessage
+   */
+  public async receiveOobMessage(outOfBandMessage: OutOfBandMessage): Promise<void> {
+    if (outOfBandMessage.handshakeProtocols) {
       throw new AriesFrameworkError('OOB message contains unsupported `handshake_protocols` attribute.')
     }
 
     const messages = outOfBandMessage.getRequests()
+
+    if (!messages || messages.length === 0) {
+      throw new AriesFrameworkError('Missing required `request~attach` attribute in OOB message.')
+    }
+
     for (const unpackedMessage of messages) {
       // To support older OOB messages we need to decorate message with `~service` attribute
       const [service] = outOfBandMessage.services
