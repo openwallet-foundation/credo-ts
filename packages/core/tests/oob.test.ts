@@ -78,21 +78,6 @@ describe('out of band', () => {
     })
   })
 
-  // Sender
-  // create OOB invitation with available handshake protocols and services
-  // - use discover feature to recognize what protocols are available, or maybe connections module should say what protocols it supports
-  // - use connection service/agent config to get routing and recipient keys information (create connection)
-  // - OutOfBandService could create base OOB message
-  // - OutOfBandModule could call OOB service and append handshake protocols and services available
-
-  // Receiver
-  // create a connection based on handshake protocol in OOB invitation
-  // send a `handshake-reuse` message to service from OOB invitation and wait for `handshake-reuse-accepted`
-  // dispatch messages from `requests` array, an agent must responsd to those messages via a newly created or existing connection
-
-  // Where/How to start when developing new feature, e2e test, module, service, something else?
-  // What about a constraint for the usage of service from another service?
-
   test('create OOB connection invitation', async () => {
     const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createInvitation(makeConnectionOptions)
 
@@ -211,7 +196,7 @@ describe('out of band', () => {
     const outOfBandMessage = await faberAgent.oob.createOobMessage(offerMessage, issueCredentialOptions)
 
     // Adding a protocol here should cause an error
-    outOfBandMessage.handshakeProtocols.push('https://didcomm.org/connections')
+    outOfBandMessage.addHandshakeProtocol('https://didcomm.org/connections')
 
     await expect(aliceAgent.oob.receiveOobMessage(outOfBandMessage)).rejects.toEqual(
       new AriesFrameworkError('OOB message contains unsupported `handshake_protocols` attribute.')
