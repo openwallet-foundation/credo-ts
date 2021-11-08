@@ -92,7 +92,9 @@ export class RecipientModule {
   }
 
   private async openMediationWebSocket(mediator: MediationRecord) {
-    const { message, connectionRecord } = await this.connectionService.createTrustPing(mediator.connectionId)
+    const { message, connectionRecord } = await this.connectionService.createTrustPing(mediator.connectionId, {
+      responseRequested: false,
+    })
 
     const websocketSchemes = ['ws', 'wss']
     const hasWebSocketTransport = connectionRecord.theirDidDoc?.didCommServices?.some((s) =>
