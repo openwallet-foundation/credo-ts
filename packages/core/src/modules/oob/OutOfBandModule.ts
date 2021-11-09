@@ -71,7 +71,7 @@ export class OutOfBandModule {
     // Either way, we need to get routing
     const mediationRecord = await this.mediationRecipientService.discoverMediation()
     const routing = await this.mediationRecipientService.getRouting(mediationRecord)
-    const { connectionRecord: connectionRecord } = await this.connectionService.createInvitation({
+    const { connectionRecord } = await this.connectionService.createInvitation({
       routing,
     })
 
