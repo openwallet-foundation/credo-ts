@@ -8,8 +8,6 @@ import { AgentMessage } from '../../agent/AgentMessage'
 import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 
-const VERSION = '1.1'
-
 export interface OutOfBandMessageOptions {
   id?: string
   label?: string
@@ -36,7 +34,7 @@ export class OutOfBandMessage extends AgentMessage {
   public addRequest(message: AgentMessage) {
     if (!this.requests) this.requests = []
     const requestAttachment = new Attachment({
-      id: 'request-0',
+      id: this.generateId(),
       mimeType: 'application/json',
       data: new AttachmentData({
         base64: JsonEncoder.toBase64(message.toJSON()),
@@ -61,7 +59,7 @@ export class OutOfBandMessage extends AgentMessage {
 
   @Equals(OutOfBandMessage.type)
   public readonly type = OutOfBandMessage.type
-  public static readonly type = `https://didcomm.org/out-of-band/${VERSION}/invitation`
+  public static readonly type = `https://didcomm.org/out-of-band/1.1/invitation`
 
   public readonly label?: string
 
