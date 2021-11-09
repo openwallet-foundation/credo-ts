@@ -11,7 +11,7 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { ConnectionService, ConnectionInvitationMessage } from '../connections'
-import { DiscoverFeaturesQueryMessage, DiscoverFeaturesService } from '../discover-features'
+import { DiscoverFeaturesService } from '../discover-features'
 import { MediationRecipientService } from '../routing'
 
 import { OutOfBandMessage } from './OutOfBandMessage'
@@ -49,18 +49,8 @@ export class OutOfBandModule {
     options: OutOfBandMessageOptions
   ): Promise<{ outOfBandMessage: OutOfBandMessage; connectionRecord: ConnectionRecord }> {
     // Discover what handshake protocols are supported
-    const queryMessage = new DiscoverFeaturesQueryMessage({
-      query: `*`,
-    })
-    const featuresMessage = await this.disoverFeaturesService.createDisclose(queryMessage)
-    const { protocols } = featuresMessage
-
     const handshakeProtocols = ['https://didcomm.org/didexchange', 'https://didcomm.org/connections']
-
-    const supportedHandshakeProtocols = protocols
-      .map((p) => p.protocolId.slice(0, -1))
-      .filter((pId) => handshakeProtocols.find((hp) => pId.startsWith(hp)))
-
+    const supportedHandshakeProtocols = this.disoverFeaturesService.getSupportedProtocols(handshakeProtocols)
     if (supportedHandshakeProtocols.length === 0) {
       throw new AriesFrameworkError('There is no handshake protocol supported. Agent can not create a connection.')
     }
