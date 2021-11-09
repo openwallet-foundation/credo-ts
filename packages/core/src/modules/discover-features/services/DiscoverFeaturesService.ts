@@ -40,4 +40,16 @@ export class DiscoverFeaturesService {
 
     return discloseMessage
   }
+
+  public getSupportedProtocols(protocolIds: string[]) {
+    const messageFamilies = this.getMessageFamilies()
+    return messageFamilies
+      .map((family) => family.slice(0, -1))
+      .filter((protocolId) => protocolIds.find((protocols) => protocolId.startsWith(protocols)))
+  }
+
+  private getMessageFamilies() {
+    const messageTypes = this.dispatcher.supportedMessageTypes
+    return Array.from(new Set(messageTypes.map((m) => m.substring(0, m.lastIndexOf('/') + 1))))
+  }
 }
