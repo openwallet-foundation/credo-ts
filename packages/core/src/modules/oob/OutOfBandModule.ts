@@ -1,7 +1,6 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
 import type { ConnectionRecord } from '../../modules/connections'
-import type { OutOfBandMessageOptions } from './OutOfBandMessage'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -15,6 +14,13 @@ import { DiscoverFeaturesService } from '../discover-features'
 import { MediationRecipientService } from '../routing'
 
 import { OutOfBandMessage } from './OutOfBandMessage'
+
+interface OutOfBandMessageConfig {
+  label?: string
+  goalCode?: string
+  goal?: string
+  handshake: boolean
+}
 
 @scoped(Lifecycle.ContainerScoped)
 export class OutOfBandModule {
@@ -42,11 +48,11 @@ export class OutOfBandModule {
    * Creates new connection record and use its keys for out-of-band message that works as a connection invitation.
    * It uses discover features to find out what handshake protocols the agent supports.
    *
-   * @param options Optinal attributes contained in out-of-band message
+   * @param config Optinal attributes contained in out-of-band message
    * @returns Created connection record and out-of-band message
    */
   public async createInvitation(
-    options: OutOfBandMessageOptions
+    config: OutOfBandMessageConfig
   ): Promise<{ outOfBandMessage: OutOfBandMessage; connectionRecord: ConnectionRecord }> {
     // Discover what handshake protocols are supported
     const handshakeProtocols = ['https://didcomm.org/didexchange', 'https://didcomm.org/connections']
@@ -65,11 +71,13 @@ export class OutOfBandModule {
       routing,
     })
 
+    const options = {
+      ...config,
+      accept: ['didcomm/aip1'],
+      handshakeProtocols: supportedHandshakeProtocols,
+      services: connectionRecord.didDoc.didCommServices,
+    }
     const outOfBandMessage = new OutOfBandMessage(options)
-    outOfBandMessage.accept.push('didcomm/aip2;env=rfc587')
-    outOfBandMessage.accept.push('didcomm/aip2;env=rfc19')
-    supportedHandshakeProtocols.forEach((p) => outOfBandMessage.addHandshakeProtocol(p))
-    connectionRecord.didDoc.didCommServices.forEach((s) => outOfBandMessage.addService(s))
 
     return { outOfBandMessage, connectionRecord }
   }
@@ -109,22 +117,25 @@ export class OutOfBandModule {
    * Creates an out-of-band message and adds given agent message to `requests~attach` attribute.
    *
    * @param message A message that will be send inside out-of-band message
-   * @param options Optinal attributes contained in out-of-band message
+   * @param config Optinal attributes contained in out-of-band message
    * @returns Out-of-band message
    */
-  public async createOobMessage(message: AgentMessage, options: OutOfBandMessageOptions) {
+  public async createOobMessage(message: AgentMessage, config: OutOfBandMessageConfig) {
     if (!message.service) {
       throw new AriesFrameworkError(
         `Out of band message with id ${message.id} and type ${message.type} does not have a ~service decorator`
       )
     }
 
+    const options = {
+      ...config,
+      accept: ['didcomm/aip1'],
+      services: [message.service.toDidCommService()],
+      handshakeProtocols: config.handshake ? ['https://didcomm.org/connections'] : undefined,
+    }
     const outOfBandMessage = new OutOfBandMessage(options)
-    outOfBandMessage.accept.push('didcomm/aip2;env=rfc587')
-    outOfBandMessage.accept.push('didcomm/aip2;env=rfc19')
 
     // To support newer OOB messages we need to add service from message and then remove `~service` attribute from message
-    outOfBandMessage.services.push(message.service.toDidCommService())
     message.service = undefined
     outOfBandMessage.addRequest(message)
 
