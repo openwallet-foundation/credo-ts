@@ -8,11 +8,14 @@ import { AgentMessage } from '../../agent/AgentMessage'
 import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 
-export interface OutOfBandMessageOptions {
+interface OutOfBandMessageOptions {
   id?: string
   label?: string
   goalCode?: string
   goal?: string
+  accept?: string[]
+  handshakeProtocols?: string[]
+  services: DidCommService[]
 }
 
 export class OutOfBandMessage extends AgentMessage {
@@ -23,12 +26,10 @@ export class OutOfBandMessage extends AgentMessage {
       this.label = options.label
       this.goalCode = options.goalCode
       this.goal = options.goal
+      this.accept = options.accept
+      this.handshakeProtocols = options.handshakeProtocols
+      this.services = options.services
     }
-  }
-
-  public addHandshakeProtocol(protocol: string) {
-    if (!this.handshakeProtocols) this.handshakeProtocols = []
-    this.handshakeProtocols.push(protocol)
   }
 
   public addRequest(message: AgentMessage) {
@@ -53,10 +54,6 @@ export class OutOfBandMessage extends AgentMessage {
     })
   }
 
-  public addService(service: DidCommService) {
-    this.services.push(service)
-  }
-
   @Equals(OutOfBandMessage.type)
   public readonly type = OutOfBandMessage.type
   public static readonly type = `https://didcomm.org/out-of-band/1.1/invitation`
@@ -69,7 +66,7 @@ export class OutOfBandMessage extends AgentMessage {
   public readonly goal?: string
 
   // TODO what type is it, is there any enum or should we create a new one
-  public readonly accept: string[] = []
+  public readonly accept?: string[] = []
 
   // TODO what type is it, should we create an enum
   @Expose({ name: 'handshake_protocols' })
