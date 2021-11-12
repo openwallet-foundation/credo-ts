@@ -7,17 +7,18 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { DidCommService } from '../src/modules/connections/models/did/service'
+import { OutOfBandMessage } from '../src/modules/oob/OutOfBandMessage'
 
 import { getBaseConfig, prepareForIssuance } from './helpers'
 import { TestLogger } from './logger'
 
 import {
+  AgentMessage,
   AriesFrameworkError,
   AutoAcceptCredential,
   ConnectionState,
   CredentialPreview,
   CredentialState,
-  IndyAgentService,
   LogLevel,
 } from '@aries-framework/core' // Maybe it's not bad to import from package?
 
@@ -116,6 +117,7 @@ describe('out of band', () => {
 
     const createdConnectionRecord = await faberAgent.connections.findById(connectionRecord?.id || '')
     const createdConnectionRecordService = createdConnectionRecord?.didDoc.service[0] as DidCommService
+    expect(createdConnectionRecordService?.serviceEndpoint).toEqual(service.serviceEndpoint)
     expect(createdConnectionRecordService?.recipientKeys).toEqual(service.recipientKeys)
     expect(createdConnectionRecordService?.routingKeys).toEqual(service.routingKeys)
   })
@@ -167,6 +169,7 @@ describe('out of band', () => {
 
     const createdConnectionRecord = await faberAgent.connections.findById(connectionRecord?.id || '')
     const createdConnectionRecordService = createdConnectionRecord?.didDoc.service[0] as DidCommService
+    expect(createdConnectionRecordService?.serviceEndpoint).toEqual(service.serviceEndpoint)
     expect(createdConnectionRecordService?.recipientKeys).toEqual(service.recipientKeys)
     expect(createdConnectionRecordService?.routingKeys).toEqual(service.routingKeys)
   })
@@ -192,6 +195,7 @@ describe('out of band', () => {
     expect(createdConnectionRecord?.invitation?.serviceEndpoint).toEqual(service.serviceEndpoint)
     expect(createdConnectionRecord?.invitation?.recipientKeys).toEqual(service.recipientKeys)
     expect(createdConnectionRecord?.invitation?.routingKeys).toEqual(service.routingKeys)
+    expect(createdConnectionRecord?.state).toEqual(ConnectionState.Invited)
   })
 
   test('make a connection based on OOB invitation', async () => {
@@ -229,23 +233,44 @@ describe('out of band', () => {
     expect(credential.state).toBe(CredentialState.OfferReceived)
   })
 
-  test('throw an error when the OOB message contains both handshake protocols and requests~attach', async () => {
+  test('create connection and process requests', async () => {
     const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
-    // Setting `handshake` attribute to `true` here should cause an error
-    const { outOfBandMessage } = await faberAgent.oob.createMessage(
-      {
-        ...issueCredentialConfig,
-        handshake: true,
-      },
-      offerMessage
-    )
+    const service = new DidCommService({
+      id: '#inline',
+      serviceEndpoint: 'rxjs:faber',
+      priority: 0,
+      recipientKeys: ['somekey'],
+      routingKeys: [],
+    })
 
+    const outOfBandMessage = new OutOfBandMessage({ services: [service] })
+    outOfBandMessage.handshakeProtocols = ['https://didcomm.org/connections/1.0']
     outOfBandMessage.addRequest(offerMessage)
 
+    const connectionRecord = await aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)
+
+    const createdConnectionRecord = await aliceAgent.connections.findById(connectionRecord?.id || '')
+    expect(createdConnectionRecord?.invitation?.serviceEndpoint).toEqual(service.serviceEndpoint)
+    expect(createdConnectionRecord?.invitation?.recipientKeys).toEqual(service.recipientKeys)
+    expect(createdConnectionRecord?.invitation?.routingKeys).toEqual(service.routingKeys)
+    expect(createdConnectionRecord?.state).toEqual(ConnectionState.Invited)
+
+    let credentials: CredentialRecord[] = []
+    while (credentials.length < 2) {
+      credentials = await aliceAgent.credentials.getAll()
+      await wait(100)
+    }
+
+    expect(credentials).toHaveLength(2)
+    const [credential] = credentials
+    expect(credential.state).toBe(CredentialState.OfferReceived)
+  })
+
+  test('throw an error when the OOB message does not contain either handshake or requests', async () => {
+    const outOfBandMessage = new OutOfBandMessage({ services: [] })
+
     await expect(aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)).rejects.toEqual(
-      new AriesFrameworkError(
-        'Current OOB message implementation can not support both `handshake_protocols` and `request~attach` toghether in a message.'
-      )
+      new AriesFrameworkError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
     )
   })
 })
