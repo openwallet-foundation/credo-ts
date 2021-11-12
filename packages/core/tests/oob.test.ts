@@ -95,7 +95,7 @@ describe('out of band', () => {
     )
   })
 
-  test('create OOB message with handshake', async () => {
+  test('create OOB message only with handshake', async () => {
     const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createMessage(makeConnectionConfig)
 
     // expect supported handshake protocols
@@ -120,7 +120,7 @@ describe('out of band', () => {
     expect(createdConnectionRecordService?.routingKeys).toEqual(service.routingKeys)
   })
 
-  test('create OOB connection-less message', async () => {
+  test('create OOB message only with requests', async () => {
     const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
     const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createMessage(
       { handshake: false },
@@ -130,6 +130,7 @@ describe('out of band', () => {
     // expect supported handshake protocols
     expect(outOfBandMessage.handshakeProtocols).toBeUndefined()
     expect(connectionRecord).toBeUndefined()
+    expect(outOfBandMessage.getRequests()).toHaveLength(1)
 
     // expect contains services
     const [service] = outOfBandMessage.services
@@ -142,36 +143,33 @@ describe('out of band', () => {
         routingKeys: [],
       })
     )
-    expect(outOfBandMessage.getRequests()).toHaveLength(1)
   })
 
-  // test('create OOB connection invitation with requests', async () => {
-  //   const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
-  //   const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createMessage({ handshake: true }, offerMessage)
+  test('create OOB message with both handshake and requests', async () => {
+    const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
+    const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createMessage({ handshake: true }, offerMessage)
 
-  //   // expect supported handshake protocols
-  //   expect(outOfBandMessage.handshakeProtocols).toContain('https://didcomm.org/connections/1.0')
-  //   expect(outOfBandMessage.getRequests()).toBeUndefined()
+    // expect supported handshake protocols
+    expect(outOfBandMessage.handshakeProtocols).toContain('https://didcomm.org/connections/1.0')
+    expect(outOfBandMessage.getRequests()).toHaveLength(1)
 
-  //   // expect contains services
-  //   const [service] = outOfBandMessage.services
-  //   expect(service).toMatchObject(
-  //     new IndyAgentService({
-  //       id: expect.any(String),
-  //       serviceEndpoint: 'rxjs:faber',
-  //       priority: 0,
-  //       recipientKeys: [expect.any(String)],
-  //       routingKeys: [],
-  //     })
-  //   )
+    // expect contains services
+    const [service] = outOfBandMessage.services
+    expect(service).toMatchObject(
+      new DidCommService({
+        id: expect.any(String),
+        serviceEndpoint: 'rxjs:faber',
+        priority: 0,
+        recipientKeys: [expect.any(String)],
+        routingKeys: [],
+      })
+    )
 
-  //   const createdConnectionRecord = await faberAgent.connections.findById(connectionRecord?.id || '')
-  //   const createdConnectionRecordService = createdConnectionRecord?.didDoc.service[0] as DidCommService
-  //   expect(createdConnectionRecordService?.recipientKeys).toEqual(service.recipientKeys)
-  //   expect(createdConnectionRecordService?.routingKeys).toEqual(service.routingKeys)
-
-  //   expect(outOfBandMessage.getRequests()).toHaveLength(1)
-  // })
+    const createdConnectionRecord = await faberAgent.connections.findById(connectionRecord?.id || '')
+    const createdConnectionRecordService = createdConnectionRecord?.didDoc.service[0] as DidCommService
+    expect(createdConnectionRecordService?.recipientKeys).toEqual(service.recipientKeys)
+    expect(createdConnectionRecordService?.routingKeys).toEqual(service.routingKeys)
+  })
 
   test('receive OOB connection invitation', async () => {
     const { outOfBandMessage } = await faberAgent.oob.createMessage(makeConnectionConfig)
