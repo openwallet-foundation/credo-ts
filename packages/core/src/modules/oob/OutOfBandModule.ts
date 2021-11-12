@@ -67,7 +67,7 @@ export class OutOfBandModule {
     const routing = await this.mediationRecipientService.getRouting(mediationRecord)
 
     const service = new DidCommService({
-      id: '#inline', // TODO generate uuid
+      id: '#inline', // TODO generate uuid?
       priority: 0,
       serviceEndpoint: routing.endpoints[0],
       recipientKeys: [routing.verkey],
@@ -81,41 +81,36 @@ export class OutOfBandModule {
     }
     const outOfBandMessage = new OutOfBandMessage(options)
 
+    // Eventually, we can create just an OutOfBand record here.
+    // The OOB record can be also used for connection-less communication in general.
+    // When we create oob record we need to count with it inside connection request handler.
+    let connectionRecord: ConnectionRecord | undefined
+
     if (config.handshake) {
       // Discover what handshake protocols are supported
       const handshakeProtocols = ['https://didcomm.org/didexchange/1.0', 'https://didcomm.org/connections/1.0']
       const supportedHandshakeProtocols = this.disoverFeaturesService.getSupportedProtocols(handshakeProtocols)
+
       if (supportedHandshakeProtocols.length === 0) {
         throw new AriesFrameworkError('There is no handshake protocol supported. Agent can not create a connection.')
       }
 
-      // Eventually, we can create just an OutOfBand record here.
-      // The OOB record can be also used for connection-less communication in general.
-      // Either way, we need to get routing.
-      // When we create oob record we need to count with it inside connection request handler.
-      const { connectionRecord } = await this.connectionService.createInvitation({
+      const connectionProtocolMessage = await this.connectionService.createInvitation({
         routing,
       })
-
+      connectionRecord = connectionProtocolMessage.connectionRecord
       outOfBandMessage.handshakeProtocols = supportedHandshakeProtocols
-      return { connectionRecord, outOfBandMessage }
     }
 
     if (message) {
-      if (!message.service) {
-        throw new AriesFrameworkError(
-          `Out of band message with id ${message.id} and type ${message.type} does not have a ~service decorator`
-        )
+      if (message.service) {
+        // We can remove `~service` attribute from message. Newer OOB messages have `services` attribute instead.
+        message.service = undefined
       }
-
-      // We can remove `~service` attribute from message. Newer OOB messages have `services` attribute instead.
-      message.service = undefined
       outOfBandMessage.addRequest(message)
-
-      return { outOfBandMessage }
     }
 
-    throw new AriesFrameworkError('Creation of out-of-band message has failed.')
+    return { outOfBandMessage, connectionRecord }
   }
 
   /**
