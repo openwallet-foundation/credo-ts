@@ -57,7 +57,8 @@ export class OutOfBandModule {
     config: OutOfBandMessageConfig,
     message?: AgentMessage
   ): Promise<{ outOfBandMessage: OutOfBandMessage; connectionRecord?: ConnectionRecord }> {
-    if (!config.handshake && !message) {
+    const { handshake } = config
+    if (!handshake && !message) {
       throw new AriesFrameworkError(
         'One or both of handshake_protocols and requests~attach MUST be included in the message.'
       )
@@ -86,7 +87,7 @@ export class OutOfBandModule {
     // When we create oob record we need to count with it inside connection request handler.
     let connectionRecord: ConnectionRecord | undefined
 
-    if (config.handshake) {
+    if (handshake) {
       // Discover what handshake protocols are supported
       const handshakeProtocols = ['https://didcomm.org/didexchange/1.0', 'https://didcomm.org/connections/1.0']
       const supportedHandshakeProtocols = this.disoverFeaturesService.getSupportedProtocols(handshakeProtocols)
@@ -122,29 +123,32 @@ export class OutOfBandModule {
     outOfBandMessage: OutOfBandMessage,
     config: { autoAccept: boolean }
   ): Promise<ConnectionRecord | undefined> {
+    const { handshakeProtocols } = outOfBandMessage
     const messages = outOfBandMessage.getRequests()
-    if (outOfBandMessage.handshakeProtocols && messages && messages.length > 0) {
+
+    if ((!handshakeProtocols || handshakeProtocols.length === 0) && (!messages || messages?.length === 0)) {
       throw new AriesFrameworkError(
-        'Current OOB message implementation can not support both `handshake_protocols` and `request~attach` toghether in a message.'
+        'One or both of handshake_protocols and requests~attach MUST be included in the message.'
       )
     }
 
-    if (outOfBandMessage.handshakeProtocols) {
+    let connectionRecord
+
+    if (handshakeProtocols) {
       // TODO check if we support handshake protocols
       // TODO reuse if connection exists
       const mediationRecord = await this.mediationRecipientService.discoverMediation()
       const routing = await this.mediationRecipientService.getRouting(mediationRecord)
       const invitation = new ConnectionInvitationMessage({ label: 'connection label', ...outOfBandMessage.services[0] })
-      let connectionRecord = await this.connectionService.processInvitation(invitation, { routing })
+      connectionRecord = await this.connectionService.processInvitation(invitation, { routing })
       if (config.autoAccept) {
         connectionRecord = await this.acceptInvitation(connectionRecord.id)
       }
-      return connectionRecord
     }
 
     if (messages) {
       for (const unpackedMessage of messages) {
-        // To support older OOB messages we need to decorate message with `~service` attribute
+        // The framework currently supports only older OOB messages with `~service` decorator.
         const [service] = outOfBandMessage.services
         unpackedMessage['~service'] = service
 
@@ -156,6 +160,8 @@ export class OutOfBandModule {
         })
       }
     }
+
+    return connectionRecord
   }
 
   // TODO This is copy-pasted from ConnectionModule
