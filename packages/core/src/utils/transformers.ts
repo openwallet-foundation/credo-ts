@@ -4,6 +4,8 @@ import { Transform, TransformationType } from 'class-transformer'
 import { ValidateBy, buildMessage } from 'class-validator'
 import { DateTime } from 'luxon'
 
+import { Metadata } from '../storage/Metadata'
+
 import { JsonTransformer } from './JsonTransformer'
 
 /**
@@ -42,6 +44,38 @@ export function RecordTransformer<T>(Class: { new (...args: any[]): T }) {
     }
   })
 }
+
+/*
+ * Decorator that transforms to and from a metadata instance.
+ *
+ * @todo remove the conversion at 0.1.0 release via a migration script
+ */
+export function MetadataTransformer() {
+  return Transform(({ value, type }) => {
+    if (type === TransformationType.CLASS_TO_PLAIN) {
+      return { ...value.data }
+    }
+
+    if (type === TransformationType.PLAIN_TO_CLASS) {
+      const { requestMetadata, schemaId, credentialDefinitionId, ...rest } = value
+      const metadata = new Metadata(rest)
+
+      if (requestMetadata) metadata.add('indyRequest', { ...value.requestMetadata })
+
+      if (schemaId) metadata.add('indyCredential', { schemaId: value.schemaId })
+
+      if (credentialDefinitionId)
+        metadata.add('indyCredential', { credentialDefinitionId: value.credentialDefinitionId })
+
+      return metadata
+    }
+
+    if (type === TransformationType.CLASS_TO_CLASS) {
+      return value
+    }
+  })
+}
+
 /*
  * Function that parses date from multiple formats
  * including SQL formats.

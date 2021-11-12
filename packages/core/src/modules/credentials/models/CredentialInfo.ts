@@ -1,7 +1,7 @@
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 
 export interface CredentialInfoOptions {
-  metadata?: IndyCredentialMetadata
+  metadata?: IndyCredentialMetadata | null
   claims: Record<string, string>
   attachments?: Attachment[]
 }
