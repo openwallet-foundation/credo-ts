@@ -31,7 +31,7 @@ Follow these steps to use AFJ in a mobile app to receive VCs
 
 ### 1. Configure agent
 
-Please make sure you reviewed the [agent setup overview](../0-agent.md).
+Please make sure you reviewed the [agent setup overview](0-agent.md).
 
 As per the recent figures, working with VCs requires some extra configuration when initializing your agent.
 
@@ -58,7 +58,7 @@ As per the recent figures, working with VCs requires some extra configuration wh
   - `AutoAcceptCredential.Always`: Always auto accepts the credential no matter if it changed in subsequent steps
   - `AutoAcceptCredential.ContentApproved` (Recommended): Needs one acceptation and the rest will be automated if nothing changes
   - `AutoAcceptCredential.Never`: Default. Never auto accept a credential
-- `indyLedgers`: As per the recent figures (Verifiable data registry), you will need to define list of [ledgers](../4-ledger.md) according to the issuer preferences.
+- `indyLedgers`: As per the recent figures (Verifiable data registry), you will need to define list of [ledgers](4-ledger.md) according to the issuer preferences.
 
 ### 2. Configure event handlers
 
