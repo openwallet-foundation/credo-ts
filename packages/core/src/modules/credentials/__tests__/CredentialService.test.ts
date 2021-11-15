@@ -134,7 +134,7 @@ const mockCredentialRecord = ({
   }
 
   if (metadata?.credentialDefinitionId) {
-    credentialRecord.metadata.add('_interal/indyCredential', {
+    credentialRecord.metadata.add('_internal/indyCredential', {
       credentialDefinitionId: metadata.credentialDefinitionId,
     })
   }
