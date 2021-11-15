@@ -28,7 +28,7 @@ npx -p @aries-framework/node is-indy-installed
 # OUTPUT: Libindy was installed correctly
 ```
 
-If the output was anything else then that, there might be some issues with your installation. If the only step you did the step 1 and 2 from this article, please report this [here](https://github.com/hyperledger/aries-framework-javascript/issues) or email me directly at berend@animo.id with an error log.
+If the output was anything else then that, there might be some issues with your installation. If the only step you did the step 1 and 2 from this article, please report this [here](https://github.com/hyperledger/aries-framework-javascript/issues) with an error log.
 
 To acquire this error log execute the following:
 
