@@ -16,8 +16,8 @@ export interface ProofRequestOptions {
   nonce: string
   nonRevoked?: RevocationInterval
   ver?: '1.0' | '2.0'
-  requestedAttributes?: Record<string, ProofAttributeInfo>
-  requestedPredicates?: Record<string, ProofPredicateInfo>
+  requestedAttributes?: Record<string, ProofAttributeInfo> | Map<string, ProofAttributeInfo>
+  requestedPredicates?: Record<string, ProofPredicateInfo> | Map<string, ProofPredicateInfo>
 }
 
 /**
@@ -32,10 +32,14 @@ export class ProofRequest {
       this.version = options.version
       this.nonce = options.nonce
       this.requestedAttributes = options.requestedAttributes
-        ? new Map(Object.entries(options.requestedAttributes))
+        ? options.requestedAttributes instanceof Map
+          ? options.requestedAttributes
+          : new Map(Object.entries(options.requestedAttributes))
         : new Map()
       this.requestedPredicates = options.requestedPredicates
-        ? new Map(Object.entries(options.requestedPredicates))
+        ? options.requestedPredicates instanceof Map
+          ? options.requestedPredicates
+          : new Map(Object.entries(options.requestedPredicates))
         : new Map()
       this.nonRevoked = options.nonRevoked
       this.ver = options.ver
