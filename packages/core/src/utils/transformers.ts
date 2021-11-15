@@ -60,12 +60,12 @@ export function MetadataTransformer() {
       const { requestMetadata, schemaId, credentialDefinitionId, ...rest } = value
       const metadata = new Metadata(rest)
 
-      if (requestMetadata) metadata.add('indyRequest', { ...value.requestMetadata })
+      if (requestMetadata) metadata.add('_internal/indyRequest', { ...value.requestMetadata })
 
-      if (schemaId) metadata.add('indyCredential', { schemaId: value.schemaId })
+      if (schemaId) metadata.add('_internal/indyCredential', { schemaId: value.schemaId })
 
       if (credentialDefinitionId)
-        metadata.add('indyCredential', { credentialDefinitionId: value.credentialDefinitionId })
+        metadata.add('_internal/indyCredential', { credentialDefinitionId: value.credentialDefinitionId })
 
       return metadata
     }

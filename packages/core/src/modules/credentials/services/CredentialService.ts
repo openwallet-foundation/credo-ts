@@ -108,7 +108,7 @@ export class CredentialService {
     })
 
     // Set the metadata
-    credentialRecord.metadata.set('indyCredential', {
+    credentialRecord.metadata.set('_internal/indyCredential', {
       schemaId: options.schemaId,
       credentialDefinintionId: options.credentialDefinitionId,
     })
@@ -195,7 +195,7 @@ export class CredentialService {
         state: CredentialState.ProposalReceived,
       })
 
-      credentialRecord.metadata.set('indyCredential', {
+      credentialRecord.metadata.set('_internal/indyCredential', {
         schemaId: proposalMessage.schemaId,
         credentialDefinitionId: proposalMessage.credentialDefinitionId,
       })
@@ -257,7 +257,7 @@ export class CredentialService {
 
     credentialRecord.offerMessage = credentialOfferMessage
     credentialRecord.credentialAttributes = preview.attributes
-    credentialRecord.metadata.set('indyCredential', {
+    credentialRecord.metadata.set('_internal/indyCredential', {
       schemaId: credOffer.schema_id,
       credentialDefinitionId: credOffer.cred_def_id,
     })
@@ -321,7 +321,7 @@ export class CredentialService {
       autoAcceptCredential: credentialTemplate.autoAcceptCredential,
     })
 
-    credentialRecord.metadata.set('indyCredential', {
+    credentialRecord.metadata.set('_internal/indyCredential', {
       credentialDefinitionId: credOffer.cred_def_id,
       schemaId: credOffer.schema_id,
     })
@@ -375,7 +375,7 @@ export class CredentialService {
       credentialRecord.offerMessage = credentialOfferMessage
       credentialRecord.linkedAttachments = credentialOfferMessage.attachments?.filter(isLinkedAttachment)
 
-      credentialRecord.metadata.set('indyCredential', {
+      credentialRecord.metadata.set('_internal/indyCredential', {
         schemaId: indyCredentialOffer.schema_id,
         credentialDefinitionId: indyCredentialOffer.cred_def_id,
       })
@@ -391,7 +391,7 @@ export class CredentialService {
         state: CredentialState.OfferReceived,
       })
 
-      credentialRecord.metadata.set('indyCredential', {
+      credentialRecord.metadata.set('_internal/indyCredential', {
         credentialDefinitionId: indyCredentialOffer.cred_def_id,
         schemaId: indyCredentialOffer.schema_id,
       })
@@ -459,7 +459,7 @@ export class CredentialService {
     })
     credentialRequest.setThread({ threadId: credentialRecord.threadId })
 
-    credentialRecord.metadata.set('indyRequest', credReqMetadata)
+    credentialRecord.metadata.set('_internal/indyRequest', credReqMetadata)
     credentialRecord.requestMessage = credentialRequest
     credentialRecord.autoAcceptCredential = options?.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
@@ -623,7 +623,7 @@ export class CredentialService {
       previousSentMessage: credentialRecord.requestMessage,
     })
 
-    const credentialRequestMetadata = credentialRecord.metadata.get<CredReqMetadata>('indyRequest')
+    const credentialRequestMetadata = credentialRecord.metadata.get<CredReqMetadata>('_internal/indyRequest')
 
     if (!credentialRequestMetadata) {
       throw new AriesFrameworkError(`Missing required request metadata for credential with id ${credentialRecord.id}`)

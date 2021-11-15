@@ -17,10 +17,10 @@ describe('transformers', () => {
     const cr = plainToClass(CredentialRecord, jsonCredentialRecord)
 
     expect(cr.metadata.data).toEqual({
-      indyRequest: {
+      '_internal/indyRequest': {
         cred_req: 'x',
       },
-      indyCredential: {
+      '_internal/indyCredential': {
         schemaId: 'abc:def',
         credentialDefinitionId: 'abc:def:CL',
       },

@@ -124,17 +124,17 @@ const mockCredentialRecord = ({
   })
 
   if (metadata?.indyRequest) {
-    credentialRecord.metadata.set('indyRequest', { ...metadata.indyRequest })
+    credentialRecord.metadata.set('_internal/indyRequest', { ...metadata.indyRequest })
   }
 
   if (metadata?.schemaId) {
-    credentialRecord.metadata.add('indyCredential', {
+    credentialRecord.metadata.add('_internal/indyCredential', {
       schemaId: metadata.schemaId,
     })
   }
 
   if (metadata?.credentialDefinitionId) {
-    credentialRecord.metadata.add('indyCredential', {
+    credentialRecord.metadata.add('_interal/indyCredential', {
       credentialDefinitionId: metadata.credentialDefinitionId,
     })
   }
@@ -339,7 +339,7 @@ describe('CredentialService', () => {
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
       expect(updatedCredentialRecord.toJSON()).toMatchObject({
-        metadata: { indyRequest: { cred_req: 'meta-data' } },
+        metadata: { '_internal/indyRequest': { cred_req: 'meta-data' } },
         state: CredentialState.RequestSent,
       })
     })

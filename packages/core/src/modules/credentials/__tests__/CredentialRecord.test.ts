@@ -17,7 +17,7 @@ describe('CredentialRecord', () => {
         ],
       })
 
-      credentialRecord.metadata.set('indyCredential', {
+      credentialRecord.metadata.set('_internal/indyCredential', {
         credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
         schemaId: 'TL1EaPFCZ8Si5aUrqScBDt:2:test-schema-1599055118161:1.0',
       })
@@ -29,7 +29,7 @@ describe('CredentialRecord', () => {
           age: '25',
         },
         metadata: {
-          indyCredential: {
+          '_internal/indyCredential': {
             credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
             schemaId: 'TL1EaPFCZ8Si5aUrqScBDt:2:test-schema-1599055118161:1.0',
           },
