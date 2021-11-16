@@ -74,8 +74,8 @@ describe('auto accept credentials', () => {
         requestMessage: expect.any(Object),
         metadata: {
           data: {
-            indyRequest: expect.any(Object),
-            indyCredential: {
+            '_internal/indyRequest': expect.any(Object),
+            '_internal/indyCredential': {
               schemaId,
               credentialDefinitionId: credDefId,
             },
@@ -91,7 +91,7 @@ describe('auto accept credentials', () => {
         createdAt: expect.any(Date),
         metadata: {
           data: {
-            indyCredential: {
+            '_internal/indyCredential': {
               schemaId,
               credentialDefinitionId: credDefId,
             },
@@ -131,8 +131,8 @@ describe('auto accept credentials', () => {
         requestMessage: expect.any(Object),
         metadata: {
           data: {
-            indyRequest: expect.any(Object),
-            indyCredential: {
+            '_internal/indyRequest': expect.any(Object),
+            '_internal/indyCredential': {
               schemaId,
               credentialDefinitionId: credDefId,
             },
@@ -207,8 +207,8 @@ describe('auto accept credentials', () => {
         requestMessage: expect.any(Object),
         metadata: {
           data: {
-            indyRequest: expect.any(Object),
-            indyCredential: {
+            '_internal/indyRequest': expect.any(Object),
+            '_internal/indyCredential': {
               schemaId,
               credentialDefinitionId: credDefId,
             },
@@ -224,7 +224,7 @@ describe('auto accept credentials', () => {
         createdAt: expect.any(Date),
         metadata: {
           data: {
-            indyCredential: {
+            '_internal/indyCredential': {
               schemaId,
               credentialDefinitionId: credDefId,
             },
@@ -304,8 +304,8 @@ describe('auto accept credentials', () => {
         requestMessage: expect.any(Object),
         metadata: {
           data: {
-            indyRequest: expect.any(Object),
-            indyCredential: {
+            '_internal/indyRequest': expect.any(Object),
+            '_internal/indyCredential': {
               schemaId,
               credentialDefinitionId: credDefId,
             },
