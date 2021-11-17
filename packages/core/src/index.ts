@@ -31,6 +31,8 @@ export * from './logger'
 export * from './error'
 export * from './wallet/error'
 
+export * from './agent/Events'
+
 const utils = {
   uuid,
 }
