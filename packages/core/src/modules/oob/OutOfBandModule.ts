@@ -89,13 +89,7 @@ export class OutOfBandModule {
 
     if (handshake) {
       // Discover what handshake protocols are supported
-      const handshakeProtocols = ['https://didcomm.org/didexchange/1.0', 'https://didcomm.org/connections/1.0']
-      const supportedHandshakeProtocols = this.disoverFeaturesService.getSupportedProtocols(handshakeProtocols)
-
-      if (supportedHandshakeProtocols.length === 0) {
-        throw new AriesFrameworkError('There is no handshake protocol supported. Agent can not create a connection.')
-      }
-
+      const supportedHandshakeProtocols = await this.getSupportedHandshakeProtocols()
       const connectionProtocolMessage = await this.connectionService.createInvitation({
         routing,
       })
@@ -135,7 +129,9 @@ export class OutOfBandModule {
     let connectionRecord
 
     if (handshakeProtocols) {
-      // TODO check if we support handshake protocols
+      if (!this.areHandshakeProtocolsSupported(handshakeProtocols)) {
+        throw new AriesFrameworkError('Handshake protocols are not supported.')
+      }
       // TODO reuse if connection exists
       const mediationRecord = await this.mediationRecipientService.discoverMediation()
       const routing = await this.mediationRecipientService.getRouting(mediationRecord)
@@ -146,6 +142,7 @@ export class OutOfBandModule {
       }
     }
 
+    // TODO wait until the connecion is ready
     if (messages) {
       for (const unpackedMessage of messages) {
         // The framework currently supports only older OOB messages with `~service` decorator.
@@ -170,5 +167,20 @@ export class OutOfBandModule {
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)
     return connectionRecord
+  }
+
+  private areHandshakeProtocolsSupported(handshakeProtocols: string[]) {
+    return this.getSupportedHandshakeProtocols().some((p) => handshakeProtocols.includes(p))
+  }
+
+  private getSupportedHandshakeProtocols() {
+    const handshakeProtocols = ['https://didcomm.org/didexchange/1.0', 'https://didcomm.org/connections/1.0']
+    const supportedHandshakeProtocols = this.disoverFeaturesService.getSupportedProtocols(handshakeProtocols)
+
+    if (supportedHandshakeProtocols.length === 0) {
+      throw new AriesFrameworkError('There is no handshake protocol supported. Agent can not create a connection.')
+    }
+
+    return supportedHandshakeProtocols
   }
 }
