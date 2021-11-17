@@ -13,7 +13,6 @@ import { getBaseConfig, prepareForIssuance } from './helpers'
 import { TestLogger } from './logger'
 
 import {
-  AgentMessage,
   AriesFrameworkError,
   AutoAcceptCredential,
   ConnectionState,
@@ -88,6 +87,13 @@ describe('out of band', () => {
     await aliceAgent.shutdown({
       deleteWallet: true,
     })
+  })
+
+  afterEach(async () => {
+    const credentials = await aliceAgent.credentials.getAll()
+    for (const credential of credentials) {
+      await aliceAgent.credentials.deleteById(credential.id)
+    }
   })
 
   test('throw error when there is no handshake or message', async () => {
@@ -233,37 +239,13 @@ describe('out of band', () => {
     expect(credential.state).toBe(CredentialState.OfferReceived)
   })
 
-  test('create connection and process requests', async () => {
-    const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
-    const service = new DidCommService({
-      id: '#inline',
-      serviceEndpoint: 'rxjs:faber',
-      priority: 0,
-      recipientKeys: ['somekey'],
-      routingKeys: [],
-    })
+  test('throw an error when handshake protocols are not supported', async () => {
+    const outOfBandMessage = new OutOfBandMessage({ services: [] })
+    outOfBandMessage.handshakeProtocols = ['https://didcomm.org/unsupported-connections-protocol/1.0']
 
-    const outOfBandMessage = new OutOfBandMessage({ services: [service] })
-    outOfBandMessage.handshakeProtocols = ['https://didcomm.org/connections/1.0']
-    outOfBandMessage.addRequest(offerMessage)
-
-    const connectionRecord = await aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)
-
-    const createdConnectionRecord = await aliceAgent.connections.findById(connectionRecord?.id || '')
-    expect(createdConnectionRecord?.invitation?.serviceEndpoint).toEqual(service.serviceEndpoint)
-    expect(createdConnectionRecord?.invitation?.recipientKeys).toEqual(service.recipientKeys)
-    expect(createdConnectionRecord?.invitation?.routingKeys).toEqual(service.routingKeys)
-    expect(createdConnectionRecord?.state).toEqual(ConnectionState.Invited)
-
-    let credentials: CredentialRecord[] = []
-    while (credentials.length < 2) {
-      credentials = await aliceAgent.credentials.getAll()
-      await wait(100)
-    }
-
-    expect(credentials).toHaveLength(2)
-    const [credential] = credentials
-    expect(credential.state).toBe(CredentialState.OfferReceived)
+    await expect(aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)).rejects.toEqual(
+      new AriesFrameworkError('Handshake protocols are not supported.')
+    )
   })
 
   test('throw an error when the OOB message does not contain either handshake or requests', async () => {
