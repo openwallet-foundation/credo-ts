@@ -1,5 +1,6 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { CredentialRecord, CredentialOfferTemplate } from '../src/modules/credentials'
+import type { AgentMessageReceivedEvent } from '@aries-framework/core'
 
 import { Subject } from 'rxjs'
 
@@ -13,6 +14,7 @@ import { getBaseConfig, prepareForIssuance } from './helpers'
 import { TestLogger } from './logger'
 
 import {
+  AgentEventTypes,
   AriesFrameworkError,
   AutoAcceptCredential,
   ConnectionState,
@@ -228,6 +230,54 @@ describe('out of band', () => {
 
     await aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)
 
+    let credentials: CredentialRecord[] = []
+    while (credentials.length < 1) {
+      credentials = await aliceAgent.credentials.getAll()
+      await wait(100)
+    }
+
+    expect(credentials).toHaveLength(1)
+    const [credential] = credentials
+    expect(credential.state).toBe(CredentialState.OfferReceived)
+  })
+
+  test('do not process requests when a connection is not ready', async () => {
+    const eventListener = jest.fn()
+    aliceAgent.events.on<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived, eventListener)
+
+    const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
+    const { outOfBandMessage } = await faberAgent.oob.createMessage(makeConnectionConfig, offerMessage)
+
+    // First, we crate a connection but we won't accept it, therefore it won't be ready
+    await aliceAgent.oob.receiveMessage(outOfBandMessage, { autoAccept: false })
+
+    // Event should not be emitted because an agent must wait until the connection is ready
+    expect(eventListener).toHaveBeenCalledTimes(0)
+
+    aliceAgent.events.off<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived, eventListener)
+  })
+
+  test('make a connection based on OOB invitation and process requests after the acceptation', async () => {
+    const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
+    // eslint-disable-next-line prefer-const
+    let { outOfBandMessage, connectionRecord: faberAliceConnection } = await faberAgent.oob.createMessage(
+      makeConnectionConfig,
+      offerMessage
+    )
+
+    // First, we crate a connection but we won't accept it, therefore it won't be ready
+    let aliceFaberConnection = await aliceAgent.oob.receiveMessage(outOfBandMessage, { autoAccept: false })
+
+    // Accept connection invitation
+    await aliceAgent.connections.acceptInvitation(aliceFaberConnection?.id || '')
+
+    // Wait until connection is ready
+    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection?.id || '')
+    faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection?.id || '')
+    expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
+    expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
+
+    // The credential should be processed when connection is made. It asynchronous so it can take a moment.
     let credentials: CredentialRecord[] = []
     while (credentials.length < 1) {
       credentials = await aliceAgent.credentials.getAll()
