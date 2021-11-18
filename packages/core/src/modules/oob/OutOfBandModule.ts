@@ -151,20 +151,21 @@ export class OutOfBandModule {
       const [service] = services
       const existingConnection = await this.connectionService.findByTheirKey(service.recipientKeys[0])
 
-      if (!existingConnection || !reuse) {
-        const mediationRecord = await this.mediationRecipientService.discoverMediation()
-        const routing = await this.mediationRecipientService.getRouting(mediationRecord)
-        const invitation = new ConnectionInvitationMessage({
-          label: 'connection label',
-          ...services[0],
-        })
-        connectionRecord = await this.connectionService.processInvitation(invitation, { routing })
-        if (autoAccept) {
-          connectionRecord = await this.acceptInvitation(connectionRecord.id)
+      if (existingConnection) {
+        this.logger.debug('Connection already exists.', { connectionId: existingConnection.id })
+        if (reuse) {
+          this.logger.debug('Reuse is enabled. Reusing an existing connection.')
+          connectionRecord = existingConnection
+          if (!messages) {
+            this.logger.debug('Out of band message does not contain any request messages.')
+            await this.sendReuse(connectionRecord)
+          }
+        } else {
+          this.logger.debug('Reuse is disabled. Creating a new connection.')
+          connectionRecord = await this.createConnection(services, autoAccept)
         }
       } else {
-        this.logger.debug('Connection already exists.', { connectionId: existingConnection.id })
-        connectionRecord = existingConnection
+        connectionRecord = await this.createConnection(services, autoAccept)
       }
 
       if (messages) {
@@ -185,15 +186,26 @@ export class OutOfBandModule {
           const connectionServices = connectionRecord.theirDidDoc?.didCommServices
           this.emitMessages(connectionServices, messages)
         }
-      } else {
-        this.logger.debug('Out of band message does not contain any request messages.')
-        await this.sendReuse(connectionRecord)
       }
 
       return connectionRecord
     } else if (messages) {
       this.emitMessages(outOfBandMessage.services, messages)
     }
+  }
+
+  private async createConnection(services: DidCommService[], autoAccept: boolean) {
+    const mediationRecord = await this.mediationRecipientService.discoverMediation()
+    const routing = await this.mediationRecipientService.getRouting(mediationRecord)
+    const invitation = new ConnectionInvitationMessage({
+      label: 'connection label',
+      ...services[0],
+    })
+    let connectionRecord = await this.connectionService.processInvitation(invitation, { routing })
+    if (autoAccept) {
+      connectionRecord = await this.acceptInvitation(connectionRecord.id)
+    }
+    return connectionRecord
   }
 
   // TODO This is copy-pasted from ConnectionModule
