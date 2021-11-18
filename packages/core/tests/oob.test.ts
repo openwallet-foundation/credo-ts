@@ -8,6 +8,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { DidCommService } from '../src/modules/connections/models/did/service'
+import { HandshakeReuseMessage } from '../src/modules/oob/HandshakeReuseMessage'
 import { OutOfBandMessage } from '../src/modules/oob/OutOfBandMessage'
 
 import { getBaseConfig, prepareForIssuance } from './helpers'
@@ -287,6 +288,19 @@ describe('out of band', () => {
     expect(credentials).toHaveLength(1)
     const [credential] = credentials
     expect(credential.state).toBe(CredentialState.OfferReceived)
+  })
+
+  test('do not create a new connection when connection exists', async () => {
+    const { outOfBandMessage } = await faberAgent.oob.createMessage(makeConnectionConfig)
+    let firstAliceFaberConnection = await aliceAgent.oob.receiveMessage(outOfBandMessage, { autoAccept: true })
+    firstAliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(firstAliceFaberConnection?.id || '')
+
+    const secondAliceFaberConnection = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
+      autoAccept: true,
+      reuse: true,
+    })
+
+    expect(firstAliceFaberConnection.id).toEqual(secondAliceFaberConnection?.id)
   })
 
   test('throw an error when handshake protocols are not supported', async () => {
