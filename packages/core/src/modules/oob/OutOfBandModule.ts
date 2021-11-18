@@ -1,14 +1,17 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
+import type { Logger } from '../../logger'
 import type { ConnectionRecord, ConnectionStateChangedEvent } from '../connections'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
+import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
+import { ConsoleLogger, LogLevel } from '../../logger'
 import {
   ConnectionService,
   ConnectionInvitationMessage,
@@ -19,6 +22,8 @@ import {
 import { DiscoverFeaturesService } from '../discover-features'
 import { MediationRecipientService } from '../routing'
 
+import { HandshakeReuseHandler } from './HandshakeReuseHandler'
+import { HandshakeReuseMessage } from './HandshakeReuseMessage'
 import { OutOfBandMessage } from './OutOfBandMessage'
 
 interface OutOfBandMessageConfig {
@@ -35,8 +40,10 @@ export class OutOfBandModule {
   private disoverFeaturesService: DiscoverFeaturesService
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
+  private logger: Logger = new ConsoleLogger(LogLevel.debug)
 
   public constructor(
+    dispatcher: Dispatcher,
     connectionService: ConnectionService,
     mediationRecipientService: MediationRecipientService,
     disoverFeaturesService: DiscoverFeaturesService,
@@ -48,6 +55,7 @@ export class OutOfBandModule {
     this.disoverFeaturesService = disoverFeaturesService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
+    this.registerHandlers(dispatcher)
   }
 
   /**
@@ -121,9 +129,10 @@ export class OutOfBandModule {
    */
   public async receiveMessage(
     outOfBandMessage: OutOfBandMessage,
-    config: { autoAccept: boolean }
+    config: { autoAccept: boolean; reuse?: boolean }
   ): Promise<ConnectionRecord | undefined> {
-    const { handshakeProtocols } = outOfBandMessage
+    const { handshakeProtocols, services } = outOfBandMessage
+    const { autoAccept, reuse } = config
     const messages = outOfBandMessage.getRequests()
 
     if ((!handshakeProtocols || handshakeProtocols.length === 0) && (!messages || messages?.length === 0)) {
@@ -139,28 +148,46 @@ export class OutOfBandModule {
         throw new AriesFrameworkError('Handshake protocols are not supported.')
       }
 
-      const mediationRecord = await this.mediationRecipientService.discoverMediation()
-      const routing = await this.mediationRecipientService.getRouting(mediationRecord)
-      const invitation = new ConnectionInvitationMessage({ label: 'connection label', ...outOfBandMessage.services[0] })
-      connectionRecord = await this.connectionService.processInvitation(invitation, { routing })
-      if (config.autoAccept) {
-        connectionRecord = await this.acceptInvitation(connectionRecord.id)
+      const [service] = services
+      const existingConnection = await this.connectionService.findByTheirKey(service.recipientKeys[0])
+
+      if (!existingConnection || !reuse) {
+        const mediationRecord = await this.mediationRecipientService.discoverMediation()
+        const routing = await this.mediationRecipientService.getRouting(mediationRecord)
+        const invitation = new ConnectionInvitationMessage({
+          label: 'connection label',
+          ...services[0],
+        })
+        connectionRecord = await this.connectionService.processInvitation(invitation, { routing })
+        if (autoAccept) {
+          connectionRecord = await this.acceptInvitation(connectionRecord.id)
+        }
+      } else {
+        this.logger.debug('Connection already exists.', { connectionId: existingConnection.id })
+        connectionRecord = existingConnection
       }
 
       if (messages) {
-        // TODO reuse if connection exists
-        // Wait until the connecion is ready and then pass the messages to the agent for further processing
-        this.eventEmitter.on<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged, (event) => {
-          const { payload } = event
-          if (
-            payload.connectionRecord.id === connectionRecord.id &&
-            payload.connectionRecord.state === ConnectionState.Complete
-          ) {
-            this.emitMessages(outOfBandMessage.services, messages)
-          }
-        })
+        this.logger.debug('Out of band message contains request messages.')
+        if (!connectionRecord.isReady) {
+          // Wait until the connecion is ready and then pass the messages to the agent for further processing
+          this.eventEmitter.on<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged, (event) => {
+            const { payload } = event
+            if (
+              payload.connectionRecord.id === connectionRecord.id &&
+              payload.connectionRecord.state === ConnectionState.Complete
+            ) {
+              const connectionServices = payload.connectionRecord.theirDidDoc?.didCommServices
+              this.emitMessages(connectionServices, messages)
+            }
+          })
+        } else {
+          const connectionServices = connectionRecord.theirDidDoc?.didCommServices
+          this.emitMessages(connectionServices, messages)
+        }
       } else {
-        // TODO proceed with reuse protocol
+        this.logger.debug('Out of band message does not contain any request messages.')
+        await this.sendReuse(connectionRecord)
       }
 
       return connectionRecord
@@ -192,7 +219,11 @@ export class OutOfBandModule {
     return supportedHandshakeProtocols
   }
 
-  private emitMessages(services: DidCommService[], messages: any[]) {
+  private emitMessages(services: DidCommService[] | undefined, messages: any[]) {
+    if (!services || services.length === 0) {
+      throw new AriesFrameworkError(`There are no services. We can not emit messages`)
+    }
+
     for (const unpackedMessage of messages) {
       // The framework currently supports only older OOB messages with `~service` decorator.
       const [service] = services
@@ -205,5 +236,15 @@ export class OutOfBandModule {
         },
       })
     }
+  }
+
+  private async sendReuse(connection: ConnectionRecord) {
+    const message = new HandshakeReuseMessage({})
+    const outbound = createOutboundMessage(connection, message)
+    await this.messageSender.sendMessage(outbound)
+  }
+
+  private registerHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerHandler(new HandshakeReuseHandler())
   }
 }
