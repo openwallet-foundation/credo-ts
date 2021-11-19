@@ -197,7 +197,7 @@ export class OutOfBandModule {
   }
 
   private getSupportedHandshakeProtocols() {
-    const handshakeProtocols = ['https://didcomm.org/didexchange/1.0', 'https://didcomm.org/connections/1.0']
+    const handshakeProtocols = ['https://didcomm.org/didexchange', 'https://didcomm.org/connections']
     const supportedHandshakeProtocols = this.disoverFeaturesService.getSupportedProtocols(handshakeProtocols)
 
     if (supportedHandshakeProtocols.length === 0) {
