@@ -103,7 +103,7 @@ export class OutOfBandModule {
 
     if (handshake) {
       // Discover what handshake protocols are supported
-      const supportedHandshakeProtocols = await this.getSupportedHandshakeProtocols()
+      const supportedHandshakeProtocols = this.getSupportedHandshakeProtocols()
       const connectionProtocolMessage = await this.connectionService.createInvitation({
         routing,
       })
@@ -148,9 +148,7 @@ export class OutOfBandModule {
         throw new AriesFrameworkError('Handshake protocols are not supported.')
       }
 
-      const [service] = services
-      const existingConnection = await this.connectionService.findByTheirKey(service.recipientKeys[0])
-
+      const existingConnection = await this.findExistingConnection(services)
       if (existingConnection) {
         this.logger.debug('Connection already exists.', { connectionId: existingConnection.id })
         if (reuse) {
@@ -190,8 +188,29 @@ export class OutOfBandModule {
 
       return connectionRecord
     } else if (messages) {
-      this.emitMessages(outOfBandMessage.services, messages)
+      this.emitMessages(services, messages)
     }
+  }
+
+  private areHandshakeProtocolsSupported(handshakeProtocols: string[]) {
+    return this.getSupportedHandshakeProtocols().some((p) => handshakeProtocols.includes(p))
+  }
+
+  private getSupportedHandshakeProtocols() {
+    const handshakeProtocols = ['https://didcomm.org/didexchange/1.0', 'https://didcomm.org/connections/1.0']
+    const supportedHandshakeProtocols = this.disoverFeaturesService.getSupportedProtocols(handshakeProtocols)
+
+    if (supportedHandshakeProtocols.length === 0) {
+      throw new AriesFrameworkError('There is no handshake protocol supported. Agent can not create a connection.')
+    }
+
+    return supportedHandshakeProtocols
+  }
+
+  private async findExistingConnection(services: DidCommService[]) {
+    const [service] = services
+    const existingConnection = await this.connectionService.findByTheirKey(service.recipientKeys[0])
+    return existingConnection
   }
 
   private async createConnection(services: DidCommService[], autoAccept: boolean) {
@@ -214,21 +233,6 @@ export class OutOfBandModule {
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)
     return connectionRecord
-  }
-
-  private areHandshakeProtocolsSupported(handshakeProtocols: string[]) {
-    return this.getSupportedHandshakeProtocols().some((p) => handshakeProtocols.includes(p))
-  }
-
-  private getSupportedHandshakeProtocols() {
-    const handshakeProtocols = ['https://didcomm.org/didexchange/1.0', 'https://didcomm.org/connections/1.0']
-    const supportedHandshakeProtocols = this.disoverFeaturesService.getSupportedProtocols(handshakeProtocols)
-
-    if (supportedHandshakeProtocols.length === 0) {
-      throw new AriesFrameworkError('There is no handshake protocol supported. Agent can not create a connection.')
-    }
-
-    return supportedHandshakeProtocols
   }
 
   private emitMessages(services: DidCommService[] | undefined, messages: any[]) {
