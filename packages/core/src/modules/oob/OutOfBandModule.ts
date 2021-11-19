@@ -22,15 +22,19 @@ import {
 import { DiscoverFeaturesService } from '../discover-features'
 import { MediationRecipientService } from '../routing'
 
-import { HandshakeReuseHandler } from './HandshakeReuseHandler'
-import { HandshakeReuseMessage } from './HandshakeReuseMessage'
-import { OutOfBandMessage } from './OutOfBandMessage'
+import { HandshakeReuseHandler } from './handlers'
+import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
 
-interface OutOfBandMessageConfig {
+interface CreateOutOfBandMessageConfig {
   label?: string
   goalCode?: string
   goal?: string
   handshake: boolean
+}
+
+interface ReceiveOutOfBandMessageConfig {
+  autoAccept: boolean
+  reuse?: boolean
 }
 
 @scoped(Lifecycle.ContainerScoped)
@@ -68,11 +72,11 @@ export class OutOfBandModule {
    * @returns Out-of-band message
    */
   public async createMessage(
-    config: OutOfBandMessageConfig,
-    message?: AgentMessage
+    config: CreateOutOfBandMessageConfig,
+    messages?: AgentMessage[]
   ): Promise<{ outOfBandMessage: OutOfBandMessage; connectionRecord?: ConnectionRecord }> {
     const { handshake } = config
-    if (!handshake && !message) {
+    if (!handshake && !messages) {
       throw new AriesFrameworkError(
         'One or both of handshake_protocols and requests~attach MUST be included in the message.'
       )
@@ -111,12 +115,14 @@ export class OutOfBandModule {
       outOfBandMessage.handshakeProtocols = supportedHandshakeProtocols
     }
 
-    if (message) {
-      if (message.service) {
-        // We can remove `~service` attribute from message. Newer OOB messages have `services` attribute instead.
-        message.service = undefined
-      }
-      outOfBandMessage.addRequest(message)
+    if (messages) {
+      messages.forEach((message) => {
+        if (message.service) {
+          // We can remove `~service` attribute from message. Newer OOB messages have `services` attribute instead.
+          message.service = undefined
+        }
+        outOfBandMessage.addRequest(message)
+      })
     }
 
     return { outOfBandMessage, connectionRecord }
@@ -129,7 +135,7 @@ export class OutOfBandModule {
    */
   public async receiveMessage(
     outOfBandMessage: OutOfBandMessage,
-    config: { autoAccept: boolean; reuse?: boolean }
+    config: ReceiveOutOfBandMessageConfig
   ): Promise<ConnectionRecord | undefined> {
     const { handshakeProtocols, services } = outOfBandMessage
     const { autoAccept, reuse } = config
