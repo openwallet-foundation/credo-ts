@@ -3,16 +3,14 @@ import type { Dispatcher } from '../../../agent/Dispatcher'
 import { DiscoverFeaturesQueryMessage } from '../messages'
 import { DiscoverFeaturesService } from '../services/DiscoverFeaturesService'
 
-const supportedMessageTypes = [
-  'https://didcomm.org/connections/1.0/invitation',
-  'https://didcomm.org/connections/1.0/request',
-  'https://didcomm.org/connections/1.0/response',
-  'https://didcomm.org/notification/1.0/ack',
-  'https://didcomm.org/issue-credential/1.0/credential-proposal',
+const supportedProtocols = [
+  'https://didcomm.org/connections/1.0/',
+  'https://didcomm.org/notification/1.0/',
+  'https://didcomm.org/issue-credential/1.0/',
 ]
 
 describe('DiscoverFeaturesService', () => {
-  const discoverFeaturesService = new DiscoverFeaturesService({ supportedMessageTypes } as Dispatcher)
+  const discoverFeaturesService = new DiscoverFeaturesService({ supportedProtocols } as Dispatcher)
 
   describe('createDisclose', () => {
     it('should return all protocols when query is *', async () => {

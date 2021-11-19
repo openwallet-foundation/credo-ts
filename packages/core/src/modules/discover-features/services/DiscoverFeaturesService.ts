@@ -20,8 +20,8 @@ export class DiscoverFeaturesService {
   public async createDisclose(queryMessage: DiscoverFeaturesQueryMessage) {
     const { query } = queryMessage
 
-    const messageTypes = this.dispatcher.supportedMessageTypes
-    const messageFamilies = Array.from(new Set(messageTypes.map((m) => m.substring(0, m.lastIndexOf('/') + 1))))
+    const messageFamilies = this.dispatcher.supportedProtocols
+
     let protocols: string[] = []
 
     if (query === '*') {
