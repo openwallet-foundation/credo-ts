@@ -1,12 +1,12 @@
-import type { UnpackedMessage } from '../../types'
-import type { DidCommService } from '../connections/models/did/service/DidCommService'
+import type { UnpackedMessage } from '../../../types'
+import type { DidCommService } from '../../connections/models/did/service/DidCommService'
 
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsInstance, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../agent/AgentMessage'
-import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
-import { JsonEncoder } from '../../utils/JsonEncoder'
+import { AgentMessage } from '../../../agent/AgentMessage'
+import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
+import { JsonEncoder } from '../../../utils/JsonEncoder'
 
 interface OutOfBandMessageOptions {
   id?: string
