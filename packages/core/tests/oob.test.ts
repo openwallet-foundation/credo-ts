@@ -7,9 +7,8 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
-import { DidCommService } from '../src/modules/connections/models/did/service'
-import { HandshakeReuseMessage } from '../src/modules/oob/HandshakeReuseMessage'
-import { OutOfBandMessage } from '../src/modules/oob/OutOfBandMessage'
+import { DidCommService } from '../src/modules/connections'
+import { OutOfBandMessage } from '../src/modules/oob/messages'
 
 import { getBaseConfig, prepareForIssuance } from './helpers'
 import { TestLogger } from './logger'
@@ -133,10 +132,9 @@ describe('out of band', () => {
 
   test('create OOB message only with requests', async () => {
     const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
-    const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createMessage(
-      { handshake: false },
-      offerMessage
-    )
+    const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createMessage({ handshake: false }, [
+      offerMessage,
+    ])
 
     // expect supported handshake protocols
     expect(outOfBandMessage.handshakeProtocols).toBeUndefined()
@@ -158,7 +156,9 @@ describe('out of band', () => {
 
   test('create OOB message with both handshake and requests', async () => {
     const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
-    const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createMessage({ handshake: true }, offerMessage)
+    const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createMessage({ handshake: true }, [
+      offerMessage,
+    ])
 
     // expect supported handshake protocols
     expect(outOfBandMessage.handshakeProtocols).toContain('https://didcomm.org/connections/1.0')
@@ -227,7 +227,7 @@ describe('out of band', () => {
 
   test('process credential offer requests based on OOB message', async () => {
     const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
-    const { outOfBandMessage } = await faberAgent.oob.createMessage(issueCredentialConfig, offerMessage)
+    const { outOfBandMessage } = await faberAgent.oob.createMessage(issueCredentialConfig, [offerMessage])
 
     await aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)
 
@@ -247,7 +247,7 @@ describe('out of band', () => {
     aliceAgent.events.on<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived, eventListener)
 
     const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
-    const { outOfBandMessage } = await faberAgent.oob.createMessage(makeConnectionConfig, offerMessage)
+    const { outOfBandMessage } = await faberAgent.oob.createMessage(makeConnectionConfig, [offerMessage])
 
     // First, we crate a connection but we won't accept it, therefore it won't be ready
     await aliceAgent.oob.receiveMessage(outOfBandMessage, { autoAccept: false })
@@ -263,7 +263,7 @@ describe('out of band', () => {
     // eslint-disable-next-line prefer-const
     let { outOfBandMessage, connectionRecord: faberAliceConnection } = await faberAgent.oob.createMessage(
       makeConnectionConfig,
-      offerMessage
+      [offerMessage]
     )
 
     // First, we crate a connection but we won't accept it, therefore it won't be ready
