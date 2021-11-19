@@ -1,6 +1,6 @@
 import { Equals } from 'class-validator'
 
-import { AgentMessage } from '../../agent/AgentMessage'
+import { AgentMessage } from '../../../agent/AgentMessage'
 
 export interface HandshakeReuseMessageOptions {
   id?: string

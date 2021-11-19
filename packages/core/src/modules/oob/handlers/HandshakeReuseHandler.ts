@@ -1,9 +1,6 @@
-import type { Handler, HandlerInboundMessage } from '../../agent/Handler'
+import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 
-import { AgentMessage } from '../../agent/AgentMessage'
-import { createOutboundMessage } from '../../agent/helpers'
-
-import { HandshakeReuseMessage } from './HandshakeReuseMessage'
+import { HandshakeReuseMessage } from '../messages/HandshakeReuseMessage'
 
 export class HandshakeReuseHandler implements Handler {
   public supportedMessages = [HandshakeReuseMessage]
