@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 /* eslint-disable no-console, @typescript-eslint/no-var-requires, no-undef */
 
-const { randomUUID } = require('crypto')
 const { createWallet, deleteWallet } = require('indy-sdk')
 
-const uuid = randomUUID()
+const uuid = Math.random() * 10000
 const id = `test-wallet-id-${uuid}`
 
 createWallet({ id }, { key: id })
