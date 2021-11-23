@@ -31,7 +31,7 @@ export interface DiscoverFeaturesDiscloseMessageOptions {
   protocols: DiscloseProtocolOptions[]
 }
 
-export class DiscoverFeaturesDiscloseMessage extends AgentMessage {
+export class DiscloseMessage extends AgentMessage {
   public constructor(options: DiscoverFeaturesDiscloseMessageOptions) {
     super()
 
@@ -44,8 +44,8 @@ export class DiscoverFeaturesDiscloseMessage extends AgentMessage {
     }
   }
 
-  @Equals(DiscoverFeaturesDiscloseMessage.type)
-  public readonly type = DiscoverFeaturesDiscloseMessage.type
+  @Equals(DiscloseMessage.type)
+  public readonly type = DiscloseMessage.type
   public static readonly type = 'https://didcomm.org/discover-features/1.0/disclose'
 
   @IsInstance(DiscloseProtocol, { each: true })
