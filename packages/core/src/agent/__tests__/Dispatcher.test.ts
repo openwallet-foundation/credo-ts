@@ -68,9 +68,9 @@ describe('Dispatcher', () => {
       const messageTypes = dispatcher.supportedProtocols
 
       expect(messageTypes).toEqual([
-        'https://didcomm.org/connections/1.0/',
-        'https://didcomm.org/notification/1.0/',
-        'https://didcomm.org/issue-credential/1.0/',
+        'https://didcomm.org/connections/1.0',
+        'https://didcomm.org/notification/1.0',
+        'https://didcomm.org/issue-credential/1.0',
       ])
     })
   })
