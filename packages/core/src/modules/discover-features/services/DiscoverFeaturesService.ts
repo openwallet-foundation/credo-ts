@@ -1,7 +1,7 @@
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { Dispatcher } from '../../../agent/Dispatcher'
-import { DiscoverFeaturesQueryMessage, DiscoverFeaturesDiscloseMessage } from '../messages'
+import { QueryMessage, DiscloseMessage } from '../messages'
 
 @scoped(Lifecycle.ContainerScoped)
 export class DiscoverFeaturesService {
@@ -12,12 +12,12 @@ export class DiscoverFeaturesService {
   }
 
   public async createQuery(options: { query: string; comment?: string }) {
-    const queryMessage = new DiscoverFeaturesQueryMessage(options)
+    const queryMessage = new QueryMessage(options)
 
     return queryMessage
   }
 
-  public async createDisclose(queryMessage: DiscoverFeaturesQueryMessage) {
+  public async createDisclose(queryMessage: QueryMessage) {
     const { query } = queryMessage
 
     const messageFamilies = this.dispatcher.supportedProtocols
@@ -33,7 +33,7 @@ export class DiscoverFeaturesService {
       protocols = [query]
     }
 
-    const discloseMessage = new DiscoverFeaturesDiscloseMessage({
+    const discloseMessage = new DiscloseMessage({
       threadId: queryMessage.threadId,
       protocols: protocols.map((protocolId) => ({ protocolId })),
     })

@@ -1,6 +1,6 @@
 import type { Dispatcher } from '../../../agent/Dispatcher'
 
-import { DiscoverFeaturesQueryMessage } from '../messages'
+import { QueryMessage } from '../messages'
 import { DiscoverFeaturesService } from '../services/DiscoverFeaturesService'
 
 const supportedProtocols = [
@@ -14,7 +14,7 @@ describe('DiscoverFeaturesService', () => {
 
   describe('createDisclose', () => {
     it('should return all protocols when query is *', async () => {
-      const queryMessage = new DiscoverFeaturesQueryMessage({
+      const queryMessage = new QueryMessage({
         query: '*',
       })
 
@@ -28,7 +28,7 @@ describe('DiscoverFeaturesService', () => {
     })
 
     it('should return only one protocol if the query specifies a specific protocol', async () => {
-      const queryMessage = new DiscoverFeaturesQueryMessage({
+      const queryMessage = new QueryMessage({
         query: 'https://didcomm.org/connections/1.0/',
       })
 
@@ -38,7 +38,7 @@ describe('DiscoverFeaturesService', () => {
     })
 
     it('should respect a wild card at the end of the query', async () => {
-      const queryMessage = new DiscoverFeaturesQueryMessage({
+      const queryMessage = new QueryMessage({
         query: 'https://didcomm.org/connections/*',
       })
 

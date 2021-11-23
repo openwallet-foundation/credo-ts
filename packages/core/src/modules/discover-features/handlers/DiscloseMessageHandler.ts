@@ -1,9 +1,9 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 
-import { DiscoverFeaturesDiscloseMessage } from '../messages'
+import { DiscloseMessage } from '../messages'
 
 export class DiscloseMessageHandler implements Handler {
-  public supportedMessages = [DiscoverFeaturesDiscloseMessage]
+  public supportedMessages = [DiscloseMessage]
 
   public async handle(inboundMessage: HandlerInboundMessage<DiscloseMessageHandler>) {
     // We don't really need to do anything with this at the moment

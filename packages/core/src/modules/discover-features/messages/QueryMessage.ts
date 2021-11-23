@@ -8,7 +8,7 @@ export interface DiscoverFeaturesQueryMessageOptions {
   comment?: string
 }
 
-export class DiscoverFeaturesQueryMessage extends AgentMessage {
+export class QueryMessage extends AgentMessage {
   public constructor(options: DiscoverFeaturesQueryMessageOptions) {
     super()
 
@@ -19,8 +19,8 @@ export class DiscoverFeaturesQueryMessage extends AgentMessage {
     }
   }
 
-  @Equals(DiscoverFeaturesQueryMessage.type)
-  public readonly type = DiscoverFeaturesQueryMessage.type
+  @Equals(QueryMessage.type)
+  public readonly type = QueryMessage.type
   public static readonly type = 'https://didcomm.org/discover-features/1.0/query'
 
   @IsString()
