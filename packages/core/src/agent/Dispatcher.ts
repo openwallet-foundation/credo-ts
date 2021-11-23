@@ -110,6 +110,12 @@ class Dispatcher {
   public get supportedProtocols() {
     return Array.from(new Set(this.supportedMessageTypes.map((m) => m.substring(0, m.lastIndexOf('/')))))
   }
+
+  public filterSupportedProtocolsByMessageFamilies(messageFamilies: string[]) {
+    return this.supportedProtocols.filter((protocolId) =>
+      messageFamilies.find((messageFamily) => protocolId.startsWith(messageFamily))
+    )
+  }
 }
 
 export { Dispatcher }
