@@ -19,7 +19,6 @@ import {
   ConnectionEventTypes,
   ConnectionState,
 } from '../connections'
-import { DiscoverFeaturesService } from '../discover-features'
 import { MediationRecipientService } from '../routing'
 
 import { HandshakeReuseHandler } from './handlers'
@@ -41,7 +40,7 @@ interface ReceiveOutOfBandMessageConfig {
 export class OutOfBandModule {
   private connectionService: ConnectionService
   private mediationRecipientService: MediationRecipientService
-  private disoverFeaturesService: DiscoverFeaturesService
+  private dispatcher: Dispatcher
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
   private logger: Logger = new ConsoleLogger(LogLevel.debug)
@@ -50,13 +49,12 @@ export class OutOfBandModule {
     dispatcher: Dispatcher,
     connectionService: ConnectionService,
     mediationRecipientService: MediationRecipientService,
-    disoverFeaturesService: DiscoverFeaturesService,
     messageSender: MessageSender,
     eventEmitter: EventEmitter
   ) {
     this.connectionService = connectionService
     this.mediationRecipientService = mediationRecipientService
-    this.disoverFeaturesService = disoverFeaturesService
+    this.dispatcher = dispatcher
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.registerHandlers(dispatcher)
@@ -203,14 +201,14 @@ export class OutOfBandModule {
   }
 
   private getSupportedHandshakeProtocols() {
-    const handshakeProtocols = ['https://didcomm.org/didexchange', 'https://didcomm.org/connections']
-    const supportedHandshakeProtocols = this.disoverFeaturesService.getSupportedProtocols(handshakeProtocols)
+    const handshakeMessageFamilies = ['https://didcomm.org/didexchange', 'https://didcomm.org/connections']
+    const handshakeProtocols = this.dispatcher.filterSupportedProtocolsByMessageFamilies(handshakeMessageFamilies)
 
-    if (supportedHandshakeProtocols.length === 0) {
+    if (handshakeProtocols.length === 0) {
       throw new AriesFrameworkError('There is no handshake protocol supported. Agent can not create a connection.')
     }
 
-    return supportedHandshakeProtocols
+    return handshakeProtocols
   }
 
   private async findExistingConnection(services: DidCommService[]) {
