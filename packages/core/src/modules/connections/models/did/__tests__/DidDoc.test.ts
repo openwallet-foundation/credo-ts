@@ -1,4 +1,4 @@
-import { classToPlain, plainToClass } from 'class-transformer'
+import { instanceToPlain, plainToInstance } from 'class-transformer'
 
 import { DidDoc } from '../DidDoc'
 import { ReferencedAuthentication, EmbeddedAuthentication } from '../authentication'
@@ -70,7 +70,7 @@ const didDoc = new DidDoc({
 // TODO: add more tests
 describe('Did | DidDoc', () => {
   it('should correctly transforms Json to DidDoc class', () => {
-    const didDoc = plainToClass(DidDoc, diddoc)
+    const didDoc = plainToInstance(DidDoc, diddoc)
 
     // Check array length of all items
     expect(didDoc.publicKey.length).toBe(diddoc.publicKey.length)
@@ -97,7 +97,7 @@ describe('Did | DidDoc', () => {
   })
 
   it('should correctly transforms DidDoc class to Json', () => {
-    const json = classToPlain(didDoc)
+    const json = instanceToPlain(didDoc)
 
     // Check array length of all items
     expect(json.publicKey.length).toBe(didDoc.publicKey.length)
