@@ -1,6 +1,6 @@
 import type { ClassConstructor } from 'class-transformer'
 
-import { Transform, TransformationType, plainToClass, classToPlain } from 'class-transformer'
+import { Transform, TransformationType, plainToInstance, instanceToPlain } from 'class-transformer'
 
 import { AriesFrameworkError } from '../../../../../error'
 import { PublicKey, publicKeyTypes } from '../publicKey'
@@ -50,17 +50,17 @@ export function AuthenticationTransformer() {
 
             // Referenced keys use other types than embedded keys.
             const publicKeyClass = (publicKeyTypes[publicKeyJson.type] ?? PublicKey) as ClassConstructor<PublicKey>
-            const publicKey = plainToClass<PublicKey, unknown>(publicKeyClass, publicKeyJson)
+            const publicKey = plainToInstance<PublicKey, unknown>(publicKeyClass, publicKeyJson)
             return new ReferencedAuthentication(publicKey, auth.type)
           } else {
             // embedded
             const publicKeyClass = (publicKeyTypes[auth.type] ?? PublicKey) as ClassConstructor<PublicKey>
-            const publicKey = plainToClass<PublicKey, unknown>(publicKeyClass, auth)
+            const publicKey = plainToInstance<PublicKey, unknown>(publicKeyClass, auth)
             return new EmbeddedAuthentication(publicKey)
           }
         })
       } else {
-        return value.map((auth) => (auth instanceof EmbeddedAuthentication ? classToPlain(auth.publicKey) : auth))
+        return value.map((auth) => (auth instanceof EmbeddedAuthentication ? instanceToPlain(auth.publicKey) : auth))
       }
     }
   )

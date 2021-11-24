@@ -1,4 +1,4 @@
-import { plainToClass } from 'class-transformer'
+import { plainToInstance } from 'class-transformer'
 
 import { CredentialRecord, CredentialState } from '../../modules/credentials'
 
@@ -14,7 +14,7 @@ describe('transformers', () => {
     metadata.credentialDefinitionId = 'abc:def:CL'
 
     // Converted old to new credentialRecord
-    const cr = plainToClass(CredentialRecord, jsonCredentialRecord)
+    const cr = plainToInstance(CredentialRecord, jsonCredentialRecord)
 
     expect(cr.metadata.data).toEqual({
       '_internal/indyRequest': {

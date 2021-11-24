@@ -1,4 +1,4 @@
-import { classToPlain, plainToClass } from 'class-transformer'
+import { instanceToPlain, plainToInstance } from 'class-transformer'
 
 import { Service, ServiceTransformer, serviceTypes, IndyAgentService, DidCommService } from '../service'
 
@@ -9,7 +9,7 @@ describe('Did | Service', () => {
       type: 'Mediator',
       serviceEndpoint: 'https://example.com',
     }
-    const service = plainToClass(Service, json)
+    const service = plainToInstance(Service, json)
 
     expect(service.id).toBe(json.id)
     expect(service.type).toBe(json.type)
@@ -27,7 +27,7 @@ describe('Did | Service', () => {
       ...json,
     })
 
-    const transformed = classToPlain(service)
+    const transformed = instanceToPlain(service)
 
     expect(transformed).toEqual(json)
   })
@@ -42,7 +42,7 @@ describe('Did | Service', () => {
         priority: 10,
         serviceEndpoint: 'https://example.com',
       }
-      const service = plainToClass(IndyAgentService, json)
+      const service = plainToInstance(IndyAgentService, json)
 
       expect(service).toMatchObject(json)
     })
@@ -61,7 +61,7 @@ describe('Did | Service', () => {
         ...json,
       })
 
-      const transformed = classToPlain(service)
+      const transformed = instanceToPlain(service)
 
       expect(transformed).toEqual(json)
     })
@@ -75,14 +75,14 @@ describe('Did | Service', () => {
         serviceEndpoint: 'https://example.com',
       }
 
-      const transformService = plainToClass(IndyAgentService, json)
+      const transformService = plainToInstance(IndyAgentService, json)
       const constructorService = new IndyAgentService({ ...json })
 
       expect(transformService.priority).toBe(0)
       expect(constructorService.priority).toBe(0)
 
-      expect(classToPlain(transformService).priority).toBe(0)
-      expect(classToPlain(constructorService).priority).toBe(0)
+      expect(instanceToPlain(transformService).priority).toBe(0)
+      expect(instanceToPlain(constructorService).priority).toBe(0)
     })
   })
 
@@ -97,7 +97,7 @@ describe('Did | Service', () => {
         priority: 10,
         serviceEndpoint: 'https://example.com',
       }
-      const service = plainToClass(DidCommService, json)
+      const service = plainToInstance(DidCommService, json)
 
       expect(service).toMatchObject(json)
     })
@@ -117,7 +117,7 @@ describe('Did | Service', () => {
         ...json,
       })
 
-      const transformed = classToPlain(service)
+      const transformed = instanceToPlain(service)
 
       expect(transformed).toEqual(json)
     })
@@ -132,14 +132,14 @@ describe('Did | Service', () => {
         serviceEndpoint: 'https://example.com',
       }
 
-      const transformService = plainToClass(DidCommService, json)
+      const transformService = plainToInstance(DidCommService, json)
       const constructorService = new DidCommService({ ...json })
 
       expect(transformService.priority).toBe(0)
       expect(constructorService.priority).toBe(0)
 
-      expect(classToPlain(transformService).priority).toBe(0)
-      expect(classToPlain(constructorService).priority).toBe(0)
+      expect(instanceToPlain(transformService).priority).toBe(0)
+      expect(instanceToPlain(constructorService).priority).toBe(0)
     })
   })
 
@@ -159,7 +159,7 @@ describe('Did | Service', () => {
       const serviceWrapperJson = {
         service: [serviceJson],
       }
-      const serviceWrapper = plainToClass(ServiceTransformerTest, serviceWrapperJson)
+      const serviceWrapper = plainToInstance(ServiceTransformerTest, serviceWrapperJson)
 
       expect(serviceWrapper.service.length).toBe(1)
 
@@ -185,7 +185,7 @@ describe('Did | Service', () => {
       const serviceWrapperJson = {
         service: serviceArray,
       }
-      const serviceWrapper = plainToClass(ServiceTransformerTest, serviceWrapperJson)
+      const serviceWrapper = plainToInstance(ServiceTransformerTest, serviceWrapperJson)
 
       expect(serviceWrapper.service.length).toBe(serviceArray.length)
 
