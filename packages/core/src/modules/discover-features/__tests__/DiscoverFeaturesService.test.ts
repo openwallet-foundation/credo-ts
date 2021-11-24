@@ -59,26 +59,4 @@ describe('DiscoverFeaturesService', () => {
       expect(message.comment).toBe('Hello')
     })
   })
-
-  describe('getSupportedProtocols', () => {
-    it('should return empty array when input is empty array', async () => {
-      const supportedProtocols = discoverFeaturesService.getSupportedProtocols([])
-      expect(supportedProtocols).toEqual([])
-    })
-
-    it('should return empty array when input contains only unsupported protocol', async () => {
-      const supportedProtocols = discoverFeaturesService.getSupportedProtocols([
-        'https://didcomm.org/unsupported-protocol/1.0',
-      ])
-      expect(supportedProtocols).toEqual([])
-    })
-
-    it('should return array with only supported protocol when input contains supported and unsupported protocol', async () => {
-      const supportedProtocols = discoverFeaturesService.getSupportedProtocols([
-        'https://didcomm.org/connections',
-        'https://didcomm.org/didexchange',
-      ])
-      expect(supportedProtocols).toEqual(['https://didcomm.org/connections/1.0'])
-    })
-  })
 })
