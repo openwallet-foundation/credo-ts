@@ -1,6 +1,6 @@
 import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
-import type { QuestionAnswerState, ValidResponse } from '../models'
 import type { QuestionAnswerRole } from '../QuestionAnswerRole'
+import type { QuestionAnswerState, ValidResponse } from '../models'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
