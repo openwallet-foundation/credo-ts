@@ -4,16 +4,15 @@ import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
 
 import { getAgentConfig, getMockConnection } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { IndyStorageService } from '../../../storage/IndyStorageService'
 import { Repository } from '../../../storage/Repository'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { QuestionAnswerEventTypes } from '../QuestionAnswerEvents'
 import { QuestionAnswerRole } from '../QuestionAnswerRole'
-import { QuestionMessage, AnswerMessage } from '../messages'
+import { QuestionMessage } from '../messages'
+import { QuestionAnswerState } from '../models'
 import { QuestionAnswerRecord } from '../repository/QuestionAnswerRecord'
 import { QuestionAnswerService } from '../services'
-import { QuestionAnswerState, ValidResponse } from '../models'
 
 describe('QuestionAnswerService', () => {
   const mockConnectionRecord = getMockConnection({

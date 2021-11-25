@@ -1,6 +1,6 @@
 import type { BaseEvent } from '../../agent/Events'
-import type { QuestionAnswerRecord } from './repository'
 import type { QuestionAnswerState } from './models'
+import type { QuestionAnswerRecord } from './repository'
 
 export enum QuestionAnswerEventTypes {
   QuestionAnswerStateChanged = 'QuestionAnswerStateChanged',

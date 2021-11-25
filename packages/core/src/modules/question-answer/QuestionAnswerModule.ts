@@ -1,16 +1,16 @@
-import type { QuestionAnswerTags } from './repository/QuestionAnswerRecord'
+import type { ValidResponse } from './models'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import { ConnectionService } from '../connections'
 import { AriesFrameworkError } from '../../error'
+import { ConnectionService } from '../connections'
 
 import { AnswerMessageHandler, QuestionMessageHandler } from './handlers'
+import { QuestionAnswerState } from './models'
 import { QuestionAnswerService } from './services'
-import { QuestionAnswerState, ValidResponse } from './models'
 
 @scoped(Lifecycle.ContainerScoped)
 export class QuestionAnswerModule {

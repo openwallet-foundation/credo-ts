@@ -1,17 +1,17 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
-import type { QuestionAnswerTags } from '../repository'
-import { AgentConfig } from '../../../agent/AgentConfig'
-import { AriesFrameworkError } from '../../../error'
 import type { Logger } from '../../../logger'
+import type { ValidResponse } from '../models'
+import type { QuestionAnswerTags } from '../repository'
+import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
 
 import { Lifecycle, scoped } from 'tsyringe'
-
+import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { AriesFrameworkError } from '../../../error'
+import { QuestionMessage, AnswerMessage } from '../messages'
+import { QuestionAnswerState } from '../models'
 import { QuestionAnswerEventTypes } from '../QuestionAnswerEvents'
 import { QuestionAnswerRole } from '../QuestionAnswerRole'
-import { QuestionMessage, AnswerMessage } from '../messages'
-import { QuestionAnswerState, ValidResponse } from '../models'
 import { QuestionAnswerRecord, QuestionAnswerRepository } from '../repository'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -149,7 +149,7 @@ export class QuestionAnswerService {
     }
 
     try {
-      let questionAnswerRecord: QuestionAnswerRecord = await this.getByThreadAndConnectionId(
+      const questionAnswerRecord: QuestionAnswerRecord = await this.getByThreadAndConnectionId(
         answerMessage.threadId,
         connection?.id
       )

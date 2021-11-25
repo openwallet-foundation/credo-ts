@@ -1,7 +1,6 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { QuestionAnswerService } from '../services'
 
-import { AriesFrameworkError } from '../../../error'
 import { QuestionMessage, AnswerMessage } from '../messages'
 
 export class QuestionMessageHandler implements Handler {
