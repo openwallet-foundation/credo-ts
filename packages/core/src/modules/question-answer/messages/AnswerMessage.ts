@@ -9,7 +9,7 @@ export class AnswerMessage extends AgentMessage {
    * sentTime will be assigned to new Date if not passed, id will be assigned to uuid/v4 if not passed
    * @param options
    */
-  public constructor(options: { id?: string, response: string; threadId: string }) {
+  public constructor(options: { id?: string; response: string; threadId: string }) {
     super()
 
     if (options) {
@@ -23,7 +23,7 @@ export class AnswerMessage extends AgentMessage {
   public readonly type = AnswerMessage.type
   public static readonly type = 'https://didcomm.org/questionanswer/1.0/answer'
 
-//   public validResponse: ValidResponse[string]
+  //   public validResponse: ValidResponse[string]
 
   @Expose({ name: 'response' })
   @IsString()

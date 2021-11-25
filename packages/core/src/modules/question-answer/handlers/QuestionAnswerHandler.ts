@@ -18,14 +18,14 @@ export class QuestionMessageHandler implements Handler {
 }
 
 export class AnswerMessageHandler implements Handler {
-    private questionAnswerService: QuestionAnswerService
-    public supportedMessages = [AnswerMessage]
-  
-    public constructor(questionAnswerService: QuestionAnswerService) {
-      this.questionAnswerService = questionAnswerService
-    }
-  
-    public async handle(messageContext: HandlerInboundMessage<AnswerMessageHandler>) {
-        await this.questionAnswerService.receiveAnswer(messageContext)
-      }
+  private questionAnswerService: QuestionAnswerService
+  public supportedMessages = [AnswerMessage]
+
+  public constructor(questionAnswerService: QuestionAnswerService) {
+    this.questionAnswerService = questionAnswerService
   }
+
+  public async handle(messageContext: HandlerInboundMessage<AnswerMessageHandler>) {
+    await this.questionAnswerService.receiveAnswer(messageContext)
+  }
+}

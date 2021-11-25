@@ -1,4 +1,4 @@
 export enum QuestionAnswerRole {
-    Questioner = 'questioner',
-    Responder = 'responder',
-  }  
+  Questioner = 'questioner',
+  Responder = 'responder',
+}

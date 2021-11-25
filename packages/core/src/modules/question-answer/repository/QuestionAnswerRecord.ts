@@ -5,7 +5,6 @@ import { QuestionAnswerState, ValidResponse } from '../models'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 
-
 export type CustomQuestionAnswerTags = TagsBase
 export type DefaultQuestionAnswerTags = {
   connectionId: string
@@ -21,7 +20,7 @@ export interface QuestionAnswerStorageProps {
   createdAt?: Date
   connectionId: string
   role: QuestionAnswerRole
-  signatureRequired: boolean,
+  signatureRequired: boolean
   state: QuestionAnswerState
   tags?: CustomQuestionAnswerTags
   threadId: string
@@ -72,7 +71,7 @@ export class QuestionAnswerRecord extends BaseRecord<DefaultQuestionAnswerTags, 
       connectionId: this.connectionId,
       role: this.role,
       state: this.state,
-      threadId: this.threadId
+      threadId: this.threadId,
     }
   }
 }

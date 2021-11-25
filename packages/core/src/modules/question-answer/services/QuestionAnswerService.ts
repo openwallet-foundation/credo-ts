@@ -20,47 +20,61 @@ export class QuestionAnswerService {
   private eventEmitter: EventEmitter
   private logger: Logger
 
-  public constructor(questionAnswerRepository: QuestionAnswerRepository, eventEmitter: EventEmitter, agentConfig: AgentConfig,) {
+  public constructor(
+    questionAnswerRepository: QuestionAnswerRepository,
+    eventEmitter: EventEmitter,
+    agentConfig: AgentConfig
+  ) {
     this.questionAnswerRepository = questionAnswerRepository
     this.eventEmitter = eventEmitter
     this.logger = agentConfig.logger
   }
   /**
-   * 
-   * @param question 
-   * @param details 
-   * @param connectionId 
-   * @param validResponses 
-   * @returns 
+   *
+   * @param question
+   * @param details
+   * @param connectionId
+   * @param validResponses
+   * @returns
    */
-  public async createQuestion(connectionId: string, question: string, validResponses: ValidResponse[], details?: string) {
-    const questionMessage = new QuestionMessage({ questionText: question, questionDetail: details, signatureRequired: false, validResponses: validResponses, })
+  public async createQuestion(
+    connectionId: string,
+    question: string,
+    validResponses: ValidResponse[],
+    details?: string
+  ) {
+    const questionMessage = new QuestionMessage({
+      questionText: question,
+      questionDetail: details,
+      signatureRequired: false,
+      validResponses: validResponses,
+    })
 
     const questionAnswerRecord = await this.createRecord({
-        questionText: questionMessage.questionText,
-        questionDetail: questionMessage.questionDetail,
-        threadId: questionMessage.id,
-        connectionId: connectionId,
-        role: QuestionAnswerRole.Questioner,
-        signatureRequired: false,
-        state: QuestionAnswerState.QuestionSent,
-        validResponses: questionMessage.validResponses,
+      questionText: questionMessage.questionText,
+      questionDetail: questionMessage.questionDetail,
+      threadId: questionMessage.id,
+      connectionId: connectionId,
+      role: QuestionAnswerRole.Questioner,
+      signatureRequired: false,
+      state: QuestionAnswerState.QuestionSent,
+      validResponses: questionMessage.validResponses,
     })
 
     await this.questionAnswerRepository.save(questionAnswerRecord)
 
     this.eventEmitter.emit<QuestionAnswerStateChangedEvent>({
-        type: QuestionAnswerEventTypes.QuestionAnswerStateChanged,
-        payload: { previousState: null, questionAnswerRecord },
+      type: QuestionAnswerEventTypes.QuestionAnswerStateChanged,
+      payload: { previousState: null, questionAnswerRecord },
     })
 
-    return {questionMessage, questionAnswerRecord}
+    return { questionMessage, questionAnswerRecord }
   }
 
   /**
-   * 
-   * @param messageContext 
-   * @returns 
+   *
+   * @param messageContext
+   * @returns
    */
   public async receiveQuestion(messageContext: InboundMessageContext<QuestionMessage>): Promise<QuestionAnswerRecord> {
     const { message: questionMessage, connection } = messageContext
@@ -68,58 +82,58 @@ export class QuestionAnswerService {
     this.logger.debug(`Receiving question message with id ${questionMessage.id}`)
 
     if (!connection) {
-        throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
-      }
-  
-      if (!connection.theirKey) {
-        throw new AriesFrameworkError(`Connection with verkey ${connection.verkey} has no recipient keys.`)
-      }
+      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+    }
+
+    if (!connection.theirKey) {
+      throw new AriesFrameworkError(`Connection with verkey ${connection.verkey} has no recipient keys.`)
+    }
 
     const questionAnswerRecord = await this.createRecord({
-        questionText: questionMessage.questionText,
-        questionDetail: questionMessage.questionDetail,
-        connectionId: connection?.id,
-        threadId: questionMessage.id,
-        role: QuestionAnswerRole.Questioner,
-        signatureRequired: false,
-        state: QuestionAnswerState.QuestionSent,
-        validResponses: questionMessage.validResponses,
-      })
+      questionText: questionMessage.questionText,
+      questionDetail: questionMessage.questionDetail,
+      connectionId: connection?.id,
+      threadId: questionMessage.id,
+      role: QuestionAnswerRole.Questioner,
+      signatureRequired: false,
+      state: QuestionAnswerState.QuestionSent,
+      validResponses: questionMessage.validResponses,
+    })
 
     await this.questionAnswerRepository.save(questionAnswerRecord)
 
     this.eventEmitter.emit<QuestionAnswerStateChangedEvent>({
-        type: QuestionAnswerEventTypes.QuestionAnswerStateChanged,
-        payload: { previousState: null, questionAnswerRecord },
+      type: QuestionAnswerEventTypes.QuestionAnswerStateChanged,
+      payload: { previousState: null, questionAnswerRecord },
     })
 
     return questionAnswerRecord
   }
 
   /**
-   * 
-   * @param response 
-   * @param connectionId 
-   * @param questionAnswerRecord 
-   * @returns 
+   *
+   * @param response
+   * @param connectionId
+   * @param questionAnswerRecord
+   * @returns
    */
-  public async createAnswer(connectionId: string, questionAnswerRecord:QuestionAnswerRecord, response: string) {
+  public async createAnswer(connectionId: string, questionAnswerRecord: QuestionAnswerRecord, response: string) {
     const answerMessage = new AnswerMessage({ response: response, threadId: questionAnswerRecord.threadId })
 
     questionAnswerRecord.response = response
 
-    if(questionAnswerRecord.validResponses.some(e => e.text === response)) {
-        await this.updateState(questionAnswerRecord, QuestionAnswerState.AnswerSent)
+    if (questionAnswerRecord.validResponses.some((e) => e.text === response)) {
+      await this.updateState(questionAnswerRecord, QuestionAnswerState.AnswerSent)
     } else {
-        this.logger.error(`Response does not match valid responses`)
+      this.logger.error(`Response does not match valid responses`)
     }
-    return {answerMessage, questionAnswerRecord}
+    return { answerMessage, questionAnswerRecord }
   }
 
   /**
-   * 
-   * @param messageContext 
-   * @returns 
+   *
+   * @param messageContext
+   * @returns
    */
   public async receiveAnswer(messageContext: InboundMessageContext<AnswerMessage>): Promise<QuestionAnswerRecord> {
     const { message: answerMessage, connection } = messageContext
@@ -127,24 +141,29 @@ export class QuestionAnswerService {
     this.logger.debug(`Receiving answer message with id ${answerMessage.id}`)
 
     if (!connection) {
-        throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
-      }
-  
-      if (!connection.theirKey) {
-        throw new AriesFrameworkError(`Connection with verkey ${connection.verkey} has no recipient keys.`)
-      }
-
-    try {
-        let questionAnswerRecord:QuestionAnswerRecord = await this.getByThreadAndConnectionId(answerMessage.threadId, connection?.id)
-
-        await this.updateState(questionAnswerRecord, QuestionAnswerState.AnswerReceived)
-
-        return questionAnswerRecord
-    } catch(error) {
-        this.logger.error(`Unable to get question answer record by threadId "${answerMessage.threadId}" and connection id "${connection?.id}" and unable to update state`, {error})
-        throw error
+      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
 
+    if (!connection.theirKey) {
+      throw new AriesFrameworkError(`Connection with verkey ${connection.verkey} has no recipient keys.`)
+    }
+
+    try {
+      let questionAnswerRecord: QuestionAnswerRecord = await this.getByThreadAndConnectionId(
+        answerMessage.threadId,
+        connection?.id
+      )
+
+      await this.updateState(questionAnswerRecord, QuestionAnswerState.AnswerReceived)
+
+      return questionAnswerRecord
+    } catch (error) {
+      this.logger.error(
+        `Unable to get question answer record by threadId "${answerMessage.threadId}" and connection id "${connection?.id}" and unable to update state`,
+        { error }
+      )
+      throw error
+    }
   }
 
   /**
@@ -172,7 +191,16 @@ export class QuestionAnswerService {
   /**
    * @todo use connection from message context
    */
-  private async createRecord(options: {questionText: string, questionDetail?: string, connectionId: string, role: QuestionAnswerRole, signatureRequired: boolean, state: QuestionAnswerState, threadId: string, validResponses: ValidResponse[]}):Promise<QuestionAnswerRecord> {
+  private async createRecord(options: {
+    questionText: string
+    questionDetail?: string
+    connectionId: string
+    role: QuestionAnswerRole
+    signatureRequired: boolean
+    state: QuestionAnswerState
+    threadId: string
+    validResponses: ValidResponse[]
+  }): Promise<QuestionAnswerRecord> {
     const questionMessageRecord = new QuestionAnswerRecord({
       questionText: options.questionText,
       questionDetail: options.questionDetail,
@@ -196,7 +224,7 @@ export class QuestionAnswerService {
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The credential record
    */
-   public getByThreadAndConnectionId(connectionId: string, threadId: string): Promise<QuestionAnswerRecord> {
+  public getByThreadAndConnectionId(connectionId: string, threadId: string): Promise<QuestionAnswerRecord> {
     return this.questionAnswerRepository.getSingleByQuery({
       connectionId,
       threadId,
@@ -204,17 +232,17 @@ export class QuestionAnswerService {
   }
 
   /**
-   * 
-   * @returns 
+   *
+   * @returns
    */
   public getAll() {
     return this.questionAnswerRepository.getAll()
   }
 
   /**
-   * 
-   * @param query 
-   * @returns 
+   *
+   * @param query
+   * @returns
    */
   public async findAllByQuery(query: Partial<QuestionAnswerTags>) {
     return this.questionAnswerRepository.findByQuery(query)

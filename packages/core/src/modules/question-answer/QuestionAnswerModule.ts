@@ -33,10 +33,15 @@ export class QuestionAnswerModule {
   public async sendQuestion(connectionId: string, question: string, validResponses: ValidResponse[], detail?: string) {
     const connection = await this.connectionService.getById(connectionId)
 
-    const {questionMessage, questionAnswerRecord} = await this.questionAnswerService.createQuestion(connectionId, question, validResponses, detail)
+    const { questionMessage, questionAnswerRecord } = await this.questionAnswerService.createQuestion(
+      connectionId,
+      question,
+      validResponses,
+      detail
+    )
     const outboundMessage = createOutboundMessage(connection, questionMessage)
     await this.messageSender.sendMessage(outboundMessage)
-    
+
     return questionAnswerRecord
   }
 
@@ -44,23 +49,26 @@ export class QuestionAnswerModule {
     const connection = await this.connectionService.getById(connectionId)
 
     const questionRecord = await this.questionAnswerService.getByThreadAndConnectionId(connectionId, threadId)
-    
 
-    const {answerMessage, questionAnswerRecord} = await this.questionAnswerService.createAnswer(connectionId, questionRecord, response)
+    const { answerMessage, questionAnswerRecord } = await this.questionAnswerService.createAnswer(
+      connectionId,
+      questionRecord,
+      response
+    )
 
     if (questionAnswerRecord.state === QuestionAnswerState.AnswerSent) {
-        const outboundMessage = createOutboundMessage(connection, answerMessage)
-        await this.messageSender.sendMessage(outboundMessage)
+      const outboundMessage = createOutboundMessage(connection, answerMessage)
+      await this.messageSender.sendMessage(outboundMessage)
     } else {
-        throw new AriesFrameworkError(`Unable to send message without valid response`)
+      throw new AriesFrameworkError(`Unable to send message without valid response`)
     }
 
     return questionAnswerRecord
   }
 
   /**
-   * 
-   * @returns 
+   *
+   * @returns
    */
   public getAll() {
     return this.questionAnswerService.getAll()

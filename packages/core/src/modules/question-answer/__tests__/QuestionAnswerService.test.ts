@@ -51,18 +51,22 @@ describe('QuestionAnswerService', () => {
 
     it(`emits a question with question text, valid responses, and question answer record`, async () => {
       const eventListenerMock = jest.fn()
-      eventEmitter.on<QuestionAnswerStateChangedEvent>(QuestionAnswerEventTypes.QuestionAnswerStateChanged, eventListenerMock)
+      eventEmitter.on<QuestionAnswerStateChangedEvent>(
+        QuestionAnswerEventTypes.QuestionAnswerStateChanged,
+        eventListenerMock
+      )
 
       const questionMessage = new QuestionMessage({
         questionText: 'Alice, are you on the phone with Bob?',
         signatureRequired: false,
-        validResponses: [
-            {text: 'Yes'},
-            {text: 'No'},
-        ]
+        validResponses: [{ text: 'Yes' }, { text: 'No' }],
       })
 
-      await questionAnswerService.createQuestion(mockConnectionRecord.id, questionMessage.questionText, questionMessage.validResponses)
+      await questionAnswerService.createQuestion(
+        mockConnectionRecord.id,
+        questionMessage.questionText,
+        questionMessage.validResponses
+      )
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'QuestionAnswerStateChanged',
