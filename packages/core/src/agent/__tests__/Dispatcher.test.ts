@@ -25,6 +25,7 @@ class CredentialProposalTestMessage extends AgentMessage {
 }
 
 class TestHandler implements Handler {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public constructor(classes: any[]) {
     this.supportedMessages = classes
   }
