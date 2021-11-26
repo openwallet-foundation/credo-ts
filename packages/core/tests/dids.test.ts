@@ -36,6 +36,13 @@ describe('dids', () => {
   })
 
   it('resolve did:sov did', async () => {
-    const resolved = await faberAgent.dids.resolve(`did:sov:R4djcEgATa55nSTS9QzhTT`)
+    const sov = await faberAgent.dids.resolve(`did:sov:R4djcEgATa55nSTS9QzhTT`)
+    const web = await faberAgent.dids.resolve(`did:web:trinsic.id`)
+    const key = await faberAgent.dids.resolve(`did:key:z6LShLeXRTzevtwcfehaGEzCMyL3bNsAeKCwcqwJxyCo63yE`)
+
+    // console.log(JSON.stringify(sov, null, 2))
+    // console.log(JSON.stringify(web, null, 2))
+    // console.log(JSON.stringify(key, null, 2))
+    expect(key.didDocument?.id).toBe('did:key:z6LShLeXRTzevtwcfehaGEzCMyL3bNsAeKCwcqwJxyCo63yE')
   })
 })

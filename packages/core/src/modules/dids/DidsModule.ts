@@ -1,9 +1,8 @@
-import type { DIDResolutionOptions } from 'did-resolver'
+import type { DIDResolutionOptions } from './types'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { DidResolverService } from './services/DidResolverService'
-
 @scoped(Lifecycle.ContainerScoped)
 export class DidsModule {
   private resolverService: DidResolverService

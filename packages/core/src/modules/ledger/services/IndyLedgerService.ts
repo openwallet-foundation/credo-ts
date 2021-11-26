@@ -101,7 +101,7 @@ export class IndyLedgerService {
 
       if (!response.result.data) return {}
 
-      const endpoints = JSON.parse(response.result.data as string)?.endpoint
+      const endpoints = JSON.parse(response.result.data as string)?.endpoint as Record<string, string>
       this.logger.debug(`Got endpoints '${JSON.stringify(endpoints)}' for did '${did}' from ledger '${pool.id}'`, {
         response,
         endpoints,

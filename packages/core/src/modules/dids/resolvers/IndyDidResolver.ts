@@ -1,46 +1,52 @@
 import type { IndyLedgerService } from '../../ledger'
-import type { DIDDocument, DIDResolutionResult, DIDResolver, ParsedDID } from 'did-resolver'
+import type { ParsedDID, DIDResolutionResult, ServiceEndpoint } from '../types'
+import type { DidResolver } from './DidResolver'
 
 import { getFullVerkey } from '../../../utils/did'
+import { DidDocumentBuilder } from '../DidDocumentBuilder'
 
-/**
- * @see https://github.com/decentralized-identity/uni-resolver-driver-did-sov/blob/24bb07502f5667064436f8a7a623903b20fa5e2f/src/main/java/uniresolver/driver/did/sov/DidSovDriver.java
- * @see https://github.com/hyperledger/aries-cloudagent-python/blob/2960c51d175103e35be2865108e495ad7fb41265/aries_cloudagent/resolver/default/indy.py
- */
-export function getResolver(indyLedgerService: IndyLedgerService): Record<string, DIDResolver> {
-  async function resolve(did: string, parsed: ParsedDID): Promise<DIDResolutionResult> {
-    let err = null
+interface DidCommunicationService extends ServiceEndpoint {
+  priority?: number
+  routingKeys?: string[]
+  recipientKeys: string[]
+  accept: string[]
+}
 
-    const id = parsed.id
+interface DidCommunicationV2Service extends ServiceEndpoint {
+  routingKeys?: string[]
+  accept: string[]
+}
 
+export class IndyDidResolver implements DidResolver {
+  private indyLedgerService: IndyLedgerService
+
+  public constructor(indyLedgerService: IndyLedgerService) {
+    this.indyLedgerService = indyLedgerService
+  }
+
+  public readonly supportedMethods = ['sov']
+
+  public async resolve(did: string, parsed: ParsedDID): Promise<DIDResolutionResult> {
     const didDocumentMetadata = {}
-    let didDocument: DIDDocument | null = null
 
     try {
-      const nym = await indyLedgerService.getPublicDid(id)
-      const endpoints = await indyLedgerService.getEndpointsForDid(did)
+      const nym = await this.indyLedgerService.getPublicDid(parsed.id)
+      const endpoints = await this.indyLedgerService.getEndpointsForDid(did)
 
       const verificationMethodId = `${parsed.did}#key-1`
 
-      didDocument = {
-        '@context': 'https://www.w3.org/ns/did/v1',
-        id: parsed.did,
-        verificationMethod: [
-          {
-            controller: parsed.did,
-            id: verificationMethodId,
-            publicKeyBase58: getFullVerkey(nym.did, nym.verkey),
-            type: 'Ed25519VerificationKey2018',
-          },
-        ],
-        authentication: [verificationMethodId],
-        assertionMethod: [verificationMethodId],
-      }
-
-      const services = []
+      const builder = new DidDocumentBuilder(parsed.did)
+        .addVerificationMethod({
+          controller: parsed.did,
+          id: verificationMethodId,
+          publicKeyBase58: getFullVerkey(nym.did, nym.verkey),
+          type: 'Ed25519VerificationKey2018',
+        })
+        .addAuthentication(verificationMethodId)
+        .addAssertionMethod(verificationMethodId)
 
       for (const [type, endpoint] of Object.entries(endpoints)) {
-        services.push({
+        builder.addService({
           id: `${parsed.did}#service-${type}`,
           serviceEndpoint: endpoint as string,
           type,
@@ -48,7 +54,7 @@ export function getResolver(indyLedgerService: IndyLedgerService): Record<string
 
         // 'endpoint' type is for didcomm
         if (type === 'endpoint') {
-          services.push({
+          builder.addService({
             type: 'did-communication',
             id: `${parsed.did}#did-communication`,
             serviceEndpoint: endpoint as string,
@@ -57,44 +63,33 @@ export function getResolver(indyLedgerService: IndyLedgerService): Record<string
             recipientKeys: [verificationMethodId],
             // FIXME: it is not possible to determine this locally, but is what is used in the uniresolver
             accept: ['didcomm/aip2;env=rfc19'],
-          })
+          } as DidCommunicationService)
 
-          services.push({
+          builder.addService({
             type: 'DIDComm',
-            id: `${parsed.did}#did-communication`,
+            id: `${parsed.did}#DIDComm`,
             serviceEndpoint: endpoint as string,
             routingKeys: [],
             // FIXME: it is not possible to determine this locally, but is what is used in the uniresolver
             accept: ['didcomm/v2', 'didcomm/aip2;env=rfc19'],
-          })
+          } as DidCommunicationV2Service)
         }
       }
 
-      didDocument.service = services
-    } catch (error) {
-      err = `resolver_error: Unable to resolve did '${did}': ${error}`
-    }
-
-    const contentType =
-      typeof didDocument?.['@context'] !== 'undefined' ? 'application/did+ld+json' : 'application/did+json'
-
-    if (err) {
       return {
-        didDocument,
+        didDocument: builder.build(),
+        didDocumentMetadata,
+        didResolutionMetadata: { contentType: 'application/did+ld+json' },
+      }
+    } catch (error) {
+      return {
+        didDocument: null,
         didDocumentMetadata,
         didResolutionMetadata: {
           error: 'notFound',
-          message: err,
+          message: `resolver_error: Unable to resolve did '${did}': ${error}`,
         },
       }
     }
-
-    return {
-      didDocument,
-      didDocumentMetadata,
-      didResolutionMetadata: { contentType },
-    }
   }
-
-  return { sov: resolve }
 }
