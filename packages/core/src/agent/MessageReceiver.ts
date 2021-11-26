@@ -80,16 +80,19 @@ export class MessageReceiver {
     const { plaintextMessage, senderKey, recipientKey } = await this.decryptMessage(encryptedMessage)
 
     let connection: ConnectionRecord | null = null
+    let unverifiedConnection: ConnectionRecord | null = null
 
     // Only fetch connection if recipientKey and senderKey are present (AuthCrypt)
     if (senderKey && recipientKey) {
-      connection = await this.connectionService.findByVerkey(recipientKey)
+      unverifiedConnection = await this.connectionService.findByVerkey(recipientKey)
 
       // Throw error if the recipient key (ourKey) does not match the key of the connection record
-      if (connection && connection.theirKey !== null && connection.theirKey !== senderKey) {
-        throw new AriesFrameworkError(
-          `Inbound message senderKey '${senderKey}' is different from connection.theirKey '${connection.theirKey}'`
-        )
+      if (
+        unverifiedConnection &&
+        unverifiedConnection.theirKey !== null &&
+        unverifiedConnection.theirKey === senderKey
+      ) {
+        connection = unverifiedConnection
       }
     }
 
@@ -115,7 +118,7 @@ export class MessageReceiver {
       // We allow unready connections to be attached to the session as we want to be able to
       // use return routing to make connections. This is especially useful for creating connections
       // with mediators when you don't have a public endpoint yet.
-      session.connection = connection ?? undefined
+      session.connection = connection ?? unverifiedConnection ?? undefined
       this.transportService.saveSession(session)
     }
 
