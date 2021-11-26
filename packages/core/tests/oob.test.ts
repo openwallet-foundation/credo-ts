@@ -39,6 +39,7 @@ describe('out of band', () => {
     goalCode: 'p2p-messaging',
     label: 'Faber College',
     handshake: true,
+    multiUseInvitation: false,
   }
 
   const issueCredentialConfig = {
@@ -46,6 +47,7 @@ describe('out of band', () => {
     goalCode: 'issue-vc',
     label: 'Faber College',
     handshake: false,
+    multiUseInvitation: false,
   }
 
   const receiveMessageConfig = {
