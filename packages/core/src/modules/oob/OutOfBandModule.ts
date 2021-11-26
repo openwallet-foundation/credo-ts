@@ -29,6 +29,7 @@ interface CreateOutOfBandMessageConfig {
   goalCode?: string
   goal?: string
   handshake: boolean
+  multiUseInvitation: boolean
 }
 
 interface ReceiveOutOfBandMessageConfig {
@@ -73,7 +74,7 @@ export class OutOfBandModule {
     config: CreateOutOfBandMessageConfig,
     messages?: AgentMessage[]
   ): Promise<{ outOfBandMessage: OutOfBandMessage; connectionRecord?: ConnectionRecord }> {
-    const { handshake } = config
+    const { handshake, multiUseInvitation } = config
     if (!handshake && !messages) {
       throw new AriesFrameworkError(
         'One or both of handshake_protocols and requests~attach MUST be included in the message.'
@@ -108,6 +109,7 @@ export class OutOfBandModule {
       const supportedHandshakeProtocols = this.getSupportedHandshakeProtocols()
       const connectionProtocolMessage = await this.connectionService.createInvitation({
         routing,
+        multiUseInvitation,
       })
       connectionRecord = connectionProtocolMessage.connectionRecord
       outOfBandMessage.handshakeProtocols = supportedHandshakeProtocols
