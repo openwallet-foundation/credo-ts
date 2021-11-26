@@ -38,6 +38,7 @@ describe('out of band', () => {
     goalCode: 'p2p-messaging',
     label: 'Faber College',
     handshake: true,
+    multiUseInvitation: false,
   }
 
   const issueCredentialConfig = {
@@ -45,6 +46,7 @@ describe('out of band', () => {
     goalCode: 'issue-vc',
     label: 'Faber College',
     handshake: false,
+    multiUseInvitation: false,
   }
 
   const receiveMessageConfig = {
@@ -96,10 +98,15 @@ describe('out of band', () => {
     for (const credential of credentials) {
       await aliceAgent.credentials.deleteById(credential.id)
     }
+
+    const connections = await faberAgent.connections.getAll()
+    for (const connection of connections) {
+      await faberAgent.connections.deleteById(connection.id)
+    }
   })
 
   test('throw error when there is no handshake or message', async () => {
-    await expect(faberAgent.oob.createMessage({ handshake: false })).rejects.toEqual(
+    await expect(faberAgent.oob.createMessage({ handshake: false, multiUseInvitation: false })).rejects.toEqual(
       new AriesFrameworkError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
     )
   })
@@ -132,9 +139,10 @@ describe('out of band', () => {
 
   test('create OOB message only with requests', async () => {
     const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
-    const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createMessage({ handshake: false }, [
-      offerMessage,
-    ])
+    const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createMessage(
+      { handshake: false, multiUseInvitation: false },
+      [offerMessage]
+    )
 
     // expect supported handshake protocols
     expect(outOfBandMessage.handshakeProtocols).toBeUndefined()
@@ -156,9 +164,10 @@ describe('out of band', () => {
 
   test('create OOB message with both handshake and requests', async () => {
     const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
-    const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createMessage({ handshake: true }, [
-      offerMessage,
-    ])
+    const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createMessage(
+      { handshake: true, multiUseInvitation: false },
+      [offerMessage]
+    )
 
     // expect supported handshake protocols
     expect(outOfBandMessage.handshakeProtocols).toContain('https://didcomm.org/connections/1.0')
@@ -301,6 +310,35 @@ describe('out of band', () => {
     })
 
     expect(firstAliceFaberConnection.id).toEqual(secondAliceFaberConnection?.id)
+  })
+
+  test('create a new connection when connection exists and reuse is false', async () => {
+    const { outOfBandMessage, connectionRecord: faberAliceConnection } = await faberAgent.oob.createMessage({
+      ...makeConnectionConfig,
+      multiUseInvitation: true,
+    })
+    let firstAliceFaberConnection = await aliceAgent.oob.receiveMessage(outOfBandMessage, { autoAccept: true })
+    firstAliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(firstAliceFaberConnection?.id || '')
+
+    let secondAliceFaberConnection = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
+      autoAccept: true,
+      reuse: false,
+    })
+
+    secondAliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(
+      secondAliceFaberConnection?.id || ''
+    )
+    const faberConnections = await faberAgent.connections.getAll()
+    const [firstConnection, secondConnection] = faberConnections.filter((c) => c.id !== faberAliceConnection?.id)
+
+    expect(firstAliceFaberConnection.id).not.toEqual(secondAliceFaberConnection?.id)
+
+    expect(faberConnections).toHaveLength(3)
+    expect(faberAliceConnection?.multiUseInvitation).toBe(true)
+    expect(faberAliceConnection?.state).toBe(ConnectionState.Invited)
+
+    expect(firstConnection.getTag('invitationKey')).toEqual(faberAliceConnection?.verkey)
+    expect(secondConnection.getTag('invitationKey')).toEqual(faberAliceConnection?.verkey)
   })
 
   test('throw an error when handshake protocols are not supported', async () => {
