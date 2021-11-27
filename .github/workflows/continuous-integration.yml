@@ -108,7 +108,7 @@ jobs:
     runs-on: ubuntu-20.04
     name: Release stable
     needs: [integration-test, validate]
-    if: github.ref == 'refs/heads/main' && github.repository == 'TimoGlastra/aries-framework-javascript' && github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout aries-framework-javascript
         uses: actions/checkout@v2
