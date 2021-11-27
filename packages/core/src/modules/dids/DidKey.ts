@@ -4,11 +4,12 @@ import { varint } from 'multiformats'
 
 import { BufferEncoder } from '../../utils/BufferEncoder'
 import { MultiBaseEncoder } from '../../utils/MultiBaseEncoder'
+import { Buffer } from '../../utils/buffer'
 
 import { DidDocumentBuilder } from './DidDocumentBuilder'
 import { parseDidUrl } from './parse'
 
-const enum KeyType {
+export const enum KeyType {
   ED25519 = 'ed25519',
   X25519 = 'x25519',
   BLS12381G1 = 'bls12381g1',
@@ -34,10 +35,10 @@ const idPrefixMap: Record<number, KeyType> = {
 }
 
 export class DidKey {
-  public readonly publicKey: Uint8Array
+  public readonly publicKey: Buffer
   public readonly keyType: KeyType
 
-  public constructor(publicKey: Uint8Array, keyType: KeyType) {
+  public constructor(publicKey: Buffer, keyType: KeyType) {
     this.publicKey = publicKey
     this.keyType = keyType
   }
@@ -52,15 +53,21 @@ export class DidKey {
     return DidKey.fromFingerprint(parsed.id)
   }
 
-  public static fromPublicKey(publicKey: Uint8Array, keyType: KeyType) {
+  public static fromPublicKey(publicKey: Buffer, keyType: KeyType) {
     return new DidKey(publicKey, keyType)
+  }
+
+  public static fromPublicKeyBase58(publicKey: string, keyType: KeyType) {
+    const publicKeyBytes = BufferEncoder.fromBase58(publicKey)
+
+    return DidKey.fromPublicKey(publicKeyBytes, keyType)
   }
 
   public static fromFingerprint(fingerprint: string) {
     const { data } = MultiBaseEncoder.decode(fingerprint)
     const [code, byteLength] = varint.decode(data)
 
-    const publicKey = data.slice(byteLength)
+    const publicKey = Buffer.from(data.slice(byteLength))
     const keyType = idPrefixMap[code]
 
     return new DidKey(publicKey, keyType)
@@ -74,7 +81,7 @@ export class DidKey {
     const prefixBytes = varint.encodeTo(code, new Uint8Array(varint.encodingLength(code)))
 
     // Combine prefix with public key
-    return new Uint8Array([...prefixBytes, ...this.publicKey])
+    return Buffer.concat([prefixBytes, this.publicKey])
   }
 
   public get fingerprint() {
