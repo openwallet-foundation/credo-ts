@@ -1,0 +1,87 @@
+name: Continuous Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release-canary:
+    runs-on: ubuntu-20.04
+    name: Release Canary
+    if: "!startsWith(github.event.head_commit.message, 'chore(release): v')"
+    steps:
+      - name: Checkout aries-framework-javascript
+        uses: actions/checkout@v2
+        with:
+          # pulls all commits (needed for lerna to correctly version)
+          fetch-depth: 0
+
+      # setup dependencies
+      - name: Setup Libindy
+        uses: ./.github/actions/setup-libindy
+
+      - name: Setup NodeJS
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: 16
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      # On push to main, release unstable version
+      - name: Release Unstable
+        run: yarn lerna publish --loglevel=verbose --canary minor --exact --force-publish --yes --no-verify-access --dist-tag alpha
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  release-stable:
+    runs-on: ubuntu-20.04
+    name: Create Stable Release
+    # Only run if the last pushed commit is a release commit
+    if: "startsWith(github.event.head_commit.message, 'chore(release): v')"
+    steps:
+      - name: Checkout aries-framework-javascript
+        uses: actions/checkout@v2
+
+      # setup dependencies
+      - name: Setup Libindy
+        uses: ./.github/actions/setup-libindy
+
+      - name: Setup NodeJS
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: 16
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Get updated version
+        id: new-version
+        run: |
+          NEW_VERSION=$(node -p "require('./lerna.json').version")
+          echo $NEW_VERSION
+
+          echo "::set-output name=version::$NEW_VERSION"
+
+      - name: Create Tag
+        uses: mathieudutour/github-tag-action@v6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          custom_tag: ${{ steps.new-version.outputs.version }}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.new-version.outputs.version }}
+          body: |
+            Release v${{ steps.new-version.outputs.version }}
+
+            You can find the changelog in the [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) file.
+
+      - name: Release to NPM
+        run: yarn lerna publish from-package --loglevel=verbose --yes --no-verify-access
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
