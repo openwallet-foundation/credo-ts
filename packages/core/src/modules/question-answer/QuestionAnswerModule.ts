@@ -33,7 +33,7 @@ export class QuestionAnswerModule {
   /**
    * Create a question message with possible valid responses, then send message to the
    * holder
-   * 
+   *
    * @param connectionId connection to send the question message to
    * @param question question text included in message
    * @param validResponses array of possible responses to question
@@ -57,7 +57,7 @@ export class QuestionAnswerModule {
 
   /**
    * Create an answer message as the holder and send it in response to a question message
-   * 
+   *
    * @param connectionId connection to send the answer message to
    * @param threadId thread id for the QuestionAnswer record
    * @param response response included in the answer message
@@ -85,7 +85,7 @@ export class QuestionAnswerModule {
 
   /**
    * Get all QuestionAnswer records
-   * 
+   *
    * @returns list containing all QuestionAnswer records
    */
   public getAll() {

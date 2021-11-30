@@ -32,7 +32,7 @@ export class QuestionAnswerService {
   }
   /**
    * Create a question message and a new QuestionAnswer record for the questioner role
-   * 
+   *
    * @param question text for question message
    * @param details optional details for question message
    * @param connectionId connection for QuestionAnswer record
@@ -75,7 +75,7 @@ export class QuestionAnswerService {
 
   /**
    * receive question message and create record for responder role
-   * 
+   *
    * @param messageContext the message context containing a question message
    * @returns QuestionAnswer record
    */
@@ -115,7 +115,7 @@ export class QuestionAnswerService {
 
   /**
    * create answer message, check that response is valid
-   * 
+   *
    * @param questionAnswerRecord record containing question and valid responses
    * @param response response used in answer message
    * @returns answer message and QuestionAnswer record
@@ -135,7 +135,7 @@ export class QuestionAnswerService {
 
   /**
    * receive answer as questioner
-   * 
+   *
    * @param messageContext the message context containing an answer message message
    * @returns QuestionAnswer record
    */
