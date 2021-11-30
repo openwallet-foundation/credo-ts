@@ -1,12 +1,10 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Repository } from '../../../storage/Repository'
-import type { StorageService } from '../../../storage/StorageService'
 import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
 import type { ValidResponse } from '../models'
 
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { IndyStorageService } from '../../../storage/IndyStorageService'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { QuestionAnswerEventTypes } from '../QuestionAnswerEvents'
 import { QuestionAnswerRole } from '../QuestionAnswerRole'
@@ -26,7 +24,6 @@ describe('QuestionAnswerService', () => {
   })
 
   let wallet: IndyWallet
-  let storageService: StorageService<QuestionAnswerRecord>
   let agentConfig: AgentConfig
   let questionAnswerRepository: Repository<QuestionAnswerRecord>
   let questionAnswerService: QuestionAnswerService
@@ -59,7 +56,6 @@ describe('QuestionAnswerService', () => {
     wallet = new IndyWallet(agentConfig)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.initialize(agentConfig.walletConfig!)
-    storageService = new IndyStorageService(wallet, agentConfig)
   })
 
   beforeEach(async () => {
