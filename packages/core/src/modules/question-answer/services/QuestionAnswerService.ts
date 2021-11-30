@@ -31,12 +31,13 @@ export class QuestionAnswerService {
     this.logger = agentConfig.logger
   }
   /**
-   *
-   * @param question
-   * @param details
-   * @param connectionId
-   * @param validResponses
-   * @returns
+   * Create a question message and a new QuestionAnswer record for the questioner role
+   * 
+   * @param question text for question message
+   * @param details optional details for question message
+   * @param connectionId connection for QuestionAnswer record
+   * @param validResponses array of valid responses for question
+   * @returns question message and QuestionAnswer record
    */
   public async createQuestion(
     connectionId: string,
@@ -73,9 +74,10 @@ export class QuestionAnswerService {
   }
 
   /**
-   *
-   * @param messageContext
-   * @returns
+   * receive question message and create record for responder role
+   * 
+   * @param messageContext the message context containing a question message
+   * @returns QuestionAnswer record
    */
   public async receiveQuestion(messageContext: InboundMessageContext<QuestionMessage>): Promise<QuestionAnswerRecord> {
     const { message: questionMessage, connection } = messageContext
@@ -95,9 +97,9 @@ export class QuestionAnswerService {
       questionDetail: questionMessage.questionDetail,
       connectionId: connection?.id,
       threadId: questionMessage.id,
-      role: QuestionAnswerRole.Questioner,
+      role: QuestionAnswerRole.Responder,
       signatureRequired: false,
-      state: QuestionAnswerState.QuestionSent,
+      state: QuestionAnswerState.QuestionReceived,
       validResponses: questionMessage.validResponses,
     })
 
@@ -112,13 +114,13 @@ export class QuestionAnswerService {
   }
 
   /**
-   *
-   * @param response
-   * @param connectionId
-   * @param questionAnswerRecord
-   * @returns
+   * create answer message, check that response is valid
+   * 
+   * @param questionAnswerRecord record containing question and valid responses
+   * @param response response used in answer message
+   * @returns answer message and QuestionAnswer record
    */
-  public async createAnswer(connectionId: string, questionAnswerRecord: QuestionAnswerRecord, response: string) {
+  public async createAnswer(questionAnswerRecord: QuestionAnswerRecord, response: string) {
     const answerMessage = new AnswerMessage({ response: response, threadId: questionAnswerRecord.threadId })
 
     questionAnswerRecord.response = response
@@ -132,9 +134,10 @@ export class QuestionAnswerService {
   }
 
   /**
-   *
-   * @param messageContext
-   * @returns
+   * receive answer as questioner
+   * 
+   * @param messageContext the message context containing an answer message message
+   * @returns QuestionAnswer record
    */
   public async receiveAnswer(messageContext: InboundMessageContext<AnswerMessage>): Promise<QuestionAnswerRecord> {
     const { message: answerMessage, connection } = messageContext
@@ -233,18 +236,14 @@ export class QuestionAnswerService {
   }
 
   /**
+   * Retrieve all QuestionAnswer records
    *
-   * @returns
+   * @returns List containing all QuestionAnswer records
    */
   public getAll() {
     return this.questionAnswerRepository.getAll()
   }
 
-  /**
-   *
-   * @param query
-   * @returns
-   */
   public async findAllByQuery(query: Partial<QuestionAnswerTags>) {
     return this.questionAnswerRepository.findByQuery(query)
   }

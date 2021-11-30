@@ -30,6 +30,16 @@ export class QuestionAnswerModule {
     this.registerHandlers(dispatcher)
   }
 
+  /**
+   * Create a question message with possible valid responses, then send message to the
+   * holder
+   * 
+   * @param connectionId connection to send the question message to
+   * @param question question text included in message
+   * @param validResponses array of possible responses to question
+   * @param detail optional details for question
+   * @returns QuestionAnswer record
+   */
   public async sendQuestion(connectionId: string, question: string, validResponses: ValidResponse[], detail?: string) {
     const connection = await this.connectionService.getById(connectionId)
 
@@ -45,13 +55,20 @@ export class QuestionAnswerModule {
     return questionAnswerRecord
   }
 
+  /**
+   * Create an answer message as the holder and send it in response to a question message
+   * 
+   * @param connectionId connection to send the answer message to
+   * @param threadId thread id for the QuestionAnswer record
+   * @param response response included in the answer message
+   * @returns QuestionAnswer record
+   */
   public async sendAnswer(connectionId: string, threadId: string, response: string) {
     const connection = await this.connectionService.getById(connectionId)
 
     const questionRecord = await this.questionAnswerService.getByThreadAndConnectionId(connectionId, threadId)
 
     const { answerMessage, questionAnswerRecord } = await this.questionAnswerService.createAnswer(
-      connectionId,
       questionRecord,
       response
     )
@@ -67,8 +84,9 @@ export class QuestionAnswerModule {
   }
 
   /**
-   *
-   * @returns
+   * Get all QuestionAnswer records
+   * 
+   * @returns list containing all QuestionAnswer records
    */
   public getAll() {
     return this.questionAnswerService.getAll()
