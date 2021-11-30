@@ -475,7 +475,7 @@ export class ConnectionService {
 
       // If message is received unpacked/, we need to make sure it included a ~service decorator
       if (!message.service && !messageContext.recipientVerkey) {
-        throw new AriesFrameworkError('Message without senderKey and recipientKey must have ~service decorator')
+        throw new AriesFrameworkError('Message recipientKey must have ~service decorator')
       }
     }
   }
