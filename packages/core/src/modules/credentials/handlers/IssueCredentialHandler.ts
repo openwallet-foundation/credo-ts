@@ -5,7 +5,9 @@ import type { CredentialRecord } from '../repository/CredentialRecord'
 import type { CredentialService } from '../services'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../agent/helpers'
-import { IssueCredentialMessage } from '../messages'
+import { CredentialProblemReportMessage, IssueCredentialMessage } from '../messages'
+
+import { CredentialProblemReportError } from './../errors/CredentialProblemReportError'
 
 export class IssueCredentialHandler implements Handler {
   private credentialService: CredentialService
@@ -24,9 +26,24 @@ export class IssueCredentialHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<IssueCredentialHandler>) {
-    const credentialRecord = await this.credentialService.processCredential(messageContext)
-    if (this.credentialResponseCoordinator.shouldAutoRespondToIssue(credentialRecord)) {
-      return await this.createAck(credentialRecord, messageContext)
+    try {
+      const credentialRecord = await this.credentialService.processCredential(messageContext)
+      if (this.credentialResponseCoordinator.shouldAutoRespondToIssue(credentialRecord)) {
+        return await this.createAck(credentialRecord, messageContext)
+      }
+    } catch (error) {
+      if (error instanceof CredentialProblemReportError) {
+        const credentialProblemReportMessage = new CredentialProblemReportMessage({
+          description: {
+            en: error.message,
+            code: error.problemCode,
+          },
+        })
+        credentialProblemReportMessage.setThread({
+          threadId: messageContext.message.threadId,
+        })
+        return createOutboundMessage(messageContext.connection!, credentialProblemReportMessage)
+      }
     }
   }
 

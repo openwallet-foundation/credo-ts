@@ -5,7 +5,8 @@ import type { ProofRecord } from '../repository'
 import type { ProofService } from '../services'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../agent/helpers'
-import { PresentationMessage } from '../messages'
+import { PresentationProblemReportError } from '../errors/PresentationProblemReportError'
+import { PresentationMessage, PresentationProblemReportMessage } from '../messages'
 
 export class PresentationHandler implements Handler {
   private proofService: ProofService
@@ -24,10 +25,25 @@ export class PresentationHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<PresentationHandler>) {
-    const proofRecord = await this.proofService.processPresentation(messageContext)
+    try {
+      const proofRecord = await this.proofService.processPresentation(messageContext)
 
-    if (this.proofResponseCoordinator.shouldAutoRespondToPresentation(proofRecord)) {
-      return await this.createAck(proofRecord, messageContext)
+      if (this.proofResponseCoordinator.shouldAutoRespondToPresentation(proofRecord)) {
+        return await this.createAck(proofRecord, messageContext)
+      }
+    } catch (error) {
+      if (error instanceof PresentationProblemReportError) {
+        const credentialProblemReportMessage = new PresentationProblemReportMessage({
+          description: {
+            en: error.message,
+            code: error.problemCode,
+          },
+        })
+        credentialProblemReportMessage.setThread({
+          threadId: messageContext.message.threadId,
+        })
+        return createOutboundMessage(messageContext.connection!, credentialProblemReportMessage)
+      }
     }
   }
 

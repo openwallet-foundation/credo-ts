@@ -9,21 +9,29 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../error'
 import { ConnectionService } from '../modules/connections/services/ConnectionService'
+import { ProblemReportMessage } from '../modules/problem-reports/messages/ProblemReportMessage'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { MessageValidator } from '../utils/MessageValidator'
 import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
+import { ProblemReportError } from './../modules/problem-reports/errors/ProblemReportError'
 import { AgentConfig } from './AgentConfig'
 import { Dispatcher } from './Dispatcher'
 import { EnvelopeService } from './EnvelopeService'
+import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
+import { createOutboundMessage, isOutboundServiceMessage } from './helpers'
 import { InboundMessageContext } from './models/InboundMessageContext'
 
+export enum ProblemReportReason {
+  MessageParseFailure = 'message-parse-failure',
+}
 @scoped(Lifecycle.ContainerScoped)
 export class MessageReceiver {
   private config: AgentConfig
   private envelopeService: EnvelopeService
   private transportService: TransportService
+  private messageSender: MessageSender
   private connectionService: ConnectionService
   private dispatcher: Dispatcher
   private logger: Logger
@@ -33,12 +41,14 @@ export class MessageReceiver {
     config: AgentConfig,
     envelopeService: EnvelopeService,
     transportService: TransportService,
+    messageSender: MessageSender,
     connectionService: ConnectionService,
     dispatcher: Dispatcher
   ) {
     this.config = config
     this.envelopeService = envelopeService
     this.transportService = transportService
+    this.messageSender = messageSender
     this.connectionService = connectionService
     this.dispatcher = dispatcher
     this.logger = this.config.logger
@@ -84,47 +94,54 @@ export class MessageReceiver {
       unpackedMessage.message
     )
 
-    const message = await this.transformMessage(unpackedMessage)
     try {
-      await MessageValidator.validate(message)
-    } catch (error) {
-      this.logger.error(`Error validating message ${message.type}`, {
-        errors: error,
-        message: message.toJSON(),
+      const message = await this.transformMessage(unpackedMessage)
+      try {
+        await MessageValidator.validate(message)
+      } catch (error) {
+        this.logger.error(`Error validating message ${unpackedMessage.message['@type']}`, {
+          errors: error,
+          message: message.toJSON(),
+        })
+        this.sendProblemReportMessage(
+          `Error validating message ${unpackedMessage.message['@type']}`,
+          connection!,
+          unpackedMessage
+        )
+      }
+
+      const messageContext = new InboundMessageContext(message, {
+        // Only make the connection available in message context if the connection is ready
+        // To prevent unwanted usage of unready connections. Connections can still be retrieved from
+        // Storage if the specific protocol allows an unready connection to be used.
+        connection: connection?.isReady ? connection : undefined,
+        senderVerkey: senderKey,
+        recipientVerkey: recipientKey,
       })
 
-      throw error
-    }
-
-    const messageContext = new InboundMessageContext(message, {
-      // Only make the connection available in message context if the connection is ready
-      // To prevent unwanted usage of unready connections. Connections can still be retrieved from
-      // Storage if the specific protocol allows an unready connection to be used.
-      connection: connection?.isReady ? connection : undefined,
-      senderVerkey: senderKey,
-      recipientVerkey: recipientKey,
-    })
-
-    // We want to save a session if there is a chance of returning outbound message via inbound transport.
-    // That can happen when inbound message has `return_route` set to `all` or `thread`.
-    // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
-    if (senderKey && recipientKey && message.hasAnyReturnRoute() && session) {
-      this.logger.debug(`Storing session for inbound message '${message.id}'`)
-      const keys = {
-        recipientKeys: [senderKey],
-        routingKeys: [],
-        senderKey: recipientKey,
+      // We want to save a session if there is a chance of returning outbound message via inbound transport.
+      // That can happen when inbound message has `return_route` set to `all` or `thread`.
+      // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
+      if (senderKey && recipientKey && message.hasAnyReturnRoute() && session) {
+        this.logger.debug(`Storing session for inbound message '${message.id}'`)
+        const keys = {
+          recipientKeys: [senderKey],
+          routingKeys: [],
+          senderKey: recipientKey,
+        }
+        session.keys = keys
+        session.inboundMessage = message
+        // We allow unready connections to be attached to the session as we want to be able to
+        // use return routing to make connections. This is especially useful for creating connections
+        // with mediators when you don't have a public endpoint yet.
+        session.connection = connection ?? undefined
+        this.transportService.saveSession(session)
       }
-      session.keys = keys
-      session.inboundMessage = message
-      // We allow unready connections to be attached to the session as we want to be able to
-      // use return routing to make connections. This is especially useful for creating connections
-      // with mediators when you don't have a public endpoint yet.
-      session.connection = connection ?? undefined
-      this.transportService.saveSession(session)
-    }
 
-    await this.dispatcher.dispatch(messageContext)
+      await this.dispatcher.dispatch(messageContext)
+    } catch (error) {
+      this.sendProblemReportMessage(error.message, connection!, unpackedMessage)
+    }
   }
 
   /**
@@ -174,12 +191,42 @@ export class MessageReceiver {
     const MessageClass = this.dispatcher.getMessageClassForType(messageType)
 
     if (!MessageClass) {
-      throw new AriesFrameworkError(`No message class found for message type "${messageType}"`)
+      // throw new AriesFrameworkError(`No message class found for message type "${messageType}"`)
+      throw new ProblemReportError(`No message class found for message type "${messageType}"`, {
+        problemCode: ProblemReportReason.MessageParseFailure,
+      })
     }
 
     // Cast the plain JSON object to specific instance of Message extended from AgentMessage
     const message = JsonTransformer.fromJSON(unpackedMessage.message, MessageClass)
 
     return message
+  }
+
+  private async sendProblemReportMessage(
+    message: string,
+    connection: ConnectionRecord,
+    unpackedMessage: UnpackedMessageContext
+  ) {
+    const problemReportMessage = new ProblemReportMessage({
+      description: {
+        en: message,
+        code: ProblemReportReason.MessageParseFailure,
+      },
+    })
+    problemReportMessage.setThread({
+      threadId: unpackedMessage.message['@id'],
+    })
+    const outboundMessage = createOutboundMessage(connection!, problemReportMessage)
+    if (outboundMessage && isOutboundServiceMessage(outboundMessage)) {
+      await this.messageSender.sendMessageToService({
+        message: outboundMessage.payload,
+        service: outboundMessage.service,
+        senderKey: outboundMessage.senderKey,
+        returnRoute: true,
+      })
+    } else if (outboundMessage) {
+      await this.messageSender.sendMessage(outboundMessage)
+    }
   }
 }

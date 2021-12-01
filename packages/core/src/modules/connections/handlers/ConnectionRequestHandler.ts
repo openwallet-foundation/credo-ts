@@ -5,7 +5,8 @@ import type { ConnectionService, Routing } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
-import { ConnectionRequestMessage } from '../messages'
+import { ConnectionProblemReportError } from '../errors/ConnectionProblemReportError'
+import { ConnectionProblemReportMessage, ConnectionRequestMessage } from '../messages'
 
 export class ConnectionRequestHandler implements Handler {
   private connectionService: ConnectionService
@@ -42,11 +43,26 @@ export class ConnectionRequestHandler implements Handler {
       routing = await this.mediationRecipientService.getRouting(mediationRecord)
     }
 
-    connectionRecord = await this.connectionService.processRequest(messageContext, routing)
+    try {
+      connectionRecord = await this.connectionService.processRequest(messageContext, routing)
 
-    if (connectionRecord?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      const { message } = await this.connectionService.createResponse(connectionRecord.id)
-      return createOutboundMessage(connectionRecord, message)
+      if (connectionRecord?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
+        const { message } = await this.connectionService.createResponse(connectionRecord.id)
+        return createOutboundMessage(connectionRecord, message)
+      }
+    } catch (error) {
+      if (error instanceof ConnectionProblemReportError) {
+        const connectionProblemReportMessage = new ConnectionProblemReportMessage({
+          description: {
+            en: error.message,
+            code: error.problemCode,
+          },
+        })
+        connectionProblemReportMessage.setThread({
+          threadId: messageContext.message.threadId,
+        })
+        return createOutboundMessage(messageContext.connection!, connectionProblemReportMessage)
+      }
     }
   }
 }

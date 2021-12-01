@@ -21,6 +21,7 @@ import {
   RequestPresentationHandler,
   PresentationAckHandler,
   PresentationHandler,
+  PresentationProblemReportHandler,
 } from './handlers'
 import { ProofRequest } from './models/ProofRequest'
 import { ProofService } from './services'
@@ -426,6 +427,7 @@ export class ProofsModule {
       new PresentationHandler(this.proofService, this.agentConfig, this.proofResponseCoordinator)
     )
     dispatcher.registerHandler(new PresentationAckHandler(this.proofService))
+    dispatcher.registerHandler(new PresentationProblemReportHandler(this.proofService))
   }
 }
 

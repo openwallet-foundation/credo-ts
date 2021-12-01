@@ -22,6 +22,7 @@ import {
   OfferCredentialHandler,
   ProposeCredentialHandler,
   RequestCredentialHandler,
+  CredentialProblemReportHandler,
 } from './handlers'
 import { CredentialService } from './services'
 
@@ -500,5 +501,6 @@ export class CredentialsModule {
       new IssueCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
     )
     dispatcher.registerHandler(new CredentialAckHandler(this.credentialService))
+    dispatcher.registerHandler(new CredentialProblemReportHandler(this.credentialService))
   }
 }

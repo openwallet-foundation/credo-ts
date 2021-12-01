@@ -5,7 +5,8 @@ import type { CredentialRecord } from '../repository/CredentialRecord'
 import type { CredentialService } from '../services'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../agent/helpers'
-import { RequestCredentialMessage } from '../messages'
+import { CredentialProblemReportError } from '../errors/CredentialProblemReportError'
+import { CredentialProblemReportMessage, RequestCredentialMessage } from '../messages'
 
 export class RequestCredentialHandler implements Handler {
   private agentConfig: AgentConfig
@@ -24,9 +25,24 @@ export class RequestCredentialHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<RequestCredentialHandler>) {
-    const credentialRecord = await this.credentialService.processRequest(messageContext)
-    if (this.credentialResponseCoordinator.shouldAutoRespondToRequest(credentialRecord)) {
-      return await this.createCredential(credentialRecord, messageContext)
+    try {
+      const credentialRecord = await this.credentialService.processRequest(messageContext)
+      if (this.credentialResponseCoordinator.shouldAutoRespondToRequest(credentialRecord)) {
+        return await this.createCredential(credentialRecord, messageContext)
+      }
+    } catch (error) {
+      if (error instanceof CredentialProblemReportError) {
+        const credentialProblemReportMessage = new CredentialProblemReportMessage({
+          description: {
+            en: error.message,
+            code: error.problemCode,
+          },
+        })
+        credentialProblemReportMessage.setThread({
+          threadId: messageContext.message.threadId,
+        })
+        return createOutboundMessage(messageContext.connection!, credentialProblemReportMessage)
+      }
     }
   }
 
@@ -39,7 +55,6 @@ export class RequestCredentialHandler implements Handler {
     )
 
     const { message, credentialRecord } = await this.credentialService.createCredential(record)
-
     if (messageContext.connection) {
       return createOutboundMessage(messageContext.connection, message)
     } else if (credentialRecord.requestMessage?.service && credentialRecord.offerMessage?.service) {
@@ -57,7 +72,6 @@ export class RequestCredentialHandler implements Handler {
         senderKey: ourService.recipientKeys[0],
       })
     }
-
     this.agentConfig.logger.error(`Could not automatically create credential request`)
   }
 }

@@ -7,7 +7,8 @@ import type { CredentialService } from '../services'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../agent/helpers'
 import { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
-import { OfferCredentialMessage } from '../messages'
+import { CredentialProblemReportError } from '../errors/CredentialProblemReportError'
+import { CredentialProblemReportMessage, OfferCredentialMessage } from '../messages'
 
 export class OfferCredentialHandler implements Handler {
   private credentialService: CredentialService
@@ -29,10 +30,26 @@ export class OfferCredentialHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<OfferCredentialHandler>) {
-    const credentialRecord = await this.credentialService.processOffer(messageContext)
-
-    if (this.credentialResponseCoordinator.shouldAutoRespondToOffer(credentialRecord)) {
-      return await this.createRequest(credentialRecord, messageContext)
+    try {
+      const credentialRecord = await this.credentialService.processOffer(messageContext)
+      if (this.credentialResponseCoordinator.shouldAutoRespondToOffer(credentialRecord)) {
+        return await this.createRequest(credentialRecord, messageContext)
+      }
+    } catch (error) {
+      if (error instanceof CredentialProblemReportError) {
+        if (error instanceof CredentialProblemReportError) {
+          const credentialProblemReportMessage = new CredentialProblemReportMessage({
+            description: {
+              en: error.message,
+              code: error.problemCode,
+            },
+          })
+          credentialProblemReportMessage.setThread({
+            threadId: messageContext.message.threadId,
+          })
+          return createOutboundMessage(messageContext.connection!, credentialProblemReportMessage)
+        }
+      }
     }
   }
 

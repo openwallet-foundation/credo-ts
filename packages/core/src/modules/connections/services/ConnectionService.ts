@@ -37,6 +37,9 @@ import {
 import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
 
+import { ConnectionProblemReportError } from './../errors/ConnectionProblemReportError'
+import { ConnectionProblemReportReason } from './../errors/ConnectionProblemReportReason'
+
 @scoped(Lifecycle.ContainerScoped)
 export class ConnectionService {
   private wallet: Wallet
@@ -81,7 +84,6 @@ export class ConnectionService {
       autoAcceptConnection: config?.autoAcceptConnection,
       multiUseInvitation: config.multiUseInvitation ?? false,
     })
-
     const { didDoc } = connectionRecord
     const [service] = didDoc.didCommServices
     const invitation = new ConnectionInvitationMessage({
@@ -213,14 +215,18 @@ export class ConnectionService {
     connectionRecord.assertRole(ConnectionRole.Inviter)
 
     if (!message.connection.didDoc) {
-      throw new AriesFrameworkError('Public DIDs are not supported yet')
+      throw new ConnectionProblemReportError(
+        'Public DIDs are not supported yet',
+        ConnectionProblemReportReason.RequestNotAccepted
+      )
     }
 
     // Create new connection if using a multi use invitation
     if (connectionRecord.multiUseInvitation) {
       if (!routing) {
-        throw new AriesFrameworkError(
-          'Cannot process request for multi-use invitation without routing object. Make sure to call processRequest with the routing parameter provided.'
+        throw new ConnectionProblemReportError(
+          'Cannot process request for multi-use invitation without routing object. Make sure to call processRequest with the routing parameter provided.',
+          ConnectionProblemReportReason.RequestNotAccepted
         )
       }
 
@@ -330,8 +336,9 @@ export class ConnectionService {
     const signerVerkey = message.connectionSig.signer
     const invitationKey = connectionRecord.getTags().invitationKey
     if (signerVerkey !== invitationKey) {
-      throw new AriesFrameworkError(
-        `Connection object in connection response message is not signed with same key as recipient key in invitation expected='${invitationKey}' received='${signerVerkey}'`
+      throw new ConnectionProblemReportError(
+        `Connection object in connection response message is not signed with same key as recipient key in invitation expected='${invitationKey}' received='${signerVerkey}'`,
+        ConnectionProblemReportReason.ResponseNotAccepted
       )
     }
 

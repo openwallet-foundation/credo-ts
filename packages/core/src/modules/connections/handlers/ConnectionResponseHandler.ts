@@ -3,7 +3,8 @@ import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { ConnectionService } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
-import { ConnectionResponseMessage } from '../messages'
+import { ConnectionProblemReportError } from '../errors/ConnectionProblemReportError'
+import { ConnectionProblemReportMessage, ConnectionResponseMessage } from '../messages'
 
 export class ConnectionResponseHandler implements Handler {
   private connectionService: ConnectionService
@@ -16,14 +17,29 @@ export class ConnectionResponseHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<ConnectionResponseHandler>) {
-    const connection = await this.connectionService.processResponse(messageContext)
+    try {
+      const connection = await this.connectionService.processResponse(messageContext)
 
-    // TODO: should we only send ping message in case of autoAcceptConnection or always?
-    // In AATH we have a separate step to send the ping. So for now we'll only do it
-    // if auto accept is enable
-    if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      const { message } = await this.connectionService.createTrustPing(connection.id, { responseRequested: false })
-      return createOutboundMessage(connection, message)
+      // TODO: should we only send ping message in case of autoAcceptConnection or always?
+      // In AATH we have a separate step to send the ping. So for now we'll only do it
+      // if auto accept is enable
+      if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
+        const { message } = await this.connectionService.createTrustPing(connection.id, { responseRequested: false })
+        return createOutboundMessage(connection, message)
+      }
+    } catch (error) {
+      if (error instanceof ConnectionProblemReportError) {
+        const connectionProblemReportMessage = new ConnectionProblemReportMessage({
+          description: {
+            en: error.message,
+            code: error.problemCode,
+          },
+        })
+        connectionProblemReportMessage.setThread({
+          threadId: messageContext.message.threadId,
+        })
+        return createOutboundMessage(messageContext.connection!, connectionProblemReportMessage)
+      }
     }
   }
 }
