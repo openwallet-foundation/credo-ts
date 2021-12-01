@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsBoolean, IsInstance, IsString, ValidateNested } from 'class-validator'
+import { Equals, IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { ValidResponse } from '../models'
@@ -13,7 +13,7 @@ export class QuestionMessage extends AgentMessage {
     questionText: string
     questionDetail?: string
     validResponses: ValidResponse[]
-    signatureRequired: boolean
+    signatureRequired?: boolean
     id?: string
     nonce?: string
   }) {
@@ -33,13 +33,16 @@ export class QuestionMessage extends AgentMessage {
   public readonly type = QuestionMessage.type
   public static readonly type = 'https://didcomm.org/questionanswer/1.0/question'
 
+  @IsOptional()
   @IsString()
   public nonce?: string
 
+  @IsOptional()
   @IsBoolean()
   @Expose({ name: 'signature_required' })
-  public signatureRequired!: boolean
+  public signatureRequired?: boolean
 
+  @Expose({ name: 'valid_responses' })
   @Type(() => ValidResponse)
   @ValidateNested({ each: true })
   @IsInstance(ValidResponse, { each: true })
@@ -49,6 +52,7 @@ export class QuestionMessage extends AgentMessage {
   @IsString()
   public questionText!: string
 
+  @IsOptional()
   @Expose({ name: 'question_detail' })
   @IsString()
   public questionDetail?: string
