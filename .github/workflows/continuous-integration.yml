@@ -121,9 +121,12 @@ jobs:
 
           echo "::set-output name=version::$PACKAGE_NUMBER"
 
-      - name: Create Tag
-        uses: mathieudutour/github-tag-action@v6.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          custom_tag: ${{ steps.get-version.outputs.version }}
-          tag_prefix: 'alpha.'
+      - name: Setup git user
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Set git tag
+        run: |
+          git tag alpha.${{ steps.get-version.outputs.version }}
+          git push origin alpha.${{ steps.get-version.outputs.version }} --no-verify
