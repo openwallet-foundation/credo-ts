@@ -27,8 +27,7 @@ import { IndyHolderService, IndyVerifierService } from '../../indy'
 import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofState } from '../ProofState'
-import { PresentationProblemReportError } from '../errors/PresentationProblemReportError'
-import { PresentationProblemReportReason } from '../errors/PresentationProblemReportReason'
+import { PresentationProblemReportError, PresentationProblemReportReason } from '../errors'
 import {
   INDY_PROOF_ATTACHMENT_ID,
   INDY_PROOF_REQUEST_ATTACHMENT_ID,

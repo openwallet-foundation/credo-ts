@@ -3,7 +3,7 @@ import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { ConnectionService } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
-import { ConnectionProblemReportError } from '../errors/ConnectionProblemReportError'
+import { ConnectionProblemReportError } from '../errors'
 import { ConnectionProblemReportMessage, ConnectionResponseMessage } from '../messages'
 
 export class ConnectionResponseHandler implements Handler {

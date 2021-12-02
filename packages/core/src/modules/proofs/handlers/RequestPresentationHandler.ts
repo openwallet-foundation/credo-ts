@@ -7,7 +7,7 @@ import type { ProofService } from '../services'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../agent/helpers'
 import { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
-import { PresentationProblemReportError } from '../errors/PresentationProblemReportError'
+import { PresentationProblemReportError } from '../errors'
 import { PresentationProblemReportMessage, RequestPresentationMessage } from '../messages'
 
 export class RequestPresentationHandler implements Handler {

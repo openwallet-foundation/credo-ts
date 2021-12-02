@@ -5,7 +5,7 @@ import type { ConnectionService, Routing } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
-import { ConnectionProblemReportError } from '../errors/ConnectionProblemReportError'
+import { ConnectionProblemReportError } from '../errors'
 import { ConnectionProblemReportMessage, ConnectionRequestMessage } from '../messages'
 
 export class ConnectionRequestHandler implements Handler {

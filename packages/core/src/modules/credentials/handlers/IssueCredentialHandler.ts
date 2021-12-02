@@ -5,10 +5,8 @@ import type { CredentialRecord } from '../repository/CredentialRecord'
 import type { CredentialService } from '../services'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../agent/helpers'
+import { CredentialProblemReportError } from '../errors'
 import { CredentialProblemReportMessage, IssueCredentialMessage } from '../messages'
-
-import { CredentialProblemReportError } from './../errors/CredentialProblemReportError'
-
 export class IssueCredentialHandler implements Handler {
   private credentialService: CredentialService
   private agentConfig: AgentConfig

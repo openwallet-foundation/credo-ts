@@ -1,8 +1,7 @@
 import type { Wallet } from '../../wallet/Wallet'
 
 import { AriesFrameworkError } from '../../error'
-import { ConnectionProblemReportError } from '../../modules/connections/errors/ConnectionProblemReportError'
-import { ConnectionProblemReportReason } from '../../modules/connections/errors/ConnectionProblemReportReason'
+import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../../modules/connections/errors'
 import { BufferEncoder } from '../../utils/BufferEncoder'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { Buffer } from '../../utils/buffer'

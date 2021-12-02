@@ -35,7 +35,6 @@ import { CredentialRecord } from '../repository/CredentialRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
 import { CredentialService } from '../services'
 
-import { ThreadDecorator } from './../../../decorators/thread/ThreadDecorator'
 import { CredentialProblemReportMessage } from './../messages/CredentialProblemReportMessage'
 import { credDef, credOffer, credReq } from './fixtures'
 
@@ -937,7 +936,7 @@ describe('CredentialService', () => {
       })
     })
 
-    test('returns problem report message base once get error', async () => {
+    test('returns problem report message once get error', async () => {
       // given
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
 

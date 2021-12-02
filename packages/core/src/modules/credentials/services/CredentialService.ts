@@ -5,8 +5,7 @@ import type { LinkedAttachment } from '../../../utils/LinkedAttachment'
 import type { ConnectionRecord } from '../../connections'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
-import type { ProposeCredentialMessageOptions } from '../messages'
-import type { CredentialProblemReportMessage } from './../messages/CredentialProblemReportMessage'
+import type { CredentialProblemReportMessage, ProposeCredentialMessageOptions } from '../messages'
 import type { CredReqMetadata } from 'indy-sdk'
 
 import { scoped, Lifecycle } from 'tsyringe'
@@ -24,8 +23,7 @@ import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
-import { CredentialProblemReportError } from '../errors/CredentialProblemReportError'
-import { CredentialProblemReportReason } from '../errors/CredentialProblemReportReason'
+import { CredentialProblemReportError, CredentialProblemReportReason } from '../errors'
 import {
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,

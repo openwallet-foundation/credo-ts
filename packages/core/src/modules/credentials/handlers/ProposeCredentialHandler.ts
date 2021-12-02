@@ -5,7 +5,7 @@ import type { CredentialRecord } from '../repository/CredentialRecord'
 import type { CredentialService } from '../services'
 
 import { createOutboundMessage } from '../../../agent/helpers'
-import { CredentialProblemReportError } from '../errors/CredentialProblemReportError'
+import { CredentialProblemReportError } from '../errors'
 import { CredentialProblemReportMessage, ProposeCredentialMessage } from '../messages'
 
 export class ProposeCredentialHandler implements Handler {

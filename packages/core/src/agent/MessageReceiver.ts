@@ -9,12 +9,11 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../error'
 import { ConnectionService } from '../modules/connections/services/ConnectionService'
-import { ProblemReportMessage } from '../modules/problem-reports/messages/ProblemReportMessage'
+import { ProblemReportError, ProblemReportMessage } from '../modules/problem-reports'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { MessageValidator } from '../utils/MessageValidator'
 import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
-import { ProblemReportError } from './../modules/problem-reports/errors/ProblemReportError'
 import { AgentConfig } from './AgentConfig'
 import { Dispatcher } from './Dispatcher'
 import { EnvelopeService } from './EnvelopeService'

@@ -5,7 +5,7 @@ import type { ProofRecord } from '../repository'
 import type { ProofService } from '../services'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../agent/helpers'
-import { PresentationProblemReportError } from '../errors/PresentationProblemReportError'
+import { PresentationProblemReportError } from '../errors'
 import { PresentationMessage, PresentationProblemReportMessage } from '../messages'
 
 export class PresentationHandler implements Handler {

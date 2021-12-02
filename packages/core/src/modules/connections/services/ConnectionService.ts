@@ -18,6 +18,7 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
 import { ConnectionEventTypes } from '../ConnectionEvents'
+import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
 import {
   ConnectionInvitationMessage,
   ConnectionRequestMessage,
@@ -36,9 +37,6 @@ import {
 } from '../models'
 import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
-
-import { ConnectionProblemReportError } from './../errors/ConnectionProblemReportError'
-import { ConnectionProblemReportReason } from './../errors/ConnectionProblemReportReason'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ConnectionService {
