@@ -79,10 +79,10 @@ export interface OutboundPackage {
 }
 
 // Metadata type for `_internal/indyCredential`
-export interface indyCredential {
+export interface IndyCredentialMetadata {
   schemaId?: string
   credentialDefinitionId?: string
 }
 
 // Metadata type for  `_internal/indyRequest`
-export type indyCredentialRequest = CredReqMetadata
+export type IndyCredentialRequestMetadata = CredReqMetadata
