@@ -92,7 +92,7 @@ describe('mediator establishment', () => {
     expect(mediatorRecipientConnection.isReady).toBe(true)
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    expect(mediatorRecipientConnection).toBeConnectedWith(recipientMediatorConnection!)
+    expect(mediatorRecipientConnection).toBeConnectedWith(recipientMediatorConnection)
     expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection)
 
     expect(recipientMediator?.state).toBe(MediationState.Granted)
@@ -191,7 +191,7 @@ describe('mediator establishment', () => {
     expect(mediatorRecipientConnection.isReady).toBe(true)
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    expect(mediatorRecipientConnection).toBeConnectedWith(recipientMediatorConnection!)
+    expect(mediatorRecipientConnection).toBeConnectedWith(recipientMediatorConnection)
     expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection)
 
     expect(recipientMediator?.state).toBe(MediationState.Granted)
