@@ -1,17 +1,16 @@
 {
+  "extends": "./tsconfig.build.json",
+  "ts-node": {
+    "require": ["tsconfig-paths/register"],
+    "files": true
+  },
   "compilerOptions": {
-    "module": "commonjs",
-    "target": "ES2017",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "strict": true,
-    "noEmitOnError": true,
-    "lib": ["ES2017"],
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
-  }
+    "baseUrl": ".",
+    "paths": {
+      "@aries-framework/*": ["packages/*/src"]
+    },
+    "types": ["node"],
+    "noEmit": true
+  },
+  "exclude": ["node_modules", "**/build/**"]
 }
