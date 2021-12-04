@@ -1,5 +1,5 @@
 {
-  "extends": "./tsconfig.build.json",
+  "extends": "./tsconfig.base.json",
   "ts-node": {
     "require": ["tsconfig-paths/register"],
     "files": true
@@ -9,7 +9,8 @@
     "paths": {
       "@aries-framework/*": ["packages/*/src"]
     },
-    "types": ["jest", "node"]
+    "types": ["node"],
+    "noEmit": true
   },
   "exclude": ["node_modules", "**/build/**"]
 }

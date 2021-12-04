@@ -1,8 +1,11 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "../../tsconfig.base2.json",
+
   "compilerOptions": {
     // FIXME https://github.com/hyperledger/aries-framework-javascript/pull/327
     "skipLibCheck": true,
     "types": ["react-native", "jest"]
-  }
+  },
+
+  "include": ["src", "tests", "jest.config.ts"]
 }

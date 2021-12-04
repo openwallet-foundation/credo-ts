@@ -5,11 +5,17 @@ module.exports = {
     'plugin:import/recommended',
     'plugin:import/typescript',
     'plugin:@typescript-eslint/recommended',
+    // 'plugin:@typescript-eslint/recommended-requiring-type-checking',
     'plugin:prettier/recommended', // Enables eslint-plugin-prettier and displays prettier errors as ESLint errors. Make sure this is always the last configuration in the extends array.
   ],
   parserOptions: {
     tsconfigRootDir: __dirname,
-    project: ['./tsconfig.eslint.json'],
+    project: [
+      './tsconfig.eslint.json',
+      './packages/*/tsconfig.json',
+      './tests/tsconfig.json',
+      './samples/tsconfig.json',
+    ],
   },
   settings: {
     'import/extensions': ['.js', '.ts'],
@@ -18,7 +24,7 @@ module.exports = {
     },
     'import/resolver': {
       typescript: {
-        project: 'packages/*/tsconfig.json',
+        project: ['packages/*/tsconfig.json', 'tests/tsconfig.json', 'samples/tsconfig.json'],
         alwaysTryTypes: true,
       },
     },

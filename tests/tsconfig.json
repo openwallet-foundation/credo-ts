@@ -1,0 +1,7 @@
+{
+  "extends": "../tsconfig.base2.json",
+  "compilerOptions": {
+    "types": ["node", "jest"]
+  },
+  "include": ["./*.ts", "./**/*.ts", "types"]
+}

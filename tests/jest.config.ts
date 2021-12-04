@@ -6,7 +6,7 @@ const config: Config.InitialOptions = {
   ...base,
   name: '@aries-framework/e2e-test',
   displayName: '@aries-framework/e2e-test',
-  setupFilesAfterEnv: ['../packages/core/tests/setup.ts'],
+  setupFilesAfterEnv: ['./setup.ts'],
 }
 
 export default config

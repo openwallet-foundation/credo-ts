@@ -1,6 +1,6 @@
 import 'reflect-metadata'
 
-import type { ConnectionRecord } from '../src/modules/connections/repository/ConnectionRecord'
+import type { ConnectionRecord } from '@aries-framework/core'
 
 jest.setTimeout(120000)
 expect.extend({ toBeConnectedWith })

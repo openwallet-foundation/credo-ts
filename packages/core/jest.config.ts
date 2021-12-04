@@ -8,7 +8,7 @@ const config: Config.InitialOptions = {
   ...base,
   name: packageJson.name,
   displayName: packageJson.name,
-  setupFilesAfterEnv: ['./tests/setup.ts'],
+  setupFilesAfterEnv: ['../../tests/setup.ts'],
 }
 
 export default config

@@ -10,9 +10,7 @@
     "type": "git"
   },
   "scripts": {
-    "check-types": "yarn check-types:build && yarn check-types:tests",
-    "check-types:tests": "tsc -p tsconfig.test.json --noEmit",
-    "check-types:build": "lerna exec tsc -- --noEmit",
+    "check-types": "lerna exec tsc && tsc -p samples/tsconfig.json && tsc -p tests/tsconfig.json",
     "prettier": "prettier --ignore-path .gitignore '**/*.+(js|json|ts|md|yml|yaml)'",
     "format": "yarn prettier --write",
     "check-format": "yarn prettier --list-different",
@@ -47,7 +45,8 @@
     "jest": "^27.0.4",
     "lerna": "^4.0.0",
     "prettier": "^2.3.1",
-    "rxjs": "^7.2.0",
+    "reflect-metadata": "^0.1.13",
+    "rxjs": "^7.4.0",
     "ts-jest": "^27.0.3",
     "ts-node": "^10.0.0",
     "tsconfig-paths": "^3.9.0",
