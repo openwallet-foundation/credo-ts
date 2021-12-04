@@ -15,7 +15,7 @@ describe('Repository', () => {
   let repository: Repository<TestRecord>
   let storageMock: IndyStorageService<TestRecord>
 
-  beforeEach(async () => {
+  beforeEach(() => {
     storageMock = new StorageMock()
     repository = new Repository(TestRecord, storageMock)
   })
@@ -92,7 +92,7 @@ describe('Repository', () => {
     it('should return null if the storage service throws an error that is not RecordNotFoundError', async () => {
       mockFunction(storageMock.getById).mockReturnValue(Promise.reject(new AriesFrameworkError('Not found')))
 
-      expect(repository.findById('test-id')).rejects.toThrowError(AriesFrameworkError)
+      await expect(repository.findById('test-id')).rejects.toThrowError(AriesFrameworkError)
       expect(storageMock.getById).toBeCalledWith(TestRecord, 'test-id')
     })
   })
@@ -148,7 +148,9 @@ describe('Repository', () => {
       const record2 = getRecord({ id: 'test-id2' })
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record, record2]))
 
-      expect(repository.findSingleByQuery({ something: 'interesting' })).rejects.toThrowError(RecordDuplicateError)
+      await expect(repository.findSingleByQuery({ something: 'interesting' })).rejects.toThrowError(
+        RecordDuplicateError
+      )
       expect(storageMock.findByQuery).toBeCalledWith(TestRecord, { something: 'interesting' })
     })
   })
@@ -167,7 +169,7 @@ describe('Repository', () => {
     it('should throw RecordNotFoundError if no records are returned by the storage service', async () => {
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([]))
 
-      expect(repository.getSingleByQuery({ something: 'interesting' })).rejects.toThrowError(RecordNotFoundError)
+      await expect(repository.getSingleByQuery({ something: 'interesting' })).rejects.toThrowError(RecordNotFoundError)
       expect(storageMock.findByQuery).toBeCalledWith(TestRecord, { something: 'interesting' })
     })
 
@@ -176,7 +178,7 @@ describe('Repository', () => {
       const record2 = getRecord({ id: 'test-id2' })
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record, record2]))
 
-      expect(repository.getSingleByQuery({ something: 'interesting' })).rejects.toThrowError(RecordDuplicateError)
+      await expect(repository.getSingleByQuery({ something: 'interesting' })).rejects.toThrowError(RecordDuplicateError)
       expect(storageMock.findByQuery).toBeCalledWith(TestRecord, { something: 'interesting' })
     })
   })

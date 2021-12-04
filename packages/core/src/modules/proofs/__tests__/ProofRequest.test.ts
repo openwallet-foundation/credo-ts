@@ -35,7 +35,7 @@ describe('ProofRequest', () => {
       ProofRequest
     )
 
-    expect(MessageValidator.validate(proofRequest)).resolves.not.toThrow()
+    await expect(MessageValidator.validate(proofRequest)).resolves.not.toThrow()
   })
 
   it('should throw an error if the proof request json contains an invalid structure', async () => {
@@ -71,6 +71,6 @@ describe('ProofRequest', () => {
     )
 
     // Expect 2 top level validation errors
-    expect(MessageValidator.validate(proofRequest)).rejects.toHaveLength(2)
+    await expect(MessageValidator.validate(proofRequest)).rejects.toHaveLength(2)
   })
 })

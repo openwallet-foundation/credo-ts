@@ -17,6 +17,7 @@ export class MessagePickupService {
     this.messageRepository = messageRepository
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   public async batch(messageContext: InboundMessageContext<BatchPickupMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()

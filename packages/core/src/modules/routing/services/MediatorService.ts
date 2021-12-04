@@ -74,7 +74,9 @@ export class MediatorService {
     }
 
     // Return the routing keys
-    this.agentConfig.logger.debug(`Returning mediator routing keys ${this._mediatorRoutingRecord.routingKeys}`)
+    this.agentConfig.logger.debug(`Returning mediator routing keys`, {
+      routingKeys: this._mediatorRoutingRecord.routingKeys,
+    })
     return this._mediatorRoutingRecord.routingKeys
   }
 

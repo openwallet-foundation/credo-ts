@@ -102,11 +102,12 @@ export class HashlinkEncoder {
       if (key === 'urls' || key === 'contentType') {
         metadataMap.set(hexTable[key], metadata[key])
       } else {
-        throw new Error(`Invalid metadata: ${metadata}`)
+        throw new Error(`Invalid metadata: ${JSON.stringify(metadata)}`)
       }
     }
 
-    const cborData = cbor.encode(metadataMap)
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+    const cborData = cbor.encode(metadataMap) as Uint8Array
 
     const multibaseMetadata = MultiBaseEncoder.encode(cborData, baseEncoding)
 

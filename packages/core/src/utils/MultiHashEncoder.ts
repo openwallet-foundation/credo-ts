@@ -27,7 +27,7 @@ export class MultiHashEncoder {
       const decodedHash = multihash.decode(data)
       return { data: decodedHash.digest, hashName: decodedHash.name }
     }
-    throw new Error(`Invalid multihash: ${data}`)
+    throw new Error(`Invalid multihash: ${data.toString()}`)
   }
 
   /**

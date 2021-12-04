@@ -62,7 +62,7 @@ describe('IndyLedgerService', () => {
     await wallet.delete()
   })
 
-  beforeEach(async () => {
+  beforeEach(() => {
     cacheRepository = new CacheRepositoryMock()
     mockFunction(cacheRepository.findById).mockResolvedValue(null)
 
@@ -70,11 +70,11 @@ describe('IndyLedgerService', () => {
   })
 
   describe('ledgerWritePool', () => {
-    it('should return the first pool', async () => {
+    it('should return the first pool', () => {
       expect(poolService.ledgerWritePool).toBe(poolService.pools[0])
     })
 
-    it('should throw a LedgerNotConfiguredError error if no pools are configured on the agent', async () => {
+    it('should throw a LedgerNotConfiguredError error if no pools are configured on the agent', () => {
       const config = getAgentConfig('IndyLedgerServiceTest', { indyLedgers: [] })
       poolService = new IndyPoolService(config, cacheRepository)
 
@@ -87,7 +87,7 @@ describe('IndyLedgerService', () => {
       const config = getAgentConfig('IndyLedgerServiceTest', { indyLedgers: [] })
       poolService = new IndyPoolService(config, cacheRepository)
 
-      expect(poolService.getPoolForDid('some-did')).rejects.toThrow(LedgerNotConfiguredError)
+      await expect(poolService.getPoolForDid('some-did')).rejects.toThrow(LedgerNotConfiguredError)
     })
 
     it('should throw a LedgerError if all ledger requests throw an error other than NotFoundError', async () => {
@@ -98,7 +98,7 @@ describe('IndyLedgerService', () => {
         spy.mockImplementationOnce(() => Promise.reject(new AriesFrameworkError('Something went wrong')))
       })
 
-      expect(poolService.getPoolForDid(did)).rejects.toThrowError(LedgerError)
+      await expect(poolService.getPoolForDid(did)).rejects.toThrowError(LedgerError)
     })
 
     it('should throw a LedgerNotFoundError if all pools did not find the did on the ledger', async () => {
@@ -111,7 +111,7 @@ describe('IndyLedgerService', () => {
         spy.mockImplementationOnce(responses[index])
       })
 
-      expect(poolService.getPoolForDid(did)).rejects.toThrowError(LedgerNotFoundError)
+      await expect(poolService.getPoolForDid(did)).rejects.toThrowError(LedgerNotFoundError)
     })
 
     it('should return the pool if the did was only found on one ledger', async () => {

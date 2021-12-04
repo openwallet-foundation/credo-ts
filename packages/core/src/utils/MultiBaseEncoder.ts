@@ -28,7 +28,7 @@ export class MultiBaseEncoder {
       const baseName = multibase.encodingFromData(data).name
       return { data: multibase.decode(data), baseName }
     }
-    throw new Error(`Invalid multibase: ${data}`)
+    throw new Error(`Invalid multibase: ${data.toString()}`)
   }
 
   /**

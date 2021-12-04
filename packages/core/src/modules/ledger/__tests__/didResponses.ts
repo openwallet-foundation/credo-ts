@@ -53,6 +53,7 @@ export function getDidResponsesForDid(
     }
 
     // LedgerNotFound
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     return () => Promise.reject(new IndyError(309))
   })
 }
