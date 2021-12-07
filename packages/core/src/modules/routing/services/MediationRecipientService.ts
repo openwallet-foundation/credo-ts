@@ -1,6 +1,7 @@
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ConnectionRecord } from '../../connections'
+import type { Routing } from '../../connections/services/ConnectionService'
 import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
 import type { MediationGrantMessage, MediationDenyMessage, KeylistUpdateResponseMessage } from '../messages'
 
@@ -154,7 +155,7 @@ export class MediationRecipientService {
     return keylistUpdateMessage
   }
 
-  public async getRouting(mediationRecord?: MediationRecord) {
+  public async getRouting(mediationRecord?: MediationRecord): Promise<Routing> {
     let endpoints = this.config.endpoints
     let routingKeys: string[] = []
 
@@ -168,7 +169,7 @@ export class MediationRecipientService {
     } else {
       // TODO: check that recipient keys are in wallet
     }
-    return { mediationRecord, endpoints, routingKeys, did, verkey }
+    return { endpoints, routingKeys, did, verkey, mediatorId: mediationRecord?.id }
   }
 
   public async saveRoute(recipientKey: string, mediationRecord: MediationRecord) {

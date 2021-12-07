@@ -123,7 +123,13 @@ describe('credentials', () => {
       createdAt: expect.any(Date),
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
-      metadata: { requestMetadata: expect.any(Object) },
+      metadata: {
+        data: {
+          '_internal/indyCredential': {
+            credentialDefinitionId: credDefId,
+          },
+        },
+      },
       credentialId: expect.any(String),
       state: CredentialState.Done,
       threadId: expect.any(String),
@@ -135,6 +141,13 @@ describe('credentials', () => {
       createdAt: expect.any(Date),
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
+      metadata: {
+        data: {
+          '_internal/indyCredential': {
+            credentialDefinitionId: credDefId,
+          },
+        },
+      },
       state: CredentialState.Done,
       threadId: expect.any(String),
     })
@@ -178,7 +191,13 @@ describe('credentials', () => {
       createdAt: expect.any(Date),
       offerMessage: expect.any(Object),
       requestMessage: expect.any(Object),
-      metadata: { requestMetadata: expect.any(Object) },
+      metadata: {
+        data: {
+          '_internal/indyCredential': {
+            credentialDefinitionId: credDefId,
+          },
+        },
+      },
       credentialId: expect.any(String),
       state: CredentialState.Done,
       threadId: expect.any(String),

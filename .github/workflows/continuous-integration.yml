@@ -52,7 +52,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x, 14.x, 16.2]
+        node-version: [12.x, 14.x, 16.x, 17.x]
 
     steps:
       - name: Checkout aries-framework-javascript
@@ -110,3 +110,23 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Get version number
+        id: get-version
+        run: |
+          COMMIT_NUMBER=$(git rev-list --count ${{ github.ref }})
+          PACKAGE_NUMBER=$((COMMIT_NUMBER-1))
+
+          echo alpha.$PACKAGE_NUMBER
+
+          echo "::set-output name=version::$PACKAGE_NUMBER"
+
+      - name: Setup git user
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Set git tag
+        run: |
+          git tag alpha.${{ steps.get-version.outputs.version }}
+          git push origin alpha.${{ steps.get-version.outputs.version }} --no-verify

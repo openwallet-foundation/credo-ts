@@ -15,6 +15,7 @@ import { DidCommMimeType } from '../types'
 
 export class AgentConfig {
   private initConfig: InitConfig
+  public label: string
   public logger: Logger
   public readonly agentDependencies: AgentDependencies
   public readonly fileSystem: FileSystem
@@ -24,6 +25,7 @@ export class AgentConfig {
 
   public constructor(initConfig: InitConfig, agentDependencies: AgentDependencies) {
     this.initConfig = initConfig
+    this.label = initConfig.label
     this.logger = initConfig.logger ?? new ConsoleLogger(LogLevel.off)
     this.agentDependencies = agentDependencies
     this.fileSystem = new agentDependencies.FileSystem()
@@ -38,24 +40,12 @@ export class AgentConfig {
     }
   }
 
-  public get label() {
-    return this.initConfig.label
-  }
-
   public get publicDidSeed() {
     return this.initConfig.publicDidSeed
   }
 
-  public get poolName() {
-    return this.initConfig.poolName ?? 'default-pool'
-  }
-
-  public get genesisPath() {
-    return this.initConfig.genesisPath
-  }
-
-  public get genesisTransactions() {
-    return this.initConfig.genesisTransactions
+  public get indyLedgers() {
+    return this.initConfig.indyLedgers ?? []
   }
 
   public get walletConfig() {
@@ -114,5 +104,9 @@ export class AgentConfig {
 
   public get useLegacyDidSovPrefix() {
     return this.initConfig.useLegacyDidSovPrefix ?? false
+  }
+
+  public get connectionImageUrl() {
+    return this.initConfig.connectionImageUrl
   }
 }

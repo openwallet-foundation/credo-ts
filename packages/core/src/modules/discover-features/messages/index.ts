@@ -1,2 +1,2 @@
-export * from './DiscoverFeaturesDiscloseMessage'
-export * from './DiscoverFeaturesQueryMessage'
+export * from './DiscloseMessage'
+export * from './QueryMessage'

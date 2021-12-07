@@ -47,6 +47,7 @@ class Dispatcher {
     } catch (error) {
       this.logger.error(`Error handling message with type ${message.type}`, {
         message: message.toJSON(),
+        error,
         senderVerkey: messageContext.senderVerkey,
         recipientVerkey: messageContext.recipientVerkey,
         connectionId: messageContext.connection?.id,
@@ -92,10 +93,28 @@ class Dispatcher {
     }
   }
 
+  /**
+   * Returns array of message types that dispatcher is able to handle.
+   * Message type format is MTURI specified at https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0003-protocols/README.md#mturi.
+   */
   public get supportedMessageTypes() {
     return this.handlers
       .reduce<typeof AgentMessage[]>((all, cur) => [...all, ...cur.supportedMessages], [])
       .map((m) => m.type)
+  }
+
+  /**
+   * Returns array of protocol IDs that dispatcher is able to handle.
+   * Protocol ID format is PIURI specified at https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0003-protocols/README.md#piuri.
+   */
+  public get supportedProtocols() {
+    return Array.from(new Set(this.supportedMessageTypes.map((m) => m.substring(0, m.lastIndexOf('/')))))
+  }
+
+  public filterSupportedProtocolsByMessageFamilies(messageFamilies: string[]) {
+    return this.supportedProtocols.filter((protocolId) =>
+      messageFamilies.find((messageFamily) => protocolId.startsWith(messageFamily))
+    )
   }
 }
 

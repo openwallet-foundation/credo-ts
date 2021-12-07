@@ -13,7 +13,7 @@ export interface TestRecordProps {
 export class TestRecord extends BaseRecord {
   public foo!: string
 
-  public constructor(props: TestRecordProps) {
+  public constructor(props?: TestRecordProps) {
     super()
 
     if (props) {

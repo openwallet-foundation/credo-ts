@@ -3,12 +3,12 @@ import type { MessageRepository } from '../../storage/MessageRepository'
 import type { OutboundTransport } from '../../transport'
 import type { OutboundMessage, WireMessage } from '../../types'
 
+import { TestMessage } from '../../../tests/TestMessage'
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../tests/helpers'
 import testLogger from '../../../tests/logger'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { DidCommService } from '../../modules/connections'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
-import { AgentMessage } from '../AgentMessage'
 import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { MessageSender } from '../MessageSender'
 import { TransportService } from '../TransportService'
@@ -51,7 +51,7 @@ describe('MessageSender', () => {
   const enveloperService = new EnvelopeService()
   const envelopeServicePackMessageMock = mockFunction(enveloperService.packMessage)
 
-  const inboundMessage = new AgentMessage()
+  const inboundMessage = new TestMessage()
   inboundMessage.setReturnRouting(ReturnRouteTypes.all)
 
   const session = new DummyTransportSession('session-123')
@@ -98,7 +98,7 @@ describe('MessageSender', () => {
       messageSender = new MessageSender(enveloperService, transportService, messageRepository, logger)
       connection = getMockConnection({ id: 'test-123', theirLabel: 'Test 123' })
 
-      outboundMessage = createOutboundMessage(connection, new AgentMessage())
+      outboundMessage = createOutboundMessage(connection, new TestMessage())
 
       envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(wireMessage))
       transportServiceFindServicesMock.mockReturnValue([firstDidCommService, secondDidCommService])
@@ -225,7 +225,7 @@ describe('MessageSender', () => {
     test('throws error when there is no outbound transport', async () => {
       await expect(
         messageSender.sendMessageToService({
-          message: new AgentMessage(),
+          message: new TestMessage(),
           senderKey,
           service,
         })
@@ -237,7 +237,7 @@ describe('MessageSender', () => {
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
 
       await messageSender.sendMessageToService({
-        message: new AgentMessage(),
+        message: new TestMessage(),
         senderKey,
         service,
       })
@@ -254,7 +254,7 @@ describe('MessageSender', () => {
       messageSender.registerOutboundTransport(outboundTransport)
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
 
-      const message = new AgentMessage()
+      const message = new TestMessage()
       message.setReturnRouting(ReturnRouteTypes.all)
 
       await messageSender.sendMessageToService({
@@ -287,7 +287,7 @@ describe('MessageSender', () => {
     })
 
     test('return outbound message context with connection, payload and endpoint', async () => {
-      const message = new AgentMessage()
+      const message = new TestMessage()
       const endpoint = 'https://example.com'
 
       const keys = {

@@ -1,6 +1,6 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { StorageService } from '../../../storage/StorageService'
-import type { BasicMessageReceivedEvent } from '../BasicMessageEvents'
+import type { BasicMessageStateChangedEvent } from '../BasicMessageEvents'
 
 import { getAgentConfig, getMockConnection } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -50,7 +50,7 @@ describe('BasicMessageService', () => {
 
     it(`emits newMessage with message and basic message record`, async () => {
       const eventListenerMock = jest.fn()
-      eventEmitter.on<BasicMessageReceivedEvent>(BasicMessageEventTypes.BasicMessageReceived, eventListenerMock)
+      eventEmitter.on<BasicMessageStateChangedEvent>(BasicMessageEventTypes.BasicMessageStateChanged, eventListenerMock)
 
       const basicMessage = new BasicMessage({
         id: '123',
@@ -65,7 +65,7 @@ describe('BasicMessageService', () => {
       await basicMessageService.save(messageContext, mockConnectionRecord)
 
       expect(eventListenerMock).toHaveBeenCalledWith({
-        type: 'BasicMessageReceived',
+        type: 'BasicMessageStateChanged',
         payload: {
           basicMessageRecord: expect.objectContaining({
             connectionId: mockConnectionRecord.id,

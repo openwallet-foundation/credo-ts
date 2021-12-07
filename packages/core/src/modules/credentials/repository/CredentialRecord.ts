@@ -9,19 +9,13 @@ import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 import {
-  ProposeCredentialMessage,
-  IssueCredentialMessage,
-  RequestCredentialMessage,
-  OfferCredentialMessage,
   CredentialPreviewAttribute,
+  IssueCredentialMessage,
+  OfferCredentialMessage,
+  ProposeCredentialMessage,
+  RequestCredentialMessage,
 } from '../messages'
 import { CredentialInfo } from '../models/CredentialInfo'
-
-export interface CredentialRecordMetadata {
-  requestMetadata?: Record<string, unknown>
-  credentialDefinitionId?: string
-  schemaId?: string
-}
 
 export interface CredentialRecordProps {
   id?: string
@@ -31,7 +25,6 @@ export interface CredentialRecordProps {
   threadId: string
 
   credentialId?: string
-  metadata?: CredentialRecordMetadata
   tags?: CustomCredentialTags
   proposalMessage?: ProposeCredentialMessage
   offerMessage?: OfferCredentialMessage
@@ -55,7 +48,6 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
   public threadId!: string
   public credentialId?: string
   public state!: CredentialState
-  public metadata!: CredentialRecordMetadata
   public autoAcceptCredential?: AutoAcceptCredential
 
   // message data
@@ -85,7 +77,6 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       this.createdAt = props.createdAt ?? new Date()
       this.state = props.state
       this.connectionId = props.connectionId
-      this.metadata = props.metadata ?? {}
       this.credentialId = props.credentialId
       this.threadId = props.threadId
       this._tags = props.tags ?? {}
@@ -124,10 +115,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
     return new CredentialInfo({
       claims,
       attachments: this.linkedAttachments,
-      metadata: {
-        credentialDefinitionId: this.metadata.credentialDefinitionId,
-        schemaId: this.metadata.schemaId,
-      },
+      metadata: this.metadata.getAll(),
     })
   }
 

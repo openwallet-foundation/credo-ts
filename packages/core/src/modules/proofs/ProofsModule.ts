@@ -271,6 +271,17 @@ export class ProofsModule {
   }
 
   /**
+   * Declines a proof request as holder
+   * @param proofRecordId the id of the proof request to be declined
+   * @returns proof record that was declined
+   */
+  public async declineRequest(proofRecordId: string) {
+    const proofRecord = await this.proofService.getById(proofRecordId)
+    await this.proofService.declineRequest(proofRecord)
+    return proofRecord
+  }
+
+  /**
    * Accept a presentation as prover (by sending a presentation acknowledgement message) to the connection
    * associated with the proof record.
    *
@@ -317,11 +328,13 @@ export class ProofsModule {
    * If restrictions allow, self attested attributes will be used.
    *
    *
+/TODO REVOCATION:
+//<<<<<<< HEAD
    * @param proofRequest The proof request to build the requested credentials object from
    * @param presentationPreview Optional presentation preview and proposal to improve credential selection algorithm
    * @returns RetrievedCredentials object
    */
-  public async getRequestedCredentialsForProofRequest(
+  /*public async getRequestedCredentialsForProofRequest(
     proofRequest: ProofRequest,
     config: {
       presentationPreview?: PresentationPreview
@@ -329,6 +342,31 @@ export class ProofsModule {
     } = {}
   ): Promise<RetrievedCredentials> {
     return this.proofService.getRequestedCredentialsForProofRequest(proofRequest, config)
+//=======
+   * @param proofRecordId the id of the proof request to get the matching credentials for
+   * @param config optional configuration for credential selection process. Use `filterByPresentationPreview` (default `true`) to only include
+   *  credentials that match the presentation preview from the presentation proposal (if available).
+
+   * @returns RetrievedCredentials object
+   */
+  public async getRequestedCredentialsForProofRequest(
+    proofRecordId: string,
+    config?: GetRequestedCredentialsConfig
+  ): Promise<RetrievedCredentials> {
+    const proofRecord = await this.proofService.getById(proofRecordId)
+
+    const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
+    const presentationPreview = config?.filterByPresentationPreview
+      ? proofRecord.proposalMessage?.presentationProposal
+      : undefined
+
+    if (!indyProofRequest) {
+      throw new AriesFrameworkError(
+        'Unable to get requested credentials for proof request. No proof request message was found or the proof request message does not contain an indy proof request.'
+      )
+    }
+
+    return this.proofService.getRequestedCredentialsForProofRequest(indyProofRequest, presentationPreview)
   }
 
   /**
@@ -413,4 +451,13 @@ export type CreateProofRequestOptions = Partial<
 export interface ProofRequestConfig {
   comment?: string
   autoAcceptProof?: AutoAcceptProof
+}
+
+export interface GetRequestedCredentialsConfig {
+  /**
+   * Whether to filter the retrieved credentials using the presentation preview.
+   * This configuration will only have effect if a presentation proposal message is available
+   * containing a presentation preview.
+   */
+  filterByPresentationPreview?: boolean
 }

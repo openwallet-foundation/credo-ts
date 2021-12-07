@@ -12,6 +12,7 @@ import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
 import { MessageRepository } from '../storage/MessageRepository'
+import { MessageValidator } from '../utils/MessageValidator'
 
 import { EnvelopeService } from './EnvelopeService'
 import { TransportService } from './TransportService'
@@ -85,6 +86,8 @@ export class MessageSender {
     packedMessage: WireMessage
     options?: { transportPriority?: TransportPriorityOptions }
   }) {
+    const errors: Error[] = []
+
     // Try to send to already open session
     const session = this.transportService.findSessionByConnectionId(connection.id)
     if (session?.inboundMessage?.hasReturnRouting()) {
@@ -92,7 +95,8 @@ export class MessageSender {
         await session.send(packedMessage)
         return
       } catch (error) {
-        this.logger.info(`Sending packed message via session failed with error: ${error.message}.`, error)
+        errors.push(error)
+        this.logger.debug(`Sending packed message via session failed with error: ${error.message}.`, error)
       }
     }
 
@@ -140,6 +144,7 @@ export class MessageSender {
     // Message is undeliverable
     this.logger.error(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`, {
       message: packedMessage,
+      errors,
       connection,
     })
     throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
@@ -152,6 +157,7 @@ export class MessageSender {
     }
   ) {
     const { connection, payload } = outboundMessage
+    const errors: Error[] = []
 
     this.logger.debug('Send outbound message', {
       message: payload,
@@ -166,7 +172,8 @@ export class MessageSender {
         await this.sendMessageToSession(session, payload)
         return
       } catch (error) {
-        this.logger.info(`Sending an outbound message via session failed with error: ${error.message}.`, error)
+        errors.push(error)
+        this.logger.debug(`Sending an outbound message via session failed with error: ${error.message}.`, error)
       }
     }
 
@@ -188,6 +195,7 @@ export class MessageSender {
         })
         return
       } catch (error) {
+        errors.push(error)
         this.logger.debug(
           `Sending outbound message to service with id ${service.id} failed with the following error:`,
           {
@@ -217,6 +225,7 @@ export class MessageSender {
     // Message is undeliverable
     this.logger.error(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`, {
       message: payload,
+      errors,
       connection,
     })
     throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
@@ -250,6 +259,20 @@ export class MessageSender {
     // Set return routing for message if requested
     if (returnRoute) {
       message.setReturnRouting(ReturnRouteTypes.all)
+    }
+
+    try {
+      await MessageValidator.validate(message)
+    } catch (error) {
+      this.logger.error(
+        `Aborting sending outbound message ${message.type} to ${service.serviceEndpoint}. Message validation failed`,
+        {
+          errors: error,
+          message: message.toJSON(),
+        }
+      )
+
+      throw error
     }
 
     const outboundPackage = await this.packMessage({ message, keys, endpoint: service.serviceEndpoint })

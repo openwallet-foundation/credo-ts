@@ -94,6 +94,21 @@ describe('Agent', () => {
     })
   })
 
+  describe('Change label', () => {
+    let agent: Agent
+
+    it('should return new label after setter is called', async () => {
+      expect.assertions(2)
+      const newLabel = 'Agent: Agent Class Test 2'
+
+      agent = new Agent(config, dependencies)
+      expect(agent.config.label).toBe(config.label)
+
+      agent.config.label = newLabel
+      expect(agent.config.label).toBe(newLabel)
+    })
+  })
+
   describe('Dependency Injection', () => {
     it('should be able to resolve registered instances', () => {
       const agent = new Agent(config, dependencies)

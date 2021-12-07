@@ -3,6 +3,24 @@
 import { BaseLogger } from './BaseLogger'
 import { LogLevel } from './Logger'
 
+/*
+ * The replacer parameter allows you to specify a function that replaces values with your own. We can use it to control what gets stringified.
+ */
+function replaceError(_: unknown, value: unknown) {
+  if (value instanceof Error) {
+    const newValue = Object.getOwnPropertyNames(value).reduce(
+      (obj, propName) => {
+        obj[propName] = (value as unknown as Record<string, unknown>)[propName]
+        return obj
+      },
+      { name: value.name } as Record<string, unknown>
+    )
+    return newValue
+  }
+
+  return value
+}
+
 export class ConsoleLogger extends BaseLogger {
   // Map our log levels to console levels
   private consoleLogMap = {
@@ -27,7 +45,7 @@ export class ConsoleLogger extends BaseLogger {
 
     // Log, with or without data
     if (data) {
-      console[consoleLevel](`${prefix}: ${message}`, JSON.stringify(data, null, 2))
+      console[consoleLevel](`${prefix}: ${message}`, JSON.stringify(data, replaceError, 2))
     } else {
       console[consoleLevel](`${prefix}: ${message}`)
     }

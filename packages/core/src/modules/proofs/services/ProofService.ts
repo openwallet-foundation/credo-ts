@@ -166,6 +166,18 @@ export class ProofService {
   }
 
   /**
+   * Decline a proof request
+   * @param proofRecord The proof request to be declined
+   */
+  public async declineRequest(proofRecord: ProofRecord): Promise<ProofRecord> {
+    proofRecord.assertState(ProofState.RequestReceived)
+
+    await this.updateState(proofRecord, ProofState.Declined)
+
+    return proofRecord
+  }
+
+  /**
    * Process a received {@link ProposePresentationMessage}. This will not accept the presentation proposal
    * or send a presentation request. It will only create a new, or update the existing proof record with
    * the information from the presentation proposal message. Use {@link ProofService.createRequestAsResponse}
@@ -613,7 +625,7 @@ export class ProofService {
         ],
       })
 
-      proofRequest.requestedAttributes[referent] = requestedAttribute
+      proofRequest.requestedAttributes.set(referent, requestedAttribute)
     }
 
     this.logger.debug('proposal predicates', presentationProposal.predicates)
@@ -630,7 +642,7 @@ export class ProofService {
         ],
       })
 
-      proofRequest.requestedPredicates[uuid()] = requestedPredicate
+      proofRequest.requestedPredicates.set(uuid(), requestedPredicate)
     }
 
     return proofRequest
@@ -653,7 +665,7 @@ export class ProofService {
     // Get the credentialIds if it contains a hashlink
     for (const [referent, requestedAttribute] of Object.entries(requestedCredentials.requestedAttributes)) {
       // Find the requested Attributes
-      const requestedAttributes = indyProofRequest.requestedAttributes[referent]
+      const requestedAttributes = indyProofRequest.requestedAttributes.get(referent) as ProofAttributeInfo
 
       // List the requested attributes
       requestedAttributesNames.push(...(requestedAttributes.names ?? [requestedAttributes.name]))
@@ -718,7 +730,7 @@ export class ProofService {
   ): Promise<RetrievedCredentials> {
     const retrievedCredentials = new RetrievedCredentials({})
 
-    for (const [referent, requestedAttribute] of Object.entries(proofRequest.requestedAttributes)) {
+    for (const [referent, requestedAttribute] of proofRequest.requestedAttributes.entries()) {
       let credentialMatch: Credential[] = []
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
@@ -756,7 +768,7 @@ export class ProofService {
       })
     }
 
-    for (const [referent] of Object.entries(proofRequest.requestedPredicates)) {
+    for (const [referent] of proofRequest.requestedPredicates.entries()) {
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
       retrievedCredentials.requestedPredicates[referent] = credentials.map((credential) => {

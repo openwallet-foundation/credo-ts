@@ -15,19 +15,25 @@ describe('CredentialRecord', () => {
             value: '25',
           }),
         ],
-        metadata: {
-          credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
-          schemaId: 'TL1EaPFCZ8Si5aUrqScBDt:2:test-schema-1599055118161:1.0',
-        },
+      })
+
+      credentialRecord.metadata.set('_internal/indyCredential', {
+        credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
+        schemaId: 'TL1EaPFCZ8Si5aUrqScBDt:2:test-schema-1599055118161:1.0',
       })
 
       const credentialInfo = credentialRecord.getCredentialInfo()
-      expect(credentialInfo?.claims).toEqual({
-        age: '25',
-      })
-      expect(credentialInfo?.metadata).toEqual({
-        credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
-        schemaId: 'TL1EaPFCZ8Si5aUrqScBDt:2:test-schema-1599055118161:1.0',
+
+      expect(credentialInfo).toEqual({
+        claims: {
+          age: '25',
+        },
+        metadata: {
+          '_internal/indyCredential': {
+            credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
+            schemaId: 'TL1EaPFCZ8Si5aUrqScBDt:2:test-schema-1599055118161:1.0',
+          },
+        },
       })
     })
   })

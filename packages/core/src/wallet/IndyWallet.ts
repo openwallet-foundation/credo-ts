@@ -44,7 +44,9 @@ export class IndyWallet implements Wallet {
 
   public get handle() {
     if (!this.isInitialized || !this.openWalletInfo) {
-      throw new AriesFrameworkError('Wallet has not been initialized yet')
+      throw new AriesFrameworkError(
+        'Wallet has not been initialized yet. Make sure to await agent.initialize() before using the agent.'
+      )
     }
 
     return this.openWalletInfo.walletHandle
@@ -52,7 +54,9 @@ export class IndyWallet implements Wallet {
 
   public get masterSecretId() {
     if (!this.isInitialized || !this.openWalletInfo) {
-      throw new AriesFrameworkError('Wallet has not been initialized yet')
+      throw new AriesFrameworkError(
+        'Wallet has not been initialized yet. Make sure to await agent.initialize() before using the agent.'
+      )
     }
 
     return this.openWalletInfo.masterSecretId

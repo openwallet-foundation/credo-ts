@@ -1,5 +1,10 @@
+import type { ValidationOptions } from 'class-validator'
+
 import { Transform, TransformationType } from 'class-transformer'
+import { ValidateBy, buildMessage } from 'class-validator'
 import { DateTime } from 'luxon'
+
+import { Metadata } from '../storage/Metadata'
 
 import { JsonTransformer } from './JsonTransformer'
 
@@ -39,6 +44,38 @@ export function RecordTransformer<T>(Class: { new (...args: any[]): T }) {
     }
   })
 }
+
+/*
+ * Decorator that transforms to and from a metadata instance.
+ *
+ * @todo remove the conversion at 0.1.0 release via a migration script
+ */
+export function MetadataTransformer() {
+  return Transform(({ value, type }) => {
+    if (type === TransformationType.CLASS_TO_PLAIN) {
+      return { ...value.data }
+    }
+
+    if (type === TransformationType.PLAIN_TO_CLASS) {
+      const { requestMetadata, schemaId, credentialDefinitionId, ...rest } = value
+      const metadata = new Metadata(rest)
+
+      if (requestMetadata) metadata.add('_internal/indyRequest', { ...value.requestMetadata })
+
+      if (schemaId) metadata.add('_internal/indyCredential', { schemaId: value.schemaId })
+
+      if (credentialDefinitionId)
+        metadata.add('_internal/indyCredential', { credentialDefinitionId: value.credentialDefinitionId })
+
+      return metadata
+    }
+
+    if (type === TransformationType.CLASS_TO_CLASS) {
+      return value
+    }
+  })
+}
+
 /*
  * Function that parses date from multiple formats
  * including SQL formats.
@@ -54,4 +91,20 @@ export function DateParser(value: string): Date {
     return new Date(luxonDate.toString())
   }
   return new Date()
+}
+
+/**
+ * Checks if a given value is a Map
+ */
+export function IsMap(validationOptions?: ValidationOptions): PropertyDecorator {
+  return ValidateBy(
+    {
+      name: 'isMap',
+      validator: {
+        validate: (value: unknown): boolean => value instanceof Map,
+        defaultMessage: buildMessage((eachPrefix) => eachPrefix + '$property must be a Map', validationOptions),
+      },
+    },
+    validationOptions
+  )
 }

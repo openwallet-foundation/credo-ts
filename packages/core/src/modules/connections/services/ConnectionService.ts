@@ -69,6 +69,8 @@ export class ConnectionService {
     autoAcceptConnection?: boolean
     alias?: string
     multiUseInvitation?: boolean
+    myLabel?: string
+    myImageUrl?: string
   }): Promise<ConnectionProtocolMsgReturnType<ConnectionInvitationMessage>> {
     // TODO: public did
     const connectionRecord = await this.createConnection({
@@ -83,10 +85,11 @@ export class ConnectionService {
     const { didDoc } = connectionRecord
     const [service] = didDoc.didCommServices
     const invitation = new ConnectionInvitationMessage({
-      label: this.config.label,
+      label: config?.myLabel ?? this.config.label,
       recipientKeys: service.recipientKeys,
       serviceEndpoint: service.serviceEndpoint,
       routingKeys: service.routingKeys,
+      imageUrl: config?.myImageUrl ?? this.config.connectionImageUrl,
     })
 
     connectionRecord.invitation = invitation
@@ -129,6 +132,7 @@ export class ConnectionService {
       autoAcceptConnection: config?.autoAcceptConnection,
       routing: config.routing,
       invitation,
+      imageUrl: invitation.imageUrl,
       tags: {
         invitationKey: invitation.recipientKeys && invitation.recipientKeys[0],
       },
@@ -150,18 +154,26 @@ export class ConnectionService {
    * Create a connection request message for the connection with the specified connection id.
    *
    * @param connectionId the id of the connection for which to create a connection request
+   * @param config config for creation of connection request
    * @returns outbound message containing connection request
    */
-  public async createRequest(connectionId: string): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
+  public async createRequest(
+    connectionId: string,
+    config?: {
+      myLabel?: string
+      myImageUrl?: string
+    }
+  ): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
     const connectionRecord = await this.connectionRepository.getById(connectionId)
 
     connectionRecord.assertState(ConnectionState.Invited)
     connectionRecord.assertRole(ConnectionRole.Invitee)
 
     const connectionRequest = new ConnectionRequestMessage({
-      label: this.config.label,
+      label: config?.myLabel ?? this.config.label,
       did: connectionRecord.did,
       didDoc: connectionRecord.didDoc,
+      imageUrl: config?.myImageUrl ?? this.config.connectionImageUrl,
     })
 
     await this.updateState(connectionRecord, ConnectionState.Requested)
@@ -227,6 +239,7 @@ export class ConnectionService {
     connectionRecord.theirLabel = message.label
     connectionRecord.threadId = message.id
     connectionRecord.theirDid = message.connection.did
+    connectionRecord.imageUrl = message.imageUrl
 
     if (!connectionRecord.theirKey) {
       throw new AriesFrameworkError(`Connection with id ${connectionRecord.id} has no recipient keys.`)
@@ -337,19 +350,25 @@ export class ConnectionService {
   /**
    * Create a trust ping message for the connection with the specified connection id.
    *
+   * By default a trust ping message should elicit a response. If this is not desired the
+   * `config.responseRequested` property can be set to `false`.
+   *
    * @param connectionId the id of the connection for which to create a trust ping message
+   * @param config the config for the trust ping message
    * @returns outbound message containing trust ping message
    */
-  public async createTrustPing(connectionId: string): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
+  public async createTrustPing(
+    connectionId: string,
+    config: { responseRequested?: boolean; comment?: string } = {}
+  ): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
     const connectionRecord = await this.connectionRepository.getById(connectionId)
 
     connectionRecord.assertState([ConnectionState.Responded, ConnectionState.Complete])
 
     // TODO:
     //  - create ack message
-    //  - allow for options
     //  - maybe this shouldn't be in the connection service?
-    const trustPing = new TrustPingMessage({})
+    const trustPing = new TrustPingMessage(config)
 
     await this.updateState(connectionRecord, ConnectionState.Complete)
 
@@ -455,8 +474,8 @@ export class ConnectionService {
       }
 
       // If message is received unpacked/, we need to make sure it included a ~service decorator
-      if (!message.service && (!messageContext.senderVerkey || !messageContext.recipientVerkey)) {
-        throw new AriesFrameworkError('Message without senderKey and recipientKey must have ~service decorator')
+      if (!message.service && !messageContext.recipientVerkey) {
+        throw new AriesFrameworkError('Message recipientKey must have ~service decorator')
       }
     }
   }
@@ -577,8 +596,9 @@ export class ConnectionService {
     autoAcceptConnection?: boolean
     multiUseInvitation: boolean
     tags?: CustomConnectionTags
+    imageUrl?: string
   }): Promise<ConnectionRecord> {
-    const { endpoints, did, verkey, routingKeys } = options.routing
+    const { endpoints, did, verkey, routingKeys, mediatorId } = options.routing
 
     const publicKey = new Ed25119Sig2018({
       id: `${did}#1`,
@@ -621,7 +641,9 @@ export class ConnectionService {
       alias: options.alias,
       theirLabel: options.theirLabel,
       autoAcceptConnection: options.autoAcceptConnection,
+      imageUrl: options.imageUrl,
       multiUseInvitation: options.multiUseInvitation,
+      mediatorId,
     })
 
     await this.connectionRepository.save(connectionRecord)
@@ -660,6 +682,7 @@ export interface Routing {
   verkey: string
   did: string
   routingKeys: string[]
+  mediatorId?: string
 }
 
 export interface ConnectionProtocolMsgReturnType<MessageType extends AgentMessage> {

@@ -1,6 +1,6 @@
 import type { ClassConstructor } from 'class-transformer'
 
-import { Transform, plainToClass } from 'class-transformer'
+import { Transform, plainToInstance } from 'class-transformer'
 
 import { Ed25119Sig2018 } from './Ed25119Sig2018'
 import { EddsaSaSigSecp256k1 } from './EddsaSaSigSecp256k1'
@@ -27,7 +27,7 @@ export function PublicKeyTransformer() {
     ({ value }: { value: { type: string }[] }) => {
       return value.map((publicKeyJson) => {
         const publicKeyClass = (publicKeyTypes[publicKeyJson.type] ?? PublicKey) as ClassConstructor<PublicKey>
-        const publicKey = plainToClass<PublicKey, unknown>(publicKeyClass, publicKeyJson)
+        const publicKey = plainToInstance<PublicKey, unknown>(publicKeyClass, publicKeyJson)
 
         return publicKey
       })

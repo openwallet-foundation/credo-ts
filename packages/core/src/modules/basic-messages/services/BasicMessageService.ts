@@ -1,13 +1,11 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { OutboundMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
-import type { BasicMessageReceivedEvent } from '../BasicMessageEvents'
+import type { BasicMessageStateChangedEvent } from '../BasicMessageEvents'
 import type { BasicMessageTags } from '../repository'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { createOutboundMessage } from '../../../agent/helpers'
 import { BasicMessageEventTypes } from '../BasicMessageEvents'
 import { BasicMessageRole } from '../BasicMessageRole'
 import { BasicMessage } from '../messages'
@@ -23,21 +21,24 @@ export class BasicMessageService {
     this.eventEmitter = eventEmitter
   }
 
-  public async send(message: string, connection: ConnectionRecord): Promise<OutboundMessage<BasicMessage>> {
-    const basicMessage = new BasicMessage({
-      content: message,
-    })
+  public async createMessage(message: string, connectionRecord: ConnectionRecord) {
+    const basicMessage = new BasicMessage({ content: message })
 
     const basicMessageRecord = new BasicMessageRecord({
       id: basicMessage.id,
       sentTime: basicMessage.sentTime.toISOString(),
       content: basicMessage.content,
-      connectionId: connection.id,
+      connectionId: connectionRecord.id,
       role: BasicMessageRole.Sender,
     })
 
     await this.basicMessageRepository.save(basicMessageRecord)
-    return createOutboundMessage(connection, basicMessage)
+    this.eventEmitter.emit<BasicMessageStateChangedEvent>({
+      type: BasicMessageEventTypes.BasicMessageStateChanged,
+      payload: { message: basicMessage, basicMessageRecord },
+    })
+
+    return basicMessage
   }
 
   /**
@@ -53,8 +54,8 @@ export class BasicMessageService {
     })
 
     await this.basicMessageRepository.save(basicMessageRecord)
-    this.eventEmitter.emit<BasicMessageReceivedEvent>({
-      type: BasicMessageEventTypes.BasicMessageReceived,
+    this.eventEmitter.emit<BasicMessageStateChangedEvent>({
+      type: BasicMessageEventTypes.BasicMessageStateChanged,
       payload: { message, basicMessageRecord },
     })
   }

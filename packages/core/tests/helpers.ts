@@ -2,7 +2,7 @@ import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTran
 import type {
   AutoAcceptProof,
   BasicMessage,
-  BasicMessageReceivedEvent,
+  BasicMessageStateChangedEvent,
   ConnectionRecordProps,
   CredentialDefinitionTemplate,
   CredentialOfferTemplate,
@@ -67,8 +67,13 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
     },
     publicDidSeed,
     autoAcceptConnections: true,
-    genesisPath,
-    poolName: `pool-${name.toLowerCase()}`,
+    indyLedgers: [
+      {
+        id: `pool-${name}`,
+        isProduction: false,
+        genesisPath,
+      },
+    ],
     logger: new TestLogger(LogLevel.error, name),
     ...extraConfig,
   }
@@ -179,17 +184,17 @@ export async function waitForCredentialRecord(
 
 export async function waitForBasicMessage(agent: Agent, { content }: { content?: string }): Promise<BasicMessage> {
   return new Promise((resolve) => {
-    const listener = (event: BasicMessageReceivedEvent) => {
+    const listener = (event: BasicMessageStateChangedEvent) => {
       const contentMatches = content === undefined || event.payload.message.content === content
 
       if (contentMatches) {
-        agent.events.off<BasicMessageReceivedEvent>(BasicMessageEventTypes.BasicMessageReceived, listener)
+        agent.events.off<BasicMessageStateChangedEvent>(BasicMessageEventTypes.BasicMessageStateChanged, listener)
 
         resolve(event.payload.message)
       }
     }
 
-    agent.events.on<BasicMessageReceivedEvent>(BasicMessageEventTypes.BasicMessageReceived, listener)
+    agent.events.on<BasicMessageStateChangedEvent>(BasicMessageEventTypes.BasicMessageStateChanged, listener)
   })
 }
 
@@ -464,11 +469,7 @@ export async function presentProof({
     state: ProofState.RequestReceived,
   })
 
-  const indyProofRequest = holderRecord.requestMessage?.indyProofRequest
-  if (!indyProofRequest) {
-    throw new Error('indyProofRequest missing')
-  }
-  const retrievedCredentials = await holderAgent.proofs.getRequestedCredentialsForProofRequest(indyProofRequest)
+  const retrievedCredentials = await holderAgent.proofs.getRequestedCredentialsForProofRequest(holderRecord.id)
   const requestedCredentials = holderAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
   await holderAgent.proofs.acceptRequest(holderRecord.id, requestedCredentials)
 
@@ -516,13 +517,11 @@ export async function setupCredentialTests(
     'rxjs:alice': aliceMessages,
   }
   const faberConfig = getBaseConfig(faberName, {
-    genesisPath,
     endpoints: ['rxjs:faber'],
     autoAcceptCredentials,
   })
 
   const aliceConfig = getBaseConfig(aliceName, {
-    genesisPath,
     endpoints: ['rxjs:alice'],
     autoAcceptCredentials,
   })
@@ -555,13 +554,11 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
   const unique = uuid().substring(0, 4)
 
   const faberConfig = getBaseConfig(`${faberName}-${unique}`, {
-    genesisPath,
     autoAcceptProofs,
     endpoints: ['rxjs:faber'],
   })
 
   const aliceConfig = getBaseConfig(`${aliceName}-${unique}`, {
-    genesisPath,
     autoAcceptProofs,
     endpoints: ['rxjs:alice'],
   })
