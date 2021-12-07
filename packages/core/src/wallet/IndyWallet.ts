@@ -14,15 +14,10 @@ import { isIndyError } from '../utils/indyError'
 import { WalletDuplicateError, WalletNotFoundError, WalletError } from './error'
 import { WalletInvalidKeyError } from './error/WalletInvalidKeyError'
 
-export interface IndyOpenWallet {
-  walletHandle: number
-  masterSecretId: string
-}
-
 @scoped(Lifecycle.ContainerScoped)
 export class IndyWallet implements Wallet {
-  private openWalletInfo?: IndyOpenWallet
   private walletConfig?: WalletConfig
+  private walletHandle?: number
 
   private logger: Logger
   private publicDidInfo: DidInfo | undefined
@@ -38,7 +33,7 @@ export class IndyWallet implements Wallet {
   }
 
   public get isInitialized() {
-    return this.openWalletInfo !== undefined
+    return this.walletHandle !== undefined
   }
 
   public get publicDid() {
@@ -46,23 +41,23 @@ export class IndyWallet implements Wallet {
   }
 
   public get handle() {
-    if (!this.isInitialized || !this.openWalletInfo?.walletHandle) {
+    if (!this.walletHandle) {
       throw new AriesFrameworkError(
         'Wallet has not been initialized yet. Make sure to await agent.initialize() before using the agent.'
       )
     }
 
-    return this.openWalletInfo.walletHandle
+    return this.walletHandle
   }
 
   public get masterSecretId() {
-    if (!this.isInitialized || !this.openWalletInfo?.masterSecretId) {
+    if (!this.isInitialized || !this.walletConfig?.id) {
       throw new AriesFrameworkError(
         'Wallet has not been initialized yet. Make sure to await agent.initialize() before using the agent.'
       )
     }
 
-    return this.openWalletInfo.masterSecretId
+    return this.walletConfig.id
   }
 
   public async initialize(walletConfig: WalletConfig) {
@@ -104,6 +99,15 @@ export class IndyWallet implements Wallet {
         id: walletConfig.id,
         key: walletConfig.key,
       }
+
+      // We usually want to create master secret only once, therefore, we can to do so when creating a wallet.
+      await this.open(walletConfig)
+
+      // We need to open wallet before creating master secret because we need wallet handle here.
+      await this.createMasterSecret(this.handle, walletConfig.id)
+
+      // We opened wallet just to create master secret, we can close it now.
+      await this.close()
     } catch (error) {
       if (isIndyError(error, 'WalletAlreadyExistsError')) {
         const errorMessage = `Wallet '${walletConfig.id}' already exists`
@@ -130,24 +134,17 @@ export class IndyWallet implements Wallet {
    * @throws {WalletError} if another error occurs
    */
   public async open(walletConfig: WalletConfig): Promise<void> {
-    if (this.openWalletInfo?.walletHandle) {
+    if (this.walletHandle) {
       throw new WalletError(
         'Wallet instance already opened. Close the currently opened wallet before re-opening the wallet'
       )
     }
 
     try {
-      const walletHandle = await this.indy.openWallet({ id: walletConfig.id }, { key: walletConfig.key })
-      const masterSecretId = await this.createMasterSecret(walletHandle, walletConfig.id)
-
+      this.walletHandle = await this.indy.openWallet({ id: walletConfig.id }, { key: walletConfig.key })
       this.walletConfig = {
         id: walletConfig.id,
         key: walletConfig.key,
-      }
-
-      this.openWalletInfo = {
-        walletHandle,
-        masterSecretId,
       }
     } catch (error) {
       if (isIndyError(error, 'WalletNotFoundError')) {
@@ -190,7 +187,7 @@ export class IndyWallet implements Wallet {
 
     this.logger.info(`Deleting wallet '${this.walletConfig.id}'`)
 
-    if (this.openWalletInfo?.walletHandle) {
+    if (this.walletHandle) {
       await this.close()
     }
 
@@ -222,9 +219,9 @@ export class IndyWallet implements Wallet {
    */
   public async close(): Promise<void> {
     try {
-      await this.indy.closeWallet(this.handle)
-      if (this.openWalletInfo) {
-        this.openWalletInfo = undefined
+      if (this.walletHandle) {
+        await this.indy.closeWallet(this.walletHandle)
+        this.walletHandle = undefined
       }
       this.publicDidInfo = undefined
     } catch (error) {

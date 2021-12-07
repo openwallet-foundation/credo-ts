@@ -6,7 +6,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 
-import { waitForBasicMessage, getBaseConfig } from './helpers'
+import { getBaseConfig } from './helpers'
 
 import { WalletDuplicateError, WalletInvalidKeyError, WalletNotFoundError } from '@aries-framework/core'
 
@@ -14,7 +14,7 @@ const aliceConfig = getBaseConfig('wallet-tests-Alice', {
   endpoints: ['rxjs:alice'],
 })
 
-describe('===wallet', () => {
+describe('wallet', () => {
   let aliceAgent: Agent
 
   beforeEach(async () => {
