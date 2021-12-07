@@ -563,7 +563,7 @@ describe('CredentialService', () => {
         '~please_ack': expect.any(Object),
       })
 
-      // We're using instance of `StubWallet`. Value of `cred` should be as same as in the credential response message.
+      // Value of `cred` should be as same as in the credential response message.
       const [cred] = await indyIssuerService.createCredential({
         credentialOffer: credOffer,
         credentialRequest: credReq,
