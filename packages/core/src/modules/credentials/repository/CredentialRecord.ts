@@ -16,6 +16,7 @@ import {
   RequestCredentialMessage,
 } from '../messages'
 import { CredentialInfo } from '../models/CredentialInfo'
+import { RevocationNotification } from '@aries-framework/core'
 
 export interface CredentialRecordProps {
   id?: string
@@ -33,6 +34,7 @@ export interface CredentialRecordProps {
   credentialAttributes?: CredentialPreviewAttribute[]
   autoAcceptCredential?: AutoAcceptCredential
   linkedAttachments?: Attachment[]
+  revocationNotification?: RevocationNotification
 }
 
 export type CustomCredentialTags = TagsBase
@@ -49,6 +51,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
   public credentialId?: string
   public state!: CredentialState
   public autoAcceptCredential?: AutoAcceptCredential
+  public revocationNotification?: RevocationNotification
 
   // message data
   @Type(() => ProposeCredentialMessage)
@@ -88,6 +91,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       this.credentialAttributes = props.credentialAttributes
       this.autoAcceptCredential = props.autoAcceptCredential
       this.linkedAttachments = props.linkedAttachments
+      this.revocationNotification = props.revocationNotification
     }
   }
 

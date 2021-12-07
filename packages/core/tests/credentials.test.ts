@@ -2,11 +2,11 @@ import type { Agent } from '../src/agent/Agent'
 import type { ConnectionRecord } from '../src/modules/connections'
 
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
-import { CredentialPreview, CredentialRecord, CredentialState } from '../src/modules/credentials'
+import { CredentialPreview, CredentialRecord, CredentialState, RevocationNotificationMessage } from '../src/modules/credentials'
 import { JsonTransformer } from '../src/utils/JsonTransformer'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 
-import { setupCredentialTests, waitForCredentialRecord } from './helpers'
+import { setupCredentialTests, waitForCredentialRecord, waitForRevocationNotification } from './helpers'
 import testLogger from './logger'
 
 const credentialPreview = CredentialPreview.fromRecord({
@@ -480,5 +480,26 @@ describe('credentials', () => {
       requestMessage: expect.any(Object),
       state: CredentialState.Done,
     })
+  })
+
+  test('Test revocation notification for Faber credential id', async()=>{
+
+    testLogger.test('Creating revocation notification message')
+    let revNotifMessage = new RevocationNotificationMessage({
+      issueThread: faberCredentialRecord.getTag('threadId') as string,
+      comment: 'Credential has been revoked'
+    })
+
+    testLogger.test('Receiving revocation notification message')
+    faberAgent.receiveMessage(revNotifMessage.toJSON)
+
+    testLogger.test('Waiting for revocation notification event')
+    let recordFromEvent = await waitForRevocationNotification(faberAgent, faberCredentialRecord.id)
+    testLogger.test('Revocation notification message received')
+
+    let fetchedRecord = await faberAgent.credentials.getById(faberCredentialRecord.id)
+
+    expect(recordFromEvent).toHaveProperty('revocationNotification')
+    expect(fetchedRecord).toHaveProperty('revocationNotification')
   })
 })

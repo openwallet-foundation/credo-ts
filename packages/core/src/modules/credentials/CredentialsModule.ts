@@ -22,8 +22,9 @@ import {
   OfferCredentialHandler,
   ProposeCredentialHandler,
   RequestCredentialHandler,
+  RevocationNotificationHandler
 } from './handlers'
-import { CredentialService } from './services'
+import { CredentialService, RevocationService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialsModule {
@@ -33,6 +34,7 @@ export class CredentialsModule {
   private agentConfig: AgentConfig
   private credentialResponseCoordinator: CredentialResponseCoordinator
   private mediationRecipientService: MediationRecipientService
+  private revocationService: RevocationService
 
   public constructor(
     dispatcher: Dispatcher,
@@ -41,7 +43,8 @@ export class CredentialsModule {
     messageSender: MessageSender,
     agentConfig: AgentConfig,
     credentialResponseCoordinator: CredentialResponseCoordinator,
-    mediationRecipientService: MediationRecipientService
+    mediationRecipientService: MediationRecipientService,
+    revocationService: RevocationService
   ) {
     this.connectionService = connectionService
     this.credentialService = credentialService
@@ -49,6 +52,7 @@ export class CredentialsModule {
     this.agentConfig = agentConfig
     this.credentialResponseCoordinator = credentialResponseCoordinator
     this.mediationRecipientService = mediationRecipientService
+    this.revocationService = revocationService
     this.registerHandlers(dispatcher)
   }
 
@@ -500,5 +504,8 @@ export class CredentialsModule {
       new IssueCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
     )
     dispatcher.registerHandler(new CredentialAckHandler(this.credentialService))
+    dispatcher.registerHandler(
+      new RevocationNotificationHandler(this.revocationService)
+    )
   }
 }

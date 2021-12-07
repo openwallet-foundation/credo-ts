@@ -6,11 +6,13 @@ import type {
   ConnectionRecordProps,
   CredentialDefinitionTemplate,
   CredentialOfferTemplate,
+  CredentialRecord,
   CredentialStateChangedEvent,
   InitConfig,
   ProofAttributeInfo,
   ProofPredicateInfo,
   ProofStateChangedEvent,
+  RevocationNotificationReceivedEvent,
   SchemaTemplate,
 } from '../src'
 import type { Schema, CredDef } from 'indy-sdk'
@@ -51,6 +53,7 @@ import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
 import testLogger, { TestLogger } from './logger'
+import { resolve } from 'path/posix'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
@@ -195,6 +198,25 @@ export async function waitForBasicMessage(agent: Agent, { content }: { content?:
     }
 
     agent.events.on<BasicMessageStateChangedEvent>(BasicMessageEventTypes.BasicMessageStateChanged, listener)
+  })
+}
+
+export async function waitForRevocationNotification(
+  agent: Agent,
+  credentialRecordId: string,
+) {
+  return new Promise<CredentialRecord>((resolve) => {
+    const listener = (event: RevocationNotificationReceivedEvent) => {
+
+      const recordMatches = event.payload.credentialRecord.id === credentialRecordId
+  
+      if(recordMatches) {
+        agent.events.off<RevocationNotificationReceivedEvent>(CredentialEventTypes.RevocationNotificationReceived, listener)
+        resolve(event.payload.credentialRecord)
+      }
+    }
+  
+    agent.events.on<RevocationNotificationReceivedEvent>(CredentialEventTypes.RevocationNotificationReceived, listener)
   })
 }
 
