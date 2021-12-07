@@ -32,6 +32,7 @@ module.exports = {
     '@typescript-eslint/ban-ts-comment': 'warn',
     '@typescript-eslint/consistent-type-imports': 'error',
     'import/no-cycle': 'error',
+    'import/newline-after-import': ['error', { count: 1 }],
     'import/order': [
       'error',
       {
@@ -42,6 +43,7 @@ module.exports = {
         'newlines-between': 'always',
       },
     ],
+    '@typescript-eslint/no-non-null-assertion': 'error',
     'import/no-extraneous-dependencies': [
       'error',
       {
