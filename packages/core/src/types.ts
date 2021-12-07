@@ -37,6 +37,7 @@ export interface InitConfig {
   didCommMimeType?: DidCommMimeType
 
   indyLedgers?: IndyPoolConfig[]
+  connectLedgersOnStart?: boolean
 
   autoAcceptMediationRequests?: boolean
   mediatorConnectionsInvite?: string

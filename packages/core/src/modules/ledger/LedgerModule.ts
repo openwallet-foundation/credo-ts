@@ -19,6 +19,13 @@ export class LedgerModule {
     this.wallet = wallet
   }
 
+  /**
+   * Connect to all the ledger pools
+   */
+  public async connectToGenesis() {
+    await this.ledgerService.connectToPools()
+  }
+
   public async registerPublicDid(did: string, verkey: string, alias: string, role?: NymRole) {
     const myPublicDid = this.wallet.publicDid?.did
 

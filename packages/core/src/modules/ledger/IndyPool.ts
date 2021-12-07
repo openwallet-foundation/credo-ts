@@ -22,6 +22,7 @@ export class IndyPool {
   private fileSystem: FileSystem
   private poolConfig: IndyPoolConfig
   private _poolHandle?: number
+  private poolConnected?: Promise<number>
   public authorAgreement?: AuthorAgreement | null
 
   public constructor(agentConfig: AgentConfig, poolConfig: IndyPoolConfig) {
@@ -74,42 +75,58 @@ export class IndyPool {
   }
 
   public async connect() {
-    const poolName = this.poolConfig.id
-    const genesisPath = await this.getGenesisPath()
+    this.poolConnected = (async () => {
+      const poolName = this.poolConfig.id
+      const genesisPath = await this.getGenesisPath()
 
-    if (!genesisPath) {
-      throw new AriesFrameworkError('Cannot connect to ledger without genesis file')
-    }
+      if (!genesisPath) {
+        throw new AriesFrameworkError('Cannot connect to ledger without genesis file')
+      }
 
-    this.logger.debug(`Connecting to ledger pool '${poolName}'`, { genesisPath })
-    await this.indy.setProtocolVersion(2)
+      this.logger.debug(`Connecting to ledger pool '${poolName}'`, { genesisPath })
+      await this.indy.setProtocolVersion(2)
 
-    try {
-      this._poolHandle = await this.indy.openPoolLedger(poolName)
-      return this._poolHandle
-    } catch (error) {
-      if (!isIndyError(error, 'PoolLedgerNotCreatedError')) {
+      try {
+        this._poolHandle = await this.indy.openPoolLedger(poolName)
+        return this._poolHandle
+      } catch (error) {
+        if (!isIndyError(error, 'PoolLedgerNotCreatedError')) {
+          throw isIndyError(error) ? new IndySdkError(error) : error
+        }
+      }
+
+      this.logger.debug(`Pool '${poolName}' does not exist yet, creating.`, {
+        indyError: 'PoolLedgerNotCreatedError',
+      })
+      try {
+        await this.indy.createPoolLedgerConfig(poolName, { genesis_txn: genesisPath })
+        this._poolHandle = await this.indy.openPoolLedger(poolName)
+        return this._poolHandle
+      } catch (error) {
         throw isIndyError(error) ? new IndySdkError(error) : error
       }
-    }
+    })()
 
-    this.logger.debug(`Pool '${poolName}' does not exist yet, creating.`, {
-      indyError: 'PoolLedgerNotCreatedError',
-    })
-    try {
-      await this.indy.createPoolLedgerConfig(poolName, { genesis_txn: genesisPath })
-      this._poolHandle = await this.indy.openPoolLedger(poolName)
-      return this._poolHandle
-    } catch (error) {
-      throw isIndyError(error) ? new IndySdkError(error) : error
+    return this.poolConnected
+  }
+
+  /**
+   * If the pool is already trying to connect it will wait for it,
+   * otherwise it will not wait
+   */
+  private async pendingConnection() {
+    if (this.poolConnected != undefined) {
+      await this.poolConnected
     }
   }
 
   private async submitRequest(request: Indy.LedgerRequest) {
+    await this.pendingConnection()
     return this.indy.submitRequest(await this.getPoolHandle(), request)
   }
 
   public async submitReadRequest(request: Indy.LedgerRequest) {
+    await this.pendingConnection()
     const response = await this.submitRequest(request)
 
     if (isLedgerRejectResponse(response)) {
@@ -120,6 +137,7 @@ export class IndyPool {
   }
 
   public async submitWriteRequest(request: Indy.LedgerRequest) {
+    await this.pendingConnection()
     const response = await this.submitRequest(request)
 
     if (isLedgerRejectResponse(response)) {

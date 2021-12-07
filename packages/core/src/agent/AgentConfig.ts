@@ -40,6 +40,10 @@ export class AgentConfig {
     }
   }
 
+  public get connectLedgersOnStart() {
+    return this.initConfig.connectLedgersOnStart
+  }
+
   public get publicDidSeed() {
     return this.initConfig.publicDidSeed
   }
