@@ -1,10 +1,13 @@
-import { RevocationNotificationMessage } from '../messages'
+import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { RevocationNotificationReceivedEvent } from '../CredentialEvents'
+import type { RevocationNotificationMessage } from '../messages'
+
+import { scoped, Lifecycle } from 'tsyringe'
+
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { CredentialEventTypes } from '../CredentialEvents'
 import { RevocationNotification } from '../models'
 import { CredentialRepository } from '../repository'
-import { InboundMessageContext } from 'packages/core/src/agent/models/InboundMessageContext'
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { scoped, Lifecycle } from 'tsyringe'
-import { CredentialEventTypes, RevocationNotificationReceivedEvent } from '@aries-framework/core'
 
 @scoped(Lifecycle.ContainerScoped)
 export class RevocationService {
@@ -26,9 +29,9 @@ export class RevocationService {
   public async processRevocationNotification(
     messageContext: InboundMessageContext<RevocationNotificationMessage>
   ): Promise<void> {
-    let threadId = messageContext.message.issueThread
-    let comment = messageContext.message.comment
-    let credentialRecord = await this.credentialRepository.getSingleByQuery({ threadId })
+    const threadId = messageContext.message.issueThread
+    const comment = messageContext.message.comment
+    const credentialRecord = await this.credentialRepository.getSingleByQuery({ threadId })
     credentialRecord.revocationNotification = new RevocationNotification(comment)
     await this.credentialRepository.update(credentialRecord)
     this.eventEmitter.emit<RevocationNotificationReceivedEvent>({

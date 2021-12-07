@@ -1,6 +1,7 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialState } from '../CredentialState'
+import type { RevocationNotification } from '../models/'
 
 import { Type } from 'class-transformer'
 
@@ -16,7 +17,6 @@ import {
   RequestCredentialMessage,
 } from '../messages'
 import { CredentialInfo } from '../models/CredentialInfo'
-import { RevocationNotification } from '@aries-framework/core'
 
 export interface CredentialRecordProps {
   id?: string

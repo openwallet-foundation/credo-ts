@@ -1,7 +1,9 @@
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { Equals, IsOptional, IsString } from 'class-validator'
+import type { AckDecorator } from '../../../decorators/ack/AckDecorator'
+
 import { Expose } from 'class-transformer'
-import { AckDecorator } from 'packages/core/src/decorators/ack/AckDecorator'
+import { Equals, IsOptional, IsString } from 'class-validator'
+
+import { AgentMessage } from '../../../agent/AgentMessage'
 
 export interface RevocationNotificationMessageOptions {
   issueThread: string

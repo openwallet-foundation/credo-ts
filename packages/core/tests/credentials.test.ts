@@ -489,19 +489,19 @@ describe('credentials', () => {
 
   test('Test revocation notification for Faber credential id', async () => {
     testLogger.test('Creating revocation notification message')
-    let revNotifMessage = new RevocationNotificationMessage({
+    const revNotifMessage = new RevocationNotificationMessage({
       issueThread: faberCredentialRecord.getTag('threadId') as string,
       comment: 'Credential has been revoked',
     })
 
     testLogger.test('Receiving revocation notification message')
-    faberAgent.receiveMessage(revNotifMessage.toJSON)
+    faberAgent.receiveMessage(revNotifMessage.toJSON())
 
     testLogger.test('Waiting for revocation notification event')
-    let recordFromEvent = await waitForRevocationNotification(faberAgent, faberCredentialRecord.id)
+    const recordFromEvent = await waitForRevocationNotification(faberAgent, faberCredentialRecord.id)
     testLogger.test('Revocation notification message received')
 
-    let fetchedRecord = await faberAgent.credentials.getById(faberCredentialRecord.id)
+    const fetchedRecord = await faberAgent.credentials.getById(faberCredentialRecord.id)
 
     expect(recordFromEvent).toHaveProperty('revocationNotification')
     expect(fetchedRecord).toHaveProperty('revocationNotification')
