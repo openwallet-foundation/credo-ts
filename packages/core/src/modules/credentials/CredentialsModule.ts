@@ -22,7 +22,7 @@ import {
   OfferCredentialHandler,
   ProposeCredentialHandler,
   RequestCredentialHandler,
-  RevocationNotificationHandler
+  RevocationNotificationHandler,
 } from './handlers'
 import { CredentialService, RevocationService } from './services'
 
@@ -504,8 +504,6 @@ export class CredentialsModule {
       new IssueCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
     )
     dispatcher.registerHandler(new CredentialAckHandler(this.credentialService))
-    dispatcher.registerHandler(
-      new RevocationNotificationHandler(this.revocationService)
-    )
+    dispatcher.registerHandler(new RevocationNotificationHandler(this.revocationService))
   }
 }

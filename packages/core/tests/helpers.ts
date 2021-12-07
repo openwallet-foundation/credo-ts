@@ -201,21 +201,20 @@ export async function waitForBasicMessage(agent: Agent, { content }: { content?:
   })
 }
 
-export async function waitForRevocationNotification(
-  agent: Agent,
-  credentialRecordId: string,
-) {
+export async function waitForRevocationNotification(agent: Agent, credentialRecordId: string) {
   return new Promise<CredentialRecord>((resolve) => {
     const listener = (event: RevocationNotificationReceivedEvent) => {
-
       const recordMatches = event.payload.credentialRecord.id === credentialRecordId
-  
-      if(recordMatches) {
-        agent.events.off<RevocationNotificationReceivedEvent>(CredentialEventTypes.RevocationNotificationReceived, listener)
+
+      if (recordMatches) {
+        agent.events.off<RevocationNotificationReceivedEvent>(
+          CredentialEventTypes.RevocationNotificationReceived,
+          listener
+        )
         resolve(event.payload.credentialRecord)
       }
     }
-  
+
     agent.events.on<RevocationNotificationReceivedEvent>(CredentialEventTypes.RevocationNotificationReceived, listener)
   })
 }

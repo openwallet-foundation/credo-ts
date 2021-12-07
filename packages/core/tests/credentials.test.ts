@@ -2,7 +2,12 @@ import type { Agent } from '../src/agent/Agent'
 import type { ConnectionRecord } from '../src/modules/connections'
 
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
-import { CredentialPreview, CredentialRecord, CredentialState, RevocationNotificationMessage } from '../src/modules/credentials'
+import {
+  CredentialPreview,
+  CredentialRecord,
+  CredentialState,
+  RevocationNotificationMessage,
+} from '../src/modules/credentials'
 import { JsonTransformer } from '../src/utils/JsonTransformer'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 
@@ -482,12 +487,11 @@ describe('credentials', () => {
     })
   })
 
-  test('Test revocation notification for Faber credential id', async()=>{
-
+  test('Test revocation notification for Faber credential id', async () => {
     testLogger.test('Creating revocation notification message')
     let revNotifMessage = new RevocationNotificationMessage({
       issueThread: faberCredentialRecord.getTag('threadId') as string,
-      comment: 'Credential has been revoked'
+      comment: 'Credential has been revoked',
     })
 
     testLogger.test('Receiving revocation notification message')
