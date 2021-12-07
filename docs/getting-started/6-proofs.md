@@ -1,6 +1,6 @@
 # Proofs
 
-As mentioned in the previous documentation ([Credentials](5-credentials.md)), after receiving a credentials and saving it to your wallet, you will need to show it to a verifier who will verify the authenticity of this credential and that the credential assertions are not tampered with.
+As mentioned in the previous documentation ([Credentials](5-credentials.md)), after receiving a credential and saving it to your wallet, you will need to show it to a verifier who will verify the authenticity of this credential and that the credential assertions are not tampered with.
 
 In VC proofs, we have two involved parties:
 
@@ -9,7 +9,7 @@ In VC proofs, we have two involved parties:
 
 The process for proving your VC starts by a verifier to request a presentation from a prover, and for the prover to respond by presenting a proof to the verifier or the prover to send a presentation proposal to the verifier.
 
-## Method 1 - Prover responds to presentation proposal
+## Method 1 - Prover (holder) responds to presentation proposal from the verifier
 
 > Note: This setup is assumed for a react native mobile agent
 
@@ -45,6 +45,14 @@ const handleProofStateChange = async (agent: Agent, event: ProofStateChangedEven
 ```
 
 - `filterByPresentationPreview`: Whether to filter the retrieved credentials using the presentation preview. This configuration will only have effect if a presentation proposal message is available containing a presentation preview..
+
+Make sure to add the event listener to the agent after initializing the wallet
+
+```ts
+agent.events.on<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged, (event) => {
+  handleProofStateChange(event)
+})
+```
 
 To interfere the process and display an optional message to the user
 
