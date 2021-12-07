@@ -13,6 +13,7 @@ import { scoped, Lifecycle } from 'tsyringe'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
+import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { isLinkedAttachment } from '../../../utils/attachment'
 import { uuid } from '../../../utils/uuid'
@@ -37,6 +38,7 @@ import {
 } from '../messages'
 import { CredentialRepository } from '../repository'
 import { CredentialRecord } from '../repository/CredentialRecord'
+
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialService {
   private credentialRepository: CredentialRepository
@@ -356,7 +358,7 @@ export class CredentialService {
     if (!indyCredentialOffer) {
       throw new CredentialProblemReportError(
         `Missing required base64 encoded attachment data for credential offer with thread id ${credentialOfferMessage.threadId}`,
-        CredentialProblemReportReason.IssuanceAbandoned
+        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
 
@@ -432,7 +434,7 @@ export class CredentialService {
     if (!credentialOffer) {
       throw new CredentialProblemReportError(
         `Missing required base64 encoded attachment data for credential offer with thread id ${credentialRecord.threadId}`,
-        CredentialProblemReportReason.IssuanceAbandoned
+        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
 
@@ -493,7 +495,7 @@ export class CredentialService {
     if (!indyCredentialRequest) {
       throw new CredentialProblemReportError(
         `Missing required base64 encoded attachment data for credential request with thread id ${credentialRequestMessage.threadId}`,
-        CredentialProblemReportReason.IssuanceAbandoned
+        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
 
@@ -534,9 +536,8 @@ export class CredentialService {
 
     // Assert offer message
     if (!offerMessage) {
-      throw new CredentialProblemReportError(
-        `Missing credential offer for credential exchange with thread id ${credentialRecord.threadId}`,
-        CredentialProblemReportReason.IssuanceAbandoned
+      throw new AriesFrameworkError(
+        `Missing credential offer for credential exchange with thread id ${credentialRecord.threadId}`
       )
     }
 
@@ -545,7 +546,7 @@ export class CredentialService {
     if (!credentialAttributes) {
       throw new CredentialProblemReportError(
         `Missing required credential attribute values on credential record with id ${credentialRecord.id}`,
-        CredentialProblemReportReason.IssuanceAbandoned
+        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
 
@@ -553,8 +554,8 @@ export class CredentialService {
     const indyCredentialOffer = offerMessage?.indyCredentialOffer
     if (!indyCredentialOffer) {
       throw new CredentialProblemReportError(
-        `Missing required credential attribute values on credential record with id ${credentialRecord.id}`,
-        CredentialProblemReportReason.IssuanceAbandoned
+        `Missing required base64 encoded attachment data for credential offer with thread id ${credentialRecord.threadId}`,
+        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
 
@@ -563,7 +564,7 @@ export class CredentialService {
     if (!indyCredentialRequest) {
       throw new CredentialProblemReportError(
         `Missing required base64 encoded attachment data for credential request with thread id ${credentialRecord.threadId}`,
-        CredentialProblemReportReason.IssuanceAbandoned
+        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
 
@@ -633,7 +634,7 @@ export class CredentialService {
     if (!credentialRequestMetadata) {
       throw new CredentialProblemReportError(
         `Missing required request metadata for credential with id ${credentialRecord.id}`,
-        CredentialProblemReportReason.IssuanceAbandoned
+        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
 
@@ -641,7 +642,7 @@ export class CredentialService {
     if (!indyCredential) {
       throw new CredentialProblemReportError(
         `Missing required base64 encoded attachment data for credential with thread id ${issueCredentialMessage.threadId}`,
-        CredentialProblemReportReason.IssuanceAbandoned
+        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
 
@@ -734,7 +735,7 @@ export class CredentialService {
   ): Promise<CredentialRecord> {
     const { message: credentialProblemReportMessage, connection } = messageContext
 
-    this.logger.debug(`Processing credential ack with id ${credentialProblemReportMessage.id}`)
+    this.logger.debug(`Processing problem report with id ${credentialProblemReportMessage.id}`)
 
     const credentialRecord = await this.getByThreadAndConnectionId(
       credentialProblemReportMessage.threadId,
@@ -742,8 +743,7 @@ export class CredentialService {
     )
 
     // Update record
-    credentialRecord.errorMsg = `${credentialProblemReportMessage.description.code} : ${credentialProblemReportMessage.description.en}`
-    this.update(credentialRecord)
+    credentialRecord.errorMsg = `${credentialProblemReportMessage.description.code}: ${credentialProblemReportMessage.description.en}`
     await this.updateState(credentialRecord, CredentialState.None)
     return credentialRecord
   }

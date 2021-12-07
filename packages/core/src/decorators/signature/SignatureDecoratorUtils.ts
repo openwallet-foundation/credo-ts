@@ -1,6 +1,5 @@
 import type { Wallet } from '../../wallet/Wallet'
 
-import { AriesFrameworkError } from '../../error'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../../modules/connections/errors'
 import { BufferEncoder } from '../../utils/BufferEncoder'
 import { JsonEncoder } from '../../utils/JsonEncoder'
@@ -30,10 +29,9 @@ export async function unpackAndVerifySignatureDecorator(
   const isValid = await wallet.verify(signerVerkey, signedData, signature)
 
   if (!isValid) {
-    throw new ConnectionProblemReportError(
-      'Signature is not valid!',
-      ConnectionProblemReportReason.RequestProcessingError
-    )
+    throw new ConnectionProblemReportError('Signature is not valid', {
+      problemCode: ConnectionProblemReportReason.RequestProcessingError,
+    })
   }
 
   // TODO: return Connection instance instead of raw json

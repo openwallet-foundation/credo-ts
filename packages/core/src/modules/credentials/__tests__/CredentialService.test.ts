@@ -936,7 +936,7 @@ describe('CredentialService', () => {
       })
     })
 
-    test('returns problem report message once get error', async () => {
+    test('returns problem report message base once get error', async () => {
       // given
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
 
@@ -998,7 +998,7 @@ describe('CredentialService', () => {
         threadId: 'somethreadid',
         connectionId: connection.id,
       })
-      expect(repositoryUpdateSpy).toHaveBeenCalledTimes(2)
+      expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
       expect(updatedCredentialRecord).toMatchObject(expectedCredentialRecord)
       expect(returnedCredentialRecord).toMatchObject(expectedCredentialRecord)

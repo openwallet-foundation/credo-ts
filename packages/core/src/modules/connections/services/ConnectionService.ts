@@ -3,6 +3,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
+import type { ConnectionProblemReportMessage } from '../messages'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
@@ -213,18 +214,16 @@ export class ConnectionService {
     connectionRecord.assertRole(ConnectionRole.Inviter)
 
     if (!message.connection.didDoc) {
-      throw new ConnectionProblemReportError(
-        'Public DIDs are not supported yet',
-        ConnectionProblemReportReason.RequestNotAccepted
-      )
+      throw new ConnectionProblemReportError('Public DIDs are not supported yet', {
+        problemCode: ConnectionProblemReportReason.RequestNotAccepted,
+      })
     }
 
     // Create new connection if using a multi use invitation
     if (connectionRecord.multiUseInvitation) {
       if (!routing) {
-        throw new ConnectionProblemReportError(
-          'Cannot process request for multi-use invitation without routing object. Make sure to call processRequest with the routing parameter provided.',
-          ConnectionProblemReportReason.RequestNotAccepted
+        throw new AriesFrameworkError(
+          'Cannot process request for multi-use invitation without routing object. Make sure to call processRequest with the routing parameter provided.'
         )
       }
 
@@ -336,7 +335,7 @@ export class ConnectionService {
     if (signerVerkey !== invitationKey) {
       throw new ConnectionProblemReportError(
         `Connection object in connection response message is not signed with same key as recipient key in invitation expected='${invitationKey}' received='${signerVerkey}'`,
-        ConnectionProblemReportReason.ResponseNotAccepted
+        { problemCode: ConnectionProblemReportReason.ResponseNotAccepted }
       )
     }
 
@@ -405,6 +404,31 @@ export class ConnectionService {
       await this.updateState(connection, ConnectionState.Complete)
     }
 
+    return connection
+  }
+
+  /**
+   * Process a received {@link ProblemReportMessage}.
+   *
+   * @param messageContext The message context containing a connection problem report message
+   * @returns connection record associated with the connection problem report message
+   *
+   */
+  public async processProblemReport(
+    messageContext: InboundMessageContext<ConnectionProblemReportMessage>
+  ): Promise<ConnectionRecord> {
+    const { message: connectionProblemReportMessage, connection, recipientVerkey } = messageContext
+
+    this.logger.debug(`Processing connection problem report for verkey ${recipientVerkey}`)
+
+    if (!connection) {
+      throw new AriesFrameworkError(
+        `Unable to process connection problem report: connection for verkey ${recipientVerkey} not found`
+      )
+    }
+
+    connection.errorMsg = `${connectionProblemReportMessage.description.code} : ${connectionProblemReportMessage.description.en}`
+    await this.updateState(connection, ConnectionState.None)
     return connection
   }
 

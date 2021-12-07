@@ -93,54 +93,50 @@ export class MessageReceiver {
       unpackedMessage.message
     )
 
+    let message: AgentMessage | null = null
     try {
-      const message = await this.transformMessage(unpackedMessage)
-      try {
-        await MessageValidator.validate(message)
-      } catch (error) {
-        this.logger.error(`Error validating message ${unpackedMessage.message['@type']}`, {
+      message = await this.transformMessage(unpackedMessage)
+      this.validateMessage(message)
+    } catch (error) {
+      if (message) {
+        this.logger.error(`Error validating message ${message.type}`, {
           errors: error,
           message: message.toJSON(),
         })
-        this.sendProblemReportMessage(
-          `Error validating message ${unpackedMessage.message['@type']}`,
-          connection!,
-          unpackedMessage
-        )
       }
-
-      const messageContext = new InboundMessageContext(message, {
-        // Only make the connection available in message context if the connection is ready
-        // To prevent unwanted usage of unready connections. Connections can still be retrieved from
-        // Storage if the specific protocol allows an unready connection to be used.
-        connection: connection?.isReady ? connection : undefined,
-        senderVerkey: senderKey,
-        recipientVerkey: recipientKey,
-      })
-
-      // We want to save a session if there is a chance of returning outbound message via inbound transport.
-      // That can happen when inbound message has `return_route` set to `all` or `thread`.
-      // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
-      if (senderKey && recipientKey && message.hasAnyReturnRoute() && session) {
-        this.logger.debug(`Storing session for inbound message '${message.id}'`)
-        const keys = {
-          recipientKeys: [senderKey],
-          routingKeys: [],
-          senderKey: recipientKey,
-        }
-        session.keys = keys
-        session.inboundMessage = message
-        // We allow unready connections to be attached to the session as we want to be able to
-        // use return routing to make connections. This is especially useful for creating connections
-        // with mediators when you don't have a public endpoint yet.
-        session.connection = connection ?? undefined
-        this.transportService.saveSession(session)
-      }
-
-      await this.dispatcher.dispatch(messageContext)
-    } catch (error) {
-      this.sendProblemReportMessage(error.message, connection!, unpackedMessage)
+      if (connection) await this.sendProblemReportMessage(error.message, connection, unpackedMessage)
+      throw error
     }
+
+    const messageContext = new InboundMessageContext(message, {
+      // Only make the connection available in message context if the connection is ready
+      // To prevent unwanted usage of unready connections. Connections can still be retrieved from
+      // Storage if the specific protocol allows an unready connection to be used.
+      connection: connection?.isReady ? connection : undefined,
+      senderVerkey: senderKey,
+      recipientVerkey: recipientKey,
+    })
+
+    // We want to save a session if there is a chance of returning outbound message via inbound transport.
+    // That can happen when inbound message has `return_route` set to `all` or `thread`.
+    // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
+    if (senderKey && recipientKey && message.hasAnyReturnRoute() && session) {
+      this.logger.debug(`Storing session for inbound message '${message.id}'`)
+      const keys = {
+        recipientKeys: [senderKey],
+        routingKeys: [],
+        senderKey: recipientKey,
+      }
+      session.keys = keys
+      session.inboundMessage = message
+      // We allow unready connections to be attached to the session as we want to be able to
+      // use return routing to make connections. This is especially useful for creating connections
+      // with mediators when you don't have a public endpoint yet.
+      session.connection = connection ?? undefined
+      this.transportService.saveSession(session)
+    }
+
+    await this.dispatcher.dispatch(messageContext)
   }
 
   /**
@@ -190,7 +186,6 @@ export class MessageReceiver {
     const MessageClass = this.dispatcher.getMessageClassForType(messageType)
 
     if (!MessageClass) {
-      // throw new AriesFrameworkError(`No message class found for message type "${messageType}"`)
       throw new ProblemReportError(`No message class found for message type "${messageType}"`, {
         problemCode: ProblemReportReason.MessageParseFailure,
       })
@@ -202,6 +197,30 @@ export class MessageReceiver {
     return message
   }
 
+  /**
+   * Validate an AgentMessage instance.
+   * @param message agent message to validate
+   */
+  private async validateMessage(message: AgentMessage) {
+    try {
+      await MessageValidator.validate(message)
+    } catch (error) {
+      this.logger.error(`Error validating message ${message.type}`, {
+        errors: error,
+        message: message.toJSON(),
+      })
+      throw new ProblemReportError(`No message class found for message type "${message.type}"`, {
+        problemCode: ProblemReportReason.MessageParseFailure,
+      })
+    }
+  }
+
+  /**
+   * Send the problem report message (https://didcomm.org/notification/1.0/problem-report) to the recipient.
+   * @param message error message to send
+   * @param connection connection to send the message to
+   * @param unpackedMessage received unpackedMessage
+   */
   private async sendProblemReportMessage(
     message: string,
     connection: ConnectionRecord,
@@ -216,7 +235,7 @@ export class MessageReceiver {
     problemReportMessage.setThread({
       threadId: unpackedMessage.message['@id'],
     })
-    const outboundMessage = createOutboundMessage(connection!, problemReportMessage)
+    const outboundMessage = createOutboundMessage(connection, problemReportMessage)
     if (outboundMessage && isOutboundServiceMessage(outboundMessage)) {
       await this.messageSender.sendMessageToService({
         message: outboundMessage.payload,

@@ -1,33 +1,34 @@
 // Create a base ProblemReportMessage message class and add it to the messages directory
+import { Expose } from 'class-transformer'
 import { Equals, IsEnum, IsOptional, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { CommonMessageType } from '../../common/messages/CommonMessageType'
 
 export enum WhoRetriesStatus {
-  YOU = 'YOU',
-  ME = 'ME',
-  BOTH = 'BOTH',
-  NONE = 'NONE',
+  You = 'YOU',
+  Me = 'ME',
+  Both = 'BOTH',
+  None = 'NONE',
 }
 
 export enum ImpactStatus {
-  MESSAGE = 'MESSAGE',
-  THREAD = 'THREAD',
-  CONNECTION = 'CONNECTION',
+  Message = 'MESSAGE',
+  Thread = 'THREAD',
+  Connection = 'CONNECTION',
 }
 
 export enum WhereStatus {
-  CLOUD = 'CLOUD',
-  EDGE = 'EDGE',
-  WIRE = 'WIRE',
-  AGENCY = 'AGENCY',
+  Cloud = 'CLOUD',
+  Edge = 'EDGE',
+  Wire = 'WIRE',
+  Agency = 'AGENCY',
 }
 
 export enum OtherStatus {
-  YOU = 'YOU',
-  ME = 'ME',
-  OTHER = 'OTHER',
+  You = 'YOU',
+  Me = 'ME',
+  Other = 'OTHER',
 }
 
 export interface DescriptionOptions {
@@ -42,14 +43,14 @@ export interface FixHintOptions {
 export interface ProblemReportMessageOptions {
   id?: string
   description: DescriptionOptions
-  problem_items?: string[]
-  who_retries?: WhoRetriesStatus
-  fix_hint?: FixHintOptions
+  problemItems?: string[]
+  whoRetries?: WhoRetriesStatus
+  fixHint?: FixHintOptions
   impact?: ImpactStatus
   where?: WhereStatus
-  noticed_time?: string
-  tracking_uri?: string
-  escalation_uri?: string
+  noticedTime?: string
+  trackingUri?: string
+  escalationUri?: string
 }
 
 /**
@@ -66,14 +67,14 @@ export class ProblemReportMessage extends AgentMessage {
     if (options) {
       this.id = options.id || this.generateId()
       this.description = options.description
-      this.problem_items = options.problem_items
-      this.who_retries = options.who_retries
-      this.fix_hint = options.fix_hint
+      this.problemItems = options.problemItems
+      this.whoRetries = options.whoRetries
+      this.fixHint = options.fixHint
       this.impact = options.impact
       this.where = options.where
-      this.noticed_time = options.noticed_time
-      this.tracking_uri = options.tracking_uri
-      this.escalation_uri = options.escalation_uri
+      this.noticedTime = options.noticedTime
+      this.trackingUri = options.trackingUri
+      this.escalationUri = options.escalationUri
     }
   }
 
@@ -81,17 +82,21 @@ export class ProblemReportMessage extends AgentMessage {
   public readonly type: string = ProblemReportMessage.type
   public static readonly type: string = CommonMessageType.ProblemReport
 
+  @IsOptional()
   public description!: DescriptionOptions
 
   @IsOptional()
-  public problem_items?: string[]
+  @Expose({ name: 'problem_items' })
+  public problemItems?: string[]
 
   @IsOptional()
   @IsEnum(WhoRetriesStatus)
-  public who_retries?: WhoRetriesStatus
+  @Expose({ name: 'who_retries' })
+  public whoRetries?: WhoRetriesStatus
 
   @IsOptional()
-  public fix_hint?: FixHintOptions
+  @Expose({ name: 'fix_hint' })
+  public fixHint?: FixHintOptions
 
   @IsOptional()
   @IsEnum(WhereStatus)
@@ -103,13 +108,16 @@ export class ProblemReportMessage extends AgentMessage {
 
   @IsOptional()
   @IsString()
-  public noticed_time?: string
+  @Expose({ name: 'noticed_time' })
+  public noticedTime?: string
 
   @IsOptional()
   @IsString()
-  public tracking_uri?: string
+  @Expose({ name: 'tracking_uri' })
+  public trackingUri?: string
 
   @IsOptional()
   @IsString()
-  public escalation_uri?: string
+  @Expose({ name: 'escalation_uri' })
+  public escalationUri?: string
 }
