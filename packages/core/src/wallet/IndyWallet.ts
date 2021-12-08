@@ -28,7 +28,7 @@ export class IndyWallet implements Wallet {
     this.indy = agentConfig.agentDependencies.indy
   }
 
-  public get isCreated() {
+  public get isProvisioned() {
     return this.walletConfig !== undefined
   }
 
@@ -218,11 +218,13 @@ export class IndyWallet implements Wallet {
    * @throws {WalletError} if the wallet is already closed or another error occurs
    */
   public async close(): Promise<void> {
+    if (!this.walletHandle) {
+      throw new WalletError('Wallet is in inavlid state, you are trying to close wallet that has no `walletHandle`.')
+    }
+
     try {
-      if (this.walletHandle) {
-        await this.indy.closeWallet(this.walletHandle)
-        this.walletHandle = undefined
-      }
+      await this.indy.closeWallet(this.walletHandle)
+      this.walletHandle = undefined
       this.publicDidInfo = undefined
     } catch (error) {
       if (isIndyError(error, 'WalletInvalidHandle')) {

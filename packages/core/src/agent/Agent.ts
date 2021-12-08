@@ -199,7 +199,7 @@ export class Agent {
       await this.wallet.close()
     }
     // delete wallet if it has been created
-    if (this.wallet.isCreated && deleteWallet) {
+    if (this.wallet.isProvisioned && deleteWallet) {
       await this.wallet.delete()
     }
   }

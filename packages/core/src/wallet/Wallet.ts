@@ -4,7 +4,7 @@ import type { Buffer } from '../utils/buffer'
 export interface Wallet {
   publicDid: DidInfo | undefined
   isInitialized: boolean
-  isCreated: boolean
+  isProvisioned: boolean
 
   initialize(walletConfig: WalletConfig): Promise<void>
   create(walletConfig: WalletConfig): Promise<void>
