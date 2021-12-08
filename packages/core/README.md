@@ -19,7 +19,7 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@aries-framework/redux-store"
+    <a href="https://www.npmjs.com/package/@aries-framework/core"
     ><img
       alt="@aries-framework/core version"
       src="https://img.shields.io/npm/v/@aries-framework/core"
