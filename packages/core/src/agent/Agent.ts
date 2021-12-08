@@ -181,7 +181,7 @@ export class Agent {
     this._isInitialized = true
   }
 
-  public async shutdown({ deleteWallet = false }: { deleteWallet?: boolean } = {}) {
+  public async shutdown() {
     // All observables use takeUntil with the stop$ observable
     // this means all observables will stop running if a value is emitted on this observable
     this.agentConfig.stop$.next(true)
@@ -197,10 +197,6 @@ export class Agent {
     // close wallet if still initialized
     if (this.wallet.isInitialized) {
       await this.wallet.close()
-    }
-    // delete wallet if it has been created
-    if (this.wallet.isProvisioned && deleteWallet) {
-      await this.wallet.delete()
     }
   }
 

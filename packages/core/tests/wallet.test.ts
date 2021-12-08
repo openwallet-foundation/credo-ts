@@ -14,7 +14,7 @@ const aliceConfig = getBaseConfig('wallet-tests-Alice', {
   endpoints: ['rxjs:alice'],
 })
 
-describe('wallet', () => {
+describe('=== wallet', () => {
   let aliceAgent: Agent
 
   beforeEach(async () => {
@@ -33,9 +33,10 @@ describe('wallet', () => {
   })
 
   afterEach(async () => {
-    await aliceAgent.shutdown({
-      deleteWallet: true,
-    })
+    await aliceAgent.shutdown()
+    if (aliceAgent.wallet.isProvisioned) {
+      await aliceAgent.wallet.delete()
+    }
   })
 
   test('open, create and open wallet with different wallet key that it is in agent config', async () => {
@@ -88,7 +89,7 @@ describe('wallet', () => {
     await expect(aliceAgent.wallet.open({ ...walletConfig, key: 'abcd' })).rejects.toThrowError(WalletInvalidKeyError)
   })
 
-  test('when create wallet and shutdown with delete wallet is deleted', async () => {
+  test('when create wallet and shutdown, wallet is closed', async () => {
     const walletConfig = {
       id: 'mywallet',
       key: 'mysecretwalletkey',
@@ -96,8 +97,8 @@ describe('wallet', () => {
 
     await aliceAgent.wallet.create(walletConfig)
 
-    await aliceAgent.shutdown({ deleteWallet: true })
+    await aliceAgent.shutdown()
 
-    await expect(aliceAgent.wallet.create(walletConfig)).resolves.toBeUndefined()
+    await expect(aliceAgent.wallet.open(walletConfig)).resolves.toBeUndefined()
   })
 })
