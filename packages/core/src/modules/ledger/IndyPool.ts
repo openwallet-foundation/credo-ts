@@ -75,7 +75,7 @@ export class IndyPool {
   }
 
   public async connect() {
-    this.poolConnected = (async () => {
+    this.poolConnected = (async ()=>{
       const poolName = this.poolConfig.id
       const genesisPath = await this.getGenesisPath()
 
@@ -110,23 +110,11 @@ export class IndyPool {
     return this.poolConnected
   }
 
-  /**
-   * If the pool is already trying to connect it will wait for it,
-   * otherwise it will not wait
-   */
-  private async pendingConnection() {
-    if (this.poolConnected != undefined) {
-      await this.poolConnected
-    }
-  }
-
   private async submitRequest(request: Indy.LedgerRequest) {
-    await this.pendingConnection()
     return this.indy.submitRequest(await this.getPoolHandle(), request)
   }
 
   public async submitReadRequest(request: Indy.LedgerRequest) {
-    await this.pendingConnection()
     const response = await this.submitRequest(request)
 
     if (isLedgerRejectResponse(response)) {
@@ -137,7 +125,7 @@ export class IndyPool {
   }
 
   public async submitWriteRequest(request: Indy.LedgerRequest) {
-    await this.pendingConnection()
+
     const response = await this.submitRequest(request)
 
     if (isLedgerRejectResponse(response)) {
@@ -148,6 +136,10 @@ export class IndyPool {
   }
 
   private async getPoolHandle() {
+    if (this.poolConnected != undefined) {
+      //If we have tried to already connect to pool wait for it
+      await this.poolConnected
+    }
     if (!this._poolHandle) {
       return this.connect()
     }
