@@ -40,12 +40,10 @@ describe('connections', () => {
   })
 
   afterAll(async () => {
-    await faberAgent.shutdown({
-      deleteWallet: true,
-    })
-    await aliceAgent.shutdown({
-      deleteWallet: true,
-    })
+    await faberAgent.shutdown()
+    await faberAgent.wallet.delete()
+    await aliceAgent.shutdown()
+    await aliceAgent.wallet.delete()
   })
 
   it('should be able to make multiple connections using a multi use invite', async () => {
