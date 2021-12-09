@@ -31,12 +31,10 @@ describe('Auto accept present proof', () => {
     })
 
     afterAll(async () => {
-      await aliceAgent.shutdown({
-        deleteWallet: true,
-      })
-      await faberAgent.shutdown({
-        deleteWallet: true,
-      })
+      await faberAgent.shutdown()
+      await faberAgent.wallet.delete()
+      await aliceAgent.shutdown()
+      await aliceAgent.wallet.delete()
     })
 
     test('Alice starts with proof proposal to Faber, both with autoAcceptProof on `always`', async () => {
@@ -114,12 +112,10 @@ describe('Auto accept present proof', () => {
     })
 
     afterAll(async () => {
-      await aliceAgent.shutdown({
-        deleteWallet: true,
-      })
-      await faberAgent.shutdown({
-        deleteWallet: true,
-      })
+      await faberAgent.shutdown()
+      await faberAgent.wallet.delete()
+      await aliceAgent.shutdown()
+      await aliceAgent.wallet.delete()
     })
 
     test('Alice starts with proof proposal to Faber, both with autoacceptproof on `contentApproved`', async () => {

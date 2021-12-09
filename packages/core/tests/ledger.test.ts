@@ -21,9 +21,8 @@ describe('ledger', () => {
   })
 
   afterAll(async () => {
-    await faberAgent.shutdown({
-      deleteWallet: true,
-    })
+    await faberAgent.shutdown()
+    await faberAgent.wallet.delete()
   })
 
   test(`initialization of agent's public DID`, async () => {
