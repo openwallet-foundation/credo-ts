@@ -14,12 +14,13 @@ import { JsonTransformer } from '../utils/JsonTransformer'
 import { MessageValidator } from '../utils/MessageValidator'
 import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
+import { CommonMessageType } from './../modules/common/messages/CommonMessageType'
 import { AgentConfig } from './AgentConfig'
 import { Dispatcher } from './Dispatcher'
 import { EnvelopeService } from './EnvelopeService'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
-import { createOutboundMessage, isOutboundServiceMessage } from './helpers'
+import { createOutboundMessage } from './helpers'
 import { InboundMessageContext } from './models/InboundMessageContext'
 
 export enum ProblemReportReason {
@@ -96,14 +97,8 @@ export class MessageReceiver {
     let message: AgentMessage | null = null
     try {
       message = await this.transformMessage(unpackedMessage)
-      this.validateMessage(message)
+      await this.validateMessage(message)
     } catch (error) {
-      if (message) {
-        this.logger.error(`Error validating message ${message.type}`, {
-          errors: error,
-          message: message.toJSON(),
-        })
-      }
       if (connection) await this.sendProblemReportMessage(error.message, connection, unpackedMessage)
       throw error
     }
@@ -209,7 +204,7 @@ export class MessageReceiver {
         errors: error,
         message: message.toJSON(),
       })
-      throw new ProblemReportError(`No message class found for message type "${message.type}"`, {
+      throw new ProblemReportError(`Error validating message ${message.type}`, {
         problemCode: ProblemReportReason.MessageParseFailure,
       })
     }
@@ -226,6 +221,9 @@ export class MessageReceiver {
     connection: ConnectionRecord,
     unpackedMessage: UnpackedMessageContext
   ) {
+    if (unpackedMessage.message['@type'] === CommonMessageType.ProblemReport) {
+      throw new AriesFrameworkError(message)
+    }
     const problemReportMessage = new ProblemReportMessage({
       description: {
         en: message,
@@ -236,14 +234,7 @@ export class MessageReceiver {
       threadId: unpackedMessage.message['@id'],
     })
     const outboundMessage = createOutboundMessage(connection, problemReportMessage)
-    if (outboundMessage && isOutboundServiceMessage(outboundMessage)) {
-      await this.messageSender.sendMessageToService({
-        message: outboundMessage.payload,
-        service: outboundMessage.service,
-        senderKey: outboundMessage.senderKey,
-        returnRoute: true,
-      })
-    } else if (outboundMessage) {
+    if (outboundMessage) {
       await this.messageSender.sendMessage(outboundMessage)
     }
   }

@@ -9,7 +9,7 @@ export class ProblemReportError extends AriesFrameworkError {
   public problemReport: ProblemReportMessage
 
   public constructor(message: string, { problemCode }: ProblemReportErrorOptions) {
-    super(message, undefined)
+    super(message)
     this.problemReport = new ProblemReportMessage({
       description: {
         en: message,

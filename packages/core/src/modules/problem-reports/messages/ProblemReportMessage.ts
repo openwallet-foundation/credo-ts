@@ -82,7 +82,6 @@ export class ProblemReportMessage extends AgentMessage {
   public readonly type: string = ProblemReportMessage.type
   public static readonly type: string = CommonMessageType.ProblemReport
 
-  @IsOptional()
   public description!: DescriptionOptions
 
   @IsOptional()

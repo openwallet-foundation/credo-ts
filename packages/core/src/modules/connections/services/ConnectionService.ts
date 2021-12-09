@@ -417,19 +417,25 @@ export class ConnectionService {
   public async processProblemReport(
     messageContext: InboundMessageContext<ConnectionProblemReportMessage>
   ): Promise<ConnectionRecord> {
-    const { message: connectionProblemReportMessage, connection, recipientVerkey } = messageContext
+    const { message: connectionProblemReportMessage, recipientVerkey } = messageContext
 
     this.logger.debug(`Processing connection problem report for verkey ${recipientVerkey}`)
 
-    if (!connection) {
+    if (!recipientVerkey) {
+      throw new AriesFrameworkError('Unable to process connection problem report without recipientVerkey')
+    }
+
+    const connectionRecord = await this.findByVerkey(recipientVerkey)
+
+    if (!connectionRecord) {
       throw new AriesFrameworkError(
         `Unable to process connection problem report: connection for verkey ${recipientVerkey} not found`
       )
     }
 
-    connection.errorMsg = `${connectionProblemReportMessage.description.code} : ${connectionProblemReportMessage.description.en}`
-    await this.updateState(connection, ConnectionState.None)
-    return connection
+    connectionRecord.errorMsg = `${connectionProblemReportMessage.description.code} : ${connectionProblemReportMessage.description.en}`
+    await this.updateState(connectionRecord, ConnectionState.None)
+    return connectionRecord
   }
 
   /**

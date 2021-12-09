@@ -10,9 +10,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../agent/AgentConfig'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 
-import { ConnectionProblemReportMessage } from './../modules/connections/messages/ConnectionProblemReportMessage'
-import { CredentialProblemReportMessage } from './../modules/credentials/messages/CredentialProblemReportMessage'
-import { PresentationProblemReportMessage } from './../modules/proofs/messages/PresentationProblemReportMessage'
+import { ProblemReportMessage } from './../modules/problem-reports/messages/ProblemReportMessage'
 import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes } from './Events'
 import { MessageSender } from './MessageSender'
@@ -50,12 +48,7 @@ class Dispatcher {
     } catch (error) {
       const problemReportMessage = error.problemReport
 
-      if (
-        (problemReportMessage instanceof ConnectionProblemReportMessage ||
-          problemReportMessage instanceof CredentialProblemReportMessage ||
-          problemReportMessage instanceof PresentationProblemReportMessage) &&
-        messageContext.connection
-      ) {
+      if (problemReportMessage instanceof ProblemReportMessage && messageContext.connection) {
         problemReportMessage.setThread({
           threadId: messageContext.message.threadId,
         })
