@@ -488,6 +488,8 @@ describe('credentials', () => {
   })
 
   test('Test revocation notification for Faber credential id', async () => {
+    expect(faberCredentialRecord.revocationNotification).toBeUndefined()
+
     testLogger.test('Creating revocation notification message')
     const revNotifMessage = new RevocationNotificationMessage({
       issueThread: faberCredentialRecord.getTag('threadId') as string,
