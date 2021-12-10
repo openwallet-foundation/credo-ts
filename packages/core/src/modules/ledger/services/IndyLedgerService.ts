@@ -92,8 +92,6 @@ export class IndyLedgerService {
     try {
       this.logger.debug(`Get endpoints for did '${did}' from ledger '${pool.id}'`)
 
-      // https://github.com/hyperledger/indy-sdk/blob/master/wrappers/nodejs/README.md#buildgetattribrequest--submitterdid-targetdid-raw-hash-enc----request
-      // @ts-ignore
       const request = await this.indy.buildGetAttribRequest(null, did, 'endpoint', null, null)
 
       this.logger.debug(`Submitting get endpoint ATTRIB request for did '${did}' to ledger '${pool.id}'`)

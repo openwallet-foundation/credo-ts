@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@multiformats/base-x": "^4.0.1",
-    "@types/indy-sdk": "^1.16.6",
+    "@types/indy-sdk": "^1.16.8",
     "@types/node-fetch": "^2.5.10",
     "@types/ws": "^7.4.4",
     "abort-controller": "^3.0.0",

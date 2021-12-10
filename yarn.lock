@@ -2144,10 +2144,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/indy-sdk-react-native@npm:@types/indy-sdk@^1.16.6", "@types/indy-sdk@^1.16.6":
-  version "1.16.6"
-  resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.16.6.tgz#ec8df3dd70cb939c85caa6ebcc32d851e2f3c454"
-  integrity sha512-BhmqsM2z65aOrg6Hum7YICX02dQA2OS05BjEypdoScmPO3ySsZ5QXngeh6pAi+se5yGYp+cL5msoTqldAhlOGA==
+"@types/indy-sdk-react-native@npm:@types/indy-sdk@^1.16.8", "@types/indy-sdk@^1.16.8":
+  version "1.16.8"
+  resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.16.8.tgz#ae3daa067caf91d870ebce219f5cc80c3f9d173f"
+  integrity sha512-UUfbZ+/6pAYOxRmeWgKaDSg0MJicf+KLFPZv8ckRU+R8AD7oemj9lLjvrOFnv+yYBFsyEw1AfqLg4RfioFZXCA==
   dependencies:
     buffer "^6.0.0"
 
