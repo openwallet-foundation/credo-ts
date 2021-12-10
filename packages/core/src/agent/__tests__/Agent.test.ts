@@ -12,7 +12,8 @@ import { CredentialRepository, CredentialService } from '../../modules/credentia
 import { CredentialsModule } from '../../modules/credentials/CredentialsModule'
 import { IndyLedgerService } from '../../modules/ledger'
 import { LedgerModule } from '../../modules/ledger/LedgerModule'
-import { ProofRepository, ProofService } from '../../modules/proofs'
+import { ProofRepository } from '../../modules/proofs/ProofRepository'
+import { ProofService } from '../../modules/proofs/ProofService'
 import { ProofsModule } from '../../modules/proofs/ProofsModule'
 import {
   MediatorModule,

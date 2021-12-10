@@ -8,11 +8,11 @@ import {
   PresentationMessage,
   ProofAttributeInfo,
   ProofPredicateInfo,
-  ProofRecord,
   ProofState,
   ProposePresentationMessage,
   RequestPresentationMessage,
 } from '../src'
+import { ProofRecord } from '../src/modules/proofs/ProofRecord'
 
 import { setupProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'

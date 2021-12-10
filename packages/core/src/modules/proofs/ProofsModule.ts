@@ -1,8 +1,8 @@
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
-import type { PresentationPreview, RequestPresentationMessage } from './messages'
-import type { RequestedCredentials, RetrievedCredentials } from './models'
-import type { ProofRequestOptions } from './models/ProofRequest'
-import type { ProofRecord } from './repository/ProofRecord'
+import type { ProofRecord } from './ProofRecord'
+import type { PresentationPreview, RequestPresentationMessage } from './v1/messages'
+import type { RequestedCredentials, RetrievedCredentials } from './v1/models'
+import type { ProofRequestOptions } from './v1/models/ProofRequest'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -16,14 +16,14 @@ import { ConnectionService } from '../connections/services/ConnectionService'
 import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
+import { ProofService } from './ProofService'
 import {
   ProposePresentationHandler,
   RequestPresentationHandler,
   PresentationAckHandler,
   PresentationHandler,
-} from './handlers'
-import { ProofRequest } from './models/ProofRequest'
-import { ProofService } from './services'
+} from './v1/handlers'
+import { ProofRequest } from './v1/models/ProofRequest'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ProofsModule {

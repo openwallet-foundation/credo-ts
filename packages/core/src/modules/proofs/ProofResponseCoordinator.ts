@@ -1,4 +1,4 @@
-import type { ProofRecord } from './repository'
+import type { ProofRecord } from './ProofRecord'
 
 import { scoped, Lifecycle } from 'tsyringe'
 
