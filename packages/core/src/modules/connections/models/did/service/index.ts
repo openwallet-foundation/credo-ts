@@ -1,6 +1,6 @@
 import type { ClassConstructor } from 'class-transformer'
 
-import { Transform, plainToClass } from 'class-transformer'
+import { Transform, plainToInstance } from 'class-transformer'
 
 import { DidCommService } from './DidCommService'
 import { IndyAgentService } from './IndyAgentService'
@@ -25,7 +25,7 @@ export function ServiceTransformer() {
     ({ value }: { value: { type: string }[] }) => {
       return value.map((serviceJson) => {
         const serviceClass = (serviceTypes[serviceJson.type] ?? Service) as ClassConstructor<Service>
-        const service = plainToClass<Service, unknown>(serviceClass, serviceJson)
+        const service = plainToInstance<Service, unknown>(serviceClass, serviceJson)
 
         return service
       })

@@ -1,6 +1,6 @@
 import type { ClassConstructor } from 'class-transformer'
 
-import { classToPlain, plainToClass } from 'class-transformer'
+import { instanceToPlain, plainToInstance } from 'class-transformer'
 
 import {
   PublicKeyTransformer,
@@ -52,7 +52,7 @@ describe('Did | PublicKey', () => {
       controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
     }
 
-    const service = plainToClass(PublicKey, json)
+    const service = plainToInstance(PublicKey, json)
     expect(service.id).toBe(json.id)
     expect(service.type).toBe(json.type)
     expect(service.controller).toBe(json.controller)
@@ -67,7 +67,7 @@ describe('Did | PublicKey', () => {
     const publicKey = new PublicKey({
       ...json,
     })
-    const transformed = classToPlain(publicKey)
+    const transformed = instanceToPlain(publicKey)
     expect(transformed).toEqual(json)
   })
 
@@ -76,7 +76,7 @@ describe('Did | PublicKey', () => {
   test.each(publicKeyJsonToClassTests)(
     'should correctly transform Json to %s class',
     async (_, publicKeyClass, json, valueKey) => {
-      const publicKey = plainToClass(publicKeyClass, json)
+      const publicKey = plainToInstance(publicKeyClass, json)
 
       expect(publicKey.id).toBe(json.id)
       expect(publicKey.type).toBe(json.type)
@@ -92,7 +92,7 @@ describe('Did | PublicKey', () => {
   test.each(publicKeyClassToJsonTests)(
     'should correctly transform %s class to Json',
     async (_, publicKey, json, valueKey) => {
-      const publicKeyJson = classToPlain(publicKey)
+      const publicKeyJson = instanceToPlain(publicKey)
 
       expect(publicKey.value).toBe(json[valueKey])
       expect(publicKeyJson).toMatchObject(json)
@@ -116,7 +116,7 @@ describe('Did | PublicKey', () => {
       const publicKeyWrapperJson = {
         publicKey: [publicKeyJson],
       }
-      const publicKeyWrapper = plainToClass(PublicKeyTransformerTest, publicKeyWrapperJson)
+      const publicKeyWrapper = plainToInstance(PublicKeyTransformerTest, publicKeyWrapperJson)
 
       expect(publicKeyWrapper.publicKey.length).toBe(1)
 
@@ -134,7 +134,7 @@ describe('Did | PublicKey', () => {
       const publicKeyWrapperJson = {
         publicKey: publicKeyArray,
       }
-      const publicKeyWrapper = plainToClass(PublicKeyTransformerTest, publicKeyWrapperJson)
+      const publicKeyWrapper = plainToInstance(PublicKeyTransformerTest, publicKeyWrapperJson)
 
       expect(publicKeyWrapper.publicKey.length).toBe(publicKeyArray.length)
 

@@ -70,8 +70,10 @@ describe('credentials', () => {
   })
 
   afterEach(async () => {
-    await faberAgent.shutdown({ deleteWallet: true })
-    await aliceAgent.shutdown({ deleteWallet: true })
+    await faberAgent.shutdown()
+    await faberAgent.wallet.delete()
+    await aliceAgent.shutdown()
+    await aliceAgent.wallet.delete()
   })
 
   test('Faber starts with connection-less credential offer to Alice', async () => {

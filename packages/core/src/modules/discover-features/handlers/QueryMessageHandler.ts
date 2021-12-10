@@ -2,11 +2,11 @@ import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DiscoverFeaturesService } from '../services/DiscoverFeaturesService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
-import { DiscoverFeaturesQueryMessage } from '../messages'
+import { QueryMessage } from '../messages'
 
 export class QueryMessageHandler implements Handler {
   private discoverFeaturesService: DiscoverFeaturesService
-  public supportedMessages = [DiscoverFeaturesQueryMessage]
+  public supportedMessages = [QueryMessage]
 
   public constructor(discoverFeaturesService: DiscoverFeaturesService) {
     this.discoverFeaturesService = discoverFeaturesService

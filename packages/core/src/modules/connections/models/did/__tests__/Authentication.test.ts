@@ -1,6 +1,6 @@
 import type { Authentication } from '../authentication'
 
-import { classToPlain, plainToClass } from 'class-transformer'
+import { instanceToPlain, plainToInstance } from 'class-transformer'
 
 import { AuthenticationTransformer, ReferencedAuthentication, EmbeddedAuthentication } from '../authentication'
 import { PublicKey, RsaSig2018 } from '../publicKey'
@@ -15,7 +15,7 @@ describe('Did | Authentication', () => {
       })
 
       const referencedAuthentication = new ReferencedAuthentication(publicKey, 'RsaSignatureAuthentication2018')
-      const transformed = classToPlain(referencedAuthentication)
+      const transformed = instanceToPlain(referencedAuthentication)
 
       expect(transformed).toMatchObject({
         type: 'RsaSignatureAuthentication2018',
@@ -49,7 +49,7 @@ describe('Did | Authentication', () => {
         publicKey: [embeddedAuthenticationJson],
         authentication: [referencedAuthenticationJson, embeddedAuthenticationJson],
       }
-      const authenticationWrapper = plainToClass(AuthenticationTransformerTest, authenticationWrapperJson)
+      const authenticationWrapper = plainToInstance(AuthenticationTransformerTest, authenticationWrapperJson)
 
       expect(authenticationWrapper.authentication.length).toBe(2)
 
@@ -77,7 +77,7 @@ describe('Did | Authentication', () => {
         publicKey: [publicKeyJson],
         authentication: [referencedAuthenticationJson],
       }
-      const authenticationWrapper = plainToClass(AuthenticationTransformerTest, authenticationWrapperJson)
+      const authenticationWrapper = plainToInstance(AuthenticationTransformerTest, authenticationWrapperJson)
 
       expect(authenticationWrapper.authentication.length).toBe(1)
 
@@ -98,7 +98,7 @@ describe('Did | Authentication', () => {
         authentication: [referencedAuthenticationJson],
       }
 
-      expect(() => plainToClass(AuthenticationTransformerTest, authenticationWrapperJson)).toThrowError(
+      expect(() => plainToInstance(AuthenticationTransformerTest, authenticationWrapperJson)).toThrowError(
         `Invalid public key referenced ${referencedAuthenticationJson.publicKey}`
       )
     })
@@ -114,7 +114,7 @@ describe('Did | Authentication', () => {
       const authenticationWrapperJson = {
         authentication: [publicKeyJson],
       }
-      const authenticationWrapper = plainToClass(AuthenticationTransformerTest, authenticationWrapperJson)
+      const authenticationWrapper = plainToInstance(AuthenticationTransformerTest, authenticationWrapperJson)
 
       expect(authenticationWrapper.authentication.length).toBe(1)
 
@@ -145,7 +145,7 @@ describe('Did | Authentication', () => {
       ]
 
       expect(authenticationWrapper.authentication.length).toBe(2)
-      const [embeddedJson, referencedJson] = classToPlain(authenticationWrapper).authentication
+      const [embeddedJson, referencedJson] = instanceToPlain(authenticationWrapper).authentication
 
       expect(embeddedJson).toMatchObject({
         controller: 'test',
