@@ -16,6 +16,12 @@ export class DidDocumentBuilder {
     this.id = id
   }
 
+  public addContext(context: string) {
+    this.context.push(context)
+
+    return this
+  }
+
   public addService(service: ServiceEndpoint) {
     this.service.push(service)
 

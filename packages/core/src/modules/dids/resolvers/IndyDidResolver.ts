@@ -2,6 +2,9 @@ import type { IndyLedgerService } from '../../ledger'
 import type { ParsedDID, DIDResolutionResult, ServiceEndpoint } from '../types'
 import type { DidResolver } from './DidResolver'
 
+import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
+
+import { BufferEncoder } from '../../../utils/BufferEncoder'
 import { getFullVerkey } from '../../../utils/did'
 import { DidDocumentBuilder } from '../DidDocumentBuilder'
 
@@ -34,16 +37,31 @@ export class IndyDidResolver implements DidResolver {
       const endpoints = await this.indyLedgerService.getEndpointsForDid(did)
 
       const verificationMethodId = `${parsed.did}#key-1`
+      const keyAgreementId = `${parsed.did}#key-agreement-1`
+
+      const publicKeyBase58 = getFullVerkey(nym.did, nym.verkey)
+      const publicKeyX25519 = BufferEncoder.toBase58(
+        convertPublicKeyToX25519(BufferEncoder.fromBase58(publicKeyBase58))
+      )
 
       const builder = new DidDocumentBuilder(parsed.did)
+        .addContext('https://w3id.org/security/suites/ed25519-2018/v1')
+        .addContext('https://w3id.org/security/suites/x25519-2019/v1')
         .addVerificationMethod({
           controller: parsed.did,
           id: verificationMethodId,
           publicKeyBase58: getFullVerkey(nym.did, nym.verkey),
           type: 'Ed25519VerificationKey2018',
         })
+        .addVerificationMethod({
+          controller: parsed.did,
+          id: keyAgreementId,
+          publicKeyBase58: publicKeyX25519,
+          type: 'X25519KeyAgreementKey2019',
+        })
         .addAuthentication(verificationMethodId)
         .addAssertionMethod(verificationMethodId)
+        .addKeyAgreement(keyAgreementId)
 
       for (const [type, endpoint] of Object.entries(endpoints)) {
         builder.addService({

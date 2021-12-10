@@ -1,5 +1,6 @@
 import type { VerificationMethod, DIDDocument } from './types'
 
+import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { varint } from 'multiformats'
 
 import { BufferEncoder } from '../../utils/BufferEncoder'
@@ -38,8 +39,8 @@ export class DidKey {
   public readonly publicKey: Buffer
   public readonly keyType: KeyType
 
-  public constructor(publicKey: Buffer, keyType: KeyType) {
-    this.publicKey = publicKey
+  public constructor(publicKey: Uint8Array, keyType: KeyType) {
+    this.publicKey = Buffer.from(publicKey)
     this.keyType = keyType
   }
 
@@ -53,8 +54,8 @@ export class DidKey {
     return DidKey.fromFingerprint(parsed.id)
   }
 
-  public static fromPublicKey(publicKey: Buffer, keyType: KeyType) {
-    return new DidKey(publicKey, keyType)
+  public static fromPublicKey(publicKey: Uint8Array, keyType: KeyType) {
+    return new DidKey(Buffer.from(publicKey), keyType)
   }
 
   public static fromPublicKeyBase58(publicKey: string, keyType: KeyType) {
@@ -181,17 +182,22 @@ function getEd25519DidDoc(didKey: DidKey) {
     publicKeyBase58: didKey.publicKeyBase58,
   }
 
+  const publicKeyX25519 = convertPublicKeyToX25519(didKey.publicKey)
+  const didKeyX25519 = new DidKey(publicKeyX25519, KeyType.X25519)
+  const x25519Id = `${didKey.did}#${didKeyX25519.fingerprint}`
+
   const didDocBuilder = getSignatureKeyBase(didKey, verificationMethod)
 
-  // FIXME: Currently no method to transform ed25519 public key to x25519 public key
-  // We could use https://www.npmjs.com/package/@stablelib/ed25519 but it will add another dependency
-  // const didKeyX25519 = new DidKey(, KeyType.X25519)
-  // didDocBuilder.addKeyAgreement({
-  //   id: `${didKey.did}#${didKeyX25519.fingerprint}`,
-  //   type: 'X25519KeyAgreementKey2019',
-  //   controller: didKey.did,
-  //   publicKeyBase58: didKeyX25519.publicKeyBase58,
-  // })
+  didDocBuilder
+    .addContext('https://w3id.org/security/suites/ed25519-2018/v1')
+    .addContext('https://w3id.org/security/suites/x25519-2019/v1')
+    .addVerificationMethod({
+      id: `${didKey.did}#${didKeyX25519.fingerprint}`,
+      type: 'X25519KeyAgreementKey2019',
+      controller: didKey.did,
+      publicKeyBase58: didKeyX25519.publicKeyBase58,
+    })
+    .addKeyAgreement(x25519Id)
 
   return didDocBuilder.build()
 }
