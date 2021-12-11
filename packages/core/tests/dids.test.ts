@@ -57,40 +57,6 @@ describe('dids', () => {
     })
   })
 
-  it('should resolve a did:web did', async () => {
-    const did = await agent.dids.resolve('did:web:did.actor:alice')
-
-    expect(did).toEqual({
-      didDocument: {
-        '@context': ['https://w3.org/ns/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
-        id: 'did:web:did.actor:alice',
-        publicKey: [
-          {
-            id: 'did:web:did.actor:alice#z6MkrmNwty5ajKtFqc1U48oL2MMLjWjartwc5sf2AihZwXDN',
-            controller: 'did:web:did.actor:alice',
-            type: 'Ed25519VerificationKey2018',
-            publicKeyBase58: 'DK7uJiq9PnPnj7AmNZqVBFoLuwTjT1hFPrk6LSjZ2JRz',
-          },
-        ],
-        authentication: ['did:web:did.actor:alice#z6MkrmNwty5ajKtFqc1U48oL2MMLjWjartwc5sf2AihZwXDN'],
-        assertionMethod: ['did:web:did.actor:alice#z6MkrmNwty5ajKtFqc1U48oL2MMLjWjartwc5sf2AihZwXDN'],
-        capabilityDelegation: ['did:web:did.actor:alice#z6MkrmNwty5ajKtFqc1U48oL2MMLjWjartwc5sf2AihZwXDN'],
-        capabilityInvocation: ['did:web:did.actor:alice#z6MkrmNwty5ajKtFqc1U48oL2MMLjWjartwc5sf2AihZwXDN'],
-        keyAgreement: [
-          {
-            id: 'did:web:did.actor:alice#zC8GybikEfyNaausDA4mkT4egP7SNLx2T1d1kujLQbcP6h',
-            type: 'X25519KeyAgreementKey2019',
-            controller: 'did:web:did.actor:alice',
-            publicKeyBase58: 'CaSHXEvLKS6SfN9aBfkVGBpp15jSnaHazqHgLHp8KZ3Y',
-          },
-        ],
-      },
-      didDocumentMetadata: {},
-      didResolutionMetadata: {
-        contentType: 'application/did+ld+json',
-      },
-    })
-  })
   it('should resolve a did:key did', async () => {
     const did = await agent.dids.resolve('did:key:z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
 
