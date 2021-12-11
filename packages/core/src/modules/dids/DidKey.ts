@@ -72,7 +72,7 @@ export class DidKey {
     const keyType = idPrefixMap[code]
 
     if (!keyType) {
-      throw new Error('Unsupported key type from multicodec')
+      throw new Error(`Unsupported key type from multicodec code '${code}'`)
     }
 
     return new DidKey(publicKey, keyType)
