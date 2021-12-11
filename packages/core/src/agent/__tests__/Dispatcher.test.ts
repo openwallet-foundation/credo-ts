@@ -25,6 +25,7 @@ class CredentialProposalTestMessage extends AgentMessage {
 }
 
 class TestHandler implements Handler {
+  // We want to pass various classes to test various behaviours so we dont need to strictly type it.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public constructor(classes: any[]) {
     this.supportedMessages = classes

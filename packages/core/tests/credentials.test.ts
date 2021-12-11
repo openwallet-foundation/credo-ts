@@ -31,12 +31,10 @@ describe('credentials', () => {
   })
 
   afterAll(async () => {
-    await aliceAgent.shutdown({
-      deleteWallet: true,
-    })
-    await faberAgent.shutdown({
-      deleteWallet: true,
-    })
+    await faberAgent.shutdown()
+    await faberAgent.wallet.delete()
+    await aliceAgent.shutdown()
+    await aliceAgent.wallet.delete()
   })
 
   test('Alice starts with credential proposal to Faber', async () => {
