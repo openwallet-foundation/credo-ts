@@ -71,6 +71,10 @@ export class DidKey {
     const publicKey = Buffer.from(data.slice(byteLength))
     const keyType = idPrefixMap[code]
 
+    if (!keyType) {
+      throw new Error('Unsupported key type from multicodec')
+    }
+
     return new DidKey(publicKey, keyType)
   }
 
