@@ -13,9 +13,8 @@ describe('dids', () => {
   })
 
   afterAll(async () => {
-    await agent.shutdown({
-      deleteWallet: true,
-    })
+    await agent.shutdown()
+    await agent.wallet.delete()
   })
 
   it('should resolve a did:sov did', async () => {
