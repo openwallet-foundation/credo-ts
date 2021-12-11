@@ -99,7 +99,7 @@ export class IndyLedgerService {
 
       if (!response.result.data) return {}
 
-      const endpoints = JSON.parse(response.result.data as string)?.endpoint as Record<string, string>
+      const endpoints = JSON.parse(response.result.data as string)?.endpoint as IndyEndpointAttrib
       this.logger.debug(`Got endpoints '${JSON.stringify(endpoints)}' for did '${did}' from ledger '${pool.id}'`, {
         response,
         endpoints,
@@ -365,7 +365,9 @@ export interface CredentialDefinitionTemplate {
   supportRevocation: boolean
 }
 
-export interface EndpointType {
+export interface IndyEndpointAttrib {
   endpoint?: string
-  [x: string]: string | undefined
+  types?: Array<'endpoint' | 'did-communication' | 'DIDComm'>
+  routingKeys?: string[]
+  [key: string]: unknown
 }

@@ -1,4 +1,4 @@
-import type { IndyLedgerService } from '../../ledger'
+import type { IndyEndpointAttrib, IndyLedgerService } from '../../ledger'
 import type { ParsedDID, DIDResolutionResult, ServiceEndpoint } from '../types'
 import type { DidResolver } from './DidResolver'
 
@@ -63,36 +63,7 @@ export class IndyDidResolver implements DidResolver {
         .addAssertionMethod(verificationMethodId)
         .addKeyAgreement(keyAgreementId)
 
-      for (const [type, endpoint] of Object.entries(endpoints)) {
-        builder.addService({
-          id: `${parsed.did}#service-${type}`,
-          serviceEndpoint: endpoint as string,
-          type,
-        })
-
-        // 'endpoint' type is for didcomm
-        if (type === 'endpoint') {
-          builder.addService({
-            type: 'did-communication',
-            id: `${parsed.did}#did-communication`,
-            serviceEndpoint: endpoint as string,
-            priority: 0,
-            routingKeys: [],
-            recipientKeys: [verificationMethodId],
-            // FIXME: it is not possible to determine this locally, but is what is used in the uniresolver
-            accept: ['didcomm/aip2;env=rfc19'],
-          } as DidCommunicationService)
-
-          builder.addService({
-            type: 'DIDComm',
-            id: `${parsed.did}#DIDComm`,
-            serviceEndpoint: endpoint as string,
-            routingKeys: [],
-            // FIXME: it is not possible to determine this locally, but is what is used in the uniresolver
-            accept: ['didcomm/v2', 'didcomm/aip2;env=rfc19'],
-          } as DidCommunicationV2Service)
-        }
-      }
+      this.addServices(builder, parsed, endpoints, keyAgreementId)
 
       return {
         didDocument: builder.build(),
@@ -108,6 +79,59 @@ export class IndyDidResolver implements DidResolver {
           message: `resolver_error: Unable to resolve did '${did}': ${error}`,
         },
       }
+    }
+  }
+
+  private addServices(
+    builder: DidDocumentBuilder,
+    parsed: ParsedDID,
+    endpoints: IndyEndpointAttrib,
+    keyAgreementId: string
+  ) {
+    const { endpoint, routingKeys, types, ...otherEndpoints } = endpoints
+
+    // If 'endpoint' type add id to the services array
+    if (endpoint) {
+      builder.addService({
+        id: `${parsed.did}#endpoint`,
+        serviceEndpoint: endpoint,
+        type: 'endpoint',
+      })
+
+      // If 'did-communication' included in types, add DIDComm v1 entry
+      if (types?.includes('did-communication')) {
+        builder.addService({
+          type: 'did-communication',
+          id: `${parsed.did}#did-communication`,
+          serviceEndpoint: endpoint,
+          priority: 0,
+          routingKeys: routingKeys ?? [],
+          recipientKeys: [keyAgreementId],
+          accept: ['didcomm/aip2;env=rfc19'],
+        } as DidCommunicationService)
+
+        // If 'DIDComm' included in types, add DIDComm v2 entry
+        if (types?.includes('DIDComm')) {
+          builder
+            .addService({
+              type: 'DIDComm',
+              id: `${parsed.did}#didcomm-1`,
+              serviceEndpoint: endpoint,
+              routingKeys: routingKeys ?? [],
+              accept: ['didcomm/v2'],
+            } as DidCommunicationV2Service)
+            .addContext('https://didcomm.org/messaging/contexts/v2')
+        }
+      }
+    }
+
+    // Add other endpoint types
+    for (const [type, endpoint] of Object.entries(otherEndpoints)) {
+      builder.addService({
+        id: `${parsed.did}#${type}`,
+        serviceEndpoint: endpoint as string,
+        type,
+      })
     }
   }
 }
