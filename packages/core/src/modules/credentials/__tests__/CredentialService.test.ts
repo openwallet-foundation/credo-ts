@@ -20,6 +20,7 @@ import { IndyLedgerService } from '../../ledger/services'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
+import { CredentialProblemReportReason } from '../errors/CredentialProblemReportReason'
 import {
   CredentialAckMessage,
   CredentialPreview,
@@ -34,6 +35,7 @@ import { CredentialRecord } from '../repository/CredentialRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
 import { CredentialService } from '../services'
 
+import { CredentialProblemReportMessage } from './../messages/CredentialProblemReportMessage'
 import { credDef, credOffer, credReq } from './fixtures'
 
 // Mock classes
@@ -919,6 +921,109 @@ describe('CredentialService', () => {
           )
         })
       )
+    })
+  })
+
+  describe('createProblemReport', () => {
+    const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249746'
+    let credential: CredentialRecord
+
+    beforeEach(() => {
+      credential = mockCredentialRecord({
+        state: CredentialState.OfferReceived,
+        threadId,
+        connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
+      })
+    })
+
+    test('returns problem report message base once get error', async () => {
+      // given
+      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
+
+      // when
+      const credentialProblemReportMessage = await new CredentialProblemReportMessage({
+        description: {
+          en: 'Indy error',
+          code: CredentialProblemReportReason.IssuanceAbandoned,
+        },
+      })
+
+      credentialProblemReportMessage.setThread({ threadId })
+      // then
+      expect(credentialProblemReportMessage.toJSON()).toMatchObject({
+        '@id': expect.any(String),
+        '@type': 'https://didcomm.org/issue-credential/1.0/problem-report',
+        '~thread': {
+          thid: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
+        },
+      })
+    })
+  })
+
+  describe('processProblemReport', () => {
+    let credential: CredentialRecord
+    let messageContext: InboundMessageContext<CredentialProblemReportMessage>
+
+    beforeEach(() => {
+      credential = mockCredentialRecord({
+        state: CredentialState.OfferReceived,
+      })
+
+      const credentialProblemReportMessage = new CredentialProblemReportMessage({
+        description: {
+          en: 'Indy error',
+          code: CredentialProblemReportReason.IssuanceAbandoned,
+        },
+      })
+      credentialProblemReportMessage.setThread({ threadId: 'somethreadid' })
+      messageContext = new InboundMessageContext(credentialProblemReportMessage, {
+        connection,
+      })
+    })
+
+    test(`updates state to ${CredentialState.None} and returns credential record`, async () => {
+      const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
+
+      // given
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
+
+      // when
+      const returnedCredentialRecord = await credentialService.processProblemReport(messageContext)
+
+      // then
+      const expectedCredentialRecord = {
+        state: CredentialState.None,
+      }
+      expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, {
+        threadId: 'somethreadid',
+        connectionId: connection.id,
+      })
+      expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
+      const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
+      expect(updatedCredentialRecord).toMatchObject(expectedCredentialRecord)
+      expect(returnedCredentialRecord).toMatchObject(expectedCredentialRecord)
+    })
+
+    test(`emits stateChange event from ${CredentialState.OfferReceived} to ${CredentialState.None}`, async () => {
+      const eventListenerMock = jest.fn()
+      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
+
+      // given
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
+
+      // when
+      await credentialService.processProblemReport(messageContext)
+
+      // then
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: 'CredentialStateChanged',
+        payload: {
+          previousState: CredentialState.OfferReceived,
+          credentialRecord: expect.objectContaining({
+            state: CredentialState.None,
+          }),
+        },
+      })
     })
   })
 
