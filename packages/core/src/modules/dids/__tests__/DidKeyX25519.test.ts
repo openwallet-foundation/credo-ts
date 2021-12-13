@@ -1,6 +1,7 @@
 import { BufferEncoder } from '../../../utils/BufferEncoder'
+import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { Buffer } from '../../../utils/buffer'
-import { DidKey, KeyType } from '../DidKey'
+import { DidKey, KeyType } from '../domain/DidKey'
 
 import didKeyX25519Fixture from './__fixtures__/didKeyX25519.json'
 
@@ -56,7 +57,7 @@ describe('DidKey', () => {
     it('should return a valid did:key did document for the did', async () => {
       const didKey = DidKey.fromDid(TEST_X25519_DID)
 
-      expect(didKey.didDocument).toEqual(didKeyX25519Fixture)
+      expect(JsonTransformer.toJSON(didKey.didDocument)).toMatchObject(didKeyX25519Fixture)
     })
   })
 })

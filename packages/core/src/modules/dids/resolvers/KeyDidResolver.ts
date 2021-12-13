@@ -1,12 +1,12 @@
-import type { DIDResolutionResult } from '../types'
+import type { DidResolutionResult } from '../types'
 import type { DidResolver } from './DidResolver'
 
-import { DidKey } from '../DidKey'
+import { DidKey } from '../domain/DidKey'
 
 export class KeyDidResolver implements DidResolver {
   public readonly supportedMethods = ['key']
 
-  public async resolve(did: string): Promise<DIDResolutionResult> {
+  public async resolve(did: string): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}
 
     try {

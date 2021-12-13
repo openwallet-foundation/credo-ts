@@ -1,5 +1,7 @@
 {
-  "@context": ["https://www.w3.org/ns/did/v1"],
+  "@context": ["https://w3id.org/ns/did/v1"],
+  "controller": [],
+  "alsoKnownAs": [],
   "id": "did:key:z5TcESXuYUE9aZWYwSdrUEGK1HNQFHyTt4aVpaCTVZcDXQmUheFwfNZmRksaAbBneNm5KyE52SdJeRCN1g6PJmF31GsHWwFiqUDujvasK3wTiDr3vvkYwEJHt7H5RGEKYEp1ErtQtcEBgsgY2DA9JZkHj1J9HZ8MRDTguAhoFtR4aTBQhgnkP4SwVbxDYMEZoF2TMYn3s",
   "verificationMethod": [
     {

@@ -1,24 +1,15 @@
 import type { IndyEndpointAttrib, IndyLedgerService } from '../../ledger'
-import type { ParsedDID, DIDResolutionResult, ServiceEndpoint } from '../types'
+import type { ParsedDid, DidResolutionResult } from '../types'
 import type { DidResolver } from './DidResolver'
 
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
 import { BufferEncoder } from '../../../utils/BufferEncoder'
 import { getFullVerkey } from '../../../utils/did'
-import { DidDocumentBuilder } from '../DidDocumentBuilder'
-
-interface DidCommunicationService extends ServiceEndpoint {
-  priority?: number
-  routingKeys?: string[]
-  recipientKeys: string[]
-  accept: string[]
-}
-
-interface DidCommunicationV2Service extends ServiceEndpoint {
-  routingKeys?: string[]
-  accept: string[]
-}
+import { DidCommService } from '../../connections'
+import { DidDocumentService } from '../domain'
+import { DidDocumentBuilder } from '../domain/DidDocumentBuilder'
+import { DidCommV2Service } from '../domain/service/DidCommV2Service'
 
 export class IndyDidResolver implements DidResolver {
   private indyLedgerService: IndyLedgerService
@@ -29,7 +20,7 @@ export class IndyDidResolver implements DidResolver {
 
   public readonly supportedMethods = ['sov']
 
-  public async resolve(did: string, parsed: ParsedDID): Promise<DIDResolutionResult> {
+  public async resolve(did: string, parsed: ParsedDid): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}
 
     try {
@@ -84,7 +75,7 @@ export class IndyDidResolver implements DidResolver {
 
   private addServices(
     builder: DidDocumentBuilder,
-    parsed: ParsedDID,
+    parsed: ParsedDid,
     endpoints: IndyEndpointAttrib,
     keyAgreementId: string
   ) {
@@ -92,34 +83,38 @@ export class IndyDidResolver implements DidResolver {
 
     // If 'endpoint' type add id to the services array
     if (endpoint) {
-      builder.addService({
-        id: `${parsed.did}#endpoint`,
-        serviceEndpoint: endpoint,
-        type: 'endpoint',
-      })
+      builder.addService(
+        new DidDocumentService({
+          id: `${parsed.did}#endpoint`,
+          serviceEndpoint: endpoint,
+          type: 'endpoint',
+        })
+      )
 
       // If 'did-communication' included in types, add DIDComm v1 entry
       if (types?.includes('did-communication')) {
-        builder.addService({
-          type: 'did-communication',
-          id: `${parsed.did}#did-communication`,
-          serviceEndpoint: endpoint,
-          priority: 0,
-          routingKeys: routingKeys ?? [],
-          recipientKeys: [keyAgreementId],
-          accept: ['didcomm/aip2;env=rfc19'],
-        } as DidCommunicationService)
+        builder.addService(
+          new DidCommService({
+            id: `${parsed.did}#did-communication`,
+            serviceEndpoint: endpoint,
+            priority: 0,
+            routingKeys: routingKeys ?? [],
+            recipientKeys: [keyAgreementId],
+            accept: ['didcomm/aip2;env=rfc19'],
+          })
+        )
 
         // If 'DIDComm' included in types, add DIDComm v2 entry
         if (types?.includes('DIDComm')) {
           builder
-            .addService({
-              type: 'DIDComm',
-              id: `${parsed.did}#didcomm-1`,
-              serviceEndpoint: endpoint,
-              routingKeys: routingKeys ?? [],
-              accept: ['didcomm/v2'],
-            } as DidCommunicationV2Service)
+            .addService(
+              new DidCommV2Service({
+                id: `${parsed.did}#didcomm-1`,
+                serviceEndpoint: endpoint,
+                routingKeys: routingKeys ?? [],
+                accept: ['didcomm/v2'],
+              })
+            )
             .addContext('https://didcomm.org/messaging/contexts/v2')
         }
       }
@@ -127,11 +122,13 @@ export class IndyDidResolver implements DidResolver {
 
     // Add other endpoint types
     for (const [type, endpoint] of Object.entries(otherEndpoints)) {
-      builder.addService({
-        id: `${parsed.did}#${type}`,
-        serviceEndpoint: endpoint as string,
-        type,
-      })
+      builder.addService(
+        new DidDocumentService({
+          id: `${parsed.did}#${type}`,
+          serviceEndpoint: endpoint as string,
+          type,
+        })
+      )
     }
   }
 }

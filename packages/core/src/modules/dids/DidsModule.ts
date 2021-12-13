@@ -1,4 +1,4 @@
-import type { DIDResolutionOptions } from './types'
+import type { DidResolutionOptions } from './types'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -12,7 +12,7 @@ export class DidsModule {
     this.resolverService = resolverService
   }
 
-  public resolve(didUrl: string, options?: DIDResolutionOptions) {
+  public resolve(didUrl: string, options?: DidResolutionOptions) {
     return this.resolverService.resolve(didUrl, options)
   }
 }

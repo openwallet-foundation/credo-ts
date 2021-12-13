@@ -1,8 +1,12 @@
-import type { ParsedDID, DIDResolutionResult, DIDResolutionOptions } from '../types'
+import type { ParsedDid, DidResolutionResult, DidResolutionOptions } from '../types'
 import type { DidResolver } from './DidResolver'
 
 import { Resolver } from 'did-resolver'
 import * as didWeb from 'web-did-resolver'
+
+import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { MessageValidator } from '../../../utils/MessageValidator'
+import { DidDocument } from '../domain'
 
 export class WebDidResolver implements DidResolver {
   public readonly supportedMethods
@@ -17,9 +21,20 @@ export class WebDidResolver implements DidResolver {
 
   public async resolve(
     did: string,
-    parsed: ParsedDID,
-    didResolutionOptions: DIDResolutionOptions
-  ): Promise<DIDResolutionResult> {
-    return this.resolver[parsed.method](did, parsed, this._resolverInstance, didResolutionOptions)
+    parsed: ParsedDid,
+    didResolutionOptions: DidResolutionOptions
+  ): Promise<DidResolutionResult> {
+    const result = await this.resolver[parsed.method](did, parsed, this._resolverInstance, didResolutionOptions)
+
+    let didDocument = null
+    if (result.didDocument) {
+      didDocument = JsonTransformer.fromJSON(result.didDocument, DidDocument)
+      await MessageValidator.validate(didDocument)
+    }
+
+    return {
+      ...result,
+      didDocument,
+    }
   }
 }

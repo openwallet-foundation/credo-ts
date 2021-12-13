@@ -1,12 +1,12 @@
 import type { Logger } from '../../../logger'
 import type { DidResolver } from '../resolvers/DidResolver'
-import type { DIDResolutionOptions, ParsedDID } from '../types'
+import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../types'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { IndyLedgerService } from '../../ledger'
-import { parseDidUrl } from '../parse'
+import { parseDid } from '../parse'
 import { IndyDidResolver } from '../resolvers/IndyDidResolver'
 import { KeyDidResolver } from '../resolvers/KeyDidResolver'
 import { WebDidResolver } from '../resolvers/WebDidResolver'
@@ -22,7 +22,7 @@ export class DidResolverService {
     this.resolvers = [new IndyDidResolver(indyLedgerService), new WebDidResolver(), new KeyDidResolver()]
   }
 
-  public resolve(didUrl: string, options: DIDResolutionOptions = {}) {
+  public async resolve(didUrl: string, options: DidResolutionOptions = {}): Promise<DidResolutionResult> {
     this.logger.debug(`resolving didUrl ${didUrl}`)
 
     const result = {
@@ -31,7 +31,7 @@ export class DidResolverService {
       didDocumentMetadata: {},
     }
 
-    const parsed = parseDidUrl(didUrl)
+    const parsed = parseDid(didUrl)
     if (!parsed) {
       return {
         ...result,
@@ -50,7 +50,7 @@ export class DidResolverService {
     return resolver.resolve(parsed.did, parsed, options)
   }
 
-  private findResolver(parsed: ParsedDID): DidResolver | null {
+  private findResolver(parsed: ParsedDid): DidResolver | null {
     return this.resolvers.find((r) => r.supportedMethods.includes(parsed.method)) ?? null
   }
 }

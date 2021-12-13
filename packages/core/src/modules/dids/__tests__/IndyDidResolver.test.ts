@@ -2,8 +2,9 @@ import type { IndyEndpointAttrib } from '../../ledger/services/IndyLedgerService
 import type { GetNymResponse } from 'indy-sdk'
 
 import { mockFunction } from '../../../../tests/helpers'
+import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
-import { parseDidUrl } from '../parse'
+import { parseDid } from '../parse'
 import { IndyDidResolver } from '../resolvers/IndyDidResolver'
 
 import didSovR1xKJw17sUoXhejEpugMYJFixture from './__fixtures__/didSovR1xKJw17sUoXhejEpugMYJ.json'
@@ -13,7 +14,7 @@ jest.mock('../../ledger/services/IndyLedgerService')
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 
 const getParsed = (did: string) => {
-  const parsed = parseDidUrl(did)
+  const parsed = parseDid(did)
 
   if (!parsed) {
     throw new Error('Could not parse')
@@ -52,7 +53,7 @@ describe('DidResolver', () => {
 
       const result = await indyDidResolver.resolve(did, getParsed(did))
 
-      expect(result).toEqual({
+      expect(JsonTransformer.toJSON(result)).toMatchObject({
         didDocument: didSovR1xKJw17sUoXhejEpugMYJFixture,
         didDocumentMetadata: {},
         didResolutionMetadata: {
@@ -81,7 +82,7 @@ describe('DidResolver', () => {
 
       const result = await indyDidResolver.resolve(did, getParsed(did))
 
-      expect(result).toEqual({
+      expect(JsonTransformer.toJSON(result)).toMatchObject({
         didDocument: didSovWJz9mHyW9BZksioQnRsrAoFixture,
         didDocumentMetadata: {},
         didResolutionMetadata: {
@@ -97,7 +98,7 @@ describe('DidResolver', () => {
 
       const result = await indyDidResolver.resolve(did, getParsed(did))
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         didDocument: null,
         didDocumentMetadata: {},
         didResolutionMetadata: {

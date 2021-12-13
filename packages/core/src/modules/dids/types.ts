@@ -1,19 +1,13 @@
-import type {
-  DIDResolutionOptions,
-  ParsedDID,
-  DIDResolutionMetadata,
-  DIDResolutionResult,
-  DIDDocument,
-  ServiceEndpoint,
-  VerificationMethod,
-} from 'did-resolver'
+import type { DidDocument } from './domain'
+import type { DIDResolutionOptions, ParsedDID, DIDDocumentMetadata, DIDResolutionMetadata } from 'did-resolver'
 
-export type {
-  DIDResolutionOptions,
-  ParsedDID,
-  DIDResolutionMetadata,
-  DIDResolutionResult,
-  DIDDocument,
-  ServiceEndpoint,
-  VerificationMethod,
+export type ParsedDid = ParsedDID
+export type DidResolutionOptions = DIDResolutionOptions
+export type DidDocumentMetadata = DIDDocumentMetadata
+export type DidResolutionMetadata = DIDResolutionMetadata
+
+export interface DidResolutionResult {
+  didResolutionMetadata: DidResolutionMetadata
+  didDocument: DidDocument | null
+  didDocumentMetadata: DidDocumentMetadata
 }

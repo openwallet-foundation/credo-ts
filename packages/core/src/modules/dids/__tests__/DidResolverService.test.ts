@@ -1,7 +1,9 @@
 import type { IndyLedgerService } from '../../ledger'
 
 import { getAgentConfig, mockProperty } from '../../../../tests/helpers'
-import { parseDidUrl } from '../parse'
+import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { DidDocument } from '../domain'
+import { parseDid } from '../parse'
 import { KeyDidResolver } from '../resolvers/KeyDidResolver'
 import { DidResolverService } from '../services/DidResolverService'
 
@@ -20,7 +22,7 @@ describe('DidResolverService', () => {
     mockProperty(KeyDidResolver.prototype, 'supportedMethods', ['key'])
 
     const returnValue = {
-      didDocument: didKeyEd25519Fixture,
+      didDocument: JsonTransformer.fromJSON(didKeyEd25519Fixture, DidDocument),
       didDocumentMetadata: {},
       didResolutionMetadata: {
         contentType: 'application/did+ld+json',
@@ -32,7 +34,7 @@ describe('DidResolverService', () => {
     expect(result).toEqual(returnValue)
 
     expect(didKeyResolveSpy).toHaveBeenCalledTimes(1)
-    expect(didKeyResolveSpy).toHaveBeenCalledWith('did:key:xxxx', parseDidUrl('did:key:xxxx'), { someKey: 'string' })
+    expect(didKeyResolveSpy).toHaveBeenCalledWith('did:key:xxxx', parseDid('did:key:xxxx'), { someKey: 'string' })
   })
 
   it("should return an error with 'invalidDid' if the did string couldn't be parsed", async () => {

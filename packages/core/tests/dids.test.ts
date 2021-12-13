@@ -2,6 +2,8 @@ import { Agent } from '../src/agent/Agent'
 
 import { getBaseConfig } from './helpers'
 
+import { JsonTransformer } from '@aries-framework/core'
+
 const { config, agentDependencies } = getBaseConfig('Faber Dids', {})
 
 describe('dids', () => {
@@ -20,14 +22,16 @@ describe('dids', () => {
   it('should resolve a did:sov did', async () => {
     const did = await agent.dids.resolve(`did:sov:TL1EaPFCZ8Si5aUrqScBDt`)
 
-    expect(did).toEqual({
+    expect(JsonTransformer.toJSON(did)).toMatchObject({
       didDocument: {
         '@context': [
-          'https://www.w3.org/ns/did/v1',
+          'https://w3id.org/ns/did/v1',
           'https://w3id.org/security/suites/ed25519-2018/v1',
           'https://w3id.org/security/suites/x25519-2019/v1',
         ],
         id: 'did:sov:TL1EaPFCZ8Si5aUrqScBDt',
+        alsoKnownAs: [],
+        controller: [],
         verificationMethod: [
           {
             type: 'Ed25519VerificationKey2018',
@@ -59,14 +63,16 @@ describe('dids', () => {
   it('should resolve a did:key did', async () => {
     const did = await agent.dids.resolve('did:key:z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
 
-    expect(did).toEqual({
+    expect(JsonTransformer.toJSON(did)).toMatchObject({
       didDocument: {
         '@context': [
-          'https://www.w3.org/ns/did/v1',
+          'https://w3id.org/ns/did/v1',
           'https://w3id.org/security/suites/ed25519-2018/v1',
           'https://w3id.org/security/suites/x25519-2019/v1',
         ],
         id: 'did:key:z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL',
+        alsoKnownAs: [],
+        controller: [],
         verificationMethod: [
           {
             id: 'did:key:z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL#z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL',

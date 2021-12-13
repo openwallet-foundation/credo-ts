@@ -1,6 +1,6 @@
-import type { ParsedDID, DIDResolutionResult, DIDResolutionOptions } from '../types'
+import type { ParsedDid, DidResolutionResult, DidResolutionOptions } from '../types'
 
 export interface DidResolver {
   readonly supportedMethods: string[]
-  resolve(did: string, parsed: ParsedDID, didResolutionOptions: DIDResolutionOptions): Promise<DIDResolutionResult>
+  resolve(did: string, parsed: ParsedDid, didResolutionOptions: DidResolutionOptions): Promise<DidResolutionResult>
 }

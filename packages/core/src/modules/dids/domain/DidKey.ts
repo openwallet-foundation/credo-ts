@@ -1,14 +1,14 @@
-import type { VerificationMethod, DIDDocument } from './types'
+import type { DidDocument, VerificationMethod } from '.'
 
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { varint } from 'multiformats'
 
-import { BufferEncoder } from '../../utils/BufferEncoder'
-import { MultiBaseEncoder } from '../../utils/MultiBaseEncoder'
-import { Buffer } from '../../utils/buffer'
+import { BufferEncoder } from '../../../utils/BufferEncoder'
+import { MultiBaseEncoder } from '../../../utils/MultiBaseEncoder'
+import { Buffer } from '../../../utils/buffer'
+import { parseDid } from '../parse'
 
 import { DidDocumentBuilder } from './DidDocumentBuilder'
-import { parseDidUrl } from './parse'
 
 export const enum KeyType {
   ED25519 = 'ed25519',
@@ -18,7 +18,7 @@ export const enum KeyType {
   BLS12381G1G2 = 'bls12381g1g2',
 }
 
-const keyTypeResolverMap: Record<KeyType, (didKey: DidKey) => DIDDocument> = {
+const keyTypeResolverMap: Record<KeyType, (didKey: DidKey) => DidDocument> = {
   [KeyType.ED25519]: getEd25519DidDoc,
   [KeyType.X25519]: getX25519DidDoc,
   [KeyType.BLS12381G1]: getBls12381g1DidDoc,
@@ -45,7 +45,7 @@ export class DidKey {
   }
 
   public static fromDid(did: string) {
-    const parsed = parseDidUrl(did)
+    const parsed = parseDid(did)
 
     if (!parsed) {
       throw new Error('Unable to parse did')
@@ -168,7 +168,7 @@ function getBls12381g1DidDoc(didKey: DidKey) {
 }
 
 function getX25519DidDoc(didKey: DidKey) {
-  return new DidDocumentBuilder(didKey.did)
+  const document = new DidDocumentBuilder(didKey.did)
     .addKeyAgreement({
       id: didKey.keyId,
       type: 'X25519KeyAgreementKey2019',
@@ -176,6 +176,8 @@ function getX25519DidDoc(didKey: DidKey) {
       publicKeyBase58: didKey.publicKeyBase58,
     })
     .build()
+
+  return document
 }
 
 function getEd25519DidDoc(didKey: DidKey) {

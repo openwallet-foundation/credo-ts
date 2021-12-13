@@ -1,4 +1,5 @@
-import { DidKey } from '../DidKey'
+import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { DidKey } from '../domain/DidKey'
 import { KeyDidResolver } from '../resolvers/KeyDidResolver'
 
 import didKeyEd25519Fixture from './__fixtures__/didKeyEd25519.json'
@@ -15,11 +16,12 @@ describe('DidResolver', () => {
       const fromDidSpy = jest.spyOn(DidKey, 'fromDid')
       const result = await keyDidResolver.resolve('did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th')
 
-      expect(result).toEqual({
+      expect(JsonTransformer.toJSON(result)).toMatchObject({
         didDocument: didKeyEd25519Fixture,
         didDocumentMetadata: {},
         didResolutionMetadata: { contentType: 'application/did+ld+json' },
       })
+      expect(result.didDocument)
       expect(fromDidSpy).toHaveBeenCalledTimes(1)
       expect(fromDidSpy).toHaveBeenCalledWith('did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th')
     })
