@@ -51,6 +51,7 @@ export interface InitConfig {
 
 export interface UnpackedMessage {
   '@type': string
+  '@id': string
   [key: string]: unknown
 }
 

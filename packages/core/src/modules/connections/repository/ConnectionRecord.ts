@@ -29,6 +29,7 @@ export interface ConnectionRecordProps {
   imageUrl?: string
   multiUseInvitation: boolean
   mediatorId?: string
+  errorMsg?: string
 }
 
 export type CustomConnectionTags = TagsBase
@@ -68,6 +69,7 @@ export class ConnectionRecord
 
   public threadId?: string
   public mediatorId?: string
+  public errorMsg?: string
 
   public static readonly type = 'ConnectionRecord'
   public readonly type = ConnectionRecord.type
@@ -94,6 +96,7 @@ export class ConnectionRecord
       this.imageUrl = props.imageUrl
       this.multiUseInvitation = props.multiUseInvitation
       this.mediatorId = props.mediatorId
+      this.errorMsg = props.errorMsg
     }
   }
 
