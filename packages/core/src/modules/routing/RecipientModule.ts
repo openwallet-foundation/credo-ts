@@ -280,7 +280,8 @@ export class RecipientModule {
     const connection = await this.connectionService.findByInvitationKey(invitation.recipientKeys[0])
     if (!connection) {
       this.logger.debug('Mediation Connection does not exist, creating connection')
-      const routing = await this.mediationRecipientService.getRouting()
+      // null means we don't want to use the current mediator when connecting to another mediator
+      const routing = await this.mediationRecipientService.getRouting(null)
 
       const invitationConnectionRecord = await this.connectionService.processInvitation(invitation, {
         autoAcceptConnection: true,
