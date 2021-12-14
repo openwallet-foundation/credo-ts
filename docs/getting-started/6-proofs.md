@@ -73,9 +73,7 @@ const handleProofStateChange = async (agent: Agent, event: ProofStateChangedEven
 Make sure to add the event listener to the agent after initializing the wallet
 
 ```ts
-agent.events.on<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged, (event) => {
-  handleProofStateChange(event)
-})
+agent.events.on<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged, handleProofStateChange)
 ```
 
 ## Manually accepting proof request
