@@ -4,8 +4,8 @@ import type { Logger } from '../../../logger'
 import type { ConnectionRecord } from '../../connections'
 import type { AutoAcceptProof } from '../ProofAutoAcceptType'
 import type { ProofStateChangedEvent } from '../ProofEvents'
-import type { PresentationPreview, PresentationPreviewAttribute } from '../messages'
-import type { PresentationProblemReportMessage } from './../messages/PresentationProblemReportMessage'
+import type { PresentationPreview, PresentationPreviewAttribute } from './messages'
+import type { PresentationProblemReportMessage } from './messages/PresentationProblemReportMessage'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
@@ -28,6 +28,9 @@ import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofState } from '../ProofState'
 import { PresentationProblemReportError, PresentationProblemReportReason } from '../errors'
+import { ProofRepository } from '../repository'
+import { ProofRecord } from '../repository/ProofRecord'
+
 import {
   INDY_PROOF_ATTACHMENT_ID,
   INDY_PROOF_REQUEST_ATTACHMENT_ID,
@@ -35,7 +38,7 @@ import {
   PresentationMessage,
   ProposePresentationMessage,
   RequestPresentationMessage,
-} from '../messages'
+} from './messages'
 import {
   AttributeFilter,
   PartialProof,
@@ -46,9 +49,7 @@ import {
   RequestedCredentials,
   RequestedPredicate,
   RetrievedCredentials,
-} from '../models'
-import { ProofRepository } from '../repository'
-import { ProofRecord } from '../repository/ProofRecord'
+} from './models'
 
 /**
  * @todo add method to check if request matches proposal. Useful to see if a request I received is the same as the proposal I sent.
@@ -56,7 +57,7 @@ import { ProofRecord } from '../repository/ProofRecord'
  * @todo validate attachments / messages
  */
 @scoped(Lifecycle.ContainerScoped)
-export class ProofService {
+export class V1ProofService {
   private proofRepository: ProofRepository
   private credentialRepository: CredentialRepository
   private ledgerService: IndyLedgerService

@@ -1,8 +1,8 @@
-import type { ProblemReportMessageOptions } from '../../problem-reports/messages/ProblemReportMessage'
+import type { ProblemReportMessageOptions } from '../../../problem-reports/messages/ProblemReportMessage'
 
 import { Equals } from 'class-validator'
 
-import { ProblemReportMessage } from '../../problem-reports/messages/ProblemReportMessage'
+import { ProblemReportMessage } from '../../../problem-reports/messages/ProblemReportMessage'
 
 export type PresentationProblemReportMessageOptions = ProblemReportMessageOptions
 

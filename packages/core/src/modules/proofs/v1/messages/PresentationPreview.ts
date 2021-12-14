@@ -11,8 +11,8 @@ import {
   ValidateNested,
 } from 'class-validator'
 
-import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
+import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import { replaceLegacyDidSovPrefix } from '../../../../utils/messageType'
 import { PredicateType } from '../models/PredicateType'
 
 export interface PresentationPreviewAttributeOptions {

@@ -11,16 +11,18 @@ import { ConnectionService, ConnectionState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyLedgerService } from '../../ledger/services'
 import { ProofEventTypes } from '../ProofEvents'
+import { ProofService } from '../ProofService'
 import { ProofState } from '../ProofState'
 import { PresentationProblemReportReason } from '../errors/PresentationProblemReportReason'
-import { INDY_PROOF_REQUEST_ATTACHMENT_ID } from '../messages'
 import { ProofRecord } from '../repository/ProofRecord'
 import { ProofRepository } from '../repository/ProofRepository'
-import { ProofService } from '../services'
 
 import { IndyVerifierService } from './../../indy/services/IndyVerifierService'
-import { PresentationProblemReportMessage } from './../messages/PresentationProblemReportMessage'
-import { RequestPresentationMessage } from './../messages/RequestPresentationMessage'
+import { PresentationProblemReportMessage } from './../v1/messages/PresentationProblemReportMessage'
+import {
+  INDY_PROOF_REQUEST_ATTACHMENT_ID,
+  RequestPresentationMessage,
+} from './../v1/messages/RequestPresentationMessage'
 import { credDef } from './fixtures'
 
 // Mock classes

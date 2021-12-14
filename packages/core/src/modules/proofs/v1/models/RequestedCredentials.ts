@@ -3,8 +3,8 @@ import type { IndyRequestedCredentials } from 'indy-sdk'
 import { Expose } from 'class-transformer'
 import { ValidateNested } from 'class-validator'
 
-import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { RecordTransformer } from '../../../utils/transformers'
+import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import { RecordTransformer } from '../../../../utils/transformers'
 
 import { RequestedAttribute } from './RequestedAttribute'
 import { RequestedPredicate } from './RequestedPredicate'

@@ -7,7 +7,7 @@ import { Type } from 'class-transformer'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { ProposePresentationMessage, RequestPresentationMessage, PresentationMessage } from '../messages'
+import { ProposePresentationMessage, RequestPresentationMessage, PresentationMessage } from '../v1/messages'
 
 export interface ProofRecordProps {
   id?: string

@@ -1,17 +1,16 @@
 import { Exclude, Expose } from 'class-transformer'
-import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator'
+import { IsInt, IsOptional, IsString } from 'class-validator'
 
-import { IndyCredentialInfo } from '../../credentials'
+import { IndyCredentialInfo } from '../../../credentials'
 
 /**
- * Requested Attribute for Indy proof creation
+ * Requested Predicate for Indy proof creation
  */
-export class RequestedAttribute {
-  public constructor(options: RequestedAttribute) {
+export class RequestedPredicate {
+  public constructor(options: RequestedPredicate) {
     if (options) {
       this.credentialId = options.credentialId
       this.timestamp = options.timestamp
-      this.revealed = options.revealed
       this.credentialInfo = options.credentialInfo
     }
   }
@@ -24,9 +23,6 @@ export class RequestedAttribute {
   @IsInt()
   @IsOptional()
   public timestamp?: number
-
-  @IsBoolean()
-  public revealed!: boolean
 
   @Exclude({ toPlainOnly: true })
   public credentialInfo!: IndyCredentialInfo

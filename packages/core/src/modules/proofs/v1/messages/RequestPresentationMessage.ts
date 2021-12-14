@@ -1,10 +1,10 @@
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { Attachment } from '../../../decorators/attachment/Attachment'
-import { JsonEncoder } from '../../../utils/JsonEncoder'
-import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { AgentMessage } from '../../../../agent/AgentMessage'
+import { Attachment } from '../../../../decorators/attachment/Attachment'
+import { JsonEncoder } from '../../../../utils/JsonEncoder'
+import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { ProofRequest } from '../models'
 
 export interface RequestPresentationOptions {

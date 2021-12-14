@@ -1,12 +1,12 @@
-import type { AgentConfig } from '../../../agent/AgentConfig'
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { MediationRecipientService } from '../../routing'
-import type { ProofResponseCoordinator } from '../ProofResponseCoordinator'
-import type { ProofRecord } from '../repository'
-import type { ProofService } from '../services'
+import type { AgentConfig } from '../../../../agent/AgentConfig'
+import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
+import type { MediationRecipientService } from '../../../routing'
+import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
+import type { ProofService } from '../../ProofService'
+import type { ProofRecord } from '../../repository'
 
-import { createOutboundMessage, createOutboundServiceMessage } from '../../../agent/helpers'
-import { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
+import { createOutboundMessage, createOutboundServiceMessage } from '../../../../agent/helpers'
+import { ServiceDecorator } from '../../../../decorators/service/ServiceDecorator'
 import { RequestPresentationMessage } from '../messages'
 
 export class RequestPresentationHandler implements Handler {

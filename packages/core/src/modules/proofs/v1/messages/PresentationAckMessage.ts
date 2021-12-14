@@ -1,8 +1,8 @@
-import type { AckMessageOptions } from '../../common'
+import type { AckMessageOptions } from '../../../common'
 
 import { Equals } from 'class-validator'
 
-import { AckMessage } from '../../common'
+import { AckMessage } from '../../../common'
 
 export type PresentationAckMessageOptions = AckMessageOptions
 

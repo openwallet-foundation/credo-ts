@@ -3,9 +3,9 @@ import type { IndyProofRequest } from 'indy-sdk'
 import { Expose, Type } from 'class-transformer'
 import { IsString, ValidateNested, IsOptional, IsIn, IsInstance } from 'class-validator'
 
-import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { IsMap } from '../../../utils/transformers'
-import { RevocationInterval } from '../../credentials'
+import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import { IsMap } from '../../../../utils/transformers'
+import { RevocationInterval } from '../../../credentials'
 
 import { ProofAttributeInfo } from './ProofAttributeInfo'
 import { ProofPredicateInfo } from './ProofPredicateInfo'

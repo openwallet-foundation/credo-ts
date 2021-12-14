@@ -1,7 +1,7 @@
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsEnum, IsInstance, IsInt, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { RevocationInterval } from '../../credentials'
+import { RevocationInterval } from '../../../credentials'
 
 import { AttributeFilter } from './AttributeFilter'
 import { PredicateType } from './PredicateType'

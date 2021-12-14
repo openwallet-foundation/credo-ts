@@ -1,6 +1,6 @@
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
-import { ProofRequest } from '../models'
+import { ProofRequest } from '../v1/models'
 
 describe('ProofRequest', () => {
   it('should successfully validate if the proof request json contains a valid structure', async () => {

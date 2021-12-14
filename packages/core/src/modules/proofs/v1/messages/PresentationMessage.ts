@@ -3,9 +3,9 @@ import type { IndyProof } from 'indy-sdk'
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { Attachment } from '../../../decorators/attachment/Attachment'
-import { JsonEncoder } from '../../../utils/JsonEncoder'
+import { AgentMessage } from '../../../../agent/AgentMessage'
+import { Attachment } from '../../../../decorators/attachment/Attachment'
+import { JsonEncoder } from '../../../../utils/JsonEncoder'
 
 export const INDY_PROOF_ATTACHMENT_ID = 'libindy-presentation-0'
 

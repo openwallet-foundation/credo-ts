@@ -1,5 +1,5 @@
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { ProofService } from '../services'
+import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
+import type { ProofService } from '../../ProofService'
 
 import { PresentationProblemReportMessage } from '../messages'
 

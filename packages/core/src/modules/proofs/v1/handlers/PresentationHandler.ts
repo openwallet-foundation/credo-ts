@@ -1,10 +1,10 @@
-import type { AgentConfig } from '../../../agent/AgentConfig'
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { ProofResponseCoordinator } from '../ProofResponseCoordinator'
-import type { ProofRecord } from '../repository'
-import type { ProofService } from '../services'
+import type { AgentConfig } from '../../../../agent/AgentConfig'
+import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
+import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
+import type { ProofService } from '../../ProofService'
+import type { ProofRecord } from '../../repository'
 
-import { createOutboundMessage, createOutboundServiceMessage } from '../../../agent/helpers'
+import { createOutboundMessage, createOutboundServiceMessage } from '../../../../agent/helpers'
 import { PresentationMessage } from '../messages'
 
 export class PresentationHandler implements Handler {
