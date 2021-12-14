@@ -11,6 +11,8 @@ import {
   ValidateNested,
 } from 'class-validator'
 
+import { AriesFrameworkError } from '../../error'
+import { JsonEncoder } from '../../utils/JsonEncoder'
 import { uuid } from '../../utils/uuid'
 
 export interface AttachmentOptions {
@@ -42,6 +44,16 @@ export class AttachmentData {
       this.links = options.links
       this.jws = options.jws
       this.sha256 = options.sha256
+    }
+  }
+
+  public getDataAsJson = () => {
+    if (this.base64 !== null && typeof this.base64 === 'string') {
+      return JsonEncoder.fromBase64(this.base64)
+    } else if (this.json !== null) {
+      return this.json
+    } else {
+      throw new AriesFrameworkError('No data available.')
     }
   }
 
