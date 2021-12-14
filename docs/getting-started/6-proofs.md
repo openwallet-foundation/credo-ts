@@ -9,7 +9,7 @@ In VC proofs, we have two involved parties:
 
 The process for proving your VC starts by a verifier to request a presentation from a prover, and for the prover to respond by presenting a proof to the verifier or the prover to send a presentation proposal to the verifier.
 
-## Method 1 - Prover (holder) responds to presentation proposal from the verifier
+## Method 1 - Prover (holder) responds to presentation request from the verifier
 
 > Note: This setup is assumed for a react native mobile agent
 
