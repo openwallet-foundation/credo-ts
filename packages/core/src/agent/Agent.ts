@@ -39,7 +39,6 @@ export class Agent {
   protected logger: Logger
   protected container: DependencyContainer
   protected eventEmitter: EventEmitter
-  protected wallet: Wallet
   protected messageReceiver: MessageReceiver
   protected transportService: TransportService
   protected messageSender: MessageSender
@@ -54,6 +53,7 @@ export class Agent {
   public readonly mediationRecipient!: RecipientModule
   public readonly mediator!: MediatorModule
   public readonly discovery!: DiscoverFeaturesModule
+  public readonly wallet: Wallet
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
     // Create child container so we don't interfere with anything outside of this agent
@@ -186,7 +186,7 @@ export class Agent {
     this._isInitialized = true
   }
 
-  public async shutdown({ deleteWallet = false }: { deleteWallet?: boolean } = {}) {
+  public async shutdown() {
     // All observables use takeUntil with the stop$ observable
     // this means all observables will stop running if a value is emitted on this observable
     this.agentConfig.stop$.next(true)
@@ -199,13 +199,9 @@ export class Agent {
       transport.stop()
     }
 
-    // close/delete wallet if still initialized
+    // close wallet if still initialized
     if (this.wallet.isInitialized) {
-      if (deleteWallet) {
-        await this.wallet.delete()
-      } else {
-        await this.wallet.close()
-      }
+      await this.wallet.close()
     }
   }
 

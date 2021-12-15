@@ -10,4 +10,5 @@ export enum ConnectionState {
   Requested = 'requested',
   Responded = 'responded',
   Complete = 'complete',
+  None = 'none',
 }

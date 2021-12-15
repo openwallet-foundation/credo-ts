@@ -9,21 +9,29 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../error'
 import { ConnectionService } from '../modules/connections/services/ConnectionService'
+import { ProblemReportError, ProblemReportMessage } from '../modules/problem-reports'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { MessageValidator } from '../utils/MessageValidator'
 import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
+import { CommonMessageType } from './../modules/common/messages/CommonMessageType'
 import { AgentConfig } from './AgentConfig'
 import { Dispatcher } from './Dispatcher'
 import { EnvelopeService } from './EnvelopeService'
+import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
+import { createOutboundMessage } from './helpers'
 import { InboundMessageContext } from './models/InboundMessageContext'
 
+export enum ProblemReportReason {
+  MessageParseFailure = 'message-parse-failure',
+}
 @scoped(Lifecycle.ContainerScoped)
 export class MessageReceiver {
   private config: AgentConfig
   private envelopeService: EnvelopeService
   private transportService: TransportService
+  private messageSender: MessageSender
   private connectionService: ConnectionService
   private dispatcher: Dispatcher
   private logger: Logger
@@ -33,12 +41,14 @@ export class MessageReceiver {
     config: AgentConfig,
     envelopeService: EnvelopeService,
     transportService: TransportService,
+    messageSender: MessageSender,
     connectionService: ConnectionService,
     dispatcher: Dispatcher
   ) {
     this.config = config
     this.envelopeService = envelopeService
     this.transportService = transportService
+    this.messageSender = messageSender
     this.connectionService = connectionService
     this.dispatcher = dispatcher
     this.logger = this.config.logger
@@ -84,15 +94,12 @@ export class MessageReceiver {
       unpackedMessage.message
     )
 
-    const message = await this.transformMessage(unpackedMessage)
+    let message: AgentMessage | null = null
     try {
-      await MessageValidator.validate(message)
+      message = await this.transformMessage(unpackedMessage)
+      await this.validateMessage(message)
     } catch (error) {
-      this.logger.error(`Error validating message ${message.type}`, {
-        errors: error,
-        message: message.toJSON(),
-      })
-
+      if (connection) await this.sendProblemReportMessage(error.message, connection, unpackedMessage)
       throw error
     }
 
@@ -174,12 +181,61 @@ export class MessageReceiver {
     const MessageClass = this.dispatcher.getMessageClassForType(messageType)
 
     if (!MessageClass) {
-      throw new AriesFrameworkError(`No message class found for message type "${messageType}"`)
+      throw new ProblemReportError(`No message class found for message type "${messageType}"`, {
+        problemCode: ProblemReportReason.MessageParseFailure,
+      })
     }
 
     // Cast the plain JSON object to specific instance of Message extended from AgentMessage
     const message = JsonTransformer.fromJSON(unpackedMessage.message, MessageClass)
 
     return message
+  }
+
+  /**
+   * Validate an AgentMessage instance.
+   * @param message agent message to validate
+   */
+  private async validateMessage(message: AgentMessage) {
+    try {
+      await MessageValidator.validate(message)
+    } catch (error) {
+      this.logger.error(`Error validating message ${message.type}`, {
+        errors: error,
+        message: message.toJSON(),
+      })
+      throw new ProblemReportError(`Error validating message ${message.type}`, {
+        problemCode: ProblemReportReason.MessageParseFailure,
+      })
+    }
+  }
+
+  /**
+   * Send the problem report message (https://didcomm.org/notification/1.0/problem-report) to the recipient.
+   * @param message error message to send
+   * @param connection connection to send the message to
+   * @param unpackedMessage received unpackedMessage
+   */
+  private async sendProblemReportMessage(
+    message: string,
+    connection: ConnectionRecord,
+    unpackedMessage: UnpackedMessageContext
+  ) {
+    if (unpackedMessage.message['@type'] === CommonMessageType.ProblemReport) {
+      throw new AriesFrameworkError(message)
+    }
+    const problemReportMessage = new ProblemReportMessage({
+      description: {
+        en: message,
+        code: ProblemReportReason.MessageParseFailure,
+      },
+    })
+    problemReportMessage.setThread({
+      threadId: unpackedMessage.message['@id'],
+    })
+    const outboundMessage = createOutboundMessage(connection, problemReportMessage)
+    if (outboundMessage) {
+      await this.messageSender.sendMessage(outboundMessage)
+    }
   }
 }
