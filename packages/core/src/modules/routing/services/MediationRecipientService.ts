@@ -155,13 +155,15 @@ export class MediationRecipientService {
     return keylistUpdateMessage
   }
 
-  public async getRouting(mediationRecord?: MediationRecord | null): Promise<Routing> {
-    let mediator = mediationRecord
+  public async getRouting({ mediatorId, useDefaultMediator = true }: GetRoutingOptions = {}): Promise<Routing> {
+    let mediationRecord: MediationRecord | null = null
 
-    // If mediator is undefined, try to find the default mediator. If the mediator is null we
-    // don't want to use the default mediator (override)
-    if (mediator === undefined) {
-      mediator = await this.findDefaultMediator()
+    if (mediatorId) {
+      mediationRecord = await this.getById(mediatorId)
+    } else if (useDefaultMediator) {
+      // If no mediatorId is provided, and useDefaultMediator is true (default)
+      // We use the default mediator if available
+      mediationRecord = await this.findDefaultMediator()
     }
 
     let endpoints = this.config.endpoints
@@ -169,15 +171,15 @@ export class MediationRecipientService {
 
     // Create and store new key
     const { did, verkey } = await this.wallet.createDid()
-    if (mediator) {
-      routingKeys = [...routingKeys, ...mediator.routingKeys]
-      endpoints = mediator.endpoint ? [mediator.endpoint] : endpoints
+    if (mediationRecord) {
+      routingKeys = [...routingKeys, ...mediationRecord.routingKeys]
+      endpoints = mediationRecord.endpoint ? [mediationRecord.endpoint] : endpoints
       // new did has been created and mediator needs to be updated with the public key.
-      mediator = await this.keylistUpdateAndAwait(mediator, verkey)
+      mediationRecord = await this.keylistUpdateAndAwait(mediationRecord, verkey)
     } else {
       // TODO: check that recipient keys are in wallet
     }
-    return { endpoints, routingKeys, did, verkey, mediatorId: mediator?.id }
+    return { endpoints, routingKeys, did, verkey, mediatorId: mediationRecord?.id }
   }
 
   public async saveRoute(recipientKey: string, mediationRecord: MediationRecord) {
@@ -295,4 +297,17 @@ export class MediationRecipientService {
 export interface MediationProtocolMsgReturnType<MessageType extends AgentMessage> {
   message: MessageType
   mediationRecord: MediationRecord
+}
+
+export interface GetRoutingOptions {
+  /**
+   * Identifier of the mediator to use when setting up routing
+   */
+  mediatorId?: string
+
+  /**
+   * Whether to use the default mediator if available and `mediatorId` has not been provided
+   * @default true
+   */
+  useDefaultMediator?: boolean
 }

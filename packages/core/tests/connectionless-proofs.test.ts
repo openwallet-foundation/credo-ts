@@ -1,5 +1,5 @@
+import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { ProofStateChangedEvent } from '../src/modules/proofs'
-import type { SubjectMessage } from 'tests/transport/SubjectInboundTransport'
 
 import { Subject, ReplaySubject } from 'rxjs'
 
@@ -7,6 +7,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
+import { CredentialPreview } from '../src/modules/credentials'
 import {
   PredicateType,
   ProofState,
@@ -29,15 +30,23 @@ import {
 } from './helpers'
 import testLogger from './logger'
 
-import { CredentialPreview } from '@aries-framework/core'
-
 describe('Present Proof', () => {
+  let agents: Agent[]
+
+  afterEach(async () => {
+    for (const agent of agents) {
+      await agent.shutdown()
+      await agent.wallet.delete()
+    }
+  })
+
   test('Faber starts with connection-less proof requests to Alice', async () => {
     const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay } = await setupProofsTest(
       'Faber connection-less Proofs',
       'Alice connection-less Proofs',
       AutoAcceptProof.Never
     )
+    agents = [aliceAgent, faberAgent]
     testLogger.test('Faber sends presentation request to Alice')
 
     const attributes = {
@@ -113,6 +122,8 @@ describe('Present Proof', () => {
       'Alice connection-less Proofs - Auto Accept',
       AutoAcceptProof.Always
     )
+
+    agents = [aliceAgent, faberAgent]
 
     const attributes = {
       name: new ProofAttributeInfo({
@@ -216,6 +227,8 @@ describe('Present Proof', () => {
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     await aliceAgent.initialize()
 
+    agents = [aliceAgent, faberAgent, mediatorAgent]
+
     const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])
 
     const [faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
@@ -314,12 +327,5 @@ describe('Present Proof', () => {
       threadId: faberProofRecord.threadId,
       state: ProofState.Done,
     })
-
-    await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
-    await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
-    await mediatorAgent.shutdown()
-    await mediatorAgent.wallet.delete()
   })
 })
