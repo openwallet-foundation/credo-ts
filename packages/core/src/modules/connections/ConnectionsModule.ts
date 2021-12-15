@@ -54,8 +54,10 @@ export class ConnectionsModule {
     invitation: ConnectionInvitationMessage
     connectionRecord: ConnectionRecord
   }> {
-    const mediationRecord = await this.mediationRecipientService.discoverMediation(config?.mediatorId)
-    const myRouting = await this.mediationRecipientService.getRouting(mediationRecord)
+    const myRouting = await this.mediationRecipientService.getRouting({
+      mediatorId: config?.mediatorId,
+      useDefaultMediator: true,
+    })
 
     const { connectionRecord: connectionRecord, message: invitation } = await this.connectionService.createInvitation({
       autoAcceptConnection: config?.autoAcceptConnection,
@@ -86,8 +88,7 @@ export class ConnectionsModule {
       mediatorId?: string
     }
   ): Promise<ConnectionRecord> {
-    const mediationRecord = await this.mediationRecipientService.discoverMediation(config?.mediatorId)
-    const myRouting = await this.mediationRecipientService.getRouting(mediationRecord)
+    const myRouting = await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId })
 
     let connection = await this.connectionService.processInvitation(invitation, {
       autoAcceptConnection: config?.autoAcceptConnection,
