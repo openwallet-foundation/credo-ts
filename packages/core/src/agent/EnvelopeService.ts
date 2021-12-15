@@ -1,5 +1,5 @@
 import type { Logger } from '../logger'
-import type { UnpackedMessageContext, WireMessage } from '../types'
+import type { DecryptedMessageContext, EncryptedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
@@ -28,7 +28,7 @@ class EnvelopeService {
     this.config = agentConfig
   }
 
-  public async packMessage(payload: AgentMessage, keys: EnvelopeKeys): Promise<WireMessage> {
+  public async packMessage(payload: AgentMessage, keys: EnvelopeKeys): Promise<EncryptedMessage> {
     const { routingKeys, senderKey } = keys
     let recipientKeys = keys.recipientKeys
 
@@ -58,7 +58,7 @@ class EnvelopeService {
     return wireMessage
   }
 
-  public async unpackMessage(packedMessage: WireMessage): Promise<UnpackedMessageContext> {
+  public async unpackMessage(packedMessage: EncryptedMessage): Promise<DecryptedMessageContext> {
     return this.wallet.unpack(packedMessage)
   }
 }

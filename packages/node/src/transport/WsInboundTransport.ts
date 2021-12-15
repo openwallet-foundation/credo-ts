@@ -1,4 +1,4 @@
-import type { Agent, InboundTransport, Logger, TransportSession, WireMessage } from '@aries-framework/core'
+import type { Agent, InboundTransport, Logger, TransportSession, EncryptedMessage } from '@aries-framework/core'
 
 import { AriesFrameworkError, AgentConfig, TransportService, utils } from '@aries-framework/core'
 import WebSocket, { Server } from 'ws'
@@ -81,7 +81,7 @@ export class WebSocketTransportSession implements TransportSession {
     this.socket = socket
   }
 
-  public async send(wireMessage: WireMessage): Promise<void> {
+  public async send(wireMessage: EncryptedMessage): Promise<void> {
     if (this.socket.readyState !== WebSocket.OPEN) {
       throw new AriesFrameworkError(`${this.type} transport session has been closed.`)
     }

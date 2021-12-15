@@ -1,6 +1,6 @@
 import type { DidCommService, ConnectionRecord } from '../modules/connections'
 import type { OutboundTransport } from '../transport/OutboundTransport'
-import type { OutboundMessage, OutboundPackage, WireMessage } from '../types'
+import type { OutboundMessage, OutboundPackage, EncryptedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
 import type { TransportSession } from './TransportService'
@@ -83,7 +83,7 @@ export class MessageSender {
     options,
   }: {
     connection: ConnectionRecord
-    packedMessage: WireMessage
+    packedMessage: EncryptedMessage
     options?: { transportPriority?: TransportPriorityOptions }
   }) {
     const errors: Error[] = []

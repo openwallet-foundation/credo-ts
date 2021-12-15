@@ -1,12 +1,12 @@
 import type { InboundTransport, Agent } from '../../packages/core/src'
 import type { TransportSession } from '../../packages/core/src/agent/TransportService'
-import type { WireMessage } from '../../packages/core/src/types'
+import type { EncryptedMessage } from '../../packages/core/src/types'
 import type { Subject, Subscription } from 'rxjs'
 
 import { AgentConfig } from '../../packages/core/src/agent/AgentConfig'
 import { uuid } from '../../packages/core/src/utils/uuid'
 
-export type SubjectMessage = { message: WireMessage; replySubject?: Subject<SubjectMessage> }
+export type SubjectMessage = { message: EncryptedMessage; replySubject?: Subject<SubjectMessage> }
 
 export class SubjectInboundTransport implements InboundTransport {
   private subject: Subject<SubjectMessage>
@@ -52,7 +52,7 @@ export class SubjectTransportSession implements TransportSession {
     this.replySubject = replySubject
   }
 
-  public async send(wireMessage: WireMessage): Promise<void> {
+  public async send(wireMessage: EncryptedMessage): Promise<void> {
     this.replySubject.next({ message: wireMessage })
   }
 }

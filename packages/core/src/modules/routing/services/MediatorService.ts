@@ -1,5 +1,5 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { WireMessage } from '../../../types'
+import type { EncryptedMessage } from '../../../types'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
 import type { ForwardMessage, KeylistUpdateMessage, MediationRequestMessage } from '../messages'
 
@@ -80,7 +80,7 @@ export class MediatorService {
 
   public async processForwardMessage(
     messageContext: InboundMessageContext<ForwardMessage>
-  ): Promise<{ mediationRecord: MediationRecord; packedMessage: WireMessage }> {
+  ): Promise<{ mediationRecord: MediationRecord; packedMessage: EncryptedMessage }> {
     const { message } = messageContext
 
     // TODO: update to class-validator validation

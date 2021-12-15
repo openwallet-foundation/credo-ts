@@ -1,5 +1,5 @@
 import type { Logger } from '../logger'
-import type { WireMessage, UnpackedMessageContext, WalletConfig } from '../types'
+import type { EncryptedMessage, DecryptedMessageContext, WalletConfig } from '../types'
 import type { Buffer } from '../utils/buffer'
 import type { Wallet, DidInfo, DidConfig } from './Wallet'
 import type { default as Indy } from 'indy-sdk'
@@ -309,7 +309,7 @@ export class IndyWallet implements Wallet {
     payload: Record<string, unknown>,
     recipientKeys: string[],
     senderVerkey?: string
-  ): Promise<WireMessage> {
+  ): Promise<EncryptedMessage> {
     try {
       const messageRaw = JsonEncoder.toBuffer(payload)
       const packedMessage = await this.indy.packMessage(this.handle, messageRaw, recipientKeys, senderVerkey ?? null)
@@ -319,14 +319,14 @@ export class IndyWallet implements Wallet {
     }
   }
 
-  public async unpack(messagePackage: WireMessage): Promise<UnpackedMessageContext> {
+  public async unpack(messagePackage: EncryptedMessage): Promise<DecryptedMessageContext> {
     try {
       const unpackedMessageBuffer = await this.indy.unpackMessage(this.handle, JsonEncoder.toBuffer(messagePackage))
       const unpackedMessage = JsonEncoder.fromBuffer(unpackedMessageBuffer)
       return {
-        senderVerkey: unpackedMessage.sender_verkey,
-        recipientVerkey: unpackedMessage.recipient_verkey,
-        message: JsonEncoder.fromString(unpackedMessage.message),
+        senderKey: unpackedMessage.sender_verkey,
+        recipientKey: unpackedMessage.recipient_verkey,
+        plaintextMessage: JsonEncoder.fromString(unpackedMessage.message),
       }
     } catch (error) {
       throw new WalletError('Error unpacking message', { cause: error })

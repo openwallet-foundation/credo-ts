@@ -1,4 +1,4 @@
-import type { InboundTransport, Agent, TransportSession, WireMessage } from '@aries-framework/core'
+import type { InboundTransport, Agent, TransportSession, EncryptedMessage } from '@aries-framework/core'
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
@@ -75,7 +75,7 @@ export class HttpTransportSession implements TransportSession {
     this.res = res
   }
 
-  public async send(wireMessage: WireMessage): Promise<void> {
+  public async send(wireMessage: EncryptedMessage): Promise<void> {
     if (this.res.headersSent) {
       throw new AriesFrameworkError(`${this.type} transport session has been closed.`)
     }

@@ -1,7 +1,7 @@
 import type { ConnectionRecord } from '../../modules/connections'
 import type { MessageRepository } from '../../storage/MessageRepository'
 import type { OutboundTransport } from '../../transport'
-import type { OutboundMessage, WireMessage } from '../../types'
+import type { OutboundMessage, EncryptedMessage } from '../../types'
 
 import { TestMessage } from '../../../tests/TestMessage'
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../tests/helpers'
@@ -41,7 +41,7 @@ class DummyOutboundTransport implements OutboundTransport {
 describe('MessageSender', () => {
   const EnvelopeService = <jest.Mock<EnvelopeServiceImpl>>(<unknown>EnvelopeServiceImpl)
 
-  const wireMessage: WireMessage = {
+  const wireMessage: EncryptedMessage = {
     protected: 'base64url',
     iv: 'base64url',
     ciphertext: 'base64url',
