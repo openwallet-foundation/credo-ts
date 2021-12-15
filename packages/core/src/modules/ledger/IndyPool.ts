@@ -75,7 +75,7 @@ export class IndyPool {
   }
 
   public async connect() {
-    this.poolConnected = (async ()=>{
+    this.poolConnected = (async () => {
       const poolName = this.poolConfig.id
       const genesisPath = await this.getGenesisPath()
 
@@ -125,7 +125,6 @@ export class IndyPool {
   }
 
   public async submitWriteRequest(request: Indy.LedgerRequest) {
-
     const response = await this.submitRequest(request)
 
     if (isLedgerRejectResponse(response)) {
