@@ -52,7 +52,7 @@ export class SubjectTransportSession implements TransportSession {
     this.replySubject = replySubject
   }
 
-  public async send(wireMessage: EncryptedMessage): Promise<void> {
-    this.replySubject.next({ message: wireMessage })
+  public async send(encryptedMessage: EncryptedMessage): Promise<void> {
+    this.replySubject.next({ message: encryptedMessage })
   }
 }

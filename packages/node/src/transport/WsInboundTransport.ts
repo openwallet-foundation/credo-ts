@@ -81,11 +81,11 @@ export class WebSocketTransportSession implements TransportSession {
     this.socket = socket
   }
 
-  public async send(wireMessage: EncryptedMessage): Promise<void> {
+  public async send(encryptedMessage: EncryptedMessage): Promise<void> {
     if (this.socket.readyState !== WebSocket.OPEN) {
       throw new AriesFrameworkError(`${this.type} transport session has been closed.`)
     }
 
-    this.socket.send(JSON.stringify(wireMessage))
+    this.socket.send(JSON.stringify(encryptedMessage))
   }
 }

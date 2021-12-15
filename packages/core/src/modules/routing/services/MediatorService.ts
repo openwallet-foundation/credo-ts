@@ -80,7 +80,7 @@ export class MediatorService {
 
   public async processForwardMessage(
     messageContext: InboundMessageContext<ForwardMessage>
-  ): Promise<{ mediationRecord: MediationRecord; packedMessage: EncryptedMessage }> {
+  ): Promise<{ mediationRecord: MediationRecord; encryptedMessage: EncryptedMessage }> {
     const { message } = messageContext
 
     // TODO: update to class-validator validation
@@ -94,7 +94,7 @@ export class MediatorService {
     mediationRecord.assertReady()
 
     return {
-      packedMessage: message.message,
+      encryptedMessage: message.message,
       mediationRecord,
     }
   }

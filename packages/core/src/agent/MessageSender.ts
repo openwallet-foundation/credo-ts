@@ -56,10 +56,10 @@ export class MessageSender {
     message: AgentMessage
     endpoint: string
   }): Promise<OutboundPackage> {
-    const wireMessage = await this.envelopeService.packMessage(message, keys)
+    const encryptedMessage = await this.envelopeService.packMessage(message, keys)
 
     return {
-      payload: wireMessage,
+      payload: encryptedMessage,
       responseRequested: message.hasAnyReturnRoute(),
       endpoint,
     }
@@ -72,18 +72,17 @@ export class MessageSender {
     if (!session.keys) {
       throw new AriesFrameworkError(`There are no keys for the given ${session.type} transport session.`)
     }
-    const wireMessage = await this.envelopeService.packMessage(message, session.keys)
-
-    await session.send(wireMessage)
+    const encryptedMessage = await this.envelopeService.packMessage(message, session.keys)
+    await session.send(encryptedMessage)
   }
 
   public async sendPackage({
     connection,
-    packedMessage,
+    encryptedMessage,
     options,
   }: {
     connection: ConnectionRecord
-    packedMessage: EncryptedMessage
+    encryptedMessage: EncryptedMessage
     options?: { transportPriority?: TransportPriorityOptions }
   }) {
     const errors: Error[] = []
@@ -92,7 +91,7 @@ export class MessageSender {
     const session = this.transportService.findSessionByConnectionId(connection.id)
     if (session?.inboundMessage?.hasReturnRouting()) {
       try {
-        await session.send(packedMessage)
+        await session.send(encryptedMessage)
         return
       } catch (error) {
         errors.push(error)
@@ -114,7 +113,7 @@ export class MessageSender {
         for (const transport of this.outboundTransports) {
           if (transport.supportedSchemes.includes(service.protocolScheme)) {
             await transport.sendMessage({
-              payload: packedMessage,
+              payload: encryptedMessage,
               endpoint: service.serviceEndpoint,
               connectionId: connection.id,
             })
@@ -137,13 +136,13 @@ export class MessageSender {
     // If the other party shared a queue service endpoint in their did doc we queue the message
     if (queueService) {
       this.logger.debug(`Queue packed message for connection ${connection.id} (${connection.theirLabel})`)
-      this.messageRepository.add(connection.id, packedMessage)
+      this.messageRepository.add(connection.id, encryptedMessage)
       return
     }
 
     // Message is undeliverable
     this.logger.error(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`, {
-      message: packedMessage,
+      message: encryptedMessage,
       errors,
       connection,
     })
@@ -217,8 +216,8 @@ export class MessageSender {
         senderKey: connection.verkey,
       }
 
-      const wireMessage = await this.envelopeService.packMessage(payload, keys)
-      this.messageRepository.add(connection.id, wireMessage)
+      const encryptedMessage = await this.envelopeService.packMessage(payload, keys)
+      this.messageRepository.add(connection.id, encryptedMessage)
       return
     }
 
