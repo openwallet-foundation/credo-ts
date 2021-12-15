@@ -26,8 +26,8 @@ import {
   RevocationNotificationHandler,
   CredentialProblemReportHandler,
 } from './handlers'
-import { CredentialService, RevocationService } from './services'
 import { CredentialProblemReportMessage } from './messages'
+import { CredentialService, RevocationService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialsModule {
