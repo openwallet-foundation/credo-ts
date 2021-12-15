@@ -10,6 +10,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../agent/AgentConfig'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 
+import { ProblemReportMessage } from './../modules/problem-reports/messages/ProblemReportMessage'
 import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes } from './Events'
 import { MessageSender } from './MessageSender'
@@ -45,15 +46,27 @@ class Dispatcher {
     try {
       outboundMessage = await handler.handle(messageContext)
     } catch (error) {
-      this.logger.error(`Error handling message with type ${message.type}`, {
-        message: message.toJSON(),
-        error,
-        senderVerkey: messageContext.senderVerkey,
-        recipientVerkey: messageContext.recipientVerkey,
-        connectionId: messageContext.connection?.id,
-      })
+      const problemReportMessage = error.problemReport
 
-      throw error
+      if (problemReportMessage instanceof ProblemReportMessage && messageContext.connection) {
+        problemReportMessage.setThread({
+          threadId: messageContext.message.threadId,
+        })
+        outboundMessage = {
+          payload: problemReportMessage,
+          connection: messageContext.connection,
+        }
+      } else {
+        this.logger.error(`Error handling message with type ${message.type}`, {
+          message: message.toJSON(),
+          error,
+          senderVerkey: messageContext.senderVerkey,
+          recipientVerkey: messageContext.recipientVerkey,
+          connectionId: messageContext.connection?.id,
+        })
+
+        throw error
+      }
     }
 
     if (outboundMessage && isOutboundServiceMessage(outboundMessage)) {

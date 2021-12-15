@@ -26,6 +26,9 @@ For testing we've added a setup to this repo that allows you to quickly setup an
 # Build indy pool
 docker build -f network/indy-pool.dockerfile -t indy-pool . --platform linux/amd64
 
+# NOTE: If you are on an ARM (M1) mac use the `network/indy-pool-arm.dockerfile` instead
+# docker build -f network/indy-pool-arm.dockerfile -t indy-pool . --platform linux/arm64/v8
+
 # Start indy pool
 docker run -d --rm --name indy-pool -p 9701-9708:9701-9708 indy-pool
 

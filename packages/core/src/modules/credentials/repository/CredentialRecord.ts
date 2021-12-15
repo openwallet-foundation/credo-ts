@@ -35,6 +35,7 @@ export interface CredentialRecordProps {
   autoAcceptCredential?: AutoAcceptCredential
   linkedAttachments?: Attachment[]
   revocationNotification?: RevocationNotification
+  errorMsg?: string
 }
 
 export type CustomCredentialTags = TagsBase
@@ -52,6 +53,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
   public state!: CredentialState
   public autoAcceptCredential?: AutoAcceptCredential
   public revocationNotification?: RevocationNotification
+  public errorMsg?: string
 
   // message data
   @Type(() => ProposeCredentialMessage)
@@ -92,6 +94,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       this.autoAcceptCredential = props.autoAcceptCredential
       this.linkedAttachments = props.linkedAttachments
       this.revocationNotification = props.revocationNotification
+      this.errorMsg = props.errorMsg
     }
   }
 
