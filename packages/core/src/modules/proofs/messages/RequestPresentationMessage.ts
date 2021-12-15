@@ -58,7 +58,7 @@ export class RequestPresentationMessage extends AgentMessage {
       (attachment) => attachment.id === INDY_PROOF_REQUEST_ATTACHMENT_ID
     )
     // Extract proof request from attachment
-    const proofRequestJson = attachment ? attachment.data.getDataAsJson() : null
+    const proofRequestJson = attachment?.data?.getDataAsJson()
     const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
 
     return proofRequest

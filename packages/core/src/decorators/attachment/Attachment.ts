@@ -47,13 +47,13 @@ export class AttachmentData {
     }
   }
 
-  public getDataAsJson = () => {
-    if (this.base64 !== null && typeof this.base64 === 'string') {
+  public getDataAsJson<T>(): T {
+    if (this.base64 && typeof this.base64 === 'string') {
       return JsonEncoder.fromBase64(this.base64)
-    } else if (this.json !== null) {
-      return this.json
+    } else if (this.json) {
+      return this.json as T
     } else {
-      throw new AriesFrameworkError('No data available.')
+      throw new AriesFrameworkError('No attachment data found in `json` or `base64` data fields.')
     }
   }
 

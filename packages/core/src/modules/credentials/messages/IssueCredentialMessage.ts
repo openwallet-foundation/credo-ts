@@ -48,8 +48,8 @@ export class IssueCredentialMessage extends AgentMessage {
     const attachment = this.credentialAttachments.find((attachment) => attachment.id === INDY_CREDENTIAL_ATTACHMENT_ID)
 
     // Extract credential from attachment
-    const credentialJson = attachment ? attachment.data.getDataAsJson() : null
+    const credentialJson = attachment?.data?.getDataAsJson()
 
-    return credentialJson
+    return credentialJson as Cred
   }
 }

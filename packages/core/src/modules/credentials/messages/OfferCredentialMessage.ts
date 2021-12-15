@@ -63,8 +63,8 @@ export class OfferCredentialMessage extends AgentMessage {
     const attachment = this.offerAttachments.find((attachment) => attachment.id === INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
 
     // Extract credential offer from attachment
-    const credentialOfferJson = attachment ? attachment.data.getDataAsJson() : null
+    const credentialOfferJson = attachment?.data?.getDataAsJson()
 
-    return credentialOfferJson
+    return credentialOfferJson as CredOffer
   }
 }

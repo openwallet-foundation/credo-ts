@@ -49,8 +49,8 @@ export class RequestCredentialMessage extends AgentMessage {
       (attachment) => attachment.id === INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID
     )
     // Extract proof request from attachment
-    const credentialReqJson = attachment ? attachment.data.getDataAsJson() : null
+    const credentialReqJson = attachment?.data?.getDataAsJson()
 
-    return credentialReqJson
+    return credentialReqJson as CredReq
   }
 }

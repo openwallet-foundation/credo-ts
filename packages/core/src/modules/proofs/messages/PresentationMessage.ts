@@ -60,13 +60,8 @@ export class PresentationMessage extends AgentMessage {
   public get indyProof(): IndyProof | null {
     const attachment = this.presentationAttachments.find((attachment) => attachment.id === INDY_PROOF_ATTACHMENT_ID)
 
-    // Return null if attachment is not found
-    if (!attachment?.data?.base64) {
-      return null
-    }
+    const proofJson = attachment?.data?.getDataAsJson()
 
-    const proofJson = JsonEncoder.fromBase64(attachment.data.base64)
-
-    return proofJson
+    return proofJson as IndyProof
   }
 }
