@@ -137,8 +137,13 @@ export class IndyPool {
   private async getPoolHandle() {
     if (this.poolConnected != undefined) {
       //If we have tried to already connect to pool wait for it
-      await this.poolConnected
+      try {
+        await this.poolConnected
+      } catch (error) {
+        this.logger.error('Connection to pool: ' + this.poolConfig.genesisPath + ' failed.')
+      }
     }
+
     if (!this._poolHandle) {
       return this.connect()
     }
