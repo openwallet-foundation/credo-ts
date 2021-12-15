@@ -79,7 +79,7 @@ export class MessageReceiver {
   }
 
   private async receivePlaintextMessage(plaintextMessage: PlaintextMessage) {
-    const message = await this.transformAndValidate(plaintextMessage, null)
+    const message = await this.transformAndValidate(plaintextMessage)
     const messageContext = new InboundMessageContext(message, {})
     await this.dispatcher.dispatch(messageContext)
   }
@@ -163,9 +163,9 @@ export class MessageReceiver {
 
   private async transformAndValidate(
     plaintextMessage: PlaintextMessage,
-    connection: ConnectionRecord | null
+    connection?: ConnectionRecord | null
   ): Promise<AgentMessage> {
-    let message: AgentMessage | null = null
+    let message: AgentMessage
     try {
       message = await this.transformMessage(plaintextMessage)
       await this.validateMessage(message)
