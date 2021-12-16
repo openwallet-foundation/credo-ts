@@ -587,7 +587,7 @@ describe('CredentialService', () => {
           })
         )
       ).rejects.toThrowError(
-        `Missing required base64 encoded attachment data for credential request with thread id ${threadId}`
+        `Missing required base64 or json encoded attachment data for credential request with thread id ${threadId}`
       )
     })
 

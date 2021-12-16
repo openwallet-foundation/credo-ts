@@ -354,7 +354,7 @@ export class ProofService {
     // Assert attachment
     if (!proofRequest) {
       throw new PresentationProblemReportError(
-        `Missing required base64 encoded attachment data for presentation request with thread id ${proofRequestMessage.threadId}`,
+        `Missing required base64 or json encoded attachment data for presentation request with thread id ${proofRequestMessage.threadId}`,
         { problemCode: PresentationProblemReportReason.abandoned }
       )
     }
@@ -423,7 +423,7 @@ export class ProofService {
     const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
     if (!indyProofRequest) {
       throw new PresentationProblemReportError(
-        `Missing required base64 encoded attachment data for presentation with thread id ${proofRecord.threadId}`,
+        `Missing required base64 or json encoded attachment data for presentation with thread id ${proofRecord.threadId}`,
         { problemCode: PresentationProblemReportReason.abandoned }
       )
     }
@@ -490,14 +490,14 @@ export class ProofService {
 
     if (!indyProofJson) {
       throw new PresentationProblemReportError(
-        `Missing required base64 encoded attachment data for presentation with thread id ${presentationMessage.threadId}`,
+        `Missing required base64 or json encoded attachment data for presentation with thread id ${presentationMessage.threadId}`,
         { problemCode: PresentationProblemReportReason.abandoned }
       )
     }
 
     if (!indyProofRequest) {
       throw new PresentationProblemReportError(
-        `Missing required base64 encoded attachment data for presentation request with thread id ${presentationMessage.threadId}`,
+        `Missing required base64 or json encoded attachment data for presentation request with thread id ${presentationMessage.threadId}`,
         { problemCode: PresentationProblemReportReason.abandoned }
       )
     }

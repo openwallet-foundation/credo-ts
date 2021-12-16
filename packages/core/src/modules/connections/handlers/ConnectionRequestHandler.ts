@@ -38,8 +38,7 @@ export class ConnectionRequestHandler implements Handler {
     // routing object is required for multi use invitation, because we're creating a
     // new keypair that possibly needs to be registered at a mediator
     if (connectionRecord.multiUseInvitation) {
-      const mediationRecord = await this.mediationRecipientService.discoverMediation()
-      routing = await this.mediationRecipientService.getRouting(mediationRecord)
+      routing = await this.mediationRecipientService.getRouting()
     }
 
     connectionRecord = await this.connectionService.processRequest(messageContext, routing)

@@ -357,7 +357,7 @@ export class CredentialService {
     const indyCredentialOffer = credentialOfferMessage.indyCredentialOffer
     if (!indyCredentialOffer) {
       throw new CredentialProblemReportError(
-        `Missing required base64 encoded attachment data for credential offer with thread id ${credentialOfferMessage.threadId}`,
+        `Missing required base64 or json encoded attachment data for credential offer with thread id ${credentialOfferMessage.threadId}`,
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
@@ -433,7 +433,7 @@ export class CredentialService {
 
     if (!credentialOffer) {
       throw new CredentialProblemReportError(
-        `Missing required base64 encoded attachment data for credential offer with thread id ${credentialRecord.threadId}`,
+        `Missing required base64 or json encoded attachment data for credential offer with thread id ${credentialRecord.threadId}`,
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
@@ -494,7 +494,7 @@ export class CredentialService {
 
     if (!indyCredentialRequest) {
       throw new CredentialProblemReportError(
-        `Missing required base64 encoded attachment data for credential request with thread id ${credentialRequestMessage.threadId}`,
+        `Missing required base64 or json encoded attachment data for credential request with thread id ${credentialRequestMessage.threadId}`,
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
@@ -554,7 +554,7 @@ export class CredentialService {
     const indyCredentialOffer = offerMessage?.indyCredentialOffer
     if (!indyCredentialOffer) {
       throw new CredentialProblemReportError(
-        `Missing required base64 encoded attachment data for credential offer with thread id ${credentialRecord.threadId}`,
+        `Missing required base64 or json encoded attachment data for credential offer with thread id ${credentialRecord.threadId}`,
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
@@ -563,7 +563,7 @@ export class CredentialService {
     const indyCredentialRequest = requestMessage?.indyCredentialRequest
     if (!indyCredentialRequest) {
       throw new CredentialProblemReportError(
-        `Missing required base64 encoded attachment data for credential request with thread id ${credentialRecord.threadId}`,
+        `Missing required base64 or json encoded attachment data for credential request with thread id ${credentialRecord.threadId}`,
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
@@ -641,7 +641,7 @@ export class CredentialService {
     const indyCredential = issueCredentialMessage.indyCredential
     if (!indyCredential) {
       throw new CredentialProblemReportError(
-        `Missing required base64 encoded attachment data for credential with thread id ${issueCredentialMessage.threadId}`,
+        `Missing required base64 or json encoded attachment data for credential with thread id ${issueCredentialMessage.threadId}`,
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
