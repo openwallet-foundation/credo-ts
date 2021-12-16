@@ -81,8 +81,7 @@ export class OutOfBandModule {
       )
     }
 
-    const mediationRecord = await this.mediationRecipientService.discoverMediation()
-    const routing = await this.mediationRecipientService.getRouting(mediationRecord)
+    const routing = await this.mediationRecipientService.getRouting()
 
     const service = new DidCommService({
       id: '#inline', // TODO generate uuid?
@@ -220,8 +219,7 @@ export class OutOfBandModule {
   }
 
   private async createConnection(services: DidCommService[], autoAccept: boolean) {
-    const mediationRecord = await this.mediationRecipientService.discoverMediation()
-    const routing = await this.mediationRecipientService.getRouting(mediationRecord)
+    const routing = await this.mediationRecipientService.getRouting()
     const invitation = new ConnectionInvitationMessage({
       label: 'connection label',
       ...services[0],
