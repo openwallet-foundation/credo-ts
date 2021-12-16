@@ -85,12 +85,10 @@ describe('out of band', () => {
   })
 
   afterAll(async () => {
-    await faberAgent.shutdown({
-      deleteWallet: true,
-    })
-    await aliceAgent.shutdown({
-      deleteWallet: true,
-    })
+    await faberAgent.shutdown()
+    await faberAgent.wallet.delete()
+    await aliceAgent.shutdown()
+    await aliceAgent.wallet.delete()
   })
 
   afterEach(async () => {
