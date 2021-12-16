@@ -47,9 +47,12 @@ export class AttachmentData {
     }
   }
 
+  /*
+   * Helper function returning JSON representation of attachment data (if present). Tries to obtain the data from .base64 or .json, throws an error otherwise
+   */
   public getDataAsJson<T>(): T {
-    if (this.base64 && typeof this.base64 === 'string') {
-      return JsonEncoder.fromBase64(this.base64)
+    if (typeof this.base64 === 'string') {
+      return JsonEncoder.fromBase64(this.base64) as T
     } else if (this.json) {
       return this.json as T
     } else {
