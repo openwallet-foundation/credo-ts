@@ -133,7 +133,7 @@ export class CredentialResponseCoordinator {
       const indyCredential = credentialRecord.credentialMessage.indyCredential
 
       if (!indyCredential) {
-        this.agentConfig.logger.error(`Missing required base64 encoded attachment data for credential`)
+        this.agentConfig.logger.error(`Missing required base64 or json encoded attachment data for credential`)
         return false
       }
 

@@ -5,7 +5,6 @@ import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } fro
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
-import { JsonEncoder } from '../../../utils/JsonEncoder'
 
 export const INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID = 'libindy-cred-request-0'
 
@@ -49,14 +48,8 @@ export class RequestCredentialMessage extends AgentMessage {
     const attachment = this.requestAttachments.find(
       (attachment) => attachment.id === INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID
     )
-
-    // Return null if attachment is not found
-    if (!attachment?.data?.base64) {
-      return null
-    }
-
     // Extract proof request from attachment
-    const credentialReqJson = JsonEncoder.fromBase64(attachment.data.base64)
+    const credentialReqJson = attachment?.data?.getDataAsJson<CredReq>() ?? null
 
     return credentialReqJson
   }
