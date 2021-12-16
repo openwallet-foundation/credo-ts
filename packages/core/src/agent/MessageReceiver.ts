@@ -65,14 +65,10 @@ export class MessageReceiver {
    * @param inboundMessage the message to receive and handle
    */
   public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
-    if (typeof inboundMessage !== 'object' || inboundMessage == null) {
-      throw new AriesFrameworkError('Invalid message received. Message should be object')
-    }
-
     this.logger.debug(`Agent ${this.config.label} received message`)
 
-    if (this.isPlaintextMessage(inboundMessage as Record<string, unknown>)) {
-      await this.receivePlaintextMessage(inboundMessage as PlaintextMessage)
+    if (this.isPlaintextMessage(inboundMessage)) {
+      await this.receivePlaintextMessage(inboundMessage)
     } else {
       await this.receiveEncryptedMessage(inboundMessage as EncryptedMessage, session)
     }
@@ -156,8 +152,11 @@ export class MessageReceiver {
     }
   }
 
-  private isPlaintextMessage(message: Record<string, unknown>): message is PlaintextMessage {
-    // If the message does have an @type field we assume the message is already in plaintext
+  private isPlaintextMessage(message: unknown): message is PlaintextMessage {
+    if (typeof message !== 'object' || message == null) {
+      throw new AriesFrameworkError('Invalid message received. Message should be object')
+    }
+    // If the message does have an @type field we assume the message is in plaintext and it is not encrypted.
     return '@type' in message
   }
 
