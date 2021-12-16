@@ -1,5 +1,5 @@
 import type { Logger } from '../logger'
-import type { WireMessage } from '../types'
+import type { EncryptedMessage } from '../types'
 import type { MessageRepository } from './MessageRepository'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -9,7 +9,7 @@ import { AgentConfig } from '../agent/AgentConfig'
 @scoped(Lifecycle.ContainerScoped)
 export class InMemoryMessageRepository implements MessageRepository {
   private logger: Logger
-  private messages: { [key: string]: WireMessage[] } = {}
+  private messages: { [key: string]: EncryptedMessage[] } = {}
 
   public constructor(agentConfig: AgentConfig) {
     this.logger = agentConfig.logger
@@ -26,7 +26,7 @@ export class InMemoryMessageRepository implements MessageRepository {
     return this.messages[connectionId].splice(0, messagesToTake)
   }
 
-  public add(connectionId: string, payload: WireMessage) {
+  public add(connectionId: string, payload: EncryptedMessage) {
     if (!this.messages[connectionId]) {
       this.messages[connectionId] = []
     }
