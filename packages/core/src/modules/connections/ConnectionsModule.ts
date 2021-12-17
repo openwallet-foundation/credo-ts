@@ -95,11 +95,11 @@ export class ConnectionsModule {
       alias: config?.alias,
       routing,
     })
-    // if auto accept is enabled (either on the record or the global agent config)
-    // we directly send a connection request
+
     if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
       connection = await this.acceptInvitation(connection.id)
     }
+
     return connection
   }
 
