@@ -214,13 +214,33 @@ describe('out of band', () => {
     expect(createdConnectionRecord?.state).toEqual(ConnectionState.Invited)
   })
 
-  test('make a connection based on OOB invitation', async () => {
+  test('make a connection based on OOB invitation encoded in URL', async () => {
     // eslint-disable-next-line prefer-const
     let { outOfBandMessage, connectionRecord: faberAliceConnection } = await faberAgent.oob.createMessage(
       makeConnectionConfig
     )
+    const urlMessage = outOfBandMessage.toUrl({ domain: 'http://example.com' })
 
-    let aliceFaberConnection = await aliceAgent.oob.receiveMessage(outOfBandMessage, { autoAccept: true })
+    let aliceFaberConnection = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, { autoAccept: true })
+
+    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection?.id || '')
+    expect(aliceFaberConnection.state).toBe(ConnectionState.Complete)
+
+    faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection?.id || '')
+    expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
+    expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
+
+    expect(faberAliceConnection.state).toBe(ConnectionState.Complete)
+  })
+
+  test('make a connection based on old connection invitation encoded in URL', async () => {
+    // eslint-disable-next-line prefer-const
+    let { invitation, connectionRecord: faberAliceConnection } = await faberAgent.connections.createConnection(
+      makeConnectionConfig
+    )
+    const urlMessage = invitation.toUrl({ domain: 'http://example.com' })
+
+    let aliceFaberConnection = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, { autoAccept: true })
 
     aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection?.id || '')
     expect(aliceFaberConnection.state).toBe(ConnectionState.Complete)
