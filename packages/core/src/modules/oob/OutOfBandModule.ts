@@ -13,16 +13,21 @@ import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { ConsoleLogger, LogLevel } from '../../logger'
 import {
-  ConnectionService,
   ConnectionInvitationMessage,
   DidCommService,
   ConnectionEventTypes,
   ConnectionState,
+  ConnectionsModule,
 } from '../connections'
 import { MediationRecipientService } from '../routing'
 
 import { HandshakeReuseHandler } from './handlers'
 import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
+
+/**
+ * Extract findOrCreate to separate method?
+ * Add support for old connection invitation
+ */
 
 interface CreateOutOfBandMessageConfig {
   label?: string
@@ -39,7 +44,7 @@ interface ReceiveOutOfBandMessageConfig {
 
 @scoped(Lifecycle.ContainerScoped)
 export class OutOfBandModule {
-  private connectionService: ConnectionService
+  private connectionsModule: ConnectionsModule
   private mediationRecipientService: MediationRecipientService
   private dispatcher: Dispatcher
   private messageSender: MessageSender
@@ -48,14 +53,14 @@ export class OutOfBandModule {
 
   public constructor(
     dispatcher: Dispatcher,
-    connectionService: ConnectionService,
+    connectionsModule: ConnectionsModule,
     mediationRecipientService: MediationRecipientService,
     messageSender: MessageSender,
     eventEmitter: EventEmitter
   ) {
-    this.connectionService = connectionService
-    this.mediationRecipientService = mediationRecipientService
     this.dispatcher = dispatcher
+    this.connectionsModule = connectionsModule
+    this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.registerHandlers(dispatcher)
@@ -74,29 +79,14 @@ export class OutOfBandModule {
     config: CreateOutOfBandMessageConfig,
     messages?: AgentMessage[]
   ): Promise<{ outOfBandMessage: OutOfBandMessage; connectionRecord?: ConnectionRecord }> {
-    const { handshake, multiUseInvitation } = config
+    const { handshake, label, multiUseInvitation } = config
     if (!handshake && !messages) {
       throw new AriesFrameworkError(
         'One or both of handshake_protocols and requests~attach MUST be included in the message.'
       )
     }
 
-    const routing = await this.mediationRecipientService.getRouting()
-
-    const service = new DidCommService({
-      id: '#inline', // TODO generate uuid?
-      priority: 0,
-      serviceEndpoint: routing.endpoints[0],
-      recipientKeys: [routing.verkey],
-      routingKeys: routing.routingKeys,
-    })
-
-    const options = {
-      ...config,
-      accept: ['didcomm/aip1'],
-      services: [service],
-    }
-    const outOfBandMessage = new OutOfBandMessage(options)
+    let outOfBandMessage: OutOfBandMessage
 
     // Eventually, we can create just an OutOfBand record here.
     // The OOB record can be also used for connection-less communication in general.
@@ -104,14 +94,47 @@ export class OutOfBandModule {
     let connectionRecord: ConnectionRecord | undefined
 
     if (handshake) {
-      // Discover what handshake protocols are supported
-      const supportedHandshakeProtocols = this.getSupportedHandshakeProtocols()
-      const connectionProtocolMessage = await this.connectionService.createInvitation({
-        routing,
+      const connectionWithInvitation = await this.connectionsModule.createConnection({
+        myLabel: label,
         multiUseInvitation,
       })
-      connectionRecord = connectionProtocolMessage.connectionRecord
-      outOfBandMessage.handshakeProtocols = supportedHandshakeProtocols
+
+      connectionRecord = connectionWithInvitation.connectionRecord
+      const services = connectionRecord.didDoc.didCommServices.map((s) => {
+        return new DidCommService({
+          id: `${connectionRecord?.did};#${s.priority}`,
+          priority: 0,
+          serviceEndpoint: s.serviceEndpoint,
+          recipientKeys: s.recipientKeys,
+          routingKeys: s.routingKeys,
+        })
+      })
+
+      // Discover what handshake protocols are supported
+      const handshakeProtocols = this.getSupportedHandshakeProtocols()
+
+      const options = {
+        ...config,
+        accept: ['didcomm/aip1'],
+        services,
+        handshakeProtocols,
+      }
+      outOfBandMessage = new OutOfBandMessage(options)
+    } else {
+      const routing = await this.mediationRecipientService.getRouting()
+      const service = new DidCommService({
+        id: '#inline',
+        priority: 0,
+        serviceEndpoint: routing.endpoints[0],
+        recipientKeys: [routing.verkey],
+        routingKeys: routing.routingKeys,
+      })
+      const options = {
+        ...config,
+        accept: ['didcomm/aip1'],
+        services: [service],
+      }
+      outOfBandMessage = new OutOfBandMessage(options)
     }
 
     if (messages) {
@@ -146,13 +169,12 @@ export class OutOfBandModule {
       )
     }
 
-    let connectionRecord: ConnectionRecord
-
     if (handshakeProtocols) {
       if (!this.areHandshakeProtocolsSupported(handshakeProtocols)) {
         throw new AriesFrameworkError('Handshake protocols are not supported.')
       }
 
+      let connectionRecord: ConnectionRecord
       const existingConnection = await this.findExistingConnection(services)
       if (existingConnection) {
         this.logger.debug('Connection already exists.', { connectionId: existingConnection.id })
@@ -168,6 +190,7 @@ export class OutOfBandModule {
           connectionRecord = await this.createConnection(services, autoAccept)
         }
       } else {
+        this.logger.debug('Connection does not exists. Creating a new connection.')
         connectionRecord = await this.createConnection(services, autoAccept)
       }
 
@@ -214,28 +237,18 @@ export class OutOfBandModule {
 
   private async findExistingConnection(services: DidCommService[]) {
     const [service] = services
-    const existingConnection = await this.connectionService.findByTheirKey(service.recipientKeys[0])
+    const existingConnection = await this.connectionsModule.findByTheirKey(service.recipientKeys[0])
     return existingConnection
   }
 
   private async createConnection(services: DidCommService[], autoAccept: boolean) {
-    const routing = await this.mediationRecipientService.getRouting()
     const invitation = new ConnectionInvitationMessage({
       label: 'connection label',
       ...services[0],
     })
-    let connectionRecord = await this.connectionService.processInvitation(invitation, { routing })
-    if (autoAccept) {
-      connectionRecord = await this.acceptInvitation(connectionRecord.id)
-    }
-    return connectionRecord
-  }
-
-  // TODO This is copy-pasted from ConnectionModule
-  private async acceptInvitation(connectionId: string): Promise<ConnectionRecord> {
-    const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(connectionId)
-    const outbound = createOutboundMessage(connectionRecord, message)
-    await this.messageSender.sendMessage(outbound)
+    const connectionRecord = await this.connectionsModule.receiveInvitation(invitation, {
+      autoAcceptConnection: autoAccept,
+    })
     return connectionRecord
   }
 
