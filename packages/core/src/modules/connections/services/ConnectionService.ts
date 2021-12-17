@@ -184,7 +184,6 @@ export class ConnectionService {
       connectionRecord.autoAcceptConnection = config?.autoAcceptConnection
     }
 
-    connectionRecord.autoAcceptConnection = config?.autoAcceptConnection
     await this.updateState(connectionRecord, ConnectionState.Requested)
 
     return {
