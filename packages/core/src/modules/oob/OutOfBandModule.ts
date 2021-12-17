@@ -3,6 +3,7 @@ import type { AgentMessageReceivedEvent } from '../../agent/Events'
 import type { Logger } from '../../logger'
 import type { ConnectionRecord, ConnectionStateChangedEvent } from '../connections'
 
+import { parseUrl } from 'query-string'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { Dispatcher } from '../../agent/Dispatcher'
@@ -25,8 +26,8 @@ import { HandshakeReuseHandler } from './handlers'
 import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
 
 /**
+ * TODO
  * Extract findOrCreate to separate method?
- * Add support for old connection invitation
  */
 
 interface CreateOutOfBandMessageConfig {
@@ -148,6 +149,17 @@ export class OutOfBandModule {
     }
 
     return { outOfBandMessage, connectionRecord }
+  }
+
+  public async receiveInvitationFromUrl(urlMessage: string, config: ReceiveOutOfBandMessageConfig) {
+    const parsedUrl = parseUrl(urlMessage).query
+    if (parsedUrl['oob']) {
+      const outOfBandMessage = await OutOfBandMessage.fromUrl(urlMessage)
+      return this.receiveMessage(outOfBandMessage, config)
+    } else if (parsedUrl['c_i'] || parsedUrl['d_m']) {
+      const invitation = await ConnectionInvitationMessage.fromUrl(urlMessage)
+      return this.connectionsModule.receiveInvitation(invitation)
+    }
   }
 
   /**
