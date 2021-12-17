@@ -277,7 +277,7 @@ describe('out of band', () => {
     let aliceFaberConnection = await aliceAgent.oob.receiveMessage(outOfBandMessage, { autoAccept: false })
 
     // Accept connection invitation
-    await aliceAgent.connections.acceptInvitation(aliceFaberConnection?.id || '')
+    await aliceAgent.connections.acceptInvitation(aliceFaberConnection?.id || '', { autoAcceptConnection: true })
 
     // Wait until connection is ready
     aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection?.id || '')
