@@ -248,9 +248,13 @@ export class OutOfBandModule {
   }
 
   private async findExistingConnection(services: DidCommService[]) {
-    const [service] = services
-    const existingConnection = await this.connectionsModule.findByTheirKey(service.recipientKeys[0])
-    return existingConnection
+    for (const service of services) {
+      for (const recipientKey of service.recipientKeys) {
+        // TODO Encode the key and endpoint of the service block in a Peer DID numalgo 2 and using that DID instead of a service block
+        const existingConnection = await this.connectionsModule.findByTheirKey(recipientKey)
+        return existingConnection
+      }
+    }
   }
 
   private async createConnection(services: DidCommService[], autoAccept: boolean) {
