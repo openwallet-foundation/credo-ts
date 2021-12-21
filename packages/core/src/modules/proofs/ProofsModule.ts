@@ -386,7 +386,7 @@ export class ProofsModule {
     const presentationProblemReportMessage = new PresentationProblemReportMessage({
       description: {
         en: message,
-        code: PresentationProblemReportReason.abandoned,
+        code: PresentationProblemReportReason.Abandoned,
       },
     })
     presentationProblemReportMessage.setThread({

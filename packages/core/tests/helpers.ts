@@ -93,6 +93,7 @@ export async function waitForProofRecord(
     state?: ProofState
     previousState?: ProofState | null
     timeoutMs?: number
+    errorMessage?: string
   }
 ) {
   const observable = agent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged)
@@ -175,6 +176,7 @@ export async function waitForCredentialRecord(
     state?: CredentialState
     previousState?: CredentialState | null
     timeoutMs?: number
+    errorMessage?: string
   }
 ) {
   const observable = agent.events.observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)

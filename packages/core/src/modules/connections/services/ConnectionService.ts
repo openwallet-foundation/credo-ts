@@ -323,7 +323,16 @@ export class ConnectionService {
     connectionRecord.assertState(ConnectionState.Requested)
     connectionRecord.assertRole(ConnectionRole.Invitee)
 
-    const connectionJson = await unpackAndVerifySignatureDecorator(message.connectionSig, this.wallet)
+    let connectionJson = null
+    try {
+      connectionJson = await unpackAndVerifySignatureDecorator(message.connectionSig, this.wallet)
+    } catch (error) {
+      if (error instanceof AriesFrameworkError) {
+        throw new ConnectionProblemReportError(error.message, {
+          problemCode: ConnectionProblemReportReason.RequestProcessingError,
+        })
+      }
+    }
 
     const connection = JsonTransformer.fromJSON(connectionJson, Connection)
     await MessageValidator.validate(connection)
@@ -433,8 +442,8 @@ export class ConnectionService {
       )
     }
 
-    connectionRecord.errorMsg = `${connectionProblemReportMessage.description.code} : ${connectionProblemReportMessage.description.en}`
-    await this.updateState(connectionRecord, ConnectionState.None)
+    connectionRecord.errorMessage = `${connectionProblemReportMessage.description.code} : ${connectionProblemReportMessage.description.en}`
+    await this.updateState(connectionRecord, connectionRecord.state)
     return connectionRecord
   }
 

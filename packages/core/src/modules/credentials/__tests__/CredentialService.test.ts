@@ -981,7 +981,7 @@ describe('CredentialService', () => {
       })
     })
 
-    test(`updates state to ${CredentialState.None} and returns credential record`, async () => {
+    test(`updates problem report error message and returns credential record`, async () => {
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
 
       // given
@@ -992,7 +992,7 @@ describe('CredentialService', () => {
 
       // then
       const expectedCredentialRecord = {
-        state: CredentialState.None,
+        errorMessage: 'issuance-abandoned: Indy error',
       }
       expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, {
         threadId: 'somethreadid',
@@ -1002,28 +1002,6 @@ describe('CredentialService', () => {
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
       expect(updatedCredentialRecord).toMatchObject(expectedCredentialRecord)
       expect(returnedCredentialRecord).toMatchObject(expectedCredentialRecord)
-    })
-
-    test(`emits stateChange event from ${CredentialState.OfferReceived} to ${CredentialState.None}`, async () => {
-      const eventListenerMock = jest.fn()
-      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
-
-      // given
-      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
-
-      // when
-      await credentialService.processProblemReport(messageContext)
-
-      // then
-      expect(eventListenerMock).toHaveBeenCalledWith({
-        type: 'CredentialStateChanged',
-        payload: {
-          previousState: CredentialState.OfferReceived,
-          credentialRecord: expect.objectContaining({
-            state: CredentialState.None,
-          }),
-        },
-      })
     })
   })
 

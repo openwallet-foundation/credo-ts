@@ -733,7 +733,9 @@ export class CredentialService {
   public async processProblemReport(
     messageContext: InboundMessageContext<CredentialProblemReportMessage>
   ): Promise<CredentialRecord> {
-    const { message: credentialProblemReportMessage, connection } = messageContext
+    const { message: credentialProblemReportMessage } = messageContext
+
+    const connection = messageContext.assertReadyConnection()
 
     this.logger.debug(`Processing problem report with id ${credentialProblemReportMessage.id}`)
 
@@ -743,8 +745,8 @@ export class CredentialService {
     )
 
     // Update record
-    credentialRecord.errorMsg = `${credentialProblemReportMessage.description.code}: ${credentialProblemReportMessage.description.en}`
-    await this.updateState(credentialRecord, CredentialState.None)
+    credentialRecord.errorMessage = `${credentialProblemReportMessage.description.code}: ${credentialProblemReportMessage.description.en}`
+    await this.updateState(credentialRecord, credentialRecord.state)
     return credentialRecord
   }
 
