@@ -3,7 +3,6 @@ import { Expose } from 'class-transformer'
 import { Equals, IsEnum, IsOptional, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { CommonMessageType } from '../../common/messages/CommonMessageType'
 
 export enum WhoRetriesStatus {
   You = 'YOU',
@@ -80,7 +79,7 @@ export class ProblemReportMessage extends AgentMessage {
 
   @Equals(ProblemReportMessage.type)
   public readonly type: string = ProblemReportMessage.type
-  public static readonly type: string = CommonMessageType.ProblemReport
+  public static readonly type: string = 'https://didcomm.org/notification/1.0/problem-report'
 
   public description!: DescriptionOptions
 
