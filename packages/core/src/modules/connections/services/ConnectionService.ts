@@ -323,7 +323,16 @@ export class ConnectionService {
     connectionRecord.assertState(ConnectionState.Requested)
     connectionRecord.assertRole(ConnectionRole.Invitee)
 
-    const connectionJson = await unpackAndVerifySignatureDecorator(message.connectionSig, this.wallet)
+    let connectionJson = null
+    try {
+      connectionJson = await unpackAndVerifySignatureDecorator(message.connectionSig, this.wallet)
+    } catch (error) {
+      if (error instanceof AriesFrameworkError) {
+        throw new ConnectionProblemReportError(error.message, {
+          problemCode: ConnectionProblemReportReason.RequestProcessingError,
+        })
+      }
+    }
 
     const connection = JsonTransformer.fromJSON(connectionJson, Connection)
     await MessageValidator.validate(connection)
@@ -417,7 +426,7 @@ export class ConnectionService {
   public async processProblemReport(
     messageContext: InboundMessageContext<ConnectionProblemReportMessage>
   ): Promise<ConnectionRecord> {
-    const { message: connectionProblemReportMessage, recipientVerkey } = messageContext
+    const { message: connectionProblemReportMessage, recipientVerkey, senderVerkey } = messageContext
 
     this.logger.debug(`Processing connection problem report for verkey ${recipientVerkey}`)
 
@@ -433,8 +442,12 @@ export class ConnectionService {
       )
     }
 
-    connectionRecord.errorMsg = `${connectionProblemReportMessage.description.code} : ${connectionProblemReportMessage.description.en}`
-    await this.updateState(connectionRecord, ConnectionState.None)
+    if (connectionRecord.theirKey && connectionRecord.theirKey !== senderVerkey) {
+      throw new AriesFrameworkError("Sender verkey doesn't match verkey of connection record")
+    }
+
+    connectionRecord.errorMessage = `${connectionProblemReportMessage.description.code} : ${connectionProblemReportMessage.description.en}`
+    await this.update(connectionRecord)
     return connectionRecord
   }
 
@@ -527,6 +540,10 @@ export class ConnectionService {
         previousState,
       },
     })
+  }
+
+  public update(connectionRecord: ConnectionRecord) {
+    return this.connectionRepository.update(connectionRecord)
   }
 
   /**

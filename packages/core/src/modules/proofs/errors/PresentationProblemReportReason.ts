@@ -4,5 +4,5 @@
  * @see https://github.com/hyperledger/aries-rfcs/blob/main/features/0037-present-proof/README.md
  */
 export enum PresentationProblemReportReason {
-  abandoned = 'abandoned',
+  Abandoned = 'abandoned',
 }

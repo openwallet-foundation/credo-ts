@@ -355,7 +355,7 @@ export class ProofService {
     if (!proofRequest) {
       throw new PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation request with thread id ${proofRequestMessage.threadId}`,
-        { problemCode: PresentationProblemReportReason.abandoned }
+        { problemCode: PresentationProblemReportReason.Abandoned }
       )
     }
     await validateOrReject(proofRequest)
@@ -424,7 +424,7 @@ export class ProofService {
     if (!indyProofRequest) {
       throw new PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation with thread id ${proofRecord.threadId}`,
-        { problemCode: PresentationProblemReportReason.abandoned }
+        { problemCode: PresentationProblemReportReason.Abandoned }
       )
     }
 
@@ -491,14 +491,14 @@ export class ProofService {
     if (!indyProofJson) {
       throw new PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation with thread id ${presentationMessage.threadId}`,
-        { problemCode: PresentationProblemReportReason.abandoned }
+        { problemCode: PresentationProblemReportReason.Abandoned }
       )
     }
 
     if (!indyProofRequest) {
       throw new PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation request with thread id ${presentationMessage.threadId}`,
-        { problemCode: PresentationProblemReportReason.abandoned }
+        { problemCode: PresentationProblemReportReason.Abandoned }
       )
     }
 
@@ -574,14 +574,16 @@ export class ProofService {
   public async processProblemReport(
     messageContext: InboundMessageContext<PresentationProblemReportMessage>
   ): Promise<ProofRecord> {
-    const { message: presentationProblemReportMessage, connection } = messageContext
+    const { message: presentationProblemReportMessage } = messageContext
+
+    const connection = messageContext.assertReadyConnection()
 
     this.logger.debug(`Processing problem report with id ${presentationProblemReportMessage.id}`)
 
     const proofRecord = await this.getByThreadAndConnectionId(presentationProblemReportMessage.threadId, connection?.id)
 
-    proofRecord.errorMsg = `${presentationProblemReportMessage.description.code}: ${presentationProblemReportMessage.description.en}`
-    await this.updateState(proofRecord, ProofState.None)
+    proofRecord.errorMessage = `${presentationProblemReportMessage.description.code}: ${presentationProblemReportMessage.description.en}`
+    await this.update(proofRecord)
     return proofRecord
   }
 
@@ -853,7 +855,7 @@ export class ProofService {
           `The encoded value for '${referent}' is invalid. ` +
             `Expected '${CredentialUtils.encode(attribute.raw)}'. ` +
             `Actual '${attribute.encoded}'`,
-          { problemCode: PresentationProblemReportReason.abandoned }
+          { problemCode: PresentationProblemReportReason.Abandoned }
         )
       }
     }

@@ -33,7 +33,7 @@ export interface CredentialRecordProps {
   credentialAttributes?: CredentialPreviewAttribute[]
   autoAcceptCredential?: AutoAcceptCredential
   linkedAttachments?: Attachment[]
-  errorMsg?: string
+  errorMessage?: string
 }
 
 export type CustomCredentialTags = TagsBase
@@ -50,7 +50,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
   public credentialId?: string
   public state!: CredentialState
   public autoAcceptCredential?: AutoAcceptCredential
-  public errorMsg?: string
+  public errorMessage?: string
 
   // message data
   @Type(() => ProposeCredentialMessage)
@@ -90,7 +90,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       this.credentialAttributes = props.credentialAttributes
       this.autoAcceptCredential = props.autoAcceptCredential
       this.linkedAttachments = props.linkedAttachments
-      this.errorMsg = props.errorMsg
+      this.errorMessage = props.errorMessage
     }
   }
 
