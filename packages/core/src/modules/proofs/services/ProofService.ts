@@ -583,7 +583,7 @@ export class ProofService {
     const proofRecord = await this.getByThreadAndConnectionId(presentationProblemReportMessage.threadId, connection?.id)
 
     proofRecord.errorMessage = `${presentationProblemReportMessage.description.code}: ${presentationProblemReportMessage.description.en}`
-    await this.updateState(proofRecord, proofRecord.state)
+    await this.update(proofRecord)
     return proofRecord
   }
 

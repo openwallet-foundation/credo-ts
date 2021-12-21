@@ -331,27 +331,4 @@ describe('Present Proof', () => {
       presentationMessage: expect.any(PresentationMessage),
     })
   })
-
-  test('Alice starts with proof proposal to Faber and received problem report message', async () => {
-    // Alice sends a presentation proposal to Faber
-    testLogger.test('Alice sends a presentation proposal to Faber')
-    let aliceProofRecord = await aliceAgent.proofs.proposeProof(aliceConnection.id, presentationPreview)
-
-    // Faber waits for a presentation proposal from Alice
-    testLogger.test('Faber waits for a presentation proposal from Alice')
-    let faberProofRecord = await waitForProofRecord(faberAgent, {
-      threadId: aliceProofRecord.threadId,
-      state: ProofState.ProposalReceived,
-    })
-
-    testLogger.test('Faber sends problem report to Alice')
-    faberProofRecord = await faberAgent.proofs.sendProblemReport(faberProofRecord.id, 'Indy error')
-
-    testLogger.test('Alice waits for problem report message from Faber')
-    aliceProofRecord = await waitForProofRecord(aliceAgent, {
-      threadId: faberProofRecord.threadId,
-      errorMessage: 'abandoned: Indy error',
-    })
-    expect(aliceProofRecord.errorMessage).toEqual('abandoned: Indy error')
-  })
 })

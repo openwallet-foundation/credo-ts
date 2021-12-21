@@ -746,7 +746,7 @@ export class CredentialService {
 
     // Update record
     credentialRecord.errorMessage = `${credentialProblemReportMessage.description.code}: ${credentialProblemReportMessage.description.en}`
-    await this.updateState(credentialRecord, credentialRecord.state)
+    await this.update(credentialRecord)
     return credentialRecord
   }
 

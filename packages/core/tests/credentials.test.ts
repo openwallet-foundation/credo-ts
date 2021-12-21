@@ -479,28 +479,4 @@ describe('credentials', () => {
       state: CredentialState.Done,
     })
   })
-
-  test('Alice starts with credential proposal to Faber and received problem report message', async () => {
-    testLogger.test('Alice sends credential proposal to Faber')
-    let aliceCredentialRecord = await aliceAgent.credentials.proposeCredential(aliceConnection.id, {
-      credentialProposal: credentialPreview,
-      credentialDefinitionId: credDefId,
-    })
-
-    testLogger.test('Faber waits for credential proposal from Alice')
-    let faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
-      threadId: aliceCredentialRecord.threadId,
-      state: CredentialState.ProposalReceived,
-    })
-
-    testLogger.test('Faber sends problem report to Alice')
-    faberCredentialRecord = await faberAgent.credentials.sendProblemReport(faberCredentialRecord.id, 'Indy error')
-
-    testLogger.test('Alice waits for problem report message from Faber')
-    aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
-      threadId: faberCredentialRecord.threadId,
-      errorMessage: 'issuance-abandoned: Indy error',
-    })
-    expect(aliceCredentialRecord.errorMessage).toEqual('issuance-abandoned: Indy error')
-  })
 })

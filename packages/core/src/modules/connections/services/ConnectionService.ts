@@ -443,7 +443,7 @@ export class ConnectionService {
     }
 
     connectionRecord.errorMessage = `${connectionProblemReportMessage.description.code} : ${connectionProblemReportMessage.description.en}`
-    await this.updateState(connectionRecord, connectionRecord.state)
+    await this.update(connectionRecord)
     return connectionRecord
   }
 
@@ -536,6 +536,10 @@ export class ConnectionService {
         previousState,
       },
     })
+  }
+
+  public update(connectionRecord: ConnectionRecord) {
+    return this.connectionRepository.update(connectionRecord)
   }
 
   /**
