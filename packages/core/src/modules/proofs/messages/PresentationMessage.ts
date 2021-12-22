@@ -5,7 +5,6 @@ import { Equals, IsArray, IsString, ValidateNested, IsOptional, IsInstance } fro
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
-import { JsonEncoder } from '../../../utils/JsonEncoder'
 
 export const INDY_PROOF_ATTACHMENT_ID = 'libindy-presentation-0'
 
@@ -60,12 +59,7 @@ export class PresentationMessage extends AgentMessage {
   public get indyProof(): IndyProof | null {
     const attachment = this.presentationAttachments.find((attachment) => attachment.id === INDY_PROOF_ATTACHMENT_ID)
 
-    // Return null if attachment is not found
-    if (!attachment?.data?.base64) {
-      return null
-    }
-
-    const proofJson = JsonEncoder.fromBase64(attachment.data.base64)
+    const proofJson = attachment?.data?.getDataAsJson<IndyProof>() ?? null
 
     return proofJson
   }

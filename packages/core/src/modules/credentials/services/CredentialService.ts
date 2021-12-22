@@ -5,7 +5,7 @@ import type { LinkedAttachment } from '../../../utils/LinkedAttachment'
 import type { ConnectionRecord } from '../../connections'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
-import type { ProposeCredentialMessageOptions } from '../messages'
+import type { CredentialProblemReportMessage, ProposeCredentialMessageOptions } from '../messages'
 import type { CredReqMetadata } from 'indy-sdk'
 
 import { scoped, Lifecycle } from 'tsyringe'
@@ -24,6 +24,7 @@ import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
+import { CredentialProblemReportError, CredentialProblemReportReason } from '../errors'
 import {
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
@@ -213,7 +214,6 @@ export class CredentialService {
         },
       })
     }
-
     return credentialRecord
   }
 
@@ -356,8 +356,9 @@ export class CredentialService {
 
     const indyCredentialOffer = credentialOfferMessage.indyCredentialOffer
     if (!indyCredentialOffer) {
-      throw new AriesFrameworkError(
-        `Missing required base64 encoded attachment data for credential offer with thread id ${credentialOfferMessage.threadId}`
+      throw new CredentialProblemReportError(
+        `Missing required base64 or json encoded attachment data for credential offer with thread id ${credentialOfferMessage.threadId}`,
+        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
 
@@ -431,8 +432,9 @@ export class CredentialService {
     const credentialOffer = credentialRecord.offerMessage?.indyCredentialOffer
 
     if (!credentialOffer) {
-      throw new AriesFrameworkError(
-        `Missing required base64 encoded attachment data for credential offer with thread id ${credentialRecord.threadId}`
+      throw new CredentialProblemReportError(
+        `Missing required base64 or json encoded attachment data for credential offer with thread id ${credentialRecord.threadId}`,
+        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
 
@@ -491,8 +493,9 @@ export class CredentialService {
     const indyCredentialRequest = credentialRequestMessage?.indyCredentialRequest
 
     if (!indyCredentialRequest) {
-      throw new AriesFrameworkError(
-        `Missing required base64 encoded attachment data for credential request with thread id ${credentialRequestMessage.threadId}`
+      throw new CredentialProblemReportError(
+        `Missing required base64 or json encoded attachment data for credential request with thread id ${credentialRequestMessage.threadId}`,
+        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
 
@@ -541,24 +544,27 @@ export class CredentialService {
     // Assert credential attributes
     const credentialAttributes = credentialRecord.credentialAttributes
     if (!credentialAttributes) {
-      throw new Error(
-        `Missing required credential attribute values on credential record with id ${credentialRecord.id}`
+      throw new CredentialProblemReportError(
+        `Missing required credential attribute values on credential record with id ${credentialRecord.id}`,
+        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
 
     // Assert Indy offer
     const indyCredentialOffer = offerMessage?.indyCredentialOffer
     if (!indyCredentialOffer) {
-      throw new AriesFrameworkError(
-        `Missing required base64 encoded attachment data for credential offer with thread id ${credentialRecord.threadId}`
+      throw new CredentialProblemReportError(
+        `Missing required base64 or json encoded attachment data for credential offer with thread id ${credentialRecord.threadId}`,
+        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
 
     // Assert Indy request
     const indyCredentialRequest = requestMessage?.indyCredentialRequest
     if (!indyCredentialRequest) {
-      throw new AriesFrameworkError(
-        `Missing required base64 encoded attachment data for credential request with thread id ${credentialRecord.threadId}`
+      throw new CredentialProblemReportError(
+        `Missing required base64 or json encoded attachment data for credential request with thread id ${credentialRecord.threadId}`,
+        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
 
@@ -626,13 +632,17 @@ export class CredentialService {
     const credentialRequestMetadata = credentialRecord.metadata.get<CredReqMetadata>('_internal/indyRequest')
 
     if (!credentialRequestMetadata) {
-      throw new AriesFrameworkError(`Missing required request metadata for credential with id ${credentialRecord.id}`)
+      throw new CredentialProblemReportError(
+        `Missing required request metadata for credential with id ${credentialRecord.id}`,
+        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
+      )
     }
 
     const indyCredential = issueCredentialMessage.indyCredential
     if (!indyCredential) {
-      throw new AriesFrameworkError(
-        `Missing required base64 encoded attachment data for credential with thread id ${issueCredentialMessage.threadId}`
+      throw new CredentialProblemReportError(
+        `Missing required base64 or json encoded attachment data for credential with thread id ${issueCredentialMessage.threadId}`,
+        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
 
@@ -710,6 +720,33 @@ export class CredentialService {
     // Update record
     await this.updateState(credentialRecord, CredentialState.Done)
 
+    return credentialRecord
+  }
+
+  /**
+   * Process a received {@link ProblemReportMessage}.
+   *
+   * @param messageContext The message context containing a credential problem report message
+   * @returns credential record associated with the credential problem report message
+   *
+   */
+  public async processProblemReport(
+    messageContext: InboundMessageContext<CredentialProblemReportMessage>
+  ): Promise<CredentialRecord> {
+    const { message: credentialProblemReportMessage } = messageContext
+
+    const connection = messageContext.assertReadyConnection()
+
+    this.logger.debug(`Processing problem report with id ${credentialProblemReportMessage.id}`)
+
+    const credentialRecord = await this.getByThreadAndConnectionId(
+      credentialProblemReportMessage.threadId,
+      connection?.id
+    )
+
+    // Update record
+    credentialRecord.errorMessage = `${credentialProblemReportMessage.description.code}: ${credentialProblemReportMessage.description.en}`
+    await this.update(credentialRecord)
     return credentialRecord
   }
 

@@ -3,6 +3,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
+import type { ConnectionProblemReportMessage } from '../messages'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
@@ -18,6 +19,7 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
 import { ConnectionEventTypes } from '../ConnectionEvents'
+import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
 import {
   ConnectionInvitationMessage,
   ConnectionRequestMessage,
@@ -81,7 +83,6 @@ export class ConnectionService {
       autoAcceptConnection: config?.autoAcceptConnection,
       multiUseInvitation: config.multiUseInvitation ?? false,
     })
-
     const { didDoc } = connectionRecord
     const [service] = didDoc.didCommServices
     const invitation = new ConnectionInvitationMessage({
@@ -213,7 +214,9 @@ export class ConnectionService {
     connectionRecord.assertRole(ConnectionRole.Inviter)
 
     if (!message.connection.didDoc) {
-      throw new AriesFrameworkError('Public DIDs are not supported yet')
+      throw new ConnectionProblemReportError('Public DIDs are not supported yet', {
+        problemCode: ConnectionProblemReportReason.RequestNotAccepted,
+      })
     }
 
     // Create new connection if using a multi use invitation
@@ -320,7 +323,16 @@ export class ConnectionService {
     connectionRecord.assertState(ConnectionState.Requested)
     connectionRecord.assertRole(ConnectionRole.Invitee)
 
-    const connectionJson = await unpackAndVerifySignatureDecorator(message.connectionSig, this.wallet)
+    let connectionJson = null
+    try {
+      connectionJson = await unpackAndVerifySignatureDecorator(message.connectionSig, this.wallet)
+    } catch (error) {
+      if (error instanceof AriesFrameworkError) {
+        throw new ConnectionProblemReportError(error.message, {
+          problemCode: ConnectionProblemReportReason.RequestProcessingError,
+        })
+      }
+    }
 
     const connection = JsonTransformer.fromJSON(connectionJson, Connection)
     await MessageValidator.validate(connection)
@@ -330,8 +342,9 @@ export class ConnectionService {
     const signerVerkey = message.connectionSig.signer
     const invitationKey = connectionRecord.getTags().invitationKey
     if (signerVerkey !== invitationKey) {
-      throw new AriesFrameworkError(
-        `Connection object in connection response message is not signed with same key as recipient key in invitation expected='${invitationKey}' received='${signerVerkey}'`
+      throw new ConnectionProblemReportError(
+        `Connection object in connection response message is not signed with same key as recipient key in invitation expected='${invitationKey}' received='${signerVerkey}'`,
+        { problemCode: ConnectionProblemReportReason.ResponseNotAccepted }
       )
     }
 
@@ -401,6 +414,41 @@ export class ConnectionService {
     }
 
     return connection
+  }
+
+  /**
+   * Process a received {@link ProblemReportMessage}.
+   *
+   * @param messageContext The message context containing a connection problem report message
+   * @returns connection record associated with the connection problem report message
+   *
+   */
+  public async processProblemReport(
+    messageContext: InboundMessageContext<ConnectionProblemReportMessage>
+  ): Promise<ConnectionRecord> {
+    const { message: connectionProblemReportMessage, recipientVerkey, senderVerkey } = messageContext
+
+    this.logger.debug(`Processing connection problem report for verkey ${recipientVerkey}`)
+
+    if (!recipientVerkey) {
+      throw new AriesFrameworkError('Unable to process connection problem report without recipientVerkey')
+    }
+
+    const connectionRecord = await this.findByVerkey(recipientVerkey)
+
+    if (!connectionRecord) {
+      throw new AriesFrameworkError(
+        `Unable to process connection problem report: connection for verkey ${recipientVerkey} not found`
+      )
+    }
+
+    if (connectionRecord.theirKey && connectionRecord.theirKey !== senderVerkey) {
+      throw new AriesFrameworkError("Sender verkey doesn't match verkey of connection record")
+    }
+
+    connectionRecord.errorMessage = `${connectionProblemReportMessage.description.code} : ${connectionProblemReportMessage.description.en}`
+    await this.update(connectionRecord)
+    return connectionRecord
   }
 
   /**
@@ -492,6 +540,10 @@ export class ConnectionService {
         previousState,
       },
     })
+  }
+
+  public update(connectionRecord: ConnectionRecord) {
+    return this.connectionRepository.update(connectionRecord)
   }
 
   /**

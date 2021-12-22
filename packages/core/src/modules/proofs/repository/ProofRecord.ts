@@ -20,6 +20,7 @@ export interface ProofRecordProps {
   presentationId?: string
   tags?: CustomProofTags
   autoAcceptProof?: AutoAcceptProof
+  errorMessage?: string
 
   // message data
   proposalMessage?: ProposePresentationMessage
@@ -41,6 +42,7 @@ export class ProofRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
   public presentationId?: string
   public state!: ProofState
   public autoAcceptProof?: AutoAcceptProof
+  public errorMessage?: string
 
   // message data
   @Type(() => ProposePresentationMessage)
@@ -69,6 +71,7 @@ export class ProofRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
       this.presentationId = props.presentationId
       this.autoAcceptProof = props.autoAcceptProof
       this._tags = props.tags ?? {}
+      this.errorMessage = props.errorMessage
     }
   }
 
