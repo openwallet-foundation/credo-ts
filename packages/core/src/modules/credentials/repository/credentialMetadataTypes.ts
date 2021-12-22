@@ -1,3 +1,5 @@
+import type { CredReqMetadata } from 'indy-sdk'
+
 export enum CredentialMetadataKeys {
   IndyCredential = '_internal/indyCredential',
   IndyRequest = '_internal/indyRequest',
@@ -8,5 +10,5 @@ export type CredentialMetadata = {
     schemaId?: string
     credentialDefinitionId?: string
   }
-  [CredentialMetadataKeys.IndyRequest]: Record<string, unknown>
+  [CredentialMetadataKeys.IndyRequest]: CredReqMetadata
 }

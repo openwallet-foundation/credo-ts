@@ -1,8 +1,7 @@
 import { CredentialState } from '../CredentialState'
 import { CredentialPreviewAttribute } from '../messages'
 import { CredentialRecord } from '../repository/CredentialRecord'
-
-import { CredentialMetadataKeys } from '@aries-framework/core'
+import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 
 describe('CredentialRecord', () => {
   describe('getCredentialInfo()', () => {

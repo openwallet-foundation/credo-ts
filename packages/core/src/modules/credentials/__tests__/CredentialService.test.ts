@@ -33,12 +33,11 @@ import {
 } from '../messages'
 import { CredentialRecord } from '../repository/CredentialRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
+import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 import { CredentialService } from '../services'
 
 import { CredentialProblemReportMessage } from './../messages/CredentialProblemReportMessage'
 import { credDef, credOffer, credReq } from './fixtures'
-
-import { CredentialMetadataKeys } from '@aries-framework/core'
 
 // Mock classes
 jest.mock('../repository/CredentialRepository')

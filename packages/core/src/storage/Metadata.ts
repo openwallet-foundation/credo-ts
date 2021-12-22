@@ -11,7 +11,9 @@ export type MetadataBase = {
  *
  * @example
  *
- * ```ts connectionRecord.metadata.set('foo', { bar: 'baz' }) connectionRepository.update(connectionRecord) ```
+ * ```ts
+ * connectionRecord.metadata.set('foo', { bar: 'baz' }) connectionRepository.update(connectionRecord)
+ * ```
  */
 export class Metadata<MetadataTypes> {
   public readonly data: MetadataBase
