@@ -38,6 +38,8 @@ import { CredentialService } from '../services'
 import { CredentialProblemReportMessage } from './../messages/CredentialProblemReportMessage'
 import { credDef, credOffer, credReq } from './fixtures'
 
+import { CredentialMetadataKeys } from '@aries-framework/core'
+
 // Mock classes
 jest.mock('../repository/CredentialRepository')
 jest.mock('../../../modules/ledger/services/IndyLedgerService')
@@ -126,17 +128,17 @@ const mockCredentialRecord = ({
   })
 
   if (metadata?.indyRequest) {
-    credentialRecord.metadata.set('_internal/indyRequest', { ...metadata.indyRequest })
+    credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, { ...metadata.indyRequest })
   }
 
   if (metadata?.schemaId) {
-    credentialRecord.metadata.add('_internal/indyCredential', {
+    credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
       schemaId: metadata.schemaId,
     })
   }
 
   if (metadata?.credentialDefinitionId) {
-    credentialRecord.metadata.add('_internal/indyCredential', {
+    credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
       credentialDefinitionId: metadata.credentialDefinitionId,
     })
   }

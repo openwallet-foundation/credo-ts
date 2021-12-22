@@ -5,7 +5,6 @@ import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoA
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
-import type { CredReqMetadata } from 'indy-sdk'
 
 export interface WalletConfig {
   id: string
@@ -78,12 +77,3 @@ export interface OutboundPackage {
   endpoint?: string
   connectionId?: string
 }
-
-// Metadata type for `_internal/indyCredential`
-export interface IndyCredentialMetadata {
-  schemaId?: string
-  credentialDefinitionId?: string
-}
-
-// Metadata type for  `_internal/indyRequest`
-export type IndyCredentialRequestMetadata = CredReqMetadata

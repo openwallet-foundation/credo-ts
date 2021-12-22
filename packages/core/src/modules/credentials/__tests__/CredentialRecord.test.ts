@@ -2,6 +2,8 @@ import { CredentialState } from '../CredentialState'
 import { CredentialPreviewAttribute } from '../messages'
 import { CredentialRecord } from '../repository/CredentialRecord'
 
+import { CredentialMetadataKeys } from '@aries-framework/core'
+
 describe('CredentialRecord', () => {
   describe('getCredentialInfo()', () => {
     test('creates credential info object from credential record data', () => {
@@ -17,7 +19,7 @@ describe('CredentialRecord', () => {
         ],
       })
 
-      credentialRecord.metadata.set('_internal/indyCredential', {
+      credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
         credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
         schemaId: 'TL1EaPFCZ8Si5aUrqScBDt:2:test-schema-1599055118161:1.0',
       })
