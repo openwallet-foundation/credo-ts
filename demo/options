@@ -1,0 +1,30 @@
+create agents -> choose agents' names
+wil je dat annelein of klm de connectie maakt
+
+setup connection:
+- send invitation
+- accept invitation
+
+register a:
+- schema
+- credential
+
+offer and accept credential
+
+send proof request & accept proof request
+
+sending messages
+
+
+interface options {
+  create_agents = false
+  setup_connection = false
+  register = false
+  credential = false
+  proof_request = false
+  messages = false
+}
+
+* eerst beginnen met de hele flow neerzetten en dan kijken waar we mee gaan verder bouwen
+* inquirer gebruiken is prima
+* register a schema / credential, zelf doen of er door heen later lopen -> opties voor later
