@@ -9,12 +9,11 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../error'
 import { ConnectionService } from '../modules/connections/services/ConnectionService'
-import { ProblemReportError, ProblemReportMessage } from '../modules/problem-reports'
+import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { MessageValidator } from '../utils/MessageValidator'
 import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
-import { CommonMessageType } from './../modules/common/messages/CommonMessageType'
 import { AgentConfig } from './AgentConfig'
 import { Dispatcher } from './Dispatcher'
 import { EnvelopeService } from './EnvelopeService'
@@ -23,9 +22,6 @@ import { TransportService } from './TransportService'
 import { createOutboundMessage } from './helpers'
 import { InboundMessageContext } from './models/InboundMessageContext'
 
-export enum ProblemReportReason {
-  MessageParseFailure = 'message-parse-failure',
-}
 @scoped(Lifecycle.ContainerScoped)
 export class MessageReceiver {
   private config: AgentConfig
@@ -226,7 +222,7 @@ export class MessageReceiver {
     connection: ConnectionRecord,
     plaintextMessage: PlaintextMessage
   ) {
-    if (plaintextMessage['@type'] === CommonMessageType.ProblemReport) {
+    if (plaintextMessage['@type'] === ProblemReportMessage.type) {
       throw new AriesFrameworkError(message)
     }
     const problemReportMessage = new ProblemReportMessage({

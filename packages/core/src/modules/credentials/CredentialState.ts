@@ -14,5 +14,4 @@ export enum CredentialState {
   CredentialIssued = 'credential-issued',
   CredentialReceived = 'credential-received',
   Done = 'done',
-  None = 'none',
 }
