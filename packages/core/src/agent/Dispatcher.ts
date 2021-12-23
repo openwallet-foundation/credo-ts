@@ -15,6 +15,9 @@ import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes } from './Events'
 import { MessageSender } from './MessageSender'
 import { isOutboundServiceMessage } from './helpers'
+import { buildGetTxnAuthorAgreementRequest } from 'indy-sdk'
+
+import { uuid } from '../utils/uuid'
 
 @scoped(Lifecycle.ContainerScoped)
 class Dispatcher {
@@ -22,6 +25,7 @@ class Dispatcher {
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
   private logger: Logger
+  private id: any
 
   public constructor(messageSender: MessageSender, eventEmitter: EventEmitter, agentConfig: AgentConfig) {
     this.messageSender = messageSender
@@ -44,6 +48,8 @@ class Dispatcher {
     let outboundMessage: OutboundMessage<AgentMessage> | OutboundServiceMessage<AgentMessage> | void
 
     try {
+
+      
       outboundMessage = await handler.handle(messageContext)
     } catch (error) {
       const problemReportMessage = error.problemReport
@@ -99,10 +105,12 @@ class Dispatcher {
   }
 
   public getMessageClassForType(messageType: string): typeof AgentMessage | undefined {
+    let x = 1
     for (const handler of this.handlers) {
-      for (const MessageClass of handler.supportedMessages) {
+      for (const MessageClass of handler.supportedMessages) {        
         if (MessageClass.type === messageType) return MessageClass
       }
+      x++
     }
   }
 

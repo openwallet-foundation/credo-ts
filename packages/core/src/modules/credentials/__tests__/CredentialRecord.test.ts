@@ -1,5 +1,5 @@
 import { CredentialState } from '../CredentialState'
-import { CredentialPreviewAttribute } from '../messages'
+import { CredentialPreviewAttribute } from '../v1/messages'
 import { CredentialRecord } from '../repository/CredentialRecord'
 
 describe('CredentialRecord', () => {

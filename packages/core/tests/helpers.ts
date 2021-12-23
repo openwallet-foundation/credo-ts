@@ -150,6 +150,7 @@ export function waitForCredentialRecordSubject(
   }
 ) {
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  
   return firstValueFrom(
     observable.pipe(
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
@@ -178,7 +179,6 @@ export async function waitForCredentialRecord(
   }
 ) {
   const observable = agent.events.observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
-
   return waitForCredentialRecordSubject(observable, options)
 }
 
@@ -323,7 +323,7 @@ export async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: string)
   try {
     testLogger.test(`Ensure test DID ${publicDid} is written to ledger`)
     await agent.ledger.getPublicDid(publicDid)
-  } catch (error) {
+  } catch (error: any) {
     // Unfortunately, this won't prevent from the test suite running because of Jest runner runs all tests
     // regardless of thrown errors. We're more explicit about the problem with this error handling.
     throw new Error(`Test DID ${publicDid} is not written on ledger or ledger is not available: ${error.message}`)
@@ -536,13 +536,13 @@ export async function setupCredentialTests(
   await aliceAgent.initialize()
 
   const {
-    schema: { id: schemaId },
+    schema,
     definition: { id: credDefId },
   } = await prepareForIssuance(faberAgent, ['name', 'age', 'profile_picture', 'x-ray'])
 
   const [faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
 
-  return { faberAgent, aliceAgent, credDefId, schemaId, faberConnection, aliceConnection }
+  return { faberAgent, aliceAgent, credDefId, schema, faberConnection, aliceConnection }
 }
 
 export async function setupProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {

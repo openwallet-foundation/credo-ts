@@ -39,7 +39,7 @@ describe('credentials', () => {
 
   test('Alice starts with credential proposal to Faber', async () => {
     testLogger.test('Alice sends credential proposal to Faber')
-    let aliceCredentialRecord = await aliceAgent.credentials.proposeCredential(aliceConnection.id, {
+    let aliceCredentialRecord = await aliceAgent.credentials.OLDproposeCredential(aliceConnection.id, {
       credentialProposal: credentialPreview,
       credentialDefinitionId: credDefId,
     })
@@ -250,7 +250,7 @@ describe('credentials', () => {
 
   test('Alice starts with credential proposal, with attachments, to Faber', async () => {
     testLogger.test('Alice sends credential proposal to Faber')
-    let aliceCredentialRecord = await aliceAgent.credentials.proposeCredential(aliceConnection.id, {
+    let aliceCredentialRecord = await aliceAgent.credentials.OLDproposeCredential(aliceConnection.id, {
       credentialProposal: credentialPreview,
       credentialDefinitionId: credDefId,
       linkedAttachments: [

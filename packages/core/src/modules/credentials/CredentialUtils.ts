@@ -8,7 +8,7 @@ import { AriesFrameworkError } from '../../error/AriesFrameworkError'
 import { encodeAttachment } from '../../utils/attachment'
 import { isBoolean, isNumber, isString } from '../../utils/type'
 
-import { CredentialPreview, CredentialPreviewAttribute } from './messages/CredentialPreview'
+import { CredentialPreview, CredentialPreviewAttribute } from './CredentialPreview'
 
 export class CredentialUtils {
   /**

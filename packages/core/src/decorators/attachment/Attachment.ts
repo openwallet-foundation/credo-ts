@@ -99,6 +99,7 @@ export class AttachmentData {
  * https://github.com/hyperledger/aries-rfcs/blob/master/concepts/0017-attachments/README.md
  */
 export class Attachment {
+  public tempId?: string
   public constructor(options: AttachmentOptions) {
     if (options) {
       this.id = options.id ?? uuid()
@@ -108,7 +109,12 @@ export class Attachment {
       this.lastmodTime = options.lastmodTime
       this.byteCount = options.byteCount
       this.data = options.data
+      this.tempId = this.id
     }
+  }
+
+  public getId(): string {
+    return this.id
   }
 
   @Expose({ name: '@id' })

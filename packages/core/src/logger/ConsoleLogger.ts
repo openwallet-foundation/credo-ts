@@ -1,5 +1,6 @@
 /* eslint-disable no-console,@typescript-eslint/no-explicit-any */
 
+import testLogger from 'packages/core/tests/logger'
 import { BaseLogger } from './BaseLogger'
 import { LogLevel } from './Logger'
 
@@ -78,4 +79,11 @@ export class ConsoleLogger extends BaseLogger {
   public fatal(message: string, data?: Record<string, any>): void {
     this.log(LogLevel.fatal, message, data)
   }
+}
+
+// import this with whatever log level required for testing
+const defaultTestLogger: ConsoleLogger = new ConsoleLogger(LogLevel.debug)
+
+export const unitTestLogger = (message: string, data?: Record<string, any>): void => {
+  defaultTestLogger.debug(message, data)
 }

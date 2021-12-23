@@ -1,10 +1,10 @@
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
-import type { CredentialPreviewAttribute } from '../messages'
-import type { IndyCredentialMetadata } from '../models/CredentialInfo'
+import type { CredentialPreviewAttribute } from '../v1/messages'
+import type { IndyCredentialMetadata } from '../v1/models/CredentialInfo'
 import type { CustomCredentialTags } from '../repository/CredentialRecord'
-import type { CredentialOfferTemplate } from '../services'
+import type { CredentialOfferTemplate } from '../v1'
 
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -30,12 +30,12 @@ import {
   IssueCredentialMessage,
   OfferCredentialMessage,
   RequestCredentialMessage,
-} from '../messages'
+} from '../v1/messages'
 import { CredentialRecord } from '../repository/CredentialRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
-import { CredentialService } from '../services'
+import { V1LegacyCredentialService } from '../v1'
 
-import { CredentialProblemReportMessage } from './../messages/CredentialProblemReportMessage'
+import { CredentialProblemReportMessage } from '../v1/messages/CredentialProblemReportMessage'
 import { credDef, credOffer, credReq } from './fixtures'
 
 // Mock classes
@@ -146,7 +146,7 @@ const mockCredentialRecord = ({
 
 describe('CredentialService', () => {
   let credentialRepository: CredentialRepository
-  let credentialService: CredentialService
+  let credentialService: V1LegacyCredentialService
   let ledgerService: IndyLedgerService
   let indyIssuerService: IndyIssuerService
   let indyHolderService: IndyHolderService
@@ -160,7 +160,7 @@ describe('CredentialService', () => {
     ledgerService = new IndyLedgerServiceMock()
     eventEmitter = new EventEmitter(agentConfig)
 
-    credentialService = new CredentialService(
+    credentialService = new V1LegacyCredentialService(
       credentialRepository,
       {
         getById: () => Promise.resolve(connection),
