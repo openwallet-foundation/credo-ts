@@ -1,7 +1,11 @@
 import { TestRecord } from './TestRecord'
 
 describe('Metadata', () => {
-  const testRecord = new TestRecord()
+  let testRecord: TestRecord
+
+  beforeEach(() => {
+    testRecord = new TestRecord()
+  })
 
   test('set() as create', () => {
     testRecord.metadata.set('bar', { aries: { framework: 'javascript' } })
@@ -12,12 +16,12 @@ describe('Metadata', () => {
   })
 
   test('set() as update ', () => {
+    testRecord.metadata.set('bar', { baz: 'abc' })
     expect(testRecord.toJSON()).toMatchObject({
-      metadata: { bar: { aries: { framework: 'javascript' } } },
+      metadata: { bar: { baz: 'abc' } },
     })
 
     testRecord.metadata.set('bar', { baz: 'foo' })
-
     expect(testRecord.toJSON()).toMatchObject({
       metadata: { bar: { baz: 'foo' } },
     })
@@ -33,12 +37,14 @@ describe('Metadata', () => {
   })
 
   test('get()', () => {
+    testRecord.metadata.set('bar', { baz: 'foo' })
     const record = testRecord.metadata.get<{ baz: 'foo' }>('bar')
 
     expect(record).toMatchObject({ baz: 'foo' })
   })
 
   test('delete()', () => {
+    testRecord.metadata.set('bar', { baz: 'foo' })
     testRecord.metadata.delete('bar')
 
     expect(testRecord.toJSON()).toMatchObject({
@@ -46,17 +52,13 @@ describe('Metadata', () => {
     })
   })
 
-  test('getAll()', () => {
+  test('keys()', () => {
     testRecord.metadata.set('bar', { baz: 'foo' })
     testRecord.metadata.set('bazz', { blub: 'foo' })
     testRecord.metadata.set('test', { abc: { def: 'hij' } })
 
-    const record = testRecord.metadata.getAll()
+    const keys = testRecord.metadata.keys
 
-    expect(record).toMatchObject({
-      bar: { baz: 'foo' },
-      bazz: { blub: 'foo' },
-      test: { abc: { def: 'hij' } },
-    })
+    expect(keys).toMatchObject(['bar', 'bazz', 'test'])
   })
 })

@@ -15,7 +15,11 @@ export type Tags<DefaultTags extends TagsBase, CustomTags extends TagsBase> = Cu
 
 export type RecordTags<Record extends BaseRecord> = ReturnType<Record['getTags']>
 
-export abstract class BaseRecord<DefaultTags extends TagsBase = TagsBase, CustomTags extends TagsBase = TagsBase> {
+export abstract class BaseRecord<
+  DefaultTags extends TagsBase = TagsBase,
+  CustomTags extends TagsBase = TagsBase,
+  MetadataValues = undefined
+> {
   protected _tags: CustomTags = {} as CustomTags
 
   public id!: string
@@ -32,7 +36,7 @@ export abstract class BaseRecord<DefaultTags extends TagsBase = TagsBase, Custom
 
   /** @inheritdoc {Metadata#Metadata} */
   @MetadataTransformer()
-  public metadata: Metadata = new Metadata({})
+  public metadata: Metadata<MetadataValues> = new Metadata({})
 
   /**
    * Get all tags. This is includes custom and default tags
