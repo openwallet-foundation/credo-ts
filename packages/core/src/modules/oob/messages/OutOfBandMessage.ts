@@ -1,4 +1,4 @@
-import type { UnpackedMessage } from '../../../types'
+import type { PlaintextMessage } from '../../../types'
 import type { DidCommService } from '../../connections/models/did/service/DidCommService'
 
 import { Expose, Type } from 'class-transformer'
@@ -48,7 +48,7 @@ export class OutOfBandMessage extends AgentMessage {
     this.requests.push(requestAttachment)
   }
 
-  public getRequests(): UnpackedMessage[] | undefined {
+  public getRequests(): PlaintextMessage[] | undefined {
     return this.requests?.map((request) => {
       if (request.data.base64) {
         return JsonEncoder.fromBase64(request.data.base64)
