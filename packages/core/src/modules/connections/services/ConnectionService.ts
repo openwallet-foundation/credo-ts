@@ -163,6 +163,7 @@ export class ConnectionService {
     config?: {
       myLabel?: string
       myImageUrl?: string
+      autoAcceptConnection?: boolean
     }
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
     const connectionRecord = await this.connectionRepository.getById(connectionId)
@@ -177,6 +178,7 @@ export class ConnectionService {
       imageUrl: config?.myImageUrl ?? this.config.connectionImageUrl,
     })
 
+    connectionRecord.autoAcceptConnection = config?.autoAcceptConnection
     await this.updateState(connectionRecord, ConnectionState.Requested)
 
     return {
