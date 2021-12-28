@@ -15,6 +15,11 @@ The first thing we'll do is install OpenSSL. Since Apple replaced OpenSSL with t
 brew install openssl@1.1 # possibly already installed on your system
 
 brew link openssl@1.1 --force
+
+echo 'export PATH="/opt/homebrew/opt/openssl@1.1/bin:$PATH"' >> ~/.zshrc
+
+source ~/.zshrc
+
 ```
 To double-check if the correct version is installed, you need to restart your terminal session and run the following command:
 
