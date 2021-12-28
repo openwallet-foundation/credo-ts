@@ -12,22 +12,16 @@
 The first thing we'll do is install OpenSSL. Since Apple replaced OpenSSL with their own version of LibreSSL, we'll need to install it. Also, we need to install a specific version of OpenSSL that is compatible with Apples architecture. After the installation, we need to link it, so that it overrides the default openssl command (we have not noticed any issues with overriding this command, but be cautious).
 
 ```sh
-curl https://raw.githubusercontent.com/rbenv/homebrew-tap/e472b7861b49cc082d1db0f66f265368da107589/Formula/openssl%401.0.rb -o openssl@1.0.rb
+brew install openssl@1.1 # possibly already installed on your system
 
-brew install ./openssl@1.0.rb
-
-rm -rf ./openssl@1.0.rb
-
-brew link openssl@1.0 --force
+brew link openssl@1.1 --force
 ```
-
-This script downloads a file and names it `openssl@1.0.rb`. After the download, we're installing it via Brew. After the installation, the file will be deleted and the correct version of OpenSSL is installed!
 To double-check if the correct version is installed, you need to restart your terminal session and run the following command:
 
 ```sh
 openssl version
 
-# OUTPUT: OpenSSL 1.0.2u 20 Dec 2019
+# OUTPUT: OpenSSL 1.1.1m  14 Dec 2021
 ```
 
 ## Step 2: Installing other dependencies
