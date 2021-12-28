@@ -1,9 +1,10 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
 import type { Logger } from '../../logger'
-import type { ConnectionRecord, ConnectionStateChangedEvent } from '../connections'
+import type { ConnectionRecord } from '../connections'
 
 import { parseUrl } from 'query-string'
+import { EmptyError } from 'rxjs'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { Dispatcher } from '../../agent/Dispatcher'
@@ -13,22 +14,11 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { ConsoleLogger, LogLevel } from '../../logger'
-import {
-  ConnectionInvitationMessage,
-  DidCommService,
-  ConnectionEventTypes,
-  ConnectionState,
-  ConnectionsModule,
-} from '../connections'
+import { ConnectionInvitationMessage, DidCommService, ConnectionState, ConnectionsModule } from '../connections'
 import { MediationRecipientService } from '../routing'
 
 import { HandshakeReuseHandler } from './handlers'
 import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
-
-/**
- * TODO
- * Extract findOrCreate to separate method?
- */
 
 interface CreateOutOfBandMessageConfig {
   label?: string
@@ -210,16 +200,22 @@ export class OutOfBandModule {
         this.logger.debug('Out of band message contains request messages.')
         if (!connectionRecord.isReady) {
           // Wait until the connecion is ready and then pass the messages to the agent for further processing
-          this.eventEmitter.on<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged, (event) => {
-            const { payload } = event
-            if (
-              payload.connectionRecord.id === connectionRecord.id &&
-              payload.connectionRecord.state === ConnectionState.Complete
-            ) {
-              const connectionServices = payload.connectionRecord.theirDidDoc?.didCommServices
+          this.connectionsModule
+            .returnWhenIsConnected(connectionRecord.id)
+            .then((c) => {
+              const connectionServices = c.theirDidDoc?.didCommServices
               this.emitMessages(connectionServices, messages)
-            }
-          })
+            })
+            .catch((error) => {
+              if (error instanceof EmptyError) {
+                this.logger.warn(
+                  `Agent unsubscribed before connection got into ${ConnectionState.Complete} state`,
+                  error
+                )
+              } else {
+                this.logger.error('Promise waiting for the connection to be complete failed.', error)
+              }
+            })
         } else {
           const connectionServices = connectionRecord.theirDidDoc?.didCommServices
           this.emitMessages(connectionServices, messages)
