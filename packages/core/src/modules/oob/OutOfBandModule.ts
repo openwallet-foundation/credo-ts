@@ -1,6 +1,7 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
 import type { Logger } from '../../logger'
+import type { PlaintextMessage } from '../../types'
 import type { ConnectionRecord } from '../connections'
 
 import { parseUrl } from 'query-string'
@@ -265,20 +266,20 @@ export class OutOfBandModule {
     return connectionRecord
   }
 
-  private emitMessages(services: DidCommService[] | undefined, messages: any[]) {
+  private emitMessages(services: DidCommService[] | undefined, messages: PlaintextMessage[]) {
     if (!services || services.length === 0) {
       throw new AriesFrameworkError(`There are no services. We can not emit messages`)
     }
 
-    for (const unpackedMessage of messages) {
+    for (const plaintextMessage of messages) {
       // The framework currently supports only older OOB messages with `~service` decorator.
       const [service] = services
-      unpackedMessage['~service'] = service
+      plaintextMessage['~service'] = service
 
       this.eventEmitter.emit<AgentMessageReceivedEvent>({
         type: AgentEventTypes.AgentMessageReceived,
         payload: {
-          message: unpackedMessage,
+          message: plaintextMessage,
         },
       })
     }
