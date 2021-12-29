@@ -189,11 +189,11 @@ export class OutOfBandModule {
           }
         } else {
           this.logger.debug('Reuse is disabled. Creating a new connection.')
-          connectionRecord = await this.createConnection(services, autoAccept)
+          connectionRecord = await this.createConnection(outOfBandMessage, autoAccept)
         }
       } else {
         this.logger.debug('Connection does not exists. Creating a new connection.')
-        connectionRecord = await this.createConnection(services, autoAccept)
+        connectionRecord = await this.createConnection(outOfBandMessage, autoAccept)
       }
 
       if (messages) {
@@ -253,9 +253,10 @@ export class OutOfBandModule {
     }
   }
 
-  private async createConnection(services: DidCommService[], autoAccept: boolean) {
+  private async createConnection(outOfBandMessage: OutOfBandMessage, autoAccept: boolean) {
+    const { services, label } = outOfBandMessage
     const invitation = new ConnectionInvitationMessage({
-      label: 'connection label',
+      label: label || '',
       ...services[0],
     })
     const connectionRecord = await this.connectionsModule.receiveInvitation(invitation, {
