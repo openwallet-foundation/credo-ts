@@ -186,7 +186,7 @@ export class OutOfBandModule {
           connectionRecord = existingConnection
           if (!messages) {
             this.logger.debug('Out of band message does not contain any request messages.')
-            await this.sendReuse(connectionRecord)
+            await this.sendReuse(outOfBandMessage, connectionRecord)
           }
         } else {
           this.logger.debug('Reuse is disabled. Creating a new connection.')
@@ -285,8 +285,8 @@ export class OutOfBandModule {
     }
   }
 
-  private async sendReuse(connection: ConnectionRecord) {
-    const message = new HandshakeReuseMessage({})
+  private async sendReuse(outOfBandMessage: OutOfBandMessage, connection: ConnectionRecord) {
+    const message = new HandshakeReuseMessage({ parentThreadId: outOfBandMessage.id })
     const outbound = createOutboundMessage(connection, message)
     await this.messageSender.sendMessage(outbound)
   }

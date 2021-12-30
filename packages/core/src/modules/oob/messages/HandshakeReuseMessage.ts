@@ -4,6 +4,7 @@ import { AgentMessage } from '../../../agent/AgentMessage'
 
 export interface HandshakeReuseMessageOptions {
   id?: string
+  parentThreadId?: string
 }
 
 export class HandshakeReuseMessage extends AgentMessage {
@@ -12,6 +13,10 @@ export class HandshakeReuseMessage extends AgentMessage {
 
     if (options) {
       this.id = options.id ?? this.generateId()
+      this.setThread({
+        threadId: this.id,
+        parentThreadId: options.parentThreadId,
+      })
     }
   }
 
