@@ -14,7 +14,6 @@ export const annelein_inquirer = async (annelein: Agent) =>{
         message: 'Options:',
         choices: 
         ['Setup connection',
-        'Accept credential',
         'Send proof request',
         'Send Message',
         'Exit',

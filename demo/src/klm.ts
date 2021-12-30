@@ -19,7 +19,7 @@ import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
 import clear from 'clear';
 import figlet from 'figlet';
 import { accept_connection } from './connection';
-import { issue_credential } from './issue_credential';
+import { issue_credential } from './credential';
 import { klm_inquirer } from './klm_inquirer';
 import { register_schema } from './register';
 import { send_message } from './send_message'
