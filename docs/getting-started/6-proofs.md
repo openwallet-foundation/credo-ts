@@ -15,6 +15,30 @@ The process for proving your VC starts by a verifier to request a presentation f
 
 > Note: This process assumes there is an established connection between the prover and the verifier
 
+## Full Example Code
+
+```ts
+const handleProofStateChange = async (event: ProofStateChangedEvent) => {
+  const proofRecord = event.payload.proofRecord
+  // previous state -> presentation-sent new state: done
+  if (event.payload.previousState === ProofState.PresentationSent && proofRecord.state === ProofState.Done) {
+    Alert.alert('Credential Proved!')
+    return
+  }
+  if (proofRecord.state === ProofState.RequestReceived) {
+    const proofRequest = proofRecord.requestMessage?.indyProofRequest
+
+    //Retrieve credentials
+    const retrievedCredentials = await agent.proofs.getRequestedCredentialsForProofRequest(proofRecord.id, {
+      filterByPresentationPreview: true,
+    })
+
+    const requestedCredentials = agent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
+    agent.proofs.acceptRequest(event.payload.proofRecord.id, requestedCredentials)
+  }
+}
+```
+
 ### 1. Configure agent
 
 Please make sure you reviewed the [agent setup overview](0-agent.md).
@@ -54,50 +78,45 @@ agent.events.on<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged, (even
 })
 ```
 
-To interfere the process and display an optional message to the user
-
-replace
+## Manually accepting proof request
 
 ```ts
-agent.proofs.acceptRequest(event.payload.proofRecord.id, requestedCredentials)
-```
+const handleProofStateChange = async (event: ProofStateChangedEvent) => {
+      ..
 
-by
+      //Construct pop up message
+      var message = '>> Proof Request Recieved <<\n';
+      message += `To prove:${proofRequest?.name}\n`;
+      message += 'Attributes to prove:\n';
 
-```ts
-Alert.alert('Attention!', message, [
-  {
-    text: 'Accept',
-    onPress: () => {
-      //Respond by
-      agent.proofs.acceptRequest(event.payload.proofRecord.id, requestedCredentials)
-    },
-  },
-  {
-    text: 'Reject',
-    onPress: () => {
-      console.log('User rejected offer')
-    },
-  },
-])
-```
+      //Loop through requested attributes
+      Object.values(proofRequest.requestedAttributes).forEach(attr => {
+        message += `${attr.name}\n`;
+      });
 
-To loop through requested attributes and display some context to the user
-
-```ts
-const proofRequest = event.payload.proofRecord.requestMessage?.indyProofRequest
-var message = '>> Proof Request Recieved <<\n'
-message += `To prove:${proofRequest?.name}\n`
-message += 'Attributes to prove:\n'
-
-Object.values(proofRequest.requestedAttributes).forEach((attr) => {
-  message += `${attr.name}\n`
-})
-
-message += `Accept proof request?`
+      message += `Accept proof request?`;
+      Alert.alert('Attention!', message, [
+        {
+          text: 'Accept',
+          onPress: () => {
+            agent.proofs.acceptRequest(event.payload.proofRecord.id,
+              requestedCredentials,
+            );
+          },
+        },
+        {
+          text: 'Reject',
+          onPress: () => {
+            //User rejected
+          },
+        },
+      ]);
+    }
+  };
 ```
 
 By sending the response to the verifier, the verifier will go through the process of verifying the VC and respond with an ack message.
+
 To give some context to the user you can add the following code to the Proof event handler
 
 ```ts
