@@ -1,29 +1,21 @@
-import { CredentialEventTypes } from '@aries-framework/core';
-import { ConnectionInvitationMessage } from '@aries-framework/core';
 import { ConnectionRecord } from '@aries-framework/core';
-import { CredentialState } from '@aries-framework/core';
-import { CredentialStateChangedEvent } from '@aries-framework/core';
 import { 
 Agent,
-InitConfig, 
-ConsoleLogger, 
-LogLevel, 
+InitConfig,
 HttpOutboundTransport, 
 BasicMessageEventTypes, 
 BasicMessageStateChangedEvent, 
 AutoAcceptCredential,
 AutoAcceptProof} from '@aries-framework/core'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
-//import { TestLogger } from '../../../packages/core/tests/logger'
-//import { bc_coverin } from 'demo/src/index'
 import clear from 'clear';
 import figlet from 'figlet';
 import { annelein_inquirer } from './annelein_inquirer';
 import { connection } from './connection';
-import { new_proof_preview } from './proof_request';
 import { send_message } from './send_message';
 import inquirer from 'inquirer'
 import { restart } from './restart';
+import { send_proof_proposal } from './proof_request';
 import { accept_credential_offer } from './credential';
 
 const bc_coverin = `{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node1","blskey":"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba","blskey_pop":"RahHYiCvoNCtPTrVtP7nMC5eTYrsUA8WjXbdhNc8debh1agE9bGiJxWBXYNFbnJXoXhWFMvyqhqhRoq737YQemH5ik9oL7R4NTTCz2LEZhkgLJzB3QRQqJyBNyv7acbdHrAT8nQ9UkLbaVL9NBpnWXBTw4LEMePaSHEw66RzPNdAX1","client_ip":"138.197.138.255","client_port":9702,"node_ip":"138.197.138.255","node_port":9701,"services":["VALIDATOR"]},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"},"metadata":{"from":"Th7MpTaRZVRYnPiabds81Y"},"type":"0"},"txnMetadata":{"seqNo":1,"txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62"},"ver":"1"}
@@ -36,7 +28,7 @@ const ui = new inquirer.ui.BottomBar();
 
 enum options {
   Connection = "setup connection",
-  Proof = "present proof",
+  Proof = "propose proof",
   Message = "send message",
   Exit = "exit",
   Restart = "restart"
@@ -49,10 +41,8 @@ export const process_answer_annelein = async (annelein: Agent, answers: any) => 
       accept_credential_offer(annelein, connectionRecord)
     }
   } else if (answers.options == options.Proof){
-    ui.updateBottomBar('\x1b[36mRegistering a proof preview...\x1b[0m');
-    const presentationPreview = await new_proof_preview()
-    if (connectionRecord !== undefined && presentationPreview !== undefined){
-      await annelein.proofs.proposeProof(connectionRecord.id, presentationPreview)
+    if (connectionRecord !== undefined){
+      await send_proof_proposal(annelein, connectionRecord)
     } else {
       console.log("\x1b[31m", 'Something went wrong.. Could it be that you have not set up a connection yet?', "\x1b[0m")
     }

@@ -1,57 +1,47 @@
+import { ProofEventTypes } from '@aries-framework/core';
+import { ProofState } from '@aries-framework/core';
+import { ProofStateChangedEvent } from '@aries-framework/core';
 import { 
 Agent,
 ConnectionRecord,
 PresentationPreview,
 PresentationPreviewAttribute} from '@aries-framework/core'
+
 import inquirer from 'inquirer'
 
-export const new_proof_preview = async () => {
-  const answer = await inquirer
-    .prompt([
-      {
-        type: 'input',
-        prefix: '',
-        name: 'credDef',
-        message: "Paste the credential definition here:",
-      },
-    ])
-    const presentationPreview = new PresentationPreview({
+const ui = new inquirer.ui.BottomBar();
+const credDef = '7KuDTpQh3GJ7Gp6kErpWvM:3:CL:115269:latest'
+
+export const send_proof_proposal = async (annelein: Agent, connectionRecord: ConnectionRecord) => {
+  annelein.events.on(
+    ProofEventTypes.ProofStateChanged,
+    async ({ payload }: ProofStateChangedEvent) => {
+      if (payload.proofRecord.state === ProofState.ProposalSent) {
+        ui.log.write("\x1b[32m\nproposal sent!\n\x1b[0m");
+        return
+      }
+    }
+  )
+
+  const presentationPreview = new PresentationPreview({
       attributes: [
         new PresentationPreviewAttribute({
-          name: 'actually happening',
-          credentialDefinitionId: answer.credDef,
-          value: 'yes',
+          name: 'name',
+          credentialDefinitionId: credDef,
+          value: 'annelein',
+        }),
+        new PresentationPreviewAttribute({
+          name: 'date of birth',
+          credentialDefinitionId: credDef,
+          value: '09/09/1999',
+        }),
+        new PresentationPreviewAttribute({
+          name: 'country of residence',
+          credentialDefinitionId: credDef,
+          value: 'the Netherlands',
         })
       ],
     })
-  return presentationPreview
+
+  await annelein.proofs.proposeProof(connectionRecord.id, presentationPreview)
 }
-
-
-// export const proof_request = async (klm: Agent, annelein: Agent, connectionRecordAnnelein: ConnectionRecord, credDefId: string) => {
-  
-//     klm.events.on(ProofEventTypes.ProofStateChanged, (event: ProofStateChangedEvent) => {
-//       if (event.payload.proofRecord.state !== ProofState.ProposalReceived) {
-//         return
-//       }
-//       console.log("proof proprosal approved!")
-//       klm.proofs.acceptProposal(event.payload.proofRecord.id)
-//     })
-  
-//     // annelein.events.on(ProofEventTypes.ProofStateChanged, async (event: ProofStateChangedEvent) => {
-//     //   if (event.payload.proofRecord.state !== ProofState.RequestReceived) {
-//     //     return
-//     //   }
-      
-//     //   klm.proofs.acceptProposal(event.payload.proofRecord.id)
-//     // })
-  
-//     const proofRec = await annelein.proofs.proposeProof(connectionRecordAnnelein.id, presentationPreview)
-  
-//     // setInterval(async () => {
-//     //   const reccie = await annelein.proofs.getById(proofRec.id)
-//     //   console.log(reccie);
-      
-//     // }, 1000)
-//     // const requestedCredentials = await annelein.proofs.getRequestedCredentialsForProofRequest(proofRec.id)
-//   }
