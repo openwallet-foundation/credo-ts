@@ -6,6 +6,7 @@ import BigNumber from 'bn.js'
 
 import { AriesFrameworkError } from '../../error/AriesFrameworkError'
 import { encodeAttachment } from '../../utils/attachment'
+import { Buffer } from '../../utils/buffer'
 import { isBoolean, isNumber, isString } from '../../utils/type'
 
 import { CredentialPreview, CredentialPreviewAttribute } from './messages/CredentialPreview'
