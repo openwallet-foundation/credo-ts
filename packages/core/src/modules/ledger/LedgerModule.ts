@@ -22,7 +22,7 @@ export class LedgerModule {
   /**
    * Connect to all the ledger pools
    */
-  public async connectToGenesis() {
+  public async connectToPools() {
     await this.ledgerService.connectToPools()
   }
 

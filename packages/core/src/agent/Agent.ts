@@ -163,7 +163,7 @@ export class Agent {
 
     // As long as value isn't false we will async connect to all genesis pools on startup
     if (connectToIndyLedgersOnStartup) {
-      this.ledger.connectToGenesis().catch((error) => {
+      this.ledger.connectToPools().catch((error) => {
         this.logger.warn('Error connecting to ledger, will try to reconnect when needed.', { error })
       })
     }
