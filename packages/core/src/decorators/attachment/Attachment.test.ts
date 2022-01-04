@@ -1,6 +1,7 @@
-import { JsonTransformer } from '../..'
+import { JsonEncoder } from '../../utils/JsonEncoder'
+import { JsonTransformer } from '../../utils/JsonTransformer'
 
-import { Attachment } from './Attachment'
+import { Attachment, AttachmentData } from './Attachment'
 
 const mockJson = {
   '@id': 'ceffce22-6471-43e4-8945-b604091981c9',
@@ -17,6 +18,18 @@ const mockJson = {
   },
 }
 
+const mockJsonBase64 = {
+  '@id': 'ceffce22-6471-43e4-8945-b604091981c9',
+  description: 'A small picture of a cat',
+  filename: 'cat.png',
+  'mime-type': 'text/plain',
+  lastmod_time: new Date(),
+  byte_count: 9200,
+  data: {
+    base64: JsonEncoder.toBase64(mockJson.data.json),
+  },
+}
+
 const id = 'ceffce22-6471-43e4-8945-b604091981c9'
 const description = 'A small picture of a cat'
 const filename = 'cat.png'
@@ -29,6 +42,7 @@ const data = {
   },
   sha256: '00d7b2068a0b237f14a7979bbfc01ad62f60792e459467bfc4a7d3b9a6dbbe3e',
 }
+const dataInstance = new AttachmentData(data)
 
 describe('Decorators | Attachment', () => {
   it('should correctly transform Json to Attachment class', () => {
@@ -39,7 +53,7 @@ describe('Decorators | Attachment', () => {
     expect(decorator.filename).toBe(mockJson.filename)
     expect(decorator.lastmodTime).toEqual(mockJson.lastmod_time)
     expect(decorator.byteCount).toEqual(mockJson.byte_count)
-    expect(decorator.data).toEqual(mockJson.data)
+    expect(decorator.data).toMatchObject(mockJson.data)
   })
 
   it('should correctly transform Attachment class to Json', () => {
@@ -50,7 +64,7 @@ describe('Decorators | Attachment', () => {
       mimeType,
       lastmodTime,
       byteCount,
-      data,
+      data: dataInstance,
     })
 
     const json = JsonTransformer.toJSON(decorator)
@@ -64,6 +78,20 @@ describe('Decorators | Attachment', () => {
       data,
     }
 
-    expect(json).toEqual(transformed)
+    expect(json).toMatchObject(transformed)
+  })
+
+  it('should return the data correctly if only JSON exists', () => {
+    const decorator = JsonTransformer.fromJSON(mockJson, Attachment)
+
+    const gotData = decorator.data.getDataAsJson()
+    expect(decorator.data.json).toEqual(gotData)
+  })
+
+  it('should return the data correctly if only Base64 exists', () => {
+    const decorator = JsonTransformer.fromJSON(mockJsonBase64, Attachment)
+
+    const gotData = decorator.data.getDataAsJson()
+    expect(mockJson.data.json).toEqual(gotData)
   })
 })

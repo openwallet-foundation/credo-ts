@@ -3,7 +3,6 @@ import { Equals, IsArray, IsString, ValidateNested, IsOptional, IsInstance } fro
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
-import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { ProofRequest } from '../models'
 
@@ -58,14 +57,8 @@ export class RequestPresentationMessage extends AgentMessage {
     const attachment = this.requestPresentationAttachments.find(
       (attachment) => attachment.id === INDY_PROOF_REQUEST_ATTACHMENT_ID
     )
-
-    // Return null if attachment is not found
-    if (!attachment?.data?.base64) {
-      return null
-    }
-
     // Extract proof request from attachment
-    const proofRequestJson = JsonEncoder.fromBase64(attachment.data.base64)
+    const proofRequestJson = attachment?.data?.getDataAsJson<ProofRequest>() ?? null
     const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
 
     return proofRequest

@@ -6,9 +6,8 @@ import type { ConnectionRecord } from '../../connections'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialProblemReportMessage, ProposeCredentialMessageOptions } from '../messages'
-import type { CredReqMetadata } from 'indy-sdk'
 
-import { scoped, Lifecycle } from 'tsyringe'
+import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -19,25 +18,26 @@ import { isLinkedAttachment } from '../../../utils/attachment'
 import { uuid } from '../../../utils/uuid'
 import { AckStatus } from '../../common'
 import { ConnectionService } from '../../connections/services/ConnectionService'
-import { IndyIssuerService, IndyHolderService } from '../../indy'
+import { IndyHolderService, IndyIssuerService } from '../../indy'
 import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../errors'
 import {
+  CredentialAckMessage,
+  CredentialPreview,
+  INDY_CREDENTIAL_ATTACHMENT_ID,
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   IssueCredentialMessage,
   OfferCredentialMessage,
   ProposeCredentialMessage,
-  CredentialPreview,
   RequestCredentialMessage,
-  CredentialAckMessage,
-  INDY_CREDENTIAL_ATTACHMENT_ID,
 } from '../messages'
 import { CredentialRepository } from '../repository'
 import { CredentialRecord } from '../repository/CredentialRecord'
+import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialService {
@@ -109,9 +109,9 @@ export class CredentialService {
     })
 
     // Set the metadata
-    credentialRecord.metadata.set('_internal/indyCredential', {
+    credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
       schemaId: options.schemaId,
-      credentialDefinintionId: options.credentialDefinitionId,
+      credentialDefinitionId: options.credentialDefinitionId,
     })
 
     await this.credentialRepository.save(credentialRecord)
@@ -196,7 +196,7 @@ export class CredentialService {
         state: CredentialState.ProposalReceived,
       })
 
-      credentialRecord.metadata.set('_internal/indyCredential', {
+      credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
         schemaId: proposalMessage.schemaId,
         credentialDefinitionId: proposalMessage.credentialDefinitionId,
       })
@@ -257,7 +257,7 @@ export class CredentialService {
 
     credentialRecord.offerMessage = credentialOfferMessage
     credentialRecord.credentialAttributes = preview.attributes
-    credentialRecord.metadata.set('_internal/indyCredential', {
+    credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
       schemaId: credOffer.schema_id,
       credentialDefinitionId: credOffer.cred_def_id,
     })
@@ -321,7 +321,7 @@ export class CredentialService {
       autoAcceptCredential: credentialTemplate.autoAcceptCredential,
     })
 
-    credentialRecord.metadata.set('_internal/indyCredential', {
+    credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
       credentialDefinitionId: credOffer.cred_def_id,
       schemaId: credOffer.schema_id,
     })
@@ -357,7 +357,7 @@ export class CredentialService {
     const indyCredentialOffer = credentialOfferMessage.indyCredentialOffer
     if (!indyCredentialOffer) {
       throw new CredentialProblemReportError(
-        `Missing required base64 encoded attachment data for credential offer with thread id ${credentialOfferMessage.threadId}`,
+        `Missing required base64 or json encoded attachment data for credential offer with thread id ${credentialOfferMessage.threadId}`,
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
@@ -376,7 +376,7 @@ export class CredentialService {
       credentialRecord.offerMessage = credentialOfferMessage
       credentialRecord.linkedAttachments = credentialOfferMessage.attachments?.filter(isLinkedAttachment)
 
-      credentialRecord.metadata.set('_internal/indyCredential', {
+      credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
         schemaId: indyCredentialOffer.schema_id,
         credentialDefinitionId: indyCredentialOffer.cred_def_id,
       })
@@ -392,9 +392,9 @@ export class CredentialService {
         state: CredentialState.OfferReceived,
       })
 
-      credentialRecord.metadata.set('_internal/indyCredential', {
-        credentialDefinitionId: indyCredentialOffer.cred_def_id,
+      credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
         schemaId: indyCredentialOffer.schema_id,
+        credentialDefinitionId: indyCredentialOffer.cred_def_id,
       })
 
       // Assert
@@ -433,7 +433,7 @@ export class CredentialService {
 
     if (!credentialOffer) {
       throw new CredentialProblemReportError(
-        `Missing required base64 encoded attachment data for credential offer with thread id ${credentialRecord.threadId}`,
+        `Missing required base64 or json encoded attachment data for credential offer with thread id ${credentialRecord.threadId}`,
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
@@ -461,7 +461,7 @@ export class CredentialService {
     })
     credentialRequest.setThread({ threadId: credentialRecord.threadId })
 
-    credentialRecord.metadata.set('_internal/indyRequest', credReqMetadata)
+    credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, credReqMetadata)
     credentialRecord.requestMessage = credentialRequest
     credentialRecord.autoAcceptCredential = options?.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
@@ -494,7 +494,7 @@ export class CredentialService {
 
     if (!indyCredentialRequest) {
       throw new CredentialProblemReportError(
-        `Missing required base64 encoded attachment data for credential request with thread id ${credentialRequestMessage.threadId}`,
+        `Missing required base64 or json encoded attachment data for credential request with thread id ${credentialRequestMessage.threadId}`,
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
@@ -554,7 +554,7 @@ export class CredentialService {
     const indyCredentialOffer = offerMessage?.indyCredentialOffer
     if (!indyCredentialOffer) {
       throw new CredentialProblemReportError(
-        `Missing required base64 encoded attachment data for credential offer with thread id ${credentialRecord.threadId}`,
+        `Missing required base64 or json encoded attachment data for credential offer with thread id ${credentialRecord.threadId}`,
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
@@ -563,7 +563,7 @@ export class CredentialService {
     const indyCredentialRequest = requestMessage?.indyCredentialRequest
     if (!indyCredentialRequest) {
       throw new CredentialProblemReportError(
-        `Missing required base64 encoded attachment data for credential request with thread id ${credentialRecord.threadId}`,
+        `Missing required base64 or json encoded attachment data for credential request with thread id ${credentialRecord.threadId}`,
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
@@ -629,7 +629,7 @@ export class CredentialService {
       previousSentMessage: credentialRecord.requestMessage,
     })
 
-    const credentialRequestMetadata = credentialRecord.metadata.get<CredReqMetadata>('_internal/indyRequest')
+    const credentialRequestMetadata = credentialRecord.metadata.get(CredentialMetadataKeys.IndyRequest)
 
     if (!credentialRequestMetadata) {
       throw new CredentialProblemReportError(
@@ -641,7 +641,7 @@ export class CredentialService {
     const indyCredential = issueCredentialMessage.indyCredential
     if (!indyCredential) {
       throw new CredentialProblemReportError(
-        `Missing required base64 encoded attachment data for credential with thread id ${issueCredentialMessage.threadId}`,
+        `Missing required base64 or json encoded attachment data for credential with thread id ${issueCredentialMessage.threadId}`,
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
@@ -733,7 +733,9 @@ export class CredentialService {
   public async processProblemReport(
     messageContext: InboundMessageContext<CredentialProblemReportMessage>
   ): Promise<CredentialRecord> {
-    const { message: credentialProblemReportMessage, connection } = messageContext
+    const { message: credentialProblemReportMessage } = messageContext
+
+    const connection = messageContext.assertReadyConnection()
 
     this.logger.debug(`Processing problem report with id ${credentialProblemReportMessage.id}`)
 
@@ -743,8 +745,8 @@ export class CredentialService {
     )
 
     // Update record
-    credentialRecord.errorMsg = `${credentialProblemReportMessage.description.code}: ${credentialProblemReportMessage.description.en}`
-    await this.updateState(credentialRecord, CredentialState.None)
+    credentialRecord.errorMessage = `${credentialProblemReportMessage.description.code}: ${credentialProblemReportMessage.description.en}`
+    await this.update(credentialRecord)
     return credentialRecord
   }
 

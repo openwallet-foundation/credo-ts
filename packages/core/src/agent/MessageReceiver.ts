@@ -1,7 +1,7 @@
 import type { Logger } from '../logger'
 import type { ConnectionRecord } from '../modules/connections'
 import type { InboundTransport } from '../transport'
-import type { UnpackedMessageContext, UnpackedMessage, WireMessage } from '../types'
+import type { DecryptedMessageContext, PlaintextMessage, EncryptedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { TransportSession } from './TransportService'
 
@@ -9,12 +9,11 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../error'
 import { ConnectionService } from '../modules/connections/services/ConnectionService'
-import { ProblemReportError, ProblemReportMessage } from '../modules/problem-reports'
+import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { MessageValidator } from '../utils/MessageValidator'
 import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
-import { CommonMessageType } from './../modules/common/messages/CommonMessageType'
 import { AgentConfig } from './AgentConfig'
 import { Dispatcher } from './Dispatcher'
 import { EnvelopeService } from './EnvelopeService'
@@ -23,9 +22,6 @@ import { TransportService } from './TransportService'
 import { createOutboundMessage } from './helpers'
 import { InboundMessageContext } from './models/InboundMessageContext'
 
-export enum ProblemReportReason {
-  MessageParseFailure = 'message-parse-failure',
-}
 @scoped(Lifecycle.ContainerScoped)
 export class MessageReceiver {
   private config: AgentConfig
@@ -59,21 +55,29 @@ export class MessageReceiver {
   }
 
   /**
-   * Receive and handle an inbound DIDComm message. It will unpack the message, transform it
+   * Receive and handle an inbound DIDComm message. It will decrypt the message, transform it
    * to it's corresponding message class and finally dispatch it to the dispatcher.
    *
-   * @param inboundPackedMessage the message to receive and handle
+   * @param inboundMessage the message to receive and handle
    */
-  public async receiveMessage(inboundPackedMessage: unknown, session?: TransportSession) {
-    if (typeof inboundPackedMessage !== 'object' || inboundPackedMessage == null) {
-      throw new AriesFrameworkError('Invalid message received. Message should be object')
-    }
-
+  public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
     this.logger.debug(`Agent ${this.config.label} received message`)
 
-    const unpackedMessage = await this.unpackMessage(inboundPackedMessage as WireMessage)
-    const senderKey = unpackedMessage.senderVerkey
-    const recipientKey = unpackedMessage.recipientVerkey
+    if (this.isPlaintextMessage(inboundMessage)) {
+      await this.receivePlaintextMessage(inboundMessage)
+    } else {
+      await this.receiveEncryptedMessage(inboundMessage as EncryptedMessage, session)
+    }
+  }
+
+  private async receivePlaintextMessage(plaintextMessage: PlaintextMessage) {
+    const message = await this.transformAndValidate(plaintextMessage)
+    const messageContext = new InboundMessageContext(message, {})
+    await this.dispatcher.dispatch(messageContext)
+  }
+
+  private async receiveEncryptedMessage(encryptedMessage: EncryptedMessage, session?: TransportSession) {
+    const { plaintextMessage, senderKey, recipientKey } = await this.decryptMessage(encryptedMessage)
 
     let connection: ConnectionRecord | null = null
 
@@ -90,27 +94,11 @@ export class MessageReceiver {
     }
 
     this.logger.info(
-      `Received message with type '${unpackedMessage.message['@type']}' from connection ${connection?.id} (${connection?.theirLabel})`,
-      unpackedMessage.message
+      `Received message with type '${plaintextMessage['@type']}' from connection ${connection?.id} (${connection?.theirLabel})`,
+      plaintextMessage
     )
 
-    let message: AgentMessage | null = null
-    try {
-      message = await this.transformMessage(unpackedMessage)
-      await this.validateMessage(message)
-    } catch (error) {
-      if (connection) await this.sendProblemReportMessage(error.message, connection, unpackedMessage)
-      throw error
-    }
-
-    const messageContext = new InboundMessageContext(message, {
-      // Only make the connection available in message context if the connection is ready
-      // To prevent unwanted usage of unready connections. Connections can still be retrieved from
-      // Storage if the specific protocol allows an unready connection to be used.
-      connection: connection?.isReady ? connection : undefined,
-      senderVerkey: senderKey,
-      recipientVerkey: recipientKey,
-    })
+    const message = await this.transformAndValidate(plaintextMessage, connection)
 
     // We want to save a session if there is a chance of returning outbound message via inbound transport.
     // That can happen when inbound message has `return_route` set to `all` or `thread`.
@@ -131,53 +119,68 @@ export class MessageReceiver {
       this.transportService.saveSession(session)
     }
 
+    const messageContext = new InboundMessageContext(message, {
+      // Only make the connection available in message context if the connection is ready
+      // To prevent unwanted usage of unready connections. Connections can still be retrieved from
+      // Storage if the specific protocol allows an unready connection to be used.
+      connection: connection?.isReady ? connection : undefined,
+      senderVerkey: senderKey,
+      recipientVerkey: recipientKey,
+    })
     await this.dispatcher.dispatch(messageContext)
   }
 
   /**
-   * Unpack a message using the envelope service.
-   * If message is not packed, it will be returned as is, but in the unpacked message structure
+   * Decrypt a message using the envelope service.
    *
-   * @param packedMessage the received, probably packed, message to unpack
+   * @param message the received inbound message to decrypt
    */
-  private async unpackMessage(packedMessage: WireMessage): Promise<UnpackedMessageContext> {
-    // If the inbound message has no @type field we assume
-    // the message is packed and must be unpacked first
-    if (!this.isUnpackedMessage(packedMessage)) {
-      try {
-        return await this.envelopeService.unpackMessage(packedMessage)
-      } catch (error) {
-        this.logger.error('error while unpacking message', {
-          error,
-          packedMessage,
-          errorMessage: error instanceof Error ? error.message : error,
-        })
-        throw error
-      }
-    }
-
-    // If the message does have an @type field we assume
-    // the message is already unpacked an use it directly
-    else {
-      const unpackedMessage: UnpackedMessageContext = { message: packedMessage }
-      return unpackedMessage
+  private async decryptMessage(message: EncryptedMessage): Promise<DecryptedMessageContext> {
+    try {
+      return await this.envelopeService.unpackMessage(message)
+    } catch (error) {
+      this.logger.error('Error while decrypting message', {
+        error,
+        encryptedMessage: message,
+        errorMessage: error instanceof Error ? error.message : error,
+      })
+      throw error
     }
   }
 
-  private isUnpackedMessage(message: Record<string, unknown>): message is UnpackedMessage {
+  private isPlaintextMessage(message: unknown): message is PlaintextMessage {
+    if (typeof message !== 'object' || message == null) {
+      throw new AriesFrameworkError('Invalid message received. Message should be object')
+    }
+    // If the message does have an @type field we assume the message is in plaintext and it is not encrypted.
     return '@type' in message
   }
 
-  /**
-   * Transform an unpacked DIDComm message into it's corresponding message class. Will look at all message types in the registered handlers.
-   *
-   * @param unpackedMessage the unpacked message for which to transform the message in to a class instance
-   */
-  private async transformMessage(unpackedMessage: UnpackedMessageContext): Promise<AgentMessage> {
-    // replace did:sov:BzCbsNYhMrjHiqZDTUASHg;spec prefix for message type with https://didcomm.org
-    replaceLegacyDidSovPrefixOnMessage(unpackedMessage.message)
+  private async transformAndValidate(
+    plaintextMessage: PlaintextMessage,
+    connection?: ConnectionRecord | null
+  ): Promise<AgentMessage> {
+    let message: AgentMessage
+    try {
+      message = await this.transformMessage(plaintextMessage)
+      await this.validateMessage(message)
+    } catch (error) {
+      if (connection) await this.sendProblemReportMessage(error.message, connection, plaintextMessage)
+      throw error
+    }
+    return message
+  }
 
-    const messageType = unpackedMessage.message['@type']
+  /**
+   * Transform an plaintext DIDComm message into it's corresponding message class. Will look at all message types in the registered handlers.
+   *
+   * @param message the plaintext message for which to transform the message in to a class instance
+   */
+  private async transformMessage(message: PlaintextMessage): Promise<AgentMessage> {
+    // replace did:sov:BzCbsNYhMrjHiqZDTUASHg;spec prefix for message type with https://didcomm.org
+    replaceLegacyDidSovPrefixOnMessage(message)
+
+    const messageType = message['@type']
     const MessageClass = this.dispatcher.getMessageClassForType(messageType)
 
     if (!MessageClass) {
@@ -187,9 +190,7 @@ export class MessageReceiver {
     }
 
     // Cast the plain JSON object to specific instance of Message extended from AgentMessage
-    const message = JsonTransformer.fromJSON(unpackedMessage.message, MessageClass)
-
-    return message
+    return JsonTransformer.fromJSON(message, MessageClass)
   }
 
   /**
@@ -214,14 +215,14 @@ export class MessageReceiver {
    * Send the problem report message (https://didcomm.org/notification/1.0/problem-report) to the recipient.
    * @param message error message to send
    * @param connection connection to send the message to
-   * @param unpackedMessage received unpackedMessage
+   * @param plaintextMessage received inbound message
    */
   private async sendProblemReportMessage(
     message: string,
     connection: ConnectionRecord,
-    unpackedMessage: UnpackedMessageContext
+    plaintextMessage: PlaintextMessage
   ) {
-    if (unpackedMessage.message['@type'] === CommonMessageType.ProblemReport) {
+    if (plaintextMessage['@type'] === ProblemReportMessage.type) {
       throw new AriesFrameworkError(message)
     }
     const problemReportMessage = new ProblemReportMessage({
@@ -231,7 +232,7 @@ export class MessageReceiver {
       },
     })
     problemReportMessage.setThread({
-      threadId: unpackedMessage.message['@id'],
+      threadId: plaintextMessage['@id'],
     })
     const outboundMessage = createOutboundMessage(connection, problemReportMessage)
     if (outboundMessage) {

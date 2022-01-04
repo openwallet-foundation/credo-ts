@@ -33,6 +33,7 @@ import {
 } from '../messages'
 import { CredentialRecord } from '../repository/CredentialRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
+import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 import { CredentialService } from '../services'
 
 import { CredentialProblemReportMessage } from './../messages/CredentialProblemReportMessage'
@@ -126,17 +127,17 @@ const mockCredentialRecord = ({
   })
 
   if (metadata?.indyRequest) {
-    credentialRecord.metadata.set('_internal/indyRequest', { ...metadata.indyRequest })
+    credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, { ...metadata.indyRequest })
   }
 
   if (metadata?.schemaId) {
-    credentialRecord.metadata.add('_internal/indyCredential', {
+    credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
       schemaId: metadata.schemaId,
     })
   }
 
   if (metadata?.credentialDefinitionId) {
-    credentialRecord.metadata.add('_internal/indyCredential', {
+    credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
       credentialDefinitionId: metadata.credentialDefinitionId,
     })
   }
@@ -587,7 +588,7 @@ describe('CredentialService', () => {
           })
         )
       ).rejects.toThrowError(
-        `Missing required base64 encoded attachment data for credential request with thread id ${threadId}`
+        `Missing required base64 or json encoded attachment data for credential request with thread id ${threadId}`
       )
     })
 
@@ -981,7 +982,7 @@ describe('CredentialService', () => {
       })
     })
 
-    test(`updates state to ${CredentialState.None} and returns credential record`, async () => {
+    test(`updates problem report error message and returns credential record`, async () => {
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
 
       // given
@@ -992,7 +993,7 @@ describe('CredentialService', () => {
 
       // then
       const expectedCredentialRecord = {
-        state: CredentialState.None,
+        errorMessage: 'issuance-abandoned: Indy error',
       }
       expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, {
         threadId: 'somethreadid',
@@ -1002,28 +1003,6 @@ describe('CredentialService', () => {
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
       expect(updatedCredentialRecord).toMatchObject(expectedCredentialRecord)
       expect(returnedCredentialRecord).toMatchObject(expectedCredentialRecord)
-    })
-
-    test(`emits stateChange event from ${CredentialState.OfferReceived} to ${CredentialState.None}`, async () => {
-      const eventListenerMock = jest.fn()
-      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
-
-      // given
-      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
-
-      // when
-      await credentialService.processProblemReport(messageContext)
-
-      // then
-      expect(eventListenerMock).toHaveBeenCalledWith({
-        type: 'CredentialStateChanged',
-        payload: {
-          previousState: CredentialState.OfferReceived,
-          credentialRecord: expect.objectContaining({
-            state: CredentialState.None,
-          }),
-        },
-      })
     })
   })
 

@@ -211,8 +211,8 @@ export class Agent {
     return this.wallet.publicDid
   }
 
-  public async receiveMessage(inboundPackedMessage: unknown, session?: TransportSession) {
-    return await this.messageReceiver.receiveMessage(inboundPackedMessage, session)
+  public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
+    return await this.messageReceiver.receiveMessage(inboundMessage, session)
   }
 
   public get injectionContainer() {
