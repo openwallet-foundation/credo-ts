@@ -36,9 +36,9 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.register = void 0;
+exports.register_credential_schema = void 0;
 var uuid_1 = require("@aries-framework/core/build/utils/uuid");
-var register = function (annelein, klm) { return __awaiter(void 0, void 0, void 0, function () {
+var register_credential_schema = function (klm) { return __awaiter(void 0, void 0, void 0, function () {
     var schema, credentialDefenition;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -56,10 +56,8 @@ var register = function (annelein, klm) { return __awaiter(void 0, void 0, void 
                     })];
             case 2:
                 credentialDefenition = _a.sent();
-                console.log("Schema ID: ".concat(schema.id));
-                console.log("Cred Def ID: ".concat(credentialDefenition.id));
                 return [2 /*return*/, credentialDefenition];
         }
     });
 }); };
-exports.register = register;
+exports.register_credential_schema = register_credential_schema;

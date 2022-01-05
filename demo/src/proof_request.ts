@@ -17,7 +17,7 @@ export const send_proof_proposal = async (annelein: Agent, connectionRecord: Con
     ProofEventTypes.ProofStateChanged,
     async ({ payload }: ProofStateChangedEvent) => {
       if (payload.proofRecord.state === ProofState.ProposalSent) {
-        ui.log.write("\x1b[32m\nproposal sent!\n\x1b[0m");
+        ui.log.write("\x1b[32m\nProposal sent!\n\x1b[0m");
         return
       }
     }

@@ -5,12 +5,6 @@ import inquirer from 'inquirer'
 import { JsonTransformer } from "@aries-framework/core"
 import { JsonEncoder } from "@aries-framework/core/src/utils/JsonEncoder"
 
-export const connection = async (annelein: Agent) => {
-    const {invitation, connectionRecord} = await annelein.connections.createConnection()
-    console.log('\nYour invitation link:\n', invitation.toUrl({domain: 'http://localhost:9000'}), '\n')
-    return connectionRecord
-}
-
 
 export const accept_connection = async (klm: Agent) => {
     const answer = await inquirer
