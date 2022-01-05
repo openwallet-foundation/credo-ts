@@ -94,7 +94,6 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   /** @inheritDoc */
   public async save(record: T) {
     const value = JsonTransformer.serialize(record)
-    // FIXME: update @types/indy-sdk to be of type Record<string, string |undefined>
     const tags = this.transformFromRecordTagValues(record.getTags()) as Record<string, string>
 
     try {
@@ -112,7 +111,6 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   /** @inheritDoc */
   public async update(record: T): Promise<void> {
     const value = JsonTransformer.serialize(record)
-    // FIXME: update @types/indy-sdk to be of type Record<string, string |undefined>
     const tags = this.transformFromRecordTagValues(record.getTags()) as Record<string, string>
 
     try {
@@ -213,7 +211,6 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
         // Retrieve records
         const recordsJson = await this.indy.fetchWalletSearchNextRecords(this.wallet.handle, searchHandle, chunk)
 
-        // FIXME: update @types/indy-sdk: records can be null (if last reached)
         if (recordsJson.records) {
           records = [...records, ...recordsJson.records]
 
@@ -224,7 +221,7 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
 
         // If the number of records returned is less than chunk
         // It means we reached the end of the iterator (no more records)
-        if (!records.length || recordsJson.records.length < chunk) {
+        if (!records.length || !recordsJson.records || recordsJson.records.length < chunk) {
           await this.indy.closeWalletSearch(searchHandle)
 
           return

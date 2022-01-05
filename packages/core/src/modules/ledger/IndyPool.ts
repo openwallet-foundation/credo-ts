@@ -56,9 +56,6 @@ export class IndyPool {
 
     this._poolHandle = undefined
 
-    // FIXME: Add type to indy-sdk
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
     await this.indy.closePoolLedger(poolHandle)
   }
 
@@ -68,10 +65,7 @@ export class IndyPool {
       await this.close()
     }
 
-    // FIXME: Add type to indy-sdk
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    await this.indy.deletePoolLedgerConfig(this.agentConfig.poolName)
+    await this.indy.deletePoolLedgerConfig(this.poolConfig.id)
   }
 
   public async connect() {

@@ -17,6 +17,7 @@ import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
+import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
@@ -45,14 +46,15 @@ export class Agent {
   private _isInitialized = false
   public messageSubscription: Subscription
 
-  public readonly connections!: ConnectionsModule
-  public readonly proofs!: ProofsModule
-  public readonly basicMessages!: BasicMessagesModule
-  public readonly ledger!: LedgerModule
-  public readonly credentials!: CredentialsModule
-  public readonly mediationRecipient!: RecipientModule
-  public readonly mediator!: MediatorModule
-  public readonly discovery!: DiscoverFeaturesModule
+  public readonly connections: ConnectionsModule
+  public readonly proofs: ProofsModule
+  public readonly basicMessages: BasicMessagesModule
+  public readonly ledger: LedgerModule
+  public readonly credentials: CredentialsModule
+  public readonly mediationRecipient: RecipientModule
+  public readonly mediator: MediatorModule
+  public readonly discovery: DiscoverFeaturesModule
+  public readonly dids: DidsModule
   public readonly wallet: Wallet
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
@@ -102,6 +104,7 @@ export class Agent {
     this.basicMessages = this.container.resolve(BasicMessagesModule)
     this.ledger = this.container.resolve(LedgerModule)
     this.discovery = this.container.resolve(DiscoverFeaturesModule)
+    this.dids = this.container.resolve(DidsModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
     this.messageSubscription = this.eventEmitter
