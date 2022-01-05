@@ -22,6 +22,7 @@ export class IndyPool {
   private fileSystem: FileSystem
   private poolConfig: IndyPoolConfig
   private _poolHandle?: number
+  private poolConnected?: Promise<number>
   public authorAgreement?: AuthorAgreement | null
 
   public constructor(agentConfig: AgentConfig, poolConfig: IndyPoolConfig) {
@@ -68,6 +69,21 @@ export class IndyPool {
   }
 
   public async connect() {
+    if (!this.poolConnected) {
+      // Save the promise of connectToLedger to determine if we are done connecting
+      this.poolConnected = this.connectToLedger()
+      this.poolConnected.catch((error) => {
+        // Set poolConnected to undefined so we can retry connection upon failure
+        this.poolConnected = undefined
+        this.logger.error('Connection to pool: ' + this.poolConfig.genesisPath + ' failed.', { error })
+      })
+      return this.poolConnected
+    } else {
+      throw new AriesFrameworkError('Cannot attempt connection to ledger, already connecting.')
+    }
+  }
+
+  private async connectToLedger() {
     const poolName = this.poolConfig.id
     const genesisPath = await this.getGenesisPath()
 
@@ -124,6 +140,15 @@ export class IndyPool {
   }
 
   private async getPoolHandle() {
+    if (this.poolConnected) {
+      // If we have tried to already connect to pool wait for it
+      try {
+        await this.poolConnected
+      } catch (error) {
+        this.logger.error('Connection to pool: ' + this.poolConfig.genesisPath + ' failed.', { error })
+      }
+    }
+
     if (!this._poolHandle) {
       return this.connect()
     }

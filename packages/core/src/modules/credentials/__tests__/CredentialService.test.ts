@@ -33,6 +33,7 @@ import {
 } from '../messages'
 import { CredentialRecord } from '../repository/CredentialRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
+import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 import { CredentialService } from '../services'
 
 import { CredentialProblemReportMessage } from './../messages/CredentialProblemReportMessage'
@@ -126,17 +127,17 @@ const mockCredentialRecord = ({
   })
 
   if (metadata?.indyRequest) {
-    credentialRecord.metadata.set('_internal/indyRequest', { ...metadata.indyRequest })
+    credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, { ...metadata.indyRequest })
   }
 
   if (metadata?.schemaId) {
-    credentialRecord.metadata.add('_internal/indyCredential', {
+    credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
       schemaId: metadata.schemaId,
     })
   }
 
   if (metadata?.credentialDefinitionId) {
-    credentialRecord.metadata.add('_internal/indyCredential', {
+    credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
       credentialDefinitionId: metadata.credentialDefinitionId,
     })
   }

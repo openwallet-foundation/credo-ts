@@ -141,7 +141,7 @@ export class Agent {
   }
 
   public async initialize() {
-    const { publicDidSeed, walletConfig, mediatorConnectionsInvite } = this.agentConfig
+    const { connectToIndyLedgersOnStartup, publicDidSeed, walletConfig, mediatorConnectionsInvite } = this.agentConfig
 
     if (this._isInitialized) {
       throw new AriesFrameworkError(
@@ -162,6 +162,13 @@ export class Agent {
     if (publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
       await this.wallet.initPublicDid({ seed: publicDidSeed })
+    }
+
+    // As long as value isn't false we will async connect to all genesis pools on startup
+    if (connectToIndyLedgersOnStartup) {
+      this.ledger.connectToPools().catch((error) => {
+        this.logger.warn('Error connecting to ledger, will try to reconnect when needed.', { error })
+      })
     }
 
     for (const transport of this.inboundTransports) {
