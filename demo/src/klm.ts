@@ -120,14 +120,14 @@ export const createAgentKLM = async (bc_coverin: string): Promise<Agent> => {
     agent.registerInboundTransport(new HttpInboundTransport({port: port}))
     agent.registerOutboundTransport(new HttpOutboundTransport())
   
+    await agent.initialize()
+
     agent.events.on(BasicMessageEventTypes.BasicMessageStateChanged, (event: BasicMessageStateChangedEvent) => {
       if (event.payload.basicMessageRecord.role === 'receiver') {
         ui.log.write(`\x1b[35m\n${name} received a message: ${event.payload.message.content}\n\x1b[0m`);
       }
     })
-  
-    await agent.initialize()
-  
+    
     return agent
   }
 
