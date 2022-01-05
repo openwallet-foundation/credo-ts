@@ -160,23 +160,31 @@ export class ConnectionService {
    */
   public async createRequest(
     connectionId: string,
-    config?: {
+    config: {
       myLabel?: string
       myImageUrl?: string
-    }
+      autoAcceptConnection?: boolean
+    } = {}
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
     const connectionRecord = await this.connectionRepository.getById(connectionId)
 
     connectionRecord.assertState(ConnectionState.Invited)
     connectionRecord.assertRole(ConnectionRole.Invitee)
 
+    const { myLabel, myImageUrl, autoAcceptConnection } = config
+
     const connectionRequest = new ConnectionRequestMessage({
-      label: config?.myLabel ?? this.config.label,
+      label: myLabel ?? this.config.label,
       did: connectionRecord.did,
       didDoc: connectionRecord.didDoc,
-      imageUrl: config?.myImageUrl ?? this.config.connectionImageUrl,
+      imageUrl: myImageUrl ?? this.config.connectionImageUrl,
     })
 
+    if (autoAcceptConnection !== undefined || autoAcceptConnection !== null) {
+      connectionRecord.autoAcceptConnection = config?.autoAcceptConnection
+    }
+
+    connectionRecord.autoAcceptConnection = config?.autoAcceptConnection
     await this.updateState(connectionRecord, ConnectionState.Requested)
 
     return {
