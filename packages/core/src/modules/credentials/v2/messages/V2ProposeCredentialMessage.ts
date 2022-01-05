@@ -1,23 +1,21 @@
 import { V2CredentialFormatSpec } from "../formats/V2CredentialFormat"
-import type { Attachment } from '../../../../decorators/attachment/Attachment'
-import { Equals } from 'class-validator'
+import { Attachment } from '../../../../decorators/attachment/Attachment'
+import { Equals, IsArray, IsInstance, ValidateNested } from 'class-validator'
 import { AgentMessage } from '../../../../agent/AgentMessage'
 import { CredentialPreview } from '../../CredentialPreview'
 import { CRED_20_PROPOSAL } from "../formats/MessageTypes"
+import { Expose, Type } from "class-transformer"
 
 export class V2ProposeCredentialMessage extends AgentMessage {
 
-  // MJR-TODO is there a better way to declare these? (interface? decorators)
   public comment?: string
   public credentialProposal?: CredentialPreview
   public formats: V2CredentialFormatSpec
-  public filtersAttach: Attachment
   public credentialDefinitionId?: string
-
 
   constructor(id: string, 
     formats: V2CredentialFormatSpec,
-    filtersAttach: Attachment,
+    filtersAttach: Attachment[],
     comment?: string,
     credentialDefinitionId?: string,
     credentialPreview?: CredentialPreview,) {
@@ -34,5 +32,12 @@ export class V2ProposeCredentialMessage extends AgentMessage {
   public readonly type = V2ProposeCredentialMessage.type
   public static readonly type = CRED_20_PROPOSAL
 
-
+  @Expose({ name: 'filters~attach' })
+  @Type(() => Attachment)
+  @IsArray()
+  @ValidateNested({
+    each: true,
+  })
+  @IsInstance(Attachment, { each: true })
+  public filtersAttach!: Attachment[]
 }

@@ -5,10 +5,10 @@ import { getBaseConfig } from '../../../../../tests/helpers'
 import { CredentialsAPI } from '../../CredentialsAPI'
 import { Agent } from '../../../../agent/Agent'
 import { CredentialRecordType } from '../CredentialExchangeRecord'
-import { ProposeCredentialOptions } from '../interfaces'
+import { AcceptProposalOptions, ProposeCredentialOptions } from '../interfaces'
 import { unitTestLogger } from '../../../../logger'
 import { CredentialPreview } from '../../CredentialPreview'
-import { LinkedAttachment } from '../../../..//utils/LinkedAttachment'
+import { LinkedAttachment } from '../../../../utils/LinkedAttachment'
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { assert } from 'console'
 const { config, agentDependencies: dependencies } = getBaseConfig('Format Servive Test')
@@ -47,9 +47,22 @@ const proposal: ProposeCredentialOptions = {
 
     }
   },
-  comment: "v1 propose credential test"
+  comment: "v2 propose credential test"
 }
 
+
+const offer: AcceptProposalOptions = {
+  connectionId: "",
+  protocolVersion: CredentialProtocolVersion.V1_0,
+  credentialRecordId: "",
+  comment: "v2 offer credential as response test",
+
+  credentialFormats: {
+    indy: {
+      attributes: credentialPreview.attributes,
+    }
+  },
+}
 
 describe('V2 Credential Architecture', () => {
   const agent = new Agent(config, dependencies)
@@ -82,7 +95,7 @@ describe('V2 Credential Architecture', () => {
     })
 
 
-    test('credential format service returns correct preview, format and filters~attach', () => {
+    test('propose credential format service returns correct preview, format and filters~attach', () => {
       const version: CredentialProtocolVersion = CredentialProtocolVersion.V2_0
       const service: CredentialService = api.getService(version)
       const formatService: CredentialFormatService = service.getFormatService(CredentialRecordType.INDY)
@@ -100,9 +113,36 @@ describe('V2 Credential Architecture', () => {
       unitTestLogger("2. formats = ", formats)
 
       unitTestLogger("3. filtersAttach = ", filtersAttach)
+      expect(filtersAttach).toBeTruthy()
+      
     })
 
-    // MJR-TODO test the filtersAttach base64, next up test manager
+    test('offer credential format service returns correct preview, format and offers~attach', () => {
+      const version: CredentialProtocolVersion = CredentialProtocolVersion.V2_0
+      const service: CredentialService = api.getService(version)
+      const formatService: CredentialFormatService = service.getFormatService(CredentialRecordType.INDY)
+      const { preview, formats, offersAttach } = formatService.getCredentialOfferAttachFormats(offer, 'CRED_20_OFFER')
+
+      expect(preview?.type).toEqual("https://didcomm.org/issue-credential/2.0/credential-preview") 
+      expect(preview?.attributes.length).toEqual(2)
+
+      unitTestLogger("1. preview = ", preview)
+
+      expect(formats.attachId).toEqual("indy")
+      expect(formats.format).toEqual("hlindy/cred-abstract@v2.0")
+      unitTestLogger("2. formats = ", formats)
+
+      unitTestLogger("3. offersAttach = ", offersAttach)
+      expect(offersAttach).toBeTruthy()
+      if (offersAttach) {
+        expect(offersAttach.length).toEqual(1)
+      }
+      
+    })
+
   })
+
+  
 })
+
 

@@ -6,6 +6,7 @@ import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 
 
 import { Attachment } from '../../../decorators/attachment/Attachment'
+import { CredOffer } from 'indy-sdk'
 
 type IssuerId = string
 
@@ -33,19 +34,13 @@ export interface W3CCredentialFormat {
   }
 }
 
-interface IndyCredentialAttribute {
-  mimeType: string
-  name: string
-  value: string
-}
-
 /// CREDENTIAL OFFER
-interface IndyOfferCredentialFormat {
+export interface IndyOfferCredentialFormat {
   credentialDefinitionId: string
-  attributes: IndyCredentialAttribute[]
+  attributes: CredentialPreviewAttribute[]
 }
 
-interface OfferCredentialFormats {
+export interface OfferCredentialFormats {
   indy?: IndyOfferCredentialFormat
   w3c?: W3CCredentialFormat
 }
@@ -73,7 +68,8 @@ interface NegotiateOfferOptions {
 
 /// CREDENTIAL PROPOSAL
 
-interface IndyProposeCredentialFormat {
+// this is the base64 encoded data payload for [Indy] credential proposal
+interface CredPropose {
   attributes?: CredentialPreviewAttribute[] 
   schemaIssuerDid?: string
   schemaName?: string
@@ -84,38 +80,57 @@ interface IndyProposeCredentialFormat {
   linkedAttachments?: LinkedAttachment[]
 }
 
-export interface ProposeCredentialFormats {
-  // If you want to propose an indy credential without attributes or
-  // any of the other properties you should pass an empty object
-  indy?: IndyProposeCredentialFormat
-  w3c?: W3CCredentialFormat
+// ====================================================================================
+// CredOffer is the base64 encoded data payload for [Indy] credential offer messages
+// IMPORTANT! review this
+export interface V2CredProposalFormat {
+  indy?:CredPropose
+  w3c?: {
+    // MJR-TODO
+  }
 }
-
-
+// ====================================================================================
 
 
 interface ProposeCredentialOptions {
-  // attributes?: CredentialPreviewAttribute[] Q: Can we move that here as I don't see anything format specific about these
   connectionId: string
   protocolVersion: CredentialProtocolVersion
-  credentialFormats: ProposeCredentialFormats
+  credentialFormats: V2CredProposalFormat
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
 }
 
+
+// ====================================================================================
+// CredOffer is the base64 encoded data payload for [Indy] credential offer messages
+// IMPORTANT! review this
+export interface V2CredOfferFormat {
+  indy?: {
+      offer: CredOffer
+  }
+  w3c?: {
+    // MJR-TODO
+  }
+}
+// ====================================================================================
+
+interface IndyCredentialPreview {
+       // Could be that credential definition id and attributes are already defined
+      // But could also be that they are undefined. So we can't make them required
+  credentialDefinitionId?: string
+  attributes?: CredentialPreviewAttribute[]
+}
+
 interface AcceptProposalOptions {
+  connectionId: string
+  protocolVersion: CredentialProtocolVersion
   credentialRecordId: string
   comment?: string
   autoAcceptCredential?: AutoAcceptCredential
   credentialFormats: {
-    indy?: {
-      // Could be that credential definition id and attributes are already defined
-      // But could also be that they are undefined. So we can't make them required
-      credentialDefinitionId?: string
-      attributes?: IndyCredentialAttribute[]
-    }
+    indy?: IndyCredentialPreview
     w3c?: {
-      // TODO
+      // MJR-TODO
     }
   }
 }
@@ -158,5 +173,5 @@ export {
   NegotiateOfferOptions,
   RequestCredentialOptions,
   AcceptRequestOptions,
-  IndyProposeCredentialFormat,
+  CredPropose as IndyProposeCredentialFormat,
 }

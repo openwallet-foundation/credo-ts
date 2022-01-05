@@ -2,7 +2,7 @@
 import { CredentialRecordType, CredentialExchangeRecord, CredentialRecordBinding } from './v2/CredentialExchangeRecord'
 import { CredentialState } from './CredentialState'
 import { CredentialProtocolVersion } from './CredentialProtocolVersion'
-import { ProposeCredentialOptions } from './v2/interfaces'
+import { AcceptProposalOptions, ProposeCredentialOptions } from './v2/interfaces'
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { V1LegacyCredentialService } from './v1/V1LegacyCredentialService'
@@ -15,29 +15,20 @@ import { MediationRecipientService } from '../routing'
 import { CredentialResponseCoordinator } from './CredentialResponseCoordinator'
 import { CredentialRole } from './v2/CredentialRole'
 import { V1CredentialService } from './v1/V1CredentialService'
-import { V2CredentialService } from './v2/V2CredentialService'
 import { unitTestLogger, LogLevel } from '../../logger'
 import { createOutboundMessage } from '../../agent/helpers'
-import { CredentialRepository } from './repository'
+import { CredentialRecord, CredentialRepository } from './repository'
 import { EventEmitter } from '../../agent/EventEmitter'
-import { V2ProposeCredentialHandler } from './v2/handlers/V2ProposeCredentialHandler'
-import { AutoAcceptCredential } from '.'
-
-
+import { IndyIssuerService } from '../indy'
+import { V2CredentialService } from './v2/V2CredentialService'
 
 export interface CredentialsAPI {
 
     proposeCredential(credentialOptions: ProposeCredentialOptions): Promise<CredentialExchangeRecord>
 
-    acceptCredentialProposal(
-        credentialRecordId: string,
-        config?: {
-          comment?: string
-          credentialDefinitionId?: string
-          autoAcceptCredential?: AutoAcceptCredential
-        }
-      ) : void
-    // acceptProposal(credentialOptions: AcceptProposalOptions): Promise<CredentialExchangeRecord>
+    acceptCredentialProposal(credentialOptions: AcceptProposalOptions): Promise<CredentialExchangeRecord>
+
+
     // negotiateProposal(credentialOptions: NegotiateProposalOptions): Promise<CredentialExchangeRecord>
 
     // // Offer
@@ -55,7 +46,7 @@ export interface CredentialsAPI {
 
     // // Record Methods
     // getAll(): Promise<CredentialExchangeRecord[]>
-    // getById(credentialRecordId: string): Promise<CredentialExchangeRecord>
+    getById(credentialRecordId: string): Promise<CredentialRecord>
     // findById(credentialRecordId: string): Promise<CredentialExchangeRecord | null>
     // deleteById(credentialRecordId: string): Promise<void>
     // findByQuery(query: Record<string, Tag | string[]>): Promise<CredentialExchangeRecord[]>
@@ -76,6 +67,8 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
     private credentialResponseCoord: CredentialResponseCoordinator
     private v1Service: V1CredentialService
     private v2Service: V2CredentialService
+    private indyIssuerService: IndyIssuerService
+    private mediatorRecipientService: MediationRecipientService
     private serviceMap: { "1.0": V1CredentialService; "2.0": V2CredentialService }
 
     // note some of the parameters passed in here are temporary, as we intend 
@@ -86,10 +79,12 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
         connectionService: ConnectionService,
         agentConfig: AgentConfig,
         credentialResponseCoordinator: CredentialResponseCoordinator,
-        mediationRecipientService: MediationRecipientService,
         v1CredentialService: V1LegacyCredentialService,
         credentialRepository: CredentialRepository,
         eventEmitter: EventEmitter,
+        indyIssuerService: IndyIssuerService,
+        mediationRecipientService: MediationRecipientService
+
     ) {
         super(
             dispatcher,
@@ -107,11 +102,10 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
         this.dispatcher = dispatcher
         this.agConfig = agentConfig
         this.credentialResponseCoord = credentialResponseCoordinator
-        this.v1Service = new V1CredentialService(this.connService,
-            this.v1CredentialService,
-            this.credentialRepository,
-            this.eventEmitter,
-            this.msgSender)
+        this.indyIssuerService = indyIssuerService
+        this.mediatorRecipientService = mediationRecipientService
+        this.v1Service = new V1CredentialService(this.connService, this.v1CredentialService)
+
         this.v2Service = new V2CredentialService(this.connService,
             this.v1CredentialService,
             this.credentialRepository,
@@ -119,14 +113,16 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
             this.msgSender,
             this.dispatcher,
             this.agConfig,
-            this.credentialResponseCoord)
-        
+            this.credentialResponseCoord,
+            this.indyIssuerService,
+            this.mediatorRecipientService)
+
 
         this.serviceMap = {
             [CredentialProtocolVersion.V1_0]: this.v1Service,
             [CredentialProtocolVersion.V2_0]: this.v2Service,
         }
-        console.log("+++++++++++++++++++++ IN CREDENTIALS API +++++++++++++++++++++++++++")
+        unitTestLogger(`+++++++++++++++++++++ CREATE CREDENTIALS API FOR ${this.agConfig.label} +++++++++++++++++++++++++++`)
 
         // register handlers here
         // this.v1Service.registerHandlers() // MJR - TODO
@@ -183,7 +179,6 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
         const bindings: CredentialRecordBinding[] = []
         bindings.push(recordBinding)
 
-
         const credentialExchangeRecord: CredentialExchangeRecord = {
             ...credentialRecord,
             protocolVersion: version,
@@ -193,17 +188,51 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
 
         }
 
+
+        // MJR-TODO: do we need to implement this?
+        // await this.credentialRepository.save(credentialExchangeRecord)
+
         return credentialExchangeRecord
     }
 
-    public async acceptCredentialProposal(
-        credentialRecordId: string,
-        config?: {
-          comment?: string
-          credentialDefinitionId?: string
-          autoAcceptCredential?: AutoAcceptCredential
+    public async acceptCredentialProposal(credentialOptions: AcceptProposalOptions): Promise<CredentialExchangeRecord> {
+        // get the version
+        const version: CredentialProtocolVersion = credentialOptions.protocolVersion
+
+        // with version we can get the Service
+        const service: CredentialService = this.getService(version)
+
+        // will get back a credential record -> map to Credential Exchange Record
+        const { credentialRecord, message } = await service.acceptProposal(credentialOptions)
+
+        const recordBinding: CredentialRecordBinding = {
+            credentialRecordType: credentialOptions.credentialFormats.indy ? CredentialRecordType.INDY : CredentialRecordType.W3C,
+            credentialRecordId: credentialRecord.id
         }
-      ) {
-          console.log("TEST-DEBUG accepting the proposal HERE...!")
-      }
+
+        const connection = await this.connService.getById(credentialOptions.connectionId)
+
+        unitTestLogger("We have a message (sending outbound): ", message)
+
+        // send the message here
+        const outbound = createOutboundMessage(connection, message)
+
+        unitTestLogger("Send Proposal to Issuer")
+        await this.msgSender.sendMessage(outbound)
+        const bindings: CredentialRecordBinding[] = []
+        bindings.push(recordBinding)
+
+
+        // MJR-TODO get credential exchange record from the getById call
+        const credentialExchangeRecord: CredentialExchangeRecord = {
+            ...credentialRecord,
+            protocolVersion: version,
+            state: CredentialState.ProposalSent,
+            role: CredentialRole.Holder,
+            credentials: bindings,
+
+        }
+        return credentialExchangeRecord
+    }
+
 }

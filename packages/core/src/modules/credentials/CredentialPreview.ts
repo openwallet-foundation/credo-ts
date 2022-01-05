@@ -58,8 +58,9 @@ export class CredentialPreview {
     if (version) {
       CredentialPreview.version = version
       CredentialPreview.type = `https://didcomm.org/issue-credential/${CredentialPreview.version}/credential-preview`
+      this.type = `https://didcomm.org/issue-credential/${CredentialPreview.version}/credential-preview`
+
     }
-    
   }
 
   @Expose({ name: '@type' })
@@ -68,7 +69,7 @@ export class CredentialPreview {
     toClassOnly: true,
   })
   public type = CredentialPreview.type
-  public static type = `https://didcomm.org/issue-credential/1.0/credential-preview`
+  public static type = `https://didcomm.org/issue-credential/${CredentialPreview.version}/credential-preview`
 
   @Type(() => CredentialPreviewAttribute)
   @ValidateNested({ each: true })

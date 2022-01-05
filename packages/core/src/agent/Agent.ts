@@ -16,7 +16,7 @@ import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
-// import { CredentialsModule } from '../modules/credentials/CredentialsModule'
+import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { CredentialsAPI } from '../modules/credentials/CredentialsAPI'
 
 import { DiscoverFeaturesModule } from '../modules/discover-features'
@@ -213,8 +213,6 @@ export class Agent {
 
   public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
     await this.messageReceiver.receiveMessage(inboundMessage, session)
-
-    console.log(">TEST-DEBUG Finished Processing Incoming Message")
   }
 
   public get injectionContainer() {

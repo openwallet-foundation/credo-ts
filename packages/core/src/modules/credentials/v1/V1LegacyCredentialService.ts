@@ -94,8 +94,10 @@ export class V1LegacyCredentialService {
       options.attachments = config.linkedAttachments.map((linkedAttachment) => linkedAttachment.attachment)
     }
 
+
     // Create message
     const proposalMessage = new ProposeCredentialMessage(options ?? {})
+
 
     // Create record
     const credentialRecord = new CredentialRecord({
@@ -384,6 +386,7 @@ export class V1LegacyCredentialService {
 
       await this.updateState(credentialRecord, CredentialState.OfferReceived)
     } catch {
+
       // No credential record exists with thread id
       credentialRecord = new CredentialRecord({
         connectionId: connection?.id,

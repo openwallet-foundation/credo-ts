@@ -28,8 +28,12 @@ export interface CredentialRecordBinding {
   credentialRecordId: string
 }
 
+export type DefaultCredentialExchangeTags = {
+  connectionId: string
+}
+
 // Base Record already available in AFJ
-export interface CredentialExchangeRecord {
+export interface CredentialExchangeRecord  {
   // in case of connection less exchange, connection id can be null
   connectionId?: string
 

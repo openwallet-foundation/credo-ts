@@ -1,24 +1,29 @@
 import { V2CredentialFormatSpec } from '../formats/V2CredentialFormat'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
-import { ProposeCredentialOptions } from '../interfaces'
+import { AcceptProposalOptions, ProposeCredentialOptions, V2CredOfferFormat, V2CredProposalFormat } from '../interfaces'
 import { uuid } from '../../../../utils/uuid'
 import { CredentialPreview } from '../../CredentialPreview'
 import { CredentialRecord, CredentialRepository } from '../../repository'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { CredentialEventTypes, CredentialStateChangedEvent } from '../../CredentialEvents'
 import { LinkedAttachment } from '../../../../utils/LinkedAttachment'
-import { CredentialPreviewAttribute } from '../../CredentialPreviewV2'
+import { CredentialPreviewAttribute } from '../../CredentialPreview'
+import { CredOffer } from 'indy-sdk'
+import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
 
-export interface AttachmentFormats {
+export interface V2AttachmentFormats {
     preview?: CredentialPreview
     formats: V2CredentialFormatSpec,
-    filtersAttach: Attachment
+    filtersAttach?: Attachment[]
+    offersAttach?: Attachment[]
+
 }
 
-export abstract class CredentialFormatService {
 
-    private credentialRepository: CredentialRepository
+
+export abstract class CredentialFormatService {
+    protected credentialRepository: CredentialRepository
     private eventEmitter: EventEmitter
 
     public constructor(
@@ -28,16 +33,22 @@ export abstract class CredentialFormatService {
         this.credentialRepository = credentialRepository
         this.eventEmitter = eventEmitter
     }
-    abstract getCredentialProposeAttachFormats(proposal: ProposeCredentialOptions, messageType: string): AttachmentFormats
+
+    
+    abstract getCredentialProposeAttachFormats(proposal: ProposeCredentialOptions, messageType: string): V2AttachmentFormats
     abstract getFormatIdentifier(messageType: string): V2CredentialFormatSpec
-    abstract getFormatData(messageType: string, data: ProposeCredentialOptions): Attachment
-    abstract setMetaDataAndEmitEvent(proposal: ProposeCredentialOptions, credentialRecord: CredentialRecord): Promise<void>
-    abstract getCredentialLinkedAttachments(proposal: ProposeCredentialOptions) : LinkedAttachment[] | undefined
-    abstract getCredentialAttributes(proposal: ProposeCredentialOptions): CredentialPreviewAttribute[] | undefined 
+    abstract getFormatData(data: V2CredProposalFormat | V2CredOfferFormat): Attachment[]
+    abstract setMetaDataAndEmitEventForProposal(proposal: V2CredProposalFormat, credentialRecord: CredentialRecord): Promise<void>
+    abstract setMetaDataForOffer(offer: V2CredOfferFormat, credentialRecord: CredentialRecord): void
+
+    abstract getCredentialLinkedAttachments(proposal: ProposeCredentialOptions): Attachment[] | undefined
+    abstract getCredentialAttributes(proposal: ProposeCredentialOptions): CredentialPreviewAttribute[] | undefined
     abstract getCredentialDefinitionId(proposal: ProposeCredentialOptions): string | undefined
 
     // other message formats here...eg issue, request formats etc.
-
+    abstract createCredentialOffer(proposal: AcceptProposalOptions): Promise<V2CredOfferFormat>
+    abstract getCredentialOfferAttachFormats(proposal: AcceptProposalOptions, messageType: string): V2AttachmentFormats
+    abstract getCredentialOfferMessage(credentialOfferMessage: V2OfferCredentialMessage): V2CredOfferFormat
 
     public generateId(): string {
         return uuid()
@@ -49,11 +60,11 @@ export abstract class CredentialFormatService {
 
     protected async emitEvent(credentialRecord: CredentialRecord) {
         this.eventEmitter.emit<CredentialStateChangedEvent>({
-          type: CredentialEventTypes.CredentialStateChanged,
-          payload: {
-            credentialRecord,
-            previousState: null,
-          },
+            type: CredentialEventTypes.CredentialStateChanged,
+            payload: {
+                credentialRecord,
+                previousState: null,
+            },
         })
     }
 }

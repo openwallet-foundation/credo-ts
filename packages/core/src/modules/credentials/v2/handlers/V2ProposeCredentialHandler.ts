@@ -1,10 +1,12 @@
 import { AgentConfig } from "../../../../agent/AgentConfig"
 import { Handler, HandlerInboundMessage } from "../../../../agent/Handler"
 import { CredentialResponseCoordinator } from "../../CredentialResponseCoordinator"
-import { V2CredentialService } from "../V2CredentialService"
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 import { CredentialRecord } from "../.."
 import { ConnectionRecord } from "../../../connections"
+import { AcceptProposalOptions } from "../interfaces"
+import { CredentialProtocolVersion } from "../../CredentialProtocolVersion"
+import { V2CredentialService } from "../V2CredentialService"
 
 export class V2ProposeCredentialHandler implements Handler {
   private credentialService: V2CredentialService
@@ -30,6 +32,7 @@ export class V2ProposeCredentialHandler implements Handler {
     }
   }
 
+  // MJR-TODO this needs upgrading to V2
   private async createOffer(
     credentialRecord: CredentialRecord,
     messageContext: HandlerInboundMessage<V2ProposeCredentialHandler>
@@ -55,10 +58,16 @@ export class V2ProposeCredentialHandler implements Handler {
       return
     }
 
-    const { message } = await this.credentialService.createOfferAsResponse(credentialRecord, {
-      credentialDefinitionId: credentialRecord.proposalMessage.credentialDefinitionId,
-      preview: credentialRecord.proposalMessage.credentialProposal,
-    })
+    const options: AcceptProposalOptions = {
+      connectionId: "",
+      protocolVersion: CredentialProtocolVersion.V2_0,
+      credentialRecordId: "",
+      credentialFormats: {
+        indy: undefined,
+        w3c: undefined
+      }
+    }
+    const message = await this.credentialService.createOfferAsResponse(credentialRecord, options)
 
     return createOutboundMessage(messageContext.connection, message)
   }

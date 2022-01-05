@@ -17,6 +17,7 @@ import {
 } from '../v1/messages'
 import { CredentialInfo } from '../v1/models/CredentialInfo'
 import { V2ProposeCredentialMessage } from '../v2/messages/V2ProposeCredentialMessage'
+import { V2OfferCredentialMessage } from '../v2/messages/V2OfferCredentialMessage'
 
 export interface CredentialRecordProps {
   id?: string
@@ -28,7 +29,7 @@ export interface CredentialRecordProps {
   credentialId?: string
   tags?: CustomCredentialTags
   proposalMessage?: ProposeCredentialMessage | V2ProposeCredentialMessage
-  offerMessage?: OfferCredentialMessage
+  offerMessage?: OfferCredentialMessage | V2OfferCredentialMessage
   requestMessage?: RequestCredentialMessage
   credentialMessage?: IssueCredentialMessage
   credentialAttributes?: CredentialPreviewAttribute[]
@@ -57,7 +58,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
   @Type(() => ProposeCredentialMessage)
   public proposalMessage?: ProposeCredentialMessage | V2ProposeCredentialMessage
   @Type(() => OfferCredentialMessage)
-  public offerMessage?: OfferCredentialMessage
+  public offerMessage?: OfferCredentialMessage | V2OfferCredentialMessage
   @Type(() => RequestCredentialMessage)
   public requestMessage?: RequestCredentialMessage
   @Type(() => IssueCredentialMessage)

@@ -51,7 +51,7 @@ describe('credentials', () => {
     })
 
     testLogger.test('Faber sends credential offer to Alice')
-    faberCredentialRecord = await faberAgent.credentials.acceptProposal(faberCredentialRecord.id, {
+    faberCredentialRecord = await faberAgent.credentials.OLDacceptProposal(faberCredentialRecord.id, {
       comment: 'some comment about credential',
     })
 
@@ -271,7 +271,7 @@ describe('credentials', () => {
     })
 
     testLogger.test('Faber sends credential offer to Alice')
-    faberCredentialRecord = await faberAgent.credentials.acceptProposal(faberCredentialRecord.id, {
+    faberCredentialRecord = await faberAgent.credentials.OLDacceptProposal(faberCredentialRecord.id, {
       comment: 'some comment about credential',
     })
 

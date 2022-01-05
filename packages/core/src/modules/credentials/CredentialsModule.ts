@@ -63,6 +63,8 @@ export class CredentialsModule {
    * @param config Additional configuration to use for the proposal
    * @returns Credential record associated with the sent proposal message
    */
+
+  // MOVED INTO V1CredentialService.createProposal
   public async OLDproposeCredential(connectionId: string, config?: CredentialProposeOptions) {
     const connection = await this.connectionService.getById(connectionId)
 
@@ -84,7 +86,9 @@ export class CredentialsModule {
    * @returns Credential record associated with the credential offer
    *
    */
-  public async acceptProposal(
+
+  // MOVED INTO V1CredentialService.acceptProposal
+  public async OLDacceptProposal(
     credentialRecordId: string,
     config?: {
       comment?: string
