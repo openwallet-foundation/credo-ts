@@ -90,6 +90,35 @@ export class IndyLedgerService {
     return didResponse
   }
 
+  public async getEndpointsForDid(did: string) {
+    const { pool } = await this.indyPoolService.getPoolForDid(did)
+
+    try {
+      this.logger.debug(`Get endpoints for did '${did}' from ledger '${pool.id}'`)
+
+      const request = await this.indy.buildGetAttribRequest(null, did, 'endpoint', null, null)
+
+      this.logger.debug(`Submitting get endpoint ATTRIB request for did '${did}' to ledger '${pool.id}'`)
+      const response = await this.submitReadRequest(pool, request)
+
+      if (!response.result.data) return {}
+
+      const endpoints = JSON.parse(response.result.data as string)?.endpoint as IndyEndpointAttrib
+      this.logger.debug(`Got endpoints '${JSON.stringify(endpoints)}' for did '${did}' from ledger '${pool.id}'`, {
+        response,
+        endpoints,
+      })
+
+      return endpoints ?? {}
+    } catch (error) {
+      this.logger.error(`Error retrieving endpoints for did '${did}' from ledger '${pool.id}'`, {
+        error,
+      })
+
+      throw isIndyError(error) ? new IndySdkError(error) : error
+    }
+  }
+
   public async registerSchema(did: string, schemaTemplate: SchemaTemplate): Promise<Schema> {
     const pool = this.indyPoolService.ledgerWritePool
 
@@ -338,4 +367,11 @@ export interface CredentialDefinitionTemplate {
   tag: string
   signatureType: 'CL'
   supportRevocation: boolean
+}
+
+export interface IndyEndpointAttrib {
+  endpoint?: string
+  types?: Array<'endpoint' | 'did-communication' | 'DIDComm'>
+  routingKeys?: string[]
+  [key: string]: unknown
 }
