@@ -1,2 +1,3 @@
 import { Agent } from '@aries-framework/core';
-export declare const register: (annelein: Agent, klm: Agent) => Promise<import("indy-sdk").CredDef>;
+import { CredDef } from 'indy-sdk-react-native';
+export declare const register_credential_schema: (klm: Agent) => Promise<CredDef>;

@@ -35,50 +35,58 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.proof_request = void 0;
+exports.send_proof_proposal = void 0;
 var core_1 = require("@aries-framework/core");
-var proofs_1 = require("@aries-framework/core/build/modules/proofs");
-var proof_request = function (klm, annelein, connectionRecordKLM, connectionRecordAnnelein, credDefId) { return __awaiter(void 0, void 0, void 0, function () {
-    var presentationPreview, proofRec;
+var core_2 = require("@aries-framework/core");
+var core_3 = require("@aries-framework/core");
+var inquirer_1 = __importDefault(require("inquirer"));
+var ui = new inquirer_1.default.ui.BottomBar();
+var credDef = '7KuDTpQh3GJ7Gp6kErpWvM:3:CL:115269:latest';
+var send_proof_proposal = function (annelein, connectionRecord) { return __awaiter(void 0, void 0, void 0, function () {
+    var presentationPreview;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                presentationPreview = new core_1.PresentationPreview({
+                annelein.events.on(core_1.ProofEventTypes.ProofStateChanged, function (_a) {
+                    var payload = _a.payload;
+                    return __awaiter(void 0, void 0, void 0, function () {
+                        return __generator(this, function (_b) {
+                            if (payload.proofRecord.state === core_2.ProofState.ProposalSent) {
+                                ui.log.write("\x1b[32m\nProposal sent!\n\x1b[0m");
+                                return [2 /*return*/];
+                            }
+                            return [2 /*return*/];
+                        });
+                    });
+                });
+                presentationPreview = new core_3.PresentationPreview({
                     attributes: [
-                        new core_1.PresentationPreviewAttribute({
-                            name: 'actually happening',
-                            credentialDefinitionId: credDefId,
-                            value: 'yes',
+                        new core_3.PresentationPreviewAttribute({
+                            name: 'name',
+                            credentialDefinitionId: credDef,
+                            value: 'annelein',
+                        }),
+                        new core_3.PresentationPreviewAttribute({
+                            name: 'date of birth',
+                            credentialDefinitionId: credDef,
+                            value: '09/09/1999',
+                        }),
+                        new core_3.PresentationPreviewAttribute({
+                            name: 'country of residence',
+                            credentialDefinitionId: credDef,
+                            value: 'the Netherlands',
                         })
                     ],
-                    predicates: [
-                    // new PresentationPreviewPredicate({
-                    //   name: 'age',
-                    //   credentialDefinitionId: credDefId,
-                    //   predicate: PredicateType.GreaterThan,
-                    //   threshold: 18,
-                    // })
-                    ]
                 });
-                klm.events.on(proofs_1.ProofEventTypes.ProofStateChanged, function (event) {
-                    if (event.payload.proofRecord.state !== proofs_1.ProofState.ProposalReceived) {
-                        return;
-                    }
-                    console.log("proof proprosal approved!");
-                    klm.proofs.acceptProposal(event.payload.proofRecord.id);
-                });
-                return [4 /*yield*/, annelein.proofs.proposeProof(connectionRecordAnnelein.id, presentationPreview)
-                    // setInterval(async () => {
-                    //   const reccie = await annelein.proofs.getById(proofRec.id)
-                    //   console.log(reccie);
-                    // }, 1000)
-                    // const requestedCredentials = await annelein.proofs.getRequestedCredentialsForProofRequest(proofRec.id)
-                ];
+                return [4 /*yield*/, annelein.proofs.proposeProof(connectionRecord.id, presentationPreview)];
             case 1:
-                proofRec = _a.sent();
+                _a.sent();
                 return [2 /*return*/];
         }
     });
 }); };
-exports.proof_request = proof_request;
+exports.send_proof_proposal = send_proof_proposal;

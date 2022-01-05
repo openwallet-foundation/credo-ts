@@ -1,22 +1,17 @@
-import { ConnectionRecord } from '@aries-framework/core';
-import { 
-Agent,
-InitConfig,
-HttpOutboundTransport, 
-BasicMessageEventTypes, 
-BasicMessageStateChangedEvent, 
-AutoAcceptCredential,
-AutoAcceptProof} from '@aries-framework/core'
-import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
+import { Agent, AutoAcceptCredential, AutoAcceptProof, BasicMessageEventTypes, BasicMessageStateChangedEvent, HttpOutboundTransport, InitConfig } from '@aries-framework/core'
 import clear from 'clear';
 import figlet from 'figlet';
 import { annelein_inquirer } from './annelein_inquirer';
-import { connection } from './connection';
 import { send_message } from './send_message';
 import inquirer from 'inquirer'
 import { restart } from './restart';
 import { send_proof_proposal } from './proof_request';
 import { accept_credential_offer } from './credential';
+import { ConnectionInvitationMessage } from '@aries-framework/core';
+import { createAgent } from './create_agent';
+import { ConnectionRecord } from '@aries-framework/core';
+import { agentDependencies } from '@aries-framework/react-native';
+import { HttpInboundTransport } from 'packages/node/src/transport/HttpInboundTransport';
 
 const bc_coverin = `{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node1","blskey":"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba","blskey_pop":"RahHYiCvoNCtPTrVtP7nMC5eTYrsUA8WjXbdhNc8debh1agE9bGiJxWBXYNFbnJXoXhWFMvyqhqhRoq737YQemH5ik9oL7R4NTTCz2LEZhkgLJzB3QRQqJyBNyv7acbdHrAT8nQ9UkLbaVL9NBpnWXBTw4LEMePaSHEw66RzPNdAX1","client_ip":"138.197.138.255","client_port":9702,"node_ip":"138.197.138.255","node_port":9701,"services":["VALIDATOR"]},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"},"metadata":{"from":"Th7MpTaRZVRYnPiabds81Y"},"type":"0"},"txnMetadata":{"seqNo":1,"txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62"},"ver":"1"}
 {"reqSignature":{},"txn":{"data":{"data":{"alias":"Node2","blskey":"37rAPpXVoxzKhz7d9gkUe52XuXryuLXoM6P6LbWDB7LSbG62Lsb33sfG7zqS8TK1MXwuCHj1FKNzVpsnafmqLG1vXN88rt38mNFs9TENzm4QHdBzsvCuoBnPH7rpYYDo9DZNJePaDvRvqJKByCabubJz3XXKbEeshzpz4Ma5QYpJqjk","blskey_pop":"Qr658mWZ2YC8JXGXwMDQTzuZCWF7NK9EwxphGmcBvCh6ybUuLxbG65nsX4JvD4SPNtkJ2w9ug1yLTj6fgmuDg41TgECXjLCij3RMsV8CwewBVgVN67wsA45DFWvqvLtu4rjNnE9JbdFTc1Z4WCPA3Xan44K1HoHAq9EVeaRYs8zoF5","client_ip":"138.197.138.255","client_port":9704,"node_ip":"138.197.138.255","node_port":9703,"services":["VALIDATOR"]},"dest":"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"},"metadata":{"from":"EbP4aYNeTHL6q385GuVpRV"},"type":"0"},"txnMetadata":{"seqNo":2,"txnId":"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc"},"ver":"1"}
@@ -34,88 +29,186 @@ enum options {
   Restart = "restart"
 }
 
-export const process_answer_annelein = async (annelein: Agent, answers: any) => {
-  if (answers.options === options.Connection){
-    connectionRecord = await connection(annelein)
-    console.log("waiting for KLM to finish connection...")
-    connectionRecord = await annelein.connections.returnWhenIsConnected(connectionRecord.id)
-    console.log("\x1b[32m", "\nConnection established!\n", "\x1b[0m")
-    if (connectionRecord !== undefined){
-      accept_credential_offer(annelein, connectionRecord)
-    }
-  } else if (answers.options == options.Proof){
-    if (connectionRecord !== undefined){
-      await send_proof_proposal(annelein, connectionRecord)
-    } else {
-      console.log("\x1b[31m", 'Something went wrong.. Could it be that you have not set up a connection yet?', "\x1b[0m")
-    }
-  } else if (answers.options == options.Message){
-    if (connectionRecord !== undefined){
-      await send_message(connectionRecord.id, annelein)
-    } else {
-      console.log("\x1b[31m", 'Something went wrong.. Could it be that you have not set up a connection yet?', "\x1b[0m")
-    } 
-  } else if (answers.options == options.Exit){
-    console.log("exiting...")
-    process.exit()
-  } else if (answers.options == options.Restart){
-    const check = await restart(annelein)
-    if (check == true){
-      annelein.shutdown()
-      run_annelein()
-      return
-    }
-  }
-  const answer = await annelein_inquirer(annelein)
-  process_answer_annelein(annelein, answer)
-}
+// class Annelein {
+//   agent: Agent;
+//   connectionRecord: ConnectionRecord;
+//   invitation: ConnectionInvitationMessage;
+//   inquire_answer: any;
+//   prompt: any;
 
-const createAgentAnnelein = async (bc_coverin: string): Promise<Agent> => {
+//   constructor(agent: Agent, connectionRecord: ConnectionRecord, invitation: ConnectionInvitationMessage){
+//     this.agent = agent
+//     this.connectionRecord = connectionRecord
+//     this.invitation = invitation
+//   }
 
-    const name = 'annelein'
-    const port = 9000
+//   process_prompt = async (annelein: Agent, answers: any) => {
+//     if (answers.options === options.Connection){
+//       console.log('\nYour invitation link:\n', this.invitation.toUrl({domain: 'http://localhost:9000'}), '\n')
+//       console.log("Waiting for KLM to finish connection...")
+//       this.connectionRecord = await annelein.connections.returnWhenIsConnected(this.connectionRecord.id)
+//       accept_credential_offer(annelein, this.connectionRecord)
+//       console.log("\x1b[32m", "\nConnection established!\n", "\x1b[0m")
+//     } else if (answers.options == options.Proof){
+//       await send_proof_proposal(annelein, this.connectionRecord)
+//     } else if (answers.options == options.Message){
+//       await send_message(this.connectionRecord.id, annelein)
+//     } else if (answers.options == options.Exit){
+//       console.log("exiting...")
+//       process.exit()
+//     } else if (answers.options == options.Restart){
+//       await restart(annelein)
+//       annelein.shutdown()
+//       run_annelein()
+//       return
+//     }
+//     const answer = await annelein_inquirer(annelein)
+//     this.process_prompt(annelein, answer)
+//   }
+// }
+
+// export const run_annelein = async () => {
+//   clear();
+//   console.log(figlet.textSync('Annelein', { horizontalLayout: 'full' }));
+
+//   const agent = await createAgent('annelein', 9000, bc_coverin)
+//   console.log("\x1b[32m", 'Agent Annelein created', "\x1b[0m")
+
+//   const {invitation, connectionRecord} = await agent.connections.createConnection()
+//   const annelein = new Annelein(agent, connectionRecord, invitation)
+
+//   const answer = await annelein_inquirer(annelein.agent)
+//   annelein.process_prompt(annelein.agent, answer)
+//   }
+
+// run_annelein()
+
+
+
+
+class BaseAgent {
+
+  port: number
+  name: string
+  config: InitConfig
+  agent: Agent
+
+  constructor(port: number, name: string) {
+
+    this.name = name
+    this.port = port
 
     const config: InitConfig = {
-      label: name,
+      label: this.name,
       //logger: new TestLogger(LogLevel.error),
       walletConfig: {
-        id: name,
-        key: name,
+        id: this.name,
+        key: this.name
       },
       publicDidSeed: "6b8b882e2618fa5d45ee7229ca880083",
       indyLedgers: [{
         genesisTransactions: bc_coverin,
-        id: 'greenlights' + name,
+        id: 'greenlights' + this.name,
         isProduction: false,
       }],
-      endpoints: [`http://localhost:${port}`],
+      endpoints: [`http://localhost:${this.port}`],
       autoAcceptConnections: true,
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       autoAcceptProofs: AutoAcceptProof.ContentApproved
     }
-  
-    const agent = new Agent(config, agentDependencies)
-    agent.registerInboundTransport(new HttpInboundTransport({port: port}))
-    agent.registerOutboundTransport(new HttpOutboundTransport())
-  
-    await agent.initialize()
+    
+    this.config = config
 
-    agent.events.on(BasicMessageEventTypes.BasicMessageStateChanged, (event: BasicMessageStateChangedEvent) => {
+    this.agent = new Agent(this.config, agentDependencies)
+    this.agent.registerInboundTransport(new HttpInboundTransport({port: this.port}))
+    this.agent.registerOutboundTransport(new HttpOutboundTransport())
+  }
+
+  async initializeAgent() {
+    await this.agent.initialize()
+
+    this.agent.events.on(BasicMessageEventTypes.BasicMessageStateChanged, (event: BasicMessageStateChangedEvent) => {
       if (event.payload.basicMessageRecord.role === 'receiver') {
-        ui.log.write(`\x1b[35m\n${name} received a message: ${event.payload.message.content}\n\x1b[0m`);
+        ui.log.write(`\x1b[35m\n${this.name} received a message: ${event.payload.message.content}\n\x1b[0m`);
       }
     })
+  }
+}
+
+
+class Klm extends BaseAgent {
+
+  inquire_answer: any;
+  prompt: any;
+
+
+  constructor(port: number, name: string) {
+    super(port, name)
+  }
+}
+
+
+class Annelein extends BaseAgent {
+  // agent: Agent;
+  // connectionRecord: ConnectionRecord;
+  // invitation: ConnectionInvitationMessage;
+  inquire_answer: any;
+  prompt: any;
+  connectionRecordId?: string
+
+  constructor(port: number, name: string) {
+    super(port, name)
+  }
   
-    return agent
+
+  async printConnectionInvite() {
+    const invite = await this.agent.connections.createConnection()
+    this.connectionRecordId = invite.connectionRecord.id
+    console.log('\nYour invitation link:\n', invite.invitation.toUrl({domain: `http://localhost:${this.port}`}), '\n')
+    return invite.connectionRecord
   }
 
-export const run_annelein = async () => {
-    clear();
-    console.log(figlet.textSync('Annelein', { horizontalLayout: 'full' }));
-    const annelein = await createAgentAnnelein(bc_coverin)
-    console.log("\x1b[32m", 'Agent Annelein created', "\x1b[0m")
-    const answer = await annelein_inquirer(annelein)
-    process_answer_annelein(annelein, answer)
+  async waitForConnection() {
+    if (!this.connectionRecordId) {
+      throw Error('No connectionRecord ID has been set yet. DID YOU FORGET TO CALL .....')
+    }
+
+    console.log("Waiting for KLM to finish connection...")
+    await this.agent.connections.returnWhenIsConnected(this.connectionRecordId)
   }
 
-run_annelein()
+
+  private async getConnectionRecord() {
+    if (!this.connectionRecordId) {
+      throw Error('No connectionRecord ID has been set yet. DID YOU FORGET TO CALL .....')
+    }
+
+    return await this.agent.connections.getById(this.connectionRecordId)
+  }
+
+  async somethingThatNeedsTheConnectionRecord() {
+    const connectionRecord = await this.getConnectionRecord()
+  }
+
+  // process_prompt = async (annelein: Agent, answers: any) => {
+  //   if (answers.options === options.Connection){
+      
+  //     accept_credential_offer(annelein, this.connectionRecord)
+  //     console.log("\x1b[32m", "\nConnection established!\n", "\x1b[0m")
+  //   } else if (answers.options == options.Proof){
+  //     await send_proof_proposal(annelein, this.connectionRecord)
+  //   } else if (answers.options == options.Message){
+  //     await send_message(this.connectionRecord.id, annelein)
+  //   } else if (answers.options == options.Exit){
+  //     console.log("exiting...")
+  //     process.exit()
+  //   } else if (answers.options == options.Restart){
+  //     await restart(annelein)
+  //     annelein.shutdown()
+  //     run_annelein()
+  //     return
+  //   }
+  //   const answer = await annelein_inquirer(annelein)
+  //   this.process_prompt(annelein, answer)
+  // }
+}

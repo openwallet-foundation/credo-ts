@@ -20,7 +20,8 @@
     "build": "yarn run clean && yarn run compile",
     "clean": "rimraf -rf ./build",
     "compile": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "yarn run build"
+    "prepublishOnly": "yarn run build",
+    "postinstall": "yarn run build"
   },
   "dependencies": {
     "@multiformats/base-x": "^4.0.1",

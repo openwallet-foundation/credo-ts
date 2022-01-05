@@ -1,5 +1,5 @@
 import { Agent } from '@aries-framework/core'
-import { uuid } from '@aries-framework/core/build/utils/uuid'  
+import { uuid } from '@aries-framework/core/build/utils/uuid'
 import { CredDef } from 'indy-sdk-react-native'
 
 export const register_credential_schema = async (klm: Agent) : Promise<CredDef> => {

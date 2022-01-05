@@ -2,7 +2,6 @@
 
 import { Agent } from '@aries-framework/core';
 import inquirer from 'inquirer'
-import { process_answer_annelein } from './annelein';
 
 export const annelein_inquirer = async (annelein: Agent) =>{
     const answer = await inquirer

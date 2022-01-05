@@ -10,10 +10,10 @@
     "start": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
     "annelein": " 'ts-node' src/annelein.ts",
     "klm": " 'ts-node' src/klm.ts",
-    "create": "npm run build && npm run test",
+    "create": "yarn build && yarn test",
     "build": "tsc -p .",
-    "local": "sudo npm i -g && demo",
-    "refresh": "rm -rf ./node_modules ./package-lock.json && npm install"
+    "local": "yarn global add && demo",
+    "refresh": "rm -rf ./node_modules ./yarn.lock && npm install"
   },
   "devDependencies": {
     "@types/chalk": "^2.2.0",
@@ -35,7 +35,8 @@
     "clear": "^0.1.0",
     "commander": "^8.3.0",
     "figlet": "^1.5.2",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "ts-node": "^10.4.0"
   },
   "description": "afj cli demo",
   "repository": {
