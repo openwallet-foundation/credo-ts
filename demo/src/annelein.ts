@@ -37,6 +37,9 @@ enum options {
 export const process_answer_annelein = async (annelein: Agent, answers: any) => {
   if (answers.options === options.Connection){
     connectionRecord = await connection(annelein)
+    console.log("waiting for KLM to finish connection...")
+    connectionRecord = await annelein.connections.returnWhenIsConnected(connectionRecord.id)
+    console.log("\x1b[32m", "\nConnection established!\n", "\x1b[0m")
     if (connectionRecord !== undefined){
       accept_credential_offer(annelein, connectionRecord)
     }
@@ -95,13 +98,13 @@ const createAgentAnnelein = async (bc_coverin: string): Promise<Agent> => {
     agent.registerInboundTransport(new HttpInboundTransport({port: port}))
     agent.registerOutboundTransport(new HttpOutboundTransport())
   
+    await agent.initialize()
+
     agent.events.on(BasicMessageEventTypes.BasicMessageStateChanged, (event: BasicMessageStateChangedEvent) => {
       if (event.payload.basicMessageRecord.role === 'receiver') {
         ui.log.write(`\x1b[35m\n${name} received a message: ${event.payload.message.content}\n\x1b[0m`);
       }
     })
-  
-    await agent.initialize()
   
     return agent
   }
