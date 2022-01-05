@@ -16,7 +16,7 @@ const TEST_X25519_PREFIX_BYTES = Buffer.concat([
 
 describe('DidKey', () => {
   describe('x25519', () => {
-    it('should correctly create a DidKey instance from public key bytes and x25519 key type', async () => {
+    it('creates a DidKey instance from public key bytes and x25519 key type', async () => {
       const publicKeyBytes = BufferEncoder.fromBase58(TEST_X25519_BASE58_KEY)
 
       const didKey = DidKey.fromPublicKey(publicKeyBytes, KeyType.X25519)
@@ -24,19 +24,19 @@ describe('DidKey', () => {
       expect(didKey.did).toBe(TEST_X25519_DID)
     })
 
-    it('should correctly create a DidKey instance from a base58 encoded public key and x25519 key type', async () => {
+    it('creates a DidKey instance from a base58 encoded public key and x25519 key type', async () => {
       const didKey = DidKey.fromPublicKeyBase58(TEST_X25519_BASE58_KEY, KeyType.X25519)
 
       expect(didKey.did).toBe(TEST_X25519_DID)
     })
 
-    it('should correctly create a DidKey instance from a fingerprint', async () => {
+    it('creates a DidKey instance from a fingerprint', async () => {
       const didKey = DidKey.fromFingerprint(TEST_X25519_FINGERPRINT)
 
       expect(didKey.did).toBe(TEST_X25519_DID)
     })
 
-    it('should correctly create a DidKey instance from a did', async () => {
+    it('creates a DidKey instance from a did', async () => {
       const didKey = DidKey.fromDid(TEST_X25519_DID)
 
       expect(didKey.publicKeyBase58).toBe(TEST_X25519_BASE58_KEY)

@@ -18,7 +18,7 @@ const TEST_BLS12381G2_PREFIX_BYTES = Buffer.concat([
 
 describe('DidKey', () => {
   describe('bls12381g2', () => {
-    it('should correctly create a DidKey instance from public key bytes and bls12381g2 key type', async () => {
+    it('creates a DidKey instance from public key bytes and bls12381g2 key type', async () => {
       const publicKeyBytes = BufferEncoder.fromBase58(TEST_BLS12381G2_BASE58_KEY)
 
       const didKey = DidKey.fromPublicKey(publicKeyBytes, KeyType.BLS12381G2)
@@ -26,19 +26,19 @@ describe('DidKey', () => {
       expect(didKey.did).toBe(TEST_BLS12381G2_DID)
     })
 
-    it('should correctly create a DidKey instance from a base58 encoded public key and bls12381g2 key type', async () => {
+    it('creates a DidKey instance from a base58 encoded public key and bls12381g2 key type', async () => {
       const didKey = DidKey.fromPublicKeyBase58(TEST_BLS12381G2_BASE58_KEY, KeyType.BLS12381G2)
 
       expect(didKey.did).toBe(TEST_BLS12381G2_DID)
     })
 
-    it('should correctly create a DidKey instance from a fingerprint', async () => {
+    it('creates a DidKey instance from a fingerprint', async () => {
       const didKey = DidKey.fromFingerprint(TEST_BLS12381G2_FINGERPRINT)
 
       expect(didKey.did).toBe(TEST_BLS12381G2_DID)
     })
 
-    it('should correctly create a DidKey instance from a did', async () => {
+    it('creates a DidKey instance from a did', async () => {
       const didKey = DidKey.fromDid(TEST_BLS12381G2_DID)
 
       expect(didKey.publicKeyBase58).toBe(TEST_BLS12381G2_BASE58_KEY)
