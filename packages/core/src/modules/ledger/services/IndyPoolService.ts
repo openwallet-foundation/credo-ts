@@ -37,6 +37,16 @@ export class IndyPoolService {
   }
 
   /**
+   * Create connections to all ledger pools
+   */
+  public async connectToPools() {
+    const poolsPromises = this.pools.map((pool) => {
+      return pool.connect()
+    })
+    return Promise.all(poolsPromises)
+  }
+
+  /**
    * Get the pool used for writing to the ledger. For now we always use the first pool
    *  as the pool that writes to the ledger
    */
