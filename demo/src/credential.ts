@@ -48,7 +48,7 @@ export const accept_credential_offer = async (annelein: Agent, connectionRecord:
   )
 }
 
-export const issue_credential = async (klm: Agent, credentialDefenitionId: string, connectionRecord: ConnectionRecord) => {
+export const issue_credential = async (klm: Agent, credentialDefinitionId: string, connectionRecord: ConnectionRecord) => {
       klm.events.on(
         CredentialEventTypes.CredentialStateChanged,
         async ({ payload }: CredentialStateChangedEvent) => {
@@ -67,7 +67,7 @@ export const issue_credential = async (klm: Agent, credentialDefenitionId: strin
     })
   
     await klm.credentials.offerCredential(connectionRecord.id, {
-      credentialDefinitionId: credentialDefenitionId, 
+      credentialDefinitionId: credentialDefinitionId, 
       preview: credentialPreview,
     })
   }

@@ -1,0 +1,94 @@
+// export const process_answer_klm = async (klm: Agent, answers: any) => {
+//   if (answers.options === options.Connection){
+//     connectionRecord = await accept_connection(klm)
+//     accept_proof_proposal(klm)
+//   } else if (answers.options == options.Credential){
+//     ui.log.write('\x1b[36mRegistering a schema...\x1b[0m');
+//     credentialDefenition = await register_credential_schema(klm)
+//     if (connectionRecord !== undefined && credentialDefenition !== undefined){
+//       await issue_credential(klm, credentialDefenition.id, connectionRecord)
+//     } else {
+//       ui.log.write("\x1b[31m Something went wrong.. Could it be that you have not set up a connection yet \x1b[0m")
+//     }
+//   } else if (answers.options == options.CredDef){
+//     console.log("creddef")
+//     if (credentialDefenition !== undefined){
+//       ui.log.write(`\x1b[36m ${credentialDefenition.id} \x1b[0m`)
+//     } else {
+//       ui.log.write("\x1b[31m Something went wrong.. Could it be that you have not set up a credential request? \x1b[0m")
+//     }
+//   } else if (answers.options == options.Message){
+//     if (connectionRecord !== undefined){
+//       await send_message(connectionRecord.id, klm)
+//     } else {
+//       ui.log.write("\x1b[31m Something went wrong.. Could it be that you have not set up a connection yet? \x1b[0m")
+//     }
+//   } else if (answers.options == options.Exit){
+//     process.exit()
+//   } else if (answers.options == options.Restart){
+//     const check = await restart(klm)
+//     if (check == true){
+//       klm.shutdown()
+//       run_klm()
+//       return
+//     }
+//   }
+//   const answer = await klm_inquirer(klm)
+//   process_answer_klm(klm, answer)
+// }
+  
+  
+//   const run_klm = async () => {
+//     clear();
+//     console.log(figlet.textSync('KLM', { horizontalLayout: 'full' }));
+//     const klm = await createAgent('klm', 9001, bc_coverin)
+//     console.log("\x1b[32m", 'Agent KLM created', "\x1b[0m")
+//     const answer = await klm_inquirer(klm)
+//     process_answer_klm(klm, answer)
+//   }
+//   run_klm()
+
+
+
+
+
+
+
+
+// class Annelein {
+//   agent: Agent;
+//   connectionRecord: ConnectionRecord;
+//   invitation: ConnectionInvitationMessage;
+//   inquire_answer: any;
+//   prompt: any;
+
+//   constructor(agent: Agent, connectionRecord: ConnectionRecord, invitation: ConnectionInvitationMessage){
+//     this.agent = agent
+//     this.connectionRecord = connectionRecord
+//     this.invitation = invitation
+//   }
+
+//   process_prompt = async (annelein: Agent, answers: any) => {
+//     if (answers.options === options.Connection){
+//       console.log('\nYour invitation link:\n', this.invitation.toUrl({domain: 'http://localhost:9000'}), '\n')
+//       console.log("Waiting for KLM to finish connection...")
+//       this.connectionRecord = await annelein.connections.returnWhenIsConnected(this.connectionRecord.id)
+//       accept_credential_offer(annelein, this.connectionRecord)
+//       console.log("\x1b[32m", "\nConnection established!\n", "\x1b[0m")
+//     } else if (answers.options == options.Proof){
+//       await send_proof_proposal(annelein, this.connectionRecord)
+//     } else if (answers.options == options.Message){
+//       await send_message(this.connectionRecord.id, annelein)
+//     } else if (answers.options == options.Exit){
+//       console.log("exiting...")
+//       process.exit()
+//     } else if (answers.options == options.Restart){
+//       await restart(annelein)
+//       annelein.shutdown()
+//       run_annelein()
+//       return
+//     }
+//     const answer = await annelein_inquirer(annelein)
+//     this.process_prompt(annelein, answer)
+//   }
+// }
