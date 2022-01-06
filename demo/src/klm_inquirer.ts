@@ -1,6 +1,5 @@
 import { Agent } from '@aries-framework/core';
 import inquirer from 'inquirer'
-import { process_answer_klm } from './klm';
 
 export const klm_inquirer = async (klm: Agent) =>{
   const answer = await inquirer
@@ -13,7 +12,6 @@ export const klm_inquirer = async (klm: Agent) =>{
         choices: 
         ['Setup connection',
         'Offer credential',
-        'Print credential definition',
         'Send Message',
         'Exit',
         'Restart'],
