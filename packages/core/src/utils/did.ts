@@ -49,19 +49,28 @@ export function isSelfCertifiedDid(did: string, verkey: string): boolean {
 }
 
 /**
+ * Extract did from schema id
+ */
+export function didFromSchemaId(schemaId: string) {
+  const [did] = schemaId.split(':')
+
+  return did
+}
+
+/**
  * Extract did from credential definition id
  */
-export function didFromCredentialDefinitionId(credentialDefinitionId: string) {
+ export function didFromCredentialDefinitionId(credentialDefinitionId: string) {
   const [did] = credentialDefinitionId.split(':')
 
   return did
 }
 
 /**
- * Extract did from schema id
+ * Extract did from revocation registry definition id
  */
-export function didFromSchemaId(schemaId: string) {
-  const [did] = schemaId.split(':')
+ export function didFromRevocationRegistryDefinitionId(revocationRegistryId: string) {
+  const [did] = revocationRegistryId.split(':')
 
   return did
 }

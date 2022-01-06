@@ -103,4 +103,23 @@ export class IndyRevocationService {
       throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
+
+  // Get revocation status for credential (given a from-to) 
+  // Note from-to interval details: https://github.com/hyperledger/indy-hipe/blob/master/text/0011-cred-revocation/README.md#indy-node-revocation-registry-intervals
+  public async getRevocationStatus(credentialRevocationId: string, revocationRegistryDefinitionId: string, to: number, from: number = 0): Promise<{revoked: boolean, deltaTimestamp: number}> {
+    this.logger.trace(`Fetching Credential Revocation Status for Credential Revocation Id '${credentialRevocationId}' with from '${from}', to '${to}'`)
+    const { revocRegDelta, deltaTimestamp } = await this.ledgerService.getRevocationRegistryDelta(
+      revocationRegistryDefinitionId,
+      from,
+      to
+    )
+    
+    const revoked = revocRegDelta.value.revoked.includes(parseInt(credentialRevocationId))
+    this.logger.trace(`Credental with Credential Revocation Id '${credentialRevocationId}' is ${revoked ? '' : 'not '}revoked with with from '${from}', to '${to}'`)
+    
+    return {
+      revoked,
+      deltaTimestamp
+    }
+  }
 }
