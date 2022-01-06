@@ -48,6 +48,25 @@ export function isSelfCertifiedDid(did: string, verkey: string): boolean {
   return false
 }
 
+export function getFullVerkey(did: string, verkey: string) {
+  if (isFullVerkey(verkey)) return verkey
+
+  // Did could have did:xxx prefix, only take the last item after :
+  const id = did.split(':').pop() ?? did
+  // Verkey is prefixed with ~ if abbreviated
+  const verkeyWithoutTilde = verkey.slice(1)
+
+  // Create base58 encoded public key (32 bytes)
+  return BufferEncoder.toBase58(
+    Buffer.concat([
+      // Take did identifier (16 bytes)
+      BufferEncoder.fromBase58(id),
+      // Concat the abbreviated verkey (16 bytes)
+      BufferEncoder.fromBase58(verkeyWithoutTilde),
+    ])
+  )
+}
+
 /**
  * Extract did from schema id
  */

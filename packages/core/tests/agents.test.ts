@@ -23,13 +23,10 @@ describe('agents', () => {
   let bobConnection: ConnectionRecord
 
   afterAll(async () => {
-    await bobAgent.shutdown({
-      deleteWallet: true,
-    })
-
-    await aliceAgent.shutdown({
-      deleteWallet: true,
-    })
+    await bobAgent.shutdown()
+    await bobAgent.wallet.delete()
+    await aliceAgent.shutdown()
+    await aliceAgent.wallet.delete()
   })
 
   test('make a connection between agents', async () => {

@@ -5,6 +5,7 @@ import type { ConnectionRecord } from '../../connections'
 import type { AutoAcceptProof } from '../ProofAutoAcceptType'
 import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { PresentationPreview, PresentationPreviewAttribute } from '../messages'
+import type { PresentationProblemReportMessage } from './../messages/PresentationProblemReportMessage'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
@@ -26,6 +27,7 @@ import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '.
 import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofState } from '../ProofState'
+import { PresentationProblemReportError, PresentationProblemReportReason } from '../errors'
 import {
   INDY_PROOF_ATTACHMENT_ID,
   INDY_PROOF_REQUEST_ATTACHMENT_ID,
@@ -354,8 +356,9 @@ export class ProofService {
 
     // Assert attachment
     if (!proofRequest) {
-      throw new AriesFrameworkError(
-        `Missing required base64 encoded attachment data for presentation request with thread id ${proofRequestMessage.threadId}`
+      throw new PresentationProblemReportError(
+        `Missing required base64 or json encoded attachment data for presentation request with thread id ${proofRequestMessage.threadId}`,
+        { problemCode: PresentationProblemReportReason.Abandoned }
       )
     }
     await validateOrReject(proofRequest)
@@ -422,8 +425,9 @@ export class ProofService {
 
     const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
     if (!indyProofRequest) {
-      throw new AriesFrameworkError(
-        `Missing required base64 encoded attachment data for presentation with thread id ${proofRecord.threadId}`
+      throw new PresentationProblemReportError(
+        `Missing required base64 or json encoded attachment data for presentation with thread id ${proofRecord.threadId}`,
+        { problemCode: PresentationProblemReportReason.Abandoned }
       )
     }
 
@@ -488,14 +492,16 @@ export class ProofService {
     const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
 
     if (!indyProofJson) {
-      throw new AriesFrameworkError(
-        `Missing required base64 encoded attachment data for presentation with thread id ${presentationMessage.threadId}`
+      throw new PresentationProblemReportError(
+        `Missing required base64 or json encoded attachment data for presentation with thread id ${presentationMessage.threadId}`,
+        { problemCode: PresentationProblemReportReason.Abandoned }
       )
     }
 
     if (!indyProofRequest) {
-      throw new AriesFrameworkError(
-        `Missing required base64 encoded attachment data for presentation request with thread id ${presentationMessage.threadId}`
+      throw new PresentationProblemReportError(
+        `Missing required base64 or json encoded attachment data for presentation request with thread id ${presentationMessage.threadId}`,
+        { problemCode: PresentationProblemReportReason.Abandoned }
       )
     }
 
@@ -558,6 +564,29 @@ export class ProofService {
     // Update record
     await this.updateState(proofRecord, ProofState.Done)
 
+    return proofRecord
+  }
+
+  /**
+   * Process a received {@link PresentationProblemReportMessage}.
+   *
+   * @param messageContext The message context containing a presentation problem report message
+   * @returns proof record associated with the presentation acknowledgement message
+   *
+   */
+  public async processProblemReport(
+    messageContext: InboundMessageContext<PresentationProblemReportMessage>
+  ): Promise<ProofRecord> {
+    const { message: presentationProblemReportMessage } = messageContext
+
+    const connection = messageContext.assertReadyConnection()
+
+    this.logger.debug(`Processing problem report with id ${presentationProblemReportMessage.id}`)
+
+    const proofRecord = await this.getByThreadAndConnectionId(presentationProblemReportMessage.threadId, connection?.id)
+
+    proofRecord.errorMessage = `${presentationProblemReportMessage.description.code}: ${presentationProblemReportMessage.description.en}`
+    await this.update(proofRecord)
     return proofRecord
   }
 
@@ -891,10 +920,11 @@ export class ProofService {
 
     for (const [referent, attribute] of proof.requestedProof.revealedAttributes.entries()) {
       if (!CredentialUtils.checkValidEncoding(attribute.raw, attribute.encoded)) {
-        throw new AriesFrameworkError(
+        throw new PresentationProblemReportError(
           `The encoded value for '${referent}' is invalid. ` +
             `Expected '${CredentialUtils.encode(attribute.raw)}'. ` +
-            `Actual '${attribute.encoded}'`
+            `Actual '${attribute.encoded}'`,
+          { problemCode: PresentationProblemReportReason.Abandoned }
         )
       }
     }

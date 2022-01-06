@@ -5,7 +5,6 @@ import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } fro
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
-import { JsonEncoder } from '../../../utils/JsonEncoder'
 
 import { CredentialPreview } from './CredentialPreview'
 
@@ -63,13 +62,8 @@ export class OfferCredentialMessage extends AgentMessage {
   public get indyCredentialOffer(): CredOffer | null {
     const attachment = this.offerAttachments.find((attachment) => attachment.id === INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
 
-    // Return null if attachment is not found
-    if (!attachment?.data?.base64) {
-      return null
-    }
-
     // Extract credential offer from attachment
-    const credentialOfferJson = JsonEncoder.fromBase64(attachment.data.base64)
+    const credentialOfferJson = attachment?.data?.getDataAsJson<CredOffer>() ?? null
 
     return credentialOfferJson
   }
