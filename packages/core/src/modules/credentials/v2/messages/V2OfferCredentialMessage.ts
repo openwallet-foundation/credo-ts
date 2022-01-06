@@ -2,7 +2,7 @@ import { V2CredentialFormatSpec } from "../formats/V2CredentialFormat"
 import { Attachment } from '../../../../decorators/attachment/Attachment'
 import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 import { AgentMessage } from '../../../../agent/AgentMessage'
-import { CredentialPreview } from '../../CredentialPreview'
+import { V2CredentialPreview } from '../V2CredentialPreview'
 import { CRED_20_OFFER } from "../formats/MessageTypes"
 import { CredOffer } from "indy-sdk"
 import { Expose, Type } from "class-transformer"
@@ -21,7 +21,7 @@ export class V2OfferCredentialMessage extends AgentMessage {
     comment: string,
     offersAttach: Attachment[],
     replacementId: string,
-    credentialPreview: CredentialPreview) {
+    credentialPreview: V2CredentialPreview) {
     super()
     this.id = id
     this.comment = comment
@@ -40,10 +40,10 @@ export class V2OfferCredentialMessage extends AgentMessage {
   public comment?: string
 
   @Expose({ name: 'credential_preview' })
-  @Type(() => CredentialPreview)
+  @Type(() => V2CredentialPreview)
   @ValidateNested()
-  @IsInstance(CredentialPreview)
-  public credentialPreview!: CredentialPreview
+  @IsInstance(V2CredentialPreview)
+  public credentialPreview!: V2CredentialPreview
 
   @Expose({ name: 'offers~attach' })
   @Type(() => Attachment)

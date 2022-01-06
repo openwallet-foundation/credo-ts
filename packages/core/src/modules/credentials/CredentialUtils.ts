@@ -8,7 +8,11 @@ import { AriesFrameworkError } from '../../error/AriesFrameworkError'
 import { encodeAttachment } from '../../utils/attachment'
 import { isBoolean, isNumber, isString } from '../../utils/type'
 
-import { CredentialPreview, CredentialPreviewAttribute } from './CredentialPreview'
+import { V2CredentialPreview } from './v2/V2CredentialPreview'
+import { V1CredentialPreview, CredentialPreviewAttribute } from './v1/V1CredentialPreview'
+
+import { CredentialProtocolVersion } from './CredentialProtocolVersion'
+import { V2CredProposalFormat } from './v2/interfaces'
 
 export class CredentialUtils {
   /**
@@ -19,8 +23,8 @@ export class CredentialUtils {
    *
    * @returns a modified version of the credential preview with the linked credentials
    * */
-  public static createAndLinkAttachmentsToPreview(attachments: LinkedAttachment[], preview: CredentialPreview) {
-    const credentialPreview = new CredentialPreview({ attributes: [...preview.attributes] })
+  private static createAndLinkAttachmentsToPreview(attachments: LinkedAttachment[], preview: V1CredentialPreview | V2CredentialPreview) {
+    const credentialPreview = new V1CredentialPreview({ attributes: [...preview.attributes] })
     const credentialPreviewAttributeNames = credentialPreview.attributes.map((attribute) => attribute.name)
     attachments.forEach((linkedAttachment) => {
       if (credentialPreviewAttributeNames.includes(linkedAttachment.attributeName)) {
@@ -38,7 +42,14 @@ export class CredentialUtils {
 
     return credentialPreview
   }
-
+  public static createAndLinkAttachmentsToPreviewV1(attachments: LinkedAttachment[], preview: V1CredentialPreview) {
+    const credentialPreview = new V1CredentialPreview({ attributes: [...preview.attributes] })
+    return this.createAndLinkAttachmentsToPreview(attachments, preview)
+  }
+  public static createAndLinkAttachmentsToPreviewV2(attachments: LinkedAttachment[], preview: V2CredentialPreview) {
+    const credentialPreview = new V2CredentialPreview({ attributes: [...preview.attributes] })
+    return this.createAndLinkAttachmentsToPreview(attachments, preview)
+  }
   /**
    * Converts int value to string
    * Converts string value:

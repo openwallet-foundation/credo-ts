@@ -1,5 +1,5 @@
 import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
-import type { OfferCredentialMessage, CredentialPreview } from './v1/messages'
+import type { OfferCredentialMessage, V1CredentialPreview } from './v1/messages'
 import type { CredentialRecord } from './repository/CredentialRecord'
 import type { CredentialOfferTemplate, CredentialProposeOptions } from './v1'
 
@@ -153,7 +153,7 @@ export class CredentialsModule {
    */
   public async negotiateProposal(
     credentialRecordId: string,
-    preview: CredentialPreview,
+    preview: V1CredentialPreview,
     config?: {
       comment?: string
       credentialDefinitionId?: string
@@ -338,7 +338,7 @@ export class CredentialsModule {
    */
   public async negotiateOffer(
     credentialRecordId: string,
-    preview: CredentialPreview,
+    preview: V1CredentialPreview,
     config?: { comment?: string; autoAcceptCredential?: AutoAcceptCredential }
   ) {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)

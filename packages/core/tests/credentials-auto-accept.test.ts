@@ -1,7 +1,7 @@
 import type { Agent } from '../src/agent/Agent'
 import type { ConnectionRecord } from '../src/modules/connections'
 
-import { AutoAcceptCredential, CredentialPreview, CredentialRecord, CredentialState } from '../src/modules/credentials'
+import { AutoAcceptCredential, V1CredentialPreview, CredentialRecord, CredentialState } from '../src/modules/credentials'
 import { JsonTransformer } from '../src/utils/JsonTransformer'
 import { sleep } from '../src/utils/sleep'
 
@@ -11,12 +11,12 @@ import type {
   Schema,
 } from 'indy-sdk'
 
-const credentialPreview = CredentialPreview.fromRecord({
+const credentialPreview = V1CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
 })
 
-const newCredentialPreview = CredentialPreview.fromRecord({
+const newCredentialPreview = V1CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
   lastname: 'Appleseed',

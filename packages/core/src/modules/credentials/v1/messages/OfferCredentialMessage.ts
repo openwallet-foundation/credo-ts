@@ -6,7 +6,7 @@ import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } fro
 import { AgentMessage } from '../../../../agent/AgentMessage'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
 
-import { CredentialPreview } from '../../CredentialPreview'
+import { V1CredentialPreview } from '../V1CredentialPreview'
 
 export const INDY_CREDENTIAL_OFFER_ATTACHMENT_ID = 'libindy-cred-offer-0'
 
@@ -14,7 +14,7 @@ export interface OfferCredentialMessageOptions {
   id?: string
   comment?: string
   offerAttachments: Attachment[]
-  credentialPreview: CredentialPreview
+  credentialPreview: V1CredentialPreview
   attachments?: Attachment[]
 }
 
@@ -45,10 +45,10 @@ export class OfferCredentialMessage extends AgentMessage {
   public comment?: string
 
   @Expose({ name: 'credential_preview' })
-  @Type(() => CredentialPreview)
+  @Type(() => V1CredentialPreview)
   @ValidateNested()
-  @IsInstance(CredentialPreview)
-  public credentialPreview!: CredentialPreview
+  @IsInstance(V1CredentialPreview)
+  public credentialPreview!: V1CredentialPreview
 
   @Expose({ name: 'offers~attach' })
   @Type(() => Attachment)

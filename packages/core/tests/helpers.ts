@@ -33,7 +33,7 @@ import {
   ConnectionRole,
   ConnectionState,
   CredentialEventTypes,
-  CredentialPreview,
+  V1CredentialPreview,
   CredentialState,
   DidCommService,
   DidDoc,
@@ -546,7 +546,7 @@ export async function setupCredentialTests(
 }
 
 export async function setupProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {
-  const credentialPreview = CredentialPreview.fromRecord({
+  const credentialPreview = V1CredentialPreview.fromRecord({
     name: 'John',
     age: '99',
   })

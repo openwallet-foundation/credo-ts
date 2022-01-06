@@ -7,7 +7,7 @@ import { Agent } from '../../../../agent/Agent'
 import { CredentialRecordType } from '../CredentialExchangeRecord'
 import { AcceptProposalOptions, ProposeCredentialOptions } from '../interfaces'
 import { unitTestLogger } from '../../../../logger'
-import { CredentialPreview } from '../../CredentialPreview'
+import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 import { LinkedAttachment } from '../../../../utils/LinkedAttachment'
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { assert } from 'console'
@@ -18,10 +18,10 @@ const TEST_INDY_FILTER = {
   cred_def_id: "GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag",
 }
 
-const credentialPreview = CredentialPreview.fromRecord({
+const credentialPreview = V1CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
-}, CredentialProtocolVersion.V2_0)
+})
 
 const proposal: ProposeCredentialOptions = {
   connectionId: "",
@@ -95,24 +95,17 @@ describe('V2 Credential Architecture', () => {
     })
 
 
-    test('propose credential format service returns correct preview, format and filters~attach', () => {
+    test('propose credential format service returns correct format and filters~attach', () => {
       const version: CredentialProtocolVersion = CredentialProtocolVersion.V2_0
       const service: CredentialService = api.getService(version)
       const formatService: CredentialFormatService = service.getFormatService(CredentialRecordType.INDY)
-      const { preview, formats, filtersAttach } = formatService.getCredentialProposeAttachFormats(proposal, 'CRED_20_PROPOSAL')
+      const { formats, filtersAttach } = formatService.getCredentialProposeAttachFormats(proposal, 'CRED_20_PROPOSAL')
 
-      
-      expect(preview?.type).toEqual("https://didcomm.org/issue-credential/2.0/credential-preview")
-      expect(preview?.attributes.length).toEqual(2)
-
-      unitTestLogger("1. preview = ", preview)
-
-     
       expect(formats.attachId).toEqual("indy")
       expect(formats.format).toEqual("hlindy/cred-filter@v2.0")
-      unitTestLogger("2. formats = ", formats)
+      unitTestLogger("1. formats = ", formats)
 
-      unitTestLogger("3. filtersAttach = ", filtersAttach)
+      unitTestLogger("2. filtersAttach = ", filtersAttach)
       expect(filtersAttach).toBeTruthy()
       
     })

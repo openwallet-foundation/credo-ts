@@ -14,15 +14,15 @@ export abstract class CredentialService {
   
   // methods for proposal
   abstract createProposal(proposal: ProposeCredentialOptions): Promise<{ credentialRecord: CredentialRecord, message: AgentMessage }>
-  getFormatService(_credentialRecordType: CredentialRecordType): CredentialFormatService {
-    throw Error("Not Implemented")
-  }
   abstract processProposal(messageContext: HandlerInboundMessage<Handler>): Promise<CredentialRecord> 
   abstract acceptProposal(proposal: AcceptProposalOptions): Promise<{ credentialRecord: CredentialRecord, message: AgentMessage }>
 
   // methods for offer
   abstract processOffer(messageContext: HandlerInboundMessage<Handler>): Promise<CredentialRecord> 
   
+  getFormatService(credentialRecordType: CredentialRecordType): CredentialFormatService {
+    throw Error("Not Implemented")
+  }
 }
 
 

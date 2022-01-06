@@ -120,6 +120,7 @@ interface IndyCredentialPreview {
   credentialDefinitionId?: string
   attributes?: CredentialPreviewAttribute[]
 }
+export type FormatType = AcceptProposalOptions | ProposeCredentialOptions
 
 interface AcceptProposalOptions {
   connectionId: string

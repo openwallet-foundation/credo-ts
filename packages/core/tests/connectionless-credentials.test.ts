@@ -7,7 +7,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import {
-  CredentialPreview,
+  V1CredentialPreview,
   AutoAcceptCredential,
   CredentialEventTypes,
   CredentialRecord,
@@ -25,7 +25,7 @@ const aliceConfig = getBaseConfig('Alice connection-less Credentials', {
   endpoints: ['rxjs:alice'],
 })
 
-const credentialPreview = CredentialPreview.fromRecord({
+const credentialPreview = V1CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
 })

@@ -3,11 +3,17 @@ import { V2CredentialFormatSpec } from '../V2CredentialFormat'
 import { Attachment } from 'packages/core/src/decorators/attachment/Attachment'
 import { AcceptProposalOptions, ProposeCredentialOptions, V2CredOfferFormat, V2CredProposalFormat } from '../../interfaces'
 import { LinkedAttachment } from 'packages/core/src/utils/LinkedAttachment'
-import { CredentialPreviewAttribute } from '../../../CredentialPreview'
+import { V1CredentialPreview, CredentialPreviewAttribute } from '../../../v1/V1CredentialPreview'
 import { CredentialRecord } from '../../..'
 import { V2OfferCredentialMessage } from '../../messages/V2OfferCredentialMessage'
 
 export class JsonLdCredentialFormatService extends CredentialFormatService {
+  setPreview(proposal: AcceptProposalOptions, preview?: V1CredentialPreview): AcceptProposalOptions {
+    throw new Error('Method not implemented.')
+  }
+  getCredentialLinkedAttachments(proposal: ProposeCredentialOptions): { attachments: Attachment[] | undefined; previewWithAttachments: V1CredentialPreview } {
+    throw new Error('Method not implemented.')
+  }
   setMetaDataAndEmitEventForProposal(proposal: V2CredProposalFormat, credentialRecord: CredentialRecord): Promise<void> {
     throw new Error('Method not implemented.')
   }
@@ -27,9 +33,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     throw new Error('Method not implemented.')
   }
   getCredentialDefinitionId(proposal: ProposeCredentialOptions): string | undefined {
-    throw new Error('Method not implemented.')
-  }
-  getCredentialLinkedAttachments(proposal: ProposeCredentialOptions): Attachment[] | undefined {
     throw new Error('Method not implemented.')
   }
   getCredentialAttributes(proposal: ProposeCredentialOptions): CredentialPreviewAttribute[] | undefined {

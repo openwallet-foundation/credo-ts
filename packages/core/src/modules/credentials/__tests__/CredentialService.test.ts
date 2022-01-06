@@ -23,7 +23,7 @@ import { CredentialUtils } from '../CredentialUtils'
 import { CredentialProblemReportReason } from '../errors/CredentialProblemReportReason'
 import {
   CredentialAckMessage,
-  CredentialPreview,
+  V1CredentialPreview,
   INDY_CREDENTIAL_ATTACHMENT_ID,
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
@@ -55,7 +55,7 @@ const connection = getMockConnection({
   state: ConnectionState.Complete,
 })
 
-const credentialPreview = CredentialPreview.fromRecord({
+const credentialPreview = V1CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
 })

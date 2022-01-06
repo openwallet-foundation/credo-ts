@@ -1,5 +1,5 @@
 export * from './CredentialAckMessage'
-export * from '../../CredentialPreview'
+export * from '../V1CredentialPreview'
 export * from './RequestCredentialMessage'
 export * from './IssueCredentialMessage'
 export * from './OfferCredentialMessage'

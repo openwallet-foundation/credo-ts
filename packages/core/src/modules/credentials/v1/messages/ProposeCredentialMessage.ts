@@ -5,12 +5,12 @@ import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-
 
 import { AgentMessage } from '../../../../agent/AgentMessage'
 
-import { CredentialPreview } from '../../CredentialPreview'
+import { V1CredentialPreview } from '../V1CredentialPreview'
 
 export interface ProposeCredentialMessageOptions {
   id?: string
   comment?: string
-  credentialProposal?: CredentialPreview
+  credentialProposal?: V1CredentialPreview
   schemaIssuerDid?: string
   schemaId?: string
   schemaName?: string
@@ -59,11 +59,11 @@ export class ProposeCredentialMessage extends AgentMessage {
    * Represents the credential data that Prover wants to receive.
    */
   @Expose({ name: 'credential_proposal' })
-  @Type(() => CredentialPreview)
+  @Type(() => V1CredentialPreview)
   @ValidateNested()
   @IsOptional()
-  @IsInstance(CredentialPreview)
-  public credentialProposal?: CredentialPreview
+  @IsInstance(V1CredentialPreview)
+  public credentialProposal?: V1CredentialPreview
 
   /**
    * Filter to request credential based on a particular Schema issuer DID.

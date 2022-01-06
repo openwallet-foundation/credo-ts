@@ -1,5 +1,5 @@
 
-import { CredentialRecordType, CredentialExchangeRecord, CredentialRecordBinding } from './v2/CredentialExchangeRecord'
+import { CredentialRecordType, CredentialExchangeRecord, CredentialRecordBinding, CredentialExchangeRecordProps } from './v2/CredentialExchangeRecord'
 import { CredentialState } from './CredentialState'
 import { CredentialProtocolVersion } from './CredentialProtocolVersion'
 import { AcceptProposalOptions, ProposeCredentialOptions } from './v2/interfaces'
@@ -179,15 +179,17 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
         const bindings: CredentialRecordBinding[] = []
         bindings.push(recordBinding)
 
-        const credentialExchangeRecord: CredentialExchangeRecord = {
-            ...credentialRecord,
+        // MJR-TODO get credential exchange record from the getById call??
+
+        const props: CredentialExchangeRecordProps = {
+            connectionId: credentialRecord.connectionId,
+            threadId: credentialRecord.threadId,
             protocolVersion: version,
             state: CredentialState.ProposalSent,
             role: CredentialRole.Holder,
             credentials: bindings,
-
         }
-
+        const credentialExchangeRecord = new CredentialExchangeRecord(props)
 
         // MJR-TODO: do we need to implement this?
         // await this.credentialRepository.save(credentialExchangeRecord)
@@ -196,6 +198,8 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
     }
 
     public async acceptCredentialProposal(credentialOptions: AcceptProposalOptions): Promise<CredentialExchangeRecord> {
+
+        
         // get the version
         const version: CredentialProtocolVersion = credentialOptions.protocolVersion
 
@@ -212,7 +216,7 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
 
         const connection = await this.connService.getById(credentialOptions.connectionId)
 
-        unitTestLogger("We have a message (sending outbound): ", message)
+        unitTestLogger("We have an offer message (sending outbound): ", message)
 
         // send the message here
         const outbound = createOutboundMessage(connection, message)
@@ -222,16 +226,20 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
         const bindings: CredentialRecordBinding[] = []
         bindings.push(recordBinding)
 
-
-        // MJR-TODO get credential exchange record from the getById call
-        const credentialExchangeRecord: CredentialExchangeRecord = {
-            ...credentialRecord,
+        const props: CredentialExchangeRecordProps = {
+            connectionId: credentialRecord.connectionId,
+            threadId: credentialRecord.threadId,
             protocolVersion: version,
             state: CredentialState.ProposalSent,
             role: CredentialRole.Holder,
             credentials: bindings,
-
         }
+
+        const credentialExchangeRecord = new CredentialExchangeRecord(props)
+
+        // MJR-TODO: do we need to implement this?
+        // await this.credentialRepository.save(credentialExchangeRecord)
+
         return credentialExchangeRecord
     }
 

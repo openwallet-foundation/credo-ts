@@ -1,12 +1,11 @@
-import { AcceptProposalOptions, ProposeCredentialOptions, V2CredOfferFormat } from "./interfaces";
+import { AcceptProposalOptions, FormatType, ProposeCredentialOptions, V2CredOfferFormat } from "./interfaces";
 import { V2ProposeCredentialMessage } from './messages/V2ProposeCredentialMessage'
 import { CredentialRecord, CredentialRecordProps } from '../repository/CredentialRecord'
 import { AgentMessage } from 'packages/core/src/agent/AgentMessage';
 import { CredentialFormatService } from './formats/CredentialFormatService';
-import { CredentialOfferTemplate, CredentialState, CredentialUtils } from '..';
+import { V1CredentialPreview, CredentialState } from '..';
 import { V2OfferCredentialMessage } from "./messages/V2OfferCredentialMessage";
-import { unitTestLogger } from '../../../logger'
-import { Attachment } from "packages/core/src/decorators/attachment/Attachment";
+import { AriesFrameworkError } from "@aries-framework/core";
 
 
 export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessage> {
@@ -33,17 +32,16 @@ export class CredentialMessageBuilder {
   ): CredentialProtocolMsgReturnType<V2ProposeCredentialMessage> {
 
     // create message
-    const { preview, formats, filtersAttach } = formatService.getCredentialProposeAttachFormats(proposal, 'CRED_20_PROPOSAL')
+    const { formats, filtersAttach } = formatService.getCredentialProposeAttachFormats(proposal, 'CRED_20_PROPOSAL')
 
     const credentialDefinitionId: string | undefined = formatService.getCredentialDefinitionId(proposal)
 
-    let attachments: Attachment[] | undefined = formatService.getCredentialLinkedAttachments(proposal)
+    let { previewWithAttachments: previewWithAttachments } = formatService.getCredentialLinkedAttachments(proposal)
 
-    
     if (filtersAttach === undefined) {
       throw Error("filtersAttach not initialized for credential proposal")
     }
-    const message: V2ProposeCredentialMessage = new V2ProposeCredentialMessage(formatService.generateId(), formats, filtersAttach, proposal.comment, credentialDefinitionId, preview)
+    const message: V2ProposeCredentialMessage = new V2ProposeCredentialMessage(formatService.generateId(), formats, filtersAttach, proposal.comment, credentialDefinitionId, previewWithAttachments)
 
     const props: CredentialRecordProps = {
       connectionId: proposal.connectionId,
@@ -95,7 +93,6 @@ export class CredentialMessageBuilder {
 
     // Create the offer message for the correct format
 
-    //  const { credentialDefinitionId, comment, preview, attachments } = credentialTemplate
     const credOffer: V2CredOfferFormat = await formatService.createCredentialOffer(proposal)
 
     const { preview, formats, offersAttach } = formatService.getCredentialOfferAttachFormats(proposal, 'CRED_20_OFFER')
@@ -126,15 +123,41 @@ export class CredentialMessageBuilder {
 
     formatService.setMetaDataForOffer(credOffer, credentialRecord)
 
-    //  credentialRecord.linkedAttachments = attachments?.filter((attachment) => isLinkedAttachment(attachment))
-    //  credentialRecord.autoAcceptCredential =
-    //    credentialTemplate.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
-
-    //  await this.updateState(credentialRecord, CredentialState.OfferSent)
-
-    //  return { message: credentialOfferMessage, credentialRecord }
-
     return credentialOfferMessage
+  }
+
+  /**
+   * Method to insert a preview object into a proposal. This can occur when we retrieve a 
+   * preview object as part of the stored credential record and need to add it to the
+   * proposal object used for processing credential proposals
+   * @param formatService correct service for format, indy, w3c etc.
+   * @param proposal the proposal object needed for acceptance processing
+   * @param preview the preview containing stored attributes
+   * @returns proposal object with extra preview attached
+   */
+  public setPreview(formatService: CredentialFormatService, proposal: AcceptProposalOptions, preview?: V1CredentialPreview): AcceptProposalOptions {
+    if (preview) {
+      formatService.setPreview(proposal, preview)
+    }
+    return proposal
+  }
+
+  /**
+   * Validate the existence of a credential definition id in a proposal record, and return the id
+   * or throw and error if absent
+   * @param formatService correct service for format, indy, w3c etc.
+   * @param proposal the proposal object needed for acceptance processing
+   * @return credential definition id for this proposal record
+   */
+  public getCredentialDefinitionId(formatService: CredentialFormatService, proposal: FormatType): string {
+
+    const credentialDefinitionId = formatService.getCredentialDefinitionId(proposal)
+    if (!credentialDefinitionId) {
+      throw new AriesFrameworkError(
+        'Missing required credential definition id. If credential proposal message contains no credential definition id it must be passed to config.'
+      )
+    }
+    return credentialDefinitionId
   }
 }
 

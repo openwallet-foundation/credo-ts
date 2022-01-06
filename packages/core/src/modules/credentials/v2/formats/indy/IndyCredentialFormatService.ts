@@ -3,16 +3,18 @@ import { ATTACHMENT_FORMAT, V2CredentialFormatSpec } from '../V2CredentialFormat
 import { AcceptProposalOptions, ProposeCredentialOptions, V2CredOfferFormat, V2CredProposalFormat } from '../../interfaces'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
 import { JsonEncoder } from '../../../../../utils/JsonEncoder'
-import { CredentialPreview } from '../../../CredentialPreview'
+import { V2CredentialPreview } from '../../V2CredentialPreview'
 import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
-import { CredentialPreviewAttribute } from '../../../CredentialPreview'
+import { CredentialPreviewAttribute } from '../../../v1/V1CredentialPreview'
 import { CredentialRecord, CredentialRepository, CredentialUtils } from '../../..'
 import { IndyIssuerService } from '../../../../indy'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { CredOffer } from 'indy-sdk'
 import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V2OfferCredentialMessage } from '../../messages/V2OfferCredentialMessage'
+import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 
 export class IndyCredentialFormatService extends CredentialFormatService {
+  
 
   private indyIssuerService?: IndyIssuerService
   protected credentialRepository: CredentialRepository
@@ -35,15 +37,11 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    *
    */
   public getCredentialProposeAttachFormats(proposal: ProposeCredentialOptions, messageType: string): V2AttachmentFormats {
-    let preview: CredentialPreview | undefined
 
-    if (proposal?.credentialFormats.indy?.attributes) {
-      preview = new CredentialPreview({ attributes: proposal?.credentialFormats.indy?.attributes })
-    }
     const formats: V2CredentialFormatSpec = this.getFormatIdentifier(messageType)
     const filtersAttach: Attachment[] = this.getFormatData(proposal.credentialFormats)
 
-    return { preview, formats, filtersAttach }
+    return { formats, filtersAttach }
   }
 
   /**
@@ -55,10 +53,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   *
   */
   public getCredentialOfferAttachFormats(proposal: AcceptProposalOptions, messageType: string): V2AttachmentFormats {
-    let preview: CredentialPreview | undefined
+    let preview: V2CredentialPreview | undefined
 
     if (proposal?.credentialFormats.indy?.attributes) {
-      preview = new CredentialPreview({ attributes: proposal?.credentialFormats.indy?.attributes })
+      preview = new V2CredentialPreview({ attributes: proposal?.credentialFormats.indy?.attributes })
     }
     const formats: V2CredentialFormatSpec = this.getFormatIdentifier(messageType)
     const offersAttach: Attachment[] = this.getFormatData(proposal.credentialFormats)
@@ -76,6 +74,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       schemaId: proposal.indy?.schemaId,
       credentialDefinintionId: proposal.indy?.credentialDefinitionId,
     })
+
     await this.credentialRepository.save(credentialRecord)
     return await super.emitEvent(credentialRecord)
   }
@@ -121,21 +120,26 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @param proposal ProposeCredentialOptions object containing (optionally) the linked attachments
    * @return array of linked attachments or undefined if none present
    */
-  public getCredentialLinkedAttachments(proposal: ProposeCredentialOptions): Attachment[] | undefined {
+  public getCredentialLinkedAttachments(proposal: ProposeCredentialOptions): { attachments: Attachment[] | undefined, previewWithAttachments: V2CredentialPreview } {
 
     // Add the linked attachments to the credentialProposal
 
     let attachments: Attachment[] | undefined
-    let preview: CredentialPreview
-    // if (proposal.credentialFormats.indy && proposal.credentialFormats.indy?.linkedAttachments) {
-    //   preview= CredentialUtils.createAndLinkAttachmentsToPreview(
-    //     proposal.credentialFormats.indy.linkedAttachments,
-    //     new CredentialPreview({ attributes: proposal.credentialFormats.indy?.attributes})
-    //   )
-    //   attachments = proposal.credentialFormats.indy.linkedAttachments.map((linkedAttachment) => linkedAttachment.attachment)
-    // }
+    let previewWithAttachments: V2CredentialPreview = new V2CredentialPreview({attributes:[]})
+    if (proposal.credentialFormats.indy && proposal.credentialFormats.indy?.linkedAttachments) {
 
-    return attachments
+      // there are linked attachments so transform into the attribute field of the CredentialPreview object for
+      // this proposal
+      if (proposal.credentialFormats.indy?.attributes) {
+        previewWithAttachments = CredentialUtils.createAndLinkAttachmentsToPreviewV2(
+          proposal.credentialFormats.indy.linkedAttachments,
+          new V2CredentialPreview({ attributes: proposal.credentialFormats.indy?.attributes })
+        )
+      }
+      attachments = proposal.credentialFormats.indy.linkedAttachments.map((linkedAttachment) => linkedAttachment.attachment)
+    }
+
+    return { attachments, previewWithAttachments }
 
   }
 
@@ -216,6 +220,21 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       }
     }
     throw Error("No json object found for the credential offer")
+  }
+
+  /**
+   * Method to insert a preview object into a proposal. This can occur when we retrieve a 
+   * preview object as part of the stored credential record and need to add it to the
+   * proposal object used for processing credential proposals
+   * @param proposal the proposal object needed for acceptance processing
+   * @param preview the preview containing stored attributes
+   * @returns proposal object with extra preview attached
+   */
+  public setPreview(proposal: AcceptProposalOptions, preview: V2CredentialPreview): AcceptProposalOptions {
+    if (proposal.credentialFormats.indy) {
+      proposal.credentialFormats.indy.attributes = preview.attributes
+    }
+    return proposal
   }
 }
 

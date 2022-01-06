@@ -2,14 +2,14 @@ import { V2CredentialFormatSpec } from "../formats/V2CredentialFormat"
 import { Attachment } from '../../../../decorators/attachment/Attachment'
 import { Equals, IsArray, IsInstance, ValidateNested } from 'class-validator'
 import { AgentMessage } from '../../../../agent/AgentMessage'
-import { CredentialPreview } from '../../CredentialPreview'
+import { V2CredentialPreview } from '../V2CredentialPreview'
 import { CRED_20_PROPOSAL } from "../formats/MessageTypes"
 import { Expose, Type } from "class-transformer"
 
 export class V2ProposeCredentialMessage extends AgentMessage {
 
   public comment?: string
-  public credentialProposal?: CredentialPreview
+  public credentialProposal?: V2CredentialPreview
   public formats: V2CredentialFormatSpec
   public credentialDefinitionId?: string
 
@@ -18,7 +18,7 @@ export class V2ProposeCredentialMessage extends AgentMessage {
     filtersAttach: Attachment[],
     comment?: string,
     credentialDefinitionId?: string,
-    credentialPreview?: CredentialPreview,) {
+    credentialPreview?: V2CredentialPreview,) {
     super()
     this.id = id
     this.comment = comment

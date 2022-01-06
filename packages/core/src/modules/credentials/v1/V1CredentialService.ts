@@ -2,7 +2,7 @@
 import { AgentMessage, AriesFrameworkError, MessageSender } from '@aries-framework/core'
 import { CredentialService } from '../CredentialService'
 import { AcceptProposalOptions, ProposeCredentialOptions } from '../v2/interfaces'
-import { CredentialPreview } from '../CredentialPreview'
+import { V1CredentialPreview } from './V1CredentialPreview'
 import { CredentialProposeOptions, V1LegacyCredentialService } from '.'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { CredentialRecord } from '../repository'
@@ -55,9 +55,9 @@ export class V1CredentialService extends CredentialService {
 
     const connection = await this.connectionService.getById(proposal.connectionId)
 
-    let credentialProposal: CredentialPreview | undefined
+    let credentialProposal: V1CredentialPreview | undefined
     if (proposal?.credentialFormats.indy?.attributes) {
-      credentialProposal = new CredentialPreview({ attributes: proposal?.credentialFormats.indy?.attributes })
+      credentialProposal = new V1CredentialPreview({ attributes: proposal?.credentialFormats.indy?.attributes })
     }
 
     const config: CredentialProposeOptions = {
@@ -76,6 +76,7 @@ export class V1CredentialService extends CredentialService {
     logger.debug(">> IN SERVICE V1 => acceptProposal")
 
     const credentialRecord = await this.legacyCredentialService.getById(proposal.credentialRecordId)
+
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
@@ -99,6 +100,7 @@ export class V1CredentialService extends CredentialService {
         'Missing required credential definition id. If credential proposal message contains no credential definition id it must be passed to config.'
       )
     }
+
 
     // TODO: check if it is possible to issue credential based on proposal filters
     const { message } = await this.legacyCredentialService.createOfferAsResponse(credentialRecord, {

@@ -31,13 +31,14 @@ import {
   IssueCredentialMessage,
   OfferCredentialMessage,
   ProposeCredentialMessage,
-  CredentialPreview,
+  V1CredentialPreview,
   RequestCredentialMessage,
   CredentialAckMessage,
   INDY_CREDENTIAL_ATTACHMENT_ID,
 } from './messages'
 import { CredentialRepository } from '../repository'
 import { CredentialRecord } from '../repository/CredentialRecord'
+import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 
 @scoped(Lifecycle.ContainerScoped)
 export class V1LegacyCredentialService {
@@ -87,9 +88,9 @@ export class V1LegacyCredentialService {
 
     // Add the linked attachments to the credentialProposal
     if (config?.linkedAttachments) {
-      options.credentialProposal = CredentialUtils.createAndLinkAttachmentsToPreview(
+      options.credentialProposal = CredentialUtils.createAndLinkAttachmentsToPreviewV1(
         config.linkedAttachments,
-        config.credentialProposal ?? new CredentialPreview({ attributes: [] })
+        config.credentialProposal ?? new V1CredentialPreview({ attributes: [] })
       )
       options.attachments = config.linkedAttachments.map((linkedAttachment) => linkedAttachment.attachment)
     }
@@ -115,7 +116,6 @@ export class V1LegacyCredentialService {
       schemaId: options.schemaId,
       credentialDefinintionId: options.credentialDefinitionId,
     })
-
     await this.credentialRepository.save(credentialRecord)
     this.eventEmitter.emit<CredentialStateChangedEvent>({
       type: CredentialEventTypes.CredentialStateChanged,
@@ -236,8 +236,10 @@ export class V1LegacyCredentialService {
     // Assert
     credentialRecord.assertState(CredentialState.ProposalReceived)
 
+
     // Create message
     const { credentialDefinitionId, comment, preview, attachments } = credentialTemplate
+
     const credOffer = await this.indyIssuerService.createCredentialOffer(credentialDefinitionId)
     const offerAttachment = new Attachment({
       id: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
@@ -302,7 +304,7 @@ export class V1LegacyCredentialService {
 
     // Create and link credential to attacment
     const credentialPreview = linkedAttachments
-      ? CredentialUtils.createAndLinkAttachmentsToPreview(linkedAttachments, preview)
+      ? CredentialUtils.createAndLinkAttachmentsToPreviewV1(linkedAttachments, preview)
       : preview
 
     // Construct offer message
@@ -846,7 +848,7 @@ export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessag
 export interface CredentialOfferTemplate {
   credentialDefinitionId: string
   comment?: string
-  preview: CredentialPreview
+  preview: V1CredentialPreview
   autoAcceptCredential?: AutoAcceptCredential
   attachments?: Attachment[]
   linkedAttachments?: LinkedAttachment[]
