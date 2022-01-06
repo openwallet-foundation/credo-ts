@@ -113,13 +113,11 @@ export class IndyRevocationService {
 
           const { tailsLocation, tailsHash } = revocationRegistryDefinition.value
           const tails = await this.indyUtilitiesService.downloadTails(tailsHash, tailsLocation)
-
-          // TODO: Remove ts-ignore upon DefinitelyTyped types updated
-          // @ts-ignore
+          
           const revocationState = await this.indy.createRevocationState(
             tails,
-            JSON.stringify(revocationRegistryDefinition),
-            JSON.stringify(revocRegDelta),
+            revocationRegistryDefinition,
+            revocRegDelta,
             deltaTimestamp,
             credentialRevocationId.toString()
           )
