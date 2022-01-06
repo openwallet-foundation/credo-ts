@@ -41,56 +41,65 @@ export class IndyRevocationService {
     requestedCredentials: RequestedCredentials
   ): Promise<Indy.RevStates> {
     try {
+      this.logger.debug(`Creating Revocation State(s) for proof request`, {
+        proofRequest,
+        requestedCredentials
+      })
       const revocationStates: Indy.RevStates = {}
-      if (proofRequest.non_revoked) {
-        this.logger.debug('Proof request requires proof of non-revocation, creating revocation state(s)')
-        //Create array of credential info
-        const credentialObjects = [
-          ...Object.values(requestedCredentials.requestedAttributes),
-          ...Object.values(requestedCredentials.requestedPredicates),
-        ]
-          .filter((c) => !!c.credentialInfo)
-          .map((c) => c.credentialInfo)
 
-        //Cache object to prevent redundancy
-        const cachedRevDefinitions: {
-          [revRegId: string]: Indy.RevocRegDef
-        } = {}
+      // Create array of attribute referent credentials
+      const attributeReferentCredentials = [
+        ...Object.values(requestedCredentials.requestedAttributes),
+      ]
+      .filter((credential) => credential.credentialInfo)
+      .map((credential) => credential.credentialInfo)
 
-        //Create revocation state of each revocable credential
-        for (const requestedCredential of credentialObjects) {
-          const revRegId = requestedCredential?.revocationRegistryId
-          const credRevId = requestedCredential?.credentialRevocationId
-          if (revRegId && credRevId) {
-            let revocRegDef: Indy.RevocRegDef
+      // Create array of predicate referent credentials
+      const predicateReferentCredentials = [
+        ...Object.values(requestedCredentials.requestedPredicates),
+      ]
+      .filter((credential) => credential.credentialInfo)
+      .map((credential) => credential.credentialInfo)
 
-            if (cachedRevDefinitions[revRegId]) {
-              revocRegDef = cachedRevDefinitions[revRegId]
-            } else {
-              revocRegDef = await this.ledgerService.getRevocRegDef(revRegId)
-              cachedRevDefinitions[revRegId] = revocRegDef
-            }
+      for(const referentCredential of attributeReferentCredentials) {
+        // Prefer referent-specific revocation interval over global revocation interval
+        const requestNonRevoked = proofRequest.requested_attributes[referentCredential?.referent!].non_revoked ?? proofRequest.non_revoked
+        const credentialRevocationId = referentCredential?.credentialRevocationId
+        const revocationRegistryId = referentCredential?.revocationRegistryId
+        
+        // If revocation interval is present and the credential is revocable
+        if(requestNonRevoked && credentialRevocationId && revocationRegistryId){
+          this.logger.trace(`Presentation is requesting proof of non revocation for attribute referent '${referentCredential?.referent!}', creating revocation state for credential`, {
+            requestNonRevoked,
+            credentialRevocationId,
+            revocationRegistryId
+          })
 
-            const { revocRegDelta, deltaTimestamp } = await this.ledgerService.getRevocRegDelta(
-              revRegId,
-              proofRequest.non_revoked?.from,
-              proofRequest.non_revoked?.to
-            )
-
-            const { tailsLocation, tailsHash } = revocRegDef.value
-            const tails = await this.indyUtilitiesService.downloadTails(tailsHash, tailsLocation)
-            // @ts-ignore TODO: Remove upon DefinitelyTyped types updated
-            const revocationState = await this.indy.createRevocationState(
-              tails,
-              JSON.stringify(revocRegDef),
-              JSON.stringify(revocRegDelta),
-              deltaTimestamp,
-              credRevId.toString()
-            )
-            revocationStates[revRegId] = { [deltaTimestamp]: revocationState }
-          }
+          revocationStates[revocationRegistryId] = await this.createReferentRevocationState(requestNonRevoked, credentialRevocationId, revocationRegistryId)
         }
       }
+
+      for(const referentCredential of predicateReferentCredentials) {
+        // Prefer referent-specific revocation interval over global revocation interval
+        const requestNonRevoked = proofRequest.requested_predicates[referentCredential?.referent!].non_revoked ?? proofRequest.non_revoked
+        const credentialRevocationId = referentCredential?.credentialRevocationId
+        const revocationRegistryId = referentCredential?.revocationRegistryId
+        
+        // If revocation interval is present and the credential is revocable
+        if(requestNonRevoked && credentialRevocationId && revocationRegistryId){
+          this.logger.trace(`Presentation is requesting proof of non revocation for predicate referent '${referentCredential?.referent!}', creating revocation state for credential`, {
+            requestNonRevoked,
+            credentialRevocationId,
+            revocationRegistryId
+          })
+          
+          revocationStates[revocationRegistryId] = await this.createReferentRevocationState(requestNonRevoked, credentialRevocationId, revocationRegistryId)
+        }
+      }
+
+      this.logger.debug(`Created Revocation States for Proof Request`, {
+        revocationStates
+      })
 
       return revocationStates
     } catch (error) {
@@ -104,14 +113,38 @@ export class IndyRevocationService {
     }
   }
 
+  // Create Revocation State for a referent credential
+  private async createReferentRevocationState(requestNonRevoked: Indy.NonRevokedInterval, credentialRevocationId: string, revocationRegistryId: string): Promise<{[deltaTimestamp: string]: unknown}>{
+    const revocationRegistryDefinition = await this.ledgerService.getRevocationRegistryDefinition(revocationRegistryId)
+
+    const { revocRegDelta, deltaTimestamp } = await this.ledgerService.getRevocationRegistryDelta(
+      revocationRegistryId,
+      requestNonRevoked?.to,
+      0
+    )
+
+    const { tailsLocation, tailsHash } = revocationRegistryDefinition.value
+    const tails = await this.indyUtilitiesService.downloadTails(tailsHash, tailsLocation)
+
+    // @ts-ignore TODO: Remove upon DefinitelyTyped types updated
+    return this.indy.createRevocationState(
+      tails,
+      JSON.stringify(revocationRegistryDefinition),
+      JSON.stringify(revocRegDelta),
+      deltaTimestamp,
+      credentialRevocationId.toString()
+    )
+  }
+
+
   // Get revocation status for credential (given a from-to) 
   // Note from-to interval details: https://github.com/hyperledger/indy-hipe/blob/master/text/0011-cred-revocation/README.md#indy-node-revocation-registry-intervals
   public async getRevocationStatus(credentialRevocationId: string, revocationRegistryDefinitionId: string, to: number, from: number = 0): Promise<{revoked: boolean, deltaTimestamp: number}> {
     this.logger.trace(`Fetching Credential Revocation Status for Credential Revocation Id '${credentialRevocationId}' with from '${from}', to '${to}'`)
     const { revocRegDelta, deltaTimestamp } = await this.ledgerService.getRevocationRegistryDelta(
       revocationRegistryDefinitionId,
-      from,
-      to
+      to,
+      from
     )
     
     const revoked = revocRegDelta.value.revoked.includes(parseInt(credentialRevocationId))

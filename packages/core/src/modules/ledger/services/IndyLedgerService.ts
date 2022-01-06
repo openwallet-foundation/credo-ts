@@ -267,8 +267,8 @@ export class IndyLedgerService {
 
   public async getRevocationRegistryDelta(
     revocationRegistryDefinitionId: string,
-    from = 0,
-    to: number = new Date().getTime()
+    to: number = new Date().getTime(),
+    from = 0
   ): Promise<ParseRevRegDeltaTemplate> {
     //TODO - implement a cache 
     const did = didFromRevocationRegistryDefinitionId(revocationRegistryDefinitionId)
