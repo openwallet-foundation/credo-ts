@@ -113,7 +113,7 @@ export class IndyRevocationService {
 
           const { tailsLocation, tailsHash } = revocationRegistryDefinition.value
           const tails = await this.indyUtilitiesService.downloadTails(tailsHash, tailsLocation)
-          
+
           const revocationState = await this.indy.createRevocationState(
             tails,
             revocationRegistryDefinition,

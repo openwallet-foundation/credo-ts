@@ -290,7 +290,7 @@ export class IndyLedgerService {
           revocRegDef,
         })
 
-        if(!this.revocationRegistryDefinitions[pool.id]){
+        if (!this.revocationRegistryDefinitions[pool.id]) {
           this.revocationRegistryDefinitions[pool.id] = {}
         }
         this.revocationRegistryDefinitions[pool.id][revocationRegistryDefinitionId] = revocRegDef
