@@ -60,7 +60,9 @@ export class IndyHolderService {
         revocationStates
       )
 
-      this.logger.debug('Created Indy Proof')
+      this.logger.debug('Created Indy Proof', {
+        indyProof,
+      })
       return indyProof
     } catch (error) {
       this.logger.error(`Error creating Indy Proof`, {

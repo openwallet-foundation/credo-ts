@@ -88,7 +88,7 @@ export class IndyRevocationService {
         const credentialRevocationId = credentialInfo.credentialRevocationId
         const revocationRegistryId = credentialInfo.revocationRegistryId
 
-        // If revocation interval is present and the credential is revocable
+        // If revocation interval is present and the credential is revocable then create revocation state
         if (requestRevocationInterval && credentialRevocationId && revocationRegistryId) {
           this.logger.trace(
             `Presentation is requesting proof of non revocation for ${type} referent '${referent}', creating revocation state for credential`,
@@ -146,16 +146,6 @@ export class IndyRevocationService {
     }
   }
 
-  private assertRevocationInterval(requestRevocationInterval: RevocationInterval) {
-    // TODO: Add Test
-    // Check revocation interval in accordance with https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0441-present-proof-best-practices/README.md#semantics-of-non-revocation-interval-endpoints
-    if (requestRevocationInterval.from && requestRevocationInterval.to !== requestRevocationInterval.from) {
-      throw new AriesFrameworkError(
-        `Presentation requests proof of non-revocation with an interval from: '${requestRevocationInterval.from}' that does not match the interval to: '${requestRevocationInterval.to}', as specified in Aries RFC 0441`
-      )
-    }
-  }
-
   // Get revocation status for credential (given a from-to)
   // Note from-to interval details: https://github.com/hyperledger/indy-hipe/blob/master/text/0011-cred-revocation/README.md#indy-node-revocation-registry-intervals
   public async getRevocationStatus(
@@ -188,6 +178,16 @@ export class IndyRevocationService {
     return {
       revoked,
       deltaTimestamp,
+    }
+  }
+
+  // TODO: Add Test
+  // Check revocation interval in accordance with https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0441-present-proof-best-practices/README.md#semantics-of-non-revocation-interval-endpoints
+  private assertRevocationInterval(requestRevocationInterval: RevocationInterval) {
+    if (requestRevocationInterval.from && requestRevocationInterval.to !== requestRevocationInterval.from) {
+      throw new AriesFrameworkError(
+        `Presentation requests proof of non-revocation with an interval from: '${requestRevocationInterval.from}' that does not match the interval to: '${requestRevocationInterval.to}', as specified in Aries RFC 0441`
+      )
     }
   }
 }

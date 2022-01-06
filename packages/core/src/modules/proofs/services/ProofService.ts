@@ -797,6 +797,8 @@ export class ProofService {
           const revocationRegistryId = credential.credentialInfo.revocationRegistryId
           let revoked: boolean | undefined
           let deltaTimestamp: number | undefined
+
+          // If revocation interval is present and the credential is revocable then fetch the revocation status of credentials for display
           if (requestNonRevoked && credentialRevocationId && revocationRegistryId) {
             this.logger.trace(
               `Presentation is requesting proof of non revocation for referent '${referent}', getting revocation status for credential`,
@@ -838,6 +840,8 @@ export class ProofService {
           const revocationRegistryId = credential.credentialInfo.revocationRegistryId
           let revoked: boolean | undefined
           let deltaTimestamp: number | undefined
+
+          // If revocation interval is present and the credential is revocable then fetch the revocation status of credentials for display
           if (requestNonRevoked && credentialRevocationId && revocationRegistryId) {
             this.logger.trace(
               `Presentation is requesting proof of non revocation for referent '${referent}', getting revocation status for credential`,

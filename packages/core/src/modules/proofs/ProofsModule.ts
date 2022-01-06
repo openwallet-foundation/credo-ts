@@ -331,21 +331,6 @@ export class ProofsModule {
    * If restrictions allow, self attested attributes will be used.
    *
    *
-/TODO REVOCATION:
-//<<<<<<< HEAD
-   * @param proofRequest The proof request to build the requested credentials object from
-   * @param presentationPreview Optional presentation preview and proposal to improve credential selection algorithm
-   * @returns RetrievedCredentials object
-   */
-  /*public async getRequestedCredentialsForProofRequest(
-    proofRequest: ProofRequest,
-    config: {
-      presentationPreview?: PresentationPreview
-      checkRevoked?: boolean
-    } = {}
-  ): Promise<RetrievedCredentials> {
-    return this.proofService.getRequestedCredentialsForProofRequest(proofRequest, config)
-//=======
    * @param proofRecordId the id of the proof request to get the matching credentials for
    * @param config optional configuration for credential selection process. Use `filterByPresentationPreview` (default `true`) to only include
    *  credentials that match the presentation preview from the presentation proposal (if available).
