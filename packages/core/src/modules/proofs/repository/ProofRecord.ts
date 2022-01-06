@@ -1,6 +1,7 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptProof } from '../ProofAutoAcceptType'
 import type { ProofState } from '../ProofState'
+import type { V2ProposalPresentationMessage } from '../v2/messages/V2ProposalPresentationMessage'
 
 import { Type } from 'class-transformer'
 
@@ -23,7 +24,7 @@ export interface ProofRecordProps {
   errorMsg?: string
 
   // message data
-  proposalMessage?: ProposePresentationMessage
+  proposalMessage?: ProposePresentationMessage | V2ProposalPresentationMessage
   requestMessage?: RequestPresentationMessage
   presentationMessage?: PresentationMessage
 }
@@ -46,7 +47,7 @@ export class ProofRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
 
   // message data
   @Type(() => ProposePresentationMessage)
-  public proposalMessage?: ProposePresentationMessage
+  public proposalMessage?: ProposePresentationMessage | V2ProposalPresentationMessage
   @Type(() => RequestPresentationMessage)
   public requestMessage?: RequestPresentationMessage
   @Type(() => PresentationMessage)

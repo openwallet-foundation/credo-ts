@@ -1,13 +1,13 @@
 import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
-import type { ProofService } from '../../ProofService'
+import type { V1LegacyProofService } from '../V1LegacyProofService'
 
 import { PresentationAckMessage } from '../messages'
 
 export class PresentationAckHandler implements Handler {
-  private proofService: ProofService
+  private proofService: V1LegacyProofService
   public supportedMessages = [PresentationAckMessage]
 
-  public constructor(proofService: ProofService) {
+  public constructor(proofService: V1LegacyProofService) {
     this.proofService = proofService
   }
 

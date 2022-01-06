@@ -1,20 +1,20 @@
 import type { AgentConfig } from '../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
-import type { ProofService } from '../../ProofService'
 import type { ProofRecord } from '../../repository'
+import type { V1LegacyProofService } from '../V1LegacyProofService'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../agent/helpers'
 import { PresentationMessage } from '../messages'
 
 export class PresentationHandler implements Handler {
-  private proofService: ProofService
+  private proofService: V1LegacyProofService
   private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator
   public supportedMessages = [PresentationMessage]
 
   public constructor(
-    proofService: ProofService,
+    proofService: V1LegacyProofService,
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator
   ) {

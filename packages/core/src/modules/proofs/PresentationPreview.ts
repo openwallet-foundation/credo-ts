@@ -10,10 +10,14 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator'
+import objectInspect from 'object-inspect'
+import { version } from 'os'
 
-import { JsonTransformer } from '../../../../utils/JsonTransformer'
-import { replaceLegacyDidSovPrefix } from '../../../../utils/messageType'
-import { PredicateType } from '../models/PredicateType'
+import { JsonTransformer } from '../../utils/JsonTransformer'
+import { replaceLegacyDidSovPrefix } from '../../utils/messageType'
+
+import { ProofProtocolVersion } from './ProofProtocolVersion'
+import { PredicateType } from './v1/models/PredicateType'
 
 export interface PresentationPreviewAttributeOptions {
   name: string
@@ -107,10 +111,18 @@ export interface PresentationPreviewOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#presentation-preview
  */
 export class PresentationPreview {
-  public constructor(options: PresentationPreviewOptions) {
+  private static version: string = ProofProtocolVersion.V1_0
+
+  public constructor(options: PresentationPreviewOptions, version?: ProofProtocolVersion) {
     if (options) {
       this.attributes = options.attributes ?? []
       this.predicates = options.predicates ?? []
+    }
+
+    if (version) {
+      PresentationPreview.version = version
+      PresentationPreview.type = `https://didcomm.org/present-proof/${PresentationPreview.version}/presentation-preview`
+      this.type = `https://didcomm.org/present-proof/${PresentationPreview.version}/presentation-preview`
     }
   }
 
@@ -119,8 +131,8 @@ export class PresentationPreview {
   @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
     toClassOnly: true,
   })
-  public readonly type = PresentationPreview.type
-  public static readonly type = 'https://didcomm.org/present-proof/1.0/presentation-preview'
+  public type = PresentationPreview.type
+  public static type = `https://didcomm.org/present-proof/${PresentationPreview.version}/presentation-preview`
 
   @Type(() => PresentationPreviewAttribute)
   @ValidateNested({ each: true })
@@ -134,5 +146,33 @@ export class PresentationPreview {
 
   public toJSON(): Record<string, unknown> {
     return JsonTransformer.toJSON(this)
+  }
+
+  public static fromRecord(record: Record<string, string>, version?: ProofProtocolVersion) {
+    const attributes = Object.entries(record).map(
+      ([name, value]) =>
+        new PresentationPreviewAttribute({
+          name,
+          mimeType: 'text/plain',
+          value,
+        })
+    )
+
+    const predicates = Object.entries(record).map(
+      ([age, credDefId]) =>
+        new PresentationPreviewPredicate({
+          name: age,
+          credentialDefinitionId: credDefId,
+          predicate: PredicateType.GreaterThanOrEqualTo,
+          threshold: 50,
+        })
+    )
+
+    return new PresentationPreview(
+      {
+        attributes,
+      },
+      version
+    )
   }
 }

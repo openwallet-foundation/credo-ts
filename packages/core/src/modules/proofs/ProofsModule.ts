@@ -1,6 +1,7 @@
+import type { PresentationPreview } from './PresentationPreview'
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
 import type { ProofRecord } from './repository/ProofRecord'
-import type { PresentationPreview, RequestPresentationMessage } from './v1/messages'
+import type { RequestPresentationMessage } from './v1/messages'
 import type { ProofRequestOptions, RequestedCredentials, RetrievedCredentials } from './v1/models'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -15,8 +16,8 @@ import { ConnectionService } from '../connections/services/ConnectionService'
 import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
-import { ProofService } from './ProofService'
 import { PresentationProblemReportReason } from './errors'
+import { V1LegacyProofService } from './v1/V1LegacyProofService'
 import {
   ProposePresentationHandler,
   RequestPresentationHandler,
@@ -29,7 +30,7 @@ import { ProofRequest } from './v1/models'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ProofsModule {
-  private proofService: ProofService
+  private proofService: V1LegacyProofService
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private mediationRecipientService: MediationRecipientService
@@ -38,19 +39,19 @@ export class ProofsModule {
 
   public constructor(
     dispatcher: Dispatcher,
-    proofService: ProofService,
     connectionService: ConnectionService,
-    mediationRecipientService: MediationRecipientService,
-    agentConfig: AgentConfig,
+    proofService: V1LegacyProofService,
     messageSender: MessageSender,
-    proofResponseCoordinator: ProofResponseCoordinator
+    agentConfig: AgentConfig,
+    proofResponseCoordinator: ProofResponseCoordinator,
+    mediationRecipientService: MediationRecipientService
   ) {
-    this.proofService = proofService
     this.connectionService = connectionService
+    this.proofService = proofService
     this.messageSender = messageSender
-    this.mediationRecipientService = mediationRecipientService
     this.agentConfig = agentConfig
     this.proofResponseCoordinator = proofResponseCoordinator
+    this.mediationRecipientService = mediationRecipientService
     this.registerHandlers(dispatcher)
   }
 
@@ -64,7 +65,8 @@ export class ProofsModule {
    * @returns Proof record associated with the sent proposal message
    *
    */
-  public async proposeProof(
+
+  public async v1ProposeProof(
     connectionId: string,
     presentationProposal: PresentationPreview,
     config?: {
@@ -91,47 +93,47 @@ export class ProofsModule {
    * @returns Proof record associated with the presentation request
    *
    */
-  public async acceptProposal(
-    proofRecordId: string,
-    config?: {
-      request?: {
-        name?: string
-        version?: string
-        nonce?: string
-      }
-      comment?: string
-    }
-  ): Promise<ProofRecord> {
-    const proofRecord = await this.proofService.getById(proofRecordId)
+  // public async acceptProposal(
+  //   proofRecordId: string,
+  //   config?: {
+  //     request?: {
+  //       name?: string
+  //       version?: string
+  //       nonce?: string
+  //     }
+  //     comment?: string
+  //   }
+  // ): Promise<ProofRecord> {
+  //   const proofRecord = await this.proofService.getById(proofRecordId)
 
-    if (!proofRecord.connectionId) {
-      throw new AriesFrameworkError(
-        `No connectionId found for credential record '${proofRecord.id}'. Connection-less issuance does not support presentation proposal or negotiation.`
-      )
-    }
+  //   if (!proofRecord.connectionId) {
+  //     throw new AriesFrameworkError(
+  //       `No connectionId found for credential record '${proofRecord.id}'. Connection-less issuance does not support presentation proposal or negotiation.`
+  //     )
+  //   }
 
-    const connection = await this.connectionService.getById(proofRecord.connectionId)
+  //   const connection = await this.connectionService.getById(proofRecord.connectionId)
 
-    const presentationProposal = proofRecord.proposalMessage?.presentationProposal
-    if (!presentationProposal) {
-      throw new AriesFrameworkError(`Proof record with id ${proofRecordId} is missing required presentation proposal`)
-    }
+  //   const presentationProposal = proofRecord.proposalMessage?.presentationProposal
+  //   if (!presentationProposal) {
+  //     throw new AriesFrameworkError(`Proof record with id ${proofRecordId} is missing required presentation proposal`)
+  //   }
 
-    const proofRequest = await this.proofService.createProofRequestFromProposal(presentationProposal, {
-      name: config?.request?.name ?? 'proof-request',
-      version: config?.request?.version ?? '1.0',
-      nonce: config?.request?.nonce,
-    })
+  //   const proofRequest = await this.proofService.createProofRequestFromProposal(presentationProposal, {
+  //     name: config?.request?.name ?? 'proof-request',
+  //     version: config?.request?.version ?? '1.0',
+  //     nonce: config?.request?.nonce,
+  //   })
 
-    const { message } = await this.proofService.createRequestAsResponse(proofRecord, proofRequest, {
-      comment: config?.comment,
-    })
+  //   const { message } = await this.proofService.createRequestAsResponse(proofRecord, proofRequest, {
+  //     comment: config?.comment,
+  //   })
 
-    const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+  //   const outboundMessage = createOutboundMessage(connection, message)
+  //   await this.messageSender.sendMessage(outboundMessage)
 
-    return proofRecord
-  }
+  //   return proofRecord
+  // }
 
   /**
    * Initiate a new presentation exchange as verifier by sending a presentation request message
@@ -336,25 +338,23 @@ export class ProofsModule {
 
    * @returns RetrievedCredentials object
    */
-  public async getRequestedCredentialsForProofRequest(
-    proofRecordId: string,
-    config?: GetRequestedCredentialsConfig
-  ): Promise<RetrievedCredentials> {
-    const proofRecord = await this.proofService.getById(proofRecordId)
+  // public async getRequestedCredentialsForProofRequest(
+  //   proofRecordId: string,
+  //   config?: GetRequestedCredentialsConfig
+  // ): Promise<RetrievedCredentials> {
+  //   const proofRecord = await this.proofService.getById(proofRecordId)
 
-    const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
-    const presentationPreview = config?.filterByPresentationPreview
-      ? proofRecord.proposalMessage?.presentationProposal
-      : undefined
+  //   const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
+  //   const presentationPreview = config?.filterByPresentationPreview ? proofRecord.proposalMessage : undefined
 
-    if (!indyProofRequest) {
-      throw new AriesFrameworkError(
-        'Unable to get requested credentials for proof request. No proof request message was found or the proof request message does not contain an indy proof request.'
-      )
-    }
+  //   if (!indyProofRequest) {
+  //     throw new AriesFrameworkError(
+  //       'Unable to get requested credentials for proof request. No proof request message was found or the proof request message does not contain an indy proof request.'
+  //     )
+  //   }
 
-    return this.proofService.getRequestedCredentialsForProofRequest(indyProofRequest, presentationPreview)
-  }
+  //   return this.proofService.getRequestedCredentialsForProofRequest(indyProofRequest, presentationPreview)
+  // }
 
   /**
    * Takes a RetrievedCredentials object and auto selects credentials in a RequestedCredentials object

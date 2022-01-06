@@ -1,6 +1,7 @@
-import type { Agent, ConnectionRecord, PresentationPreview } from '../src'
+import type { Agent, ConnectionRecord, PresentationPreview, ProposeProofOptions } from '../src'
 
 import {
+  ProofProtocolVersion,
   AutoAcceptProof,
   ProofState,
   ProofAttributeInfo,
@@ -39,7 +40,21 @@ describe('Auto accept present proof', () => {
 
     test('Alice starts with proof proposal to Faber, both with autoAcceptProof on `always`', async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
-      const aliceProofRecord = await aliceAgent.proofs.proposeProof(aliceConnection.id, presentationPreview)
+
+      const proposal: ProposeProofOptions = {
+        connectionId: aliceConnection.id,
+        protocolVersion: ProofProtocolVersion.V1_0,
+        proofFormats: {
+          indy: {
+            nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
+            proofPreview: presentationPreview,
+            name: 'abc',
+            version: '1.0',
+          },
+        },
+      }
+
+      const aliceProofRecord = await aliceAgent.proofs.proposeProof(proposal)
 
       testLogger.test('Faber waits for presentation from Alice')
       await waitForProofRecord(faberAgent, {
@@ -120,7 +135,19 @@ describe('Auto accept present proof', () => {
 
     test('Alice starts with proof proposal to Faber, both with autoacceptproof on `contentApproved`', async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
-      const aliceProofRecord = await aliceAgent.proofs.proposeProof(aliceConnection.id, presentationPreview)
+      const proposal: ProposeProofOptions = {
+        connectionId: aliceConnection.id,
+        protocolVersion: ProofProtocolVersion.V1_0,
+        proofFormats: {
+          indy: {
+            nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
+            proofPreview: presentationPreview,
+            name: 'abc',
+            version: '1.0',
+          },
+        },
+      }
+      const aliceProofRecord = await aliceAgent.proofs.proposeProof(proposal)
 
       testLogger.test('Faber waits for presentation proposal from Alice')
       const faberProofRecord = await waitForProofRecord(faberAgent, {
