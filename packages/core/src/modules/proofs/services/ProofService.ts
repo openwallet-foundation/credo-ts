@@ -776,7 +776,7 @@ export class ProofService {
             })
             
             // Note presentation from-to's vs ledger from-to's: https://github.com/hyperledger/indy-hipe/blob/master/text/0011-cred-revocation/README.md#indy-node-revocation-registry-intervals
-            const status = await this.indyRevocationService.getRevocationStatus(credentialRevocationId, revocationRegistryId, requestNonRevoked.to!, 0)
+            const status = await this.indyRevocationService.getRevocationStatus(credentialRevocationId, revocationRegistryId, requestNonRevoked)
             revoked = status.revoked
             deltaTimestamp = status.deltaTimestamp
           }
@@ -810,7 +810,7 @@ export class ProofService {
             })
             
             // Note presentation from-to's vs ledger from-to's: https://github.com/hyperledger/indy-hipe/blob/master/text/0011-cred-revocation/README.md#indy-node-revocation-registry-intervals
-            const status = await this.indyRevocationService.getRevocationStatus(credentialRevocationId, revocationRegistryId, requestNonRevoked.to!, 0)
+            const status = await this.indyRevocationService.getRevocationStatus(credentialRevocationId, revocationRegistryId, requestNonRevoked)
             revoked = status.revoked
             deltaTimestamp = status.deltaTimestamp
           }
@@ -825,7 +825,6 @@ export class ProofService {
       )
     }
 
-    //If checkRevoked is true then get revocation status, else return retrievedCredentials
     return retrievedCredentials
   }
 
