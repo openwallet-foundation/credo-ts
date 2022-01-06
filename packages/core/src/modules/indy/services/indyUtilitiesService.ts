@@ -1,6 +1,9 @@
 import type { Logger } from '../../../logger'
 import type { FileSystem } from '../../../storage/FileSystem'
 import type { default as Indy, BlobReaderHandle } from 'indy-sdk'
+import type { Buffer } from '../../../utils/buffer'
+
+import { BufferEncoder } from '../../../utils/BufferEncoder'
 
 import axios from 'axios'
 import { scoped, Lifecycle } from 'tsyringe'
@@ -74,7 +77,7 @@ export class IndyUtilitiesService {
 
         if (response.data) {
           this.logger.debug(`Retrieved tails file from URL ${tailsLocation}, writing to FileSystem at path ${filePath}`)
-          await this.fileSystem.write(filePath, Buffer.from(response.data).toString())
+          await this.fileSystem.write(filePath, BufferEncoder.toUtf8String(response.data))
           this.logger.debug(`Saved tails file to FileSystem at path ${filePath}`)
         } else {
           throw new Error('Fetched empty tails file data, unable to save tails file')

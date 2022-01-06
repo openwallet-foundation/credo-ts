@@ -235,7 +235,7 @@ export class IndyLedgerService {
     try {
 
       //TODO: Add a persistant cache
-      if(!this.revocationRegistryDefinitions[pool.id][revocationRegistryDefinitionId]){
+      if(!this.revocationRegistryDefinitions[pool.id]?.[revocationRegistryDefinitionId]){
         this.logger.trace(`Revocation Registry Definition '${revocationRegistryDefinitionId}' not cached, retrieving from ledger`)
 
         const request = await this.indy.buildGetRevocRegDefRequest(null, revocationRegistryDefinitionId)
@@ -247,7 +247,6 @@ export class IndyLedgerService {
   
         const [, revocRegDef] = await this.indy.parseGetRevocRegDefResponse(response)
         this.logger.debug(`Got revocation registry definition '${revocationRegistryDefinitionId}' from ledger`, {
-          response,
           revocRegDef,
         })
   
@@ -286,7 +285,7 @@ export class IndyLedgerService {
 
       const [, revocRegDelta, deltaTimestamp] = await this.indy.parseGetRevocRegDeltaResponse(response)
       this.logger.debug(`Got revocation registry delta '${revocationRegistryDefinitionId}' from ledger`, {
-        response,
+        deltaTimestamp,
         revocRegDelta,
       })
 

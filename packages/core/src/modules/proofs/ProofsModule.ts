@@ -366,7 +366,7 @@ export class ProofsModule {
       )
     }
 
-    return this.proofService.getRequestedCredentialsForProofRequest(indyProofRequest, presentationPreview)
+    return this.proofService.getRequestedCredentialsForProofRequest(indyProofRequest, {presentationProposal: presentationPreview})
   }
 
   /**

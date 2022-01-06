@@ -12,6 +12,7 @@ export class RequestedPredicate {
       this.credentialId = options.credentialId
       this.timestamp = options.timestamp
       this.credentialInfo = options.credentialInfo
+      this.revoked = options.revoked
     }
   }
 

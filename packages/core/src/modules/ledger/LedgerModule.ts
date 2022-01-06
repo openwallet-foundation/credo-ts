@@ -66,11 +66,11 @@ export class LedgerModule {
     return this.ledgerService.getCredentialDefinition(id)
   }
 
-  public async getRevocRegDef(revocRegDefId: string) {
-    return this.ledgerService.getRevocRegDef(revocRegDefId)
+  public async getRevocationRegistryDefinition(revocRegDefId: string) {
+    return this.ledgerService.getRevocationRegistryDefinition(revocRegDefId)
   }
 
-  public async getRevocRegDelta(revRegId: string, from = 0, to = new Date().getTime()) {
-    return this.ledgerService.getRevocRegDelta(revRegId, from, to)
+  public async getRevocationRegistryDelta(revRegId: string, from = 0, to = new Date().getTime()) {
+    return this.ledgerService.getRevocationRegistryDelta(revRegId, from, to)
   }
 }

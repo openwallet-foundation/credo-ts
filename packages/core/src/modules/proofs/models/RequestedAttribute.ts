@@ -13,6 +13,7 @@ export class RequestedAttribute {
       this.timestamp = options.timestamp
       this.revealed = options.revealed
       this.credentialInfo = options.credentialInfo
+      this.revoked = options.revoked
     }
   }
 
