@@ -1,19 +1,19 @@
 import type { Logger } from '../../../logger'
 import type { FileSystem } from '../../../storage/FileSystem'
+import type { RevocationInterval } from '../../credentials/models/RevocationInterval'
 import type { RequestedCredentials } from '../../proofs'
-import type { default as Indy, } from 'indy-sdk'
+import type { default as Indy } from 'indy-sdk'
 
 import { scoped, Lifecycle } from 'tsyringe'
 
-import { RevocationInterval } from '../../credentials/models/RevocationInterval'
 import { AgentConfig } from '../../../agent/AgentConfig'
+import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { IndySdkError } from '../../../error/IndySdkError'
 import { isIndyError } from '../../../utils/indyError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { IndyLedgerService } from '../../ledger'
 
 import { IndyUtilitiesService } from './IndyUtilitiesService'
-import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 
 enum RequestReferentType {
   Attribute = 'attribute',
@@ -51,41 +51,59 @@ export class IndyRevocationService {
     try {
       this.logger.debug(`Creating Revocation State(s) for proof request`, {
         proofRequest,
-        requestedCredentials
+        requestedCredentials,
       })
       const revocationStates: Indy.RevStates = {}
       const referentCredentials = []
 
       //Retrieve information for referents and push to single array
-      for(const [referent, requestedCredential] of Object.entries(requestedCredentials.requestedAttributes)){
-        referentCredentials.push({referent, credentialInfo: requestedCredential.credentialInfo, type: RequestReferentType.Attribute})
+      for (const [referent, requestedCredential] of Object.entries(requestedCredentials.requestedAttributes)) {
+        referentCredentials.push({
+          referent,
+          credentialInfo: requestedCredential.credentialInfo,
+          type: RequestReferentType.Attribute,
+        })
       }
-      for(const [referent, requestedCredential] of Object.entries(requestedCredentials.requestedPredicates)){
-        referentCredentials.push({referent, credentialInfo: requestedCredential.credentialInfo, type: RequestReferentType.Predicate})
+      for (const [referent, requestedCredential] of Object.entries(requestedCredentials.requestedPredicates)) {
+        referentCredentials.push({
+          referent,
+          credentialInfo: requestedCredential.credentialInfo,
+          type: RequestReferentType.Predicate,
+        })
       }
 
-      for(const {referent, credentialInfo, type} of referentCredentials){
-        if(!credentialInfo){
-          throw new AriesFrameworkError(`Credential for referent '${referent} does not have credential info for revocation state creation`)
+      for (const { referent, credentialInfo, type } of referentCredentials) {
+        if (!credentialInfo) {
+          throw new AriesFrameworkError(
+            `Credential for referent '${referent} does not have credential info for revocation state creation`
+          )
         }
 
         // Prefer referent-specific revocation interval over global revocation interval
-        const referentRevocationInterval = type === RequestReferentType.Predicate ? proofRequest.requested_predicates[referent].non_revoked : proofRequest.requested_attributes[referent].non_revoked
+        const referentRevocationInterval =
+          type === RequestReferentType.Predicate
+            ? proofRequest.requested_predicates[referent].non_revoked
+            : proofRequest.requested_attributes[referent].non_revoked
         const requestRevocationInterval = referentRevocationInterval ?? proofRequest.non_revoked
         const credentialRevocationId = credentialInfo.credentialRevocationId
         const revocationRegistryId = credentialInfo.revocationRegistryId
 
         // If revocation interval is present and the credential is revocable
-        if(requestRevocationInterval && credentialRevocationId && revocationRegistryId){
-          this.logger.trace(`Presentation is requesting proof of non revocation for ${type} referent '${referent!}', creating revocation state for credential`, {
-            requestRevocationInterval,
-            credentialRevocationId,
-            revocationRegistryId
-          })
-          
+        if (requestRevocationInterval && credentialRevocationId && revocationRegistryId) {
+          this.logger.trace(
+            `Presentation is requesting proof of non revocation for ${type} referent '${referent}', creating revocation state for credential`,
+            {
+              requestRevocationInterval,
+              credentialRevocationId,
+              revocationRegistryId,
+            }
+          )
+
           this.assertRevocationInterval(requestRevocationInterval)
 
-          const revocationRegistryDefinition = await this.ledgerService.getRevocationRegistryDefinition(revocationRegistryId)
+          const revocationRegistryDefinition = await this.ledgerService.getRevocationRegistryDefinition(
+            revocationRegistryId
+          )
 
           const { revocRegDelta, deltaTimestamp } = await this.ledgerService.getRevocationRegistryDelta(
             revocationRegistryId,
@@ -97,7 +115,7 @@ export class IndyRevocationService {
           const tails = await this.indyUtilitiesService.downloadTails(tailsHash, tailsLocation)
 
           // TODO: Remove ts-ignore upon DefinitelyTyped types updated
-          // @ts-ignore 
+          // @ts-ignore
           const revocationState = await this.indy.createRevocationState(
             tails,
             JSON.stringify(revocationRegistryDefinition),
@@ -107,7 +125,7 @@ export class IndyRevocationService {
           )
           const timestamp = revocationState.timestamp
 
-          if(!revocationStates[revocationRegistryId]){
+          if (!revocationStates[revocationRegistryId]) {
             revocationStates[revocationRegistryId] = {}
           }
           revocationStates[revocationRegistryId][timestamp] = revocationState
@@ -115,7 +133,7 @@ export class IndyRevocationService {
       }
 
       this.logger.debug(`Created Revocation States for Proof Request`, {
-        revocationStates
+        revocationStates,
       })
 
       return revocationStates
@@ -133,15 +151,23 @@ export class IndyRevocationService {
   private assertRevocationInterval(requestRevocationInterval: RevocationInterval) {
     // TODO: Add Test
     // Check revocation interval in accordance with https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0441-present-proof-best-practices/README.md#semantics-of-non-revocation-interval-endpoints
-    if(requestRevocationInterval.from && requestRevocationInterval.to !== requestRevocationInterval.from){
-      throw new AriesFrameworkError(`Presentation requests proof of non-revocation with an interval from: '${requestRevocationInterval.from}' that does not match the interval to: '${requestRevocationInterval.to}', as specified in Aries RFC 0441`)
+    if (requestRevocationInterval.from && requestRevocationInterval.to !== requestRevocationInterval.from) {
+      throw new AriesFrameworkError(
+        `Presentation requests proof of non-revocation with an interval from: '${requestRevocationInterval.from}' that does not match the interval to: '${requestRevocationInterval.to}', as specified in Aries RFC 0441`
+      )
     }
   }
 
-  // Get revocation status for credential (given a from-to) 
+  // Get revocation status for credential (given a from-to)
   // Note from-to interval details: https://github.com/hyperledger/indy-hipe/blob/master/text/0011-cred-revocation/README.md#indy-node-revocation-registry-intervals
-  public async getRevocationStatus(credentialRevocationId: string, revocationRegistryDefinitionId: string, requestRevocationInterval: RevocationInterval): Promise<{revoked: boolean, deltaTimestamp: number}> {
-    this.logger.trace(`Fetching Credential Revocation Status for Credential Revocation Id '${credentialRevocationId}' with revocation interval with to '${requestRevocationInterval.to}' & from '${requestRevocationInterval.from}'`)
+  public async getRevocationStatus(
+    credentialRevocationId: string,
+    revocationRegistryDefinitionId: string,
+    requestRevocationInterval: RevocationInterval
+  ): Promise<{ revoked: boolean; deltaTimestamp: number }> {
+    this.logger.trace(
+      `Fetching Credential Revocation Status for Credential Revocation Id '${credentialRevocationId}' with revocation interval with to '${requestRevocationInterval.to}' & from '${requestRevocationInterval.from}'`
+    )
 
     this.assertRevocationInterval(requestRevocationInterval)
 
@@ -150,13 +176,20 @@ export class IndyRevocationService {
       requestRevocationInterval.to,
       requestRevocationInterval.from
     )
-    
-    const revoked = revocRegDelta.value.revoked && revocRegDelta.value.revoked.includes(parseInt(credentialRevocationId))
-    this.logger.trace(`Credental with Credential Revocation Id '${credentialRevocationId}' is ${revoked ? '' : 'not '}revoked with revocation interval with to '${requestRevocationInterval.to}' & from '${requestRevocationInterval.from}'`)
-    
+
+    const revoked =
+      revocRegDelta.value.revoked && revocRegDelta.value.revoked.includes(parseInt(credentialRevocationId))
+    this.logger.trace(
+      `Credental with Credential Revocation Id '${credentialRevocationId}' is ${
+        revoked ? '' : 'not '
+      }revoked with revocation interval with to '${requestRevocationInterval.to}' & from '${
+        requestRevocationInterval.from
+      }'`
+    )
+
     return {
       revoked,
-      deltaTimestamp
+      deltaTimestamp,
     }
   }
 }

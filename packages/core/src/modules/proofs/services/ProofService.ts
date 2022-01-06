@@ -5,7 +5,7 @@ import type { ConnectionRecord } from '../../connections'
 import type { AutoAcceptProof } from '../ProofAutoAcceptType'
 import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { PresentationPreview, PresentationPreviewAttribute } from '../messages'
-import type { CredDef, IndyProof, RevocRegDelta, Schema } from 'indy-sdk'
+import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
 import { inject, Lifecycle, scoped } from 'tsyringe'
@@ -766,17 +766,24 @@ export class ProofService {
           const requestNonRevoked = requestedAttribute.nonRevoked ?? proofRequest.nonRevoked
           const credentialRevocationId = credential.credentialInfo.credentialRevocationId
           const revocationRegistryId = credential.credentialInfo.revocationRegistryId
-          var revoked: boolean | undefined
-          var deltaTimestamp: number | undefined
-          if(requestNonRevoked && credentialRevocationId && revocationRegistryId){
-            this.logger.trace(`Presentation is requesting proof of non revocation for referent '${referent}', getting revocation status for credential`, {
-              requestNonRevoked,
-              credentialRevocationId,
-              revocationRegistryId
-            })
-            
+          let revoked: boolean | undefined
+          let deltaTimestamp: number | undefined
+          if (requestNonRevoked && credentialRevocationId && revocationRegistryId) {
+            this.logger.trace(
+              `Presentation is requesting proof of non revocation for referent '${referent}', getting revocation status for credential`,
+              {
+                requestNonRevoked,
+                credentialRevocationId,
+                revocationRegistryId,
+              }
+            )
+
             // Note presentation from-to's vs ledger from-to's: https://github.com/hyperledger/indy-hipe/blob/master/text/0011-cred-revocation/README.md#indy-node-revocation-registry-intervals
-            const status = await this.indyRevocationService.getRevocationStatus(credentialRevocationId, revocationRegistryId, requestNonRevoked)
+            const status = await this.indyRevocationService.getRevocationStatus(
+              credentialRevocationId,
+              revocationRegistryId,
+              requestNonRevoked
+            )
             revoked = status.revoked
             deltaTimestamp = status.deltaTimestamp
           }
@@ -800,17 +807,24 @@ export class ProofService {
           const requestNonRevoked = requestedPredicate.nonRevoked ?? proofRequest.nonRevoked
           const credentialRevocationId = credential.credentialInfo.credentialRevocationId
           const revocationRegistryId = credential.credentialInfo.revocationRegistryId
-          var revoked: boolean | undefined
-          var deltaTimestamp: number | undefined
-          if(requestNonRevoked && credentialRevocationId && revocationRegistryId){
-            this.logger.trace(`Presentation is requesting proof of non revocation for referent '${referent}', getting revocation status for credential`, {
-              requestNonRevoked,
-              credentialRevocationId,
-              revocationRegistryId
-            })
-            
+          let revoked: boolean | undefined
+          let deltaTimestamp: number | undefined
+          if (requestNonRevoked && credentialRevocationId && revocationRegistryId) {
+            this.logger.trace(
+              `Presentation is requesting proof of non revocation for referent '${referent}', getting revocation status for credential`,
+              {
+                requestNonRevoked,
+                credentialRevocationId,
+                revocationRegistryId,
+              }
+            )
+
             // Note presentation from-to's vs ledger from-to's: https://github.com/hyperledger/indy-hipe/blob/master/text/0011-cred-revocation/README.md#indy-node-revocation-registry-intervals
-            const status = await this.indyRevocationService.getRevocationStatus(credentialRevocationId, revocationRegistryId, requestNonRevoked)
+            const status = await this.indyRevocationService.getRevocationStatus(
+              credentialRevocationId,
+              revocationRegistryId,
+              requestNonRevoked
+            )
             revoked = status.revoked
             deltaTimestamp = status.deltaTimestamp
           }

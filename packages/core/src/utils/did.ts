@@ -60,7 +60,7 @@ export function didFromSchemaId(schemaId: string) {
 /**
  * Extract did from credential definition id
  */
- export function didFromCredentialDefinitionId(credentialDefinitionId: string) {
+export function didFromCredentialDefinitionId(credentialDefinitionId: string) {
   const [did] = credentialDefinitionId.split(':')
 
   return did
@@ -69,7 +69,7 @@ export function didFromSchemaId(schemaId: string) {
 /**
  * Extract did from revocation registry definition id
  */
- export function didFromRevocationRegistryDefinitionId(revocationRegistryId: string) {
+export function didFromRevocationRegistryDefinitionId(revocationRegistryId: string) {
   const [did] = revocationRegistryId.split(':')
 
   return did
