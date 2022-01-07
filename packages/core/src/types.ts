@@ -78,3 +78,9 @@ export interface OutboundPackage {
   endpoint?: string
   connectionId?: string
 }
+
+export type AnyJson = boolean | number | string | null | JsonArray | JsonMap
+export interface JsonMap {
+  [key: string]: AnyJson
+}
+export type JsonArray = Array<AnyJson>
