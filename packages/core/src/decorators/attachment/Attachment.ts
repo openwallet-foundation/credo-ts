@@ -1,3 +1,5 @@
+import type { Wallet } from '../../wallet/Wallet'
+
 import { Expose, Type } from 'class-transformer'
 import {
   IsBase64,
@@ -15,6 +17,8 @@ import { AriesFrameworkError } from '../../error'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { uuid } from '../../utils/uuid'
 
+import { AttachmentJws, signAttachmentJws, verifyAttachmentJws } from './AttachmentJwsUtil'
+
 export interface AttachmentOptions {
   id?: string
   description?: string
@@ -29,7 +33,7 @@ export interface AttachmentDataOptions {
   base64?: string
   json?: Record<string, unknown>
   links?: string[]
-  jws?: Record<string, unknown>
+  jws?: AttachmentJws
   sha256?: string
 }
 
@@ -37,29 +41,6 @@ export interface AttachmentDataOptions {
  * A JSON object that gives access to the actual content of the attachment
  */
 export class AttachmentData {
-  public constructor(options: AttachmentDataOptions) {
-    if (options) {
-      this.base64 = options.base64
-      this.json = options.json
-      this.links = options.links
-      this.jws = options.jws
-      this.sha256 = options.sha256
-    }
-  }
-
-  /*
-   * Helper function returning JSON representation of attachment data (if present). Tries to obtain the data from .base64 or .json, throws an error otherwise
-   */
-  public getDataAsJson<T>(): T {
-    if (typeof this.base64 === 'string') {
-      return JsonEncoder.fromBase64(this.base64) as T
-    } else if (this.json) {
-      return this.json as T
-    } else {
-      throw new AriesFrameworkError('No attachment data found in `json` or `base64` data fields.')
-    }
-  }
-
   /**
    * Base64-encoded data, when representing arbitrary content inline instead of via links. Optional.
    */
@@ -84,7 +65,9 @@ export class AttachmentData {
    * A JSON Web Signature over the content of the attachment. Optional.
    */
   @IsOptional()
-  public jws?: Record<string, unknown>
+  @Type(() => AttachmentJws)
+  @ValidateNested()
+  public jws?: AttachmentJws
 
   /**
    * The hash of the content. Optional.
@@ -92,6 +75,47 @@ export class AttachmentData {
   @IsOptional()
   @IsHash('sha256')
   public sha256?: string
+
+  public constructor(options: AttachmentDataOptions) {
+    if (options) {
+      this.base64 = options.base64
+      this.json = options.json
+      this.links = options.links
+      this.jws = options.jws
+      this.sha256 = options.sha256
+    }
+  }
+
+  /*
+   * Helper function returning JSON representation of attachment data (if present). Tries to obtain the data from .base64 or .json, throws an error otherwise
+   */
+  public getDataAsJson<T>(): T {
+    if (typeof this.base64 === 'string') {
+      return JsonEncoder.fromBase64(this.base64) as T
+    } else if (this.json) {
+      return this.json as T
+    } else {
+      throw new AriesFrameworkError('No attachment data found in `json` or `base64` data fields.')
+    }
+  }
+
+  public async sign(wallet: Wallet, verkeys: string[]) {
+    if (!this.base64) {
+      throw new AriesFrameworkError('Missing base64 data on attachment')
+    }
+
+    this.jws = await signAttachmentJws(wallet, verkeys, this.base64)
+  }
+
+  public async verify(wallet: Wallet) {
+    if (!this.jws || !this.base64) {
+      throw new AriesFrameworkError('Missing JWS and/or base64 parameters')
+    }
+
+    const isValid = await verifyAttachmentJws(wallet, this.jws, this.base64)
+
+    return isValid
+  }
 }
 
 /**
