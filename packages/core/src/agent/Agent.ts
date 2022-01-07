@@ -16,9 +16,9 @@ import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
-// import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { CredentialsAPI } from '../modules/credentials/CredentialsAPI'
 
+import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
@@ -35,6 +35,7 @@ import { AgentEventTypes } from './Events'
 import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
+import { CredentialsModule } from '..'
 
 export class Agent {
   protected agentConfig: AgentConfig
@@ -47,16 +48,17 @@ export class Agent {
   private _isInitialized = false
   public messageSubscription: Subscription
 
-  public readonly connections!: ConnectionsModule
-  public readonly proofs!: ProofsModule
-  public readonly basicMessages!: BasicMessagesModule
-  public readonly ledger!: LedgerModule
-  // public readonly credentials!: CredentialsModule
+  public readonly connections: ConnectionsModule
+  public readonly proofs: ProofsModule
+  public readonly basicMessages: BasicMessagesModule
+  public readonly ledger: LedgerModule
   public readonly credentials!: CredentialsAPI
+  // public readonly credentials: CredentialsModule
+  public readonly mediationRecipient: RecipientModule
+  public readonly mediator: MediatorModule
+  public readonly discovery: DiscoverFeaturesModule
+  public readonly dids: DidsModule
 
-  public readonly mediationRecipient!: RecipientModule
-  public readonly mediator!: MediatorModule
-  public readonly discovery!: DiscoverFeaturesModule
   public readonly wallet: Wallet
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
@@ -109,6 +111,7 @@ export class Agent {
     this.basicMessages = this.container.resolve(BasicMessagesModule)
     this.ledger = this.container.resolve(LedgerModule)
     this.discovery = this.container.resolve(DiscoverFeaturesModule)
+    this.dids = this.container.resolve(DidsModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
     this.messageSubscription = this.eventEmitter
@@ -145,7 +148,7 @@ export class Agent {
   }
 
   public async initialize() {
-    const { publicDidSeed, walletConfig, mediatorConnectionsInvite } = this.agentConfig
+    const { connectToIndyLedgersOnStartup, publicDidSeed, walletConfig, mediatorConnectionsInvite } = this.agentConfig
 
     if (this._isInitialized) {
       throw new AriesFrameworkError(
@@ -166,6 +169,13 @@ export class Agent {
     if (publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
       await this.wallet.initPublicDid({ seed: publicDidSeed })
+    }
+
+    // As long as value isn't false we will async connect to all genesis pools on startup
+    if (connectToIndyLedgersOnStartup) {
+      this.ledger.connectToPools().catch((error) => {
+        this.logger.warn('Error connecting to ledger, will try to reconnect when needed.', { error })
+      })
     }
 
     for (const transport of this.inboundTransports) {

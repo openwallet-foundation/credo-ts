@@ -1,0 +1,20 @@
+{
+  "@context": ["https://w3id.org/ns/did/v1"],
+  "controller": [],
+  "alsoKnownAs": [],
+  "id": "did:key:z6LShLeXRTzevtwcfehaGEzCMyL3bNsAeKCwcqwJxyCo63yE",
+  "verificationMethod": [],
+  "authentication": [],
+  "assertionMethod": [],
+  "capabilityDelegation": [],
+  "capabilityInvocation": [],
+  "keyAgreement": [
+    {
+      "id": "did:key:z6LShLeXRTzevtwcfehaGEzCMyL3bNsAeKCwcqwJxyCo63yE#z6LShLeXRTzevtwcfehaGEzCMyL3bNsAeKCwcqwJxyCo63yE",
+      "type": "X25519KeyAgreementKey2019",
+      "controller": "did:key:z6LShLeXRTzevtwcfehaGEzCMyL3bNsAeKCwcqwJxyCo63yE",
+      "publicKeyBase58": "6fUMuABnqSDsaGKojbUF3P7ZkEL3wi2njsDdUWZGNgCU"
+    }
+  ],
+  "service": []
+}

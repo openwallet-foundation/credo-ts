@@ -1,6 +1,7 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialState } from '../CredentialState'
+import type { CredentialMetadata } from './credentialMetadataTypes'
 
 import { Type } from 'class-transformer'
 
@@ -46,7 +47,7 @@ export type DefaultCredentialTags = {
   credentialId?: string
 }
 
-export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCredentialTags> {
+export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCredentialTags, CredentialMetadata> {
   public connectionId?: string
   public threadId!: string
   public credentialId?: string
@@ -120,7 +121,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
     return new CredentialInfo({
       claims,
       attachments: this.linkedAttachments,
-      metadata: this.metadata.getAll(),
+      metadata: this.metadata.data,
     })
   }
 

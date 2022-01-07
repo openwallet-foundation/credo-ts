@@ -8,7 +8,7 @@ import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialProblemReportMessage, ProposeCredentialMessageOptions } from './messages'
 import type { CredReqMetadata } from 'indy-sdk'
 
-import { scoped, Lifecycle } from 'tsyringe'
+import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -19,13 +19,15 @@ import { isLinkedAttachment } from '../../../utils/attachment'
 import { uuid } from '../../../utils/uuid'
 import { AckStatus } from '../../common'
 import { ConnectionService } from '../../connections/services/ConnectionService'
-import { IndyIssuerService, IndyHolderService } from '../../indy'
+import { IndyHolderService, IndyIssuerService } from '../../indy'
 import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../errors'
 import {
+  CredentialAckMessage,
+  INDY_CREDENTIAL_ATTACHMENT_ID,
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   IssueCredentialMessage,
@@ -33,12 +35,11 @@ import {
   ProposeCredentialMessage,
   V1CredentialPreview,
   RequestCredentialMessage,
-  CredentialAckMessage,
-  INDY_CREDENTIAL_ATTACHMENT_ID,
 } from './messages'
 import { CredentialRepository } from '../repository'
 import { CredentialRecord } from '../repository/CredentialRecord'
 import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
+import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 
 @scoped(Lifecycle.ContainerScoped)
 export class V1LegacyCredentialService {
@@ -112,9 +113,9 @@ export class V1LegacyCredentialService {
     })
 
     // Set the metadata
-    credentialRecord.metadata.set('_internal/indyCredential', {
+    credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
       schemaId: options.schemaId,
-      credentialDefinintionId: options.credentialDefinitionId,
+      credentialDefinitionId: options.credentialDefinitionId,
     })
     await this.credentialRepository.save(credentialRecord)
     this.eventEmitter.emit<CredentialStateChangedEvent>({
@@ -199,7 +200,7 @@ export class V1LegacyCredentialService {
         state: CredentialState.ProposalReceived,
       })
 
-      credentialRecord.metadata.set('_internal/indyCredential', {
+      credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
         schemaId: proposalMessage.schemaId,
         credentialDefinitionId: proposalMessage.credentialDefinitionId,
       })
@@ -262,7 +263,7 @@ export class V1LegacyCredentialService {
 
     credentialRecord.offerMessage = credentialOfferMessage
     credentialRecord.credentialAttributes = preview.attributes
-    credentialRecord.metadata.set('_internal/indyCredential', {
+    credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
       schemaId: credOffer.schema_id,
       credentialDefinitionId: credOffer.cred_def_id,
     })
@@ -326,7 +327,7 @@ export class V1LegacyCredentialService {
       autoAcceptCredential: credentialTemplate.autoAcceptCredential,
     })
 
-    credentialRecord.metadata.set('_internal/indyCredential', {
+    credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
       credentialDefinitionId: credOffer.cred_def_id,
       schemaId: credOffer.schema_id,
     })
@@ -381,7 +382,7 @@ export class V1LegacyCredentialService {
       credentialRecord.offerMessage = credentialOfferMessage
       credentialRecord.linkedAttachments = credentialOfferMessage.attachments?.filter(isLinkedAttachment)
 
-      credentialRecord.metadata.set('_internal/indyCredential', {
+      credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
         schemaId: indyCredentialOffer.schema_id,
         credentialDefinitionId: indyCredentialOffer.cred_def_id,
       })
@@ -398,9 +399,9 @@ export class V1LegacyCredentialService {
         state: CredentialState.OfferReceived,
       })
 
-      credentialRecord.metadata.set('_internal/indyCredential', {
-        credentialDefinitionId: indyCredentialOffer.cred_def_id,
+      credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
         schemaId: indyCredentialOffer.schema_id,
+        credentialDefinitionId: indyCredentialOffer.cred_def_id,
       })
 
       // Assert
@@ -467,7 +468,7 @@ export class V1LegacyCredentialService {
     })
     credentialRequest.setThread({ threadId: credentialRecord.threadId })
 
-    credentialRecord.metadata.set('_internal/indyRequest', credReqMetadata)
+    credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, credReqMetadata)
     credentialRecord.requestMessage = credentialRequest
     credentialRecord.autoAcceptCredential = options?.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
@@ -635,7 +636,7 @@ export class V1LegacyCredentialService {
       previousSentMessage: credentialRecord.requestMessage,
     })
 
-    const credentialRequestMetadata = credentialRecord.metadata.get<CredReqMetadata>('_internal/indyRequest')
+    const credentialRequestMetadata = credentialRecord.metadata.get(CredentialMetadataKeys.IndyRequest)
 
     if (!credentialRequestMetadata) {
       throw new CredentialProblemReportError(
