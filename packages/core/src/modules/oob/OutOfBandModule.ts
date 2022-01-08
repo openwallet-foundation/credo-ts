@@ -8,30 +8,30 @@ import { parseUrl } from 'query-string'
 import { EmptyError } from 'rxjs'
 import { Lifecycle, scoped } from 'tsyringe'
 
+import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
-import { ConsoleLogger, LogLevel } from '../../logger'
 import { ConnectionInvitationMessage, DidCommService, ConnectionState, ConnectionsModule } from '../connections'
 import { MediationRecipientService } from '../routing'
 
 import { HandshakeReuseHandler } from './handlers'
 import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
 
-interface CreateOutOfBandMessageConfig {
+export interface CreateOutOfBandMessageConfig {
   label?: string
   goalCode?: string
   goal?: string
   handshake: boolean
-  multiUseInvitation: boolean
+  multiUseInvitation?: boolean
 }
 
-interface ReceiveOutOfBandMessageConfig {
-  autoAccept: boolean
-  reuse?: boolean
+export interface ReceiveOutOfBandMessageConfig {
+  autoAcceptConnection: boolean
+  reuseConnection?: boolean
 }
 
 @scoped(Lifecycle.ContainerScoped)
@@ -41,16 +41,18 @@ export class OutOfBandModule {
   private dispatcher: Dispatcher
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
-  private logger: Logger = new ConsoleLogger(LogLevel.debug)
+  private logger: Logger
 
   public constructor(
     dispatcher: Dispatcher,
+    agentConfig: AgentConfig,
     connectionsModule: ConnectionsModule,
     mediationRecipientService: MediationRecipientService,
     messageSender: MessageSender,
     eventEmitter: EventEmitter
   ) {
     this.dispatcher = dispatcher
+    this.logger = agentConfig.logger
     this.connectionsModule = connectionsModule
     this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
@@ -59,13 +61,14 @@ export class OutOfBandModule {
   }
 
   /**
-   * Creates an out-of-band message and adds given agent message to `requests~attach` attribute.
-   * Creates new connection record and use its keys for out-of-band message that works as a connection invitation.
+   * Creates an out-of-band message and adds given agent messages to `requests~attach` attribute.
+   *
+   * If `handshake` is true, creates new connection record and use its keys for out-of-band message that works as a connection invitation.
    * It uses discover features to find out what handshake protocols the agent supports.
    *
    * @param config Optinal attributes contained in out-of-band message
-   * @param message A message that will be send inside out-of-band message
-   * @returns Out-of-band message
+   * @param messages Messages that will be sent inside out-of-band message
+   * @returns Out-of-band message and connection record if it has been created.
    */
   public async createMessage(
     config: CreateOutOfBandMessageConfig,
@@ -142,6 +145,14 @@ export class OutOfBandModule {
     return { outOfBandMessage, connectionRecord }
   }
 
+  /**
+   * Parses URL, decodes invitation and eventually creates a new connection record.
+   * It supports both OOB (Aries RFC 0434: Out-of-Band Protocol 1.1) and Connection Invitation (0160: Connection Protocol).
+   *
+   * @param urlMessage URL containing encoded invitation
+   * @param config Configuration of how to process given invitation.
+   * @returns Connection record if it has been created.
+   */
   public async receiveInvitationFromUrl(urlMessage: string, config: ReceiveOutOfBandMessageConfig) {
     const parsedUrl = parseUrl(urlMessage).query
     if (parsedUrl['oob']) {
@@ -149,12 +160,22 @@ export class OutOfBandModule {
       return this.receiveMessage(outOfBandMessage, config)
     } else if (parsedUrl['c_i'] || parsedUrl['d_m']) {
       const invitation = await ConnectionInvitationMessage.fromUrl(urlMessage)
-      return this.connectionsModule.receiveInvitation(invitation)
+      const { autoAcceptConnection } = config
+      return this.connectionsModule.receiveInvitation(invitation, { autoAcceptConnection })
     }
+    throw new AriesFrameworkError(
+      'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`.'
+    )
   }
 
   /**
-   * Takes all messages from `requests~attach` attribute and pass them to the agent via event emitter.
+   * Processes out-of-band message and passes all messages from `requests~attach` attribute to the agent.
+   *
+   * If the message contains `hanshake_protocols` attribute it either creates or reuse an existing connection.
+   * It waits until the connection is ready and then it passes all messages from `requests~attach` attribute to the agent.
+   * Reuse of connection can be enabled or disabled by `config.reuseConnection` attribute.
+   *
+   * If there is no `hanshake_protocols` attribute it just passes the messages to the agent.
    *
    * @param outOfBandMessage
    */
@@ -163,7 +184,7 @@ export class OutOfBandModule {
     config: ReceiveOutOfBandMessageConfig
   ): Promise<ConnectionRecord | undefined> {
     const { handshakeProtocols, services } = outOfBandMessage
-    const { autoAccept, reuse } = config
+    const { autoAcceptConnection, reuseConnection } = config
     const messages = outOfBandMessage.getRequests()
 
     if ((!handshakeProtocols || handshakeProtocols.length === 0) && (!messages || messages?.length === 0)) {
@@ -174,14 +195,17 @@ export class OutOfBandModule {
 
     if (handshakeProtocols) {
       if (!this.areHandshakeProtocolsSupported(handshakeProtocols)) {
-        throw new AriesFrameworkError('Handshake protocols are not supported.')
+        const supportedProtocols = this.getSupportedHandshakeProtocols()
+        throw new AriesFrameworkError(
+          `Out-of-band message contains unsupported handshake protocols ${handshakeProtocols}. Supported protocols are ${supportedProtocols}`
+        )
       }
 
       let connectionRecord: ConnectionRecord
       const existingConnection = await this.findExistingConnection(services)
       if (existingConnection) {
         this.logger.debug('Connection already exists.', { connectionId: existingConnection.id })
-        if (reuse) {
+        if (reuseConnection) {
           this.logger.debug('Reuse is enabled. Reusing an existing connection.')
           connectionRecord = existingConnection
           if (!messages) {
@@ -190,11 +214,11 @@ export class OutOfBandModule {
           }
         } else {
           this.logger.debug('Reuse is disabled. Creating a new connection.')
-          connectionRecord = await this.createConnection(outOfBandMessage, autoAccept)
+          connectionRecord = await this.createConnection(outOfBandMessage, { autoAcceptConnection })
         }
       } else {
         this.logger.debug('Connection does not exists. Creating a new connection.')
-        connectionRecord = await this.createConnection(outOfBandMessage, autoAccept)
+        connectionRecord = await this.createConnection(outOfBandMessage, { autoAcceptConnection })
       }
 
       if (messages) {
@@ -254,14 +278,15 @@ export class OutOfBandModule {
     }
   }
 
-  private async createConnection(outOfBandMessage: OutOfBandMessage, autoAccept: boolean) {
+  private async createConnection(outOfBandMessage: OutOfBandMessage, config: { autoAcceptConnection: boolean }) {
     const { services, label } = outOfBandMessage
+    const { autoAcceptConnection } = config
     const invitation = new ConnectionInvitationMessage({
       label: label || '',
       ...services[0],
     })
     const connectionRecord = await this.connectionsModule.receiveInvitation(invitation, {
-      autoAcceptConnection: autoAccept,
+      autoAcceptConnection,
     })
     return connectionRecord
   }
