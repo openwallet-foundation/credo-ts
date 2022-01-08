@@ -22,5 +22,5 @@ export class HandshakeReuseMessage extends AgentMessage {
 
   @Equals(HandshakeReuseMessage.type)
   public readonly type = HandshakeReuseMessage.type
-  public static readonly type = 'https://didcomm.org/out-of-band/1.0/handshake-reuse'
+  public static readonly type = 'https://didcomm.org/out-of-band/1.1/handshake-reuse'
 }
