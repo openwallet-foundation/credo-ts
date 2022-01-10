@@ -2,7 +2,7 @@ import { ConnectionInvitationMessage, ConnectionRecord, CredentialEventTypes, Cr
 import clear from 'clear';
 import figlet from 'figlet';
 import inquirer from 'inquirer'
-import { Cred, CredDef } from 'indy-sdk-react-native';
+import { Cred, CredDef, Schema } from 'indy-sdk-react-native';
 import { BaseAgent } from './base_agent';
 import { JsonEncoder } from '@aries-framework/core/src/utils/JsonEncoder';
 import { Color, Output } from './output_class';
@@ -41,7 +41,7 @@ const ui = new inquirer.ui.BottomBar();
       this.proofProposalListener()
     }
 
-    proofProposalListener() {
+    private proofProposalListener() {
       this.agent.events.on(ProofEventTypes.ProofStateChanged,
       async ({ payload }: ProofStateChangedEvent) => {
         if (payload.proofRecord.state !== ProofState.ProposalReceived) {
@@ -59,8 +59,7 @@ const ui = new inquirer.ui.BottomBar();
       return await this.agent.connections.getById(this.connectionRecordId)
     }
 
-    async receiveConnectionRequest(invitation_url: string) {
-      // first we would need an prompt to get the invitation url
+    private async receiveConnectionRequest(invitation_url: string) {
       const http = 'http://localhost:9000?c_i='
       let invitationJson = invitation_url.replace(http, '')
   
@@ -75,13 +74,14 @@ const ui = new inquirer.ui.BottomBar();
       return await this.agent.connections.receiveInvitation(invitationMessage)
     }
     
-    async waitForConnection(connectionRecord: any) {
+    private async waitForConnection(connectionRecord: any) {
       connectionRecord = await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
       console.log(Output.connectionEstablished)
       return connectionRecord.id
     }
 
     async acceptConnection(invitation_url: string) {
+      // first we would need an prompt to get the invitation url
       let connectionRecord = await this.receiveConnectionRequest(invitation_url)
       this.connectionRecordId = await this.waitForConnection(connectionRecord)
     }
@@ -107,33 +107,39 @@ const ui = new inquirer.ui.BottomBar();
       )
     }
 
-    async issueCredential(){
-      const schema = await this.registerSchema()
+    private async registerCredentialDefiniton(schema: Schema) {
       this.credentialDefinition = await this.agent.ledger.registerCredentialDefinition({
-          schema,
-          tag: 'latest',
-          supportRevocation: false,
+        schema,
+        tag: 'latest',
+        supportRevocation: false,
       })
+      return this.credentialDefinition
+    }
 
-      this.credentialIssuedListener()
-      //kijken of je de schema attribute names ook automatisch zo binnen kan krijgen
-      console.log(schema.attrNames)
+    private getCredentialPreview() {
       const credentialPreview = CredentialPreview.fromRecord({
         'departure date':  '05/01/2022',
         'returning date': '01/02/2022',
         'actually happening': 'yes'
       })
+      return credentialPreview
+    }
 
+    async issueCredential(){
+      this.credentialIssuedListener()
+      const schema = await this.registerSchema()
+      const credentialDefinition = await this.registerCredentialDefiniton(schema)
+      console.log(schema.attrNames) //kijken of je de schema attribute names ook automatisch zo binnen kan krijgen
+      const credentialPreview = this.getCredentialPreview()
       const connectionRecord = await this.getConnectionRecord()
       await this.agent.credentials.offerCredential(connectionRecord.id, {
-        credentialDefinitionId: this.credentialDefinition.id, 
+        credentialDefinitionId: credentialDefinition.id, 
         preview: credentialPreview,
       })
     }
 
     async sendMessage (message: string) {
       const connectionRecord = await this.getConnectionRecord()
-  
       await this.agent.basicMessages.sendMessage(connectionRecord.id, message)
     }
   
