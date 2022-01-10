@@ -4,7 +4,7 @@ ConnectionRecord,
 CredentialEventTypes,
 CredentialState,
 CredentialStateChangedEvent} from '@aries-framework/core'
-import { CredentialPreview } from '@aries-framework/core/build/modules/credentials'
+import { CredentialPreview } from '@aries-framework/core/src/modules/credentials'
 import indy from 'indy-sdk'
 import inquirer from 'inquirer'
 
