@@ -37,18 +37,6 @@ const ui = new inquirer.ui.BottomBar();
     constructor(port: number, name: string) {
       super(port, name)
       super.initializeAgent() // this is not awaited..
-      this.proofProposalListener()
-    }
-
-    private proofProposalListener() {
-      this.agent.events.on(ProofEventTypes.ProofStateChanged,
-      async ({ payload }: ProofStateChangedEvent) => {
-        if (payload.proofRecord.state !== ProofState.ProposalReceived) {
-          return
-        }
-        await this.agent.proofs.acceptProposal(payload.proofRecord.id)
-        console.log(`${Color.green}\nProof accepted!\n${Color.reset}`);
-      })
     }
 
     private async getConnectionRecord() {

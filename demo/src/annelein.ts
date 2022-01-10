@@ -13,21 +13,7 @@ export class Annelein extends BaseAgent {
   constructor(port: number, name: string) {
     super(port, name)
     super.initializeAgent() // this is not awaited..
-    this.credentialOfferListener()
     this.credDef = '7KuDTpQh3GJ7Gp6kErpWvM:3:CL:115269:latest'
-  }
-
-  private async credentialOfferListener() {
-    this.agent.events.on(
-      CredentialEventTypes.CredentialStateChanged,
-      async ({ payload }: CredentialStateChangedEvent) => {
-        if (payload.credentialRecord.state !== CredentialState.OfferReceived){
-          return
-        }
-        // open yes/no option in prompt
-        // or maybe return something else first to start the prompt
-      }
-    )
   }
 
   private async proposalSentListener () {

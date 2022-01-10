@@ -1,6 +1,8 @@
+import { CredentialEventTypes, CredentialState, CredentialStateChangedEvent } from "@aries-framework/core";
 import inquirer from "inquirer";
 import { Annelein } from "./annelein"
 import { BaseInquirer } from "./base_inquirer"
+import { Title } from "./output_class";
 
 export enum promptOptions {
     Connection = "setup connection",
@@ -21,7 +23,7 @@ class AnneleinInquirer extends BaseInquirer{
     }
 
     async getPromptChoice() {
-      return await inquirer.prompt([this.getOptionsInquirer(this.promptOptionsString)])
+      return await inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
     }
 
     async processAnswer() {
@@ -40,8 +42,26 @@ class AnneleinInquirer extends BaseInquirer{
       this.processAnswer()
     }
 
+    private credentialOfferListener() {
+      this.annelein.agent.events.on(
+        CredentialEventTypes.CredentialStateChanged,
+        async ({ payload }: CredentialStateChangedEvent) => {
+          if (payload.credentialRecord.state !== CredentialState.OfferReceived){
+            const confirm = this.inquireConfirmation(Title.proofProposalTitle)
+            if (confirm.options === 'no'){
+              return
+            } else if (confirm.options === 'yes'){
+              this.inquireConfirmation(Title.credentialOfferTitle)
+            }
+          }
+          return
+        }
+      )
+    }
+
     async connection() {
       await this.annelein.setupConnection()
+      this.credentialOfferListener()
     }
 
     async proof() {
@@ -49,26 +69,28 @@ class AnneleinInquirer extends BaseInquirer{
     }
 
     async message() {
-      const message = await this.promptMessage()
-      if (message === "") {
+      const message = await this.inquireMessage()
+      if (message === null) {
           return
       } 
       this.annelein.sendMessage(message)
     }
 
     async exit() {
-      const confirm = await inquirer.prompt([this.getOptionsInquirerConfirm()])
+      const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
       if (confirm.options === 'no'){
         return
+      } else if (confirm.options === 'yes'){
+        await this.annelein.exit()
       }
-      await this.annelein.exit()
     }
 
     async restart() {
-      const confirm = await inquirer.prompt([this.getOptionsInquirerConfirm()])
+      const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
       if (confirm.options === 'no'){
         return
+      } else if (confirm.options === 'yes'){
+        await this.annelein.restart()
       }
-      await this.annelein.restart()
     }
 }
