@@ -6,7 +6,7 @@ import { Cred, CredDef, Schema } from 'indy-sdk-react-native';
 import { BaseAgent } from './base_agent';
 import { JsonEncoder } from '@aries-framework/core/src/utils/JsonEncoder';
 import { Color, Output } from './output_class';
-import { uuid } from '@aries-framework/core/build/utils/uuid';
+import { uuid } from '@aries-framework/core/src/utils/uuid';
 import { restart } from './restart';
 
 enum options {

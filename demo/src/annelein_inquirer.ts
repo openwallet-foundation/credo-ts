@@ -1,5 +1,3 @@
-'use strict';
-
 import { Agent } from '@aries-framework/core';
 import inquirer from 'inquirer'
 
