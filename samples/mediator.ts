@@ -13,6 +13,7 @@
  */
 
 import type { InitConfig } from '@aries-framework/core'
+import type { Socket } from 'net'
 
 import express from 'express'
 import { Server } from 'ws'
@@ -87,7 +88,7 @@ const run = async () => {
   // When an 'upgrade' to WS is made on our http server, we forward the
   // request to the WS server
   httpInboundTransport.server?.on('upgrade', (request, socket, head) => {
-    socketServer.handleUpgrade(request, socket, head, (socket) => {
+    socketServer.handleUpgrade(request, socket as Socket, head, (socket) => {
       socketServer.emit('connection', socket, request)
     })
   })
