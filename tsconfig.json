@@ -7,8 +7,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@aries-framework/*": ["packages/*/src"],
-      "@aries-framework/cli-demo": ["demo/src"]
+      "@aries-framework/*": ["packages/*/src"]
     },
     "types": ["jest", "node"]
   },
