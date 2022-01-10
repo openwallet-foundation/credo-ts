@@ -7,17 +7,7 @@ import { clear } from 'console';
 import figlet from 'figlet';
 import { Color, Output } from './output_class';
 
-const ui = new inquirer.ui.BottomBar();
-
-enum options {
-  Connection = "setup connection",
-  Proof = "propose proof",
-  Message = "send message",
-  Exit = "exit",
-  Restart = "restart"
-}
-
-class Annelein extends BaseAgent {
+export class Annelein extends BaseAgent {
   connectionRecordId?: string
   credDef: string
   
@@ -107,6 +97,7 @@ class Annelein extends BaseAgent {
   }
 
   async sendProofProposal () {
+    this.proposalSentListener()
     const connectionRecord = await this.getConnectionRecord()
     const presentationPreview = await this.newPresentationPreview()
     await this.agent.proofs.proposeProof(connectionRecord.id, presentationPreview)

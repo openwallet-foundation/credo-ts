@@ -92,3 +92,36 @@
 //     this.process_prompt(annelein, answer)
 //   }
 // }
+
+
+// 'use strict';
+
+// import { Agent } from '@aries-framework/core';
+// import inquirer from 'inquirer'
+
+// export const annelein_inquirer = async (annelein: Agent) =>{
+//     const answer = await inquirer
+//     .prompt([
+//       {
+//         type: 'list',
+//         prefix: '',
+//         name: 'options',
+//         message: 'Options:',
+//         choices: 
+//         ['Setup connection',
+//         'Propose proof',
+//         'Send Message',
+//         'Exit',
+//         'Restart'],
+//         filter(val) {
+//             return val.toLowerCase();
+//         },
+//       },
+//     ])
+//     return answer
+//   }
+
+
+// je hebt een prompt interpreter die als argumenten heeft:
+// - de agent class met de functies
+// - de specifieke agent prompt class 
