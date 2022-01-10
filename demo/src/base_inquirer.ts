@@ -1,11 +1,5 @@
 import inquirer from "inquirer";
-
-enum Title {
-    optionsTitle = 'Options:',
-    invitationTitle = 'Paste the invitation url here:',
-    messageTitle = 'Write your message here:\nPress q to exit',
-    confirmTitle = 'Are you sure?:'
-}
+import { Title } from "./output_class";
 
 export class BaseInquirer {
     optionsInquirer: any
@@ -28,37 +22,33 @@ export class BaseInquirer {
             };
     }
 
-    getOptionsInquirer(promptOptions: string[]) {
+    inquireOptions(promptOptions: string[]) {
         const optionsInquirer = this.optionsInquirer
         optionsInquirer.message = Title.optionsTitle
         optionsInquirer.choice = promptOptions
         return optionsInquirer
     }
 
-    getInputInquirerMessage() {
+    inquireInput(title: string) {
         const inputInquirer = this.inputInquirer
-        inputInquirer.message = Title.messageTitle
+        inputInquirer.message = title
         return inputInquirer
     }
 
-    getInputInquirerInvitation() {
-        const inputInquirer = this.inputInquirer
-        inputInquirer.message = Title.invitationTitle
-        return inputInquirer
-    }
-
-    getOptionsInquirerConfirm() {
+    inquireConfirmation(title: string) {
         const optionsInquirer = this.optionsInquirer
-        optionsInquirer.message = Title.confirmTitle
+        optionsInquirer.message = title
         optionsInquirer.options = ['yes', 'no']
         return optionsInquirer
     }
 
-    async promptMessage() {
-        const message = await inquirer.prompt([this.getInputInquirerMessage()])
+    async inquireMessage() {
+        const inputInquirer = this.inputInquirer
+        inputInquirer.message = Title.messageTitle
+        const message = await inquirer.prompt([inputInquirer])
         
         if (message.message[0] == 'q'){
-            return ""
+            return null
         } else {
             return message
         }

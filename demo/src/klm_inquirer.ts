@@ -1,6 +1,8 @@
+import { ProofEventTypes, ProofState, ProofStateChangedEvent } from '@aries-framework/core';
 import inquirer from 'inquirer'
 import { BaseInquirer } from './base_inquirer';
 import { KLM } from './klm';
+import { Color, Title } from './output_class';
 
   export enum promptOptions {
     Connection = "setup connection",
@@ -21,7 +23,7 @@ class KlmInquirer extends BaseInquirer{
     }
 
     async getPromptChoice() {
-      return await inquirer.prompt([this.getOptionsInquirer(this.promptOptionsString)])
+      return await inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
     }
 
     async processAnswer() {
@@ -40,9 +42,27 @@ class KlmInquirer extends BaseInquirer{
       this.processAnswer()
     }
 
+    private proofProposalListener() {
+      this.klm.agent.events.on(ProofEventTypes.ProofStateChanged,
+        async ({ payload }: ProofStateChangedEvent) => {
+          if (payload.proofRecord.state !== ProofState.ProposalReceived) {
+            const confirm = this.inquireConfirmation(Title.proofProposalTitle)
+            if (confirm.options === 'no'){
+              return
+            } else if (confirm.options === 'yes'){
+              await this.klm.agent.proofs.acceptProposal(payload.proofRecord.id)
+              console.log(`${Color.green}\nProof accepted!\n${Color.reset}`);
+            }
+          }
+          return
+        })
+      }
+
     async connection() {
-      const getUrl = await inquirer.prompt([this.getInputInquirerInvitation()])
-      await this.klm.acceptConnection(getUrl.url)
+        const title = 'Paste the invitation url here:'
+        const getUrl = await inquirer.prompt([this.inquireInput(title)])
+        await this.klm.acceptConnection(getUrl.url)
+        this.proofProposalListener()
     }
 
     async proof() {
@@ -50,26 +70,28 @@ class KlmInquirer extends BaseInquirer{
     }
 
     async message() {
-      const message = await this.promptMessage()
-      if (message === "") {
+      const message = await this.inquireMessage()
+      if (message === null) {
           return
-      } 
+      }
       this.klm.sendMessage(message)
     }
 
     async exit() {
-      const confirm = await inquirer.prompt([this.getOptionsInquirerConfirm()])
+      const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
       if (confirm.options === 'no'){
         return
+      } else if (confirm.options === 'yes'){
+        await this.klm.exit()
       }
-      await this.klm.exit()
     }
 
     async restart() {
-      const confirm = await inquirer.prompt([this.getOptionsInquirerConfirm()])
+      const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
       if (confirm.options === 'no'){
         return
+      } else if (confirm.options === 'yes'){
+        await this.klm.restart()
       }
-      await this.klm.restart()
     }
 }
