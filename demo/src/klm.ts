@@ -31,7 +31,7 @@ const ui = new inquirer.ui.BottomBar();
    *       - KLM.receiveInvitationUrl
    */
   
-   class KLM extends BaseAgent {
+  export class KLM extends BaseAgent {
     connectionRecordId?: string
     credentialDefinition?: CredDef
   
