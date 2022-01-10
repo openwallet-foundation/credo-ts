@@ -6,8 +6,7 @@ import { Cred, CredDef, Schema } from 'indy-sdk-react-native';
 import { BaseAgent } from './base_agent';
 import { JsonEncoder } from '@aries-framework/core/src/utils/JsonEncoder';
 import { Color, Output } from './output_class';
-import { uuid } from '@aries-framework/core/src/utils/uuid';
-import { restart } from './restart';
+import { uuid } from '@aries-framework/core/build/utils/uuid';
 
 enum options {
   Connection = "setup connection",
@@ -67,6 +66,7 @@ const ui = new inquirer.ui.BottomBar();
         invitationJson = JsonEncoder.fromBase64(invitationJson)
       } catch(e){
         console.log(`${Color.green}\nIt looks like your invitation link is not correctly formatted?\n${Color.reset}`)
+        //misschien moet dit naar de inquirer?
         return
       }
 
@@ -81,7 +81,6 @@ const ui = new inquirer.ui.BottomBar();
     }
 
     async acceptConnection(invitation_url: string) {
-      // first we would need an prompt to get the invitation url
       let connectionRecord = await this.receiveConnectionRequest(invitation_url)
       this.connectionRecordId = await this.waitForConnection(connectionRecord)
     }
@@ -149,7 +148,6 @@ const ui = new inquirer.ui.BottomBar();
     }
   
     async restart() {
-      await restart(this.agent)
       await this.agent.shutdown()
       //memory leak?
       runKlm()

@@ -1,6 +1,5 @@
 import { CredentialEventTypes, CredentialState, CredentialStateChangedEvent, PresentationPreview, PresentationPreviewAttribute, ProofEventTypes, ProofState, ProofStateChangedEvent } from '@aries-framework/core'
 import inquirer from 'inquirer'
-import { restart } from './restart';
 import { ConnectionRecord } from '@aries-framework/core';
 import { BaseAgent } from './base_agent';
 import { clear } from 'console';
@@ -114,7 +113,6 @@ export class Annelein extends BaseAgent {
   }
 
   async restart() {
-    await restart(this.agent)
     await this.agent.shutdown()
     //memory leak?
     runAnnelein()

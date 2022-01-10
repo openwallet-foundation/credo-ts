@@ -58,10 +58,18 @@ class KlmInquirer extends BaseInquirer{
     }
 
     async exit() {
+      const confirm = await inquirer.prompt([this.getOptionsInquirerConfirm()])
+      if (confirm.options === 'no'){
+        return
+      }
       await this.klm.exit()
     }
 
     async restart() {
+      const confirm = await inquirer.prompt([this.getOptionsInquirerConfirm()])
+      if (confirm.options === 'no'){
+        return
+      }
       await this.klm.restart()
     }
 }
