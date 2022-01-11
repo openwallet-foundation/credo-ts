@@ -65,6 +65,11 @@ export class Annelein extends BaseAgent {
     await this.waitForConnection()
   }
 
+  async acceptCredentialOffer(payload: any) {
+    await this.agent.credentials.acceptOffer(payload.credentialRecord.id)
+    console.log("\x1b[32m\nCredential offer accepted!\n\x1b[0m")
+  }
+
   private async newPresentationPreview() {
     const presentationPreview = new PresentationPreview({
       attributes: [

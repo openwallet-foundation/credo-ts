@@ -67,6 +67,11 @@ enum options {
       this.connectionRecordId = await this.waitForConnection(connectionRecord)
     }
 
+    async acceptProofProposal(payload: any) {
+      await this.agent.proofs.acceptProposal(payload.proofRecord.id)
+      console.log(`${Color.green}\nProof accepted!\n${Color.reset}`);
+    }
+
     private async registerSchema(){
       const schema = await this.agent.ledger.registerSchema({
         name: 'koninklijke luchtvaart maatschappij' + uuid(),

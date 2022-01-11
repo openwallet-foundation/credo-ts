@@ -17,11 +17,13 @@ export enum PromptOptions {
 class AnneleinInquirer extends BaseInquirer{
     annelein: Annelein
     promptOptionsString: string[]
+    listenerOn: boolean
 
     constructor(annelein: Annelein) {
       super()
       this.promptOptionsString = Object.values(PromptOptions)
       this.annelein = annelein
+      this.listenerOn = false
     }
 
     public static async build(): Promise<AnneleinInquirer> {
@@ -35,6 +37,9 @@ class AnneleinInquirer extends BaseInquirer{
 
     async processAnswer() {
       const choice = await this.getPromptChoice()
+      if (this.listenerOn === true){
+        return
+      }
       if (choice.options == PromptOptions.Connection){
           await this.connection()
       } else if (choice.options == PromptOptions.Proof){
@@ -50,26 +55,36 @@ class AnneleinInquirer extends BaseInquirer{
       this.processAnswer()
     }
 
+    private turnListenerOn(){
+      this.listenerOn = true
+    }
+
+    private turnListenerOff(){
+      this.listenerOn = false
+    }
+
+    private async acceptCredentialOffer(payload: any) {
+      const confirm = await inquirer.prompt([this.inquireConfirmation(Title.credentialOfferTitle)])
+      if (confirm.options === 'no'){
+        return
+      } else if (confirm.options === 'yes'){
+        this.annelein.acceptCredentialOffer(payload)
+      }
+    }
+
     private credentialOfferListener() {
       this.annelein.agent.events.on(
         CredentialEventTypes.CredentialStateChanged,
         async ({ payload }: CredentialStateChangedEvent) => {
           if (payload.credentialRecord.state === CredentialState.OfferReceived){
-            const confirm = await inquirer.prompt([this.inquireConfirmation(Title.credentialOfferTitle)])
-            if (confirm.options === 'no'){
-              return
-            } else if (confirm.options === 'yes'){
-              this.acceptCredentialOffer(payload)
-              console.log("\x1b[32m\nCredential offer accepted!\n\x1b[0m")
-            }
+            this.turnListenerOn()
+            this.acceptCredentialOffer(payload)
+            this.turnListenerOff()
+            this.processAnswer()
           }
           return
         }
       )
-    }
-
-    private async acceptCredentialOffer(payload: any) {
-      await this.annelein.agent.credentials.acceptOffer(payload.credentialRecord.id)
     }
 
     async connection() {
