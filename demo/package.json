@@ -8,8 +8,8 @@
   "license": "MIT",
   "scripts": {
     "start": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
-    "annelein": " 'ts-node' src/annelein.ts",
-    "klm": " 'ts-node' src/klm.ts",
+    "annelein": " 'ts-node' src/annelein_inquirer.ts",
+    "klm": " 'ts-node' src/klm_inquirer.ts",
     "create": "yarn build && yarn test",
     "build": "tsc -p .",
     "local": "yarn global add && demo",

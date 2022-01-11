@@ -25,7 +25,7 @@ export class BaseInquirer {
     inquireOptions(promptOptions: string[]) {
         const optionsInquirer = this.optionsInquirer
         optionsInquirer.message = Title.optionsTitle
-        optionsInquirer.choice = promptOptions
+        optionsInquirer.choices = promptOptions
         return optionsInquirer
     }
 
@@ -38,7 +38,7 @@ export class BaseInquirer {
     inquireConfirmation(title: string) {
         const optionsInquirer = this.optionsInquirer
         optionsInquirer.message = title
-        optionsInquirer.options = ['yes', 'no']
+        optionsInquirer.choices = ['yes', 'no']
         return optionsInquirer
     }
 
@@ -47,10 +47,10 @@ export class BaseInquirer {
         inputInquirer.message = Title.messageTitle
         const message = await inquirer.prompt([inputInquirer])
         
-        if (message.message[0] == 'q'){
+        if (message.input[0] == 'q'){
             return null
         } else {
-            return message
+            return message.input
         }
     }
 }

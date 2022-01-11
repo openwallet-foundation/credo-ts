@@ -12,8 +12,14 @@ export class Annelein extends BaseAgent {
   
   constructor(port: number, name: string) {
     super(port, name)
-    super.initializeAgent() // this is not awaited..
+    // super.initializeAgent() // this is not awaited..
     this.credDef = '7KuDTpQh3GJ7Gp6kErpWvM:3:CL:115269:latest'
+  }
+
+  public static async build(): Promise<Annelein> {
+    const annelein = new Annelein(9000, 'annelein')
+    await annelein.initializeAgent()
+    return annelein
   }
 
   private async proposalSentListener () {
@@ -101,15 +107,6 @@ export class Annelein extends BaseAgent {
   async restart() {
     await this.agent.shutdown()
     //memory leak?
-    runAnnelein()
+    //runAnnelein()
   }
 }
-
-
-const runAnnelein = () => {
-  clear();
-  console.log(figlet.textSync('Annelein', { horizontalLayout: 'full' }));
-  const annelein = new Annelein(9000, 'annelein')
-}
-
-runAnnelein()

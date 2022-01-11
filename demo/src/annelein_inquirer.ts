@@ -1,10 +1,12 @@
 import { CredentialEventTypes, CredentialState, CredentialStateChangedEvent } from "@aries-framework/core";
+import { clear } from "console";
+import figlet from "figlet";
 import inquirer from "inquirer";
 import { Annelein } from "./annelein"
 import { BaseInquirer } from "./base_inquirer"
 import { Title } from "./output_class";
 
-export enum promptOptions {
+export enum PromptOptions {
     Connection = "setup connection",
     Proof = "propose proof",
     Message = "send message",
@@ -16,10 +18,15 @@ class AnneleinInquirer extends BaseInquirer{
     annelein: Annelein
     promptOptionsString: string[]
 
-    constructor() {
+    constructor(annelein: Annelein) {
       super()
-      this.promptOptionsString = Object.keys(promptOptions).map((key) => (key))
-      this.annelein = new Annelein(9000, 'annelein')
+      this.promptOptionsString = Object.values(PromptOptions)
+      this.annelein = annelein
+    }
+
+    public static async build(): Promise<AnneleinInquirer> {
+      const annelein = await Annelein.build()
+      return new AnneleinInquirer(annelein)
     }
 
     async getPromptChoice() {
@@ -28,16 +35,16 @@ class AnneleinInquirer extends BaseInquirer{
 
     async processAnswer() {
       const choice = await this.getPromptChoice()
-      if (choice.options == promptOptions.Connection){
-          this.connection()
-      } else if (choice.options == promptOptions.Proof){
-          this.proof()
-      } else if (choice.options == promptOptions.Message){
-          this.message()
-      } else if (choice.options == promptOptions.Exit){
-          this.exit()
-      } else if (choice.options == promptOptions.Restart){
-          this.restart()
+      if (choice.options == PromptOptions.Connection){
+          await this.connection()
+      } else if (choice.options == PromptOptions.Proof){
+          await this.proof()
+      } else if (choice.options == PromptOptions.Message){
+          await this.message()
+      } else if (choice.options == PromptOptions.Exit){
+          await this.exit()
+      } else if (choice.options == PromptOptions.Restart){
+          await this.restart()
       }
       this.processAnswer()
     }
@@ -46,17 +53,22 @@ class AnneleinInquirer extends BaseInquirer{
       this.annelein.agent.events.on(
         CredentialEventTypes.CredentialStateChanged,
         async ({ payload }: CredentialStateChangedEvent) => {
-          if (payload.credentialRecord.state !== CredentialState.OfferReceived){
-            const confirm = this.inquireConfirmation(Title.proofProposalTitle)
+          if (payload.credentialRecord.state === CredentialState.OfferReceived){
+            const confirm = await inquirer.prompt([this.inquireConfirmation(Title.credentialOfferTitle)])
             if (confirm.options === 'no'){
               return
             } else if (confirm.options === 'yes'){
-              this.inquireConfirmation(Title.credentialOfferTitle)
+              this.acceptCredentialOffer(payload)
+              console.log("\x1b[32m\nCredential offer accepted!\n\x1b[0m")
             }
           }
           return
         }
       )
+    }
+
+    private async acceptCredentialOffer(payload: any) {
+      await this.annelein.agent.credentials.acceptOffer(payload.credentialRecord.id)
     }
 
     async connection() {
@@ -94,3 +106,12 @@ class AnneleinInquirer extends BaseInquirer{
       }
     }
 }
+
+const runAnnelein = async () => {
+  clear();
+  console.log(figlet.textSync('Annelein', { horizontalLayout: 'full' }));
+  const annelein = await AnneleinInquirer.build()
+  annelein.processAnswer()
+}
+
+runAnnelein()
