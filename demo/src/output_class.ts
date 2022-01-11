@@ -12,9 +12,9 @@ export enum Output {
 
 export enum Title {
     optionsTitle = 'Options:',
-    invitationTitle = 'Paste the invitation url here:',
-    messageTitle = 'Write your message here:\nPress q to exit',
-    confirmTitle = 'Are you sure?',
-    credentialOfferTitle = 'Credential offer received, do you want to accept it?',
-    proofProposalTitle = 'Proof proposal received, do you want to accept it?'
+    invitationTitle = '\nPaste the invitation url here:',
+    messageTitle = '\nWrite your message here:\nPress q to exit',
+    confirmTitle = '\nAre you sure?',
+    credentialOfferTitle = '\nCredential offer received, do you want to accept it?',
+    proofProposalTitle = '\nProof proposal received, do you want to accept it?'
 }

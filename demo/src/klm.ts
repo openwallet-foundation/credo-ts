@@ -36,7 +36,13 @@ const ui = new inquirer.ui.BottomBar();
   
     constructor(port: number, name: string) {
       super(port, name)
-      super.initializeAgent() // this is not awaited..
+      // super.initializeAgent() // this is not awaited..
+    }
+
+    public static async build(): Promise<KLM> {
+      const klm = new KLM(9001, 'klm')
+      await klm.initializeAgent()
+      return klm
     }
 
     private async getConnectionRecord() {
@@ -112,7 +118,7 @@ const ui = new inquirer.ui.BottomBar();
       return credentialPreview
     }
 
-    async issueCredential(){
+    async issueCredential(){ //clean this up
       this.credentialIssuedListener()
       const schema = await this.registerSchema()
       const credentialDefinition = await this.registerCredentialDefiniton(schema)
@@ -123,6 +129,7 @@ const ui = new inquirer.ui.BottomBar();
         credentialDefinitionId: credentialDefinition.id, 
         preview: credentialPreview,
       })
+      console.log("\x1b[32m\nCredential offer send!\n\x1b[0m")
     }
 
     async sendMessage (message: string) {
@@ -138,15 +145,6 @@ const ui = new inquirer.ui.BottomBar();
     async restart() {
       await this.agent.shutdown()
       //memory leak?
-      runKlm()
+      // runKlm()
     }
   }
-
-
-const runKlm = async () => {
-  clear();
-  console.log(figlet.textSync('KLM', { horizontalLayout: 'full' }));
-  const klm = new KLM(9001, 'klm')
-}
-
-runKlm()

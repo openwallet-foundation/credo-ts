@@ -1,10 +1,13 @@
 import { ProofEventTypes, ProofState, ProofStateChangedEvent } from '@aries-framework/core';
+import { clear } from 'console';
+import figlet from 'figlet';
 import inquirer from 'inquirer'
+import { Annelein } from './annelein';
 import { BaseInquirer } from './base_inquirer';
 import { KLM } from './klm';
 import { Color, Title } from './output_class';
 
-  export enum promptOptions {
+  export enum PromptOptions {
     Connection = "setup connection",
     Credential = "offer credential",
     Message = "send message",
@@ -16,10 +19,15 @@ class KlmInquirer extends BaseInquirer{
     klm: KLM
     promptOptionsString: string[]
 
-    constructor() {
+    constructor(klm: KLM) {
       super()
-      this.promptOptionsString = Object.keys(promptOptions).map((key) => (key))
-      this.klm = new KLM(9001, 'klm')
+      this.promptOptionsString = Object.values(PromptOptions)
+      this.klm = klm
+    }
+
+    public static async build(): Promise<KlmInquirer> {
+      const klm = await KLM.build()
+      return new KlmInquirer(klm)
     }
 
     async getPromptChoice() {
@@ -28,16 +36,16 @@ class KlmInquirer extends BaseInquirer{
 
     async processAnswer() {
       const choice = await this.getPromptChoice()
-      if (choice.options == promptOptions.Connection){
-          this.connection()
-      } else if (choice.options == promptOptions.Credential){
-          this.proof()
-      } else if (choice.options == promptOptions.Message){
-          this.message()
-      } else if (choice.options == promptOptions.Exit){
-          this.exit()
-      } else if (choice.options == promptOptions.Restart){
-          this.restart()
+      if (choice.options == PromptOptions.Connection){
+          await this.connection()
+      } else if (choice.options == PromptOptions.Credential){
+          await this.credential()
+      } else if (choice.options == PromptOptions.Message){
+          await this.message()
+      } else if (choice.options == PromptOptions.Exit){
+          await this.exit()
+      } else if (choice.options == PromptOptions.Restart){
+          await this.restart()
       }
       this.processAnswer()
     }
@@ -59,13 +67,13 @@ class KlmInquirer extends BaseInquirer{
       }
 
     async connection() {
-        const title = 'Paste the invitation url here:'
-        const getUrl = await inquirer.prompt([this.inquireInput(title)])
-        await this.klm.acceptConnection(getUrl.url)
-        this.proofProposalListener()
+      const title = 'Paste the invitation url here:'
+      const getUrl = await inquirer.prompt([this.inquireInput(title)])
+      await this.klm.acceptConnection(getUrl.input)
+      this.proofProposalListener()
     }
 
-    async proof() {
+    async credential() {
       await this.klm.issueCredential()
     }
 
@@ -95,3 +103,12 @@ class KlmInquirer extends BaseInquirer{
       }
     }
 }
+
+const runKlm = async () => {
+  clear();
+  console.log(figlet.textSync('KLM', { horizontalLayout: 'full' }));
+  const klm = await KlmInquirer.build()
+  klm.processAnswer()
+}
+
+runKlm()
