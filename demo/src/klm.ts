@@ -7,6 +7,8 @@ import { BaseAgent } from './base_agent';
 import { JsonEncoder } from '@aries-framework/core/src/utils/JsonEncoder';
 import { Color, Output } from './output_class';
 import { uuid } from '@aries-framework/core/build/utils/uuid';
+import { runAnnelein } from './annelein_inquirer';
+import { runKlm } from './klm_inquirer';
 
 enum options {
   Connection = "setup connection",
@@ -15,20 +17,6 @@ enum options {
   Exit = "exit",
   Restart = "restart"
 }
-
-const ui = new inquirer.ui.BottomBar();
-  /**
-   * - Agent functionality (1 per agent, 1 per script)
-   *  - Annelein
-   *    - createInvite(): invitationUrl: string
-   *  - KLM
-   *    - receiveInvitationUrl(invitationUrl: string)
-   * - Command functionality
-   *  - CommandInterperter
-   *    - showInitialMenu()
-   *    - askForInvitationUrl() // prompts user for invite
-   *       - KLM.receiveInvitationUrl
-   */
   
   export class KLM extends BaseAgent {
     connectionRecordId?: string
@@ -144,7 +132,7 @@ const ui = new inquirer.ui.BottomBar();
   
     async restart() {
       await this.agent.shutdown()
+      runKlm()
       //memory leak?
-      // runKlm()
     }
   }
