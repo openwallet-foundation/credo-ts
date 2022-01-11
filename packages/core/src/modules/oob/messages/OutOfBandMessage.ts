@@ -19,7 +19,7 @@ interface OutOfBandMessageOptions {
   goal?: string
   accept?: string[]
   handshakeProtocols?: string[]
-  services: DidCommService[]
+  services: Array<DidCommService | string>
 }
 
 export class OutOfBandMessage extends AgentMessage {
@@ -119,5 +119,5 @@ export class OutOfBandMessage extends AgentMessage {
 
   @IsArray()
   @ArrayNotEmpty()
-  public services: DidCommService[] = []
+  public services: Array<DidCommService | string> = []
 }
