@@ -16,6 +16,7 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { ConnectionInvitationMessage, DidCommService, ConnectionState, ConnectionsModule } from '../connections'
+import { DidsModule } from '../dids'
 import { MediationRecipientService } from '../routing'
 
 import { HandshakeReuseHandler } from './handlers'
@@ -37,6 +38,7 @@ export interface ReceiveOutOfBandMessageConfig {
 @scoped(Lifecycle.ContainerScoped)
 export class OutOfBandModule {
   private connectionsModule: ConnectionsModule
+  private dids: DidsModule
   private mediationRecipientService: MediationRecipientService
   private dispatcher: Dispatcher
   private messageSender: MessageSender
@@ -47,6 +49,7 @@ export class OutOfBandModule {
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     connectionsModule: ConnectionsModule,
+    dids: DidsModule,
     mediationRecipientService: MediationRecipientService,
     messageSender: MessageSender,
     eventEmitter: EventEmitter
@@ -54,6 +57,7 @@ export class OutOfBandModule {
     this.dispatcher = dispatcher
     this.logger = agentConfig.logger
     this.connectionsModule = connectionsModule
+    this.dids = dids
     this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
@@ -268,12 +272,16 @@ export class OutOfBandModule {
     return handshakeProtocols
   }
 
-  private async findExistingConnection(services: DidCommService[]) {
+  private async findExistingConnection(services: Array<DidCommService | string>) {
     for (const service of services) {
-      for (const recipientKey of service.recipientKeys) {
-        // TODO Encode the key and endpoint of the service block in a Peer DID numalgo 2 and using that DID instead of a service block
-        const existingConnection = await this.connectionsModule.findByTheirKey(recipientKey)
-        return existingConnection
+      if (typeof service === 'string') {
+        // TODO await this.connectionsModule.findByTheirDid()
+      } else {
+        for (const recipientKey of service.recipientKeys) {
+          // TODO Encode the key and endpoint of the service block in a Peer DID numalgo 2 and using that DID instead of a service block
+          const existingConnection = await this.connectionsModule.findByTheirKey(recipientKey)
+          return existingConnection
+        }
       }
     }
   }
@@ -281,25 +289,57 @@ export class OutOfBandModule {
   private async createConnection(outOfBandMessage: OutOfBandMessage, config: { autoAcceptConnection: boolean }) {
     const { services, label } = outOfBandMessage
     const { autoAcceptConnection } = config
-    const invitation = new ConnectionInvitationMessage({
-      label: label || '',
-      ...services[0],
-    })
+
+    if (services.length > 1) {
+      throw new AriesFrameworkError(`Agent currently does not support more than one item in 'service' attribute.`)
+    }
+
+    const [service] = services
+    let options
+    if (typeof service === 'string') {
+      options = {
+        did: service,
+      }
+    } else {
+      options = {
+        ...service,
+      }
+    }
+
+    const invitation = new ConnectionInvitationMessage({ label: label || '', ...options })
     const connectionRecord = await this.connectionsModule.receiveInvitation(invitation, {
       autoAcceptConnection,
     })
     return connectionRecord
   }
 
-  private emitMessages(services: DidCommService[] | undefined, messages: PlaintextMessage[]) {
+  private async emitMessages(services: Array<DidCommService | string> | undefined, messages: PlaintextMessage[]) {
     if (!services || services.length === 0) {
       throw new AriesFrameworkError(`There are no services. We can not emit messages`)
     }
 
     for (const plaintextMessage of messages) {
+      // TODO validate message request, is it supported by framework?
+
       // The framework currently supports only older OOB messages with `~service` decorator.
       const [service] = services
-      plaintextMessage['~service'] = service
+
+      if (typeof service === 'string') {
+        const did = service
+        const didResolutionResult = await this.dids.resolve(did)
+        const [didCommService] = didResolutionResult.didDocument?.didCommServices || []
+        if (!didCommService) {
+          throw new AriesFrameworkError('Resolved did does not have any service.')
+        }
+        const { recipientKeys, routingKeys, serviceEndpoint } = didCommService
+        plaintextMessage['~service'] = {
+          recipientKeys,
+          routingKeys,
+          serviceEndpoint,
+        }
+      } else {
+        plaintextMessage['~service'] = service
+      }
 
       this.eventEmitter.emit<AgentMessageReceivedEvent>({
         type: AgentEventTypes.AgentMessageReceived,
