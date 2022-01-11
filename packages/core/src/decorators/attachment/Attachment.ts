@@ -17,7 +17,7 @@ import { AriesFrameworkError } from '../../error'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { uuid } from '../../utils/uuid'
 
-import { AttachmentJws, signAttachmentJws, verifyAttachmentJws } from './AttachmentJwsUtil'
+import { AttachmentJws, getVerkeysForJws, signAttachmentJws, verifyAttachmentJws } from './AttachmentJwsUtil'
 
 export interface AttachmentOptions {
   id?: string
@@ -84,6 +84,12 @@ export class AttachmentData {
       this.jws = options.jws
       this.sha256 = options.sha256
     }
+  }
+
+  public get jwsVerkeys(): string[] {
+    if (!this.jws) return []
+
+    return getVerkeysForJws(this.jws)
   }
 
   /*

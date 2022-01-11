@@ -8,6 +8,7 @@ import { DidKey, KeyType } from '../../modules/dids/domain/DidKey'
 import { BufferEncoder } from '../../utils/BufferEncoder'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { base64ToBase64URL } from '../../utils/base64'
+import { WalletError } from '../../wallet/error'
 
 const JWS_KEY_TYPE = 'OKP'
 const JWS_CURVE = 'Ed25519'
@@ -127,6 +128,38 @@ async function createJws(verkey: string, base64Payload: string, wallet: Wallet) 
   }
 }
 
+export function getVerkeysForJws(jws: AttachmentJws) {
+  if (jws?.protected) {
+    const verkey = getVerkeyFromProtectedHeader(jws.protected)
+
+    if (verkey) return [verkey]
+  } else if (jws?.signatures) {
+    const verkeys = []
+
+    for (const signature of jws.signatures) {
+      if (signature.protected) {
+        const verkey = getVerkeyFromProtectedHeader(signature.protected)
+        if (verkey) verkeys.push(verkey)
+      }
+    }
+
+    return verkeys
+  }
+
+  return []
+}
+
+function getVerkeyFromProtectedHeader(protectedBase64: string): string | null {
+  const protectedJson = JsonEncoder.fromBase64(protectedBase64)
+  const key = protectedJson?.jwk?.x
+
+  if (key) {
+    return BufferEncoder.toBase58(BufferEncoder.fromBase64(key))
+  }
+
+  return null
+}
+
 export async function signAttachmentJws(wallet: Wallet, verkeys: string[], base64: string) {
   // Ensure base64url (attachments are base64)
   const base64Payload = base64ToBase64URL(base64)
@@ -186,10 +219,18 @@ export async function verifyAttachmentJws(wallet: Wallet, jws: AttachmentJws, ba
     const signature = BufferEncoder.fromBase64(jws.signature)
     const verkey = BufferEncoder.toBase58(BufferEncoder.fromBase64(protectedJson?.jwk?.x))
 
-    const isValid = await wallet.verify(verkey, data, signature)
+    try {
+      const isValid = await wallet.verify(verkey, data, signature)
 
-    if (!isValid) {
-      return false
+      if (!isValid) return false
+    } catch (error) {
+      // WalletError probably means signature verification failed. Would be useful to add
+      // more specific error type in wallet.verify method
+      if (error instanceof WalletError) {
+        return false
+      }
+
+      throw error
     }
   }
 
