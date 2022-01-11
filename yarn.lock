@@ -2273,10 +2273,17 @@
   dependencies:
     "@types/node" "*"
 
-"@types/indy-sdk-react-native@npm:@types/indy-sdk@^1.16.8", "@types/indy-sdk@^1.16.8":
+"@types/indy-sdk-react-native@npm:@types/indy-sdk@^1.16.8":
   version "1.16.9"
   resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.16.9.tgz#647a77ead1e93c77b2b0ef5f2c399ba2ea461b89"
   integrity sha512-X8fdwcGaXfCxayBOb4NUny37JDd9Q3ZDKnm7WBhPRcdOXw3kmsy+WX52751nJQRBcltu883rbqYAIzcZE83XRA==
+  dependencies:
+    buffer "^6.0.0"
+
+"@types/indy-sdk@^1.16.6":
+  version "1.16.8"
+  resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.16.8.tgz#ae3daa067caf91d870ebce219f5cc80c3f9d173f"
+  integrity sha512-UUfbZ+/6pAYOxRmeWgKaDSg0MJicf+KLFPZv8ckRU+R8AD7oemj9lLjvrOFnv+yYBFsyEw1AfqLg4RfioFZXCA==
   dependencies:
     buffer "^6.0.0"
 
@@ -5625,9 +5632,9 @@ indent-string@^4.0.0:
   integrity sha512-EdDDZu4A2OyIK7Lr/2zG+w5jmbuk1DVBnEwREQvBzspBJkCEbRa8GxU1lghYcaGJCnRWibjDXlq779X1/y5xwg==
 
 indy-sdk-react-native@^0.1.16:
-  version "0.1.18"
-  resolved "https://registry.yarnpkg.com/indy-sdk-react-native/-/indy-sdk-react-native-0.1.18.tgz#ffe9413ddc31f7e797f1a8012d5d58ebb5af5432"
-  integrity sha512-8/8x5+f/w6QpZ085NeutFmKaPDFXM8kTGZifkU/p1GVkwaPnpHmSyoHVz1bjhIuHNH0q6VIsCO0yDYol7uwbKw==
+  version "0.1.17"
+  resolved "https://registry.yarnpkg.com/indy-sdk-react-native/-/indy-sdk-react-native-0.1.17.tgz#7548d14d34502d78f00d5df2f18bfe6504b0b584"
+  integrity sha512-wfvAdv+6di+7NIsTh2bKzllZzN2p1r1ws/5P6RKUM3Bf2kBibS70RcrrbIbFFhhzopDlh1XQiqFJqQIZtBoSjg==
   dependencies:
     buffer "^6.0.2"
 
