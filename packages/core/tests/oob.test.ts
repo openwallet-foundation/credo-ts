@@ -8,6 +8,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { DidCommService } from '../src/modules/connections'
+import { DidDocument } from '../src/modules/dids/domain'
 import { OutOfBandMessage } from '../src/modules/oob/messages'
 
 import { getBaseConfig, prepareForIssuance } from './helpers'
@@ -99,6 +100,8 @@ describe('out of band', () => {
     for (const connection of connections) {
       await faberAgent.connections.deleteById(connection.id)
     }
+
+    jest.resetAllMocks()
   })
 
   test('throw error when there is no handshake or message', async () => {
@@ -115,7 +118,7 @@ describe('out of band', () => {
     expect(outOfBandMessage.getRequests()).toBeUndefined()
 
     // expect contains services
-    const [service] = outOfBandMessage.services
+    const [service] = outOfBandMessage.services as DidCommService[]
     expect(service).toMatchObject(
       new DidCommService({
         id: expect.any(String),
@@ -168,7 +171,7 @@ describe('out of band', () => {
     expect(outOfBandMessage.getRequests()).toHaveLength(1)
 
     // expect contains services
-    const [service] = outOfBandMessage.services
+    const [service] = outOfBandMessage.services as DidCommService[]
     expect(service).toMatchObject(
       new DidCommService({
         id: expect.any(String),
@@ -192,7 +195,7 @@ describe('out of band', () => {
     const connectionRecord = await aliceAgent.oob.receiveMessage(outOfBandMessage, { autoAcceptConnection: false })
 
     // expect contains services
-    const [service] = outOfBandMessage.services
+    const [service] = outOfBandMessage.services as DidCommService[]
     expect(service).toMatchObject(
       new DidCommService({
         id: expect.any(String),
@@ -261,6 +264,42 @@ describe('out of band', () => {
     expect(credentials).toHaveLength(1)
     const [credential] = credentials
     expect(credential.state).toBe(CredentialState.OfferReceived)
+  })
+
+  test('process credential offer requests based on OOB message with did', async () => {
+    // Given
+    const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
+    const { outOfBandMessage } = await faberAgent.oob.createMessage(issueCredentialConfig, [offerMessage])
+
+    // Prepare did resolution to resolve did with the keys from oob services attribute
+    const didResolutionResultMock = {
+      didResolutionMetadata: {},
+      didDocument: new DidDocument({
+        id: 'diddocument',
+        service: outOfBandMessage.services as DidCommService[],
+      }),
+      didDocumentMetadata: {},
+    }
+    aliceAgent.dids.resolve = jest.fn(() => Promise.resolve(didResolutionResultMock))
+
+    // Change services attribute from services object to did
+    outOfBandMessage.services = ['somedid']
+
+    // When
+    await aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)
+
+    // Then
+    let credentials: CredentialRecord[] = []
+    while (credentials.length < 1) {
+      credentials = await aliceAgent.credentials.getAll()
+      await wait(100)
+    }
+
+    expect(credentials).toHaveLength(1)
+    const [credential] = credentials
+    expect(credential.state).toBe(CredentialState.OfferReceived)
+
+    expect(aliceAgent.dids.resolve).toHaveBeenCalledWith('somedid')
   })
 
   test('do not process requests when a connection is not ready', async () => {
@@ -359,10 +398,13 @@ describe('out of band', () => {
 
   test('throw an error when handshake protocols are not supported', async () => {
     const outOfBandMessage = new OutOfBandMessage({ services: [] })
-    outOfBandMessage.handshakeProtocols = ['https://didcomm.org/unsupported-connections-protocol/1.0']
+    const unsupportedProtocol = 'https://didcomm.org/unsupported-connections-protocol/1.0'
+    outOfBandMessage.handshakeProtocols = [unsupportedProtocol]
 
     await expect(aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)).rejects.toEqual(
-      new AriesFrameworkError('Handshake protocols are not supported.')
+      new AriesFrameworkError(
+        `Out-of-band message contains unsupported handshake protocols ${unsupportedProtocol}. Supported protocols are https://didcomm.org/connections/1.0`
+      )
     )
   })
 
