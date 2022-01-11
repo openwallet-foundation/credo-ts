@@ -18,11 +18,13 @@ import { Color, Title } from './output_class';
 class KlmInquirer extends BaseInquirer{
     klm: KLM
     promptOptionsString: string[]
+    listenerOn: boolean
 
     constructor(klm: KLM) {
       super()
       this.promptOptionsString = Object.values(PromptOptions)
       this.klm = klm
+      this.listenerOn = false
     }
 
     public static async build(): Promise<KlmInquirer> {
@@ -36,6 +38,9 @@ class KlmInquirer extends BaseInquirer{
 
     async processAnswer() {
       const choice = await this.getPromptChoice()
+      if (this.listenerOn === true){
+        return
+      }
       if (choice.options == PromptOptions.Connection){
           await this.connection()
       } else if (choice.options == PromptOptions.Credential){
@@ -51,21 +56,36 @@ class KlmInquirer extends BaseInquirer{
       this.processAnswer()
     }
 
+    private turnListenerOn(){
+      this.listenerOn = true
+    }
+
+    private turnListenerOff(){
+      this.listenerOn = false
+    }
+
+    private async proofProposalPrompt(payload: any) {
+      const confirm = await inquirer.prompt([this.inquireConfirmation(Title.proofProposalTitle)])
+      if (confirm.options === 'no'){
+        return
+      } else if (confirm.options === 'yes'){
+        this.klm.acceptProofProposal(payload)
+      }
+    }
+
     private proofProposalListener() {
       this.klm.agent.events.on(ProofEventTypes.ProofStateChanged,
         async ({ payload }: ProofStateChangedEvent) => {
-          if (payload.proofRecord.state !== ProofState.ProposalReceived) {
-            const confirm = this.inquireConfirmation(Title.proofProposalTitle)
-            if (confirm.options === 'no'){
-              return
-            } else if (confirm.options === 'yes'){
-              await this.klm.agent.proofs.acceptProposal(payload.proofRecord.id)
-              console.log(`${Color.green}\nProof accepted!\n${Color.reset}`);
-            }
+          if (payload.proofRecord.state === ProofState.ProposalReceived) {
+            this.turnListenerOn()
+            this.proofProposalPrompt(payload)
+            this.turnListenerOff()
+            this.processAnswer()
           }
           return
-        })
-      }
+        }
+      )
+    }
 
     async connection() {
       const title = 'Paste the invitation url here:'
