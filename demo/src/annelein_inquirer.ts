@@ -45,6 +45,7 @@ class AnneleinInquirer extends BaseInquirer{
           await this.exit()
       } else if (choice.options == PromptOptions.Restart){
           await this.restart()
+          return
       }
       this.processAnswer()
     }
@@ -107,7 +108,7 @@ class AnneleinInquirer extends BaseInquirer{
     }
 }
 
-const runAnnelein = async () => {
+export const runAnnelein = async () => {
   clear();
   console.log(figlet.textSync('Annelein', { horizontalLayout: 'full' }));
   const annelein = await AnneleinInquirer.build()

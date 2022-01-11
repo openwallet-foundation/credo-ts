@@ -125,3 +125,17 @@
 // je hebt een prompt interpreter die als argumenten heeft:
 // - de agent class met de functies
 // - de specifieke agent prompt class 
+
+
+  /**
+   * - Agent functionality (1 per agent, 1 per script)
+   *  - Annelein
+   *    - createInvite(): invitationUrl: string
+   *  - KLM
+   *    - receiveInvitationUrl(invitationUrl: string)
+   * - Command functionality
+   *  - CommandInterperter
+   *    - showInitialMenu()
+   *    - askForInvitationUrl() // prompts user for invite
+   *       - KLM.receiveInvitationUrl
+   */

@@ -5,6 +5,7 @@ import { BaseAgent } from './base_agent';
 import { clear } from 'console';
 import figlet from 'figlet';
 import { Color, Output } from './output_class';
+import { runAnnelein } from './annelein_inquirer';
 
 export class Annelein extends BaseAgent {
   connectionRecordId?: string
@@ -106,7 +107,7 @@ export class Annelein extends BaseAgent {
 
   async restart() {
     await this.agent.shutdown()
+    runAnnelein()
     //memory leak?
-    //runAnnelein()
   }
 }

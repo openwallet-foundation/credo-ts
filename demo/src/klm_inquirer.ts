@@ -46,6 +46,7 @@ class KlmInquirer extends BaseInquirer{
           await this.exit()
       } else if (choice.options == PromptOptions.Restart){
           await this.restart()
+          return
       }
       this.processAnswer()
     }
@@ -104,7 +105,7 @@ class KlmInquirer extends BaseInquirer{
     }
 }
 
-const runKlm = async () => {
+export const runKlm = async () => {
   clear();
   console.log(figlet.textSync('KLM', { horizontalLayout: 'full' }));
   const klm = await KlmInquirer.build()
