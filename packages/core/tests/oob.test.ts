@@ -11,6 +11,7 @@ import { DidCommService } from '../src/modules/connections'
 import { DidDocument } from '../src/modules/dids/domain'
 import { OutOfBandMessage } from '../src/modules/oob/messages'
 
+import { TestMessage } from './TestMessage'
 import { getBaseConfig, prepareForIssuance } from './helpers'
 import { TestLogger } from './logger'
 
@@ -413,6 +414,16 @@ describe('out of band', () => {
 
     await expect(aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)).rejects.toEqual(
       new AriesFrameworkError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
+    )
+  })
+
+  test('throw an error when the OOB message contains unsupported message request', async () => {
+    const testMessage = new TestMessage()
+    testMessage.type = 'https://didcomm.org/test-protocol/1.0/test-message'
+    const { outOfBandMessage } = await faberAgent.oob.createMessage(issueCredentialConfig, [testMessage])
+
+    await expect(aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)).rejects.toEqual(
+      new AriesFrameworkError('There is no message in requests~attach supported by agent.')
     )
   })
 })
