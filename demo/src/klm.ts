@@ -30,7 +30,7 @@ enum options {
 
     private async getConnectionRecord() {
       if (!this.connectionRecordId) {
-        throw Error(Output.missingConnectionRecord)
+        throw Error(`${Color.red}${Output.missingConnectionRecord}${Color.reset}`)
       }
       return await this.agent.connections.getById(this.connectionRecordId)
     }
@@ -43,7 +43,6 @@ enum options {
         invitationJson = JsonEncoder.fromBase64(invitationJson)
       } catch(e){
         console.log(`${Color.green}\nIt looks like your invitation link is not correctly formatted?\n${Color.reset}`)
-        //misschien moet dit naar de inquirer?
         return
       }
 
@@ -59,6 +58,9 @@ enum options {
 
     async acceptConnection(invitation_url: string) {
       let connectionRecord = await this.receiveConnectionRequest(invitation_url)
+      if (connectionRecord === undefined) {
+        return
+      }
       this.connectionRecordId = await this.waitForConnection(connectionRecord)
     }
 

@@ -18,21 +18,9 @@ export class Annelein extends BaseAgent {
     return annelein
   }
 
-  private async proposalSentListener () {
-    this.agent.events.on(
-      ProofEventTypes.ProofStateChanged,
-      async ({ payload }: ProofStateChangedEvent) => {
-        if (payload.proofRecord.state !== ProofState.ProposalSent) {
-          return 
-        }
-        console.log(`${Color.green}\nProposal sent!\n${Color.reset}`);
-      }
-    )
-  }
-
   private async getConnectionRecord() {
     if (!this.connectionRecordId) {
-      throw Error(`${Color.red, Output.missingConnectionRecord, Color.reset}`)
+      throw Error(`${Color.red}${Output.missingConnectionRecord}${Color.reset}`)
     }
     return await this.agent.connections.getById(this.connectionRecordId)
   }
@@ -87,7 +75,6 @@ export class Annelein extends BaseAgent {
   }
 
   async sendProofProposal () {
-    this.proposalSentListener()
     const connectionRecord = await this.getConnectionRecord()
     const presentationPreview = await this.newPresentationPreview()
     await this.agent.proofs.proposeProof(connectionRecord.id, presentationPreview)

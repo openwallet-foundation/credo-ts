@@ -43,20 +43,9 @@ export class BaseAgent {
       this.agent.registerInboundTransport(new HttpInboundTransport({port: this.port}))
       this.agent.registerOutboundTransport(new HttpOutboundTransport())
     }
-
-    async messageListener() {
-      this.agent.events.on(BasicMessageEventTypes.BasicMessageStateChanged,
-        (event: BasicMessageStateChangedEvent) => {
-        if (event.payload.basicMessageRecord.role === 'receiver') {
-          console.log(`${Color.purlpe}\n${this.name} received a message: ${event.payload.message.content}\n${Color.reset}`);
-        }
-        return
-      })
-    }
   
     async initializeAgent() {
       await this.agent.initialize()
       console.log(`${Color.green}\nAgent ${this.name} created!${Color.reset}\n`)
-      this.messageListener()
     }
   }
