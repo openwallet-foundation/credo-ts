@@ -198,6 +198,7 @@ export class OutOfBandModule {
     }
 
     if (handshakeProtocols) {
+      this.logger.debug('Out of band message contains handshake protocols.')
       if (!this.areHandshakeProtocolsSupported(handshakeProtocols)) {
         const supportedProtocols = this.getSupportedHandshakeProtocols()
         throw new AriesFrameworkError(
@@ -233,7 +234,7 @@ export class OutOfBandModule {
             .returnWhenIsConnected(connectionRecord.id)
             .then((c) => {
               const connectionServices = c.theirDidDoc?.didCommServices
-              this.emitMessages(connectionServices, messages)
+              return this.emitMessages(connectionServices, messages)
             })
             .catch((error) => {
               if (error instanceof EmptyError) {
@@ -247,13 +248,14 @@ export class OutOfBandModule {
             })
         } else {
           const connectionServices = connectionRecord.theirDidDoc?.didCommServices
-          this.emitMessages(connectionServices, messages)
+          await this.emitMessages(connectionServices, messages)
         }
       }
 
       return connectionRecord
     } else if (messages) {
-      this.emitMessages(services, messages)
+      this.logger.debug('Out of band message contains only request messages.')
+      await this.emitMessages(services, messages)
     }
   }
 
@@ -318,8 +320,12 @@ export class OutOfBandModule {
       throw new AriesFrameworkError(`There are no services. We can not emit messages`)
     }
 
-    for (const plaintextMessage of messages) {
-      // TODO validate message request, is it supported by framework?
+    const plaintextMessage = messages.find((message) =>
+      this.dispatcher.supportedMessageTypes.find((type) => type === message['@type'])
+    )
+
+    if (plaintextMessage) {
+      this.logger.debug(`Message with type ${plaintextMessage['@type']} can be processed.`)
 
       // The framework currently supports only older OOB messages with `~service` decorator.
       const [service] = services
@@ -347,6 +353,8 @@ export class OutOfBandModule {
           message: plaintextMessage,
         },
       })
+    } else {
+      throw new AriesFrameworkError('There is no message in requests~attach supported by agent.')
     }
   }
 
