@@ -36,6 +36,7 @@
     "commander": "^8.3.0",
     "figlet": "^1.5.2",
     "path": "^0.12.7",
+    "rxjs": "^7.5.2",
     "ts-node": "^10.4.0"
   },
   "description": "afj cli demo",

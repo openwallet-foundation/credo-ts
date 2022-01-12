@@ -2,10 +2,10 @@ import { ProofEventTypes, ProofState, ProofStateChangedEvent } from '@aries-fram
 import { clear } from 'console';
 import figlet from 'figlet';
 import inquirer from 'inquirer'
-import { Annelein } from './annelein';
 import { BaseInquirer } from './base_inquirer';
 import { KLM } from './klm';
-import { Color, Title } from './output_class';
+import { Title } from './output_class';
+
 
   export enum PromptOptions {
     Connection = "setup connection",
@@ -19,6 +19,7 @@ class KlmInquirer extends BaseInquirer{
     klm: KLM
     promptOptionsString: string[]
     listenerOn: boolean
+    permissionTimeout: any
 
     constructor(klm: KLM) {
       super()
@@ -32,13 +33,33 @@ class KlmInquirer extends BaseInquirer{
       return new KlmInquirer(klm)
     }
 
-    async getPromptChoice() {
-      return await inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
+    async getPromptChoice(){
+      const prompt = inquirer.prompt([this.inquireOptions(this.promptOptionsString)]);
+  
+      // const timeoutPromise = new Promise(resolve => {
+      //   this.permissionTimeout = setInterval(() => {
+      //     if (this.listenerOn === true){
+      //       resolve(false)
+      //     }
+      //   }, 0.1 * 1000);
+      // });
+  
+      // const promise = (async () => {
+      //   const optIn = await prompt;
+      //   if (this.permissionTimeout){
+      //     clearInterval(this.permissionTimeout)
+      //   }
+      //   return optIn;
+      // })();
+  
+      // // Return the result of the prompt if it finishes first otherwise default to the timeout's value.
+      // return Promise.race([promise, timeoutPromise]);
+      return prompt
     }
 
     async processAnswer() {
       const choice = await this.getPromptChoice()
-      if (this.listenerOn === true){
+      if (this.listenerOn === true) {
         return
       }
       if (choice.options == PromptOptions.Connection){
@@ -69,7 +90,7 @@ class KlmInquirer extends BaseInquirer{
       if (confirm.options === 'no'){
         return
       } else if (confirm.options === 'yes'){
-        this.klm.acceptProofProposal(payload)
+        await this.klm.acceptProofProposal(payload)
       }
     }
 
@@ -78,7 +99,8 @@ class KlmInquirer extends BaseInquirer{
         async ({ payload }: ProofStateChangedEvent) => {
           if (payload.proofRecord.state === ProofState.ProposalReceived) {
             this.turnListenerOn()
-            this.proofProposalPrompt(payload)
+            await this.proofProposalPrompt(payload)
+            clearInterval(this.permissionTimeout)
             this.turnListenerOff()
             this.processAnswer()
           }
@@ -88,7 +110,7 @@ class KlmInquirer extends BaseInquirer{
     }
 
     async connection() {
-      const title = 'Paste the invitation url here:'
+      const title = Title.invitationTitle
       const getUrl = await inquirer.prompt([this.inquireInput(title)])
       await this.klm.acceptConnection(getUrl.input)
       this.proofProposalListener()
