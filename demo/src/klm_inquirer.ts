@@ -4,6 +4,7 @@ import figlet from 'figlet';
 import inquirer from 'inquirer'
 import { BaseInquirer } from './base_inquirer';
 import { KLM } from './klm';
+import { Listener } from './listener';
 import { Title } from './output_class';
 
 
@@ -15,17 +16,17 @@ import { Title } from './output_class';
     Restart = "restart"
   }
 
-class KlmInquirer extends BaseInquirer{
+export class KlmInquirer extends BaseInquirer{
     klm: KLM
     promptOptionsString: string[]
-    listenerOn: boolean
-    permissionTimeout: any
+    listener: Listener
 
     constructor(klm: KLM) {
       super()
-      this.promptOptionsString = Object.values(PromptOptions)
       this.klm = klm
-      this.listenerOn = false
+      this.listener = new Listener()
+      this.promptOptionsString = Object.values(PromptOptions)
+      this.listener.messageListener(this.klm.agent, this.klm.name)
     }
 
     public static async build(): Promise<KlmInquirer> {
@@ -59,7 +60,7 @@ class KlmInquirer extends BaseInquirer{
 
     async processAnswer() {
       const choice = await this.getPromptChoice()
-      if (this.listenerOn === true) {
+      if (this.listener.on === true) {
         return
       }
       if (choice.options == PromptOptions.Connection){
@@ -77,15 +78,7 @@ class KlmInquirer extends BaseInquirer{
       this.processAnswer()
     }
 
-    private turnListenerOn(){
-      this.listenerOn = true
-    }
-
-    private turnListenerOff(){
-      this.listenerOn = false
-    }
-
-    private async proofProposalPrompt(payload: any) {
+    async proofProposalPrompt(payload: any) {
       const confirm = await inquirer.prompt([this.inquireConfirmation(Title.proofProposalTitle)])
       if (confirm.options === 'no'){
         return
@@ -94,26 +87,11 @@ class KlmInquirer extends BaseInquirer{
       }
     }
 
-    private proofProposalListener() {
-      this.klm.agent.events.on(ProofEventTypes.ProofStateChanged,
-        async ({ payload }: ProofStateChangedEvent) => {
-          if (payload.proofRecord.state === ProofState.ProposalReceived) {
-            this.turnListenerOn()
-            await this.proofProposalPrompt(payload)
-            clearInterval(this.permissionTimeout)
-            this.turnListenerOff()
-            this.processAnswer()
-          }
-          return
-        }
-      )
-    }
-
     async connection() {
       const title = Title.invitationTitle
       const getUrl = await inquirer.prompt([this.inquireInput(title)])
       await this.klm.acceptConnection(getUrl.input)
-      this.proofProposalListener()
+      this.listener.proofProposalListener(this.klm, this)
     }
 
     async credential() {
