@@ -21,14 +21,22 @@ class AnneleinInquirer extends BaseInquirer{
 
     constructor(annelein: Annelein) {
       super()
-      this.promptOptionsString = Object.values(PromptOptions)
       this.annelein = annelein
       this.listenerOn = false
+      this.promptOptionsString = Object.values(PromptOptions)
     }
 
     public static async build(): Promise<AnneleinInquirer> {
       const annelein = await Annelein.build()
       return new AnneleinInquirer(annelein)
+    }
+
+    private turnListenerOn(){
+      this.listenerOn = true
+    }
+
+    private turnListenerOff(){
+      this.listenerOn = false
     }
 
     async getPromptChoice() {
@@ -55,21 +63,20 @@ class AnneleinInquirer extends BaseInquirer{
       this.processAnswer()
     }
 
-    private turnListenerOn(){
-      this.listenerOn = true
-    }
-
-    private turnListenerOff(){
-      this.listenerOn = false
-    }
-
     private async acceptCredentialOffer(payload: any) {
       const confirm = await inquirer.prompt([this.inquireConfirmation(Title.credentialOfferTitle)])
       if (confirm.options === 'no'){
         return
       } else if (confirm.options === 'yes'){
-        this.annelein.acceptCredentialOffer(payload)
+        await this.annelein.acceptCredentialOffer(payload)
       }
+    }
+
+    async newConfirmPrompt(payload: any) {
+      this.turnListenerOn()
+      await this.acceptCredentialOffer(payload)
+      this.turnListenerOff()
+      this.processAnswer()
     }
 
     private credentialOfferListener() {
@@ -77,10 +84,7 @@ class AnneleinInquirer extends BaseInquirer{
         CredentialEventTypes.CredentialStateChanged,
         async ({ payload }: CredentialStateChangedEvent) => {
           if (payload.credentialRecord.state === CredentialState.OfferReceived){
-            this.turnListenerOn()
-            this.acceptCredentialOffer(payload)
-            this.turnListenerOff()
-            this.processAnswer()
+            await this.newConfirmPrompt(payload)
           }
           return
         }

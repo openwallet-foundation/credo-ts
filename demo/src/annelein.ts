@@ -1,9 +1,5 @@
-import { CredentialEventTypes, CredentialState, CredentialStateChangedEvent, PresentationPreview, PresentationPreviewAttribute, ProofEventTypes, ProofState, ProofStateChangedEvent } from '@aries-framework/core'
-import inquirer from 'inquirer'
-import { ConnectionRecord } from '@aries-framework/core';
+import { PresentationPreview, PresentationPreviewAttribute, ProofEventTypes, ProofState, ProofStateChangedEvent } from '@aries-framework/core'
 import { BaseAgent } from './base_agent';
-import { clear } from 'console';
-import figlet from 'figlet';
 import { Color, Output } from './output_class';
 import { runAnnelein } from './annelein_inquirer';
 
@@ -13,7 +9,6 @@ export class Annelein extends BaseAgent {
   
   constructor(port: number, name: string) {
     super(port, name)
-    // super.initializeAgent() // this is not awaited..
     this.credDef = '7KuDTpQh3GJ7Gp6kErpWvM:3:CL:115269:latest'
   }
 
@@ -30,8 +25,7 @@ export class Annelein extends BaseAgent {
         if (payload.proofRecord.state !== ProofState.ProposalSent) {
           return 
         }
-        console.log("\x1b[32m\nProposal sent!\n\x1b[0m");
-        return
+        console.log(`${Color.green}\nProposal sent!\n${Color.reset}`);
       }
     )
   }
@@ -52,12 +46,11 @@ export class Annelein extends BaseAgent {
   }
 
   private async waitForConnection() {
-    // dit was eerst met if statement net zoals hier boven
     const connectionRecord = await this.getConnectionRecord()
 
     console.log("Waiting for KLM to finish connection...")
     await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
-    console.log(Output.connectionEstablished)
+    console.log(`${Color.green}${Output.connectionEstablished}${Color.reset}`)
   }
   
   async setupConnection() {
@@ -67,7 +60,7 @@ export class Annelein extends BaseAgent {
 
   async acceptCredentialOffer(payload: any) {
     await this.agent.credentials.acceptOffer(payload.credentialRecord.id)
-    console.log("\x1b[32m\nCredential offer accepted!\n\x1b[0m")
+    console.log(`${Color.green}\nCredential offer accepted!\n${Color.reset}`)
   }
 
   private async newPresentationPreview() {
@@ -106,13 +99,12 @@ export class Annelein extends BaseAgent {
   }
 
   async exit() {
-    console.log("Exiting")
+    console.log("Exiting...")
     process.exit()
   }
 
   async restart() {
     await this.agent.shutdown()
     runAnnelein()
-    //memory leak?
   }
 }
