@@ -49,17 +49,7 @@ export class OutOfBandMessage extends AgentMessage {
   }
 
   public getRequests(): PlaintextMessage[] | undefined {
-    return this.requests?.map((request) => {
-      if (request.data.base64) {
-        return JsonEncoder.fromBase64(request.data.base64)
-      }
-
-      if (request.data.json) {
-        return request.data.json
-      }
-
-      throw new AriesFrameworkError('There is no supported data attribute in attachment')
-    })
+    return this.requests?.map((request) => request.data.getDataAsJson())
   }
 
   public toUrl({ domain }: { domain: string }) {
