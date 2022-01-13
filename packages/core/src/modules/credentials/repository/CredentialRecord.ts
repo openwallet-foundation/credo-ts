@@ -1,6 +1,9 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialState } from '../CredentialState'
+import type { V2OfferCredentialMessage } from '../v2/messages/V2OfferCredentialMessage'
+import type { V2ProposeCredentialMessage } from '../v2/messages/V2ProposeCredentialMessage'
+import type { V2RequestCredentialMessage } from '../v2/messages/V2RequestCredentialMessage'
 import type { CredentialMetadata } from './credentialMetadataTypes'
 
 import { Type } from 'class-transformer'
@@ -9,16 +12,14 @@ import { Attachment } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
+import { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
 import {
-  CredentialPreviewAttribute,
   IssueCredentialMessage,
   OfferCredentialMessage,
   ProposeCredentialMessage,
   RequestCredentialMessage,
 } from '../v1/messages'
 import { CredentialInfo } from '../v1/models/CredentialInfo'
-import { V2ProposeCredentialMessage } from '../v2/messages/V2ProposeCredentialMessage'
-import { V2OfferCredentialMessage } from '../v2/messages/V2OfferCredentialMessage'
 
 export interface CredentialRecordProps {
   id?: string
@@ -61,7 +62,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
   @Type(() => OfferCredentialMessage)
   public offerMessage?: OfferCredentialMessage | V2OfferCredentialMessage
   @Type(() => RequestCredentialMessage)
-  public requestMessage?: RequestCredentialMessage
+  public requestMessage?: RequestCredentialMessage | V2RequestCredentialMessage
   @Type(() => IssueCredentialMessage)
   public credentialMessage?: IssueCredentialMessage
 

@@ -1,5 +1,5 @@
+import { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
 import { CredentialUtils } from '../CredentialUtils'
-import { CredentialPreviewAttribute } from '../v1/V1CredentialPreview'
 
 /**
  * Sample test cases for encoding/decoding of verifiable credential claims - Aries RFCs 0036 and 0037

@@ -5,7 +5,6 @@ import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } fro
 
 import { AgentMessage } from '../../../../agent/AgentMessage'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
-
 import { V1CredentialPreview } from '../V1CredentialPreview'
 
 export const INDY_CREDENTIAL_OFFER_ATTACHMENT_ID = 'libindy-cred-offer-0'
@@ -64,7 +63,6 @@ export class OfferCredentialMessage extends AgentMessage {
 
     // Extract credential offer from attachment
     const credentialOfferJson = attachment?.data?.getDataAsJson<CredOffer>() ?? null
-
     return credentialOfferJson
   }
 }

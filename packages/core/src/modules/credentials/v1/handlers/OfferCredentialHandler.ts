@@ -1,9 +1,9 @@
+import type { V1LegacyCredentialService } from '../..'
 import type { AgentConfig } from '../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import type { CredentialRecord } from '../../repository/CredentialRecord'
-import type { V1LegacyCredentialService } from '../..'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../agent/helpers'
 import { ServiceDecorator } from '../../../../decorators/service/ServiceDecorator'

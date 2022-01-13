@@ -4,7 +4,6 @@ import { Expose, Type } from 'class-transformer'
 import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../../agent/AgentMessage'
-
 import { V1CredentialPreview } from '../V1CredentialPreview'
 
 export interface ProposeCredentialMessageOptions {

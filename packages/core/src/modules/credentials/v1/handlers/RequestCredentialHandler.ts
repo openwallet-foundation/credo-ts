@@ -1,8 +1,8 @@
+import type { V1LegacyCredentialService } from '../..'
 import type { AgentConfig } from '../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 import type { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import type { CredentialRecord } from '../../repository/CredentialRecord'
-import type { V1LegacyCredentialService } from '../..'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../agent/helpers'
 import { RequestCredentialMessage } from '../messages'

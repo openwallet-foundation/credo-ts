@@ -6,7 +6,6 @@ import type { ConnectionRecord } from '../../connections'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialProblemReportMessage, ProposeCredentialMessageOptions } from './messages'
-import type { CredReqMetadata } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -25,6 +24,11 @@ import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../errors'
+import { CredentialRepository } from '../repository'
+import { CredentialRecord } from '../repository/CredentialRecord'
+import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
+
+import { V1CredentialPreview } from './V1CredentialPreview'
 import {
   CredentialAckMessage,
   INDY_CREDENTIAL_ATTACHMENT_ID,
@@ -33,13 +37,8 @@ import {
   IssueCredentialMessage,
   OfferCredentialMessage,
   ProposeCredentialMessage,
-  V1CredentialPreview,
   RequestCredentialMessage,
 } from './messages'
-import { CredentialRepository } from '../repository'
-import { CredentialRecord } from '../repository/CredentialRecord'
-import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
-import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 
 @scoped(Lifecycle.ContainerScoped)
 export class V1LegacyCredentialService {
@@ -89,17 +88,15 @@ export class V1LegacyCredentialService {
 
     // Add the linked attachments to the credentialProposal
     if (config?.linkedAttachments) {
-      options.credentialProposal = CredentialUtils.createAndLinkAttachmentsToPreviewV1(
+      options.credentialProposal = CredentialUtils.createAndLinkAttachmentsToPreview(
         config.linkedAttachments,
         config.credentialProposal ?? new V1CredentialPreview({ attributes: [] })
       )
       options.attachments = config.linkedAttachments.map((linkedAttachment) => linkedAttachment.attachment)
     }
 
-
     // Create message
     const proposalMessage = new ProposeCredentialMessage(options ?? {})
-
 
     // Create record
     const credentialRecord = new CredentialRecord({
@@ -190,7 +187,6 @@ export class V1LegacyCredentialService {
       credentialRecord.proposalMessage = proposalMessage
       await this.updateState(credentialRecord, CredentialState.ProposalReceived)
     } catch {
-
       // No credential record exists with thread id
       credentialRecord = new CredentialRecord({
         connectionId: connection?.id,
@@ -236,7 +232,6 @@ export class V1LegacyCredentialService {
   ): Promise<CredentialProtocolMsgReturnType<OfferCredentialMessage>> {
     // Assert
     credentialRecord.assertState(CredentialState.ProposalReceived)
-
 
     // Create message
     const { credentialDefinitionId, comment, preview, attachments } = credentialTemplate
@@ -305,7 +300,7 @@ export class V1LegacyCredentialService {
 
     // Create and link credential to attacment
     const credentialPreview = linkedAttachments
-      ? CredentialUtils.createAndLinkAttachmentsToPreviewV1(linkedAttachments, preview)
+      ? CredentialUtils.createAndLinkAttachmentsToPreview(linkedAttachments, preview)
       : preview
 
     // Construct offer message
@@ -389,7 +384,6 @@ export class V1LegacyCredentialService {
 
       await this.updateState(credentialRecord, CredentialState.OfferReceived)
     } catch {
-
       // No credential record exists with thread id
       credentialRecord = new CredentialRecord({
         connectionId: connection?.id,
@@ -594,7 +588,7 @@ export class V1LegacyCredentialService {
       credentialAttachments: [credentialAttachment],
       attachments:
         offerMessage?.attachments?.filter((attachment) => isLinkedAttachment(attachment)) ||
-        requestMessage?.attachments?.filter((attachment) => isLinkedAttachment(attachment)),
+        requestMessage?.attachments?.filter((attachment: Attachment) => isLinkedAttachment(attachment)),
     })
     issueCredentialMessage.setThread({
       threadId: credentialRecord.threadId,

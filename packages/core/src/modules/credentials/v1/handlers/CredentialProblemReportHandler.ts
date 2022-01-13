@@ -1,5 +1,5 @@
-import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 import type { V1LegacyCredentialService } from '../..'
+import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 
 import { CredentialProblemReportMessage } from '../messages'
 

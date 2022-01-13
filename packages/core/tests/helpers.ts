@@ -33,7 +33,6 @@ import {
   ConnectionRole,
   ConnectionState,
   CredentialEventTypes,
-  V1CredentialPreview,
   CredentialState,
   DidCommService,
   DidDoc,
@@ -47,6 +46,7 @@ import {
 } from '../src'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
+import { V1CredentialPreview } from '../src/modules/credentials/v1/V1CredentialPreview'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -150,7 +150,7 @@ export function waitForCredentialRecordSubject(
   }
 ) {
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
-  
+
   return firstValueFrom(
     observable.pipe(
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
@@ -323,7 +323,7 @@ export async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: string)
   try {
     testLogger.test(`Ensure test DID ${publicDid} is written to ledger`)
     await agent.ledger.getPublicDid(publicDid)
-  } catch (error: any) {
+  } catch (error) {
     // Unfortunately, this won't prevent from the test suite running because of Jest runner runs all tests
     // regardless of thrown errors. We're more explicit about the problem with this error handling.
     throw new Error(`Test DID ${publicDid} is not written on ledger or ledger is not available: ${error.message}`)
@@ -364,7 +364,7 @@ export async function issueCredential({
     state: CredentialState.OfferReceived,
   })
 
-  await holderAgent.credentials.acceptOffer(holderCredentialRecord.id, {
+  await holderAgent.credentials.OLDacceptOffer(holderCredentialRecord.id, {
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   })
 
@@ -418,7 +418,7 @@ export async function issueConnectionLessCredential({
     state: CredentialState.OfferReceived,
   })
 
-  holderCredentialRecord = await holderAgent.credentials.acceptOffer(holderCredentialRecord.id, {
+  holderCredentialRecord = await holderAgent.credentials.OLDacceptOffer(holderCredentialRecord.id, {
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   })
 

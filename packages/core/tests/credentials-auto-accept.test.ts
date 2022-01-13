@@ -1,15 +1,14 @@
 import type { Agent } from '../src/agent/Agent'
 import type { ConnectionRecord } from '../src/modules/connections'
+import type { Schema } from 'indy-sdk'
 
-import { AutoAcceptCredential, V1CredentialPreview, CredentialRecord, CredentialState } from '../src/modules/credentials'
+import { AutoAcceptCredential, CredentialRecord, CredentialState } from '../src/modules/credentials'
+import { V1CredentialPreview } from '../src/modules/credentials/v1/V1CredentialPreview'
 import { JsonTransformer } from '../src/utils/JsonTransformer'
 import { sleep } from '../src/utils/sleep'
 
 import { setupCredentialTests, waitForCredentialRecord } from './helpers'
 import testLogger from './logger'
-import type {
-  Schema,
-} from 'indy-sdk'
 
 const credentialPreview = V1CredentialPreview.fromRecord({
   name: 'John',
@@ -47,65 +46,64 @@ describe('auto accept credentials', () => {
       await aliceAgent.shutdown()
       await aliceAgent.wallet.delete()
     })
-   
 
-    // test('Alice starts with credential proposal to Faber, both with autoAcceptCredential on `always`', async () => {
-    //   testLogger.test('Alice sends credential proposal to Faber')
+    test('Alice starts with credential proposal to Faber, both with autoAcceptCredential on `always`', async () => {
+      testLogger.test('Alice sends credential proposal to Faber')
 
-    //   const schemaId = schema.id
-    //   let aliceCredentialRecord = await aliceAgent.credentials.proposeCredential(aliceConnection.id, {
-    //     credentialProposal: credentialPreview,
-    //     credentialDefinitionId: credDefId,
-    //   })
+      const schemaId = schema.id
+      let aliceCredentialRecord = await aliceAgent.credentials.OLDproposeCredential(aliceConnection.id, {
+        credentialProposal: credentialPreview,
+        credentialDefinitionId: credDefId,
+      })
 
-    //   testLogger.test('Alice waits for credential from Faber')
-    //   aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
-    //     threadId: aliceCredentialRecord.threadId,
-    //     state: CredentialState.CredentialReceived,
-    //   })
+      testLogger.test('Alice waits for credential from Faber')
+      aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+        threadId: aliceCredentialRecord.threadId,
+        state: CredentialState.CredentialReceived,
+      })
 
-    //   testLogger.test('Faber waits for credential ack from Alice')
-    //   faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
-    //     threadId: aliceCredentialRecord.threadId,
-    //     state: CredentialState.Done,
-    //   })
+      testLogger.test('Faber waits for credential ack from Alice')
+      faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
+        threadId: aliceCredentialRecord.threadId,
+        state: CredentialState.Done,
+      })
 
-    //   expect(aliceCredentialRecord).toMatchObject({
-    //     type: CredentialRecord.name,
-    //     id: expect.any(String),
-    //     createdAt: expect.any(Date),
-    //     offerMessage: expect.any(Object),
-    //     requestMessage: expect.any(Object),
-    //     metadata: {
-    //       data: {
-    //         '_internal/indyRequest': expect.any(Object),
-    //         '_internal/indyCredential': {
-    //           schemaId,
-    //           credentialDefinitionId: credDefId,
-    //         },
-    //       },
-    //     },
-    //     credentialId: expect.any(String),
-    //     state: CredentialState.Done,
-    //   })
+      expect(aliceCredentialRecord).toMatchObject({
+        type: CredentialRecord.name,
+        id: expect.any(String),
+        createdAt: expect.any(Date),
+        offerMessage: expect.any(Object),
+        requestMessage: expect.any(Object),
+        metadata: {
+          data: {
+            '_internal/indyRequest': expect.any(Object),
+            '_internal/indyCredential': {
+              schemaId,
+              credentialDefinitionId: credDefId,
+            },
+          },
+        },
+        credentialId: expect.any(String),
+        state: CredentialState.Done,
+      })
 
-    //   expect(faberCredentialRecord).toMatchObject({
-    //     type: CredentialRecord.name,
-    //     id: expect.any(String),
-    //     createdAt: expect.any(Date),
-    //     metadata: {
-    //       data: {
-    //         '_internal/indyCredential': {
-    //           schemaId,
-    //           credentialDefinitionId: credDefId,
-    //         },
-    //       },
-    //     },
-    //     offerMessage: expect.any(Object),
-    //     requestMessage: expect.any(Object),
-    //     state: CredentialState.Done,
-    //   })
-    // })
+      expect(faberCredentialRecord).toMatchObject({
+        type: CredentialRecord.name,
+        id: expect.any(String),
+        createdAt: expect.any(Date),
+        metadata: {
+          data: {
+            '_internal/indyCredential': {
+              schemaId,
+              credentialDefinitionId: credDefId,
+            },
+          },
+        },
+        offerMessage: expect.any(Object),
+        requestMessage: expect.any(Object),
+        state: CredentialState.Done,
+      })
+    })
 
     test('Faber starts with credential offer to Alice, both with autoAcceptCredential on `always`', async () => {
       testLogger.test('Faber sends credential offer to Alice')
@@ -127,7 +125,6 @@ describe('auto accept credentials', () => {
         threadId: faberCredentialRecord.threadId,
         state: CredentialState.Done,
       })
-      
 
       expect(aliceCredentialRecord).toMatchObject({
         type: CredentialRecord.name,
@@ -290,7 +287,7 @@ describe('auto accept credentials', () => {
       expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
 
       testLogger.test('alice sends credential request to faber')
-      aliceCredentialRecord = await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id)
+      aliceCredentialRecord = await aliceAgent.credentials.OLDacceptOffer(aliceCredentialRecord.id)
 
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {

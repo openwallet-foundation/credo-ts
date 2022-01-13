@@ -17,7 +17,6 @@ import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsAPI } from '../modules/credentials/CredentialsAPI'
-
 import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
@@ -35,7 +34,6 @@ import { AgentEventTypes } from './Events'
 import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
-import { CredentialsModule } from '..'
 
 export class Agent {
   protected agentConfig: AgentConfig
@@ -104,7 +102,6 @@ export class Agent {
     // this.credentials = this.container.resolve(CredentialsModule)
     this.credentials = this.container.resolve(CredentialsAPI)
 
-    
     this.proofs = this.container.resolve(ProofsModule)
     this.mediator = this.container.resolve(MediatorModule)
     this.mediationRecipient = this.container.resolve(RecipientModule)

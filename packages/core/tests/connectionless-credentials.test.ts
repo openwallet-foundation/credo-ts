@@ -93,7 +93,7 @@ describe('credentials', () => {
     })
 
     testLogger.test('Alice sends credential request to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id)
+    aliceCredentialRecord = await aliceAgent.credentials.OLDacceptOffer(aliceCredentialRecord.id)
 
     testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
@@ -173,7 +173,7 @@ describe('credentials', () => {
       state: CredentialState.OfferReceived,
     })
 
-    await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id, {
+    await aliceAgent.credentials.OLDacceptOffer(aliceCredentialRecord.id, {
       autoAcceptCredential: AutoAcceptCredential.ContentApproved,
     })
 

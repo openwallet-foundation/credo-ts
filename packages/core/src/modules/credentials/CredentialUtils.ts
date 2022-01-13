@@ -1,4 +1,6 @@
 import type { LinkedAttachment } from '../../utils/LinkedAttachment'
+import type { V1CredentialPreview } from './v1/V1CredentialPreview'
+import type { V2CredentialPreview } from './v2/V2CredentialPreview'
 import type { CredValues } from 'indy-sdk'
 
 import { hash as sha256 } from '@stablelib/sha256'
@@ -9,11 +11,7 @@ import { encodeAttachment } from '../../utils/attachment'
 import { Buffer } from '../../utils/buffer'
 import { isBoolean, isNumber, isString } from '../../utils/type'
 
-import { V2CredentialPreview } from './v2/V2CredentialPreview'
-import { V1CredentialPreview, CredentialPreviewAttribute } from './v1/V1CredentialPreview'
-
-import { CredentialProtocolVersion } from './CredentialProtocolVersion'
-import { V2CredProposalFormat } from './v2/interfaces'
+import { CredentialPreviewAttribute } from './CredentialPreviewAttributes'
 
 export class CredentialUtils {
   /**
@@ -24,8 +22,10 @@ export class CredentialUtils {
    *
    * @returns a modified version of the credential preview with the linked credentials
    * */
-  private static createAndLinkAttachmentsToPreview(attachments: LinkedAttachment[], preview: V1CredentialPreview | V2CredentialPreview) {
-    const credentialPreview = new V1CredentialPreview({ attributes: [...preview.attributes] })
+  public static createAndLinkAttachmentsToPreview(
+    attachments: LinkedAttachment[],
+    credentialPreview: V1CredentialPreview | V2CredentialPreview
+  ) {
     const credentialPreviewAttributeNames = credentialPreview.attributes.map((attribute) => attribute.name)
     attachments.forEach((linkedAttachment) => {
       if (credentialPreviewAttributeNames.includes(linkedAttachment.attributeName)) {
@@ -42,14 +42,6 @@ export class CredentialUtils {
     })
 
     return credentialPreview
-  }
-  public static createAndLinkAttachmentsToPreviewV1(attachments: LinkedAttachment[], preview: V1CredentialPreview) {
-    const credentialPreview = new V1CredentialPreview({ attributes: [...preview.attributes] })
-    return this.createAndLinkAttachmentsToPreview(attachments, preview)
-  }
-  public static createAndLinkAttachmentsToPreviewV2(attachments: LinkedAttachment[], preview: V2CredentialPreview) {
-    const credentialPreview = new V2CredentialPreview({ attributes: [...preview.attributes] })
-    return this.createAndLinkAttachmentsToPreview(attachments, preview)
   }
   /**
    * Converts int value to string

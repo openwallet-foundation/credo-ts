@@ -1,12 +1,10 @@
-import { AnyJson } from '../../generic'
-import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
-import { LinkedAttachment } from '../../../utils/LinkedAttachment'
-import { CredentialPreviewAttribute } from '../'
+import type { LinkedAttachment } from '../../../utils/LinkedAttachment'
+import type { AnyJson } from '../../generic'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
-
-
-import { Attachment } from '../../../decorators/attachment/Attachment'
-import { CredOffer } from 'indy-sdk'
+import type { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
+import type { CredentialProtocolVersion } from '../CredentialProtocolVersion'
+import type { CredentialRecordType } from './CredentialExchangeRecord'
+import type { CredDef, CredOffer, CredReq, CredReqMetadata } from 'indy-sdk'
 
 type IssuerId = string
 
@@ -25,7 +23,7 @@ export interface W3CCredentialFormat {
     type: string | string[]
     issuanceDate: string
     proof?: Record<string, AnyJson> | Array<Record<string, AnyJson>>
-    [x: string]: any
+    [x: string]: unknown
   }
   format: {
     linkedDataProof: {
@@ -45,6 +43,7 @@ export interface OfferCredentialFormats {
   w3c?: W3CCredentialFormat
 }
 
+// Used in OfferCredential
 interface OfferCredentialOptions {
   connectionId: string
   protocolVersion: CredentialProtocolVersion
@@ -54,13 +53,16 @@ interface OfferCredentialOptions {
 }
 
 interface AcceptOfferOptions {
+  connectionId: string
+  protocolVersion: CredentialProtocolVersion
   credentialRecordId: string
+  credentialRecordType: CredentialRecordType
   comment?: string
   autoAcceptCredential?: AutoAcceptCredential
 }
 
 interface NegotiateOfferOptions {
-  credentialRecordId: string  
+  credentialRecordId: string
   credentialFormats: OfferCredentialFormats
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
@@ -70,7 +72,7 @@ interface NegotiateOfferOptions {
 
 // this is the base64 encoded data payload for [Indy] credential proposal
 interface CredPropose {
-  attributes?: CredentialPreviewAttribute[] 
+  attributes?: CredentialPreviewAttribute[]
   schemaIssuerDid?: string
   schemaName?: string
   schemaVersion?: string
@@ -80,17 +82,12 @@ interface CredPropose {
   linkedAttachments?: LinkedAttachment[]
 }
 
-// ====================================================================================
-// CredOffer is the base64 encoded data payload for [Indy] credential offer messages
-// IMPORTANT! review this
 export interface V2CredProposalFormat {
-  indy?:CredPropose
+  indy?: CredPropose
   w3c?: {
     // MJR-TODO
   }
 }
-// ====================================================================================
-
 
 interface ProposeCredentialOptions {
   connectionId: string
@@ -100,23 +97,27 @@ interface ProposeCredentialOptions {
   comment?: string
 }
 
-
-// ====================================================================================
-// CredOffer is the base64 encoded data payload for [Indy] credential offer messages
-// IMPORTANT! review this
-export interface V2CredOfferFormat {
+export interface V2CredDefinitionFormat {
   indy?: {
-      offer: CredOffer
+    credentialDefinition: CredDef
   }
   w3c?: {
     // MJR-TODO
   }
 }
-// ====================================================================================
+
+export interface V2CredOfferFormat {
+  indy?: {
+    credentialOffer: CredOffer
+  }
+  w3c?: {
+    // MJR-TODO
+  }
+}
 
 interface IndyCredentialPreview {
-       // Could be that credential definition id and attributes are already defined
-      // But could also be that they are undefined. So we can't make them required
+  // Could be that credential definition id and attributes are already defined
+  // But could also be that they are undefined. So we can't make them required
   credentialDefinitionId?: string
   attributes?: CredentialPreviewAttribute[]
 }
@@ -144,19 +145,27 @@ interface NegotiateProposalOptions {
 }
 
 /// CREDENTIAL REQUEST
-
-interface RequestCredentialFormats {
-  // Indy cannot start from credential request
-  w3c: W3CCredentialFormat
+// this is the base64 encoded data payload for [Indy] credential request
+export interface V2CredRequestFormat {
+  // Indy cannot start from credential request - MJR: but you can still have credential requests in Indy
+  // in response to an offer
+  indy?: {
+    request: CredReq
+    requestMetaData?: CredReqMetadata
+  }
+  w3c?: W3CCredentialFormat
 }
 
 interface RequestCredentialOptions {
-  connectionId: string
+  credentialRecordType: CredentialRecordType
+  connectionId?: string
+  holderDid: string
   // As indy cannot start from request and w3c is not supported in v1 we always use v2 here
-  // protocolVersion: ProtocolVersion
-  credentialFormats: RequestCredentialFormats
+  credentialFormats?: V2CredRequestFormat
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
+  offer?: V2CredOfferFormat // will not be there if this is a W3C request rather than an indy response to offer
+  credentialDefinition?: V2CredDefinitionFormat
 }
 
 interface AcceptRequestOptions {

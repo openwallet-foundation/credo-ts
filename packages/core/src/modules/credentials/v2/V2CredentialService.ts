@@ -1,35 +1,54 @@
-import { AgentMessage, AgentConfig, MessageSender, CredentialState, CredentialStateChangedEvent, CredentialEventTypes, AriesFrameworkError, IndyLedgerService } from '@aries-framework/core'
-import { CredentialService } from '../CredentialService'
-import { AcceptProposalOptions, FormatType, ProposeCredentialOptions, V2CredOfferFormat, V2CredProposalFormat } from './interfaces'
-import { CredentialRecord, CredentialRepository } from '../repository'
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { CredentialRecordType } from './CredentialExchangeRecord'
-import { CredentialFormatService } from './formats/CredentialFormatService'
-import { unitTestLogger } from '../../../logger'
+import type { AgentConfig } from '../../../agent/AgentConfig'
+import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { Dispatcher } from '../../../agent/Dispatcher'
+import type { EventEmitter } from '../../../agent/EventEmitter'
+import type { HandlerInboundMessage } from '../../../agent/Handler'
+import type { MessageSender } from '../../../agent/MessageSender'
+import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
+import type { ConnectionService } from '../../connections/services/ConnectionService'
+import type { IndyHolderService, IndyIssuerService } from '../../indy'
+import type { IndyLedgerService } from '../../ledger'
+import type { MediationRecipientService } from '../../routing'
+import type { CredentialStateChangedEvent } from '../CredentialEvents'
+import type { CredentialResponseCoordinator } from '../CredentialResponseCoordinator'
+import type { CredentialRepository } from '../repository'
+import type { V1LegacyCredentialService } from '../v1/V1LegacyCredentialService' // tmp
+import type { CredentialProtocolMsgReturnType } from './CredentialMessageBuilder'
+import type { CredentialFormatService } from './formats/CredentialFormatService'
+import type {
+  AcceptProposalOptions,
+  FormatType,
+  ProposeCredentialOptions,
+  RequestCredentialOptions,
+  V2CredOfferFormat,
+  V2CredProposalFormat,
+  V2CredRequestFormat,
+} from './interfaces'
+import type { V2OfferCredentialMessage } from './messages/V2OfferCredentialMessage'
+import type { V2RequestCredentialMessage } from './messages/V2RequestCredentialMessage'
+
+import { AriesFrameworkError } from '../../../error'
+import { unitTestLogger } from '../../../logger'
+import { JsonEncoder } from '../../../utils/JsonEncoder'
+import { isLinkedAttachment } from '../../../utils/attachment'
+import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
+import { CredentialService } from '../CredentialService'
+import { CredentialState } from '../CredentialState'
+import { CredentialProblemReportError, CredentialProblemReportReason } from '../errors'
+import { CredentialRecord } from '../repository'
+
+import { CredentialRecordType } from './CredentialExchangeRecord'
+import { CredentialMessageBuilder } from './CredentialMessageBuilder'
+import { INDY_ATTACH_ID } from './formats/V2CredentialFormat'
 import { IndyCredentialFormatService } from './formats/indy/IndyCredentialFormatService'
 import { JsonLdCredentialFormatService } from './formats/jsonld/JsonLdCredentialFormatService'
-import { CredentialMessageBuilder } from './CredentialMessageBuilder'
-import { Lifecycle, scoped } from 'tsyringe'
-import { V1LegacyCredentialService } from '../v1/V1LegacyCredentialService' // tmp
-import { ConnectionService } from '../../connections/services/ConnectionService'
-import { HandlerInboundMessage } from 'packages/core/src/agent/Handler'
-import { V2ProposeCredentialHandler } from './handlers/V2ProposeCredentialHandler'
-import { Dispatcher } from '../../../agent/Dispatcher'
-import { CredentialResponseCoordinator } from '../CredentialResponseCoordinator'
-import { JsonEncoder } from '../../../utils/JsonEncoder'
-import { V2OfferCredentialMessage } from './messages/V2OfferCredentialMessage'
-import { IndyHolderService, IndyIssuerService } from '../../indy'
 import { V2OfferCredentialHandler } from './handlers/V2OfferCredentialHandler'
-import { MediationRecipientService } from '../../routing'
-import { CredentialProblemReportError, CredentialProblemReportReason } from '../errors'
-import { isLinkedAttachment } from '../../../utils/attachment'
-
-
+import { V2ProposeCredentialHandler } from './handlers/V2ProposeCredentialHandler'
+import { V2RequestCredentialHandler } from './handlers/V2RequestCredentialHandler'
 
 export class V2CredentialService extends CredentialService {
-
   private credentialService: V1LegacyCredentialService // Temporary while v1 constructor needs this
   private connectionService: ConnectionService
   private credentialRepository: CredentialRepository
@@ -39,6 +58,8 @@ export class V2CredentialService extends CredentialService {
   private dispatcher: Dispatcher
   private logger: Logger
   private indyIssuerService: IndyIssuerService
+  private indyLedgerService: IndyLedgerService
+  private indyHolderService: IndyHolderService
   private mediationRecipientService: MediationRecipientService
   private credentialMessageBuilder: CredentialMessageBuilder
 
@@ -52,7 +73,9 @@ export class V2CredentialService extends CredentialService {
     agentConfig: AgentConfig,
     credentialResponseCoordinator: CredentialResponseCoordinator,
     indyIssuerService: IndyIssuerService,
-    mediationRecipientService: MediationRecipientService
+    mediationRecipientService: MediationRecipientService,
+    indyLedgerService: IndyLedgerService,
+    indyHolderService: IndyHolderService
   ) {
     super()
     this.credentialRepository = credentialRepository
@@ -65,8 +88,9 @@ export class V2CredentialService extends CredentialService {
     this.logger = agentConfig.logger
     this.indyIssuerService = indyIssuerService
     this.mediationRecipientService = mediationRecipientService
+    this.indyLedgerService = indyLedgerService
+    this.indyHolderService = indyHolderService
     this.credentialMessageBuilder = new CredentialMessageBuilder()
-
   }
   /**
    * Returns the protocol version for this credential service
@@ -84,12 +108,17 @@ export class V2CredentialService extends CredentialService {
    * @returns the formatting service.
    */
   public getFormatService(credentialRecordType: CredentialRecordType): CredentialFormatService {
-
     const serviceFormatMap = {
       [CredentialRecordType.INDY]: IndyCredentialFormatService,
       [CredentialRecordType.W3C]: JsonLdCredentialFormatService,
     }
-    return new serviceFormatMap[credentialRecordType](this.credentialRepository, this.eventEmitter, this.indyIssuerService)
+    return new serviceFormatMap[credentialRecordType](
+      this.credentialRepository,
+      this.eventEmitter,
+      this.indyIssuerService,
+      this.indyLedgerService,
+      this.indyHolderService
+    )
   }
 
   /**
@@ -99,19 +128,19 @@ export class V2CredentialService extends CredentialService {
    * @returns Object containing proposal message and associated credential record
    *
    */
-  public async createProposal(proposal: ProposeCredentialOptions): Promise<{ credentialRecord: CredentialRecord, message: AgentMessage }> {
+  public async createProposal(
+    proposal: ProposeCredentialOptions
+  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }> {
     // should handle all formats in proposal.credentialFormats by querying and calling
     // its corresponding handler classes.
-    const connection = await this.connectionService.getById(proposal.connectionId)
+    unitTestLogger('>> IN SERVICE V2 createProposal')
 
-    unitTestLogger(">> IN SERVICE V2 createProposal")
-
-    unitTestLogger("Get the Format Service and Create Proposal Message")
+    unitTestLogger('Get the Format Service and Create Proposal Message')
     const formatService: CredentialFormatService = this.getFormatServiceFrom(proposal)
 
-    const { message, credentialRecord } = this.credentialMessageBuilder.createProposal(formatService, proposal, connection.threadId)
+    const { message, credentialRecord } = this.credentialMessageBuilder.createProposal(formatService, proposal)
 
-    unitTestLogger("Save meta data and emit state change event")
+    unitTestLogger('Save meta data and emit state change event')
     await formatService.setMetaDataAndEmitEventForProposal(proposal.credentialFormats, credentialRecord)
 
     return { credentialRecord, message }
@@ -123,7 +152,9 @@ export class V2CredentialService extends CredentialService {
    * @param messageContext the inbound propose credential message
    * @returns credential record appropriate for this incoming message (once accepted)
    */
-  public async processProposal(messageContext: HandlerInboundMessage<V2ProposeCredentialHandler>): Promise<CredentialRecord> {
+  public async processProposal(
+    messageContext: HandlerInboundMessage<V2ProposeCredentialHandler>
+  ): Promise<CredentialRecord> {
     let credentialRecord: CredentialRecord
     const { message: proposalMessage, connection } = messageContext
 
@@ -148,11 +179,12 @@ export class V2CredentialService extends CredentialService {
     } catch {
       //   // No credential record exists with thread id
 
-      console.log("TEST-DEBUG No credential record exists")
+      unitTestLogger('TEST-DEBUG No credential record exists')
 
       // get the format service based on the preview id
 
-      const credentialRecordType = proposalMessage.filtersAttach[0].id === 'indy' ? CredentialRecordType.INDY : CredentialRecordType.W3C
+      const credentialRecordType =
+        proposalMessage.filtersAttach[0].id === INDY_ATTACH_ID ? CredentialRecordType.INDY : CredentialRecordType.W3C
 
       const formatService: CredentialFormatService = this.getFormatService(credentialRecordType)
 
@@ -186,12 +218,12 @@ export class V2CredentialService extends CredentialService {
     })
   }
 
-  public async acceptProposal(proposal: AcceptProposalOptions): Promise<{ credentialRecord: CredentialRecord, message: AgentMessage }> {
-    this.logger.debug(">> IN SERVICE V2 => acceptProposal")
+  public async acceptProposal(
+    proposal: AcceptProposalOptions
+  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }> {
+    this.logger.debug('>> IN SERVICE V2 => acceptProposal')
 
     const credentialRecord = await this.credentialService.getById(proposal.credentialRecordId)
-    console.log(">>>>>> AFTER got credentialRecord with attributes...", credentialRecord.proposalMessage?.credentialProposal)
-
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
@@ -207,8 +239,11 @@ export class V2CredentialService extends CredentialService {
     const formatService: CredentialFormatService = this.getFormatServiceFrom(proposal)
 
     // set the proposal object's preview field -> this containts the attributes
-    this.credentialMessageBuilder.setPreview(formatService, proposal, credentialRecord.proposalMessage?.credentialProposal)
-
+    this.credentialMessageBuilder.setPreview(
+      formatService,
+      proposal,
+      credentialRecord.proposalMessage?.credentialProposal
+    )
 
     // validate that this message has a credential definition id
     this.credentialMessageBuilder.getCredentialDefinitionId(formatService, proposal)
@@ -219,30 +254,36 @@ export class V2CredentialService extends CredentialService {
 
     return { credentialRecord, message }
   }
-  private getFormatServiceFrom(proposal: FormatType): CredentialFormatService {
-    const credentialRecordType = proposal.credentialFormats.indy ? CredentialRecordType.INDY : CredentialRecordType.W3C
+
+  private getFormatServiceFrom(formatType?: FormatType): CredentialFormatService {
+    if (!formatType) {
+      return this.getFormatService(CredentialRecordType.W3C)
+    }
+    const credentialRecordType = formatType.credentialFormats.indy
+      ? CredentialRecordType.INDY
+      : CredentialRecordType.W3C
 
     return this.getFormatService(credentialRecordType)
   }
 
-
   /**
-  * Create a {@link OfferCredentialMessage} as response to a received credential proposal.
-  * To create an offer not bound to an existing credential exchange, use {@link V2CredentialService#createOffer}.
-  *
-  * @param credentialRecord The credential record for which to create the credential offer
-  * @param credentialTemplate The credential template to use for the offer
-  * @returns Object containing offer message and associated credential record
-  *
-  */
+   * Create a {@link OfferCredentialMessage} as response to a received credential proposal.
+   * To create an offer not bound to an existing credential exchange, use {@link V2CredentialService#createOffer}.
+   *
+   * @param credentialRecord The credential record for which to create the credential offer
+   * @param credentialTemplate The credential template to use for the offer
+   * @returns Object containing offer message and associated credential record
+   *
+   */
   public async createOfferAsResponse(
     credentialRecord: CredentialRecord,
-    proposal: AcceptProposalOptions): Promise<V2OfferCredentialMessage> {
+    proposal: AcceptProposalOptions
+  ): Promise<V2OfferCredentialMessage> {
     // Assert
     credentialRecord.assertState(CredentialState.ProposalReceived)
 
     // Create the offer message
-    unitTestLogger("Get the Format Service and Create Offer Message")
+    unitTestLogger('Get the Format Service and Create Offer Message')
     // const credentialRecordType = proposal.credentialFormats.indy ? CredentialRecordType.INDY : CredentialRecordType.W3C
 
     // const formatService: CredentialFormatService = this.getFormatService(credentialRecordType)
@@ -257,14 +298,19 @@ export class V2CredentialService extends CredentialService {
    * @param messageContext the inbound offer credential message
    * @returns credential record appropriate for this incoming message (once accepted)
    */
-  public async processOffer(messageContext: HandlerInboundMessage<V2OfferCredentialHandler>): Promise<CredentialRecord> {
+  public async processOffer(
+    messageContext: HandlerInboundMessage<V2OfferCredentialHandler>
+  ): Promise<CredentialRecord> {
     let credentialRecord: CredentialRecord
     const { message: credentialOfferMessage, connection } = messageContext
 
     unitTestLogger(`Processing credential offer with id ${credentialOfferMessage.id}`)
     unitTestLogger(`CredentialOfferMessage message = ${credentialOfferMessage}`)
 
-    const credentialRecordType = credentialOfferMessage.offerAttachments[0].id == 'indy' ? CredentialRecordType.INDY : CredentialRecordType.W3C
+    const credentialRecordType =
+      credentialOfferMessage.offerAttachments[0].id == INDY_ATTACH_ID
+        ? CredentialRecordType.INDY
+        : CredentialRecordType.W3C
 
     unitTestLogger(`Found a message of type: ${credentialRecordType}`)
 
@@ -280,7 +326,7 @@ export class V2CredentialService extends CredentialService {
       )
     }
 
-    unitTestLogger("We received an indy credential offer")
+    unitTestLogger('We received an indy credential offer')
 
     try {
       // Credential record already exists
@@ -303,7 +349,7 @@ export class V2CredentialService extends CredentialService {
     } catch {
       // No credential record exists with thread id
 
-      unitTestLogger("No credential record found for this offer - create a new one")
+      unitTestLogger('No credential record found for this offer - create a new one')
 
       credentialRecord = new CredentialRecord({
         connectionId: connection?.id,
@@ -333,34 +379,42 @@ export class V2CredentialService extends CredentialService {
   }
 
   /**
-   * Register the v2 handlers. These handlers supplement, ie are created in addition to, the existing\
+   * Register the v2 handlers. These handlers supplement, ie are created in addition to, the existing
    * v1 handlers.
    */
   public registerHandlers() {
-    unitTestLogger("Registering V2 handlers...")
-    unitTestLogger("  => V2ProposeCredentialHandler")
+    unitTestLogger('Registering V2 handlers...')
+    unitTestLogger('  => V2ProposeCredentialHandler')
 
     this.dispatcher.registerHandler(
       new V2ProposeCredentialHandler(this, this.agentConfig, this.credentialResponseCoordinator)
     )
 
-    unitTestLogger("  => V2OfferCredentialHandler")
+    unitTestLogger('  => V2OfferCredentialHandler')
     this.dispatcher.registerHandler(
-      new V2OfferCredentialHandler(this, this.agentConfig, this.credentialResponseCoordinator, this.mediationRecipientService)
+      new V2OfferCredentialHandler(
+        this,
+        this.agentConfig,
+        this.credentialResponseCoordinator,
+        this.mediationRecipientService
+      )
     )
 
+    unitTestLogger('  => V2RequestCredentialHandler')
+    this.dispatcher.registerHandler(
+      new V2RequestCredentialHandler(this, this.agentConfig, this.credentialResponseCoordinator)
+    )
     // Others to follow...
-
   }
 
   /**
- * Update the record to a new state and emit an state changed event. Also updates the record
- * in storage.
- *
- * @param credentialRecord The credential record to update the state for
- * @param newState The state to update to
- *
- */
+   * Update the record to a new state and emit an state changed event. Also updates the record
+   * in storage.
+   *
+   * @param credentialRecord The credential record to update the state for
+   * @param newState The state to update to
+   *
+   */
   private async updateState(credentialRecord: CredentialRecord, newState: CredentialState) {
     const previousState = credentialRecord.state
     credentialRecord.state = newState
@@ -373,5 +427,89 @@ export class V2CredentialService extends CredentialService {
         previousState: previousState,
       },
     })
+  }
+
+  /**
+   * Create a {@link V2RequestCredentialMessage}
+   *
+   * @param credentialRecord The credential record for which to create the credential request
+   * @param options request options for creating this request
+   * @returns Object containing request message and associated credential record
+   *
+   */
+  public async createRequest(
+    record: CredentialRecord,
+    options: RequestCredentialOptions
+  ): Promise<CredentialProtocolMsgReturnType<V2RequestCredentialMessage>> {
+    unitTestLogger('>> IN SERVICE V2 createRequest')
+
+    unitTestLogger('Get the Format Service and Create Request Message')
+    const formatService = this.getFormatService(options.credentialRecordType)
+
+    const { message, credentialRecord } = await this.credentialMessageBuilder.createRequest(
+      formatService,
+      record,
+      options
+    )
+
+    await this.updateState(credentialRecord, CredentialState.RequestSent)
+
+    return { message, credentialRecord }
+  }
+
+  /**
+   * Process a received {@link RequestCredentialMessage}. This will not accept the credential request
+   * or send a credential. It will only update the existing credential record with
+   * the information from the credential request message. Use {@link V1LegacyCredentialService#createCredential}
+   * after calling this method to create a credential.
+   *
+   * @param messageContext The message context containing a v2 credential request message
+   * @returns credential record associated with the credential request message
+   *
+   */
+  public async processRequest(
+    messageContext: InboundMessageContext<V2RequestCredentialMessage>
+  ): Promise<CredentialRecord> {
+    const { message: credentialRequestMessage, connection } = messageContext
+
+    unitTestLogger('>> IN SERVICE V2 processRequest')
+
+    // get the formaat-specific payload from the message
+    const credentialRecordType: CredentialRecordType =
+      credentialRequestMessage.formats.attachId == INDY_ATTACH_ID ? CredentialRecordType.INDY : CredentialRecordType.W3C
+    const formatService: CredentialFormatService = this.getFormatService(credentialRecordType)
+
+    this.logger.debug(`Processing credential request with id ${credentialRequestMessage.id}`)
+    const v2credentialRequestPayload: V2CredRequestFormat | undefined =
+      this.credentialMessageBuilder.getCredentialRequestFromMessage(formatService, credentialRequestMessage)
+
+    unitTestLogger(`v2credentialRequestPayload = ${v2credentialRequestPayload}`)
+
+    if (!v2credentialRequestPayload) {
+      throw new CredentialProblemReportError(
+        `Missing required base64 or json encoded attachment data for credential request with thread id ${credentialRequestMessage.threadId}`,
+        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
+      )
+    }
+    unitTestLogger('Looking for a credential record')
+
+    const credentialRecord = await this.getByThreadAndConnectionId(credentialRequestMessage.threadId, connection?.id)
+    unitTestLogger('Got a credential record!')
+
+    // Assert
+    credentialRecord.assertState(CredentialState.OfferSent)
+    this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      previousReceivedMessage: credentialRecord.proposalMessage,
+      previousSentMessage: credentialRecord.offerMessage,
+    })
+
+    // this.logger.debug('Credential record found when processing credential request', credentialRecord)
+
+    credentialRecord.requestMessage = credentialRequestMessage
+
+    unitTestLogger('-----> UPDATING STATE TO REQUEST RECEIVED')
+    await this.updateState(credentialRecord, CredentialState.RequestReceived)
+
+    return credentialRecord
   }
 }

@@ -1,12 +1,14 @@
-import { AgentConfig } from "../../../../agent/AgentConfig"
-import { Handler, HandlerInboundMessage } from "../../../../agent/Handler"
-import { CredentialResponseCoordinator } from "../../CredentialResponseCoordinator"
+import type { CredentialRecord } from '../..'
+import type { AgentConfig } from '../../../../agent/AgentConfig'
+import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
+import type { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
+import type { V2CredentialService } from '../V2CredentialService'
+import type { AcceptProposalOptions } from '../interfaces'
+
+import { createOutboundMessage } from '../../../../../src/agent/helpers'
+import { unitTestLogger } from '../../../../logger'
+import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
-import { CredentialRecord } from "../.."
-import { ConnectionRecord } from "../../../connections"
-import { AcceptProposalOptions } from "../interfaces"
-import { CredentialProtocolVersion } from "../../CredentialProtocolVersion"
-import { V2CredentialService } from "../V2CredentialService"
 
 export class V2ProposeCredentialHandler implements Handler {
   private credentialService: V2CredentialService
@@ -25,14 +27,17 @@ export class V2ProposeCredentialHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<V2ProposeCredentialHandler>) {
-    console.log("----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR PROPOSE CREDENTIAL")
+    unitTestLogger('----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR PROPOSE CREDENTIAL')
     const credentialRecord = await this.credentialService.processProposal(messageContext)
+
+    // MJR-TODO there is some indy specific stuff in the credentialAutoResponseCoordinator
+    // this needs looking at
     if (this.credentialAutoResponseCoordinator.shouldAutoRespondToProposal(credentialRecord)) {
-      return await this.createOffer(credentialRecord, messageContext) 
+      return await this.createOffer(credentialRecord, messageContext)
     }
   }
 
-  // MJR-TODO this needs upgrading to V2
+  // MJR-TODO this is not yet fully implemented
   private async createOffer(
     credentialRecord: CredentialRecord,
     messageContext: HandlerInboundMessage<V2ProposeCredentialHandler>
@@ -59,20 +64,16 @@ export class V2ProposeCredentialHandler implements Handler {
     }
 
     const options: AcceptProposalOptions = {
-      connectionId: "",
+      connectionId: '',
       protocolVersion: CredentialProtocolVersion.V2_0,
-      credentialRecordId: "",
+      credentialRecordId: '',
       credentialFormats: {
         indy: undefined,
-        w3c: undefined
-      }
+        w3c: undefined,
+      },
     }
     const message = await this.credentialService.createOfferAsResponse(credentialRecord, options)
 
     return createOutboundMessage(messageContext.connection, message)
   }
-}
-
-function createOutboundMessage(connection: ConnectionRecord, message: any) {
-  throw new Error("Function not implemented.")
 }

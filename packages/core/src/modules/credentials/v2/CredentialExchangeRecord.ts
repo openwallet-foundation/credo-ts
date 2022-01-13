@@ -1,9 +1,10 @@
-import { TagsBase, BaseRecord } from '../../../storage/BaseRecord'
-import { AutoAcceptCredential } from '../CredentialAutoAcceptType'
+import type { TagsBase } from '../../../storage/BaseRecord'
+import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
+import type { CredentialProtocolVersion } from '../CredentialProtocolVersion'
+import type { CredentialState } from '../CredentialState'
+import type { CredentialRole } from './CredentialRole'
 
-import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
-import { CredentialRole } from './CredentialRole'
-import { CredentialState } from '../CredentialState'
+import { BaseRecord } from '../../../storage/BaseRecord'
 
 export interface CredentialRecordTags {
   threadId: string
@@ -17,7 +18,7 @@ export enum CredentialRecordType {
   W3C,
 }
 export enum W3CFormatType {
-  JSONLD
+  JSONLD,
   // others to follow
 }
 
@@ -47,7 +48,7 @@ export class CredentialExchangeRecord extends BaseRecord {
 
   // enum as defined in Issue Credential V2 protocol
   public state!: CredentialState
-  
+
   // tags stuff inherited from BaseRecord
   public tags?: TagsBase
 
@@ -83,8 +84,3 @@ export class CredentialExchangeRecord extends BaseRecord {
     return this._tags
   }
 }
-
-
-
-
-

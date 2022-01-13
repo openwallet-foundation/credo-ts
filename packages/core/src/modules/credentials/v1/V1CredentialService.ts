@@ -1,57 +1,115 @@
+/* eslint-disable @typescript-eslint/explicit-member-accessibility */
+import type {
+  CredentialOfferTemplate,
+  CredentialProposeOptions,
+  CredentialProtocolMsgReturnType,
+  V1LegacyCredentialService,
+} from '.'
+import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { ConnectionService } from '../../connections/services/ConnectionService'
+import type { CredentialRecord } from '../repository'
+import type { AcceptProposalOptions, ProposeCredentialOptions, RequestCredentialOptions } from '../v2/interfaces'
+import type { V2RequestCredentialMessage } from '../v2/messages/V2RequestCredentialMessage'
+import type { OfferCredentialHandler, ProposeCredentialHandler } from './handlers'
+import type { OfferCredentialMessage, RequestCredentialMessage } from './messages'
+import type { HandlerInboundMessage } from 'packages/core/src/agent/Handler'
+import type { InboundMessageContext } from 'packages/core/src/agent/models/InboundMessageContext'
 
-import { AgentMessage, AriesFrameworkError, MessageSender } from '@aries-framework/core'
-import { CredentialService } from '../CredentialService'
-import { AcceptProposalOptions, ProposeCredentialOptions } from '../v2/interfaces'
-import { V1CredentialPreview } from './V1CredentialPreview'
-import { CredentialProposeOptions, V1LegacyCredentialService } from '.'
-import { ConnectionService } from '../../connections/services/ConnectionService'
-import { CredentialRecord } from '../repository'
-import { Lifecycle, scoped } from 'tsyringe'
-import { CredentialRepository } from '../repository'
-import { EventEmitter } from '../../../agent/EventEmitter'
+import { AriesFrameworkError } from '../../../error'
 import { ConsoleLogger, LogLevel } from '../../../logger'
-import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
-import { createOutboundMessage } from '../../../agent/helpers'
-import { HandlerInboundMessage } from 'packages/core/src/agent/Handler'
-import { V2ProposeCredentialHandler } from '../v2/handlers/V2ProposeCredentialHandler'
 import { isLinkedAttachment } from '../../../utils/attachment'
-import { OfferCredentialHandler, ProposeCredentialHandler } from './handlers'
+import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
+import { CredentialService } from '../CredentialService'
+
+import { V1CredentialPreview } from './V1CredentialPreview'
 
 const logger = new ConsoleLogger(LogLevel.debug)
 
 export class V1CredentialService extends CredentialService {
-
-  // MJR-TODO: move these from credentialModules to here
-
-  processProposal(messageContext: HandlerInboundMessage<ProposeCredentialHandler>): Promise<CredentialRecord> {
-    return this.legacyCredentialService.processProposal(messageContext)
-  }
-
-  processOffer(messageContext: HandlerInboundMessage<OfferCredentialHandler>): Promise<CredentialRecord> {
-    return this.legacyCredentialService.processOffer(messageContext)
-  }
-
-  registerHandlers() {
+  processRequest(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    messageContext: InboundMessageContext<RequestCredentialMessage | V2RequestCredentialMessage>
+  ): Promise<CredentialRecord> {
     throw new Error('Method not implemented.')
   }
   private legacyCredentialService: V1LegacyCredentialService // MJR-TODO move all functionality from that class into here
   private connectionService: ConnectionService
 
-  constructor(connectionService: ConnectionService,
-    credentialService: V1LegacyCredentialService
-  ) {
+  public constructor(connectionService: ConnectionService, credentialService: V1LegacyCredentialService) {
     super()
     this.legacyCredentialService = credentialService
     this.connectionService = connectionService
   }
 
+  /**
+   * Process a received {@link ProposeCredentialMessage}. This will not accept the credential proposal
+   * or send a credential offer. It will only create a new, or update the existing credential record with
+   * the information from the credential proposal message. Use {@link V1LegacyCredentialService#createOfferAsResponse}
+   * after calling this method to create a credential offer.
+   *
+   * @param messageContext The message context containing a credential proposal message
+   * @returns credential record associated with the credential proposal message
+   *
+   */
+  public processProposal(messageContext: HandlerInboundMessage<ProposeCredentialHandler>): Promise<CredentialRecord> {
+    return this.legacyCredentialService.processProposal(messageContext)
+  }
+
+  /**
+   * Process a received {@link OfferCredentialMessage}. This will not accept the credential offer
+   * or send a credential request. It will only create a new credential record with
+   * the information from the credential offer message. Use {@link V1LegacyCredentialService#createRequest}
+   * after calling this method to create a credential request.
+   *
+   * @param messageContext The message context containing a credential request message
+   * @returns credential record associated with the credential offer message
+   *
+   */
+  public processOffer(messageContext: HandlerInboundMessage<OfferCredentialHandler>): Promise<CredentialRecord> {
+    return this.legacyCredentialService.processOffer(messageContext)
+  }
+
+  /**
+   * Create a {@link OfferCredentialMessage} as response to a received credential proposal.
+   * To create an offer not bound to an existing credential exchange, use {@link V1LegacyCredentialService#createOffer}.
+   *
+   * @param credentialRecord The credential record for which to create the credential offer
+   * @param credentialTemplate The credential template to use for the offer
+   * @returns Object containing offer message and associated credential record
+   *
+   */
+  public async createOfferAsResponse(
+    credentialRecord: CredentialRecord,
+    credentialTemplate: CredentialOfferTemplate
+  ): Promise<CredentialProtocolMsgReturnType<OfferCredentialMessage>> {
+    return this.legacyCredentialService.createOfferAsResponse(credentialRecord, credentialTemplate)
+  }
+
+  public registerHandlers() {
+    throw new Error('Method not implemented.')
+  }
+
+  /**
+   *
+   * Get the version of Issue Credentials according to AIP1.0 or AIP2.0
+   * @returns the version of this credential service
+   */
   public getVersion(): CredentialProtocolVersion {
     return CredentialProtocolVersion.V1_0
   }
 
-
-  public async createProposal(proposal: ProposeCredentialOptions): Promise<{ credentialRecord: CredentialRecord, message: AgentMessage }> {
-    logger.debug(">> IN SERVICE V1 => createProposal")
+  /**
+   * Create a {@link ProposeCredentialMessage} not bound to an existing credential exchange.
+   * To create a proposal as response to an existing credential exchange, use {@link V1LegacyCredentialService#createProposalAsResponse}.
+   *
+   * @param proposal The object containing config options
+   * @returns Object containing proposal message and associated credential record
+   *
+   */
+  public async createProposal(
+    proposal: ProposeCredentialOptions
+  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }> {
+    logger.debug('>> IN SERVICE V1 => createProposal')
 
     const connection = await this.connectionService.getById(proposal.connectionId)
 
@@ -63,7 +121,7 @@ export class V1CredentialService extends CredentialService {
     const config: CredentialProposeOptions = {
       credentialProposal: credentialProposal,
       credentialDefinitionId: proposal.credentialFormats.indy?.credentialDefinitionId,
-      linkedAttachments: proposal.credentialFormats.indy?.linkedAttachments
+      linkedAttachments: proposal.credentialFormats.indy?.linkedAttachments,
     }
 
     // MJR-TODO flip these params around to save a line of code
@@ -72,8 +130,15 @@ export class V1CredentialService extends CredentialService {
     return { credentialRecord, message }
   }
 
-  public async acceptProposal(proposal: AcceptProposalOptions): Promise<{ credentialRecord: CredentialRecord, message: AgentMessage }> {
-    logger.debug(">> IN SERVICE V1 => acceptProposal")
+  /**
+   * Processing an incoming credential message and create a credential offer as a response
+   * @param proposal The object containing config options
+   * @returns Object containing proposal message and associated credential record
+   */
+  public async acceptProposal(
+    proposal: AcceptProposalOptions
+  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }> {
+    logger.debug('>> IN SERVICE V1 => acceptProposal')
 
     const credentialRecord = await this.legacyCredentialService.getById(proposal.credentialRecordId)
 
@@ -89,7 +154,8 @@ export class V1CredentialService extends CredentialService {
       )
     }
 
-    const credentialDefinitionId = proposal.credentialFormats.indy?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
+    const credentialDefinitionId =
+      proposal.credentialFormats.indy?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
 
     credentialRecord.linkedAttachments = credentialProposalMessage.attachments?.filter((attachment) =>
       isLinkedAttachment(attachment)
@@ -101,9 +167,7 @@ export class V1CredentialService extends CredentialService {
       )
     }
 
-
-    // TODO: check if it is possible to issue credential based on proposal filters
-    const { message } = await this.legacyCredentialService.createOfferAsResponse(credentialRecord, {
+    const { message } = await this.createOfferAsResponse(credentialRecord, {
       preview: credentialProposalMessage.credentialProposal,
       credentialDefinitionId,
       comment: proposal.comment,
@@ -114,4 +178,20 @@ export class V1CredentialService extends CredentialService {
     return { credentialRecord, message }
   }
 
+  /**
+   * Create a {@link RequestCredentialMessage} as response to a received credential offer.
+   *
+   * @param credentialRecord The credential record for which to create the credential request
+   * @param options Additional configuration to use for the credential request See {@link RequestCredentialOptions}
+   * @returns Object containing request message and associated credential record
+   *
+   */
+  public async createRequest(
+    credentialRecord: CredentialRecord,
+    options: RequestCredentialOptions
+  ): Promise<CredentialProtocolMsgReturnType<RequestCredentialMessage>> {
+    // mapping from RequestCredentialOptions -> CredentialRequesOptions happens
+    // here
+    return this.legacyCredentialService.createRequest(credentialRecord, options)
+  }
 }

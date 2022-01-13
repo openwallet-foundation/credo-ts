@@ -3,12 +3,10 @@ import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import type { CredentialRecord } from '../../repository/CredentialRecord'
-import type { V1LegacyCredentialService } from '../..'
+import type { V2CredentialService } from '../V2CredentialService'
 
-import { createOutboundMessage, createOutboundServiceMessage } from '../../../../agent/helpers'
-import { ServiceDecorator } from '../../../../decorators/service/ServiceDecorator'
+import { unitTestLogger } from '../../../../logger'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
-import { V2CredentialService } from '../V2CredentialService'
 
 export class V2OfferCredentialHandler implements Handler {
   private credentialService: V2CredentialService
@@ -28,10 +26,9 @@ export class V2OfferCredentialHandler implements Handler {
     this.credentialResponseCoordinator = credentialResponseCoordinator
     this.mediationRecipientService = mediationRecipientService
   }
-  
 
   public async handle(messageContext: HandlerInboundMessage<V2OfferCredentialHandler>) {
-    console.log("----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR OFFER CREDENTIAL")
+    unitTestLogger('----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR OFFER CREDENTIAL')
 
     const credentialRecord = await this.credentialService.processOffer(messageContext)
 
@@ -40,13 +37,17 @@ export class V2OfferCredentialHandler implements Handler {
     }
   }
 
-  private async createRequest(record: CredentialRecord, messageContext: HandlerInboundMessage<V2OfferCredentialHandler>) {
+  private async createRequest(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    record: CredentialRecord,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    messageContext: HandlerInboundMessage<V2OfferCredentialHandler>
+  ) {
     this.agentConfig.logger.info(
       `Automatically sending request with autoAccept on ${this.agentConfig.autoAcceptCredentials}`
     )
 
     // MJR-TODO
-
 
     // if (messageContext.connection) {
     //   const { message } = await this.credentialService.createRequest(record, {

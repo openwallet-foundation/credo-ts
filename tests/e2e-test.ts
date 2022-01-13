@@ -1,8 +1,9 @@
-import { Agent, V1CredentialPreview } from '@aries-framework/core'
+import type { Agent } from '@aries-framework/core'
 
 import { issueCredential, makeConnection, prepareForIssuance, presentProof } from '../packages/core/tests/helpers'
 
 import {
+  V1CredentialPreview,
   AttributeFilter,
   CredentialState,
   MediationState,

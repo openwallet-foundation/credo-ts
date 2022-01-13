@@ -1,14 +1,14 @@
+import type { V1LegacyCredentialService } from '../..'
 import type { AgentConfig } from '../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 import type { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import type { CredentialRecord } from '../../repository/CredentialRecord'
-import type { V1LegacyCredentialService } from '../..'
 
 import { createOutboundMessage } from '../../../../agent/helpers'
 import { ProposeCredentialMessage } from '../messages'
 
 export class ProposeCredentialHandler implements Handler {
-  private credentialService: V1LegacyCredentialService
+  private credentialService: V1LegacyCredentialService // MJR-TODO replace with V1CredentialService when registerhandlers done
   private agentConfig: AgentConfig
   private credentialAutoResponseCoordinator: CredentialResponseCoordinator
   public supportedMessages = [ProposeCredentialMessage]
@@ -25,6 +25,7 @@ export class ProposeCredentialHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<ProposeCredentialHandler>) {
     const credentialRecord = await this.credentialService.processProposal(messageContext)
+
     if (this.credentialAutoResponseCoordinator.shouldAutoRespondToProposal(credentialRecord)) {
       return await this.createOffer(credentialRecord, messageContext)
     }

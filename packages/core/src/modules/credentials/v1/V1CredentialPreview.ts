@@ -1,43 +1,11 @@
+import type { CredentialPreviewOptions } from '../CredentialPreviewAttributes'
+
 import { Expose, Transform, Type } from 'class-transformer'
-import { Equals, IsInstance, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { Equals, IsInstance, ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
-
-export interface CredentialPreviewAttributeOptions {
-  name: string
-  mimeType?: string
-  value: string
-}
-
-export class CredentialPreviewAttribute {
-  public constructor(options: CredentialPreviewAttributeOptions) {
-    if (options) {
-      this.name = options.name
-      this.mimeType = options.mimeType
-      this.value = options.value
-    }
-  }
-
-  @IsString()
-  public name!: string
-
-  @Expose({ name: 'mime-type' })
-  @IsOptional()
-  @IsMimeType()
-  public mimeType?: string = 'text/plain'
-
-  @IsString()
-  public value!: string
-
-  public toJSON(): Record<string, unknown> {
-    return JsonTransformer.toJSON(this)
-  }
-}
-
-export interface CredentialPreviewOptions {
-  attributes: CredentialPreviewAttribute[]
-}
+import { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
 
 /**
  * Credential preview inner message class.
