@@ -1,4 +1,5 @@
 export const SEED = '00000000000000000000000000000My2'
+export const VERKEY = 'kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn'
 
 export const DATA_JSON = {
   did: 'did',
@@ -19,7 +20,7 @@ export const DATA_JSON = {
 
 export const JWS_JSON = {
   header: { kid: 'did:key:z6MkfD6ccYE22Y9pHKtixeczk92MmMi2oJCP6gmNooZVKB9A' },
-  signature: 'fmJcjnkAmdjYw37ztAizmnW7YepR26M0CEc2fpZeGgFcZTrkbrZTDB8hjLwoQjay8UnY1nvrWx-KGPNVbAKJCA',
   protected:
-    'eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa2ZENmNjWUUyMlk5cEhLdGl4ZWN6azkyTW1NaTJvSkNQNmdtTm9vWlZLQjlBIiwiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4IjoiQ3pya2I2NDUzN2tVRUZGQ3lJcjhJODFRYklEaTYyc2ttTjVGbjUtTXNWRSIsImtpZCI6ImRpZDprZXk6ejZNa2ZENmNjWUUyMlk5cEhLdGl4ZWN6azkyTW1NaTJvSkNQNmdtTm9vWlZLQjlBIn19',
+    'eyJhbGciOiJFZERTQSIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6IkN6cmtiNjQ1MzdrVUVGRkN5SXI4STgxUWJJRGk2MnNrbU41Rm41LU1zVkUifX0',
+  signature: 'OsDP4FM8792J9JlessA9IXv4YUYjIGcIAnPPrEJmgxYomMwDoH-h2DMAF5YF2VtsHHyhGN_0HryDjWSEAZdYBQ',
 }

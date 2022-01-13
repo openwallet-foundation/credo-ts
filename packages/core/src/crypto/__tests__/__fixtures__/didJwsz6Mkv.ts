@@ -1,4 +1,5 @@
 export const SEED = '00000000000000000000000000000My1'
+export const VERKEY = 'GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa'
 
 export const DATA_JSON = {
   did: 'did',

@@ -1,4 +1,4 @@
-import type { Wallet } from '../../wallet/Wallet'
+import type { JwsGeneralFormat } from '../../crypto/JwsTypes'
 
 import { Expose, Type } from 'class-transformer'
 import {
@@ -13,11 +13,10 @@ import {
   ValidateNested,
 } from 'class-validator'
 
+import { Jws } from '../../crypto/JwsTypes'
 import { AriesFrameworkError } from '../../error'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { uuid } from '../../utils/uuid'
-
-import { AttachmentJws, getVerkeysForJws, signAttachmentJws, verifyAttachmentJws } from './AttachmentJwsUtil'
 
 export interface AttachmentOptions {
   id?: string
@@ -33,7 +32,7 @@ export interface AttachmentDataOptions {
   base64?: string
   json?: Record<string, unknown>
   links?: string[]
-  jws?: AttachmentJws
+  jws?: Jws
   sha256?: string
 }
 
@@ -65,9 +64,7 @@ export class AttachmentData {
    * A JSON Web Signature over the content of the attachment. Optional.
    */
   @IsOptional()
-  @Type(() => AttachmentJws)
-  @ValidateNested()
-  public jws?: AttachmentJws
+  public jws?: Jws
 
   /**
    * The hash of the content. Optional.
@@ -84,43 +81,6 @@ export class AttachmentData {
       this.jws = options.jws
       this.sha256 = options.sha256
     }
-  }
-
-  public get jwsVerkeys(): string[] {
-    if (!this.jws) return []
-
-    return getVerkeysForJws(this.jws)
-  }
-
-  /*
-   * Helper function returning JSON representation of attachment data (if present). Tries to obtain the data from .base64 or .json, throws an error otherwise
-   */
-  public getDataAsJson<T>(): T {
-    if (typeof this.base64 === 'string') {
-      return JsonEncoder.fromBase64(this.base64) as T
-    } else if (this.json) {
-      return this.json as T
-    } else {
-      throw new AriesFrameworkError('No attachment data found in `json` or `base64` data fields.')
-    }
-  }
-
-  public async sign(wallet: Wallet, verkeys: string[]) {
-    if (!this.base64) {
-      throw new AriesFrameworkError('Missing base64 data on attachment')
-    }
-
-    this.jws = await signAttachmentJws(wallet, verkeys, this.base64)
-  }
-
-  public async verify(wallet: Wallet) {
-    if (!this.jws || !this.base64) {
-      throw new AriesFrameworkError('Missing JWS and/or base64 parameters')
-    }
-
-    const isValid = await verifyAttachmentJws(wallet, this.jws, this.base64)
-
-    return isValid
   }
 }
 
@@ -187,4 +147,34 @@ export class Attachment {
   @ValidateNested()
   @IsInstance(AttachmentData)
   public data!: AttachmentData
+
+  /*
+   * Helper function returning JSON representation of attachment data (if present). Tries to obtain the data from .base64 or .json, throws an error otherwise
+   */
+  public getDataAsJson<T>(): T {
+    if (typeof this.data.base64 === 'string') {
+      return JsonEncoder.fromBase64(this.data.base64) as T
+    } else if (this.data.json) {
+      return this.data.json as T
+    } else {
+      throw new AriesFrameworkError('No attachment data found in `json` or `base64` data fields.')
+    }
+  }
+
+  public addJws(jws: JwsGeneralFormat) {
+    // If no JWS yet, assign to current JWS
+    if (!this.data.jws) {
+      this.data.jws = jws
+    }
+    // Is already jws array, add to it
+    else if ('signatures' in this.data.jws) {
+      this.data.jws.signatures.push(jws)
+    }
+    // If already single JWS, transform to general jws format
+    else {
+      this.data.jws = {
+        signatures: [this.data.jws, jws],
+      }
+    }
+  }
 }

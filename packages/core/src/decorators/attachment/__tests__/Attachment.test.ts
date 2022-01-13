@@ -1,12 +1,8 @@
-import { getAgentConfig } from '../../../../tests/helpers'
+import * as didJwsz6Mkf from '../../../crypto/__tests__/__fixtures__/didJwsz6Mkf'
+import * as didJwsz6Mkv from '../../../crypto/__tests__/__fixtures__/didJwsz6Mkv'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { IndyWallet } from '../../../wallet/IndyWallet'
 import { Attachment, AttachmentData } from '../Attachment'
-import { AttachmentJws } from '../AttachmentJwsUtil'
-
-import * as didJwsz6Mkf from './__fixtures__/didJwsz6Mkf'
-import * as didJwsz6Mkv from './__fixtures__/didJwsz6Mkv'
 
 const mockJson = {
   '@id': 'ceffce22-6471-43e4-8945-b604091981c9',
@@ -50,19 +46,6 @@ const data = {
 const dataInstance = new AttachmentData(data)
 
 describe('Decorators | Attachment', () => {
-  let wallet: IndyWallet
-
-  beforeAll(async () => {
-    const config = getAgentConfig('AttachmentDecorator')
-    wallet = new IndyWallet(config)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.initialize(config.walletConfig!)
-  })
-
-  afterAll(async () => {
-    await wallet.delete()
-  })
-
   it('should correctly transform Json to Attachment class', () => {
     const decorator = JsonTransformer.fromJSON(mockJson, Attachment)
 
@@ -102,114 +85,42 @@ describe('Decorators | Attachment', () => {
   it('should return the data correctly if only JSON exists', () => {
     const decorator = JsonTransformer.fromJSON(mockJson, Attachment)
 
-    const gotData = decorator.data.getDataAsJson()
+    const gotData = decorator.getDataAsJson()
     expect(decorator.data.json).toEqual(gotData)
   })
 
   it('should return the data correctly if only Base64 exists', () => {
     const decorator = JsonTransformer.fromJSON(mockJsonBase64, Attachment)
 
-    const gotData = decorator.data.getDataAsJson()
+    const gotData = decorator.getDataAsJson()
     expect(mockJson.data.json).toEqual(gotData)
   })
 
-  describe('jwsPublicKeysBase58', () => {
-    it('returns the verkeys of the keys used to signed the jws', async () => {
+  describe('addJws', () => {
+    it('correctly adds the jws to the data', async () => {
+      const base64 = JsonEncoder.toBase64(didJwsz6Mkf.DATA_JSON)
       const attachment = new Attachment({
         id: 'some-uuid',
         data: new AttachmentData({
-          base64: JsonEncoder.toBase64(didJwsz6Mkf.DATA_JSON),
-          jws: JsonTransformer.fromJSON({ signatures: [didJwsz6Mkf.JWS_JSON, didJwsz6Mkv.JWS_JSON] }, AttachmentJws),
+          base64,
         }),
       })
 
-      expect(attachment.data.jwsVerkeys).toEqual([
-        'kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn',
-        'GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa',
-      ])
-    })
-  })
+      expect(attachment.data.jws).toBeUndefined()
 
-  describe('sign()', () => {
-    it('creates a jws of the base64 attachment data', async () => {
-      const { verkey } = await wallet.createDid({ seed: didJwsz6Mkf.SEED })
+      attachment.addJws(didJwsz6Mkf.JWS_JSON)
+      expect(attachment.data.jws).toEqual(didJwsz6Mkf.JWS_JSON)
 
-      const attachment = new Attachment({
-        id: 'some-uuid',
-        data: new AttachmentData({
-          base64: JsonEncoder.toBase64(didJwsz6Mkf.DATA_JSON),
-        }),
-      })
-
-      await attachment.data.sign(wallet, [verkey])
+      attachment.addJws(didJwsz6Mkv.JWS_JSON)
+      expect(attachment.data.jws).toEqual({ signatures: [didJwsz6Mkf.JWS_JSON, didJwsz6Mkv.JWS_JSON] })
 
       expect(JsonTransformer.toJSON(attachment)).toMatchObject({
         '@id': 'some-uuid',
         data: {
           base64: JsonEncoder.toBase64(didJwsz6Mkf.DATA_JSON),
-          jws: didJwsz6Mkf.JWS_JSON,
+          jws: { signatures: [didJwsz6Mkf.JWS_JSON, didJwsz6Mkv.JWS_JSON] },
         },
       })
-    })
-
-    it('throws an error if the attachment does not have base64 data', async () => {
-      const { verkey } = await wallet.createDid({ seed: didJwsz6Mkf.SEED })
-
-      const attachment = new Attachment({
-        id: 'some-uuid',
-        data: new AttachmentData({
-          json: didJwsz6Mkf.DATA_JSON,
-        }),
-      })
-
-      expect(attachment.data.sign(wallet, [verkey])).rejects.toThrowError('Missing base64 data on attachment')
-    })
-  })
-
-  describe('verify()', () => {
-    it('returns true if the jws signature matches the attachment base64 data', async () => {
-      const attachment = new Attachment({
-        id: 'some-uuid',
-        data: new AttachmentData({
-          base64: JsonEncoder.toBase64(didJwsz6Mkf.DATA_JSON),
-          jws: JsonTransformer.fromJSON(didJwsz6Mkf.JWS_JSON, AttachmentJws),
-        }),
-      })
-
-      const isValid = await attachment.data.verify(wallet)
-      expect(isValid).toBe(true)
-    })
-
-    it('returns false if the jws signature does not match the attachment base64 data', async () => {
-      const attachment = new Attachment({
-        id: 'some-uuid',
-        data: new AttachmentData({
-          base64: JsonEncoder.toBase64({ ...didJwsz6Mkf.DATA_JSON, did: 'another_did' }),
-          jws: JsonTransformer.fromJSON(didJwsz6Mkf.JWS_JSON, AttachmentJws),
-        }),
-      })
-
-      const isValid = await attachment.data.verify(wallet)
-      expect(isValid).toBe(false)
-    })
-
-    it('throws an error if the attachment does not have base64 or jws data', async () => {
-      const attachmentWithoutBase64 = new Attachment({
-        id: 'some-uuid',
-        data: new AttachmentData({
-          jws: JsonTransformer.fromJSON(didJwsz6Mkf.JWS_JSON, AttachmentJws),
-        }),
-      })
-
-      const attachmentWithoutJws = new Attachment({
-        id: 'some-uuid',
-        data: new AttachmentData({
-          base64: JsonEncoder.toBase64(didJwsz6Mkf.DATA_JSON),
-        }),
-      })
-
-      expect(attachmentWithoutBase64.data.verify(wallet)).rejects.toThrowError('Missing JWS and/or base64 parameters')
-      expect(attachmentWithoutJws.data.verify(wallet)).rejects.toThrowError('Missing JWS and/or base64 parameters')
     })
   })
 })
