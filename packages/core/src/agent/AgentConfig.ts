@@ -40,6 +40,10 @@ export class AgentConfig {
     }
   }
 
+  public get connectToIndyLedgersOnStartup() {
+    return this.initConfig.connectToIndyLedgersOnStartup ?? true
+  }
+
   public get publicDidSeed() {
     return this.initConfig.publicDidSeed
   }

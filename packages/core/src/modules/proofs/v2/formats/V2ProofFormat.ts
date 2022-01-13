@@ -39,14 +39,28 @@ const V2JsonLdRequestProofFormat: V2ProofFormatSpec = {
   format: LD_REQUEST_FORMAT,
 }
 
+const V2IndyProofFormat: V2ProofFormatSpec = {
+  attachId: INDY_ATTACH_ID,
+  format: PRES_20_PROOF,
+}
+
+const V2JsonLdProofFormat: V2ProofFormatSpec = {
+  attachId: LD_ATTACH_ID,
+  format: LD_REQUEST_FORMAT,
+}
+
 export const ATTACHMENT_FORMAT: V2ProofAttachmentFormat = {
   PRES_20_PROPOSAL: {
     indy: V2IndyProposeProofFormat,
     ldproof: V2JsonLdProposeProofFormat,
   },
-  CRED_20_OFFER: {
+  PRES_20_REQUEST: {
     indy: V2IndyRequestProofFormat,
     ldproof: V2JsonLdRequestProofFormat,
+  },
+  PRES_20_PROOF: {
+    indy: V2IndyProofFormat,
+    ldproof: V2JsonLdProofFormat,
   },
 
   // MJR-TODO

@@ -1,31 +1,31 @@
-import type { PresentationPreview } from '../../PresentationPreview'
 import type { V2ProofFormatSpec } from '../formats/V2ProofFormat'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsArray, IsInstance, ValidateNested } from 'class-validator'
+import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../../agent/AgentMessage'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
+import { PresentationPreview } from '../../PresentationPreview'
 import { PRES_20_PROPOSAL } from '../formats/MessageTypes'
 
-export class V2ProposalPresentationMessage extends AgentMessage {
-  private comment?: string
-  private presentationProposal?: PresentationPreview
-  private formats: V2ProofFormatSpec
+export interface V2ProposePresentationMessageOptions {
+  id: string
+  formats: V2ProofFormatSpec
+  filtersAttach: Attachment[]
+  comment?: string
+  presentationProposal: PresentationPreview
+}
 
-  public constructor(
-    id: string,
-    formats: V2ProofFormatSpec,
-    filtersAttach: Attachment[],
-    comment?: string,
-    presentationProposal?: PresentationPreview
-  ) {
+export class V2ProposalPresentationMessage extends AgentMessage {
+  public constructor(options: V2ProposePresentationMessageOptions) {
     super()
-    this.id = id
-    this.comment = comment
-    this.presentationProposal = presentationProposal
-    this.formats = formats
-    this.filtersAttach = filtersAttach
+    if (options) {
+      this.id = options.id ?? this.generateId()
+      this.comment = options.comment
+      this.presentationProposal = options.presentationProposal
+      this.formats = options.formats
+      this.filtersAttach = options.filtersAttach
+    }
   }
 
   @Equals(V2ProposalPresentationMessage.type)
@@ -40,4 +40,22 @@ export class V2ProposalPresentationMessage extends AgentMessage {
   })
   @IsInstance(Attachment, { each: true })
   public filtersAttach!: Attachment[]
+
+  /**
+   * Provides some human readable information about the proposed presentation.
+   */
+  @IsString()
+  @IsOptional()
+  public comment?: string
+
+  /**
+   * Represents the presentation example that prover wants to provide.
+   */
+  @Expose({ name: 'presentation_proposal' })
+  @Type(() => PresentationPreview)
+  @ValidateNested()
+  @IsInstance(PresentationPreview)
+  public presentationProposal!: PresentationPreview
+
+  public formats!: V2ProofFormatSpec
 }

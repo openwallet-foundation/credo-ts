@@ -1,7 +1,3 @@
-interface AttachmentFormat {
-  [id: string]: string
-}
-
 export const SPEC_URI =
   'https://github.com/hyperledger/aries-rfcs/tree/eace815c3e8598d4a8dd7881d8c731fdb2bcc0aa/features/0454-present-proof-v2'
 

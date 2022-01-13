@@ -1,7 +1,7 @@
 import type { ConnectionRecord } from '../../modules/connections'
 import type { MessageRepository } from '../../storage/MessageRepository'
 import type { OutboundTransport } from '../../transport'
-import type { OutboundMessage, WireMessage } from '../../types'
+import type { OutboundMessage, EncryptedMessage } from '../../types'
 
 import { TestMessage } from '../../../tests/TestMessage'
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../tests/helpers'
@@ -41,7 +41,7 @@ class DummyOutboundTransport implements OutboundTransport {
 describe('MessageSender', () => {
   const EnvelopeService = <jest.Mock<EnvelopeServiceImpl>>(<unknown>EnvelopeServiceImpl)
 
-  const wireMessage: WireMessage = {
+  const encryptedMessage: EncryptedMessage = {
     protected: 'base64url',
     iv: 'base64url',
     ciphertext: 'base64url',
@@ -100,7 +100,7 @@ describe('MessageSender', () => {
 
       outboundMessage = createOutboundMessage(connection, new TestMessage())
 
-      envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(wireMessage))
+      envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(encryptedMessage))
       transportServiceFindServicesMock.mockReturnValue([firstDidCommService, secondDidCommService])
     })
 
@@ -133,7 +133,7 @@ describe('MessageSender', () => {
 
       expect(sendMessageSpy).toHaveBeenCalledWith({
         connectionId: 'test-123',
-        payload: wireMessage,
+        payload: encryptedMessage,
         endpoint: firstDidCommService.serviceEndpoint,
         responseRequested: false,
       })
@@ -151,7 +151,7 @@ describe('MessageSender', () => {
 
       expect(sendMessageSpy).toHaveBeenCalledWith({
         connectionId: 'test-123',
-        payload: wireMessage,
+        payload: encryptedMessage,
         endpoint: firstDidCommService.serviceEndpoint,
         responseRequested: false,
       })
@@ -215,7 +215,7 @@ describe('MessageSender', () => {
         logger
       )
 
-      envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(wireMessage))
+      envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(encryptedMessage))
     })
 
     afterEach(() => {
@@ -243,7 +243,7 @@ describe('MessageSender', () => {
       })
 
       expect(sendMessageSpy).toHaveBeenCalledWith({
-        payload: wireMessage,
+        payload: encryptedMessage,
         endpoint: service.serviceEndpoint,
         responseRequested: false,
       })
@@ -264,7 +264,7 @@ describe('MessageSender', () => {
       })
 
       expect(sendMessageSpy).toHaveBeenCalledWith({
-        payload: wireMessage,
+        payload: encryptedMessage,
         endpoint: service.serviceEndpoint,
         responseRequested: true,
       })
@@ -279,7 +279,7 @@ describe('MessageSender', () => {
       messageSender = new MessageSender(enveloperService, transportService, messageRepository, logger)
       connection = getMockConnection({ id: 'test-123' })
 
-      envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(wireMessage))
+      envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(encryptedMessage))
     })
 
     afterEach(() => {
@@ -298,7 +298,7 @@ describe('MessageSender', () => {
       const result = await messageSender.packMessage({ message, keys, endpoint })
 
       expect(result).toEqual({
-        payload: wireMessage,
+        payload: encryptedMessage,
         responseRequested: message.hasAnyReturnRoute(),
         endpoint,
       })

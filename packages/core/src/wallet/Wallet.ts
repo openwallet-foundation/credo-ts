@@ -1,4 +1,4 @@
-import type { WireMessage, UnpackedMessageContext, WalletConfig } from '../types'
+import type { EncryptedMessage, DecryptedMessageContext, WalletConfig } from '../types'
 import type { Buffer } from '../utils/buffer'
 
 export interface Wallet {
@@ -14,8 +14,8 @@ export interface Wallet {
 
   initPublicDid(didConfig: DidConfig): Promise<void>
   createDid(didConfig?: DidConfig): Promise<DidInfo>
-  pack(payload: Record<string, unknown>, recipientKeys: string[], senderVerkey?: string): Promise<WireMessage>
-  unpack(messagePackage: WireMessage): Promise<UnpackedMessageContext>
+  pack(payload: Record<string, unknown>, recipientKeys: string[], senderVerkey?: string): Promise<EncryptedMessage>
+  unpack(encryptedMessage: EncryptedMessage): Promise<DecryptedMessageContext>
   sign(data: Buffer, verkey: string): Promise<Buffer>
   verify(signerVerkey: string, data: Buffer, signature: Buffer): Promise<boolean>
   generateNonce(): Promise<string>

@@ -3,8 +3,10 @@ import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type { ProofRecord } from '../../repository'
 import type { V2ProofService } from '../V2ProofService'
+import type { ProofRequestAsResponse, ProofRequestsOptions } from '../interface'
 
 import { createOutboundMessage } from '../../../../agent/helpers'
+import { ProofRequestOptions } from '../../v1/models/ProofRequest'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
 export class V2ProposePresentationHandler implements Handler {
@@ -47,12 +49,22 @@ export class V2ProposePresentationHandler implements Handler {
       this.agentConfig.logger.error(`Proof record with id ${proofRecord.id} is missing required credential proposal`)
       return
     }
-    const proofRequest = await this.proofService.createProofRequestFromProposal(proofRecord.proposalMessage, {
+
+    const proofRequestsOptions: ProofRequestsOptions = {
       name: 'proof-request',
       version: '1.0',
-    })
+    }
 
-    const { message } = await this.proofService.createRequestAsResponse(proofRecord, proofRequest)
+    const proofRequest = await this.proofService.createProofRequestFromProposal(
+      proofRecord.proposalMessage?.presentationProposal,
+      proofRequestsOptions
+    )
+
+    const proofRequestAsResponse: ProofRequestAsResponse = {
+      proofRecord,
+      proofRequest,
+    }
+    const { message } = await this.proofService.createRequestAsResponse(proofRequestAsResponse)
 
     return createOutboundMessage(messageContext.connection, message)
   }

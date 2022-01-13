@@ -1,75 +1,77 @@
-import { CredDefId } from "indy-sdk";
-import { PredicateType, PresentationPreviewAttribute, PresentationPreviewPredicate } from "../..";
-import { setupProofsTest, waitForProofRecord } from "../../../../../tests/helpers";
-import testLogger from "../../../../../tests/logger";
-import { Agent } from "../../../../agent/Agent";
-import { ConnectionRecord } from "../../../connections";
-import { PresentationPreview } from "../../PresentationPreview";
-import { ProofProtocolVersion } from "../../ProofProtocolVersion";
-import { ProposeProofOptions } from "../interface";
+import type { Agent } from '../../../../agent/Agent'
+import type { ConnectionRecord } from '../../../connections'
+import type { ProposeProofOptions } from '../interface'
+import type { CredDefId } from 'indy-sdk'
 
+import { PredicateType } from '../..'
+import { setupProofsTest } from '../../../../../tests/helpers'
+import testLogger from '../../../../../tests/logger'
+import { PresentationPreviewAttribute, PresentationPreviewPredicate } from '../../PresentationPreview'
+import { ProofProtocolVersion } from '../../ProofProtocolVersion'
 
 describe('Present Proof', () => {
-    let faberAgent: Agent
-    let aliceAgent: Agent
-    let credDefId: CredDefId
-    let faberConnection: ConnectionRecord
+  let faberAgent: Agent
+  let aliceAgent: Agent
+  let credDefId: CredDefId
+  // let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
-  let presentationPreview: PresentationPreview
-    
-    beforeAll(async () => {
-        testLogger.test('Initializing the agents')
-      ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
-        await setupProofsTest('Faber agent', 'Alice agent'))
-    })
-  
-    afterAll(async () => {
-      testLogger.test('Shutting down both agents')
-      await faberAgent.shutdown()
-      await faberAgent.wallet.delete()
-      await aliceAgent.shutdown()
-      await aliceAgent.wallet.delete()
-    })
-  
-// ====================
-// TEST V1 BEGIN 
-// ====================
+  // let presentationPreview: PresentationPreview
 
-    test('Alice starts with V1 proof proposal to Faber', async () => {
-        testLogger.test('Alice sends (v1) proof proposal to Faber')
+  beforeAll(async () => {
+    testLogger.test('Initializing the agents')
+    ;({ faberAgent, aliceAgent, credDefId, aliceConnection } = await setupProofsTest('Faber agent', 'Alice agent'))
+  })
 
-        let attributes = [new PresentationPreviewAttribute({
-            name: 'name',
-            credentialDefinitionId: credDefId,
-            value: 'John'
-        })]
+  afterAll(async () => {
+    testLogger.test('Shutting down both agents')
+    await faberAgent.shutdown()
+    await faberAgent.wallet.delete()
+    await aliceAgent.shutdown()
+    await aliceAgent.wallet.delete()
+  })
 
-        let predicates = [new PresentationPreviewPredicate({
-            name: 'age',
-            predicate: PredicateType.GreaterThanOrEqualTo,
-            threshold: 50,
-            credentialDefinitionId: credDefId
-        })]
+  // ====================
+  // TEST V1 BEGIN
+  // ====================
 
-        const proposeOptions: ProposeProofOptions = {
-            connectionId: aliceConnection.id,
-            protocolVersion: ProofProtocolVersion.V1_0,
-            proofFormats: {
-                indy:{
-                    attributes,
-                      predicates,
-                }
-            },
-            comment: 'V1 propose proof test'
-        }
+  test('Alice starts with V1 proof proposal to Faber', async () => {
+    testLogger.test('Alice sends (v1) proof proposal to Faber')
 
-        let presentationExchangeRecord = await aliceAgent.proofs.proposeProof(proposeOptions)
+    const attributes = [
+      new PresentationPreviewAttribute({
+        name: 'name',
+        credentialDefinitionId: credDefId,
+        value: 'John',
+      }),
+    ]
 
-        expect(presentationExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
+    const predicates = [
+      new PresentationPreviewPredicate({
+        name: 'age',
+        predicate: PredicateType.GreaterThanOrEqualTo,
+        threshold: 50,
+        credentialDefinitionId: credDefId,
+      }),
+    ]
 
-        // let faberPresentationRecord = await waitForProofRecord(faberAgent, {
-        //     threadId: presentationExchangeRecord
-        // })
+    const proposeOptions: ProposeProofOptions = {
+      connectionId: aliceConnection.id,
+      protocolVersion: ProofProtocolVersion.V1_0,
+      proofFormats: {
+        indy: {
+          attributes,
+          predicates,
+        },
+      },
+      comment: 'V1 propose proof test',
+    }
 
-    })
-}  
+    const presentationExchangeRecord = await aliceAgent.proofs.proposeProof(proposeOptions)
+
+    expect(presentationExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
+
+    // let faberPresentationRecord = await waitForProofRecord(faberAgent, {
+    //     threadId: presentationExchangeRecord
+    // })
+  })
+})

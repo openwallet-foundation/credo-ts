@@ -76,8 +76,8 @@ export class HttpOutboundTransport implements OutboundTransport {
         this.logger.debug(`Response received`, { responseMessage, status: response.status })
 
         try {
-          const wireMessage = JSON.parse(responseMessage)
-          this.agent.receiveMessage(wireMessage)
+          const encryptedMessage = JSON.parse(responseMessage)
+          this.agent.receiveMessage(encryptedMessage)
         } catch (error) {
           this.logger.debug('Unable to parse response message')
         }

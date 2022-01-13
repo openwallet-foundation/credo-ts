@@ -2,11 +2,8 @@ import type { AgentConfig } from '../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 import type { MediationRecipientService } from '../../../routing'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
-import type { ProofRecord } from '../../repository'
 import type { V1LegacyProofService } from '../V1LegacyProofService'
 
-import { createOutboundMessage, createOutboundServiceMessage } from '../../../../agent/helpers'
-import { ServiceDecorator } from '../../../../decorators/service/ServiceDecorator'
 import { RequestPresentationMessage } from '../messages'
 
 export class RequestPresentationHandler implements Handler {
@@ -29,10 +26,10 @@ export class RequestPresentationHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<RequestPresentationHandler>) {
-    // const proofRecord = await this.proofService.processRequest(messageContext)
-    // if (this.proofResponseCoordinator.shouldAutoRespondToRequest(proofRecord)) {
-    //   return await this.createPresentation(proofRecord, messageContext)
-    // }
+    const proofRecord = await this.proofService.processRequest(messageContext)
+    if (this.proofResponseCoordinator.shouldAutoRespondToRequest(proofRecord)) {
+      //   return await this.createPresentation(proofRecord, messageContext)
+    }
   }
 
   // private async createPresentation(

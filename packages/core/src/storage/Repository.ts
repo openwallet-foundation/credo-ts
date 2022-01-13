@@ -4,7 +4,7 @@ import type { BaseRecordConstructor, Query, StorageService } from './StorageServ
 import { RecordDuplicateError, RecordNotFoundError } from '../error'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export class Repository<T extends BaseRecord<any, any>> {
+export class Repository<T extends BaseRecord<any, any, any>> {
   private storageService: StorageService<T>
   private recordClass: BaseRecordConstructor<T>
 

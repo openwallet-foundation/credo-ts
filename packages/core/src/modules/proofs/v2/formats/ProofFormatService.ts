@@ -10,7 +10,7 @@ import { uuid } from '../../../../utils/uuid'
 import { ProofEventTypes } from '../../ProofEvents'
 
 export interface V2AttachmentFormats {
-  preview?: PresentationPreview
+  preview: PresentationPreview
   formats: V2ProofFormatSpec
   filtersAttach: Attachment[]
 }

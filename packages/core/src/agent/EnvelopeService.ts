@@ -1,5 +1,5 @@
 import type { Logger } from '../logger'
-import type { UnpackedMessageContext, WireMessage } from '../types'
+import type { DecryptedMessageContext, EncryptedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
@@ -28,7 +28,7 @@ class EnvelopeService {
     this.config = agentConfig
   }
 
-  public async packMessage(payload: AgentMessage, keys: EnvelopeKeys): Promise<WireMessage> {
+  public async packMessage(payload: AgentMessage, keys: EnvelopeKeys): Promise<EncryptedMessage> {
     const { routingKeys, senderKey } = keys
     let recipientKeys = keys.recipientKeys
 
@@ -37,14 +37,14 @@ class EnvelopeService {
 
     this.logger.debug(`Pack outbound message ${message['@type']}`)
 
-    let wireMessage = await this.wallet.pack(message, recipientKeys, senderKey ?? undefined)
+    let encryptedMessage = await this.wallet.pack(message, recipientKeys, senderKey ?? undefined)
 
     // If the message has routing keys (mediator) pack for each mediator
     for (const routingKey of routingKeys) {
       const forwardMessage = new ForwardMessage({
         // Forward to first recipient key
         to: recipientKeys[0],
-        message: wireMessage,
+        message: encryptedMessage,
       })
       recipientKeys = [routingKey]
       this.logger.debug('Forward message created', forwardMessage)
@@ -52,14 +52,14 @@ class EnvelopeService {
       const forwardJson = forwardMessage.toJSON({ useLegacyDidSovPrefix: this.config.useLegacyDidSovPrefix })
 
       // Forward messages are anon packed
-      wireMessage = await this.wallet.pack(forwardJson, [routingKey], undefined)
+      encryptedMessage = await this.wallet.pack(forwardJson, [routingKey], undefined)
     }
 
-    return wireMessage
+    return encryptedMessage
   }
 
-  public async unpackMessage(packedMessage: WireMessage): Promise<UnpackedMessageContext> {
-    return this.wallet.unpack(packedMessage)
+  public async unpackMessage(encryptedMessage: EncryptedMessage): Promise<DecryptedMessageContext> {
+    return this.wallet.unpack(encryptedMessage)
   }
 }
 

@@ -11,6 +11,8 @@ import {
   ValidateNested,
 } from 'class-validator'
 
+import { AriesFrameworkError } from '../../error'
+import { JsonEncoder } from '../../utils/JsonEncoder'
 import { uuid } from '../../utils/uuid'
 
 export interface AttachmentOptions {
@@ -42,6 +44,19 @@ export class AttachmentData {
       this.links = options.links
       this.jws = options.jws
       this.sha256 = options.sha256
+    }
+  }
+
+  /*
+   * Helper function returning JSON representation of attachment data (if present). Tries to obtain the data from .base64 or .json, throws an error otherwise
+   */
+  public getDataAsJson<T>(): T {
+    if (typeof this.base64 === 'string') {
+      return JsonEncoder.fromBase64(this.base64) as T
+    } else if (this.json) {
+      return this.json as T
+    } else {
+      throw new AriesFrameworkError('No attachment data found in `json` or `base64` data fields.')
     }
   }
 

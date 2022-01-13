@@ -11,11 +11,11 @@ import { ConnectionService, ConnectionState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyLedgerService } from '../../ledger/services'
 import { ProofEventTypes } from '../ProofEvents'
-import { ProofService } from '../ProofService'
 import { ProofState } from '../ProofState'
 import { PresentationProblemReportReason } from '../errors/PresentationProblemReportReason'
 import { ProofRecord } from '../repository/ProofRecord'
 import { ProofRepository } from '../repository/ProofRepository'
+import { V1LegacyProofService } from '../v1/V1LegacyProofService'
 
 import { IndyVerifierService } from './../../indy/services/IndyVerifierService'
 import { PresentationProblemReportMessage } from './../v1/messages/PresentationProblemReportMessage'
@@ -90,7 +90,7 @@ const mockProofRecord = ({
 
 describe('ProofService', () => {
   let proofRepository: ProofRepository
-  let proofService: ProofService
+  let proofService: V1LegacyProofService
   let ledgerService: IndyLedgerService
   let wallet: Wallet
   let indyVerifierService: IndyVerifierService
@@ -108,7 +108,7 @@ describe('ProofService', () => {
     eventEmitter = new EventEmitter(agentConfig)
     connectionService = new connectionServiceMock()
 
-    proofService = new ProofService(
+    proofService = new V1LegacyProofService(
       proofRepository,
       ledgerService,
       wallet,
@@ -198,7 +198,7 @@ describe('ProofService', () => {
       const presentationProblemReportMessage = await new PresentationProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: PresentationProblemReportReason.abandoned,
+          code: PresentationProblemReportReason.Abandoned,
         },
       })
 
@@ -226,7 +226,7 @@ describe('ProofService', () => {
       const presentationProblemReportMessage = new PresentationProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: PresentationProblemReportReason.abandoned,
+          code: PresentationProblemReportReason.Abandoned,
         },
       })
       presentationProblemReportMessage.setThread({ threadId: 'somethreadid' })
@@ -235,7 +235,7 @@ describe('ProofService', () => {
       })
     })
 
-    test(`updates state to ${ProofState.None} and returns proof record`, async () => {
+    test(`updates problem report error message and returns proof record`, async () => {
       const repositoryUpdateSpy = jest.spyOn(proofRepository, 'update')
 
       // given
@@ -246,7 +246,7 @@ describe('ProofService', () => {
 
       // then
       const expectedCredentialRecord = {
-        state: ProofState.None,
+        errorMessage: 'abandoned: Indy error',
       }
       expect(proofRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, {
         threadId: 'somethreadid',
@@ -256,28 +256,6 @@ describe('ProofService', () => {
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
       expect(updatedCredentialRecord).toMatchObject(expectedCredentialRecord)
       expect(returnedCredentialRecord).toMatchObject(expectedCredentialRecord)
-    })
-
-    test(`emits stateChange event from ${ProofState.RequestReceived} to ${ProofState.None}`, async () => {
-      const eventListenerMock = jest.fn()
-      eventEmitter.on<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged, eventListenerMock)
-
-      // given
-      mockFunction(proofRepository.getSingleByQuery).mockReturnValue(Promise.resolve(proof))
-
-      // when
-      await proofService.processProblemReport(messageContext)
-
-      // then
-      expect(eventListenerMock).toHaveBeenCalledWith({
-        type: 'ProofStateChanged',
-        payload: {
-          previousState: ProofState.RequestReceived,
-          proofRecord: expect.objectContaining({
-            state: ProofState.None,
-          }),
-        },
-      })
     })
   })
 })

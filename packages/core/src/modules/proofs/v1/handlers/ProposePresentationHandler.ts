@@ -1,10 +1,8 @@
 import type { AgentConfig } from '../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
-import type { ProofRecord } from '../../repository'
 import type { V1LegacyProofService } from '../V1LegacyProofService'
 
-import { createOutboundMessage } from '../../../../agent/helpers'
 import { ProposePresentationMessage } from '../messages'
 
 export class ProposePresentationHandler implements Handler {
@@ -24,10 +22,10 @@ export class ProposePresentationHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<ProposePresentationHandler>) {
-    // const proofRecord = await this.proofService.processProposal(messageContext)
-    // if (this.proofResponseCoordinator.shouldAutoRespondToProposal(proofRecord)) {
-    //   return await this.createRequest(proofRecord, messageContext)
-    // }
+    const proofRecord = await this.proofService.processProposal(messageContext)
+    if (this.proofResponseCoordinator.shouldAutoRespondToProposal(proofRecord)) {
+      //   return await this.createRequest(proofRecord, messageContext)
+    }
   }
 
   // private async createRequest(

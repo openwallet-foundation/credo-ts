@@ -5,14 +5,13 @@ import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoA
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
-import type { CredReqMetadata } from 'indy-sdk'
 
 export interface WalletConfig {
   id: string
   key: string
 }
 
-export type WireMessage = {
+export type EncryptedMessage = {
   protected: unknown
   iv: unknown
   ciphertext: unknown
@@ -37,6 +36,7 @@ export interface InitConfig {
   didCommMimeType?: DidCommMimeType
 
   indyLedgers?: IndyPoolConfig[]
+  connectToIndyLedgersOnStartup?: boolean
 
   autoAcceptMediationRequests?: boolean
   mediatorConnectionsInvite?: string
@@ -49,16 +49,16 @@ export interface InitConfig {
   connectionImageUrl?: string
 }
 
-export interface UnpackedMessage {
+export interface PlaintextMessage {
   '@type': string
   '@id': string
   [key: string]: unknown
 }
 
-export interface UnpackedMessageContext {
-  message: UnpackedMessage
-  senderVerkey?: string
-  recipientVerkey?: string
+export interface DecryptedMessageContext {
+  plaintextMessage: PlaintextMessage
+  senderKey?: string
+  recipientKey?: string
 }
 
 export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
@@ -73,17 +73,8 @@ export interface OutboundServiceMessage<T extends AgentMessage = AgentMessage> {
 }
 
 export interface OutboundPackage {
-  payload: WireMessage
+  payload: EncryptedMessage
   responseRequested?: boolean
   endpoint?: string
   connectionId?: string
 }
-
-// Metadata type for `_internal/indyCredential`
-export interface IndyCredentialMetadata {
-  schemaId?: string
-  credentialDefinitionId?: string
-}
-
-// Metadata type for  `_internal/indyRequest`
-export type IndyCredentialRequestMetadata = CredReqMetadata

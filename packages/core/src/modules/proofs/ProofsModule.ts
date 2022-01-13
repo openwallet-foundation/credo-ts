@@ -93,47 +93,47 @@ export class ProofsModule {
    * @returns Proof record associated with the presentation request
    *
    */
-  // public async acceptProposal(
-  //   proofRecordId: string,
-  //   config?: {
-  //     request?: {
-  //       name?: string
-  //       version?: string
-  //       nonce?: string
-  //     }
-  //     comment?: string
-  //   }
-  // ): Promise<ProofRecord> {
-  //   const proofRecord = await this.proofService.getById(proofRecordId)
+  public async acceptProposal(
+    proofRecordId: string,
+    config?: {
+      request?: {
+        name?: string
+        version?: string
+        nonce?: string
+      }
+      comment?: string
+    }
+  ): Promise<ProofRecord> {
+    const proofRecord = await this.proofService.getById(proofRecordId)
 
-  //   if (!proofRecord.connectionId) {
-  //     throw new AriesFrameworkError(
-  //       `No connectionId found for credential record '${proofRecord.id}'. Connection-less issuance does not support presentation proposal or negotiation.`
-  //     )
-  //   }
+    if (!proofRecord.connectionId) {
+      throw new AriesFrameworkError(
+        `No connectionId found for credential record '${proofRecord.id}'. Connection-less issuance does not support presentation proposal or negotiation.`
+      )
+    }
 
-  //   const connection = await this.connectionService.getById(proofRecord.connectionId)
+    const connection = await this.connectionService.getById(proofRecord.connectionId)
 
-  //   const presentationProposal = proofRecord.proposalMessage?.presentationProposal
-  //   if (!presentationProposal) {
-  //     throw new AriesFrameworkError(`Proof record with id ${proofRecordId} is missing required presentation proposal`)
-  //   }
+    const presentationProposal = proofRecord.proposalMessage?.presentationProposal
+    if (!presentationProposal) {
+      throw new AriesFrameworkError(`Proof record with id ${proofRecordId} is missing required presentation proposal`)
+    }
 
-  //   const proofRequest = await this.proofService.createProofRequestFromProposal(presentationProposal, {
-  //     name: config?.request?.name ?? 'proof-request',
-  //     version: config?.request?.version ?? '1.0',
-  //     nonce: config?.request?.nonce,
-  //   })
+    const proofRequest = await this.proofService.createProofRequestFromProposal(presentationProposal, {
+      name: config?.request?.name ?? 'proof-request',
+      version: config?.request?.version ?? '1.0',
+      nonce: config?.request?.nonce,
+    })
 
-  //   const { message } = await this.proofService.createRequestAsResponse(proofRecord, proofRequest, {
-  //     comment: config?.comment,
-  //   })
+    const { message } = await this.proofService.createRequestAsResponse(proofRecord, proofRequest, {
+      comment: config?.comment,
+    })
 
-  //   const outboundMessage = createOutboundMessage(connection, message)
-  //   await this.messageSender.sendMessage(outboundMessage)
+    const outboundMessage = createOutboundMessage(connection, message)
+    await this.messageSender.sendMessage(outboundMessage)
 
-  //   return proofRecord
-  // }
+    return proofRecord
+  }
 
   /**
    * Initiate a new presentation exchange as verifier by sending a presentation request message
@@ -337,7 +337,7 @@ export class ProofsModule {
    *  credentials that match the presentation preview from the presentation proposal (if available).
 
    * @returns RetrievedCredentials object
-   */
+  //  */
   // public async getRequestedCredentialsForProofRequest(
   //   proofRecordId: string,
   //   config?: GetRequestedCredentialsConfig
@@ -385,7 +385,7 @@ export class ProofsModule {
     const presentationProblemReportMessage = new PresentationProblemReportMessage({
       description: {
         en: message,
-        code: PresentationProblemReportReason.abandoned,
+        code: PresentationProblemReportReason.Abandoned,
       },
     })
     presentationProblemReportMessage.setThread({

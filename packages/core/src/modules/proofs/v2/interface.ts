@@ -5,6 +5,8 @@ import type {
 } from '../PresentationPreview'
 import type { AutoAcceptProof } from '../ProofAutoAcceptType'
 import type { ProofProtocolVersion } from '../ProofProtocolVersion'
+import type { ProofRecord } from '../repository'
+import type { ProofRequest } from '../v1/models'
 
 export interface ProposeProofOptions {
   connectionId: string
@@ -12,6 +14,19 @@ export interface ProposeProofOptions {
   proofFormats: V2ProposeProofFormat
   comment?: string
   autoAcceptProof?: AutoAcceptProof
+}
+
+export interface AcceptProposalOptions {
+  proofRecordId: string
+  protocolVersion: ProofProtocolVersion
+  request?: ProofRequestsOptions
+  comment?: string
+}
+
+export interface ProofRequestsOptions {
+  nonce?: string
+  name?: string
+  version?: string
 }
 
 export interface ProposeProofFormats {
@@ -30,18 +45,19 @@ interface IndyProposeProofFormat {
   proofPreview?: PresentationPreview
 }
 
+export interface ProofRequestAsResponse {
+  proofRecord: ProofRecord
+  proofRequest: ProofRequest
+  comment?: string
+}
+
 export interface W3CProofFormat {
   inputDescriptors: string
 }
 
 export interface V2ProposeProofFormat {
-  indy?: ProofProposal
+  indy?: IndyProposeProofFormat
   w3c?: {
     // TODO
   }
-}
-
-interface ProofProposal {
-  attributes?: PresentationPreviewAttribute[]
-  predicates?: PresentationPreviewPredicate[]
 }

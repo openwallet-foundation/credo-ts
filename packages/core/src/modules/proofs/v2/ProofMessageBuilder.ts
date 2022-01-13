@@ -2,6 +2,7 @@ import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { ProofRecordProps } from '../repository'
 import type { ProofFormatService } from './formats/ProofFormatService'
 import type { ProposeProofOptions } from './interface'
+import type { V2ProposePresentationMessageOptions } from './messages/V2ProposalPresentationMessage'
 
 import { ProofState } from '../ProofState'
 import { ProofRecord } from '../repository'
@@ -22,12 +23,16 @@ export class ProofMessageBuilder {
     // create message
     const { preview, formats, filtersAttach } = formatService.getProofProposeAttachFormats(proposal, 'PRES_20_PROPOSAL')
 
-    const message: V2ProposalPresentationMessage = new V2ProposalPresentationMessage(
-      formatService.generateId(),
+    const v2ProposePresentationMessageOptions: V2ProposePresentationMessageOptions = {
+      id: formatService.generateId(),
       formats,
       filtersAttach,
-      proposal.comment,
-      preview
+      comment: proposal.comment,
+      presentationProposal: preview,
+    }
+
+    const message: V2ProposalPresentationMessage = new V2ProposalPresentationMessage(
+      v2ProposePresentationMessageOptions
     )
 
     const props: ProofRecordProps = {

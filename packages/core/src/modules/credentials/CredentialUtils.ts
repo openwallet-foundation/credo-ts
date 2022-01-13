@@ -1,11 +1,12 @@
 import type { LinkedAttachment } from '../../utils/LinkedAttachment'
 import type { CredValues } from 'indy-sdk'
 
+import { hash as sha256 } from '@stablelib/sha256'
 import BigNumber from 'bn.js'
-import { sha256 } from 'js-sha256'
 
 import { AriesFrameworkError } from '../../error/AriesFrameworkError'
 import { encodeAttachment } from '../../utils/attachment'
+import { Buffer } from '../../utils/buffer'
 import { isBoolean, isNumber, isString } from '../../utils/type'
 
 import { CredentialPreview, CredentialPreviewAttribute } from './messages/CredentialPreview'
@@ -164,7 +165,7 @@ export class CredentialUtils {
       value = 'None'
     }
 
-    return new BigNumber(sha256.array(value as string)).toString()
+    return new BigNumber(sha256(Buffer.from(value as string))).toString()
   }
 
   private static isInt32(number: number) {

@@ -19,10 +19,15 @@ export class IndyProofFormatService extends ProofFormatService {
    *
    */
   public getProofProposeAttachFormats(proposal: ProposeProofOptions, messageType: string): V2AttachmentFormats {
-    let preview: PresentationPreview | undefined
+    let preview: PresentationPreview
 
     if (proposal?.proofFormats?.indy?.attributes) {
-      preview = new PresentationPreview({ attributes: proposal?.proofFormats.indy?.attributes })
+      preview = new PresentationPreview({
+        attributes: proposal?.proofFormats.indy?.attributes,
+        predicates: proposal?.proofFormats.indy?.predicates,
+      })
+    } else {
+      preview = new PresentationPreview({ attributes: [], predicates: [] })
     }
 
     const formats: V2ProofFormatSpec = this.getFormatIdentifier(messageType)

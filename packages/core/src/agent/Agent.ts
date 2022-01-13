@@ -17,10 +17,10 @@ import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
+import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { ProofsAPI } from '../modules/proofs/ProofsAPI'
-import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
@@ -46,15 +46,15 @@ export class Agent {
   private _isInitialized = false
   public messageSubscription: Subscription
 
-  public readonly connections!: ConnectionsModule
-  // public readonly proofs!: ProofsModule
-  public readonly proofs!: ProofsAPI
-  public readonly basicMessages!: BasicMessagesModule
-  public readonly ledger!: LedgerModule
-  public readonly credentials!: CredentialsModule
-  public readonly mediationRecipient!: RecipientModule
-  public readonly mediator!: MediatorModule
-  public readonly discovery!: DiscoverFeaturesModule
+  public readonly connections: ConnectionsModule
+  public readonly proofs: ProofsAPI
+  public readonly basicMessages: BasicMessagesModule
+  public readonly ledger: LedgerModule
+  public readonly credentials: CredentialsModule
+  public readonly mediationRecipient: RecipientModule
+  public readonly mediator: MediatorModule
+  public readonly discovery: DiscoverFeaturesModule
+  public readonly dids: DidsModule
   public readonly wallet: Wallet
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
@@ -98,13 +98,13 @@ export class Agent {
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.container.resolve(ConnectionsModule)
     this.credentials = this.container.resolve(CredentialsModule)
-    // this.proofs = this.container.resolve(ProofsModule)
     this.proofs = this.container.resolve(ProofsAPI)
     this.mediator = this.container.resolve(MediatorModule)
     this.mediationRecipient = this.container.resolve(RecipientModule)
     this.basicMessages = this.container.resolve(BasicMessagesModule)
     this.ledger = this.container.resolve(LedgerModule)
     this.discovery = this.container.resolve(DiscoverFeaturesModule)
+    this.dids = this.container.resolve(DidsModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
     this.messageSubscription = this.eventEmitter
@@ -141,7 +141,7 @@ export class Agent {
   }
 
   public async initialize() {
-    const { publicDidSeed, walletConfig, mediatorConnectionsInvite } = this.agentConfig
+    const { connectToIndyLedgersOnStartup, publicDidSeed, walletConfig, mediatorConnectionsInvite } = this.agentConfig
 
     if (this._isInitialized) {
       throw new AriesFrameworkError(
@@ -162,6 +162,13 @@ export class Agent {
     if (publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
       await this.wallet.initPublicDid({ seed: publicDidSeed })
+    }
+
+    // As long as value isn't false we will async connect to all genesis pools on startup
+    if (connectToIndyLedgersOnStartup) {
+      this.ledger.connectToPools().catch((error) => {
+        this.logger.warn('Error connecting to ledger, will try to reconnect when needed.', { error })
+      })
     }
 
     for (const transport of this.inboundTransports) {
@@ -207,8 +214,8 @@ export class Agent {
     return this.wallet.publicDid
   }
 
-  public async receiveMessage(inboundPackedMessage: unknown, session?: TransportSession) {
-    return await this.messageReceiver.receiveMessage(inboundPackedMessage, session)
+  public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
+    return await this.messageReceiver.receiveMessage(inboundMessage, session)
   }
 
   public get injectionContainer() {

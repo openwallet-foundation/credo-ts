@@ -10,8 +10,6 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator'
-import objectInspect from 'object-inspect'
-import { version } from 'os'
 
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import { replaceLegacyDidSovPrefix } from '../../utils/messageType'
@@ -171,6 +169,7 @@ export class PresentationPreview {
     return new PresentationPreview(
       {
         attributes,
+        predicates,
       },
       version
     )
