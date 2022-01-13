@@ -371,6 +371,6 @@ export class OutOfBandModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new HandshakeReuseHandler())
+    dispatcher.registerHandler(new HandshakeReuseHandler(this.logger))
   }
 }
