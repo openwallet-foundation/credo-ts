@@ -234,6 +234,9 @@ export class OutOfBandModule {
             .returnWhenIsConnected(connectionRecord.id)
             .then((c) => {
               const connectionServices = c.theirDidDoc?.didCommServices
+              if (!connectionServices) {
+                throw new AriesFrameworkError(`Connection record ${connectionRecord.id} does not have any services.`)
+              }
               return this.emitMessages(connectionServices, messages)
             })
             .catch((error) => {
@@ -248,6 +251,9 @@ export class OutOfBandModule {
             })
         } else {
           const connectionServices = connectionRecord.theirDidDoc?.didCommServices
+          if (!connectionServices) {
+            throw new AriesFrameworkError(`Connection record ${connectionRecord.id} does not have any services.`)
+          }
           await this.emitMessages(connectionServices, messages)
         }
       }
@@ -315,7 +321,7 @@ export class OutOfBandModule {
     return connectionRecord
   }
 
-  private async emitMessages(services: Array<DidCommService | string> | undefined, messages: PlaintextMessage[]) {
+  private async emitMessages(services: Array<DidCommService | string>, messages: PlaintextMessage[]) {
     if (!services || services.length === 0) {
       throw new AriesFrameworkError(`There are no services. We can not emit messages`)
     }
