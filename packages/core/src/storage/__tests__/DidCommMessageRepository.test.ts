@@ -30,7 +30,7 @@ describe('Repository', () => {
       id,
       message: invitationJson,
       role: DidCommMessageRole.Receiver,
-      connectionId: '16ca6665-29f6-4333-a80e-d34db6bfe0b0',
+      associatedRecordId: '16ca6665-29f6-4333-a80e-d34db6bfe0b0',
     })
   }
 
@@ -41,11 +41,11 @@ describe('Repository', () => {
 
       const invitation = await repository.getAgentMessage({
         messageClass: ConnectionInvitationMessage,
-        threadId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
+        associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
       expect(storageMock.findByQuery).toBeCalledWith(DidCommMessageRecord, {
-        threadId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
+        associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
         messageType: 'https://didcomm.org/connections/1.0/invitation',
       })
       expect(invitation).toBeInstanceOf(ConnectionInvitationMessage)
@@ -57,12 +57,14 @@ describe('Repository', () => {
       await repository.saveAgentMessage({
         role: DidCommMessageRole.Receiver,
         agentMessage: JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage),
+        associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
       expect(storageMock.save).toBeCalledWith(
         expect.objectContaining({
           role: DidCommMessageRole.Receiver,
           message: invitationJson,
+          associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
         })
       )
     })

@@ -15,12 +15,12 @@ describe('DidCommMessageRecord', () => {
     const didCommeMessageRecord = new DidCommMessageRecord({
       message: didCommMessage,
       role: DidCommMessageRole.Receiver,
-      connectionId: '16ca6665-29f6-4333-a80e-d34db6bfe0b0',
+      associatedRecordId: '16ca6665-29f6-4333-a80e-d34db6bfe0b0',
     })
 
     expect(didCommeMessageRecord.getTags()).toEqual({
       role: DidCommMessageRole.Receiver,
-      connectionId: '16ca6665-29f6-4333-a80e-d34db6bfe0b0',
+      associatedRecordId: '16ca6665-29f6-4333-a80e-d34db6bfe0b0',
 
       // Computed properties based on message id and type
       threadId: 'ea24e14a-4fc4-40f4-85a0-f6fcf02bfc1c',
@@ -45,7 +45,7 @@ describe('DidCommMessageRecord', () => {
     const didCommeMessageRecord = new DidCommMessageRecord({
       message: invitationJson,
       role: DidCommMessageRole.Receiver,
-      connectionId: '16ca6665-29f6-4333-a80e-d34db6bfe0b0',
+      associatedRecordId: '16ca6665-29f6-4333-a80e-d34db6bfe0b0',
     })
 
     const invitation = didCommeMessageRecord.getMessageInstance(ConnectionInvitationMessage)

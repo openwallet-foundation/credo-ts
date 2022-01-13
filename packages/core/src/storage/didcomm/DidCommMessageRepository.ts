@@ -16,36 +16,36 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
     super(DidCommMessageRecord, storageService)
   }
 
-  public async saveAgentMessage({
-    role,
-    agentMessage,
-    connectionId,
-  }: {
-    role: DidCommMessageRole
-    agentMessage: AgentMessage
-    connectionId?: string
-  }) {
+  public async saveAgentMessage({ role, agentMessage, associatedRecordId }: SaveAgentMessageOptions) {
     const didCommMessageRecord = new DidCommMessageRecord({
       message: agentMessage.toJSON() as JsonMap,
       role,
-      connectionId,
+      associatedRecordId,
     })
 
     await this.save(didCommMessageRecord)
   }
 
   public async getAgentMessage<MessageClass extends typeof AgentMessage = typeof AgentMessage>({
-    threadId,
+    associatedRecordId,
     messageClass,
-  }: {
-    threadId: string
-    messageClass: MessageClass
-  }): Promise<InstanceType<MessageClass>> {
+  }: GetAgentMessageOptions<MessageClass>): Promise<InstanceType<MessageClass>> {
     const record = await this.getSingleByQuery({
-      threadId,
+      associatedRecordId,
       messageType: messageClass.type,
     })
 
     return record.getMessageInstance(messageClass)
   }
+}
+
+export interface SaveAgentMessageOptions {
+  role: DidCommMessageRole
+  agentMessage: AgentMessage
+  associatedRecordId: string
+}
+
+export interface GetAgentMessageOptions<MessageClass extends typeof AgentMessage> {
+  associatedRecordId: string
+  messageClass: MessageClass
 }

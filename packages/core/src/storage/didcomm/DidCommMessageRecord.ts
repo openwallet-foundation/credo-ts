@@ -5,12 +5,13 @@ import type { DidCommMessageRole } from './DidCommMessageRole'
 import { AriesFrameworkError } from '../../error'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import { rightSplit } from '../../utils/string'
+import { isJsonMap } from '../../utils/type'
 import { uuid } from '../../utils/uuid'
 import { BaseRecord } from '../BaseRecord'
 
 export type DefaultDidCommMessageTags = {
   role: DidCommMessageRole
-  connectionId?: string
+  associatedRecordId?: string
 
   // Computed
   protocolName: string
@@ -27,13 +28,20 @@ export interface DidCommMessageRecordProps {
   message: JsonMap
   id?: string
   createdAt?: Date
-  connectionId?: string
+  associatedRecordId?: string
 }
 
 export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> {
   public message!: JsonMap
   public role!: DidCommMessageRole
-  public connectionId?: string
+
+  /**
+   * The id of the record that is associated with this message record.
+   *
+   * E.g. if the connection record wants to store an invitation message
+   * the associatedRecordId will be the id of the connection record.
+   */
+  public associatedRecordId?: string
 
   public static readonly type = 'DidCommMessageRecord'
   public readonly type = DidCommMessageRecord.type
@@ -44,7 +52,7 @@ export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> 
     if (props) {
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
-      this.connectionId = props.connectionId
+      this.associatedRecordId = props.associatedRecordId
       this.role = props.role
       this.message = props.message
     }
@@ -59,21 +67,14 @@ export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> 
     const thread = this.message['~thread']
     let threadId = messageId
 
-    // FIXME: make this less verbose
-    if (
-      thread &&
-      typeof thread === 'object' &&
-      thread !== null &&
-      !Array.isArray(thread) &&
-      typeof thread.thid === 'string'
-    ) {
+    if (isJsonMap(thread) && typeof thread.thid === 'string') {
       threadId = thread.thid
     }
 
     return {
       ...this._tags,
       role: this.role,
-      connectionId: this.connectionId,
+      associatedRecordId: this.associatedRecordId,
 
       // Computed properties based on message id and type
       threadId,
