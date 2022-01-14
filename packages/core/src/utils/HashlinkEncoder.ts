@@ -1,10 +1,10 @@
 import type { BaseName } from './MultiBaseEncoder'
 import type { Buffer } from './buffer'
 
+import { hash as sha256 } from '@stablelib/sha256'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore ts is giving me headaches because this package has no types
 import cbor from 'borc'
-import { sha256 } from 'js-sha256'
 
 import { BufferEncoder } from './BufferEncoder'
 import { MultiBaseEncoder } from './MultiBaseEncoder'
@@ -89,7 +89,7 @@ export class HashlinkEncoder {
     baseEncoding: BaseName = 'base58btc'
   ): string {
     // TODO: Support more hashing algorithms
-    const hash = new Uint8Array(sha256.array(buffer))
+    const hash = sha256(buffer)
     const mh = MultiHashEncoder.encode(hash, hashName)
     const mb = MultiBaseEncoder.encode(mh, baseEncoding)
     return BufferEncoder.toUtf8String(mb)

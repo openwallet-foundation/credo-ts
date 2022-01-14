@@ -16,12 +16,15 @@ import { ConnectionService } from '../connections/services/ConnectionService'
 import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
+import { PresentationProblemReportReason } from './errors'
 import {
   ProposePresentationHandler,
   RequestPresentationHandler,
   PresentationAckHandler,
   PresentationHandler,
+  PresentationProblemReportHandler,
 } from './handlers'
+import { PresentationProblemReportMessage } from './messages/PresentationProblemReportMessage'
 import { ProofRequest } from './models/ProofRequest'
 import { ProofService } from './services'
 
@@ -369,6 +372,33 @@ export class ProofsModule {
   }
 
   /**
+   * Send problem report message for a proof record
+   * @param proofRecordId  The id of the proof record for which to send problem report
+   * @param message message to send
+   * @returns proof record associated with the proof problem report message
+   */
+  public async sendProblemReport(proofRecordId: string, message: string) {
+    const record = await this.proofService.getById(proofRecordId)
+    if (!record.connectionId) {
+      throw new AriesFrameworkError(`No connectionId found for proof record '${record.id}'.`)
+    }
+    const connection = await this.connectionService.getById(record.connectionId)
+    const presentationProblemReportMessage = new PresentationProblemReportMessage({
+      description: {
+        en: message,
+        code: PresentationProblemReportReason.Abandoned,
+      },
+    })
+    presentationProblemReportMessage.setThread({
+      threadId: record.threadId,
+    })
+    const outboundMessage = createOutboundMessage(connection, presentationProblemReportMessage)
+    await this.messageSender.sendMessage(outboundMessage)
+
+    return record
+  }
+
+  /**
    * Retrieve all proof records
    *
    * @returns List containing all proof records
@@ -426,6 +456,7 @@ export class ProofsModule {
       new PresentationHandler(this.proofService, this.agentConfig, this.proofResponseCoordinator)
     )
     dispatcher.registerHandler(new PresentationAckHandler(this.proofService))
+    dispatcher.registerHandler(new PresentationProblemReportHandler(this.proofService))
   }
 }
 

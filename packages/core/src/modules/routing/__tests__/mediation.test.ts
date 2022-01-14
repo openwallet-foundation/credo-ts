@@ -25,15 +25,12 @@ describe('mediator establishment', () => {
   let senderAgent: Agent
 
   afterEach(async () => {
-    await recipientAgent.shutdown({
-      deleteWallet: true,
-    })
-    await mediatorAgent.shutdown({
-      deleteWallet: true,
-    })
-    await senderAgent.shutdown({
-      deleteWallet: true,
-    })
+    await recipientAgent.shutdown()
+    await recipientAgent.wallet.delete()
+    await mediatorAgent.shutdown()
+    await mediatorAgent.wallet.delete()
+    await senderAgent.shutdown()
+    await senderAgent.wallet.delete()
   })
 
   test(`Mediation end-to-end flow

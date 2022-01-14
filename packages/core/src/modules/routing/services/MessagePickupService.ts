@@ -1,5 +1,5 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { WireMessage } from '../../../types'
+import type { EncryptedMessage } from '../../../types'
 import type { BatchPickupMessage } from '../messages'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
@@ -41,7 +41,7 @@ export class MessagePickupService {
     return createOutboundMessage(connection, batchMessage)
   }
 
-  public queueMessage(connectionId: string, message: WireMessage) {
+  public queueMessage(connectionId: string, message: EncryptedMessage) {
     this.messageRepository.add(connectionId, message)
   }
 }

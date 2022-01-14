@@ -4,6 +4,7 @@ import { Transform, TransformationType } from 'class-transformer'
 import { ValidateBy, buildMessage } from 'class-validator'
 import { DateTime } from 'luxon'
 
+import { CredentialMetadataKeys } from '../modules/credentials/repository/credentialMetadataTypes'
 import { Metadata } from '../storage/Metadata'
 
 import { JsonTransformer } from './JsonTransformer'
@@ -60,12 +61,12 @@ export function MetadataTransformer() {
       const { requestMetadata, schemaId, credentialDefinitionId, ...rest } = value
       const metadata = new Metadata(rest)
 
-      if (requestMetadata) metadata.add('_internal/indyRequest', { ...value.requestMetadata })
+      if (requestMetadata) metadata.add(CredentialMetadataKeys.IndyRequest, { ...value.requestMetadata })
 
-      if (schemaId) metadata.add('_internal/indyCredential', { schemaId: value.schemaId })
+      if (schemaId) metadata.add(CredentialMetadataKeys.IndyCredential, { schemaId: value.schemaId })
 
       if (credentialDefinitionId)
-        metadata.add('_internal/indyCredential', { credentialDefinitionId: value.credentialDefinitionId })
+        metadata.add(CredentialMetadataKeys.IndyCredential, { credentialDefinitionId: value.credentialDefinitionId })
 
       return metadata
     }

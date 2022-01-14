@@ -16,13 +16,16 @@ import { ConnectionService } from '../connections/services/ConnectionService'
 import { MediationRecipientService } from '../routing'
 
 import { CredentialResponseCoordinator } from './CredentialResponseCoordinator'
+import { CredentialProblemReportReason } from './errors'
 import {
   CredentialAckHandler,
   IssueCredentialHandler,
   OfferCredentialHandler,
   ProposeCredentialHandler,
   RequestCredentialHandler,
+  CredentialProblemReportHandler,
 } from './handlers'
+import { CredentialProblemReportMessage } from './messages'
 import { CredentialService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -442,6 +445,33 @@ export class CredentialsModule {
   }
 
   /**
+   * Send problem report message for a credential record
+   * @param credentialRecordId  The id of the credential record for which to send problem report
+   * @param message message to send
+   * @returns credential record associated with credential problem report message
+   */
+  public async sendProblemReport(credentialRecordId: string, message: string) {
+    const record = await this.credentialService.getById(credentialRecordId)
+    if (!record.connectionId) {
+      throw new AriesFrameworkError(`No connectionId found for credential record '${record.id}'.`)
+    }
+    const connection = await this.connectionService.getById(record.connectionId)
+    const credentialProblemReportMessage = new CredentialProblemReportMessage({
+      description: {
+        en: message,
+        code: CredentialProblemReportReason.IssuanceAbandoned,
+      },
+    })
+    credentialProblemReportMessage.setThread({
+      threadId: record.threadId,
+    })
+    const outboundMessage = createOutboundMessage(connection, credentialProblemReportMessage)
+    await this.messageSender.sendMessage(outboundMessage)
+
+    return record
+  }
+
+  /**
    * Retrieve all credential records
    *
    * @returns List containing all credential records
@@ -500,5 +530,6 @@ export class CredentialsModule {
       new IssueCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
     )
     dispatcher.registerHandler(new CredentialAckHandler(this.credentialService))
+    dispatcher.registerHandler(new CredentialProblemReportHandler(this.credentialService))
   }
 }
