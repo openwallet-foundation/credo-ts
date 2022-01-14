@@ -17,7 +17,7 @@ const aliceConfig = getBaseConfig('wallet-tests-Alice', {
 describe('=== wallet', () => {
   let aliceAgent: Agent
 
-  beforeEach(async () => {
+  beforeEach(() => {
     const aliceMessages = new Subject<SubjectMessage>()
     const bobMessages = new Subject<SubjectMessage>()
 

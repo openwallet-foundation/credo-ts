@@ -22,11 +22,13 @@ export class EventEmitter {
   }
 
   public on<T extends BaseEvent>(event: T['type'], listener: (data: T) => void | Promise<void>) {
-    this.eventEmitter.on(event, listener)
+    // Cast to ignore type-error of providing promise return value to sync event method
+    this.eventEmitter.on(event, listener as (data: T) => void)
   }
 
   public off<T extends BaseEvent>(event: T['type'], listener: (data: T) => void | Promise<void>) {
-    this.eventEmitter.off(event, listener)
+    // Cast to ignore type-error of providing promise return value to sync event method
+    this.eventEmitter.off(event, listener as (data: T) => void)
   }
 
   public observable<T extends BaseEvent>(event: T['type']) {

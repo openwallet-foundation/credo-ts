@@ -14,7 +14,7 @@ export class WsInboundTransport implements InboundTransport {
     this.socketServer = server ?? new Server({ port })
   }
 
-  public async start(agent: Agent) {
+  public start(agent: Agent) {
     const transportService = agent.injectionContainer.resolve(TransportService)
     const config = agent.injectionContainer.resolve(AgentConfig)
 
@@ -42,6 +42,9 @@ export class WsInboundTransport implements InboundTransport {
         this.logger.debug(`Socket with id ${socketId} already exists.`)
       }
     })
+
+    // We're not making any async calls, but interface expects promise
+    return Promise.resolve()
   }
 
   public async stop() {
@@ -59,8 +62,8 @@ export class WsInboundTransport implements InboundTransport {
   }
 
   private listenOnWebSocketMessages(agent: Agent, socket: WebSocket, session: TransportSession) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    socket.addEventListener('message', async (event: any) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-misused-promises
+    socket.addEventListener('message', async (event) => {
       this.logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
       try {
         await agent.receiveMessage(JSON.parse(event.data), session)
@@ -81,11 +84,14 @@ export class WebSocketTransportSession implements TransportSession {
     this.socket = socket
   }
 
-  public async send(encryptedMessage: EncryptedMessage): Promise<void> {
+  public send(encryptedMessage: EncryptedMessage): Promise<void> {
     if (this.socket.readyState !== WebSocket.OPEN) {
       throw new AriesFrameworkError(`${this.type} transport session has been closed.`)
     }
 
     this.socket.send(JSON.stringify(encryptedMessage))
+
+    // We're not making any async calls, but interface expects promise
+    return Promise.resolve()
   }
 }

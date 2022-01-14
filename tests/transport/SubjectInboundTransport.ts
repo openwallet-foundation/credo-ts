@@ -16,12 +16,18 @@ export class SubjectInboundTransport implements InboundTransport {
     this.subject = subject
   }
 
-  public async start(agent: Agent) {
+  public start(agent: Agent) {
     this.subscribe(agent)
+
+    // We're not making any async calls, but interface expects promise
+    return Promise.resolve()
   }
 
-  public async stop() {
+  public stop() {
     this.subscription?.unsubscribe()
+
+    // We're not making any async calls, but interface expects promise
+    return Promise.resolve()
   }
 
   private subscribe(agent: Agent) {
@@ -52,7 +58,10 @@ export class SubjectTransportSession implements TransportSession {
     this.replySubject = replySubject
   }
 
-  public async send(encryptedMessage: EncryptedMessage): Promise<void> {
+  public send(encryptedMessage: EncryptedMessage): Promise<void> {
     this.replySubject.next({ message: encryptedMessage })
+
+    // We're not making any async calls, but interface expects promise
+    return Promise.resolve()
   }
 }

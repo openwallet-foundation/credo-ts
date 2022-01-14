@@ -35,7 +35,7 @@ class EnvelopeService {
     // pass whether we want to use legacy did sov prefix
     const message = payload.toJSON({ useLegacyDidSovPrefix: this.config.useLegacyDidSovPrefix })
 
-    this.logger.debug(`Pack outbound message ${message['@type']}`)
+    this.logger.debug(`Pack outbound message ${message['@type'] as string}`)
 
     let encryptedMessage = await this.wallet.pack(message, recipientKeys, senderKey ?? undefined)
 

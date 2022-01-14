@@ -1,6 +1,7 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { MediationRecipientService } from '../services'
 
+import { AriesFrameworkError } from '../../../error'
 import { MediationDenyMessage } from '../messages'
 
 export class MediationDenyHandler implements Handler {
@@ -13,7 +14,7 @@ export class MediationDenyHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<MediationDenyHandler>) {
     if (!messageContext.connection) {
-      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection not found (verkey=${messageContext.recipientVerkey ?? 'unknown'}`)
     }
     await this.mediationRecipientService.processMediationDeny(messageContext)
   }

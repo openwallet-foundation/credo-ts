@@ -52,7 +52,7 @@ describe('Dispatcher', () => {
   dispatcher.registerHandler(new TestHandler([CredentialProposalTestMessage]))
 
   describe('supportedMessageTypes', () => {
-    test('return all supported message types URIs', async () => {
+    test('return all supported message types URIs', () => {
       const messageTypes = dispatcher.supportedMessageTypes
 
       expect(messageTypes).toEqual([
@@ -66,7 +66,7 @@ describe('Dispatcher', () => {
   })
 
   describe('supportedProtocols', () => {
-    test('return all supported message protocols URIs', async () => {
+    test('return all supported message protocols URIs', () => {
       const messageTypes = dispatcher.supportedProtocols
 
       expect(messageTypes).toEqual([
@@ -78,19 +78,19 @@ describe('Dispatcher', () => {
   })
 
   describe('filterSupportedProtocolsByMessageFamilies', () => {
-    it('should return empty array when input is empty array', async () => {
+    it('should return empty array when input is empty array', () => {
       const supportedProtocols = dispatcher.filterSupportedProtocolsByMessageFamilies([])
       expect(supportedProtocols).toEqual([])
     })
 
-    it('should return empty array when input contains only unsupported protocol', async () => {
+    it('should return empty array when input contains only unsupported protocol', () => {
       const supportedProtocols = dispatcher.filterSupportedProtocolsByMessageFamilies([
         'https://didcomm.org/unsupported-protocol/1.0',
       ])
       expect(supportedProtocols).toEqual([])
     })
 
-    it('should return array with only supported protocol when input contains supported and unsupported protocol', async () => {
+    it('should return array with only supported protocol when input contains supported and unsupported protocol', () => {
       const supportedProtocols = dispatcher.filterSupportedProtocolsByMessageFamilies([
         'https://didcomm.org/connections',
         'https://didcomm.org/didexchange',

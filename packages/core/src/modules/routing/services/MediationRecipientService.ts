@@ -184,7 +184,7 @@ export class MediationRecipientService {
 
   public async saveRoute(recipientKey: string, mediationRecord: MediationRecord) {
     mediationRecord.recipientKeys.push(recipientKey)
-    this.mediatorRepository.update(mediationRecord)
+    await this.mediatorRepository.update(mediationRecord)
   }
 
   public async removeRoute(recipientKey: string, mediationRecord: MediationRecord) {
@@ -192,7 +192,7 @@ export class MediationRecipientService {
     if (index > -1) {
       mediationRecord.recipientKeys.splice(index, 1)
     }
-    this.mediatorRepository.update(mediationRecord)
+    await this.mediatorRepository.update(mediationRecord)
   }
 
   public async processMediationDeny(messageContext: InboundMessageContext<MediationDenyMessage>) {

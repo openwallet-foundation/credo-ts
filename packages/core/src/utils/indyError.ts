@@ -70,9 +70,9 @@ export interface IndyError {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isIndyError(error: any, errorName?: IndyErrorValues): error is IndyError {
-  if (typeof error !== 'object' || error === null) return false
+  if (typeof error !== 'object' || error === null || error === undefined || Array.isArray(error)) return false
 
-  const indyError = error.name === 'IndyError'
+  const indyError = 'name' in error && error.name === 'IndyError'
 
   // if no specific indy error name is passed
   // or the error is no indy error

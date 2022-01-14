@@ -21,15 +21,18 @@ export class SubjectOutboundTransport implements OutboundTransport {
     this.subjectMap = subjectMap
   }
 
-  public async start(agent: Agent): Promise<void> {
+  public start(agent: Agent): Promise<void> {
     this.logger = agent.injectionContainer.resolve(InjectionSymbols.Logger)
+
+    // We're not making any async calls, but interface expects promise
+    return Promise.resolve()
   }
 
   public async stop(): Promise<void> {
     // Nothing required to stop
   }
 
-  public async sendMessage(outboundPackage: OutboundPackage) {
+  public sendMessage(outboundPackage: OutboundPackage) {
     this.logger.debug(`Sending outbound message to endpoint ${outboundPackage.endpoint}`, {
       endpoint: outboundPackage.endpoint,
     })
@@ -46,5 +49,8 @@ export class SubjectOutboundTransport implements OutboundTransport {
     }
 
     subject.next({ message: payload, replySubject: this.ourSubject })
+
+    // We're not making any async calls, but interface expects promise
+    return Promise.resolve()
   }
 }

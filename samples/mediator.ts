@@ -69,6 +69,7 @@ agent.registerInboundTransport(wsInboundTransport)
 agent.registerOutboundTransport(wsOutboundTransport)
 
 // Allow to create invitation, no other way to ask for invitation yet
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
 httpInboundTransport.app.get('/invitation', async (req, res) => {
   if (typeof req.query.c_i === 'string') {
     const invitation = await ConnectionInvitationMessage.fromUrl(req.url)
@@ -93,4 +94,4 @@ const run = async () => {
   })
 }
 
-run()
+void run()

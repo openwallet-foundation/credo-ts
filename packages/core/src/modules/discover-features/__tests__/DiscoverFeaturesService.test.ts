@@ -13,12 +13,12 @@ describe('DiscoverFeaturesService', () => {
   const discoverFeaturesService = new DiscoverFeaturesService({ supportedProtocols } as Dispatcher)
 
   describe('createDisclose', () => {
-    it('should return all protocols when query is *', async () => {
+    it('should return all protocols when query is *', () => {
       const queryMessage = new QueryMessage({
         query: '*',
       })
 
-      const message = await discoverFeaturesService.createDisclose(queryMessage)
+      const message = discoverFeaturesService.createDisclose(queryMessage)
 
       expect(message.protocols.map((p) => p.protocolId)).toStrictEqual([
         'https://didcomm.org/connections/1.0',
@@ -27,30 +27,30 @@ describe('DiscoverFeaturesService', () => {
       ])
     })
 
-    it('should return only one protocol if the query specifies a specific protocol', async () => {
+    it('should return only one protocol if the query specifies a specific protocol', () => {
       const queryMessage = new QueryMessage({
         query: 'https://didcomm.org/connections/1.0',
       })
 
-      const message = await discoverFeaturesService.createDisclose(queryMessage)
+      const message = discoverFeaturesService.createDisclose(queryMessage)
 
       expect(message.protocols.map((p) => p.protocolId)).toStrictEqual(['https://didcomm.org/connections/1.0'])
     })
 
-    it('should respect a wild card at the end of the query', async () => {
+    it('should respect a wild card at the end of the query', () => {
       const queryMessage = new QueryMessage({
         query: 'https://didcomm.org/connections/*',
       })
 
-      const message = await discoverFeaturesService.createDisclose(queryMessage)
+      const message = discoverFeaturesService.createDisclose(queryMessage)
 
       expect(message.protocols.map((p) => p.protocolId)).toStrictEqual(['https://didcomm.org/connections/1.0'])
     })
   })
 
   describe('createQuery', () => {
-    it('should return a query message with the query and comment', async () => {
-      const message = await discoverFeaturesService.createQuery({
+    it('should return a query message with the query and comment', () => {
+      const message = discoverFeaturesService.createQuery({
         query: '*',
         comment: 'Hello',
       })

@@ -172,11 +172,11 @@ export class Agent {
     }
 
     for (const transport of this.inboundTransports) {
-      transport.start(this)
+      await transport.start(this)
     }
 
     for (const transport of this.outboundTransports) {
-      transport.start(this)
+      await transport.start(this)
     }
 
     // Connect to mediator through provided invitation if provided in config
@@ -198,10 +198,10 @@ export class Agent {
 
     // Stop transports
     for (const transport of this.outboundTransports) {
-      transport.stop()
+      await transport.stop()
     }
     for (const transport of this.inboundTransports) {
-      transport.stop()
+      await transport.stop()
     }
 
     // close wallet if still initialized

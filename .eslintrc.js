@@ -50,6 +50,7 @@ module.exports = {
       },
     ],
     '@typescript-eslint/no-non-null-assertion': 'error',
+    '@typescript-eslint/no-unsafe-assignment': 'off',
     'import/no-extraneous-dependencies': [
       'error',
       {
@@ -87,6 +88,7 @@ module.exports = {
       },
       rules: {
         '@typescript-eslint/no-unsafe-assignment': 'off',
+        '@typescript-eslint/no-unsafe-member-access': 'off',
         '@typescript-eslint/unbound-method': 'off',
         '@typescript-eslint/restrict-template-expressions': 'off',
         'import/no-extraneous-dependencies': [

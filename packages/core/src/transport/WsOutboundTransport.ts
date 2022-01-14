@@ -20,7 +20,7 @@ export class WsOutboundTransport implements OutboundTransport {
   private WebSocketClass!: typeof WebSocket
   public supportedSchemes = ['ws', 'wss']
 
-  public async start(agent: Agent): Promise<void> {
+  public start(agent: Agent): Promise<void> {
     this.agent = agent
     const agentConfig = agent.injectionContainer.resolve(AgentConfig)
 
@@ -28,6 +28,9 @@ export class WsOutboundTransport implements OutboundTransport {
     this.eventEmitter = agent.injectionContainer.resolve(EventEmitter)
     this.logger.debug('Starting WS outbound transport')
     this.WebSocketClass = agentConfig.agentDependencies.WebSocketClass
+
+    // We're not making any async calls, but interface expects promise
+    return Promise.resolve()
   }
 
   public async stop() {
@@ -36,17 +39,21 @@ export class WsOutboundTransport implements OutboundTransport {
       socket.removeEventListener('message', this.handleMessageEvent)
       socket.close()
     })
+
+    // We're not making any async calls, but interface expects promise
+    return Promise.resolve()
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
     const { payload, endpoint, connectionId } = outboundPackage
-    this.logger.debug(`Sending outbound message to endpoint '${endpoint}' over WebSocket transport.`, {
-      payload,
-    })
 
     if (!endpoint) {
       throw new AriesFrameworkError("Missing connection or endpoint. I don't know how and where to send the message.")
     }
+
+    this.logger.debug(`Sending outbound message to endpoint '${endpoint}' over WebSocket transport.`, {
+      payload,
+    })
 
     const isNewSocket = this.hasOpenSocket(endpoint)
     const socket = await this.resolveSocket({ socketId: endpoint, endpoint, connectionId })
@@ -99,11 +106,11 @@ export class WsOutboundTransport implements OutboundTransport {
   // NOTE: Because this method is passed to the event handler this must be a lambda method
   // so 'this' is scoped to the 'WsOutboundTransport' class instance
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private handleMessageEvent = (event: any) => {
+  private handleMessageEvent = (event: { data: any; type: string; target: WebSocket }) => {
     this.logger.trace('WebSocket message event received.', { url: event.target.url, data: event.data })
     const payload = JSON.parse(Buffer.from(event.data).toString('utf-8'))
     this.logger.debug('Payload received from mediator:', payload)
-    this.agent.receiveMessage(payload)
+    void this.agent.receiveMessage(payload)
   }
 
   private listenOnWebSocketMessages(socket: WebSocket) {
@@ -135,7 +142,7 @@ export class WsOutboundTransport implements OutboundTransport {
         reject(error)
       }
 
-      socket.onclose = async (event: WebSocket.CloseEvent) => {
+      socket.onclose = (event: WebSocket.CloseEvent) => {
         this.logger.debug(`WebSocket closing to ${endpoint}`, { event })
         socket.removeEventListener('message', this.handleMessageEvent)
         this.transportTable.delete(socketId)

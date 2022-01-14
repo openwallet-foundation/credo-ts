@@ -131,7 +131,7 @@ export class MediatorService {
   public async saveRoute(recipientKey: string, mediationRecord: MediationRecord) {
     try {
       mediationRecord.recipientKeys.push(recipientKey)
-      this.mediationRepository.update(mediationRecord)
+      await this.mediationRepository.update(mediationRecord)
       return KeylistUpdateResult.Success
     } catch (error) {
       this.agentConfig.logger.error(

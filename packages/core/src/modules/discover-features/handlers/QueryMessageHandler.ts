@@ -12,11 +12,11 @@ export class QueryMessageHandler implements Handler {
     this.discoverFeaturesService = discoverFeaturesService
   }
 
-  public async handle(inboundMessage: HandlerInboundMessage<QueryMessageHandler>) {
+  public handle(inboundMessage: HandlerInboundMessage<QueryMessageHandler>) {
     const connection = inboundMessage.assertReadyConnection()
 
-    const discloseMessage = await this.discoverFeaturesService.createDisclose(inboundMessage.message)
+    const discloseMessage = this.discoverFeaturesService.createDisclose(inboundMessage.message)
 
-    return createOutboundMessage(connection, discloseMessage)
+    return Promise.resolve(createOutboundMessage(connection, discloseMessage))
   }
 }

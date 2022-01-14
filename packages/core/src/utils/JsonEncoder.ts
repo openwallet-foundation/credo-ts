@@ -25,7 +25,9 @@ export class JsonEncoder {
    *
    * @param base64 the base64 or base64url string to decode into json
    */
-  public static fromBase64(base64: string) {
+  // Currently we use any type for json, we should update it to Json interface
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public static fromBase64(base64: string): any {
     return JsonEncoder.fromBuffer(Buffer.from(base64, 'base64'))
   }
 
@@ -43,7 +45,9 @@ export class JsonEncoder {
    *
    * @param string the string to decode into json
    */
-  public static fromString(string: string) {
+  // Currently we use any type for json, we should update it to Json interface
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public static fromString(string: string): any {
     return JSON.parse(string)
   }
 
@@ -61,7 +65,9 @@ export class JsonEncoder {
    *
    * @param buffer the buffer to decode into json
    */
-  public static fromBuffer(buffer: Buffer | Uint8Array) {
+  // Currently we use any type for json, we should update it to Json interface
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public static fromBuffer(buffer: Buffer | Uint8Array): any {
     return JsonEncoder.fromString(Buffer.from(buffer).toString('utf-8'))
   }
 }

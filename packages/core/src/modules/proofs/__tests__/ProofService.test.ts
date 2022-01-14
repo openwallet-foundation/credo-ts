@@ -193,7 +193,7 @@ describe('ProofService', () => {
       mockFunction(proofRepository.getById).mockReturnValue(Promise.resolve(proof))
 
       // when
-      const presentationProblemReportMessage = await new PresentationProblemReportMessage({
+      const presentationProblemReportMessage = new PresentationProblemReportMessage({
         description: {
           en: 'Indy error',
           code: PresentationProblemReportReason.Abandoned,

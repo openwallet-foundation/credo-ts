@@ -29,7 +29,7 @@ export class DiscoverFeaturesModule {
   public async queryFeatures(connectionId: string, options: { query: string; comment?: string }) {
     const connection = await this.connectionService.getById(connectionId)
 
-    const queryMessage = await this.discoverFeaturesService.createQuery(options)
+    const queryMessage = this.discoverFeaturesService.createQuery(options)
 
     const outbound = createOutboundMessage(connection, queryMessage)
     await this.messageSender.sendMessage(outbound)

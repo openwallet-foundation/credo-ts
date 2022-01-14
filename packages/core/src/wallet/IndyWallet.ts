@@ -7,12 +7,11 @@ import type { default as Indy } from 'indy-sdk'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../agent/AgentConfig'
-import { AriesFrameworkError } from '../error'
+import { AriesFrameworkError, errorMessageOr, isError } from '../error'
 import { JsonEncoder } from '../utils/JsonEncoder'
 import { isIndyError } from '../utils/indyError'
 
-import { WalletDuplicateError, WalletNotFoundError, WalletError } from './error'
-import { WalletInvalidKeyError } from './error/WalletInvalidKeyError'
+import { WalletDuplicateError, WalletNotFoundError, WalletError, WalletInvalidKeyError } from './error'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyWallet implements Wallet {
@@ -121,7 +120,6 @@ export class IndyWallet implements Wallet {
         const errorMessage = `Error creating wallet '${walletConfig.id}'`
         this.logger.error(errorMessage, {
           error,
-          errorMessage: error.message,
         })
 
         throw new WalletError(errorMessage, { cause: error })
@@ -166,7 +164,6 @@ export class IndyWallet implements Wallet {
         const errorMessage = `Error opening wallet '${walletConfig.id}'`
         this.logger.error(errorMessage, {
           error,
-          errorMessage: error.message,
         })
 
         throw new WalletError(errorMessage, { cause: error })
@@ -203,10 +200,12 @@ export class IndyWallet implements Wallet {
           cause: error,
         })
       } else {
-        const errorMessage = `Error deleting wallet '${this.walletConfig.id}': ${error.message}`
+        const errorMessage = `Error deleting wallet '${this.walletConfig.id}': ${errorMessageOr(
+          error,
+          'unknown error occurred'
+        )}`
         this.logger.error(errorMessage, {
           error,
-          errorMessage: error.message,
         })
 
         throw new WalletError(errorMessage, { cause: error })
@@ -219,7 +218,7 @@ export class IndyWallet implements Wallet {
    */
   public async close(): Promise<void> {
     if (!this.walletHandle) {
-      throw new WalletError('Wallet is in inavlid state, you are trying to close wallet that has no `walletHandle`.')
+      throw new WalletError('Wallet is in invalid state, you are trying to close wallet that has no `walletHandle`.')
     }
 
     try {
@@ -235,10 +234,9 @@ export class IndyWallet implements Wallet {
           cause: error,
         })
       } else {
-        const errorMessage = `Error closing wallet': ${error.message}`
+        const errorMessage = `Error closing wallet: ${errorMessageOr(error, 'unknown error occurred')}`
         this.logger.error(errorMessage, {
           error,
-          errorMessage: error.message,
         })
 
         throw new WalletError(errorMessage, { cause: error })
@@ -275,7 +273,6 @@ export class IndyWallet implements Wallet {
         return masterSecretId
       } else {
         this.logger.error(`Error creating master secret with id ${masterSecretId}`, {
-          indyError: error.indyName,
           error,
         })
 
@@ -313,7 +310,7 @@ export class IndyWallet implements Wallet {
     try {
       const messageRaw = JsonEncoder.toBuffer(payload)
       const packedMessage = await this.indy.packMessage(this.handle, messageRaw, recipientKeys, senderVerkey ?? null)
-      return JsonEncoder.fromBuffer(packedMessage)
+      return JsonEncoder.fromBuffer(packedMessage) as EncryptedMessage
     } catch (error) {
       throw new WalletError('Error packing message', { cause: error })
     }
@@ -322,7 +319,7 @@ export class IndyWallet implements Wallet {
   public async unpack(messagePackage: EncryptedMessage): Promise<DecryptedMessageContext> {
     try {
       const unpackedMessageBuffer = await this.indy.unpackMessage(this.handle, JsonEncoder.toBuffer(messagePackage))
-      const unpackedMessage = JsonEncoder.fromBuffer(unpackedMessageBuffer)
+      const unpackedMessage = JsonEncoder.fromBuffer(unpackedMessageBuffer) as Record<string, string>
       return {
         senderKey: unpackedMessage.sender_verkey,
         recipientKey: unpackedMessage.recipient_verkey,

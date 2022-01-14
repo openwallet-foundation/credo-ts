@@ -25,7 +25,7 @@ describe('ledger', () => {
     await faberAgent.wallet.delete()
   })
 
-  test(`initialization of agent's public DID`, async () => {
+  test(`initialization of agent's public DID`, () => {
     const publicDid = faberAgent.publicDid
     testLogger.test('faberAgentPublicDid', publicDid)
 

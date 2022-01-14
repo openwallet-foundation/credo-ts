@@ -28,7 +28,7 @@ describe('E2E Subject tests', () => {
   let mediatorAgent: Agent
   let senderAgent: Agent
 
-  beforeEach(async () => {
+  beforeEach(() => {
     recipientAgent = new Agent(recipientConfig.config, recipientConfig.agentDependencies)
     mediatorAgent = new Agent(mediatorConfig.config, mediatorConfig.agentDependencies)
     senderAgent = new Agent(senderConfig.config, senderConfig.agentDependencies)

@@ -7,6 +7,7 @@ import type fetch from 'node-fetch'
 import { AbortController } from 'abort-controller'
 
 import { AgentConfig } from '../agent/AgentConfig'
+import { errorMessageOr, isError } from '../error'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 
 export class HttpOutboundTransport implements OutboundTransport {
@@ -24,11 +25,16 @@ export class HttpOutboundTransport implements OutboundTransport {
     this.fetch = this.agentConfig.agentDependencies.fetch
 
     this.logger.debug('Starting HTTP outbound transport')
+
+    // We're not making any async calls, but interface expects promise
+    return Promise.resolve()
   }
 
   public async stop(): Promise<void> {
     this.logger.debug('Stopping HTTP outbound transport')
-    // Nothing required to stop HTTP
+
+    // We're not making any async calls, but interface expects promise
+    return Promise.resolve()
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
@@ -38,7 +44,7 @@ export class HttpOutboundTransport implements OutboundTransport {
       throw new AriesFrameworkError(`Missing endpoint. I don't know how and where to send the message.`)
     }
 
-    this.logger.debug(`Sending outbound message to endpoint '${outboundPackage.endpoint}'`, {
+    this.logger.debug(`Sending outbound message to endpoint '${endpoint}'`, {
       payload: outboundPackage.payload,
     })
 
@@ -61,7 +67,7 @@ export class HttpOutboundTransport implements OutboundTransport {
         // Request is aborted after 15 seconds, but that doesn't necessarily mean the request
         // went wrong. ACA-Py keeps the socket alive until it has a response message. So we assume
         // that if the error was aborted and we had return routing enabled, we should ignore the error.
-        if (error.name == 'AbortError' && outboundPackage.responseRequested) {
+        if (isError(error) && error.name == 'AbortError' && outboundPackage.responseRequested) {
           this.logger.debug(
             'Request was aborted due to timeout. Not throwing error due to return routing on sent message'
           )
@@ -77,7 +83,7 @@ export class HttpOutboundTransport implements OutboundTransport {
 
         try {
           const encryptedMessage = JSON.parse(responseMessage)
-          this.agent.receiveMessage(encryptedMessage)
+          void this.agent.receiveMessage(encryptedMessage)
         } catch (error) {
           this.logger.debug('Unable to parse response message')
         }
@@ -85,13 +91,13 @@ export class HttpOutboundTransport implements OutboundTransport {
         this.logger.debug(`No response received.`)
       }
     } catch (error) {
-      this.logger.error(`Error sending message to ${endpoint}: ${error.message}`, {
+      const errorMessage = errorMessageOr(error, 'unknown error occurred')
+      this.logger.error(`Error sending message to ${endpoint}: ${errorMessage}`, {
         error,
-        message: error.message,
         body: payload,
         didCommMimeType: this.agentConfig.didCommMimeType,
       })
-      throw new AriesFrameworkError(`Error sending message to ${endpoint}: ${error.message}`, { cause: error })
+      throw new AriesFrameworkError(`Error sending message to ${endpoint}: ${errorMessage}`, { cause: error })
     }
   }
 }

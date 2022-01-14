@@ -7,7 +7,7 @@ import type { TransportSession } from './TransportService'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
-import { AriesFrameworkError } from '../error'
+import { AriesFrameworkError, errorMessageOr } from '../error'
 import { ConnectionService } from '../modules/connections/services/ConnectionService'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
 import { JsonTransformer } from '../utils/JsonTransformer'
@@ -94,7 +94,9 @@ export class MessageReceiver {
     }
 
     this.logger.info(
-      `Received message with type '${plaintextMessage['@type']}' from connection ${connection?.id} (${connection?.theirLabel})`,
+      `Received message with type '${plaintextMessage['@type']}' from connection ${connection?.id ?? 'undefined'} (${
+        connection?.theirLabel ?? 'undefined'
+      })`,
       plaintextMessage
     )
 
@@ -162,10 +164,15 @@ export class MessageReceiver {
   ): Promise<AgentMessage> {
     let message: AgentMessage
     try {
-      message = await this.transformMessage(plaintextMessage)
+      message = this.transformMessage(plaintextMessage)
       await this.validateMessage(message)
     } catch (error) {
-      if (connection) await this.sendProblemReportMessage(error.message, connection, plaintextMessage)
+      if (connection)
+        await this.sendProblemReportMessage(
+          errorMessageOr(error, 'Error validating or transforming message'),
+          connection,
+          plaintextMessage
+        )
       throw error
     }
     return message
@@ -176,7 +183,7 @@ export class MessageReceiver {
    *
    * @param message the plaintext message for which to transform the message in to a class instance
    */
-  private async transformMessage(message: PlaintextMessage): Promise<AgentMessage> {
+  private transformMessage(message: PlaintextMessage): AgentMessage {
     // replace did:sov:BzCbsNYhMrjHiqZDTUASHg;spec prefix for message type with https://didcomm.org
     replaceLegacyDidSovPrefixOnMessage(message)
 

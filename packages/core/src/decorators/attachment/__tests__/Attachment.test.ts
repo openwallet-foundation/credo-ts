@@ -97,7 +97,7 @@ describe('Decorators | Attachment', () => {
   })
 
   describe('addJws', () => {
-    it('correctly adds the jws to the data', async () => {
+    it('correctly adds the jws to the data', () => {
       const base64 = JsonEncoder.toBase64(didJwsz6Mkf.DATA_JSON)
       const attachment = new Attachment({
         id: 'some-uuid',

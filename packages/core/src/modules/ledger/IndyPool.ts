@@ -32,9 +32,9 @@ export class IndyPool {
     this.logger = agentConfig.logger
 
     // Listen to stop$ (shutdown) and close pool
-    agentConfig.stop$.subscribe(async () => {
+    agentConfig.stop$.subscribe(() => {
       if (this._poolHandle) {
-        await this.close()
+        void this.close()
       }
     })
   }
@@ -75,7 +75,7 @@ export class IndyPool {
       this.poolConnected.catch((error) => {
         // Set poolConnected to undefined so we can retry connection upon failure
         this.poolConnected = undefined
-        this.logger.error('Connection to pool: ' + this.poolConfig.genesisPath + ' failed.', { error })
+        this.logger.error(`Connection to pool: ${this.poolConfig.id} failed.`, { error })
       })
       return this.poolConnected
     } else {
@@ -145,7 +145,7 @@ export class IndyPool {
       try {
         await this.poolConnected
       } catch (error) {
-        this.logger.error('Connection to pool: ' + this.poolConfig.genesisPath + ' failed.', { error })
+        this.logger.error(`Connection to pool: ${this.poolConfig.id} failed.`, { error })
       }
     }
 

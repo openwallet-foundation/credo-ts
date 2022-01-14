@@ -14,7 +14,7 @@ export class BatchHandler implements Handler {
     this.eventEmitter = eventEmitter
   }
 
-  public async handle(messageContext: HandlerInboundMessage<BatchHandler>) {
+  public handle(messageContext: HandlerInboundMessage<BatchHandler>) {
     const { message, connection } = messageContext
 
     if (!connection) {
@@ -30,5 +30,8 @@ export class BatchHandler implements Handler {
         },
       })
     })
+
+    // We're not making any async calls, but interface expects promise
+    return Promise.resolve()
   }
 }

@@ -46,20 +46,29 @@ export class JwsService {
 
     const signerVerkeys = []
     for (const jws of signatures) {
-      const protectedJson = JsonEncoder.fromBase64(jws.protected)
+      const protectedJson: {
+        alg?: string
+        jwk?: {
+          kty?: string
+          crv?: string
+          x?: string
+        }
+      } = JsonEncoder.fromBase64(jws.protected)
+
+      const key = protectedJson?.jwk?.x
 
       const isValidKeyType = protectedJson?.jwk?.kty === JWS_KEY_TYPE
       const isValidCurve = protectedJson?.jwk?.crv === JWS_CURVE
       const isValidAlg = protectedJson?.alg === JWS_ALG
 
-      if (!isValidKeyType || !isValidCurve || !isValidAlg) {
+      if (!isValidKeyType || !isValidCurve || !isValidAlg || !key) {
         throw new AriesFrameworkError('Invalid protected header')
       }
 
       const data = BufferEncoder.fromString(`${jws.protected}.${base64Payload}`)
       const signature = BufferEncoder.fromBase64(jws.signature)
 
-      const verkey = BufferEncoder.toBase58(BufferEncoder.fromBase64(protectedJson?.jwk?.x))
+      const verkey = BufferEncoder.toBase58(BufferEncoder.fromBase64(key))
       signerVerkeys.push(verkey)
 
       try {

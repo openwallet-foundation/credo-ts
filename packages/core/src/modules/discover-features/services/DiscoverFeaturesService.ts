@@ -11,13 +11,13 @@ export class DiscoverFeaturesService {
     this.dispatcher = dispatcher
   }
 
-  public async createQuery(options: { query: string; comment?: string }) {
+  public createQuery(options: { query: string; comment?: string }) {
     const queryMessage = new QueryMessage(options)
 
     return queryMessage
   }
 
-  public async createDisclose(queryMessage: QueryMessage) {
+  public createDisclose(queryMessage: QueryMessage) {
     const { query } = queryMessage
 
     const messageFamilies = this.dispatcher.supportedProtocols
