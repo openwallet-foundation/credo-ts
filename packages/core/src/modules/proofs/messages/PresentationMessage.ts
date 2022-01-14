@@ -59,7 +59,7 @@ export class PresentationMessage extends AgentMessage {
   public get indyProof(): IndyProof | null {
     const attachment = this.presentationAttachments.find((attachment) => attachment.id === INDY_PROOF_ATTACHMENT_ID)
 
-    const proofJson = attachment?.data?.getDataAsJson<IndyProof>() ?? null
+    const proofJson = attachment?.getDataAsJson<IndyProof>() ?? null
 
     return proofJson
   }
