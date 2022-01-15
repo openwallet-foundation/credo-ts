@@ -66,7 +66,7 @@ export class ProofsModule {
    *
    */
 
-  public async v1ProposeProof(
+  public async oldProposeProof(
     connectionId: string,
     presentationProposal: PresentationPreview,
     config?: {
@@ -93,7 +93,7 @@ export class ProofsModule {
    * @returns Proof record associated with the presentation request
    *
    */
-  public async acceptProposal(
+  public async oldAcceptProposal(
     proofRecordId: string,
     config?: {
       request?: {
@@ -144,7 +144,7 @@ export class ProofsModule {
    * @returns Proof record associated with the sent request message
    *
    */
-  public async requestProof(
+  public async oldRequestProof(
     connectionId: string,
     proofRequestOptions: CreateProofRequestOptions,
     config?: ProofRequestConfig

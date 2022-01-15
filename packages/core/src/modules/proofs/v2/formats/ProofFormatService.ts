@@ -16,7 +16,7 @@ export interface V2AttachmentFormats {
 }
 
 export abstract class ProofFormatService {
-  private proofRepository: ProofRepository
+  protected proofRepository: ProofRepository
   private eventEmitter: EventEmitter
 
   public constructor(proofRepository: ProofRepository, eventEmitter: EventEmitter) {
@@ -24,9 +24,9 @@ export abstract class ProofFormatService {
     this.eventEmitter = eventEmitter
   }
   abstract getProofProposeAttachFormats(proposal: ProposeProofOptions, messageType: string): V2AttachmentFormats
-  // abstract getFormatIdentifier(messageType: string): V2CredentialFormatSpec
+  abstract getFormatIdentifier(messageType: string): V2ProofFormatSpec
+  abstract setMetaDataAndEmitEventForProposal(proposal: V2ProposeProofFormat, proofRecord: ProofRecord): Promise<void>
   abstract getFormatData(data: V2ProposeProofFormat): Attachment[]
-  abstract save(proposal: ProposeProofOptions, credentialRecord: ProofRecord): Promise<void>
 
   // other message formats here...eg issue, request formats etc.
 
@@ -39,7 +39,6 @@ export abstract class ProofFormatService {
   }
 
   public async emitEvent(proofRecord: ProofRecord) {
-    await this.proofRepository.save(proofRecord)
     this.eventEmitter.emit<ProofStateChangedEvent>({
       type: ProofEventTypes.ProofStateChanged,
       payload: {

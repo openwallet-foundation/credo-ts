@@ -65,11 +65,11 @@ export const ATTACHMENT_FORMAT: V2ProofAttachmentFormat = {
 
   // MJR-TODO
   // CRED_20_REQUEST: {
-  //     V20CredFormat.Format.INDY.api: "hlindy/cred-req@v2.0",
+  //     V20CredFormat.Format.Indy.api: "hlindy/cred-req@v2.0",
   //     V20CredFormat.Format.LD_PROOF.api: "aries/ld-proof-vc-detail@v1.0",
   // },
   // CRED_20_ISSUE: {
-  //     V20CredFormat.Format.INDY.api: "hlindy/cred@v2.0",
+  //     V20CredFormat.Format.Indy.api: "hlindy/cred@v2.0",
   //     V20CredFormat.Format.LD_PROOF.api: "aries/ld-proof-vc@v1.0",
   // },
 }

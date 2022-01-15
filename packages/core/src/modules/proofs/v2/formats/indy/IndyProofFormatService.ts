@@ -1,4 +1,5 @@
-import type { ProofRecord } from '../../../repository'
+import type { ProofRecord, ProofRepository } from '../../..'
+import type { EventEmitter } from '../../../../../agent/EventEmitter'
 import type { ProposeProofOptions, V2ProposeProofFormat } from '../../interface'
 import type { V2AttachmentFormats } from '../ProofFormatService'
 import type { V2ProofFormatSpec } from '../V2ProofFormat'
@@ -10,6 +11,13 @@ import { ProofFormatService } from '../ProofFormatService'
 import { ATTACHMENT_FORMAT } from '../V2ProofFormat'
 
 export class IndyProofFormatService extends ProofFormatService {
+  protected proofRepository: ProofRepository
+
+  public constructor(proofRepository: ProofRepository, eventEmitter: EventEmitter) {
+    super(proofRepository, eventEmitter)
+    this.proofRepository = proofRepository
+  }
+
   /**
    * Create a {@link AttachmentFormats} object dependent on the message type.
    *
@@ -39,7 +47,12 @@ export class IndyProofFormatService extends ProofFormatService {
   /**
    * Save the meta data and emit event
    */
-  public async save(proposal: ProposeProofOptions, proofRecord: ProofRecord): Promise<void> {
+  public async setMetaDataAndEmitEventForProposal(
+    proposal: V2ProposeProofFormat,
+    proofRecord: ProofRecord
+  ): Promise<void> {
+    console.log('IndyProofFormat [metdata] proofRecord:', proofRecord)
+    await this.proofRepository.save(proofRecord)
     return await super.emitEvent(proofRecord)
   }
 

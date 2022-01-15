@@ -30,7 +30,7 @@ export class V2ProposalPresentationMessage extends AgentMessage {
 
   @Equals(V2ProposalPresentationMessage.type)
   public readonly type = V2ProposalPresentationMessage.type
-  public static readonly type = PRES_20_PROPOSAL
+  public static readonly type = `https://didcomm.org/${PRES_20_PROPOSAL}`
 
   @Expose({ name: 'filters~attach' })
   @Type(() => Attachment)

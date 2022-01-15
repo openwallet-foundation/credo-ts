@@ -3,8 +3,14 @@ import type { HandlerInboundMessage } from '../../../agent/Handler'
 import type { AutoAcceptProof } from '../ProofAutoAcceptType'
 import type { ProofRecord } from '../repository/ProofRecord'
 import type { V2ProposePresentationHandler } from '../v2/handlers/V2ProposePresentationHandler'
-import type { ProofRequestAsResponse, ProposeProofOptions } from '../v2/interface'
-import type { ProofRequest, ProofRequestOptions, RetrievedCredentials } from './models'
+import type {
+  CreateRequestOptions,
+  PresentationConfig,
+  ProofRequestAsResponse,
+  ProposeProofOptions,
+  RequestProofOptions,
+} from '../v2/interface'
+import type { ProofRequestOptions, RetrievedCredentials } from './models'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -15,6 +21,7 @@ import { ProofProtocolVersion } from '../ProofProtocolVersion'
 import { ProofService } from '../ProofService'
 
 import { V1LegacyProofService } from './V1LegacyProofService'
+import { ProofRequest } from './models'
 
 const logger = new ConsoleLogger(LogLevel.debug)
 
@@ -25,6 +32,12 @@ const logger = new ConsoleLogger(LogLevel.debug)
  */
 @scoped(Lifecycle.ContainerScoped)
 export class V1ProofService extends ProofService {
+  createRequest(
+    createRequestOptions: CreateRequestOptions
+  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+    throw new Error('Method not implemented.')
+  }
+
   public createProofRequestFromProposal(
     presentationProposal: PresentationPreview,
     proofRequestOptions: ProofRequestOptions
@@ -69,8 +82,6 @@ export class V1ProofService extends ProofService {
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     // Assert
     const connection = await this.connectionService.getById(proposal.connectionId)
-    
-    console.log('V1 proposal', proposal.proofFormats.indy)
 
     let presentationProposal: PresentationPreview | undefined
     if (proposal?.proofFormats?.indy?.proofPreview?.attributes) {
@@ -85,7 +96,7 @@ export class V1ProofService extends ProofService {
       })
     }
 
-    const proposalConfig: PresentationProposalConfig = {
+    const proposalConfig: PresentationConfig = {
       comment: proposal?.comment,
       autoAcceptProof: proposal?.autoAcceptProof,
     }
@@ -118,12 +129,42 @@ export class V1ProofService extends ProofService {
     return { proofRecord, message }
   }
 
+  public async requestProof(
+    requestProofOptions: RequestProofOptions
+  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+    const { connectionId, proofRequestOptions, comment, autoAcceptProof } = requestProofOptions
+
+    const connection = await this.connectionService.getById(connectionId)
+
+    const nonce = proofRequestOptions.nonce ?? (await this.legacyProofService.generateProofRequestNonce())
+
+    const proofRequest = new ProofRequest({
+      name: proofRequestOptions.name ?? 'proof-request',
+      version: proofRequestOptions.name ?? '1.0',
+      nonce,
+      requestedAttributes: proofRequestOptions.requestedAttributes,
+      requestedPredicates: proofRequestOptions.requestedPredicates,
+    })
+
+    const proposalConfig: PresentationConfig = {
+      comment: comment,
+      autoAcceptProof: autoAcceptProof,
+    }
+
+    const { message, proofRecord } = await this.legacyProofService.createRequest(
+      proofRequest,
+      connection,
+      proposalConfig
+    )
+
+    return { proofRecord, message }
+  }
+
+  public async generateProofRequestNonce() {
+    return this.legacyProofService.generateProofRequestNonce()
+  }
+
   public async getById(proofRecordId: string): Promise<ProofRecord> {
     return this.legacyProofService.getById(proofRecordId)
   }
-}
-
-interface PresentationProposalConfig {
-  comment?: string
-  autoAcceptProof?: AutoAcceptProof
 }

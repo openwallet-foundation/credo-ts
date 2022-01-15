@@ -4,19 +4,23 @@ import type { ProofRecord } from './repository'
 import type { RetrievedCredentials } from './v1/models'
 import type {
   AcceptProposalOptions,
+  CreateRequestOptions,
   ProofRequestAsResponse,
   ProofRequestsOptions,
   ProposeProofOptions,
+  RequestProofOptions,
 } from './v2/interface'
 
-import { Lifecycle, scoped } from 'tsyringe'
+import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
+import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error/AriesFrameworkError'
+import { Wallet } from '../../wallet/Wallet'
 import { ConnectionService } from '../connections/services/ConnectionService'
 import { IndyHolderService } from '../indy'
 import { MediationRecipientService } from '../routing'
@@ -29,11 +33,14 @@ import { ProofsModule } from './ProofsModule'
 import { ProofRepository } from './repository'
 import { V1LegacyProofService } from './v1/V1LegacyProofService'
 import { V1ProofService } from './v1/V1ProofService'
+import { ProofRequest } from './v1/models'
 import { ProofRole } from './v2/ProofRole'
 import { V2ProofService } from './v2/V2ProofService'
 
 export interface ProofsAPI {
   proposeProof(proofOptions: ProposeProofOptions): Promise<PresentationExchangeRecord>
+  acceptProposal(acceptProposalOptions: AcceptProposalOptions): Promise<ProofRecord>
+  requestProof(requestProofOptions: RequestProofOptions): Promise<ProofRecord>
   getById(proofRecordId: string): Promise<ProofRecord>
 }
 
@@ -51,6 +58,7 @@ export class ProofsAPI extends ProofsModule implements ProofsAPI {
   private v2Service: V2ProofService
   private serviceMap: { '1.0': V1ProofService; '2.0': V2ProofService }
   private indyHolderService: IndyHolderService
+  private wallet: Wallet
 
   public constructor(
     dispatcher: Dispatcher,
@@ -62,7 +70,8 @@ export class ProofsAPI extends ProofsModule implements ProofsAPI {
     v1ProofService: V1LegacyProofService,
     proofRepository: ProofRepository,
     eventEmitter: EventEmitter,
-    indyHolderService: IndyHolderService
+    indyHolderService: IndyHolderService,
+    @inject(InjectionSymbols.Wallet) wallet: Wallet
   ) {
     super(
       dispatcher,
@@ -82,6 +91,7 @@ export class ProofsAPI extends ProofsModule implements ProofsAPI {
     this.agntConfig = agentConfig
     this.proofResponseCoord = proofResponseCoordinator
     this.indyHolderService = indyHolderService
+    this.wallet = wallet
     this.v1Service = new V1ProofService(this.v1ProofService, this.connService)
     this.v2Service = new V2ProofService(
       this.proofRepository,
@@ -90,6 +100,7 @@ export class ProofsAPI extends ProofsModule implements ProofsAPI {
       this.agntConfig,
       this.dispatcher,
       this.proofResponseCoord,
+      this.wallet,
       this.indyHolderService
     )
 
@@ -120,8 +131,8 @@ export class ProofsAPI extends ProofsModule implements ProofsAPI {
 
     const recordBinding: PresentationRecordBinding = {
       presentationRecordType: proofOptions.proofFormats?.indy
-        ? PresentationRecordType.INDY
-        : PresentationRecordType.W3C,
+        ? PresentationRecordType.Indy
+        : PresentationRecordType.W3c,
       presentationRecordId: proofRecord.id,
     }
 
@@ -139,7 +150,7 @@ export class ProofsAPI extends ProofsModule implements ProofsAPI {
     return presentationExchangeRecord
   }
 
-  public async acceptProof(acceptProposalOptions: AcceptProposalOptions): Promise<ProofRecord> {
+  public async acceptProposal(acceptProposalOptions: AcceptProposalOptions): Promise<ProofRecord> {
     const version: ProofProtocolVersion = acceptProposalOptions.protocolVersion
 
     const service: ProofService = this.getService(version)
@@ -206,6 +217,44 @@ export class ProofsAPI extends ProofsModule implements ProofsAPI {
     }
 
     return service.getRequestedCredentialsForProofRequest(indyProofRequest, presentationPreview)
+  }
+
+  public async requestProof(requestProofOptions: RequestProofOptions): Promise<ProofRecord> {
+    const version: ProofProtocolVersion = requestProofOptions.protocolVersion
+
+    const { proofRequestOptions } = requestProofOptions
+
+    const service: ProofService = this.getService(version)
+
+    const connection = await this.connService.getById(requestProofOptions.connectionId)
+
+    const nonce = proofRequestOptions.nonce ?? (await this.generateProofRequestNonce())
+
+    const proofRequest = new ProofRequest({
+      name: proofRequestOptions.name ?? 'proof-request',
+      version: proofRequestOptions.name ?? '1.0',
+      nonce,
+      requestedAttributes: proofRequestOptions.requestedAttributes,
+      requestedPredicates: proofRequestOptions.requestedPredicates,
+    })
+
+    const createRequestOptions: CreateRequestOptions = {
+      proofRequest,
+      connectionRecord: connection,
+      comment: requestProofOptions.comment,
+      autoAcceptProof: requestProofOptions.autoAcceptProof,
+    }
+
+    const { message, proofRecord } = await service.createRequest(createRequestOptions)
+
+    const outboundMessage = createOutboundMessage(connection, message)
+    await this.msgSender.sendMessage(outboundMessage)
+
+    return proofRecord
+  }
+
+  public async generateProofRequestNonce() {
+    return this.wallet.generateNonce()
   }
 
   /**

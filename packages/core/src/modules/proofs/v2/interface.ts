@@ -1,3 +1,4 @@
+import type { ConnectionRecord } from '../../connections'
 import type {
   PresentationPreview,
   PresentationPreviewAttribute,
@@ -6,7 +7,7 @@ import type {
 import type { AutoAcceptProof } from '../ProofAutoAcceptType'
 import type { ProofProtocolVersion } from '../ProofProtocolVersion'
 import type { ProofRecord } from '../repository'
-import type { ProofRequest } from '../v1/models'
+import type { ProofRequest, ProofRequestOptions } from '../v1/models'
 
 export interface ProposeProofOptions {
   connectionId: string
@@ -60,4 +61,30 @@ export interface V2ProposeProofFormat {
   w3c?: {
     // TODO
   }
+}
+
+export interface PresentationConfig {
+  comment?: string
+  autoAcceptProof?: AutoAcceptProof
+}
+
+
+export type CreateProofRequestOptions = Partial<
+  Pick<ProofRequestOptions, 'name' | 'nonce' | 'requestedAttributes' | 'requestedPredicates'>
+>
+
+export interface RequestProofOptions {
+  connectionId: string
+  protocolVersion: ProofProtocolVersion
+  proofFormats: V2ProposeProofFormat
+  proofRequestOptions: CreateProofRequestOptions
+  comment?: string
+  autoAcceptProof?: AutoAcceptProof
+}
+
+export interface CreateRequestOptions {
+  proofRequest: ProofRequest
+  connectionRecord?: ConnectionRecord
+  comment?: string
+  autoAcceptProof?: AutoAcceptProof
 }

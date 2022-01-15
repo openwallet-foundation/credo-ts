@@ -11,11 +11,11 @@ export interface PresentationRecordTags {
 }
 
 export enum PresentationRecordType {
-  INDY,
-  W3C,
+  Indy = 'Indy',
+  W3c = 'W3c',
 }
 export enum W3CFormatType {
-  JSONLD,
+  Jsonld = 'Jsonld',
   // others to follow
 }
 
@@ -44,7 +44,7 @@ export interface PresentationExchangeRecord {
   role: ProofRole
 
   // This value binds the PresentationExchangeRecord to the actual proof records.
-  // Because we can have multiple proof record types (Indy & W3C), a proof
+  // Because we can have multiple proof record types (Indy & W3c), a proof
   // record id alone doesn't tell us where to look for the proof.
   // Therefore we use the PresentationRecordBinding interface to specify the proof // record id, as well as the type.
   presentation: PresentationRecordBinding[]

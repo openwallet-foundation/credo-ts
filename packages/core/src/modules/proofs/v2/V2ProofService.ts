@@ -1,25 +1,23 @@
 import type { ProofRequest, ProofStateChangedEvent } from '..'
-import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { AgentMessage } from '../../../agent/AgentMessage'
-import type { Dispatcher } from '../../../agent/Dispatcher'
-import type { EventEmitter } from '../../../agent/EventEmitter'
 import type { HandlerInboundMessage } from '../../../agent/Handler'
 import type { Logger } from '../../../logger'
-import type { ConnectionService } from '../../connections/services'
-import type { IndyHolderService } from '../../indy'
 import type { PresentationPreview } from '../PresentationPreview'
-import type { ProofResponseCoordinator } from '../ProofResponseCoordinator'
-import type { ProofRepository } from '../repository'
-import type { ProofRequestOptions } from '../v1/models'
+import type { ProofRecordProps } from '../repository'
 import type { ProofFormatService } from './formats/ProofFormatService'
-import type { ProofRequestAsResponse, ProofRequestsOptions, ProposeProofOptions } from './interface'
-import type { V2ProposalPresentationMessage } from './messages/V2ProposalPresentationMessage'
+import type {
+  CreateRequestOptions,
+  ProofRequestAsResponse,
+  ProofRequestsOptions,
+  ProposeProofOptions,
+  RequestProofOptions,
+} from './interface'
+import type { V2ProposePresentationMessageOptions } from './messages/V2ProposalPresentationMessage'
 
-import { Lifecycle, scoped } from 'tsyringe'
+import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import {
   INDY_PROOF_REQUEST_ATTACHMENT_ID,
-  ProposePresentationMessage,
   RequestPresentationMessage,
   RequestedAttribute,
   RequestedPredicate,
@@ -27,22 +25,40 @@ import {
   ProofEventTypes,
   ProofState,
 } from '..'
+import { AgentConfig } from '../../../agent/AgentConfig'
+import { Dispatcher } from '../../../agent/Dispatcher'
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { InjectionSymbols } from '../../../constants'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { Wallet } from '../../../wallet/Wallet'
+import { ConnectionService } from '../../connections/services'
 import { Credential } from '../../credentials'
+import { IndyHolderService } from '../../indy'
 import { PresentationRecordType } from '../PresentationExchangeRecord'
 import { ProofProtocolVersion } from '../ProofProtocolVersion'
+import { ProofResponseCoordinator } from '../ProofResponseCoordinator'
 import { ProofService } from '../ProofService'
-import { ProofRecord } from '../repository'
+import { ProofRepository, ProofRecord } from '../repository'
 
-import { ProofMessageBuilder } from './ProofMessageBuilder'
 import { IndyProofFormatService } from './formats/indy/IndyProofFormatService'
 import { JsonLdProofFormatService } from './formats/jsonld/JsonLdProofFormatService'
 import { V2ProposePresentationHandler } from './handlers/V2ProposePresentationHandler'
+import { V2ProposalPresentationMessage } from './messages/V2ProposalPresentationMessage'
 
 scoped(Lifecycle.ContainerScoped)
 export class V2ProofService extends ProofService {
+  requestProof(requestProofOptions: RequestProofOptions): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+    throw new Error('Method not implemented.')
+  }
+
+  createRequest(
+    createRequestOptions: CreateRequestOptions
+  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+    throw new Error('Method not implemented.')
+  }
+
   private proofRepository: ProofRepository
   private connectionService: ConnectionService
   private eventEmitter: EventEmitter
@@ -51,6 +67,7 @@ export class V2ProofService extends ProofService {
   private dispatcher: Dispatcher
   private logger: Logger
   private indyHolderService: IndyHolderService
+  private wallet: Wallet
 
   public constructor(
     proofRepository: ProofRepository,
@@ -59,6 +76,7 @@ export class V2ProofService extends ProofService {
     agentConfig: AgentConfig,
     dispatcher: Dispatcher,
     proofResponseCoordinator: ProofResponseCoordinator,
+    @inject(InjectionSymbols.Wallet) wallet: Wallet,
     indyHolderService: IndyHolderService
   ) {
     super()
@@ -70,12 +88,13 @@ export class V2ProofService extends ProofService {
     this.proofResponseCoordinator = proofResponseCoordinator
     this.logger = agentConfig.logger
     this.indyHolderService = indyHolderService
+    this.wallet = wallet
   }
 
   public getFormatService(_proofRecordType: PresentationRecordType): ProofFormatService {
     const serviceFormatMap = {
-      [PresentationRecordType.INDY]: IndyProofFormatService,
-      [PresentationRecordType.W3C]: JsonLdProofFormatService,
+      [PresentationRecordType.Indy]: IndyProofFormatService,
+      [PresentationRecordType.W3c]: JsonLdProofFormatService,
     }
     return new serviceFormatMap[_proofRecordType](this.proofRepository, this.eventEmitter)
   }
@@ -92,22 +111,44 @@ export class V2ProofService extends ProofService {
     const connection = await this.connectionService.getById(proposal.connectionId)
 
     const presentationRecordType = proposal.proofFormats?.indy
-      ? PresentationRecordType.INDY
-      : PresentationRecordType.W3C
+      ? PresentationRecordType.Indy
+      : PresentationRecordType.W3c
 
     this.logger.debug('Get the Format Service and Create Proposal Message')
 
     const formatService: ProofFormatService = this.getFormatService(presentationRecordType)
 
-    const presentationMessageBuilder = new ProofMessageBuilder()
-    const { message, proofRecord } = presentationMessageBuilder.createProposal(
-      formatService,
-      proposal,
-      connection.threadId
+    console.log('V2 Service [createProposal] formatService: ', formatService)
+
+    const { preview, formats, filtersAttach } = formatService.getProofProposeAttachFormats(proposal, 'PRES_20_PROPOSAL')
+
+    const v2ProposePresentationMessageOptions: V2ProposePresentationMessageOptions = {
+      id: formatService.generateId(),
+      formats,
+      filtersAttach,
+      comment: proposal.comment,
+      presentationProposal: preview,
+    }
+
+    console.log('[ProofMessageBuilder] v2ProposePresentationMessageOptions:', v2ProposePresentationMessageOptions)
+    const message: V2ProposalPresentationMessage = new V2ProposalPresentationMessage(
+      v2ProposePresentationMessageOptions
     )
 
+    const props: ProofRecordProps = {
+      connectionId: proposal.connectionId,
+      threadId: connection.threadId ? connection.threadId : '',
+      state: ProofState.ProposalSent,
+      autoAcceptProof: proposal?.autoAcceptProof,
+    }
+
+    // Create record
+
+    const proofRecord = new ProofRecord(props)
+    proofRecord.proposalMessage = message // new V2 field
+
     this.logger.debug('Save meta data and emit state change event')
-    await formatService.save(proposal, proofRecord)
+    await formatService.setMetaDataAndEmitEventForProposal(proposal.proofFormats, proofRecord)
 
     return { proofRecord, message }
   }
@@ -115,11 +156,15 @@ export class V2ProofService extends ProofService {
   public async processProposal(
     messageContext: HandlerInboundMessage<V2ProposePresentationHandler>
   ): Promise<ProofRecord> {
+    console.log('V2 [processProposal] messageContext:', messageContext)
+
     let proofRecord: ProofRecord
     const { message: proposalMessage, connection } = messageContext
 
     try {
       proofRecord = await this.getByThreadAndConnectionId(proposalMessage.threadId, connection?.id)
+
+      console.log('V2 [processProposal] proofRecord:', proofRecord)
 
       proofRecord.assertState(ProofState.PresentationSent)
       proofRecord.assertState(ProofState.RequestSent)
@@ -271,6 +316,10 @@ export class V2ProofService extends ProofService {
     })
 
     return JsonTransformer.fromJSON(credentialsJson, Credential) as unknown as Credential[]
+  }
+
+  public async generateProofRequestNonce() {
+    return this.wallet.generateNonce()
   }
 
   /**

@@ -10,10 +10,7 @@ import { ProofFormatService } from '../ProofFormatService'
 const logger = new ConsoleLogger(LogLevel.debug)
 
 export class JsonLdProofFormatService extends ProofFormatService {
-  public save(proposal: ProposeProofOptions, proofRecord: ProofRecord): Promise<void> {
-    logger.debug(proposal.connectionId) // temp used to avoid lint errors
-    logger.debug(proofRecord.id) // temp used to avoid lint errors
-
+  public setMetaDataAndEmitEventForProposal(proposal: V2ProposeProofFormat, proofRecord: ProofRecord): Promise<void> {
     throw new Error('Method not implemented.')
   }
 
