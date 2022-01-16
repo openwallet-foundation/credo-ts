@@ -1,12 +1,9 @@
-import type { DidDoc } from '../models'
-
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 
-import { Attachment, AttachmentData } from 'packages/core/src/decorators/attachment/Attachment'
-import { JsonEncoder } from 'packages/core/src/utils/JsonEncoder'
+import { Attachment } from 'packages/core/src/decorators/attachment/Attachment'
 
 export interface DidExchangeRequestMessageOptions {
   id?: string
@@ -15,7 +12,6 @@ export interface DidExchangeRequestMessageOptions {
   goalCode?: string
   goal?: string
   did: string
-  didDoc: DidDoc
 }
 
 /**
@@ -35,17 +31,7 @@ export class DidExchangeRequestMessage extends AgentMessage {
     this.label = options.label
     this.goalCode = options.goalCode
     this.goal = options.goal
-
     this.did = options.did
-    this.didDoc =
-      options.didDoc &&
-      new Attachment({
-        id: this.generateId(),
-        mimeType: 'application/json',
-        data: new AttachmentData({
-          base64: JsonEncoder.toBase64(options.didDoc),
-        }),
-      })
 
     this.setThread({
       threadId: this.id,
@@ -71,5 +57,5 @@ export class DidExchangeRequestMessage extends AgentMessage {
 
   @Expose({ name: 'did_doc~attach' })
   @Type(() => Attachment)
-  public readonly didDoc?: Attachment
+  public didDoc?: Attachment
 }

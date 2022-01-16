@@ -9,8 +9,13 @@ import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { InjectionSymbols } from '../../constants'
+import { JwsService } from '../../crypto/JwsService'
+import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../error'
+import { JsonEncoder } from '../../utils/JsonEncoder'
+import { JsonTransformer } from '../../utils/JsonTransformer'
 import { Wallet } from '../../wallet/Wallet'
+import { DidKey, KeyType } from '../dids/domain/DidKey'
 import { ProblemReportError } from '../problem-reports'
 
 import { DidExchangeCompleteMessage } from './messages/DidExchangeCompleteMessage'
@@ -95,6 +100,7 @@ export class DidExchangeProtocol {
   private wallet: Wallet
   private config: AgentConfig
   private connectionRepository: ConnectionRepository
+  private jwsService: JwsService
   private eventEmitter: EventEmitter
   private logger: Logger
 
@@ -102,11 +108,13 @@ export class DidExchangeProtocol {
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
     config: AgentConfig,
     connectionRepository: ConnectionRepository,
+    jwsService: JwsService,
     eventEmitter: EventEmitter
   ) {
     this.wallet = wallet
     this.config = config
     this.connectionRepository = connectionRepository
+    this.jwsService = jwsService
     this.eventEmitter = eventEmitter
     this.logger = config.logger
   }
@@ -117,6 +125,7 @@ export class DidExchangeProtocol {
   ): Promise<DidExchangeRequestMessage> {
     // this.assertState()
     // this.assertRole()
+    // this.assertCreateMessageState(message, record)
 
     if (!connectionRecord.invitation) {
       throw new AriesFrameworkError('Connection invitation is missing.')
@@ -127,10 +136,15 @@ export class DidExchangeProtocol {
     const didDoc = this.createDidDoc(did, verkey, routing)
     const parentThreadId = connectionRecord.invitation?.id
 
-    const message = new DidExchangeRequestMessage({ label, parentThreadId, did, didDoc, goal, goalCode })
+    const message = new DidExchangeRequestMessage({ label, parentThreadId, did, goal, goalCode })
+
+    // Create sign attachment containing didDoc
+    const didDocAttach = await this.createSignedAttachment(didDoc, verkey)
+    message.didDoc = didDocAttach
 
     // this.assertTransition()
     // this.updateState()
+    // this.updateState(record)
     return message
   }
 
@@ -140,8 +154,10 @@ export class DidExchangeProtocol {
   ): Promise<ConnectionRecord> {
     // this.assertState()
     // this.assertRole()
+    // this.assertProcessMessageState(message)
 
-    const { connection: connectionRecord, message } = messageContext
+    // eslint-disable-next-line prefer-const
+    let { connection: connectionRecord, message } = messageContext
 
     if (!connectionRecord) {
       throw new AriesFrameworkError('No connection record in message context.')
@@ -155,8 +171,14 @@ export class DidExchangeProtocol {
 
     // If the responder wishes to continue the exchange, they will persist the received information in their wallet.
 
+    if (message.didDoc) {
+      // Verify signature on DidDoc attachment and assign DidDoc to connection record
+      await this.verifyAttachmentSignature(message.didDoc)
+      const didDoc = JsonTransformer.fromJSON(message.didDoc.getDataAsJson(), DidDoc)
+      connectionRecord.theirDidDoc = didDoc
+    }
+
     connectionRecord.theirDid = message.did
-    connectionRecord.theirDidDoc = message.didDoc?.data.getDataAsJson()
     connectionRecord.theirLabel = message.label
     connectionRecord.threadId = message.id
 
@@ -182,10 +204,18 @@ export class DidExchangeProtocol {
     }
 
     // The responder will then craft an exchange response using the newly updated or provisioned information.
-    const message = new DidExchangeResponseMessage({ did, didDoc, threadId })
+    const message = new DidExchangeResponseMessage({ did, threadId })
 
     // Sign message attachment
     // Use invitationKey by default, fall back to verkey (?)
+    const [verkey] = connectionRecord.invitation?.recipientKeys || []
+
+    if (!verkey) {
+      throw new AriesFrameworkError('Connection invitation does not contain recipient key.')
+    }
+
+    const didDocAttach = await this.createSignedAttachment(didDoc, verkey)
+    message.didDoc = didDocAttach
 
     // this.assertTransition()
     // this.updateState()
@@ -205,10 +235,15 @@ export class DidExchangeProtocol {
       throw new AriesFrameworkError('No connection record in message context.')
     }
 
-    connectionRecord.theirDid = message.did
-    connectionRecord.theirDidDoc = message.didDoc?.data.getDataAsJson()
-
     // verify signerVerkey === invitationKey
+    if (message.didDoc) {
+      // Verify signature on DidDoc attachment and assign DidDoc to connection record
+      await this.verifyAttachmentSignature(message.didDoc)
+      const didDoc = JsonTransformer.fromJSON(message.didDoc.getDataAsJson(), DidDoc)
+      connectionRecord.theirDidDoc = didDoc
+    }
+
+    connectionRecord.theirDid = message.did
 
     // this.assertTransition()
     // this.updateState()
@@ -242,7 +277,7 @@ export class DidExchangeProtocol {
   }
 
   public async processComplete(
-    messageContext: InboundMessageContext<DidExchangeResponseMessage>
+    messageContext: InboundMessageContext<DidExchangeCompleteMessage>
   ): Promise<ConnectionRecord> {
     const { connection: connectionRecord, message } = messageContext
     // this.assertState(connectionRecord, DidExchangeCompleteMessage)
@@ -250,6 +285,10 @@ export class DidExchangeProtocol {
 
     if (!connectionRecord) {
       throw new AriesFrameworkError('No connection record in message context.')
+    }
+
+    if (connectionRecord.invitation?.id !== message.thread?.parentThreadId) {
+      throw new ProblemReportError('Missing reference to invitation.', { problemCode: 'request_not_accepted' })
     }
 
     // this.assertTransition()
@@ -295,5 +334,48 @@ export class DidExchangeProtocol {
     })
 
     return didDoc
+  }
+
+  private async createSignedAttachment(didDoc: DidDoc, verkey: string) {
+    const didDocAttach = new Attachment({
+      mimeType: 'application/json',
+      data: new AttachmentData({
+        base64: JsonEncoder.toBase64(didDoc),
+      }),
+    })
+
+    const kid = DidKey.fromPublicKeyBase58(verkey, KeyType.ED25519)
+    const payload = JsonEncoder.toBuffer(didDoc)
+
+    const jws = await this.jwsService.createJws({
+      payload,
+      verkey,
+      header: {
+        kid,
+      },
+    })
+
+    didDocAttach.addJws(jws)
+    return didDocAttach
+  }
+
+  private async verifyAttachmentSignature(didDocAttachment: Attachment) {
+    const jws = didDocAttachment?.data.jws
+
+    if (!jws) {
+      throw new ProblemReportError('DidDoc signature is missing.', { problemCode: 'request_not_accepted' })
+    }
+
+    const payload = JsonEncoder.toBuffer(didDocAttachment?.getDataAsJson())
+    const didDoc = JsonTransformer.fromJSON(didDocAttachment.getDataAsJson(), DidDoc)
+    const { isValid, signerVerkeys } = await this.jwsService.verifyJws({ jws, payload })
+
+    if (
+      !isValid ||
+      !(signerVerkeys.length > 1) ||
+      !signerVerkeys.every((verkey) => didDoc.publicKey.map((pk) => pk.value).includes(verkey))
+    ) {
+      throw new ProblemReportError('DidDoc signature is invalid.', { problemCode: 'request_not_accepted' })
+    }
   }
 }

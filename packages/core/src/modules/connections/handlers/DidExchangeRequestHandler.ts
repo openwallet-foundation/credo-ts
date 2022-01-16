@@ -37,6 +37,8 @@ export class DidExchangeRequestHandler implements Handler {
       throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
 
+    // TODO if (connectionRecord !== 'did-exchange) throw error
+
     let routing: Routing | undefined
 
     // routing object is required for multi use invitation, because we're creating a
