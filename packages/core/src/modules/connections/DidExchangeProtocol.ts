@@ -23,7 +23,6 @@ import { DidExchangeRequestMessage } from './messages/DidExchangeRequestMessage'
 import { DidExchangeResponseMessage } from './messages/DidExchangeResponseMessage'
 import { DidExchangeState, DidExchangeRole } from './models'
 import { authenticationTypes, DidCommService, DidDoc, Ed25119Sig2018, ReferencedAuthentication } from './models/did'
-import { ConnectionRepository } from './repository'
 import { ConnectionService } from './services'
 
 type Flavor<T, FlavorType> = T & { _type?: FlavorType }

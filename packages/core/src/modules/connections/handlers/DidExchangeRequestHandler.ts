@@ -37,7 +37,10 @@ export class DidExchangeRequestHandler implements Handler {
       throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
 
-    // TODO if (connectionRecord !== 'did-exchange) throw error
+    const { protocol } = connectionRecord
+    if (protocol !== 'did-exchange') {
+      throw new AriesFrameworkError(`Connection record protol is ${protocol} but handler supports only did-exchange.`)
+    }
 
     let routing: Routing | undefined
 
