@@ -2,8 +2,7 @@ import { Type, Expose } from 'class-transformer'
 import { Equals, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-
-import { Attachment } from 'packages/core/src/decorators/attachment/Attachment'
+import { Attachment } from '../../../decorators/attachment/Attachment'
 
 export interface DidExchangeResponseMessageOptions {
   id?: string

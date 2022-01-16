@@ -21,34 +21,14 @@ import { ProblemReportError } from '../problem-reports'
 import { DidExchangeCompleteMessage } from './messages/DidExchangeCompleteMessage'
 import { DidExchangeRequestMessage } from './messages/DidExchangeRequestMessage'
 import { DidExchangeResponseMessage } from './messages/DidExchangeResponseMessage'
+import { DidExchangeState, DidExchangeRole } from './models'
 import { authenticationTypes, DidCommService, DidDoc, Ed25119Sig2018, ReferencedAuthentication } from './models/did'
 import { ConnectionRepository } from './repository'
+import { ConnectionService } from './services'
 
 type Flavor<T, FlavorType> = T & { _type?: FlavorType }
 
 type Did = Flavor<string, 'Did'>
-
-/**
- * Connection states as defined in RFC 0160.
- *
- * @see https://github.com/hyperledger/aries-rfcs/blob/main/features/0023-did-exchange/README.md#state-machine-tables
- */
-const enum DidExchangeState {
-  Start = 'start',
-  InvitationSent = 'invitation-sent',
-  InvitationReceived = 'invitation-received',
-  RequestSent = 'request-sent',
-  RequestReceived = 'request-received',
-  ResponseSent = 'response-sent',
-  ResponseReceived = 'response-received',
-  Abandoned = 'abandoned',
-  Completed = 'completed',
-}
-
-const enum DidExchangeRole {
-  Requester = 'Requester',
-  Responder = 'Responder',
-}
 
 interface DidExchangeRequestParams {
   label: string
@@ -75,31 +55,84 @@ interface DidExchangeProtocolMessageWithRecord<MessageType extends AgentMessage>
 // get and find methods should be part of service for now and in the future
 
 class DidExchangeStateMachine {
-  private outboundStateRules = [
+  private static createMessageStateRules = [
     {
-      outbound: DidExchangeRequestMessage.type,
-      state: DidExchangeState.InvitationSent,
+      message: DidExchangeRequestMessage.type,
+      state: DidExchangeState.InvitationReceived,
       role: DidExchangeRole.Requester,
+      nextState: DidExchangeState.RequestSent,
+    },
+    {
+      message: DidExchangeResponseMessage.type,
+      state: DidExchangeState.RequestReceived,
+      role: DidExchangeRole.Responder,
+      nextState: DidExchangeState.ResponseSent,
+    },
+    {
+      message: DidExchangeCompleteMessage.type,
+      state: DidExchangeState.ResponseReceived,
+      role: DidExchangeRole.Requester,
+      nextState: DidExchangeState.Completed,
     },
   ]
 
-  private inboundStateRules = [
+  private static processMessageStateRules = [
     {
-      inbound: DidExchangeRequestMessage.type,
+      message: DidExchangeRequestMessage.type,
       state: DidExchangeState.InvitationSent,
+      role: DidExchangeRole.Responder,
+      nextState: DidExchangeState.RequestSent,
+    },
+    {
+      message: DidExchangeResponseMessage.type,
+      state: DidExchangeState.RequestSent,
       role: DidExchangeRole.Requester,
+      nextState: DidExchangeState.ResponseReceived,
+    },
+    {
+      message: DidExchangeCompleteMessage.type,
+      state: DidExchangeState.ResponseSent,
+      role: DidExchangeRole.Responder,
+      nextState: DidExchangeState.Completed,
     },
   ]
-  // public assertState(connectionRecord, inboundMessageType) {}
-  // public assertTransition(connectionRecord, outboundMessageType) {}
-  // public updateState(connectionRecord, message) {}
+
+  public static assertCreateMessageState(messageType: string, record: ConnectionRecord) {
+    const rule = this.createMessageStateRules.find((r) => r.message === messageType)
+    if (!rule) {
+      throw new AriesFrameworkError(`Could not find create message rule for ${messageType}`)
+    }
+    if (rule.state !== record.state || rule.role !== record.role) {
+      throw new AriesFrameworkError(`Record is in invalid state.`)
+    }
+  }
+
+  public static assertProcessMessageState(messageType: string, record: ConnectionRecord) {
+    const rule = this.processMessageStateRules.find((r) => r.message === messageType)
+    if (!rule) {
+      throw new AriesFrameworkError(`Could not find create message rule for ${messageType}`)
+    }
+    if (rule.state !== record.state || rule.role !== record.role) {
+      throw new AriesFrameworkError(`Record is in invalid state.`)
+    }
+  }
+
+  public static nextState(messageType: string, record: ConnectionRecord) {
+    const rule = this.createMessageStateRules
+      .concat(this.processMessageStateRules)
+      .find((r) => r.message === messageType && r.role === record.role)
+    if (!rule) {
+      throw new AriesFrameworkError(`Could not find create message rule for ${messageType}`)
+    }
+    return rule.nextState
+  }
 }
 
 @scoped(Lifecycle.ContainerScoped)
 export class DidExchangeProtocol {
   private wallet: Wallet
   private config: AgentConfig
-  private connectionRepository: ConnectionRepository
+  private connectionService: ConnectionService
   private jwsService: JwsService
   private eventEmitter: EventEmitter
   private logger: Logger
@@ -107,13 +140,13 @@ export class DidExchangeProtocol {
   public constructor(
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
     config: AgentConfig,
-    connectionRepository: ConnectionRepository,
+    connectionService: ConnectionService,
     jwsService: JwsService,
     eventEmitter: EventEmitter
   ) {
     this.wallet = wallet
     this.config = config
-    this.connectionRepository = connectionRepository
+    this.connectionService = connectionService
     this.jwsService = jwsService
     this.eventEmitter = eventEmitter
     this.logger = config.logger
@@ -123,13 +156,11 @@ export class DidExchangeProtocol {
     connectionRecord: ConnectionRecord,
     params: DidExchangeRequestParams
   ): Promise<DidExchangeRequestMessage> {
-    // this.assertState()
-    // this.assertRole()
-    // this.assertCreateMessageState(message, record)
-
     if (!connectionRecord.invitation) {
       throw new AriesFrameworkError('Connection invitation is missing.')
     }
+
+    DidExchangeStateMachine.assertCreateMessageState(DidExchangeRequestMessage.type, connectionRecord)
 
     const { label, goal, goalCode, routing } = params
     const { did, verkey } = await this.createDid()
@@ -142,9 +173,7 @@ export class DidExchangeProtocol {
     const didDocAttach = await this.createSignedAttachment(didDoc, verkey)
     message.didDoc = didDocAttach
 
-    // this.assertTransition()
-    // this.updateState()
-    // this.updateState(record)
+    await this.updateState(DidExchangeRequestMessage.type, connectionRecord)
     return message
   }
 
@@ -152,16 +181,14 @@ export class DidExchangeProtocol {
     messageContext: InboundMessageContext<DidExchangeRequestMessage>,
     routing?: Routing
   ): Promise<ConnectionRecord> {
-    // this.assertState()
-    // this.assertRole()
-    // this.assertProcessMessageState(message)
-
     // eslint-disable-next-line prefer-const
     let { connection: connectionRecord, message } = messageContext
 
     if (!connectionRecord) {
       throw new AriesFrameworkError('No connection record in message context.')
     }
+
+    DidExchangeStateMachine.assertProcessMessageState(DidExchangeRequestMessage.type, connectionRecord)
 
     // check corresponding invitation ID is the request's ~thread.pthid
 
@@ -182,15 +209,12 @@ export class DidExchangeProtocol {
     connectionRecord.theirLabel = message.label
     connectionRecord.threadId = message.id
 
-    // this.assertTransition()
-    // this.updateState()
-
+    await this.updateState(DidExchangeRequestMessage.type, connectionRecord)
     return connectionRecord
   }
 
   public async createResponse(connectionRecord: ConnectionRecord): Promise<DidExchangeResponseMessage> {
-    // this.assertState()
-    // this.assertRole()
+    DidExchangeStateMachine.assertCreateMessageState(DidExchangeResponseMessage.type, connectionRecord)
 
     // They will then either update the provisional service information to rotate the key, or provision a new DID entirely.
     // The choice here will depend on the nature of the DID used in the invitation.
@@ -217,9 +241,7 @@ export class DidExchangeProtocol {
     const didDocAttach = await this.createSignedAttachment(didDoc, verkey)
     message.didDoc = didDocAttach
 
-    // this.assertTransition()
-    // this.updateState()
-
+    await this.updateState(DidExchangeResponseMessage.type, connectionRecord)
     return message
   }
 
@@ -228,12 +250,11 @@ export class DidExchangeProtocol {
   ): Promise<ConnectionRecord> {
     const { connection: connectionRecord, message } = messageContext
 
-    // this.assertState()
-    // this.assertRole()
-
     if (!connectionRecord) {
       throw new AriesFrameworkError('No connection record in message context.')
     }
+
+    DidExchangeStateMachine.assertProcessMessageState(DidExchangeResponseMessage.type, connectionRecord)
 
     // verify signerVerkey === invitationKey
     if (message.didDoc) {
@@ -245,15 +266,12 @@ export class DidExchangeProtocol {
 
     connectionRecord.theirDid = message.did
 
-    // this.assertTransition()
-    // this.updateState()
-
+    await this.updateState(DidExchangeResponseMessage.type, connectionRecord)
     return connectionRecord
   }
 
   public async createComplete(connectionRecord: ConnectionRecord): Promise<DidExchangeCompleteMessage> {
-    // this.assertState(connectionRecord, DidExchangeCompleteMessage)
-    // this.assertRole()
+    DidExchangeStateMachine.assertCreateMessageState(DidExchangeCompleteMessage.type, connectionRecord)
 
     const threadId = connectionRecord.threadId
     const parentThreadId = connectionRecord.invitation?.id
@@ -270,9 +288,7 @@ export class DidExchangeProtocol {
 
     const message = new DidExchangeCompleteMessage({ threadId, parentThreadId })
 
-    // this.assertTransition()
-    // this.updateState()
-
+    await this.updateState(DidExchangeCompleteMessage.type, connectionRecord)
     return message
   }
 
@@ -280,20 +296,24 @@ export class DidExchangeProtocol {
     messageContext: InboundMessageContext<DidExchangeCompleteMessage>
   ): Promise<ConnectionRecord> {
     const { connection: connectionRecord, message } = messageContext
-    // this.assertState(connectionRecord, DidExchangeCompleteMessage)
-    // this.assertRole()
 
     if (!connectionRecord) {
       throw new AriesFrameworkError('No connection record in message context.')
     }
 
+    DidExchangeStateMachine.assertProcessMessageState(DidExchangeResponseMessage.type, connectionRecord)
+
     if (connectionRecord.invitation?.id !== message.thread?.parentThreadId) {
       throw new ProblemReportError('Missing reference to invitation.', { problemCode: 'request_not_accepted' })
     }
 
-    // this.assertTransition()
-    // this.updateState()
+    await this.updateState(DidExchangeCompleteMessage.type, connectionRecord)
     return connectionRecord
+  }
+
+  private async updateState(messageType: string, connectionRecord: ConnectionRecord) {
+    const nextState = DidExchangeStateMachine.nextState(messageType, connectionRecord)
+    return this.connectionService.updateState(connectionRecord, nextState)
   }
 
   private async createDid(): Promise<{ did: string; verkey: string }> {

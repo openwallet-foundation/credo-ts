@@ -1,5 +1,5 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { ConnectionRole } from '../models/ConnectionRole'
+import type { ConnectionRole, DidExchangeRole } from '../models'
 
 import { Type } from 'class-transformer'
 
@@ -7,8 +7,7 @@ import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 import { ConnectionInvitationMessage } from '../messages/ConnectionInvitationMessage'
-import { ConnectionState } from '../models/ConnectionState'
-import { DidDoc } from '../models/did/DidDoc'
+import { DidDoc, ConnectionState, DidExchangeState } from '../models'
 
 export interface ConnectionRecordProps {
   id?: string
@@ -20,8 +19,8 @@ export interface ConnectionRecordProps {
   theirDidDoc?: DidDoc
   theirLabel?: string
   invitation?: ConnectionInvitationMessage
-  state: ConnectionState
-  role: ConnectionRole
+  state: ConnectionState | DidExchangeState
+  role: ConnectionRole | DidExchangeRole
   alias?: string
   autoAcceptConnection?: boolean
   threadId?: string
@@ -34,8 +33,8 @@ export interface ConnectionRecordProps {
 
 export type CustomConnectionTags = TagsBase
 export type DefaultConnectionTags = {
-  state: ConnectionState
-  role: ConnectionRole
+  state: ConnectionState | DidExchangeState
+  role: ConnectionRole | DidExchangeRole
   invitationKey?: string
   threadId?: string
   verkey?: string
@@ -49,8 +48,8 @@ export class ConnectionRecord
   extends BaseRecord<DefaultConnectionTags, CustomConnectionTags>
   implements ConnectionRecordProps
 {
-  public state!: ConnectionState
-  public role!: ConnectionRole
+  public state!: ConnectionState | DidExchangeState
+  public role!: ConnectionRole | DidExchangeRole
 
   @Type(() => DidDoc)
   public didDoc!: DidDoc
@@ -140,7 +139,7 @@ export class ConnectionRecord
   }
 
   public get isReady() {
-    return [ConnectionState.Responded, ConnectionState.Complete].includes(this.state)
+    return [ConnectionState.Responded, ConnectionState.Complete, DidExchangeState.Completed].includes(this.state)
   }
 
   public assertReady() {
@@ -151,7 +150,7 @@ export class ConnectionRecord
     }
   }
 
-  public assertState(expectedStates: ConnectionState | ConnectionState[]) {
+  public assertState(expectedStates: ConnectionState | DidExchangeState | (ConnectionState | DidExchangeState)[]) {
     if (!Array.isArray(expectedStates)) {
       expectedStates = [expectedStates]
     }

@@ -4,6 +4,7 @@ import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
+import type { DidExchangeState, DidExchangeRole } from '../models'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
@@ -538,7 +539,7 @@ export class ConnectionService {
     }
   }
 
-  public async updateState(connectionRecord: ConnectionRecord, newState: ConnectionState) {
+  public async updateState(connectionRecord: ConnectionRecord, newState: ConnectionState | DidExchangeState) {
     const previousState = connectionRecord.state
     connectionRecord.state = newState
     await this.connectionRepository.update(connectionRecord)
@@ -643,8 +644,8 @@ export class ConnectionService {
   }
 
   private async createConnection(options: {
-    role: ConnectionRole
-    state: ConnectionState
+    role: ConnectionRole | DidExchangeRole
+    state: ConnectionState | DidExchangeState
     invitation?: ConnectionInvitationMessage
     alias?: string
     routing: Routing
