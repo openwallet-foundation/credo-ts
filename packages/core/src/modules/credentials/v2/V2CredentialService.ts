@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-member-accessibility */
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { Dispatcher } from '../../../agent/Dispatcher'
@@ -19,6 +20,9 @@ import type { CredentialFormatService } from './formats/CredentialFormatService'
 import type {
   AcceptProposalOptions,
   FormatType,
+  NegotiateOfferOptions,
+  NegotiateProposalOptions,
+  OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
   V2CredOfferFormat,
@@ -47,6 +51,8 @@ import { JsonLdCredentialFormatService } from './formats/jsonld/JsonLdCredential
 import { V2OfferCredentialHandler } from './handlers/V2OfferCredentialHandler'
 import { V2ProposeCredentialHandler } from './handlers/V2ProposeCredentialHandler'
 import { V2RequestCredentialHandler } from './handlers/V2RequestCredentialHandler'
+
+import { createOutboundMessage } from 'packages/core/src/agent/helpers'
 
 export class V2CredentialService extends CredentialService {
   private credentialService: V1LegacyCredentialService // Temporary while v1 constructor needs this
@@ -277,7 +283,7 @@ export class V2CredentialService extends CredentialService {
    */
   public async createOfferAsResponse(
     credentialRecord: CredentialRecord,
-    proposal: AcceptProposalOptions
+    proposal: AcceptProposalOptions | NegotiateProposalOptions
   ): Promise<V2OfferCredentialMessage> {
     // Assert
     credentialRecord.assertState(CredentialState.ProposalReceived)
@@ -305,7 +311,6 @@ export class V2CredentialService extends CredentialService {
     const { message: credentialOfferMessage, connection } = messageContext
 
     unitTestLogger(`Processing credential offer with id ${credentialOfferMessage.id}`)
-    unitTestLogger(`CredentialOfferMessage message = ${credentialOfferMessage}`)
 
     const credentialRecordType =
       credentialOfferMessage.offerAttachments[0].id == INDY_ATTACH_ID
@@ -511,5 +516,73 @@ export class V2CredentialService extends CredentialService {
     await this.updateState(credentialRecord, CredentialState.RequestReceived)
 
     return credentialRecord
+  }
+
+  /**
+   * Negotiate a credential proposal as issuer (by sending a credential offer message) to the connection
+   * associated with the credential record.
+   *
+   * @param credentialOptions configuration for the offer see {@link NegotiateProposalOptions}
+   * @returns Credential exchange record associated with the credential offer
+   *
+   */
+  public async negotiateProposal(
+    credentialOptions: NegotiateProposalOptions
+  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }> {
+    const credentialRecord = await this.credentialService.getById(credentialOptions.credentialRecordId)
+
+    if (!credentialRecord.connectionId) {
+      throw new AriesFrameworkError(
+        `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
+      )
+    }
+
+    const credentialProposalMessage = credentialRecord.proposalMessage
+
+    if (!credentialProposalMessage?.credentialProposal) {
+      throw new AriesFrameworkError(
+        `Credential record with id ${credentialOptions.credentialRecordId} is missing required credential proposal`
+      )
+    }
+
+    const credentialDefinitionId =
+      credentialOptions.credentialFormats.indy?.credentialDefinitionId ??
+      credentialProposalMessage.credentialDefinitionId
+
+    if (!credentialDefinitionId) {
+      throw new AriesFrameworkError(
+        'Missing required credential definition id. If credential proposal message contains no credential definition id it must be passed to config.'
+      )
+    }
+    const message = await this.createOfferAsResponse(credentialRecord, credentialOptions)
+
+    return { credentialRecord, message }
+  }
+
+  /**
+   * Create a {@link V2OfferCredentialMessage} as begonning of protocol process.
+   *
+   * @param formatService {@link CredentialFormatService} the format service object containing format-specific logic
+   * @param options attributes of the original offer
+   * @returns Object containing offer message and associated credential record
+   *
+   */
+  public async createOffer(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    credentialOptions: OfferCredentialOptions
+  ): Promise<{ credentialRecord: CredentialRecord; message: V2OfferCredentialMessage }> {
+    const connection = await this.connectionService.getById(credentialOptions.connectionId)
+
+    connection?.assertReady()
+
+    const formatService: CredentialFormatService = this.getFormatServiceFrom(credentialOptions)
+
+    // Create message
+    const { credentialRecord, message } = await this.credentialMessageBuilder.createOffer(
+      formatService,
+      credentialOptions
+    )
+
+    return { credentialRecord, message }
   }
 }

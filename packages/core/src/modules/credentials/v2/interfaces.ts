@@ -62,6 +62,7 @@ interface AcceptOfferOptions {
 }
 
 interface NegotiateOfferOptions {
+  protocolVersion: CredentialProtocolVersion
   credentialRecordId: string
   credentialFormats: OfferCredentialFormats
   autoAcceptCredential?: AutoAcceptCredential
@@ -121,7 +122,7 @@ interface IndyCredentialPreview {
   credentialDefinitionId?: string
   attributes?: CredentialPreviewAttribute[]
 }
-export type FormatType = AcceptProposalOptions | ProposeCredentialOptions
+export type FormatType = AcceptProposalOptions | ProposeCredentialOptions | NegotiateProposalOptions
 
 interface AcceptProposalOptions {
   connectionId: string
@@ -138,6 +139,7 @@ interface AcceptProposalOptions {
 }
 
 interface NegotiateProposalOptions {
+  protocolVersion: CredentialProtocolVersion
   credentialRecordId: string
   credentialFormats: OfferCredentialFormats
   autoAcceptCredential?: AutoAcceptCredential

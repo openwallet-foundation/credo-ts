@@ -8,7 +8,13 @@ import type {
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { CredentialRecord } from '../repository'
-import type { AcceptProposalOptions, ProposeCredentialOptions, RequestCredentialOptions } from '../v2/interfaces'
+import type {
+  AcceptProposalOptions,
+  NegotiateProposalOptions,
+  OfferCredentialOptions,
+  ProposeCredentialOptions,
+  RequestCredentialOptions,
+} from '../v2/interfaces'
 import type { V2RequestCredentialMessage } from '../v2/messages/V2RequestCredentialMessage'
 import type { OfferCredentialHandler, ProposeCredentialHandler } from './handlers'
 import type { OfferCredentialMessage, RequestCredentialMessage } from './messages'
@@ -26,7 +32,7 @@ import { V1CredentialPreview } from './V1CredentialPreview'
 const logger = new ConsoleLogger(LogLevel.debug)
 
 export class V1CredentialService extends CredentialService {
-  processRequest(
+  public processRequest(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     messageContext: InboundMessageContext<RequestCredentialMessage | V2RequestCredentialMessage>
   ): Promise<CredentialRecord> {
@@ -193,5 +199,93 @@ export class V1CredentialService extends CredentialService {
     // mapping from RequestCredentialOptions -> CredentialRequesOptions happens
     // here
     return this.legacyCredentialService.createRequest(credentialRecord, options)
+  }
+
+  /**
+   * Negotiate a credential proposal as issuer (by sending a credential offer message) to the connection
+   * associated with the credential record.
+   *
+   * @param credentialOptions configuration for the offer see {@link NegotiateProposalOptions}
+   * @returns Credential exchange record associated with the credential offer
+   *
+   */
+  public async negotiateProposal(
+    credentialOptions: NegotiateProposalOptions
+  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }> {
+    const credentialRecord = await this.legacyCredentialService.getById(credentialOptions.credentialRecordId)
+
+    if (!credentialRecord.connectionId) {
+      throw new AriesFrameworkError(
+        `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
+      )
+    }
+
+    const credentialProposalMessage = credentialRecord.proposalMessage
+
+    if (!credentialProposalMessage?.credentialProposal) {
+      throw new AriesFrameworkError(
+        `Credential record with id ${credentialOptions.credentialRecordId} is missing required credential proposal`
+      )
+    }
+
+    const credentialDefinitionId =
+      credentialOptions.credentialFormats.indy?.credentialDefinitionId ??
+      credentialProposalMessage.credentialDefinitionId
+
+    if (!credentialDefinitionId) {
+      throw new AriesFrameworkError(
+        'Missing required credential definition id. If credential proposal message contains no credential definition id it must be passed to config.'
+      )
+    }
+
+    let newCredentialProposal: V1CredentialPreview
+    if (credentialOptions?.credentialFormats.indy?.attributes) {
+      newCredentialProposal = new V1CredentialPreview({
+        attributes: credentialOptions?.credentialFormats.indy?.attributes,
+      })
+    } else {
+      throw Error('No proposal attributes in the negotiation options!')
+    }
+
+    const { message } = await this.createOfferAsResponse(credentialRecord, {
+      preview: newCredentialProposal,
+      credentialDefinitionId,
+      comment: credentialOptions.comment,
+      autoAcceptCredential: credentialOptions.autoAcceptCredential,
+      attachments: credentialRecord.linkedAttachments,
+    })
+    return { credentialRecord, message }
+  }
+
+  /**
+   * Create a {@link OfferCredentialMessage} not bound to an existing credential exchange.
+   * To create an offer as response to an existing credential exchange, use {@link V1CredentialService#createOfferAsResponse}.
+   *
+   * @param credentialOptions The options containing config params for creating the credential offer
+   * @returns Object containing offer message and associated credential record
+   *
+   */
+  public async createOffer(
+    credentialOptions: OfferCredentialOptions
+  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }> {
+    const connection = await this.connectionService.getById(credentialOptions.connectionId)
+
+    if (
+      credentialOptions?.credentialFormats.indy?.attributes &&
+      credentialOptions?.credentialFormats.indy?.credentialDefinitionId
+    ) {
+      const credentialPreview: V1CredentialPreview = new V1CredentialPreview({
+        attributes: credentialOptions.credentialFormats.indy?.attributes,
+      })
+
+      const template: CredentialOfferTemplate = {
+        ...credentialOptions,
+        preview: credentialPreview,
+        credentialDefinitionId: credentialOptions?.credentialFormats.indy?.credentialDefinitionId,
+      }
+      return await this.legacyCredentialService.createOffer(template, connection)
+    }
+
+    throw Error('Missing properties from OfferCredentialOptions object: cannot create Offer!')
   }
 }

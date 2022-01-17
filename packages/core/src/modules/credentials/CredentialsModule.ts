@@ -12,6 +12,7 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
+import { isLinkedAttachment } from '../../utils/attachment'
 import { ConnectionService } from '../connections/services/ConnectionService'
 import { MediationRecipientService } from '../routing'
 
@@ -80,6 +81,66 @@ export class CredentialsModule {
   }
 
   /**
+   * Accept a credential proposal as issuer (by sending a credential offer message) to the connection
+   * associated with the credential record.
+   *
+   * @param credentialRecordId The id of the credential record for which to accept the proposal
+   * @param config Additional configuration to use for the offer
+   * @returns Credential record associated with the credential offer
+   *
+   */
+  public async OLDacceptProposal(
+    credentialRecordId: string,
+    config?: {
+      comment?: string
+      credentialDefinitionId?: string
+      autoAcceptCredential?: AutoAcceptCredential
+    }
+  ) {
+    const credentialRecord = await this.credentialService.getById(credentialRecordId)
+    if (!credentialRecord.connectionId) {
+      throw new AriesFrameworkError(
+        `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
+      )
+    }
+
+    const connection = await this.connectionService.getById(credentialRecord.connectionId)
+
+    const credentialProposalMessage = credentialRecord.proposalMessage
+    if (!credentialProposalMessage?.credentialProposal) {
+      throw new AriesFrameworkError(
+        `Credential record with id ${credentialRecordId} is missing required credential proposal`
+      )
+    }
+
+    const credentialDefinitionId = config?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
+
+    credentialRecord.linkedAttachments = credentialProposalMessage.attachments?.filter((attachment) =>
+      isLinkedAttachment(attachment)
+    )
+
+    if (!credentialDefinitionId) {
+      throw new AriesFrameworkError(
+        'Missing required credential definition id. If credential proposal message contains no credential definition id it must be passed to config.'
+      )
+    }
+
+    // TODO: check if it is possible to issue credential based on proposal filters
+    const { message } = await this.credentialService.createOfferAsResponse(credentialRecord, {
+      preview: credentialProposalMessage.credentialProposal,
+      credentialDefinitionId,
+      comment: config?.comment,
+      autoAcceptCredential: config?.autoAcceptCredential,
+      attachments: credentialRecord.linkedAttachments,
+    })
+
+    const outboundMessage = createOutboundMessage(connection, message)
+    await this.messageSender.sendMessage(outboundMessage)
+
+    return credentialRecord
+  }
+
+  /**
    * Negotiate a credential proposal as issuer (by sending a credential offer message) to the connection
    * associated with the credential record.
    *
@@ -89,7 +150,7 @@ export class CredentialsModule {
    * @returns Credential record associated with the credential offer
    *
    */
-  public async negotiateProposal(
+  public async OLDnegotiateProposal(
     credentialRecordId: string,
     preview: V1CredentialPreview,
     config?: {
@@ -145,7 +206,7 @@ export class CredentialsModule {
    * @param credentialTemplate The credential template to use for the offer
    * @returns Credential record associated with the sent credential offer message
    */
-  public async offerCredential(
+  public async OLDofferCredential(
     connectionId: string,
     credentialTemplate: CredentialOfferTemplate
   ): Promise<CredentialRecord> {

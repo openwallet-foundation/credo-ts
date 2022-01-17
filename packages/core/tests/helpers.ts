@@ -354,7 +354,7 @@ export async function issueCredential({
     .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
     .subscribe(holderReplay)
 
-  let issuerCredentialRecord = await issuerAgent.credentials.offerCredential(issuerConnectionId, {
+  let issuerCredentialRecord = await issuerAgent.credentials.OLDofferCredential(issuerConnectionId, {
     ...credentialTemplate,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   })

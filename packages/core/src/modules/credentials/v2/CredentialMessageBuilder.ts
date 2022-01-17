@@ -3,11 +3,14 @@ import type { V2CredentialPreview } from './V2CredentialPreview'
 import type { CredentialFormatService } from './formats/CredentialFormatService'
 import type {
   AcceptProposalOptions,
+  NegotiateProposalOptions,
+  OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
   V2CredOfferFormat,
   V2CredRequestFormat,
 } from './interfaces'
+import type { V2OfferCredentialMessageOptions } from './messages/V2OfferCredentialMessage'
 import type { V2ProposeCredentialMessageOptions } from './messages/V2ProposeCredentialMessage'
 import type { V2RequestCredentialMessageOptions } from './messages/V2RequestCredentialMessage'
 import type { AgentMessage } from 'packages/core/src/agent/AgentMessage'
@@ -45,7 +48,7 @@ export class CredentialMessageBuilder {
 
     const credentialDefinitionId: string | undefined = formatService.getCredentialDefinitionId(proposal)
 
-    const { previewWithAttachments: previewWithAttachments } = formatService.getCredentialLinkedAttachments(proposal)
+    const { previewWithAttachments } = formatService.getCredentialLinkedAttachments(proposal)
 
     if (!filtersAttach) {
       throw Error('filtersAttach not initialized for credential proposal')
@@ -113,7 +116,7 @@ export class CredentialMessageBuilder {
   public async createOfferAsResponse(
     formatService: CredentialFormatService,
     credentialRecord: CredentialRecord,
-    proposal: AcceptProposalOptions
+    proposal: AcceptProposalOptions | NegotiateProposalOptions
   ): Promise<V2OfferCredentialMessage> {
     // Create the offer message for the correct format
 
@@ -134,14 +137,16 @@ export class CredentialMessageBuilder {
     if (preview === undefined) {
       throw Error('credential missing for credential offer')
     }
-    const credentialOfferMessage: V2OfferCredentialMessage = new V2OfferCredentialMessage(
-      formatService.generateId(),
+
+    const messageProps: V2OfferCredentialMessageOptions = {
+      id: formatService.generateId(),
       formats,
       comment,
-      offersAttach,
-      '', // replacementId
-      preview
-    )
+      offerAttachments: offersAttach,
+      replacementId: '', // replacementId
+      credentialPreview: preview,
+    }
+    const credentialOfferMessage: V2OfferCredentialMessage = new V2OfferCredentialMessage(messageProps)
 
     credentialOfferMessage.setThread({
       threadId: credentialRecord.threadId,
@@ -269,5 +274,62 @@ export class CredentialMessageBuilder {
     message: V2RequestCredentialMessage
   ): V2CredRequestFormat | undefined {
     return formatService.getCredentialRequest(message)
+  }
+
+  /**
+   * Create a {@link V2OfferCredentialMessage} as begonning of protocol process.
+   *
+   * @param formatService {@link CredentialFormatService} the format service object containing format-specific logic
+   * @param options attributes of the original offer
+   * @returns Object containing offer message and associated credential record
+   *
+   */
+  public async createOffer(
+    formatService: CredentialFormatService,
+    options: OfferCredentialOptions
+  ): Promise<{ credentialRecord: CredentialRecord; message: V2OfferCredentialMessage }> {
+    // const { credentialDefinitionId, comment, preview, linkedAttachments } = credentialTemplate
+
+    const credOffer: V2CredOfferFormat = await formatService.createCredentialOffer(options)
+
+    const { formats, offersAttach } = formatService.getCredentialOfferAttachFormats(options, credOffer, 'CRED_20_OFFER')
+    const credentialDefinitionId: string | undefined = formatService.getCredentialDefinitionId(options)
+
+    const { previewWithAttachments } = formatService.getCredentialLinkedAttachments(options)
+
+    if (!offersAttach) {
+      throw Error('filtersAttach not initialized for credential proposal')
+    }
+    const comment: string = options.comment ? options.comment : ''
+
+    const messageProps: V2OfferCredentialMessageOptions = {
+      id: formatService.generateId(),
+      formats,
+      comment,
+      offerAttachments: offersAttach,
+      replacementId: '', // replacementId
+      credentialPreview: previewWithAttachments,
+      credentialDefinitionId,
+    }
+
+    // Construct v2 offer message
+    const credentialOfferMessage: V2OfferCredentialMessage = new V2OfferCredentialMessage(messageProps)
+
+    const recordProps: CredentialRecordProps = {
+      connectionId: options.connectionId,
+      threadId: credentialOfferMessage.threadId,
+      offerMessage: credentialOfferMessage,
+      autoAcceptCredential: options?.autoAcceptCredential,
+      state: CredentialState.OfferSent,
+      credentialAttributes: previewWithAttachments.attributes,
+    }
+
+    // Create the v2 record
+    const credentialRecord = new CredentialRecord(recordProps)
+
+    // set meta data, save credential record to respository and emit event
+    formatService.setMetaDataAndEmitEventForOffer(credOffer, credentialRecord)
+
+    return { credentialRecord, message: credentialOfferMessage }
   }
 }

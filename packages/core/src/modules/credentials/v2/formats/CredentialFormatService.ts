@@ -8,6 +8,8 @@ import type { V2CredentialPreview } from '../V2CredentialPreview'
 import type { V2CredentialFormatSpec } from '../formats/V2CredentialFormat'
 import type {
   AcceptProposalOptions,
+  NegotiateProposalOptions,
+  OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
   V2CredDefinitionFormat,
@@ -48,6 +50,10 @@ export abstract class CredentialFormatService {
     proposal: V2CredProposalFormat,
     credentialRecord: CredentialRecord
   ): Promise<void>
+  abstract setMetaDataAndEmitEventForOffer(
+    proposal: V2CredOfferFormat,
+    credentialRecord: CredentialRecord
+  ): Promise<void>
   abstract setMetaDataForOffer(offer: V2CredOfferFormat, credentialRecord: CredentialRecord): void
   abstract setMetaDataForRequest(request: V2CredRequestFormat, credentialRecord: CredentialRecord): void
 
@@ -60,9 +66,11 @@ export abstract class CredentialFormatService {
   abstract setPreview(proposal: AcceptProposalOptions, preview: V1CredentialPreview): AcceptProposalOptions
 
   // other message formats here...eg issue, request formats etc.
-  abstract createCredentialOffer(proposal: AcceptProposalOptions): Promise<V2CredOfferFormat>
+  abstract createCredentialOffer(
+    proposal: AcceptProposalOptions | NegotiateProposalOptions | OfferCredentialOptions
+  ): Promise<V2CredOfferFormat>
   abstract getCredentialOfferAttachFormats(
-    proposal: AcceptProposalOptions,
+    proposal: AcceptProposalOptions | NegotiateProposalOptions | OfferCredentialOptions,
     offer: V2CredOfferFormat,
     messageType: string
   ): V2AttachmentFormats
@@ -74,6 +82,8 @@ export abstract class CredentialFormatService {
   abstract getCredentialRequest(message: V2RequestCredentialMessage): V2CredRequestFormat | undefined
 
   abstract getCredentialRequestAttachFormats(request: V2CredRequestFormat, messageType: string): V2AttachmentFormats
+
+  abstract createAcceptProposalOptions(credentialRecord: CredentialRecord): AcceptProposalOptions
 
   public generateId(): string {
     return uuid()

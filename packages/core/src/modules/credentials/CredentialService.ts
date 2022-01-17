@@ -10,7 +10,14 @@ import type { RequestCredentialMessage } from './v1/messages'
 import type { CredentialRecordType } from './v2/CredentialExchangeRecord'
 import type { V2CredentialService } from './v2/V2CredentialService'
 import type { CredentialFormatService } from './v2/formats/CredentialFormatService'
-import type { AcceptProposalOptions, ProposeCredentialOptions, RequestCredentialOptions } from './v2/interfaces'
+import type {
+  AcceptProposalOptions,
+  NegotiateOfferOptions,
+  NegotiateProposalOptions,
+  OfferCredentialOptions,
+  ProposeCredentialOptions,
+  RequestCredentialOptions,
+} from './v2/interfaces'
 import type { V2RequestCredentialMessage } from './v2/messages/V2RequestCredentialMessage'
 
 export type CredentialServiceType = V1CredentialService | V2CredentialService
@@ -26,8 +33,14 @@ export abstract class CredentialService {
   abstract acceptProposal(
     proposal: AcceptProposalOptions
   ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }>
+  abstract negotiateProposal(
+    credentialOptions: NegotiateProposalOptions
+  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }>
 
   // methods for offer
+  abstract createOffer(
+    credentialOptions: OfferCredentialOptions
+  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }>
   abstract processOffer(messageContext: HandlerInboundMessage<Handler>): Promise<CredentialRecord>
 
   // methods for request

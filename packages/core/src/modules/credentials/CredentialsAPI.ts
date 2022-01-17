@@ -5,6 +5,8 @@ import type { CredentialRecordBinding, CredentialExchangeRecordProps } from './v
 import type {
   AcceptOfferOptions,
   AcceptProposalOptions,
+  NegotiateProposalOptions,
+  OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from './v2/interfaces'
@@ -37,13 +39,14 @@ import { V2CredentialService } from './v2/V2CredentialService'
 
 export interface CredentialsAPI {
   // Proposal methods
+
   proposeCredential(credentialOptions: ProposeCredentialOptions): Promise<CredentialExchangeRecord>
   acceptCredentialProposal(credentialOptions: AcceptProposalOptions): Promise<CredentialExchangeRecord>
-
-  // negotiateProposal(credentialOptions: NegotiateProposalOptions): Promise<CredentialExchangeRecord>
+  negotiateCredentialProposal(credentialOptions: NegotiateProposalOptions): Promise<CredentialExchangeRecord>
 
   // Offer methods
-  // offerCredential(credentialOptions: OfferCredentialOptions): Promise<CredentialExchangeRecord>
+
+  offerCredential(credentialOptions: OfferCredentialOptions): Promise<CredentialExchangeRecord>
   acceptCredentialOffer(credentialOptions: AcceptOfferOptions): Promise<CredentialExchangeRecord>
   // declineOffer(credentialRecordId: string): Promise<CredentialExchangeRecord>
   // negotiateOffer(credentialOptions: NegotiateOfferOptions): Promise<CredentialExchangeRecord>
@@ -393,5 +396,107 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
         `Cannot accept offer for credential record without connectionId or ~service decorator on credential offer.`
       )
     }
+  }
+
+  /**
+   * Negotiate a credential proposal as issuer (by sending a credential offer message) to the connection
+   * associated with the credential record.
+   *
+   * @param credentialOptions configuration for the offer see {@link NegotiateProposalOptions}
+   * @returns Credential exchange record associated with the credential offer
+   *
+   */
+  public async negotiateCredentialProposal(
+    credentialOptions: NegotiateProposalOptions
+  ): Promise<CredentialExchangeRecord> {
+    unitTestLogger('>> IN CREDENTIAL API => negotiateCredentialProposal')
+
+    // get the version
+    const version: CredentialProtocolVersion = credentialOptions.protocolVersion
+
+    unitTestLogger(`version =${version}`)
+
+    // with version we can get the Service
+    const service: CredentialService = this.getService(version)
+
+    const { credentialRecord, message } = await service.negotiateProposal(credentialOptions)
+
+    if (!credentialRecord.connectionId) {
+      throw new AriesFrameworkError(`Connection id for credential record ${credentialRecord.credentialId} not found!`)
+    }
+    const connection = await this.connService.getById(credentialRecord.connectionId)
+    if (!connection) {
+      throw new AriesFrameworkError(`Connection for ${credentialRecord.connectionId} not found!`)
+    }
+    // use record connection id to get the connection
+
+    const outboundMessage = createOutboundMessage(connection, message)
+
+    await this.msgSender.sendMessage(outboundMessage)
+
+    const recordBinding: CredentialRecordBinding = {
+      credentialRecordType: credentialOptions.credentialFormats.indy
+        ? CredentialRecordType.INDY
+        : CredentialRecordType.W3C,
+      credentialRecordId: credentialRecord.id,
+    }
+
+    const bindings: CredentialRecordBinding[] = []
+    bindings.push(recordBinding)
+
+    const props: CredentialExchangeRecordProps = {
+      connectionId: credentialRecord.connectionId,
+      threadId: credentialRecord.threadId,
+      protocolVersion: version,
+      state: CredentialState.ProposalSent,
+      role: CredentialRole.Holder,
+      credentials: bindings,
+    }
+    const credentialExchangeRecord = new CredentialExchangeRecord(props)
+
+    return credentialExchangeRecord
+  }
+
+  /**
+   * Initiate a new credential exchange as issuer by sending a credential offer message
+   * to the connection with the specified connection id.
+   *
+   * @param credentialOptions config options for the credential offer
+   * @returns Credential exchange record associated with the sent credential offer message
+   */
+  public async offerCredential(credentialOptions: OfferCredentialOptions): Promise<CredentialExchangeRecord> {
+    const connection = await this.connService.getById(credentialOptions.connectionId)
+
+    // with version we can get the Service
+    const service: CredentialService = this.getService(credentialOptions.protocolVersion)
+
+    unitTestLogger('Got a CredentialService object for this version')
+    const { message, credentialRecord } = await service.createOffer(credentialOptions)
+
+    unitTestLogger('V2 Offer Message successfully created; message= ', message)
+    const outboundMessage = createOutboundMessage(connection, message)
+    await this.msgSender.sendMessage(outboundMessage)
+
+    const recordBinding: CredentialRecordBinding = {
+      credentialRecordType: credentialOptions.credentialFormats.indy
+        ? CredentialRecordType.INDY
+        : CredentialRecordType.W3C,
+      credentialRecordId: credentialRecord.id,
+    }
+
+    const bindings: CredentialRecordBinding[] = []
+    bindings.push(recordBinding)
+
+    const props: CredentialExchangeRecordProps = {
+      connectionId: credentialRecord.connectionId,
+      threadId: credentialRecord.threadId,
+      protocolVersion: credentialOptions.protocolVersion,
+      state: CredentialState.ProposalSent,
+      role: CredentialRole.Holder,
+      credentials: bindings,
+    }
+    const credentialExchangeRecord = new CredentialExchangeRecord(props)
+
+    return credentialExchangeRecord
   }
 }

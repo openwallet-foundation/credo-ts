@@ -9,24 +9,31 @@ import { Attachment } from '../../../../decorators/attachment/Attachment'
 import { V2CredentialPreview } from '../V2CredentialPreview'
 import { CRED_20_OFFER } from '../formats/MessageTypes'
 
-export class V2OfferCredentialMessage extends AgentMessage {
-  public formats: V2CredentialFormatSpec
+export interface V2OfferCredentialMessageOptions {
+  id: string
+  formats: V2CredentialFormatSpec
+  offerAttachments: Attachment[]
+  credentialPreview: V2CredentialPreview
+  replacementId: string
+  comment?: string
+  credentialDefinitionId?: string
+}
 
-  public constructor(
-    id: string,
-    formats: V2CredentialFormatSpec,
-    comment: string,
-    offersAttach: Attachment[],
-    replacementId: string,
-    credentialPreview: V2CredentialPreview
-  ) {
+export class V2OfferCredentialMessage extends AgentMessage {
+  public formats!: V2CredentialFormatSpec
+
+  public constructor(options: V2OfferCredentialMessageOptions) {
     super()
-    this.id = id
-    this.comment = comment
-    this.credentialPreview = credentialPreview
-    this.formats = formats
-    this.offerAttachments = offersAttach
-    this.replacementId = replacementId
+    if (options) {
+
+      this.id = options.id ?? this.generateId()
+      this.comment = options.comment
+      this.credentialDefinitionId = options.credentialDefinitionId
+      this.formats = options.formats
+      this.credentialPreview = options.credentialPreview
+      this.offerAttachments = options.offerAttachments
+      this.credentialDefinitionId = options.credentialDefinitionId
+    }
   }
 
   @Equals(V2OfferCredentialMessage.type)
@@ -56,6 +63,14 @@ export class V2OfferCredentialMessage extends AgentMessage {
   @IsString()
   @IsOptional()
   public replacementId?: string
+
+  /**
+   * Filter to request credential based on a particular Credential Definition.
+   */
+  @Expose({ name: 'cred_def_id' })
+  @IsString()
+  @IsOptional()
+  public credentialDefinitionId?: string
 
   // this is needed for the CredentialResponseCoordinator (which needs reworking into V1 and V2 versions)
   // MJR-TODO rework CredentialResponseCoordinator for new V2 architecture

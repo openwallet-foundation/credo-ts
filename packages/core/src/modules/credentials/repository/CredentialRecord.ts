@@ -32,7 +32,7 @@ export interface CredentialRecordProps {
   tags?: CustomCredentialTags
   proposalMessage?: ProposeCredentialMessage | V2ProposeCredentialMessage
   offerMessage?: OfferCredentialMessage | V2OfferCredentialMessage
-  requestMessage?: RequestCredentialMessage
+  requestMessage?: RequestCredentialMessage | V2RequestCredentialMessage
   credentialMessage?: IssueCredentialMessage
   credentialAttributes?: CredentialPreviewAttribute[]
   autoAcceptCredential?: AutoAcceptCredential

@@ -1,10 +1,12 @@
 import type { Agent } from '../../../../agent/Agent'
-import type { ConnectionRecord } from '../../../../modules/connections'
+import type { ConnectionRecord } from '../../../connections'
 import type { Schema } from 'indy-sdk'
 
+import { AutoAcceptCredential, CredentialRecord, CredentialState } from '../..'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../tests/helpers'
 import testLogger from '../../../../../tests/logger'
-import { AutoAcceptCredential, CredentialRecord, CredentialState } from '../../../../modules/credentials'
+import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import { sleep } from '../../../../utils/sleep'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 
 const credentialPreview = V1CredentialPreview.fromRecord({
@@ -12,7 +14,13 @@ const credentialPreview = V1CredentialPreview.fromRecord({
   age: '99',
 })
 
-describe('auto accept credentials V1', () => {
+const newCredentialPreview = V1CredentialPreview.fromRecord({
+  name: 'John',
+  age: '99',
+  lastname: 'Appleseed',
+})
+
+describe('auto accept credentials', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
   let credDefId: string
@@ -38,7 +46,7 @@ describe('auto accept credentials V1', () => {
       await aliceAgent.wallet.delete()
     })
 
-    test('Alice starts with V1 credential proposal to Faber, both with autoAcceptCredential on `always`', async () => {
+    test('Alice starts with credential proposal to Faber, both with autoAcceptCredential on `always`', async () => {
       testLogger.test('Alice sends credential proposal to Faber')
 
       const schemaId = schema.id
@@ -96,10 +104,10 @@ describe('auto accept credentials V1', () => {
       })
     })
 
-    test('Faber starts with V1 credential offer to Alice, both with autoAcceptCredential on `always`', async () => {
+    test('Faber starts with credential offer to Alice, both with autoAcceptCredential on `always`', async () => {
       testLogger.test('Faber sends credential offer to Alice')
       const schemaId = schema.id
-      faberCredentialRecord = await faberAgent.credentials.offerCredential(faberConnection.id, {
+      faberCredentialRecord = await faberAgent.credentials.OLDofferCredential(faberConnection.id, {
         preview: credentialPreview,
         credentialDefinitionId: credDefId,
         comment: 'some comment about credential',
@@ -146,6 +154,4 @@ describe('auto accept credentials V1', () => {
       })
     })
   })
-
-  // MJR-TODO V2 Auto Accept Tests Here -->
 })

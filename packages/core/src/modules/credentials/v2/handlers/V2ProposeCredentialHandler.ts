@@ -3,11 +3,13 @@ import type { AgentConfig } from '../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 import type { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import type { V2CredentialService } from '../V2CredentialService'
+import type { CredentialFormatService } from '../formats/CredentialFormatService'
 import type { AcceptProposalOptions } from '../interfaces'
 
 import { createOutboundMessage } from '../../../../../src/agent/helpers'
 import { unitTestLogger } from '../../../../logger'
-import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
+import { CredentialRecordType } from '../CredentialExchangeRecord'
+import { INDY_ATTACH_ID } from '../formats/V2CredentialFormat'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 
 export class V2ProposeCredentialHandler implements Handler {
@@ -37,7 +39,6 @@ export class V2ProposeCredentialHandler implements Handler {
     }
   }
 
-  // MJR-TODO this is not yet fully implemented
   private async createOffer(
     credentialRecord: CredentialRecord,
     messageContext: HandlerInboundMessage<V2ProposeCredentialHandler>
@@ -63,15 +64,12 @@ export class V2ProposeCredentialHandler implements Handler {
       return
     }
 
-    const options: AcceptProposalOptions = {
-      connectionId: '',
-      protocolVersion: CredentialProtocolVersion.V2_0,
-      credentialRecordId: '',
-      credentialFormats: {
-        indy: undefined,
-        w3c: undefined,
-      },
-    }
+    const msg: V2ProposeCredentialMessage = credentialRecord.proposalMessage as V2ProposeCredentialMessage
+    const id = msg.filtersAttach[0].id
+    const type: CredentialRecordType = id == INDY_ATTACH_ID ? CredentialRecordType.INDY : CredentialRecordType.W3C
+    const formatService: CredentialFormatService = this.credentialService.getFormatService(type)
+
+    const options: AcceptProposalOptions = formatService.createAcceptProposalOptions(credentialRecord)
     const message = await this.credentialService.createOfferAsResponse(credentialRecord, options)
 
     return createOutboundMessage(messageContext.connection, message)

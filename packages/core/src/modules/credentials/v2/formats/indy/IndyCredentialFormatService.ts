@@ -5,6 +5,8 @@ import type { IndyLedgerService } from '../../../../ledger'
 import type { CredentialPreviewAttribute } from '../../../CredentialPreviewAttributes'
 import type {
   AcceptProposalOptions,
+  NegotiateProposalOptions,
+  OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
   V2CredDefinitionFormat,
@@ -13,6 +15,7 @@ import type {
   V2CredRequestFormat,
 } from '../../interfaces'
 import type { V2OfferCredentialMessage } from '../../messages/V2OfferCredentialMessage'
+import type { V2ProposeCredentialMessage } from '../../messages/V2ProposeCredentialMessage'
 import type { V2RequestCredentialMessage } from '../../messages/V2RequestCredentialMessage'
 import type { V2AttachmentFormats } from '../CredentialFormatService'
 import type { V2CredentialFormatSpec } from '../V2CredentialFormat'
@@ -21,6 +24,7 @@ import type { CredDef, CredOffer, CredReq } from 'indy-sdk'
 import { CredentialMetadataKeys, CredentialUtils } from '../../..'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
 import { JsonEncoder } from '../../../../../utils/JsonEncoder'
+import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { V2CredentialPreview } from '../../V2CredentialPreview'
 import { CredentialFormatService } from '../CredentialFormatService'
 import { INDY_ATTACH_ID, ATTACHMENT_FORMAT } from '../V2CredentialFormat'
@@ -120,6 +124,23 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     return await super.emitEvent(credentialRecord)
   }
 
+  /**
+   * Save the meta data and emit event for a credential offer
+   * @param proposal wrapper object that contains either indy or some other format of proposal, in this case indy.
+   * see {@link V2CredProposalFormat}
+   * @param credentialRecord the record containing attributes for this credentual
+   */
+  public async setMetaDataAndEmitEventForOffer(
+    offer: V2CredOfferFormat,
+    credentialRecord: CredentialRecord
+  ): Promise<void> {
+    credentialRecord.metadata.set('_internal/indyCredential', {
+      schemaId: offer.indy?.credentialOffer.schema_id,
+      credentialDefinintionId: offer.indy?.credentialOffer.cred_def_id,
+    })
+    await this.credentialRepository.save(credentialRecord)
+    return await super.emitEvent(credentialRecord)
+  }
   /**
    * Set the meta data only
    * @param offer the object containing information about the offer, including the indy sdk specific stuff
@@ -296,7 +317,9 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @param credentialDefinitionId The credential definition to create an offer for
    * @returns The created credential offer
    */
-  public async createCredentialOffer(proposal: AcceptProposalOptions): Promise<V2CredOfferFormat> {
+  public async createCredentialOffer(
+    proposal: AcceptProposalOptions | NegotiateProposalOptions | OfferCredentialOptions
+  ): Promise<V2CredOfferFormat> {
     if (this.indyIssuerService && proposal.credentialFormats?.indy?.credentialDefinitionId) {
       const credOffer: CredOffer = await this.indyIssuerService.createCredentialOffer(
         proposal.credentialFormats.indy.credentialDefinitionId
@@ -406,5 +429,27 @@ export class IndyCredentialFormatService extends CredentialFormatService {
         },
       }
     }
+  }
+
+  public createAcceptProposalOptions(credentialRecord: CredentialRecord): AcceptProposalOptions {
+    if (credentialRecord.proposalMessage && credentialRecord.proposalMessage.credentialProposal?.attributes) {
+      const proposeMessage: V2ProposeCredentialMessage = credentialRecord.proposalMessage as V2ProposeCredentialMessage
+      if (proposeMessage && proposeMessage.credentialProposal) {
+        const options: AcceptProposalOptions = {
+          connectionId: '',
+          protocolVersion: CredentialProtocolVersion.V2_0,
+          credentialRecordId: credentialRecord.id,
+          credentialFormats: {
+            indy: {
+              credentialDefinitionId: credentialRecord.proposalMessage.credentialDefinitionId,
+              attributes: proposeMessage.credentialProposal.attributes,
+            },
+          },
+        }
+
+        return options
+      }
+    }
+    throw Error('Unable to create accept proposal options object')
   }
 }

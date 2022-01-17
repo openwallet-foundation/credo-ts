@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-member-accessibility */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { CredentialRecord } from '../../..'
 import type { CredentialPreviewAttribute } from '../../../CredentialPreviewAttributes'
@@ -20,6 +21,12 @@ import type { Attachment } from 'packages/core/src/decorators/attachment/Attachm
 import { CredentialFormatService } from '../CredentialFormatService'
 
 export class JsonLdCredentialFormatService extends CredentialFormatService {
+  setMetaDataAndEmitEventForOffer(proposal: V2CredOfferFormat, credentialRecord: CredentialRecord): Promise<void> {
+    throw new Error('Method not implemented.')
+  }
+  createAcceptProposalOptions(credentialRecord: CredentialRecord): AcceptProposalOptions {
+    throw new Error('Method not implemented.')
+  }
   public getCredentialRequest(message: V2RequestCredentialMessage): V2CredRequestFormat | undefined {
     throw new Error('Method not implemented.')
   }
