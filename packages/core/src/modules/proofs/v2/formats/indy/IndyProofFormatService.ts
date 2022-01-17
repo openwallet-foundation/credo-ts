@@ -29,10 +29,10 @@ export class IndyProofFormatService extends ProofFormatService {
   public getProofProposeAttachFormats(proposal: ProposeProofOptions, messageType: string): V2AttachmentFormats {
     let preview: PresentationPreview
 
-    if (proposal?.proofFormats?.indy?.attributes) {
+    if (proposal?.proofFormats?.indy?.proofPreview?.attributes) {
       preview = new PresentationPreview({
-        attributes: proposal?.proofFormats.indy?.attributes,
-        predicates: proposal?.proofFormats.indy?.predicates,
+        attributes: proposal?.proofFormats.indy?.proofPreview?.attributes,
+        predicates: proposal?.proofFormats.indy?.proofPreview?.predicates,
       })
     } else {
       preview = new PresentationPreview({ attributes: [], predicates: [] })
@@ -51,7 +51,6 @@ export class IndyProofFormatService extends ProofFormatService {
     proposal: V2ProposeProofFormat,
     proofRecord: ProofRecord
   ): Promise<void> {
-    console.log('IndyProofFormat [metdata] proofRecord:', proofRecord)
     await this.proofRepository.save(proofRecord)
     return await super.emitEvent(proofRecord)
   }

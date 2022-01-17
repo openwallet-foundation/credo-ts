@@ -7,10 +7,12 @@ import type { ProofRecordProps } from '../repository'
 import type { ProofFormatService } from './formats/ProofFormatService'
 import type {
   CreateRequestOptions,
+  FormatType,
   ProofRequestAsResponse,
   ProofRequestsOptions,
   ProposeProofOptions,
   RequestProofOptions,
+  V2ProposeProofFormat,
 } from './interface'
 import type { V2ProposePresentationMessageOptions } from './messages/V2ProposalPresentationMessage'
 
@@ -42,6 +44,7 @@ import { ProofResponseCoordinator } from '../ProofResponseCoordinator'
 import { ProofService } from '../ProofService'
 import { ProofRepository, ProofRecord } from '../repository'
 
+import { INDY_ATTACH_ID } from './formats/V2ProofFormat'
 import { IndyProofFormatService } from './formats/indy/IndyProofFormatService'
 import { JsonLdProofFormatService } from './formats/jsonld/JsonLdProofFormatService'
 import { V2ProposePresentationHandler } from './handlers/V2ProposePresentationHandler'
@@ -99,6 +102,15 @@ export class V2ProofService extends ProofService {
     return new serviceFormatMap[_proofRecordType](this.proofRepository, this.eventEmitter)
   }
 
+  private getFormatServiceFrom(formatType?: FormatType): ProofFormatService {
+    if (!formatType) {
+      return this.getFormatService(PresentationRecordType.W3c)
+    }
+    const credentialRecordType = formatType.proofFormats.indy ? PresentationRecordType.Indy : PresentationRecordType.W3c
+
+    return this.getFormatService(credentialRecordType)
+  }
+
   public getVersion(): ProofProtocolVersion {
     return ProofProtocolVersion.V1_0
   }
@@ -108,17 +120,7 @@ export class V2ProofService extends ProofService {
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     this.logger.debug('----------- In V2 Proof Service  -----------------\n')
 
-    const connection = await this.connectionService.getById(proposal.connectionId)
-
-    const presentationRecordType = proposal.proofFormats?.indy
-      ? PresentationRecordType.Indy
-      : PresentationRecordType.W3c
-
-    this.logger.debug('Get the Format Service and Create Proposal Message')
-
-    const formatService: ProofFormatService = this.getFormatService(presentationRecordType)
-
-    console.log('V2 Service [createProposal] formatService: ', formatService)
+    const formatService: ProofFormatService = this.getFormatServiceFrom(proposal)
 
     const { preview, formats, filtersAttach } = formatService.getProofProposeAttachFormats(proposal, 'PRES_20_PROPOSAL')
 
@@ -130,20 +132,18 @@ export class V2ProofService extends ProofService {
       presentationProposal: preview,
     }
 
-    console.log('[ProofMessageBuilder] v2ProposePresentationMessageOptions:', v2ProposePresentationMessageOptions)
     const message: V2ProposalPresentationMessage = new V2ProposalPresentationMessage(
       v2ProposePresentationMessageOptions
     )
 
     const props: ProofRecordProps = {
       connectionId: proposal.connectionId,
-      threadId: connection.threadId ? connection.threadId : '',
+      threadId: message.threadId,
       state: ProofState.ProposalSent,
       autoAcceptProof: proposal?.autoAcceptProof,
     }
 
     // Create record
-
     const proofRecord = new ProofRecord(props)
     proofRecord.proposalMessage = message // new V2 field
 
@@ -156,15 +156,11 @@ export class V2ProofService extends ProofService {
   public async processProposal(
     messageContext: HandlerInboundMessage<V2ProposePresentationHandler>
   ): Promise<ProofRecord> {
-    console.log('V2 [processProposal] messageContext:', messageContext)
-
     let proofRecord: ProofRecord
     const { message: proposalMessage, connection } = messageContext
 
     try {
       proofRecord = await this.getByThreadAndConnectionId(proposalMessage.threadId, connection?.id)
-
-      console.log('V2 [processProposal] proofRecord:', proofRecord)
 
       proofRecord.assertState(ProofState.PresentationSent)
       proofRecord.assertState(ProofState.RequestSent)
@@ -174,29 +170,33 @@ export class V2ProofService extends ProofService {
       })
 
       // Update record
-      // proofRecord.proposalMessage = proposalMessage
+      proofRecord.proposalMessage = proposalMessage
       await this.updateState(proofRecord, ProofState.ProposalReceived)
     } catch {
       // No proof record exists with thread id
+
+      const presentationRecordType =
+        proposalMessage.filtersAttach[0].id === INDY_ATTACH_ID
+          ? PresentationRecordType.Indy
+          : PresentationRecordType.W3c
+
+      const formatService: ProofFormatService = this.getFormatService(presentationRecordType)
+
       proofRecord = new ProofRecord({
         connectionId: connection?.id,
         threadId: proposalMessage.threadId,
-        // proposalMessage: proposalMessage,
+        proposalMessage,
         state: ProofState.ProposalReceived,
       })
 
-      // Assert
+      // Save record and emit event
       this.connectionService.assertConnectionOrServiceDecorator(messageContext)
 
-      // Save record
-      await this.proofRepository.save(proofRecord)
-      this.eventEmitter.emit<ProofStateChangedEvent>({
-        type: ProofEventTypes.ProofStateChanged,
-        payload: {
-          proofRecord,
-          previousState: null,
-        },
-      })
+      let options: V2ProposeProofFormat
+      if (proposalMessage.filtersAttach[0].data.base64) {
+        options = JsonEncoder.fromBase64(proposalMessage.filtersAttach[0].data.base64)
+        formatService.setMetaDataAndEmitEventForProposal(options, proofRecord)
+      }
     }
 
     return proofRecord

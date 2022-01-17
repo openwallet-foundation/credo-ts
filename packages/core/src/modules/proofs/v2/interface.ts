@@ -20,6 +20,15 @@ export interface ProposeProofOptions {
 export interface AcceptProposalOptions {
   proofRecordId: string
   protocolVersion: ProofProtocolVersion
+  proofFormats: {
+    indy?: {
+      attributes?: PresentationPreviewAttribute
+      predicates?: PresentationPreviewPredicate
+    }
+    w3c?: {
+      // TODO
+    }
+  }
   request?: ProofRequestsOptions
   comment?: string
 }
@@ -68,7 +77,6 @@ export interface PresentationConfig {
   autoAcceptProof?: AutoAcceptProof
 }
 
-
 export type CreateProofRequestOptions = Partial<
   Pick<ProofRequestOptions, 'name' | 'nonce' | 'requestedAttributes' | 'requestedPredicates'>
 >
@@ -88,3 +96,5 @@ export interface CreateRequestOptions {
   comment?: string
   autoAcceptProof?: AutoAcceptProof
 }
+
+export type FormatType = AcceptProposalOptions | ProposeProofOptions
