@@ -11,6 +11,7 @@ import { Title } from './output_class';
   export enum PromptOptions {
     Connection = "setup connection",
     Credential = "offer credential",
+    Proof = "proof request",
     Message = "send message",
     Exit = "exit",
     Restart = "restart"
@@ -36,25 +37,6 @@ export class KlmInquirer extends BaseInquirer{
 
     async getPromptChoice(){
       const prompt = inquirer.prompt([this.inquireOptions(this.promptOptionsString)]);
-  
-      // const timeoutPromise = new Promise(resolve => {
-      //   this.permissionTimeout = setInterval(() => {
-      //     if (this.listenerOn === true){
-      //       resolve(false)
-      //     }
-      //   }, 0.1 * 1000);
-      // });
-  
-      // const promise = (async () => {
-      //   const optIn = await prompt;
-      //   if (this.permissionTimeout){
-      //     clearInterval(this.permissionTimeout)
-      //   }
-      //   return optIn;
-      // })();
-  
-      // // Return the result of the prompt if it finishes first otherwise default to the timeout's value.
-      // return Promise.race([promise, timeoutPromise]);
       return prompt
     }
 
@@ -67,6 +49,8 @@ export class KlmInquirer extends BaseInquirer{
           await this.connection()
       } else if (choice.options == PromptOptions.Credential){
           await this.credential()
+      } else if (choice.options == PromptOptions.Proof){
+          await this.proof()
       } else if (choice.options == PromptOptions.Message){
           await this.message()
       } else if (choice.options == PromptOptions.Exit){
@@ -96,6 +80,10 @@ export class KlmInquirer extends BaseInquirer{
 
     async credential() {
       await this.klm.issueCredential()
+    }
+
+    async proof() {
+      await this.klm.sendProofRequest()
     }
 
     async message() {

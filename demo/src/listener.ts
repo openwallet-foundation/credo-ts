@@ -88,6 +88,23 @@ export class Listener{
         }
       )
     }
+  
+    private async newProofRequestPrompt(payload: any, anneleinInquirer: AnneleinInquirer) {
+      this.turnListenerOn()
+      await anneleinInquirer.acceptProofRequest(payload)
+      this.turnListenerOff()
+      anneleinInquirer.processAnswer()
+    }
 
-      
+    proofRequestListener(annelein: Annelein, anneleinInquirer: AnneleinInquirer) {
+      annelein.agent.events.on(
+        ProofEventTypes.ProofStateChanged,
+        async ({ payload }: ProofStateChangedEvent) => {
+          if (payload.proofRecord.state === ProofState.RequestReceived){
+              await this.newProofRequestPrompt(payload, anneleinInquirer)
+          }
+          return
+        }
+      )
+  }
 }

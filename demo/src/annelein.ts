@@ -4,7 +4,7 @@ import { Color, Output } from './output_class';
 import { runAnnelein } from './annelein_inquirer';
 
 export class Annelein extends BaseAgent {
-  connectionRecordId?: string
+  connectionRecordKLMId?: string
   credDef: string
   
   constructor(port: number, name: string) {
@@ -19,15 +19,15 @@ export class Annelein extends BaseAgent {
   }
 
   private async getConnectionRecord() {
-    if (!this.connectionRecordId) {
+    if (!this.connectionRecordKLMId) {
       throw Error(`${Color.red}${Output.missingConnectionRecord}${Color.reset}`)
     }
-    return await this.agent.connections.getById(this.connectionRecordId)
+    return await this.agent.connections.getById(this.connectionRecordKLMId)
   }
 
   private async printConnectionInvite() {
     const invite = await this.agent.connections.createConnection()
-    this.connectionRecordId = invite.connectionRecord.id
+    this.connectionRecordKLMId = invite.connectionRecord.id
 
     console.log('\nYour invitation link:\n', invite.invitation.toUrl({domain: `http://localhost:${this.port}`}), '\n')
     return invite.connectionRecord
@@ -49,6 +49,15 @@ export class Annelein extends BaseAgent {
   async acceptCredentialOffer(payload: any) {
     await this.agent.credentials.acceptOffer(payload.credentialRecord.id)
     console.log(`${Color.green}\nCredential offer accepted!\n${Color.reset}`)
+  }
+
+  async acceptProofRequest(payload: any) {
+    const retrievedCredentials = await this.agent.proofs.getRequestedCredentialsForProofRequest(payload.proofRecord.id, {
+      filterByPresentationPreview: true,
+    })
+    const requestedCredentials = this.agent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
+    await this.agent.proofs.acceptRequest(payload.proofRecord.id, requestedCredentials)
+    console.log(`${Color.green}\nProof request accepted!\n${Color.reset}`)
   }
 
   private async newPresentationPreview() {
