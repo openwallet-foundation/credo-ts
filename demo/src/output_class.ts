@@ -17,5 +17,6 @@ export enum Title {
     messageTitle = '\n\nWrite your message here:\nPress q to exit',
     confirmTitle = '\n\nAre you sure?',
     credentialOfferTitle = '\n\nCredential offer received, do you want to accept it?',
-    proofProposalTitle = '\n\nProof proposal received, do you want to accept it?'
+    proofProposalTitle = '\n\nProof proposal received, do you want to accept it?',
+    proofRequestTitle = '\n\nProof request received, do you want to accept it?'
 }

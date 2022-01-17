@@ -65,9 +65,19 @@ export class AnneleinInquirer extends BaseInquirer{
       }
     }
 
+    async acceptProofRequest(payload: any) {
+      const confirm = await inquirer.prompt([this.inquireConfirmation(Title.proofRequestTitle)])
+      if (confirm.options === 'no'){
+        return
+      } else if (confirm.options === 'yes'){
+        await this.annelein.acceptProofRequest(payload)
+      }
+    }
+
     async connection() {
       await this.annelein.setupConnection()
       this.listener.credentialOfferListener(this.annelein, this)
+      this.listener.proofRequestListener(this.annelein, this)
     }
 
     async proof() {
