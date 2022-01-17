@@ -1,7 +1,8 @@
-import { JsonEncoder } from '../../utils/JsonEncoder'
-import { JsonTransformer } from '../../utils/JsonTransformer'
-
-import { Attachment, AttachmentData } from './Attachment'
+import * as didJwsz6Mkf from '../../../crypto/__tests__/__fixtures__/didJwsz6Mkf'
+import * as didJwsz6Mkv from '../../../crypto/__tests__/__fixtures__/didJwsz6Mkv'
+import { JsonEncoder } from '../../../utils/JsonEncoder'
+import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { Attachment, AttachmentData } from '../Attachment'
 
 const mockJson = {
   '@id': 'ceffce22-6471-43e4-8945-b604091981c9',
@@ -84,14 +85,42 @@ describe('Decorators | Attachment', () => {
   it('should return the data correctly if only JSON exists', () => {
     const decorator = JsonTransformer.fromJSON(mockJson, Attachment)
 
-    const gotData = decorator.data.getDataAsJson()
+    const gotData = decorator.getDataAsJson()
     expect(decorator.data.json).toEqual(gotData)
   })
 
   it('should return the data correctly if only Base64 exists', () => {
     const decorator = JsonTransformer.fromJSON(mockJsonBase64, Attachment)
 
-    const gotData = decorator.data.getDataAsJson()
+    const gotData = decorator.getDataAsJson()
     expect(mockJson.data.json).toEqual(gotData)
+  })
+
+  describe('addJws', () => {
+    it('correctly adds the jws to the data', async () => {
+      const base64 = JsonEncoder.toBase64(didJwsz6Mkf.DATA_JSON)
+      const attachment = new Attachment({
+        id: 'some-uuid',
+        data: new AttachmentData({
+          base64,
+        }),
+      })
+
+      expect(attachment.data.jws).toBeUndefined()
+
+      attachment.addJws(didJwsz6Mkf.JWS_JSON)
+      expect(attachment.data.jws).toEqual(didJwsz6Mkf.JWS_JSON)
+
+      attachment.addJws(didJwsz6Mkv.JWS_JSON)
+      expect(attachment.data.jws).toEqual({ signatures: [didJwsz6Mkf.JWS_JSON, didJwsz6Mkv.JWS_JSON] })
+
+      expect(JsonTransformer.toJSON(attachment)).toMatchObject({
+        '@id': 'some-uuid',
+        data: {
+          base64: JsonEncoder.toBase64(didJwsz6Mkf.DATA_JSON),
+          jws: { signatures: [didJwsz6Mkf.JWS_JSON, didJwsz6Mkv.JWS_JSON] },
+        },
+      })
+    })
   })
 })
