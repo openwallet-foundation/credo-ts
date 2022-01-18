@@ -197,6 +197,8 @@ export class OutOfBandModule {
       )
     }
 
+    const existingConnection = await this.findExistingConnection(services)
+
     if (handshakeProtocols) {
       this.logger.debug('Out of band message contains handshake protocols.')
       if (!this.areHandshakeProtocolsSupported(handshakeProtocols)) {
@@ -207,7 +209,6 @@ export class OutOfBandModule {
       }
 
       let connectionRecord: ConnectionRecord
-      const existingConnection = await this.findExistingConnection(services)
       if (existingConnection) {
         this.logger.debug('Connection already exists.', { connectionId: existingConnection.id })
         if (reuseConnection) {
@@ -232,13 +233,7 @@ export class OutOfBandModule {
           // Wait until the connecion is ready and then pass the messages to the agent for further processing
           this.connectionsModule
             .returnWhenIsConnected(connectionRecord.id)
-            .then((c) => {
-              const connectionServices = c.theirDidDoc?.didCommServices
-              if (!connectionServices) {
-                throw new AriesFrameworkError(`Connection record ${connectionRecord.id} does not have any services.`)
-              }
-              return this.emitMessages(connectionServices, messages)
-            })
+            .then((connectionRecord) => this.emitWithConnection(connectionRecord, messages))
             .catch((error) => {
               if (error instanceof EmptyError) {
                 this.logger.warn(
@@ -250,18 +245,19 @@ export class OutOfBandModule {
               }
             })
         } else {
-          const connectionServices = connectionRecord.theirDidDoc?.didCommServices
-          if (!connectionServices) {
-            throw new AriesFrameworkError(`Connection record ${connectionRecord.id} does not have any services.`)
-          }
-          await this.emitMessages(connectionServices, messages)
+          await this.emitWithConnection(connectionRecord, messages)
         }
       }
 
       return connectionRecord
     } else if (messages) {
       this.logger.debug('Out of band message contains only request messages.')
-      await this.emitMessages(services, messages)
+      if (existingConnection) {
+        this.logger.debug('Connection already exists.', { connectionId: existingConnection.id })
+        await this.emitWithConnection(existingConnection, messages)
+      } else {
+        await this.emitWithServices(services, messages)
+      }
     }
   }
 
@@ -284,12 +280,13 @@ export class OutOfBandModule {
     for (const service of services) {
       if (typeof service === 'string') {
         // TODO await this.connectionsModule.findByTheirDid()
-      } else {
-        for (const recipientKey of service.recipientKeys) {
-          // TODO Encode the key and endpoint of the service block in a Peer DID numalgo 2 and using that DID instead of a service block
-          const existingConnection = await this.connectionsModule.findByTheirKey(recipientKey)
-          return existingConnection
-        }
+        throw new AriesFrameworkError('Dids are not currently supported in out-of-band message services attribute.')
+      }
+
+      for (const recipientKey of service.recipientKeys) {
+        // TODO Encode the key and endpoint of the service block in a Peer DID numalgo 2 and using that DID instead of a service block
+        const existingConnection = await this.connectionsModule.findByTheirKey(recipientKey)
+        return existingConnection
       }
     }
   }
@@ -321,7 +318,27 @@ export class OutOfBandModule {
     return connectionRecord
   }
 
-  private async emitMessages(services: Array<DidCommService | string>, messages: PlaintextMessage[]) {
+  private async emitWithConnection(connectionRecord: ConnectionRecord, messages: PlaintextMessage[]) {
+    const plaintextMessage = messages.find((message) =>
+      this.dispatcher.supportedMessageTypes.find((type) => type === message['@type'])
+    )
+
+    if (!plaintextMessage) {
+      throw new AriesFrameworkError('There is no message in requests~attach supported by agent.')
+    }
+
+    this.logger.debug(`Message with type ${plaintextMessage['@type']} can be processed.`)
+
+    this.eventEmitter.emit<AgentMessageReceivedEvent>({
+      type: AgentEventTypes.AgentMessageReceived,
+      payload: {
+        message: plaintextMessage,
+        connection: connectionRecord,
+      },
+    })
+  }
+
+  private async emitWithServices(services: Array<DidCommService | string>, messages: PlaintextMessage[]) {
     if (!services || services.length === 0) {
       throw new AriesFrameworkError(`There are no services. We can not emit messages`)
     }
@@ -330,27 +347,26 @@ export class OutOfBandModule {
       this.dispatcher.supportedMessageTypes.find((type) => type === message['@type'])
     )
 
-    if (plaintextMessage) {
-      this.logger.debug(`Message with type ${plaintextMessage['@type']} can be processed.`)
-
-      // The framework currently supports only older OOB messages with `~service` decorator.
-      const [service] = services
-
-      if (typeof service === 'string') {
-        throw new AriesFrameworkError('Dids are not currently supported in out-of-band message services attribute.')
-      }
-
-      plaintextMessage['~service'] = service
-
-      this.eventEmitter.emit<AgentMessageReceivedEvent>({
-        type: AgentEventTypes.AgentMessageReceived,
-        payload: {
-          message: plaintextMessage,
-        },
-      })
-    } else {
+    if (!plaintextMessage) {
       throw new AriesFrameworkError('There is no message in requests~attach supported by agent.')
     }
+
+    this.logger.debug(`Message with type ${plaintextMessage['@type']} can be processed.`)
+
+    // The framework currently supports only older OOB messages with `~service` decorator.
+    const [service] = services
+
+    if (typeof service === 'string') {
+      throw new AriesFrameworkError('Dids are not currently supported in out-of-band message services attribute.')
+    }
+
+    plaintextMessage['~service'] = service
+    this.eventEmitter.emit<AgentMessageReceivedEvent>({
+      type: AgentEventTypes.AgentMessageReceived,
+      payload: {
+        message: plaintextMessage,
+      },
+    })
   }
 
   private async sendReuse(outOfBandMessage: OutOfBandMessage, connection: ConnectionRecord) {
