@@ -267,42 +267,6 @@ describe('out of band', () => {
     expect(credential.state).toBe(CredentialState.OfferReceived)
   })
 
-  test('process credential offer requests based on OOB message with did', async () => {
-    // Given
-    const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
-    const { outOfBandMessage } = await faberAgent.oob.createMessage(issueCredentialConfig, [offerMessage])
-
-    // Prepare did resolution to resolve did with the keys from oob services attribute
-    const didResolutionResultMock = {
-      didResolutionMetadata: {},
-      didDocument: new DidDocument({
-        id: 'diddocument',
-        service: outOfBandMessage.services as DidCommService[],
-      }),
-      didDocumentMetadata: {},
-    }
-    aliceAgent.dids.resolve = jest.fn(() => Promise.resolve(didResolutionResultMock))
-
-    // Change services attribute from services object to did
-    outOfBandMessage.services = ['somedid']
-
-    // When
-    await aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)
-
-    // Then
-    let credentials: CredentialRecord[] = []
-    while (credentials.length < 1) {
-      credentials = await aliceAgent.credentials.getAll()
-      await wait(100)
-    }
-
-    expect(credentials).toHaveLength(1)
-    const [credential] = credentials
-    expect(credential.state).toBe(CredentialState.OfferReceived)
-
-    expect(aliceAgent.dids.resolve).toHaveBeenCalledWith('somedid')
-  })
-
   test('do not process requests when a connection is not ready', async () => {
     const eventListener = jest.fn()
     aliceAgent.events.on<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived, eventListener)
@@ -424,6 +388,16 @@ describe('out of band', () => {
 
     await expect(aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)).rejects.toEqual(
       new AriesFrameworkError('There is no message in requests~attach supported by agent.')
+    )
+  })
+
+  test('throw an error when the OOB message does not contain either handshake or requests', async () => {
+    const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
+    const { outOfBandMessage } = await faberAgent.oob.createMessage(issueCredentialConfig, [offerMessage])
+    outOfBandMessage.services = ['somedid']
+
+    await expect(aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)).rejects.toEqual(
+      new AriesFrameworkError('Dids are not currently supported in out-of-band message services attribute.')
     )
   })
 })
