@@ -114,7 +114,7 @@ export class Agent {
       .observable<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived)
       .pipe(
         takeUntil(this.agentConfig.stop$),
-        concatMap((e) => this.messageReceiver.receiveMessage(e.payload.message))
+        concatMap((e) => this.messageReceiver.receiveMessage(e.payload.message, undefined, e.payload.connection))
       )
       .subscribe()
   }
