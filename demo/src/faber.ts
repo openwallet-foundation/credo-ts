@@ -4,29 +4,29 @@ import { BaseAgent } from './base_agent';
 import { JsonEncoder } from '@aries-framework/core/src/utils/JsonEncoder';
 import { Color, Output } from './output_class';
 import { uuid } from '@aries-framework/core/build/utils/uuid';
-import { runKlm } from './klm_inquirer';
+import { runFaber } from './faber_inquirer';
 import { ProofAttributeInfo } from '@aries-framework/core';
 import { AttributeFilter } from '@aries-framework/core';
 
-export class KLM extends BaseAgent {
-  connectionRecordAnneleinId?: string
+export class Faber extends BaseAgent {
+  connectionRecordAliceId?: string
   credentialDefinition?: CredDef
 
   constructor(port: number, name: string) {
     super(port, name)
   }
 
-  public static async build(): Promise<KLM> {
-    const klm = new KLM(9001, 'klm')
-    await klm.initializeAgent()
-    return klm
+  public static async build(): Promise<Faber> {
+    const faber = new Faber(9001, 'faber')
+    await faber.initializeAgent()
+    return faber
   }
 
   private async getConnectionRecord() {
-    if (!this.connectionRecordAnneleinId) {
+    if (!this.connectionRecordAliceId) {
       throw Error(`${Color.red}${Output.missingConnectionRecord}${Color.reset}`)
     }
-    return await this.agent.connections.getById(this.connectionRecordAnneleinId)
+    return await this.agent.connections.getById(this.connectionRecordAliceId)
   }
 
   private async receiveConnectionRequest(invitation_url: string) {
@@ -55,7 +55,7 @@ export class KLM extends BaseAgent {
     if (connectionRecord === undefined) {
       return
     }
-    this.connectionRecordAnneleinId = await this.waitForConnection(connectionRecord)
+    this.connectionRecordAliceId = await this.waitForConnection(connectionRecord)
   }
 
   private async registerSchema(){
@@ -133,6 +133,6 @@ export class KLM extends BaseAgent {
 
   async restart() {
     await this.agent.shutdown()
-    runKlm()
+    runFaber()
   }
 }

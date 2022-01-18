@@ -1,10 +1,10 @@
 import { PresentationPreview, PresentationPreviewAttribute, ProofEventTypes, ProofState, ProofStateChangedEvent } from '@aries-framework/core'
 import { BaseAgent } from './base_agent';
 import { Color, Output } from './output_class';
-import { runAnnelein } from './annelein_inquirer';
+import { runAlice } from './alice_inquirer';
 
-export class Annelein extends BaseAgent {
-  connectionRecordKLMId?: string
+export class Alice extends BaseAgent {
+  connectionRecordFaberId?: string
   credDef: string
   
   constructor(port: number, name: string) {
@@ -12,22 +12,22 @@ export class Annelein extends BaseAgent {
     this.credDef = '7KuDTpQh3GJ7Gp6kErpWvM:3:CL:115269:latest'
   }
 
-  public static async build(): Promise<Annelein> {
-    const annelein = new Annelein(9000, 'annelein')
-    await annelein.initializeAgent()
-    return annelein
+  public static async build(): Promise<Alice> {
+    const alice = new Alice(9000, 'alice')
+    await alice.initializeAgent()
+    return alice
   }
 
   private async getConnectionRecord() {
-    if (!this.connectionRecordKLMId) {
+    if (!this.connectionRecordFaberId) {
       throw Error(`${Color.red}${Output.missingConnectionRecord}${Color.reset}`)
     }
-    return await this.agent.connections.getById(this.connectionRecordKLMId)
+    return await this.agent.connections.getById(this.connectionRecordFaberId)
   }
 
   private async printConnectionInvite() {
     const invite = await this.agent.connections.createConnection()
-    this.connectionRecordKLMId = invite.connectionRecord.id
+    this.connectionRecordFaberId = invite.connectionRecord.id
 
     console.log('\nYour invitation link:\n', invite.invitation.toUrl({domain: `http://localhost:${this.port}`}), '\n')
     return invite.connectionRecord
@@ -36,7 +36,7 @@ export class Annelein extends BaseAgent {
   private async waitForConnection() {
     const connectionRecord = await this.getConnectionRecord()
 
-    console.log("Waiting for KLM to finish connection...")
+    console.log("Waiting for Faber to finish connection...")
     await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
     console.log(`${Color.green}${Output.connectionEstablished}${Color.reset}`)
   }
@@ -73,6 +73,6 @@ export class Annelein extends BaseAgent {
 
   async restart() {
     await this.agent.shutdown()
-    runAnnelein()
+    runAlice()
   }
 }

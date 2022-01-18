@@ -6,10 +6,8 @@ import { BasicMessageStateChangedEvent } from "@aries-framework/core"
 import { BasicMessageEventTypes } from "@aries-framework/core"
 import { ProofEventTypes } from "@aries-framework/core"
 import { CredentialEventTypes } from "@aries-framework/core"
-import { Annelein } from "./annelein"
-import { AnneleinInquirer } from "./annelein_inquirer"
-import { KLM } from "./klm"
-import { KlmInquirer } from "./klm_inquirer"
+import { Alice } from "./alice"
+import { AliceInquirer } from "./alice_inquirer"
 import { Color } from "./output_class"
 import inquirer from 'inquirer'
 
@@ -30,19 +28,19 @@ export class Listener{
         this.on = false
     }
 
-    private async newCredentialPrompt(payload: any, anneleinInquirer: AnneleinInquirer) {
+    private async newCredentialPrompt(payload: any, aliceInquirer: AliceInquirer) {
       this.turnListenerOn()
-      await anneleinInquirer.acceptCredentialOffer(payload)
+      await aliceInquirer.acceptCredentialOffer(payload)
       this.turnListenerOff()
-      anneleinInquirer.processAnswer()
+      aliceInquirer.processAnswer()
     }
 
-    credentialOfferListener(annelein: Annelein, anneleinInquirer: AnneleinInquirer) {
-        annelein.agent.events.on(
+    credentialOfferListener(alice: Alice, aliceInquirer: AliceInquirer) {
+        alice.agent.events.on(
           CredentialEventTypes.CredentialStateChanged,
           async ({ payload }: CredentialStateChangedEvent) => {
             if (payload.credentialRecord.state === CredentialState.OfferReceived){
-                await this.newCredentialPrompt(payload, anneleinInquirer)
+                await this.newCredentialPrompt(payload, aliceInquirer)
             }
             return
           }
@@ -59,19 +57,19 @@ export class Listener{
       })
     }
   
-    private async newProofRequestPrompt(payload: any, anneleinInquirer: AnneleinInquirer) {
+    private async newProofRequestPrompt(payload: any, aliceInquirer: AliceInquirer) {
       this.turnListenerOn()
-      await anneleinInquirer.acceptProofRequest(payload)
+      await aliceInquirer.acceptProofRequest(payload)
       this.turnListenerOff()
-      anneleinInquirer.processAnswer()
+      aliceInquirer.processAnswer()
     }
 
-    proofRequestListener(annelein: Annelein, anneleinInquirer: AnneleinInquirer) {
-      annelein.agent.events.on(
+    proofRequestListener(alice: Alice, aliceInquirer: AliceInquirer) {
+      alice.agent.events.on(
         ProofEventTypes.ProofStateChanged,
         async ({ payload }: ProofStateChangedEvent) => {
           if (payload.proofRecord.state === ProofState.RequestReceived){
-              await this.newProofRequestPrompt(payload, anneleinInquirer)
+              await this.newProofRequestPrompt(payload, aliceInquirer)
           }
           return
         }
