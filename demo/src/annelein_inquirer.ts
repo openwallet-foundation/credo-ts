@@ -6,7 +6,7 @@ import { BaseInquirer } from "./base_inquirer"
 import { Listener } from "./listener";
 import { Title } from "./output_class";
 
-export enum PromptOptions {
+enum PromptOptions {
     Connection = "setup connection",
     Proof = "propose proof",
     Message = "send message",
@@ -41,17 +41,22 @@ export class AnneleinInquirer extends BaseInquirer{
       if (this.listener.on === true){
         return
       }
-      if (choice.options == PromptOptions.Connection){
-          await this.connection()
-      } else if (choice.options == PromptOptions.Proof){
-          await this.proof()
-      } else if (choice.options == PromptOptions.Message){
-          await this.message()
-      } else if (choice.options == PromptOptions.Exit){
-          await this.exit()
-      } else if (choice.options == PromptOptions.Restart){
-          await this.restart()
-          return
+      switch(choice){
+        case PromptOptions.Connection:
+            await this.connection()
+            break
+        case PromptOptions.Proof:
+            await this.proof()
+            break
+        case PromptOptions.Message:
+            await this.message()
+            break
+        case PromptOptions.Exit:
+            await this.exit()
+            break
+        case PromptOptions.Restart:
+            await this.restart()
+            return
       }
       this.processAnswer()
     }
