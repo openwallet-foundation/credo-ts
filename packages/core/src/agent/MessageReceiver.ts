@@ -64,19 +64,19 @@ export class MessageReceiver {
    *
    * @param inboundMessage the message to receive and handle
    */
-  public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
+  public async receiveMessage(inboundMessage: unknown, session?: TransportSession, connection?: ConnectionRecord) {
     this.logger.debug(`Agent ${this.config.label} received message`)
 
     if (this.isPlaintextMessage(inboundMessage)) {
-      await this.receivePlaintextMessage(inboundMessage)
+      await this.receivePlaintextMessage(inboundMessage, connection)
     } else {
       await this.receiveEncryptedMessage(inboundMessage as EncryptedMessage, session)
     }
   }
 
-  private async receivePlaintextMessage(plaintextMessage: PlaintextMessage) {
+  private async receivePlaintextMessage(plaintextMessage: PlaintextMessage, connection?: ConnectionRecord) {
     const message = await this.transformAndValidate(plaintextMessage)
-    const messageContext = new InboundMessageContext(message, {})
+    const messageContext = new InboundMessageContext(message, { connection })
     await this.dispatcher.dispatch(messageContext)
   }
 
