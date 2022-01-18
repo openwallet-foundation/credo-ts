@@ -1,8 +1,8 @@
-import type { PresentationPreview } from './PresentationPreview'
-import type { AutoAcceptProof } from './ProofAutoAcceptType'
+import type { PresentationPreview } from './protocol/v1/models/PresentationPreview'
+import type { AutoAcceptProof } from './models/ProofAutoAcceptType'
 import type { ProofRecord } from './repository/ProofRecord'
-import type { RequestPresentationMessage } from './v1/messages'
-import type { ProofRequestOptions, RequestedCredentials, RetrievedCredentials } from './v1/models'
+import type { RequestPresentationMessage } from './protocol/v1/messages'
+import type { ProofRequestOptions, RequestedCredentials, RetrievedCredentials } from './protocol/v1/models'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -17,16 +17,16 @@ import { MediationRecipientService } from '../routing/services/MediationRecipien
 
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
 import { PresentationProblemReportReason } from './errors'
-import { V1LegacyProofService } from './v1/V1LegacyProofService'
+import { V1LegacyProofService } from './protocol/v1/V1LegacyProofService'
 import {
   ProposePresentationHandler,
   RequestPresentationHandler,
   PresentationAckHandler,
   PresentationHandler,
   PresentationProblemReportHandler,
-} from './v1/handlers'
-import { PresentationProblemReportMessage } from './v1/messages'
-import { ProofRequest } from './v1/models'
+} from './protocol/v1/handlers'
+import { PresentationProblemReportMessage } from './protocol/v1/messages'
+import { ProofRequest } from './protocol/v1/models'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ProofsModule {

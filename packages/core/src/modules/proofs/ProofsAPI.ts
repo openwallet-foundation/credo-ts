@@ -1,7 +1,5 @@
-import type { PresentationExchangeRecord, PresentationRecordBinding } from './PresentationExchangeRecord'
+import type { PresentationExchangeRecord, PresentationRecordBinding } from './repository/PresentationExchangeRecord'
 import type { ProofService } from './ProofService'
-import type { ProofRecord } from './repository'
-import type { RetrievedCredentials } from './v1/models'
 import type {
   AcceptProposalOptions,
   CreateRequestOptions,
@@ -9,7 +7,9 @@ import type {
   ProofRequestsOptions,
   ProposeProofOptions,
   RequestProofOptions,
-} from './v2/interface'
+} from './interface'
+import type { ProofRecord } from './repository'
+import type { RetrievedCredentials } from './protocol/v1/models'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
@@ -25,16 +25,16 @@ import { ConnectionService } from '../connections/services/ConnectionService'
 import { IndyHolderService } from '../indy'
 import { MediationRecipientService } from '../routing'
 
-import { PresentationRecordType } from './PresentationExchangeRecord'
-import { ProofProtocolVersion } from './ProofProtocolVersion'
+import { PresentationRecordType } from './repository/PresentationExchangeRecord'
+import { ProofProtocolVersion } from './models/ProofProtocolVersion'
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
-import { ProofState } from './ProofState'
+import { ProofRole } from './models/ProofRole'
+import { ProofState } from './models/ProofState'
 import { ProofsModule } from './ProofsModule'
 import { ProofRepository } from './repository'
-import { V1LegacyProofService } from './v1/V1LegacyProofService'
-import { V1ProofService } from './v1/V1ProofService'
-import { ProofRequest } from './v1/models'
-import { ProofRole } from './v2/ProofRole'
+import { V1LegacyProofService } from './protocol/v1/V1LegacyProofService'
+import { V1ProofService } from './protocol/v1/V1ProofService'
+import { ProofRequest } from './protocol/v1/models'
 import { V2ProofService } from './v2/V2ProofService'
 
 export interface ProofsAPI {

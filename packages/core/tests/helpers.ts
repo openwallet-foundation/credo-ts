@@ -48,8 +48,8 @@ import {
   PresentationPreview,
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
-} from '../src/modules/proofs/PresentationPreview'
-import { ProofProtocolVersion } from '../src/modules/proofs/ProofProtocolVersion'
+} from '../src/modules/proofs/protocol/v1/models/PresentationPreview'
+import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 

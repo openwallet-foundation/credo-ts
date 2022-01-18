@@ -1,6 +1,6 @@
 import type { Agent, ConnectionRecord } from '../src'
-import type { PresentationPreview } from '../src/modules/proofs/PresentationPreview'
-import type { ProposeProofOptions } from '../src/modules/proofs/v2/interface'
+import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/PresentationPreview'
+import type { ProposeProofOptions } from '../src/modules/proofs/interface'
 
 import {
   AutoAcceptProof,
@@ -10,7 +10,7 @@ import {
   ProofPredicateInfo,
   PredicateType,
 } from '../src'
-import { ProofProtocolVersion } from '../src/modules/proofs/ProofProtocolVersion'
+import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 
 import { setupProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'

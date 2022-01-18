@@ -14,7 +14,7 @@ import { IndyLedgerService } from '../../modules/ledger'
 import { LedgerModule } from '../../modules/ledger/LedgerModule'
 import { ProofRepository } from '../../modules/proofs'
 import { ProofsModule } from '../../modules/proofs/ProofsModule'
-import { V1LegacyProofService } from '../../modules/proofs/v1/V1LegacyProofService'
+import { V1LegacyProofService } from '../../modules/proofs/protocol/v1/V1LegacyProofService'
 import {
   MediatorModule,
   RecipientModule,
