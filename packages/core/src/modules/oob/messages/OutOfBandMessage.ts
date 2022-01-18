@@ -49,7 +49,7 @@ export class OutOfBandMessage extends AgentMessage {
   }
 
   public getRequests(): PlaintextMessage[] | undefined {
-    return this.requests?.map((request) => request.data.getDataAsJson())
+    return this.requests?.map((request) => request.getDataAsJson())
   }
 
   public toUrl({ domain }: { domain: string }) {
