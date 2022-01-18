@@ -60,35 +60,6 @@ export class Annelein extends BaseAgent {
     console.log(`${Color.green}\nProof request accepted!\n${Color.reset}`)
   }
 
-  private async newPresentationPreview() {
-    const presentationPreview = new PresentationPreview({
-      attributes: [
-        new PresentationPreviewAttribute({
-          name: 'name',
-          credentialDefinitionId: this.credDef,
-          value: 'annelein',
-        }),
-        new PresentationPreviewAttribute({
-          name: 'date of birth',
-          credentialDefinitionId: this.credDef,
-          value: '09/09/1999',
-        }),
-        new PresentationPreviewAttribute({
-          name: 'country of residence',
-          credentialDefinitionId: this.credDef,
-          value: 'the Netherlands',
-        })
-      ],
-    })
-    return presentationPreview
-  }
-
-  async sendProofProposal () {
-    const connectionRecord = await this.getConnectionRecord()
-    const presentationPreview = await this.newPresentationPreview()
-    await this.agent.proofs.proposeProof(connectionRecord.id, presentationPreview)
-  }
-
   async sendMessage (message: string) {
     const connectionRecord = await this.getConnectionRecord()
     await this.agent.basicMessages.sendMessage(connectionRecord.id, message)
@@ -96,6 +67,7 @@ export class Annelein extends BaseAgent {
 
   async exit() {
     console.log("Exiting...")
+    await this.agent.shutdown()
     process.exit()
   }
 
