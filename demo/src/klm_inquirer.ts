@@ -11,7 +11,7 @@ import { Title } from './output_class';
 enum PromptOptions {
   Connection = "setup connection",
   Credential = "offer credential",
-  Proof = "proof request",
+  Proof = "request proof",
   Message = "send message",
   Exit = "exit",
   Restart = "restart"
@@ -45,43 +45,33 @@ export class KlmInquirer extends BaseInquirer{
       if (this.listener.on === true) {
         return
       }
-      switch(choice){
+      switch(choice.options){
         case PromptOptions.Connection:
-            await this.connection()
-            break
+          await this.connection()
+          break
         case PromptOptions.Credential:
-            await this.credential()
-            break
+          await this.credential()
+          break
         case PromptOptions.Proof:
-            await this.proof()
-            break
+          await this.proof()
+          break
         case PromptOptions.Message:
-            await this.message()
-            break
+          await this.message()
+          break
         case PromptOptions.Exit:
-            await this.exit()
-            break
+          await this.exit()
+          break
         case PromptOptions.Restart:
-            await this.restart()
-            return
+          await this.restart()
+          return
       }
       this.processAnswer()
-    }
-
-    async proofProposalPrompt(payload: any) {
-      const confirm = await inquirer.prompt([this.inquireConfirmation(Title.proofProposalTitle)])
-      if (confirm.options === 'no'){
-        return
-      } else if (confirm.options === 'yes'){
-        await this.klm.acceptProofProposal(payload)
-      }
     }
 
     async connection() {
       const title = Title.invitationTitle
       const getUrl = await inquirer.prompt([this.inquireInput(title)])
       await this.klm.acceptConnection(getUrl.input)
-      this.listener.proofProposalListener(this.klm, this)
     }
 
     async credential() {

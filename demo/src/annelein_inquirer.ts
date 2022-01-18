@@ -8,7 +8,6 @@ import { Title } from "./output_class";
 
 enum PromptOptions {
     Connection = "setup connection",
-    Proof = "propose proof",
     Message = "send message",
     Exit = "exit",
     Restart = "restart"
@@ -41,23 +40,20 @@ export class AnneleinInquirer extends BaseInquirer{
       if (this.listener.on === true){
         return
       }
-      switch(choice){
+      switch(choice.options){
         case PromptOptions.Connection:
-            await this.connection()
-            break
-        case PromptOptions.Proof:
-            await this.proof()
-            break
+          await this.connection()
+          break
         case PromptOptions.Message:
-            await this.message()
-            break
+          await this.message()
+          break
         case PromptOptions.Exit:
-            await this.exit()
-            break
+          await this.exit()
+          break
         case PromptOptions.Restart:
-            await this.restart()
-            return
-      }
+          await this.restart()
+          return
+    }
       this.processAnswer()
     }
 
@@ -83,11 +79,6 @@ export class AnneleinInquirer extends BaseInquirer{
       await this.annelein.setupConnection()
       this.listener.credentialOfferListener(this.annelein, this)
       this.listener.proofRequestListener(this.annelein, this)
-    }
-
-    async proof() {
-      this.listener.proposalSentListener(this.annelein)
-      await this.annelein.sendProofProposal()
     }
 
     async message() {
