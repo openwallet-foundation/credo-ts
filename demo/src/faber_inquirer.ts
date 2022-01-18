@@ -3,7 +3,7 @@ import { clear } from 'console';
 import figlet from 'figlet';
 import inquirer from 'inquirer'
 import { BaseInquirer } from './base_inquirer';
-import { KLM } from './klm';
+import { Faber } from './faber';
 import { Listener } from './listener';
 import { Title } from './output_class';
 
@@ -17,22 +17,22 @@ enum PromptOptions {
   Restart = "restart"
 }
 
-export class KlmInquirer extends BaseInquirer{
-    klm: KLM
+export class FaberInquirer extends BaseInquirer{
+    faber: Faber
     promptOptionsString: string[]
     listener: Listener
 
-    constructor(klm: KLM) {
+    constructor(faber: Faber) {
       super()
-      this.klm = klm
+      this.faber = faber
       this.listener = new Listener()
       this.promptOptionsString = Object.values(PromptOptions)
-      this.listener.messageListener(this.klm.agent, this.klm.name)
+      this.listener.messageListener(this.faber.agent, this.faber.name)
     }
 
-    public static async build(): Promise<KlmInquirer> {
-      const klm = await KLM.build()
-      return new KlmInquirer(klm)
+    public static async build(): Promise<FaberInquirer> {
+      const faber = await Faber.build()
+      return new FaberInquirer(faber)
     }
 
     async getPromptChoice(){
@@ -71,15 +71,15 @@ export class KlmInquirer extends BaseInquirer{
     async connection() {
       const title = Title.invitationTitle
       const getUrl = await inquirer.prompt([this.inquireInput(title)])
-      await this.klm.acceptConnection(getUrl.input)
+      await this.faber.acceptConnection(getUrl.input)
     }
 
     async credential() {
-      await this.klm.issueCredential()
+      await this.faber.issueCredential()
     }
 
     async proof() {
-      await this.klm.sendProofRequest()
+      await this.faber.sendProofRequest()
     }
 
     async message() {
@@ -87,7 +87,7 @@ export class KlmInquirer extends BaseInquirer{
       if (message === null) {
           return
       }
-      this.klm.sendMessage(message)
+      this.faber.sendMessage(message)
     }
 
     async exit() {
@@ -95,25 +95,26 @@ export class KlmInquirer extends BaseInquirer{
       if (confirm.options === 'no'){
         return
       } else if (confirm.options === 'yes'){
-        await this.klm.exit()
+        await this.faber.exit()
       }
     }
 
     async restart() {
       const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
       if (confirm.options === 'no'){
+        this.processAnswer()
         return
       } else if (confirm.options === 'yes'){
-        await this.klm.restart()
+        await this.faber.restart()
       }
     }
 }
 
-export const runKlm = async () => {
+export const runFaber = async () => {
   clear();
-  console.log(figlet.textSync('KLM', { horizontalLayout: 'full' }));
-  const klm = await KlmInquirer.build()
-  klm.processAnswer()
+  console.log(figlet.textSync('Faber', { horizontalLayout: 'full' }));
+  const faber = await FaberInquirer.build()
+  faber.processAnswer()
 }
 
-runKlm()
+runFaber()

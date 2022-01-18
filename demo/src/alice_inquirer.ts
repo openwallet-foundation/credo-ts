@@ -1,7 +1,7 @@
 import { clear } from "console";
 import figlet from "figlet";
 import inquirer from "inquirer";
-import { Annelein } from "./annelein"
+import { Alice } from "./alice"
 import { BaseInquirer } from "./base_inquirer"
 import { Listener } from "./listener";
 import { Title } from "./output_class";
@@ -13,22 +13,22 @@ enum PromptOptions {
     Restart = "restart"
   }
 
-export class AnneleinInquirer extends BaseInquirer{
-    annelein: Annelein
+export class AliceInquirer extends BaseInquirer{
+    alice: Alice
     promptOptionsString: string[]
     listener: Listener
 
-    constructor(annelein: Annelein) {
+    constructor(alice: Alice) {
       super()
-      this.annelein = annelein
+      this.alice = alice
       this.listener = new Listener()
       this.promptOptionsString = Object.values(PromptOptions)
-      this.listener.messageListener(this.annelein.agent, this.annelein.name)
+      this.listener.messageListener(this.alice.agent, this.alice.name)
     }
 
-    public static async build(): Promise<AnneleinInquirer> {
-      const annelein = await Annelein.build()
-      return new AnneleinInquirer(annelein)
+    public static async build(): Promise<AliceInquirer> {
+      const alice = await Alice.build()
+      return new AliceInquirer(alice)
     }
 
     async getPromptChoice() {
@@ -62,7 +62,7 @@ export class AnneleinInquirer extends BaseInquirer{
       if (confirm.options === 'no'){
         return
       } else if (confirm.options === 'yes'){
-        await this.annelein.acceptCredentialOffer(payload)
+        await this.alice.acceptCredentialOffer(payload)
       }
     }
 
@@ -71,14 +71,14 @@ export class AnneleinInquirer extends BaseInquirer{
       if (confirm.options === 'no'){
         return
       } else if (confirm.options === 'yes'){
-        await this.annelein.acceptProofRequest(payload)
+        await this.alice.acceptProofRequest(payload)
       }
     }
 
     async connection() {
-      await this.annelein.setupConnection()
-      this.listener.credentialOfferListener(this.annelein, this)
-      this.listener.proofRequestListener(this.annelein, this)
+      await this.alice.setupConnection()
+      this.listener.credentialOfferListener(this.alice, this)
+      this.listener.proofRequestListener(this.alice, this)
     }
 
     async message() {
@@ -86,7 +86,7 @@ export class AnneleinInquirer extends BaseInquirer{
       if (message === null) {
           return
       } 
-      this.annelein.sendMessage(message)
+      this.alice.sendMessage(message)
     }
 
     async exit() {
@@ -94,25 +94,26 @@ export class AnneleinInquirer extends BaseInquirer{
       if (confirm.options === 'no'){
         return
       } else if (confirm.options === 'yes'){
-        await this.annelein.exit()
+        await this.alice.exit()
       }
     }
 
     async restart() {
       const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
       if (confirm.options === 'no'){
+        this.processAnswer()
         return
       } else if (confirm.options === 'yes'){
-        await this.annelein.restart()
+        await this.alice.restart()
       }
     }
 }
 
-export const runAnnelein = async () => {
+export const runAlice = async () => {
   clear();
-  console.log(figlet.textSync('Annelein', { horizontalLayout: 'full' }));
-  const annelein = await AnneleinInquirer.build()
-  annelein.processAnswer()
+  console.log(figlet.textSync('Alice', { horizontalLayout: 'full' }));
+  const alice = await AliceInquirer.build()
+  alice.processAnswer()
 }
 
-runAnnelein()
+runAlice()
