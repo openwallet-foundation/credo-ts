@@ -337,21 +337,10 @@ export class OutOfBandModule {
       const [service] = services
 
       if (typeof service === 'string') {
-        const did = service
-        const didResolutionResult = await this.dids.resolve(did)
-        const [didCommService] = didResolutionResult.didDocument?.didCommServices || []
-        if (!didCommService) {
-          throw new AriesFrameworkError('Resolved did does not have any service.')
-        }
-        const { recipientKeys, routingKeys, serviceEndpoint } = didCommService
-        plaintextMessage['~service'] = {
-          recipientKeys,
-          routingKeys,
-          serviceEndpoint,
-        }
-      } else {
-        plaintextMessage['~service'] = service
+        throw new AriesFrameworkError('Dids are not currently supported in out-of-band message services attribute.')
       }
+
+      plaintextMessage['~service'] = service
 
       this.eventEmitter.emit<AgentMessageReceivedEvent>({
         type: AgentEventTypes.AgentMessageReceived,
