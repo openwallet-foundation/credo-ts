@@ -263,7 +263,9 @@ describe('out of band', () => {
       const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
       const { outOfBandMessage } = await faberAgent.oob.createMessage(issueCredentialConfig, [offerMessage])
 
-      await aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)
+      const urlMessage = outOfBandMessage.toUrl({ domain: 'http://example.com' })
+
+      await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, receiveMessageConfig)
 
       let credentials: CredentialRecord[] = []
       while (credentials.length < 1) {
