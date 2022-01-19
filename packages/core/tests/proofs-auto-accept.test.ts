@@ -1,4 +1,6 @@
-import type { Agent, ConnectionRecord, PresentationPreview } from '../src'
+import type { Agent, ConnectionRecord } from '../src'
+import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/PresentationPreview'
+import type { ProposeProofOptions } from '../src/modules/proofs/interface'
 
 import {
   AutoAcceptProof,
@@ -8,6 +10,7 @@ import {
   ProofPredicateInfo,
   PredicateType,
 } from '../src'
+import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 
 import { setupProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'
@@ -39,17 +42,34 @@ describe('Auto accept present proof', () => {
 
     test('Alice starts with proof proposal to Faber, both with autoAcceptProof on `always`', async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
-      const aliceProofRecord = await aliceAgent.proofs.proposeProof(aliceConnection.id, presentationPreview)
+
+      const proposal: ProposeProofOptions = {
+        connectionId: aliceConnection.id,
+        protocolVersion: ProofProtocolVersion.V1_0,
+        proofFormats: {
+          indy: {
+            nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
+            proofPreview: presentationPreview,
+            name: 'age',
+            version: '1.0',
+          },
+        },
+        autoAcceptProof: AutoAcceptProof.Always,
+      }
+
+      const alicePresExchRecord = await aliceAgent.proofs.proposeProof(proposal)
+
+      console.log('test case alicePresExchRecord threadid', alicePresExchRecord)
 
       testLogger.test('Faber waits for presentation from Alice')
       await waitForProofRecord(faberAgent, {
-        threadId: aliceProofRecord.threadId,
+        threadId: alicePresExchRecord.threadId,
         state: ProofState.Done,
       })
 
       testLogger.test('Alice waits till it receives presentation ack')
       await waitForProofRecord(aliceAgent, {
-        threadId: aliceProofRecord.threadId,
+        threadId: alicePresExchRecord.threadId,
         state: ProofState.Done,
       })
     })
@@ -120,11 +140,23 @@ describe('Auto accept present proof', () => {
 
     test('Alice starts with proof proposal to Faber, both with autoacceptproof on `contentApproved`', async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
-      const aliceProofRecord = await aliceAgent.proofs.proposeProof(aliceConnection.id, presentationPreview)
+      const proposal: ProposeProofOptions = {
+        connectionId: aliceConnection.id,
+        protocolVersion: ProofProtocolVersion.V1_0,
+        proofFormats: {
+          indy: {
+            nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
+            proofPreview: presentationPreview,
+            name: 'abc',
+            version: '1.0',
+          },
+        },
+      }
+      const alicePresExchRecord = await aliceAgent.proofs.proposeProof(proposal)
 
       testLogger.test('Faber waits for presentation proposal from Alice')
       const faberProofRecord = await waitForProofRecord(faberAgent, {
-        threadId: aliceProofRecord.threadId,
+        threadId: alicePresExchRecord.threadId,
         state: ProofState.ProposalReceived,
       })
 
@@ -133,13 +165,13 @@ describe('Auto accept present proof', () => {
 
       testLogger.test('Faber waits for presentation from Alice')
       await waitForProofRecord(faberAgent, {
-        threadId: aliceProofRecord.threadId,
+        threadId: alicePresExchRecord.threadId,
         state: ProofState.Done,
       })
 
       // Alice waits till it receives presentation ack
       await waitForProofRecord(aliceAgent, {
-        threadId: aliceProofRecord.threadId,
+        threadId: alicePresExchRecord.threadId,
         state: ProofState.Done,
       })
     })
@@ -184,9 +216,13 @@ describe('Auto accept present proof', () => {
       })
 
       testLogger.test('Alice accepts presentation request from Faber')
-      const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(aliceProofRecord.id, {
-        filterByPresentationPreview: true,
-      })
+      const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
+        ProofProtocolVersion.V1_0,
+        aliceProofRecord.id,
+        {
+          filterByPresentationPreview: true,
+        }
+      )
       const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
       await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
 

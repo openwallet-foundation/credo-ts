@@ -1,13 +1,14 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { AutoAcceptProof } from '../ProofAutoAcceptType'
-import type { ProofState } from '../ProofState'
+import type { AutoAcceptProof } from '../models/ProofAutoAcceptType'
+import type { ProofState } from '../models/ProofState'
+import type { V2ProposalPresentationMessage } from '../v2/messages/V2ProposalPresentationMessage'
 
 import { Type } from 'class-transformer'
 
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { ProposePresentationMessage, RequestPresentationMessage, PresentationMessage } from '../messages'
+import { ProposePresentationMessage, RequestPresentationMessage, PresentationMessage } from '../protocol/v1/messages'
 
 export interface ProofRecordProps {
   id?: string
@@ -23,7 +24,7 @@ export interface ProofRecordProps {
   errorMessage?: string
 
   // message data
-  proposalMessage?: ProposePresentationMessage
+  proposalMessage?: ProposePresentationMessage | V2ProposalPresentationMessage
   requestMessage?: RequestPresentationMessage
   presentationMessage?: PresentationMessage
 }
@@ -44,9 +45,9 @@ export class ProofRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
   public autoAcceptProof?: AutoAcceptProof
   public errorMessage?: string
 
-  // message data
+  // message data -- this goes in a separate DIDComm message record
   @Type(() => ProposePresentationMessage)
-  public proposalMessage?: ProposePresentationMessage
+  public proposalMessage?: ProposePresentationMessage | V2ProposalPresentationMessage
   @Type(() => RequestPresentationMessage)
   public requestMessage?: RequestPresentationMessage
   @Type(() => PresentationMessage)

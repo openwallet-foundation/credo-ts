@@ -1,7 +1,7 @@
 import type { ProblemReportErrorOptions } from '../../problem-reports'
 import type { PresentationProblemReportReason } from './PresentationProblemReportReason'
 
-import { PresentationProblemReportMessage } from '../messages'
+import { PresentationProblemReportMessage } from '../protocol/v1/messages'
 
 import { ProblemReportError } from './../../problem-reports/errors/ProblemReportError'
 
