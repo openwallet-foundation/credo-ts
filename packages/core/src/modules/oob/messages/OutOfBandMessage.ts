@@ -14,7 +14,7 @@ import { MessageValidator } from '../../../utils/MessageValidator'
 
 interface OutOfBandMessageOptions {
   id?: string
-  label?: string
+  label: string
   goalCode?: string
   goal?: string
   accept?: string[]
@@ -25,6 +25,7 @@ interface OutOfBandMessageOptions {
 export class OutOfBandMessage extends AgentMessage {
   public constructor(options: OutOfBandMessageOptions) {
     super()
+
     if (options) {
       this.id = options.id ?? this.generateId()
       this.label = options.label
@@ -85,7 +86,7 @@ export class OutOfBandMessage extends AgentMessage {
   public readonly type = OutOfBandMessage.type
   public static readonly type = `https://didcomm.org/out-of-band/1.1/invitation`
 
-  public readonly label?: string
+  public readonly label!: string
 
   @Expose({ name: 'goal_code' })
   public readonly goalCode?: string
