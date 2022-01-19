@@ -8,7 +8,6 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { DidCommService } from '../src/modules/connections'
-import { DidDocument } from '../src/modules/dids/domain'
 import { OutOfBandMessage } from '../src/modules/oob/messages'
 
 import { TestMessage } from './TestMessage'
@@ -107,7 +106,7 @@ describe('out of band', () => {
 
   describe('createMessage', () => {
     test('throw error when there is no handshake or message', async () => {
-      await expect(faberAgent.oob.createMessage({ handshake: false })).rejects.toEqual(
+      await expect(faberAgent.oob.createMessage({ label: 'test-connection', handshake: false })).rejects.toEqual(
         new AriesFrameworkError(
           'One or both of handshake_protocols and requests~attach MUST be included in the message.'
         )
@@ -142,9 +141,10 @@ describe('out of band', () => {
 
     test('create OOB message only with requests', async () => {
       const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
-      const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createMessage({ handshake: false }, [
-        offerMessage,
-      ])
+      const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createMessage(
+        { label: 'test-connection', handshake: false },
+        [offerMessage]
+      )
 
       // expect supported handshake protocols
       expect(outOfBandMessage.handshakeProtocols).toBeUndefined()
@@ -166,9 +166,10 @@ describe('out of band', () => {
 
     test('create OOB message with both handshake and requests', async () => {
       const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
-      const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createMessage({ handshake: true }, [
-        offerMessage,
-      ])
+      const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createMessage(
+        { label: 'test-connection', handshake: true },
+        [offerMessage]
+      )
 
       // expect supported handshake protocols
       expect(outOfBandMessage.handshakeProtocols).toContain('https://didcomm.org/connections/1.0')
@@ -377,7 +378,7 @@ describe('out of band', () => {
     })
 
     test('throw an error when handshake protocols are not supported', async () => {
-      const outOfBandMessage = new OutOfBandMessage({ services: [] })
+      const outOfBandMessage = new OutOfBandMessage({ label: 'test-connection', services: [] })
       const unsupportedProtocol = 'https://didcomm.org/unsupported-connections-protocol/1.0'
       outOfBandMessage.handshakeProtocols = [unsupportedProtocol]
 
@@ -389,7 +390,7 @@ describe('out of band', () => {
     })
 
     test('throw an error when the OOB message does not contain either handshake or requests', async () => {
-      const outOfBandMessage = new OutOfBandMessage({ services: [] })
+      const outOfBandMessage = new OutOfBandMessage({ label: 'test-connection', services: [] })
 
       await expect(aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)).rejects.toEqual(
         new AriesFrameworkError(
