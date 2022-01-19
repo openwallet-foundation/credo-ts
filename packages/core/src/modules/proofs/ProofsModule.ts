@@ -1,8 +1,8 @@
-import type { AutoAcceptProof } from './ProofAutoAcceptType'
-import type { PresentationPreview, RequestPresentationMessage } from './messages'
-import type { RequestedCredentials, RetrievedCredentials } from './models'
-import type { ProofRequestOptions } from './models/ProofRequest'
+import type { PresentationPreview } from './protocol/v1/models/PresentationPreview'
+import type { AutoAcceptProof } from './models/ProofAutoAcceptType'
 import type { ProofRecord } from './repository/ProofRecord'
+import type { RequestPresentationMessage } from './protocol/v1/messages'
+import type { ProofRequestOptions, RequestedCredentials, RetrievedCredentials } from './protocol/v1/models'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -17,20 +17,20 @@ import { MediationRecipientService } from '../routing/services/MediationRecipien
 
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
 import { PresentationProblemReportReason } from './errors'
+import { V1LegacyProofService } from './protocol/v1/V1LegacyProofService'
 import {
   ProposePresentationHandler,
   RequestPresentationHandler,
   PresentationAckHandler,
   PresentationHandler,
   PresentationProblemReportHandler,
-} from './handlers'
-import { PresentationProblemReportMessage } from './messages/PresentationProblemReportMessage'
-import { ProofRequest } from './models/ProofRequest'
-import { ProofService } from './services'
+} from './protocol/v1/handlers'
+import { PresentationProblemReportMessage } from './protocol/v1/messages'
+import { ProofRequest } from './protocol/v1/models'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ProofsModule {
-  private proofService: ProofService
+  private proofService: V1LegacyProofService
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private mediationRecipientService: MediationRecipientService
@@ -39,19 +39,19 @@ export class ProofsModule {
 
   public constructor(
     dispatcher: Dispatcher,
-    proofService: ProofService,
     connectionService: ConnectionService,
-    mediationRecipientService: MediationRecipientService,
-    agentConfig: AgentConfig,
+    proofService: V1LegacyProofService,
     messageSender: MessageSender,
-    proofResponseCoordinator: ProofResponseCoordinator
+    agentConfig: AgentConfig,
+    proofResponseCoordinator: ProofResponseCoordinator,
+    mediationRecipientService: MediationRecipientService
   ) {
-    this.proofService = proofService
     this.connectionService = connectionService
+    this.proofService = proofService
     this.messageSender = messageSender
-    this.mediationRecipientService = mediationRecipientService
     this.agentConfig = agentConfig
     this.proofResponseCoordinator = proofResponseCoordinator
+    this.mediationRecipientService = mediationRecipientService
     this.registerHandlers(dispatcher)
   }
 
@@ -65,7 +65,8 @@ export class ProofsModule {
    * @returns Proof record associated with the sent proposal message
    *
    */
-  public async proposeProof(
+
+  public async oldProposeProof(
     connectionId: string,
     presentationProposal: PresentationPreview,
     config?: {
@@ -92,7 +93,7 @@ export class ProofsModule {
    * @returns Proof record associated with the presentation request
    *
    */
-  public async acceptProposal(
+  public async oldAcceptProposal(
     proofRecordId: string,
     config?: {
       request?: {
@@ -143,7 +144,7 @@ export class ProofsModule {
    * @returns Proof record associated with the sent request message
    *
    */
-  public async requestProof(
+  public async oldRequestProof(
     connectionId: string,
     proofRequestOptions: CreateProofRequestOptions,
     config?: ProofRequestConfig
@@ -336,26 +337,24 @@ export class ProofsModule {
    *  credentials that match the presentation preview from the presentation proposal (if available).
 
    * @returns RetrievedCredentials object
-   */
-  public async getRequestedCredentialsForProofRequest(
-    proofRecordId: string,
-    config?: GetRequestedCredentialsConfig
-  ): Promise<RetrievedCredentials> {
-    const proofRecord = await this.proofService.getById(proofRecordId)
+  //  */
+  // public async getRequestedCredentialsForProofRequest(
+  //   proofRecordId: string,
+  //   config?: GetRequestedCredentialsConfig
+  // ): Promise<RetrievedCredentials> {
+  //   const proofRecord = await this.proofService.getById(proofRecordId)
 
-    const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
-    const presentationPreview = config?.filterByPresentationPreview
-      ? proofRecord.proposalMessage?.presentationProposal
-      : undefined
+  //   const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
+  //   const presentationPreview = config?.filterByPresentationPreview ? proofRecord.proposalMessage : undefined
 
-    if (!indyProofRequest) {
-      throw new AriesFrameworkError(
-        'Unable to get requested credentials for proof request. No proof request message was found or the proof request message does not contain an indy proof request.'
-      )
-    }
+  //   if (!indyProofRequest) {
+  //     throw new AriesFrameworkError(
+  //       'Unable to get requested credentials for proof request. No proof request message was found or the proof request message does not contain an indy proof request.'
+  //     )
+  //   }
 
-    return this.proofService.getRequestedCredentialsForProofRequest(indyProofRequest, presentationPreview)
-  }
+  //   return this.proofService.getRequestedCredentialsForProofRequest(indyProofRequest, presentationPreview)
+  // }
 
   /**
    * Takes a RetrievedCredentials object and auto selects credentials in a RequestedCredentials object

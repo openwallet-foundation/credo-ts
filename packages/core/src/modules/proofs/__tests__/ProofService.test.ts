@@ -11,16 +11,18 @@ import { ConnectionService, ConnectionState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyLedgerService } from '../../ledger/services'
 import { ProofEventTypes } from '../ProofEvents'
-import { ProofState } from '../ProofState'
+import { ProofState } from '../models/ProofState'
 import { PresentationProblemReportReason } from '../errors/PresentationProblemReportReason'
-import { INDY_PROOF_REQUEST_ATTACHMENT_ID } from '../messages'
 import { ProofRecord } from '../repository/ProofRecord'
 import { ProofRepository } from '../repository/ProofRepository'
-import { ProofService } from '../services'
+import { V1LegacyProofService } from '../protocol/v1/V1LegacyProofService'
 
 import { IndyVerifierService } from './../../indy/services/IndyVerifierService'
-import { PresentationProblemReportMessage } from './../messages/PresentationProblemReportMessage'
-import { RequestPresentationMessage } from './../messages/RequestPresentationMessage'
+import { PresentationProblemReportMessage } from '../protocol/v1/messages/PresentationProblemReportMessage'
+import {
+  INDY_PROOF_REQUEST_ATTACHMENT_ID,
+  RequestPresentationMessage,
+} from '../protocol/v1/messages/RequestPresentationMessage'
 import { credDef } from './fixtures'
 
 // Mock classes
@@ -88,7 +90,7 @@ const mockProofRecord = ({
 
 describe('ProofService', () => {
   let proofRepository: ProofRepository
-  let proofService: ProofService
+  let proofService: V1LegacyProofService
   let ledgerService: IndyLedgerService
   let wallet: Wallet
   let indyVerifierService: IndyVerifierService
@@ -106,7 +108,7 @@ describe('ProofService', () => {
     eventEmitter = new EventEmitter(agentConfig)
     connectionService = new connectionServiceMock()
 
-    proofService = new ProofService(
+    proofService = new V1LegacyProofService(
       proofRepository,
       ledgerService,
       wallet,

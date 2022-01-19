@@ -4,7 +4,7 @@ import { scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 
-import { AutoAcceptProof } from './ProofAutoAcceptType'
+import { AutoAcceptProof } from './models/ProofAutoAcceptType'
 
 /**
  * This class handles all the automation with all the messages in the present proof protocol

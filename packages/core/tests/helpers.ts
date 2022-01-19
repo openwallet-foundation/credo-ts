@@ -38,15 +38,18 @@ import {
   DidCommService,
   DidDoc,
   PredicateType,
-  PresentationPreview,
-  PresentationPreviewAttribute,
-  PresentationPreviewPredicate,
   ProofEventTypes,
   ProofState,
   Agent,
 } from '../src'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
+import {
+  PresentationPreview,
+  PresentationPreviewAttribute,
+  PresentationPreviewPredicate,
+} from '../src/modules/proofs/protocol/v1/models/PresentationPreview'
+import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -469,7 +472,10 @@ export async function presentProof({
     state: ProofState.RequestReceived,
   })
 
-  const retrievedCredentials = await holderAgent.proofs.getRequestedCredentialsForProofRequest(holderRecord.id)
+  const retrievedCredentials = await holderAgent.proofs.getRequestedCredentialsForProofRequest(
+    ProofProtocolVersion.V1_0,
+    holderRecord.id
+  )
   const requestedCredentials = holderAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
   await holderAgent.proofs.acceptRequest(holderRecord.id, requestedCredentials)
 

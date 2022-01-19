@@ -1,4 +1,6 @@
-import type { Agent, ConnectionRecord, PresentationPreview } from '../src'
+import type { Agent, ConnectionRecord } from '../src'
+import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/PresentationPreview'
+import type { ProposeProofOptions } from '../src/modules/proofs/interface'
 import type { CredDefId } from 'indy-sdk'
 
 import {
@@ -13,6 +15,7 @@ import {
   ProposePresentationMessage,
   RequestPresentationMessage,
 } from '../src'
+import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 
 import { setupProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'
@@ -42,16 +45,29 @@ describe('Present Proof', () => {
   test('Alice starts with proof proposal to Faber', async () => {
     // Alice sends a presentation proposal to Faber
     testLogger.test('Alice sends a presentation proposal to Faber')
-    let aliceProofRecord = await aliceAgent.proofs.proposeProof(aliceConnection.id, presentationPreview)
+
+    const proposeProofOptions: ProposeProofOptions = {
+      connectionId: aliceConnection.id,
+      protocolVersion: ProofProtocolVersion.V1_0,
+      proofFormats: {
+        indy: {
+          nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
+          proofPreview: presentationPreview,
+          name: 'abc',
+          version: '1.0',
+        },
+      },
+    }
+    const alicePresentationExchangeRecord = await aliceAgent.proofs.proposeProof(proposeProofOptions)
 
     // Faber waits for a presentation proposal from Alice
     testLogger.test('Faber waits for a presentation proposal from Alice')
     let faberProofRecord = await waitForProofRecord(faberAgent, {
-      threadId: aliceProofRecord.threadId,
+      threadId: alicePresentationExchangeRecord.threadId,
       state: ProofState.ProposalReceived,
     })
 
-    expect(JsonTransformer.toJSON(aliceProofRecord)).toMatchObject({
+    expect(JsonTransformer.toJSON(alicePresentationExchangeRecord)).toMatchObject({
       createdAt: expect.any(Date),
       id: expect.any(String),
       proposalMessage: {
@@ -86,23 +102,27 @@ describe('Present Proof', () => {
 
     // Alice waits for presentation request from Faber
     testLogger.test('Alice waits for presentation request from Faber')
-    aliceProofRecord = await waitForProofRecord(aliceAgent, {
-      threadId: aliceProofRecord.threadId,
+    let aliceProofRecord = await waitForProofRecord(aliceAgent, {
+      threadId: alicePresentationExchangeRecord.threadId,
       state: ProofState.RequestReceived,
     })
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
-    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(aliceProofRecord.id, {
-      filterByPresentationPreview: true,
-    })
+    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
+      ProofProtocolVersion.V1_0,
+      aliceProofRecord.id,
+      {
+        filterByPresentationPreview: true,
+      }
+    )
     const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
     await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
 
     // Faber waits for the presentation from Alice
     testLogger.test('Faber waits for presentation from Alice')
     faberProofRecord = await waitForProofRecord(faberAgent, {
-      threadId: aliceProofRecord.threadId,
+      threadId: alicePresentationExchangeRecord.threadId,
       state: ProofState.PresentationReceived,
     })
 
@@ -153,7 +173,7 @@ describe('Present Proof', () => {
       type: ProofRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      threadId: aliceProofRecord.threadId,
+      threadId: alicePresentationExchangeRecord.threadId,
       connectionId: expect.any(String),
       isVerified: true,
       state: ProofState.PresentationReceived,
@@ -250,9 +270,13 @@ describe('Present Proof', () => {
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
-    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(aliceProofRecord.id, {
-      filterByPresentationPreview: true,
-    })
+    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
+      ProofProtocolVersion.V1_0,
+      aliceProofRecord.id,
+      {
+        filterByPresentationPreview: true,
+      }
+    )
     const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
     await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
 
