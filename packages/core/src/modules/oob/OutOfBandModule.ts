@@ -23,7 +23,7 @@ import { HandshakeReuseHandler } from './handlers'
 import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
 
 export interface CreateOutOfBandMessageConfig {
-  label?: string
+  label: string
   goalCode?: string
   goal?: string
   handshake: boolean
@@ -311,7 +311,7 @@ export class OutOfBandModule {
       }
     }
 
-    const invitation = new ConnectionInvitationMessage({ label: label || '', ...options })
+    const invitation = new ConnectionInvitationMessage({ label, ...options })
     const connectionRecord = await this.connectionsModule.receiveInvitation(invitation, {
       autoAcceptConnection,
     })
