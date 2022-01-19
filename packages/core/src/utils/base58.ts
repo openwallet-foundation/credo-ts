@@ -1,4 +1,5 @@
 import base from '@multiformats/base-x'
+
 const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 
 const base58Converter = base(BASE58_ALPHABET)

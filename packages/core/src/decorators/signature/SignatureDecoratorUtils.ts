@@ -29,7 +29,7 @@ export async function unpackAndVerifySignatureDecorator(
   const isValid = await wallet.verify(signerVerkey, signedData, signature)
 
   if (!isValid) {
-    throw new AriesFrameworkError('Signature is not valid!')
+    throw new AriesFrameworkError('Signature is not valid')
   }
 
   // TODO: return Connection instance instead of raw json

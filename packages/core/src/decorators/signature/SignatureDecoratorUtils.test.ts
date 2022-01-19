@@ -76,7 +76,7 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
     try {
       await unpackAndVerifySignatureDecorator(wronglySignedData, wallet)
     } catch (error) {
-      expect(error.message).toEqual('Signature is not valid!')
+      expect(error.message).toEqual('Signature is not valid')
     }
   })
 })

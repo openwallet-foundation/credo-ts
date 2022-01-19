@@ -39,7 +39,6 @@ export class RequestCredentialHandler implements Handler {
     )
 
     const { message, credentialRecord } = await this.credentialService.createCredential(record)
-
     if (messageContext.connection) {
       return createOutboundMessage(messageContext.connection, message)
     } else if (credentialRecord.requestMessage?.service && credentialRecord.offerMessage?.service) {
@@ -57,7 +56,6 @@ export class RequestCredentialHandler implements Handler {
         senderKey: ourService.recipientKeys[0],
       })
     }
-
     this.agentConfig.logger.error(`Could not automatically create credential request`)
   }
 }

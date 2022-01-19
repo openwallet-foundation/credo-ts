@@ -20,6 +20,7 @@ import { IndyLedgerService } from '../../ledger/services'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
+import { CredentialProblemReportReason } from '../errors/CredentialProblemReportReason'
 import {
   CredentialAckMessage,
   CredentialPreview,
@@ -32,8 +33,10 @@ import {
 } from '../messages'
 import { CredentialRecord } from '../repository/CredentialRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
+import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 import { CredentialService } from '../services'
 
+import { CredentialProblemReportMessage } from './../messages/CredentialProblemReportMessage'
 import { credDef, credOffer, credReq } from './fixtures'
 
 // Mock classes
@@ -124,17 +127,17 @@ const mockCredentialRecord = ({
   })
 
   if (metadata?.indyRequest) {
-    credentialRecord.metadata.set('_internal/indyRequest', { ...metadata.indyRequest })
+    credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, { ...metadata.indyRequest })
   }
 
   if (metadata?.schemaId) {
-    credentialRecord.metadata.add('_internal/indyCredential', {
+    credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
       schemaId: metadata.schemaId,
     })
   }
 
   if (metadata?.credentialDefinitionId) {
-    credentialRecord.metadata.add('_internal/indyCredential', {
+    credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
       credentialDefinitionId: metadata.credentialDefinitionId,
     })
   }
@@ -563,7 +566,7 @@ describe('CredentialService', () => {
         '~please_ack': expect.any(Object),
       })
 
-      // We're using instance of `StubWallet`. Value of `cred` should be as same as in the credential response message.
+      // Value of `cred` should be as same as in the credential response message.
       const [cred] = await indyIssuerService.createCredential({
         credentialOffer: credOffer,
         credentialRequest: credReq,
@@ -585,7 +588,7 @@ describe('CredentialService', () => {
           })
         )
       ).rejects.toThrowError(
-        `Missing required base64 encoded attachment data for credential request with thread id ${threadId}`
+        `Missing required base64 or json encoded attachment data for credential request with thread id ${threadId}`
       )
     })
 
@@ -919,6 +922,87 @@ describe('CredentialService', () => {
           )
         })
       )
+    })
+  })
+
+  describe('createProblemReport', () => {
+    const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249746'
+    let credential: CredentialRecord
+
+    beforeEach(() => {
+      credential = mockCredentialRecord({
+        state: CredentialState.OfferReceived,
+        threadId,
+        connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
+      })
+    })
+
+    test('returns problem report message base once get error', async () => {
+      // given
+      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
+
+      // when
+      const credentialProblemReportMessage = await new CredentialProblemReportMessage({
+        description: {
+          en: 'Indy error',
+          code: CredentialProblemReportReason.IssuanceAbandoned,
+        },
+      })
+
+      credentialProblemReportMessage.setThread({ threadId })
+      // then
+      expect(credentialProblemReportMessage.toJSON()).toMatchObject({
+        '@id': expect.any(String),
+        '@type': 'https://didcomm.org/issue-credential/1.0/problem-report',
+        '~thread': {
+          thid: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
+        },
+      })
+    })
+  })
+
+  describe('processProblemReport', () => {
+    let credential: CredentialRecord
+    let messageContext: InboundMessageContext<CredentialProblemReportMessage>
+
+    beforeEach(() => {
+      credential = mockCredentialRecord({
+        state: CredentialState.OfferReceived,
+      })
+
+      const credentialProblemReportMessage = new CredentialProblemReportMessage({
+        description: {
+          en: 'Indy error',
+          code: CredentialProblemReportReason.IssuanceAbandoned,
+        },
+      })
+      credentialProblemReportMessage.setThread({ threadId: 'somethreadid' })
+      messageContext = new InboundMessageContext(credentialProblemReportMessage, {
+        connection,
+      })
+    })
+
+    test(`updates problem report error message and returns credential record`, async () => {
+      const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
+
+      // given
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
+
+      // when
+      const returnedCredentialRecord = await credentialService.processProblemReport(messageContext)
+
+      // then
+      const expectedCredentialRecord = {
+        errorMessage: 'issuance-abandoned: Indy error',
+      }
+      expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, {
+        threadId: 'somethreadid',
+        connectionId: connection.id,
+      })
+      expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
+      const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
+      expect(updatedCredentialRecord).toMatchObject(expectedCredentialRecord)
+      expect(returnedCredentialRecord).toMatchObject(expectedCredentialRecord)
     })
   })
 

@@ -54,8 +54,10 @@ export class ConnectionsModule {
     invitation: ConnectionInvitationMessage
     connectionRecord: ConnectionRecord
   }> {
-    const mediationRecord = await this.mediationRecipientService.discoverMediation(config?.mediatorId)
-    const myRouting = await this.mediationRecipientService.getRouting(mediationRecord)
+    const myRouting = await this.mediationRecipientService.getRouting({
+      mediatorId: config?.mediatorId,
+      useDefaultMediator: true,
+    })
 
     const { connectionRecord: connectionRecord, message: invitation } = await this.connectionService.createInvitation({
       autoAcceptConnection: config?.autoAcceptConnection,
@@ -86,13 +88,12 @@ export class ConnectionsModule {
       mediatorId?: string
     }
   ): Promise<ConnectionRecord> {
-    const mediationRecord = await this.mediationRecipientService.discoverMediation(config?.mediatorId)
-    const myRouting = await this.mediationRecipientService.getRouting(mediationRecord)
+    const routing = await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId })
 
     let connection = await this.connectionService.processInvitation(invitation, {
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
-      routing: myRouting,
+      routing,
     })
     // if auto accept is enabled (either on the record or the global agent config)
     // we directly send a connection request
@@ -130,8 +131,16 @@ export class ConnectionsModule {
    * @param connectionId the id of the connection for which to accept the invitation
    * @returns connection record
    */
-  public async acceptInvitation(connectionId: string): Promise<ConnectionRecord> {
-    const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(connectionId)
+  public async acceptInvitation(
+    connectionId: string,
+    config?: {
+      autoAcceptConnection?: boolean
+    }
+  ): Promise<ConnectionRecord> {
+    const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(
+      connectionId,
+      config
+    )
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)
 
