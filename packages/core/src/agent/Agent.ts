@@ -114,8 +114,7 @@ export class Agent {
       .observable<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived)
       .pipe(
         takeUntil(this.agentConfig.stop$),
-        // TODO Replace params with one InboundMessageContext object to get rid of `undefined`.
-        concatMap((e) => this.messageReceiver.receiveMessage(e.payload.message, undefined, e.payload.connection))
+        concatMap((e) => this.messageReceiver.receiveMessage(e.payload.message, { connection: e.payload.connection }))
       )
       .subscribe()
   }
@@ -219,7 +218,7 @@ export class Agent {
   }
 
   public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
-    return await this.messageReceiver.receiveMessage(inboundMessage, session)
+    return await this.messageReceiver.receiveMessage(inboundMessage, { session })
   }
 
   public get injectionContainer() {
