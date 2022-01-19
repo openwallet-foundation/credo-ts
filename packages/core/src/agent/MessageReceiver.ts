@@ -64,7 +64,10 @@ export class MessageReceiver {
    *
    * @param inboundMessage the message to receive and handle
    */
-  public async receiveMessage(inboundMessage: unknown, session?: TransportSession, connection?: ConnectionRecord) {
+  public async receiveMessage(
+    inboundMessage: unknown,
+    { session, connection }: { session?: TransportSession; connection?: ConnectionRecord }
+  ) {
     this.logger.debug(`Agent ${this.config.label} received message`)
 
     if (this.isPlaintextMessage(inboundMessage)) {
