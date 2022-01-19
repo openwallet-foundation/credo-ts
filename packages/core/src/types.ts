@@ -78,3 +78,9 @@ export interface OutboundPackage {
   endpoint?: string
   connectionId?: string
 }
+
+export type JsonValue = string | number | boolean | null | JsonObject | JsonArray
+export type JsonArray = Array<JsonValue>
+export interface JsonObject {
+  [property: string]: JsonValue
+}
