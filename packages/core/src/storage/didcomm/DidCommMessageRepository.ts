@@ -1,5 +1,5 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
-import type { JsonMap } from '../../types'
+import type { JsonObject } from '../../types'
 import type { DidCommMessageRole } from './DidCommMessageRole'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
@@ -18,7 +18,7 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
 
   public async saveAgentMessage({ role, agentMessage, associatedRecordId }: SaveAgentMessageOptions) {
     const didCommMessageRecord = new DidCommMessageRecord({
-      message: agentMessage.toJSON() as JsonMap,
+      message: agentMessage.toJSON() as JsonObject,
       role,
       associatedRecordId,
     })

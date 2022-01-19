@@ -1,11 +1,11 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
-import type { JsonMap } from '../../types'
+import type { JsonObject } from '../../types'
 import type { DidCommMessageRole } from './DidCommMessageRole'
 
 import { AriesFrameworkError } from '../../error'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import { rightSplit } from '../../utils/string'
-import { isJsonMap } from '../../utils/type'
+import { isJsonObject } from '../../utils/type'
 import { uuid } from '../../utils/uuid'
 import { BaseRecord } from '../BaseRecord'
 
@@ -25,14 +25,14 @@ export type DefaultDidCommMessageTags = {
 
 export interface DidCommMessageRecordProps {
   role: DidCommMessageRole
-  message: JsonMap
+  message: JsonObject
   id?: string
   createdAt?: Date
   associatedRecordId?: string
 }
 
 export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> {
-  public message!: JsonMap
+  public message!: JsonObject
   public role!: DidCommMessageRole
 
   /**
@@ -67,7 +67,7 @@ export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> 
     const thread = this.message['~thread']
     let threadId = messageId
 
-    if (isJsonMap(thread) && typeof thread.thid === 'string') {
+    if (isJsonObject(thread) && typeof thread.thid === 'string') {
       threadId = thread.thid
     }
 
