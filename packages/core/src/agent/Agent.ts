@@ -132,6 +132,7 @@ export class Agent {
       .observable<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived)
       .pipe(
         takeUntil(this.agentConfig.stop$),
+        // TODO Replace params with one InboundMessageContext object to get rid of `undefined`.
         concatMap((e) => this.messageReceiver.receiveMessage(e.payload.message, undefined, e.payload.connection))
       )
       .subscribe()
