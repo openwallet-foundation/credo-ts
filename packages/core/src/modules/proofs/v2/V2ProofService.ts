@@ -1,15 +1,15 @@
-import type { ProofRequest, ProofStateChangedEvent } from '..'
+import type { ProofStateChangedEvent } from '..'
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { HandlerInboundMessage } from '../../../agent/Handler'
 import type { Logger } from '../../../logger'
-import type { PresentationPreview } from '../PresentationPreview'
+import type { PresentationPreviewAttribute } from '../PresentationPreview'
 import type { ProofRecordProps } from '../repository'
 import type { ProofFormatService } from './formats/ProofFormatService'
 import type {
+  AcceptProposalOptions,
   CreateRequestOptions,
   FormatType,
   ProofRequestAsResponse,
-  ProofRequestsOptions,
   ProposeProofOptions,
   RequestProofOptions,
   V2ProposeProofFormat,
@@ -19,6 +19,10 @@ import type { V2ProposePresentationMessageOptions } from './messages/V2ProposalP
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import {
+  AttributeFilter,
+  ProofAttributeInfo,
+  ProofPredicateInfo,
+  ProofRequest,
   INDY_PROOF_REQUEST_ATTACHMENT_ID,
   RequestPresentationMessage,
   RequestedAttribute,
@@ -34,11 +38,13 @@ import { InjectionSymbols } from '../../../constants'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { uuid } from '../../../utils/uuid'
 import { Wallet } from '../../../wallet/Wallet'
 import { ConnectionService } from '../../connections/services'
 import { Credential } from '../../credentials'
 import { IndyHolderService } from '../../indy'
 import { PresentationRecordType } from '../PresentationExchangeRecord'
+import { PresentationPreview } from '../PresentationPreview'
 import { ProofProtocolVersion } from '../ProofProtocolVersion'
 import { ProofResponseCoordinator } from '../ProofResponseCoordinator'
 import { ProofService } from '../ProofService'
@@ -106,9 +112,11 @@ export class V2ProofService extends ProofService {
     if (!formatType) {
       return this.getFormatService(PresentationRecordType.W3c)
     }
-    const credentialRecordType = formatType.proofFormats.indy ? PresentationRecordType.Indy : PresentationRecordType.W3c
+    const presentationRecordType = formatType.proofFormats.indy
+      ? PresentationRecordType.Indy
+      : PresentationRecordType.W3c
 
-    return this.getFormatService(credentialRecordType)
+    return this.getFormatService(presentationRecordType)
   }
 
   public getVersion(): ProofProtocolVersion {
@@ -202,11 +210,97 @@ export class V2ProofService extends ProofService {
     return proofRecord
   }
 
-  public createProofRequestFromProposal(
-    presentationProposal: PresentationPreview,
-    proofRequestOptions: ProofRequestsOptions
-  ): Promise<ProofRequest> {
-    throw new Error('Method not implemented.')
+  public async createProofRequestFromProposal(acceptProposal: AcceptProposalOptions): Promise<ProofRequest> {
+    const proofRequestOptions = acceptProposal.proofFormats.indy?.proofRequestOptions
+
+    const presentationProposal = acceptProposal.proofFormats.indy?.presentationProposal
+      ? acceptProposal.proofFormats.indy?.presentationProposal
+      : new PresentationPreview({
+          attributes: [],
+        })
+
+    const nonce =
+      acceptProposal.proofFormats.indy?.proofRequestOptions.nonce ?? (await this.generateProofRequestNonce())
+
+    const proofRequest = new ProofRequest({
+      name: proofRequestOptions?.name ?? 'proof-request',
+      version: proofRequestOptions?.version ?? '1.0',
+      nonce,
+    })
+
+    console.log('inside V2 [createProofRequestFromProposal] - proofRequestOptions', proofRequestOptions)
+    console.log('inside V2 [createProofRequestFromProposal] - proofRequest', proofRequest)
+    /**
+     * Create mapping of attributes by referent. This required the
+     * attributes to come from the same credential.
+     * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#referent
+     *
+     * {
+     *  "referent1": [Attribute1, Attribute2],
+     *  "referent2": [Attribute3]
+     * }
+     */
+    const attributesByReferent: Record<string, PresentationPreviewAttribute[]> = {}
+    for (const proposedAttributes of presentationProposal.attributes) {
+      if (!proposedAttributes.referent) proposedAttributes.referent = uuid()
+
+      const referentAttributes = attributesByReferent[proposedAttributes.referent]
+
+      // Referent key already exist, add to list
+      if (referentAttributes) {
+        referentAttributes.push(proposedAttributes)
+      }
+      // Referent key does not exist yet, create new entry
+      else {
+        attributesByReferent[proposedAttributes.referent] = [proposedAttributes]
+      }
+    }
+
+    // Transform attributes by referent to requested attributes
+    for (const [referent, proposedAttributes] of Object.entries(attributesByReferent)) {
+      // Either attributeName or attributeNames will be undefined
+      const attributeName = proposedAttributes.length == 1 ? proposedAttributes[0].name : undefined
+      const attributeNames = proposedAttributes.length > 1 ? proposedAttributes.map((a) => a.name) : undefined
+
+      const requestedAttribute = new ProofAttributeInfo({
+        name: attributeName,
+        names: attributeNames,
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: proposedAttributes[0].credentialDefinitionId,
+          }),
+        ],
+      })
+
+      proofRequest.requestedAttributes.set(referent, requestedAttribute)
+    }
+
+    this.logger.debug('proposal predicates', presentationProposal.predicates)
+    // Transform proposed predicates to requested predicates
+    for (const proposedPredicate of presentationProposal.predicates) {
+      const requestedPredicate = new ProofPredicateInfo({
+        name: proposedPredicate.name,
+        predicateType: proposedPredicate.predicate,
+        predicateValue: proposedPredicate.threshold,
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: proposedPredicate.credentialDefinitionId,
+          }),
+        ],
+      })
+
+      proofRequest.requestedPredicates.set(uuid(), requestedPredicate)
+    }
+    console.log('inside [createProofRequestFromProposal] - attributesByReferent', attributesByReferent)
+    console.log('inside [createProofRequestFromProposal] - proofRequest', proofRequest)
+
+    const formatService: ProofFormatService = this.getFormatServiceFrom(acceptProposal)
+    // const { preview, formats, filtersAttach } = formatService.getProofRequestAttachFormats(
+    //   acceptProposal.proofFormats.indy?.proofRequestOptions,
+    //   'PRES_20_REQUEST'
+    // )
+
+    return proofRequest
   }
 
   public async createRequestAsResponse(

@@ -3,7 +3,7 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { PresentationPreview } from '../../PresentationPreview'
 import type { ProofStateChangedEvent } from '../../ProofEvents'
 import type { ProofRecord, ProofRepository } from '../../repository'
-import type { ProposeProofOptions, V2ProposeProofFormat } from '../interface'
+import type { ProposeProofOptions, RequestProofOptions, V2ProposeProofFormat } from '../interface'
 import type { V2ProofFormatSpec } from './V2ProofFormat'
 
 import { uuid } from '../../../../utils/uuid'
@@ -24,6 +24,7 @@ export abstract class ProofFormatService {
     this.eventEmitter = eventEmitter
   }
   abstract getProofProposeAttachFormats(proposal: ProposeProofOptions, messageType: string): V2AttachmentFormats
+  abstract getProofRequestAttachFormats(proposal: RequestProofOptions, messageType: string): V2AttachmentFormats
   abstract getFormatIdentifier(messageType: string): V2ProofFormatSpec
   abstract setMetaDataAndEmitEventForProposal(proposal: V2ProposeProofFormat, proofRecord: ProofRecord): Promise<void>
   abstract getFormatData(data: V2ProposeProofFormat): Attachment[]

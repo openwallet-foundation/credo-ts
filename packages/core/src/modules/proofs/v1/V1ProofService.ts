@@ -4,9 +4,11 @@ import type { AutoAcceptProof } from '../ProofAutoAcceptType'
 import type { ProofRecord } from '../repository/ProofRecord'
 import type { V2ProposePresentationHandler } from '../v2/handlers/V2ProposePresentationHandler'
 import type {
+  AcceptProposalOptions,
   CreateRequestOptions,
   PresentationConfig,
   ProofRequestAsResponse,
+  ProofRequestConfigOptions,
   ProposeProofOptions,
   RequestProofOptions,
 } from '../v2/interface'
@@ -38,12 +40,30 @@ export class V1ProofService extends ProofService {
     throw new Error('Method not implemented.')
   }
 
-  public createProofRequestFromProposal(
-    presentationProposal: PresentationPreview,
-    proofRequestOptions: ProofRequestOptions
-  ): Promise<ProofRequest> {
-    throw new Error('Method not implemented.')
+  public createProofRequestFromProposal(acceptProposalOptions: AcceptProposalOptions): Promise<ProofRequest> {
+    let presentationProposal: PresentationPreview | undefined
+    let proofRequestOptions: ProofRequestConfigOptions | undefined
+
+    if (acceptProposalOptions.proofFormats.indy) {
+      presentationProposal = new PresentationPreview({
+        attributes: acceptProposalOptions.proofFormats.indy?.presentationProposal?.attributes,
+        predicates: acceptProposalOptions.proofFormats.indy?.presentationProposal?.predicates,
+      })
+      proofRequestOptions = acceptProposalOptions.proofFormats.indy?.proofRequestOptions
+    } else {
+      presentationProposal = new PresentationPreview({
+        attributes: [],
+        predicates: [],
+      })
+      proofRequestOptions = {
+        name: '',
+        version: '',
+        nonce: '',
+      }
+    }
+    return this.legacyProofService.createProofRequestFromProposal(presentationProposal, proofRequestOptions)
   }
+
   public processProposal(messageContext: HandlerInboundMessage<V2ProposePresentationHandler>): Promise<ProofRecord> {
     logger.debug(messageContext.message.id) // temp used to avoid lint errors
     throw new Error('Method not implemented.')

@@ -21,22 +21,18 @@ export interface AcceptProposalOptions {
   proofRecordId: string
   protocolVersion: ProofProtocolVersion
   proofFormats: {
-    indy?: {
-      attributes?: PresentationPreviewAttribute
-      predicates?: PresentationPreviewPredicate
-    }
+    indy?: IndyProofRequestFormat
     w3c?: {
       // TODO
     }
   }
-  request?: ProofRequestsOptions
   comment?: string
 }
 
-export interface ProofRequestsOptions {
+export interface ProofRequestConfigOptions {
   nonce?: string
-  name?: string
-  version?: string
+  name: string
+  version: string
 }
 
 export interface ProposeProofFormats {
@@ -53,6 +49,11 @@ interface IndyProposeProofFormat {
   name: string
   version: string
   proofPreview?: PresentationPreview
+}
+
+interface IndyProofRequestFormat {
+  proofRequestOptions: ProofRequestConfigOptions
+  presentationProposal?: PresentationPreview
 }
 
 export interface ProofRequestAsResponse {
@@ -97,4 +98,4 @@ export interface CreateRequestOptions {
   autoAcceptProof?: AutoAcceptProof
 }
 
-export type FormatType = AcceptProposalOptions | ProposeProofOptions
+export type FormatType = ProposeProofOptions | AcceptProposalOptions

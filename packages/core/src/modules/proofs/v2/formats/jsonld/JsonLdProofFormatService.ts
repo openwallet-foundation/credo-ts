@@ -1,6 +1,6 @@
 import type { Attachment } from '../../../../../decorators/attachment/Attachment'
 import type { ProofRecord } from '../../../repository'
-import type { ProposeProofOptions, V2ProposeProofFormat } from '../../interface'
+import type { ProposeProofOptions, RequestProofOptions, V2ProposeProofFormat } from '../../interface'
 import type { V2AttachmentFormats } from '../ProofFormatService'
 import type { V2ProofFormatSpec } from '../V2ProofFormat'
 
@@ -10,6 +10,10 @@ import { ProofFormatService } from '../ProofFormatService'
 const logger = new ConsoleLogger(LogLevel.debug)
 
 export class JsonLdProofFormatService extends ProofFormatService {
+  public getProofRequestAttachFormats(proposal: RequestProofOptions, messageType: string): V2AttachmentFormats {
+    throw new Error('Method not implemented.')
+  }
+
   public setMetaDataAndEmitEventForProposal(proposal: V2ProposeProofFormat, proofRecord: ProofRecord): Promise<void> {
     throw new Error('Method not implemented.')
   }

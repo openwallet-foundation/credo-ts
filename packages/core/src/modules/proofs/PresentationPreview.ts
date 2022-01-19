@@ -156,20 +156,20 @@ export class PresentationPreview {
         })
     )
 
-    const predicates = Object.entries(record).map(
-      ([age, credDefId]) =>
-        new PresentationPreviewPredicate({
-          name: age,
-          credentialDefinitionId: credDefId,
-          predicate: PredicateType.GreaterThanOrEqualTo,
-          threshold: 50,
-        })
-    )
+    // const predicates = Object.entries(record).map(
+    //   ([age, cred_def_id]) =>
+    //     new PresentationPreviewPredicate({
+    //       name: age,
+    //       credentialDefinitionId: cred_def_id,
+    //       predicate: PredicateType.GreaterThanOrEqualTo,
+    //       threshold: 50,
+    //     })
+    // )
 
     return new PresentationPreview(
       {
         attributes,
-        predicates,
+        // predicates,
       },
       version
     )

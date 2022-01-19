@@ -44,6 +44,24 @@ export class IndyProofFormatService extends ProofFormatService {
     return { preview, formats, filtersAttach }
   }
 
+  public getProofRequestAttachFormats(proposal: ProposeProofOptions, messageType: string): V2AttachmentFormats {
+    let preview: PresentationPreview
+
+    if (proposal?.proofFormats?.indy?.proofPreview?.attributes) {
+      preview = new PresentationPreview({
+        attributes: proposal?.proofFormats.indy?.proofPreview?.attributes,
+        predicates: proposal?.proofFormats.indy?.proofPreview?.predicates,
+      })
+    } else {
+      preview = new PresentationPreview({ attributes: [], predicates: [] })
+    }
+
+    const formats: V2ProofFormatSpec = this.getFormatIdentifier(messageType)
+    const filtersAttach: Attachment[] = this.getFormatData(proposal.proofFormats)
+
+    return { preview, formats, filtersAttach }
+  }
+
   /**
    * Save the meta data and emit event
    */

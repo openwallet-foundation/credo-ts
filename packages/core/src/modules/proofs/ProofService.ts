@@ -8,9 +8,9 @@ import type { ProofRequest, RetrievedCredentials } from './v1/models'
 import type { ProofFormatService } from './v2/formats/ProofFormatService'
 import type { V2ProposePresentationHandler } from './v2/handlers/V2ProposePresentationHandler'
 import type {
+  AcceptProposalOptions,
   CreateRequestOptions,
   ProofRequestAsResponse,
-  ProofRequestsOptions,
   ProposeProofOptions,
   RequestProofOptions,
 } from './v2/interface'
@@ -45,10 +45,7 @@ export abstract class ProofService {
     presentationProposal?: PresentationPreview
   ): Promise<RetrievedCredentials>
 
-  abstract createProofRequestFromProposal(
-    presentationProposal: PresentationPreview,
-    proofRequestOptions: ProofRequestsOptions
-  ): Promise<ProofRequest>
+  abstract createProofRequestFromProposal(acceptProposalOptions: AcceptProposalOptions): Promise<ProofRequest>
 
   abstract createRequestAsResponse(
     proofRequestAsResponse: ProofRequestAsResponse

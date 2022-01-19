@@ -6,7 +6,6 @@ import type {
   AcceptProposalOptions,
   CreateRequestOptions,
   ProofRequestAsResponse,
-  ProofRequestsOptions,
   ProposeProofOptions,
   RequestProofOptions,
 } from './v2/interface'
@@ -152,11 +151,11 @@ export class ProofsAPI extends ProofsModule implements ProofsAPI {
 
   public async acceptProposal(acceptProposalOptions: AcceptProposalOptions): Promise<ProofRecord> {
     const version: ProofProtocolVersion = acceptProposalOptions.protocolVersion
-
+    const proofRequestOptions = acceptProposalOptions.proofFormats.indy?.proofRequestOptions
     const service: ProofService = this.getService(version)
 
     const proofRecord = await service.getById(acceptProposalOptions.proofRecordId)
-
+    console.log('[acceptProposal] - proofRecord: ', proofRecord)
     if (!proofRecord.connectionId) {
       throw new AriesFrameworkError(
         `No connectionId found for credential record '${proofRecord.id}'. Connection-less issuance does not support presentation proposal or negotiation.`
@@ -172,13 +171,13 @@ export class ProofsAPI extends ProofsModule implements ProofsAPI {
       )
     }
 
-    const config: ProofRequestsOptions = {
-      name: acceptProposalOptions.request?.name ?? 'proof-request',
-      version: acceptProposalOptions?.request?.version ?? '1.0',
-      nonce: acceptProposalOptions?.request?.nonce,
-    }
+    // const config: ProofRequestsOptions = {
+    //   name: proofRequestOptions?.name ?? 'proof-request',
+    //   version: proofRequestOptions?.version ?? '1.0',
+    //   nonce: proofRequestOptions?.nonce,
+    // }
 
-    const proofRequest = await service.createProofRequestFromProposal(presentationProposal, config)
+    const proofRequest = await service.createProofRequestFromProposal(acceptProposalOptions)
 
     const proofRequestAsResponse: ProofRequestAsResponse = {
       proofRecord,
@@ -186,7 +185,8 @@ export class ProofsAPI extends ProofsModule implements ProofsAPI {
       comment: acceptProposalOptions?.comment,
     }
     const { message } = await service.createRequestAsResponse(proofRequestAsResponse)
-
+    console.log('[acceptProposal] - proofRecord', proofRecord)
+    console.log('[acceptProposal] - message', message)
     const outboundMessage = createOutboundMessage(connection, message)
     await this.msgSender.sendMessage(outboundMessage)
 

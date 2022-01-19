@@ -1,16 +1,13 @@
 import type { Agent } from '../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../connections'
-import type { ProposeProofOptions } from '../interface'
+import type { AcceptProposalOptions, ProposeProofOptions } from '../interface'
 import type { CredDefId } from 'indy-sdk'
 
 import { ProofState } from '../..'
 import { setupProofsTest, waitForProofRecord } from '../../../../../tests/helpers'
 import testLogger from '../../../../../tests/logger'
-import {
-  PresentationPreview,
-  PresentationPreviewAttribute,
-  PresentationPreviewPredicate,
-} from '../../PresentationPreview'
+import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import { PresentationPreview } from '../../PresentationPreview'
 import { ProofProtocolVersion } from '../../ProofProtocolVersion'
 import { ProofRole } from '../ProofRole'
 
@@ -20,15 +17,15 @@ describe('Present Proof', () => {
   let credDefId: CredDefId
   // let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
-
-  const presentationPreview = PresentationPreview.fromRecord({
-    name: 'John',
-    age: '99',
-  })
-
+  let presentationPreview: PresentationPreview
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
     ;({ faberAgent, aliceAgent, credDefId, aliceConnection } = await setupProofsTest('Faber agent', 'Alice agent'))
+    presentationPreview = PresentationPreview.fromRecord({
+      name: 'John',
+      age: '99',
+      // cred_def_id: credDefId,
+    })
   })
 
   afterAll(async () => {
@@ -45,7 +42,6 @@ describe('Present Proof', () => {
 
   test('Alice starts with V1 proof proposal to Faber', async () => {
     testLogger.test('Alice sends (v1) proof proposal to Faber')
-
     const proposeOptions: ProposeProofOptions = {
       connectionId: aliceConnection.id,
       protocolVersion: ProofProtocolVersion.V1_0,
@@ -60,19 +56,75 @@ describe('Present Proof', () => {
       comment: 'V1 propose proof test',
     }
 
-    const presentationExchangeRecord = await aliceAgent.proofs.proposeProof(proposeOptions)
+    console.log('presentationPreview:::', presentationPreview)
 
-    expect(presentationExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
-    expect(presentationExchangeRecord.protocolVersion).toEqual(ProofProtocolVersion.V1_0)
-    expect(presentationExchangeRecord.state).toEqual(ProofState.ProposalSent)
-    expect(presentationExchangeRecord.role).toEqual(ProofRole.Prover)
-    expect(presentationExchangeRecord.threadId).not.toBeNull()
+    const alicePresentationExchangeRecord = await aliceAgent.proofs.proposeProof(proposeOptions)
+
+    console.log('alicePresentationExchangeRecord::', alicePresentationExchangeRecord)
+
+    expect(alicePresentationExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
+    expect(alicePresentationExchangeRecord.protocolVersion).toEqual(ProofProtocolVersion.V1_0)
+    expect(alicePresentationExchangeRecord.state).toEqual(ProofState.ProposalSent)
+    expect(alicePresentationExchangeRecord.role).toEqual(ProofRole.Prover)
+    expect(alicePresentationExchangeRecord.threadId).not.toBeNull()
 
     testLogger.test('Faber waits for presentation from Alice')
-    const faberPresentationRecord = await waitForProofRecord(faberAgent, {
-      threadId: presentationExchangeRecord.threadId,
+    let faberPresentationRecord = await waitForProofRecord(faberAgent, {
+      threadId: alicePresentationExchangeRecord.threadId,
       state: ProofState.ProposalReceived,
     })
+
+    expect(JsonTransformer.toJSON(alicePresentationExchangeRecord)).toMatchObject({
+      createdAt: expect.any(Date),
+      id: expect.any(String),
+      proposalMessage: {
+        '@type': 'https://didcomm.org/present-proof/1.0/propose-presentation',
+        '@id': expect.any(String),
+        presentation_proposal: {
+          '@type': 'https://didcomm.org/present-proof/1.0/presentation-preview',
+          attributes: [
+            {
+              cred_def_id: undefined,
+              name: 'name',
+              'mime-type': 'text/plain',
+              value: 'John',
+              referent: undefined,
+            },
+            {
+              cred_def_id: undefined,
+              name: 'age',
+              'mime-type': 'text/plain',
+              value: '99',
+              referent: undefined,
+            },
+          ],
+          predicates: [
+            // {
+            //   cred_def_id: credDefId,
+            //   name: 'age',
+            //   predicate: '>=',
+            //   threshold: 50,
+            // },
+          ],
+        },
+      },
+    })
+
+    // Accept Proposal
+    const acceptProposalOptions: AcceptProposalOptions = {
+      proofRecordId: faberPresentationRecord.id,
+      protocolVersion: ProofProtocolVersion.V1_0,
+    }
+    testLogger.test('Faber accepts presentation proposal from Alice')
+    const proofRecord = await faberAgent.proofs.acceptProposal(acceptProposalOptions)
+    console.log('proofRecord:', proofRecord)
+
+    testLogger.test('Alice waits for proof request from Faber')
+    faberPresentationRecord = await waitForProofRecord(aliceAgent, {
+      threadId: alicePresentationExchangeRecord.threadId,
+      state: ProofState.RequestReceived,
+    })
+    console.log('faberPresentationRecord', faberPresentationRecord)
   })
 
   // ====================
@@ -100,18 +152,71 @@ describe('Present Proof', () => {
       comment: 'V2 propose proof test',
     }
 
-    const presentationExchangeRecord = await aliceAgent.proofs.proposeProof(proposeOptions)
+    const aliceV2PresentationExchangeRecord = await aliceAgent.proofs.proposeProof(proposeOptions)
 
-    expect(presentationExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
-    expect(presentationExchangeRecord.protocolVersion).toEqual(ProofProtocolVersion.V2_0)
-    expect(presentationExchangeRecord.state).toEqual(ProofState.ProposalSent)
-    expect(presentationExchangeRecord.role).toEqual(ProofRole.Prover)
-    expect(presentationExchangeRecord.threadId).not.toBeNull()
+    expect(aliceV2PresentationExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
+    expect(aliceV2PresentationExchangeRecord.protocolVersion).toEqual(ProofProtocolVersion.V2_0)
+    expect(aliceV2PresentationExchangeRecord.state).toEqual(ProofState.ProposalSent)
+    expect(aliceV2PresentationExchangeRecord.role).toEqual(ProofRole.Prover)
+    expect(aliceV2PresentationExchangeRecord.threadId).not.toBeNull()
 
     testLogger.test('Faber waits for presentation from Alice')
-    const faberPresentationRecord = await waitForProofRecord(faberAgent, {
-      threadId: presentationExchangeRecord.threadId,
+    let faberPresentationRecord = await waitForProofRecord(faberAgent, {
+      threadId: aliceV2PresentationExchangeRecord.threadId,
       state: ProofState.ProposalReceived,
     })
+
+    expect(JsonTransformer.toJSON(aliceV2PresentationExchangeRecord)).toMatchObject({
+      createdAt: expect.any(Date),
+      id: expect.any(String),
+      proposalMessage: {
+        '@type': 'https://didcomm.org/present-proof/2.0/propose-presentation',
+        '@id': expect.any(String),
+        presentation_proposal: {
+          '@type': 'https://didcomm.org/present-proof/1.0/presentation-preview',
+          attributes: [
+            {
+              cred_def_id: undefined,
+              name: 'name',
+              'mime-type': 'text/plain',
+              value: 'John',
+              referent: undefined,
+            },
+            {
+              cred_def_id: undefined,
+              name: 'age',
+              'mime-type': 'text/plain',
+              value: '99',
+              referent: undefined,
+            },
+          ],
+          predicates: [
+            // {
+            //   cred_def_id: credDefId,
+            //   name: 'age',
+            //   predicate: '>=',
+            //   threshold: 50,
+            // },
+          ],
+        },
+      },
+    })
+
+    // TODO Accept Proposal
+    // Accept Proposal
+    // const acceptProposalOptions: AcceptProposalOptions = {
+    //   proofRecordId: faberPresentationRecord.id,
+    //   protocolVersion: ProofProtocolVersion.V2_0,
+    // }
+    // testLogger.test('Faber accepts presentation proposal from Alice')
+    // const proofRecord = await faberAgent.proofs.acceptProposal(acceptProposalOptions)
+    // console.log('v2 proofRecord:', proofRecord)
+
+    // testLogger.test('Alice waits for proof request from Faber')
+    // faberPresentationRecord = await waitForProofRecord(aliceAgent, {
+    //   threadId: aliceV2PresentationExchangeRecord.threadId,
+    //   state: ProofState.RequestReceived,
+    // })
+    // console.log('v2 faberPresentationRecord', faberPresentationRecord)
   })
 })

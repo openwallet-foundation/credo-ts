@@ -3,10 +3,10 @@ import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type { ProofRecord } from '../../repository'
 import type { V2ProofService } from '../V2ProofService'
-import type { ProofRequestAsResponse, ProofRequestsOptions } from '../interface'
+import type { AcceptProposalOptions, ProofRequestAsResponse } from '../interface'
 
 import { createOutboundMessage } from '../../../../agent/helpers'
-import { ProofRequestOptions } from '../../v1/models/ProofRequest'
+import { ProofProtocolVersion } from '../../ProofProtocolVersion'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
 export class V2ProposePresentationHandler implements Handler {
@@ -50,15 +50,21 @@ export class V2ProposePresentationHandler implements Handler {
       return
     }
 
-    const proofRequestsOptions: ProofRequestsOptions = {
-      name: 'proof-request',
-      version: '1.0',
+    const acceptProposal: AcceptProposalOptions = {
+      protocolVersion: ProofProtocolVersion.V2_0,
+      proofFormats: {
+        indy: {
+          proofRequestOptions: {
+            name: 'proof-request',
+            version: '1.0',
+          },
+          presentationProposal: proofRecord.proposalMessage?.presentationProposal,
+        },
+      },
+      proofRecordId: proofRecord.id,
     }
 
-    const proofRequest = await this.proofService.createProofRequestFromProposal(
-      proofRecord.proposalMessage?.presentationProposal,
-      proofRequestsOptions
-    )
+    const proofRequest = await this.proofService.createProofRequestFromProposal(acceptProposal)
 
     const proofRequestAsResponse: ProofRequestAsResponse = {
       proofRecord,
