@@ -30,6 +30,7 @@ export class Listener{
 
     private async newCredentialPrompt(payload: any, aliceInquirer: AliceInquirer) {
       this.turnListenerOn()
+      console.log(payload.credentialPreview)
       await aliceInquirer.acceptCredentialOffer(payload)
       this.turnListenerOff()
       aliceInquirer.processAnswer()

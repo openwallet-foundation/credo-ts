@@ -1,4 +1,3 @@
-import { ProofEventTypes, ProofState, ProofStateChangedEvent } from '@aries-framework/core';
 import { clear } from 'console';
 import figlet from 'figlet';
 import inquirer from 'inquirer'
