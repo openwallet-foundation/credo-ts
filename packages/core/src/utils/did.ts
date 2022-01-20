@@ -16,6 +16,7 @@
  */
 
 import { BufferEncoder } from './BufferEncoder'
+import { Buffer } from './buffer'
 
 export const FULL_VERKEY_REGEX = /^[1-9A-HJ-NP-Za-km-z]{43,44}$/
 export const ABBREVIATED_VERKEY_REGEX = /^~[1-9A-HJ-NP-Za-km-z]{21,22}$/
