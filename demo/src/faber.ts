@@ -1,15 +1,15 @@
-import { ConnectionInvitationMessage, CredentialPreview, JsonTransformer } from '@aries-framework/core';
-import { CredDef, Schema } from 'indy-sdk-react-native';
-import { BaseAgent } from './base_agent';
-import { JsonEncoder } from '@aries-framework/core/src/utils/JsonEncoder';
-import { Color, Output } from './output_class';
-import { uuid } from '@aries-framework/core/build/utils/uuid';
-import { runFaber } from './faber_inquirer';
-import { ProofAttributeInfo } from '@aries-framework/core';
-import { AttributeFilter } from '@aries-framework/core';
-import inquirer from "inquirer";
+import { ConnectionInvitationMessage, CredentialPreview, JsonTransformer } from '@aries-framework/core'
+import { CredDef, Schema } from 'indy-sdk-react-native'
+import { BaseAgent } from './base_agent'
+import { JsonEncoder } from '@aries-framework/core/src/utils/JsonEncoder'
+import { Color, Output } from './output_class'
+import { uuid } from '@aries-framework/core/build/utils/uuid'
+import { runFaber } from './faber_inquirer'
+import { ProofAttributeInfo } from '@aries-framework/core'
+import { AttributeFilter } from '@aries-framework/core'
+import inquirer from 'inquirer'
 
-const ui = new inquirer.ui.BottomBar();
+const ui = new inquirer.ui.BottomBar()
 
 export class Faber extends BaseAgent {
   connectionRecordAliceId?: string
@@ -38,7 +38,7 @@ export class Faber extends BaseAgent {
 
     try {
       invitationJson = JsonEncoder.fromBase64(invitationJson)
-    } catch(e){
+    } catch (e) {
       console.log(`${Color.green}\nIt looks like your invitation link is not correctly formatted?\n${Color.reset}`)
       return
     }
@@ -46,7 +46,7 @@ export class Faber extends BaseAgent {
     const invitationMessage = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
     return await this.agent.connections.receiveInvitation(invitationMessage)
   }
-  
+
   private async waitForConnection(connectionRecord: any) {
     connectionRecord = await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
     console.log(`${Color.green}${Output.connectionEstablished}${Color.reset}`)
@@ -68,35 +68,35 @@ export class Faber extends BaseAgent {
     console.log(`${Color.purlpe}Attributes: ${Color.reset}${attributes[0]}, ${attributes[1]}, ${attributes[2]}\n`)
   }
 
-  private async registerSchema(){
+  private async registerSchema() {
     const schemaTemplate = {
       name: 'Faber College' + uuid(),
       version: '1.0.0',
-      attributes: ['name', 'degree', 'date']
+      attributes: ['name', 'degree', 'date'],
     }
     this.printSchema(schemaTemplate.name, schemaTemplate.version, schemaTemplate.attributes)
     ui.updateBottomBar(`${Color.green}\nRegistering schema...\n`)
     const schema = await this.agent.ledger.registerSchema(schemaTemplate)
-    ui.updateBottomBar("\nSchema registerd!\n")
+    ui.updateBottomBar('\nSchema registerd!\n')
     return schema
   }
 
   private async registerCredentialDefiniton(schema: Schema) {
-    ui.updateBottomBar("\nRegistering credential defenition...\n")
+    ui.updateBottomBar('\nRegistering credential defenition...\n')
     this.credentialDefinition = await this.agent.ledger.registerCredentialDefinition({
       schema,
       tag: 'latest',
       supportRevocation: false,
     })
-    ui.updateBottomBar("\nCredential definition registerd!!\n")
+    ui.updateBottomBar('\nCredential definition registerd!!\n')
     return this.credentialDefinition
   }
 
   private getCredentialPreview() {
     const credentialPreview = CredentialPreview.fromRecord({
-      'name':  'Alice Smith',
-      'degree': 'Computer Science',
-      'date': '01/01/2022'
+      name: 'Alice Smith',
+      degree: 'Computer Science',
+      date: '01/01/2022',
     })
     return credentialPreview
   }
@@ -107,9 +107,9 @@ export class Faber extends BaseAgent {
     const credentialPreview = this.getCredentialPreview()
     const connectionRecord = await this.getConnectionRecord()
 
-    ui.updateBottomBar("\nSending credential offer...\n")
+    ui.updateBottomBar('\nSending credential offer...\n')
     await this.agent.credentials.offerCredential(connectionRecord.id, {
-      credentialDefinitionId: credentialDefinition.id, 
+      credentialDefinitionId: credentialDefinition.id,
       preview: credentialPreview,
     })
     ui.updateBottomBar(`\nCredential offer send!\n${Color.reset}`)
@@ -117,7 +117,7 @@ export class Faber extends BaseAgent {
 
   async printProofFlow(print: string) {
     ui.updateBottomBar(print)
-    await new Promise(f => setTimeout(f, 2000));
+    await new Promise((f) => setTimeout(f, 2000))
   }
 
   async newProofAttribute() {
@@ -144,7 +144,7 @@ export class Faber extends BaseAgent {
     ui.updateBottomBar(`\nProof request send!\n${Color.reset}`)
   }
 
-  async sendMessage (message: string) {
+  async sendMessage(message: string) {
     const connectionRecord = await this.getConnectionRecord()
     await this.agent.basicMessages.sendMessage(connectionRecord.id, message)
   }
