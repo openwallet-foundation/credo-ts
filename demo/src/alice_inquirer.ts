@@ -1,6 +1,9 @@
+import type { CredentialRecord, ProofRecord } from '@aries-framework/core'
+
 import { clear } from 'console'
-import figlet from 'figlet'
+import { textSync } from 'figlet'
 import inquirer from 'inquirer'
+
 import { Alice } from './alice'
 import { BaseInquirer } from './base_inquirer'
 import { Listener } from './listener'
@@ -14,11 +17,11 @@ enum PromptOptions {
 }
 
 export class AliceInquirer extends BaseInquirer {
-  alice: Alice
-  promptOptionsString: string[]
-  listener: Listener
+  public alice: Alice
+  public promptOptionsString: string[]
+  public listener: Listener
 
-  constructor(alice: Alice) {
+  public constructor(alice: Alice) {
     super()
     this.alice = alice
     this.listener = new Listener()
@@ -31,11 +34,11 @@ export class AliceInquirer extends BaseInquirer {
     return new AliceInquirer(alice)
   }
 
-  async getPromptChoice() {
+  private async getPromptChoice() {
     return await inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
   }
 
-  async processAnswer() {
+  public async processAnswer() {
     const choice = await this.getPromptChoice()
     if (this.listener.on === true) {
       return
@@ -57,31 +60,31 @@ export class AliceInquirer extends BaseInquirer {
     this.processAnswer()
   }
 
-  async acceptCredentialOffer(payload: any) {
+  public async acceptCredentialOffer(credentialRecord: CredentialRecord) {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.credentialOfferTitle)])
     if (confirm.options === 'no') {
-      await this.alice.agent.credentials.declineOffer(payload.credentialRecord.id)
+      await this.alice.agent.credentials.declineOffer(credentialRecord.id)
     } else if (confirm.options === 'yes') {
-      await this.alice.acceptCredentialOffer(payload)
+      await this.alice.acceptCredentialOffer(credentialRecord)
     }
   }
 
-  async acceptProofRequest(payload: any) {
+  public async acceptProofRequest(proofRecord: ProofRecord) {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.proofRequestTitle)])
     if (confirm.options === 'no') {
-      await this.alice.agent.proofs.declineRequest(payload.proofRecord.id)
+      await this.alice.agent.proofs.declineRequest(proofRecord.id)
     } else if (confirm.options === 'yes') {
-      await this.alice.acceptProofRequest(payload)
+      await this.alice.acceptProofRequest(proofRecord)
     }
   }
 
-  async connection() {
+  public async connection() {
     await this.alice.setupConnection()
     this.listener.credentialOfferListener(this.alice, this)
     this.listener.proofRequestListener(this.alice, this)
   }
 
-  async message() {
+  public async message() {
     const message = await this.inquireMessage()
     if (message === null) {
       return
@@ -89,7 +92,7 @@ export class AliceInquirer extends BaseInquirer {
     this.alice.sendMessage(message)
   }
 
-  async exit() {
+  public async exit() {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
     if (confirm.options === 'no') {
       return
@@ -98,20 +101,21 @@ export class AliceInquirer extends BaseInquirer {
     }
   }
 
-  async restart() {
+  public async restart() {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
     if (confirm.options === 'no') {
       this.processAnswer()
       return
     } else if (confirm.options === 'yes') {
       await this.alice.restart()
+      //here it needs to be restarted
     }
   }
 }
 
 export const runAlice = async () => {
   clear()
-  console.log(figlet.textSync('Alice', { horizontalLayout: 'full' }))
+  console.log(textSync('Alice', { horizontalLayout: 'full' }))
   const alice = await AliceInquirer.build()
   alice.processAnswer()
 }

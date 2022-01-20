@@ -1,12 +1,14 @@
+import type { CredentialRecord } from 'packages/core/src/modules/credentials'
+import type { ProofRecord } from 'packages/core/src/modules/proofs'
+
 import { BaseAgent } from './base_agent'
 import { Color, Output } from './output_class'
-import { runAlice } from './alice_inquirer'
 
 export class Alice extends BaseAgent {
-  connectionRecordFaberId?: string
-  credDef: string
+  public connectionRecordFaberId?: string
+  public credDef: string
 
-  constructor(port: number, name: string) {
+  public constructor(port: number, name: string) {
     super(port, name)
     this.credDef = '7KuDTpQh3GJ7Gp6kErpWvM:3:CL:115269:latest'
   }
@@ -40,41 +42,37 @@ export class Alice extends BaseAgent {
     console.log(`${Color.green}${Output.connectionEstablished}${Color.reset}`)
   }
 
-  async setupConnection() {
+  public async setupConnection() {
     await this.printConnectionInvite()
     await this.waitForConnection()
   }
 
-  async acceptCredentialOffer(payload: any) {
-    await this.agent.credentials.acceptOffer(payload.credentialRecord.id)
+  public async acceptCredentialOffer(credentialRecord: CredentialRecord) {
+    await this.agent.credentials.acceptOffer(credentialRecord.id)
     console.log(`${Color.green}\nCredential offer accepted!\n${Color.reset}`)
   }
 
-  async acceptProofRequest(payload: any) {
-    const retrievedCredentials = await this.agent.proofs.getRequestedCredentialsForProofRequest(
-      payload.proofRecord.id,
-      {
-        filterByPresentationPreview: true,
-      }
-    )
+  public async acceptProofRequest(proofRecord: ProofRecord) {
+    const retrievedCredentials = await this.agent.proofs.getRequestedCredentialsForProofRequest(proofRecord.id, {
+      filterByPresentationPreview: true,
+    })
     const requestedCredentials = this.agent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
-    await this.agent.proofs.acceptRequest(payload.proofRecord.id, requestedCredentials)
+    await this.agent.proofs.acceptRequest(proofRecord.id, requestedCredentials)
     console.log(`${Color.green}\nProof request accepted!\n${Color.reset}`)
   }
 
-  async sendMessage(message: string) {
+  public async sendMessage(message: string) {
     const connectionRecord = await this.getConnectionRecord()
     await this.agent.basicMessages.sendMessage(connectionRecord.id, message)
   }
 
-  async exit() {
+  public async exit() {
     console.log(Output.exit)
     await this.agent.shutdown()
     process.exit()
   }
 
-  async restart() {
+  public async restart() {
     await this.agent.shutdown()
-    runAlice()
   }
 }
