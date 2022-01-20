@@ -53,6 +53,23 @@ module.exports = {
   },
   overrides: [
     {
+      files: ['packages/core/**'],
+      rules: {
+        'no-restricted-globals': [
+          'error',
+          {
+            name: 'Buffer',
+            message: 'Global buffer is not supported on all platforms. Import buffer from `src/utils/buffer`',
+          },
+          {
+            name: 'AbortController',
+            message:
+              "Global AbortController is not supported on all platforms. Use `import { AbortController } from 'abort-controller'`",
+          },
+        ],
+      },
+    },
+    {
       files: ['jest.config.ts', '.eslintrc.js'],
       env: {
         node: true,
