@@ -2,7 +2,7 @@ import type { Wallet } from '@aries-framework/core'
 
 import { getAgentConfig } from '../../../tests/helpers'
 import { DidKey, KeyType } from '../../modules/dids'
-import { JsonEncoder } from '../../utils'
+import { Buffer, JsonEncoder } from '../../utils'
 import { IndyWallet } from '../../wallet/IndyWallet'
 import { JwsService } from '../JwsService'
 
@@ -67,6 +67,7 @@ describe('JwsService', () => {
       expect(isValid).toBe(true)
       expect(signerVerkeys).toEqual([didJwsz6Mkf.VERKEY, didJwsz6Mkv.VERKEY])
     })
+
     it('returns false if the jws signature does not match the payload', async () => {
       const payload = JsonEncoder.toBuffer({ ...didJwsz6Mkf.DATA_JSON, did: 'another_did' })
 
@@ -77,6 +78,15 @@ describe('JwsService', () => {
 
       expect(isValid).toBe(false)
       expect(signerVerkeys).toMatchObject([])
+    })
+
+    it('throws an error if the jws signatures array does not contain a JWS', async () => {
+      await expect(
+        jwsService.verifyJws({
+          payload: new Buffer([]),
+          jws: { signatures: [] },
+        })
+      ).rejects.toThrowError('Unable to verify JWS: No entries in JWS signatures array.')
     })
   })
 })
