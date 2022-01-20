@@ -1,4 +1,4 @@
-import { ConnectionInvitationMessage, CredentialEventTypes, CredentialPreview, CredentialState, CredentialStateChangedEvent, JsonTransformer } from '@aries-framework/core';
+import { ConnectionInvitationMessage, CredentialPreview, JsonTransformer } from '@aries-framework/core';
 import { CredDef, Schema } from 'indy-sdk-react-native';
 import { BaseAgent } from './base_agent';
 import { JsonEncoder } from '@aries-framework/core/src/utils/JsonEncoder';
@@ -7,6 +7,9 @@ import { uuid } from '@aries-framework/core/build/utils/uuid';
 import { runFaber } from './faber_inquirer';
 import { ProofAttributeInfo } from '@aries-framework/core';
 import { AttributeFilter } from '@aries-framework/core';
+import inquirer from "inquirer";
+
+const ui = new inquirer.ui.BottomBar();
 
 export class Faber extends BaseAgent {
   connectionRecordAliceId?: string
@@ -58,29 +61,42 @@ export class Faber extends BaseAgent {
     this.connectionRecordAliceId = await this.waitForConnection(connectionRecord)
   }
 
+  private printSchema(name: string, version: string, attributes: string[]) {
+    console.log(`\n\nThe credential definition will look like this:\n`)
+    console.log(`${Color.purlpe}Name: ${Color.reset}${name}`)
+    console.log(`${Color.purlpe}Version: ${Color.reset}${version}`)
+    console.log(`${Color.purlpe}Attributes: ${Color.reset}${attributes[0]}, ${attributes[1]}, ${attributes[2]}\n`)
+  }
+
   private async registerSchema(){
-    const schema = await this.agent.ledger.registerSchema({
-      name: 'koninklijke luchtvaart maatschappij' + uuid(),
-      version: '1.0.6',
-      attributes: ['departure date', 'returning date', 'actually happening']
-    })
+    const schemaTemplate = {
+      name: 'Faber College' + uuid(),
+      version: '1.0.0',
+      attributes: ['name', 'degree', 'date']
+    }
+    this.printSchema(schemaTemplate.name, schemaTemplate.version, schemaTemplate.attributes)
+    ui.updateBottomBar(`${Color.green}\nRegistering schema...\n`)
+    const schema = await this.agent.ledger.registerSchema(schemaTemplate)
+    ui.updateBottomBar("\nSchema registerd!\n")
     return schema
   }
 
   private async registerCredentialDefiniton(schema: Schema) {
+    ui.updateBottomBar("\nRegistering credential defenition...\n")
     this.credentialDefinition = await this.agent.ledger.registerCredentialDefinition({
       schema,
       tag: 'latest',
       supportRevocation: false,
     })
+    ui.updateBottomBar("\nCredential definition registerd!!\n")
     return this.credentialDefinition
   }
 
   private getCredentialPreview() {
     const credentialPreview = CredentialPreview.fromRecord({
-      'departure date':  '05/01/2022',
-      'returning date': '01/02/2022',
-      'actually happening': 'yes'
+      'name':  'Alice Smith',
+      'degree': 'Computer Science',
+      'date': '01/01/2022'
     })
     return credentialPreview
   }
@@ -91,17 +107,24 @@ export class Faber extends BaseAgent {
     const credentialPreview = this.getCredentialPreview()
     const connectionRecord = await this.getConnectionRecord()
 
+    ui.updateBottomBar("\nSending credential offer...\n")
     await this.agent.credentials.offerCredential(connectionRecord.id, {
       credentialDefinitionId: credentialDefinition.id, 
       preview: credentialPreview,
     })
-    console.log(`${Color.green}\nCredential offer send!\n${Color.reset}`)
+    ui.updateBottomBar(`\nCredential offer send!\n${Color.reset}`)
+  }
+
+  async printProofFlow(print: string) {
+    ui.updateBottomBar(print)
+    await new Promise(f => setTimeout(f, 2000));
   }
 
   async newProofAttribute() {
+    await this.printProofFlow(`${Color.green}\nCreating new proof attribute for 'name' ...\n`)
     return {
       name: new ProofAttributeInfo({
-        name: 'actually happening',
+        name: 'name',
         restrictions: [
           new AttributeFilter({
             credentialDefinitionId: this.credentialDefinition?.id,
@@ -114,10 +137,11 @@ export class Faber extends BaseAgent {
   async sendProofRequest() {
     const connectionRecord = await this.getConnectionRecord()
     const proofAttribute = await this.newProofAttribute()
+    await this.printProofFlow(`${Color.green}\nRequesting proof...\n`)
     await this.agent.proofs.requestProof(connectionRecord.id, {
       requestedAttributes: proofAttribute,
     })
-    console.log(`${Color.green}\Proof request send!\n${Color.reset}`)
+    ui.updateBottomBar(`\nProof request send!\n${Color.reset}`)
   }
 
   async sendMessage (message: string) {
@@ -126,7 +150,7 @@ export class Faber extends BaseAgent {
   }
 
   async exit() {
-    console.log("Exiting...")
+    console.log(Output.exit)
     await this.agent.shutdown()
     process.exit()
   }

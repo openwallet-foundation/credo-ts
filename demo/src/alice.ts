@@ -1,4 +1,3 @@
-import { PresentationPreview, PresentationPreviewAttribute, ProofEventTypes, ProofState, ProofStateChangedEvent } from '@aries-framework/core'
 import { BaseAgent } from './base_agent';
 import { Color, Output } from './output_class';
 import { runAlice } from './alice_inquirer';
@@ -29,7 +28,7 @@ export class Alice extends BaseAgent {
     const invite = await this.agent.connections.createConnection()
     this.connectionRecordFaberId = invite.connectionRecord.id
 
-    console.log('\nYour invitation link:\n', invite.invitation.toUrl({domain: `http://localhost:${this.port}`}), '\n')
+    console.log(Output.connectionLink, invite.invitation.toUrl({domain: `http://localhost:${this.port}`}), '\n')
     return invite.connectionRecord
   }
 
@@ -66,7 +65,7 @@ export class Alice extends BaseAgent {
   }
 
   async exit() {
-    console.log("Exiting...")
+    console.log(Output.exit)
     await this.agent.shutdown()
     process.exit()
   }
