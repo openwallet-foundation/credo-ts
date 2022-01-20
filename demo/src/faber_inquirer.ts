@@ -6,7 +6,6 @@ import { Faber } from './faber';
 import { Listener } from './listener';
 import { Title } from './output_class';
 
-
 enum PromptOptions {
   Connection = "setup connection",
   Credential = "offer credential",
@@ -50,10 +49,10 @@ export class FaberInquirer extends BaseInquirer{
           break
         case PromptOptions.Credential:
           await this.credential()
-          break
+          return
         case PromptOptions.Proof:
           await this.proof()
-          break
+          return
         case PromptOptions.Message:
           await this.message()
           break
@@ -75,10 +74,12 @@ export class FaberInquirer extends BaseInquirer{
 
     async credential() {
       await this.faber.issueCredential()
+      this.listener.credentialAcceptedListener(this.faber, this)
     }
 
     async proof() {
       await this.faber.sendProofRequest()
+      this.listener.proofAcceptedListener(this.faber, this)
     }
 
     async message() {
