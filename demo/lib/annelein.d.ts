@@ -1,1 +1,0 @@
-import { Agent } from '@aries-framework/core';
