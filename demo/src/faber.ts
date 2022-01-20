@@ -1,22 +1,29 @@
-import { ConnectionInvitationMessage, CredentialPreview, JsonTransformer } from '@aries-framework/core'
-import { CredDef, Schema } from 'indy-sdk-react-native'
-import { BaseAgent } from './base_agent'
-import { JsonEncoder } from '@aries-framework/core/src/utils/JsonEncoder'
-import { Color, Output } from './output_class'
-import { uuid } from '@aries-framework/core/build/utils/uuid'
-import { runFaber } from './faber_inquirer'
-import { ProofAttributeInfo } from '@aries-framework/core'
-import { AttributeFilter } from '@aries-framework/core'
-import inquirer from 'inquirer'
+import type { ConnectionRecord } from '@aries-framework/core'
+import type { CredDef, Schema } from 'indy-sdk-react-native'
+import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-const ui = new inquirer.ui.BottomBar()
+import {
+  ConnectionInvitationMessage,
+  CredentialPreview,
+  JsonTransformer,
+  ProofAttributeInfo,
+  AttributeFilter,
+} from '@aries-framework/core'
+import { uuid } from '@aries-framework/core/build/utils/uuid'
+import { JsonEncoder } from '@aries-framework/core/src/utils/JsonEncoder'
+import { ui } from 'inquirer'
+
+import { BaseAgent } from './base_agent'
+import { Color, Output } from './output_class'
 
 export class Faber extends BaseAgent {
-  connectionRecordAliceId?: string
-  credentialDefinition?: CredDef
+  public connectionRecordAliceId?: string
+  public credentialDefinition?: CredDef
+  public ui: BottomBar
 
-  constructor(port: number, name: string) {
+  public constructor(port: number, name: string) {
     super(port, name)
+    this.ui = new ui.BottomBar()
   }
 
   public static async build(): Promise<Faber> {
@@ -47,14 +54,14 @@ export class Faber extends BaseAgent {
     return await this.agent.connections.receiveInvitation(invitationMessage)
   }
 
-  private async waitForConnection(connectionRecord: any) {
+  private async waitForConnection(connectionRecord: ConnectionRecord) {
     connectionRecord = await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
     console.log(`${Color.green}${Output.connectionEstablished}${Color.reset}`)
     return connectionRecord.id
   }
 
-  async acceptConnection(invitation_url: string) {
-    let connectionRecord = await this.receiveConnectionRequest(invitation_url)
+  public async acceptConnection(invitation_url: string) {
+    const connectionRecord = await this.receiveConnectionRequest(invitation_url)
     if (connectionRecord === undefined) {
       return
     }
@@ -75,20 +82,20 @@ export class Faber extends BaseAgent {
       attributes: ['name', 'degree', 'date'],
     }
     this.printSchema(schemaTemplate.name, schemaTemplate.version, schemaTemplate.attributes)
-    ui.updateBottomBar(`${Color.green}\nRegistering schema...\n`)
+    this.ui.updateBottomBar(`${Color.green}\nRegistering schema...\n`)
     const schema = await this.agent.ledger.registerSchema(schemaTemplate)
-    ui.updateBottomBar('\nSchema registerd!\n')
+    this.ui.updateBottomBar('\nSchema registerd!\n')
     return schema
   }
 
   private async registerCredentialDefiniton(schema: Schema) {
-    ui.updateBottomBar('\nRegistering credential defenition...\n')
+    this.ui.updateBottomBar('\nRegistering credential defenition...\n')
     this.credentialDefinition = await this.agent.ledger.registerCredentialDefinition({
       schema,
       tag: 'latest',
       supportRevocation: false,
     })
-    ui.updateBottomBar('\nCredential definition registerd!!\n')
+    this.ui.updateBottomBar('\nCredential definition registerd!!\n')
     return this.credentialDefinition
   }
 
@@ -101,26 +108,26 @@ export class Faber extends BaseAgent {
     return credentialPreview
   }
 
-  async issueCredential() {
+  public async issueCredential() {
     const schema = await this.registerSchema()
     const credentialDefinition = await this.registerCredentialDefiniton(schema)
     const credentialPreview = this.getCredentialPreview()
     const connectionRecord = await this.getConnectionRecord()
 
-    ui.updateBottomBar('\nSending credential offer...\n')
+    this.ui.updateBottomBar('\nSending credential offer...\n')
     await this.agent.credentials.offerCredential(connectionRecord.id, {
       credentialDefinitionId: credentialDefinition.id,
       preview: credentialPreview,
     })
-    ui.updateBottomBar(`\nCredential offer send!\n${Color.reset}`)
+    this.ui.updateBottomBar(`\nCredential offer send!\n${Color.reset}`)
   }
 
-  async printProofFlow(print: string) {
-    ui.updateBottomBar(print)
+  private async printProofFlow(print: string) {
+    this.ui.updateBottomBar(print)
     await new Promise((f) => setTimeout(f, 2000))
   }
 
-  async newProofAttribute() {
+  private async newProofAttribute() {
     await this.printProofFlow(`${Color.green}\nCreating new proof attribute for 'name' ...\n`)
     return {
       name: new ProofAttributeInfo({
@@ -134,29 +141,28 @@ export class Faber extends BaseAgent {
     }
   }
 
-  async sendProofRequest() {
+  public async sendProofRequest() {
     const connectionRecord = await this.getConnectionRecord()
     const proofAttribute = await this.newProofAttribute()
     await this.printProofFlow(`${Color.green}\nRequesting proof...\n`)
     await this.agent.proofs.requestProof(connectionRecord.id, {
       requestedAttributes: proofAttribute,
     })
-    ui.updateBottomBar(`\nProof request send!\n${Color.reset}`)
+    this.ui.updateBottomBar(`\nProof request send!\n${Color.reset}`)
   }
 
-  async sendMessage(message: string) {
+  public async sendMessage(message: string) {
     const connectionRecord = await this.getConnectionRecord()
     await this.agent.basicMessages.sendMessage(connectionRecord.id, message)
   }
 
-  async exit() {
+  public async exit() {
     console.log(Output.exit)
     await this.agent.shutdown()
     process.exit()
   }
 
-  async restart() {
+  public async restart() {
     await this.agent.shutdown()
-    runFaber()
   }
 }

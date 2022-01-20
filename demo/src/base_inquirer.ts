@@ -1,11 +1,12 @@
 import inquirer from 'inquirer'
+
 import { Title } from './output_class'
 
 export class BaseInquirer {
-  optionsInquirer: any
-  inputInquirer: any
+  public optionsInquirer: any
+  public inputInquirer: any
 
-  constructor() {
+  public constructor() {
     this.optionsInquirer = {
       type: 'list',
       prefix: '',
@@ -22,27 +23,27 @@ export class BaseInquirer {
     }
   }
 
-  inquireOptions(promptOptions: string[]) {
+  public inquireOptions(promptOptions: string[]) {
     const optionsInquirer = this.optionsInquirer
     optionsInquirer.message = Title.optionsTitle
     optionsInquirer.choices = promptOptions
     return optionsInquirer
   }
 
-  inquireInput(title: string) {
+  public inquireInput(title: string) {
     const inputInquirer = this.inputInquirer
     inputInquirer.message = title
     return inputInquirer
   }
 
-  inquireConfirmation(title: string) {
+  public inquireConfirmation(title: string) {
     const optionsInquirer = this.optionsInquirer
     optionsInquirer.message = title
     optionsInquirer.choices = ['yes', 'no']
     return optionsInquirer
   }
 
-  async inquireMessage() {
+  public async inquireMessage() {
     const inputInquirer = this.inputInquirer
     inputInquirer.message = Title.messageTitle
     const message = await inquirer.prompt([inputInquirer])

@@ -59,6 +59,12 @@ module.exports = {
       },
     },
     {
+      files: ['demo/**'],
+      rules: {
+        'no-console': 'off',
+      },
+    },
+    {
       files: ['*.test.ts', '**/__tests__/**', '**/tests/**', 'jest.*.ts', 'samples/**', 'demo/**'],
       env: {
         jest: true,

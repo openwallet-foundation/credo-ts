@@ -7,7 +7,10 @@ import type {
   CredentialStateChangedEvent,
   ProofStateChangedEvent,
   BasicMessageStateChangedEvent,
+  ProofRecord,
+  CredentialRecord,
 } from '@aries-framework/core'
+import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
 import {
   CredentialState,
@@ -16,17 +19,17 @@ import {
   ProofEventTypes,
   CredentialEventTypes,
 } from '@aries-framework/core'
-import inquirer from 'inquirer'
+import { ui } from 'inquirer'
 
 import { Color } from './output_class'
 
 export class Listener {
-  on: boolean
-  ui: any
+  public on: boolean
+  private ui: BottomBar
 
-  constructor() {
+  public constructor() {
     this.on = false
-    this.ui = new inquirer.ui.BottomBar()
+    this.ui = new ui.BottomBar()
   }
 
   private turnListenerOn() {
@@ -37,14 +40,14 @@ export class Listener {
     this.on = false
   }
 
-  private printCredentialAttributes(payload: any) {
+  private printCredentialAttributes(payload: CredentialRecord) {
     console.log('\n\nCredential preview:')
     for (const attribute in payload.credentialAttributes) {
       console.log(`\n${attribute.toString}`)
     }
   }
 
-  private async newCredentialPrompt(payload: any, aliceInquirer: AliceInquirer) {
+  private async newCredentialPrompt(payload: CredentialRecord, aliceInquirer: AliceInquirer) {
     this.printCredentialAttributes(payload)
     this.turnListenerOn()
     await aliceInquirer.acceptCredentialOffer(payload)
@@ -53,19 +56,19 @@ export class Listener {
     aliceInquirer.processAnswer()
   }
 
-  credentialOfferListener(alice: Alice, aliceInquirer: AliceInquirer) {
+  public credentialOfferListener(alice: Alice, aliceInquirer: AliceInquirer) {
     alice.agent.events.on(
       CredentialEventTypes.CredentialStateChanged,
       async ({ payload }: CredentialStateChangedEvent) => {
         if (payload.credentialRecord.state === CredentialState.OfferReceived) {
-          await this.newCredentialPrompt(payload, aliceInquirer)
+          await this.newCredentialPrompt(payload.credentialRecord, aliceInquirer)
         }
         return
       }
     )
   }
 
-  messageListener(agent: Agent, name: string) {
+  public messageListener(agent: Agent, name: string) {
     agent.events.on(BasicMessageEventTypes.BasicMessageStateChanged, async (event: BasicMessageStateChangedEvent) => {
       if (event.payload.basicMessageRecord.role === 'receiver') {
         this.ui.updateBottomBar(
@@ -76,7 +79,7 @@ export class Listener {
     })
   }
 
-  private async newProofRequestPrompt(payload: any, aliceInquirer: AliceInquirer) {
+  private async newProofRequestPrompt(payload: ProofRecord, aliceInquirer: AliceInquirer) {
     this.turnListenerOn()
     await aliceInquirer.acceptProofRequest(payload)
     this.turnListenerOff()
@@ -84,16 +87,16 @@ export class Listener {
     aliceInquirer.processAnswer()
   }
 
-  proofRequestListener(alice: Alice, aliceInquirer: AliceInquirer) {
+  public proofRequestListener(alice: Alice, aliceInquirer: AliceInquirer) {
     alice.agent.events.on(ProofEventTypes.ProofStateChanged, async ({ payload }: ProofStateChangedEvent) => {
       if (payload.proofRecord.state === ProofState.RequestReceived) {
-        await this.newProofRequestPrompt(payload, aliceInquirer)
+        await this.newProofRequestPrompt(payload.proofRecord, aliceInquirer)
       }
       return
     })
   }
 
-  proofAcceptedListener(faber: Faber, faberInquirer: FaberInquirer) {
+  public proofAcceptedListener(faber: Faber, faberInquirer: FaberInquirer) {
     faber.agent.events.on(ProofEventTypes.ProofStateChanged, async ({ payload }: ProofStateChangedEvent) => {
       if (payload.proofRecord.state === ProofState.Done || payload.proofRecord.state === ProofState.Declined) {
         faberInquirer.processAnswer()
@@ -102,7 +105,7 @@ export class Listener {
     })
   }
 
-  credentialAcceptedListener(faber: Faber, faberInquirer: FaberInquirer) {
+  public credentialAcceptedListener(faber: Faber, faberInquirer: FaberInquirer) {
     faber.agent.events.on(
       CredentialEventTypes.CredentialStateChanged,
       async ({ payload }: CredentialStateChangedEvent) => {

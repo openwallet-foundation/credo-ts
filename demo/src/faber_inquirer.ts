@@ -1,6 +1,7 @@
 import { clear } from 'console'
-import figlet from 'figlet'
+import { textSync } from 'figlet'
 import inquirer from 'inquirer'
+
 import { BaseInquirer } from './base_inquirer'
 import { Faber } from './faber'
 import { Listener } from './listener'
@@ -16,11 +17,11 @@ enum PromptOptions {
 }
 
 export class FaberInquirer extends BaseInquirer {
-  faber: Faber
-  promptOptionsString: string[]
-  listener: Listener
+  public faber: Faber
+  public promptOptionsString: string[]
+  public listener: Listener
 
-  constructor(faber: Faber) {
+  public constructor(faber: Faber) {
     super()
     this.faber = faber
     this.listener = new Listener()
@@ -33,12 +34,12 @@ export class FaberInquirer extends BaseInquirer {
     return new FaberInquirer(faber)
   }
 
-  async getPromptChoice() {
+  private async getPromptChoice() {
     const prompt = inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
     return prompt
   }
 
-  async processAnswer() {
+  public async processAnswer() {
     const choice = await this.getPromptChoice()
     if (this.listener.on === true) {
       return
@@ -66,23 +67,23 @@ export class FaberInquirer extends BaseInquirer {
     this.processAnswer()
   }
 
-  async connection() {
+  public async connection() {
     const title = Title.invitationTitle
     const getUrl = await inquirer.prompt([this.inquireInput(title)])
     await this.faber.acceptConnection(getUrl.input)
   }
 
-  async credential() {
+  public async credential() {
     await this.faber.issueCredential()
     this.listener.credentialAcceptedListener(this.faber, this)
   }
 
-  async proof() {
+  public async proof() {
     await this.faber.sendProofRequest()
     this.listener.proofAcceptedListener(this.faber, this)
   }
 
-  async message() {
+  public async message() {
     const message = await this.inquireMessage()
     if (message === null) {
       return
@@ -90,7 +91,7 @@ export class FaberInquirer extends BaseInquirer {
     this.faber.sendMessage(message)
   }
 
-  async exit() {
+  public async exit() {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
     if (confirm.options === 'no') {
       return
@@ -99,20 +100,21 @@ export class FaberInquirer extends BaseInquirer {
     }
   }
 
-  async restart() {
+  public async restart() {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
     if (confirm.options === 'no') {
       this.processAnswer()
       return
     } else if (confirm.options === 'yes') {
       await this.faber.restart()
+      //this needs to be restarted
     }
   }
 }
 
 export const runFaber = async () => {
   clear()
-  console.log(figlet.textSync('Faber', { horizontalLayout: 'full' }))
+  console.log(textSync('Faber', { horizontalLayout: 'full' }))
   const faber = await FaberInquirer.build()
   faber.processAnswer()
 }
