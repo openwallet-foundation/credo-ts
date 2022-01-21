@@ -8,12 +8,10 @@ import { CredentialRecord, CredentialState } from '../..'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../tests/helpers'
 import testLogger from '../../../../../tests/logger'
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
-import { unitTestLogger } from '../../../../logger'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { LinkedAttachment } from '../../../../utils/LinkedAttachment'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
-import { CredentialFormatType } from '../CredentialExchangeRecord'
 import { CredentialRole } from '../CredentialRole'
 
 describe('credentials', () => {
