@@ -1,6 +1,6 @@
 <h1 align="center"><b>DEMO</b></h1>
 
-This is the Aries Framework Javascript demo. Walk through the AFJ flow yourself together with agents Alice and Faber
+This is the Aries Framework Javascript demo. Walk through the AFJ flow yourself together with agents Alice and Faber.
 
 ## Features
 
@@ -23,29 +23,31 @@ In order to use Aries Framework JavaScript some platform specific dependencies a
 
 These are the steps for running the AFJ demo:
 
-Clone the AFJ git repository
+Clone the AFJ git repository:
 
 ```sh
 git clone https://github.com/hyperledger/aries-framework-javascript.git
 ```
 
-Go to the demo folder
+Open two different terminals next to each other and in both, go to the demo folder:
 
 ```sh
-cd demo
+cd aries-framework-javascript/demo
 ```
 
-Install the project
+Install the project in one of the terminals:
 
 ```sh
 yarn install
 ```
 
-Open two different terminals next to each other and run each agent seperatly
+In the left terminal run Alice:
 
 ```sh
 yarn alice
 ```
+
+In the right terminal run Faber:
 
 ```sh
 yarn faber
@@ -55,27 +57,33 @@ yarn faber
 
 To set up a connection:
 
-- select 'setup connection' in both Agents
+- Select 'setup connection' in both Agents
 - Alice will print a invitation link which you then copy and paste to Faber
 - You have now set up a connection!
 
 To offer a credential:
 
-- select 'offer credential' in Faber
+- Select 'offer credential' in Faber
 - Faber will start with registering a schema and the credential definition accordingly
 - You have now send a credential offer to Alice!
 - Go to Alice to accept the incoming credential offer
 
 To request a proof:
 
-- select 'request proof' in Faber
+- Select 'request proof' in Faber
 - Faber will create a new proof attribute and will then send a proof request to Alice!
 - Go to Alice to accept the incoming proof request
 
 To send a basic message:
 
-- select 'send message' in either one of the Agents
-- Type your message and press Enter
-- Message send!
+- Select 'send message' in either one of the Agents
+- Type your message and press enter
+- Message sent!
 
-Exit the demo by selecting 'Exit', this will shutdown the agent and 'Restart' will do so too but will setup a new agent inmediatly.
+Exit:
+
+- Select 'exit' to shutdown the agent.
+
+Restart:
+
+- Select 'restart', to shutdown the current agent and start a new one
