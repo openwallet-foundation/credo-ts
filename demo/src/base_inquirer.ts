@@ -3,8 +3,8 @@ import inquirer from 'inquirer'
 import { Title } from './output_class'
 
 export class BaseInquirer {
-  public optionsInquirer: any
-  public inputInquirer: any
+  public optionsInquirer: { type: string; prefix: string; name: string; message: string; choices: string[] }
+  public inputInquirer: { type: string; prefix: string; name: string; message: string; choices: string[] }
 
   public constructor() {
     this.optionsInquirer = {
@@ -20,6 +20,7 @@ export class BaseInquirer {
       prefix: '',
       name: 'input',
       message: '',
+      choices: [],
     }
   }
 

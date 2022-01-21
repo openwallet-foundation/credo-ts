@@ -7,6 +7,13 @@ import { Faber } from './faber'
 import { Listener } from './listener'
 import { Title } from './output_class'
 
+export const runFaber = async () => {
+  clear()
+  console.log(textSync('Faber', { horizontalLayout: 'full' }))
+  const faber = await FaberInquirer.build()
+  faber.processAnswer()
+}
+
 enum PromptOptions {
   Connection = 'setup connection',
   Credential = 'offer credential',
@@ -50,10 +57,10 @@ export class FaberInquirer extends BaseInquirer {
         break
       case PromptOptions.Credential:
         await this.credential()
-        return
+        break
       case PromptOptions.Proof:
         await this.proof()
-        return
+        break
       case PromptOptions.Message:
         await this.message()
         break
@@ -71,6 +78,15 @@ export class FaberInquirer extends BaseInquirer {
     const title = Title.invitationTitle
     const getUrl = await inquirer.prompt([this.inquireInput(title)])
     await this.faber.acceptConnection(getUrl.input)
+  }
+
+  public async exitUseCase() {
+    const confirm = await inquirer.prompt([this.inquireConfirmation(`Is the credential offer accepted?`)])
+    if (confirm.options === 'no') {
+      return false
+    } else if (confirm.options === 'yes') {
+      return true
+    }
   }
 
   public async credential() {
@@ -107,16 +123,9 @@ export class FaberInquirer extends BaseInquirer {
       return
     } else if (confirm.options === 'yes') {
       await this.faber.restart()
-      //this needs to be restarted
+      runFaber()
     }
   }
-}
-
-export const runFaber = async () => {
-  clear()
-  console.log(textSync('Faber', { horizontalLayout: 'full' }))
-  const faber = await FaberInquirer.build()
-  faber.processAnswer()
 }
 
 runFaber()
