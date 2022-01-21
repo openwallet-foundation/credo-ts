@@ -7,7 +7,6 @@
   },
   "license": "MIT",
   "scripts": {
-    "start": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
     "alice": " 'ts-node' src/alice_inquirer.ts",
     "faber": " 'ts-node' src/faber_inquirer.ts",
     "create": "yarn build && yarn test",
