@@ -181,8 +181,8 @@ export class ConnectionsModule {
     return connectionRecord
   }
 
-  public async returnWhenIsConnected(connectionId: string): Promise<ConnectionRecord> {
-    return this.connectionService.returnWhenIsConnected(connectionId)
+  public async returnWhenIsConnected(connectionId: string, options?: { timeOutMs: number }): Promise<ConnectionRecord> {
+    return this.connectionService.returnWhenIsConnected(connectionId, options?.timeOutMs)
   }
 
   /**
