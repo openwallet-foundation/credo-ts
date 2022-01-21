@@ -15,7 +15,6 @@ import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialResponseCoordinator } from '../CredentialResponseCoordinator'
 import type {
   AcceptProposalOptions,
-  FormatType,
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
@@ -24,20 +23,14 @@ import type {
 import type { CredentialRepository } from '../repository'
 import type { V1LegacyCredentialService } from '../v1/V1LegacyCredentialService' // tmp
 import type { CredentialProtocolMsgReturnType } from './CredentialMessageBuilder'
-import type {
-  CredentialFormatService,
-  V2CredProposeOfferRequestFormat,
-  V2CredProposalFormat,
-} from './formats/CredentialFormatService'
+import type { CredentialFormatService, V2CredProposeOfferRequestFormat } from './formats/CredentialFormatService'
 import type { V2CredentialFormatSpec } from './formats/V2CredentialFormat'
 import type { V2OfferCredentialMessage } from './messages/V2OfferCredentialMessage'
 import type { V2ProposeCredentialMessage } from './messages/V2ProposeCredentialMessage'
 import type { V2RequestCredentialMessage } from './messages/V2RequestCredentialMessage'
-import type { Attachment } from 'packages/core/src/decorators/attachment/Attachment'
 
 import { AriesFrameworkError } from '../../../error'
 import { unitTestLogger } from '../../../logger'
-import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { isLinkedAttachment } from '../../../utils/attachment'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
@@ -151,7 +144,9 @@ export class V2CredentialService extends CredentialService {
     unitTestLogger('Save meta data and emit state change event')
 
     // Q: How do we set the meta data when there are multiple formats?
-    await formats[0].getMetaDataService().setMetaDataForProposal(proposal.credentialFormats, credentialRecord)
+    for (const format of formats) {
+      await format.getMetaDataService().setMetaDataForProposal(proposal.credentialFormats, credentialRecord)
+    }
 
     return { credentialRecord, message }
   }
@@ -243,10 +238,6 @@ export class V2CredentialService extends CredentialService {
           }
         }
       }
-      // if (attachment && attachment.data.base64) {
-      //   options = JsonEncoder.fromBase64(attachment.data.base64)
-      //   formats[0].getMetaDataService().setMetaDataAndEmitEventForProposal(options, credentialRecord)
-      // }
       await this.credentialRepository.save(credentialRecord)
       await this.emitEvent(credentialRecord)
     }
@@ -289,21 +280,30 @@ export class V2CredentialService extends CredentialService {
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
       )
     }
-    const credentialProposalMessage = credentialRecord.proposalMessage
+    const credentialProposalMessage: V2ProposeCredentialMessage =
+      credentialRecord.proposalMessage as V2ProposeCredentialMessage
     if (!credentialProposalMessage?.credentialProposal) {
       throw new AriesFrameworkError(
         `Credential record with id ${proposal.credentialRecordId} is missing required credential proposal`
       )
     }
 
-    // TODO-MJR - only do this if Indy format present in the message
-    const formatService: CredentialFormatService = this.getFormatService(CredentialFormatType.Indy)
+    // only do this if Indy format present in the message
+    // credential preview is Indy specific
 
-    this.credentialMessageBuilder.setPreview(
-      formatService,
-      proposal,
-      credentialRecord.proposalMessage?.credentialProposal
-    )
+    // MJR-TODO not sure we need this; is this done inside createOfferAsResponse anyway??
+    for (const msg of credentialProposalMessage.formats) {
+      if (msg.format.includes('indy')) {
+        const formatService: CredentialFormatService = this.getFormatService(CredentialFormatType.Indy)
+
+        this.credentialMessageBuilder.setPreview(
+          formatService,
+          proposal,
+          credentialRecord.proposalMessage?.credentialProposal
+        )
+      }
+    }
+
     const message = await this.createOfferAsResponse(credentialRecord, proposal)
 
     await this.updateState(credentialRecord, CredentialState.OfferSent)
@@ -357,7 +357,7 @@ export class V2CredentialService extends CredentialService {
 
     // get the format specific cred offer
 
-    const attachmentData = credentialOfferMessage.offerAttachments[0].data
+    const attachmentData = credentialOfferMessage.attachments[0].data
     const credOffer: V2CredProposeOfferRequestFormat | undefined = formatService.getCredentialPayload(attachmentData)
 
     if (!credOffer) {

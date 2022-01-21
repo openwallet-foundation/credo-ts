@@ -27,7 +27,7 @@ export class V2ProposeCredentialMessage extends AgentMessage {
       this.comment = props.comment
       this.credentialProposal = props.credentialProposal
       this.formats = props.formats
-      this.filtersAttach = props.filtersAttach
+      this.attachments = props.filtersAttach
     }
   }
 
@@ -49,7 +49,7 @@ export class V2ProposeCredentialMessage extends AgentMessage {
     each: true,
   })
   @IsInstance(Attachment, { each: true })
-  public filtersAttach!: Attachment[]
+  public attachments!: Attachment[]
 
   /**
    * Human readable information about this Credential Proposal,

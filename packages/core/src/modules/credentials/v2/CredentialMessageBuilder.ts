@@ -213,8 +213,8 @@ export class CredentialMessageBuilder {
     requestOptions: RequestCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<V2RequestCredentialMessage>> {
     // Assert credential
-    credentialRecord.assertState(CredentialState.OfferReceived)\
-    
+    credentialRecord.assertState(CredentialState.OfferReceived)
+
     for (const service of formatServices) {
       const { formats, requestAttach, credOfferRequest } = await service.getCredentialRequestAttachFormats(
         requestOptions,
@@ -231,9 +231,6 @@ export class CredentialMessageBuilder {
           formats: formatsArray,
           requestsAttach: requestAttachArray,
           comment: requestOptions.comment,
-          attachments: credentialRecord.offerMessage?.attachments?.filter((attachment) =>
-            isLinkedAttachment(attachment)
-          ),
         }
 
         const credentialRequestMessage = new V2RequestCredentialMessage(options)

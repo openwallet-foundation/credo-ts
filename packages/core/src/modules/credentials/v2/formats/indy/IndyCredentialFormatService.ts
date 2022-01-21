@@ -85,11 +85,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @returns object containing associated attachment, formats and offersAttach elements
    *
    */
-  public createOfferAttachFormats(
-    proposal: AcceptProposalOptions,
-    offer: V2CredProposeOfferRequestFormat,
-    messageType: string
-  ): V2AttachmentFormats {
+  public createOfferAttachFormats(proposal: AcceptProposalOptions, messageType: string): V2AttachmentFormats {
     let preview: V2CredentialPreview | undefined
 
     if (proposal?.credentialFormats.indy?.attributes) {
@@ -97,7 +93,8 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     }
     const formats: V2CredentialFormatSpec = this.getFormatIdentifier(messageType)
 
-    const offersAttach: Attachment = this.getFormatData(offer.indy?.payload.credentialPayload, formats.attachId)
+    console.log('>>>>>>>>>>>>>>>>> data = ', proposal.credentialFormats.indy)
+    const offersAttach: Attachment = this.getFormatData(proposal, formats.attachId)
 
     return { preview, formats, offersAttach }
   }
@@ -121,7 +118,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     if (message) {
       const indyFormat = message.formats.find((f) => f.format.includes('indy'))
       if (indyFormat) {
-        const attachment = message.offerAttachments.find((attachment) => attachment.id === indyFormat?.attachId)
+        const attachment = message.attachments.find((attachment) => attachment.id === indyFormat?.attachId)
         if (attachment) {
           const data = attachment.data
           if (data) {
@@ -222,7 +219,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     previewWithAttachments: V2CredentialPreview
   } {
     // Add the linked attachments to the credentialProposal
-    const credPropose: CredPropose = proposal.credentialFormats.indy?.payload as CredPropose
+    const credPropose: CredPropose = proposal.credentialFormats.indy?.payload.credentialPayload as CredPropose
     let attachments: Attachment[] | undefined
     let previewWithAttachments: V2CredentialPreview = new V2CredentialPreview({ attributes: [] })
     if (proposal.credentialFormats.indy && credPropose.linkedAttachments) {
@@ -386,7 +383,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    */
   public getAttachment(message: V2RequestCredentialMessage): Attachment | undefined {
     const indyFormat = message.formats.find((f) => f.format.includes('indy'))
-    const attachment = message.requestsAttach.find((attachment) => attachment.id === indyFormat?.attachId)
+    const attachment = message.attachments.find((attachment) => attachment.id === indyFormat?.attachId)
     return attachment
   }
   private async emitEvent(credentialRecord: CredentialRecord) {

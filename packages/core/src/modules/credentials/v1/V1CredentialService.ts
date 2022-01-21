@@ -8,15 +8,17 @@ import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type {
   AcceptProposalOptions,
+  CredPropose,
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../interfaces'
 import type { CredentialRecord } from '../repository'
+import type { V2CredProposeOfferRequestFormat, CredentialFormatService } from '../v2/formats/CredentialFormatService'
 import type { V2RequestCredentialMessage } from '../v2/messages/V2RequestCredentialMessage'
 import type { OfferCredentialHandler, ProposeCredentialHandler } from './handlers'
-import type { OfferCredentialMessage, RequestCredentialMessage } from './messages'
+import type { OfferCredentialMessage, ProposeCredentialMessage, RequestCredentialMessage } from './messages'
 import type { HandlerInboundMessage } from 'packages/core/src/agent/Handler'
 import type { InboundMessageContext } from 'packages/core/src/agent/models/InboundMessageContext'
 
@@ -119,14 +121,17 @@ export class V1CredentialService extends CredentialService {
     const connection = await this.connectionService.getById(proposal.connectionId)
 
     let credentialProposal: V1CredentialPreview | undefined
-    if (proposal?.credentialFormats.indy?.attributes) {
-      credentialProposal = new V1CredentialPreview({ attributes: proposal?.credentialFormats.indy?.attributes })
+
+    const credPropose: CredPropose = proposal.credentialFormats.indy?.payload.credentialPayload as CredPropose
+
+    if (credPropose.attributes) {
+      credentialProposal = new V1CredentialPreview({ attributes: credPropose.attributes })
     }
 
     const config: CredentialProposeOptions = {
       credentialProposal: credentialProposal,
-      credentialDefinitionId: proposal.credentialFormats.indy?.credentialDefinitionId,
-      linkedAttachments: proposal.credentialFormats.indy?.linkedAttachments,
+      credentialDefinitionId: credPropose.credentialDefinitionId,
+      linkedAttachments: credPropose.linkedAttachments,
     }
 
     // MJR-TODO flip these params around to save a line of code
@@ -152,7 +157,8 @@ export class V1CredentialService extends CredentialService {
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
       )
     }
-    const credentialProposalMessage = credentialRecord.proposalMessage
+    const credentialProposalMessage: ProposeCredentialMessage =
+      credentialRecord.proposalMessage as ProposeCredentialMessage
     if (!credentialProposalMessage?.credentialProposal) {
       throw new AriesFrameworkError(
         `Credential record with id ${proposal.credentialRecordId} is missing required credential proposal`
@@ -219,7 +225,8 @@ export class V1CredentialService extends CredentialService {
       )
     }
 
-    const credentialProposalMessage = credentialRecord.proposalMessage
+    const credentialProposalMessage: ProposeCredentialMessage =
+      credentialRecord.proposalMessage as ProposeCredentialMessage
 
     if (!credentialProposalMessage?.credentialProposal) {
       throw new AriesFrameworkError(
@@ -286,5 +293,10 @@ export class V1CredentialService extends CredentialService {
     }
 
     throw Error('Missing properties from OfferCredentialOptions object: cannot create Offer!')
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public getFormats(credentialFormats: V2CredProposeOfferRequestFormat): CredentialFormatService[] {
+    throw new Error('Method not implemented.')
   }
 }

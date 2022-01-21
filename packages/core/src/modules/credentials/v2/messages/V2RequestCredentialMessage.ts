@@ -15,7 +15,6 @@ export interface V2RequestCredentialMessageOptions {
   requestsAttach: Attachment[]
   comment?: string
   credentialDefinitionId?: string
-  attachments?: Attachment[] // Q: this is from the V1 message: do we need it in V2?
 }
 
 export class V2RequestCredentialMessage extends AgentMessage {
@@ -28,9 +27,8 @@ export class V2RequestCredentialMessage extends AgentMessage {
       this.comment = options.comment
       this.credentialDefinitionId = options.credentialDefinitionId
       this.formats = options.formats
-      this.requestsAttach = options.requestsAttach
+      this.attachments = options.requestsAttach
       this.credentialDefinitionId = options.credentialDefinitionId
-      this.attachments = options.attachments
     }
   }
 
@@ -45,7 +43,7 @@ export class V2RequestCredentialMessage extends AgentMessage {
     each: true,
   })
   @IsInstance(Attachment, { each: true })
-  public requestsAttach!: Attachment[]
+  public attachments!: Attachment[]
 
   /**
    * Human readable information about this Credential Proposal,
