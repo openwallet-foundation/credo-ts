@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-member-accessibility */
 import type {
   CredentialOfferTemplate,
   CredentialProposeOptions,
@@ -7,14 +6,14 @@ import type {
 } from '.'
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
-import type { CredentialRecord } from '../repository'
 import type {
   AcceptProposalOptions,
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
-} from '../v2/interfaces'
+} from '../interfaces'
+import type { CredentialRecord } from '../repository'
 import type { V2RequestCredentialMessage } from '../v2/messages/V2RequestCredentialMessage'
 import type { OfferCredentialHandler, ProposeCredentialHandler } from './handlers'
 import type { OfferCredentialMessage, RequestCredentialMessage } from './messages'

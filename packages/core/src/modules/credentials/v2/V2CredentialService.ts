@@ -13,24 +13,27 @@ import type { IndyLedgerService } from '../../ledger'
 import type { MediationRecipientService } from '../../routing'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialResponseCoordinator } from '../CredentialResponseCoordinator'
-import type { CredentialRepository } from '../repository'
-import type { V1LegacyCredentialService } from '../v1/V1LegacyCredentialService' // tmp
-import type { CredentialProtocolMsgReturnType } from './CredentialMessageBuilder'
-import type { CredentialFormatService } from './formats/CredentialFormatService'
 import type {
   AcceptProposalOptions,
   FormatType,
-  NegotiateOfferOptions,
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
-  V2CredOfferFormat,
+} from '../interfaces'
+import type { CredentialRepository } from '../repository'
+import type { V1LegacyCredentialService } from '../v1/V1LegacyCredentialService' // tmp
+import type { CredentialProtocolMsgReturnType } from './CredentialMessageBuilder'
+import type {
+  CredentialFormatService,
+  V2CredProposeOfferRequestFormat,
   V2CredProposalFormat,
-  V2CredRequestFormat,
-} from './interfaces'
+} from './formats/CredentialFormatService'
+import type { V2CredentialFormatSpec } from './formats/V2CredentialFormat'
 import type { V2OfferCredentialMessage } from './messages/V2OfferCredentialMessage'
+import type { V2ProposeCredentialMessage } from './messages/V2ProposeCredentialMessage'
 import type { V2RequestCredentialMessage } from './messages/V2RequestCredentialMessage'
+import type { Attachment } from 'packages/core/src/decorators/attachment/Attachment'
 
 import { AriesFrameworkError } from '../../../error'
 import { unitTestLogger } from '../../../logger'
@@ -43,16 +46,14 @@ import { CredentialState } from '../CredentialState'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../errors'
 import { CredentialRecord } from '../repository'
 
-import { CredentialRecordType } from './CredentialExchangeRecord'
+import { CredentialFormatType } from './CredentialExchangeRecord'
 import { CredentialMessageBuilder } from './CredentialMessageBuilder'
-import { INDY_ATTACH_ID } from './formats/V2CredentialFormat'
+import { FORMAT_KEYS } from './formats/CredentialFormatService'
 import { IndyCredentialFormatService } from './formats/indy/IndyCredentialFormatService'
 import { JsonLdCredentialFormatService } from './formats/jsonld/JsonLdCredentialFormatService'
 import { V2OfferCredentialHandler } from './handlers/V2OfferCredentialHandler'
 import { V2ProposeCredentialHandler } from './handlers/V2ProposeCredentialHandler'
 import { V2RequestCredentialHandler } from './handlers/V2RequestCredentialHandler'
-
-import { createOutboundMessage } from 'packages/core/src/agent/helpers'
 
 export class V2CredentialService extends CredentialService {
   private credentialService: V1LegacyCredentialService // Temporary while v1 constructor needs this
@@ -110,15 +111,15 @@ export class V2CredentialService extends CredentialService {
    * Gets the correct formatting service for this credential record type, eg indy or jsonld. Others may be
    * added in the future.
    * Each formatting service knows how to format the message structure for the specific record type
-   * @param _credentialRecordType the record type, indy, jsonld, jwt etc.
+   * @param credentialFormatType the format type, indy, jsonld, jwt etc.
    * @returns the formatting service.
    */
-  public getFormatService(credentialRecordType: CredentialRecordType): CredentialFormatService {
+  public getFormatService(credentialFormatType: CredentialFormatType): CredentialFormatService {
     const serviceFormatMap = {
-      [CredentialRecordType.INDY]: IndyCredentialFormatService,
-      [CredentialRecordType.W3C]: JsonLdCredentialFormatService,
+      [CredentialFormatType.Indy]: IndyCredentialFormatService,
+      [CredentialFormatType.JsonLd]: JsonLdCredentialFormatService,
     }
-    return new serviceFormatMap[credentialRecordType](
+    return new serviceFormatMap[credentialFormatType](
       this.credentialRepository,
       this.eventEmitter,
       this.indyIssuerService,
@@ -142,16 +143,53 @@ export class V2CredentialService extends CredentialService {
     unitTestLogger('>> IN SERVICE V2 createProposal')
 
     unitTestLogger('Get the Format Service and Create Proposal Message')
-    const formatService: CredentialFormatService = this.getFormatServiceFrom(proposal)
 
-    const { message, credentialRecord } = this.credentialMessageBuilder.createProposal(formatService, proposal)
+    const formats: CredentialFormatService[] = this.getFormats(proposal.credentialFormats as Record<string, unknown>)
+
+    const { message, credentialRecord } = this.credentialMessageBuilder.createProposal(formats, proposal)
 
     unitTestLogger('Save meta data and emit state change event')
-    await formatService.setMetaDataAndEmitEventForProposal(proposal.credentialFormats, credentialRecord)
+
+    // Q: How do we set the meta data when there are multiple formats?
+    await formats[0].getMetaDataService().setMetaDataForProposal(proposal.credentialFormats, credentialRecord)
 
     return { credentialRecord, message }
   }
 
+  /**
+   * Get all the format service objects for a given credential format from an incoming message
+   * @param messageFormats the format objects containing the format name (eg indy)
+   * @return the credential format service objects in an array - derived from format object keys
+   */
+  public getFormatsFromMessage(messageFormats: V2CredentialFormatSpec[]): CredentialFormatService[] {
+    const formats: CredentialFormatService[] = []
+
+    for (const msg of messageFormats) {
+      if (msg.format.includes('indy')) {
+        formats.push(this.getFormatService(CredentialFormatType.Indy))
+      } else if (msg.format.includes('aries')) {
+        formats.push(this.getFormatService(CredentialFormatType.JsonLd))
+      } else {
+        throw Error(`Unknown Message Format: ${msg.format}`)
+      }
+    }
+    return formats
+  }
+  /**
+   * Get all the format service objects for a given credential format
+   * @param credentialFormats the format object containing various optional parameters
+   * @return the credential format service objects in an array - derived from format object keys
+   */
+  public getFormats(credentialFormats: Record<string, unknown>): CredentialFormatService[] {
+    const formats: CredentialFormatService[] = []
+    const formatKeys = Object.keys(credentialFormats)
+    for (const key of formatKeys) {
+      const credentialFormatType: CredentialFormatType = FORMAT_KEYS[key]
+      const formatService: CredentialFormatService = this.getFormatService(credentialFormatType)
+      formats.push(formatService)
+    }
+    return formats
+  }
   /**
    * Method called by {@link V2ProposeCredentialHandler} on reception of a propose credential message
    * We do the necessary processin here to accept the proposal and do the state change, emit event etc.
@@ -187,27 +225,43 @@ export class V2CredentialService extends CredentialService {
 
       unitTestLogger('TEST-DEBUG No credential record exists')
 
-      // get the format service based on the preview id
+      // get the format service objects for the formats found in the message
+      const formats: CredentialFormatService[] = this.getFormatsFromMessage(proposalMessage.formats)
 
-      const credentialRecordType =
-        proposalMessage.filtersAttach[0].id === INDY_ATTACH_ID ? CredentialRecordType.INDY : CredentialRecordType.W3C
-
-      const formatService: CredentialFormatService = this.getFormatService(credentialRecordType)
-
-      credentialRecord = this.credentialMessageBuilder.acceptProposal(formatService, proposalMessage, connection?.id)
+      credentialRecord = this.credentialMessageBuilder.acceptProposal(proposalMessage, connection?.id)
 
       // Save record and emit event
       this.connectionService.assertConnectionOrServiceDecorator(messageContext)
 
-      let options: V2CredProposalFormat
-      if (proposalMessage.filtersAttach[0].data.base64) {
-        options = JsonEncoder.fromBase64(proposalMessage.filtersAttach[0].data.base64)
-        formatService.setMetaDataAndEmitEventForProposal(options, credentialRecord)
+      // use the attach id in the formats object to find the correct attachment
+      for (const format of formats) {
+        const attachment = format.getAttachment(proposalMessage)
+        if (attachment) {
+          const credProposal: V2CredProposeOfferRequestFormat | undefined = format.getCredentialPayload(attachment.data)
+          if (credProposal) {
+            format.getMetaDataService().setMetaDataForProposal(credProposal, credentialRecord)
+          }
+        }
       }
+      // if (attachment && attachment.data.base64) {
+      //   options = JsonEncoder.fromBase64(attachment.data.base64)
+      //   formats[0].getMetaDataService().setMetaDataAndEmitEventForProposal(options, credentialRecord)
+      // }
+      await this.credentialRepository.save(credentialRecord)
+      await this.emitEvent(credentialRecord)
     }
     return credentialRecord
   }
 
+  private async emitEvent(credentialRecord: CredentialRecord) {
+    this.eventEmitter.emit<CredentialStateChangedEvent>({
+      type: CredentialEventTypes.CredentialStateChanged,
+      payload: {
+        credentialRecord,
+        previousState: null,
+      },
+    })
+  }
   /**
    * Retrieve a credential record by connection id and thread id
    *
@@ -242,34 +296,19 @@ export class V2CredentialService extends CredentialService {
       )
     }
 
-    const formatService: CredentialFormatService = this.getFormatServiceFrom(proposal)
+    // TODO-MJR - only do this if Indy format present in the message
+    const formatService: CredentialFormatService = this.getFormatService(CredentialFormatType.Indy)
 
-    // set the proposal object's preview field -> this containts the attributes
     this.credentialMessageBuilder.setPreview(
       formatService,
       proposal,
       credentialRecord.proposalMessage?.credentialProposal
     )
-
-    // validate that this message has a credential definition id
-    this.credentialMessageBuilder.getCredentialDefinitionId(formatService, proposal)
-
     const message = await this.createOfferAsResponse(credentialRecord, proposal)
 
     await this.updateState(credentialRecord, CredentialState.OfferSent)
 
     return { credentialRecord, message }
-  }
-
-  private getFormatServiceFrom(formatType?: FormatType): CredentialFormatService {
-    if (!formatType) {
-      return this.getFormatService(CredentialRecordType.W3C)
-    }
-    const credentialRecordType = formatType.credentialFormats.indy
-      ? CredentialRecordType.INDY
-      : CredentialRecordType.W3C
-
-    return this.getFormatService(credentialRecordType)
   }
 
   /**
@@ -288,14 +327,11 @@ export class V2CredentialService extends CredentialService {
     // Assert
     credentialRecord.assertState(CredentialState.ProposalReceived)
 
+    const formats: CredentialFormatService[] = this.getFormats(proposal.credentialFormats as Record<string, unknown>)
+
     // Create the offer message
     unitTestLogger('Get the Format Service and Create Offer Message')
-    // const credentialRecordType = proposal.credentialFormats.indy ? CredentialRecordType.INDY : CredentialRecordType.W3C
-
-    // const formatService: CredentialFormatService = this.getFormatService(credentialRecordType)
-    const formatService: CredentialFormatService = this.getFormatServiceFrom(proposal)
-
-    return await this.credentialMessageBuilder.createOfferAsResponse(formatService, credentialRecord, proposal)
+    return await this.credentialMessageBuilder.createOfferAsResponse(formats, credentialRecord, proposal)
   }
 
   /**
@@ -312,17 +348,17 @@ export class V2CredentialService extends CredentialService {
 
     unitTestLogger(`Processing credential offer with id ${credentialOfferMessage.id}`)
 
-    const credentialRecordType =
-      credentialOfferMessage.offerAttachments[0].id == INDY_ATTACH_ID
-        ? CredentialRecordType.INDY
-        : CredentialRecordType.W3C
+    const credentialFormatType: CredentialFormatType = credentialOfferMessage.formats[0].format.includes('indy')
+      ? CredentialFormatType.Indy
+      : CredentialFormatType.JsonLd
+    unitTestLogger(`Found a message of type: ${credentialFormatType}`)
 
-    unitTestLogger(`Found a message of type: ${credentialRecordType}`)
-
-    const formatService: CredentialFormatService = this.getFormatService(credentialRecordType)
+    const formatService: CredentialFormatService = this.getFormatService(credentialFormatType)
 
     // get the format specific cred offer
-    const credOffer: V2CredOfferFormat = formatService.getCredentialOfferMessage(credentialOfferMessage)
+
+    const attachmentData = credentialOfferMessage.offerAttachments[0].data
+    const credOffer: V2CredProposeOfferRequestFormat | undefined = formatService.getCredentialPayload(attachmentData)
 
     if (!credOffer) {
       throw new CredentialProblemReportError(
@@ -348,7 +384,7 @@ export class V2CredentialService extends CredentialService {
 
       credentialRecord.linkedAttachments = credentialOfferMessage.attachments?.filter(isLinkedAttachment)
 
-      formatService.setMetaDataForOffer(credOffer, credentialRecord)
+      formatService.getMetaDataService().setMetaDataForOffer(credOffer, credentialRecord)
 
       await this.updateState(credentialRecord, CredentialState.OfferReceived)
     } catch {
@@ -360,11 +396,11 @@ export class V2CredentialService extends CredentialService {
         connectionId: connection?.id,
         threadId: credentialOfferMessage.id,
         offerMessage: credentialOfferMessage,
-        credentialAttributes: credentialOfferMessage.credentialPreview.attributes,
+        credentialAttributes: credentialOfferMessage.credentialPreview?.attributes,
         state: CredentialState.OfferReceived,
       })
 
-      formatService.setMetaDataForOffer(credOffer, credentialRecord)
+      formatService.getMetaDataService().setMetaDataForOffer(credOffer, credentialRecord)
 
       // Assert
       this.connectionService.assertConnectionOrServiceDecorator(messageContext)
@@ -449,17 +485,17 @@ export class V2CredentialService extends CredentialService {
     unitTestLogger('>> IN SERVICE V2 createRequest')
 
     unitTestLogger('Get the Format Service and Create Request Message')
-    const formatService = this.getFormatService(options.credentialRecordType)
 
-    const { message, credentialRecord } = await this.credentialMessageBuilder.createRequest(
-      formatService,
-      record,
-      options
-    )
+    if (options.credentialFormats) {
+      const formats: CredentialFormatService[] = this.getFormats(options.credentialFormats as Record<string, unknown>)
 
-    await this.updateState(credentialRecord, CredentialState.RequestSent)
+      const { message, credentialRecord } = await this.credentialMessageBuilder.createRequest(formats, record, options)
 
-    return { message, credentialRecord }
+      await this.updateState(credentialRecord, CredentialState.RequestSent)
+      return { message, credentialRecord }
+    } else {
+      throw Error('No format keys found on the RequestCredentialOptions object')
+    }
   }
 
   /**
@@ -480,22 +516,23 @@ export class V2CredentialService extends CredentialService {
     unitTestLogger('>> IN SERVICE V2 processRequest')
 
     // get the formaat-specific payload from the message
-    const credentialRecordType: CredentialRecordType =
-      credentialRequestMessage.formats.attachId == INDY_ATTACH_ID ? CredentialRecordType.INDY : CredentialRecordType.W3C
-    const formatService: CredentialFormatService = this.getFormatService(credentialRecordType)
+    // const credentialFormatType: CredentialFormatType = credentialRequestMessage.formats.format.includes('indy')
+    //   ? CredentialFormatType.Indy
+    //   : CredentialFormatType.JsonLd
+    // const formatService: CredentialFormatService = this.getFormatService(credentialFormatType)
 
-    this.logger.debug(`Processing credential request with id ${credentialRequestMessage.id}`)
-    const v2credentialRequestPayload: V2CredRequestFormat | undefined =
-      this.credentialMessageBuilder.getCredentialRequestFromMessage(formatService, credentialRequestMessage)
+    // this.logger.debug(`Processing credential request with id ${credentialRequestMessage.id}`)
+    // const v2credentialRequestPayload: V2CredProposeOfferRequestFormat | undefined =
+    //   this.credentialMessageBuilder.getCredentialRequestFromMessage(formatService, credentialRequestMessage)
 
-    unitTestLogger(`v2credentialRequestPayload = ${v2credentialRequestPayload}`)
+    // unitTestLogger(`v2credentialRequestPayload = ${v2credentialRequestPayload}`)
 
-    if (!v2credentialRequestPayload) {
-      throw new CredentialProblemReportError(
-        `Missing required base64 or json encoded attachment data for credential request with thread id ${credentialRequestMessage.threadId}`,
-        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
-      )
-    }
+    // if (!v2credentialRequestPayload) {
+    //   throw new CredentialProblemReportError(
+    //     `Missing required base64 or json encoded attachment data for credential request with thread id ${credentialRequestMessage.threadId}`,
+    //     { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
+    //   )
+    // }
     unitTestLogger('Looking for a credential record')
 
     const credentialRecord = await this.getByThreadAndConnectionId(credentialRequestMessage.threadId, connection?.id)
@@ -545,15 +582,6 @@ export class V2CredentialService extends CredentialService {
       )
     }
 
-    const credentialDefinitionId =
-      credentialOptions.credentialFormats.indy?.credentialDefinitionId ??
-      credentialProposalMessage.credentialDefinitionId
-
-    if (!credentialDefinitionId) {
-      throw new AriesFrameworkError(
-        'Missing required credential definition id. If credential proposal message contains no credential definition id it must be passed to config.'
-      )
-    }
     const message = await this.createOfferAsResponse(credentialRecord, credentialOptions)
 
     return { credentialRecord, message }
@@ -575,14 +603,48 @@ export class V2CredentialService extends CredentialService {
 
     connection?.assertReady()
 
-    const formatService: CredentialFormatService = this.getFormatServiceFrom(credentialOptions)
-
-    // Create message
-    const { credentialRecord, message } = await this.credentialMessageBuilder.createOffer(
-      formatService,
-      credentialOptions
+    const formats: CredentialFormatService[] = this.getFormats(
+      credentialOptions.credentialFormats as Record<string, unknown>
     )
 
+    // Create message
+    const { credentialRecord, message } = await this.credentialMessageBuilder.createOffer(formats, credentialOptions)
+
     return { credentialRecord, message }
+  }
+
+  public createAcceptProposalOptions(credentialRecord: CredentialRecord): AcceptProposalOptions {
+    if (credentialRecord.proposalMessage && credentialRecord.proposalMessage.credentialProposal?.attributes) {
+      const msg: V2ProposeCredentialMessage = credentialRecord.proposalMessage as V2ProposeCredentialMessage
+      const formats: CredentialFormatService[] = this.getFormatsFromMessage(msg.formats)
+
+      let options: AcceptProposalOptions = {
+        connectionId: '',
+        protocolVersion: CredentialProtocolVersion.V2_0,
+        credentialRecordId: credentialRecord.id,
+        credentialFormats: {},
+      }
+
+      for (const formatService of formats) {
+        options = formatService.processProposal(options, credentialRecord)
+      }
+
+      const proposeMessage: V2ProposeCredentialMessage = credentialRecord.proposalMessage as V2ProposeCredentialMessage
+      if (proposeMessage && proposeMessage.credentialProposal) {
+        const options: AcceptProposalOptions = {
+          connectionId: '',
+          protocolVersion: CredentialProtocolVersion.V2_0,
+          credentialRecordId: credentialRecord.id,
+          credentialFormats: {
+            indy: {
+              attributes: proposeMessage.credentialProposal.attributes,
+            },
+          },
+        }
+
+        return options
+      }
+    }
+    throw Error('Unable to create accept proposal options object')
   }
 }

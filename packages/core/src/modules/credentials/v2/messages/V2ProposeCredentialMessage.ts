@@ -6,31 +6,28 @@ import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } fro
 import { AgentMessage } from '../../../../agent/AgentMessage'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
 import { V2CredentialPreview } from '../V2CredentialPreview'
-import { CRED_20_PROPOSAL } from '../formats/MessageTypes'
 
-export interface V2ProposeCredentialMessageOptions {
+export const CRED_20_PROPOSAL = 'https://didcomm.org/issue-credential/2.0/propose-credential'
+
+export interface V2ProposeCredentialMessageProps {
   id: string
-  formats: V2CredentialFormatSpec
+  formats: V2CredentialFormatSpec[]
   filtersAttach: Attachment[]
   comment?: string
-  credentialDefinitionId?: string
   credentialProposal?: V2CredentialPreview
 }
 
 export class V2ProposeCredentialMessage extends AgentMessage {
-  public formats!: V2CredentialFormatSpec
+  public formats!: V2CredentialFormatSpec[]
 
-  public constructor(options: V2ProposeCredentialMessageOptions) {
+  public constructor(props: V2ProposeCredentialMessageProps) {
     super()
-    if (options) {
-      this.id = options.id ?? this.generateId()
-      this.comment = options.comment
-      this.credentialProposal = options.credentialProposal
-
-      this.credentialDefinitionId = options.credentialDefinitionId
-      this.formats = options.formats
-      this.filtersAttach = options.filtersAttach
-      this.credentialDefinitionId = options.credentialDefinitionId
+    if (props) {
+      this.id = props.id ?? this.generateId()
+      this.comment = props.comment
+      this.credentialProposal = props.credentialProposal
+      this.formats = props.formats
+      this.filtersAttach = props.filtersAttach
     }
   }
 
@@ -61,11 +58,4 @@ export class V2ProposeCredentialMessage extends AgentMessage {
   @IsOptional()
   @IsString()
   public comment?: string
-  /**
-   * Filter to request credential based on a particular Credential Definition.
-   */
-  @Expose({ name: 'cred_def_id' })
-  @IsString()
-  @IsOptional()
-  public credentialDefinitionId?: string
 }

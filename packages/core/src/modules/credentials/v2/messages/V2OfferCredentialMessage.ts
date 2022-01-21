@@ -7,32 +7,29 @@ import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } fro
 import { AgentMessage } from '../../../../agent/AgentMessage'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
 import { V2CredentialPreview } from '../V2CredentialPreview'
-import { CRED_20_OFFER } from '../formats/MessageTypes'
 
 export interface V2OfferCredentialMessageOptions {
   id: string
-  formats: V2CredentialFormatSpec
+  formats: V2CredentialFormatSpec[]
   offerAttachments: Attachment[]
-  credentialPreview: V2CredentialPreview
+  credentialPreview?: V2CredentialPreview
   replacementId: string
   comment?: string
-  credentialDefinitionId?: string
 }
 
+export const CRED_20_OFFER = 'https://didcomm.org/issue-credential/2.0/offer-credential'
+
 export class V2OfferCredentialMessage extends AgentMessage {
-  public formats!: V2CredentialFormatSpec
+  public formats!: V2CredentialFormatSpec[]
 
   public constructor(options: V2OfferCredentialMessageOptions) {
     super()
     if (options) {
-
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
-      this.credentialDefinitionId = options.credentialDefinitionId
       this.formats = options.formats
       this.credentialPreview = options.credentialPreview
       this.offerAttachments = options.offerAttachments
-      this.credentialDefinitionId = options.credentialDefinitionId
     }
   }
 
@@ -48,7 +45,7 @@ export class V2OfferCredentialMessage extends AgentMessage {
   @Type(() => V2CredentialPreview)
   @ValidateNested()
   @IsInstance(V2CredentialPreview)
-  public credentialPreview!: V2CredentialPreview
+  public credentialPreview?: V2CredentialPreview
 
   @Expose({ name: 'offers~attach' })
   @Type(() => Attachment)
@@ -63,14 +60,6 @@ export class V2OfferCredentialMessage extends AgentMessage {
   @IsString()
   @IsOptional()
   public replacementId?: string
-
-  /**
-   * Filter to request credential based on a particular Credential Definition.
-   */
-  @Expose({ name: 'cred_def_id' })
-  @IsString()
-  @IsOptional()
-  public credentialDefinitionId?: string
 
   // this is needed for the CredentialResponseCoordinator (which needs reworking into V1 and V2 versions)
   // MJR-TODO rework CredentialResponseCoordinator for new V2 architecture

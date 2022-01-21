@@ -1,7 +1,7 @@
 import type { Agent } from '../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../connections'
+import type { AcceptOfferOptions, AcceptProposalOptions, ProposeCredentialOptions } from '../../interfaces'
 import type { CredentialExchangeRecord } from '../CredentialExchangeRecord'
-import type { AcceptOfferOptions, AcceptProposalOptions, ProposeCredentialOptions } from '../interfaces'
 import type { Schema } from 'indy-sdk'
 
 import { CredentialState } from '../..'
@@ -14,7 +14,7 @@ import { LinkedAttachment } from '../../../../utils/LinkedAttachment'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
 import { CredentialRecord } from '../../repository'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
-import { CredentialRecordType } from '../CredentialExchangeRecord'
+import { CredentialFormatType } from '../CredentialExchangeRecord'
 import { CredentialRole } from '../CredentialRole'
 
 describe('credentials', () => {
@@ -157,7 +157,7 @@ describe('credentials', () => {
       const acceptOfferOptions: AcceptOfferOptions = {
         credentialRecordId: aliceCredentialRecord.id,
         connectionId: aliceCredentialRecord.connectionId,
-        credentialRecordType: CredentialRecordType.INDY,
+        credentialFormatType: CredentialFormatType.Indy,
         protocolVersion: CredentialProtocolVersion.V1_0,
       }
       const offerCredentialExchangeRecord: CredentialExchangeRecord =
@@ -344,7 +344,7 @@ describe('credentials', () => {
       const acceptOfferOptions: AcceptOfferOptions = {
         credentialRecordId: aliceCredentialRecord.id,
         connectionId: aliceCredentialRecord.connectionId,
-        credentialRecordType: CredentialRecordType.INDY,
+        credentialFormatType: CredentialFormatType.Indy,
         protocolVersion: CredentialProtocolVersion.V2_0,
       }
       const offerCredentialExchangeRecord: CredentialExchangeRecord =

@@ -14,11 +14,13 @@ export interface CredentialRecordTags {
 }
 
 export enum CredentialRecordType {
-  INDY,
-  W3C,
+  Indy = 'Indy',
+  W3c = 'W3c',
 }
-export enum W3CFormatType {
-  JSONLD,
+
+export enum CredentialFormatType {
+  Indy = 'Indy',
+  JsonLd = 'JsonLd',
   // others to follow
 }
 

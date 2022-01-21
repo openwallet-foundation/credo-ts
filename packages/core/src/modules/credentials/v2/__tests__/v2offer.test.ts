@@ -1,7 +1,7 @@
 import type { Agent } from '../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../connections'
+import type { NegotiateOfferOptions, OfferCredentialOptions, ProposeCredentialOptions } from '../../interfaces'
 import type { CredentialExchangeRecord } from '../CredentialExchangeRecord'
-import type { NegotiateOfferOptions, OfferCredentialOptions, ProposeCredentialOptions } from '../interfaces'
 import type { Schema } from 'indy-sdk'
 
 import { AutoAcceptCredential, CredentialState } from '../..'

@@ -6,6 +6,7 @@ import type { CustomCredentialTags } from '../repository/CredentialRecord'
 import type { CredentialOfferTemplate } from '../v1'
 import type { IndyCredentialMetadata } from '../v1/models/CredentialInfo'
 
+import { uuid } from '../../../../src/utils/uuid'
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
@@ -29,7 +30,6 @@ import { V1CredentialPreview } from '../v1/V1CredentialPreview'
 import {
   CredentialAckMessage,
   INDY_CREDENTIAL_ATTACHMENT_ID,
-  INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   IssueCredentialMessage,
   OfferCredentialMessage,
@@ -62,7 +62,7 @@ const credentialPreview = V1CredentialPreview.fromRecord({
 })
 
 const offerAttachment = new Attachment({
-  id: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
+  id: uuid(),
   mimeType: 'application/json',
   data: new AttachmentData({
     base64:

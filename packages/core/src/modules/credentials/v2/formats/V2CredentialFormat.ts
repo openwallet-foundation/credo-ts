@@ -1,3 +1,5 @@
+import { uuid } from '../../../../../src/utils/uuid'
+
 export type V2CredentialFormatSpec = {
   attachId: string
   format: string
@@ -9,18 +11,19 @@ type V2CredentialAttachmentFormat = {
     ldproof: V2CredentialFormatSpec
   }
 }
-
-export const INDY_ATTACH_ID = 'indy'
+function generateId(): string {
+  return uuid()
+}
 const INDY_PROPOSE_FORMAT = 'hlindy/cred-filter@v2.0'
 const INDY_OFFER_FORMAT = 'hlindy/cred-abstract@v2.0'
 const INDY_REQUEST_FORMAT = 'hlindy/cred-req@v2.0'
 
 const LD_ATTACH_ID = '...' // MJR-TODO
-const LD_PROPOSE_FORMAT = '...' // MJR-TODO
+const LD_PROPOSE_FORMAT = 'aries/ld-proof-vc-detail@v1.0'
 const LD_OFFER_FORMAT = 'aries/ld-proof-vc-detail@v1.0'
 
 const V2IndyProposeCredentialFormat: V2CredentialFormatSpec = {
-  attachId: INDY_ATTACH_ID,
+  attachId: generateId(),
   format: INDY_PROPOSE_FORMAT,
 }
 
@@ -30,7 +33,7 @@ const V2JsonLdProposeCredentialFormat: V2CredentialFormatSpec = {
 }
 
 const V2IndyOfferCredentialFormat: V2CredentialFormatSpec = {
-  attachId: INDY_ATTACH_ID,
+  attachId: generateId(),
   format: INDY_OFFER_FORMAT,
 }
 
@@ -40,7 +43,7 @@ const V2JsonLdOfferCredentialFormat: V2CredentialFormatSpec = {
 }
 
 const V2IndyRequestCredentialFormat: V2CredentialFormatSpec = {
-  attachId: INDY_ATTACH_ID,
+  attachId: generateId(),
   format: INDY_REQUEST_FORMAT,
 }
 

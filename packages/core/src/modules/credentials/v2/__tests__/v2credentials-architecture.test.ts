@@ -1,11 +1,6 @@
 import type { CredentialService } from '../../CredentialService'
-import type { CredentialFormatService } from '../formats/CredentialFormatService'
-import type {
-  AcceptProposalOptions,
-  ProposeCredentialOptions,
-  V2CredOfferFormat,
-  V2CredRequestFormat,
-} from '../interfaces'
+import type { AcceptProposalOptions, ProposeCredentialOptions } from '../../interfaces'
+import type { CredentialFormatService, V2CredProposeOfferRequestFormat } from '../formats/CredentialFormatService'
 import type { CredOffer } from 'indy-sdk'
 
 import { getBaseConfig } from '../../../../../tests/helpers'
@@ -16,8 +11,8 @@ import { LinkedAttachment } from '../../../../utils/LinkedAttachment'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
 import { CredentialsAPI } from '../../CredentialsAPI'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
-import { CredentialRecordType } from '../CredentialExchangeRecord'
-import { INDY_ATTACH_ID } from '../formats/V2CredentialFormat'
+import { CredentialFormatType } from '../CredentialExchangeRecord'
+import { CredentialMessageBuilder } from '../CredentialMessageBuilder'
 
 const { config, agentDependencies: dependencies } = getBaseConfig('Format Servive Test')
 
@@ -25,28 +20,68 @@ const credentialPreview = V1CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
 })
-
+const testAttributes = {
+  attributes: credentialPreview.attributes,
+  schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+  schemaName: 'ahoy',
+  schemaVersion: '1.0',
+  schemaId: '1560364003',
+  issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+  credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
+  linkedAttachments: [
+    new LinkedAttachment({
+      name: 'profile_picture',
+      attachment: new Attachment({
+        mimeType: 'image/png',
+        data: new AttachmentData({ base64: 'base64encodedpic' }),
+      }),
+    }),
+  ],
+}
 const proposal: ProposeCredentialOptions = {
   connectionId: '',
   protocolVersion: CredentialProtocolVersion.V1_0,
   credentialFormats: {
     indy: {
-      attributes: credentialPreview.attributes,
-      schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
-      schemaName: 'ahoy',
-      schemaVersion: '1.0',
-      schemaId: '1560364003',
-      issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
-      credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
-      linkedAttachments: [
-        new LinkedAttachment({
-          name: 'profile_picture',
-          attachment: new Attachment({
-            mimeType: 'image/png',
-            data: new AttachmentData({ base64: 'base64encodedpic' }),
-          }),
-        }),
-      ],
+      payload: {
+        credentialPayload: testAttributes,
+      },
+    },
+  },
+  comment: 'v2 propose credential test',
+}
+
+const multiFormatProposal: ProposeCredentialOptions = {
+  connectionId: '',
+  protocolVersion: CredentialProtocolVersion.V2_0,
+  credentialFormats: {
+    indy: {
+      payload: {
+        credentialPayload: testAttributes,
+      },
+    },
+    jsonld: {
+      credential: {
+        '@context': 'https://www.w3.org/2018/',
+        issuer: 'did:key:z6MkodKV3mnjQQMB9jhMZtKD9Sm75ajiYq51JDLuRSPZTXrr',
+        type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+        issuanceDate: '2020-01-01T19:23:24Z',
+        expirationDate: '2021-01-01T19:23:24Z',
+        credentialSubject: {
+          id: 'did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
+          degree: {
+            type: 'BachelorDegree',
+            name: 'Bachelor of Science and Arts',
+          },
+        },
+      },
+      options: {
+        proofPurpose: 'assertionMethod',
+        created: '2020-04-02T18:48:36Z',
+        domain: 'example.com',
+        challenge: '9450a9c1-4db5-4ab9-bc0c-b7a9b2edac38',
+        proofType: 'Ed25519Signature2018',
+      },
     },
   },
   comment: 'v2 propose credential test',
@@ -85,7 +120,7 @@ describe('V2 Credential Architecture', () => {
     test('returns the correct credential format service for indy', () => {
       const version: CredentialProtocolVersion = CredentialProtocolVersion.V2_0
       const service: CredentialService = api.getService(version)
-      const formatService: CredentialFormatService = service.getFormatService(CredentialRecordType.INDY)
+      const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.Indy)
       expect(formatService).not.toBeNull()
       const type: string = formatService.getType()
       expect(type).toEqual('IndyCredentialFormatService')
@@ -94,10 +129,10 @@ describe('V2 Credential Architecture', () => {
     test('propose credential format service returns correct format and filters~attach', () => {
       const version: CredentialProtocolVersion = CredentialProtocolVersion.V2_0
       const service: CredentialService = api.getService(version)
-      const formatService: CredentialFormatService = service.getFormatService(CredentialRecordType.INDY)
-      const { formats, filtersAttach } = formatService.getCredentialProposeAttachFormats(proposal, 'CRED_20_PROPOSAL')
+      const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.Indy)
+      const { formats, filtersAttach } = formatService.createProposalAttachFormats(proposal, 'CRED_20_PROPOSAL')
 
-      expect(formats.attachId).toEqual(INDY_ATTACH_ID)
+      expect(formats.attachId.length).toBeGreaterThan(0)
       expect(formats.format).toEqual('hlindy/cred-filter@v2.0')
       unitTestLogger('1. formats = ', formats)
 
@@ -108,11 +143,13 @@ describe('V2 Credential Architecture', () => {
     test('offer credential format service returns correct preview, format and offers~attach', () => {
       const version: CredentialProtocolVersion = CredentialProtocolVersion.V2_0
       const service: CredentialService = api.getService(version)
-      const formatService: CredentialFormatService = service.getFormatService(CredentialRecordType.INDY)
+      const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.Indy)
 
-      const v2Offer: V2CredOfferFormat = {
+      const v2Offer: V2CredProposeOfferRequestFormat = {
         indy: {
-          credentialOffer: credOffer,
+          payload: {
+            credentialPayload: credOffer,
+          },
         },
       }
       const options: AcceptProposalOptions = {
@@ -126,7 +163,7 @@ describe('V2 Credential Architecture', () => {
           },
         },
       }
-      const { preview, formats, offersAttach } = formatService.getCredentialOfferAttachFormats(
+      const { preview, formats, offersAttach } = formatService.createOfferAttachFormats(
         options,
         v2Offer,
         'CRED_20_OFFER'
@@ -137,54 +174,27 @@ describe('V2 Credential Architecture', () => {
 
       unitTestLogger('1. preview = ', preview)
 
-      expect(formats.attachId).toEqual(INDY_ATTACH_ID)
+      expect(formats.attachId.length).toBeGreaterThan(0)
       expect(formats.format).toEqual('hlindy/cred-abstract@v2.0')
       unitTestLogger('2. formats = ', formats)
 
       unitTestLogger('3. offersAttach = ', offersAttach)
       expect(offersAttach).toBeTruthy()
-      if (offersAttach) {
-        expect(offersAttach.length).toEqual(1)
-      }
     })
-    test('request credential format service returns correct format and request~attach', async () => {
+    test('propose credential format service creates message with multiple formats', () => {
       const version: CredentialProtocolVersion = CredentialProtocolVersion.V2_0
       const service: CredentialService = api.getService(version)
 
-      const formatService: CredentialFormatService = service.getFormatService(CredentialRecordType.INDY)
+      const formats: CredentialFormatService[] = service.getFormats(multiFormatProposal.credentialFormats)
+      expect(formats.length).toBe(2)
+      const messageBuilder: CredentialMessageBuilder = new CredentialMessageBuilder()
 
-      // create Mock credential request for this test
-      type StringProps = Record<'prop1', string>
-      const a: StringProps = { prop1: 'o' }
+      const v2Proposal = messageBuilder.createProposal(formats, multiFormatProposal)
 
-      const credentialRequest: V2CredRequestFormat = {
-        indy: {
-          request: {
-            prover_did: '',
-            cred_def_id: '',
-            blinded_ms: a,
-            blinded_ms_correctness_proof: a,
-            nonce: '',
-          },
-          requestMetaData: {},
-        },
-      }
-
-      // format service -> create the request~attach component for the v2 request message
-      const { formats, requestAttach } = formatService.getCredentialRequestAttachFormats(
-        credentialRequest,
-        'CRED_20_REQUEST'
-      )
-
-      expect(formats.attachId).toEqual(INDY_ATTACH_ID)
-      expect(formats.format).toEqual('hlindy/cred-req@v2.0')
-      unitTestLogger('1. formats = ', formats)
-
-      unitTestLogger('2. requestAttach = ', requestAttach)
-      expect(requestAttach).toBeTruthy()
-      if (requestAttach) {
-        expect(requestAttach.length).toEqual(1)
-      }
+      expect(v2Proposal.message.formats.length).toBe(2)
+      expect(v2Proposal.message.formats[0].format).toEqual('hlindy/cred-filter@v2.0')
+      expect(v2Proposal.message.formats[1].format).toEqual('aries/ld-proof-vc-detail@v1.0')
+      expect(v2Proposal.message.filtersAttach.length).toBe(2)
     })
   })
 })

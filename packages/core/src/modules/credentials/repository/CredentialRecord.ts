@@ -21,6 +21,10 @@ import {
 } from '../v1/messages'
 import { CredentialInfo } from '../v1/models/CredentialInfo'
 
+export type ProposeMessageType = ProposeCredentialMessage | V2ProposeCredentialMessage | undefined
+export type OfferMessageType = OfferCredentialMessage | V2OfferCredentialMessage
+export type RequestMessageType = RequestCredentialMessage | V2RequestCredentialMessage
+
 export interface CredentialRecordProps {
   id?: string
   createdAt?: Date
@@ -30,9 +34,9 @@ export interface CredentialRecordProps {
 
   credentialId?: string
   tags?: CustomCredentialTags
-  proposalMessage?: ProposeCredentialMessage | V2ProposeCredentialMessage
-  offerMessage?: OfferCredentialMessage | V2OfferCredentialMessage
-  requestMessage?: RequestCredentialMessage | V2RequestCredentialMessage
+  proposalMessage?: ProposeMessageType
+  offerMessage?: OfferMessageType
+  requestMessage?: RequestMessageType
   credentialMessage?: IssueCredentialMessage
   credentialAttributes?: CredentialPreviewAttribute[]
   autoAcceptCredential?: AutoAcceptCredential
@@ -58,11 +62,11 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
 
   // message data
   @Type(() => ProposeCredentialMessage)
-  public proposalMessage?: ProposeCredentialMessage | V2ProposeCredentialMessage
+  public proposalMessage?: ProposeMessageType
   @Type(() => OfferCredentialMessage)
-  public offerMessage?: OfferCredentialMessage | V2OfferCredentialMessage
+  public offerMessage?: OfferMessageType
   @Type(() => RequestCredentialMessage)
-  public requestMessage?: RequestCredentialMessage | V2RequestCredentialMessage
+  public requestMessage?: RequestMessageType
   @Type(() => IssueCredentialMessage)
   public credentialMessage?: IssueCredentialMessage
 

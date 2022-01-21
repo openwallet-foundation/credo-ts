@@ -6,11 +6,12 @@ import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } fro
 
 import { AgentMessage } from '../../../../agent/AgentMessage'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
-import { CRED_20_REQUEST } from '../formats/MessageTypes'
+
+export const CRED_20_REQUEST = 'https://didcomm.org/issue-credential/2.0/request-credential'
 
 export interface V2RequestCredentialMessageOptions {
   id: string
-  formats: V2CredentialFormatSpec
+  formats: V2CredentialFormatSpec[]
   requestsAttach: Attachment[]
   comment?: string
   credentialDefinitionId?: string
@@ -18,7 +19,7 @@ export interface V2RequestCredentialMessageOptions {
 }
 
 export class V2RequestCredentialMessage extends AgentMessage {
-  public formats!: V2CredentialFormatSpec
+  public formats!: V2CredentialFormatSpec[]
 
   public constructor(options: V2RequestCredentialMessageOptions) {
     super()

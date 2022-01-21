@@ -2,14 +2,12 @@ import type { CredentialRecord } from '../..'
 import type { AgentConfig } from '../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 import type { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
+import type { AcceptProposalOptions } from '../../interfaces'
 import type { V2CredentialService } from '../V2CredentialService'
-import type { CredentialFormatService } from '../formats/CredentialFormatService'
-import type { AcceptProposalOptions } from '../interfaces'
+import type { InboundMessageContext } from 'packages/core/src/agent/models/InboundMessageContext'
 
 import { createOutboundMessage } from '../../../../../src/agent/helpers'
 import { unitTestLogger } from '../../../../logger'
-import { CredentialRecordType } from '../CredentialExchangeRecord'
-import { INDY_ATTACH_ID } from '../formats/V2CredentialFormat'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 
 export class V2ProposeCredentialHandler implements Handler {
@@ -28,7 +26,7 @@ export class V2ProposeCredentialHandler implements Handler {
     this.agentConfig = agentConfig
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V2ProposeCredentialHandler>) {
+  public async handle(messageContext: InboundMessageContext<V2ProposeCredentialMessage>) {
     unitTestLogger('----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR PROPOSE CREDENTIAL')
     const credentialRecord = await this.credentialService.processProposal(messageContext)
 
@@ -59,17 +57,7 @@ export class V2ProposeCredentialHandler implements Handler {
       return
     }
 
-    if (!credentialRecord.proposalMessage.credentialDefinitionId) {
-      this.agentConfig.logger.error('Missing required credential definition id')
-      return
-    }
-
-    const msg: V2ProposeCredentialMessage = credentialRecord.proposalMessage as V2ProposeCredentialMessage
-    const id = msg.filtersAttach[0].id
-    const type: CredentialRecordType = id == INDY_ATTACH_ID ? CredentialRecordType.INDY : CredentialRecordType.W3C
-    const formatService: CredentialFormatService = this.credentialService.getFormatService(type)
-
-    const options: AcceptProposalOptions = formatService.createAcceptProposalOptions(credentialRecord)
+    const options: AcceptProposalOptions = this.credentialService.createAcceptProposalOptions(credentialRecord)
     const message = await this.credentialService.createOfferAsResponse(credentialRecord, options)
 
     return createOutboundMessage(messageContext.connection, message)

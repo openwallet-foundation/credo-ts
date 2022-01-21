@@ -4,6 +4,7 @@ import type { MediationRecipientService } from '../../../routing/services/Mediat
 import type { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import type { CredentialRecord } from '../../repository/CredentialRecord'
 import type { V2CredentialService } from '../V2CredentialService'
+import type { InboundMessageContext } from 'packages/core/src/agent/models/InboundMessageContext'
 
 import { unitTestLogger } from '../../../../logger'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
@@ -27,7 +28,7 @@ export class V2OfferCredentialHandler implements Handler {
     this.mediationRecipientService = mediationRecipientService
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V2OfferCredentialHandler>) {
+  public async handle(messageContext: InboundMessageContext<V2OfferCredentialMessage>) {
     unitTestLogger('----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR OFFER CREDENTIAL')
 
     const credentialRecord = await this.credentialService.processOffer(messageContext)

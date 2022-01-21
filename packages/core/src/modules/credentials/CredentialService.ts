@@ -3,13 +3,6 @@ import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Handler, HandlerInboundMessage } from '../../agent/Handler'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
-import type { CredentialRecord } from './repository'
-import type { V1CredentialService } from './v1/V1CredentialService'
-import type { CredentialProtocolMsgReturnType } from './v1/V1LegacyCredentialService'
-import type { RequestCredentialMessage } from './v1/messages'
-import type { CredentialRecordType } from './v2/CredentialExchangeRecord'
-import type { V2CredentialService } from './v2/V2CredentialService'
-import type { CredentialFormatService } from './v2/formats/CredentialFormatService'
 import type {
   AcceptProposalOptions,
   NegotiateOfferOptions,
@@ -17,7 +10,18 @@ import type {
   OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
-} from './v2/interfaces'
+} from './interfaces'
+import type { CredentialRecord } from './repository'
+import type { V1CredentialService } from './v1/V1CredentialService'
+import type { CredentialProtocolMsgReturnType } from './v1/V1LegacyCredentialService'
+import type { RequestCredentialMessage } from './v1/messages'
+import type { CredentialFormatType, CredentialRecordType } from './v2/CredentialExchangeRecord'
+import type { V2CredentialService } from './v2/V2CredentialService'
+import type {
+  CredentialFormatService,
+  V2CredProposalFormat,
+  V2CredProposeOfferRequestFormat,
+} from './v2/formats/CredentialFormatService'
 import type { V2RequestCredentialMessage } from './v2/messages/V2RequestCredentialMessage'
 
 export type CredentialServiceType = V1CredentialService | V2CredentialService
@@ -25,6 +29,7 @@ export type CredentialServiceType = V1CredentialService | V2CredentialService
 export abstract class CredentialService {
   abstract getVersion(): CredentialProtocolVersion
 
+  abstract getFormats(credentialFormats: V2CredProposeOfferRequestFormat): CredentialFormatService[]
   // methods for proposal
   abstract createProposal(
     proposal: ProposeCredentialOptions
@@ -52,7 +57,7 @@ export abstract class CredentialService {
   abstract processRequest(
     messageContext: InboundMessageContext<RequestCredentialMessage | V2RequestCredentialMessage>
   ): Promise<CredentialRecord>
-  public getFormatService(credentialRecordType: CredentialRecordType): CredentialFormatService {
+  public getFormatService(credentialFormatType: CredentialFormatType): CredentialFormatService {
     throw Error('Not Implemented')
   }
 }

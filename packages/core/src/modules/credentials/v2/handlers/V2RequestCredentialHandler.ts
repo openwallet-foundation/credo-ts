@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AgentConfig } from '../../../../agent/AgentConfig'
-import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
+import type { Handler } from '../../../../agent/Handler'
 import type { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
-import type { CredentialRecord } from '../../repository/CredentialRecord'
 import type { V2CredentialService } from '../V2CredentialService'
+import type { InboundMessageContext } from 'packages/core/src/agent/models/InboundMessageContext'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../agent/helpers'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
@@ -24,7 +24,7 @@ export class V2RequestCredentialHandler implements Handler {
     this.agentConfig = agentConfig
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V2RequestCredentialHandler>) {
+  public async handle(messageContext: InboundMessageContext<V2RequestCredentialMessage>) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const credentialRecord = await this.credentialService.processRequest(messageContext)
 

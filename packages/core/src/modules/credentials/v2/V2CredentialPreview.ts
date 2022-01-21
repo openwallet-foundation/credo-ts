@@ -1,10 +1,9 @@
 import type { CredentialPreviewOptions } from '../CredentialPreviewAttributes'
 
-import { Expose, Transform, Type } from 'class-transformer'
+import { Expose, Type } from 'class-transformer'
 import { Equals, IsInstance, ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 import { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
 
 /**
@@ -23,11 +22,8 @@ export class V2CredentialPreview {
 
   @Expose({ name: '@type' })
   @Equals(V2CredentialPreview.type)
-  @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
-    toClassOnly: true,
-  })
   public type = V2CredentialPreview.type
-  public static type = `https://didcomm.org/issue-credential/2.0/credential-preview`
+  public static type = 'https://didcomm.org/issue-credential/2.0/credential-preview'
 
   @Type(() => CredentialPreviewAttribute)
   @ValidateNested({ each: true })

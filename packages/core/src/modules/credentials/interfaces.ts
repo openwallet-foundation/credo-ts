@@ -1,10 +1,11 @@
-import type { LinkedAttachment } from '../../../utils/LinkedAttachment'
-import type { AnyJson } from '../../generic'
-import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
-import type { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
-import type { CredentialProtocolVersion } from '../CredentialProtocolVersion'
-import type { CredentialRecordType } from './CredentialExchangeRecord'
-import type { CredDef, CredOffer, CredReq, CredReqMetadata } from 'indy-sdk'
+import type { LinkedAttachment } from '../../utils/LinkedAttachment'
+import type { AnyJson } from '../generic'
+import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
+import type { CredentialPreviewAttribute } from './CredentialPreviewAttributes'
+import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
+import type { CredentialFormatType } from './v2/CredentialExchangeRecord'
+import type { V2CredProposeOfferRequestFormat } from './v2/formats/CredentialFormatService'
+import type { CredDef } from 'indy-sdk'
 
 type IssuerId = string
 
@@ -25,10 +26,12 @@ export interface W3CCredentialFormat {
     proof?: Record<string, AnyJson> | Array<Record<string, AnyJson>>
     [x: string]: unknown
   }
-  format: {
-    linkedDataProof: {
-      proofType: Array<string | LDSignatureSuite>
-    }
+  options: {
+    proofPurpose: string
+    created: string
+    domain: string
+    challenge: string
+    proofType: string
   }
 }
 
@@ -56,7 +59,7 @@ interface AcceptOfferOptions {
   connectionId: string
   protocolVersion: CredentialProtocolVersion
   credentialRecordId: string
-  credentialRecordType: CredentialRecordType
+  credentialFormatType: CredentialFormatType
   comment?: string
   autoAcceptCredential?: AutoAcceptCredential
 }
@@ -72,7 +75,7 @@ interface NegotiateOfferOptions {
 /// CREDENTIAL PROPOSAL
 
 // this is the base64 encoded data payload for [Indy] credential proposal
-interface CredPropose {
+export interface CredPropose {
   attributes?: CredentialPreviewAttribute[]
   schemaIssuerDid?: string
   schemaName?: string
@@ -81,19 +84,13 @@ interface CredPropose {
   issuerDid?: string
   credentialDefinitionId?: string
   linkedAttachments?: LinkedAttachment[]
-}
-
-export interface V2CredProposalFormat {
-  indy?: CredPropose
-  w3c?: {
-    // MJR-TODO
-  }
+  cred_def_id?: string
 }
 
 interface ProposeCredentialOptions {
   connectionId: string
   protocolVersion: CredentialProtocolVersion
-  credentialFormats: V2CredProposalFormat
+  credentialFormats: V2CredProposeOfferRequestFormat
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
 }
@@ -101,15 +98,6 @@ interface ProposeCredentialOptions {
 export interface V2CredDefinitionFormat {
   indy?: {
     credentialDefinition: CredDef
-  }
-  w3c?: {
-    // MJR-TODO
-  }
-}
-
-export interface V2CredOfferFormat {
-  indy?: {
-    credentialOffer: CredOffer
   }
   w3c?: {
     // MJR-TODO
@@ -148,25 +136,16 @@ interface NegotiateProposalOptions {
 
 /// CREDENTIAL REQUEST
 // this is the base64 encoded data payload for [Indy] credential request
-export interface V2CredRequestFormat {
-  // Indy cannot start from credential request - MJR: but you can still have credential requests in Indy
-  // in response to an offer
-  indy?: {
-    request: CredReq
-    requestMetaData?: CredReqMetadata
-  }
-  w3c?: W3CCredentialFormat
-}
 
 interface RequestCredentialOptions {
-  credentialRecordType: CredentialRecordType
+  credentialFormatType: CredentialFormatType
   connectionId?: string
   holderDid: string
   // As indy cannot start from request and w3c is not supported in v1 we always use v2 here
-  credentialFormats?: V2CredRequestFormat
+  credentialFormats?: V2CredProposeOfferRequestFormat
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
-  offer?: V2CredOfferFormat // will not be there if this is a W3C request rather than an indy response to offer
+  offer?: V2CredProposeOfferRequestFormat // will not be there if this is a W3C request rather than an indy response to offer
   credentialDefinition?: V2CredDefinitionFormat
 }
 
