@@ -147,6 +147,14 @@ export class V2CredentialService extends CredentialService {
     for (const format of formats) {
       await format.getMetaDataService().setMetaDataForProposal(proposal.credentialFormats, credentialRecord)
     }
+    await this.credentialRepository.save(credentialRecord)
+    this.eventEmitter.emit<CredentialStateChangedEvent>({
+      type: CredentialEventTypes.CredentialStateChanged,
+      payload: {
+        credentialRecord,
+        previousState: null,
+      },
+    })
 
     return { credentialRecord, message }
   }
@@ -238,9 +246,9 @@ export class V2CredentialService extends CredentialService {
           }
         }
       }
-      await this.credentialRepository.save(credentialRecord)
-      await this.emitEvent(credentialRecord)
     }
+    await this.credentialRepository.save(credentialRecord)
+    await this.emitEvent(credentialRecord)
     return credentialRecord
   }
 
@@ -424,17 +432,6 @@ export class V2CredentialService extends CredentialService {
         }
       }
     }
-    this.connectionService.assertConnectionOrServiceDecorator(messageContext)
-    // Save in repository
-
-    await this.credentialRepository.save(credentialRecord)
-    this.eventEmitter.emit<CredentialStateChangedEvent>({
-      type: CredentialEventTypes.CredentialStateChanged,
-      payload: {
-        credentialRecord,
-        previousState: null,
-      },
-    })
 
     return credentialRecord
   }

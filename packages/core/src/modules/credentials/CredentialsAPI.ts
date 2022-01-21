@@ -213,9 +213,6 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
     }
     const credentialExchangeRecord = new CredentialExchangeRecord(props)
 
-    // MJR-TODO: do we need to implement this?
-    // await this.credentialRepository.save(credentialExchangeRecord)
-
     return credentialExchangeRecord
   }
 
@@ -267,8 +264,6 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
 
     const credentialExchangeRecord = new CredentialExchangeRecord(props)
 
-    // MJR-TODO: do we need to implement this?
-    // await this.credentialRepository.save(credentialExchangeRecord)
 
     return credentialExchangeRecord
   }
@@ -309,9 +304,6 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
     }
 
     const credentialExchangeRecord = new CredentialExchangeRecord(props)
-
-    // MJR-TODO: do we need to implement this?
-    // await this.credentialRepository.save(credentialExchangeRecord)
 
     return credentialExchangeRecord
   }
