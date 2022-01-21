@@ -148,7 +148,7 @@ export class Faber extends BaseAgent {
     await this.agent.proofs.requestProof(connectionRecord.id, {
       requestedAttributes: proofAttribute,
     })
-    this.ui.updateBottomBar(`\nProof request send!\n${Color.reset}`)
+    this.ui.updateBottomBar(`\nProof request send!\n\n${Color.reset}`)
   }
 
   public async sendMessage(message: string) {

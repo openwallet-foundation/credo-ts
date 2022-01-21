@@ -57,10 +57,10 @@ export class FaberInquirer extends BaseInquirer {
         break
       case PromptOptions.Credential:
         await this.credential()
-        break
+        return
       case PromptOptions.Proof:
         await this.proof()
-        break
+        return
       case PromptOptions.Message:
         await this.message()
         break
@@ -80,8 +80,8 @@ export class FaberInquirer extends BaseInquirer {
     await this.faber.acceptConnection(getUrl.input)
   }
 
-  public async exitUseCase() {
-    const confirm = await inquirer.prompt([this.inquireConfirmation(`Is the credential offer accepted?`)])
+  public async exitUseCase(title: string) {
+    const confirm = await inquirer.prompt([this.inquireConfirmation(title)])
     if (confirm.options === 'no') {
       return false
     } else if (confirm.options === 'yes') {
@@ -91,12 +91,14 @@ export class FaberInquirer extends BaseInquirer {
 
   public async credential() {
     await this.faber.issueCredential()
-    this.listener.credentialAcceptedListener(this.faber, this)
+    const title = `Is the credential offer accepted?`
+    this.listener.newAcceptedPrompt(title, this.faber, this)
   }
 
   public async proof() {
     await this.faber.sendProofRequest()
-    this.listener.proofAcceptedListener(this.faber, this)
+    const title = `Is the proof request accepted?`
+    this.listener.newAcceptedPrompt(title, this.faber, this)
   }
 
   public async message() {

@@ -106,27 +106,10 @@ export class Listener {
     })
   }
 
-  public async newCredentialAcceptedPrompt(faber: Faber, faberInquirer: FaberInquirer) {
+  public async newAcceptedPrompt(title: string, faber: Faber, faberInquirer: FaberInquirer) {
     this.turnListenerOn()
-    const check = await faberInquirer.exitUseCase()
-    if (check === true) {
-      faber.ui.updateBottomBar(`${Color.green}\nCredential offer accepted!\n${Color.reset}`)
-    } else if (check === false) {
-      faber.ui.updateBottomBar(`${Color.red}\nCredential offer declined\n${Color.reset}`)
-    }
+    await faberInquirer.exitUseCase(title)
     this.turnListenerOff()
     faberInquirer.processAnswer()
-  }
-
-  public credentialAcceptedListener(faber: Faber, faberInquirer: FaberInquirer) {
-    faber.agent.events.on(
-      CredentialEventTypes.CredentialStateChanged,
-      async ({ payload }: CredentialStateChangedEvent) => {
-        if (payload.credentialRecord.state === CredentialState.Done) {
-          this.newCredentialAcceptedPrompt(faber, faberInquirer)
-        }
-        return
-      }
-    )
   }
 }
