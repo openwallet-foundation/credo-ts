@@ -4,10 +4,10 @@ import type { Logger } from '../../logger'
 import type { ConnectionRecord } from './repository'
 import type { Routing } from './services/ConnectionService'
 
-import { EventEmitter } from 'stream'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
+import { EventEmitter } from '../../agent/EventEmitter'
 import { InjectionSymbols } from '../../constants'
 import { JwsService } from '../../crypto/JwsService'
 import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
@@ -30,7 +30,7 @@ type Flavor<T, FlavorType> = T & { _type?: FlavorType }
 type Did = Flavor<string, 'Did'>
 
 interface DidExchangeRequestParams {
-  label: string
+  label?: string
   goal?: string
   goalCode?: string
   routing: Routing
@@ -161,8 +161,9 @@ export class DidExchangeProtocol {
 
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeRequestMessage.type, connectionRecord)
 
-    const { label, goal, goalCode, routing } = params
-    const { did, verkey } = await this.createDid()
+    const { goal, goalCode, routing } = params
+    const label = params.label ?? this.config.label
+    const { did, verkey } = routing
     const didDoc = this.createDidDoc(did, verkey, routing)
     const parentThreadId = connectionRecord.invitation?.id
 
@@ -171,6 +172,9 @@ export class DidExchangeProtocol {
     // Create sign attachment containing didDoc
     const didDocAttach = await this.createSignedAttachment(didDoc, verkey)
     message.didDoc = didDocAttach
+
+    connectionRecord.did = did
+    connectionRecord.didDoc = didDoc
 
     await this.updateState(DidExchangeRequestMessage.type, connectionRecord)
     return message
@@ -313,11 +317,6 @@ export class DidExchangeProtocol {
   private async updateState(messageType: string, connectionRecord: ConnectionRecord) {
     const nextState = DidExchangeStateMachine.nextState(messageType, connectionRecord)
     return this.connectionService.updateState(connectionRecord, nextState)
-  }
-
-  private async createDid(): Promise<{ did: string; verkey: string }> {
-    const { did, verkey } = await this.wallet.createDid()
-    return { did, verkey }
   }
 
   private createDidDoc(did: Did, verkey: string, routing: Routing) {

@@ -273,11 +273,9 @@ describe('ConnectionService', () => {
   describe('createRequest', () => {
     it('returns a connection request message containing the information from the connection record', async () => {
       expect.assertions(5)
-
       const connection = getMockConnection()
-      mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(connection))
 
-      const { connectionRecord: connectionRecord, message } = await connectionService.createRequest('test')
+      const { connectionRecord, message } = await connectionService.createRequest(connection)
 
       expect(connectionRecord.state).toBe(ConnectionState.Requested)
       expect(message.label).toBe(config.label)
@@ -290,31 +288,25 @@ describe('ConnectionService', () => {
       expect.assertions(1)
 
       const connection = getMockConnection()
-      mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(connection))
-
-      const { message } = await connectionService.createRequest('test', { myLabel: 'custom-label' })
+      const { message } = await connectionService.createRequest(connection, { myLabel: 'custom-label' })
 
       expect(message.label).toBe('custom-label')
     })
 
     it('returns a connection request message containing a custom image url', async () => {
       expect.assertions(1)
-
       const connection = getMockConnection()
-      mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(connection))
 
-      const { message } = await connectionService.createRequest('test', { myImageUrl: 'custom-image-url' })
+      const { message } = await connectionService.createRequest(connection, { myImageUrl: 'custom-image-url' })
 
       expect(message.imageUrl).toBe('custom-image-url')
     })
 
     it(`throws an error when connection role is ${ConnectionRole.Inviter} and not ${ConnectionRole.Invitee}`, async () => {
       expect.assertions(1)
+      const connection = getMockConnection({ role: ConnectionRole.Inviter })
 
-      mockFunction(connectionRepository.getById).mockReturnValue(
-        Promise.resolve(getMockConnection({ role: ConnectionRole.Inviter }))
-      )
-      return expect(connectionService.createRequest('test')).rejects.toThrowError(
+      return expect(connectionService.createRequest(connection)).rejects.toThrowError(
         `Connection record has invalid role ${ConnectionRole.Inviter}. Expected role ${ConnectionRole.Invitee}.`
       )
     })
@@ -324,9 +316,9 @@ describe('ConnectionService', () => {
       `throws an error when connection state is %s and not ${ConnectionState.Invited}`,
       (state) => {
         expect.assertions(1)
+        const connection = getMockConnection({ state })
 
-        mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(getMockConnection({ state })))
-        return expect(connectionService.createRequest('test')).rejects.toThrowError(
+        return expect(connectionService.createRequest(connection)).rejects.toThrowError(
           `Connection record is in invalid state ${state}. Valid states are: ${ConnectionState.Invited}.`
         )
       }
@@ -554,9 +546,8 @@ describe('ConnectionService', () => {
           threadId: 'test',
         },
       })
-      mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(mockConnection))
 
-      const { message, connectionRecord: connectionRecord } = await connectionService.createResponse('test')
+      const { message, connectionRecord: connectionRecord } = await connectionService.createResponse(mockConnection)
 
       const connection = new Connection({
         did: mockConnection.did,
@@ -571,15 +562,12 @@ describe('ConnectionService', () => {
     it(`throws an error when connection role is ${ConnectionRole.Invitee} and not ${ConnectionRole.Inviter}`, async () => {
       expect.assertions(1)
 
-      mockFunction(connectionRepository.getById).mockReturnValue(
-        Promise.resolve(
-          getMockConnection({
-            role: ConnectionRole.Invitee,
-            state: ConnectionState.Requested,
-          })
-        )
-      )
-      return expect(connectionService.createResponse('test')).rejects.toThrowError(
+      const connection = getMockConnection({
+        role: ConnectionRole.Invitee,
+        state: ConnectionState.Requested,
+      })
+
+      return expect(connectionService.createResponse(connection)).rejects.toThrowError(
         `Connection record has invalid role ${ConnectionRole.Invitee}. Expected role ${ConnectionRole.Inviter}.`
       )
     })
@@ -590,9 +578,8 @@ describe('ConnectionService', () => {
       async (state) => {
         expect.assertions(1)
 
-        mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(getMockConnection({ state })))
-
-        return expect(connectionService.createResponse('test')).rejects.toThrowError(
+        const connection = getMockConnection({ state })
+        return expect(connectionService.createResponse(connection)).rejects.toThrowError(
           `Connection record is in invalid state ${state}. Valid states are: ${ConnectionState.Requested}.`
         )
       }
@@ -802,12 +789,9 @@ describe('ConnectionService', () => {
     it('returns a trust ping message', async () => {
       expect.assertions(2)
 
-      const mockConnection = getMockConnection({
-        state: ConnectionState.Responded,
-      })
-      mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(mockConnection))
+      const mockConnection = getMockConnection({ state: ConnectionState.Responded })
 
-      const { message, connectionRecord: connectionRecord } = await connectionService.createTrustPing('test')
+      const { message, connectionRecord: connectionRecord } = await connectionService.createTrustPing(mockConnection)
 
       expect(connectionRecord.state).toBe(ConnectionState.Complete)
       expect(message).toEqual(expect.any(TrustPingMessage))
@@ -818,9 +802,9 @@ describe('ConnectionService', () => {
       `throws an error when connection state is %s and not ${ConnectionState.Responded} or ${ConnectionState.Complete}`,
       (state) => {
         expect.assertions(1)
+        const connection = getMockConnection({ state })
 
-        mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(getMockConnection({ state })))
-        return expect(connectionService.createTrustPing('test')).rejects.toThrowError(
+        return expect(connectionService.createTrustPing(connection)).rejects.toThrowError(
           `Connection record is in invalid state ${state}. Valid states are: ${ConnectionState.Responded}, ${ConnectionState.Complete}.`
         )
       }

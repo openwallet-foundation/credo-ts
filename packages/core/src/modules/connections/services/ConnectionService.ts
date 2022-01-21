@@ -106,7 +106,7 @@ export class ConnectionService {
       },
     })
 
-    return { connectionRecord: connectionRecord, message: invitation }
+    return { connectionRecord, message: invitation }
   }
 
   /**
@@ -155,20 +155,18 @@ export class ConnectionService {
   /**
    * Create a connection request message for the connection with the specified connection id.
    *
-   * @param connectionId the id of the connection for which to create a connection request
+   * @param connectionRecord the connection for which to create a connection request
    * @param config config for creation of connection request
    * @returns outbound message containing connection request
    */
   public async createRequest(
-    connectionId: string,
+    connectionRecord: ConnectionRecord,
     config: {
       myLabel?: string
       myImageUrl?: string
       autoAcceptConnection?: boolean
     } = {}
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
-    const connectionRecord = await this.connectionRepository.getById(connectionId)
-
     connectionRecord.assertState(ConnectionState.Invited)
     connectionRecord.assertRole(ConnectionRole.Invitee)
 
@@ -188,7 +186,7 @@ export class ConnectionService {
     await this.updateState(connectionRecord, ConnectionState.Requested)
 
     return {
-      connectionRecord: connectionRecord,
+      connectionRecord,
       message: connectionRequest,
     }
   }
@@ -264,14 +262,12 @@ export class ConnectionService {
   /**
    * Create a connection response message for the connection with the specified connection id.
    *
-   * @param connectionId the id of the connection for which to create a connection response
+   * @param connectionRecord the connection for which to create a connection response
    * @returns outbound message containing connection response
    */
   public async createResponse(
-    connectionId: string
+    connectionRecord: ConnectionRecord
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionResponseMessage>> {
-    const connectionRecord = await this.connectionRepository.getById(connectionId)
-
     connectionRecord.assertState(ConnectionState.Requested)
     connectionRecord.assertRole(ConnectionRole.Inviter)
 
@@ -283,7 +279,7 @@ export class ConnectionService {
     const connectionJson = JsonTransformer.toJSON(connection)
 
     if (!connectionRecord.threadId) {
-      throw new AriesFrameworkError(`Connection record with id ${connectionId} does not have a thread id`)
+      throw new AriesFrameworkError(`Connection record with id ${connectionRecord.id} does not have a thread id`)
     }
 
     // Use invitationKey by default, fall back to verkey
@@ -297,7 +293,7 @@ export class ConnectionService {
     await this.updateState(connectionRecord, ConnectionState.Responded)
 
     return {
-      connectionRecord: connectionRecord,
+      connectionRecord,
       message: connectionResponse,
     }
   }
@@ -374,16 +370,14 @@ export class ConnectionService {
    * By default a trust ping message should elicit a response. If this is not desired the
    * `config.responseRequested` property can be set to `false`.
    *
-   * @param connectionId the id of the connection for which to create a trust ping message
+   * @param connectionRecord the connection for which to create a trust ping message
    * @param config the config for the trust ping message
    * @returns outbound message containing trust ping message
    */
   public async createTrustPing(
-    connectionId: string,
+    connectionRecord: ConnectionRecord,
     config: { responseRequested?: boolean; comment?: string } = {}
   ): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
-    const connectionRecord = await this.connectionRepository.getById(connectionId)
-
     connectionRecord.assertState([ConnectionState.Responded, ConnectionState.Complete])
 
     // TODO:
@@ -397,7 +391,7 @@ export class ConnectionService {
     }
 
     return {
-      connectionRecord: connectionRecord,
+      connectionRecord,
       message: trustPing,
     }
   }

@@ -8,6 +8,7 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 
+import { DidExchangeProtocol } from './DidExchangeProtocol'
 import {
   ConnectionRequestHandler,
   ConnectionResponseHandler,
@@ -22,6 +23,7 @@ import { TrustPingService } from './services/TrustPingService'
 @scoped(Lifecycle.ContainerScoped)
 export class ConnectionsModule {
   private agentConfig: AgentConfig
+  private didExchangeProtocol: DidExchangeProtocol
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private trustPingService: TrustPingService
@@ -30,12 +32,14 @@ export class ConnectionsModule {
   public constructor(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
+    didExchangeProtocol: DidExchangeProtocol,
     connectionService: ConnectionService,
     trustPingService: TrustPingService,
     mediationRecipientService: MediationRecipientService,
     messageSender: MessageSender
   ) {
     this.agentConfig = agentConfig
+    this.didExchangeProtocol = didExchangeProtocol
     this.connectionService = connectionService
     this.trustPingService = trustPingService
     this.mediationRecipientService = mediationRecipientService
@@ -59,7 +63,7 @@ export class ConnectionsModule {
       useDefaultMediator: true,
     })
 
-    const { connectionRecord: connectionRecord, message: invitation } = await this.connectionService.createInvitation({
+    const { connectionRecord, message: invitation } = await this.connectionService.createInvitation({
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
       routing: myRouting,
@@ -135,15 +139,23 @@ export class ConnectionsModule {
     connectionId: string,
     config?: {
       autoAcceptConnection?: boolean
+      label: string
+      mediatorId?: string
     }
   ): Promise<ConnectionRecord> {
-    const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(
-      connectionId,
-      config
-    )
-    const outbound = createOutboundMessage(connectionRecord, message)
-    await this.messageSender.sendMessage(outbound)
+    const connectionRecord = await this.connectionService.getById(connectionId)
 
+    let outboundMessage
+    if (connectionRecord.protocol === 'did-exchange') {
+      const routing = await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId })
+      const message = await this.didExchangeProtocol.createRequest(connectionRecord, { label: config?.label, routing })
+      outboundMessage = createOutboundMessage(connectionRecord, message)
+    } else {
+      const { message } = await this.connectionService.createRequest(connectionRecord, config)
+      outboundMessage = createOutboundMessage(connectionRecord, message)
+    }
+
+    await this.messageSender.sendMessage(outboundMessage)
     return connectionRecord
   }
 
@@ -155,11 +167,18 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptRequest(connectionId: string): Promise<ConnectionRecord> {
-    const { message, connectionRecord: connectionRecord } = await this.connectionService.createResponse(connectionId)
+    const connectionRecord = await this.connectionService.getById(connectionId)
 
-    const outbound = createOutboundMessage(connectionRecord, message)
-    await this.messageSender.sendMessage(outbound)
+    let outboundMessage
+    if (connectionRecord.protocol === 'did-exchange') {
+      const message = await this.didExchangeProtocol.createResponse(connectionRecord)
+      outboundMessage = createOutboundMessage(connectionRecord, message)
+    } else {
+      const { message } = await this.connectionService.createResponse(connectionRecord)
+      outboundMessage = createOutboundMessage(connectionRecord, message)
+    }
 
+    await this.messageSender.sendMessage(outboundMessage)
     return connectionRecord
   }
 
@@ -171,13 +190,20 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
-    const { message, connectionRecord: connectionRecord } = await this.connectionService.createTrustPing(connectionId, {
-      responseRequested: false,
-    })
+    const connectionRecord = await this.connectionService.getById(connectionId)
 
-    const outbound = createOutboundMessage(connectionRecord, message)
-    await this.messageSender.sendMessage(outbound)
+    let outboundMessage
+    if (connectionRecord.protocol === 'did-exchange') {
+      const message = await this.didExchangeProtocol.createComplete(connectionRecord)
+      outboundMessage = createOutboundMessage(connectionRecord, message)
+    } else {
+      const { message } = await this.connectionService.createTrustPing(connectionRecord, {
+        responseRequested: false,
+      })
+      outboundMessage = createOutboundMessage(connectionRecord, message)
+    }
 
+    await this.messageSender.sendMessage(outboundMessage)
     return connectionRecord
   }
 

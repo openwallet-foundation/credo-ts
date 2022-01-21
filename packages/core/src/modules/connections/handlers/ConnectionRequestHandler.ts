@@ -44,7 +44,7 @@ export class ConnectionRequestHandler implements Handler {
     connectionRecord = await this.connectionService.processRequest(messageContext, routing)
 
     if (connectionRecord?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      const { message } = await this.connectionService.createResponse(connectionRecord.id)
+      const { message } = await this.connectionService.createResponse(connectionRecord)
       return createOutboundMessage(connectionRecord, message)
     }
   }
