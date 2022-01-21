@@ -40,18 +40,20 @@ export class Listener {
     this.on = false
   }
 
-  private printCredentialAttributes(payload: CredentialRecord) {
-    console.log('\n\nCredential preview:')
-    for (const attribute in payload.credentialAttributes) {
-      console.log(`\n${attribute.toString}`)
+  private printCredentialAttributes(credentialRecord: CredentialRecord) {
+    if (credentialRecord.credentialAttributes !== undefined) {
+      const attribute = credentialRecord.credentialAttributes
+      console.log('\n\nCredential preview:')
+      attribute.forEach((element) => {
+        console.log(`${Color.purlpe}${element.name} ${Color.reset}${element.value}`)
+      })
     }
   }
 
-  private async newCredentialPrompt(payload: CredentialRecord, aliceInquirer: AliceInquirer) {
-    this.printCredentialAttributes(payload)
+  private async newCredentialPrompt(credentialRecord: CredentialRecord, aliceInquirer: AliceInquirer) {
+    this.printCredentialAttributes(credentialRecord)
     this.turnListenerOn()
-    await aliceInquirer.acceptCredentialOffer(payload)
-
+    await aliceInquirer.acceptCredentialOffer(credentialRecord)
     this.turnListenerOff()
     aliceInquirer.processAnswer()
   }
@@ -79,11 +81,10 @@ export class Listener {
     })
   }
 
-  private async newProofRequestPrompt(payload: ProofRecord, aliceInquirer: AliceInquirer) {
+  private async newProofRequestPrompt(proofRecord: ProofRecord, aliceInquirer: AliceInquirer) {
     this.turnListenerOn()
-    await aliceInquirer.acceptProofRequest(payload)
+    await aliceInquirer.acceptProofRequest(proofRecord)
     this.turnListenerOff()
-
     aliceInquirer.processAnswer()
   }
 
@@ -98,22 +99,31 @@ export class Listener {
 
   public proofAcceptedListener(faber: Faber, faberInquirer: FaberInquirer) {
     faber.agent.events.on(ProofEventTypes.ProofStateChanged, async ({ payload }: ProofStateChangedEvent) => {
-      if (payload.proofRecord.state === ProofState.Done || payload.proofRecord.state === ProofState.Declined) {
+      if (payload.proofRecord.state === ProofState.Done) {
         faberInquirer.processAnswer()
       }
       return
     })
   }
 
+  public async newCredentialAcceptedPrompt(faber: Faber, faberInquirer: FaberInquirer) {
+    this.turnListenerOn()
+    const check = await faberInquirer.exitUseCase()
+    if (check === true) {
+      faber.ui.updateBottomBar(`${Color.green}\nCredential offer accepted!\n${Color.reset}`)
+    } else if (check === false) {
+      faber.ui.updateBottomBar(`${Color.red}\nCredential offer declined\n${Color.reset}`)
+    }
+    this.turnListenerOff()
+    faberInquirer.processAnswer()
+  }
+
   public credentialAcceptedListener(faber: Faber, faberInquirer: FaberInquirer) {
     faber.agent.events.on(
       CredentialEventTypes.CredentialStateChanged,
       async ({ payload }: CredentialStateChangedEvent) => {
-        if (
-          payload.credentialRecord.state === CredentialState.Done ||
-          payload.credentialRecord.state === CredentialState.Declined
-        ) {
-          faberInquirer.processAnswer()
+        if (payload.credentialRecord.state === CredentialState.Done) {
+          this.newCredentialAcceptedPrompt(faber, faberInquirer)
         }
         return
       }

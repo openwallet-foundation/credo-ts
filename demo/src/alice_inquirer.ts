@@ -9,6 +9,13 @@ import { BaseInquirer } from './base_inquirer'
 import { Listener } from './listener'
 import { Title } from './output_class'
 
+export const runAlice = async () => {
+  clear()
+  console.log(textSync('Alice', { horizontalLayout: 'full' }))
+  const alice = await AliceInquirer.build()
+  alice.processAnswer()
+}
+
 enum PromptOptions {
   Connection = 'setup connection',
   Message = 'send message',
@@ -108,16 +115,9 @@ export class AliceInquirer extends BaseInquirer {
       return
     } else if (confirm.options === 'yes') {
       await this.alice.restart()
-      //here it needs to be restarted
+      runAlice()
     }
   }
-}
-
-export const runAlice = async () => {
-  clear()
-  console.log(textSync('Alice', { horizontalLayout: 'full' }))
-  const alice = await AliceInquirer.build()
-  alice.processAnswer()
 }
 
 runAlice()
