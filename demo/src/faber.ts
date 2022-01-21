@@ -119,7 +119,7 @@ export class Faber extends BaseAgent {
       credentialDefinitionId: credentialDefinition.id,
       preview: credentialPreview,
     })
-    this.ui.updateBottomBar(`\nCredential offer send!\n${Color.reset}`)
+    this.ui.updateBottomBar(`\nCredential offer sent! \n${Color.reset}`)
   }
 
   private async printProofFlow(print: string) {
