@@ -8,6 +8,8 @@ import type {
   V2CredDefinitionFormat,
 } from '../../../interfaces'
 import type { V2CredentialPreview } from '../../V2CredentialPreview'
+import type { V2OfferCredentialMessage } from '../../messages/V2OfferCredentialMessage'
+import type { V2ProposeCredentialMessage } from '../../messages/V2ProposeCredentialMessage'
 import type { V2RequestCredentialMessage } from '../../messages/V2RequestCredentialMessage'
 import type {
   V2AttachmentFormats,
@@ -25,7 +27,9 @@ import { ATTACHMENT_FORMAT } from '../V2CredentialFormat'
 import { JsonLdMetaDataService } from './JsonLdMetaDataService'
 
 export class JsonLdCredentialFormatService extends CredentialFormatService {
-  public getAttachment(message: V2RequestCredentialMessage): Attachment | undefined {
+  public getAttachment(
+    message: V2RequestCredentialMessage | V2ProposeCredentialMessage | V2OfferCredentialMessage
+  ): Attachment | undefined {
     throw new Error('Method not implemented.')
   }
   // eslint-disable-next-line prettier/prettier

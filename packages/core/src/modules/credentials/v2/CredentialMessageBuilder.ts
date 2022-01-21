@@ -132,14 +132,11 @@ export class CredentialMessageBuilder {
     const formatsArray: V2CredentialFormatSpec[] = []
     const offersAttachArray: Attachment[] | undefined = []
     let previewAttachments: V2CredentialPreview | undefined
-    let credOffer: V2CredProposeOfferRequestFormat = {}
+    let credOffer: V2CredProposeOfferRequestFormat | undefined
     for (const service of formatServices) {
       // Create the offer message for the correct format
 
-      if (!credOffer) {
-        // Just set this once...what do we do about meta-data?
-        credOffer = await service.createOffer(proposal)
-      }
+      credOffer = await service.createOffer(proposal)
 
       const { preview, formats, offersAttach } = service.createOfferAttachFormats(proposal, credOffer, 'CRED_20_OFFER')
       if (offersAttach === undefined) {
@@ -172,8 +169,9 @@ export class CredentialMessageBuilder {
     })
 
     credentialRecord.offerMessage = credentialOfferMessage
-
-    formatServices[0].getMetaDataService().setMetaDataForOffer(credOffer, credentialRecord)
+    if (credOffer) {
+      formatServices[0].getMetaDataService().setMetaDataForOffer(credOffer, credentialRecord)
+    }
 
     return credentialOfferMessage
   }

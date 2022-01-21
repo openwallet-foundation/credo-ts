@@ -348,60 +348,75 @@ export class V2CredentialService extends CredentialService {
 
     unitTestLogger(`Processing credential offer with id ${credentialOfferMessage.id}`)
 
-    const credentialFormatType: CredentialFormatType = credentialOfferMessage.formats[0].format.includes('indy')
-      ? CredentialFormatType.Indy
-      : CredentialFormatType.JsonLd
-    unitTestLogger(`Found a message of type: ${credentialFormatType}`)
+    // const credentialFormatType: CredentialFormatType = credentialOfferMessage.formats[0].format.includes('indy')
+    //   ? CredentialFormatType.Indy
+    //   : CredentialFormatType.JsonLd
+    // unitTestLogger(`Found a message of type: ${credentialFormatType}`)
 
-    const formatService: CredentialFormatService = this.getFormatService(credentialFormatType)
+    // const formatService: CredentialFormatService = this.getFormatService(credentialFormatType)
 
-    // get the format specific cred offer
+    // // get the format specific cred offer
 
-    const attachmentData = credentialOfferMessage.attachments[0].data
-    const credOffer: V2CredProposeOfferRequestFormat | undefined = formatService.getCredentialPayload(attachmentData)
+    // const attachmentData = credentialOfferMessage.attachments[0].data
 
-    if (!credOffer) {
-      throw new CredentialProblemReportError(
-        `Missing required base64 or json encoded attachment data for credential offer with thread id ${credentialOfferMessage.threadId}`,
-        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
-      )
-    }
+    // Save record and emit event
+    this.connectionService.assertConnectionOrServiceDecorator(messageContext)
+    const formats: CredentialFormatService[] = this.getFormatsFromMessage(credentialOfferMessage.formats)
 
-    unitTestLogger('We received an indy credential offer')
+    // use the attach id in the formats object to find the correct attachment
+    for (const format of formats) {
+      const attachment = format.getAttachment(credentialOfferMessage)
 
-    try {
-      // Credential record already exists
-      credentialRecord = await this.getByThreadAndConnectionId(credentialOfferMessage.threadId, connection?.id)
+      if (attachment) {
+        const credOffer: V2CredProposeOfferRequestFormat | undefined = format.getCredentialPayload(attachment.data)
 
-      // Assert
-      credentialRecord.assertState(CredentialState.ProposalSent)
-      this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-        previousReceivedMessage: credentialRecord.offerMessage,
-        previousSentMessage: credentialRecord.proposalMessage,
-      })
+        if (!credOffer) {
+          throw new CredentialProblemReportError(
+            `Missing required base64 or json encoded attachment data for credential offer with thread id ${credentialOfferMessage.threadId}`,
+            { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
+          )
+        }
+      } else {
+        throw new CredentialProblemReportError(
+          `Missing required attachment for credential offer with thread id ${credentialOfferMessage.threadId}`,
+          { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
+        )
+      }
+      unitTestLogger('We received an indy credential offer')
 
-      credentialRecord.offerMessage = credentialOfferMessage
+      try {
+        // Credential record already exists
+        credentialRecord = await this.getByThreadAndConnectionId(credentialOfferMessage.threadId, connection?.id)
 
-      credentialRecord.linkedAttachments = credentialOfferMessage.attachments?.filter(isLinkedAttachment)
+        // Assert
+        credentialRecord.assertState(CredentialState.ProposalSent)
+        this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
+          previousReceivedMessage: credentialRecord.offerMessage,
+          previousSentMessage: credentialRecord.proposalMessage,
+        })
 
-      formatService.getMetaDataService().setMetaDataForOffer(credOffer, credentialRecord)
+        credentialRecord.offerMessage = credentialOfferMessage
 
-      await this.updateState(credentialRecord, CredentialState.OfferReceived)
-    } catch {
-      // No credential record exists with thread id
+        credentialRecord.linkedAttachments = credentialOfferMessage.attachments?.filter(isLinkedAttachment)
 
-      unitTestLogger('No credential record found for this offer - create a new one')
+        format.getMetaDataService().setMetaDataForOffer(credOffer, credentialRecord)
 
-      credentialRecord = new CredentialRecord({
-        connectionId: connection?.id,
-        threadId: credentialOfferMessage.id,
-        offerMessage: credentialOfferMessage,
-        credentialAttributes: credentialOfferMessage.credentialPreview?.attributes,
-        state: CredentialState.OfferReceived,
-      })
+        await this.updateState(credentialRecord, CredentialState.OfferReceived)
+      } catch {
+        // No credential record exists with thread id
 
-      formatService.getMetaDataService().setMetaDataForOffer(credOffer, credentialRecord)
+        unitTestLogger('No credential record found for this offer - create a new one')
 
+        credentialRecord = new CredentialRecord({
+          connectionId: connection?.id,
+          threadId: credentialOfferMessage.id,
+          offerMessage: credentialOfferMessage,
+          credentialAttributes: credentialOfferMessage.credentialPreview?.attributes,
+          state: CredentialState.OfferReceived,
+        })
+
+        format.getMetaDataService().setMetaDataForOffer(credOffer, credentialRecord)
+      }
       // Assert
       this.connectionService.assertConnectionOrServiceDecorator(messageContext)
 

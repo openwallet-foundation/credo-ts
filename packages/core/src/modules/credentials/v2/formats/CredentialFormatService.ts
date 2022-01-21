@@ -15,6 +15,7 @@ import type { CredentialRecord, CredentialRepository } from '../../repository'
 import type { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 import type { V2CredentialPreview } from '../V2CredentialPreview'
 import type { V2CredentialFormatSpec } from '../formats/V2CredentialFormat'
+import type { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import type { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 import type { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
 import type { MetaDataService } from './MetaDataService'
@@ -60,7 +61,9 @@ export interface V2AttachmentFormats {
 }
 
 export abstract class CredentialFormatService {
-  abstract getAttachment(message: V2RequestCredentialMessage | V2ProposeCredentialMessage): Attachment | undefined
+  abstract getAttachment(
+    message: V2RequestCredentialMessage | V2ProposeCredentialMessage | V2OfferCredentialMessage
+  ): Attachment | undefined
   protected credentialRepository: CredentialRepository
   protected eventEmitter: EventEmitter
 

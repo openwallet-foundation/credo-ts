@@ -85,7 +85,11 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @returns object containing associated attachment, formats and offersAttach elements
    *
    */
-  public createOfferAttachFormats(proposal: AcceptProposalOptions, messageType: string): V2AttachmentFormats {
+  public createOfferAttachFormats(
+    proposal: AcceptProposalOptions,
+    offer: V2CredProposeOfferRequestFormat,
+    messageType: string
+  ): V2AttachmentFormats {
     let preview: V2CredentialPreview | undefined
 
     if (proposal?.credentialFormats.indy?.attributes) {
@@ -93,8 +97,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     }
     const formats: V2CredentialFormatSpec = this.getFormatIdentifier(messageType)
 
-    console.log('>>>>>>>>>>>>>>>>> data = ', proposal.credentialFormats.indy)
-    const offersAttach: Attachment = this.getFormatData(proposal, formats.attachId)
+    const offersAttach: Attachment = this.getFormatData(offer.indy?.payload.credentialPayload, formats.attachId)
 
     return { preview, formats, offersAttach }
   }
@@ -381,18 +384,11 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @param message Gets the
    * @returns The Attachment if found or undefined
    */
-  public getAttachment(message: V2RequestCredentialMessage): Attachment | undefined {
+  public getAttachment(
+    message: V2RequestCredentialMessage | V2ProposeCredentialMessage | V2OfferCredentialMessage
+  ): Attachment | undefined {
     const indyFormat = message.formats.find((f) => f.format.includes('indy'))
     const attachment = message.attachments.find((attachment) => attachment.id === indyFormat?.attachId)
     return attachment
-  }
-  private async emitEvent(credentialRecord: CredentialRecord) {
-    this.eventEmitter.emit<CredentialStateChangedEvent>({
-      type: CredentialEventTypes.CredentialStateChanged,
-      payload: {
-        credentialRecord,
-        previousState: null,
-      },
-    })
   }
 }
