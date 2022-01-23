@@ -3,13 +3,14 @@ import type { V2ProofFormatSpec } from '../formats/V2ProofFormat'
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../../agent/AgentMessage'
-import { Attachment } from '../../../../decorators/attachment/Attachment'
+import { AgentMessage } from '../../../../../agent/AgentMessage'
+import { Attachment } from '../../../../../decorators/attachment/Attachment'
+import { uuid } from '../../../../../utils/uuid'
 import { PresentationPreview } from '../../v1/models/PresentationPreview'
 import { PRES_20_PROPOSAL } from '../formats/MessageTypes'
 
 export interface V2ProposePresentationMessageOptions {
-  id: string
+  id?: string
   formats: V2ProofFormatSpec
   filtersAttach: Attachment[]
   comment?: string
@@ -20,7 +21,7 @@ export class V2ProposalPresentationMessage extends AgentMessage {
   public constructor(options: V2ProposePresentationMessageOptions) {
     super()
     if (options) {
-      this.id = options.id ?? this.generateId()
+      this.id = options.id ?? uuid()
       this.comment = options.comment
       this.presentationProposal = options.presentationProposal
       this.formats = options.formats
