@@ -1,11 +1,12 @@
 {
-  "name": "demo",
+  "name": "afj-demo",
   "version": "1.0.0",
-  "main": "./lib/annelein.js",
-  "bin": {
-    "demo": "./lib/annelein.js"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "directory": "demo/"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "scripts": {
     "alice": " 'ts-node' src/alice_inquirer.ts",
     "faber": " 'ts-node' src/faber_inquirer.ts",
@@ -19,15 +20,5 @@
     "commander": "^8.3.0",
     "figlet": "^1.5.2",
     "ts-node": "^10.4.0"
-  },
-  "description": "afj cli demo",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/animo/basic-message-demo.git"
-  },
-  "author": "",
-  "bugs": {
-    "url": "https://github.com/animo/basic-message-demo/issues"
-  },
-  "homepage": "https://github.com/animo/basic-message-demo#readme"
+  }
 }
