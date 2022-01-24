@@ -2,15 +2,8 @@ import type { ConnectionRecord } from '@aries-framework/core'
 import type { CredDef, Schema } from 'indy-sdk-react-native'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-import {
-  ConnectionInvitationMessage,
-  CredentialPreview,
-  JsonTransformer,
-  ProofAttributeInfo,
-  AttributeFilter,
-} from '@aries-framework/core'
+import { CredentialPreview, ProofAttributeInfo, AttributeFilter } from '@aries-framework/core'
 import { uuid } from '@aries-framework/core/build/utils/uuid'
-import { JsonEncoder } from '@aries-framework/core/src/utils/JsonEncoder'
 import { ui } from 'inquirer'
 
 import { BaseAgent } from './BaseAgent'
@@ -39,19 +32,8 @@ export class Faber extends BaseAgent {
     return await this.agent.connections.getById(this.connectionRecordAliceId)
   }
 
-  private async receiveConnectionRequest(invitation_url: string) {
-    const http = 'http://localhost:9000?c_i='
-    let invitationJson = invitation_url.replace(http, '')
-
-    try {
-      invitationJson = JsonEncoder.fromBase64(invitationJson)
-    } catch (e) {
-      console.log(`${Color.green}\nIt looks like your invitation link is not correctly formatted?\n${Color.reset}`)
-      return
-    }
-
-    const invitationMessage = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
-    return await this.agent.connections.receiveInvitation(invitationMessage)
+  private async receiveConnectionRequest(invitationUrl: string) {
+    return await this.agent.connections.receiveInvitationFromUrl(invitationUrl)
   }
 
   private async waitForConnection(connectionRecord: ConnectionRecord) {
