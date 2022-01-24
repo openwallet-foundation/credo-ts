@@ -65,7 +65,6 @@ export class Listener {
         if (payload.credentialRecord.state === CredentialState.OfferReceived) {
           await this.newCredentialPrompt(payload.credentialRecord, aliceInquirer)
         }
-        return
       }
     )
   }
@@ -77,7 +76,6 @@ export class Listener {
           `${Color.purlpe}\n${name} received a message: ${event.payload.message.content}\n${Color.reset}`
         )
       }
-      return
     })
   }
 
@@ -93,7 +91,6 @@ export class Listener {
       if (payload.proofRecord.state === ProofState.RequestReceived) {
         await this.newProofRequestPrompt(payload.proofRecord, aliceInquirer)
       }
-      return
     })
   }
 
@@ -102,7 +99,6 @@ export class Listener {
       if (payload.proofRecord.state === ProofState.Done) {
         faberInquirer.processAnswer()
       }
-      return
     })
   }
 

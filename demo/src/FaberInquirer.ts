@@ -15,10 +15,10 @@ export const runFaber = async () => {
 }
 
 enum PromptOptions {
-  Connection = 'Receive connection invitation',
-  Credential = 'Offer credential',
-  Proof = 'Request proof',
-  Message = 'Send message',
+  ReceiveConnectionUrl = 'Receive connection invitation',
+  OfferCredential = 'Offer credential',
+  RequestProof = 'Request proof',
+  SendMessage = 'Send message',
   Exit = 'Exit',
   Restart = 'Restart',
 }
@@ -52,16 +52,16 @@ export class FaberInquirer extends BaseInquirer {
       return
     }
     switch (choice.options) {
-      case PromptOptions.Connection:
+      case PromptOptions.ReceiveConnectionUrl:
         await this.connection()
         break
-      case PromptOptions.Credential:
+      case PromptOptions.OfferCredential:
         await this.credential()
         return
-      case PromptOptions.Proof:
+      case PromptOptions.RequestProof:
         await this.proof()
         return
-      case PromptOptions.Message:
+      case PromptOptions.SendMessage:
         await this.message()
         break
       case PromptOptions.Exit:
