@@ -1,6 +1,7 @@
 {
   "name": "afj-demo",
   "version": "1.0.0",
+  "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/hyperledger/aries-framework-javascript",
