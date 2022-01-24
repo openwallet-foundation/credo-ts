@@ -87,6 +87,9 @@ export class AliceInquirer extends BaseInquirer {
 
   public async connection() {
     await this.alice.setupConnection()
+    if (this.alice.connected === false) {
+      return
+    }
     this.listener.credentialOfferListener(this.alice, this)
     this.listener.proofRequestListener(this.alice, this)
   }

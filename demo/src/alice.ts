@@ -8,10 +8,12 @@ import { Color, Output } from './output_class'
 export class Alice extends BaseAgent {
   public connectionRecordFaberId?: string
   public credDef: string
+  public connected: boolean
 
   public constructor(port: number, name: string) {
     super(port, name)
     this.credDef = '7KuDTpQh3GJ7Gp6kErpWvM:3:CL:115269:latest'
+    this.connected = false
   }
 
   public static async build(): Promise<Alice> {
@@ -39,8 +41,14 @@ export class Alice extends BaseAgent {
     const connectionRecord = await this.getConnectionRecord()
 
     console.log('Waiting for Faber to finish connection...')
-    await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
+    try {
+      await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
+    } catch (e) {
+      console.log(`${Color.red}\nTimeout of 20 seconds reached.. Returning to home screen.\n${Color.reset}`)
+      return
+    }
     console.log(`${Color.green}${Output.connectionEstablished}${Color.reset}`)
+    this.connected = true
   }
 
   public async setupConnection() {
