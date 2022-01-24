@@ -1,7 +1,7 @@
-import type { Alice } from './alice'
-import type { AliceInquirer } from './alice_inquirer'
-import type { Faber } from './faber'
-import type { FaberInquirer } from './faber_inquirer'
+import type { Alice } from './Alice'
+import type { AliceInquirer } from './AliceInquirer'
+import type { Faber } from './Faber'
+import type { FaberInquirer } from './FaberInquirer'
 import type {
   Agent,
   CredentialStateChangedEvent,
@@ -21,7 +21,7 @@ import {
 } from '@aries-framework/core'
 import { ui } from 'inquirer'
 
-import { Color } from './output_class'
+import { Color } from './OutputClass'
 
 export class Listener {
   public on: boolean

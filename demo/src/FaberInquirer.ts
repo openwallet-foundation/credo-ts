@@ -2,10 +2,10 @@ import { clear } from 'console'
 import { textSync } from 'figlet'
 import inquirer from 'inquirer'
 
-import { BaseInquirer } from './base_inquirer'
-import { Faber } from './faber'
-import { Listener } from './listener'
-import { Title } from './output_class'
+import { BaseInquirer } from './BaseInquirer'
+import { Faber } from './Faber'
+import { Listener } from './Listener'
+import { Title } from './OutputClass'
 
 export const runFaber = async () => {
   clear()

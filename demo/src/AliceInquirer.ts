@@ -4,10 +4,10 @@ import { clear } from 'console'
 import { textSync } from 'figlet'
 import inquirer from 'inquirer'
 
-import { Alice } from './alice'
-import { BaseInquirer } from './base_inquirer'
-import { Listener } from './listener'
-import { Title } from './output_class'
+import { Alice } from './Alice'
+import { BaseInquirer } from './BaseInquirer'
+import { Listener } from './Listener'
+import { Title } from './OutputClass'
 
 export const runAlice = async () => {
   clear()

@@ -1,6 +1,6 @@
 import inquirer from 'inquirer'
 
-import { Title } from './output_class'
+import { Title } from './OutputClass'
 
 export class BaseInquirer {
   public optionsInquirer: { type: string; prefix: string; name: string; message: string; choices: string[] }

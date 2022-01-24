@@ -1,8 +1,8 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { CredentialRecord, ProofRecord } from '@aries-framework/core'
 
-import { BaseAgent } from './base_agent'
-import { Color, Output } from './output_class'
+import { BaseAgent } from './BaseAgent'
+import { Color, Output } from './OutputClass'
 
 export class Alice extends BaseAgent {
   public connectionRecordFaberId?: string
