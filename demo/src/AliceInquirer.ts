@@ -17,8 +17,8 @@ export const runAlice = async () => {
 }
 
 enum PromptOptions {
-  Connection = 'Setup Connection',
-  Message = 'Send Message',
+  Connection = 'Create connection invitation',
+  Message = 'Send message',
   Exit = 'Exit',
   Restart = 'Restart',
 }
