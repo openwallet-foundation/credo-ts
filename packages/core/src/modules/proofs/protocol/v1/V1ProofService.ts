@@ -1,29 +1,54 @@
 import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { HandlerInboundMessage } from '../../../../agent/Handler'
+import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
+import type { Logger } from '../../../../logger'
+import type { ProofStateChangedEvent } from '../../ProofEvents'
+import type { CreatePresentationOptions, CreateRequestOptions } from '../../formats/ProofFormatService'
 import type { AutoAcceptProof } from '../../models/ProofAutoAcceptType'
 import type {
-  CreateRequestOptions,
-  PresentationConfig,
-  ProofRequestAsResponse,
-  ProposeProofOptions,
+  CreateProposalAsResponseOptions,
+  CreateProposalOptions,
+  CreateRequestAsResponseOptions,
+  PresentationOptions,
   RequestProofOptions,
-} from '../../interface'
-import type { ProofRecord } from '../../repository/ProofRecord'
-import type { V2ProposePresentationHandler } from '../v2/handlers/V2ProposePresentationHandler'
-import type { ProofRequestOptions, RetrievedCredentials } from './models'
+} from '../../models/ServiceOptions'
+import type { ProofAttributeInfo } from './models'
+import type { CredDef, IndyProof, Schema } from 'indy-sdk'
+import type { Attachment } from 'packages/core/src/decorators/attachment/Attachment'
 
-import { Lifecycle, scoped } from 'tsyringe'
+import { inject, Lifecycle, scoped } from 'tsyringe'
 
-import { ConsoleLogger, LogLevel } from '../../../../logger'
+import { ProofRepository } from '../..'
+import { AgentConfig } from '../../../../agent/AgentConfig'
+import { EventEmitter } from '../../../../agent/EventEmitter'
+import { InjectionSymbols } from '../../../../constants'
+import { Wallet } from '../../../../wallet'
 import { ConnectionService } from '../../../connections'
-import { PresentationPreview } from './models/PresentationPreview'
-import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
+import { CredentialRepository } from '../../../credentials/repository'
+import { IndyHolderService, IndyVerifierService } from '../../../indy/services'
+import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
+import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
+import { PresentationProblemReportError, PresentationProblemReportReason } from '../../errors'
+import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
+import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
+import { ProofState } from '../../models/ProofState'
+import { ProofRecord } from '../../repository/ProofRecord'
 
-import { V1LegacyProofService } from './V1LegacyProofService'
-import { ProofRequest } from './models'
+import {
+  INDY_PROOF_ATTACHMENT_ID,
+  INDY_PROOF_REQUEST_ATTACHMENT_ID,
+  PresentationMessage,
+  ProposePresentationMessage,
+  RequestPresentationMessage,
+} from './messages'
+import { ProofRequest, RequestedCredentials, RequestedPredicate } from './models'
+import { PresentationPreview } from './models/PresentationPreview'
 
-const logger = new ConsoleLogger(LogLevel.debug)
+import { AttachmentData } from 'packages/core/src/decorators/attachment/Attachment'
+import { JsonEncoder } from 'packages/core/src/utils/JsonEncoder'
+
+// const logger = new ConsoleLogger(LogLevel.debug)
 
 /**
  * @todo add method to check if request matches proposal. Useful to see if a request I received is the same as the proposal I sent.
@@ -32,139 +57,394 @@ const logger = new ConsoleLogger(LogLevel.debug)
  */
 @scoped(Lifecycle.ContainerScoped)
 export class V1ProofService extends ProofService {
-  createRequest(
-    createRequestOptions: CreateRequestOptions
-  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
-    throw new Error('Method not implemented.')
-  }
-
-  public createProofRequestFromProposal(
-    presentationProposal: PresentationPreview,
-    proofRequestOptions: ProofRequestOptions
-  ): Promise<ProofRequest> {
-    throw new Error('Method not implemented.')
-  }
-  public processProposal(messageContext: HandlerInboundMessage<V2ProposePresentationHandler>): Promise<ProofRecord> {
-    logger.debug(messageContext.message.id) // temp used to avoid lint errors
-    throw new Error('Method not implemented.')
-  }
-
-  private legacyProofService: V1LegacyProofService
-
+  private proofRepository: ProofRepository
+  private credentialRepository: CredentialRepository
+  private ledgerService: IndyLedgerService
+  private wallet: Wallet
+  private logger: Logger
+  private indyHolderService: IndyHolderService
+  private indyVerifierService: IndyVerifierService
   private connectionService: ConnectionService
+  private eventEmitter: EventEmitter
+  private indyProofFormatService: IndyProofFormatService
 
-  public constructor(proofService: V1LegacyProofService, connectionService: ConnectionService) {
+  public constructor(
+    proofRepository: ProofRepository,
+    ledgerService: IndyLedgerService,
+    @inject(InjectionSymbols.Wallet) wallet: Wallet,
+    agentConfig: AgentConfig,
+    indyHolderService: IndyHolderService,
+    indyVerifierService: IndyVerifierService,
+    connectionService: ConnectionService,
+    eventEmitter: EventEmitter,
+    credentialRepository: CredentialRepository,
+    indyProofFormatService: IndyProofFormatService
+  ) {
     super()
-    this.legacyProofService = proofService
+    this.proofRepository = proofRepository
+    this.credentialRepository = credentialRepository
+    this.ledgerService = ledgerService
+    this.wallet = wallet
+    this.logger = agentConfig.logger
+    this.indyHolderService = indyHolderService
+    this.indyVerifierService = indyVerifierService
     this.connectionService = connectionService
-  }
-
-  public registerHandlers() {
-    throw new Error('Method not implemented.')
+    this.eventEmitter = eventEmitter
+    this.indyProofFormatService = indyProofFormatService
   }
 
   public getVersion(): ProofProtocolVersion {
     return ProofProtocolVersion.V1_0
   }
 
-  /**
-   * Create a {@link ProposePresentationMessage} not bound to an existing presentation exchange.
-   * To create a proposal as response to an existing presentation exchange, use {@link ProofService.createProposalAsResponse}.
-   *
-   * @param connectionRecord The connection for which to create the presentation proposal
-   * @param presentationProposal The presentation proposal to include in the message
-   * @param config Additional configuration to use for the proposal
-   * @returns Object containing proposal message and associated proof record
-   *
-   */
   public async createProposal(
-    proposal: ProposeProofOptions
+    options: CreateProposalOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+    const { connectionRecord, proofFormats } = options
+
+    const presentationProposal = proofFormats.indy?.proofPreview
+      ? new PresentationPreview({
+          attributes: proofFormats.indy?.proofPreview.attributes,
+          predicates: proofFormats.indy?.proofPreview.predicates,
+        })
+      : new PresentationPreview({
+          attributes: [],
+          predicates: [],
+        })
+
     // Assert
-    const connection = await this.connectionService.getById(proposal.connectionId)
+    connectionRecord.assertReady()
 
-    let presentationProposal: PresentationPreview | undefined
-    if (proposal?.proofFormats?.indy?.proofPreview?.attributes) {
-      presentationProposal = new PresentationPreview({
-        attributes: proposal?.proofFormats.indy?.proofPreview?.attributes,
-        predicates: proposal?.proofFormats.indy?.proofPreview?.predicates,
-      })
-    } else {
-      presentationProposal = new PresentationPreview({
-        attributes: [],
-        predicates: [],
-      })
-    }
-
-    const proposalConfig: PresentationConfig = {
-      comment: proposal?.comment,
-      autoAcceptProof: proposal?.autoAcceptProof,
-    }
-
-    const { message, proofRecord } = await this.legacyProofService.createProposal(
-      connection,
+    // Create message
+    const proposalMessage = new ProposePresentationMessage({
+      comment: options?.comment,
       presentationProposal,
-      proposalConfig
-    )
-
-    return { proofRecord, message }
-  }
-
-  public getRequestedCredentialsForProofRequest(
-    proofRequest: ProofRequest,
-    presentationProposal?: PresentationPreview
-  ): Promise<RetrievedCredentials> {
-    return this.legacyProofService.getRequestedCredentialsForProofRequest(proofRequest, presentationProposal)
-  }
-
-  public async createRequestAsResponse(
-    proofRequestAsResponse: ProofRequestAsResponse
-  ): Promise<{ message: AgentMessage; proofRecord: ProofRecord }> {
-    // const { proofRecord, proofRequest } = proofRequestAsResponse
-    const { message, proofRecord } = await this.legacyProofService.createRequestAsResponse(
-      proofRequestAsResponse.proofRecord,
-      proofRequestAsResponse.proofRequest
-    )
-
-    return { proofRecord, message }
-  }
-
-  public async requestProof(
-    requestProofOptions: RequestProofOptions
-  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
-    const { connectionId, proofRequestOptions, comment, autoAcceptProof } = requestProofOptions
-
-    const connection = await this.connectionService.getById(connectionId)
-
-    const nonce = proofRequestOptions.nonce ?? (await this.legacyProofService.generateProofRequestNonce())
-
-    const proofRequest = new ProofRequest({
-      name: proofRequestOptions.name ?? 'proof-request',
-      version: proofRequestOptions.name ?? '1.0',
-      nonce,
-      requestedAttributes: proofRequestOptions.requestedAttributes,
-      requestedPredicates: proofRequestOptions.requestedPredicates,
     })
 
-    const proposalConfig: PresentationConfig = {
-      comment: comment,
-      autoAcceptProof: autoAcceptProof,
+    // Create record
+    const proofRecord = new ProofRecord({
+      connectionId: connectionRecord.id,
+      threadId: proposalMessage.threadId,
+      state: ProofState.ProposalSent,
+      proposalMessage,
+      autoAcceptProof: options?.autoAcceptProof,
+    })
+
+    await this.proofRepository.save(proofRecord)
+    this.eventEmitter.emit<ProofStateChangedEvent>({
+      type: ProofEventTypes.ProofStateChanged,
+      payload: { proofRecord, previousState: null },
+    })
+
+    return { proofRecord, message: proposalMessage }
+  }
+
+  public createProposalAsResponse(
+    options: CreateProposalAsResponseOptions
+  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+    throw new Error('Method not implemented.')
+  }
+
+  public processProposal(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
+    throw new Error('Method not implemented.')
+  }
+
+  public async createRequest(
+    options: RequestProofOptions
+  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+    this.logger.debug(`Creating proof request`)
+    const { connectionRecord, proofFormats } = options
+
+    const proofRequest = proofFormats.indy?.proofRequest
+      ? new ProofRequest({
+          name: proofFormats.indy?.proofRequest.name,
+          nonce: proofFormats.indy?.proofRequest.nonce,
+          version: proofFormats.indy?.proofRequest.nonce,
+          requestedAttributes: proofFormats.indy?.proofRequest.requestedAttributes,
+          requestedPredicates: proofFormats.indy?.proofRequest.requestedPredicates,
+        })
+      : new ProofRequest({
+          name: 'proof-request',
+          version: '1.0',
+          nonce: '',
+          requestedAttributes: {},
+          requestedPredicates: {},
+        })
+
+    // Assert
+    connectionRecord?.assertReady()
+
+    // Create message
+    const createRequestOptions: CreateRequestOptions = {
+      attachId: INDY_PROOF_REQUEST_ATTACHMENT_ID,
+      messageType: 'V1_PROOF',
+      proofRequest,
+    }
+    const { attachment } = await this.indyProofFormatService.createRequest(createRequestOptions)
+
+    const requestPresentationMessage = new RequestPresentationMessage({
+      comment: options?.comment,
+      requestPresentationAttachments: [attachment],
+    })
+
+    // Create record
+    const proofRecord = new ProofRecord({
+      connectionId: connectionRecord?.id,
+      threadId: requestPresentationMessage.threadId,
+      requestMessage: requestPresentationMessage,
+      state: ProofState.RequestSent,
+      autoAcceptProof: options?.autoAcceptProof,
+    })
+
+    await this.proofRepository.save(proofRecord)
+    this.eventEmitter.emit<ProofStateChangedEvent>({
+      type: ProofEventTypes.ProofStateChanged,
+      payload: { proofRecord, previousState: null },
+    })
+
+    return { message: requestPresentationMessage, proofRecord }
+  }
+
+  public createRequestAsResponse(
+    options: CreateRequestAsResponseOptions
+  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+    throw new Error('Method not implemented.')
+  }
+
+  public processRequest(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
+    throw new Error('Method not implemented.')
+  }
+
+  public async createPresentation(
+    options: PresentationOptions
+  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+    const { proofRecord, proofFormats } = options
+    const requestedCredentials = proofFormats.indy
+      ? new RequestedCredentials({
+          requestedAttributes: proofFormats.indy.requestedAttributes,
+          requestedPredicates: proofFormats.indy.requestedPredicates,
+          selfAttestedAttributes: proofFormats.indy.selfAttestedAttributes,
+        })
+      : new RequestedCredentials({
+          requestedAttributes: {},
+          requestedPredicates: {},
+          selfAttestedAttributes: {},
+        })
+
+    this.logger.debug(`Creating presentation for proof record with id ${proofRecord.id}`)
+
+    // Assert
+    proofRecord.assertState(ProofState.RequestReceived)
+
+    const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
+    if (!indyProofRequest) {
+      throw new PresentationProblemReportError(
+        `Missing required base64 or json encoded attachment data for presentation with thread id ${proofRecord.threadId}`,
+        { problemCode: PresentationProblemReportReason.Abandoned }
+      )
     }
 
-    const { message, proofRecord } = await this.legacyProofService.createRequest(
-      proofRequest,
-      connection,
-      proposalConfig
+    // Get the matching attachments to the requested credentials
+    const attachments = await this.getRequestedAttachmentsForRequestedCredentials(
+      indyProofRequest,
+      requestedCredentials
     )
 
-    return { proofRecord, message }
+    // Create proof
+    const proof = await this.createProof(indyProofRequest, requestedCredentials)
+
+    // Create message
+    const createPresentationOptions: CreatePresentationOptions = {
+      attachId: INDY_PROOF_ATTACHMENT_ID,
+      messageType: 'V1_PROOF',
+      attachData: new AttachmentData({
+        base64: JsonEncoder.toBase64(proof),
+      }),
+    }
+
+    // Create Indy attachment
+    const { attachment } = await this.indyProofFormatService.createPresentation(createPresentationOptions)
+
+    const presentationMessage = new PresentationMessage({
+      comment: options?.comment,
+      presentationAttachments: [attachment],
+      attachments,
+    })
+    presentationMessage.setThread({ threadId: proofRecord.threadId })
+
+    // Update record
+    proofRecord.presentationMessage = presentationMessage
+    await this.updateState(proofRecord, ProofState.PresentationSent)
+
+    return { message: presentationMessage, proofRecord }
   }
 
-  public async generateProofRequestNonce() {
-    return this.legacyProofService.generateProofRequestNonce()
+  public processPresentation(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
+    throw new Error('Method not implemented.')
   }
 
-  public async getById(proofRecordId: string): Promise<ProofRecord> {
-    return this.legacyProofService.getById(proofRecordId)
+  public createAck(options: CreateAckOptions): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+    throw new Error('Method not implemented.')
+  }
+
+  public processAck(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
+    throw new Error('Method not implemented.')
+  }
+
+  public createProblemReport(
+    options: CreateProblemReportOptions
+  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+    throw new Error('Method not implemented.')
+  }
+
+  public processProblemReport(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
+    throw new Error('Method not implemented.')
+  }
+
+  public getRequestedCredentialsForProofRequest(options: {
+    proofRecord: ProofRecord
+  }): Promise<{ indy?: RetrievedCredentials | undefined; w3c?: undefined }> {
+    throw new Error('Method not implemented.')
+  }
+
+  public async getRequestedAttachmentsForRequestedCredentials(
+    indyProofRequest: ProofRequest,
+    requestedCredentials: RequestedCredentials
+  ): Promise<Attachment[] | undefined> {
+    const attachments: Attachment[] = []
+    const credentialIds = new Set<string>()
+    const requestedAttributesNames: (string | undefined)[] = []
+
+    // Get the credentialIds if it contains a hashlink
+    for (const [referent, requestedAttribute] of Object.entries(requestedCredentials.requestedAttributes)) {
+      // Find the requested Attributes
+      const requestedAttributes = indyProofRequest.requestedAttributes.get(referent) as ProofAttributeInfo
+
+      // List the requested attributes
+      requestedAttributesNames.push(...(requestedAttributes.names ?? [requestedAttributes.name]))
+
+      // Find the attributes that have a hashlink as a value
+      for (const attribute of Object.values(requestedAttribute.credentialInfo.attributes)) {
+        if (attribute.toLowerCase().startsWith('hl:')) {
+          credentialIds.add(requestedAttribute.credentialId)
+        }
+      }
+    }
+
+    // Only continues if there is an attribute value that contains a hashlink
+    for (const credentialId of credentialIds) {
+      // Get the credentialRecord that matches the ID
+
+      const credentialRecord = await this.credentialRepository.getSingleByQuery({ credentialId })
+
+      if (credentialRecord.linkedAttachments) {
+        // Get the credentials that have a hashlink as value and are requested
+        const requestedCredentials = credentialRecord.credentialAttributes?.filter(
+          (credential) =>
+            credential.value.toLowerCase().startsWith('hl:') && requestedAttributesNames.includes(credential.name)
+        )
+
+        // Get the linked attachments that match the requestedCredentials
+        const linkedAttachments = credentialRecord.linkedAttachments.filter((attachment) =>
+          requestedCredentials?.map((credential) => credential.value.split(':')[1]).includes(attachment.id)
+        )
+
+        if (linkedAttachments) {
+          attachments.push(...linkedAttachments)
+        }
+      }
+    }
+
+    return attachments.length ? attachments : undefined
+  }
+
+  /**
+   * Create indy proof from a given proof request and requested credential object.
+   *
+   * @param proofRequest The proof request to create the proof for
+   * @param requestedCredentials The requested credentials object specifying which credentials to use for the proof
+   * @returns indy proof object
+   */
+  private async createProof(
+    proofRequest: ProofRequest,
+    requestedCredentials: RequestedCredentials
+  ): Promise<IndyProof> {
+    const credentialObjects = [
+      ...Object.values(requestedCredentials.requestedAttributes),
+      ...Object.values(requestedCredentials.requestedPredicates),
+    ].map((c) => c.credentialInfo)
+
+    const schemas = await this.getSchemas(new Set(credentialObjects.map((c) => c.schemaId)))
+    const credentialDefinitions = await this.getCredentialDefinitions(
+      new Set(credentialObjects.map((c) => c.credentialDefinitionId))
+    )
+
+    const proof = await this.indyHolderService.createProof({
+      proofRequest: proofRequest.toJSON(),
+      requestedCredentials: requestedCredentials.toJSON(),
+      schemas,
+      credentialDefinitions,
+    })
+
+    return proof
+  }
+
+  /**
+   * Update the record to a new state and emit an state changed event. Also updates the record
+   * in storage.
+   *
+   * @param proofRecord The proof record to update the state for
+   * @param newState The state to update to
+   *
+   */
+  private async updateState(proofRecord: ProofRecord, newState: ProofState) {
+    const previousState = proofRecord.state
+    proofRecord.state = newState
+    await this.proofRepository.update(proofRecord)
+
+    this.eventEmitter.emit<ProofStateChangedEvent>({
+      type: ProofEventTypes.ProofStateChanged,
+      payload: { proofRecord, previousState: previousState },
+    })
+  }
+
+  /**
+   * Build schemas object needed to create and verify proof objects.
+   *
+   * Creates object with `{ schemaId: Schema }` mapping
+   *
+   * @param schemaIds List of schema ids
+   * @returns Object containing schemas for specified schema ids
+   *
+   */
+  private async getSchemas(schemaIds: Set<string>) {
+    const schemas: { [key: string]: Schema } = {}
+
+    for (const schemaId of schemaIds) {
+      const schema = await this.ledgerService.getSchema(schemaId)
+      schemas[schemaId] = schema
+    }
+
+    return schemas
+  }
+
+  /**
+   * Build credential definitions object needed to create and verify proof objects.
+   *
+   * Creates object with `{ credentialDefinitionId: CredentialDefinition }` mapping
+   *
+   * @param credentialDefinitionIds List of credential definition ids
+   * @returns Object containing credential definitions for specified credential definition ids
+   *
+   */
+  private async getCredentialDefinitions(credentialDefinitionIds: Set<string>) {
+    const credentialDefinitions: { [key: string]: CredDef } = {}
+
+    for (const credDefId of credentialDefinitionIds) {
+      const credDef = await this.ledgerService.getCredentialDefinition(credDefId)
+      credentialDefinitions[credDefId] = credDef
+    }
+
+    return credentialDefinitions
   }
 }

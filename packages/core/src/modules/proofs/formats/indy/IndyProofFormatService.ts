@@ -4,15 +4,17 @@ import type {
   CreateRequestOptions,
   ProcessProposalOptions,
   ProofAttachmentFormat,
+  ProofFormatSpec,
 } from '../ProofFormatService'
 
+import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
+import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { ProofFormatService } from '../ProofFormatService'
-
-import { Attachment, AttachmentData } from 'packages/core/src/decorators/attachment/Attachment'
-import { JsonEncoder } from 'packages/core/src/utils'
+import { ATTACHMENT_FORMAT } from '../ProofFormats'
 
 export class IndyProofFormatService extends ProofFormatService {
   public createProposal(options: CreateProposalOptions): ProofAttachmentFormat {
+    // Handle format in service
     throw new Error('Method not implemented.')
   }
 
@@ -21,15 +23,17 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public createRequest(options: CreateRequestOptions): ProofAttachmentFormat {
+    const format: ProofFormatSpec = this.getFormatIdentifier(options.messageType)
+
     const { attachId, proofRequest } = options
     const attachment = new Attachment({
-      id: attachId,
+      id: attachId ? attachId : undefined,
       mimeType: 'application/json',
       data: new AttachmentData({
         base64: JsonEncoder.toBase64(proofRequest),
       }),
     })
-    return { attachment }
+    return { format, attachment }
   }
 
   public processRequest(options: ProcessRequestOptions): void {
@@ -37,16 +41,28 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public createPresentation(options: CreatePresentationOptions): ProofAttachmentFormat {
+    const format: ProofFormatSpec = this.getFormatIdentifier(options.messageType)
+
     const { attachId, attachData } = options
     const attachment = new Attachment({
-      id: attachId,
+      id: attachId ? attachId : undefined,
       mimeType: 'application/json',
       data: attachData,
     })
-    return { attachment }
+    return { format, attachment }
   }
 
   public processPresentation(options: ProcessPresentationOptions): void {
     throw new Error('Method not implemented.')
+  }
+
+  /**
+   * Get attachment format identifier for format and message combination
+   *
+   * @param messageType Message type for which to return the format identifier
+   * @return V2CredentialFormatSpec - Issue credential attachment format identifier
+   */
+  public getFormatIdentifier(messageType: string): ProofFormatSpec {
+    return ATTACHMENT_FORMAT[messageType].indy
   }
 }

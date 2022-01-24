@@ -26,7 +26,7 @@ export class ProofFormatSpec {
 }
 
 export interface ProofAttachmentFormat {
-  // format: ProofFormatSpec
+  format: ProofFormatSpec
   attachment: Attachment
 }
 
@@ -41,7 +41,8 @@ export interface ProcessProposalOptions {
 }
 
 export interface CreateRequestOptions {
-  attachId: string
+  attachId?: string
+  messageType: string
   proofRequest: ProofRequest
 }
 
@@ -52,7 +53,8 @@ export interface ProcessRequestOptions {
 }
 
 export interface CreatePresentationOptions {
-  attachId: string
+  attachId?: string
+  messageType: string
   attachData: AttachmentData
 }
 

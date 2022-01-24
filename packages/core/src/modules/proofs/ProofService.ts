@@ -1,20 +1,17 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
-import type { HandlerInboundMessage } from '../../agent/Handler'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
-import type {
-  CreateRequestOptions,
-  RequestProofOptions,
-  CreateProposalOptions,
-  CreateProposalAsResponseOptions,
-  CreateRequestAsResponseOptions,
-} from './interface'
+import type { CreateRequestAsResponseOptions } from './interface'
 import type { ProofProtocolVersion } from './models/ProofProtocolVersion'
-import type { ProofRequest, RetrievedCredentials } from './protocol/v1/models'
-import type { PresentationPreview } from './protocol/v1/models/PresentationPreview'
+import type {
+  CreatePresentationOptions,
+  CreateProposalAsResponseOptions,
+  CreateProposalOptions,
+  RequestProofOptions,
+} from './models/ServiceOptions'
+import type { RetrievedCredentials } from './protocol/v1/models'
 import type { ProofRecord } from './repository'
 import type { PresentationRecordType } from './repository/PresentationExchangeRecord'
 import type { ProofFormatService } from './v2/formats/ProofFormatService'
-import type { V2ProposePresentationHandler } from './v2/handlers/V2ProposePresentationHandler'
 
 import { ConsoleLogger, LogLevel } from '../../logger'
 
@@ -72,7 +69,7 @@ export abstract class ProofService {
    */
   abstract processProposal(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
 
-  abstract createRequest(options: CreateRequestOptions): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
+  abstract createRequest(options: RequestProofOptions): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
 
   abstract createRequestAsResponse(
     options: CreateRequestAsResponseOptions

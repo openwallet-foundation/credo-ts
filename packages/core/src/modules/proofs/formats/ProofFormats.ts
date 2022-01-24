@@ -11,6 +11,7 @@ const INDY_ATTACH_ID = 'indy'
 const PRES_20_PROPOSAL = 'hlindy/proof-req@v2.0'
 const PRES_20_REQUEST = 'hlindy/proof-req@v2.0'
 const PRES_20_PROOF = 'hlindy/proof@v2.0'
+const V1_PROOF = 'v1_proof'
 
 const LD_ATTACH_ID = '...' // MJR-TODO
 const LD_PROPOSE_FORMAT = '...' // MJR-TODO
@@ -46,6 +47,11 @@ const V2JsonLdProofFormat: ProofFormatSpec = {
   format: LD_REQUEST_FORMAT,
 }
 
+const V1IndyProofFormat: ProofFormatSpec = {
+  attachmentId: INDY_ATTACH_ID,
+  format: V1_PROOF,
+}
+
 export const ATTACHMENT_FORMAT: V2ProofAttachmentFormat = {
   PRES_20_PROPOSAL: {
     indy: V2IndyProposeProofFormat,
@@ -58,6 +64,10 @@ export const ATTACHMENT_FORMAT: V2ProofAttachmentFormat = {
   PRES_20_PROOF: {
     indy: V2IndyProofFormat,
     ldproof: V2JsonLdProofFormat,
+  },
+  V1_PROOF: {
+    indy: V1IndyProofFormat,
+    ldproof: V1IndyProofFormat,
   },
 
   // MJR-TODO

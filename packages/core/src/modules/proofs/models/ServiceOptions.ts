@@ -1,7 +1,7 @@
 import type { AutoAcceptProof, ProofRecord } from '..'
 import type { ConnectionRecord } from '../../connections'
 import type { ProofProtocolVersion } from './ProofProtocolVersion'
-import type { ProposeProofFormats } from './SharedOptions'
+import type { CreatePresentationFormats, ProposeProofFormats, RequestProofFormats } from './SharedOptions'
 
 // ----- Create Proposal ----- //
 export interface CreateProposalOptions {
@@ -21,10 +21,10 @@ export interface CreateProposalAsResponseOptions {
 
 // ----- Request Proof ----- //
 export interface RequestProofOptions {
-  connectionId: string
+  connectionRecord: ConnectionRecord
   protocolVersion: ProofProtocolVersion
-  proofFormats: V2ProposeProofFormat
-  proofRequestOptions: CreateProofRequestOptions
+  proofFormats: RequestProofFormats
+  // proofRequestOptions: CreateProofRequestOptions
   comment?: string
   autoAcceptProof?: AutoAcceptProof
 }
@@ -37,8 +37,9 @@ export interface CreateRequestAsResponseOptions {
 }
 
 // ----- Create Presentation ----- //
-export interface CreatePresentationOptions {
+export interface PresentationOptions {
   proofRecord: ProofRecord
   proofFormats: CreatePresentationFormats
+  comment?: string
   // TODO: add other options such as comment, etc...
 }
