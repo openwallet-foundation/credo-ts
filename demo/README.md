@@ -15,9 +15,7 @@ This is the Aries Framework Javascript demo. Walk through the AFJ flow yourself 
 
 In order to use Aries Framework JavaScript some platform specific dependencies and setup is required. See our guides below to quickly set up you project with Aries Framework JavaScript for NodeJS, React Native and Electron.
 
-- [React Native](/docs/setup-react-native.md)
 - [NodeJS](/docs/setup-nodejs.md)
-- [Electron](/docs/setup-electron.md)
 
 ### Run the demo
 
