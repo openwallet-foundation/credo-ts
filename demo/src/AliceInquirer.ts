@@ -17,10 +17,10 @@ export const runAlice = async () => {
 }
 
 enum PromptOptions {
-  Connection = 'setup connection',
-  Message = 'send message',
-  Exit = 'exit',
-  Restart = 'restart',
+  Connection = 'Setup Connection',
+  Message = 'Send Message',
+  Exit = 'Exit',
+  Restart = 'Restart',
 }
 
 export class AliceInquirer extends BaseInquirer {
