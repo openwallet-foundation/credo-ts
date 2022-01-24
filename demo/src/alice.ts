@@ -1,6 +1,5 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
-import type { CredentialRecord } from 'packages/core/src/modules/credentials'
-import type { ProofRecord } from 'packages/core/src/modules/proofs'
+import type { CredentialRecord, ProofRecord } from '@aries-framework/core'
 
 import { BaseAgent } from './base_agent'
 import { Color, Output } from './output_class'
