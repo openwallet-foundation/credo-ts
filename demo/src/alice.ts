@@ -2,8 +2,8 @@
 import type { CredentialRecord } from 'packages/core/src/modules/credentials'
 import type { ProofRecord } from 'packages/core/src/modules/proofs'
 
-import { BaseAgent } from './base_agent'
-import { Color, Output } from './output_class'
+import { BaseAgent } from './BaseAgent'
+import { Color, Output } from './OutputClass'
 
 export class Alice extends BaseAgent {
   public connectionRecordFaberId?: string
