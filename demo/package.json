@@ -5,7 +5,7 @@
   "bin": {
     "demo": "./lib/annelein.js"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "scripts": {
     "alice": " 'ts-node' src/alice_inquirer.ts",
     "faber": " 'ts-node' src/faber_inquirer.ts",
