@@ -2,6 +2,8 @@
 
 This is the Aries Framework Javascript demo. Walk through the AFJ flow yourself together with agents Alice and Faber.
 
+Alice, a former student of Faber College, connects with the College, is issued a credential about her degree and then is asked by the College for a proof.
+
 ## Features
 
 - ✅ Creating a connection
