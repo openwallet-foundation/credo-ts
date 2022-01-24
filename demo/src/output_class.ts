@@ -15,7 +15,7 @@ export enum Output {
 export enum Title {
   optionsTitle = '\nOptions:',
   invitationTitle = '\n\nPaste the invitation url here:',
-  messageTitle = '\n\nWrite your message here:\nPress q to exit',
+  messageTitle = '\n\nWrite your message here:\n(Press enter to send or press q to exit)\n',
   confirmTitle = '\n\nAre you sure?',
   credentialOfferTitle = '\n\nCredential offer received, do you want to accept it?',
   proofRequestTitle = '\n\nProof request received, do you want to accept it?',
