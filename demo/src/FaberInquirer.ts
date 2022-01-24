@@ -15,12 +15,12 @@ export const runFaber = async () => {
 }
 
 enum PromptOptions {
-  Connection = 'Setup Connection',
-  Credential = 'Offer Credential',
-  Proof = 'Request Proof',
-  Message = 'Send Message',
+  Connection = 'Receive connection invitation',
+  Credential = 'Offer credential',
+  Proof = 'Request proof',
+  Message = 'Send message',
   Exit = 'Exit',
-  Restart = 'Eestart',
+  Restart = 'Restart',
 }
 
 export class FaberInquirer extends BaseInquirer {
