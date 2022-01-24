@@ -2,6 +2,11 @@ import inquirer from 'inquirer'
 
 import { Title } from './OutputClass'
 
+export enum ConfirmOptions {
+  Yes = 'yes',
+  No = 'no',
+}
+
 export class BaseInquirer {
   public optionsInquirer: { type: string; prefix: string; name: string; message: string; choices: string[] }
   public inputInquirer: { type: string; prefix: string; name: string; message: string; choices: string[] }
@@ -40,7 +45,7 @@ export class BaseInquirer {
   public inquireConfirmation(title: string) {
     const optionsInquirer = this.optionsInquirer
     optionsInquirer.message = title
-    optionsInquirer.choices = ['yes', 'no']
+    optionsInquirer.choices = [ConfirmOptions.Yes, ConfirmOptions.No]
     return optionsInquirer
   }
 

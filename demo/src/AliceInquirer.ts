@@ -5,7 +5,7 @@ import { textSync } from 'figlet'
 import inquirer from 'inquirer'
 
 import { Alice } from './Alice'
-import { BaseInquirer } from './BaseInquirer'
+import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
 import { Listener } from './Listener'
 import { Title } from './OutputClass'
 
@@ -69,18 +69,18 @@ export class AliceInquirer extends BaseInquirer {
 
   public async acceptCredentialOffer(credentialRecord: CredentialRecord) {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.credentialOfferTitle)])
-    if (confirm.options === 'no') {
+    if (confirm.options === ConfirmOptions.No) {
       await this.alice.agent.credentials.declineOffer(credentialRecord.id)
-    } else if (confirm.options === 'yes') {
+    } else if (confirm.options === ConfirmOptions.Yes) {
       await this.alice.acceptCredentialOffer(credentialRecord)
     }
   }
 
   public async acceptProofRequest(proofRecord: ProofRecord) {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.proofRequestTitle)])
-    if (confirm.options === 'no') {
+    if (confirm.options === ConfirmOptions.No) {
       await this.alice.agent.proofs.declineRequest(proofRecord.id)
-    } else if (confirm.options === 'yes') {
+    } else if (confirm.options === ConfirmOptions.Yes) {
       await this.alice.acceptProofRequest(proofRecord)
     }
   }
@@ -104,19 +104,19 @@ export class AliceInquirer extends BaseInquirer {
 
   public async exit() {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
-    if (confirm.options === 'no') {
+    if (confirm.options === ConfirmOptions.No) {
       return
-    } else if (confirm.options === 'yes') {
+    } else if (confirm.options === ConfirmOptions.Yes) {
       await this.alice.exit()
     }
   }
 
   public async restart() {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
-    if (confirm.options === 'no') {
+    if (confirm.options === ConfirmOptions.No) {
       this.processAnswer()
       return
-    } else if (confirm.options === 'yes') {
+    } else if (confirm.options === ConfirmOptions.Yes) {
       await this.alice.restart()
       runAlice()
     }

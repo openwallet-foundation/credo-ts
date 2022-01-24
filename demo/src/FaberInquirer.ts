@@ -2,7 +2,7 @@ import { clear } from 'console'
 import { textSync } from 'figlet'
 import inquirer from 'inquirer'
 
-import { BaseInquirer } from './BaseInquirer'
+import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
 import { Faber } from './Faber'
 import { Listener } from './Listener'
 import { Title } from './OutputClass'
@@ -82,9 +82,9 @@ export class FaberInquirer extends BaseInquirer {
 
   public async exitUseCase(title: string) {
     const confirm = await inquirer.prompt([this.inquireConfirmation(title)])
-    if (confirm.options === 'no') {
+    if (confirm.options === ConfirmOptions.No) {
       return false
-    } else if (confirm.options === 'yes') {
+    } else if (confirm.options === ConfirmOptions.Yes) {
       return true
     }
   }
@@ -111,19 +111,19 @@ export class FaberInquirer extends BaseInquirer {
 
   public async exit() {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
-    if (confirm.options === 'no') {
+    if (confirm.options === ConfirmOptions.No) {
       return
-    } else if (confirm.options === 'yes') {
+    } else if (confirm.options === ConfirmOptions.Yes) {
       await this.faber.exit()
     }
   }
 
   public async restart() {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
-    if (confirm.options === 'no') {
+    if (confirm.options === ConfirmOptions.No) {
       this.processAnswer()
       return
-    } else if (confirm.options === 'yes') {
+    } else if (confirm.options === ConfirmOptions.Yes) {
       await this.faber.restart()
       runFaber()
     }
