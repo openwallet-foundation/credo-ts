@@ -6,12 +6,10 @@ import { Color, Output } from './OutputClass'
 
 export class Alice extends BaseAgent {
   public connectionRecordFaberId?: string
-  public credDef: string
   public connected: boolean
 
   public constructor(port: number, name: string) {
     super(port, name)
-    this.credDef = '7KuDTpQh3GJ7Gp6kErpWvM:3:CL:115269:latest'
     this.connected = false
   }
 
