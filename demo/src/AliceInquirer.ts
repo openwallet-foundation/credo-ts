@@ -4,10 +4,10 @@ import { clear } from 'console'
 import { textSync } from 'figlet'
 import inquirer from 'inquirer'
 
-import { Alice } from './alice'
-import { BaseInquirer } from './base_inquirer'
-import { Listener } from './listener'
-import { Title } from './output_class'
+import { Alice } from './Alice'
+import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
+import { Listener } from './Listener'
+import { Title } from './OutputClass'
 
 export const runAlice = async () => {
   clear()
@@ -17,10 +17,10 @@ export const runAlice = async () => {
 }
 
 enum PromptOptions {
-  Connection = 'setup connection',
-  Message = 'send message',
-  Exit = 'exit',
-  Restart = 'restart',
+  Connection = 'Setup Connection',
+  Message = 'Send Message',
+  Exit = 'Exit',
+  Restart = 'Restart',
 }
 
 export class AliceInquirer extends BaseInquirer {
@@ -69,24 +69,27 @@ export class AliceInquirer extends BaseInquirer {
 
   public async acceptCredentialOffer(credentialRecord: CredentialRecord) {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.credentialOfferTitle)])
-    if (confirm.options === 'no') {
+    if (confirm.options === ConfirmOptions.No) {
       await this.alice.agent.credentials.declineOffer(credentialRecord.id)
-    } else if (confirm.options === 'yes') {
+    } else if (confirm.options === ConfirmOptions.Yes) {
       await this.alice.acceptCredentialOffer(credentialRecord)
     }
   }
 
   public async acceptProofRequest(proofRecord: ProofRecord) {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.proofRequestTitle)])
-    if (confirm.options === 'no') {
+    if (confirm.options === ConfirmOptions.No) {
       await this.alice.agent.proofs.declineRequest(proofRecord.id)
-    } else if (confirm.options === 'yes') {
+    } else if (confirm.options === ConfirmOptions.Yes) {
       await this.alice.acceptProofRequest(proofRecord)
     }
   }
 
   public async connection() {
     await this.alice.setupConnection()
+    if (this.alice.connected === false) {
+      return
+    }
     this.listener.credentialOfferListener(this.alice, this)
     this.listener.proofRequestListener(this.alice, this)
   }
@@ -101,19 +104,19 @@ export class AliceInquirer extends BaseInquirer {
 
   public async exit() {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
-    if (confirm.options === 'no') {
+    if (confirm.options === ConfirmOptions.No) {
       return
-    } else if (confirm.options === 'yes') {
+    } else if (confirm.options === ConfirmOptions.Yes) {
       await this.alice.exit()
     }
   }
 
   public async restart() {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
-    if (confirm.options === 'no') {
+    if (confirm.options === ConfirmOptions.No) {
       this.processAnswer()
       return
-    } else if (confirm.options === 'yes') {
+    } else if (confirm.options === ConfirmOptions.Yes) {
       await this.alice.restart()
       runAlice()
     }

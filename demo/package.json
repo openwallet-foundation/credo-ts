@@ -1,47 +1,25 @@
 {
-  "name": "demo",
+  "name": "afj-demo",
   "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "directory": "demo/"
+  },
   "license": "Apache-2.0",
   "scripts": {
-    "alice": "ts-node src/alice_inquirer.ts",
-    "faber": "ts-node src/faber_inquirer.ts",
-    "create": "yarn build && yarn test",
-    "build": "tsc -p .",
-    "local": "yarn global add && demo",
+    "alice": "ts-node src/AliceInquirer.ts",
+    "faber": "ts-node src/FaberInquirer.ts",
     "refresh": "rm -rf ./node_modules ./yarn.lock && npm install"
   },
   "devDependencies": {
-    "@types/chalk": "^2.2.0",
-    "@types/clear": "^0.1.2",
-    "@types/commander": "^2.12.2",
-    "@types/express": "^4.17.13",
-    "@types/figlet": "^1.5.4",
-    "@types/inquirer": "^8.1.3",
-    "@types/node": "^15.14.4",
-    "clean-package": "^2.1.1",
-    "nodemon": "^2.0.15",
-    "ts-node": "^10.4.0",
-    "typescript": "~4.3.0"
-  },
-  "dependencies": {
     "@aries-framework/core": "^0.1.0",
     "@aries-framework/node": "^0.1.0",
-    "chalk": "^5.0.0",
+    "@types/figlet": "^1.5.4",
+    "@types/inquirer": "^8.1.3",
     "clear": "^0.1.0",
     "commander": "^8.3.0",
     "figlet": "^1.5.2",
-    "path": "^0.12.7",
-    "rxjs": "^7.5.2",
     "ts-node": "^10.4.0"
-  },
-  "description": "afj cli demo",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/animo/basic-message-demo.git"
-  },
-  "author": "",
-  "bugs": {
-    "url": "https://github.com/animo/basic-message-demo/issues"
-  },
-  "homepage": "https://github.com/animo/basic-message-demo#readme"
+  }
 }

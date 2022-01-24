@@ -13,8 +13,8 @@ import { uuid } from '@aries-framework/core/build/utils/uuid'
 import { JsonEncoder } from '@aries-framework/core/src/utils/JsonEncoder'
 import { ui } from 'inquirer'
 
-import { BaseAgent } from './base_agent'
-import { Color, Output } from './output_class'
+import { BaseAgent } from './BaseAgent'
+import { Color, Output } from './OutputClass'
 
 export class Faber extends BaseAgent {
   public connectionRecordAliceId?: string
@@ -110,13 +110,13 @@ export class Faber extends BaseAgent {
 
   public async issueCredential() {
     const schema = await this.registerSchema()
-    const credentialDefinition = await this.registerCredentialDefiniton(schema)
+    const credDef = await this.registerCredentialDefiniton(schema)
     const credentialPreview = this.getCredentialPreview()
     const connectionRecord = await this.getConnectionRecord()
 
     this.ui.updateBottomBar('\nSending credential offer...\n')
     await this.agent.credentials.offerCredential(connectionRecord.id, {
-      credentialDefinitionId: credentialDefinition.id,
+      credentialDefinitionId: credDef.id,
       preview: credentialPreview,
     })
     this.ui.updateBottomBar(`\nCredential offer sent! \n${Color.reset}`)

@@ -2,10 +2,10 @@ import { clear } from 'console'
 import { textSync } from 'figlet'
 import inquirer from 'inquirer'
 
-import { BaseInquirer } from './base_inquirer'
-import { Faber } from './faber'
-import { Listener } from './listener'
-import { Title } from './output_class'
+import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
+import { Faber } from './Faber'
+import { Listener } from './Listener'
+import { Title } from './OutputClass'
 
 export const runFaber = async () => {
   clear()
@@ -15,12 +15,12 @@ export const runFaber = async () => {
 }
 
 enum PromptOptions {
-  Connection = 'setup connection',
-  Credential = 'offer credential',
-  Proof = 'request proof',
-  Message = 'send message',
-  Exit = 'exit',
-  Restart = 'restart',
+  Connection = 'Setup Connection',
+  Credential = 'Offer Credential',
+  Proof = 'Request Proof',
+  Message = 'Send Message',
+  Exit = 'Exit',
+  Restart = 'Eestart',
 }
 
 export class FaberInquirer extends BaseInquirer {
@@ -82,9 +82,9 @@ export class FaberInquirer extends BaseInquirer {
 
   public async exitUseCase(title: string) {
     const confirm = await inquirer.prompt([this.inquireConfirmation(title)])
-    if (confirm.options === 'no') {
+    if (confirm.options === ConfirmOptions.No) {
       return false
-    } else if (confirm.options === 'yes') {
+    } else if (confirm.options === ConfirmOptions.Yes) {
       return true
     }
   }
@@ -111,19 +111,19 @@ export class FaberInquirer extends BaseInquirer {
 
   public async exit() {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
-    if (confirm.options === 'no') {
+    if (confirm.options === ConfirmOptions.No) {
       return
-    } else if (confirm.options === 'yes') {
+    } else if (confirm.options === ConfirmOptions.Yes) {
       await this.faber.exit()
     }
   }
 
   public async restart() {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
-    if (confirm.options === 'no') {
+    if (confirm.options === ConfirmOptions.No) {
       this.processAnswer()
       return
-    } else if (confirm.options === 'yes') {
+    } else if (confirm.options === ConfirmOptions.Yes) {
       await this.faber.restart()
       runFaber()
     }
