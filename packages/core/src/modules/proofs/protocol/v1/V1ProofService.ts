@@ -245,7 +245,7 @@ export class V1ProofService extends ProofService {
     }
 
     // Get the matching attachments to the requested credentials
-    const attachments = await this.getRequestedAttachmentsForRequestedCredentials(
+    const attachments = await this.indyProofFormatService.getRequestedAttachmentsForRequestedCredentials(
       indyProofRequest,
       requestedCredentials
     )
@@ -253,7 +253,7 @@ export class V1ProofService extends ProofService {
     // Create proof
     const proof = await this.createProof(indyProofRequest, requestedCredentials)
 
-    // Create message
+    // Create payload
     const createPresentationOptions: CreatePresentationOptions = {
       attachId: INDY_PROOF_ATTACHMENT_ID,
       messageType: 'V1_PROOF',
@@ -262,7 +262,7 @@ export class V1ProofService extends ProofService {
       }),
     }
 
-    // Create Indy attachment
+    // Create indy attachment
     const { attachment } = await this.indyProofFormatService.createPresentation(createPresentationOptions)
 
     const presentationMessage = new PresentationMessage({
@@ -305,57 +305,6 @@ export class V1ProofService extends ProofService {
     proofRecord: ProofRecord
   }): Promise<{ indy?: RetrievedCredentials | undefined; w3c?: undefined }> {
     throw new Error('Method not implemented.')
-  }
-
-  public async getRequestedAttachmentsForRequestedCredentials(
-    indyProofRequest: ProofRequest,
-    requestedCredentials: RequestedCredentials
-  ): Promise<Attachment[] | undefined> {
-    const attachments: Attachment[] = []
-    const credentialIds = new Set<string>()
-    const requestedAttributesNames: (string | undefined)[] = []
-
-    // Get the credentialIds if it contains a hashlink
-    for (const [referent, requestedAttribute] of Object.entries(requestedCredentials.requestedAttributes)) {
-      // Find the requested Attributes
-      const requestedAttributes = indyProofRequest.requestedAttributes.get(referent) as ProofAttributeInfo
-
-      // List the requested attributes
-      requestedAttributesNames.push(...(requestedAttributes.names ?? [requestedAttributes.name]))
-
-      // Find the attributes that have a hashlink as a value
-      for (const attribute of Object.values(requestedAttribute.credentialInfo.attributes)) {
-        if (attribute.toLowerCase().startsWith('hl:')) {
-          credentialIds.add(requestedAttribute.credentialId)
-        }
-      }
-    }
-
-    // Only continues if there is an attribute value that contains a hashlink
-    for (const credentialId of credentialIds) {
-      // Get the credentialRecord that matches the ID
-
-      const credentialRecord = await this.credentialRepository.getSingleByQuery({ credentialId })
-
-      if (credentialRecord.linkedAttachments) {
-        // Get the credentials that have a hashlink as value and are requested
-        const requestedCredentials = credentialRecord.credentialAttributes?.filter(
-          (credential) =>
-            credential.value.toLowerCase().startsWith('hl:') && requestedAttributesNames.includes(credential.name)
-        )
-
-        // Get the linked attachments that match the requestedCredentials
-        const linkedAttachments = credentialRecord.linkedAttachments.filter((attachment) =>
-          requestedCredentials?.map((credential) => credential.value.split(':')[1]).includes(attachment.id)
-        )
-
-        if (linkedAttachments) {
-          attachments.push(...linkedAttachments)
-        }
-      }
-    }
-
-    return attachments.length ? attachments : undefined
   }
 
   /**

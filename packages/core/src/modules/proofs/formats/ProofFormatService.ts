@@ -64,7 +64,6 @@ interface ProcessPresentationOptions {
   options: never // TBD
 }
 
-
 /**
  * This abstract class is the base class for any proof format
  * specific service.
