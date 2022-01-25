@@ -1,17 +1,17 @@
-import type { V2ProofFormatSpec } from '../formats/V2ProofFormat'
+import type { ProofFormatSpec } from '../../../formats/models/ProofFormatServiceOptions'
 
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
-import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { uuid } from '../../../../../utils/uuid'
 import { PresentationPreview } from '../../v1/models/PresentationPreview'
-import { PRES_20_PROPOSAL } from '../formats/MessageTypes'
+
+import { Attachment } from 'packages/core/src/decorators/attachment/Attachment'
 
 export interface V2ProposePresentationMessageOptions {
   id?: string
-  formats: V2ProofFormatSpec
+  formats: ProofFormatSpec
   filtersAttach: Attachment[]
   comment?: string
   presentationProposal: PresentationPreview
@@ -58,5 +58,5 @@ export class V2ProposalPresentationMessage extends AgentMessage {
   @IsInstance(PresentationPreview)
   public presentationProposal!: PresentationPreview
 
-  public formats!: V2ProofFormatSpec
+  public formats!: ProofFormatSpec
 }
