@@ -11,8 +11,9 @@ import { uuid } from 'packages/core/src/utils/uuid'
 
 export interface V2RequestPresentationMessageOptions {
   id?: string
-  goalCode?: string
   comment?: string
+  goalCode?: string
+  willConfirm?: boolean
   attachmentInfo: ProofAttachmentFormat[]
 }
 
@@ -23,16 +24,17 @@ export class V2RequestPresentationMessage extends AgentMessage {
       this.id = options.id ?? uuid()
       this.comment = options.comment
       this.goalCode = options.goalCode
+      this.willConfirm = options.willConfirm ?? false
 
       for (const entry of options.attachmentInfo) {
-        this.addProposalsAttachment(entry)
+        this.addRequestPresentationsAttachment(entry)
       }
     }
   }
 
-  public addProposalsAttachment(attachment: ProofAttachmentFormat) {
+  public addRequestPresentationsAttachment(attachment: ProofAttachmentFormat) {
     this.formats.push(attachment.format)
-    this.proposalsAttach.push(attachment.attachment)
+    this.requestPresentationsAttach.push(attachment.attachment)
   }
 
   @Equals(V2RequestPresentationMessage.type)
@@ -59,10 +61,10 @@ export class V2RequestPresentationMessage extends AgentMessage {
   @IsInstance(ProofFormatSpec, { each: true })
   public formats!: ProofFormatSpec[]
 
-  @Expose({ name: 'proposals~attach' })
+  @Expose({ name: 'request_presentations~attach' })
   @Type(() => Attachment)
   @IsArray()
   @ValidateNested({ each: true })
   @IsInstance(Attachment, { each: true })
-  public proposalsAttach!: Attachment[]
+  public requestPresentationsAttach!: Attachment[]
 }
