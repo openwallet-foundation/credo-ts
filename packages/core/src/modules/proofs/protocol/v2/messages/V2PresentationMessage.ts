@@ -13,6 +13,7 @@ export interface V2PresentationMessageOptions {
   id?: string
   goalCode?: string
   comment?: string
+  willConfirm?: boolean
   attachmentInfo: ProofAttachmentFormat[]
 }
 
@@ -23,6 +24,7 @@ export class V2PresentationMessage extends AgentMessage {
       this.id = options.id ?? uuid()
       this.comment = options.comment
       this.goalCode = options.goalCode
+      this.willConfirm = options.willConfirm ?? false
 
       for (const entry of options.attachmentInfo) {
         this.addPresentationsAttachment(entry)
