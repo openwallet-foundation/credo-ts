@@ -111,6 +111,12 @@ In order to use Aries Framework JavaScript some platform specific dependencies a
 - [NodeJS](/docs/setup-nodejs.md)
 - [Electron](/docs/setup-electron.md)
 
+### Demo
+
+To get to know the AFJ flow, we build a demo to walk through it yourself together with agents Alice and Faber.
+
+- [Demo](/demo)
+
 ### Usage
 
 Now that your project is setup and everything seems to be working, it is time to start building! Follow these guides below to get started!
