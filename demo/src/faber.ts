@@ -101,7 +101,8 @@ export class Faber extends BaseAgent {
       credentialDefinitionId: credDef.id,
       preview: credentialPreview,
     })
-    this.ui.updateBottomBar(`\nCredential offer sent! \n${Color.reset}`)
+    this.ui.updateBottomBar(`\nCredential offer sent! \n
+    Go to the Alice agent to accept the credential offer\n${Color.reset}`)
   }
 
   private async printProofFlow(print: string) {
@@ -111,7 +112,7 @@ export class Faber extends BaseAgent {
 
   private async newProofAttribute() {
     await this.printProofFlow(`${Color.green}\nCreating new proof attribute for 'name' ...\n`)
-    return {
+    const proofAttribute = {
       name: new ProofAttributeInfo({
         name: 'name',
         restrictions: [
@@ -121,6 +122,7 @@ export class Faber extends BaseAgent {
         ],
       }),
     }
+    return proofAttribute
   }
 
   public async sendProofRequest() {
@@ -130,7 +132,8 @@ export class Faber extends BaseAgent {
     await this.agent.proofs.requestProof(connectionRecord.id, {
       requestedAttributes: proofAttribute,
     })
-    this.ui.updateBottomBar(`\nProof request send!\n\n${Color.reset}`)
+    this.ui.updateBottomBar(`\nProof request sent!\n\n
+    Go to the Alice agent to accept the proof request\n${Color.reset}`)
   }
 
   public async sendMessage(message: string) {
