@@ -2,7 +2,7 @@ import type { CredentialStateChangedEvent } from '../../..'
 import type { EventEmitter } from '../../../../../agent/EventEmitter'
 import type { CredPropose } from '../../../interfaces'
 import type { CredentialRecord, CredentialRepository } from '../../../repository'
-import type { V2CredProposalFormat, V2CredProposeOfferRequestFormat } from '../CredentialFormatService'
+import type { V2CredProposeOfferRequestFormat } from '../CredentialFormatService'
 import type { MetaDataService } from '../MetaDataService'
 import type { CredOffer } from 'indy-sdk'
 
@@ -75,8 +75,7 @@ export class IndyMetaDataService implements MetaDataService {
     proposal: V2CredProposeOfferRequestFormat,
     credentialRecord: CredentialRecord
   ): Promise<void> {
-    const credPropose: CredPropose = proposal.indy?.payload as CredPropose
-
+    const credPropose: CredPropose = proposal.indy?.payload.credentialPayload as CredPropose
     credentialRecord.metadata.set('_internal/indyCredential', {
       schemaId: credPropose.schemaId,
       credentialDefinintionId: credPropose.credentialDefinitionId,

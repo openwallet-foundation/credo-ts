@@ -1,27 +1,36 @@
+import type { AgentMessage } from '../../../../src/agent/AgentMessage'
+import type { Attachment } from '../../../../src/decorators/attachment/Attachment'
 import type {
   AcceptProposalOptions,
+  AcceptRequestOptions,
+  CredPropose,
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../interfaces'
-import type { CredentialRecordProps, OfferMessageType } from '../repository/CredentialRecord'
+import type { CredentialRecordProps } from '../repository/CredentialRecord'
 import type { V2CredentialPreview } from './V2CredentialPreview'
 import type { CredentialFormatService, V2CredProposeOfferRequestFormat } from './formats/CredentialFormatService'
 import type { V2CredentialFormatSpec } from './formats/V2CredentialFormat'
+import type { V2IssueCredentialMessageProps } from './messages/V2IssueCredentialMessage'
 import type { V2OfferCredentialMessageOptions } from './messages/V2OfferCredentialMessage'
 import type { V2ProposeCredentialMessageProps } from './messages/V2ProposeCredentialMessage'
 import type { V2RequestCredentialMessageOptions } from './messages/V2RequestCredentialMessage'
-import type { AgentMessage } from 'packages/core/src/agent/AgentMessage'
-import type { Attachment } from 'packages/core/src/decorators/attachment/Attachment'
 
 import { assert } from 'console'
 
-import { CredentialState } from '..'
+import { CredentialState, CredentialUtils, INDY_CREDENTIAL_ATTACHMENT_ID } from '..'
+import { AttachmentData } from '../../../../src/decorators/attachment/Attachment'
+import { AriesFrameworkError } from '../../../../src/error'
+import { JsonEncoder } from '../../../../src/utils/JsonEncoder'
 import { uuid } from '../../../../src/utils/uuid'
 import { isLinkedAttachment } from '../../../utils/attachment'
+import { credOffer } from '../__tests__/fixtures'
+import { CredentialProblemReportError, CredentialProblemReportReason } from '../errors'
 import { CredentialRecord } from '../repository/CredentialRecord'
 
+import { V2IssueCredentialMessage } from './messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from './messages/V2OfferCredentialMessage'
 import { V2ProposeCredentialMessage } from './messages/V2ProposeCredentialMessage'
 import { V2RequestCredentialMessage } from './messages/V2RequestCredentialMessage'
@@ -212,9 +221,8 @@ export class CredentialMessageBuilder {
   ): Promise<CredentialProtocolMsgReturnType<V2RequestCredentialMessage>> {
     // Assert credential
     credentialRecord.assertState(CredentialState.OfferReceived)
-
     for (const service of formatServices) {
-      const { formats, requestAttach, credOfferRequest } = await service.getCredentialRequestAttachFormats(
+      const { formats, requestAttach, credOfferRequest } = await service.createRequestAttachFormats(
         requestOptions,
         credentialRecord
       )
@@ -244,13 +252,10 @@ export class CredentialMessageBuilder {
         credentialRecord.autoAcceptCredential =
           requestOptions.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
-        credentialRecord.linkedAttachments = credentialRecord.offerMessage?.attachments?.filter((attachment) =>
-          isLinkedAttachment(attachment)
-        )
         return { message: credentialRequestMessage, credentialRecord }
       }
     }
-    throw Error('Missing offer. Beginning Credential Exchange with Request not supported in Indy')
+    throw Error('Error: No formats specified in message')
   }
 
   /**
@@ -287,7 +292,6 @@ export class CredentialMessageBuilder {
     formatServices: CredentialFormatService[],
     options: OfferCredentialOptions
   ): Promise<{ credentialRecord: CredentialRecord; message: V2OfferCredentialMessage }> {
-    // const { credentialDefinitionId, comment, preview, linkedAttachments } = credentialTemplate
 
     const formatsArray: V2CredentialFormatSpec[] = []
     const offersAttachArray: Attachment[] | undefined = []
@@ -339,6 +343,53 @@ export class CredentialMessageBuilder {
     formatServices[0].getMetaDataService().setMetaDataAndEmitEventForOffer(credOffer, credentialRecord)
 
     return { credentialRecord, message: credentialOfferMessage }
+  }
+
+  /**
+   * Create a {@link V2IssueCredentialMessage} - we issue the credentials to the holder with this message
+   *
+   * @param formatService {@link CredentialFormatService} the format service object containing format-specific logic
+   * @param offerMessage the original offer message
+   * @returns Object containing offer message and associated credential record
+   *
+   */
+  public async createCredential(
+    credentialFormats: CredentialFormatService[],
+    credentialRecord: CredentialRecord,
+    options: AcceptRequestOptions
+  ): Promise<CredentialProtocolMsgReturnType<V2IssueCredentialMessage>> {
+    const formatsArray: V2CredentialFormatSpec[] = []
+    const credAttachArray: Attachment[] | undefined = []
+
+    credentialFormats.forEach(async (formatService) => {
+      // Create the offer message for the correct format
+      const { formats, credentialsAttach } = await formatService.createIssueAttachFormats(credentialRecord)
+
+      if (!formats) {
+        throw Error('formats not initialized for credential')
+      }
+      formatsArray.push(formats)
+      if (!credentialsAttach) {
+        throw Error('credentialsAttach not initialized for credential')
+      }
+      credAttachArray.push(credentialsAttach)
+    })
+
+    const offerMessage: V2OfferCredentialMessage = credentialRecord.offerMessage as V2OfferCredentialMessage
+    const requestMessage: V2RequestCredentialMessage = credentialRecord.requestMessage as V2RequestCredentialMessage
+    const offerAttachments = offerMessage?.attachments
+    const requestAttachments = requestMessage?.attachments
+    const messageOptions: V2IssueCredentialMessageProps = {
+      id: this.generateId(),
+      formats: formatsArray,
+      credentialsAttach: credAttachArray,
+      comment: options.comment,
+      attachments: offerAttachments || requestAttachments,
+    }
+
+    const message: V2IssueCredentialMessage = new V2IssueCredentialMessage(messageOptions)
+
+    return { message, credentialRecord }
   }
 
   public generateId(): string {

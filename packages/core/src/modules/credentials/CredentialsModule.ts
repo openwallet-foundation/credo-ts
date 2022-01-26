@@ -2,7 +2,7 @@ import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
 import type { CredentialRecord } from './repository/CredentialRecord'
 import type { CredentialOfferTemplate, CredentialProposeOptions } from './v1'
 import type { V1CredentialPreview } from './v1/V1CredentialPreview'
-import type { OfferCredentialMessage } from './v1/messages'
+import type { OfferCredentialMessage, ProposeCredentialMessage } from './v1/messages'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -106,7 +106,7 @@ export class CredentialsModule {
 
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
-    const credentialProposalMessage = credentialRecord.proposalMessage
+    const credentialProposalMessage = credentialRecord.proposalMessage as ProposeCredentialMessage
     if (!credentialProposalMessage?.credentialProposal) {
       throw new AriesFrameworkError(
         `Credential record with id ${credentialRecordId} is missing required credential proposal`
@@ -168,7 +168,7 @@ export class CredentialsModule {
     }
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
-    const credentialProposalMessage = credentialRecord.proposalMessage
+    const credentialProposalMessage = credentialRecord.proposalMessage as ProposeCredentialMessage
 
     if (!credentialProposalMessage?.credentialProposal) {
       throw new AriesFrameworkError(
@@ -373,7 +373,7 @@ export class CredentialsModule {
    * @returns Credential record associated with the sent presentation message
    *
    */
-  public async acceptRequest(
+  public async OLDacceptRequest(
     credentialRecordId: string,
     config?: { comment?: string; autoAcceptCredential?: AutoAcceptCredential }
   ) {
@@ -422,7 +422,7 @@ export class CredentialsModule {
    * @returns credential record associated with the sent credential acknowledgement message
    *
    */
-  public async acceptCredential(credentialRecordId: string) {
+  public async OLDacceptCredential(credentialRecordId: string) {
     const record = await this.credentialService.getById(credentialRecordId)
     const { message, credentialRecord } = await this.credentialService.createAck(record)
 

@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { CredentialRecord } from '../../..'
 import type { CredentialPreviewAttribute } from '../../../CredentialPreviewAttributes'
@@ -8,13 +9,13 @@ import type {
   V2CredDefinitionFormat,
 } from '../../../interfaces'
 import type { V2CredentialPreview } from '../../V2CredentialPreview'
+import type { V2IssueCredentialMessage } from '../../messages/V2IssueCredentialMessage'
 import type { V2OfferCredentialMessage } from '../../messages/V2OfferCredentialMessage'
 import type { V2ProposeCredentialMessage } from '../../messages/V2ProposeCredentialMessage'
 import type { V2RequestCredentialMessage } from '../../messages/V2RequestCredentialMessage'
 import type {
   V2AttachmentFormats,
   V2CredProposeOfferRequestFormat,
-  V2CredProposalFormat,
 } from '../CredentialFormatService'
 import type { MetaDataService } from '../MetaDataService'
 import type { V2CredentialFormatSpec } from '../V2CredentialFormat'
@@ -27,13 +28,19 @@ import { ATTACHMENT_FORMAT } from '../V2CredentialFormat'
 import { JsonLdMetaDataService } from './JsonLdMetaDataService'
 
 export class JsonLdCredentialFormatService extends CredentialFormatService {
+  public processCredential(message: V2IssueCredentialMessage, credentialRecord: CredentialRecord): Promise<void> {
+    throw new Error('Method not implemented.')
+  }
+  public createRequestAttachFormats(requestOptions: RequestCredentialOptions, credentialRecord: CredentialRecord): Promise<V2AttachmentFormats> {
+    throw new Error('Method not implemented.')
+  }
   public getAttachment(
     message: V2RequestCredentialMessage | V2ProposeCredentialMessage | V2OfferCredentialMessage
   ): Attachment | undefined {
     throw new Error('Method not implemented.')
   }
   // eslint-disable-next-line prettier/prettier
-  public getCredentialRequestAttachFormats(requestOptions: RequestCredentialOptions, credentialRecord: CredentialRecord): Promise<V2AttachmentFormats> {
+  public createIssueAttachFormats(credentialRecord: CredentialRecord): Promise<V2AttachmentFormats> {
     throw new Error('Method not implemented.')
   }
   public processProposal(options: AcceptProposalOptions, credentialRecord: CredentialRecord): AcceptProposalOptions {
@@ -66,7 +73,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   }
 
   public setMetaDataAndEmitEventForProposal(
-    _proposal: V2CredProposalFormat,
+    _proposal: V2CredProposeOfferRequestFormat,
     _credentialRecord: CredentialRecord
   ): Promise<void> {
     throw new Error('Method not implemented.')

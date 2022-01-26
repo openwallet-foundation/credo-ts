@@ -1,3 +1,4 @@
+import type { IssueCredentialMessage, OfferCredentialMessage, ProposeCredentialMessage } from '.'
 import type { CredentialRecord } from './repository'
 
 import { scoped, Lifecycle } from 'tsyringe'
@@ -118,7 +119,7 @@ export class CredentialResponseCoordinator {
   private areOfferValuesValid(credentialRecord: CredentialRecord) {
     const { offerMessage, credentialAttributes } = credentialRecord
 
-    if (offerMessage && credentialAttributes) {
+    if (offerMessage && credentialAttributes && offerMessage.credentialPreview) {
       const offerValues = CredentialUtils.convertAttributesToValues(offerMessage.credentialPreview.attributes)
       const defaultValues = CredentialUtils.convertAttributesToValues(credentialAttributes)
       if (CredentialUtils.checkValuesMatch(offerValues, defaultValues)) {
@@ -130,7 +131,9 @@ export class CredentialResponseCoordinator {
 
   private areCredentialValuesValid(credentialRecord: CredentialRecord) {
     if (credentialRecord.credentialAttributes && credentialRecord.credentialMessage) {
-      const indyCredential = credentialRecord.credentialMessage.indyCredential
+      const cmsg: IssueCredentialMessage = credentialRecord.credentialMessage as IssueCredentialMessage
+
+      const indyCredential = cmsg.indyCredential
 
       if (!indyCredential) {
         this.agentConfig.logger.error(`Missing required base64 or json encoded attachment data for credential`)
@@ -147,17 +150,23 @@ export class CredentialResponseCoordinator {
     return false
   }
 
+  // MJR-TODO these are v1 specific...update to V2
   private areProposalAndOfferDefinitionIdEqual(credentialRecord: CredentialRecord) {
-    const proposalCredentialDefinitionId = credentialRecord.proposalMessage?.credentialDefinitionId
-    const offerCredentialDefinitionId = credentialRecord.offerMessage?.indyCredentialOffer?.cred_def_id
+    const pmsg: ProposeCredentialMessage = credentialRecord.proposalMessage as ProposeCredentialMessage
+
+    const proposalCredentialDefinitionId = pmsg.credentialDefinitionId
+
+    const msg: OfferCredentialMessage = credentialRecord.offerMessage as OfferCredentialMessage
+    const offerCredentialDefinitionId = msg.indyCredentialOffer?.cred_def_id
     return proposalCredentialDefinitionId === offerCredentialDefinitionId
   }
 
   private isRequestDefinitionIdValid(credentialRecord: CredentialRecord) {
     if (credentialRecord.proposalMessage || credentialRecord.offerMessage) {
+      const msg: ProposeCredentialMessage = credentialRecord.proposalMessage as ProposeCredentialMessage
+
       const previousCredentialDefinitionId =
-        credentialRecord.offerMessage?.indyCredentialOffer?.cred_def_id ??
-        credentialRecord.proposalMessage?.credentialDefinitionId
+        credentialRecord.offerMessage?.indyCredentialOffer?.cred_def_id ?? msg.credentialDefinitionId
 
       if (previousCredentialDefinitionId === credentialRecord.requestMessage?.indyCredentialRequest?.cred_def_id) {
         return true

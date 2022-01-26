@@ -102,7 +102,7 @@ describe('credentials', () => {
     })
 
     testLogger.test('Faber sends credential to Alice')
-    faberCredentialRecord = await faberAgent.credentials.acceptRequest(faberCredentialRecord.id)
+    faberCredentialRecord = await faberAgent.credentials.OLDacceptRequest(faberCredentialRecord.id)
 
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
@@ -111,7 +111,7 @@ describe('credentials', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
+    aliceCredentialRecord = await aliceAgent.credentials.OLDacceptCredential(aliceCredentialRecord.id)
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {

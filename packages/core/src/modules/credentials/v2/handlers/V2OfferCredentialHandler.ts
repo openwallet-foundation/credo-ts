@@ -1,11 +1,13 @@
+import type { InboundMessageContext } from '../../../../../src/agent/models/InboundMessageContext'
 import type { AgentConfig } from '../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import type { CredentialRecord } from '../../repository/CredentialRecord'
 import type { V2CredentialService } from '../V2CredentialService'
-import type { InboundMessageContext } from 'packages/core/src/agent/models/InboundMessageContext'
 
+import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../src/agent/helpers'
+import { ServiceDecorator } from '../../../../../src/decorators/service/ServiceDecorator'
 import { unitTestLogger } from '../../../../logger'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
@@ -39,9 +41,7 @@ export class V2OfferCredentialHandler implements Handler {
   }
 
   private async createRequest(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     record: CredentialRecord,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     messageContext: HandlerInboundMessage<V2OfferCredentialHandler>
   ) {
     this.agentConfig.logger.info(
@@ -50,37 +50,38 @@ export class V2OfferCredentialHandler implements Handler {
 
     // MJR-TODO
 
-    // if (messageContext.connection) {
-    //   const { message } = await this.credentialService.createRequest(record, {
-    //     holderDid: messageContext.connection.did,
-    //   })
+    if (messageContext.connection) {
+      unitTestLogger('  AutoAccept is ON => createRequest')
+      const { message } = await this.credentialService.createRequest(record, {
+        holderDid: messageContext.connection.did,
+      })
 
-    //   return createOutboundMessage(messageContext.connection, message)
-    // } else if (record.offerMessage?.service) {
-    //   const routing = await this.mediationRecipientService.getRouting()
-    //   const ourService = new ServiceDecorator({
-    //     serviceEndpoint: routing.endpoints[0],
-    //     recipientKeys: [routing.verkey],
-    //     routingKeys: routing.routingKeys,
-    //   })
-    //   const recipientService = record.offerMessage.service
+      return createOutboundMessage(messageContext.connection, message)
+    } else if (record.offerMessage?.service) {
+      const routing = await this.mediationRecipientService.getRouting()
+      const ourService = new ServiceDecorator({
+        serviceEndpoint: routing.endpoints[0],
+        recipientKeys: [routing.verkey],
+        routingKeys: routing.routingKeys,
+      })
+      const recipientService = record.offerMessage.service
 
-    //   const { message, credentialRecord } = await this.credentialService.createRequest(record, {
-    //     holderDid: ourService.recipientKeys[0],
-    //   })
+      const { message, credentialRecord } = await this.credentialService.createRequest(record, {
+        holderDid: ourService.recipientKeys[0],
+      })
 
-    //   // Set and save ~service decorator to record (to remember our verkey)
-    //   message.service = ourService
-    //   credentialRecord.requestMessage = message
-    //   await this.credentialService.update(credentialRecord)
+      // Set and save ~service decorator to record (to remember our verkey)
+      message.service = ourService
+      credentialRecord.requestMessage = message
+      await this.credentialService.update(credentialRecord)
 
-    //   return createOutboundServiceMessage({
-    //     payload: message,
-    //     service: recipientService.toDidCommService(),
-    //     senderKey: ourService.recipientKeys[0],
-    //   })
-    // }
+      return createOutboundServiceMessage({
+        payload: message,
+        service: recipientService.toDidCommService(),
+        senderKey: ourService.recipientKeys[0],
+      })
+    }
 
-    // this.agentConfig.logger.error(`Could not automatically create credential request`)
+    this.agentConfig.logger.error(`Could not automatically create credential request`)
   }
 }

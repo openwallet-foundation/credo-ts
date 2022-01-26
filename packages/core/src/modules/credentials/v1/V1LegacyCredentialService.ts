@@ -354,8 +354,8 @@ export class V1LegacyCredentialService {
     const { message: credentialOfferMessage, connection } = messageContext
 
     this.logger.debug(`Processing credential offer with id ${credentialOfferMessage.id}`)
-
     const indyCredentialOffer = credentialOfferMessage.indyCredentialOffer
+
     if (!indyCredentialOffer) {
       throw new CredentialProblemReportError(
         `Missing required base64 or json encoded attachment data for credential offer with thread id ${credentialOfferMessage.threadId}`,

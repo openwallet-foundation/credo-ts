@@ -1,6 +1,7 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialState } from '../CredentialState'
+import type { V2IssueCredentialMessage } from '../v2/messages/V2IssueCredentialMessage'
 import type { V2OfferCredentialMessage } from '../v2/messages/V2OfferCredentialMessage'
 import type { V2ProposeCredentialMessage } from '../v2/messages/V2ProposeCredentialMessage'
 import type { V2RequestCredentialMessage } from '../v2/messages/V2RequestCredentialMessage'
@@ -24,6 +25,7 @@ import { CredentialInfo } from '../v1/models/CredentialInfo'
 export type ProposeMessageType = ProposeCredentialMessage | V2ProposeCredentialMessage | undefined
 export type OfferMessageType = OfferCredentialMessage | V2OfferCredentialMessage
 export type RequestMessageType = RequestCredentialMessage | V2RequestCredentialMessage
+export type IssueCredentialType = IssueCredentialMessage | V2IssueCredentialMessage
 
 export interface CredentialRecordProps {
   id?: string
@@ -68,7 +70,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
   @Type(() => RequestCredentialMessage)
   public requestMessage?: RequestMessageType
   @Type(() => IssueCredentialMessage)
-  public credentialMessage?: IssueCredentialMessage
+  public credentialMessage?: IssueCredentialType
 
   @Type(() => CredentialPreviewAttribute)
   public credentialAttributes?: CredentialPreviewAttribute[]

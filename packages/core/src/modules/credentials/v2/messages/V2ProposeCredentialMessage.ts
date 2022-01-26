@@ -7,8 +7,6 @@ import { AgentMessage } from '../../../../agent/AgentMessage'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
 import { V2CredentialPreview } from '../V2CredentialPreview'
 
-export const CRED_20_PROPOSAL = 'https://didcomm.org/issue-credential/2.0/propose-credential'
-
 export interface V2ProposeCredentialMessageProps {
   id: string
   formats: V2CredentialFormatSpec[]
@@ -27,13 +25,13 @@ export class V2ProposeCredentialMessage extends AgentMessage {
       this.comment = props.comment
       this.credentialProposal = props.credentialProposal
       this.formats = props.formats
-      this.attachments = props.filtersAttach
+      this.filtersAttach = props.filtersAttach
     }
   }
 
   @Equals(V2ProposeCredentialMessage.type)
   public readonly type = V2ProposeCredentialMessage.type
-  public static readonly type = CRED_20_PROPOSAL
+  public static readonly type = 'https://didcomm.org/issue-credential/2.0/propose-credential'
 
   @Expose({ name: 'credential_proposal' })
   @Type(() => V2CredentialPreview)
@@ -49,7 +47,7 @@ export class V2ProposeCredentialMessage extends AgentMessage {
     each: true,
   })
   @IsInstance(Attachment, { each: true })
-  public attachments!: Attachment[]
+  public filtersAttach!: Attachment[]
 
   /**
    * Human readable information about this Credential Proposal,

@@ -30,6 +30,7 @@ import { V1CredentialPreview } from '../v1/V1CredentialPreview'
 import {
   CredentialAckMessage,
   INDY_CREDENTIAL_ATTACHMENT_ID,
+  INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   IssueCredentialMessage,
   OfferCredentialMessage,
@@ -62,7 +63,7 @@ const credentialPreview = V1CredentialPreview.fromRecord({
 })
 
 const offerAttachment = new Attachment({
-  id: uuid(),
+  id: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   mimeType: 'application/json',
   data: new AttachmentData({
     base64:

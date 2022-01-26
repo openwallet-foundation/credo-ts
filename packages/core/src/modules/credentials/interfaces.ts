@@ -3,7 +3,7 @@ import type { AnyJson } from '../generic'
 import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
 import type { CredentialPreviewAttribute } from './CredentialPreviewAttributes'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
-import type { CredentialFormatType } from './v2/CredentialExchangeRecord'
+import type { CredentialFormatType, CredentialRecordType } from './v2/CredentialExchangeRecord'
 import type { V2CredProposeOfferRequestFormat } from './v2/formats/CredentialFormatService'
 import type { CredDef } from 'indy-sdk'
 
@@ -59,7 +59,7 @@ interface AcceptOfferOptions {
   connectionId: string
   protocolVersion: CredentialProtocolVersion
   credentialRecordId: string
-  credentialFormatType: CredentialFormatType
+  credentialRecordType: CredentialRecordType
   comment?: string
   autoAcceptCredential?: AutoAcceptCredential
 }
@@ -138,7 +138,6 @@ interface NegotiateProposalOptions {
 // this is the base64 encoded data payload for [Indy] credential request
 
 interface RequestCredentialOptions {
-  credentialFormatType: CredentialFormatType
   connectionId?: string
   holderDid: string
   // As indy cannot start from request and w3c is not supported in v1 we always use v2 here
@@ -150,6 +149,7 @@ interface RequestCredentialOptions {
 }
 
 interface AcceptRequestOptions {
+  protocolVersion: CredentialProtocolVersion
   credentialRecordId: string
   comment?: string
   autoAcceptCredential?: AutoAcceptCredential

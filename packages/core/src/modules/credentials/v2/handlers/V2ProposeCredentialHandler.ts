@@ -32,9 +32,9 @@ export class V2ProposeCredentialHandler implements Handler {
 
     // MJR-TODO there is some indy specific stuff in the credentialAutoResponseCoordinator
     // this needs looking at
-    if (this.credentialAutoResponseCoordinator.shouldAutoRespondToProposal(credentialRecord)) {
-      return await this.createOffer(credentialRecord, messageContext)
-    }
+    // if (this.credentialAutoResponseCoordinator.shouldAutoRespondToProposal(credentialRecord)) {
+    //   return await this.createOffer(credentialRecord, messageContext)
+    // }
   }
 
   private async createOffer(

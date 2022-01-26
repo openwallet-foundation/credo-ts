@@ -8,6 +8,7 @@ import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type {
   AcceptProposalOptions,
+  AcceptRequestOptions,
   CredPropose,
   NegotiateProposalOptions,
   OfferCredentialOptions,
@@ -16,9 +17,17 @@ import type {
 } from '../interfaces'
 import type { CredentialRecord } from '../repository'
 import type { V2CredProposeOfferRequestFormat, CredentialFormatService } from '../v2/formats/CredentialFormatService'
+import type { V2CredentialAckMessage } from '../v2/messages/V2CredentialAckMessage'
+import type { V2IssueCredentialMessage } from '../v2/messages/V2IssueCredentialMessage'
 import type { V2RequestCredentialMessage } from '../v2/messages/V2RequestCredentialMessage'
 import type { OfferCredentialHandler, ProposeCredentialHandler } from './handlers'
-import type { OfferCredentialMessage, ProposeCredentialMessage, RequestCredentialMessage } from './messages'
+import type {
+  CredentialAckMessage,
+  IssueCredentialMessage,
+  OfferCredentialMessage,
+  ProposeCredentialMessage,
+  RequestCredentialMessage,
+} from './messages'
 import type { HandlerInboundMessage } from 'packages/core/src/agent/Handler'
 import type { InboundMessageContext } from 'packages/core/src/agent/models/InboundMessageContext'
 
@@ -33,6 +42,24 @@ import { V1CredentialPreview } from './V1CredentialPreview'
 const logger = new ConsoleLogger(LogLevel.debug)
 
 export class V1CredentialService extends CredentialService {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public processCredential(
+    messageContext: InboundMessageContext<V2IssueCredentialMessage | IssueCredentialMessage>
+  ): Promise<CredentialRecord> {
+    throw new Error('Method not implemented.')
+  }
+  public createAck(
+    credentialRecord: CredentialRecord
+  ): Promise<CredentialProtocolMsgReturnType<CredentialAckMessage | V2CredentialAckMessage>> {
+    throw new Error('Method not implemented.')
+  }
+  public createCredential(
+    credentialRecord: CredentialRecord,
+    options?: AcceptRequestOptions
+  ): Promise<CredentialProtocolMsgReturnType<IssueCredentialMessage | V2IssueCredentialMessage>> {
+    return this.legacyCredentialService.createCredential(credentialRecord, options)
+  }
+
   public processRequest(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     messageContext: InboundMessageContext<RequestCredentialMessage | V2RequestCredentialMessage>
@@ -168,6 +195,7 @@ export class V1CredentialService extends CredentialService {
     const credentialDefinitionId =
       proposal.credentialFormats.indy?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
 
+      console.log("QUACK attachment = ", credentialRecord.linkedAttachments)
     credentialRecord.linkedAttachments = credentialProposalMessage.attachments?.filter((attachment) =>
       isLinkedAttachment(attachment)
     )

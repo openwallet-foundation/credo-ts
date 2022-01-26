@@ -28,15 +28,6 @@ const testAttributes = {
   schemaId: '1560364003',
   issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
   credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
-  linkedAttachments: [
-    new LinkedAttachment({
-      name: 'profile_picture',
-      attachment: new Attachment({
-        mimeType: 'image/png',
-        data: new AttachmentData({ base64: 'base64encodedpic' }),
-      }),
-    }),
-  ],
 }
 const proposal: ProposeCredentialOptions = {
   connectionId: '',
@@ -139,7 +130,20 @@ describe('V2 Credential Architecture', () => {
       unitTestLogger('2. filtersAttach = ', filtersAttach)
       expect(filtersAttach).toBeTruthy()
     })
+    test('propose credential format service creates message with multiple formats', () => {
+      const version: CredentialProtocolVersion = CredentialProtocolVersion.V2_0
+      const service: CredentialService = api.getService(version)
 
+      const formats: CredentialFormatService[] = service.getFormats(multiFormatProposal.credentialFormats)
+      expect(formats.length).toBe(2)
+      const messageBuilder: CredentialMessageBuilder = new CredentialMessageBuilder()
+
+      const v2Proposal = messageBuilder.createProposal(formats, multiFormatProposal)
+
+      expect(v2Proposal.message.formats.length).toBe(2)
+      expect(v2Proposal.message.formats[0].format).toEqual('hlindy/cred-filter@v2.0')
+      expect(v2Proposal.message.formats[1].format).toEqual('aries/ld-proof-vc-detail@v1.0')
+    })
     test('offer credential format service returns correct preview, format and offers~attach', () => {
       const version: CredentialProtocolVersion = CredentialProtocolVersion.V2_0
       const service: CredentialService = api.getService(version)
@@ -181,20 +185,44 @@ describe('V2 Credential Architecture', () => {
       unitTestLogger('3. offersAttach = ', offersAttach)
       expect(offersAttach).toBeTruthy()
     })
-    test('propose credential format service creates message with multiple formats', () => {
+    test('issue credential format service returns correct format and credentials~attach', async () => {
       const version: CredentialProtocolVersion = CredentialProtocolVersion.V2_0
       const service: CredentialService = api.getService(version)
+      const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.Indy)
 
-      const formats: CredentialFormatService[] = service.getFormats(multiFormatProposal.credentialFormats)
-      expect(formats.length).toBe(2)
-      const messageBuilder: CredentialMessageBuilder = new CredentialMessageBuilder()
+      const v2Offer: V2CredProposeOfferRequestFormat = {
+        indy: {
+          payload: {
+            credentialPayload: credOffer,
+          },
+        },
+      }
 
-      const v2Proposal = messageBuilder.createProposal(formats, multiFormatProposal)
+      // TODO need to mock the messages within a credential record (request and offer)
+      // const options: AcceptProposalOptions = {
+      //   connectionId: '',
+      //   protocolVersion: CredentialProtocolVersion.V1_0,
+      //   credentialRecordId: '',
+      //   comment: 'v2 offer credential as response test',
+      //   credentialFormats: {
+      //     indy: {
+      //       attributes: credentialPreview.attributes,
+      //     },
+      //   },
+      // }
+      // const { formats, credentialsAttach } = await formatService.createIssueAttachFormats(faberCredentialRecord)
 
-      expect(v2Proposal.message.formats.length).toBe(2)
-      expect(v2Proposal.message.formats[0].format).toEqual('hlindy/cred-filter@v2.0')
-      expect(v2Proposal.message.formats[1].format).toEqual('aries/ld-proof-vc-detail@v1.0')
-      expect(v2Proposal.message.attachments.length).toBe(2)
+      // expect(preview?.type).toEqual('https://didcomm.org/issue-credential/2.0/credential-preview')
+      // expect(preview?.attributes.length).toEqual(2)
+
+      // unitTestLogger('1. preview = ', preview)
+
+      // expect(formats.attachId.length).toBeGreaterThan(0)
+      // expect(formats.format).toEqual('hlindy/cred-abstract@v2.0')
+      // unitTestLogger('2. formats = ', formats)
+
+      // unitTestLogger('3. offersAttach = ', offersAttach)
+      // expect(offersAttach).toBeTruthy()
     })
   })
 })

@@ -6,6 +6,7 @@ import type { V2CredentialService } from '../V2CredentialService'
 import type { InboundMessageContext } from 'packages/core/src/agent/models/InboundMessageContext'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../agent/helpers'
+import { unitTestLogger } from '../../../../logger'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
 
 export class V2RequestCredentialHandler implements Handler {
@@ -26,6 +27,8 @@ export class V2RequestCredentialHandler implements Handler {
 
   public async handle(messageContext: InboundMessageContext<V2RequestCredentialMessage>) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    unitTestLogger('----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR REQUEST CREDENTIAL')
+
     const credentialRecord = await this.credentialService.processRequest(messageContext)
 
     // MJR-TODO
