@@ -1,21 +1,23 @@
 import type { IndyLedgerService } from '../../ledger'
+import type { DidDocumentRepository } from '../repository'
 
 import { getAgentConfig, mockProperty } from '../../../../tests/helpers'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { DidDocument } from '../domain'
-import { parseDid } from '../parse'
-import { KeyDidResolver } from '../resolvers/KeyDidResolver'
+import { parseDid } from '../domain/parse'
+import { KeyDidResolver } from '../methods/key/KeyDidResolver'
 import { DidResolverService } from '../services/DidResolverService'
 
 import didKeyEd25519Fixture from './__fixtures__/didKeyEd25519.json'
 
-jest.mock('../resolvers/KeyDidResolver')
+jest.mock('../methods/key/KeyDidResolver')
 
 const agentConfig = getAgentConfig('DidResolverService')
 
 describe('DidResolverService', () => {
   const indyLedgerServiceMock = jest.fn() as unknown as IndyLedgerService
-  const didResolverService = new DidResolverService(agentConfig, indyLedgerServiceMock)
+  const didDocumentRepositoryMock = jest.fn() as unknown as DidDocumentRepository
+  const didResolverService = new DidResolverService(agentConfig, indyLedgerServiceMock, didDocumentRepositoryMock)
 
   it('should correctly find and call the correct resolver for a specified did', async () => {
     const didKeyResolveSpy = jest.spyOn(KeyDidResolver.prototype, 'resolve')

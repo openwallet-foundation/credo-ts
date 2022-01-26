@@ -1,12 +1,12 @@
-import type { ParsedDid, DidResolutionResult, DidResolutionOptions } from '../types'
-import type { DidResolver } from './DidResolver'
+import type { DidResolver } from '../../domain/DidResolver'
+import type { ParsedDid, DidResolutionResult, DidResolutionOptions } from '../../types'
 
 import { Resolver } from 'did-resolver'
 import * as didWeb from 'web-did-resolver'
 
-import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { MessageValidator } from '../../../utils/MessageValidator'
-import { DidDocument } from '../domain'
+import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import { MessageValidator } from '../../../../utils/MessageValidator'
+import { DidDocument } from '../../domain'
 
 export class WebDidResolver implements DidResolver {
   public readonly supportedMethods

@@ -1,27 +1,16 @@
-import type { IndyEndpointAttrib } from '../../ledger/services/IndyLedgerService'
+import type { IndyEndpointAttrib } from '../../../../ledger/services/IndyLedgerService'
 import type { GetNymResponse } from 'indy-sdk'
 
-import { mockFunction } from '../../../../tests/helpers'
-import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
-import { parseDid } from '../parse'
-import { IndyDidResolver } from '../resolvers/IndyDidResolver'
+import { mockFunction } from '../../../../../../tests/helpers'
+import { JsonTransformer } from '../../../../../utils/JsonTransformer'
+import { IndyLedgerService } from '../../../../ledger/services/IndyLedgerService'
+import didSovR1xKJw17sUoXhejEpugMYJFixture from '../../../__tests__/__fixtures__/didSovR1xKJw17sUoXhejEpugMYJ.json'
+import didSovWJz9mHyW9BZksioQnRsrAoFixture from '../../../__tests__/__fixtures__/didSovWJz9mHyW9BZksioQnRsrAo.json'
+import { parseDid } from '../../../domain/parse'
+import { IndyDidResolver } from '../IndyDidResolver'
 
-import didSovR1xKJw17sUoXhejEpugMYJFixture from './__fixtures__/didSovR1xKJw17sUoXhejEpugMYJ.json'
-import didSovWJz9mHyW9BZksioQnRsrAoFixture from './__fixtures__/didSovWJz9mHyW9BZksioQnRsrAo.json'
-
-jest.mock('../../ledger/services/IndyLedgerService')
+jest.mock('../../../../ledger/services/IndyLedgerService')
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
-
-const getParsed = (did: string) => {
-  const parsed = parseDid(did)
-
-  if (!parsed) {
-    throw new Error('Could not parse')
-  }
-
-  return parsed
-}
 
 describe('DidResolver', () => {
   describe('IndyDidResolver', () => {
@@ -51,7 +40,7 @@ describe('DidResolver', () => {
       mockFunction(ledgerService.getPublicDid).mockResolvedValue(nymResponse)
       mockFunction(ledgerService.getEndpointsForDid).mockResolvedValue(endpoints)
 
-      const result = await indyDidResolver.resolve(did, getParsed(did))
+      const result = await indyDidResolver.resolve(did, parseDid(did))
 
       expect(JsonTransformer.toJSON(result)).toMatchObject({
         didDocument: didSovR1xKJw17sUoXhejEpugMYJFixture,
@@ -80,7 +69,7 @@ describe('DidResolver', () => {
       mockFunction(ledgerService.getPublicDid).mockReturnValue(Promise.resolve(nymResponse))
       mockFunction(ledgerService.getEndpointsForDid).mockReturnValue(Promise.resolve(endpoints))
 
-      const result = await indyDidResolver.resolve(did, getParsed(did))
+      const result = await indyDidResolver.resolve(did, parseDid(did))
 
       expect(JsonTransformer.toJSON(result)).toMatchObject({
         didDocument: didSovWJz9mHyW9BZksioQnRsrAoFixture,
@@ -96,7 +85,7 @@ describe('DidResolver', () => {
 
       mockFunction(ledgerService.getPublicDid).mockRejectedValue(new Error('Error retrieving did'))
 
-      const result = await indyDidResolver.resolve(did, getParsed(did))
+      const result = await indyDidResolver.resolve(did, parseDid(did))
 
       expect(result).toMatchObject({
         didDocument: null,

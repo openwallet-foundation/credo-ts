@@ -1,8 +1,7 @@
-import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { DidKey } from '../domain/DidKey'
-import { KeyDidResolver } from '../resolvers/KeyDidResolver'
-
-import didKeyEd25519Fixture from './__fixtures__/didKeyEd25519.json'
+import { JsonTransformer } from '../../../../../utils/JsonTransformer'
+import didKeyEd25519Fixture from '../../../__tests__/__fixtures__/didKeyEd25519.json'
+import { DidKey } from '../DidKey'
+import { KeyDidResolver } from '../KeyDidResolver'
 
 describe('DidResolver', () => {
   describe('KeyDidResolver', () => {

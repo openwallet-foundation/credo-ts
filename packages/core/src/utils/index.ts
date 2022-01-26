@@ -1,3 +1,6 @@
 export * from './BufferEncoder'
 export * from './JsonEncoder'
+export * from './JsonTransformer'
+export * from './MultiBaseEncoder'
 export * from './buffer'
+export * from './MultiHashEncoder'
