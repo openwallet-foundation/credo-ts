@@ -1,6 +1,6 @@
 import { IsArray, IsOptional, IsString } from 'class-validator'
 
-import { DidCommService } from '../../modules/connections/models/did/service/DidCommService'
+import { DidCommService } from '../../modules/dids/domain/service/DidCommService'
 import { uuid } from '../../utils/uuid'
 
 export interface ServiceDecoratorOptions {

@@ -1,5 +1,5 @@
 export * from './service'
 export * from './verificationMethod'
 export * from './DidDocument'
-export * from './DidKey'
 export * from './DidDocumentBuilder'
+export * from './Key'

@@ -44,6 +44,10 @@ export class JwsService {
     const base64Payload = BufferEncoder.toBase64URL(payload)
     const signatures = 'signatures' in jws ? jws.signatures : [jws]
 
+    if (signatures.length === 0) {
+      throw new AriesFrameworkError('Unable to verify JWS: No entries in JWS signatures array.')
+    }
+
     const signerVerkeys = []
     for (const jws of signatures) {
       const protectedJson = JsonEncoder.fromBase64(jws.protected)

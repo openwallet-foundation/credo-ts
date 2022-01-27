@@ -1,10 +1,11 @@
 import type { Wallet } from '@aries-framework/core'
 
 import { getAgentConfig } from '../../../tests/helpers'
-import { DidKey, KeyType } from '../../modules/dids'
-import { JsonEncoder } from '../../utils'
+import { DidKey, Key } from '../../modules/dids'
+import { Buffer, JsonEncoder } from '../../utils'
 import { IndyWallet } from '../../wallet/IndyWallet'
 import { JwsService } from '../JwsService'
+import { KeyType } from '../KeyType'
 
 import * as didJwsz6Mkf from './__fixtures__/didJwsz6Mkf'
 import * as didJwsz6Mkv from './__fixtures__/didJwsz6Mkv'
@@ -31,7 +32,8 @@ describe('JwsService', () => {
       const { verkey } = await wallet.createDid({ seed: didJwsz6Mkf.SEED })
 
       const payload = JsonEncoder.toBuffer(didJwsz6Mkf.DATA_JSON)
-      const kid = DidKey.fromPublicKeyBase58(verkey, KeyType.ED25519).did
+      const key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
+      const kid = new DidKey(key).did
 
       const jws = await jwsService.createJws({
         payload,
@@ -67,6 +69,7 @@ describe('JwsService', () => {
       expect(isValid).toBe(true)
       expect(signerVerkeys).toEqual([didJwsz6Mkf.VERKEY, didJwsz6Mkv.VERKEY])
     })
+
     it('returns false if the jws signature does not match the payload', async () => {
       const payload = JsonEncoder.toBuffer({ ...didJwsz6Mkf.DATA_JSON, did: 'another_did' })
 
@@ -77,6 +80,15 @@ describe('JwsService', () => {
 
       expect(isValid).toBe(false)
       expect(signerVerkeys).toMatchObject([])
+    })
+
+    it('throws an error if the jws signatures array does not contain a JWS', async () => {
+      await expect(
+        jwsService.verifyJws({
+          payload: new Buffer([]),
+          jws: { signatures: [] },
+        })
+      ).rejects.toThrowError('Unable to verify JWS: No entries in JWS signatures array.')
     })
   })
 })

@@ -1,6 +1,6 @@
 {
   "@context": [
-    "https://w3id.org/ns/did/v1",
+    "https://w3id.org/did/v1",
     "https://w3id.org/security/suites/ed25519-2018/v1",
     "https://w3id.org/security/suites/x25519-2019/v1"
   ],
@@ -13,12 +13,6 @@
       "type": "Ed25519VerificationKey2018",
       "controller": "did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th",
       "publicKeyBase58": "8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"
-    },
-    {
-      "id": "did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th#z6LShpNhGwSupbB7zjuivH156vhLJBDDzmQtA4BY9S94pe1K",
-      "type": "X25519KeyAgreementKey2019",
-      "controller": "did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th",
-      "publicKeyBase58": "79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ"
     }
   ],
   "assertionMethod": [
@@ -34,7 +28,12 @@
     "did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th#z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th"
   ],
   "keyAgreement": [
-    "did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th#z6LShpNhGwSupbB7zjuivH156vhLJBDDzmQtA4BY9S94pe1K"
+    {
+      "id": "did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th#z6LShpNhGwSupbB7zjuivH156vhLJBDDzmQtA4BY9S94pe1K",
+      "type": "X25519KeyAgreementKey2019",
+      "controller": "did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th",
+      "publicKeyBase58": "79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ"
+    }
   ],
   "service": []
 }
