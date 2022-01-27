@@ -1,5 +1,5 @@
 import type { IndyLedgerService } from '../../ledger'
-import type { DidDocumentRepository } from '../repository'
+import type { DidRepository } from '../repository'
 
 import { getAgentConfig, mockProperty } from '../../../../tests/helpers'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
@@ -16,7 +16,7 @@ const agentConfig = getAgentConfig('DidResolverService')
 
 describe('DidResolverService', () => {
   const indyLedgerServiceMock = jest.fn() as unknown as IndyLedgerService
-  const didDocumentRepositoryMock = jest.fn() as unknown as DidDocumentRepository
+  const didDocumentRepositoryMock = jest.fn() as unknown as DidRepository
   const didResolverService = new DidResolverService(agentConfig, indyLedgerServiceMock, didDocumentRepositoryMock)
 
   it('should correctly find and call the correct resolver for a specified did', async () => {

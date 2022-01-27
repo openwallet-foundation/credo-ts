@@ -1,2 +1,2 @@
-export * from './DidDocumentRepository'
-export * from './DidDocumentRecord'
+export * from './DidRepository'
+export * from './DidRecord'

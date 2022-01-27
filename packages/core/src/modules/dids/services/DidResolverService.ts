@@ -11,25 +11,21 @@ import { IndyDidResolver } from '../methods/indy/IndyDidResolver'
 import { KeyDidResolver } from '../methods/key/KeyDidResolver'
 import { PeerDidResolver } from '../methods/peer/PeerDidResolver'
 import { WebDidResolver } from '../methods/web/WebDidResolver'
-import { DidDocumentRepository } from '../repository'
+import { DidRepository } from '../repository'
 
 @scoped(Lifecycle.ContainerScoped)
 export class DidResolverService {
   private logger: Logger
   private resolvers: DidResolver[]
 
-  public constructor(
-    agentConfig: AgentConfig,
-    indyLedgerService: IndyLedgerService,
-    didDocumentRepository: DidDocumentRepository
-  ) {
+  public constructor(agentConfig: AgentConfig, indyLedgerService: IndyLedgerService, didRepository: DidRepository) {
     this.logger = agentConfig.logger
 
     this.resolvers = [
       new IndyDidResolver(indyLedgerService),
       new WebDidResolver(),
       new KeyDidResolver(),
-      new PeerDidResolver(didDocumentRepository),
+      new PeerDidResolver(didRepository),
     ]
   }
 

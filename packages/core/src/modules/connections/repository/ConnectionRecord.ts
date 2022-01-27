@@ -41,6 +41,8 @@ export type DefaultConnectionTags = {
   verkey?: string
   theirKey?: string
   mediatorId?: string
+  did: string
+  theirDid?: string
 }
 
 export class ConnectionRecord
@@ -112,6 +114,8 @@ export class ConnectionRecord
       verkey: this.verkey,
       theirKey: this.theirKey || undefined,
       mediatorId: this.mediatorId,
+      did: this.did,
+      theirDid: this.theirDid,
     }
   }
 

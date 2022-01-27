@@ -1,5 +1,6 @@
 import { getMockConnection } from '../../../tests/helpers'
-import { ConnectionInvitationMessage, ConnectionRole, DidDoc, DidCommService } from '../../modules/connections'
+import { ConnectionInvitationMessage, ConnectionRole, DidDoc } from '../../modules/connections'
+import { DidCommService } from '../../modules/dids/domain/service/DidCommService'
 import { TransportService } from '../TransportService'
 
 import { DummyTransportSession } from './stubs'

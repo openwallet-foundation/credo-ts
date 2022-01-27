@@ -8,7 +8,8 @@ import type { TransportSession } from './TransportService'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../error'
-import { ConnectionService } from '../modules/connections/services/ConnectionService'
+import { ConnectionRepository } from '../modules/connections'
+import { DidRepository } from '../modules/dids/repository/DidRepository'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { MessageValidator } from '../utils/MessageValidator'
@@ -28,9 +29,10 @@ export class MessageReceiver {
   private envelopeService: EnvelopeService
   private transportService: TransportService
   private messageSender: MessageSender
-  private connectionService: ConnectionService
   private dispatcher: Dispatcher
   private logger: Logger
+  private didRepository: DidRepository
+  private connectionRepository: ConnectionRepository
   public readonly inboundTransports: InboundTransport[] = []
 
   public constructor(
@@ -38,15 +40,17 @@ export class MessageReceiver {
     envelopeService: EnvelopeService,
     transportService: TransportService,
     messageSender: MessageSender,
-    connectionService: ConnectionService,
-    dispatcher: Dispatcher
+    connectionRepository: ConnectionRepository,
+    dispatcher: Dispatcher,
+    didRepository: DidRepository
   ) {
     this.config = config
     this.envelopeService = envelopeService
     this.transportService = transportService
     this.messageSender = messageSender
-    this.connectionService = connectionService
+    this.connectionRepository = connectionRepository
     this.dispatcher = dispatcher
+    this.didRepository = didRepository
     this.logger = this.config.logger
   }
 
@@ -77,21 +81,10 @@ export class MessageReceiver {
   }
 
   private async receiveEncryptedMessage(encryptedMessage: EncryptedMessage, session?: TransportSession) {
-    const { plaintextMessage, senderKey, recipientKey } = await this.decryptMessage(encryptedMessage)
+    const decryptedMessage = await this.decryptMessage(encryptedMessage)
+    const { plaintextMessage, senderKey, recipientKey } = decryptedMessage
 
-    let connection: ConnectionRecord | null = null
-
-    // Only fetch connection if recipientKey and senderKey are present (AuthCrypt)
-    if (senderKey && recipientKey) {
-      connection = await this.connectionService.findByVerkey(recipientKey)
-
-      // Throw error if the recipient key (ourKey) does not match the key of the connection record
-      if (connection && connection.theirKey !== null && connection.theirKey !== senderKey) {
-        throw new AriesFrameworkError(
-          `Inbound message senderKey '${senderKey}' is different from connection.theirKey '${connection.theirKey}'`
-        )
-      }
-    }
+    const connection = await this.findConnectionByMessageKeys(decryptedMessage)
 
     this.logger.info(
       `Received message with type '${plaintextMessage['@type']}' from connection ${connection?.id} (${connection?.theirLabel})`,
@@ -169,6 +162,55 @@ export class MessageReceiver {
       throw error
     }
     return message
+  }
+
+  private async findConnectionByMessageKeys({
+    recipientKey,
+    senderKey,
+  }: DecryptedMessageContext): Promise<ConnectionRecord | null> {
+    // We only fetch connections that are sent in AuthCrypt mode
+    if (!recipientKey || !senderKey) return null
+
+    let connection: ConnectionRecord | null = null
+
+    // Try to find the did records that holds the sender and recipient keys
+    const ourDidRecord = await this.didRepository.findByVerkey(recipientKey)
+
+    // If both our did record and their did record is available we can find a matching did record
+    if (ourDidRecord) {
+      const theirDidRecord = await this.didRepository.findByVerkey(senderKey)
+
+      if (theirDidRecord) {
+        connection = await this.connectionRepository.findSingleByQuery({
+          did: ourDidRecord.id,
+          theirDid: theirDidRecord.id,
+        })
+      } else {
+        connection = await this.connectionRepository.findSingleByQuery({
+          did: ourDidRecord.id,
+        })
+
+        // If theirDidRecord was not found, and connection.theirDid is set, it means the sender is not authenticated
+        // to send messages to use
+        if (connection && connection.theirDid) {
+          throw new AriesFrameworkError(`Inbound message senderKey '${senderKey}' is different from connection did`)
+        }
+      }
+    }
+
+    // If no connection was found, we search in the connection record, where legacy did documents are stored
+    if (!connection) {
+      connection = await this.connectionRepository.findByVerkey(recipientKey)
+
+      // Throw error if the recipient key (ourKey) does not match the key of the connection record
+      if (connection && connection.theirKey !== null && connection.theirKey !== senderKey) {
+        throw new AriesFrameworkError(
+          `Inbound message senderKey '${senderKey}' is different from connection.theirKey '${connection.theirKey}'`
+        )
+      }
+    }
+
+    return connection
   }
 
   /**

@@ -7,33 +7,32 @@ import { BaseRecord } from '../../../storage/BaseRecord'
 import { DidDocument } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 
-export interface DidDocumentRecordProps {
+export interface DidRecordProps {
   id: string
   role: DidDocumentRole
-  didDocument: DidDocument
+  didDocument?: DidDocument
   createdAt?: Date
-  tags?: CustomDidDocumentTags
+  tags?: CustomDidTags
 }
 
-export type CustomDidDocumentTags = TagsBase
+interface CustomDidTags extends TagsBase {
+  recipientKeys?: string[]
+}
 
-export type DefaultDidDocumentTags = TagsBase
+export type DefaultDidTags = TagsBase
 
-export class DidDocumentRecord
-  extends BaseRecord<DefaultDidDocumentTags, CustomDidDocumentTags>
-  implements DidDocumentRecordProps
-{
+export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> implements DidRecordProps {
   @Type(() => DidDocument)
   @ValidateNested()
-  public didDocument!: DidDocument
+  public didDocument?: DidDocument
 
   @IsEnum(DidDocumentRole)
   public role!: DidDocumentRole
 
   public static readonly type = 'DidDocumentRecord'
-  public readonly type = DidDocumentRecord.type
+  public readonly type = DidRecord.type
 
-  public constructor(props: DidDocumentRecordProps) {
+  public constructor(props: DidRecordProps) {
     super()
 
     if (props) {
