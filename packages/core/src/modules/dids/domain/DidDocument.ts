@@ -26,7 +26,7 @@ export class DidDocument {
   @Expose({ name: '@context' })
   @IsArray()
   @Transform((o) => (typeof o.value === 'string' ? [o.value] : o.value), { toClassOnly: true })
-  public context = ['https://w3id.org/ns/did/v1']
+  public context = ['https://w3id.org/did/v1']
 
   @IsString()
   public id!: string
@@ -88,6 +88,19 @@ export class DidDocument {
       this.capabilityInvocation = options.capabilityInvocation ?? this.capabilityInvocation
       this.capabilityDelegation = options.capabilityDelegation ?? this.capabilityDelegation
     }
+  }
+
+  public dereferenceKey(keyId: string) {
+    // TODO: once we use JSON-LD we should use that to resolve references in did documents.
+    // for now we check whether the key id ends with the keyId.
+    // so if looking for #123 and key.id is did:key:123#123, it is valid. But #123 as key.id is also valid
+    const verificationMethod = this.verificationMethod.find((key) => key.id.endsWith(keyId))
+
+    if (!verificationMethod) {
+      throw new Error(`Unable to locate verification with id '${keyId}'`)
+    }
+
+    return verificationMethod
   }
 
   /**

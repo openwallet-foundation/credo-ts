@@ -1,7 +1,7 @@
-import type { DidResolutionResult } from '../types'
-import type { DidResolver } from './DidResolver'
+import type { DidResolver } from '../../domain/DidResolver'
+import type { DidResolutionResult } from '../../types'
 
-import { DidKey } from '../domain/DidKey'
+import { DidKey } from './DidKey'
 
 export class KeyDidResolver implements DidResolver {
   public readonly supportedMethods = ['key']
@@ -13,8 +13,8 @@ export class KeyDidResolver implements DidResolver {
       const didDocument = DidKey.fromDid(did).didDocument
 
       return {
-        didDocument: didDocument,
-        didDocumentMetadata: {},
+        didDocument,
+        didDocumentMetadata,
         didResolutionMetadata: { contentType: 'application/did+ld+json' },
       }
     } catch (error) {

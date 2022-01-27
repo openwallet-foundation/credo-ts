@@ -1,15 +1,15 @@
-import type { IndyEndpointAttrib, IndyLedgerService } from '../../ledger'
-import type { ParsedDid, DidResolutionResult } from '../types'
-import type { DidResolver } from './DidResolver'
+import type { IndyEndpointAttrib, IndyLedgerService } from '../../../ledger'
+import type { DidResolver } from '../../domain/DidResolver'
+import type { ParsedDid, DidResolutionResult } from '../../types'
 
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
-import { BufferEncoder } from '../../../utils/BufferEncoder'
-import { getFullVerkey } from '../../../utils/did'
-import { DidCommService } from '../../connections'
-import { DidDocumentService } from '../domain'
-import { DidDocumentBuilder } from '../domain/DidDocumentBuilder'
-import { DidCommV2Service } from '../domain/service/DidCommV2Service'
+import { BufferEncoder } from '../../../../utils/BufferEncoder'
+import { getFullVerkey } from '../../../../utils/did'
+import { DidDocumentService } from '../../domain'
+import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
+import { DidCommService } from '../../domain/service/DidCommService'
+import { DidCommV2Service } from '../../domain/service/DidCommV2Service'
 
 export class IndyDidResolver implements DidResolver {
   private indyLedgerService: IndyLedgerService

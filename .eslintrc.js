@@ -50,6 +50,12 @@ module.exports = {
         devDependencies: false,
       },
     ],
+    'no-restricted-imports': [
+      'error',
+      {
+        patterns: ['packages/*'],
+      },
+    ],
   },
   overrides: [
     {
