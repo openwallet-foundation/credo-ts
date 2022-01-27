@@ -15,12 +15,14 @@ export class DidExchangeCompleteMessage extends AgentMessage {
   public constructor(options: DidExchangeCompleteMessageOptions) {
     super()
 
-    this.id = options.id ?? this.generateId()
+    if (options) {
+      this.id = options.id ?? this.generateId()
 
-    this.setThread({
-      threadId: options.threadId,
-      parentThreadId: options.parentThreadId,
-    })
+      this.setThread({
+        threadId: options.threadId,
+        parentThreadId: options.parentThreadId,
+      })
+    }
   }
 
   @Equals(DidExchangeCompleteMessage.type)

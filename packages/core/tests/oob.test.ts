@@ -7,6 +7,7 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
+import { DidExchangeState } from '../src/modules/connections'
 import { DidCommService } from '../src/modules/dids'
 import { OutOfBandMessage } from '../src/modules/oob/messages'
 
@@ -219,7 +220,8 @@ describe('out of band', () => {
       expect(createdConnectionRecord?.invitation?.serviceEndpoint).toEqual(service.serviceEndpoint)
       expect(createdConnectionRecord?.invitation?.recipientKeys).toEqual(service.recipientKeys)
       expect(createdConnectionRecord?.invitation?.routingKeys).toEqual(service.routingKeys)
-      expect(createdConnectionRecord?.state).toEqual(ConnectionState.Invited)
+      // expect(createdConnectionRecord?.state).toEqual(ConnectionState.Invited)
+      expect(createdConnectionRecord?.state).toEqual(DidExchangeState.InvitationReceived)
     })
 
     test('make a connection based on OOB invitation encoded in URL', async () => {
@@ -227,6 +229,7 @@ describe('out of band', () => {
       let { outOfBandMessage, connectionRecord: faberAliceConnection } = await faberAgent.oob.createMessage(
         makeConnectionConfig
       )
+      console.log('========== outOfBandMessage ==========', outOfBandMessage)
       const urlMessage = outOfBandMessage.toUrl({ domain: 'http://example.com' })
 
       let aliceFaberConnection = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, {
@@ -234,13 +237,18 @@ describe('out of band', () => {
       })
 
       aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection?.id || '')
-      expect(aliceFaberConnection.state).toBe(ConnectionState.Complete)
+      expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
+
+      console.log('==== aliceFaberConnection completed')
 
       faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection?.id || '')
-      expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
-      expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
+      expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
+      console.log('==== faberAliceConnection completed')
 
-      expect(faberAliceConnection.state).toBe(ConnectionState.Complete)
+      expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
+      console.log('==== faberAliceConnection).toBeConnectedWith(aliceFaberConnection)')
+      expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
+      console.log('==== aliceFaberConnection).toBeConnectedWith(faberAliceConnection)')
     })
 
     test('make a connection based on old connection invitation encoded in URL', async () => {
@@ -304,9 +312,11 @@ describe('out of band', () => {
         makeConnectionConfig,
         [offerMessage]
       )
+      console.log('==== after faberAgent.oob.createMessage')
 
       // First, we crate a connection but we won't accept it, therefore it won't be ready
       let aliceFaberConnection = await aliceAgent.oob.receiveMessage(outOfBandMessage, { autoAcceptConnection: false })
+      console.log('==== after aliceAgent.oob.receiveMessage')
 
       // Accept connection invitation
       await aliceAgent.connections.acceptInvitation(aliceFaberConnection?.id || '', {
@@ -314,11 +324,15 @@ describe('out of band', () => {
         autoAcceptConnection: true,
       })
 
+      console.log('==== after aliceAgent.connections.acceptInvitation')
+
       // Wait until connection is ready
       aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection?.id || '')
       faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection?.id || '')
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
+      console.log('==== faberAliceConnection).toBeConnectedWith(aliceFaberConnection)')
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
+      console.log('==== aliceFaberConnection).toBeConnectedWith(faberAliceConnection)')
 
       // The credential should be processed when connection is made. It asynchronous so it can take a moment.
       let credentials: CredentialRecord[] = []
@@ -376,7 +390,8 @@ describe('out of band', () => {
 
       expect(faberConnections).toHaveLength(3)
       expect(faberAliceConnection?.multiUseInvitation).toBe(true)
-      expect(faberAliceConnection?.state).toBe(ConnectionState.Invited)
+      // expect(faberAliceConnection?.state).toBe(ConnectionState.Invited)
+      expect(faberAliceConnection?.state).toBe(DidExchangeState.InvitationSent)
 
       expect(firstConnection.getTag('invitationKey')).toEqual(faberAliceConnection?.verkey)
       expect(secondConnection.getTag('invitationKey')).toEqual(faberAliceConnection?.verkey)
@@ -389,7 +404,7 @@ describe('out of band', () => {
 
       await expect(aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)).rejects.toEqual(
         new AriesFrameworkError(
-          `Out-of-band message contains unsupported handshake protocols ${unsupportedProtocol}. Supported protocols are https://didcomm.org/connections/1.0`
+          `Out-of-band message contains unsupported handshake protocols ${unsupportedProtocol}. Supported protocols are https://didcomm.org/connections/1.0,https://didcomm.org/didexchange/1.0`
         )
       )
     })

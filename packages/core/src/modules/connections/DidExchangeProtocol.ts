@@ -22,7 +22,7 @@ import { DidExchangeCompleteMessage } from './messages/DidExchangeCompleteMessag
 import { DidExchangeRequestMessage } from './messages/DidExchangeRequestMessage'
 import { DidExchangeResponseMessage } from './messages/DidExchangeResponseMessage'
 import { DidExchangeState, DidExchangeRole } from './models'
-import { authenticationTypes, DidCommService, DidDoc, Ed25119Sig2018, ReferencedAuthentication } from './models/did'
+import { authenticationTypes, DidCommService, DidDoc, Ed25119Sig2018, EmbeddedAuthentication } from './models/did'
 import { ConnectionService } from './services'
 
 type Flavor<T, FlavorType> = T & { _type?: FlavorType }
@@ -34,6 +34,7 @@ interface DidExchangeRequestParams {
   goal?: string
   goalCode?: string
   routing: Routing
+  autoAcceptConnection?: boolean
 }
 
 interface DidExchangeProtocolMessageWithRecord<MessageType extends AgentMessage> {
@@ -80,7 +81,7 @@ class DidExchangeStateMachine {
       message: DidExchangeRequestMessage.type,
       state: DidExchangeState.InvitationSent,
       role: DidExchangeRole.Responder,
-      nextState: DidExchangeState.RequestSent,
+      nextState: DidExchangeState.RequestReceived,
     },
     {
       message: DidExchangeResponseMessage.type,
@@ -102,7 +103,9 @@ class DidExchangeStateMachine {
       throw new AriesFrameworkError(`Could not find create message rule for ${messageType}`)
     }
     if (rule.state !== record.state || rule.role !== record.role) {
-      throw new AriesFrameworkError(`Record is in invalid state.`)
+      throw new AriesFrameworkError(
+        `Record with role ${record.role} is in invalid state ${record.state} to create ${messageType}. Expected state for role ${rule.role} is ${rule.state}.`
+      )
     }
   }
 
@@ -112,7 +115,9 @@ class DidExchangeStateMachine {
       throw new AriesFrameworkError(`Could not find create message rule for ${messageType}`)
     }
     if (rule.state !== record.state || rule.role !== record.role) {
-      throw new AriesFrameworkError(`Record is in invalid state.`)
+      throw new AriesFrameworkError(
+        `Record with role ${record.role} is in invalid state ${record.state} to process ${messageType}. Expected state for role ${rule.role} is ${rule.state}.`
+      )
     }
   }
 
@@ -155,13 +160,15 @@ export class DidExchangeProtocol {
     connectionRecord: ConnectionRecord,
     params: DidExchangeRequestParams
   ): Promise<DidExchangeRequestMessage> {
+    this.logger.debug(`Create message ${DidExchangeRequestMessage.type} start`, connectionRecord)
+
     if (!connectionRecord.invitation) {
       throw new AriesFrameworkError('Connection invitation is missing.')
     }
 
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeRequestMessage.type, connectionRecord)
 
-    const { goal, goalCode, routing } = params
+    const { goal, goalCode, routing, autoAcceptConnection } = params
     const label = params.label ?? this.config.label
     const { did, verkey } = routing
     const didDoc = this.createDidDoc(did, verkey, routing)
@@ -175,8 +182,18 @@ export class DidExchangeProtocol {
 
     connectionRecord.did = did
     connectionRecord.didDoc = didDoc
+    connectionRecord.verkey = verkey
+    connectionRecord.threadId = message.id
+
+    if (autoAcceptConnection !== undefined || autoAcceptConnection !== null) {
+      connectionRecord.autoAcceptConnection = autoAcceptConnection
+    }
 
     await this.updateState(DidExchangeRequestMessage.type, connectionRecord)
+    this.logger.debug(`Create message ${DidExchangeRequestMessage.type} end`, {
+      connectionRecord,
+      message,
+    })
     return message
   }
 
@@ -184,6 +201,8 @@ export class DidExchangeProtocol {
     messageContext: InboundMessageContext<DidExchangeRequestMessage>,
     routing?: Routing
   ): Promise<ConnectionRecord> {
+    this.logger.debug(`Process message ${DidExchangeRequestMessage.type} start`, messageContext)
+
     // eslint-disable-next-line prefer-const
     let { connection: connectionRecord, message } = messageContext
 
@@ -201,9 +220,30 @@ export class DidExchangeProtocol {
 
     // If the responder wishes to continue the exchange, they will persist the received information in their wallet.
 
+    // Create new connection if using a multi use invitation
+    if (connectionRecord.multiUseInvitation) {
+      if (!routing) {
+        throw new AriesFrameworkError(
+          'Cannot process request for multi-use invitation without routing object. Make sure to call processRequest with the routing parameter provided.'
+        )
+      }
+
+      connectionRecord = await this.connectionService.createConnection({
+        role: connectionRecord.role,
+        state: connectionRecord.state,
+        multiUseInvitation: false,
+        routing,
+        autoAcceptConnection: connectionRecord.autoAcceptConnection,
+        invitation: connectionRecord.invitation,
+        tags: connectionRecord.getTags(),
+        protocol: 'did-exchange',
+      })
+    }
+
     if (message.didDoc) {
       // Verify signature on DidDoc attachment and assign DidDoc to connection record
       await this.verifyAttachmentSignature(message.didDoc)
+      console.log('========== signature verified ==========')
       const didDoc = JsonTransformer.fromJSON(message.didDoc.getDataAsJson(), DidDoc)
       connectionRecord.theirDidDoc = didDoc
     }
@@ -213,10 +253,12 @@ export class DidExchangeProtocol {
     connectionRecord.threadId = message.id
 
     await this.updateState(DidExchangeRequestMessage.type, connectionRecord)
+    this.logger.debug(`Process message ${DidExchangeRequestMessage.type} end`, connectionRecord)
     return connectionRecord
   }
 
   public async createResponse(connectionRecord: ConnectionRecord): Promise<DidExchangeResponseMessage> {
+    this.logger.debug(`Create message ${DidExchangeResponseMessage.type} start`, connectionRecord)
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeResponseMessage.type, connectionRecord)
 
     // They will then either update the provisional service information to rotate the key, or provision a new DID entirely.
@@ -245,12 +287,14 @@ export class DidExchangeProtocol {
     message.didDoc = didDocAttach
 
     await this.updateState(DidExchangeResponseMessage.type, connectionRecord)
+    this.logger.debug(`Create message ${DidExchangeResponseMessage.type} end`, { connectionRecord, message })
     return message
   }
 
   public async processResponse(
     messageContext: InboundMessageContext<DidExchangeResponseMessage>
   ): Promise<ConnectionRecord> {
+    this.logger.debug(`Process message ${DidExchangeResponseMessage.type} start`, messageContext)
     const { connection: connectionRecord, message } = messageContext
 
     if (!connectionRecord) {
@@ -262,7 +306,7 @@ export class DidExchangeProtocol {
     // verify signerVerkey === invitationKey
     if (message.didDoc) {
       // Verify signature on DidDoc attachment and assign DidDoc to connection record
-      await this.verifyAttachmentSignature(message.didDoc)
+      await this.verifyAttachmentSignature(message.didDoc, connectionRecord.invitation?.recipientKeys)
       const didDoc = JsonTransformer.fromJSON(message.didDoc.getDataAsJson(), DidDoc)
       connectionRecord.theirDidDoc = didDoc
     }
@@ -270,10 +314,12 @@ export class DidExchangeProtocol {
     connectionRecord.theirDid = message.did
 
     await this.updateState(DidExchangeResponseMessage.type, connectionRecord)
+    this.logger.debug(`Process message ${DidExchangeResponseMessage.type} end`, connectionRecord)
     return connectionRecord
   }
 
   public async createComplete(connectionRecord: ConnectionRecord): Promise<DidExchangeCompleteMessage> {
+    this.logger.debug(`Create message ${DidExchangeCompleteMessage.type} start`, connectionRecord)
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeCompleteMessage.type, connectionRecord)
 
     const threadId = connectionRecord.threadId
@@ -292,25 +338,28 @@ export class DidExchangeProtocol {
     const message = new DidExchangeCompleteMessage({ threadId, parentThreadId })
 
     await this.updateState(DidExchangeCompleteMessage.type, connectionRecord)
+    this.logger.debug(`Create message ${DidExchangeCompleteMessage.type} end`, { connectionRecord, message })
     return message
   }
 
   public async processComplete(
     messageContext: InboundMessageContext<DidExchangeCompleteMessage>
   ): Promise<ConnectionRecord> {
+    this.logger.debug(`Process message ${DidExchangeCompleteMessage.type} start`, messageContext)
     const { connection: connectionRecord, message } = messageContext
 
     if (!connectionRecord) {
       throw new AriesFrameworkError('No connection record in message context.')
     }
 
-    DidExchangeStateMachine.assertProcessMessageState(DidExchangeResponseMessage.type, connectionRecord)
+    DidExchangeStateMachine.assertProcessMessageState(DidExchangeCompleteMessage.type, connectionRecord)
 
     if (connectionRecord.invitation?.id !== message.thread?.parentThreadId) {
       throw new ProblemReportError('Missing reference to invitation.', { problemCode: 'request_not_accepted' })
     }
 
     await this.updateState(DidExchangeCompleteMessage.type, connectionRecord)
+    this.logger.debug(`Process message ${DidExchangeCompleteMessage.type} end`, { connectionRecord })
     return connectionRecord
   }
 
@@ -342,7 +391,7 @@ export class DidExchangeProtocol {
 
     // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
     // inferred from the publicKey class instance
-    const auth = new ReferencedAuthentication(publicKey, authenticationTypes[publicKey.type])
+    const auth = new EmbeddedAuthentication(publicKey)
 
     const didDoc = new DidDoc({
       id: did,
@@ -377,22 +426,30 @@ export class DidExchangeProtocol {
     return didDocAttach
   }
 
-  private async verifyAttachmentSignature(didDocAttachment: Attachment) {
-    const jws = didDocAttachment?.data.jws
+  private async verifyAttachmentSignature(didDocAttachment: Attachment, invitationKeys: string[] = []) {
+    const jws = didDocAttachment.data.jws
 
     if (!jws) {
       throw new ProblemReportError('DidDoc signature is missing.', { problemCode: 'request_not_accepted' })
     }
 
-    const payload = JsonEncoder.toBuffer(didDocAttachment?.getDataAsJson())
-    const didDoc = JsonTransformer.fromJSON(didDocAttachment.getDataAsJson(), DidDoc)
+    const json = didDocAttachment.getDataAsJson()
+    const payload = JsonEncoder.toBuffer(json)
+    // console.log('========== before fromJSON ==========', JSON.stringify(json, null, 2))
+    const didDoc = JsonTransformer.fromJSON(json, DidDoc)
+    // console.log('========== before verifyJws ==========', didDoc)
     const { isValid, signerVerkeys } = await this.jwsService.verifyJws({ jws, payload })
 
-    if (
-      !isValid ||
-      !(signerVerkeys.length > 1) ||
-      !signerVerkeys.every((verkey) => didDoc.publicKey.map((pk) => pk.value).includes(verkey))
-    ) {
+    const didDocKeys = didDoc.publicKey.map((pk) => pk.value).concat(invitationKeys)
+
+    console.log('========== after verifyJws ==========', { isValid, signerVerkeys, didDoc_publicKey: didDoc.publicKey })
+    console.log(
+      '========== didDocKeys ==========',
+      didDocKeys,
+      signerVerkeys.length > 1,
+      !signerVerkeys.every((verkey) => didDocKeys.includes(verkey))
+    )
+    if (!isValid || signerVerkeys.length > 1 || !signerVerkeys.every((verkey) => didDocKeys.includes(verkey))) {
       throw new ProblemReportError('DidDoc signature is invalid.', { problemCode: 'request_not_accepted' })
     }
   }

@@ -96,6 +96,7 @@ export class OutOfBandModule {
       const connectionWithInvitation = await this.connectionsModule.createConnection({
         myLabel: label,
         multiUseInvitation,
+        protocol: 'did-exchange',
       })
 
       connectionRecord = connectionWithInvitation.connectionRecord
@@ -114,6 +115,7 @@ export class OutOfBandModule {
 
       const options = {
         ...config,
+        id: connectionRecord.invitation?.id,
         accept: ['didcomm/aip1'],
         services,
         handshakeProtocols,
@@ -219,11 +221,11 @@ export class OutOfBandModule {
             await this.sendReuse(outOfBandMessage, connectionRecord)
           }
         } else {
-          this.logger.debug('Reuse is disabled. Creating a new connection.')
+          this.logger.debug('Reuse is disabled.')
           connectionRecord = await this.createConnection(outOfBandMessage, { autoAcceptConnection })
         }
       } else {
-        this.logger.debug('Connection does not exists. Creating a new connection.')
+        this.logger.debug('Connection does not exists.')
         connectionRecord = await this.createConnection(outOfBandMessage, { autoAcceptConnection })
       }
 
@@ -292,6 +294,7 @@ export class OutOfBandModule {
   }
 
   private async createConnection(outOfBandMessage: OutOfBandMessage, config: { autoAcceptConnection: boolean }) {
+    this.logger.debug('Creating a new connection.', { outOfBandMessage, config })
     const { services, label } = outOfBandMessage
     const { autoAcceptConnection } = config
 
@@ -307,14 +310,18 @@ export class OutOfBandModule {
       }
     } else {
       options = {
-        ...service,
+        recipientKeys: service.recipientKeys,
+        serviceEndpoint: service.serviceEndpoint,
+        routingKeys: service.routingKeys,
       }
     }
 
-    const invitation = new ConnectionInvitationMessage({ label, ...options })
+    const invitation = new ConnectionInvitationMessage({ id: outOfBandMessage.id, label, ...options })
     const connectionRecord = await this.connectionsModule.receiveInvitation(invitation, {
       autoAcceptConnection,
+      protocol: 'did-exchange',
     })
+    this.logger.debug('Connection created.', connectionRecord)
     return connectionRecord
   }
 

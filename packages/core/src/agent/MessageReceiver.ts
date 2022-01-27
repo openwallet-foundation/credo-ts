@@ -89,11 +89,6 @@ export class MessageReceiver {
 
     const connection = await this.findConnectionByMessageKeys(decryptedMessage)
 
-    this.logger.info(
-      `Received message with type '${plaintextMessage['@type']}' from connection ${connection?.id} (${connection?.theirLabel})`,
-      plaintextMessage
-    )
-
     const message = await this.transformAndValidate(plaintextMessage, connection)
 
     // We want to save a session if there is a chance of returning outbound message via inbound transport.

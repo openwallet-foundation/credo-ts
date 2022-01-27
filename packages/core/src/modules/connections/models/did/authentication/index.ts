@@ -35,16 +35,32 @@ export function AuthenticationTransformer() {
       obj: { publicKey: { id: string; type: string }[] }
       type: TransformationType
     }) => {
-      // TODO: PLAIN_TO_PLAIN
+      // TODO: CLASS_TO_PLAIN
 
       if (type === TransformationType.PLAIN_TO_CLASS) {
         return value.map((auth) => {
           // referenced public key
           if (auth.publicKey) {
-            //referenced
-            const publicKeyJson = obj.publicKey.find((publicKey) => publicKey.id === auth.publicKey)
+            let publicKeyJson
+            if (typeof auth.publicKey === 'string') {
+              //referenced
+              publicKeyJson = obj.publicKey.find((publicKey) => {
+                return publicKey.id === auth.publicKey
+              })
+            } else {
+              //referenced
+              publicKeyJson = obj.publicKey.find((publicKey) => {
+                return publicKey.id === (auth.publicKey as PublicKey)?.id
+              })
+            }
 
+            console.log('===== publicKeyJson', publicKeyJson)
             if (!publicKeyJson) {
+              // console.log('===== publicKeyJson', publicKeyJson)
+              // console.log('===== obj', obj)
+              // console.log('===== value', value)
+              // console.log('===== auth', auth)
+
               throw new AriesFrameworkError(`Invalid public key referenced ${auth.publicKey}`)
             }
 

@@ -1,5 +1,6 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { Logger } from '../../../logger'
 import type { MediationRecipientService } from '../../routing/services/MediationRecipientService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 import type { ConnectionService, Routing } from '../services/ConnectionService'
@@ -9,6 +10,7 @@ import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { DidExchangeRequestMessage } from '../messages'
 
 export class DidExchangeRequestHandler implements Handler {
+  private logger: Logger
   private didExchangeProtocol: DidExchangeProtocol
   private connectionService: ConnectionService
   private agentConfig: AgentConfig
@@ -21,6 +23,7 @@ export class DidExchangeRequestHandler implements Handler {
     agentConfig: AgentConfig,
     mediationRecipientService: MediationRecipientService
   ) {
+    this.logger = agentConfig.logger
     this.didExchangeProtocol = didExchangeProtocol
     this.connectionService = connectionService
     this.agentConfig = agentConfig
@@ -50,6 +53,15 @@ export class DidExchangeRequestHandler implements Handler {
       routing = await this.mediationRecipientService.getRouting()
     }
 
+    // TODO
+    //
+    // A connection request message is the only case when I can use the connection record found
+    // only based on recipient key without checking that `theirKey` is equal to sender key.
+    //
+    // The question is if we should do it here in this way or rather somewhere else to keep
+    // responsibility of all handlers aligned.
+    //
+    messageContext.connection = connectionRecord
     connectionRecord = await this.didExchangeProtocol.processRequest(messageContext, routing)
 
     if (connectionRecord?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {

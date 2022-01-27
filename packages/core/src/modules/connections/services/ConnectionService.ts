@@ -4,11 +4,10 @@ import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
-import type { DidExchangeState, DidExchangeRole } from '../models'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
-import { first, map, timeout } from 'rxjs/operators'
+import { first, map, timeout, tap } from 'rxjs/operators'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
@@ -19,7 +18,7 @@ import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
-import { IndyAgentService } from '../../dids/domain/service'
+import { DidCommService } from '../../dids'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
 import {
@@ -29,13 +28,15 @@ import {
   TrustPingMessage,
 } from '../messages'
 import {
+  DidExchangeState,
+  DidExchangeRole,
   Connection,
   ConnectionState,
   ConnectionRole,
   DidDoc,
   Ed25119Sig2018,
   authenticationTypes,
-  ReferencedAuthentication,
+  EmbeddedAuthentication,
 } from '../models'
 import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
@@ -74,15 +75,29 @@ export class ConnectionService {
     multiUseInvitation?: boolean
     myLabel?: string
     myImageUrl?: string
+    protocol?: string
   }): Promise<ConnectionProtocolMsgReturnType<ConnectionInvitationMessage>> {
     // TODO: public did
+
+    let role
+    let state
+
+    if (config?.protocol === 'did-exchange') {
+      role = DidExchangeRole.Responder
+      state = DidExchangeState.InvitationSent
+    } else {
+      role = ConnectionRole.Inviter
+      state = ConnectionState.Invited
+    }
+
     const connectionRecord = await this.createConnection({
-      role: ConnectionRole.Inviter,
-      state: ConnectionState.Invited,
+      role,
+      state,
       alias: config?.alias,
       routing: config.routing,
       autoAcceptConnection: config?.autoAcceptConnection,
       multiUseInvitation: config.multiUseInvitation ?? false,
+      protocol: config?.protocol,
     })
     const { didDoc } = connectionRecord
     const [service] = didDoc.didCommServices
@@ -124,11 +139,23 @@ export class ConnectionService {
       routing: Routing
       autoAcceptConnection?: boolean
       alias?: string
+      protocol?: string
     }
   ): Promise<ConnectionRecord> {
+    let role
+    let state
+
+    if (config?.protocol === 'did-exchange') {
+      role = DidExchangeRole.Requester
+      state = DidExchangeState.InvitationReceived
+    } else {
+      role = ConnectionRole.Invitee
+      state = ConnectionState.Invited
+    }
+
     const connectionRecord = await this.createConnection({
-      role: ConnectionRole.Invitee,
-      state: ConnectionState.Invited,
+      role,
+      state,
       alias: config?.alias,
       theirLabel: invitation.label,
       autoAcceptConnection: config?.autoAcceptConnection,
@@ -139,6 +166,7 @@ export class ConnectionService {
         invitationKey: invitation.recipientKeys && invitation.recipientKeys[0],
       },
       multiUseInvitation: false,
+      protocol: config?.protocol,
     })
     await this.connectionRepository.update(connectionRecord)
     this.eventEmitter.emit<ConnectionStateChangedEvent>({
@@ -637,7 +665,7 @@ export class ConnectionService {
     return this.connectionRepository.getByThreadId(threadId)
   }
 
-  private async createConnection(options: {
+  public async createConnection(options: {
     role: ConnectionRole | DidExchangeRole
     state: ConnectionState | DidExchangeState
     invitation?: ConnectionInvitationMessage
@@ -648,6 +676,7 @@ export class ConnectionService {
     multiUseInvitation: boolean
     tags?: CustomConnectionTags
     imageUrl?: string
+    protocol?: string
   }): Promise<ConnectionRecord> {
     const { endpoints, did, verkey, routingKeys, mediatorId } = options.routing
 
@@ -660,7 +689,7 @@ export class ConnectionService {
     // IndyAgentService is old service type
     const services = endpoints.map(
       (endpoint, index) =>
-        new IndyAgentService({
+        new DidCommService({
           id: `${did}#IndyAgentService`,
           serviceEndpoint: endpoint,
           recipientKeys: [verkey],
@@ -672,7 +701,7 @@ export class ConnectionService {
 
     // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
     // inferred from the publicKey class instance
-    const auth = new ReferencedAuthentication(publicKey, authenticationTypes[publicKey.type])
+    const auth = new EmbeddedAuthentication(publicKey)
 
     const didDoc = new DidDoc({
       id: did,
@@ -695,6 +724,7 @@ export class ConnectionService {
       imageUrl: options.imageUrl,
       multiUseInvitation: options.multiUseInvitation,
       mediatorId,
+      protocol: options.protocol,
     })
 
     await this.connectionRepository.save(connectionRecord)
@@ -703,7 +733,10 @@ export class ConnectionService {
 
   public async returnWhenIsConnected(connectionId: string, timeoutMs = 20000): Promise<ConnectionRecord> {
     const isConnected = (connection: ConnectionRecord) => {
-      return connection.id === connectionId && connection.state === ConnectionState.Complete
+      return (
+        connection.id === connectionId &&
+        (connection.state === ConnectionState.Complete || connection.state === DidExchangeState.Completed)
+      )
     }
 
     const observable = this.eventEmitter.observable<ConnectionStateChangedEvent>(
@@ -714,6 +747,7 @@ export class ConnectionService {
     observable
       .pipe(
         map((e) => e.payload.connectionRecord),
+        tap((c) => console.log('=== tap c', c)),
         first(isConnected), // Do not wait for longer than specified timeout
         timeout(timeoutMs)
       )

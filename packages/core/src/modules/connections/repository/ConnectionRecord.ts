@@ -142,7 +142,12 @@ export class ConnectionRecord
   }
 
   public get isReady() {
-    return [ConnectionState.Responded, ConnectionState.Complete, DidExchangeState.Completed].includes(this.state)
+    return [
+      ConnectionState.Responded,
+      ConnectionState.Complete,
+      DidExchangeState.Completed,
+      DidExchangeState.ResponseSent,
+    ].includes(this.state)
   }
 
   public assertReady() {

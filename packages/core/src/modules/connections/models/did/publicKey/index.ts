@@ -24,11 +24,13 @@ export const publicKeyTypes: { [key: string]: unknown | undefined } = {
  */
 export function PublicKeyTransformer() {
   return Transform(
-    ({ value }: { value: { type: string }[] }) => {
+    ({ value }: { value: { type: string; publicKeyBase58?: string; value?: string }[] }) => {
       return value.map((publicKeyJson) => {
         const publicKeyClass = (publicKeyTypes[publicKeyJson.type] ?? PublicKey) as ClassConstructor<PublicKey>
         const publicKey = plainToInstance<PublicKey, unknown>(publicKeyClass, publicKeyJson)
 
+        // console.log('==== PublicKeyTransformer', publicKeyJson, publicKey, publicKeyClass)
+        publicKey.value = publicKeyJson.publicKeyBase58 || publicKeyJson.value
         return publicKey
       })
     },

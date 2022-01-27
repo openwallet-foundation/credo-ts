@@ -15,6 +15,9 @@ import {
   AckMessageHandler,
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
+  DidExchangeRequestHandler,
+  DidExchangeResponseHandler,
+  DidExchangeCompleteHandler,
 } from './handlers'
 import { ConnectionInvitationMessage } from './messages'
 import { ConnectionService } from './services/ConnectionService'
@@ -54,6 +57,7 @@ export class ConnectionsModule {
     multiUseInvitation?: boolean
     myLabel?: string
     myImageUrl?: string
+    protocol?: string
   }): Promise<{
     invitation: ConnectionInvitationMessage
     connectionRecord: ConnectionRecord
@@ -70,6 +74,7 @@ export class ConnectionsModule {
       multiUseInvitation: config?.multiUseInvitation,
       myLabel: config?.myLabel,
       myImageUrl: config?.myImageUrl,
+      protocol: config?.protocol,
     })
 
     return { connectionRecord, invitation }
@@ -90,6 +95,7 @@ export class ConnectionsModule {
       autoAcceptConnection?: boolean
       alias?: string
       mediatorId?: string
+      protocol?: string
     }
   ): Promise<ConnectionRecord> {
     const routing = await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId })
@@ -98,6 +104,7 @@ export class ConnectionsModule {
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
       routing,
+      protocol: config?.protocol,
     })
 
     if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
@@ -122,6 +129,7 @@ export class ConnectionsModule {
       autoAcceptConnection?: boolean
       alias?: string
       mediatorId?: string
+      protocol: string
     }
   ): Promise<ConnectionRecord> {
     const invitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
@@ -143,12 +151,17 @@ export class ConnectionsModule {
       mediatorId?: string
     }
   ): Promise<ConnectionRecord> {
+    this.agentConfig.logger.debug('Accepting invitaion', { connectionId, config })
     const connectionRecord = await this.connectionService.getById(connectionId)
 
     let outboundMessage
     if (connectionRecord.protocol === 'did-exchange') {
       const routing = await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId })
-      const message = await this.didExchangeProtocol.createRequest(connectionRecord, { label: config?.label, routing })
+      const message = await this.didExchangeProtocol.createRequest(connectionRecord, {
+        label: config?.label,
+        routing,
+        autoAcceptConnection: config?.autoAcceptConnection,
+      })
       outboundMessage = createOutboundMessage(connectionRecord, message)
     } else {
       const { message } = await this.connectionService.createRequest(connectionRecord, config)
@@ -304,5 +317,19 @@ export class ConnectionsModule {
     dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
     dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
     dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService))
+
+    dispatcher.registerHandler(
+      new DidExchangeRequestHandler(
+        this.didExchangeProtocol,
+        this.connectionService,
+        this.agentConfig,
+        this.mediationRecipientService
+      )
+    )
+
+    dispatcher.registerHandler(
+      new DidExchangeResponseHandler(this.didExchangeProtocol, this.connectionService, this.agentConfig)
+    )
+    dispatcher.registerHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol))
   }
 }

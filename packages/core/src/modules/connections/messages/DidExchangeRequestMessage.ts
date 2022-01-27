@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsString } from 'class-validator'
+import { Equals, IsOptional, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
@@ -26,16 +26,18 @@ export class DidExchangeRequestMessage extends AgentMessage {
   public constructor(options: DidExchangeRequestMessageOptions) {
     super()
 
-    this.id = options.id || this.generateId()
-    this.label = options.label
-    this.goalCode = options.goalCode
-    this.goal = options.goal
-    this.did = options.did
+    if (options) {
+      this.id = options.id || this.generateId()
+      this.label = options.label
+      this.goalCode = options.goalCode
+      this.goal = options.goal
+      this.did = options.did
 
-    this.setThread({
-      threadId: this.id,
-      parentThreadId: options.parentThreadId,
-    })
+      this.setThread({
+        threadId: this.id,
+        parentThreadId: options.parentThreadId,
+      })
+    }
   }
 
   @Equals(DidExchangeRequestMessage.type)
@@ -46,13 +48,15 @@ export class DidExchangeRequestMessage extends AgentMessage {
   public readonly label?: string
 
   @Expose({ name: 'goal_code' })
+  @IsOptional()
   public readonly goalCode?: string
 
   @IsString()
+  @IsOptional()
   public readonly goal?: string
 
   @IsString()
-  public readonly did: string
+  public readonly did!: string
 
   @Expose({ name: 'did_doc~attach' })
   @Type(() => Attachment)

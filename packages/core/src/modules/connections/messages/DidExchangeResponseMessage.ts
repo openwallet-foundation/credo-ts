@@ -23,12 +23,14 @@ export class DidExchangeResponseMessage extends AgentMessage {
   public constructor(options: DidExchangeResponseMessageOptions) {
     super()
 
-    this.id = options.id || this.generateId()
-    this.did = options.did
+    if (options) {
+      this.id = options.id || this.generateId()
+      this.did = options.did
 
-    this.setThread({
-      threadId: options.threadId,
-    })
+      this.setThread({
+        threadId: options.threadId,
+      })
+    }
   }
 
   @Equals(DidExchangeResponseMessage.type)
@@ -36,7 +38,7 @@ export class DidExchangeResponseMessage extends AgentMessage {
   public static readonly type = 'https://didcomm.org/didexchange/1.0/response'
 
   @IsString()
-  public readonly did: string
+  public readonly did!: string
 
   @Expose({ name: 'did_doc~attach' })
   @Type(() => Attachment)
