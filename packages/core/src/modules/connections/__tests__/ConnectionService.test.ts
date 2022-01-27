@@ -11,13 +11,14 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { AckMessage, AckStatus } from '../../common'
+import { DidCommService } from '../../dids/domain/service/DidCommService'
 import {
   ConnectionInvitationMessage,
   ConnectionRequestMessage,
   ConnectionResponseMessage,
   TrustPingMessage,
 } from '../messages'
-import { Connection, ConnectionState, ConnectionRole, DidDoc, DidCommService } from '../models'
+import { Connection, ConnectionState, ConnectionRole, DidDoc } from '../models'
 import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
 import { ConnectionService } from '../services/ConnectionService'
