@@ -6,12 +6,13 @@ import { Equals, IsArray, IsBoolean, IsInstance, IsOptional, IsString, ValidateN
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { uuid } from '../../../../../utils/uuid'
 import { ProofFormatSpec } from '../../../formats/models/ProofFormatServiceOptions'
-import { PresentationPreview } from '../../v1/models/PresentationPreview'
 
 import { Attachment } from 'packages/core/src/decorators/attachment/Attachment'
 
 export interface V2ProposePresentationMessageOptions {
   id?: string
+  formats: ProofFormatSpec
+  filtersAttach: Attachment[]
   comment?: string
   goalCode?: string
   willConfirm?: boolean
