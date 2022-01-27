@@ -1,17 +1,19 @@
 import type { DidDocument } from '../../domain'
 import type { DidResolver } from '../../domain/DidResolver'
-import type { DidDocumentRepository } from '../../repository'
+import type { DidRepository } from '../../repository'
 import type { DidResolutionResult } from '../../types'
+
+import { AriesFrameworkError } from '../../../../error'
 
 import { DidPeer, PeerDidNumAlgo } from './DidPeer'
 
 export class PeerDidResolver implements DidResolver {
   public readonly supportedMethods = ['peer']
 
-  private didDocumentRepository: DidDocumentRepository
+  private didRepository: DidRepository
 
-  public constructor(didDocumentRepository: DidDocumentRepository) {
-    this.didDocumentRepository = didDocumentRepository
+  public constructor(didRepository: DidRepository) {
+    this.didRepository = didRepository
   }
 
   public async resolve(did: string): Promise<DidResolutionResult> {
@@ -24,7 +26,12 @@ export class PeerDidResolver implements DidResolver {
 
       // For Method 1, retrieve from storage
       if (didPeer.numAlgo === PeerDidNumAlgo.GenesisDoc) {
-        const didDocumentRecord = await this.didDocumentRepository.getById(did)
+        const didDocumentRecord = await this.didRepository.getById(did)
+
+        if (!didDocumentRecord.didDocument) {
+          throw new AriesFrameworkError(`Found did record for method 1 peer did (${did}), but no did document.`)
+        }
+
         didDocument = didDocumentRecord.didDocument
       } else {
         didDocument = didPeer.didDocument

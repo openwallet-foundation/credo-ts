@@ -603,9 +603,7 @@ export class ConnectionService {
    * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
    */
   public findByVerkey(verkey: string): Promise<ConnectionRecord | null> {
-    return this.connectionRepository.findSingleByQuery({
-      verkey,
-    })
+    return this.connectionRepository.findByVerkey(verkey)
   }
 
   /**
@@ -616,9 +614,7 @@ export class ConnectionService {
    * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
    */
   public findByTheirKey(verkey: string): Promise<ConnectionRecord | null> {
-    return this.connectionRepository.findSingleByQuery({
-      theirKey: verkey,
-    })
+    return this.connectionRepository.findByTheirKey(verkey)
   }
 
   /**
@@ -629,9 +625,7 @@ export class ConnectionService {
    * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
    */
   public findByInvitationKey(key: string): Promise<ConnectionRecord | null> {
-    return this.connectionRepository.findSingleByQuery({
-      invitationKey: key,
-    })
+    return this.connectionRepository.findByInvitationKey(key)
   }
 
   /**
@@ -643,7 +637,7 @@ export class ConnectionService {
    * @returns The connection record
    */
   public getByThreadId(threadId: string): Promise<ConnectionRecord> {
-    return this.connectionRepository.getSingleByQuery({ threadId })
+    return this.connectionRepository.getByThreadId(threadId)
   }
 
   private async createConnection(options: {

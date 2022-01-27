@@ -137,6 +137,14 @@ export class DidDocument {
     return services.sort((a, b) => b.priority - a.priority)
   }
 
+  public get recipientKeys(): string[] {
+    // Get a `recipientKeys` entries from the did document
+    return this.didCommServices.reduce<string[]>(
+      (recipientKeys, service) => recipientKeys.concat(service.recipientKeys),
+      []
+    )
+  }
+
   public toJSON() {
     return JsonTransformer.toJSON(this)
   }

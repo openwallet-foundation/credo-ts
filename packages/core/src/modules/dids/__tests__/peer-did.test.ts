@@ -11,7 +11,7 @@ import { convertPublicKeyToX25519, getEd25519VerificationMethod } from '../domai
 import { getX25519VerificationMethod } from '../domain/key-type/x25519'
 import { DidKey } from '../methods/key'
 import { DidPeer, PeerDidNumAlgo } from '../methods/peer/DidPeer'
-import { DidDocumentRecord, DidDocumentRepository } from '../repository'
+import { DidRecord, DidRepository } from '../repository'
 import { DidResolverService } from '../services'
 
 import didPeer1zQmY from './__fixtures__/didPeer1zQmY.json'
@@ -19,7 +19,7 @@ import didPeer1zQmY from './__fixtures__/didPeer1zQmY.json'
 describe('peer dids', () => {
   const config = getAgentConfig('Peer DIDs Lifecycle')
 
-  let didDocumentRepository: DidDocumentRepository
+  let didRepository: DidRepository
   let didResolverService: DidResolverService
   let wallet: IndyWallet
 
@@ -28,11 +28,11 @@ describe('peer dids', () => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.initialize(config.walletConfig!)
 
-    const storageService = new IndyStorageService<DidDocumentRecord>(wallet, config)
-    didDocumentRepository = new DidDocumentRepository(storageService)
+    const storageService = new IndyStorageService<DidRecord>(wallet, config)
+    didRepository = new DidRepository(storageService)
 
-    // Mocking IndyLedgerService as we're only interestd in the did:peer resolver
-    didResolverService = new DidResolverService(config, {} as unknown as IndyLedgerService, didDocumentRepository)
+    // Mocking IndyLedgerService as we're only interested in the did:peer resolver
+    didResolverService = new DidResolverService(config, {} as unknown as IndyLedgerService, didRepository)
   })
 
   afterEach(async () => {
@@ -102,15 +102,20 @@ describe('peer dids', () => {
     expect(peerDid.didDocument).toMatchObject(didPeer1zQmY)
 
     // Save the record to storage
-    const didDocumentRecord = new DidDocumentRecord({
+    const didDocumentRecord = new DidRecord({
       id: didPeer1zQmY.id,
       role: DidDocumentRole.Created,
       // It is important to take the did document from the PeerDid class
       // as it will have the id property
       didDocument: peerDid.didDocument,
+      tags: {
+        // We need to save the recipientKeys, so we can find the associated did
+        // of a key when we receive a message from another connection.
+        recipientKeys: peerDid.didDocument.recipientKeys,
+      },
     })
 
-    await didDocumentRepository.save(didDocumentRecord)
+    await didRepository.save(didDocumentRecord)
   })
 
   test('receive a did and did document', async () => {
@@ -134,17 +139,20 @@ describe('peer dids', () => {
       expect(didPeer.didDocument.toJSON()).toMatchObject(didPeer1zQmY)
     }
 
-    // If the method is a genesis doc (did:peer:1) we should store the document
-    // Otherwise this is not needed as we can generate it form the did itself
-    if (didPeer.numAlgo === PeerDidNumAlgo.GenesisDoc) {
-      const didDocumentRecord = new DidDocumentRecord({
-        id: didPeer.did,
-        role: DidDocumentRole.Received,
-        didDocument: didPeer.didDocument,
-      })
+    const didDocumentRecord = new DidRecord({
+      id: didPeer.did,
+      role: DidDocumentRole.Received,
+      // If the method is a genesis doc (did:peer:1) we should store the document
+      // Otherwise we only need to store the did itself (as the did can be generated)
+      didDocument: didPeer.numAlgo === PeerDidNumAlgo.GenesisDoc ? didPeer.didDocument : undefined,
+      tags: {
+        // We need to save the recipientKeys, so we can find the associated did
+        // of a key when we receive a message from another connection.
+        recipientKeys: didPeer.didDocument.recipientKeys,
+      },
+    })
 
-      await didDocumentRepository.save(didDocumentRecord)
-    }
+    await didRepository.save(didDocumentRecord)
 
     // Then we save the did (not the did document) in the connection record
     // connectionRecord.theirDid = didPeer.did

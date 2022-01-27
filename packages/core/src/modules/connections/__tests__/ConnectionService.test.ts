@@ -342,7 +342,7 @@ describe('ConnectionService', () => {
         verkey: 'my-key',
         role: ConnectionRole.Inviter,
       })
-      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(connectionRecord))
+      mockFunction(connectionRepository.findByVerkey).mockReturnValue(Promise.resolve(connectionRecord))
 
       const theirDid = 'their-did'
       const theirVerkey = 'their-verkey'
@@ -395,7 +395,7 @@ describe('ConnectionService', () => {
         senderVerkey: 'sender-verkey',
       })
 
-      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(null))
+      mockFunction(connectionRepository.findByVerkey).mockReturnValue(Promise.resolve(null))
       return expect(connectionService.processRequest(messageContext)).rejects.toThrowError(
         'Unable to process connection request: connection for verkey test-verkey not found'
       )
@@ -411,7 +411,7 @@ describe('ConnectionService', () => {
         role: ConnectionRole.Inviter,
         multiUseInvitation: true,
       })
-      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(connectionRecord))
+      mockFunction(connectionRepository.findByVerkey).mockReturnValue(Promise.resolve(connectionRecord))
 
       const theirDid = 'their-did'
       const theirVerkey = 'their-verkey'
@@ -458,7 +458,7 @@ describe('ConnectionService', () => {
     it(`throws an error when connection role is ${ConnectionRole.Invitee} and not ${ConnectionRole.Inviter}`, async () => {
       expect.assertions(1)
 
-      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(
+      mockFunction(connectionRepository.findByVerkey).mockReturnValue(
         Promise.resolve(getMockConnection({ role: ConnectionRole.Invitee }))
       )
 
@@ -482,7 +482,7 @@ describe('ConnectionService', () => {
         verkey: recipientVerkey,
       })
 
-      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(connection))
+      mockFunction(connectionRepository.findByVerkey).mockReturnValue(Promise.resolve(connection))
 
       const connectionRequest = new ConnectionRequestMessage({
         did: 'did',
@@ -512,7 +512,7 @@ describe('ConnectionService', () => {
         role: ConnectionRole.Inviter,
         multiUseInvitation: true,
       })
-      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(connectionRecord))
+      mockFunction(connectionRepository.findByVerkey).mockReturnValue(Promise.resolve(connectionRecord))
 
       const theirDidDoc = new DidDoc({
         id: 'their-did',
@@ -618,7 +618,7 @@ describe('ConnectionService', () => {
           serviceEndpoint: 'test',
         }),
       })
-      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(connectionRecord))
+      mockFunction(connectionRepository.findByVerkey).mockReturnValue(Promise.resolve(connectionRecord))
 
       const otherPartyConnection = new Connection({
         did: theirDid,
@@ -667,7 +667,7 @@ describe('ConnectionService', () => {
         recipientVerkey: 'recipientVerkey',
       })
 
-      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(
+      mockFunction(connectionRepository.findByVerkey).mockReturnValue(
         Promise.resolve(
           getMockConnection({
             role: ConnectionRole.Inviter,
@@ -692,7 +692,7 @@ describe('ConnectionService', () => {
         role: ConnectionRole.Invitee,
         state: ConnectionState.Requested,
       })
-      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(connectionRecord))
+      mockFunction(connectionRepository.findByVerkey).mockReturnValue(Promise.resolve(connectionRecord))
 
       const otherPartyConnection = new Connection({
         did: theirDid,
@@ -749,7 +749,7 @@ describe('ConnectionService', () => {
         recipientVerkey: 'test-verkey',
         senderVerkey: 'sender-verkey',
       })
-      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(null))
+      mockFunction(connectionRepository.findByVerkey).mockReturnValue(Promise.resolve(null))
 
       return expect(connectionService.processResponse(messageContext)).rejects.toThrowError(
         'Unable to process connection response: connection for verkey test-verkey not found'
@@ -774,7 +774,7 @@ describe('ConnectionService', () => {
         theirDid: undefined,
         theirDidDoc: undefined,
       })
-      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(connectionRecord))
+      mockFunction(connectionRepository.findByVerkey).mockReturnValue(Promise.resolve(connectionRecord))
 
       const otherPartyConnection = new Connection({
         did: theirDid,
@@ -1071,11 +1071,11 @@ describe('ConnectionService', () => {
       expect(result).toBe(expected)
     })
 
-    it('getById should return value from connectionRepository.getSingleByQuery', async () => {
+    it('getByThreadId should return value from connectionRepository.getSingleByQuery', async () => {
       const expected = getMockConnection()
-      mockFunction(connectionRepository.getSingleByQuery).mockReturnValue(Promise.resolve(expected))
+      mockFunction(connectionRepository.getByThreadId).mockReturnValue(Promise.resolve(expected))
       const result = await connectionService.getByThreadId('threadId')
-      expect(connectionRepository.getSingleByQuery).toBeCalledWith({ threadId: 'threadId' })
+      expect(connectionRepository.getByThreadId).toBeCalledWith('threadId')
 
       expect(result).toBe(expected)
     })
@@ -1091,18 +1091,18 @@ describe('ConnectionService', () => {
 
     it('findByVerkey should return value from connectionRepository.findSingleByQuery', async () => {
       const expected = getMockConnection()
-      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(expected))
+      mockFunction(connectionRepository.findByVerkey).mockReturnValue(Promise.resolve(expected))
       const result = await connectionService.findByVerkey('verkey')
-      expect(connectionRepository.findSingleByQuery).toBeCalledWith({ verkey: 'verkey' })
+      expect(connectionRepository.findByVerkey).toBeCalledWith('verkey')
 
       expect(result).toBe(expected)
     })
 
     it('findByTheirKey should return value from connectionRepository.findSingleByQuery', async () => {
       const expected = getMockConnection()
-      mockFunction(connectionRepository.findSingleByQuery).mockReturnValue(Promise.resolve(expected))
+      mockFunction(connectionRepository.findByTheirKey).mockReturnValue(Promise.resolve(expected))
       const result = await connectionService.findByTheirKey('theirKey')
-      expect(connectionRepository.findSingleByQuery).toBeCalledWith({ theirKey: 'theirKey' })
+      expect(connectionRepository.findByTheirKey).toBeCalledWith('theirKey')
 
       expect(result).toBe(expected)
     })
