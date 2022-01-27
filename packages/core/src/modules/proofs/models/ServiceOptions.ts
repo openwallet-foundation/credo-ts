@@ -43,3 +43,7 @@ export interface PresentationOptions {
   comment?: string
   // TODO: add other options such as comment, etc...
 }
+
+export interface CreateAckOptions {
+  proofRecord: ProofRecord
+}

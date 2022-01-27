@@ -1,17 +1,17 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
-import type { CreateRequestAsResponseOptions } from './interface'
+import type { ProofFormatService } from './formats/ProofFormatService'
 import type { ProofProtocolVersion } from './models/ProofProtocolVersion'
 import type {
-  CreatePresentationOptions,
   CreateProposalAsResponseOptions,
   CreateProposalOptions,
+  CreateRequestAsResponseOptions,
+  PresentationOptions,
   RequestProofOptions,
 } from './models/ServiceOptions'
 import type { RetrievedCredentials } from './protocol/v1/models'
 import type { ProofRecord } from './repository'
 import type { PresentationRecordType } from './repository/PresentationExchangeRecord'
-import type { ProofFormatService } from './v2/formats/ProofFormatService'
 
 import { ConsoleLogger, LogLevel } from '../../logger'
 
@@ -78,7 +78,7 @@ export abstract class ProofService {
   abstract processRequest(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
 
   abstract createPresentation(
-    options: CreatePresentationOptions
+    options: PresentationOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
 
   abstract processPresentation(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
