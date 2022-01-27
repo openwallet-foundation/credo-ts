@@ -10,7 +10,7 @@ import type {
   RequestProofOptions,
 } from './models/ServiceOptions'
 import type { RetrievedCredentials } from './protocol/v1/models'
-import type { ProofRecord } from './repository'
+import type { ProofRecord, ProofRepository } from './repository'
 import type { PresentationRecordType } from './repository/PresentationExchangeRecord'
 
 import { ConsoleLogger, LogLevel } from '../../logger'
@@ -22,7 +22,14 @@ const logger = new ConsoleLogger(LogLevel.debug)
  * - stores records
  * - returns records & messages
  */
+
 export abstract class ProofService {
+  private proofRepository: ProofRepository
+
+  public constructor(proofRepository: ProofRepository) {
+    this.proofRepository = proofRepository
+  }
+
   abstract getVersion(): ProofProtocolVersion
 
   /**
@@ -101,7 +108,45 @@ export abstract class ProofService {
     throw Error('Not Implemented')
   }
 
-  public getById(proofRecordId: string): Promise<ProofRecord> {
+  /**
+   * Retrieve all proof records
+   *
+   * @returns List containing all proof records
+   */
+  public async getAll(): Promise<ProofRecord[]> {
+    return this.proofRepository.getAll()
+  }
+
+  /**
+   * Retrieve a proof record by id
+   *
+   * @param proofRecordId The proof record id
+   * @throws {RecordNotFoundError} If no record is found
+   * @return The proof record
+   *
+   */
+  public async getById(proofRecordId: string): Promise<ProofRecord> {
     return this.proofRepository.getById(proofRecordId)
+  }
+
+  /**
+   * Retrieve a proof record by id
+   *
+   * @param proofRecordId The proof record id
+   * @return The proof record or null if not found
+   *
+   */
+  public async findById(proofRecordId: string): Promise<ProofRecord | null> {
+    return this.proofRepository.findById(proofRecordId)
+  }
+
+  /**
+   * Delete a proof record by id
+   *
+   * @param proofId the proof record id
+   */
+  public async deleteById(proofId: string) {
+    const proofRecord = await this.getById(proofId)
+    return this.proofRepository.delete(proofRecord)
   }
 }
