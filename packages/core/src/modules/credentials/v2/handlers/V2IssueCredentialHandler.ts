@@ -28,9 +28,9 @@ export class V2IssueCredentialHandler implements Handler {
     unitTestLogger('----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR ISSUE CREDENTIAL')
 
     const credentialRecord = await this.credentialService.processCredential(messageContext)
-    // if (this.credentialResponseCoordinator.shouldAutoRespondToIssue(credentialRecord)) {
-    //   return await this.createAck(credentialRecord, messageContext)
-    // }
+    if (this.credentialResponseCoordinator.shouldAutoRespondToIssue(credentialRecord)) {
+      return await this.createAck(credentialRecord, messageContext)
+    }
   }
 
   private async createAck(record: CredentialRecord, messageContext: HandlerInboundMessage<V2IssueCredentialHandler>) {

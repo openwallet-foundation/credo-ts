@@ -639,6 +639,17 @@ export class V2CredentialService extends CredentialService {
     // Create message
     const { credentialRecord, message } = await this.credentialMessageBuilder.createOffer(formats, credentialOptions)
 
+    for (const format of formats) {
+      const attachment = format.getAttachment(message)
+      if (attachment) {
+        const credOffer: V2CredProposeOfferRequestFormat | undefined = format.getCredentialPayload(attachment.data)
+        if (credOffer) {
+          format.getMetaDataService().setMetaDataForOffer(credOffer, credentialRecord)
+        }
+      }
+    }
+    await this.credentialRepository.save(credentialRecord)
+    await this.emitEvent(credentialRecord)
     return { credentialRecord, message }
   }
 
