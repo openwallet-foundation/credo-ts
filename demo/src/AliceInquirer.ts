@@ -42,7 +42,11 @@ export class AliceInquirer extends BaseInquirer {
   }
 
   private async getPromptChoice() {
-    return await inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
+    if (this.alice.connectionRecordFaberId !== undefined) {
+      return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
+    }
+    const reducedOption = [PromptOptions.CreateConnection, PromptOptions.Exit, PromptOptions.Restart]
+    return inquirer.prompt([this.inquireOptions(reducedOption)])
   }
 
   public async processAnswer() {

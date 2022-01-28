@@ -42,8 +42,11 @@ export class FaberInquirer extends BaseInquirer {
   }
 
   private async getPromptChoice() {
-    const prompt = inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
-    return prompt
+    if (this.faber.connectionRecordAliceId !== undefined) {
+      return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
+    }
+    const reducedOption = [PromptOptions.ReceiveConnectionUrl, PromptOptions.Exit, PromptOptions.Restart]
+    return inquirer.prompt([this.inquireOptions(reducedOption)])
   }
 
   public async processAnswer() {
