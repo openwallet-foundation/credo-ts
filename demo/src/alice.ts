@@ -2,7 +2,7 @@
 import type { CredentialRecord, ProofRecord } from '@aries-framework/core'
 
 import { BaseAgent } from './BaseAgent'
-import { Color, Output } from './OutputClass'
+import { greenText, Output, redText } from './OutputClass'
 
 export class Alice extends BaseAgent {
   public connectionRecordFaberId?: string
@@ -21,7 +21,7 @@ export class Alice extends BaseAgent {
 
   private async getConnectionRecord() {
     if (!this.connectionRecordFaberId) {
-      throw Error(`${Color.red}${Output.missingConnectionRecord}${Color.reset}`)
+      throw Error(redText(Output.missingConnectionRecord))
     }
     return await this.agent.connections.getById(this.connectionRecordFaberId)
   }
@@ -41,10 +41,10 @@ export class Alice extends BaseAgent {
     try {
       await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
     } catch (e) {
-      console.log(`${Color.red}\nTimeout of 20 seconds reached.. Returning to home screen.\n${Color.reset}`)
+      console.log(redText(`\nTimeout of 20 seconds reached.. Returning to home screen.\n`))
       return
     }
-    console.log(`${Color.green}${Output.connectionEstablished}${Color.reset}`)
+    console.log(greenText(Output.connectionEstablished))
     this.connected = true
   }
 
@@ -55,7 +55,7 @@ export class Alice extends BaseAgent {
 
   public async acceptCredentialOffer(credentialRecord: CredentialRecord) {
     await this.agent.credentials.acceptOffer(credentialRecord.id)
-    console.log(`${Color.green}\nCredential offer accepted!\n${Color.reset}`)
+    console.log(greenText('\nCredential offer accepted!\n'))
   }
 
   public async acceptProofRequest(proofRecord: ProofRecord) {
@@ -64,7 +64,7 @@ export class Alice extends BaseAgent {
     })
     const requestedCredentials = this.agent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
     await this.agent.proofs.acceptRequest(proofRecord.id, requestedCredentials)
-    console.log(`${Color.green}\nProof request accepted!\n${Color.reset}`)
+    console.log(greenText('\nProof request accepted!\n'))
   }
 
   public async sendMessage(message: string) {

@@ -7,7 +7,7 @@ import { uuid } from '@aries-framework/core/build/utils/uuid'
 import { ui } from 'inquirer'
 
 import { BaseAgent } from './BaseAgent'
-import { Color, Output } from './OutputClass'
+import { Color, greenText, Output, purpleText, redText } from './OutputClass'
 
 export class Faber extends BaseAgent {
   public connectionRecordAliceId?: string
@@ -27,7 +27,7 @@ export class Faber extends BaseAgent {
 
   private async getConnectionRecord() {
     if (!this.connectionRecordAliceId) {
-      throw Error(`${Color.red}${Output.missingConnectionRecord}${Color.reset}`)
+      throw Error(redText(Output.missingConnectionRecord))
     }
     return await this.agent.connections.getById(this.connectionRecordAliceId)
   }
@@ -38,7 +38,7 @@ export class Faber extends BaseAgent {
 
   private async waitForConnection(connectionRecord: ConnectionRecord) {
     connectionRecord = await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
-    console.log(`${Color.green}${Output.connectionEstablished}${Color.reset}`)
+    console.log(greenText(Output.connectionEstablished))
     return connectionRecord.id
   }
 
@@ -52,9 +52,9 @@ export class Faber extends BaseAgent {
 
   private printSchema(name: string, version: string, attributes: string[]) {
     console.log(`\n\nThe credential definition will look like this:\n`)
-    console.log(`${Color.purlpe}Name: ${Color.reset}${name}`)
-    console.log(`${Color.purlpe}Version: ${Color.reset}${version}`)
-    console.log(`${Color.purlpe}Attributes: ${Color.reset}${attributes[0]}, ${attributes[1]}, ${attributes[2]}\n`)
+    console.log(purpleText(`Name: ${Color.reset}${name}`))
+    console.log(purpleText(`Version: ${Color.reset}${version}`))
+    console.log(purpleText(`Attributes: ${Color.reset}${attributes[0]}, ${attributes[1]}, ${attributes[2]}\n`))
   }
 
   private async registerSchema() {
@@ -64,7 +64,7 @@ export class Faber extends BaseAgent {
       attributes: ['name', 'degree', 'date'],
     }
     this.printSchema(schemaTemplate.name, schemaTemplate.version, schemaTemplate.attributes)
-    this.ui.updateBottomBar(`${Color.green}\nRegistering schema...\n`)
+    this.ui.updateBottomBar(greenText('\nRegistering schema...\n', false))
     const schema = await this.agent.ledger.registerSchema(schemaTemplate)
     this.ui.updateBottomBar('\nSchema registerd!\n')
     return schema
@@ -101,8 +101,9 @@ export class Faber extends BaseAgent {
       credentialDefinitionId: credDef.id,
       preview: credentialPreview,
     })
-    this.ui.updateBottomBar(`\nCredential offer sent! \n
-    Go to the Alice agent to accept the credential offer\n${Color.reset}`)
+    this.ui.updateBottomBar(
+      `\nCredential offer sent!\n\nGo to the Alice agent to accept the credential offer\n\n${Color.reset}`
+    )
   }
 
   private async printProofFlow(print: string) {
@@ -111,7 +112,7 @@ export class Faber extends BaseAgent {
   }
 
   private async newProofAttribute() {
-    await this.printProofFlow(`${Color.green}\nCreating new proof attribute for 'name' ...\n`)
+    await this.printProofFlow(greenText(`Creating new proof attribute for 'name' ...\n`))
     const proofAttribute = {
       name: new ProofAttributeInfo({
         name: 'name',
@@ -128,12 +129,13 @@ export class Faber extends BaseAgent {
   public async sendProofRequest() {
     const connectionRecord = await this.getConnectionRecord()
     const proofAttribute = await this.newProofAttribute()
-    await this.printProofFlow(`${Color.green}\nRequesting proof...\n`)
+    await this.printProofFlow(greenText('\nRequesting proof...\n', false))
     await this.agent.proofs.requestProof(connectionRecord.id, {
       requestedAttributes: proofAttribute,
     })
-    this.ui.updateBottomBar(`\nProof request sent!\n\n
-    Go to the Alice agent to accept the proof request\n${Color.reset}`)
+    this.ui.updateBottomBar(
+      `\nProof request sent!\n\nGo to the Alice agent to accept the proof request\n\n${Color.reset}`
+    )
   }
 
   public async sendMessage(message: string) {

@@ -1,7 +1,7 @@
 export enum Color {
   green = `\x1b[32m`,
   red = `\x1b[31m`,
-  purlpe = `\x1b[35m`,
+  purple = `\x1b[35m`,
   reset = `\x1b[0m`,
 }
 
@@ -19,4 +19,25 @@ export enum Title {
   confirmTitle = '\n\nAre you sure?',
   credentialOfferTitle = '\n\nCredential offer received, do you want to accept it?',
   proofRequestTitle = '\n\nProof request received, do you want to accept it?',
+}
+
+export const greenText = (text: string, reset?: boolean) => {
+  if (reset === false) {
+    return Color.green + text
+  }
+  return Color.green + text + Color.reset
+}
+
+export const purpleText = (text: string, reset?: boolean) => {
+  if (reset === false) {
+    return Color.purple + text
+  }
+  return Color.purple + text + Color.reset
+}
+
+export const redText = (text: string, reset?: boolean) => {
+  if (reset === false) {
+    return Color.red + text
+  }
+  return Color.red + text + Color.reset
 }
