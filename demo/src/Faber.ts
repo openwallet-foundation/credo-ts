@@ -70,7 +70,7 @@ export class Faber extends BaseAgent {
   }
 
   private async registerCredentialDefiniton(schema: Schema) {
-    this.ui.updateBottomBar('\nRegistering credential defenition...\n')
+    this.ui.updateBottomBar('\nRegistering credential definition...\n')
     this.credentialDefinition = await this.agent.ledger.registerCredentialDefinition({
       schema,
       tag: 'latest',
