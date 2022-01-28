@@ -119,7 +119,7 @@ export class IndyRevocationService {
             revocationRegistryDefinition,
             revocRegDelta,
             deltaTimestamp,
-            credentialRevocationId.toString()
+            credentialRevocationId
           )
           const timestamp = revocationState.timestamp
 

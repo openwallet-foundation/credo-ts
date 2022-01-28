@@ -123,7 +123,7 @@ export class IndyHolderService {
     credential,
     credentialDefinition,
     credentialId,
-    revocationRegistryDefinitions,
+    revocationRegistryDefinition,
   }: StoreCredentialOptions): Promise<Indy.CredentialId> {
     try {
       return await this.indy.proverStoreCredential(
@@ -132,7 +132,7 @@ export class IndyHolderService {
         credentialRequestMetadata,
         credential,
         credentialDefinition,
-        revocationRegistryDefinitions ?? null
+        revocationRegistryDefinition ?? null
       )
     } catch (error) {
       this.logger.error(`Error storing Indy Credential '${credentialId}'`, {
@@ -292,7 +292,7 @@ export interface StoreCredentialOptions {
   credential: Indy.Cred
   credentialDefinition: Indy.CredDef
   credentialId?: Indy.CredentialId
-  revocationRegistryDefinitions?: Indy.RevRegsDefs
+  revocationRegistryDefinition?: Indy.RevocRegDef
 }
 
 export interface CreateProofOptions {

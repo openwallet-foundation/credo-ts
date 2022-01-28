@@ -264,7 +264,7 @@ export class IndyLedgerService {
     }
   }
 
-  public async getRevocationRegistryDefinition(revocationRegistryDefinitionId: string) {
+  public async getRevocationRegistryDefinition(revocationRegistryDefinitionId: string): Promise<Indy.RevocRegDef> {
     const did = didFromRevocationRegistryDefinitionId(revocationRegistryDefinitionId)
     const { pool } = await this.indyPoolService.getPoolForDid(did)
 
