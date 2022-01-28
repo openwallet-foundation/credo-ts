@@ -113,7 +113,8 @@ export class MessageReceiver {
       // We allow unready connections to be attached to the session as we want to be able to
       // use return routing to make connections. This is especially useful for creating connections
       // with mediators when you don't have a public endpoint yet.
-      session.connection = connection ?? unverifiedConnection ?? undefined
+      // session.connection = connection ?? unverifiedConnection ?? undefined
+      session.connection = connection ?? undefined
       this.transportService.saveSession(session)
     }
 

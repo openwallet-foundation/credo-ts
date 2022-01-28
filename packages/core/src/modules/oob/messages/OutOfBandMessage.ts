@@ -1,5 +1,5 @@
 import type { PlaintextMessage } from '../../../types'
-import type { DidCommService } from '../../connections/models/did/service/DidCommService'
+import type { DidCommService } from '../../dids'
 
 import { Expose, Type } from 'class-transformer'
 import { ArrayNotEmpty, Equals, IsArray, IsInstance, IsOptional, ValidateNested } from 'class-validator'
