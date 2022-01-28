@@ -1,26 +1,24 @@
-import type { ProofAttachmentFormat } from '../../../formats/models/ProofFormatServiceOptions'
+import type { ProofAttachmentFormat } from '../../../formats/ProofFormatService'
 
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../../../agent/AgentMessage'
-import { uuid } from '../../../../../utils/uuid'
 import { ProofFormatSpec } from '../../../formats/models/ProofFormatServiceOptions'
 
+import { AgentMessage } from '@aries-framework/core'
 import { Attachment } from 'packages/core/src/decorators/attachment/Attachment'
+import { uuid } from 'packages/core/src/utils/uuid'
 
-export interface V2ProposePresentationMessageOptions {
+export interface V2RequestPresentationMessageOptions {
   id?: string
-  formats: ProofFormatSpec
-  filtersAttach: Attachment[]
   comment?: string
   goalCode?: string
   willConfirm?: boolean
   attachmentInfo: ProofAttachmentFormat[]
 }
 
-export class V2ProposalPresentationMessage extends AgentMessage {
-  public constructor(options: V2ProposePresentationMessageOptions) {
+export class V2RequestPresentationMessage extends AgentMessage {
+  public constructor(options: V2RequestPresentationMessageOptions) {
     super()
     if (options) {
       this.id = options.id ?? uuid()
@@ -29,19 +27,19 @@ export class V2ProposalPresentationMessage extends AgentMessage {
       this.willConfirm = options.willConfirm ?? false
 
       for (const entry of options.attachmentInfo) {
-        this.addProposalsAttachment(entry)
+        this.addRequestPresentationsAttachment(entry)
       }
     }
   }
 
-  public addProposalsAttachment(attachment: ProofAttachmentFormat) {
+  public addRequestPresentationsAttachment(attachment: ProofAttachmentFormat) {
     this.formats.push(attachment.format)
-    this.proposalsAttach.push(attachment.attachment)
+    this.requestPresentationsAttach.push(attachment.attachment)
   }
 
-  @Equals(V2ProposalPresentationMessage.type)
-  public readonly type = V2ProposalPresentationMessage.type
-  public static readonly type = `https://didcomm.org/present-proof/2.0/propose-presentation`
+  @Equals(V2RequestPresentationMessage.type)
+  public readonly type = V2RequestPresentationMessage.type
+  public static readonly type = 'https://didcomm.org/present-proof/2.0/request-presentation'
 
   @IsString()
   @IsOptional()
@@ -63,10 +61,10 @@ export class V2ProposalPresentationMessage extends AgentMessage {
   @IsInstance(ProofFormatSpec, { each: true })
   public formats!: ProofFormatSpec[]
 
-  @Expose({ name: 'proposals~attach' })
+  @Expose({ name: 'request_presentations~attach' })
   @Type(() => Attachment)
   @IsArray()
   @ValidateNested({ each: true })
   @IsInstance(Attachment, { each: true })
-  public proposalsAttach!: Attachment[]
+  public requestPresentationsAttach!: Attachment[]
 }
