@@ -7,7 +7,7 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
-import { DidCommService } from '../src/modules/connections'
+import { DidCommService } from '../src/modules/dids'
 import { OutOfBandMessage } from '../src/modules/oob/messages'
 
 import { TestMessage } from './TestMessage'
