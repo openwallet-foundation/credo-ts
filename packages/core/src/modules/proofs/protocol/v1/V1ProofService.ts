@@ -11,7 +11,9 @@ import type {
   PresentationOptions,
   RequestProofOptions,
 } from '../../models/ServiceOptions'
-import { AttributeFilter, RetrievedCredentials } from './models'
+import type { PresentationProblemReportMessage } from './messages'
+import type { RetrievedCredentials } from './models'
+import type { PresentationPreviewAttribute } from './models/PresentationPreview'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 import type { Attachment } from 'packages/core/src/decorators/attachment/Attachment'
 
@@ -46,14 +48,14 @@ import {
   RequestPresentationMessage,
 } from './messages'
 import {
-  RequestedAttribute,
-  RequestedPredicate,
+  AttributeFilter,
+  ProofPredicateInfo,
   PartialProof,
   ProofRequest,
   RequestedCredentials,
   ProofAttributeInfo,
 } from './models'
-import { PresentationPreview, PresentationPreviewAttribute } from './models/PresentationPreview'
+import { PresentationPreview } from './models/PresentationPreview'
 
 import { AriesFrameworkError } from '@aries-framework/core'
 import { AttachmentData } from 'packages/core/src/decorators/attachment/Attachment'
@@ -151,7 +153,7 @@ export class V1ProofService extends ProofService {
     return { proofRecord, message: proposalMessage }
   }
 
-  public createProposalAsResponse(
+  public async createProposalAsResponse(
     options: CreateProposalAsResponseOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     const { proofRecord, proofFormats, comment } = options
@@ -169,17 +171,14 @@ export class V1ProofService extends ProofService {
     } else {
       throw new AriesFrameworkError('')
     }
-    // const proposalMessage = new ProposePresentationMessage({
-    //   comment,
-    //   presentationProposal,
-    // })
+
     proposalMessage.setThread({ threadId: proofRecord.threadId })
 
     // Update record
     proofRecord.proposalMessage = proposalMessage
     this.updateState(proofRecord, ProofState.ProposalSent)
 
-    return { message: proposalMessage, proofRecord }
+    return { proofRecord, message: proposalMessage }
   }
 
   /**
@@ -334,7 +333,9 @@ export class V1ProofService extends ProofService {
 
   public async processRequest(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
     let proofRecord: ProofRecord
-    const { message: proofRequestMessage, connection } = messageContext
+    const { message: proofRequestMsg, connection } = messageContext
+
+    const proofRequestMessage = proofRequestMsg as RequestPresentationMessage
 
     this.logger.debug(`Processing presentation request with id ${proofRequestMessage.id}`)
 
@@ -453,8 +454,9 @@ export class V1ProofService extends ProofService {
   }
 
   public async processPresentation(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
-    const { message: presentationMessage, connection } = messageContext
+    const { message: presentationMsg, connection } = messageContext
 
+    const presentationMessage = presentationMsg as PresentationMessage
     this.logger.debug(`Processing presentation with id ${presentationMessage.id}`)
 
     const proofRecord = await this.getByThreadAndConnectionId(presentationMessage.threadId, connection?.id)
@@ -540,8 +542,9 @@ export class V1ProofService extends ProofService {
   }
 
   public async processProblemReport(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
-    const { message: presentationProblemReportMessage } = messageContext
+    const { message: presentationProblemReportMsg } = messageContext
 
+    const presentationProblemReportMessage = presentationProblemReportMsg as PresentationProblemReportMessage
     const connection = messageContext.assertReadyConnection()
 
     this.logger.debug(`Processing problem report with id ${presentationProblemReportMessage.id}`)
