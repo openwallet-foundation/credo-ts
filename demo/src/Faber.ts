@@ -2,8 +2,7 @@ import type { ConnectionRecord } from '@aries-framework/core'
 import type { CredDef, Schema } from 'indy-sdk-react-native'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-import { CredentialPreview, ProofAttributeInfo, AttributeFilter } from '@aries-framework/core'
-import { uuid } from '@aries-framework/core/build/utils/uuid'
+import { CredentialPreview, ProofAttributeInfo, AttributeFilter, utils } from '@aries-framework/core'
 import { ui } from 'inquirer'
 
 import { BaseAgent } from './BaseAgent'
@@ -59,7 +58,7 @@ export class Faber extends BaseAgent {
 
   private async registerSchema() {
     const schemaTemplate = {
-      name: 'Faber College' + uuid(),
+      name: 'Faber College' + utils.uuid(),
       version: '1.0.0',
       attributes: ['name', 'degree', 'date'],
     }
