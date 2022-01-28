@@ -183,7 +183,6 @@ export class MessageSender {
 
     // Retrieve DIDComm services
     const { services, queueService } = await this.retrieveServicesByConnection(connection, options?.transportPriority)
-    this.logger.debug(`========== services ${connection.id} (${connection.theirLabel})`, { services })
 
     // Loop trough all available services and try to send the message
     for await (const service of services) {

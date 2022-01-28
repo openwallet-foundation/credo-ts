@@ -747,7 +747,6 @@ export class ConnectionService {
     observable
       .pipe(
         map((e) => e.payload.connectionRecord),
-        tap((c) => console.log('=== tap c', c)),
         first(isConnected), // Do not wait for longer than specified timeout
         timeout(timeoutMs)
       )

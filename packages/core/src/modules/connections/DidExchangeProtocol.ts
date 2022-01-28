@@ -4,26 +4,35 @@ import type { Logger } from '../../logger'
 import type { ConnectionRecord } from './repository'
 import type { Routing } from './services/ConnectionService'
 
+import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { InjectionSymbols } from '../../constants'
+import { KeyType } from '../../crypto'
 import { JwsService } from '../../crypto/JwsService'
 import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../error'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import { Wallet } from '../../wallet/Wallet'
-import { DidKey, KeyType } from '../dids/domain/DidKey'
+import { DidCommService, DidDocumentBuilder, Key } from '../dids'
+import { getEd25519VerificationMethod } from '../dids/domain/key-type/ed25519'
+import { getX25519VerificationMethod } from '../dids/domain/key-type/x25519'
+import { DidKey } from '../dids/methods/key/DidKey'
+import { DidPeer, PeerDidNumAlgo } from '../dids/methods/peer/DidPeer'
+import { DidRecord, DidRepository } from '../dids/repository'
 import { ProblemReportError } from '../problem-reports'
 
 import { DidExchangeCompleteMessage } from './messages/DidExchangeCompleteMessage'
 import { DidExchangeRequestMessage } from './messages/DidExchangeRequestMessage'
 import { DidExchangeResponseMessage } from './messages/DidExchangeResponseMessage'
 import { DidExchangeState, DidExchangeRole } from './models'
-import { authenticationTypes, DidCommService, DidDoc, Ed25119Sig2018, EmbeddedAuthentication } from './models/did'
+import { authenticationTypes, DidDoc, Ed25119Sig2018, EmbeddedAuthentication } from './models/did'
 import { ConnectionService } from './services'
+import { DidDocumentRole } from '../dids/domain/DidDocumentRole'
+import { uuid } from '../../utils/uuid'
 
 type Flavor<T, FlavorType> = T & { _type?: FlavorType }
 
@@ -140,17 +149,20 @@ export class DidExchangeProtocol {
   private jwsService: JwsService
   private eventEmitter: EventEmitter
   private logger: Logger
+  private didRepository: DidRepository
 
   public constructor(
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
     config: AgentConfig,
     connectionService: ConnectionService,
+    didRepository: DidRepository,
     jwsService: JwsService,
     eventEmitter: EventEmitter
   ) {
     this.wallet = wallet
     this.config = config
     this.connectionService = connectionService
+    this.didRepository = didRepository
     this.jwsService = jwsService
     this.eventEmitter = eventEmitter
     this.logger = config.logger
@@ -172,6 +184,7 @@ export class DidExchangeProtocol {
     const label = params.label ?? this.config.label
     const { did, verkey } = routing
     const didDoc = this.createDidDoc(did, verkey, routing)
+    await this.createPeerDidDoc(did, verkey, routing)
     const parentThreadId = connectionRecord.invitation?.id
 
     const message = new DidExchangeRequestMessage({ label, parentThreadId, did, goal, goalCode })
@@ -403,6 +416,74 @@ export class DidExchangeProtocol {
     return didDoc
   }
 
+  private async createPeerDidDoc(did: Did, verkey: string, routing: Routing) {
+    console.log('===== createPeerDidDoc =====', { did, verkey, routing })
+    const publicKeyBase58 = verkey
+
+    const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
+    const x25519Key = Key.fromPublicKey(convertPublicKeyToX25519(ed25519Key.publicKey), KeyType.X25519)
+
+    const ed25519VerificationMethod = getEd25519VerificationMethod({
+      id: ed25519Key.publicKeyBase58.substring(0, 8),
+      key: ed25519Key,
+      // For peer dids generated with method 1, the controller MUST be #id as we don't know the did yet
+      controller: '#id',
+    })
+    const x25519VerificationMethod = getX25519VerificationMethod({
+      id: x25519Key.publicKeyBase58.substring(0, 8),
+      key: x25519Key,
+      // For peer dids generated with method 1, the controller MUST be #id as we don't know the did yet
+      controller: '#id',
+    })
+
+    let mediatorRoutingKey
+    if (routing.routingKeys.length > 0) {
+      const [mediatorPublicKeyBase58] = routing.routingKeys
+      const mediatorEd25519Key = Key.fromPublicKeyBase58(mediatorPublicKeyBase58, KeyType.Ed25519)
+      const mediatorEd25519DidKey = new DidKey(mediatorEd25519Key)
+      const mediatorX25519Key = Key.fromPublicKey(
+        convertPublicKeyToX25519(mediatorEd25519Key.publicKey),
+        KeyType.X25519
+      )
+      // Use ed25519 did:key, which also includes the x25519 key used for didcomm
+      mediatorRoutingKey = `${mediatorEd25519DidKey.did}#${mediatorX25519Key.fingerprint}`
+    }
+
+    // TODO Iterate over all endpoints
+    const [serviceEndpoint] = routing.endpoints
+    const service = new DidCommService({
+      id: '#service-0',
+      // Fixme: can we use relative reference (#id) instead of absolute reference here (did:example:123#id)?
+      // We don't know the did yet
+      recipientKeys: [ed25519VerificationMethod.id],
+      serviceEndpoint,
+      accept: ['didcomm/aip2;env=rfc19'],
+      // It is important that we encode the routing keys as key references.
+      // So instead of using plain verkeys, we should encode them as did:key dids
+      routingKeys: mediatorRoutingKey ? [mediatorRoutingKey] : [],
+    })
+
+    const didDocument = new DidDocumentBuilder('')
+      .addAuthentication(ed25519VerificationMethod)
+      .addKeyAgreement(x25519VerificationMethod)
+      .addService(service)
+      .build()
+
+    this.logger.debug('===== didDocument =====', didDocument)
+
+    const peerDid = DidPeer.fromDidDocument(didDocument, PeerDidNumAlgo.GenesisDoc)
+
+    const didDocumentRecord = new DidRecord({
+      id: uuid(),
+      role: DidDocumentRole.Created,
+      // It is important to take the did document from the PeerDid class
+      // as it will have the id property
+      didDocument: peerDid.didDocument,
+    })
+
+    await this.didRepository.save(didDocumentRecord)
+  }
+
   private async createSignedAttachment(didDoc: DidDoc, verkey: string) {
     const didDocAttach = new Attachment({
       mimeType: 'application/json',
@@ -411,7 +492,7 @@ export class DidExchangeProtocol {
       }),
     })
 
-    const kid = DidKey.fromPublicKeyBase58(verkey, KeyType.ED25519)
+    const kid = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
     const payload = JsonEncoder.toBuffer(didDoc)
 
     const jws = await this.jwsService.createJws({

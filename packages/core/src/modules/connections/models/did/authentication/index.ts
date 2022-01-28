@@ -54,7 +54,6 @@ export function AuthenticationTransformer() {
               })
             }
 
-            console.log('===== publicKeyJson', publicKeyJson)
             if (!publicKeyJson) {
               // console.log('===== publicKeyJson', publicKeyJson)
               // console.log('===== obj', obj)

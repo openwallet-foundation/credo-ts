@@ -224,7 +224,7 @@ describe('out of band', () => {
       expect(createdConnectionRecord?.state).toEqual(DidExchangeState.InvitationReceived)
     })
 
-    test('make a connection based on OOB invitation encoded in URL', async () => {
+    test.only('make a connection based on OOB invitation encoded in URL', async () => {
       // eslint-disable-next-line prefer-const
       let { outOfBandMessage, connectionRecord: faberAliceConnection } = await faberAgent.oob.createMessage(
         makeConnectionConfig

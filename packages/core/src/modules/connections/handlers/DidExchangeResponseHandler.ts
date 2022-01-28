@@ -55,8 +55,6 @@ export class DidExchangeResponseHandler implements Handler {
     messageContext.connection = connectionRecord
     const connection = await this.didExchangeProtocol.processResponse(messageContext)
 
-    this.agentConfig.logger.debug('Handler continues with', { connection, agentConfig: this.agentConfig })
-
     // TODO: should we only send ping message in case of autoAcceptConnection or always?
     // In AATH we have a separate step to send the ping. So for now we'll only do it
     // if auto accept is enable
