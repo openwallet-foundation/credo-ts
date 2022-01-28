@@ -8,7 +8,7 @@ export enum Color {
 export enum Output {
   connectionEstablished = `\nConnection established!`,
   missingConnectionRecord = `\nNo connectionRecord ID has been set yet\n`,
-  connectionLink = `\nRun 'setup connection' in Faber and paste this invitation link:\n\n`,
+  connectionLink = `\nRun 'Receive connection invitation' in Faber and paste this invitation link:\n\n`,
   exit = 'Shutting down agent...\nExiting...',
 }
 
