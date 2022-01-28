@@ -21,7 +21,7 @@ import {
 } from '@aries-framework/core'
 import { ui } from 'inquirer'
 
-import { Color } from './OutputClass'
+import { Color, purpleText } from './OutputClass'
 
 export class Listener {
   public on: boolean
@@ -45,7 +45,7 @@ export class Listener {
       const attribute = credentialRecord.credentialAttributes
       console.log('\n\nCredential preview:')
       attribute.forEach((element) => {
-        console.log(`${Color.purlpe}${element.name} ${Color.reset}${element.value}`)
+        console.log(purpleText(`${element.name} ${Color.reset}${element.value}`))
       })
     }
   }
@@ -65,7 +65,6 @@ export class Listener {
         if (payload.credentialRecord.state === CredentialState.OfferReceived) {
           await this.newCredentialPrompt(payload.credentialRecord, aliceInquirer)
         }
-        return
       }
     )
   }
@@ -73,11 +72,8 @@ export class Listener {
   public messageListener(agent: Agent, name: string) {
     agent.events.on(BasicMessageEventTypes.BasicMessageStateChanged, async (event: BasicMessageStateChangedEvent) => {
       if (event.payload.basicMessageRecord.role === 'receiver') {
-        this.ui.updateBottomBar(
-          `${Color.purlpe}\n${name} received a message: ${event.payload.message.content}\n${Color.reset}`
-        )
+        this.ui.updateBottomBar(purpleText(`\n${name} received a message: ${event.payload.message.content}\n`))
       }
-      return
     })
   }
 
@@ -93,7 +89,6 @@ export class Listener {
       if (payload.proofRecord.state === ProofState.RequestReceived) {
         await this.newProofRequestPrompt(payload.proofRecord, aliceInquirer)
       }
-      return
     })
   }
 
@@ -102,7 +97,6 @@ export class Listener {
       if (payload.proofRecord.state === ProofState.Done) {
         faberInquirer.processAnswer()
       }
-      return
     })
   }
 

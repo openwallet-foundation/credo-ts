@@ -17,8 +17,8 @@ export const runAlice = async () => {
 }
 
 enum PromptOptions {
-  Connection = 'Setup Connection',
-  Message = 'Send Message',
+  CreateConnection = 'Create connection invitation',
+  SendMessage = 'Send message',
   Exit = 'Exit',
   Restart = 'Restart',
 }
@@ -51,10 +51,10 @@ export class AliceInquirer extends BaseInquirer {
       return
     }
     switch (choice.options) {
-      case PromptOptions.Connection:
+      case PromptOptions.CreateConnection:
         await this.connection()
         break
-      case PromptOptions.Message:
+      case PromptOptions.SendMessage:
         await this.message()
         break
       case PromptOptions.Exit:
