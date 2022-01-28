@@ -7,7 +7,7 @@ import type { ConnectionProblemReportMessage } from '../messages'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
-import { first, map, timeout, tap } from 'rxjs/operators'
+import { first, map, timeout } from 'rxjs/operators'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
@@ -35,7 +35,6 @@ import {
   ConnectionRole,
   DidDoc,
   Ed25119Sig2018,
-  authenticationTypes,
   EmbeddedAuthentication,
 } from '../models'
 import { ConnectionRecord } from '../repository/ConnectionRecord'

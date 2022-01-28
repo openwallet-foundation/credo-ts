@@ -16,8 +16,10 @@ import { Attachment, AttachmentData } from '../../decorators/attachment/Attachme
 import { AriesFrameworkError } from '../../error'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { JsonTransformer } from '../../utils/JsonTransformer'
+import { uuid } from '../../utils/uuid'
 import { Wallet } from '../../wallet/Wallet'
 import { DidCommService, DidDocumentBuilder, Key } from '../dids'
+import { DidDocumentRole } from '../dids/domain/DidDocumentRole'
 import { getEd25519VerificationMethod } from '../dids/domain/key-type/ed25519'
 import { getX25519VerificationMethod } from '../dids/domain/key-type/x25519'
 import { DidKey } from '../dids/methods/key/DidKey'
@@ -31,8 +33,6 @@ import { DidExchangeResponseMessage } from './messages/DidExchangeResponseMessag
 import { DidExchangeState, DidExchangeRole } from './models'
 import { authenticationTypes, DidDoc, Ed25119Sig2018, EmbeddedAuthentication } from './models/did'
 import { ConnectionService } from './services'
-import { DidDocumentRole } from '../dids/domain/DidDocumentRole'
-import { uuid } from '../../utils/uuid'
 
 type Flavor<T, FlavorType> = T & { _type?: FlavorType }
 
@@ -256,7 +256,6 @@ export class DidExchangeProtocol {
     if (message.didDoc) {
       // Verify signature on DidDoc attachment and assign DidDoc to connection record
       await this.verifyAttachmentSignature(message.didDoc)
-      console.log('========== signature verified ==========')
       const didDoc = JsonTransformer.fromJSON(message.didDoc.getDataAsJson(), DidDoc)
       connectionRecord.theirDidDoc = didDoc
     }
@@ -417,7 +416,6 @@ export class DidExchangeProtocol {
   }
 
   private async createPeerDidDoc(did: Did, verkey: string, routing: Routing) {
-    console.log('===== createPeerDidDoc =====', { did, verkey, routing })
     const publicKeyBase58 = verkey
 
     const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
@@ -468,8 +466,6 @@ export class DidExchangeProtocol {
       .addKeyAgreement(x25519VerificationMethod)
       .addService(service)
       .build()
-
-    this.logger.debug('===== didDocument =====', didDocument)
 
     const peerDid = DidPeer.fromDidDocument(didDocument, PeerDidNumAlgo.GenesisDoc)
 
@@ -523,13 +519,13 @@ export class DidExchangeProtocol {
 
     const didDocKeys = didDoc.publicKey.map((pk) => pk.value).concat(invitationKeys)
 
-    console.log('========== after verifyJws ==========', { isValid, signerVerkeys, didDoc_publicKey: didDoc.publicKey })
-    console.log(
-      '========== didDocKeys ==========',
-      didDocKeys,
-      signerVerkeys.length > 1,
-      !signerVerkeys.every((verkey) => didDocKeys.includes(verkey))
-    )
+    // console.log('========== after verifyJws ==========', { isValid, signerVerkeys, didDoc_publicKey: didDoc.publicKey })
+    // console.log(
+    //   '========== didDocKeys ==========',
+    //   didDocKeys,
+    //   signerVerkeys.length > 1,
+    //   !signerVerkeys.every((verkey) => didDocKeys.includes(verkey))
+    // )
     if (!isValid || signerVerkeys.length > 1 || !signerVerkeys.every((verkey) => didDocKeys.includes(verkey))) {
       throw new ProblemReportError('DidDoc signature is invalid.', { problemCode: 'request_not_accepted' })
     }
