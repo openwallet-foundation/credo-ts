@@ -9,7 +9,7 @@ import { DidPeer, PeerDidNumAlgo } from '../DidPeer'
 
 import didPeer1zQmR from './__fixtures__/didPeer1zQmR.json'
 import didPeer1zQmZ from './__fixtures__/didPeer1zQmZ.json'
-import didPeer2ez6L from './__fixtures__/didPeer2ez6L.json'
+import didPeer2Ez6L from './__fixtures__/didPeer2Ez6L.json'
 
 describe('DidPeer', () => {
   test('transforms a key correctly into a peer did method 0 did document', async () => {
@@ -28,7 +28,7 @@ describe('DidPeer', () => {
   })
 
   test('transforms a method 2 did correctly into a did document', () => {
-    expect(DidPeer.fromDid(didPeer2ez6L.id).didDocument.toJSON()).toMatchObject(didPeer2ez6L)
+    expect(DidPeer.fromDid(didPeer2Ez6L.id).didDocument.toJSON()).toMatchObject(didPeer2Ez6L)
   })
 
   test('transforms a method 0 did correctly into a did document', () => {
@@ -46,11 +46,11 @@ describe('DidPeer', () => {
 
   test('transforms a did document into a valid method 2 did', () => {
     const didPeer2 = DidPeer.fromDidDocument(
-      JsonTransformer.fromJSON(didPeer2ez6L, DidDocument),
+      JsonTransformer.fromJSON(didPeer2Ez6L, DidDocument),
       PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
     )
 
-    expect(didPeer2.did).toBe(didPeer2ez6L.id)
+    expect(didPeer2.did).toBe(didPeer2Ez6L.id)
   })
 
   test('transforms a did document into a valid method 1 did', () => {
@@ -90,7 +90,7 @@ describe('DidPeer', () => {
     const peerDidNumAlgo2 =
       'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc.Vz6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V.Vz6MkgoLTnTypo3tDRwCkZXSccTPHRLhF4ZnjhueYAFpEX6vg.SeyJ0IjoiZG0iLCJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9lbmRwb2ludCIsInIiOlsiZGlkOmV4YW1wbGU6c29tZW1lZGlhdG9yI3NvbWVrZXkiXSwiYSI6WyJkaWRjb21tL3YyIiwiZGlkY29tbS9haXAyO2Vudj1yZmM1ODciXX0'
     expect(DidPeer.fromDid(peerDidNumAlgo2).numAlgo).toBe(PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc)
-    expect(DidPeer.fromDidDocument(JsonTransformer.fromJSON(didPeer2ez6L, DidDocument)).numAlgo).toBe(
+    expect(DidPeer.fromDidDocument(JsonTransformer.fromJSON(didPeer2Ez6L, DidDocument)).numAlgo).toBe(
       PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
     )
   })
