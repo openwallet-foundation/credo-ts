@@ -1,25 +1,32 @@
 import type { Logger } from '../../../logger'
-import type { DidResolver } from '../resolvers/DidResolver'
+import type { DidResolver } from '../domain/DidResolver'
 import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../types'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { IndyLedgerService } from '../../ledger'
-import { parseDid } from '../parse'
-import { IndyDidResolver } from '../resolvers/IndyDidResolver'
-import { KeyDidResolver } from '../resolvers/KeyDidResolver'
-import { WebDidResolver } from '../resolvers/WebDidResolver'
+import { parseDid } from '../domain/parse'
+import { IndyDidResolver } from '../methods/indy/IndyDidResolver'
+import { KeyDidResolver } from '../methods/key/KeyDidResolver'
+import { PeerDidResolver } from '../methods/peer/PeerDidResolver'
+import { WebDidResolver } from '../methods/web/WebDidResolver'
+import { DidRepository } from '../repository'
 
 @scoped(Lifecycle.ContainerScoped)
 export class DidResolverService {
   private logger: Logger
   private resolvers: DidResolver[]
 
-  public constructor(agentConfig: AgentConfig, indyLedgerService: IndyLedgerService) {
+  public constructor(agentConfig: AgentConfig, indyLedgerService: IndyLedgerService, didRepository: DidRepository) {
     this.logger = agentConfig.logger
 
-    this.resolvers = [new IndyDidResolver(indyLedgerService), new WebDidResolver(), new KeyDidResolver()]
+    this.resolvers = [
+      new IndyDidResolver(indyLedgerService),
+      new WebDidResolver(),
+      new KeyDidResolver(),
+      new PeerDidResolver(didRepository),
+    ]
   }
 
   public async resolve(didUrl: string, options: DidResolutionOptions = {}): Promise<DidResolutionResult> {
@@ -31,8 +38,10 @@ export class DidResolverService {
       didDocumentMetadata: {},
     }
 
-    const parsed = parseDid(didUrl)
-    if (!parsed) {
+    let parsed: ParsedDid
+    try {
+      parsed = parseDid(didUrl)
+    } catch (error) {
       return {
         ...result,
         didResolutionMetadata: { error: 'invalidDid' },
