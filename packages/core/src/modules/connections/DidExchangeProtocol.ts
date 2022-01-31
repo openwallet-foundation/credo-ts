@@ -361,7 +361,6 @@ export class DidExchangeProtocol {
         throw new AriesFrameworkError('No did doc')
       }
       // Verify signature on DidDoc attachment and assign DidDoc to connection record
-      // verify signerVerkey === invitationKey
       await this.verifyAttachmentSignature(message.didDoc, connectionRecord.invitation?.recipientKeys)
       didDocument = JsonTransformer.fromJSON(message.didDoc.getDataAsJson(), DidDocument)
     } else {
@@ -445,16 +444,15 @@ export class DidExchangeProtocol {
     const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
     const x25519Key = Key.fromPublicKey(convertPublicKeyToX25519(ed25519Key.publicKey), KeyType.X25519)
 
+    // For peer dids generated with method 1, the controller MUST be #id as we don't know the did yet
     const ed25519VerificationMethod = getEd25519VerificationMethod({
-      id: ed25519Key.publicKeyBase58.substring(0, 8),
+      id: uuid(),
       key: ed25519Key,
-      // For peer dids generated with method 1, the controller MUST be #id as we don't know the did yet
       controller: '#id',
     })
     const x25519VerificationMethod = getX25519VerificationMethod({
-      id: x25519Key.publicKeyBase58.substring(0, 8),
+      id: uuid(),
       key: x25519Key,
-      // For peer dids generated with method 1, the controller MUST be #id as we don't know the did yet
       controller: '#id',
     })
 
