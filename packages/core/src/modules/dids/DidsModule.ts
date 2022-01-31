@@ -22,8 +22,4 @@ export class DidsModule {
   public findByVerkey(recipientKey: string) {
     return this.didRepository.findByVerkey(recipientKey)
   }
-
-  public getAll() {
-    return this.didRepository.getAll()
-  }
 }

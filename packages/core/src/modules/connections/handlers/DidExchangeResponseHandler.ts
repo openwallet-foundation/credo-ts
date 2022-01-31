@@ -25,12 +25,6 @@ export class DidExchangeResponseHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<DidExchangeResponseHandler>) {
-    // const { connection: connectionRecord } = messageContext
-
-    // if (!connectionRecord) {
-    //   throw new AriesFrameworkError(`Connection is missing in message context`)
-    // }
-
     if (!messageContext.recipientVerkey || !messageContext.senderVerkey) {
       throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
     }
