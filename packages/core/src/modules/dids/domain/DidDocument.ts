@@ -26,7 +26,7 @@ export class DidDocument {
   @Expose({ name: '@context' })
   @IsArray()
   @Transform((o) => (typeof o.value === 'string' ? [o.value] : o.value), { toClassOnly: true })
-  public context = ['https://w3id.org/ns/did/v1']
+  public context = ['https://w3id.org/did/v1']
 
   @IsString()
   public id!: string
@@ -90,6 +90,19 @@ export class DidDocument {
     }
   }
 
+  public dereferenceKey(keyId: string) {
+    // TODO: once we use JSON-LD we should use that to resolve references in did documents.
+    // for now we check whether the key id ends with the keyId.
+    // so if looking for #123 and key.id is did:key:123#123, it is valid. But #123 as key.id is also valid
+    const verificationMethod = this.verificationMethod.find((key) => key.id.endsWith(keyId))
+
+    if (!verificationMethod) {
+      throw new Error(`Unable to locate verification with id '${keyId}'`)
+    }
+
+    return verificationMethod
+  }
+
   /**
    * Returns all of the service endpoints matching the given type.
    *
@@ -122,6 +135,14 @@ export class DidDocument {
 
     // Sort services based on indicated priority
     return services.sort((a, b) => b.priority - a.priority)
+  }
+
+  public get recipientKeys(): string[] {
+    // Get a `recipientKeys` entries from the did document
+    return this.didCommServices.reduce<string[]>(
+      (recipientKeys, service) => recipientKeys.concat(service.recipientKeys),
+      []
+    )
   }
 
   public toJSON() {

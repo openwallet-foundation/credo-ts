@@ -4,7 +4,10 @@ import type { DIDResolutionOptions, ParsedDID, DIDDocumentMetadata, DIDResolutio
 export type ParsedDid = ParsedDID
 export type DidResolutionOptions = DIDResolutionOptions
 export type DidDocumentMetadata = DIDDocumentMetadata
-export type DidResolutionMetadata = DIDResolutionMetadata
+
+export interface DidResolutionMetadata extends DIDResolutionMetadata {
+  message?: string
+}
 
 export interface DidResolutionResult {
   didResolutionMetadata: DidResolutionMetadata

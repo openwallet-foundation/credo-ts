@@ -35,7 +35,6 @@ import {
   CredentialEventTypes,
   CredentialPreview,
   CredentialState,
-  DidCommService,
   DidDoc,
   PredicateType,
   ProofEventTypes,
@@ -44,12 +43,7 @@ import {
 } from '../src'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
-import {
-  PresentationPreview,
-  PresentationPreviewAttribute,
-  PresentationPreviewPredicate,
-} from '../src/modules/proofs/protocol/v1/models/PresentationPreview'
-import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
+import { DidCommService } from '../src/modules/dids'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
