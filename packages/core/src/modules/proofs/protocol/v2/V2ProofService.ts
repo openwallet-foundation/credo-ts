@@ -1,8 +1,12 @@
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { ProofStateChangedEvent } from '../../ProofEvents'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
-import type { CreateRequestAsResponseOptions, CreateRequestOptions } from '../../interface'
-import type { CreateProposalAsResponseOptions, CreateProposalOptions } from '../../models/ProofServiceOptions'
+import type {
+  CreateProposalAsResponseOptions,
+  CreateProposalOptions,
+  CreateRequestAsResponseOptions,
+  CreateRequestOptions,
+} from '../../models/ProofServiceOptions'
 import type { RetrievedCredentials } from '../v1/models'
 import type { AgentMessage } from '@aries-framework/core'
 
@@ -18,6 +22,7 @@ import { ProofState } from '../../models/ProofState'
 import { PresentationRecordType, ProofRecord, ProofRepository } from '../../repository'
 
 import { V2ProposalPresentationMessage } from './messages/V2ProposalPresentationMessage'
+import { V2RequestPresentationMessage } from './messages/V2RequestPresentationMessage'
 
 @scoped(Lifecycle.ContainerScoped)
 export class V2ProofService extends ProofService {
@@ -48,7 +53,12 @@ export class V2ProofService extends ProofService {
     const formats = []
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
-      formats.push(service.createProposal(options.proofFormats))
+      formats.push(
+        service.createProposal({
+          messageType: 'hlindy/proof-req@v2.0',
+          formats: options.proofFormats,
+        })
+      )
     }
 
     const proposalMessage = new V2ProposalPresentationMessage({
@@ -91,7 +101,12 @@ export class V2ProofService extends ProofService {
     const formats = []
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
-      formats.push(service.createProposal(options.proofFormats))
+      formats.push(
+        service.createProposal({
+          messageType: 'hlindy/proof-req@v2.0',
+          formats: options.proofFormats,
+        })
+      )
     }
 
     const proposalMessage = new V2ProposalPresentationMessage({
@@ -117,17 +132,88 @@ export class V2ProofService extends ProofService {
   public async createRequest(
     options: CreateRequestOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+    // create attachment formats
     const formats = []
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
-      formats.push(service.createRequest(options.proofFormats))
+      formats.push(
+        service.createRequest({
+          messageType: 'hlindy/proof-req@v2.0',
+          formats: options.proofFormats,
+        })
+      )
+    }
+
+    // create request message
+    const requestMessage = new V2RequestPresentationMessage({
+      attachmentInfo: formats,
+      comment: options.comment,
+      willConfirm: options.willConfirm,
+      goalCode: options.goalCode,
+    })
+
+    // create & store proof record
+    const proofRecord = new ProofRecord({
+      connectionId: options.connectionRecord.id,
+      threadId: requestMessage.threadId,
+      state: ProofState.ProposalSent,
+      protocolVersion: ProofProtocolVersion.V2_0,
+    })
+
+    await this.proofRepository.save(proofRecord)
+
+    // create DIDComm message
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      agentMessage: requestMessage,
+      role: DidCommMessageRole.Sender,
+      associatedRecordId: proofRecord.id,
+    })
+
+    this.eventEmitter.emit<ProofStateChangedEvent>({
+      type: ProofEventTypes.ProofStateChanged,
+      payload: { proofRecord, previousState: null },
+    })
+
+    return {
+      proofRecord: proofRecord,
+      message: requestMessage,
     }
   }
 
-  public createRequestAsResponse(
+  public async createRequestAsResponse(
     options: CreateRequestAsResponseOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
-    throw new Error('Method not implemented.')
+    options.proofRecord.assertState(ProofState.ProposalReceived)
+
+    // create attachment formats
+    const formats = []
+    for (const key of Object.keys(options.proofFormats)) {
+      const service = this.formatServiceMap[key]
+      formats.push(
+        service.createRequest({
+          messageType: 'hlindy/proof-req@v2.0',
+          formats: options.proofFormats,
+        })
+      )
+    }
+
+    // create request message
+    const requestMessage = new V2RequestPresentationMessage({
+      attachmentInfo: formats,
+      comment: options.comment,
+      willConfirm: options.willConfirm,
+      goalCode: options.goalCode,
+    })
+
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      agentMessage: requestMessage,
+      role: DidCommMessageRole.Sender,
+      associatedRecordId: options.proofRecord.id,
+    })
+
+    this.updateState(options.proofRecord, ProofState.RequestSent)
+
+    return { message: requestMessage, proofRecord: options.proofRecord }
   }
   public processRequest(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
     throw new Error('Method not implemented.')
