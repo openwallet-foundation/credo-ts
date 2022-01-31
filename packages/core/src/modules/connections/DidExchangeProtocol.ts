@@ -1,4 +1,3 @@
-import type { AgentMessage } from '../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import type { Logger } from '../../logger'
 import type { ConnectionRecord } from './repository'
@@ -8,7 +7,6 @@ import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
-import { EventEmitter } from '../../agent/EventEmitter'
 import { InjectionSymbols } from '../../constants'
 import { KeyType } from '../../crypto'
 import { JwsService } from '../../crypto/JwsService'
@@ -27,15 +25,11 @@ import { DidPeer, PeerDidNumAlgo } from '../dids/methods/peer/DidPeer'
 import { DidRecord, DidRepository } from '../dids/repository'
 import { ProblemReportError } from '../problem-reports'
 
+import { DidExchangeStateMachine } from './DidExchangeStateMachine'
 import { DidExchangeCompleteMessage } from './messages/DidExchangeCompleteMessage'
 import { DidExchangeRequestMessage } from './messages/DidExchangeRequestMessage'
 import { DidExchangeResponseMessage } from './messages/DidExchangeResponseMessage'
-import { DidExchangeState, DidExchangeRole } from './models'
 import { ConnectionService } from './services'
-
-type Flavor<T, FlavorType> = T & { _type?: FlavorType }
-
-type Did = Flavor<string, 'Did'>
 
 interface DidExchangeRequestParams {
   label?: string
@@ -45,96 +39,11 @@ interface DidExchangeRequestParams {
   autoAcceptConnection?: boolean
 }
 
-interface DidExchangeProtocolMessageWithRecord<MessageType extends AgentMessage> {
-  message: MessageType
-  connectionRecord: ConnectionRecord
-}
-
-class DidExchangeStateMachine {
-  private static createMessageStateRules = [
-    {
-      message: DidExchangeRequestMessage.type,
-      state: DidExchangeState.InvitationReceived,
-      role: DidExchangeRole.Requester,
-      nextState: DidExchangeState.RequestSent,
-    },
-    {
-      message: DidExchangeResponseMessage.type,
-      state: DidExchangeState.RequestReceived,
-      role: DidExchangeRole.Responder,
-      nextState: DidExchangeState.ResponseSent,
-    },
-    {
-      message: DidExchangeCompleteMessage.type,
-      state: DidExchangeState.ResponseReceived,
-      role: DidExchangeRole.Requester,
-      nextState: DidExchangeState.Completed,
-    },
-  ]
-
-  private static processMessageStateRules = [
-    {
-      message: DidExchangeRequestMessage.type,
-      state: DidExchangeState.InvitationSent,
-      role: DidExchangeRole.Responder,
-      nextState: DidExchangeState.RequestReceived,
-    },
-    {
-      message: DidExchangeResponseMessage.type,
-      state: DidExchangeState.RequestSent,
-      role: DidExchangeRole.Requester,
-      nextState: DidExchangeState.ResponseReceived,
-    },
-    {
-      message: DidExchangeCompleteMessage.type,
-      state: DidExchangeState.ResponseSent,
-      role: DidExchangeRole.Responder,
-      nextState: DidExchangeState.Completed,
-    },
-  ]
-
-  public static assertCreateMessageState(messageType: string, record: ConnectionRecord) {
-    const rule = this.createMessageStateRules.find((r) => r.message === messageType)
-    if (!rule) {
-      throw new AriesFrameworkError(`Could not find create message rule for ${messageType}`)
-    }
-    if (rule.state !== record.state || rule.role !== record.role) {
-      throw new AriesFrameworkError(
-        `Record with role ${record.role} is in invalid state ${record.state} to create ${messageType}. Expected state for role ${rule.role} is ${rule.state}.`
-      )
-    }
-  }
-
-  public static assertProcessMessageState(messageType: string, record: ConnectionRecord) {
-    const rule = this.processMessageStateRules.find((r) => r.message === messageType)
-    if (!rule) {
-      throw new AriesFrameworkError(`Could not find create message rule for ${messageType}`)
-    }
-    if (rule.state !== record.state || rule.role !== record.role) {
-      throw new AriesFrameworkError(
-        `Record with role ${record.role} is in invalid state ${record.state} to process ${messageType}. Expected state for role ${rule.role} is ${rule.state}.`
-      )
-    }
-  }
-
-  public static nextState(messageType: string, record: ConnectionRecord) {
-    const rule = this.createMessageStateRules
-      .concat(this.processMessageStateRules)
-      .find((r) => r.message === messageType && r.role === record.role)
-    if (!rule) {
-      throw new AriesFrameworkError(`Could not find create message rule for ${messageType}`)
-    }
-    return rule.nextState
-  }
-}
-
 @scoped(Lifecycle.ContainerScoped)
 export class DidExchangeProtocol {
-  private wallet: Wallet
   private config: AgentConfig
   private connectionService: ConnectionService
   private jwsService: JwsService
-  private eventEmitter: EventEmitter
   private logger: Logger
   private didRepository: DidRepository
 
@@ -143,15 +52,12 @@ export class DidExchangeProtocol {
     config: AgentConfig,
     connectionService: ConnectionService,
     didRepository: DidRepository,
-    jwsService: JwsService,
-    eventEmitter: EventEmitter
+    jwsService: JwsService
   ) {
-    this.wallet = wallet
     this.config = config
     this.connectionService = connectionService
     this.didRepository = didRepository
     this.jwsService = jwsService
-    this.eventEmitter = eventEmitter
     this.logger = config.logger
   }
 
