@@ -997,25 +997,6 @@ export class V1ProofService extends ProofService {
     return JsonTransformer.fromJSON(credentialsJson, Credential) as unknown as Credential[]
   }
 
-  // /**
-  //  * Update the record to a new state and emit an state changed event. Also updates the record
-  //  * in storage.
-  //  *
-  //  * @param proofRecord The proof record to update the state for
-  //  * @param newState The state to update to
-  //  *
-  //  */
-  // private async updateState(proofRecord: ProofRecord, newState: ProofState) {
-  //   const previousState = proofRecord.state
-  //   proofRecord.state = newState
-  //   await this.proofRepository.update(proofRecord)
-
-  //   this.eventEmitter.emit<ProofStateChangedEvent>({
-  //     type: ProofEventTypes.ProofStateChanged,
-  //     payload: { proofRecord, previousState: previousState },
-  //   })
-  // }
-
   /**
    * Build schemas object needed to create and verify proof objects.
    *
