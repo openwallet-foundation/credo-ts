@@ -1,5 +1,6 @@
-import type { AutoAcceptProof, ProofRecord } from '..'
+import type { AutoAcceptProof, ProofRecord, ProofRequest } from '..'
 import type { ConnectionRecord } from '../../connections'
+import type { PresentationPreview } from '../protocol/v1/models/PresentationPreview'
 import type { ProofProtocolVersion } from './ProofProtocolVersion'
 import type { CreatePresentationFormats, ProposeProofFormats, RequestProofFormats } from './SharedOptions'
 
@@ -46,4 +47,9 @@ export interface PresentationOptions {
 
 export interface CreateAckOptions {
   proofRecord: ProofRecord
+}
+
+export interface RequestedCredentialForProofRequestOptions {
+  proofRequest: ProofRequest
+  presentationProposal?: PresentationPreview
 }

@@ -7,6 +7,7 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   PresentationOptions,
+  RequestedCredentialForProofRequestOptions,
   RequestProofOptions,
 } from './models/ServiceOptions'
 import type { RetrievedCredentials } from './protocol/v1/models'
@@ -24,7 +25,7 @@ const logger = new ConsoleLogger(LogLevel.debug)
  */
 
 export abstract class ProofService {
-  private proofRepository: ProofRepository
+  protected proofRepository: ProofRepository
 
   public constructor(proofRepository: ProofRepository) {
     this.proofRepository = proofRepository
@@ -99,9 +100,9 @@ export abstract class ProofService {
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
   abstract processProblemReport(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
 
-  abstract getRequestedCredentialsForProofRequest(options: {
-    proofRecord: ProofRecord
-  }): Promise<{ indy?: RetrievedCredentials; w3c?: never }>
+  abstract getRequestedCredentialsForProofRequest(
+    options: RequestedCredentialForProofRequestOptions
+  ): Promise<{ indy?: RetrievedCredentials; w3c?: never }>
 
   public getFormatService(presentationRecordType: PresentationRecordType): ProofFormatService {
     logger.debug(presentationRecordType.toString())

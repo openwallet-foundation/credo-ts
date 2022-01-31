@@ -384,9 +384,11 @@ export class ProofsModule {
    * @param proofRecordId the id of the proof request to be declined
    * @returns proof record that was declined
    */
-  public async declineRequest(proofRecordId: string) {
-    const proofRecord = await this.proofService.getById(proofRecordId)
-    await this.proofService.declineRequest(proofRecord)
+  public async declineRequest(proofRecordId: string, version: ProofProtocolVersion) {
+    const service = this.getService(version)
+
+    const proofRecord = await service.getById(proofRecordId)
+    await service.declineRequest(proofRecord)
     return proofRecord
   }
 
@@ -398,9 +400,11 @@ export class ProofsModule {
    * @returns Proof record associated with the sent presentation acknowledgement message
    *
    */
-  public async acceptPresentation(proofRecordId: string): Promise<ProofRecord> {
-    const record = await this.proofService.getById(proofRecordId)
-    const { message, proofRecord } = await this.proofService.createAck(record)
+  public async acceptPresentation(proofRecordId: string, version: ProofProtocolVersion): Promise<ProofRecord> {
+    const service = this.getService(version)
+
+    const record = await service.getById(proofRecordId)
+    const { message, proofRecord } = await service.createAck(record)
 
     // Use connection if present
     if (proofRecord.connectionId) {
@@ -443,23 +447,26 @@ export class ProofsModule {
 
    * @returns RetrievedCredentials object
   //  */
-  // public async getRequestedCredentialsForProofRequest(
-  //   proofRecordId: string,
-  //   config?: GetRequestedCredentialsConfig
-  // ): Promise<RetrievedCredentials> {
-  //   const proofRecord = await this.proofService.getById(proofRecordId)
+  public async getRequestedCredentialsForProofRequest(
+    proofRecordId: string,
+    version: ProofProtocolVersion,
+    config?: GetRequestedCredentialsConfig
+  ): Promise<RetrievedCredentials> {
+    const service = this.getService(version)
 
-  //   const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
-  //   const presentationPreview = config?.filterByPresentationPreview ? proofRecord.proposalMessage : undefined
+    const proofRecord = await service.getById(proofRecordId)
 
-  //   if (!indyProofRequest) {
-  //     throw new AriesFrameworkError(
-  //       'Unable to get requested credentials for proof request. No proof request message was found or the proof request message does not contain an indy proof request.'
-  //     )
-  //   }
+    const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
+    const presentationPreview = config?.filterByPresentationPreview ? proofRecord.proposalMessage : undefined
 
-  //   return this.proofService.getRequestedCredentialsForProofRequest(indyProofRequest, presentationPreview)
-  // }
+    if (!indyProofRequest) {
+      throw new AriesFrameworkError(
+        'Unable to get requested credentials for proof request. No proof request message was found or the proof request message does not contain an indy proof request.'
+      )
+    }
+
+    return service.getRequestedCredentialsForProofRequest(indyProofRequest, presentationPreview)
+  }
 
   /**
    * Takes a RetrievedCredentials object and auto selects credentials in a RequestedCredentials object
@@ -471,8 +478,12 @@ export class ProofsModule {
    *
    * @returns RequestedCredentials
    */
-  public autoSelectCredentialsForProofRequest(retrievedCredentials: RetrievedCredentials): RequestedCredentials {
-    return this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)
+  public autoSelectCredentialsForProofRequest(
+    retrievedCredentials: RetrievedCredentials,
+    version: ProofProtocolVersion
+  ): RequestedCredentials {
+    const service = this.getService(version)
+    return service.autoSelectCredentialsForProofRequest(retrievedCredentials)
   }
 
   /**

@@ -1,5 +1,6 @@
 import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
+import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { Logger } from '../../../../logger'
 import type { ProofStateChangedEvent } from '../../ProofEvents'
 import type { CreatePresentationOptions, CreateRequestOptions } from '../../formats/ProofFormatService'
@@ -9,22 +10,24 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   PresentationOptions,
+  RequestedCredentialForProofRequestOptions,
   RequestProofOptions,
 } from '../../models/ServiceOptions'
 import type { PresentationProblemReportMessage } from './messages'
-import type { RetrievedCredentials } from './models'
 import type { PresentationPreviewAttribute } from './models/PresentationPreview'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
-import type { Attachment } from 'packages/core/src/decorators/attachment/Attachment'
 
 import { validateOrReject } from 'class-validator'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
-import { ProofRepository } from '../..'
 import { AgentConfig } from '../../../../agent/AgentConfig'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../../constants'
+import { AttachmentData } from '../../../../decorators/attachment/Attachment'
+import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
+import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import { uuid } from '../../../../utils/uuid'
 import { Wallet } from '../../../../wallet'
 import { AckStatus } from '../../../common/messages/AckMessage'
 import { ConnectionService } from '../../../connections'
@@ -38,6 +41,7 @@ import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatServic
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
 import { ProofState } from '../../models/ProofState'
 import { ProofRecord } from '../../repository/ProofRecord'
+import { ProofRepository } from '../../repository/ProofRepository'
 
 import {
   INDY_PROOF_ATTACHMENT_ID,
@@ -48,19 +52,17 @@ import {
   RequestPresentationMessage,
 } from './messages'
 import {
+  RetrievedCredentials,
   AttributeFilter,
   ProofPredicateInfo,
   PartialProof,
   ProofRequest,
   RequestedCredentials,
   ProofAttributeInfo,
+  RequestedAttribute,
+  RequestedPredicate,
 } from './models'
 import { PresentationPreview } from './models/PresentationPreview'
-
-import { AriesFrameworkError } from '@aries-framework/core'
-import { AttachmentData } from 'packages/core/src/decorators/attachment/Attachment'
-import { JsonEncoder } from 'packages/core/src/utils/JsonEncoder'
-import { uuid } from 'packages/core/src/utils/uuid'
 
 // const logger = new ConsoleLogger(LogLevel.debug)
 
@@ -71,7 +73,7 @@ import { uuid } from 'packages/core/src/utils/uuid'
  */
 @scoped(Lifecycle.ContainerScoped)
 export class V1ProofService extends ProofService {
-  private proofRepository: ProofRepository
+  protected proofRepository: ProofRepository
   private credentialRepository: CredentialRepository
   private ledgerService: IndyLedgerService
   private wallet: Wallet
@@ -703,10 +705,62 @@ export class V1ProofService extends ProofService {
     return attachments.length ? attachments : undefined
   }
 
-  public async getRequestedCredentialsForProofRequest(options: {
-    proofRecord: ProofRecord
-  }): Promise<{ indy?: RetrievedCredentials | undefined; w3c?: undefined }> {
-    throw new Error('Method not implemented.')
+  public async getRequestedCredentialsForProofRequest(
+    options: RequestedCredentialForProofRequestOptions
+  ): Promise<{ indy?: RetrievedCredentials | undefined; w3c?: undefined }> {
+    const retrievedCredentials = new RetrievedCredentials({})
+    const { proofRequest, presentationProposal } = options
+
+    for (const [referent, requestedAttribute] of proofRequest.requestedAttributes.entries()) {
+      let credentialMatch: Credential[] = []
+      const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
+
+      // If we have exactly one credential, or no proposal to pick preferences
+      // on the credentials to use, we will use the first one
+      if (credentials.length === 1 || !presentationProposal) {
+        credentialMatch = credentials
+      }
+      // If we have a proposal we will use that to determine the credentials to use
+      else {
+        const names = requestedAttribute.names ?? [requestedAttribute.name]
+
+        // Find credentials that matches all parameters from the proposal
+        credentialMatch = credentials.filter((credential) => {
+          const { attributes, credentialDefinitionId } = credential.credentialInfo
+
+          // Check if credentials matches all parameters from proposal
+          return names.every((name) =>
+            presentationProposal.attributes.find(
+              (a) =>
+                a.name === name &&
+                a.credentialDefinitionId === credentialDefinitionId &&
+                (!a.value || a.value === attributes[name])
+            )
+          )
+        })
+      }
+
+      retrievedCredentials.requestedAttributes[referent] = credentialMatch.map((credential: Credential) => {
+        return new RequestedAttribute({
+          credentialId: credential.credentialInfo.referent,
+          revealed: true,
+          credentialInfo: credential.credentialInfo,
+        })
+      })
+    }
+
+    for (const [referent] of proofRequest.requestedPredicates.entries()) {
+      const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
+
+      retrievedCredentials.requestedPredicates[referent] = credentials.map((credential) => {
+        return new RequestedPredicate({
+          credentialId: credential.credentialInfo.referent,
+          credentialInfo: credential.credentialInfo,
+        })
+      })
+    }
+
+    return { indy: retrievedCredentials }
   }
 
   /**
