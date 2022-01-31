@@ -8,6 +8,7 @@ import type { ConnectionService, Routing } from '../services/ConnectionService'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { DidExchangeRequestMessage } from '../messages'
+import { HandshakeProtocol } from '../models'
 
 export class DidExchangeRequestHandler implements Handler {
   private logger: Logger
@@ -41,8 +42,10 @@ export class DidExchangeRequestHandler implements Handler {
     }
 
     const { protocol } = connectionRecord
-    if (protocol !== 'did-exchange') {
-      throw new AriesFrameworkError(`Connection record protol is ${protocol} but handler supports only did-exchange.`)
+    if (protocol !== HandshakeProtocol.DidExchange) {
+      throw new AriesFrameworkError(
+        `Connection record protol is ${protocol} but handler supports only ${HandshakeProtocol.DidExchange}.`
+      )
     }
 
     let routing: Routing | undefined

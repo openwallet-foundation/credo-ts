@@ -36,6 +36,7 @@ import {
   DidDoc,
   Ed25119Sig2018,
   EmbeddedAuthentication,
+  HandshakeProtocol,
 } from '../models'
 import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
@@ -81,7 +82,7 @@ export class ConnectionService {
     let role
     let state
 
-    if (config?.protocol === 'did-exchange') {
+    if (config?.protocol === HandshakeProtocol.DidExchange) {
       role = DidExchangeRole.Responder
       state = DidExchangeState.InvitationSent
     } else {
@@ -144,7 +145,7 @@ export class ConnectionService {
     let role
     let state
 
-    if (config?.protocol === 'did-exchange') {
+    if (config?.protocol === HandshakeProtocol.DidExchange) {
       role = DidExchangeRole.Requester
       state = DidExchangeState.InvitationReceived
     } else {

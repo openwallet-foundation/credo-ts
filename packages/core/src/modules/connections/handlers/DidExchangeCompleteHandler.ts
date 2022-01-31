@@ -3,6 +3,7 @@ import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
 import { AriesFrameworkError } from '../../../error'
 import { DidExchangeCompleteMessage } from '../messages'
+import { HandshakeProtocol } from '../models'
 
 export class DidExchangeCompleteHandler implements Handler {
   private didExchangeProtocol: DidExchangeProtocol
@@ -20,8 +21,10 @@ export class DidExchangeCompleteHandler implements Handler {
     }
 
     const { protocol } = connectionRecord
-    if (protocol !== 'did-exchange') {
-      throw new AriesFrameworkError(`Connection record protol is ${protocol} but handler supports only did-exchange.`)
+    if (protocol !== HandshakeProtocol.DidExchange) {
+      throw new AriesFrameworkError(
+        `Connection record protol is ${protocol} but handler supports only ${HandshakeProtocol.DidExchange}.`
+      )
     }
 
     await this.didExchangeProtocol.processComplete(messageContext)

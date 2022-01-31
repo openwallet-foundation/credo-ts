@@ -26,7 +26,7 @@ export interface CreateOutOfBandMessageConfig {
   label: string
   goalCode?: string
   goal?: string
-  handshake: boolean
+  handshakeProtocol?: string
   multiUseInvitation?: boolean
 }
 
@@ -67,19 +67,28 @@ export class OutOfBandModule {
   /**
    * Creates an out-of-band message and adds given agent messages to `requests~attach` attribute.
    *
-   * If `handshake` is true, creates new connection record and use its keys for out-of-band message that works as a connection invitation.
-   * It uses discover features to find out what handshake protocols the agent supports.
+   * If you want to create a new connection you need to set `handshakeProtocol` to one of the supported
+   * protocols from `HandhsakeProtocol`, for example:
    *
-   * @param config Optinal attributes contained in out-of-band message
+   * ```ts
+   *  const config = {
+   *    handshakeProtocol: HandshakeProtocol.DidExchange
+   *  }
+   *  const message = outOfBandModule.createMessage(config)
+   * ```
+   *
+   * Then, the out-of-band will use its keys and will work as a connection invitation.
+   *
+   * @param config Configuration and other attributes of out-of-band message
    * @param messages Messages that will be sent inside out-of-band message
-   * @returns Out-of-band message and connection record if it has been created.
+   * @returns Out-of-band message and optionally connection record created based on `handshakeProtocol`
    */
   public async createMessage(
     config: CreateOutOfBandMessageConfig,
     messages?: AgentMessage[]
   ): Promise<{ outOfBandMessage: OutOfBandMessage; connectionRecord?: ConnectionRecord }> {
-    const { handshake, label, multiUseInvitation } = config
-    if (!handshake && !messages) {
+    const { handshakeProtocol, label, multiUseInvitation } = config
+    if (!handshakeProtocol && !messages) {
       throw new AriesFrameworkError(
         'One or both of handshake_protocols and requests~attach MUST be included in the message.'
       )
@@ -92,11 +101,13 @@ export class OutOfBandModule {
     // When we create oob record we need to count with it inside connection request handler.
     let connectionRecord: ConnectionRecord | undefined
 
-    if (handshake) {
+    if (handshakeProtocol) {
+      this.assertHandshakeProtocols([handshakeProtocol])
+
       const connectionWithInvitation = await this.connectionsModule.createConnection({
         myLabel: label,
         multiUseInvitation,
-        protocol: 'did-exchange',
+        protocol: handshakeProtocol,
       })
 
       connectionRecord = connectionWithInvitation.connectionRecord
@@ -110,15 +121,12 @@ export class OutOfBandModule {
         })
       })
 
-      // Discover what handshake protocols are supported
-      const handshakeProtocols = this.getSupportedHandshakeProtocols()
-
       const options = {
         ...config,
         id: connectionRecord.invitation?.id,
         accept: ['didcomm/aip1'],
         services,
-        handshakeProtocols,
+        handshakeProtocols: [handshakeProtocol],
       }
       outOfBandMessage = new OutOfBandMessage(options)
     } else {
@@ -203,12 +211,9 @@ export class OutOfBandModule {
 
     if (handshakeProtocols) {
       this.logger.debug('Out of band message contains handshake protocols.')
-      if (!this.areHandshakeProtocolsSupported(handshakeProtocols)) {
-        const supportedProtocols = this.getSupportedHandshakeProtocols()
-        throw new AriesFrameworkError(
-          `Out-of-band message contains unsupported handshake protocols ${handshakeProtocols}. Supported protocols are ${supportedProtocols}`
-        )
-      }
+      this.assertHandshakeProtocols(handshakeProtocols)
+
+      const [handshakeProtocol] = handshakeProtocols
 
       let connectionRecord: ConnectionRecord
       if (existingConnection) {
@@ -222,11 +227,11 @@ export class OutOfBandModule {
           }
         } else {
           this.logger.debug('Reuse is disabled.')
-          connectionRecord = await this.createConnection(outOfBandMessage, { autoAcceptConnection })
+          connectionRecord = await this.createConnection(outOfBandMessage, { handshakeProtocol, autoAcceptConnection })
         }
       } else {
         this.logger.debug('Connection does not exists.')
-        connectionRecord = await this.createConnection(outOfBandMessage, { autoAcceptConnection })
+        connectionRecord = await this.createConnection(outOfBandMessage, { handshakeProtocol, autoAcceptConnection })
       }
 
       if (messages) {
@@ -260,6 +265,15 @@ export class OutOfBandModule {
       } else {
         await this.emitWithServices(services, messages)
       }
+    }
+  }
+
+  private assertHandshakeProtocols(handshakeProtocols: string[]) {
+    if (!this.areHandshakeProtocolsSupported(handshakeProtocols)) {
+      const supportedProtocols = this.getSupportedHandshakeProtocols()
+      throw new AriesFrameworkError(
+        `Handshake protocols [${handshakeProtocols}] are not supported. Supported protocols are [${supportedProtocols}]`
+      )
     }
   }
 
@@ -303,10 +317,13 @@ export class OutOfBandModule {
     }
   }
 
-  private async createConnection(outOfBandMessage: OutOfBandMessage, config: { autoAcceptConnection: boolean }) {
+  private async createConnection(
+    outOfBandMessage: OutOfBandMessage,
+    config: { handshakeProtocol: string; autoAcceptConnection: boolean }
+  ) {
     this.logger.debug('Creating a new connection.', { outOfBandMessage, config })
     const { services, label } = outOfBandMessage
-    const { autoAcceptConnection } = config
+    const { handshakeProtocol, autoAcceptConnection } = config
 
     if (services.length > 1) {
       throw new AriesFrameworkError(`Agent currently does not support more than one item in 'service' attribute.`)
@@ -329,7 +346,7 @@ export class OutOfBandModule {
     const invitation = new ConnectionInvitationMessage({ id: outOfBandMessage.id, label, ...options })
     const connectionRecord = await this.connectionsModule.receiveInvitation(invitation, {
       autoAcceptConnection,
-      protocol: 'did-exchange',
+      protocol: handshakeProtocol,
     })
     this.logger.debug('Connection created.', connectionRecord)
     return connectionRecord

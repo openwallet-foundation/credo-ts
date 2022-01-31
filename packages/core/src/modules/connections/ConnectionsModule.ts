@@ -20,6 +20,7 @@ import {
   DidExchangeCompleteHandler,
 } from './handlers'
 import { ConnectionInvitationMessage } from './messages'
+import { HandshakeProtocol } from './models'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
 
@@ -155,7 +156,7 @@ export class ConnectionsModule {
     const connectionRecord = await this.connectionService.getById(connectionId)
 
     let outboundMessage
-    if (connectionRecord.protocol === 'did-exchange') {
+    if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       const routing = await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId })
       const message = await this.didExchangeProtocol.createRequest(connectionRecord, {
         label: config?.label,
@@ -183,7 +184,7 @@ export class ConnectionsModule {
     const connectionRecord = await this.connectionService.getById(connectionId)
 
     let outboundMessage
-    if (connectionRecord.protocol === 'did-exchange') {
+    if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       const message = await this.didExchangeProtocol.createResponse(connectionRecord)
       outboundMessage = createOutboundMessage(connectionRecord, message)
     } else {
@@ -206,7 +207,7 @@ export class ConnectionsModule {
     const connectionRecord = await this.connectionService.getById(connectionId)
 
     let outboundMessage
-    if (connectionRecord.protocol === 'did-exchange') {
+    if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       const message = await this.didExchangeProtocol.createComplete(connectionRecord)
       outboundMessage = createOutboundMessage(connectionRecord, message)
     } else {

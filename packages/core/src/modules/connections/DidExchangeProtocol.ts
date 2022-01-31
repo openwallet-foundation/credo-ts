@@ -50,18 +50,6 @@ interface DidExchangeProtocolMessageWithRecord<MessageType extends AgentMessage>
   connectionRecord: ConnectionRecord
 }
 
-// create
-// validate connection record role, state and protocol (connection vs. did-exchange)
-// create message
-// update state
-
-// process
-// validate connection record role, state and protocol (connection vs. did-exchange)
-// process message
-// update connection record (emit update event)
-
-// get and find methods should be part of service for now and in the future
-
 class DidExchangeStateMachine {
   private static createMessageStateRules = [
     {
@@ -248,7 +236,7 @@ export class DidExchangeProtocol {
         autoAcceptConnection: connectionRecord.autoAcceptConnection,
         invitation: connectionRecord.invitation,
         tags: connectionRecord.getTags(),
-        protocol: 'did-exchange',
+        protocol: connectionRecord.protocol,
       })
     }
 
