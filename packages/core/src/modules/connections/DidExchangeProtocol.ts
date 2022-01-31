@@ -18,7 +18,7 @@ import { JsonEncoder } from '../../utils/JsonEncoder'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import { uuid } from '../../utils/uuid'
 import { Wallet } from '../../wallet/Wallet'
-import { DidCommService, DidDocumentBuilder, Key } from '../dids'
+import { DidCommService, DidDocument, DidDocumentBuilder, Key } from '../dids'
 import { DidDocumentRole } from '../dids/domain/DidDocumentRole'
 import { getEd25519VerificationMethod } from '../dids/domain/key-type/ed25519'
 import { getX25519VerificationMethod } from '../dids/domain/key-type/x25519'
@@ -31,7 +31,6 @@ import { DidExchangeCompleteMessage } from './messages/DidExchangeCompleteMessag
 import { DidExchangeRequestMessage } from './messages/DidExchangeRequestMessage'
 import { DidExchangeResponseMessage } from './messages/DidExchangeResponseMessage'
 import { DidExchangeState, DidExchangeRole } from './models'
-import { authenticationTypes, DidDoc, Ed25119Sig2018, EmbeddedAuthentication } from './models/did'
 import { ConnectionService } from './services'
 
 type Flavor<T, FlavorType> = T & { _type?: FlavorType }
@@ -182,19 +181,19 @@ export class DidExchangeProtocol {
 
     const { goal, goalCode, routing, autoAcceptConnection } = params
     const label = params.label ?? this.config.label
-    const { did, verkey } = routing
-    const didDoc = this.createDidDoc(did, verkey, routing)
-    await this.createPeerDidDoc(did, verkey, routing)
+    const { verkey } = routing
+    const peerDid = await this.createPeerDidDoc(routing)
     const parentThreadId = connectionRecord.invitation?.id
 
-    const message = new DidExchangeRequestMessage({ label, parentThreadId, did, goal, goalCode })
+    const message = new DidExchangeRequestMessage({ label, parentThreadId, did: peerDid.did, goal, goalCode })
 
     // Create sign attachment containing didDoc
-    const didDocAttach = await this.createSignedAttachment(didDoc, verkey)
-    message.didDoc = didDocAttach
+    if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
+      const didDocAttach = await this.createSignedAttachment(peerDid.didDocument, verkey)
+      message.didDoc = didDocAttach
+    }
 
-    connectionRecord.did = did
-    connectionRecord.didDoc = didDoc
+    connectionRecord.did = peerDid.did
     connectionRecord.verkey = verkey
     connectionRecord.threadId = message.id
 
@@ -253,12 +252,33 @@ export class DidExchangeProtocol {
       })
     }
 
-    if (message.didDoc) {
-      // Verify signature on DidDoc attachment and assign DidDoc to connection record
+    const peerDid = DidPeer.fromDid(message.did)
+    let didDocument
+
+    if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
+      if (!message.didDoc) {
+        throw new AriesFrameworkError('No did doc')
+      }
       await this.verifyAttachmentSignature(message.didDoc)
-      const didDoc = JsonTransformer.fromJSON(message.didDoc.getDataAsJson(), DidDoc)
-      connectionRecord.theirDidDoc = didDoc
+      didDocument = JsonTransformer.fromJSON(message.didDoc.getDataAsJson(), DidDocument)
+    } else {
+      didDocument = peerDid.didDocument
     }
+
+    const didRecord = new DidRecord({
+      id: message.did,
+      role: DidDocumentRole.Received,
+      // It is important to take the did document from the PeerDid class
+      // as it will have the id property
+      didDocument,
+      tags: {
+        // We need to save the recipientKeys, so we can find the associated did
+        // of a key when we receive a message from another connection.
+        recipientKeys: didDocument.recipientKeys,
+      },
+    })
+
+    await this.didRepository.save(didRecord)
 
     connectionRecord.theirDid = message.did
     connectionRecord.theirLabel = message.label
@@ -269,7 +289,10 @@ export class DidExchangeProtocol {
     return connectionRecord
   }
 
-  public async createResponse(connectionRecord: ConnectionRecord): Promise<DidExchangeResponseMessage> {
+  public async createResponse(
+    connectionRecord: ConnectionRecord,
+    routing?: Routing
+  ): Promise<DidExchangeResponseMessage> {
     this.logger.debug(`Create message ${DidExchangeResponseMessage.type} start`, connectionRecord)
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeResponseMessage.type, connectionRecord)
 
@@ -278,14 +301,13 @@ export class DidExchangeProtocol {
 
     // if reuse did from invitation then do ...
     // otherwise create new did and didDoc
-    const { did, didDoc, threadId } = connectionRecord
+    const { did, threadId } = connectionRecord
 
     if (!threadId) {
       throw new AriesFrameworkError('Missing threadId on connection record.')
     }
 
     // The responder will then craft an exchange response using the newly updated or provisioned information.
-    const message = new DidExchangeResponseMessage({ did, threadId })
 
     // Sign message attachment
     // Use invitationKey by default, fall back to verkey (?)
@@ -295,8 +317,25 @@ export class DidExchangeProtocol {
       throw new AriesFrameworkError('Connection invitation does not contain recipient key.')
     }
 
-    const didDocAttach = await this.createSignedAttachment(didDoc, verkey)
-    message.didDoc = didDocAttach
+    const peerDidRouting = routing || {
+      endpoints: connectionRecord.invitation?.serviceEndpoint ? [connectionRecord.invitation?.serviceEndpoint] : [],
+      verkey,
+      did,
+      routingKeys: connectionRecord.invitation?.routingKeys || [],
+    }
+
+    // TODO Currently, we just reuse invitation to create a peer did, we should also add option to create new keys
+    const peerDid = await this.createPeerDidDoc(peerDidRouting)
+    connectionRecord.did = peerDid.did
+
+    const message = new DidExchangeResponseMessage({ did: peerDid.did, threadId })
+
+    // TODO
+    // As I understood, a numAlgo 0 doesn't include service inside encoded peer did therefore we should also create a did doc attachment for it
+    if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
+      const didDocAttach = await this.createSignedAttachment(peerDid.didDocument, verkey)
+      message.didDoc = didDocAttach
+    }
 
     await this.updateState(DidExchangeResponseMessage.type, connectionRecord)
     this.logger.debug(`Create message ${DidExchangeResponseMessage.type} end`, { connectionRecord, message })
@@ -315,13 +354,32 @@ export class DidExchangeProtocol {
 
     DidExchangeStateMachine.assertProcessMessageState(DidExchangeResponseMessage.type, connectionRecord)
 
-    // verify signerVerkey === invitationKey
-    if (message.didDoc) {
+    const peerDid = DidPeer.fromDid(message.did)
+    let didDocument
+    if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
+      if (!message.didDoc) {
+        throw new AriesFrameworkError('No did doc')
+      }
       // Verify signature on DidDoc attachment and assign DidDoc to connection record
+      // verify signerVerkey === invitationKey
       await this.verifyAttachmentSignature(message.didDoc, connectionRecord.invitation?.recipientKeys)
-      const didDoc = JsonTransformer.fromJSON(message.didDoc.getDataAsJson(), DidDoc)
-      connectionRecord.theirDidDoc = didDoc
+      didDocument = JsonTransformer.fromJSON(message.didDoc.getDataAsJson(), DidDocument)
+    } else {
+      didDocument = peerDid.didDocument
     }
+
+    const didRecord = new DidRecord({
+      id: message.did,
+      role: DidDocumentRole.Received,
+      didDocument,
+      tags: {
+        // We need to save the recipientKeys, so we can find the associated did
+        // of a key when we receive a message from another connection.
+        recipientKeys: didDocument.recipientKeys,
+      },
+    })
+
+    await this.didRepository.save(didRecord)
 
     connectionRecord.theirDid = message.did
 
@@ -376,47 +434,13 @@ export class DidExchangeProtocol {
   }
 
   private async updateState(messageType: string, connectionRecord: ConnectionRecord) {
+    this.logger.debug(`Updating state`, { connectionRecord })
     const nextState = DidExchangeStateMachine.nextState(messageType, connectionRecord)
     return this.connectionService.updateState(connectionRecord, nextState)
   }
 
-  private createDidDoc(did: Did, verkey: string, routing: Routing) {
-    const publicKey = new Ed25119Sig2018({
-      id: `${did}#1`,
-      controller: did,
-      publicKeyBase58: verkey,
-    })
-
-    const { endpoints, routingKeys } = routing
-    // IndyAgentService is old service type
-    const services = endpoints.map(
-      (endpoint, index) =>
-        new DidCommService({
-          id: `${did}#IndyAgentService`,
-          serviceEndpoint: endpoint,
-          recipientKeys: [verkey],
-          routingKeys: routingKeys,
-          // Order of endpoint determines priority
-          priority: index,
-        })
-    )
-
-    // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
-    // inferred from the publicKey class instance
-    const auth = new EmbeddedAuthentication(publicKey)
-
-    const didDoc = new DidDoc({
-      id: did,
-      authentication: [auth],
-      service: services,
-      publicKey: [publicKey],
-    })
-
-    return didDoc
-  }
-
-  private async createPeerDidDoc(did: Did, verkey: string, routing: Routing) {
-    const publicKeyBase58 = verkey
+  private async createPeerDidDoc(routing: Routing) {
+    const publicKeyBase58 = routing.verkey
 
     const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
     const x25519Key = Key.fromPublicKey(convertPublicKeyToX25519(ed25519Key.publicKey), KeyType.X25519)
@@ -453,7 +477,8 @@ export class DidExchangeProtocol {
       id: '#service-0',
       // Fixme: can we use relative reference (#id) instead of absolute reference here (did:example:123#id)?
       // We don't know the did yet
-      recipientKeys: [ed25519VerificationMethod.id],
+      // TODO we should perhaps use keyAgreement instead of authentication key in here, then it must be changed also in connection record verkey
+      recipientKeys: [ed25519Key.publicKeyBase58],
       serviceEndpoint,
       accept: ['didcomm/aip2;env=rfc19'],
       // It is important that we encode the routing keys as key references.
@@ -469,18 +494,26 @@ export class DidExchangeProtocol {
 
     const peerDid = DidPeer.fromDidDocument(didDocument, PeerDidNumAlgo.GenesisDoc)
 
-    const didDocumentRecord = new DidRecord({
-      id: uuid(),
+    const didRecord = new DidRecord({
+      id: peerDid.did,
       role: DidDocumentRole.Created,
       // It is important to take the did document from the PeerDid class
       // as it will have the id property
-      didDocument: peerDid.didDocument,
+      // Should not we also resolve and store document for inline peer did?
+      didDocument: peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc ? peerDid.didDocument : undefined,
+      tags: {
+        // We need to save the recipientKeys, so we can find the associated did
+        // of a key when we receive a message from another connection.
+        recipientKeys: peerDid.didDocument.recipientKeys,
+      },
     })
 
-    await this.didRepository.save(didDocumentRecord)
+    await this.didRepository.save(didRecord)
+    this.logger.debug('Did record created.', didRecord)
+    return peerDid
   }
 
-  private async createSignedAttachment(didDoc: DidDoc, verkey: string) {
+  private async createSignedAttachment(didDoc: DidDocument, verkey: string) {
     const didDocAttach = new Attachment({
       mimeType: 'application/json',
       data: new AttachmentData({
@@ -510,22 +543,26 @@ export class DidExchangeProtocol {
       throw new ProblemReportError('DidDoc signature is missing.', { problemCode: 'request_not_accepted' })
     }
 
-    const json = didDocAttachment.getDataAsJson()
+    const json = didDocAttachment.getDataAsJson() as Record<string, unknown>
+    this.logger.trace('DidDocument JSON', json)
+
     const payload = JsonEncoder.toBuffer(json)
-    // console.log('========== before fromJSON ==========', JSON.stringify(json, null, 2))
-    const didDoc = JsonTransformer.fromJSON(json, DidDoc)
-    // console.log('========== before verifyJws ==========', didDoc)
+    const didDocument = JsonTransformer.fromJSON(json, DidDocument)
+
     const { isValid, signerVerkeys } = await this.jwsService.verifyJws({ jws, payload })
 
-    const didDocKeys = didDoc.publicKey.map((pk) => pk.value).concat(invitationKeys)
+    const didDocKeys = didDocument.authentication
+      .map((a) => {
+        if (typeof a === 'string') {
+          return a
+        }
+        // TODO return key according to type property?
+        return a.publicKeyBase58
+      })
+      .concat(invitationKeys)
 
-    // console.log('========== after verifyJws ==========', { isValid, signerVerkeys, didDoc_publicKey: didDoc.publicKey })
-    // console.log(
-    //   '========== didDocKeys ==========',
-    //   didDocKeys,
-    //   signerVerkeys.length > 1,
-    //   !signerVerkeys.every((verkey) => didDocKeys.includes(verkey))
-    // )
+    this.logger.trace('JWS verification result', { isValid, signerVerkeys, didDocKeys })
+
     if (!isValid || signerVerkeys.length > 1 || !signerVerkeys.every((verkey) => didDocKeys.includes(verkey))) {
       throw new ProblemReportError('DidDoc signature is invalid.', { problemCode: 'request_not_accepted' })
     }

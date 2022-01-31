@@ -65,7 +65,7 @@ export class DidExchangeRequestHandler implements Handler {
     connectionRecord = await this.didExchangeProtocol.processRequest(messageContext, routing)
 
     if (connectionRecord?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      const message = await this.didExchangeProtocol.createResponse(connectionRecord)
+      const message = await this.didExchangeProtocol.createResponse(connectionRecord, routing)
       return createOutboundMessage(connectionRecord, message)
     }
   }

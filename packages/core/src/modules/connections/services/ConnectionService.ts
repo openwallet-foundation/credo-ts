@@ -664,6 +664,10 @@ export class ConnectionService {
     return this.connectionRepository.getByThreadId(threadId)
   }
 
+  public async findByTheirDid(did: string): Promise<ConnectionRecord | null> {
+    return this.connectionRepository.findSingleByQuery({ theirDid: did })
+  }
+
   public async createConnection(options: {
     role: ConnectionRole | DidExchangeRole
     state: ConnectionState | DidExchangeState

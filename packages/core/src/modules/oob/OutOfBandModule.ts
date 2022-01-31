@@ -279,6 +279,7 @@ export class OutOfBandModule {
   }
 
   private async findExistingConnection(services: Array<DidCommService | string>) {
+    this.logger.debug('Searching for an existing connection for given services.', { services })
     for (const service of services) {
       if (typeof service === 'string') {
         // TODO await this.connectionsModule.findByTheirDid()
@@ -286,8 +287,17 @@ export class OutOfBandModule {
       }
 
       for (const recipientKey of service.recipientKeys) {
-        // TODO Encode the key and endpoint of the service block in a Peer DID numalgo 2 and using that DID instead of a service block
-        const existingConnection = await this.connectionsModule.findByTheirKey(recipientKey)
+        let existingConnection = await this.connectionsModule.findByTheirKey(recipientKey)
+
+        if (!existingConnection) {
+          // TODO Encode the key and endpoint of the service block in a Peer DID numalgo 2 and using that DID instead of a service block
+          const theirDidRecord = await this.dids.findByVerkey(recipientKey)
+
+          if (theirDidRecord) {
+            existingConnection = await this.connectionsModule.findByDid(theirDidRecord?.id)
+          }
+        }
+
         return existingConnection
       }
     }

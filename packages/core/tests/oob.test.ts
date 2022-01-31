@@ -224,7 +224,7 @@ describe('out of band', () => {
       expect(createdConnectionRecord?.state).toEqual(DidExchangeState.InvitationReceived)
     })
 
-    test.only('make a connection based on OOB invitation encoded in URL', async () => {
+    test('make a connection based on OOB invitation encoded in URL', async () => {
       // eslint-disable-next-line prefer-const
       let { outOfBandMessage, connectionRecord: faberAliceConnection } = await faberAgent.oob.createMessage(
         makeConnectionConfig
@@ -237,16 +237,12 @@ describe('out of band', () => {
 
       aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection?.id || '')
       expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
-      // console.log('==== aliceFaberConnection completed')
 
       faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection?.id || '')
       expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
-      // console.log('==== faberAliceConnection completed')
 
-      expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
-      // console.log('==== faberAliceConnection).toBeConnectedWith(aliceFaberConnection)')
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
-      // console.log('==== aliceFaberConnection).toBeConnectedWith(faberAliceConnection)')
+      expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
     })
 
     test('make a connection based on old connection invitation encoded in URL', async () => {
@@ -339,7 +335,9 @@ describe('out of band', () => {
     })
 
     test('do not create a new connection when connection exists', async () => {
-      const { outOfBandMessage } = await faberAgent.oob.createMessage(makeConnectionConfig)
+      const { connectionRecord: faberAliceConnection, outOfBandMessage } = await faberAgent.oob.createMessage(
+        makeConnectionConfig
+      )
       let firstAliceFaberConnection = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
         autoAcceptConnection: true,
       })
@@ -351,6 +349,13 @@ describe('out of band', () => {
         autoAcceptConnection: true,
         reuseConnection: true,
       })
+
+      await aliceAgent.connections.returnWhenIsConnected(secondAliceFaberConnection?.id || '')
+
+      // We need to wait for the faber connection to be completed because there is a clean up
+      // after each test that removes all connections. If we didn't wait here it could case flaky
+      // tests when we're trying to access removed records.
+      await faberAgent.connections.returnWhenIsConnected(faberAliceConnection?.id || '')
 
       expect(firstAliceFaberConnection.id).toEqual(secondAliceFaberConnection?.id)
     })
@@ -387,6 +392,16 @@ describe('out of band', () => {
 
       expect(firstConnection.getTag('invitationKey')).toEqual(faberAliceConnection?.verkey)
       expect(secondConnection.getTag('invitationKey')).toEqual(faberAliceConnection?.verkey)
+
+      // We need to wait for the faber connection to be completed because there is a clean up
+      // after each test that removes all connections. If we didn't wait here it could case flaky
+      // tests when we're trying to access removed records.
+      const connections = await faberAgent.connections.getAll()
+      for (const connection of connections) {
+        if (!connection.multiUseInvitation) {
+          await faberAgent.connections.returnWhenIsConnected(connection.id)
+        }
+      }
     })
 
     test('throw an error when handshake protocols are not supported', async () => {

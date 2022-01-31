@@ -309,6 +309,10 @@ export class ConnectionsModule {
     return this.connectionService.getByThreadId(threadId)
   }
 
+  public async findByDid(did: string): Promise<ConnectionRecord | null> {
+    return this.connectionService.findByTheirDid(did)
+  }
+
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(
       new ConnectionRequestHandler(this.connectionService, this.agentConfig, this.mediationRecipientService)
