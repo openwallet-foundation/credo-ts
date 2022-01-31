@@ -3,16 +3,16 @@ import type { InboundMessageContext } from '../../../../agent/models/InboundMess
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { Logger } from '../../../../logger'
 import type { ProofStateChangedEvent } from '../../ProofEvents'
-import type { CreatePresentationOptions, CreateRequestOptions } from '../../formats/ProofFormatService'
+import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
 import type {
   CreateAckOptions,
   CreateProposalAsResponseOptions,
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
+  CreateRequestOptions,
   PresentationOptions,
   RequestedCredentialForProofRequestOptions,
-  RequestProofOptions,
-} from '../../models/ServiceOptions'
+} from '../../models/ProofServiceOptions'
 import type { PresentationProblemReportMessage } from './messages'
 import type { PresentationPreviewAttribute } from './models/PresentationPreview'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
@@ -25,6 +25,8 @@ import { EventEmitter } from '../../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../../constants'
 import { AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
+import { DidCommMessageRole } from '../../../../storage'
+import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { uuid } from '../../../../utils/uuid'
@@ -73,7 +75,6 @@ import { PresentationPreview } from './models/PresentationPreview'
  */
 @scoped(Lifecycle.ContainerScoped)
 export class V1ProofService extends ProofService {
-  protected proofRepository: ProofRepository
   private credentialRepository: CredentialRepository
   private ledgerService: IndyLedgerService
   private wallet: Wallet
@@ -81,11 +82,11 @@ export class V1ProofService extends ProofService {
   private indyHolderService: IndyHolderService
   private indyVerifierService: IndyVerifierService
   private connectionService: ConnectionService
-  private eventEmitter: EventEmitter
   private indyProofFormatService: IndyProofFormatService
 
   public constructor(
     proofRepository: ProofRepository,
+    didCommMessageRepository: DidCommMessageRepository,
     ledgerService: IndyLedgerService,
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
     agentConfig: AgentConfig,
@@ -96,8 +97,7 @@ export class V1ProofService extends ProofService {
     credentialRepository: CredentialRepository,
     indyProofFormatService: IndyProofFormatService
   ) {
-    super()
-    this.proofRepository = proofRepository
+    super(proofRepository, didCommMessageRepository, eventEmitter)
     this.credentialRepository = credentialRepository
     this.ledgerService = ledgerService
     this.wallet = wallet
@@ -105,7 +105,6 @@ export class V1ProofService extends ProofService {
     this.indyHolderService = indyHolderService
     this.indyVerifierService = indyVerifierService
     this.connectionService = connectionService
-    this.eventEmitter = eventEmitter
     this.indyProofFormatService = indyProofFormatService
   }
 
@@ -142,8 +141,14 @@ export class V1ProofService extends ProofService {
       connectionId: connectionRecord.id,
       threadId: proposalMessage.threadId,
       state: ProofState.ProposalSent,
-      proposalMessage,
       autoAcceptProof: options?.autoAcceptProof,
+      protocolVersion: ProofProtocolVersion.V1_0,
+    })
+
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      agentMessage: proposalMessage,
+      associatedRecordId: proofRecord.id,
+      role: DidCommMessageRole.Sender,
     })
 
     await this.proofRepository.save(proofRecord)
@@ -176,8 +181,13 @@ export class V1ProofService extends ProofService {
 
     proposalMessage.setThread({ threadId: proofRecord.threadId })
 
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      agentMessage: proposalMessage,
+      associatedRecordId: proofRecord.id,
+      role: DidCommMessageRole.Sender,
+    })
+
     // Update record
-    proofRecord.proposalMessage = proposalMessage
     this.updateState(proofRecord, ProofState.ProposalSent)
 
     return { proofRecord, message: proposalMessage }
@@ -205,23 +215,33 @@ export class V1ProofService extends ProofService {
       // Proof record already exists
       proofRecord = await this.getByThreadAndConnectionId(proposalMessage.threadId, connection?.id)
 
+      const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+        associatedRecordId: proofRecord.id,
+        messageClass: RequestPresentationMessage,
+      })
+
       // Assert
       proofRecord.assertState(ProofState.RequestSent)
       this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-        previousReceivedMessage: proofRecord.proposalMessage,
-        previousSentMessage: proofRecord.requestMessage,
+        previousReceivedMessage: proposalMessage,
+        previousSentMessage: requestMessage ?? undefined,
+      })
+
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+        agentMessage: proposalMessage,
+        associatedRecordId: proofRecord.id,
+        role: DidCommMessageRole.Receiver,
       })
 
       // Update record
-      proofRecord.proposalMessage = proposalMessage
       await this.updateState(proofRecord, ProofState.ProposalReceived)
     } catch {
       // No proof record exists with thread id
       proofRecord = new ProofRecord({
         connectionId: connection?.id,
         threadId: proposalMessage.threadId,
-        proposalMessage,
         state: ProofState.ProposalReceived,
+        protocolVersion: ProofProtocolVersion.V1_0,
       })
 
       // Assert
@@ -244,24 +264,17 @@ export class V1ProofService extends ProofService {
   public async createRequestAsResponse(
     options: CreateRequestAsResponseOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
-    const { proofRecord, proofFormats, comment } = options
+    const { proofRecord, comment } = options
 
-    let proofRequest: ProofRequest
-    if (proofFormats.indy?.proofRequest) {
-      proofRequest = proofFormats.indy?.proofRequest
-    } else {
-      throw new AriesFrameworkError('Proof request is required.')
-    }
     // Assert
     proofRecord.assertState(ProofState.ProposalReceived)
 
     // Create message
-    const createRequestOptions: CreateRequestOptions = {
+    const { attachment } = this.indyProofFormatService.createRequest({
       attachId: INDY_PROOF_REQUEST_ATTACHMENT_ID,
       messageType: 'V1_PROOF',
-      proofRequest,
-    }
-    const { attachment } = await this.indyProofFormatService.createRequest(createRequestOptions)
+      formats: options.proofFormats,
+    })
 
     const requestPresentationMessage = new RequestPresentationMessage({
       comment,
@@ -271,44 +284,32 @@ export class V1ProofService extends ProofService {
       threadId: proofRecord.threadId,
     })
 
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      agentMessage: requestPresentationMessage,
+      associatedRecordId: proofRecord.id,
+      role: DidCommMessageRole.Sender,
+    })
+
     // Update record
-    proofRecord.requestMessage = requestPresentationMessage
     await this.updateState(proofRecord, ProofState.RequestSent)
 
     return { message: requestPresentationMessage, proofRecord }
   }
 
   public async createRequest(
-    options: RequestProofOptions
+    options: CreateRequestOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     this.logger.debug(`Creating proof request`)
-    const { connectionRecord, proofFormats } = options
-
-    let proofRequest: ProofRequest
-    if (proofFormats.indy?.proofRequest) {
-      proofRequest = new ProofRequest({
-        name: proofFormats.indy?.proofRequest.name,
-        nonce: proofFormats.indy?.proofRequest.nonce,
-        version: proofFormats.indy?.proofRequest.nonce,
-        requestedAttributes: proofFormats.indy?.proofRequest.requestedAttributes,
-        requestedPredicates: proofFormats.indy?.proofRequest.requestedPredicates,
-      })
-    } else {
-      throw new AriesFrameworkError(
-        'Unable to get requested credentials for proof request. No proof request message was found or the proof request message does not contain an indy proof request.'
-      )
-    }
 
     // Assert
-    connectionRecord?.assertReady()
+    options.connectionRecord?.assertReady()
 
     // Create message
-    const createRequestOptions: CreateRequestOptions = {
+    const { attachment } = await this.indyProofFormatService.createRequest({
       attachId: INDY_PROOF_REQUEST_ATTACHMENT_ID,
       messageType: 'V1_PROOF',
-      proofRequest,
-    }
-    const { attachment } = await this.indyProofFormatService.createRequest(createRequestOptions)
+      formats: options.proofFormats,
+    })
 
     const requestPresentationMessage = new RequestPresentationMessage({
       comment: options?.comment,
@@ -317,11 +318,17 @@ export class V1ProofService extends ProofService {
 
     // Create record
     const proofRecord = new ProofRecord({
-      connectionId: connectionRecord?.id,
+      connectionId: options.connectionRecord?.id,
       threadId: requestPresentationMessage.threadId,
-      requestMessage: requestPresentationMessage,
       state: ProofState.RequestSent,
       autoAcceptProof: options?.autoAcceptProof,
+      protocolVersion: ProofProtocolVersion.V1_0,
+    })
+
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      agentMessage: requestPresentationMessage,
+      associatedRecordId: proofRecord.id,
+      role: DidCommMessageRole.Sender,
     })
 
     await this.proofRepository.save(proofRecord)
@@ -358,23 +365,44 @@ export class V1ProofService extends ProofService {
       // Proof record already exists
       proofRecord = await this.getByThreadAndConnectionId(proofRequestMessage.threadId, connection?.id)
 
+      const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+        associatedRecordId: proofRecord.id,
+        messageClass: RequestPresentationMessage,
+      })
+
+      const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+        associatedRecordId: proofRecord.id,
+        messageClass: ProposePresentationMessage,
+      })
+
       // Assert
       proofRecord.assertState(ProofState.ProposalSent)
       this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-        previousReceivedMessage: proofRecord.requestMessage,
-        previousSentMessage: proofRecord.proposalMessage,
+        previousReceivedMessage: requestMessage ?? undefined,
+        previousSentMessage: proposalMessage ?? undefined,
+      })
+
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+        agentMessage: proofRequestMessage,
+        associatedRecordId: proofRecord.id,
+        role: DidCommMessageRole.Receiver,
       })
 
       // Update record
-      proofRecord.requestMessage = proofRequestMessage
       await this.updateState(proofRecord, ProofState.RequestReceived)
     } catch {
       // No proof record exists with thread id
       proofRecord = new ProofRecord({
         connectionId: connection?.id,
         threadId: proofRequestMessage.threadId,
-        requestMessage: proofRequestMessage,
         state: ProofState.RequestReceived,
+        protocolVersion: ProofProtocolVersion.V1_0,
+      })
+
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+        agentMessage: proofRequestMessage,
+        associatedRecordId: proofRecord.id,
+        role: DidCommMessageRole.Receiver,
       })
 
       // Assert
@@ -412,7 +440,12 @@ export class V1ProofService extends ProofService {
     // Assert
     proofRecord.assertState(ProofState.RequestReceived)
 
-    const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
+    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: proofRecord.id,
+      messageClass: RequestPresentationMessage,
+    })
+
+    const indyProofRequest = requestMessage?.indyProofRequest
     if (!indyProofRequest) {
       throw new PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation with thread id ${proofRecord.threadId}`,
@@ -429,17 +462,14 @@ export class V1ProofService extends ProofService {
     // Create proof
     const proof = await this.createProof(indyProofRequest, requestedCredentials)
 
-    // Create payload
-    const createPresentationOptions: CreatePresentationOptions = {
+    // Create indy attachment
+    const { attachment } = await this.indyProofFormatService.createPresentation({
       attachId: INDY_PROOF_ATTACHMENT_ID,
       messageType: 'V1_PROOF',
       attachData: new AttachmentData({
         base64: JsonEncoder.toBase64(proof),
       }),
-    }
-
-    // Create indy attachment
-    const { attachment } = await this.indyProofFormatService.createPresentation(createPresentationOptions)
+    })
 
     const presentationMessage = new PresentationMessage({
       comment: options?.comment,
@@ -448,8 +478,13 @@ export class V1ProofService extends ProofService {
     })
     presentationMessage.setThread({ threadId: proofRecord.threadId })
 
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      agentMessage: presentationMessage,
+      associatedRecordId: proofRecord.id,
+      role: DidCommMessageRole.Sender,
+    })
+
     // Update record
-    proofRecord.presentationMessage = presentationMessage
     await this.updateState(proofRecord, ProofState.PresentationSent)
 
     return { message: presentationMessage, proofRecord }
@@ -463,16 +498,26 @@ export class V1ProofService extends ProofService {
 
     const proofRecord = await this.getByThreadAndConnectionId(presentationMessage.threadId, connection?.id)
 
+    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: proofRecord.id,
+      messageClass: ProposePresentationMessage,
+    })
+
+    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: proofRecord.id,
+      messageClass: RequestPresentationMessage,
+    })
+
     // Assert
     proofRecord.assertState(ProofState.RequestSent)
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: proofRecord.proposalMessage,
-      previousSentMessage: proofRecord.requestMessage,
+      previousReceivedMessage: proposalMessage ?? undefined,
+      previousSentMessage: requestMessage ?? undefined,
     })
 
     // TODO: add proof class with validator
     const indyProofJson = presentationMessage.indyProof
-    const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
+    const indyProofRequest = requestMessage?.indyProofRequest
 
     if (!indyProofJson) {
       throw new PresentationProblemReportError(
@@ -490,9 +535,14 @@ export class V1ProofService extends ProofService {
 
     const isValid = await this.verifyProof(indyProofJson, indyProofRequest)
 
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      agentMessage: presentationMessage,
+      associatedRecordId: proofRecord.id,
+      role: DidCommMessageRole.Receiver,
+    })
+
     // Update record
     proofRecord.isVerified = isValid
-    proofRecord.presentationMessage = presentationMessage
     await this.updateState(proofRecord, ProofState.PresentationReceived)
 
     return proofRecord
@@ -524,11 +574,21 @@ export class V1ProofService extends ProofService {
 
     const proofRecord = await this.getByThreadAndConnectionId(presentationAckMessage.threadId, connection?.id)
 
+    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: proofRecord.id,
+      messageClass: RequestPresentationMessage,
+    })
+
+    const presentationMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: proofRecord.id,
+      messageClass: PresentationMessage,
+    })
+
     // Assert
     proofRecord.assertState(ProofState.PresentationSent)
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: proofRecord.requestMessage,
-      previousSentMessage: proofRecord.presentationMessage,
+      previousReceivedMessage: requestMessage ?? undefined,
+      previousSentMessage: presentationMessage ?? undefined,
     })
 
     // Update record
@@ -537,9 +597,7 @@ export class V1ProofService extends ProofService {
     return proofRecord
   }
 
-  public createProblemReport(
-    options: CreateProblemReportOptions
-  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+  public createProblemReport(): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     throw new Error('Method not implemented.')
   }
 
@@ -940,24 +998,24 @@ export class V1ProofService extends ProofService {
     return JsonTransformer.fromJSON(credentialsJson, Credential) as unknown as Credential[]
   }
 
-  /**
-   * Update the record to a new state and emit an state changed event. Also updates the record
-   * in storage.
-   *
-   * @param proofRecord The proof record to update the state for
-   * @param newState The state to update to
-   *
-   */
-  private async updateState(proofRecord: ProofRecord, newState: ProofState) {
-    const previousState = proofRecord.state
-    proofRecord.state = newState
-    await this.proofRepository.update(proofRecord)
+  // /**
+  //  * Update the record to a new state and emit an state changed event. Also updates the record
+  //  * in storage.
+  //  *
+  //  * @param proofRecord The proof record to update the state for
+  //  * @param newState The state to update to
+  //  *
+  //  */
+  // private async updateState(proofRecord: ProofRecord, newState: ProofState) {
+  //   const previousState = proofRecord.state
+  //   proofRecord.state = newState
+  //   await this.proofRepository.update(proofRecord)
 
-    this.eventEmitter.emit<ProofStateChangedEvent>({
-      type: ProofEventTypes.ProofStateChanged,
-      payload: { proofRecord, previousState: previousState },
-    })
-  }
+  //   this.eventEmitter.emit<ProofStateChangedEvent>({
+  //     type: ProofEventTypes.ProofStateChanged,
+  //     payload: { proofRecord, previousState: previousState },
+  //   })
+  // }
 
   /**
    * Build schemas object needed to create and verify proof objects.

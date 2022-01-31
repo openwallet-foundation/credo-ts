@@ -39,6 +39,7 @@ export interface RequestProofFormats {
     // new ProofRequest()
     proofRequest: IndyProofRequestOptions
   }
+  presentationExchange?: never
 }
 
 export interface CreateRequestOptions {

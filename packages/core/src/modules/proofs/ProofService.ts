@@ -1,20 +1,27 @@
+import type { ProofState, ProofStateChangedEvent } from '.'
 import type { AgentMessage } from '../../agent/AgentMessage'
+import type { EventEmitter } from '../../agent/EventEmitter'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
+import type { DidCommMessageRepository } from '../../storage'
 import type { ProofFormatService } from './formats/ProofFormatService'
+import type { CreateProblemReportOptions } from './formats/models/ProofFormatServiceOptions'
 import type { ProofProtocolVersion } from './models/ProofProtocolVersion'
 import type {
+  CreateAckOptions,
   CreateProposalAsResponseOptions,
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
+  CreateRequestOptions,
   PresentationOptions,
   RequestedCredentialForProofRequestOptions,
-  RequestProofOptions,
-} from './models/ServiceOptions'
+} from './models/ProofServiceOptions'
 import type { RetrievedCredentials } from './protocol/v1/models'
 import type { ProofRecord, ProofRepository } from './repository'
 import type { PresentationRecordType } from './repository/PresentationExchangeRecord'
 
 import { ConsoleLogger, LogLevel } from '../../logger'
+
+import { ProofEventTypes } from './ProofEvents'
 
 const logger = new ConsoleLogger(LogLevel.debug)
 
@@ -26,9 +33,36 @@ const logger = new ConsoleLogger(LogLevel.debug)
 
 export abstract class ProofService {
   protected proofRepository: ProofRepository
+  protected didCommMessageRepository: DidCommMessageRepository
+  protected eventEmitter: EventEmitter
 
-  public constructor(proofRepository: ProofRepository) {
+  public constructor(
+    proofRepository: ProofRepository,
+    didCommMessageRepository: DidCommMessageRepository,
+    eventEmitter: EventEmitter
+  ) {
     this.proofRepository = proofRepository
+    this.didCommMessageRepository = didCommMessageRepository
+    this.eventEmitter = eventEmitter
+  }
+
+  /**
+   * Update the record to a new state and emit an state changed event. Also updates the record
+   * in storage.
+   *
+   * @param proofRecord The proof record to update the state for
+   * @param newState The state to update to
+   *
+   */
+  protected async updateState(proofRecord: ProofRecord, newState: ProofState) {
+    const previousState = proofRecord.state
+    proofRecord.state = newState
+    await this.proofRepository.update(proofRecord)
+
+    this.eventEmitter.emit<ProofStateChangedEvent>({
+      type: ProofEventTypes.ProofStateChanged,
+      payload: { proofRecord, previousState: previousState },
+    })
   }
 
   abstract getVersion(): ProofProtocolVersion
@@ -77,7 +111,7 @@ export abstract class ProofService {
    */
   abstract processProposal(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
 
-  abstract createRequest(options: RequestProofOptions): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
+  abstract createRequest(options: CreateRequestOptions): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
 
   abstract createRequestAsResponse(
     options: CreateRequestAsResponseOptions
