@@ -3,7 +3,6 @@ import type { InboundMessageContext } from '../../../../agent/models/InboundMess
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { Logger } from '../../../../logger'
 import type { ProofStateChangedEvent } from '../../ProofEvents'
-import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
 import type {
   CreateAckOptions,
   CreateProposalAsResponseOptions,
