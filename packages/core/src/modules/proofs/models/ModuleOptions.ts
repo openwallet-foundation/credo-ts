@@ -1,6 +1,6 @@
-import type { AutoAcceptProof } from '..'
-import type { ProposeProofFormats } from '../interface'
+import type { AutoAcceptProof, ProofRequestOptions } from '..'
 import type { ProofProtocolVersion } from './ProofProtocolVersion'
+import type { AcceptProposalFormats, ProposeProofFormats } from './SharedOptions'
 
 export interface ProposeProofOptions {
   connectionId: string
@@ -18,8 +18,28 @@ export interface NegotiateRequestOptions {
 }
 
 export interface AcceptProposalOptions {
+  protocolVersion: ProofProtocolVersion
   proofRecordId: string
-  proofFormats: ProposeProofFormats
+  proofFormats: AcceptProposalFormats
   comment?: string
   autoAcceptProof?: AutoAcceptProof
 }
+
+export interface RequestProofsOptions {
+  protocolVersion: ProofProtocolVersion
+  connectionId: string
+  proofRequestOptions: CreateProofRequestOptions
+  comment?: string
+  autoAcceptProof?: AutoAcceptProof
+}
+
+export interface CreateOutOfBandRequestOptions {
+  protocolVersion: ProofProtocolVersion
+  proofRequestOptions: CreateProofRequestOptions
+  comment?: string
+  autoAcceptProof?: AutoAcceptProof
+}
+
+export type CreateProofRequestOptions = Partial<
+  Pick<ProofRequestOptions, 'name' | 'nonce' | 'requestedAttributes' | 'requestedPredicates'>
+>

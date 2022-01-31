@@ -21,7 +21,7 @@ export interface CreateProposalAsResponseOptions {
 
 // ----- Request Proof ----- //
 export interface RequestProofOptions {
-  connectionRecord: ConnectionRecord
+  connectionRecord?: ConnectionRecord
   protocolVersion: ProofProtocolVersion
   proofFormats: RequestProofFormats
   // proofRequestOptions: CreateProofRequestOptions

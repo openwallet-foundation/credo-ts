@@ -20,7 +20,7 @@ import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
-import { ProofsAPI } from '../modules/proofs/ProofsAPI'
+import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
@@ -47,7 +47,7 @@ export class Agent {
   public messageSubscription: Subscription
 
   public readonly connections: ConnectionsModule
-  public readonly proofs: ProofsAPI
+  public readonly proofs: ProofsModule
   public readonly basicMessages: BasicMessagesModule
   public readonly ledger: LedgerModule
   public readonly credentials: CredentialsModule
@@ -98,7 +98,7 @@ export class Agent {
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.container.resolve(ConnectionsModule)
     this.credentials = this.container.resolve(CredentialsModule)
-    this.proofs = this.container.resolve(ProofsAPI)
+    this.proofs = this.container.resolve(ProofsModule)
     this.mediator = this.container.resolve(MediatorModule)
     this.mediationRecipient = this.container.resolve(RecipientModule)
     this.basicMessages = this.container.resolve(BasicMessagesModule)

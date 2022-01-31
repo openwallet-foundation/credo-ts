@@ -1,9 +1,5 @@
-import type { RequestedCredentials } from '..'
-import type {
-  IndyPresentationProofFormat,
-  IndyProposeProofFormat,
-  IndyRequestProofFormat,
-} from '../formats/IndyProofFormatsServiceOptions'
+import type { ProofRequest, RequestedCredentials } from '..'
+import type { IndyProposeProofFormat, IndyRequestProofFormat } from '../formats/IndyProofFormatsServiceOptions'
 
 export interface ProposeProofFormats {
   // If you want to propose an indy proof without attributes or
@@ -24,4 +20,15 @@ export interface CreatePresentationFormats {
   // any of the other properties you should pass an empty object
   indy?: RequestedCredentials
   presentationExchange?: never // TBD
+}
+
+export interface AcceptProposalFormats {
+  // If you want to propose an indy proof without attributes or
+  // any of the other properties you should pass an empty object
+  indy?: AcceptProposal
+  presentationExchange?: never // TBD
+}
+
+interface AcceptProposal {
+  request: ProofRequest
 }
