@@ -1,4 +1,5 @@
 import type * as Indy from 'indy-sdk'
+import { isIndyError } from '../../../utils/indyError'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -31,7 +32,7 @@ export class IndyVerifierService {
         revocationStates
       )
     } catch (error) {
-      throw new IndySdkError(error)
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 }

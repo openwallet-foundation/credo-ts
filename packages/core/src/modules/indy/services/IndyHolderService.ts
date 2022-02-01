@@ -56,50 +56,19 @@ export class IndyHolderService {
         requestedCredentials
       )
 
-      const jsonReqCreds = requestedCredentials.toJSON()
-
-      console.log("JSONREQUESTEDCREDS", jsonReqCreds)
-
       const indyProof: Indy.IndyProof = await this.indy.proverCreateProof(
         this.wallet.handle,
         proofRequest,
-        jsonReqCreds,
+        requestedCredentials.toJSON(),
         this.wallet.masterSecretId,
         schemas,
         credentialDefinitions,
         revocationStates
       )
 
-      this.logger.debug('Created Indy Proof', {
+      this.logger.trace('Created Indy Proof', {
         indyProof,
       })
-
-
-      //Troubleshooting - Testing verifying our own proof within AFJ
-      // const requestRevRegId = "RmbvMQPRMnerJ5Lpv9dRny:4:RmbvMQPRMnerJ5Lpv9dRny:3:CL:7473:rev:CL_ACCUM:332aa053-d8d8-4a24-a788-3fc81a007cf8"
-      // const proofTimestamp = indyProof.identifiers[0].timestamp!
-
-      // const revocationRegistry = await this.indyLedgerService.getRevocationRegistry(requestRevRegId, proofTimestamp)
-
-      // console.log("Verify result:", 
-      //   await this.indyVerifierService.verifyProof({
-      //     proofRequest,
-      //     proof: indyProof,
-      //     schemas,
-      //     credentialDefinitions,
-      //     revocationRegistryDefinitions: {
-      //       "RmbvMQPRMnerJ5Lpv9dRny:4:RmbvMQPRMnerJ5Lpv9dRny:3:CL:7473:rev:CL_ACCUM:332aa053-d8d8-4a24-a788-3fc81a007cf8": 
-      //         await this.indyLedgerService.getRevocationRegistryDefinition(
-      //           'RmbvMQPRMnerJ5Lpv9dRny:4:RmbvMQPRMnerJ5Lpv9dRny:3:CL:7473:rev:CL_ACCUM:332aa053-d8d8-4a24-a788-3fc81a007cf8'
-      //         ),
-      //     },
-      //     revocationStates: {
-      //       "RmbvMQPRMnerJ5Lpv9dRny:4:RmbvMQPRMnerJ5Lpv9dRny:3:CL:7473:rev:CL_ACCUM:332aa053-d8d8-4a24-a788-3fc81a007cf8": {
-      //         [revocationRegistry.ledgerTimestamp]: revocationRegistry.revocReg
-      //       }
-      //     },
-      //   })
-      // )
 
       return indyProof
     } catch (error) {

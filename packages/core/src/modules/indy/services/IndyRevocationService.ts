@@ -101,7 +101,7 @@ export class IndyRevocationService {
 
           this.assertRevocationInterval(requestRevocationInterval)
 
-          const revocationRegistryDefinition = await this.ledgerService.getRevocationRegistryDefinition(
+          const { revocRegDef } = await this.ledgerService.getRevocationRegistryDefinition(
             revocationRegistryId
           )
 
@@ -111,12 +111,12 @@ export class IndyRevocationService {
             0
           )
 
-          const { tailsLocation, tailsHash } = revocationRegistryDefinition.value
+          const { tailsLocation, tailsHash } = revocRegDef.value
           const tails = await this.indyUtilitiesService.downloadTails(tailsHash, tailsLocation)
 
           const revocationState = await this.indy.createRevocationState(
             tails,
-            revocationRegistryDefinition,
+            revocRegDef,
             revocRegDelta,
             deltaTimestamp,
             credentialRevocationId

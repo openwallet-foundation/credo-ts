@@ -34,8 +34,6 @@ export class IndyLedgerService {
   private indyIssuer: IndyIssuerService
   private indyPoolService: IndyPoolService
 
-  private revocationRegistryDefinitions: { [poolId: string]: { [revRegId: string]: Indy.RevocRegDef } } = {}
-
   public constructor(
     wallet: IndyWallet,
     agentConfig: AgentConfig,
@@ -160,16 +158,19 @@ export class IndyLedgerService {
     const { pool } = await this.indyPoolService.getPoolForDid(did)
 
     try {
-      this.logger.debug(`Get schema '${schemaId}' from ledger '${pool.id}'`)
+      this.logger.debug(`Getting schema '${schemaId}' from ledger '${pool.id}'`)
 
       const request = await this.indy.buildGetSchemaRequest(null, schemaId)
 
-      this.logger.debug(`Submitting get schema request for schema '${schemaId}' to ledger '${pool.id}'`)
+      this.logger.trace(`Submitting get schema request for schema '${schemaId}' to ledger '${pool.id}'`)
       const response = await this.submitReadRequest(pool, request)
+
+      this.logger.trace(`Got un-parsed schema '${schemaId}' from ledger '${pool.id}'`, {
+        response
+      })
 
       const [, schema] = await this.indy.parseGetSchemaResponse(response)
       this.logger.debug(`Got schema '${schemaId}' from ledger '${pool.id}'`, {
-        response,
         schema,
       })
 
@@ -192,7 +193,7 @@ export class IndyLedgerService {
 
     try {
       this.logger.debug(
-        `Register credential definition on ledger '${pool.id}' with did '${did}'`,
+        `Registering credential definition on ledger '${pool.id}' with did '${did}'`,
         credentialDefinitionTemplate
       )
       const { schema, tag, signatureType, supportRevocation } = credentialDefinitionTemplate
@@ -236,19 +237,21 @@ export class IndyLedgerService {
     this.logger.debug(`Using ledger '${pool.id}' to retrieve credential definition '${credentialDefinitionId}'`)
 
     try {
-      this.logger.debug(`Get credential definition '${credentialDefinitionId}' from ledger '${pool.id}'`)
 
       const request = await this.indy.buildGetCredDefRequest(null, credentialDefinitionId)
 
-      this.logger.debug(
+      this.logger.trace(
         `Submitting get credential definition request for credential definition '${credentialDefinitionId}' to ledger '${pool.id}'`
       )
 
       const response = await this.submitReadRequest(pool, request)
+      this.logger.trace(`Got un-parsed credential definition '${credentialDefinitionId}' from ledger '${pool.id}'`, {
+        response
+      })
+
 
       const [, credentialDefinition] = await this.indy.parseGetCredDefResponse(response)
       this.logger.debug(`Got credential definition '${credentialDefinitionId}' from ledger '${pool.id}'`, {
-        response,
         credentialDefinition,
       })
 
@@ -264,7 +267,7 @@ export class IndyLedgerService {
     }
   }
 
-  public async getRevocationRegistryDefinition(revocationRegistryDefinitionId: string): Promise<Indy.RevocRegDef> {
+  public async getRevocationRegistryDefinition(revocationRegistryDefinitionId: string): Promise<ParseRevRegDefTemplate> {
     const did = didFromRevocationRegistryDefinitionId(revocationRegistryDefinitionId)
     const { pool } = await this.indyPoolService.getPoolForDid(did)
 
@@ -272,36 +275,28 @@ export class IndyLedgerService {
       `Using ledger '${pool.id}' to retrieve revocation registry definition '${revocationRegistryDefinitionId}'`
     )
     try {
-      //TODO: Add a persistant cache
-      if (!this.revocationRegistryDefinitions[pool.id]?.[revocationRegistryDefinitionId]) {
-        this.logger.trace(
-          `Revocation Registry Definition '${revocationRegistryDefinitionId}' not cached, retrieving from ledger`
-        )
+      //TODO - implement a cache
+      this.logger.trace(
+        `Revocation Registry Definition '${revocationRegistryDefinitionId}' not cached, retrieving from ledger`
+      )
 
-        const request = await this.indy.buildGetRevocRegDefRequest(null, revocationRegistryDefinitionId)
+      const request = await this.indy.buildGetRevocRegDefRequest(null, revocationRegistryDefinitionId)
 
-        this.logger.debug(
-          `Submitting get revocation registry definition request for revocation registry definition '${revocationRegistryDefinitionId}' to ledger`
-        )
-        const response = await this.submitReadRequest(pool, request)
+      this.logger.trace(
+        `Submitting get revocation registry definition request for revocation registry definition '${revocationRegistryDefinitionId}' to ledger`
+      )
+      const response = await this.submitReadRequest(pool, request)
+      this.logger.trace(`Got un-parsed revocation registry definition '${revocationRegistryDefinitionId}' from ledger '${pool.id}'`, {
+        response
+      })
 
-        const [, revocRegDef] = await this.indy.parseGetRevocRegDefResponse(response)
+      const [, revocRegDef] = await this.indy.parseGetRevocRegDefResponse(response)
 
-        //TODO: REMOVE?
-        // @ts-ignore
-        revocRegDef.txnTime = response.result.txnTime
+      this.logger.debug(`Got revocation registry definition '${revocationRegistryDefinitionId}' from ledger`, {
+        revocRegDef,
+      })
 
-        this.logger.debug(`Got revocation registry definition '${revocationRegistryDefinitionId}' from ledger`, {
-          revocRegDef,
-        })
-
-        if (!this.revocationRegistryDefinitions[pool.id]) {
-          this.revocationRegistryDefinitions[pool.id] = {}
-        }
-        this.revocationRegistryDefinitions[pool.id][revocationRegistryDefinitionId] = revocRegDef
-      }
-
-      return this.revocationRegistryDefinitions[pool.id][revocationRegistryDefinitionId]
+      return { revocRegDef, revocRegDefTxnTime: response.result.txnTime }
     } catch (error) {
       this.logger.error(
         `Error retrieving revocation registry definition '${revocationRegistryDefinitionId}' from ledger`,
@@ -326,26 +321,36 @@ export class IndyLedgerService {
     const { pool } = await this.indyPoolService.getPoolForDid(did)
 
     this.logger.debug(
-      `Using ledger '${pool.id}' to retrieve revocation registry delta with revocation registry definition id: '${revocationRegistryDefinitionId}'`
+      `Using ledger '${pool.id}' to retrieve revocation registry delta with revocation registry definition id: '${revocationRegistryDefinitionId}'`, {
+        to,
+        from
+      }
     )
 
     try {
       const request = await this.indy.buildGetRevocRegDeltaRequest(null, revocationRegistryDefinitionId, from, to)
 
-      this.logger.debug(
+      this.logger.trace(
         `Submitting get revocation registry delta request for revocation registry '${revocationRegistryDefinitionId}' to ledger`
       )
+
       const response = await this.submitReadRequest(pool, request)
+      this.logger.trace(`Got revocation registry delta unparsed-response '${revocationRegistryDefinitionId}' from ledger`, {
+        response
+      })
 
       const [, revocRegDelta, deltaTimestamp] = await this.indy.parseGetRevocRegDeltaResponse(response)
+
       this.logger.debug(`Got revocation registry delta '${revocationRegistryDefinitionId}' from ledger`, {
-        deltaTimestamp,
         revocRegDelta,
+        deltaTimestamp,
+        to,
+        from
       })
 
       return { revocRegDelta, deltaTimestamp }
     } catch (error) {
-      this.logger.error(`Error retrieving revocation registry delta '${revocationRegistryDefinitionId}' from ledger`, {
+      this.logger.error(`Error retrieving revocation registry delta '${revocationRegistryDefinitionId}' from ledger, potentially revocation interval ends before revocation registry creation?"`, {
         error,
         revocationRegistryId: revocationRegistryDefinitionId,
         pool: pool.id,
@@ -364,16 +369,22 @@ export class IndyLedgerService {
     const { pool } = await this.indyPoolService.getPoolForDid(did)
 
     this.logger.debug(
-      `Using ledger '${pool.id}' to retrieve revocation registry accumulated state with revocation registry definition id: '${revocationRegistryDefinitionId}'`
+      `Using ledger '${pool.id}' to retrieve revocation registry accumulated state with revocation registry definition id: '${revocationRegistryDefinitionId}'`, {
+        timestamp
+      }
     )
 
     try {
       const request = await this.indy.buildGetRevocRegRequest(null, revocationRegistryDefinitionId, timestamp)
 
-      this.logger.debug(
+      this.logger.trace(
         `Submitting get revocation registry request for revocation registry '${revocationRegistryDefinitionId}' to ledger`
       )
       const response = await this.submitReadRequest(pool, request)
+      this.logger.trace(`Got un-parsed revocation registry '${revocationRegistryDefinitionId}' from ledger '${pool.id}'`, {
+        response
+      })
+
 
       const [, revocReg, ledgerTimestamp] = await this.indy.parseGetRevocRegResponse(response)
       this.logger.debug(`Got revocation registry '${revocationRegistryDefinitionId}' from ledger`, {
@@ -501,6 +512,11 @@ export interface CredentialDefinitionTemplate {
   tag: string
   signatureType: 'CL'
   supportRevocation: boolean
+}
+
+export interface ParseRevRegDefTemplate {
+  revocRegDef: Indy.RevocRegDef
+  revocRegDefTxnTime: number
 }
 
 export interface ParseRevRegDeltaTemplate {

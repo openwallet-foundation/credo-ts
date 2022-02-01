@@ -68,6 +68,8 @@ export class IndyUtilitiesService {
 
         await this.fileSystem.downloadToFile(tailsLocation, filePath)
         this.logger.debug(`Saved tails file to FileSystem at path ${filePath}`)
+
+        //TODO: Validate Tails File Hash
       }
 
       this.logger.debug(`Tails file for URL ${tailsLocation} is stored in the FileSystem, opening tails reader`)
