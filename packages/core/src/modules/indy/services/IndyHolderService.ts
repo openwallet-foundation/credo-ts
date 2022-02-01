@@ -10,8 +10,6 @@ import { isIndyError } from '../../../utils/indyError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 
 import { IndyRevocationService } from './IndyRevocationService'
-import { IndyVerifierService } from './IndyVerifierService'
-import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyHolderService {
@@ -19,15 +17,11 @@ export class IndyHolderService {
   private logger: Logger
   private wallet: IndyWallet
   private indyRevocationService: IndyRevocationService
-  private indyVerifierService: IndyVerifierService
-  private indyLedgerService: IndyLedgerService
 
-  public constructor(agentConfig: AgentConfig, indyRevocationService: IndyRevocationService, indyVerifierService: IndyVerifierService, indyLedgerService: IndyLedgerService, wallet: IndyWallet) {
+  public constructor(agentConfig: AgentConfig, indyRevocationService: IndyRevocationService, wallet: IndyWallet) {
     this.indy = agentConfig.agentDependencies.indy
     this.wallet = wallet
     this.indyRevocationService = indyRevocationService
-    this.indyVerifierService = indyVerifierService
-    this.indyLedgerService = indyLedgerService
     this.logger = agentConfig.logger
   }
 

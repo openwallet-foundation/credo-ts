@@ -101,9 +101,7 @@ export class IndyRevocationService {
 
           this.assertRevocationInterval(requestRevocationInterval)
 
-          const { revocRegDef } = await this.ledgerService.getRevocationRegistryDefinition(
-            revocationRegistryId
-          )
+          const { revocRegDef } = await this.ledgerService.getRevocationRegistryDefinition(revocationRegistryId)
 
           const { revocRegDelta, deltaTimestamp } = await this.ledgerService.getRevocationRegistryDelta(
             revocationRegistryId,
@@ -165,8 +163,7 @@ export class IndyRevocationService {
       0
     )
 
-    const revoked: boolean =
-      revocRegDelta.value.revoked?.includes(parseInt(credentialRevocationId)) || false
+    const revoked: boolean = revocRegDelta.value.revoked?.includes(parseInt(credentialRevocationId)) || false
     this.logger.trace(
       `Credental with Credential Revocation Id '${credentialRevocationId}' is ${
         revoked ? '' : 'not '
@@ -184,11 +181,14 @@ export class IndyRevocationService {
   // TODO: Add Test
   // Check revocation interval in accordance with https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0441-present-proof-best-practices/README.md#semantics-of-non-revocation-interval-endpoints
   private assertRevocationInterval(requestRevocationInterval: RevocationInterval) {
-    if (!requestRevocationInterval.to){
+    if (!requestRevocationInterval.to) {
       throw new AriesFrameworkError(`Presentation requests proof of non-revocation with no 'to' value specified`)
     }
 
-    if ((requestRevocationInterval.from || requestRevocationInterval.from === 0) && (requestRevocationInterval.to !== requestRevocationInterval.from)) {
+    if (
+      (requestRevocationInterval.from || requestRevocationInterval.from === 0) &&
+      requestRevocationInterval.to !== requestRevocationInterval.from
+    ) {
       throw new AriesFrameworkError(
         `Presentation requests proof of non-revocation with an interval from: '${requestRevocationInterval.from}' that does not match the interval to: '${requestRevocationInterval.to}', as specified in Aries RFC 0441`
       )

@@ -1,10 +1,10 @@
 import type * as Indy from 'indy-sdk'
-import { isIndyError } from '../../../utils/indyError'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { IndySdkError } from '../../../error'
+import { isIndyError } from '../../../utils/indyError'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyVerifierService {
