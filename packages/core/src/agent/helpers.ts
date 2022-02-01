@@ -2,7 +2,7 @@ import type { ConnectionRecord } from '../modules/connections'
 import type { OutboundMessage, OutboundServiceMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 
-import { DidCommService } from '../modules/connections/models/did/service/DidCommService'
+import { DidCommService } from '../modules/dids/domain/service/DidCommService'
 
 export function createOutboundMessage<T extends AgentMessage = AgentMessage>(
   connection: ConnectionRecord,

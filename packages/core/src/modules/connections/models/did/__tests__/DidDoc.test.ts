@@ -1,9 +1,9 @@
 import { instanceToPlain, plainToInstance } from 'class-transformer'
 
+import { DidCommService, DidDocumentService, IndyAgentService } from '../../../../dids'
 import { DidDoc } from '../DidDoc'
 import { ReferencedAuthentication, EmbeddedAuthentication } from '../authentication'
 import { Ed25119Sig2018, EddsaSaSigSecp256k1, RsaSig2018 } from '../publicKey'
-import { Service, IndyAgentService, DidCommService } from '../service'
 
 import diddoc from './diddoc.json'
 
@@ -44,7 +44,7 @@ const didDoc = new DidDoc({
     }),
   ],
   service: [
-    new Service({
+    new DidDocumentService({
       id: '0',
       type: 'Mediator',
       serviceEndpoint: 'did:sov:Q4zqM7aXqm7gDQkUVLng9h',
@@ -87,7 +87,7 @@ describe('Did | DidDoc', () => {
     expect(didDoc.publicKey[2]).toBeInstanceOf(EddsaSaSigSecp256k1)
 
     // Check Service
-    expect(didDoc.service[0]).toBeInstanceOf(Service)
+    expect(didDoc.service[0]).toBeInstanceOf(DidDocumentService)
     expect(didDoc.service[1]).toBeInstanceOf(IndyAgentService)
     expect(didDoc.service[2]).toBeInstanceOf(DidCommService)
 

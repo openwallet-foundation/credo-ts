@@ -1,3 +1,147 @@
 # Proofs
 
-> TODO
+As mentioned in the previous documentation ([Credentials](5-credentials.md)), after receiving a credential and saving it to your wallet, you will need to show it to a verifier who will verify the authenticity of this credential and that the credential assertions are not tampered with.
+
+In VC proofs, we have two involved parties:
+
+- Holder (prover)
+- Verifier
+
+The process for proving your VC starts by a verifier to request a presentation from a prover, and for the prover to respond by presenting a proof to the verifier or the prover to send a presentation proposal to the verifier.
+
+## Method 1 - Prover (holder) responds to presentation request from the verifier
+
+> Note: This setup is assumed for a react native mobile agent
+
+> Note: This process assumes there is an established connection between the prover and the verifier
+
+## Full Example Code
+
+```ts
+const handleProofStateChange = async (event: ProofStateChangedEvent) => {
+  const proofRecord = event.payload.proofRecord
+  // previous state -> presentation-sent new state: done
+  if (event.payload.previousState === ProofState.PresentationSent && proofRecord.state === ProofState.Done) {
+    Alert.alert('Credential Proved!')
+    return
+  }
+  if (proofRecord.state === ProofState.RequestReceived) {
+    const proofRequest = proofRecord.requestMessage?.indyProofRequest
+
+    //Retrieve credentials
+    const retrievedCredentials = await agent.proofs.getRequestedCredentialsForProofRequest(proofRecord.id, {
+      filterByPresentationPreview: true,
+    })
+
+    const requestedCredentials = agent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
+    agent.proofs.acceptRequest(event.payload.proofRecord.id, requestedCredentials)
+  }
+}
+```
+
+### 1. Configure agent
+
+Please make sure you reviewed the [agent setup overview](0-agent.md).
+
+### 2. Configure proof events handler
+
+This handler will be triggered whenever there is a Proof state change.
+
+```ts
+const handleProofStateChange = async (agent: Agent, event: ProofStateChangedEvent) => {
+  console.log(
+    `>> Proof state changed: ${event.payload.proofRecord.id}, previous state -> ${event.payload.previousState} new state: ${event.payload.proofRecord.state}`
+  )
+
+  if (event.payload.proofRecord.state === ProofState.RequestReceived) {
+    const retrievedCredentials = await agent.proofs.getRequestedCredentialsForProofRequest(
+      event.payload.proofRecord.id,
+      {
+        filterByPresentationPreview: true,
+      }
+    )
+
+    const requestedCredentials = agent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
+
+    agent.proofs.acceptRequest(event.payload.proofRecord.id, requestedCredentials)
+  }
+}
+```
+
+- `filterByPresentationPreview`: Whether to filter the retrieved credentials using the presentation preview. This configuration will only have effect if a presentation proposal message is available containing a presentation preview..
+
+Make sure to add the event listener to the agent after initializing the wallet
+
+```ts
+agent.events.on<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged, handleProofStateChange)
+```
+
+## Manually accepting proof request
+
+```ts
+const handleProofStateChange = async (event: ProofStateChangedEvent) => {
+      ..
+
+      //Construct pop up message
+      var message = '>> Proof Request Recieved <<\n';
+      message += `To prove:${proofRequest?.name}\n`;
+      message += 'Attributes to prove:\n';
+
+      //Loop through requested attributes
+      Object.values(proofRequest.requestedAttributes).forEach(attr => {
+        message += `${attr.name}\n`;
+      });
+
+      message += `Accept proof request?`;
+      Alert.alert('Attention!', message, [
+        {
+          text: 'Accept',
+          onPress: () => {
+            agent.proofs.acceptRequest(event.payload.proofRecord.id,
+              requestedCredentials,
+            );
+          },
+        },
+        {
+          text: 'Reject',
+          onPress: () => {
+            //User rejected
+          },
+        },
+      ]);
+    }
+  };
+```
+
+By sending the response to the verifier, the verifier will go through the process of verifying the VC and respond with an ack message.
+
+To give some context to the user you can add the following code to the Proof event handler
+
+```ts
+const handleProofStateChange = async (agent: Agent, event: ProofStateChangedEvent) => {
+    ...
+    if (
+      event.payload.previousState === ProofState.PresentationSent &&
+      event.payload.proofRecord.state === ProofState.Done
+    ) {
+      console.log('Done proving credentials');
+      Alert.alert('Credential Proved!');
+      return;
+    }
+    ....
+  };
+```
+
+## Method 2 - Prover sends a presentation proposal to verifier
+
+> To do
+
+## Connectionless Proof Request
+
+> To do
+
+## References
+
+- [Verifiable credentials model](https://www.w3.org/TR/vc-data-model/).
+- [Present Proof Protocol 1.0](https://github.com/hyperledger/aries-rfcs/blob/main/features/0037-present-proof/README.md).
+- [Present Proof Protocol 2.0](https://github.com/hyperledger/aries-rfcs/blob/main/features/0454-present-proof-v2/README.md).
