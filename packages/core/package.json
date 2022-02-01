@@ -30,7 +30,6 @@
     "@types/node-fetch": "^2.5.10",
     "@types/ws": "^7.4.4",
     "abort-controller": "^3.0.0",
-    "axios": "^0.21.1",
     "bn.js": "^5.2.0",
     "borc": "^3.0.0",
     "buffer": "^6.0.3",
