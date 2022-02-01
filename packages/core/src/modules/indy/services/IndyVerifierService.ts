@@ -5,7 +5,6 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { IndySdkError } from '../../../error'
 import { isIndyError } from '../../../utils/indyError'
-
 import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -22,12 +21,11 @@ export class IndyVerifierService {
     proofRequest,
     proof,
     schemas,
-    credentialDefinitions
+    credentialDefinitions,
   }: VerifyProofOptions): Promise<boolean> {
     try {
-
       const { revocationRegistryDefinitions, revocationRegistryStates } = await this.getRevocationRegistries(proof)
-      
+
       return await this.indy.verifierVerifyProof(
         proofRequest,
         proof,
@@ -42,21 +40,21 @@ export class IndyVerifierService {
   }
 
   private async getRevocationRegistries(proof: Indy.IndyProof) {
-    let revocationRegistryDefinitions:Indy.RevocRegDefs = {}
-    let revocationRegistryStates:Indy.RevStates = {}
-    for(const identifier of proof.identifiers){
+    const revocationRegistryDefinitions: Indy.RevocRegDefs = {}
+    const revocationRegistryStates: Indy.RevStates = {}
+    for (const identifier of proof.identifiers) {
       const revRegId = identifier.rev_reg_id
       const timestamp = identifier.timestamp
 
       //Fetch Revocation Registry Definition if not already fetched
-      if(revRegId && !revocationRegistryDefinitions[revRegId]){
+      if (revRegId && !revocationRegistryDefinitions[revRegId]) {
         const { revocRegDef } = await this.ledgerService.getRevocationRegistryDefinition(revRegId)
         revocationRegistryDefinitions[revRegId] = revocRegDef
       }
 
       //Fetch Revocation Registry by Timestamp if not already fetched
-      if(revRegId && timestamp && !revocationRegistryStates[revRegId]?.[timestamp]){
-        if(!revocationRegistryStates[revRegId]){
+      if (revRegId && timestamp && !revocationRegistryStates[revRegId]?.[timestamp]) {
+        if (!revocationRegistryStates[revRegId]) {
           revocationRegistryStates[revRegId] = {}
         }
         const { revocReg } = await this.ledgerService.getRevocationRegistry(revRegId, timestamp)
