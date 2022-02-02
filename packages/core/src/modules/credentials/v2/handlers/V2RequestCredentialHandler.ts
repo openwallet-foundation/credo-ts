@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import type { InboundMessageContext } from '../../../../../src/agent/models/InboundMessageContext'
 import type { AgentConfig } from '../../../../agent/AgentConfig'
 import type { Handler } from '../../../../agent/Handler'
 import type { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
@@ -6,7 +7,6 @@ import type { AcceptRequestOptions } from '../../interfaces'
 import type { CredentialRecord } from '../../repository'
 import type { V2CredentialService } from '../V2CredentialService'
 import type { CredentialFormatService } from '../formats/CredentialFormatService'
-import type { InboundMessageContext } from 'packages/core/src/agent/models/InboundMessageContext'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../agent/helpers'
 import { ConsoleLogger, unitTestLogger } from '../../../../logger'

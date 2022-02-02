@@ -275,10 +275,7 @@ export class CredentialMessageBuilder {
     // use the attach id in the formats object to find the correct attachment
     const attachment = formatService.getAttachment(message)
     if (attachment) {
-      const data = attachment.data
-      if (data) {
-        return formatService.getCredentialPayload(data)
-      }
+      return formatService.getCredentialPayload(attachment)
     }
     throw Error(`Missing attachment in Request Message`)
   }

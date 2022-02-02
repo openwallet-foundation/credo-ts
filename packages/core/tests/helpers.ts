@@ -34,7 +34,6 @@ import {
   ConnectionState,
   CredentialEventTypes,
   CredentialState,
-  DidCommService,
   DidDoc,
   PredicateType,
   PresentationPreview,
@@ -47,6 +46,7 @@ import {
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
 import { V1CredentialPreview } from '../src/modules/credentials/v1/V1CredentialPreview'
+import { DidCommService } from '../src/modules/dids'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 

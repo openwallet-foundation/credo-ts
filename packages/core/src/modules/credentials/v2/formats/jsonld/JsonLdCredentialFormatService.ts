@@ -80,7 +80,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   public setMetaDataForRequest(request: V2CredProposeOfferRequestFormat, credentialRecord: CredentialRecord): void {
     throw new Error('Method not implemented.')
   }
-  public getCredentialPayload<T extends CredOffer | CredReq>(data: AttachmentData): V2CredProposeOfferRequestFormat {
+  public getCredentialPayload<T extends CredOffer | CredReq>(data: Attachment): V2CredProposeOfferRequestFormat {
     throw new Error('Method not implemented.')
   }
 

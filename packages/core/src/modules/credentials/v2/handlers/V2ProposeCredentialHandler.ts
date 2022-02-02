@@ -1,11 +1,11 @@
 import type { CredentialRecord } from '../..'
+import type { InboundMessageContext } from '../../../../../src/agent/models/InboundMessageContext'
 import type { AgentConfig } from '../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 import type { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import type { AcceptProposalOptions } from '../../interfaces'
 import type { V2CredentialService } from '../V2CredentialService'
 import type { CredentialFormatService } from '../formats/CredentialFormatService'
-import type { InboundMessageContext } from 'packages/core/src/agent/models/InboundMessageContext'
 
 import { createOutboundMessage } from '../../../../../src/agent/helpers'
 import { unitTestLogger } from '../../../../logger'

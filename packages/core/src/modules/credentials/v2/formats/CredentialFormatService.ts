@@ -110,7 +110,7 @@ export abstract class CredentialFormatService {
   // helper methods
 
   abstract getCredentialDefinition(offer: V2CredProposeOfferRequestFormat): Promise<V2CredDefinitionFormat | undefined>
-  abstract getCredentialPayload(data: AttachmentData): V2CredProposeOfferRequestFormat
+  abstract getCredentialPayload(data: Attachment): V2CredProposeOfferRequestFormat
   abstract getFormatIdentifier(messageType: string): V2CredentialFormatSpec
   abstract getFormatData(data: unknown, id: string): Attachment
   abstract getCredentialAttributes(proposal: ProposeCredentialOptions): CredentialPreviewAttribute[] | undefined

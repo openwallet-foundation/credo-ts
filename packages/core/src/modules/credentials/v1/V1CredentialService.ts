@@ -4,6 +4,8 @@ import type {
   CredentialProtocolMsgReturnType,
   V1LegacyCredentialService,
 } from '.'
+import type { HandlerInboundMessage } from '../../../../src/agent/Handler'
+import type { InboundMessageContext } from '../../../../src/agent/models/InboundMessageContext'
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { CredentialState } from '../CredentialState'
@@ -29,8 +31,6 @@ import type {
   ProposeCredentialMessage,
   RequestCredentialMessage,
 } from './messages'
-import type { HandlerInboundMessage } from 'packages/core/src/agent/Handler'
-import type { InboundMessageContext } from 'packages/core/src/agent/models/InboundMessageContext'
 
 import { AriesFrameworkError } from '../../../error'
 import { ConsoleLogger, LogLevel } from '../../../logger'

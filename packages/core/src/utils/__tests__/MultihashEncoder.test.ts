@@ -1,5 +1,6 @@
 import { BufferEncoder } from '../BufferEncoder'
 import { MultiHashEncoder } from '../MultiHashEncoder'
+import { Buffer } from '../buffer'
 
 const validData = Buffer.from('Hello World!')
 const validMultiHash = new Uint8Array([18, 12, 72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100, 33])

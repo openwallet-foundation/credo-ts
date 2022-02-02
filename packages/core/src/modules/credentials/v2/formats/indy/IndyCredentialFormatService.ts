@@ -136,12 +136,9 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       if (indyFormat) {
         const attachment = message.messageAttachment.find((attachment) => attachment.id === indyFormat?.attachId)
         if (attachment) {
-          const data = attachment.data
-          if (data) {
-            requestOptions.offer = this.getCredentialPayload<CredReq>(data)
-          } else {
-            throw Error(`Missing data payload in attachment in credential Record ${credentialRecord.id}`)
-          }
+          requestOptions.offer = this.getCredentialPayload<CredReq>(attachment)
+        } else {
+          throw Error(`Missing data payload in attachment in credential Record ${credentialRecord.id}`)
         }
       }
     } else {
@@ -185,7 +182,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @return V2CredRequestFormat object containing the Indy SDK CredReq, note meta data does not
    * seem to be needed here (or even present in the payload)
    */
-  public getCredentialPayload<T>(data: AttachmentData): V2CredProposeOfferRequestFormat {
+  public getCredentialPayload<T>(data: Attachment): V2CredProposeOfferRequestFormat {
     const credentialOfferJson: T = data.getDataAsJson<T>() as T
     return {
       indy: {
@@ -390,12 +387,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
           (attachment) => attachment.id === indyProposeFormat.attachId
         )
         if (attachment) {
-          const data = attachment.data
-          if (data) {
-            credPropose = this.getCredentialPayload<CredPropose>(data).indy?.payload.credentialPayload as CredPropose
-          } else {
-            throw Error(`Missing data payload in attachment in credential Record ${credentialRecord.id}`)
-          }
+          credPropose = this.getCredentialPayload<CredPropose>(attachment).indy?.payload
+            .credentialPayload as CredPropose
+        } else {
+          throw Error(`Missing data payload in attachment in credential Record ${credentialRecord.id}`)
         }
       }
 
@@ -461,12 +456,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
         (attachment) => attachment.id === indyOfferFormat?.attachId
       )
       if (attachment) {
-        const data = attachment.data
-        if (data) {
-          indyCredentialOffer = this.getCredentialPayload<CredOffer>(data).indy?.payload.credentialPayload as CredOffer
-        } else {
-          throw Error(`Missing data payload in attachment in credential Record ${credentialRecord.id}`)
-        }
+        indyCredentialOffer = this.getCredentialPayload<CredOffer>(attachment).indy?.payload
+          .credentialPayload as CredOffer
+      } else {
+        throw Error(`Missing data payload in attachment in credential Record ${credentialRecord.id}`)
       }
     }
     if (!indyCredentialOffer) {
@@ -485,12 +478,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
         (attachment) => attachment.id === indyRequestFormat.attachId
       )
       if (attachment) {
-        const data = attachment.data
-        if (data) {
-          indyCredentialRequest = this.getCredentialPayload<CredReq>(data).indy?.payload.credentialPayload as CredReq
-        } else {
-          throw Error(`Missing data payload in attachment in credential Record ${credentialRecord.id}`)
-        }
+        indyCredentialRequest = this.getCredentialPayload<CredReq>(attachment).indy?.payload
+          .credentialPayload as CredReq
+      } else {
+        throw Error(`Missing data payload in attachment in credential Record ${credentialRecord.id}`)
       }
     }
     if (!indyCredentialRequest) {
@@ -555,12 +546,9 @@ export class IndyCredentialFormatService extends CredentialFormatService {
         (attachment) => attachment.id === indyCredentialFormat.attachId
       )
       if (attachment) {
-        const data = attachment.data
-        if (data) {
-          indyCredential = this.getCredentialPayload<Cred>(data).indy?.payload.credentialPayload as Cred
-        } else {
-          throw Error(`Missing data payload in attachment in credential Record ${credentialRecord.id}`)
-        }
+        indyCredential = this.getCredentialPayload<Cred>(attachment).indy?.payload.credentialPayload as Cred
+      } else {
+        throw Error(`Missing data payload in attachment in credential Record ${credentialRecord.id}`)
       }
     }
 
@@ -712,10 +700,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     const offerAttachment = this.getAttachment(offerMessage)
 
     if (proposeAttachment && offerAttachment) {
-      const credPropose: CredPropose = this.getCredentialPayload<CredPropose>(proposeAttachment.data).indy?.payload
+      const credPropose: CredPropose = this.getCredentialPayload<CredPropose>(proposeAttachment).indy?.payload
         .credentialPayload as CredPropose
 
-      const credOffer: CredOffer = this.getCredentialPayload<CredOffer>(offerAttachment.data).indy?.payload
+      const credOffer: CredOffer = this.getCredentialPayload<CredOffer>(offerAttachment).indy?.payload
         .credentialPayload as CredOffer
       const proposalCredentialDefinitionId = credPropose.credentialDefinitionId
 
@@ -746,7 +734,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       const attachment = this.getAttachment(issueCredentialMessage)
 
       if (attachment) {
-        const indyCredential = this.getCredentialPayload<Cred>(attachment.data).indy?.payload.credentialPayload as Cred
+        const indyCredential = this.getCredentialPayload<Cred>(attachment).indy?.payload.credentialPayload as Cred
 
         if (!indyCredential) {
           throw Error(`Missing required base64 encoded attachment data for credential`)
@@ -786,14 +774,14 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       let indyCredentialProposal: CredPropose | undefined
 
       if (requestAttachment) {
-        indyCredentialRequest = this.getCredentialPayload<CredReq>(requestAttachment.data).indy?.payload
+        indyCredentialRequest = this.getCredentialPayload<CredReq>(requestAttachment).indy?.payload
           .credentialPayload as CredReq
         if (offerAttachment) {
-          indyCredentialOffer = this.getCredentialPayload<CredOffer>(offerAttachment.data).indy?.payload
+          indyCredentialOffer = this.getCredentialPayload<CredOffer>(offerAttachment).indy?.payload
             .credentialPayload as CredOffer
         }
         if (proposeAttachment) {
-          indyCredentialProposal = this.getCredentialPayload<CredPropose>(proposeAttachment.data).indy?.payload
+          indyCredentialProposal = this.getCredentialPayload<CredPropose>(proposeAttachment).indy?.payload
             .credentialPayload as CredPropose
         }
 

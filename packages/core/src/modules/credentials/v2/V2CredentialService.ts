@@ -251,7 +251,7 @@ export class V2CredentialService extends CredentialService {
       for (const format of formats) {
         const attachment = format.getAttachment(proposalMessage)
         if (attachment) {
-          const credProposal: V2CredProposeOfferRequestFormat | undefined = format.getCredentialPayload(attachment.data)
+          const credProposal: V2CredProposeOfferRequestFormat | undefined = format.getCredentialPayload(attachment)
           if (credProposal) {
             format.getMetaDataService().setMetaDataForProposal(credProposal, credentialRecord)
           }
@@ -391,7 +391,7 @@ export class V2CredentialService extends CredentialService {
       for (const format of formats) {
         const attachment = format.getAttachment(credentialOfferMessage)
         if (attachment) {
-          credOffer = format.getCredentialPayload(attachment.data)
+          credOffer = format.getCredentialPayload(attachment)
 
           if (!credOffer) {
             throw new CredentialProblemReportError(
@@ -427,7 +427,7 @@ export class V2CredentialService extends CredentialService {
       for (const format of formats) {
         const attachment = format.getAttachment(credentialOfferMessage)
         if (attachment) {
-          credOffer = format.getCredentialPayload(attachment.data)
+          credOffer = format.getCredentialPayload(attachment)
 
           if (!credOffer) {
             throw new CredentialProblemReportError(
@@ -708,7 +708,7 @@ export class V2CredentialService extends CredentialService {
     for (const format of formats) {
       const attachment = format.getAttachment(message)
       if (attachment) {
-        const credOffer: V2CredProposeOfferRequestFormat | undefined = format.getCredentialPayload(attachment.data)
+        const credOffer: V2CredProposeOfferRequestFormat | undefined = format.getCredentialPayload(attachment)
         if (credOffer) {
           format.getMetaDataService().setMetaDataForOffer(credOffer, credentialRecord)
         }
