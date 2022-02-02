@@ -53,7 +53,7 @@ export class BufferEncoder {
    *
    * @param str the string to decode into buffer format
    */
-  public static fromString(str: string): Uint8Array {
+  public static fromString(str: string): Buffer {
     return Buffer.from(str)
   }
 

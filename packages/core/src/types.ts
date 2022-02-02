@@ -1,7 +1,8 @@
 import type { AgentMessage } from './agent/AgentMessage'
 import type { Logger } from './logger'
-import type { ConnectionRecord, DidCommService } from './modules/connections'
+import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
+import type { DidCommService } from './modules/dids/domain/service/DidCommService'
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
@@ -77,4 +78,10 @@ export interface OutboundPackage {
   responseRequested?: boolean
   endpoint?: string
   connectionId?: string
+}
+
+export type JsonValue = string | number | boolean | null | JsonObject | JsonArray
+export type JsonArray = Array<JsonValue>
+export interface JsonObject {
+  [property: string]: JsonValue
 }

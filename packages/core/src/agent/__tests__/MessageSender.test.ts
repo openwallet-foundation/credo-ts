@@ -7,7 +7,9 @@ import { TestMessage } from '../../../tests/TestMessage'
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../tests/helpers'
 import testLogger from '../../../tests/logger'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { DidCommService } from '../../modules/connections'
+import { DidDocument } from '../../modules/dids'
+import { DidCommService } from '../../modules/dids/domain/service/DidCommService'
+import { DidResolverService } from '../../modules/dids/services/DidResolverService'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { MessageSender } from '../MessageSender'
@@ -18,10 +20,11 @@ import { DummyTransportSession } from './stubs'
 
 jest.mock('../TransportService')
 jest.mock('../EnvelopeService')
+jest.mock('../../modules/dids/services/DidResolverService')
 
 const TransportServiceMock = TransportService as jest.MockedClass<typeof TransportService>
+const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>
 const logger = testLogger
-
 class DummyOutboundTransport implements OutboundTransport {
   public start(): Promise<void> {
     throw new Error('Method not implemented.')
@@ -88,14 +91,23 @@ describe('MessageSender', () => {
   let messageRepository: MessageRepository
   let connection: ConnectionRecord
   let outboundMessage: OutboundMessage
+  let didResolverService: DidResolverService
 
   describe('sendMessage', () => {
     beforeEach(() => {
       TransportServiceMock.mockClear()
       transportServiceHasInboundEndpoint.mockReturnValue(true)
+
+      didResolverService = new DidResolverServiceMock()
       outboundTransport = new DummyOutboundTransport()
       messageRepository = new InMemoryMessageRepository(getAgentConfig('MessageSender'))
-      messageSender = new MessageSender(enveloperService, transportService, messageRepository, logger)
+      messageSender = new MessageSender(
+        enveloperService,
+        transportService,
+        messageRepository,
+        logger,
+        didResolverService
+      )
       connection = getMockConnection({ id: 'test-123', theirLabel: 'Test 123' })
 
       outboundMessage = createOutboundMessage(connection, new TestMessage())
@@ -138,6 +150,55 @@ describe('MessageSender', () => {
         responseRequested: false,
       })
       expect(sendMessageSpy).toHaveBeenCalledTimes(1)
+    })
+
+    test("resolves the did document using the did resolver if connection.theirDid starts with 'did:'", async () => {
+      messageSender.registerOutboundTransport(outboundTransport)
+
+      const did = 'did:peer:1exampledid'
+      const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
+      const resolveMock = mockFunction(didResolverService.resolve)
+
+      connection.theirDid = did
+      resolveMock.mockResolvedValue({
+        didDocument: new DidDocument({
+          id: did,
+          service: [firstDidCommService, secondDidCommService],
+        }),
+        didResolutionMetadata: {},
+        didDocumentMetadata: {},
+      })
+
+      await messageSender.sendMessage(outboundMessage)
+
+      expect(resolveMock).toHaveBeenCalledWith(did)
+      expect(sendMessageSpy).toHaveBeenCalledWith({
+        connectionId: 'test-123',
+        payload: encryptedMessage,
+        endpoint: firstDidCommService.serviceEndpoint,
+        responseRequested: false,
+      })
+      expect(sendMessageSpy).toHaveBeenCalledTimes(1)
+    })
+
+    test("throws an error if connection.theirDid starts with 'did:' but the resolver can't resolve the did document", async () => {
+      messageSender.registerOutboundTransport(outboundTransport)
+
+      const did = 'did:peer:1exampledid'
+      const resolveMock = mockFunction(didResolverService.resolve)
+
+      connection.theirDid = did
+      resolveMock.mockResolvedValue({
+        didDocument: null,
+        didResolutionMetadata: {
+          error: 'notFound',
+        },
+        didDocumentMetadata: {},
+      })
+
+      await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrowError(
+        `Unable to resolve did document for did '${did}': notFound`
+      )
     })
 
     test('call send message when session send method fails with missing keys', async () => {
@@ -212,7 +273,8 @@ describe('MessageSender', () => {
         enveloperService,
         transportService,
         new InMemoryMessageRepository(getAgentConfig('MessageSenderTest')),
-        logger
+        logger,
+        didResolverService
       )
 
       envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(encryptedMessage))
@@ -276,7 +338,13 @@ describe('MessageSender', () => {
     beforeEach(() => {
       outboundTransport = new DummyOutboundTransport()
       messageRepository = new InMemoryMessageRepository(getAgentConfig('PackMessage'))
-      messageSender = new MessageSender(enveloperService, transportService, messageRepository, logger)
+      messageSender = new MessageSender(
+        enveloperService,
+        transportService,
+        messageRepository,
+        logger,
+        didResolverService
+      )
       connection = getMockConnection({ id: 'test-123' })
 
       envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(encryptedMessage))
