@@ -39,12 +39,9 @@ jobs:
       - name: Get version number
         id: get-version
         run: |
-          COMMIT_NUMBER=$(git rev-list --count ${{ github.ref }})
-          PACKAGE_NUMBER=$((COMMIT_NUMBER-1))
+          LAST_RELEASED_VERSION=$(npm view @aries-framework/core@alpha version)
 
-          echo alpha.$PACKAGE_NUMBER
-
-          echo "::set-output name=version::$PACKAGE_NUMBER"
+          echo "::set-output name=version::$LAST_RELEASED_VERSION"
 
       - name: Setup git user
         run: |
@@ -53,8 +50,8 @@ jobs:
 
       - name: Set git tag
         run: |
-          git tag alpha.${{ steps.get-version.outputs.version }}
-          git push origin alpha.${{ steps.get-version.outputs.version }} --no-verify
+          git tag ${{ steps.get-version.outputs.version }}
+          git push origin ${{ steps.get-version.outputs.version }} --no-verify
 
   release-stable:
     runs-on: ubuntu-20.04
