@@ -2,7 +2,7 @@ import type { PresentationAckMessage, PresentationAckMessageOptions } from '../.
 
 import { Equals } from 'class-validator'
 
-import { AckMessage } from 'packages/core/src/modules/common'
+import { AckMessage } from '../../../../common/messages/AckMessage'
 
 /**
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0015-acks/README.md#explicit-acks

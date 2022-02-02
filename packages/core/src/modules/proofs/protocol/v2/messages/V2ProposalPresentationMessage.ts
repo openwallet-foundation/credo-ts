@@ -1,18 +1,15 @@
-import type { ProofAttachmentFormat } from '../../../formats/models/ProofFormatServiceOptions'
+import type { ProofAttachmentFormat } from '../../../formats/models/ProofAttachmentFormat'
 
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
+import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { uuid } from '../../../../../utils/uuid'
-import { ProofFormatSpec } from '../../../formats/models/ProofFormatServiceOptions'
-
-import { Attachment } from 'packages/core/src/decorators/attachment/Attachment'
+import { ProofFormatSpec } from '../../../formats/models/ProofFormatSpec'
 
 export interface V2ProposePresentationMessageOptions {
   id?: string
-  formats: ProofFormatSpec
-  filtersAttach: Attachment[]
   comment?: string
   goalCode?: string
   willConfirm?: boolean

@@ -9,6 +9,8 @@ export interface CreateProposalOptions {
   connectionRecord: ConnectionRecord
   protocolVersion: ProofProtocolVersion
   proofFormats: ProposeProofFormats
+  willConfirm?: boolean
+  goalCode?: string
   comment?: string
   autoAcceptProof?: AutoAcceptProof
 }
@@ -16,23 +18,29 @@ export interface CreateProposalOptions {
 export interface CreateProposalAsResponseOptions {
   proofRecord: ProofRecord
   proofFormats: ProposeProofFormats
+  willConfirm?: boolean
+  goalCode?: string
   comment?: string
   autoAcceptProof?: AutoAcceptProof
 }
 
 // ----- Request Proof ----- //
-export interface RequestProofOptions {
-  connectionRecord?: ConnectionRecord
+export interface CreateRequestOptions {
+  connectionRecord: ConnectionRecord
   protocolVersion: ProofProtocolVersion
-  proofFormats: RequestProofFormats
-  // proofRequestOptions: CreateProofRequestOptions
+  proofFormats: ProposeProofFormats
+  willConfirm?: boolean
+  goalCode?: string
   comment?: string
   autoAcceptProof?: AutoAcceptProof
 }
 
 export interface CreateRequestAsResponseOptions {
   proofRecord: ProofRecord
+  protocolVersion: ProofProtocolVersion
   proofFormats: RequestProofFormats
+  willConfirm?: boolean
+  goalCode?: string
   comment?: string
   autoAcceptProof?: AutoAcceptProof
 }
