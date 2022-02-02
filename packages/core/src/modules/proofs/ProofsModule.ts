@@ -9,7 +9,7 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   RequestProofOptions,
-} from './models/ServiceOptions'
+} from './models/ProofServiceOptions'
 import type { RequestPresentationMessage } from './protocol/v1/messages'
 import type { ProofRequestOptions, RequestedCredentials, RetrievedCredentials } from './protocol/v1/models'
 import type { ProofRecord } from './repository/ProofRecord'

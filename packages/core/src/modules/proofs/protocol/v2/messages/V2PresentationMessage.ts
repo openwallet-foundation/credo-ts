@@ -1,13 +1,13 @@
-import type { ProofAttachmentFormat } from '../../../formats/ProofFormatService'
+import type { ProofAttachmentFormat } from '../../../formats/models/ProofAttachmentFormat'
 
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { ProofFormatSpec } from '../../../formats/models/ProofFormatServiceOptions'
+import { Attachment } from '../../../../../decorators/attachment/Attachment'
+import { uuid } from '../../../../../utils/uuid'
+import { ProofFormatSpec } from '../../../formats/models/ProofFormatSpec'
 
 import { AgentMessage } from '@aries-framework/core'
-import { Attachment } from 'packages/core/src/decorators/attachment/Attachment'
-import { uuid } from 'packages/core/src/utils/uuid'
 
 export interface V2PresentationMessageOptions {
   id?: string

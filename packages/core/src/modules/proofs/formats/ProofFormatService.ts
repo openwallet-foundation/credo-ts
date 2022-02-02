@@ -1,68 +1,12 @@
-import type { ProofRecord, ProofRequest, ProposePresentationMessage } from '..'
-import type { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
-import type { CreateProposalOptions } from '../models/ServiceOptions'
-
-import { Expose, Type } from 'class-transformer'
-import { IsInstance, IsString, ValidateNested } from 'class-validator'
-
-interface ProofFormatSpecOptions {
-  attachmentId: string
-  format: string
-}
-
-export class ProofFormatSpec {
-  public constructor(options: ProofFormatSpecOptions) {
-    if (options) {
-      this.attachmentId = options.attachmentId
-      this.format = options.format
-    }
-  }
-
-  @Expose({ name: 'attach_id' })
-  public attachmentId!: string
-
-  @IsString()
-  public format!: string
-}
-
-export interface ProofAttachmentFormat {
-  format: ProofFormatSpec
-  attachment: Attachment
-}
-
-// interface CreateProposalOptions {
-//   record: ProofRecord
-// }
-
-export interface ProcessProposalOptions {
-  record: ProofRecord
-  proposal: ProofAttachmentFormat
-  options: never // TBD
-}
-
-export interface CreateRequestOptions {
-  attachId?: string
-  messageType: string
-  proofRequest: ProofRequest
-}
-
-export interface ProcessRequestOptions {
-  record: ProofRecord
-  request: ProofAttachmentFormat
-  options: never // TBD
-}
-
-export interface CreatePresentationOptions {
-  attachId?: string
-  messageType: string
-  attachData: AttachmentData
-}
-
-interface ProcessPresentationOptions {
-  record: ProofRecord
-  presentation: ProofAttachmentFormat
-  options: never // TBD
-}
+import type { ProofAttachmentFormat } from './models/ProofAttachmentFormat'
+import type {
+  CreatePresentationOptions,
+  CreateProposalOptions,
+  CreateRequestOptions,
+  ProcessPresentationOptions,
+  ProcessProposalOptions,
+  ProcessRequestOptions,
+} from './models/ProofFormatServiceOptions'
 
 /**
  * This abstract class is the base class for any proof format

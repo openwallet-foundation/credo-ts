@@ -11,8 +11,8 @@ export interface PresentationRecordTags {
 }
 
 export enum PresentationRecordType {
-  Indy = 'Indy',
-  W3c = 'W3c',
+  Indy = 'indy',
+  JsonLD = 'JSON-LD',
 }
 export enum W3CFormatType {
   Jsonld = 'Jsonld',
