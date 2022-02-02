@@ -1,4 +1,5 @@
 import type {
+  AcceptPresentationOptions,
   AcceptProposalOptions,
   CreateOutOfBandRequestOptions,
   ProposeProofOptions,
@@ -8,6 +9,8 @@ import type { AutoAcceptProof } from './models/ProofAutoAcceptType'
 import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
+  PresentationOptions,
+  RequestedCredentialForProofRequestOptions,
   RequestProofOptions,
 } from './models/ServiceOptions'
 import type { RequestPresentationMessage } from './protocol/v1/messages'
@@ -326,15 +329,19 @@ export class ProofsModule {
    * @returns Proof record associated with the sent presentation message
    *
    */
-  public async acceptRequest(
-    proofRecordId: string,
-    requestedCredentials: RequestedCredentials,
-    config?: {
-      comment?: string
+  public async acceptRequest(options: AcceptPresentationOptions): Promise<ProofRecord> {
+    const { proofRecordId, proofFormats, comment } = options
+
+    const version: ProofProtocolVersion = options.protocolVersion
+    const service = this.getService(version)
+
+    const record = await service.getById(proofRecordId)
+    const presentationOptions: PresentationOptions = {
+      proofFormats,
+      proofRecord: record,
+      comment,
     }
-  ): Promise<ProofRecord> {
-    const record = await this.proofService.getById(proofRecordId)
-    const { message, proofRecord } = await this.proofService.createPresentation(record, requestedCredentials, config)
+    const { message, proofRecord } = await service.createPresentation(presentationOptions)
 
     // Use connection if present
     if (proofRecord.connectionId) {
@@ -360,7 +367,7 @@ export class ProofsModule {
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
       proofRecord.presentationMessage = message
-      await this.proofService.update(proofRecord)
+      await service.update(proofRecord)
 
       await this.messageSender.sendMessageToService({
         message,
@@ -464,8 +471,11 @@ export class ProofsModule {
         'Unable to get requested credentials for proof request. No proof request message was found or the proof request message does not contain an indy proof request.'
       )
     }
-
-    return service.getRequestedCredentialsForProofRequest(indyProofRequest, presentationPreview)
+    const requestedCredentialsForProofRequest: RequestedCredentialForProofRequestOptions = {
+      proofRequest: indyProofRequest,
+      presentationProposal: presentationPreview,
+    }
+    return service.getRequestedCredentialsForProofRequest(requestedCredentialsForProofRequest)
   }
 
   /**
@@ -492,8 +502,9 @@ export class ProofsModule {
    * @param message message to send
    * @returns proof record associated with the proof problem report message
    */
-  public async sendProblemReport(proofRecordId: string, message: string) {
-    const record = await this.proofService.getById(proofRecordId)
+  public async sendProblemReport(proofRecordId: string, message: string, version: ProofProtocolVersion) {
+    const service = this.getService(version)
+    const record = await service.getById(proofRecordId)
     if (!record.connectionId) {
       throw new AriesFrameworkError(`No connectionId found for proof record '${record.id}'.`)
     }

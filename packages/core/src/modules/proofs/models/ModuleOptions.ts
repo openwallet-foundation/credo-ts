@@ -1,6 +1,6 @@
 import type { AutoAcceptProof, ProofRequestOptions } from '..'
 import type { ProofProtocolVersion } from './ProofProtocolVersion'
-import type { AcceptProposalFormats, ProposeProofFormats } from './SharedOptions'
+import type { AcceptProposalFormats, CreatePresentationFormats, ProposeProofFormats } from './SharedOptions'
 
 export interface ProposeProofOptions {
   connectionId: string
@@ -43,3 +43,10 @@ export interface CreateOutOfBandRequestOptions {
 export type CreateProofRequestOptions = Partial<
   Pick<ProofRequestOptions, 'name' | 'nonce' | 'requestedAttributes' | 'requestedPredicates'>
 >
+
+export interface AcceptPresentationOptions {
+  protocolVersion: ProofProtocolVersion
+  proofRecordId: string
+  comment?: string
+  proofFormats: CreatePresentationFormats
+}
