@@ -18,6 +18,7 @@ import { uuid } from '../../utils/uuid'
 import { Wallet } from '../../wallet/Wallet'
 import { DidCommService, DidDocument, DidDocumentBuilder, Key } from '../dids'
 import { DidDocumentRole } from '../dids/domain/DidDocumentRole'
+import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
 import { getEd25519VerificationMethod } from '../dids/domain/key-type/ed25519'
 import { getX25519VerificationMethod } from '../dids/domain/key-type/x25519'
 import { DidKey } from '../dids/methods/key/DidKey'
@@ -444,18 +445,18 @@ export class DidExchangeProtocol {
     const { isValid, signerVerkeys } = await this.jwsService.verifyJws({ jws, payload })
 
     const didDocKeys = didDocument.authentication
-      .map((a) => {
-        if (typeof a === 'string') {
-          return a
-        }
-        // TODO return key according to type property?
-        return a.publicKeyBase58
+      .map((authentication) => {
+        const verificationMethod =
+          typeof authentication === 'string' ? didDocument.dereferenceKey(authentication) : authentication
+        const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
+        const key = getKeyFromVerificationMethod(verificationMethod)
+        return key.publicKeyBase58
       })
       .concat(invitationKeys)
 
     this.logger.trace('JWS verification result', { isValid, signerVerkeys, didDocKeys })
 
-    if (!isValid || signerVerkeys.length > 1 || !signerVerkeys.every((verkey) => didDocKeys.includes(verkey))) {
+    if (!isValid || !signerVerkeys.every((verkey) => didDocKeys.includes(verkey))) {
       throw new ProblemReportError('DidDoc signature is invalid.', { problemCode: 'request_not_accepted' })
     }
   }
