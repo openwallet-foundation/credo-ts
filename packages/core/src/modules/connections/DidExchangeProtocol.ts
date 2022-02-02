@@ -24,9 +24,9 @@ import { getX25519VerificationMethod } from '../dids/domain/key-type/x25519'
 import { DidKey } from '../dids/methods/key/DidKey'
 import { DidPeer, PeerDidNumAlgo } from '../dids/methods/peer/DidPeer'
 import { DidRecord, DidRepository } from '../dids/repository'
-import { ProblemReportError } from '../problem-reports'
 
 import { DidExchangeStateMachine } from './DidExchangeStateMachine'
+import { DidExchangeProblemReportError, DidExchangeProblemReportReason } from './errors'
 import { DidExchangeCompleteMessage } from './messages/DidExchangeCompleteMessage'
 import { DidExchangeRequestMessage } from './messages/DidExchangeRequestMessage'
 import { DidExchangeResponseMessage } from './messages/DidExchangeResponseMessage'
@@ -122,7 +122,9 @@ export class DidExchangeProtocol {
     // check corresponding invitation ID is the request's ~thread.pthid
 
     if (connectionRecord.invitation?.id !== message.thread?.parentThreadId) {
-      throw new ProblemReportError('Missing reference to invitation.', { problemCode: 'request_not_accepted' })
+      throw new DidExchangeProblemReportError('Missing reference to invitation.', {
+        problemCode: DidExchangeProblemReportReason.RequestNotAccepted,
+      })
     }
 
     // If the responder wishes to continue the exchange, they will persist the received information in their wallet.
@@ -151,11 +153,7 @@ export class DidExchangeProtocol {
     let didDocument
 
     if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
-      if (!message.didDoc) {
-        throw new AriesFrameworkError('No did doc')
-      }
-      await this.verifyAttachmentSignature(message.didDoc)
-      didDocument = JsonTransformer.fromJSON(message.didDoc.getDataAsJson(), DidDocument)
+      didDocument = await this.resolveDidDocument(message)
     } else {
       didDocument = peerDid.didDocument
     }
@@ -252,12 +250,7 @@ export class DidExchangeProtocol {
     const peerDid = DidPeer.fromDid(message.did)
     let didDocument
     if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
-      if (!message.didDoc) {
-        throw new AriesFrameworkError('No did doc')
-      }
-      // Verify signature on DidDoc attachment and assign DidDoc to connection record
-      await this.verifyAttachmentSignature(message.didDoc, connectionRecord.invitation?.recipientKeys)
-      didDocument = JsonTransformer.fromJSON(message.didDoc.getDataAsJson(), DidDocument)
+      didDocument = await this.resolveDidDocument(message, connectionRecord.invitation?.recipientKeys)
     } else {
       didDocument = peerDid.didDocument
     }
@@ -319,7 +312,9 @@ export class DidExchangeProtocol {
     DidExchangeStateMachine.assertProcessMessageState(DidExchangeCompleteMessage.type, connectionRecord)
 
     if (connectionRecord.invitation?.id !== message.thread?.parentThreadId) {
-      throw new ProblemReportError('Missing reference to invitation.', { problemCode: 'request_not_accepted' })
+      throw new DidExchangeProblemReportError('Missing reference to invitation.', {
+        problemCode: DidExchangeProblemReportReason.CompleteRejected,
+      })
     }
 
     await this.updateState(DidExchangeCompleteMessage.type, connectionRecord)
@@ -429,22 +424,43 @@ export class DidExchangeProtocol {
     return didDocAttach
   }
 
-  private async verifyAttachmentSignature(didDocAttachment: Attachment, invitationKeys: string[] = []) {
-    const jws = didDocAttachment.data.jws
+  /**
+   * Resolves DID document from reqeust or response message attachment and verifies its signature.
+   *
+   * @param message DID request or DID response message
+   * @param invitationKeys array containing keys from connection invitation that could be used for signing of DID document
+   * @returns resovled and verified DID document from message attachment
+   */
+  private async resolveDidDocument(
+    message: DidExchangeRequestMessage | DidExchangeResponseMessage,
+    invitationKeys: string[] = []
+  ): Promise<DidDocument> {
+    if (!message.didDoc) {
+      const problemCode =
+        message.type === DidExchangeRequestMessage.type
+          ? DidExchangeProblemReportReason.RequestNotAccepted
+          : DidExchangeProblemReportReason.ResponseNotAccepted
+      throw new DidExchangeProblemReportError('DID Document attachment is missing.', { problemCode })
+    }
+    const didDocumentAttachment = message.didDoc
+    const jws = didDocumentAttachment.data.jws
 
     if (!jws) {
-      throw new ProblemReportError('DidDoc signature is missing.', { problemCode: 'request_not_accepted' })
+      const problemCode =
+        message.type === DidExchangeRequestMessage.type
+          ? DidExchangeProblemReportReason.RequestNotAccepted
+          : DidExchangeProblemReportReason.ResponseNotAccepted
+      throw new DidExchangeProblemReportError('DID Document signature is missing.', { problemCode })
     }
 
-    const json = didDocAttachment.getDataAsJson() as Record<string, unknown>
+    const json = didDocumentAttachment.getDataAsJson() as Record<string, unknown>
     this.logger.trace('DidDocument JSON', json)
 
     const payload = JsonEncoder.toBuffer(json)
-    const didDocument = JsonTransformer.fromJSON(json, DidDocument)
-
     const { isValid, signerVerkeys } = await this.jwsService.verifyJws({ jws, payload })
 
-    const didDocKeys = didDocument.authentication
+    const didDocument = JsonTransformer.fromJSON(json, DidDocument)
+    const didDocumentKeys = didDocument.authentication
       .map((authentication) => {
         const verificationMethod =
           typeof authentication === 'string' ? didDocument.dereferenceKey(authentication) : authentication
@@ -454,10 +470,16 @@ export class DidExchangeProtocol {
       })
       .concat(invitationKeys)
 
-    this.logger.trace('JWS verification result', { isValid, signerVerkeys, didDocKeys })
+    this.logger.trace('JWS verification result', { isValid, signerVerkeys, didDocumentKeys })
 
-    if (!isValid || !signerVerkeys.every((verkey) => didDocKeys.includes(verkey))) {
-      throw new ProblemReportError('DidDoc signature is invalid.', { problemCode: 'request_not_accepted' })
+    if (!isValid || !signerVerkeys.every((verkey) => didDocumentKeys.includes(verkey))) {
+      const problemCode =
+        message.type === DidExchangeRequestMessage.type
+          ? DidExchangeProblemReportReason.RequestNotAccepted
+          : DidExchangeProblemReportReason.ResponseNotAccepted
+      throw new DidExchangeProblemReportError('DID Document signature is invalid.', { problemCode })
     }
+
+    return didDocument
   }
 }
