@@ -5,6 +5,7 @@ import type { CredentialResponseCoordinator } from '../../CredentialResponseCoor
 import type { AcceptRequestOptions } from '../../interfaces'
 import type { CredentialRecord } from '../../repository'
 import type { V2CredentialService } from '../V2CredentialService'
+import type { CredentialFormatService } from '../formats/CredentialFormatService'
 import type { InboundMessageContext } from 'packages/core/src/agent/models/InboundMessageContext'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../agent/helpers'
@@ -31,10 +32,29 @@ export class V2RequestCredentialHandler implements Handler {
   public async handle(messageContext: InboundMessageContext<V2RequestCredentialMessage>) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     unitTestLogger('----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR REQUEST CREDENTIAL')
-
     const credentialRecord = await this.credentialService.processRequest(messageContext)
 
-    if (this.credentialAutoResponseCoordinator.shouldAutoRespondToRequest(credentialRecord)) {
+    const requestMessage: V2RequestCredentialMessage = credentialRecord.requestMessage as V2RequestCredentialMessage
+
+    // 1. Get all formats for this message
+    const formatServices: CredentialFormatService[] = this.credentialService.getFormatsFromMessage(
+      requestMessage.formats
+    )
+
+    // 2. loop through found formats
+    let shouldAutoRespond = true
+    for (const formatService of formatServices) {
+      // 3. Call format.shouldRespondToProposal for each one
+      const formatShouldAutoRespond = formatService.shouldAutoRespondToRequest(
+        credentialRecord,
+        this.agentConfig.autoAcceptCredentials
+      )
+      shouldAutoRespond = shouldAutoRespond && formatShouldAutoRespond
+    }
+
+    unitTestLogger('----------------->>> REQUEST HANDLER shouldAutoRespond = ' + shouldAutoRespond)
+    // 4. if all formats are eligibile for auto response then call create offer
+    if (shouldAutoRespond) {
       return await this.createCredential(credentialRecord, messageContext)
     }
   }
@@ -55,6 +75,8 @@ export class V2RequestCredentialHandler implements Handler {
 
     const { message, credentialRecord } = await this.credentialService.createCredential(record, options)
     if (messageContext.connection) {
+      unitTestLogger('Sending ISSUE CREDENTIAL message: ' + message)
+
       return createOutboundMessage(messageContext.connection, message)
     } else if (credentialRecord.requestMessage?.service && credentialRecord.offerMessage?.service) {
       const recipientService = credentialRecord.requestMessage.service

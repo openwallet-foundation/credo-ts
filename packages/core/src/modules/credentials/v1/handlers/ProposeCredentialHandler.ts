@@ -50,13 +50,14 @@ export class ProposeCredentialHandler implements Handler {
       return
     }
 
-    if (!credentialRecord.proposalMessage.credentialDefinitionId) {
+    const proposalMessage: ProposeCredentialMessage = credentialRecord.proposalMessage as ProposeCredentialMessage
+    if (!proposalMessage.credentialDefinitionId) {
       this.agentConfig.logger.error('Missing required credential definition id')
       return
     }
 
     const { message } = await this.credentialService.createOfferAsResponse(credentialRecord, {
-      credentialDefinitionId: credentialRecord.proposalMessage.credentialDefinitionId,
+      credentialDefinitionId: proposalMessage.credentialDefinitionId,
       preview: credentialRecord.proposalMessage.credentialProposal,
     })
 

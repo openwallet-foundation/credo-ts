@@ -23,7 +23,7 @@ export class IssueCredentialMessage extends AgentMessage {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
       this.credentialAttachments = options.credentialAttachments
-      this.attachments = options.attachments
+      this.messageAttachment = options.attachments
     }
   }
 

@@ -25,8 +25,7 @@ export class V2IssueCredentialMessage extends AgentMessage {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
       this.formats = options.formats
-      this.credentialsAttach = options.credentialsAttach
-      this.attachments = options.attachments
+      this.messageAttachment = options.credentialsAttach
     }
   }
 
@@ -45,7 +44,7 @@ export class V2IssueCredentialMessage extends AgentMessage {
     each: true,
   })
   @IsInstance(Attachment, { each: true })
-  public credentialsAttach!: Attachment[]
+  public messageAttachment!: Attachment[]
 
   // this is needed for the CredentialResponseCoordinator (which needs reworking into V1 and V2 versions)
   // MJR-TODO rework CredentialResponseCoordinator for new V2 architecture

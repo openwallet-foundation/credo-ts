@@ -14,7 +14,6 @@ export interface V2RequestCredentialMessageOptions {
   formats: V2CredentialFormatSpec[]
   requestsAttach: Attachment[]
   comment?: string
-  credentialDefinitionId?: string
 }
 
 export class V2RequestCredentialMessage extends AgentMessage {
@@ -25,10 +24,8 @@ export class V2RequestCredentialMessage extends AgentMessage {
     if (options) {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
-      this.credentialDefinitionId = options.credentialDefinitionId
       this.formats = options.formats
-      this.attachments = options.requestsAttach
-      this.credentialDefinitionId = options.credentialDefinitionId
+      this.messageAttachment = options.requestsAttach
     }
   }
 
@@ -43,7 +40,7 @@ export class V2RequestCredentialMessage extends AgentMessage {
     each: true,
   })
   @IsInstance(Attachment, { each: true })
-  public attachments!: Attachment[]
+  public messageAttachment!: Attachment[]
 
   /**
    * Human readable information about this Credential Proposal,
@@ -52,13 +49,6 @@ export class V2RequestCredentialMessage extends AgentMessage {
   @IsOptional()
   @IsString()
   public comment?: string
-  /**
-   * Filter to request credential based on a particular Credential Definition.
-   */
-  @Expose({ name: 'cred_def_id' })
-  @IsString()
-  @IsOptional()
-  public credentialDefinitionId?: string
 
   // MJR-TODO This needs moving into the format service as it is indy specific
   // this is needed for the CredentialResponseCoordinator (which needs reworking into V1 and V2 versions)

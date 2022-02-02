@@ -1,6 +1,7 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { CredentialRecord } from '../../..'
+import type { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
 import type { CredentialPreviewAttribute } from '../../../CredentialPreviewAttributes'
 import type {
   AcceptProposalOptions,
@@ -19,6 +20,7 @@ import type {
 } from '../CredentialFormatService'
 import type { MetaDataService } from '../MetaDataService'
 import type { V2CredentialFormatSpec } from '../V2CredentialFormat'
+import type { AgentConfig } from '@aries-framework/core'
 import type { CredOffer, CredReq } from 'indy-sdk'
 
 import { Attachment, AttachmentData } from '../../../../../../src/decorators/attachment/Attachment'
@@ -27,7 +29,21 @@ import { ATTACHMENT_FORMAT } from '../V2CredentialFormat'
 
 import { JsonLdMetaDataService } from './JsonLdMetaDataService'
 
+
 export class JsonLdCredentialFormatService extends CredentialFormatService {
+  public shouldAutoRespondToOffer(credentialRecord: CredentialRecord, autoAcceptType: AutoAcceptCredential): boolean {
+    throw new Error('Method not implemented.')
+  }
+  public shouldAutoRespondToRequest(credentialRecord: CredentialRecord, autoAcceptType: AutoAcceptCredential): boolean {
+    throw new Error('Method not implemented.')
+  }
+  public shouldAutoRespondToIssue(credentialRecord: CredentialRecord, autoAcceptType: AutoAcceptCredential): boolean {
+    throw new Error('Method not implemented.')
+  }
+  public shouldAutoRespondToProposal(credentialRecord: CredentialRecord, autoAcceptType: AutoAcceptCredential): boolean {
+    throw new Error('Method not implemented.')
+  }
+ 
   public processCredential(message: V2IssueCredentialMessage, credentialRecord: CredentialRecord): Promise<void> {
     throw new Error('Method not implemented.')
   }

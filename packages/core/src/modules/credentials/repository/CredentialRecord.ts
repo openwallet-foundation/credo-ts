@@ -94,6 +94,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       this._tags = props.tags ?? {}
 
       this.proposalMessage = props.proposalMessage
+
       this.offerMessage = props.offerMessage
       this.requestMessage = props.requestMessage
       this.credentialMessage = props.credentialMessage

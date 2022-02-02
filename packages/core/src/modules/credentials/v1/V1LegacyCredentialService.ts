@@ -144,6 +144,7 @@ export class V1LegacyCredentialService {
 
     // Create message
     const proposalMessage = new ProposeCredentialMessage(config ?? {})
+
     proposalMessage.setThread({ threadId: credentialRecord.threadId })
 
     // Update record
@@ -257,6 +258,7 @@ export class V1LegacyCredentialService {
     })
 
     credentialRecord.offerMessage = credentialOfferMessage
+
     credentialRecord.credentialAttributes = preview.attributes
     credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
       schemaId: credOffer.schema_id,
@@ -375,7 +377,7 @@ export class V1LegacyCredentialService {
       })
 
       credentialRecord.offerMessage = credentialOfferMessage
-      credentialRecord.linkedAttachments = credentialOfferMessage.attachments?.filter(isLinkedAttachment)
+      credentialRecord.linkedAttachments = credentialOfferMessage.messageAttachment?.filter(isLinkedAttachment)
 
       credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
         schemaId: indyCredentialOffer.schema_id,
@@ -458,7 +460,9 @@ export class V1LegacyCredentialService {
     const credentialRequest = new RequestCredentialMessage({
       comment: options?.comment,
       requestAttachments: [requestAttachment],
-      attachments: credentialRecord.offerMessage?.attachments?.filter((attachment) => isLinkedAttachment(attachment)),
+      attachments: credentialRecord.offerMessage?.messageAttachment?.filter((attachment) =>
+        isLinkedAttachment(attachment)
+      ),
     })
     credentialRequest.setThread({ threadId: credentialRecord.threadId })
 
@@ -466,7 +470,7 @@ export class V1LegacyCredentialService {
     credentialRecord.requestMessage = credentialRequest
     credentialRecord.autoAcceptCredential = options?.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
-    credentialRecord.linkedAttachments = credentialRecord.offerMessage?.attachments?.filter((attachment) =>
+    credentialRecord.linkedAttachments = credentialRecord.offerMessage?.messageAttachment?.filter((attachment) =>
       isLinkedAttachment(attachment)
     )
     await this.updateState(credentialRecord, CredentialState.RequestSent)
@@ -587,8 +591,8 @@ export class V1LegacyCredentialService {
       comment: options?.comment,
       credentialAttachments: [credentialAttachment],
       attachments:
-        offerMessage?.attachments?.filter((attachment) => isLinkedAttachment(attachment)) ||
-        requestMessage?.attachments?.filter((attachment: Attachment) => isLinkedAttachment(attachment)),
+        offerMessage?.messageAttachment?.filter((attachment) => isLinkedAttachment(attachment)) ||
+        requestMessage?.messageAttachment?.filter((attachment: Attachment) => isLinkedAttachment(attachment)),
     })
     issueCredentialMessage.setThread({
       threadId: credentialRecord.threadId,

@@ -29,7 +29,7 @@ export class V2OfferCredentialMessage extends AgentMessage {
       this.comment = options.comment
       this.formats = options.formats
       this.credentialPreview = options.credentialPreview
-      this.attachments = options.offerAttachments
+      this.messageAttachment = options.offerAttachments
     }
   }
 
@@ -54,7 +54,7 @@ export class V2OfferCredentialMessage extends AgentMessage {
     each: true,
   })
   @IsInstance(Attachment, { each: true })
-  public attachments!: Attachment[]
+  public messageAttachment!: Attachment[]
 
   @Expose({ name: 'replacement_id' })
   @IsString()

@@ -64,13 +64,13 @@ interface AcceptOfferOptions {
   autoAcceptCredential?: AutoAcceptCredential
 }
 
-interface NegotiateOfferOptions {
-  protocolVersion: CredentialProtocolVersion
-  credentialRecordId: string
-  credentialFormats: OfferCredentialFormats
-  autoAcceptCredential?: AutoAcceptCredential
-  comment?: string
-}
+// interface NegotiateOfferOptions {
+//   protocolVersion: CredentialProtocolVersion
+//   credentialRecordId: string
+//   credentialFormats: OfferCredentialFormats
+//   autoAcceptCredential?: AutoAcceptCredential
+//   comment?: string
+// }
 
 /// CREDENTIAL PROPOSAL
 
@@ -91,6 +91,7 @@ interface ProposeCredentialOptions {
   connectionId: string
   protocolVersion: CredentialProtocolVersion
   credentialFormats: V2CredProposeOfferRequestFormat
+  credentialRecordId?: string
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
 }
@@ -161,7 +162,6 @@ export {
   AcceptProposalOptions,
   NegotiateProposalOptions,
   AcceptOfferOptions,
-  NegotiateOfferOptions,
   RequestCredentialOptions,
   AcceptRequestOptions,
   CredPropose as IndyProposeCredentialFormat,

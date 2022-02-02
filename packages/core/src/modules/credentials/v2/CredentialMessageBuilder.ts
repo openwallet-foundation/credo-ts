@@ -61,8 +61,8 @@ export class CredentialMessageBuilder {
     const formatsArray: V2CredentialFormatSpec[] = []
     const filtersAttachArray: Attachment[] | undefined = []
     let previewAttachments: V2CredentialPreview | undefined
-    for (const service of formatServices) {
-      const { formats, filtersAttach, previewWithAttachments } = service.createProposalAttachFormats(
+    for (const formatService of formatServices) {
+      const { formats, filtersAttach, previewWithAttachments } = formatService.createProposalAttachFormats(
         proposal,
         'CRED_20_PROPOSAL'
       )
@@ -176,9 +176,12 @@ export class CredentialMessageBuilder {
     credentialOfferMessage.setThread({
       threadId: credentialRecord.threadId,
     })
-
     credentialRecord.offerMessage = credentialOfferMessage
+
+    credentialRecord.credentialAttributes = previewAttachments?.attributes
+
     if (credOffer) {
+      // MJR-TODO is it sufficient to call this once assuming at least one format?
       formatServices[0].getMetaDataService().setMetaDataForOffer(credOffer, credentialRecord)
     }
 
@@ -292,7 +295,6 @@ export class CredentialMessageBuilder {
     formatServices: CredentialFormatService[],
     options: OfferCredentialOptions
   ): Promise<{ credentialRecord: CredentialRecord; message: V2OfferCredentialMessage }> {
-
     const formatsArray: V2CredentialFormatSpec[] = []
     const offersAttachArray: Attachment[] | undefined = []
     let previewAttachments: V2CredentialPreview | undefined
@@ -340,7 +342,7 @@ export class CredentialMessageBuilder {
     const credentialRecord = new CredentialRecord(recordProps)
 
     // set meta data and emit event - MJR-TODO how do we do this for multiple formats?
-    formatServices[0].getMetaDataService().setMetaDataAndEmitEventForOffer(credOffer, credentialRecord)
+    formatServices[0].getMetaDataService().setMetaDataForOffer(credOffer, credentialRecord)
 
     return { credentialRecord, message: credentialOfferMessage }
   }
@@ -377,8 +379,8 @@ export class CredentialMessageBuilder {
 
     const offerMessage: V2OfferCredentialMessage = credentialRecord.offerMessage as V2OfferCredentialMessage
     const requestMessage: V2RequestCredentialMessage = credentialRecord.requestMessage as V2RequestCredentialMessage
-    const offerAttachments = offerMessage?.attachments
-    const requestAttachments = requestMessage?.attachments
+    const offerAttachments = offerMessage?.messageAttachment
+    const requestAttachments = requestMessage?.messageAttachment
     const messageOptions: V2IssueCredentialMessageProps = {
       id: this.generateId(),
       formats: formatsArray,

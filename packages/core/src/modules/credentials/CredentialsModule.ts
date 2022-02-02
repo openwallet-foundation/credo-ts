@@ -115,7 +115,7 @@ export class CredentialsModule {
 
     const credentialDefinitionId = config?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
 
-    credentialRecord.linkedAttachments = credentialProposalMessage.attachments?.filter((attachment) =>
+    credentialRecord.linkedAttachments = credentialProposalMessage.messageAttachment?.filter((attachment) =>
       isLinkedAttachment(attachment)
     )
 
@@ -220,6 +220,7 @@ export class CredentialsModule {
     return credentialRecord
   }
 
+  // MJR-TODO move this into CredentialsAPI
   /**
    * Initiate a new credential exchange as issuer by creating a credential offer
    * not bound to any connection. The offer must be delivered out-of-band to the holder
@@ -323,7 +324,7 @@ export class CredentialsModule {
    * @param credentialRecordId the id of the credential to be declined
    * @returns credential record that was declined
    */
-  public async declineOffer(credentialRecordId: string) {
+  public async OLDdeclineOffer(credentialRecordId: string) {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)
     await this.credentialService.declineOffer(credentialRecord)
     return credentialRecord
@@ -339,7 +340,7 @@ export class CredentialsModule {
    * @returns Credential record associated with the sent credential request message
    *
    */
-  public async negotiateOffer(
+  public async OLDnegotiateOffer(
     credentialRecordId: string,
     preview: V1CredentialPreview,
     config?: { comment?: string; autoAcceptCredential?: AutoAcceptCredential }

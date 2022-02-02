@@ -1,4 +1,5 @@
 import type { CredentialRecord, CredentialRepository, OfferMessageType } from '../../..'
+import type { AgentConfig } from '../../../../../../src/agent/AgentConfig'
 import type { EventEmitter } from '../../../../../agent/EventEmitter'
 import type { IndyHolderService, IndyIssuerService } from '../../../../indy'
 import type { IndyLedgerService } from '../../../../ledger'
@@ -15,17 +16,23 @@ import type {
 } from '../../../interfaces'
 import type { V2IssueCredentialMessage } from '../../messages/V2IssueCredentialMessage'
 import type { V2OfferCredentialMessage } from '../../messages/V2OfferCredentialMessage'
-import type { V2ProposeCredentialMessage } from '../../messages/V2ProposeCredentialMessage'
+import type {
+  V2ProposeCredentialMessage,
+  V2ProposeCredentialMessageProps,
+} from '../../messages/V2ProposeCredentialMessage'
 import type { V2RequestCredentialMessage } from '../../messages/V2RequestCredentialMessage'
 import type { V2AttachmentFormats, V2CredProposeOfferRequestFormat } from '../CredentialFormatService'
 import type { MetaDataService } from '../MetaDataService'
 import type { V2CredentialFormatSpec } from '../V2CredentialFormat'
 import type { Cred, CredDef, CredOffer, CredReq } from 'indy-sdk'
 
-import { CredentialMetadataKeys, CredentialUtils } from '../../..'
+import { of } from 'rxjs'
+
+import { AutoAcceptCredential, CredentialMetadataKeys, CredentialUtils } from '../../..'
 import { AriesFrameworkError } from '../../../../../../src/error'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
 import { JsonEncoder } from '../../../../../utils/JsonEncoder'
+import { CredentialResponseCoordinator } from '../../../CredentialResponseCoordinator'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../../errors'
 import { V2CredentialPreview } from '../../V2CredentialPreview'
 import { CredentialFormatService } from '../CredentialFormatService'
@@ -71,16 +78,11 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     // object keys in the credential format within the proposal
 
     const formats: V2CredentialFormatSpec = this.getFormatIdentifier(messageType)
-    let attachId = this.generateId()
-
-    attachId = attachId.substring(0, 0) + '0' + attachId.substring(1) // TMP -MJR to avoid validation errors
 
     const filtersAttach: Attachment = this.getFormatData(
       proposal.credentialFormats.indy?.payload.credentialPayload,
-      attachId
+      formats.attachId
     )
-    const cred = proposal.credentialFormats.indy?.payload.credentialPayload as CredPropose
-
     const { previewWithAttachments } = this.getCredentialLinkedAttachments(proposal)
 
     return { formats, filtersAttach, previewWithAttachments }
@@ -102,7 +104,9 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     let preview: V2CredentialPreview | undefined
 
     if (proposal?.credentialFormats.indy?.attributes) {
-      preview = new V2CredentialPreview({ attributes: proposal?.credentialFormats.indy?.attributes })
+      preview = new V2CredentialPreview({
+        attributes: proposal?.credentialFormats.indy?.attributes,
+      })
     }
     const formats: V2CredentialFormatSpec = this.getFormatIdentifier(messageType)
 
@@ -130,7 +134,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     if (message) {
       const indyFormat = message.formats.find((f) => f.format.includes('indy'))
       if (indyFormat) {
-        const attachment = message.attachments.find((attachment) => attachment.id === indyFormat?.attachId)
+        const attachment = message.messageAttachment.find((attachment) => attachment.id === indyFormat?.attachId)
         if (attachment) {
           const data = attachment.data
           if (data) {
@@ -181,10 +185,8 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @return V2CredRequestFormat object containing the Indy SDK CredReq, note meta data does not
    * seem to be needed here (or even present in the payload)
    */
-  public getCredentialPayload<T extends CredOffer | CredReq | CredPropose>(
-    data: AttachmentData
-  ): V2CredProposeOfferRequestFormat {
-    const credentialOfferJson: T = data.getDataAsJson<T>() ?? null
+  public getCredentialPayload<T>(data: AttachmentData): V2CredProposeOfferRequestFormat {
+    const credentialOfferJson: T = data.getDataAsJson<T>() as T
     return {
       indy: {
         payload: {
@@ -232,15 +234,20 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   } {
     // Add the linked attachments to the credentialProposal
     const credPropose: CredPropose = proposal.credentialFormats.indy?.payload.credentialPayload as CredPropose
+
     let attachments: Attachment[] | undefined
-    let previewWithAttachments: V2CredentialPreview = new V2CredentialPreview({ attributes: [] })
+    let previewWithAttachments: V2CredentialPreview = new V2CredentialPreview({
+      attributes: credPropose.attributes ? credPropose.attributes : [],
+    })
     if (proposal.credentialFormats.indy && credPropose.linkedAttachments) {
       // there are linked attachments so transform into the attribute field of the CredentialPreview object for
       // this proposal
-      if (credPropose.attributes) {
+      if (credPropose.attributes && credPropose.credentialDefinitionId) {
         previewWithAttachments = CredentialUtils.createAndLinkAttachmentsToPreview(
           credPropose.linkedAttachments,
-          new V2CredentialPreview({ attributes: credPropose.attributes })
+          new V2CredentialPreview({
+            attributes: credPropose.attributes,
+          })
         )
       }
       attachments = credPropose.linkedAttachments.map((linkedAttachment) => linkedAttachment.attachment)
@@ -284,7 +291,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    */
   public getFormatData(data: unknown, id: string): Attachment {
     const attachment: Attachment = new Attachment({
-      id: id,
+      id,
       mimeType: 'application/json',
       data: new AttachmentData({
         base64: JsonEncoder.toBase64(data),
@@ -306,7 +313,6 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       const credOffer: CredOffer = await this.indyIssuerService.createCredentialOffer(
         proposal.credentialFormats.indy.credentialDefinitionId
       )
-
       return {
         indy: {
           payload: {
@@ -374,11 +380,30 @@ export class IndyCredentialFormatService extends CredentialFormatService {
 
   public processProposal(options: AcceptProposalOptions, credentialRecord: CredentialRecord): AcceptProposalOptions {
     if (credentialRecord.proposalMessage && credentialRecord.proposalMessage.credentialProposal?.attributes) {
-      const proposeMessage: V2ProposeCredentialMessage = credentialRecord.proposalMessage as V2ProposeCredentialMessage
+      const proposeMessage = credentialRecord.proposalMessage as V2ProposeCredentialMessage
+
+      let credPropose
+      const indyProposeFormat = proposeMessage.formats.find((f) => f.format.includes('indy'))
+
+      if (indyProposeFormat && proposeMessage.messageAttachment) {
+        const attachment = proposeMessage.messageAttachment.find(
+          (attachment) => attachment.id === indyProposeFormat.attachId
+        )
+        if (attachment) {
+          const data = attachment.data
+          if (data) {
+            credPropose = this.getCredentialPayload<CredPropose>(data).indy?.payload.credentialPayload as CredPropose
+          } else {
+            throw Error(`Missing data payload in attachment in credential Record ${credentialRecord.id}`)
+          }
+        }
+      }
+
       if (proposeMessage && proposeMessage.credentialProposal) {
         options.credentialFormats = {
           indy: {
             attributes: proposeMessage.credentialProposal.attributes,
+            credentialDefinitionId: credPropose?.credentialDefinitionId,
           },
         }
         return options
@@ -401,7 +426,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       | V2IssueCredentialMessage
   ): Attachment | undefined {
     const indyFormat = message.formats.find((f) => f.format.includes('indy'))
-    const attachment = message.attachments?.find((attachment) => attachment.id === indyFormat?.attachId)
+    const attachment = message.messageAttachment?.find((attachment) => attachment.id === indyFormat?.attachId)
     return attachment
   }
 
@@ -432,7 +457,9 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     let indyCredentialOffer: CredOffer | undefined
     const indyOfferFormat = offerMessage.formats.find((f) => f.format.includes('indy'))
     if (indyOfferFormat) {
-      const attachment = offerMessage.attachments.find((attachment) => attachment.id === indyOfferFormat?.attachId)
+      const attachment = offerMessage.messageAttachment.find(
+        (attachment) => attachment.id === indyOfferFormat?.attachId
+      )
       if (attachment) {
         const data = attachment.data
         if (data) {
@@ -454,7 +481,9 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     let indyCredentialRequest: CredReq | undefined
     const indyRequestFormat = requestMessage.formats.find((f) => f.format.includes('indy'))
     if (indyRequestFormat) {
-      const attachment = requestMessage.attachments.find((attachment) => attachment.id === indyRequestFormat.attachId)
+      const attachment = requestMessage.messageAttachment.find(
+        (attachment) => attachment.id === indyRequestFormat.attachId
+      )
       if (attachment) {
         const data = attachment.data
         if (data) {
@@ -512,16 +541,18 @@ export class IndyCredentialFormatService extends CredentialFormatService {
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
-    if (!issueCredentialMessage.attachments) {
+    if (!issueCredentialMessage.messageAttachment) {
       throw Error('Missing credential message attachments')
     }
     // get the credential from the payload
 
     let indyCredential: Cred | undefined
-    const indyOfferFormat = issueCredentialMessage.formats.find((f) => f.format.includes('indy'))
-    if (indyOfferFormat) {
-      const attachment = issueCredentialMessage.credentialsAttach.find(
-        (attachment) => attachment.id === indyOfferFormat.attachId
+
+    const indyCredentialFormat = issueCredentialMessage.formats.find((f) => f.format.includes('indy'))
+
+    if (indyCredentialFormat) {
+      const attachment = issueCredentialMessage.messageAttachment.find(
+        (attachment) => attachment.id === indyCredentialFormat.attachId
       )
       if (attachment) {
         const data = attachment.data
@@ -532,6 +563,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
         }
       }
     }
+
     if (!indyCredential) {
       throw new CredentialProblemReportError(
         `Missing required base64 or json encoded attachment data for credential with thread id ${issueCredentialMessage.threadId}`,
@@ -561,5 +593,219 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     })
     credentialRecord.credentialId = credentialId
     credentialRecord.credentialMessage = issueCredentialMessage
+  }
+
+  /**
+   * Checks whether it should automatically respond to a proposal. Moved from CredentialResponseCoordinator
+   * as this contains format-specific logic
+   * @param credentialRecord The credential record for which we are testing whether or not to auto respond
+   * @param agentConfig config object for the agent, used to hold auto accept state for the agent
+   * @returns true if we should auto respond, false otherwise
+
+   */
+  public shouldAutoRespondToProposal(
+    credentialRecord: CredentialRecord,
+    autoAcceptType: AutoAcceptCredential
+  ): boolean {
+    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
+      credentialRecord.autoAcceptCredential,
+      autoAcceptType
+    )
+
+    if (autoAccept === AutoAcceptCredential.Always) {
+      return true
+    } else if (autoAccept === AutoAcceptCredential.ContentApproved) {
+      return (
+        this.areProposalValuesValid(credentialRecord) && this.areProposalAndOfferDefinitionIdEqual(credentialRecord)
+      )
+    }
+    return false
+  }
+
+  /**
+   * Checks whether it should automatically respond to an offer. Moved from CredentialResponseCoordinator
+   * as this contains format-specific logic
+   * @param credentialRecord The credential record for which we are testing whether or not to auto respond
+   * @param autoAcceptType auto accept type for this credential exchange - normal auto or content approved
+   * @returns true if we should auto respond, false otherwise
+
+   */
+  public shouldAutoRespondToOffer(credentialRecord: CredentialRecord, autoAcceptType: AutoAcceptCredential): boolean {
+    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
+      credentialRecord.autoAcceptCredential,
+      autoAcceptType
+    )
+
+    if (autoAccept === AutoAcceptCredential.Always) {
+      return true
+    } else if (autoAccept === AutoAcceptCredential.ContentApproved) {
+      return this.areOfferValuesValid(credentialRecord) && this.areProposalAndOfferDefinitionIdEqual(credentialRecord)
+    }
+    return false
+  }
+
+  /**
+ * Checks whether it should automatically respond to a request. Moved from CredentialResponseCoordinator
+ * as this contains format-specific logic
+ * @param credentialRecord The credential record for which we are testing whether or not to auto respond
+ * @param autoAcceptType auto accept type for this credential exchange - normal auto or content approved
+ * @returns true if we should auto respond, false otherwise
+
+ */
+  public shouldAutoRespondToRequest(credentialRecord: CredentialRecord, autoAcceptType: AutoAcceptCredential): boolean {
+    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
+      credentialRecord.autoAcceptCredential,
+      autoAcceptType
+    )
+
+    if (autoAccept === AutoAcceptCredential.Always) {
+      return true
+    } else if (autoAccept === AutoAcceptCredential.ContentApproved) {
+      return this.isRequestDefinitionIdValid(credentialRecord)
+    }
+    return false
+  }
+
+  /**
+* Checks whether it should automatically respond to a request. Moved from CredentialResponseCoordinator
+* as this contains format-specific logic
+* @param credentialRecord The credential record for which we are testing whether or not to auto respond
+* @param autoAcceptType auto accept type for this credential exchange - normal auto or content approved
+* @returns true if we should auto respond, false otherwise
+
+*/
+  public shouldAutoRespondToIssue(credentialRecord: CredentialRecord, autoAcceptType: AutoAcceptCredential): boolean {
+    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
+      credentialRecord.autoAcceptCredential,
+      autoAcceptType
+    )
+
+    if (autoAccept === AutoAcceptCredential.Always) {
+      return true
+    } else if (autoAccept === AutoAcceptCredential.ContentApproved) {
+      return this.areCredentialValuesValid(credentialRecord)
+    }
+    return false
+  }
+
+  private areProposalValuesValid(credentialRecord: CredentialRecord) {
+    const { proposalMessage, credentialAttributes } = credentialRecord
+
+    if (proposalMessage && proposalMessage.credentialProposal && credentialAttributes) {
+      const proposalValues = CredentialUtils.convertAttributesToValues(proposalMessage.credentialProposal.attributes)
+      const defaultValues = CredentialUtils.convertAttributesToValues(credentialAttributes)
+      if (CredentialUtils.checkValuesMatch(proposalValues, defaultValues)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  private areProposalAndOfferDefinitionIdEqual(credentialRecord: CredentialRecord) {
+    const proposeMessage: V2ProposeCredentialMessage = credentialRecord.proposalMessage as V2ProposeCredentialMessage
+    const offerMessage: V2OfferCredentialMessage = credentialRecord.offerMessage as V2OfferCredentialMessage
+
+    if (!offerMessage || !proposeMessage) {
+      return false
+    }
+    const proposeAttachment = this.getAttachment(proposeMessage)
+    const offerAttachment = this.getAttachment(offerMessage)
+
+    if (proposeAttachment && offerAttachment) {
+      const credPropose: CredPropose = this.getCredentialPayload<CredPropose>(proposeAttachment.data).indy?.payload
+        .credentialPayload as CredPropose
+
+      const credOffer: CredOffer = this.getCredentialPayload<CredOffer>(offerAttachment.data).indy?.payload
+        .credentialPayload as CredOffer
+      const proposalCredentialDefinitionId = credPropose.credentialDefinitionId
+
+      const offerCredentialDefinitionId = credOffer.cred_def_id
+      return proposalCredentialDefinitionId === offerCredentialDefinitionId
+    }
+    return false
+  }
+
+  private areOfferValuesValid(credentialRecord: CredentialRecord) {
+    const { offerMessage, credentialAttributes } = credentialRecord
+
+    if (offerMessage && credentialAttributes && offerMessage.credentialPreview) {
+      const offerValues = CredentialUtils.convertAttributesToValues(offerMessage.credentialPreview.attributes)
+      const defaultValues = CredentialUtils.convertAttributesToValues(credentialAttributes)
+      if (CredentialUtils.checkValuesMatch(offerValues, defaultValues)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  private areCredentialValuesValid(credentialRecord: CredentialRecord) {
+    const issueCredentialMessage: V2IssueCredentialMessage | undefined =
+      credentialRecord.credentialMessage as V2IssueCredentialMessage
+
+    if (credentialRecord.credentialAttributes && credentialRecord.credentialMessage) {
+      const attachment = this.getAttachment(issueCredentialMessage)
+
+      if (attachment) {
+        const indyCredential = this.getCredentialPayload<Cred>(attachment.data).indy?.payload.credentialPayload as Cred
+
+        if (!indyCredential) {
+          throw Error(`Missing required base64 encoded attachment data for credential`)
+          return false
+        }
+
+        const credentialMessageValues = indyCredential.values
+        const defaultValues = CredentialUtils.convertAttributesToValues(credentialRecord.credentialAttributes)
+
+        if (CredentialUtils.checkValuesMatch(credentialMessageValues, defaultValues)) {
+          return true
+        }
+      }
+      return false
+    }
+    return false
+  }
+  private isRequestDefinitionIdValid(credentialRecord: CredentialRecord) {
+    const requestMessage: V2RequestCredentialMessage | undefined =
+      credentialRecord.requestMessage as V2RequestCredentialMessage
+    const offerMessage: V2OfferCredentialMessage = credentialRecord.offerMessage as V2OfferCredentialMessage
+    const proposeMessage: V2ProposeCredentialMessage | undefined =
+      credentialRecord.proposalMessage as V2ProposeCredentialMessage
+
+    let offerAttachment, proposeAttachment
+    if (proposeMessage || offerMessage) {
+      const requestAttachment = this.getAttachment(requestMessage)
+      if (offerMessage) {
+        offerAttachment = this.getAttachment(offerMessage)
+      }
+      if (proposeMessage) {
+        proposeAttachment = this.getAttachment(proposeMessage)
+      }
+
+      let indyCredentialRequest: CredReq
+      let indyCredentialOffer: CredOffer | undefined
+      let indyCredentialProposal: CredPropose | undefined
+
+      if (requestAttachment) {
+        indyCredentialRequest = this.getCredentialPayload<CredReq>(requestAttachment.data).indy?.payload
+          .credentialPayload as CredReq
+        if (offerAttachment) {
+          indyCredentialOffer = this.getCredentialPayload<CredOffer>(offerAttachment.data).indy?.payload
+            .credentialPayload as CredOffer
+        }
+        if (proposeAttachment) {
+          indyCredentialProposal = this.getCredentialPayload<CredPropose>(proposeAttachment.data).indy?.payload
+            .credentialPayload as CredPropose
+        }
+
+        const previousCredentialDefinitionId =
+          indyCredentialOffer?.cred_def_id ?? indyCredentialProposal?.credentialDefinitionId
+
+        if (previousCredentialDefinitionId === indyCredentialRequest.cred_def_id) {
+          return true
+        }
+      }
+      return false
+    }
+    return false
   }
 }

@@ -38,7 +38,7 @@ export class ProposeCredentialMessage extends AgentMessage {
       this.schemaVersion = options.schemaVersion
       this.credentialDefinitionId = options.credentialDefinitionId
       this.issuerDid = options.issuerDid
-      this.attachments = options.attachments
+      this.messageAttachment = options.attachments
     }
   }
 

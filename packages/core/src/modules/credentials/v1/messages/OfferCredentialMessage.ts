@@ -31,7 +31,7 @@ export class OfferCredentialMessage extends AgentMessage {
       this.comment = options.comment
       this.credentialPreview = options.credentialPreview
       this.offerAttachments = options.offerAttachments
-      this.attachments = options.attachments
+      this.messageAttachment = options.attachments
     }
   }
 

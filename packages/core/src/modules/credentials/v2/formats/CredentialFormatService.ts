@@ -1,3 +1,5 @@
+import type { AutoAcceptCredential } from '../..'
+import type { AgentConfig } from '../../../../../src/agent/AgentConfig'
 import type { EventEmitter } from '../../../../agent/EventEmitter'
 import type { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import type { CredentialPreviewAttribute } from '../../CredentialPreviewAttributes'
@@ -77,6 +79,10 @@ export abstract class CredentialFormatService {
   // PROPOSE METHODS
   abstract processProposal(options: AcceptProposalOptions, credentialRecord: CredentialRecord): AcceptProposalOptions
   abstract createProposalAttachFormats(proposal: ProposeCredentialOptions, messageType: string): V2AttachmentFormats
+  abstract shouldAutoRespondToProposal(
+    credentialRecord: CredentialRecord,
+    autoAcceptType: AutoAcceptCredential
+  ): boolean
 
   // OFFER METHODS
   abstract createOffer(
@@ -87,18 +93,22 @@ export abstract class CredentialFormatService {
     offer: V2CredProposeOfferRequestFormat,
     messageType: string
   ): V2AttachmentFormats
+  abstract shouldAutoRespondToOffer(credentialRecord: CredentialRecord, autoAcceptType: AutoAcceptCredential): boolean
 
   // REQUEST METHODS
   abstract createRequestAttachFormats(
     requestOptions: RequestCredentialOptions,
     credentialRecord: CredentialRecord
   ): Promise<V2AttachmentFormats>
+  abstract shouldAutoRespondToRequest(credentialRecord: CredentialRecord, autoAcceptType: AutoAcceptCredential): boolean
 
   // ISSUE METHODS
   abstract createIssueAttachFormats(credentialRecord: CredentialRecord): Promise<V2AttachmentFormats>
   abstract processCredential(message: V2IssueCredentialMessage, credentialRecord: CredentialRecord): Promise<void>
+  abstract shouldAutoRespondToIssue(credentialRecord: CredentialRecord, autoAcceptType: AutoAcceptCredential): boolean
 
   // helper methods
+
   abstract getCredentialDefinition(offer: V2CredProposeOfferRequestFormat): Promise<V2CredDefinitionFormat | undefined>
   abstract getCredentialPayload(data: AttachmentData): V2CredProposeOfferRequestFormat
   abstract getFormatIdentifier(messageType: string): V2CredentialFormatSpec
@@ -107,7 +117,6 @@ export abstract class CredentialFormatService {
   abstract setPreview(proposal: AcceptProposalOptions, preview: V1CredentialPreview): AcceptProposalOptions
 
   abstract getMetaDataService(): MetaDataService
-
   public generateId(): string {
     return uuid()
   }

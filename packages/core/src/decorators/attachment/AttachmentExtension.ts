@@ -15,17 +15,17 @@ export function AttachmentDecorated<T extends BaseMessageConstructor>(Base: T) {
     @ValidateNested()
     @IsInstance(Attachment, { each: true })
     @IsOptional()
-    public attachments?: Attachment[]
+    public messageAttachment?: Attachment[]
 
     public getAttachmentById(id: string): Attachment | undefined {
-      return this.attachments?.find((attachment) => attachment.id === id)
+      return this.messageAttachment?.find((attachment) => attachment.id === id)
     }
 
     public addAttachment(attachment: Attachment): void {
-      if (this.attachments) {
-        this.attachments?.push(attachment)
+      if (this.messageAttachment) {
+        this.messageAttachment?.push(attachment)
       } else {
-        this.attachments = [attachment]
+        this.messageAttachment = [attachment]
       }
     }
   }

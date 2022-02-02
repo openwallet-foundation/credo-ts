@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import type { CredentialState } from '.'
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Handler, HandlerInboundMessage } from '../../agent/Handler'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
@@ -6,7 +7,6 @@ import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
 import type {
   AcceptProposalOptions,
   AcceptRequestOptions,
-  NegotiateOfferOptions,
   NegotiateProposalOptions,
   OfferCredentialFormats,
   OfferCredentialOptions,
@@ -56,6 +56,10 @@ export abstract class CredentialService {
     options: RequestCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
+  abstract negotiateOffer(
+    credentialOptions: ProposeCredentialOptions
+  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }>
+
   // methods for issue
 
   abstract processRequest(
@@ -79,4 +83,6 @@ export abstract class CredentialService {
   public getFormatService(credentialFormatType: CredentialFormatType): CredentialFormatService {
     throw Error('Not Implemented')
   }
+
+  abstract updateState(credentialRecord: CredentialRecord, newState: CredentialState): Promise<void>
 }

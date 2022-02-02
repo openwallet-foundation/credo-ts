@@ -3,6 +3,7 @@ import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 import type { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import type { CredentialRecord } from '../../repository/CredentialRecord'
 import type { V2CredentialService } from '../V2CredentialService'
+import type { CredentialFormatService } from '../formats/CredentialFormatService'
 import type { InboundMessageContext } from 'packages/core/src/agent/models/InboundMessageContext'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../agent/helpers'
@@ -28,7 +29,26 @@ export class V2IssueCredentialHandler implements Handler {
     unitTestLogger('----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR ISSUE CREDENTIAL')
 
     const credentialRecord = await this.credentialService.processCredential(messageContext)
-    if (this.credentialResponseCoordinator.shouldAutoRespondToIssue(credentialRecord)) {
+
+    const credentialMessage: V2IssueCredentialMessage = credentialRecord.credentialMessage as V2IssueCredentialMessage
+
+    // 1. Get all formats for this message
+    const formatServices: CredentialFormatService[] = this.credentialService.getFormatsFromMessage(
+      credentialMessage.formats
+    )
+
+    // 2. loop through found formats
+    let shouldAutoRespond = true
+    for (const formatService of formatServices) {
+      // 3. Call format.shouldRespondToProposal for each one
+      const formatShouldAutoRespond = formatService.shouldAutoRespondToIssue(
+        credentialRecord,
+        this.agentConfig.autoAcceptCredentials
+      )
+      shouldAutoRespond = shouldAutoRespond && formatShouldAutoRespond
+    }
+    // 4. if all formats are eligibile for auto response then call create offer
+    if (shouldAutoRespond) {
       return await this.createAck(credentialRecord, messageContext)
     }
   }

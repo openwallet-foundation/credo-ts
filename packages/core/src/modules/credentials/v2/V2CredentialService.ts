@@ -148,6 +148,8 @@ export class V2CredentialService extends CredentialService {
 
     const { message, credentialRecord } = this.credentialMessageBuilder.createProposal(formats, proposal)
 
+    credentialRecord.credentialAttributes = message.credentialProposal?.attributes
+
     unitTestLogger('Save meta data and emit state change event')
 
     // Q: How do we set the meta data when there are multiple formats?
@@ -323,8 +325,6 @@ export class V2CredentialService extends CredentialService {
 
     const message = await this.createOfferAsResponse(credentialRecord, proposal)
 
-    await this.updateState(credentialRecord, CredentialState.OfferSent)
-
     return { credentialRecord, message }
   }
 
@@ -348,7 +348,15 @@ export class V2CredentialService extends CredentialService {
 
     // Create the offer message
     unitTestLogger('Get the Format Service and Create Offer Message')
-    return await this.credentialMessageBuilder.createOfferAsResponse(formats, credentialRecord, proposal)
+    const credentialOfferMessage = await this.credentialMessageBuilder.createOfferAsResponse(
+      formats,
+      credentialRecord,
+      proposal
+    )
+
+    await this.updateState(credentialRecord, CredentialState.OfferSent)
+
+    return credentialOfferMessage
   }
 
   /**
@@ -378,7 +386,6 @@ export class V2CredentialService extends CredentialService {
         previousReceivedMessage: credentialRecord.offerMessage,
         previousSentMessage: credentialRecord.proposalMessage,
       })
-
       credentialRecord.offerMessage = credentialOfferMessage
 
       for (const format of formats) {
@@ -497,7 +504,7 @@ export class V2CredentialService extends CredentialService {
    * @param newState The state to update to
    *
    */
-  private async updateState(credentialRecord: CredentialRecord, newState: CredentialState) {
+  public async updateState(credentialRecord: CredentialRecord, newState: CredentialState) {
     const previousState = credentialRecord.state
     credentialRecord.state = newState
     await this.credentialRepository.update(credentialRecord)
@@ -526,6 +533,7 @@ export class V2CredentialService extends CredentialService {
     unitTestLogger('>> IN SERVICE V2 createRequest')
 
     unitTestLogger('Get the Format Service and Create Request Message')
+
     record.assertState(CredentialState.OfferReceived)
 
     const credentialOffer: V2OfferCredentialMessage | undefined = record.offerMessage as V2OfferCredentialMessage
@@ -541,6 +549,7 @@ export class V2CredentialService extends CredentialService {
       const { message, credentialRecord } = await this.credentialMessageBuilder.createRequest(formats, record, options)
 
       await this.updateState(credentialRecord, CredentialState.RequestSent)
+
       return { message, credentialRecord }
     } else {
       throw Error('No format keys found on the RequestCredentialOptions object')
@@ -567,6 +576,7 @@ export class V2CredentialService extends CredentialService {
     unitTestLogger('Looking for a credential record')
 
     const credentialRecord = await this.getByThreadAndConnectionId(credentialRequestMessage.threadId, connection?.id)
+
     unitTestLogger('Got a credential record!')
 
     // Assert
@@ -618,6 +628,62 @@ export class V2CredentialService extends CredentialService {
     return { credentialRecord, message }
   }
 
+  /**
+   * Negotiate a credential offer as holder (by sending a credential proposal message) to the connection
+   * associated with the credential record.
+   *
+   * @param credentialOptions configuration for the offer see {@link NegotiateProposalOptions}
+   * @returns Credential record associated with the credential offer and the corresponding new offer message
+   *
+   */
+  public async negotiateOffer(
+    credentialOptions: ProposeCredentialOptions
+  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }> {
+    if (!credentialOptions.credentialRecordId) {
+      throw Error('No credential record id found in propose options')
+    }
+    const credentialRecord = await this.credentialService.getById(credentialOptions.credentialRecordId)
+
+    if (!credentialRecord.connectionId) {
+      throw new AriesFrameworkError(
+        `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
+      )
+    }
+    const { message } = await this.createProposalAsResponse(credentialRecord, credentialOptions)
+
+    return { credentialRecord, message }
+  }
+
+  /**
+   * Create a {@link ProposePresentationMessage} as response to a received credential offer.
+   * To create a proposal not bound to an existing credential exchange, use {@link V1LegacyCredentialService#createProposal}.
+   *
+   * @param credentialRecord The credential record for which to create the credential proposal
+   * @param config Additional configuration to use for the proposal
+   * @returns Object containing proposal message and associated credential record
+   *
+   */
+  public async createProposalAsResponse(
+    credentialRecord: CredentialRecord,
+    options: ProposeCredentialOptions
+  ): Promise<CredentialProtocolMsgReturnType<V2ProposeCredentialMessage>> {
+    // Assert
+    credentialRecord.assertState(CredentialState.OfferReceived)
+
+    // Create message
+
+    const formats: CredentialFormatService[] = this.getFormats(options.credentialFormats)
+
+    const { message } = this.credentialMessageBuilder.createProposal(formats, options)
+    message.setThread({ threadId: credentialRecord.threadId })
+
+    // Update record
+    credentialRecord.proposalMessage = message
+    credentialRecord.credentialAttributes = message.credentialProposal?.attributes
+    this.updateState(credentialRecord, CredentialState.ProposalSent)
+
+    return { message: message, credentialRecord }
+  }
   /**
    * Create a {@link V2OfferCredentialMessage} as begonning of protocol process.
    *
@@ -678,19 +744,16 @@ export class V2CredentialService extends CredentialService {
 
       const proposeMessage: V2ProposeCredentialMessage = credentialRecord.proposalMessage as V2ProposeCredentialMessage
       if (proposeMessage && proposeMessage.credentialProposal) {
-        const options: AcceptProposalOptions = {
-          connectionId: '',
-          protocolVersion: CredentialProtocolVersion.V2_0,
-          credentialRecordId: credentialRecord.id,
-          credentialFormats: {
-            indy: {
-              attributes: proposeMessage.credentialProposal.attributes,
-            },
+        options.credentialRecordId = credentialRecord.id
+        options.credentialFormats = {
+          indy: {
+            attributes: proposeMessage.credentialProposal.attributes,
+            credentialDefinitionId: options.credentialFormats.indy?.credentialDefinitionId,
           },
         }
-
-        return options
       }
+
+      return options
     }
     throw Error('Unable to create accept proposal options object')
   }
@@ -709,7 +772,8 @@ export class V2CredentialService extends CredentialService {
   ): Promise<CredentialProtocolMsgReturnType<IssueCredentialMessage | V2IssueCredentialMessage>> {
     record.assertState(CredentialState.RequestReceived)
 
-    const offerMessage: V2OfferCredentialMessage = record.offerMessage as V2OfferCredentialMessage
+    const offerMessage = record.offerMessage as V2OfferCredentialMessage
+
     const credentialFormats: CredentialFormatService[] = this.getFormatsFromMessage(offerMessage.formats)
     const { message, credentialRecord } = await this.credentialMessageBuilder.createCredential(
       credentialFormats,

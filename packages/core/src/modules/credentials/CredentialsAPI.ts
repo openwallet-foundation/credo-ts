@@ -48,8 +48,11 @@ export interface CredentialsAPI {
   // Offer methods
   offerCredential(credentialOptions: OfferCredentialOptions): Promise<CredentialExchangeRecord>
   acceptCredentialOffer(credentialOptions: AcceptOfferOptions): Promise<CredentialExchangeRecord>
-  // declineOffer(credentialRecordId: string): Promise<CredentialExchangeRecord>
-  // negotiateOffer(credentialOptions: NegotiateOfferOptions): Promise<CredentialExchangeRecord>
+  declineCredentialOffer(
+    credentialRecordId: string,
+    version: CredentialProtocolVersion
+  ): Promise<CredentialExchangeRecord>
+  negotiateCredentialOffer(credentialOptions: ProposeCredentialOptions): Promise<CredentialExchangeRecord>
 
   // // Request
   // This is for beginning the exchange with a request (no proposal or offer). Only possible
@@ -156,6 +159,86 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
 
   public getService(protocolVersion: CredentialProtocolVersion): CredentialService {
     return this.serviceMap[protocolVersion]
+  }
+
+  public async declineCredentialOffer(
+    credentialRecordId: string,
+    version: CredentialProtocolVersion
+  ): Promise<CredentialExchangeRecord> {
+    unitTestLogger('>> IN CREDENTIAL API => declineCredentialOffer')
+
+    unitTestLogger(`version =${version}`)
+
+    // with version we can get the Service
+    const service: CredentialService = this.getService(version)
+
+    const credentialRecord: CredentialRecord = await this.getById(credentialRecordId)
+
+    credentialRecord.assertState(CredentialState.OfferReceived)
+
+    await service.updateState(credentialRecord, CredentialState.Declined)
+
+    const props: CredentialExchangeRecordProps = {
+      connectionId: credentialRecord.connectionId,
+      threadId: credentialRecord.threadId,
+      protocolVersion: version,
+      state: CredentialState.Declined,
+      role: CredentialRole.Holder,
+      credentials: [],
+    }
+    const credentialExchangeRecord = new CredentialExchangeRecord(props)
+
+    return credentialExchangeRecord
+  }
+
+  public async negotiateCredentialOffer(
+    credentialOptions: ProposeCredentialOptions
+  ): Promise<CredentialExchangeRecord> {
+    unitTestLogger('>> IN CREDENTIAL API => negotiateCredentialOffer')
+
+    // get the version
+    const version: CredentialProtocolVersion = credentialOptions.protocolVersion
+
+    unitTestLogger(`version =${version}`)
+
+    // with version we can get the Service
+    const service: CredentialService = this.getService(version)
+
+    const { credentialRecord, message } = await service.negotiateOffer(credentialOptions)
+
+    if (!credentialRecord.connectionId) {
+      throw new AriesFrameworkError(`Connection id for credential record ${credentialRecord.credentialId} not found!`)
+    }
+    const connection = await this.v2connectionService.getById(credentialRecord.connectionId)
+    if (!connection) {
+      throw new AriesFrameworkError(`Connection for ${credentialRecord.connectionId} not found!`)
+    }
+
+    const outboundMessage = createOutboundMessage(connection, message)
+
+    await this.v2messageSender.sendMessage(outboundMessage)
+
+    const recordBinding: CredentialRecordBinding = {
+      credentialRecordType: credentialOptions.credentialFormats.indy
+        ? CredentialRecordType.Indy
+        : CredentialRecordType.W3c,
+      credentialRecordId: credentialRecord.id,
+    }
+
+    const bindings: CredentialRecordBinding[] = []
+    bindings.push(recordBinding)
+
+    const props: CredentialExchangeRecordProps = {
+      connectionId: credentialRecord.connectionId,
+      threadId: credentialRecord.threadId,
+      protocolVersion: version,
+      state: CredentialState.ProposalSent,
+      role: CredentialRole.Holder,
+      credentials: bindings,
+    }
+    const credentialExchangeRecord = new CredentialExchangeRecord(props)
+
+    return credentialExchangeRecord
   }
 
   /**
@@ -342,7 +425,7 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
       unitTestLogger('We have sent a credential request')
       const outboundMessage = createOutboundMessage(connection, message)
 
-      unitTestLogger('We have a message (sending outbound): ', message)
+      unitTestLogger('We have a PROPOSAL message (sending outbound): ', message)
 
       await this.v2messageSender.sendMessage(outboundMessage)
 

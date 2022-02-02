@@ -6,6 +6,7 @@ import type {
 } from '.'
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
+import type { CredentialState } from '../CredentialState'
 import type {
   AcceptProposalOptions,
   AcceptRequestOptions,
@@ -42,6 +43,9 @@ import { V1CredentialPreview } from './V1CredentialPreview'
 const logger = new ConsoleLogger(LogLevel.debug)
 
 export class V1CredentialService extends CredentialService {
+  public updateState(credentialRecord: CredentialRecord, newState: CredentialState): Promise<void> {
+    throw new Error('Method not implemented.')
+  }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public processCredential(
     messageContext: InboundMessageContext<V2IssueCredentialMessage | IssueCredentialMessage>
@@ -194,9 +198,7 @@ export class V1CredentialService extends CredentialService {
 
     const credentialDefinitionId =
       proposal.credentialFormats.indy?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
-
-      console.log("QUACK attachment = ", credentialRecord.linkedAttachments)
-    credentialRecord.linkedAttachments = credentialProposalMessage.attachments?.filter((attachment) =>
+    credentialRecord.linkedAttachments = credentialProposalMessage.messageAttachment?.filter((attachment) =>
       isLinkedAttachment(attachment)
     )
 
@@ -239,7 +241,7 @@ export class V1CredentialService extends CredentialService {
    * associated with the credential record.
    *
    * @param credentialOptions configuration for the offer see {@link NegotiateProposalOptions}
-   * @returns Credential exchange record associated with the credential offer
+   * @returns Credential record associated with the credential offer and the corresponding new offer message
    *
    */
   public async negotiateProposal(
@@ -289,6 +291,42 @@ export class V1CredentialService extends CredentialService {
       attachments: credentialRecord.linkedAttachments,
     })
     return { credentialRecord, message }
+  }
+
+  /**
+   * Negotiate a credential offer as holder (by sending a credential proposal message) to the connection
+   * associated with the credential record.
+   *
+   * @param credentialOptions configuration for the offer see {@link NegotiateProposalOptions}
+   * @returns Credential record associated with the credential offer and the corresponding new offer message
+   *
+   */
+  public async negotiateOffer(
+    credentialOptions: ProposeCredentialOptions
+  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }> {
+    if (!credentialOptions.credentialRecordId) {
+      throw Error('No credential record id found in credential options')
+    }
+    const credentialRecord = await this.legacyCredentialService.getById(credentialOptions.credentialRecordId)
+
+    if (!credentialRecord.connectionId) {
+      throw new AriesFrameworkError(
+        `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
+      )
+    }
+    let credentialPreview: V1CredentialPreview
+    const proposal: CredPropose = credentialOptions.credentialFormats.indy?.payload.credentialPayload as CredPropose
+    if (proposal.attributes) {
+      credentialPreview = new V1CredentialPreview({
+        attributes: proposal.attributes,
+      })
+      const options: CredentialProposeOptions = {
+        credentialProposal: credentialPreview,
+      }
+      const { message } = await this.legacyCredentialService.createProposalAsResponse(credentialRecord, options)
+      return { credentialRecord, message }
+    }
+    throw Error('Missing attributes in V1 Negotiate Offer Options')
   }
 
   /**

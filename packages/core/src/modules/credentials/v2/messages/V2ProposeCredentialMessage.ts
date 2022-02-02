@@ -8,7 +8,7 @@ import { Attachment } from '../../../../decorators/attachment/Attachment'
 import { V2CredentialPreview } from '../V2CredentialPreview'
 
 export interface V2ProposeCredentialMessageProps {
-  id: string
+  id?: string
   formats: V2CredentialFormatSpec[]
   filtersAttach: Attachment[]
   comment?: string
@@ -25,7 +25,7 @@ export class V2ProposeCredentialMessage extends AgentMessage {
       this.comment = props.comment
       this.credentialProposal = props.credentialProposal
       this.formats = props.formats
-      this.filtersAttach = props.filtersAttach
+      this.messageAttachment = props.filtersAttach
     }
   }
 
@@ -47,7 +47,7 @@ export class V2ProposeCredentialMessage extends AgentMessage {
     each: true,
   })
   @IsInstance(Attachment, { each: true })
-  public filtersAttach!: Attachment[]
+  public messageAttachment!: Attachment[]
 
   /**
    * Human readable information about this Credential Proposal,

@@ -158,7 +158,7 @@ describe('V2 Credential Architecture', () => {
       }
       const options: AcceptProposalOptions = {
         connectionId: '',
-        protocolVersion: CredentialProtocolVersion.V1_0,
+        protocolVersion: CredentialProtocolVersion.V2_0,
         credentialRecordId: '',
         comment: 'v2 offer credential as response test',
         credentialFormats: {
@@ -172,7 +172,6 @@ describe('V2 Credential Architecture', () => {
         v2Offer,
         'CRED_20_OFFER'
       )
-
       expect(preview?.type).toEqual('https://didcomm.org/issue-credential/2.0/credential-preview')
       expect(preview?.attributes.length).toEqual(2)
 

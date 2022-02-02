@@ -1,4 +1,3 @@
-import type { CredentialStateChangedEvent } from '../../..'
 import type { EventEmitter } from '../../../../../agent/EventEmitter'
 import type { CredPropose } from '../../../interfaces'
 import type { CredentialRecord, CredentialRepository } from '../../../repository'
@@ -6,7 +5,6 @@ import type { V2CredProposeOfferRequestFormat } from '../CredentialFormatService
 import type { MetaDataService } from '../MetaDataService'
 import type { CredOffer } from 'indy-sdk'
 
-import { CredentialEventTypes } from '../../..'
 import { CredentialMetadataKeys } from '../../../repository'
 
 export class IndyMetaDataService implements MetaDataService {
@@ -16,25 +14,6 @@ export class IndyMetaDataService implements MetaDataService {
   public constructor(credentialRepository: CredentialRepository, eventEmitter: EventEmitter) {
     this.eventEmitter = eventEmitter
     this.credentialRepository = credentialRepository
-  }
-  /**
-   * Save the meta data and emit event for a credential offer
-   * @param proposal wrapper object that contains either indy or some other format of proposal, in this case indy.
-   * see {@link V2CredProposalFormat}
-   * @param credentialRecord the record containing attributes for this credentual
-   */
-  public async setMetaDataAndEmitEventForOffer(
-    offer: V2CredProposeOfferRequestFormat,
-    credentialRecord: CredentialRecord
-  ): Promise<void> {
-    if (offer.indy?.payload.credentialPayload) {
-      const credOffer: CredOffer = offer.indy.payload.credentialPayload as CredOffer
-
-      credentialRecord.metadata.set('_internal/indyCredential', {
-        schemaId: credOffer.schema_id,
-        credentialDefinintionId: credOffer.cred_def_id,
-      })
-    }
   }
   /**
    * Set the meta data only
@@ -76,6 +55,7 @@ export class IndyMetaDataService implements MetaDataService {
     credentialRecord: CredentialRecord
   ): Promise<void> {
     const credPropose: CredPropose = proposal.indy?.payload.credentialPayload as CredPropose
+
     credentialRecord.metadata.set('_internal/indyCredential', {
       schemaId: credPropose.schemaId,
       credentialDefinintionId: credPropose.credentialDefinitionId,

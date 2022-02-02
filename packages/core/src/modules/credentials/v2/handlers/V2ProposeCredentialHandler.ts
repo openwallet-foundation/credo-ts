@@ -4,6 +4,7 @@ import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 import type { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import type { AcceptProposalOptions } from '../../interfaces'
 import type { V2CredentialService } from '../V2CredentialService'
+import type { CredentialFormatService } from '../formats/CredentialFormatService'
 import type { InboundMessageContext } from 'packages/core/src/agent/models/InboundMessageContext'
 
 import { createOutboundMessage } from '../../../../../src/agent/helpers'
@@ -30,9 +31,25 @@ export class V2ProposeCredentialHandler implements Handler {
     unitTestLogger('----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR PROPOSE CREDENTIAL')
     const credentialRecord = await this.credentialService.processProposal(messageContext)
 
-    // MJR-TODO there is some indy specific stuff in the credentialAutoResponseCoordinator
-    // this needs looking at
-    if (this.credentialAutoResponseCoordinator.shouldAutoRespondToProposal(credentialRecord)) {
+    const proposalMessage: V2ProposeCredentialMessage = credentialRecord.proposalMessage as V2ProposeCredentialMessage
+
+    // 1. Get all formats for this message
+    const formatServices: CredentialFormatService[] = this.credentialService.getFormatsFromMessage(
+      proposalMessage.formats
+    )
+
+    // 2. loop through found formats
+    let shouldAutoRespond = true
+    for (const formatService of formatServices) {
+      // 3. Call format.shouldRespondToProposal for each one
+      const formatShouldAutoRespond = formatService.shouldAutoRespondToProposal(
+        credentialRecord,
+        this.agentConfig.autoAcceptCredentials
+      )
+      shouldAutoRespond = shouldAutoRespond && formatShouldAutoRespond
+    }
+    // 4. if all formats are eligibile for auto response then call create offer
+    if (shouldAutoRespond) {
       return await this.createOffer(credentialRecord, messageContext)
     }
   }
@@ -58,8 +75,10 @@ export class V2ProposeCredentialHandler implements Handler {
     }
 
     const options: AcceptProposalOptions = this.credentialService.createAcceptProposalOptions(credentialRecord)
+
     const message = await this.credentialService.createOfferAsResponse(credentialRecord, options)
 
+    credentialRecord.offerMessage = message
     return createOutboundMessage(messageContext.connection, message)
   }
 }
