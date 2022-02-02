@@ -33,7 +33,6 @@ import {
   ConnectionRole,
   ConnectionState,
   CredentialEventTypes,
-  CredentialPreview,
   CredentialState,
   DidDoc,
   PredicateType,
@@ -46,6 +45,7 @@ import {
 } from '../src'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
+import { V1CredentialPreview } from '../src/modules/credentials/v1/V1CredentialPreview'
 import { DidCommService } from '../src/modules/dids'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
@@ -150,6 +150,7 @@ export function waitForCredentialRecordSubject(
   }
 ) {
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+
   return firstValueFrom(
     observable.pipe(
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
@@ -178,7 +179,6 @@ export async function waitForCredentialRecord(
   }
 ) {
   const observable = agent.events.observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
-
   return waitForCredentialRecordSubject(observable, options)
 }
 
@@ -354,7 +354,7 @@ export async function issueCredential({
     .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
     .subscribe(holderReplay)
 
-  let issuerCredentialRecord = await issuerAgent.credentials.offerCredential(issuerConnectionId, {
+  let issuerCredentialRecord = await issuerAgent.credentials.OLDofferCredential(issuerConnectionId, {
     ...credentialTemplate,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   })
@@ -364,7 +364,7 @@ export async function issueCredential({
     state: CredentialState.OfferReceived,
   })
 
-  await holderAgent.credentials.acceptOffer(holderCredentialRecord.id, {
+  await holderAgent.credentials.OLDacceptOffer(holderCredentialRecord.id, {
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   })
 
@@ -418,7 +418,7 @@ export async function issueConnectionLessCredential({
     state: CredentialState.OfferReceived,
   })
 
-  holderCredentialRecord = await holderAgent.credentials.acceptOffer(holderCredentialRecord.id, {
+  holderCredentialRecord = await holderAgent.credentials.OLDacceptOffer(holderCredentialRecord.id, {
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   })
 
@@ -544,17 +544,17 @@ export async function setupCredentialTests(
   await aliceAgent.initialize()
 
   const {
-    schema: { id: schemaId },
+    schema,
     definition: { id: credDefId },
   } = await prepareForIssuance(faberAgent, ['name', 'age', 'profile_picture', 'x-ray'])
 
   const [faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
 
-  return { faberAgent, aliceAgent, credDefId, schemaId, faberConnection, aliceConnection }
+  return { faberAgent, aliceAgent, credDefId, schema, faberConnection, aliceConnection }
 }
 
 export async function setupProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {
-  const credentialPreview = CredentialPreview.fromRecord({
+  const credentialPreview = V1CredentialPreview.fromRecord({
     name: 'John',
     age: '99',
   })

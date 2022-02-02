@@ -1,7 +1,8 @@
 import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
-import type { OfferCredentialMessage, CredentialPreview } from './messages'
 import type { CredentialRecord } from './repository/CredentialRecord'
-import type { CredentialOfferTemplate, CredentialProposeOptions } from './services'
+import type { CredentialOfferTemplate, CredentialProposeOptions } from './v1'
+import type { V1CredentialPreview } from './v1/V1CredentialPreview'
+import type { OfferCredentialMessage, ProposeCredentialMessage } from './v1/messages'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -17,6 +18,7 @@ import { MediationRecipientService } from '../routing'
 
 import { CredentialResponseCoordinator } from './CredentialResponseCoordinator'
 import { CredentialProblemReportReason } from './errors'
+import { V1LegacyCredentialService } from './v1/V1LegacyCredentialService'
 import {
   CredentialAckHandler,
   IssueCredentialHandler,
@@ -24,14 +26,13 @@ import {
   ProposeCredentialHandler,
   RequestCredentialHandler,
   CredentialProblemReportHandler,
-} from './handlers'
-import { CredentialProblemReportMessage } from './messages'
-import { CredentialService } from './services'
+} from './v1/handlers'
+import { CredentialProblemReportMessage } from './v1/messages'
 
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialsModule {
   private connectionService: ConnectionService
-  private credentialService: CredentialService
+  private credentialService: V1LegacyCredentialService
   private messageSender: MessageSender
   private agentConfig: AgentConfig
   private credentialResponseCoordinator: CredentialResponseCoordinator
@@ -40,7 +41,7 @@ export class CredentialsModule {
   public constructor(
     dispatcher: Dispatcher,
     connectionService: ConnectionService,
-    credentialService: CredentialService,
+    credentialService: V1LegacyCredentialService,
     messageSender: MessageSender,
     agentConfig: AgentConfig,
     credentialResponseCoordinator: CredentialResponseCoordinator,
@@ -63,12 +64,17 @@ export class CredentialsModule {
    * @param config Additional configuration to use for the proposal
    * @returns Credential record associated with the sent proposal message
    */
-  public async proposeCredential(connectionId: string, config?: CredentialProposeOptions) {
+
+  // MOVED INTO V1CredentialService.createProposal
+  // MJR-TODO
+  // leave here until the auto accept v2 stuff is done then remove
+  public async OLDproposeCredential(connectionId: string, config?: CredentialProposeOptions) {
     const connection = await this.connectionService.getById(connectionId)
 
     const { message, credentialRecord } = await this.credentialService.createProposal(connection, config)
 
     const outbound = createOutboundMessage(connection, message)
+
     await this.messageSender.sendMessage(outbound)
 
     return credentialRecord
@@ -83,7 +89,7 @@ export class CredentialsModule {
    * @returns Credential record associated with the credential offer
    *
    */
-  public async acceptProposal(
+  public async OLDacceptProposal(
     credentialRecordId: string,
     config?: {
       comment?: string
@@ -100,7 +106,7 @@ export class CredentialsModule {
 
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
-    const credentialProposalMessage = credentialRecord.proposalMessage
+    const credentialProposalMessage = credentialRecord.proposalMessage as ProposeCredentialMessage
     if (!credentialProposalMessage?.credentialProposal) {
       throw new AriesFrameworkError(
         `Credential record with id ${credentialRecordId} is missing required credential proposal`
@@ -109,7 +115,7 @@ export class CredentialsModule {
 
     const credentialDefinitionId = config?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
 
-    credentialRecord.linkedAttachments = credentialProposalMessage.attachments?.filter((attachment) =>
+    credentialRecord.linkedAttachments = credentialProposalMessage.messageAttachment?.filter((attachment) =>
       isLinkedAttachment(attachment)
     )
 
@@ -144,9 +150,9 @@ export class CredentialsModule {
    * @returns Credential record associated with the credential offer
    *
    */
-  public async negotiateProposal(
+  public async OLDnegotiateProposal(
     credentialRecordId: string,
-    preview: CredentialPreview,
+    preview: V1CredentialPreview,
     config?: {
       comment?: string
       credentialDefinitionId?: string
@@ -162,7 +168,7 @@ export class CredentialsModule {
     }
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
-    const credentialProposalMessage = credentialRecord.proposalMessage
+    const credentialProposalMessage = credentialRecord.proposalMessage as ProposeCredentialMessage
 
     if (!credentialProposalMessage?.credentialProposal) {
       throw new AriesFrameworkError(
@@ -200,7 +206,7 @@ export class CredentialsModule {
    * @param credentialTemplate The credential template to use for the offer
    * @returns Credential record associated with the sent credential offer message
    */
-  public async offerCredential(
+  public async OLDofferCredential(
     connectionId: string,
     credentialTemplate: CredentialOfferTemplate
   ): Promise<CredentialRecord> {
@@ -214,6 +220,7 @@ export class CredentialsModule {
     return credentialRecord
   }
 
+  // MJR-TODO move this into CredentialsAPI
   /**
    * Initiate a new credential exchange as issuer by creating a credential offer
    * not bound to any connection. The offer must be delivered out-of-band to the holder
@@ -251,7 +258,11 @@ export class CredentialsModule {
    * @returns Credential record associated with the sent credential request message
    *
    */
-  public async acceptOffer(
+
+  // MOVED INTO V1CredentialService.acceptOffer
+  // MJR-TODO
+  // leave here until the auto accept v2 accept offer is done (incl. tests) then remove
+  public async OLDacceptOffer(
     credentialRecordId: string,
     config?: { comment?: string; autoAcceptCredential?: AutoAcceptCredential }
   ): Promise<CredentialRecord> {
@@ -313,7 +324,7 @@ export class CredentialsModule {
    * @param credentialRecordId the id of the credential to be declined
    * @returns credential record that was declined
    */
-  public async declineOffer(credentialRecordId: string) {
+  public async OLDdeclineOffer(credentialRecordId: string) {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)
     await this.credentialService.declineOffer(credentialRecord)
     return credentialRecord
@@ -329,9 +340,9 @@ export class CredentialsModule {
    * @returns Credential record associated with the sent credential request message
    *
    */
-  public async negotiateOffer(
+  public async OLDnegotiateOffer(
     credentialRecordId: string,
-    preview: CredentialPreview,
+    preview: V1CredentialPreview,
     config?: { comment?: string; autoAcceptCredential?: AutoAcceptCredential }
   ) {
     const credentialRecord = await this.credentialService.getById(credentialRecordId)
@@ -363,7 +374,7 @@ export class CredentialsModule {
    * @returns Credential record associated with the sent presentation message
    *
    */
-  public async acceptRequest(
+  public async OLDacceptRequest(
     credentialRecordId: string,
     config?: { comment?: string; autoAcceptCredential?: AutoAcceptCredential }
   ) {
@@ -412,7 +423,7 @@ export class CredentialsModule {
    * @returns credential record associated with the sent credential acknowledgement message
    *
    */
-  public async acceptCredential(credentialRecordId: string) {
+  public async OLDacceptCredential(credentialRecordId: string) {
     const record = await this.credentialService.getById(credentialRecordId)
     const { message, credentialRecord } = await this.credentialService.createAck(record)
 

@@ -1,5 +1,5 @@
+import { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
 import { CredentialState } from '../CredentialState'
-import { CredentialPreviewAttribute } from '../messages'
 import { CredentialRecord } from '../repository/CredentialRecord'
 import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 

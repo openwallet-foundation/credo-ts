@@ -7,7 +7,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import {
-  CredentialPreview,
+  V1CredentialPreview,
   AutoAcceptCredential,
   CredentialEventTypes,
   CredentialRecord,
@@ -25,7 +25,7 @@ const aliceConfig = getBaseConfig('Alice connection-less Credentials', {
   endpoints: ['rxjs:alice'],
 })
 
-const credentialPreview = CredentialPreview.fromRecord({
+const credentialPreview = V1CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
 })
@@ -93,7 +93,7 @@ describe('credentials', () => {
     })
 
     testLogger.test('Alice sends credential request to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id)
+    aliceCredentialRecord = await aliceAgent.credentials.OLDacceptOffer(aliceCredentialRecord.id)
 
     testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
@@ -102,7 +102,7 @@ describe('credentials', () => {
     })
 
     testLogger.test('Faber sends credential to Alice')
-    faberCredentialRecord = await faberAgent.credentials.acceptRequest(faberCredentialRecord.id)
+    faberCredentialRecord = await faberAgent.credentials.OLDacceptRequest(faberCredentialRecord.id)
 
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
@@ -111,7 +111,7 @@ describe('credentials', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
+    aliceCredentialRecord = await aliceAgent.credentials.OLDacceptCredential(aliceCredentialRecord.id)
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
@@ -173,7 +173,7 @@ describe('credentials', () => {
       state: CredentialState.OfferReceived,
     })
 
-    await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id, {
+    await aliceAgent.credentials.OLDacceptOffer(aliceCredentialRecord.id, {
       autoAcceptCredential: AutoAcceptCredential.ContentApproved,
     })
 

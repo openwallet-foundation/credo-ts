@@ -1,3 +1,4 @@
+import type { IssueCredentialMessage, ProposeCredentialMessage } from '.'
 import type { CredentialRecord } from './repository'
 
 import { scoped, Lifecycle } from 'tsyringe'
@@ -25,7 +26,7 @@ export class CredentialResponseCoordinator {
    *	- Otherwise the agent config
    *	- Otherwise {@link AutoAcceptCredential.Never} is returned
    */
-  private static composeAutoAccept(
+  public static composeAutoAccept(
     recordConfig: AutoAcceptCredential | undefined,
     agentConfig: AutoAcceptCredential | undefined
   ) {
@@ -117,8 +118,7 @@ export class CredentialResponseCoordinator {
 
   private areOfferValuesValid(credentialRecord: CredentialRecord) {
     const { offerMessage, credentialAttributes } = credentialRecord
-
-    if (offerMessage && credentialAttributes) {
+    if (offerMessage && credentialAttributes && offerMessage.credentialPreview) {
       const offerValues = CredentialUtils.convertAttributesToValues(offerMessage.credentialPreview.attributes)
       const defaultValues = CredentialUtils.convertAttributesToValues(credentialAttributes)
       if (CredentialUtils.checkValuesMatch(offerValues, defaultValues)) {
@@ -129,11 +129,13 @@ export class CredentialResponseCoordinator {
   }
 
   private areCredentialValuesValid(credentialRecord: CredentialRecord) {
+    const msg: IssueCredentialMessage | undefined = credentialRecord.credentialMessage as IssueCredentialMessage
+
     if (credentialRecord.credentialAttributes && credentialRecord.credentialMessage) {
-      const indyCredential = credentialRecord.credentialMessage.indyCredential
+      const indyCredential = msg.indyCredential
 
       if (!indyCredential) {
-        this.agentConfig.logger.error(`Missing required base64 or json encoded attachment data for credential`)
+        this.agentConfig.logger.error(`Missing required base64 encoded attachment data for credential`)
         return false
       }
 
@@ -148,16 +150,19 @@ export class CredentialResponseCoordinator {
   }
 
   private areProposalAndOfferDefinitionIdEqual(credentialRecord: CredentialRecord) {
-    const proposalCredentialDefinitionId = credentialRecord.proposalMessage?.credentialDefinitionId
+    const msg: ProposeCredentialMessage | undefined = credentialRecord.proposalMessage as ProposeCredentialMessage
+    const proposalCredentialDefinitionId = msg?.credentialDefinitionId
     const offerCredentialDefinitionId = credentialRecord.offerMessage?.indyCredentialOffer?.cred_def_id
     return proposalCredentialDefinitionId === offerCredentialDefinitionId
   }
 
   private isRequestDefinitionIdValid(credentialRecord: CredentialRecord) {
+    const proposeMessage: ProposeCredentialMessage | undefined =
+      credentialRecord.proposalMessage as ProposeCredentialMessage
+
     if (credentialRecord.proposalMessage || credentialRecord.offerMessage) {
       const previousCredentialDefinitionId =
-        credentialRecord.offerMessage?.indyCredentialOffer?.cred_def_id ??
-        credentialRecord.proposalMessage?.credentialDefinitionId
+        credentialRecord.offerMessage?.indyCredentialOffer?.cred_def_id ?? proposeMessage.credentialDefinitionId
 
       if (previousCredentialDefinitionId === credentialRecord.requestMessage?.indyCredentialRequest?.cred_def_id) {
         return true

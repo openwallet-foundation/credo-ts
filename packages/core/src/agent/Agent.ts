@@ -16,7 +16,7 @@ import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
-import { CredentialsModule } from '../modules/credentials/CredentialsModule'
+import { CredentialsAPI } from '../modules/credentials/CredentialsAPI'
 import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
@@ -50,11 +50,13 @@ export class Agent {
   public readonly proofs: ProofsModule
   public readonly basicMessages: BasicMessagesModule
   public readonly ledger: LedgerModule
-  public readonly credentials: CredentialsModule
+  public readonly credentials!: CredentialsAPI
+  // public readonly credentials: CredentialsModule
   public readonly mediationRecipient: RecipientModule
   public readonly mediator: MediatorModule
   public readonly discovery: DiscoverFeaturesModule
   public readonly dids: DidsModule
+
   public readonly wallet: Wallet
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
@@ -97,7 +99,9 @@ export class Agent {
 
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.container.resolve(ConnectionsModule)
-    this.credentials = this.container.resolve(CredentialsModule)
+    // this.credentials = this.container.resolve(CredentialsModule)
+    this.credentials = this.container.resolve(CredentialsAPI)
+
     this.proofs = this.container.resolve(ProofsModule)
     this.mediator = this.container.resolve(MediatorModule)
     this.mediationRecipient = this.container.resolve(RecipientModule)
@@ -215,7 +219,7 @@ export class Agent {
   }
 
   public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
-    return await this.messageReceiver.receiveMessage(inboundMessage, session)
+    await this.messageReceiver.receiveMessage(inboundMessage, session)
   }
 
   public get injectionContainer() {

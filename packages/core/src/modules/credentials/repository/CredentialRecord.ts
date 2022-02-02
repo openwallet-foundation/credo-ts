@@ -1,6 +1,10 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialState } from '../CredentialState'
+import type { V2IssueCredentialMessage } from '../v2/messages/V2IssueCredentialMessage'
+import type { V2OfferCredentialMessage } from '../v2/messages/V2OfferCredentialMessage'
+import type { V2ProposeCredentialMessage } from '../v2/messages/V2ProposeCredentialMessage'
+import type { V2RequestCredentialMessage } from '../v2/messages/V2RequestCredentialMessage'
 import type { CredentialMetadata } from './credentialMetadataTypes'
 
 import { Type } from 'class-transformer'
@@ -9,14 +13,19 @@ import { Attachment } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
+import { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
 import {
-  CredentialPreviewAttribute,
   IssueCredentialMessage,
   OfferCredentialMessage,
   ProposeCredentialMessage,
   RequestCredentialMessage,
-} from '../messages'
-import { CredentialInfo } from '../models/CredentialInfo'
+} from '../v1/messages'
+import { CredentialInfo } from '../v1/models/CredentialInfo'
+
+export type ProposeMessageType = ProposeCredentialMessage | V2ProposeCredentialMessage | undefined
+export type OfferMessageType = OfferCredentialMessage | V2OfferCredentialMessage
+export type RequestMessageType = RequestCredentialMessage | V2RequestCredentialMessage
+export type IssueCredentialType = IssueCredentialMessage | V2IssueCredentialMessage
 
 export interface CredentialRecordProps {
   id?: string
@@ -27,9 +36,9 @@ export interface CredentialRecordProps {
 
   credentialId?: string
   tags?: CustomCredentialTags
-  proposalMessage?: ProposeCredentialMessage
-  offerMessage?: OfferCredentialMessage
-  requestMessage?: RequestCredentialMessage
+  proposalMessage?: ProposeMessageType
+  offerMessage?: OfferMessageType
+  requestMessage?: RequestMessageType
   credentialMessage?: IssueCredentialMessage
   credentialAttributes?: CredentialPreviewAttribute[]
   autoAcceptCredential?: AutoAcceptCredential
@@ -55,13 +64,13 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
 
   // message data
   @Type(() => ProposeCredentialMessage)
-  public proposalMessage?: ProposeCredentialMessage
+  public proposalMessage?: ProposeMessageType
   @Type(() => OfferCredentialMessage)
-  public offerMessage?: OfferCredentialMessage
+  public offerMessage?: OfferMessageType
   @Type(() => RequestCredentialMessage)
-  public requestMessage?: RequestCredentialMessage
+  public requestMessage?: RequestMessageType
   @Type(() => IssueCredentialMessage)
-  public credentialMessage?: IssueCredentialMessage
+  public credentialMessage?: IssueCredentialType
 
   @Type(() => CredentialPreviewAttribute)
   public credentialAttributes?: CredentialPreviewAttribute[]
@@ -85,6 +94,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       this._tags = props.tags ?? {}
 
       this.proposalMessage = props.proposalMessage
+
       this.offerMessage = props.offerMessage
       this.requestMessage = props.requestMessage
       this.credentialMessage = props.credentialMessage
