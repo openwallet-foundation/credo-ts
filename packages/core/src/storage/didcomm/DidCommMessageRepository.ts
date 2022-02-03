@@ -26,6 +26,22 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
     await this.save(didCommMessageRecord)
   }
 
+  public async saveOrUpdateAgentMessage(options: SaveAgentMessageOptions) {
+    const record = await this.findSingleByQuery({
+      associatedRecordId: options.associatedRecordId,
+      messageType: options.agentMessage.type,
+    })
+
+    if (record) {
+      record.message = options.agentMessage.toJSON() as JsonObject
+      record.role = options.role
+      await this.update(record)
+      return
+    }
+
+    await this.saveAgentMessage(options)
+  }
+
   public async getAgentMessage<MessageClass extends typeof AgentMessage = typeof AgentMessage>({
     associatedRecordId,
     messageClass,
@@ -36,6 +52,17 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
     })
 
     return record.getMessageInstance(messageClass)
+  }
+  public async findAgentMessage<MessageClass extends typeof AgentMessage = typeof AgentMessage>({
+    associatedRecordId,
+    messageClass,
+  }: GetAgentMessageOptions<MessageClass>): Promise<InstanceType<MessageClass> | null> {
+    const record = await this.findSingleByQuery({
+      associatedRecordId,
+      messageType: messageClass.type,
+    })
+
+    return record?.getMessageInstance(messageClass) ?? null
   }
 }
 
