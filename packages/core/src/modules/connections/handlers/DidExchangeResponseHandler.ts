@@ -37,7 +37,7 @@ export class DidExchangeResponseHandler implements Handler {
     const { protocol } = connectionRecord
     if (protocol !== HandshakeProtocol.DidExchange) {
       throw new AriesFrameworkError(
-        `Connection record protol is ${protocol} but handler supports only ${HandshakeProtocol.DidExchange}.`
+        `Connection record protocol is ${protocol} but handler supports only ${HandshakeProtocol.DidExchange}.`
       )
     }
 
@@ -52,7 +52,7 @@ export class DidExchangeResponseHandler implements Handler {
     messageContext.connection = connectionRecord
     const connection = await this.didExchangeProtocol.processResponse(messageContext)
 
-    // TODO: should we only send ping message in case of autoAcceptConnection or always?
+    // TODO: should we only send complete message in case of autoAcceptConnection or always?
     // In AATH we have a separate step to send the ping. So for now we'll only do it
     // if auto accept is enable
     if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {

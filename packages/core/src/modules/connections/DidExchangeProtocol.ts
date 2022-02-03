@@ -409,7 +409,8 @@ export class DidExchangeProtocol {
       }),
     })
 
-    const kid = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
+    const key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
+    const kid = new DidKey(key).did
     const payload = JsonEncoder.toBuffer(didDoc)
 
     const jws = await this.jwsService.createJws({

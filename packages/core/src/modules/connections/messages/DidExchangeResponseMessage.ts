@@ -1,5 +1,5 @@
 import { Type, Expose } from 'class-transformer'
-import { Equals, IsString } from 'class-validator'
+import { Equals, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
@@ -42,5 +42,6 @@ export class DidExchangeResponseMessage extends AgentMessage {
 
   @Expose({ name: 'did_doc~attach' })
   @Type(() => Attachment)
+  @ValidateNested()
   public didDoc?: Attachment
 }

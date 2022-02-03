@@ -408,7 +408,6 @@ describe('out of band', () => {
 
       expect(faberConnections).toHaveLength(3)
       expect(faberAliceConnection?.multiUseInvitation).toBe(true)
-      // expect(faberAliceConnection?.state).toBe(ConnectionState.Invited)
       expect(faberAliceConnection?.state).toBe(DidExchangeState.InvitationSent)
 
       expect(firstConnection.getTag('invitationKey')).toEqual(faberAliceConnection?.verkey)

@@ -308,7 +308,7 @@ export class OutOfBandModule {
           const theirDidRecord = await this.dids.findByVerkey(recipientKey)
 
           if (theirDidRecord) {
-            existingConnection = await this.connectionsModule.findByDid(theirDidRecord?.id)
+            existingConnection = await this.connectionsModule.findByDid(theirDidRecord.id)
           }
         }
 

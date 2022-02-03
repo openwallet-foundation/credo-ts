@@ -44,7 +44,7 @@ export class DidExchangeRequestHandler implements Handler {
     const { protocol } = connectionRecord
     if (protocol !== HandshakeProtocol.DidExchange) {
       throw new AriesFrameworkError(
-        `Connection record protol is ${protocol} but handler supports only ${HandshakeProtocol.DidExchange}.`
+        `Connection record protocol is ${protocol} but handler supports only ${HandshakeProtocol.DidExchange}.`
       )
     }
 
