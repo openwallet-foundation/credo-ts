@@ -346,39 +346,39 @@ export class DidExchangeProtocol {
       controller: '#id',
     })
 
-    let mediatorRoutingKey
-    if (routing.routingKeys.length > 0) {
-      const [mediatorPublicKeyBase58] = routing.routingKeys
-      const mediatorEd25519Key = Key.fromPublicKeyBase58(mediatorPublicKeyBase58, KeyType.Ed25519)
+    const didDocumentBuilder = new DidDocumentBuilder('')
+      .addAuthentication(ed25519VerificationMethod)
+      .addKeyAgreement(x25519VerificationMethod)
+
+    const routingKeys = routing.routingKeys.map((routingKey) => {
+      const mediatorEd25519Key = Key.fromPublicKeyBase58(routingKey, KeyType.Ed25519)
       const mediatorEd25519DidKey = new DidKey(mediatorEd25519Key)
       const mediatorX25519Key = Key.fromPublicKey(
         convertPublicKeyToX25519(mediatorEd25519Key.publicKey),
         KeyType.X25519
       )
       // Use ed25519 did:key, which also includes the x25519 key used for didcomm
-      mediatorRoutingKey = `${mediatorEd25519DidKey.did}#${mediatorX25519Key.fingerprint}`
-    }
-
-    // TODO Iterate over all endpoints
-    const [serviceEndpoint] = routing.endpoints
-    const service = new DidCommService({
-      id: '#service-0',
-      // Fixme: can we use relative reference (#id) instead of absolute reference here (did:example:123#id)?
-      // We don't know the did yet
-      // TODO we should perhaps use keyAgreement instead of authentication key in here, then it must be changed also in connection record verkey
-      recipientKeys: [ed25519Key.publicKeyBase58],
-      serviceEndpoint,
-      accept: ['didcomm/aip2;env=rfc19'],
-      // It is important that we encode the routing keys as key references.
-      // So instead of using plain verkeys, we should encode them as did:key dids
-      routingKeys: mediatorRoutingKey ? [mediatorRoutingKey] : [],
+      const mediatorRoutingKey = `${mediatorEd25519DidKey.did}#${mediatorX25519Key.fingerprint}`
+      return mediatorRoutingKey
     })
 
-    const didDocument = new DidDocumentBuilder('')
-      .addAuthentication(ed25519VerificationMethod)
-      .addKeyAgreement(x25519VerificationMethod)
-      .addService(service)
-      .build()
+    routing.endpoints.forEach((endpoint) => {
+      const service = new DidCommService({
+        id: '#service-0',
+        // Fixme: can we use relative reference (#id) instead of absolute reference here (did:example:123#id)?
+        // We don't know the did yet
+        // TODO we should perhaps use keyAgreement instead of authentication key in here, then it must be changed also in connection record verkey
+        recipientKeys: [ed25519Key.publicKeyBase58],
+        serviceEndpoint: endpoint,
+        accept: ['didcomm/aip2;env=rfc19'],
+        // It is important that we encode the routing keys as key references.
+        // So instead of using plain verkeys, we should encode them as did:key dids
+        routingKeys,
+      })
+      didDocumentBuilder.addService(service)
+    })
+
+    const didDocument = didDocumentBuilder.build()
 
     const peerDid = DidPeer.fromDidDocument(didDocument, PeerDidNumAlgo.GenesisDoc)
 
