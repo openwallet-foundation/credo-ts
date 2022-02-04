@@ -50,8 +50,8 @@ jobs:
 
       - name: Set git tag
         run: |
-          git tag ${{ steps.get-version.outputs.version }}
-          git push origin ${{ steps.get-version.outputs.version }} --no-verify
+          git tag v${{ steps.get-version.outputs.version }}
+          git push origin v${{ steps.get-version.outputs.version }} --no-verify
 
   release-stable:
     runs-on: ubuntu-20.04
