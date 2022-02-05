@@ -26,7 +26,9 @@ export interface CreateOutOfBandMessageConfig {
   label: string
   goalCode?: string
   goal?: string
-  handshakeProtocol?: string
+  handshake: boolean
+  handshakeProtocols?: string[]
+  messages?: AgentMessage[]
   multiUseInvitation?: boolean
 }
 
@@ -67,12 +69,14 @@ export class OutOfBandModule {
   /**
    * Creates an out-of-band message and adds given agent messages to `requests~attach` attribute.
    *
-   * If you want to create a new connection you need to set `handshakeProtocol` to one of the supported
-   * protocols from `HandhsakeProtocol`, for example:
+   * If you want to create a new connection you need to set `handshake` to `true`. You can define
+   * what patricular handshakre protocols should be used by setting `handshakeProtocols` to one or
+   * more supported protocols from `HandhsakeProtocol`, for example:
    *
    * ```ts
    *  const config = {
-   *    handshakeProtocol: HandshakeProtocol.DidExchange
+   *    handshake: true
+   *    handshakeProtocols: [HandshakeProtocol.DidExchange]
    *  }
    *  const message = outOfBandModule.createMessage(config)
    * ```
@@ -84,11 +88,10 @@ export class OutOfBandModule {
    * @returns Out-of-band message and optionally connection record created based on `handshakeProtocol`
    */
   public async createMessage(
-    config: CreateOutOfBandMessageConfig,
-    messages?: AgentMessage[]
+    config: CreateOutOfBandMessageConfig
   ): Promise<{ outOfBandMessage: OutOfBandMessage; connectionRecord?: ConnectionRecord }> {
-    const { handshakeProtocol, label, multiUseInvitation } = config
-    if (!handshakeProtocol && !messages) {
+    const { label, multiUseInvitation, handshake, handshakeProtocols: customHandshakeProtocols, messages } = config
+    if (!handshake && !messages) {
       throw new AriesFrameworkError(
         'One or both of handshake_protocols and requests~attach MUST be included in the message.'
       )
@@ -101,8 +104,18 @@ export class OutOfBandModule {
     // When we create oob record we need to count with it inside connection request handler.
     let connectionRecord: ConnectionRecord | undefined
 
-    if (handshakeProtocol) {
-      this.assertHandshakeProtocols([handshakeProtocol])
+    if (handshake) {
+      let handshakeProtocols
+      // Find first supported handshake protocol preserving the order of handshake protocols defined by agent
+      if (customHandshakeProtocols) {
+        this.assertHandshakeProtocols(customHandshakeProtocols)
+        handshakeProtocols = customHandshakeProtocols
+      } else {
+        handshakeProtocols = this.getSupportedHandshakeProtocols()
+      }
+
+      // TODO Currently, we need one protocol to create connection invitation to set connection state and
+      const [handshakeProtocol] = handshakeProtocols
 
       const connectionWithInvitation = await this.connectionsModule.createConnection({
         myLabel: label,
@@ -211,9 +224,9 @@ export class OutOfBandModule {
 
     if (handshakeProtocols) {
       this.logger.debug('Out of band message contains handshake protocols.')
-      this.assertHandshakeProtocols(handshakeProtocols)
-
-      const [handshakeProtocol] = handshakeProtocols
+      // Find first supported handshake protocol preserving the order of `handshake_protocols`
+      // in out-of-band message.
+      const handshakeProtocol = this.getFirstSupportedProtocol(handshakeProtocols)
 
       let connectionRecord: ConnectionRecord
       if (existingConnection) {
@@ -278,7 +291,8 @@ export class OutOfBandModule {
   }
 
   private areHandshakeProtocolsSupported(handshakeProtocols: string[]) {
-    return this.getSupportedHandshakeProtocols().some((p) => handshakeProtocols.includes(p))
+    const supportedProtocols = this.getSupportedHandshakeProtocols()
+    return handshakeProtocols.every((p) => supportedProtocols.includes(p))
   }
 
   private getSupportedHandshakeProtocols() {
@@ -289,7 +303,23 @@ export class OutOfBandModule {
       throw new AriesFrameworkError('There is no handshake protocol supported. Agent can not create a connection.')
     }
 
-    return handshakeProtocols
+    // Order protocols according to `handshakeMessageFamilies` array
+    const orederedProtocols = handshakeMessageFamilies
+      .map((messageFamily) => handshakeProtocols.find((p) => p.startsWith(messageFamily)))
+      .filter((item): item is string => !!item)
+
+    return orederedProtocols
+  }
+
+  private getFirstSupportedProtocol(handshakeProtocols: string[]) {
+    const supportedProtocols = this.getSupportedHandshakeProtocols()
+    const handshakeProtocol = handshakeProtocols.find((p) => supportedProtocols.includes(p))
+    if (!handshakeProtocol) {
+      throw new AriesFrameworkError(
+        `Handshake protocols [${handshakeProtocols}] are not supported. Supported protocols are [${supportedProtocols}]`
+      )
+    }
+    return handshakeProtocol
   }
 
   private async findExistingConnection(services: Array<DidCommService | string>) {

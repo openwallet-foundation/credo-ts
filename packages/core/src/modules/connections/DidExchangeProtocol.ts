@@ -30,6 +30,7 @@ import { DidExchangeProblemReportError, DidExchangeProblemReportReason } from '.
 import { DidExchangeCompleteMessage } from './messages/DidExchangeCompleteMessage'
 import { DidExchangeRequestMessage } from './messages/DidExchangeRequestMessage'
 import { DidExchangeResponseMessage } from './messages/DidExchangeResponseMessage'
+import { HandshakeProtocol } from './models'
 import { ConnectionService } from './services'
 
 interface DidExchangeRequestParams {
@@ -176,6 +177,7 @@ export class DidExchangeProtocol {
     connectionRecord.theirDid = message.did
     connectionRecord.theirLabel = message.label
     connectionRecord.threadId = message.id
+    connectionRecord.protocol = HandshakeProtocol.DidExchange
 
     await this.updateState(DidExchangeRequestMessage.type, connectionRecord)
     this.logger.debug(`Process message ${DidExchangeRequestMessage.type} end`, connectionRecord)
