@@ -18,7 +18,7 @@ import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
-import { DidCommService } from '../../dids'
+import { IndyAgentService } from '../../dids'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
 import {
@@ -693,7 +693,7 @@ export class ConnectionService {
     // IndyAgentService is old service type
     const services = endpoints.map(
       (endpoint, index) =>
-        new DidCommService({
+        new IndyAgentService({
           id: `${did}#IndyAgentService`,
           serviceEndpoint: endpoint,
           recipientKeys: [verkey],
