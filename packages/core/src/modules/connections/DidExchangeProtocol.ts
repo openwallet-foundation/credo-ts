@@ -197,39 +197,36 @@ export class DidExchangeProtocol {
     this.logger.debug(`Create message ${DidExchangeResponseMessage.type} start`, connectionRecord)
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeResponseMessage.type, connectionRecord)
 
-    // They will then either update the provisional service information to rotate the key, or provision a new DID entirely.
-    // The choice here will depend on the nature of the DID used in the invitation.
-
-    // if reuse did from invitation then do ...
-    // otherwise create new did and didDoc
     const { did, threadId } = connectionRecord
 
     if (!threadId) {
       throw new AriesFrameworkError('Missing threadId on connection record.')
     }
 
-    // The responder will then craft an exchange response using the newly updated or provisioned information.
-
-    // Sign message attachment
-    // Use invitationKey by default, fall back to verkey (?)
-    const [verkey] = connectionRecord.invitation?.recipientKeys || []
-
-    if (!verkey) {
-      throw new AriesFrameworkError('Connection invitation does not contain recipient key.')
-    }
-
-    const peerDidRouting = routing || {
-      endpoints: connectionRecord.invitation?.serviceEndpoint ? [connectionRecord.invitation?.serviceEndpoint] : [],
-      verkey,
-      did,
-      routingKeys: connectionRecord.invitation?.routingKeys || [],
+    let peerDidRouting
+    if (routing) {
+      peerDidRouting = routing
+    } else {
+      const { serviceEndpoint, recipientKeys, routingKeys } = connectionRecord.invitation || {}
+      if (serviceEndpoint && recipientKeys && routingKeys) {
+        peerDidRouting = {
+          endpoints: [serviceEndpoint],
+          did,
+          verkey: recipientKeys[0],
+          routingKeys: routingKeys,
+        }
+      } else {
+        throw new AriesFrameworkError(
+          'Connection record does not have an invitation with serviceEndpoint, recipientKeys or routingKeys.'
+        )
+      }
     }
 
     const peerDid = await this.createPeerDidDoc(peerDidRouting)
     const message = new DidExchangeResponseMessage({ did: peerDid.did, threadId })
 
     if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
-      const didDocAttach = await this.createSignedAttachment(peerDid.didDocument, verkey)
+      const didDocAttach = await this.createSignedAttachment(peerDid.didDocument, peerDidRouting.verkey)
       message.didDoc = didDocAttach
     }
 
