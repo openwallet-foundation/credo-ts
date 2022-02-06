@@ -182,7 +182,7 @@ export class DidExchangeProtocol {
 
     connectionRecord.theirDid = message.did
     connectionRecord.theirLabel = message.label
-    connectionRecord.threadId = message.id
+    connectionRecord.threadId = message.threadId || message.id
     connectionRecord.protocol = HandshakeProtocol.DidExchange
 
     await this.updateState(DidExchangeRequestMessage.type, connectionRecord)
@@ -248,6 +248,12 @@ export class DidExchangeProtocol {
     }
 
     DidExchangeStateMachine.assertProcessMessageState(DidExchangeResponseMessage.type, connectionRecord)
+
+    if (!message.thread?.threadId || message.thread?.threadId !== connectionRecord.threadId) {
+      throw new DidExchangeProblemReportError('Invalid or missing thread ID.', {
+        problemCode: DidExchangeProblemReportReason.ResponseNotAccepted,
+      })
+    }
 
     if (!message.did.startsWith('did:peer:')) {
       throw new DidExchangeProblemReportError(
@@ -323,8 +329,14 @@ export class DidExchangeProtocol {
 
     DidExchangeStateMachine.assertProcessMessageState(DidExchangeCompleteMessage.type, connectionRecord)
 
-    if (connectionRecord.invitation?.id !== message.thread?.parentThreadId) {
-      throw new DidExchangeProblemReportError('Missing reference to invitation.', {
+    if (!message.thread?.threadId || message.thread?.threadId !== connectionRecord.threadId) {
+      throw new DidExchangeProblemReportError('Invalid or missing thread ID.', {
+        problemCode: DidExchangeProblemReportReason.CompleteRejected,
+      })
+    }
+
+    if (!message.thread?.parentThreadId || message.thread?.parentThreadId !== connectionRecord.invitation?.id) {
+      throw new DidExchangeProblemReportError('Invalid or missing parent thread ID referencing to the invitation.', {
         problemCode: DidExchangeProblemReportReason.CompleteRejected,
       })
     }
