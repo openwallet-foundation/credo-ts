@@ -4,10 +4,9 @@ import type { ConnectionRecord } from './repository'
 import type { Routing } from './services/ConnectionService'
 
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
-import { inject, Lifecycle, scoped } from 'tsyringe'
+import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
-import { InjectionSymbols } from '../../constants'
 import { KeyType } from '../../crypto'
 import { JwsService } from '../../crypto/JwsService'
 import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
@@ -15,7 +14,6 @@ import { AriesFrameworkError } from '../../error'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import { uuid } from '../../utils/uuid'
-import { Wallet } from '../../wallet/Wallet'
 import { DidCommService, DidDocument, DidDocumentBuilder, Key } from '../dids'
 import { DidDocumentRole } from '../dids/domain/DidDocumentRole'
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
@@ -50,7 +48,6 @@ export class DidExchangeProtocol {
   private didRepository: DidRepository
 
   public constructor(
-    @inject(InjectionSymbols.Wallet) wallet: Wallet,
     config: AgentConfig,
     connectionService: ConnectionService,
     didRepository: DidRepository,
@@ -150,15 +147,25 @@ export class DidExchangeProtocol {
       })
     }
 
+    if (!message.did.startsWith('did:peer:')) {
+      throw new DidExchangeProblemReportError(
+        `Message contains unsupported did ${message.did}. Supported dids are [did:peer]`,
+        {
+          problemCode: DidExchangeProblemReportReason.RequestNotAccepted,
+        }
+      )
+    }
     const peerDid = DidPeer.fromDid(message.did)
-    let didDocument
-
-    if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
-      didDocument = await this.resolveDidDocument(message)
-    } else {
-      didDocument = peerDid.didDocument
+    if (peerDid.numAlgo !== PeerDidNumAlgo.GenesisDoc) {
+      throw new DidExchangeProblemReportError(
+        `Unsupported numalgo ${peerDid.numAlgo}. Supported numalgos are [${PeerDidNumAlgo.GenesisDoc}]`,
+        {
+          problemCode: DidExchangeProblemReportReason.RequestNotAccepted,
+        }
+      )
     }
 
+    const didDocument = await this.resolveDidDocument(message)
     const didRecord = new DidRecord({
       id: message.did,
       role: DidDocumentRole.Received,
@@ -171,7 +178,6 @@ export class DidExchangeProtocol {
         recipientKeys: didDocument.recipientKeys,
       },
     })
-
     await this.didRepository.save(didRecord)
 
     connectionRecord.theirDid = message.did
@@ -219,18 +225,15 @@ export class DidExchangeProtocol {
       routingKeys: connectionRecord.invitation?.routingKeys || [],
     }
 
-    // TODO Currently, we just reuse invitation to create a peer did, we should also add option to create new keys
     const peerDid = await this.createPeerDidDoc(peerDidRouting)
-    connectionRecord.did = peerDid.did
-
     const message = new DidExchangeResponseMessage({ did: peerDid.did, threadId })
 
-    // TODO
-    // As I understood, a numAlgo 0 doesn't include service inside encoded peer did therefore we should also create a did doc attachment for it
     if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
       const didDocAttach = await this.createSignedAttachment(peerDid.didDocument, verkey)
       message.didDoc = didDocAttach
     }
+
+    connectionRecord.did = peerDid.did
 
     await this.updateState(DidExchangeResponseMessage.type, connectionRecord)
     this.logger.debug(`Create message ${DidExchangeResponseMessage.type} end`, { connectionRecord, message })
@@ -249,14 +252,25 @@ export class DidExchangeProtocol {
 
     DidExchangeStateMachine.assertProcessMessageState(DidExchangeResponseMessage.type, connectionRecord)
 
+    if (!message.did.startsWith('did:peer:')) {
+      throw new DidExchangeProblemReportError(
+        `Message contains unsupported did ${message.did}. Supported dids are [did:peer]`,
+        {
+          problemCode: DidExchangeProblemReportReason.ResponseNotAccepted,
+        }
+      )
+    }
     const peerDid = DidPeer.fromDid(message.did)
-    let didDocument
-    if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
-      didDocument = await this.resolveDidDocument(message, connectionRecord.invitation?.recipientKeys)
-    } else {
-      didDocument = peerDid.didDocument
+    if (peerDid.numAlgo !== PeerDidNumAlgo.GenesisDoc) {
+      throw new DidExchangeProblemReportError(
+        `Unsupported numalgo ${peerDid.numAlgo}. Supported numalgos are [${PeerDidNumAlgo.GenesisDoc}]`,
+        {
+          problemCode: DidExchangeProblemReportReason.ResponseNotAccepted,
+        }
+      )
     }
 
+    const didDocument = await this.resolveDidDocument(message, connectionRecord.invitation?.recipientKeys)
     const didRecord = new DidRecord({
       id: message.did,
       role: DidDocumentRole.Received,
@@ -267,7 +281,6 @@ export class DidExchangeProtocol {
         recipientKeys: didDocument.recipientKeys,
       },
     })
-
     await this.didRepository.save(didRecord)
 
     connectionRecord.theirDid = message.did
@@ -389,7 +402,6 @@ export class DidExchangeProtocol {
       role: DidDocumentRole.Created,
       // It is important to take the did document from the PeerDid class
       // as it will have the id property
-      // Should not we also resolve and store document for inline peer did?
       didDocument: peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc ? peerDid.didDocument : undefined,
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
