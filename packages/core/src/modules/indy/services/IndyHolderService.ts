@@ -201,7 +201,7 @@ export interface StoreCredentialOptions {
   credential: Indy.Cred
   credentialDefinition: Indy.CredDef
   credentialId?: Indy.CredentialId
-  revocationRegistryDefinitions?: Indy.RevRegsDefs
+  revocationRegistryDefinitions?: Indy.RevocRegDef
 }
 
 export interface CreateProofOptions {

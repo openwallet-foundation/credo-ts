@@ -41,6 +41,6 @@ export interface VerifyProofOptions {
   proof: Indy.IndyProof
   schemas: Indy.Schemas
   credentialDefinitions: Indy.CredentialDefs
-  revocationRegistryDefinitions?: Indy.RevRegsDefs
+  revocationRegistryDefinitions?: Indy.RevocRegDefs
   revocationStates?: Indy.RevStates
 }
