@@ -4,24 +4,29 @@ import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator
 import type { V1LegacyProofService } from '../V1LegacyProofService'
 
 import { V1ProposePresentationMessage } from '../messages'
+import { V1ProofService } from '..'
+import { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 
-export class ProposePresentationHandler implements Handler {
-  private proofService: V1LegacyProofService
+export class V1ProposePresentationHandler implements Handler {
+  private proofService: V1ProofService
   private agentConfig: AgentConfig
+  private didCommMessageRepository: DidCommMessageRepository
   private proofResponseCoordinator: ProofResponseCoordinator
   public supportedMessages = [V1ProposePresentationMessage]
 
   public constructor(
-    proofService: V1LegacyProofService,
+    proofService: V1ProofService,
     agentConfig: AgentConfig,
-    proofResponseCoordinator: ProofResponseCoordinator
+    proofResponseCoordinator: ProofResponseCoordinator,
+    didCommMessageRepository: DidCommMessageRepository
   ) {
     this.proofService = proofService
     this.agentConfig = agentConfig
     this.proofResponseCoordinator = proofResponseCoordinator
+    this.didCommMessageRepository = didCommMessageRepository
   }
 
-  public async handle(messageContext: HandlerInboundMessage<ProposePresentationHandler>) {
+  public async handle(messageContext: HandlerInboundMessage<V1ProposePresentationHandler>) {
     const proofRecord = await this.proofService.processProposal(messageContext)
     if (this.proofResponseCoordinator.shouldAutoRespondToProposal(proofRecord)) {
       //   return await this.createRequest(proofRecord, messageContext)
