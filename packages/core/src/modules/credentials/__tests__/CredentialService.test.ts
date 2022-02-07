@@ -276,7 +276,7 @@ describe('CredentialService', () => {
           connection
         )
       ).rejects.toThrowError(
-        `The credential preview attributes do not match the schema attributes (difference is: name,age,test,error, needs: name,age)`
+        `The credential preview attributes do not match the schema attributes (difference is: test,error, needs: name,age)`
       )
 
       const credentialPreviewWithExtra = CredentialPreview.fromRecord({

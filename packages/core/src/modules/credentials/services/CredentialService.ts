@@ -249,11 +249,14 @@ export class CredentialService {
     const credAttributes = credentialTemplate.preview.attributes.map((a) => a.name)
     const schemaAttributes = schema.attrNames
 
-    const difference = schemaAttributes
-      .filter((x) => !credAttributes.includes(x))
-      .concat(credAttributes.filter((x) => !schemaAttributes.includes(x)))
+    const difference: string[] = []
+    credAttributes.forEach((credAtrr) => {
+      if (schemaAttributes.indexOf(credAtrr) === -1) {
+        difference.push(credAtrr)
+      }
+    })
 
-    if (difference.length >= 1) {
+    if (difference.length > 0) {
       throw new AriesFrameworkError(
         `The credential preview attributes do not match the schema attributes (difference is: ${difference}, needs: ${schemaAttributes})`
       )
@@ -317,11 +320,14 @@ export class CredentialService {
     const credAttributes = credentialTemplate.preview.attributes.map((a) => a.name)
     const schemaAttributes = schema.attrNames
 
-    const difference = schemaAttributes
-      .filter((x) => !credAttributes.includes(x))
-      .concat(credAttributes.filter((x) => !schemaAttributes.includes(x)))
+    const difference: string[] = []
+    credAttributes.forEach((credAtrr) => {
+      if (schemaAttributes.indexOf(credAtrr) === -1) {
+        difference.push(credAtrr)
+      }
+    })
 
-    if (difference.length >= 1) {
+    if (difference.length > 0) {
       throw new AriesFrameworkError(
         `The credential preview attributes do not match the schema attributes (difference is: ${difference}, needs: ${schemaAttributes})`
       )
