@@ -115,7 +115,13 @@ describe('ProofService', () => {
     eventEmitter = new EventEmitter(agentConfig)
     connectionService = new connectionServiceMock()
 
-    proofService = new V2ProofService(proofRepository, didCommMessageRepository, eventEmitter)
+    proofService = new V2ProofService(
+      agentConfig,
+      connectionService,
+      proofRepository,
+      didCommMessageRepository,
+      eventEmitter
+    )
 
     mockFunction(ledgerService.getCredentialDefinition).mockReturnValue(Promise.resolve(credDef))
   })
