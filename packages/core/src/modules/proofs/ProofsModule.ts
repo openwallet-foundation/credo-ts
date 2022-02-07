@@ -13,7 +13,7 @@ import type {
   RequestedCredentialForProofRequestOptions,
   RequestProofOptions,
 } from './models/ProofServiceOptions'
-import type { RequestPresentationMessage } from './protocol/v1/messages'
+import type { V1RequestPresentationMessage } from './protocol/v1/messages'
 import type { ProofRequestOptions, RequestedCredentials, RetrievedCredentials } from './protocol/v1/models'
 import type { ProofRecord } from './repository/ProofRecord'
 
@@ -35,7 +35,7 @@ import { IndyLedgerService } from '../ledger'
 import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
-import { PresentationProblemReportReason } from './errors'
+import { V1PresentationProblemReportReason } from './protocol/v1/errors'
 import { IndyProofFormatService } from './formats/indy/IndyProofFormatService'
 import { ProofProtocolVersion } from './models/ProofProtocolVersion'
 import { V1ProofService } from './protocol/v1/V1ProofService'
@@ -46,7 +46,7 @@ import {
   PresentationHandler,
   PresentationProblemReportHandler,
 } from './protocol/v1/handlers'
-import { PresentationProblemReportMessage } from './protocol/v1/messages'
+import { V1PresentationProblemReportMessage } from './protocol/v1/messages'
 import { ProofRequest } from './protocol/v1/models'
 import { V2ProofService } from './protocol/v2/V2ProofService'
 import { ProofRepository } from './repository'
@@ -276,7 +276,7 @@ export class ProofsModule {
    *
    */
   public async createOutOfBandRequest(options: CreateOutOfBandRequestOptions): Promise<{
-    requestMessage: RequestPresentationMessage
+    requestMessage: V1RequestPresentationMessage
     proofRecord: ProofRecord
   }> {
     const { proofRequestOptions } = options
@@ -509,10 +509,10 @@ export class ProofsModule {
       throw new AriesFrameworkError(`No connectionId found for proof record '${record.id}'.`)
     }
     const connection = await this.connectionService.getById(record.connectionId)
-    const presentationProblemReportMessage = new PresentationProblemReportMessage({
+    const presentationProblemReportMessage = new V1PresentationProblemReportMessage({
       description: {
         en: message,
-        code: PresentationProblemReportReason.Abandoned,
+        code: V1PresentationProblemReportReason.Abandoned,
       },
     })
     presentationProblemReportMessage.setThread({

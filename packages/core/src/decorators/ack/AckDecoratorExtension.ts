@@ -1,4 +1,5 @@
 import type { BaseMessageConstructor } from '../../agent/BaseMessage'
+import type { AckValues } from './AckDecorator'
 
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, ValidateNested } from 'class-validator'
@@ -14,8 +15,8 @@ export function AckDecorated<T extends BaseMessageConstructor>(Base: T) {
     @IsOptional()
     public pleaseAck?: AckDecorator
 
-    public setPleaseAck() {
-      this.pleaseAck = new AckDecorator()
+    public setPleaseAck(on: [AckValues.Receipt]) {
+      this.pleaseAck = new AckDecorator({ on: on })
     }
 
     public getPleaseAck(): AckDecorator | undefined {

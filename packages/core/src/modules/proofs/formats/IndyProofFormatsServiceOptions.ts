@@ -1,3 +1,4 @@
+import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type { RevocationInterval } from '../../credentials/models/RevocationInterval'
 import type { ProofRequest, RequestedAttribute, RequestedPredicate } from '../protocol/v1/models'
 import type {
@@ -26,6 +27,11 @@ export interface IndyRequestProofFormat {
   requestedAttributes?: Record<string, ProofAttributeInfo> | Map<string, ProofAttributeInfo>
   requestedPredicates?: Record<string, ProofPredicateInfo> | Map<string, ProofPredicateInfo>
   proofRequest?: ProofRequest
+}
+
+export interface IndyVerifyProofFormat {
+  proofJson: Attachment
+  proofRequest: Attachment
 }
 
 export interface IndyPresentationProofFormat {

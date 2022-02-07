@@ -3,7 +3,10 @@ import { Equals, IsArray, IsString, ValidateNested, IsOptional, IsInstance } fro
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
+import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
+import { ProofAttachmentFormat } from '../../../formats/models/ProofAttachmentFormat'
+import { ProofFormatSpec } from '../../../formats/models/ProofFormatSpec'
 import { ProofRequest } from '../models'
 
 export interface RequestPresentationOptions {
@@ -19,7 +22,7 @@ export const INDY_PROOF_REQUEST_ATTACHMENT_ID = 'libindy-request-presentation-0'
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#request-presentation
  */
-export class RequestPresentationMessage extends AgentMessage {
+export class V1RequestPresentationMessage extends AgentMessage {
   public constructor(options: RequestPresentationOptions) {
     super()
 
@@ -30,8 +33,8 @@ export class RequestPresentationMessage extends AgentMessage {
     }
   }
 
-  @Equals(RequestPresentationMessage.type)
-  public readonly type = RequestPresentationMessage.type
+  @Equals(V1RequestPresentationMessage.type)
+  public readonly type = V1RequestPresentationMessage.type
   public static readonly type = 'https://didcomm.org/present-proof/1.0/request-presentation'
 
   /**
@@ -62,5 +65,27 @@ export class RequestPresentationMessage extends AgentMessage {
     const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
 
     return proofRequest
+  }
+
+  public getAttachmentFormats(): ProofAttachmentFormat[] {
+    const attachment = this.indyAttachment
+
+    if (!attachment) {
+      throw new AriesFrameworkError(`Could not find a request presentation attachment`)
+    }
+
+    return [
+      {
+        format: new ProofFormatSpec({ format: 'hlindy/proof-req@v2.0' }),
+        attachment: attachment,
+      },
+    ]
+  }
+
+  public get indyAttachment(): Attachment | null {
+    return (
+      this.requestPresentationAttachments.find((attachment) => attachment.id === INDY_PROOF_REQUEST_ATTACHMENT_ID) ??
+      null
+    )
   }
 }

@@ -15,7 +15,7 @@ export interface ProposePresentationMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#propose-presentation
  */
-export class ProposePresentationMessage extends AgentMessage {
+export class V1ProposePresentationMessage extends AgentMessage {
   public constructor(options: ProposePresentationMessageOptions) {
     super()
 
@@ -26,8 +26,8 @@ export class ProposePresentationMessage extends AgentMessage {
     }
   }
 
-  @Equals(ProposePresentationMessage.type)
-  public readonly type = ProposePresentationMessage.type
+  @Equals(V1ProposePresentationMessage.type)
+  public readonly type = V1ProposePresentationMessage.type
   public static readonly type = 'https://didcomm.org/present-proof/1.0/propose-presentation'
 
   /**
