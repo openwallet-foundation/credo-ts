@@ -53,7 +53,7 @@ export class DidExchangeResponseHandler implements Handler {
     const connection = await this.didExchangeProtocol.processResponse(messageContext)
 
     // TODO: should we only send complete message in case of autoAcceptConnection or always?
-    // In AATH we have a separate step to send the ping. So for now we'll only do it
+    // In AATH we have a separate step to send the complete. So for now we'll only do it
     // if auto accept is enable
     if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
       const message = await this.didExchangeProtocol.createComplete(connection)
