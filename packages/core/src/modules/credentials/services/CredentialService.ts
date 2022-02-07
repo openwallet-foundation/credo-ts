@@ -244,6 +244,17 @@ export class CredentialService {
       }),
     })
 
+    // Check if credential preview attributes match the schema attributes
+    const schema = await this.ledgerService.getSchema(credOffer.schema_id)
+    const credAttributes = credentialTemplate.preview.attributes
+    const schemaAttribute = schema.attrNames
+
+    credAttributes.forEach((credAtrr) => {
+      if (schemaAttribute.indexOf(credAtrr.name) === -1) {
+        throw new AriesFrameworkError(`The credential preview attributes do not match the schema attributes`)
+      }
+    })
+
     const credentialOfferMessage = new OfferCredentialMessage({
       comment,
       offerAttachments: [offerAttachment],
@@ -295,6 +306,17 @@ export class CredentialService {
       data: new AttachmentData({
         base64: JsonEncoder.toBase64(credOffer),
       }),
+    })
+
+    // Check if credential preview attributes match the schema attributes
+    const schema = await this.ledgerService.getSchema(credOffer.schema_id)
+    const credAttributes = credentialTemplate.preview.attributes
+    const schemaAttribute = schema.attrNames
+
+    credAttributes.forEach((credAtrr) => {
+      if (schemaAttribute.indexOf(credAtrr.name) === -1) {
+        throw new AriesFrameworkError(`The credential preview attributes do not match the schema attributes`)
+      }
     })
 
     // Create and link credential to attacment
