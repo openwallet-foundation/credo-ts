@@ -37,7 +37,7 @@ import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 import { CredentialService } from '../services'
 
 import { CredentialProblemReportMessage } from './../messages/CredentialProblemReportMessage'
-import { credDef, credOffer, credReq } from './fixtures'
+import { credDef, credOffer, credReq, schema } from './fixtures'
 
 // Mock classes
 jest.mock('../repository/CredentialRepository')
@@ -175,6 +175,7 @@ describe('CredentialService', () => {
     )
 
     mockFunction(ledgerService.getCredentialDefinition).mockReturnValue(Promise.resolve(credDef))
+    mockFunction(ledgerService.getSchema).mockReturnValue(Promise.resolve(schema))
   })
 
   describe('createCredentialOffer', () => {
@@ -258,6 +259,44 @@ describe('CredentialService', () => {
           },
         ],
       })
+    })
+
+    test('throw error if credential preview attributes do not match with schema attributes', async () => {
+      const credentialPreview = CredentialPreview.fromRecord({
+        test: 'credential',
+        error: 'yes',
+      })
+
+      expect(
+        credentialService.createOffer(
+          {
+            ...credentialTemplate,
+            preview: credentialPreview,
+          },
+          connection
+        )
+      ).rejects.toThrowError(
+        `The credential preview attributes do not match the schema attributes (difference is: name,age,test,error, needs: name,age)`
+      )
+
+      const credentialPreviewWithExtra = CredentialPreview.fromRecord({
+        test: 'credential',
+        error: 'yes',
+        name: 'John',
+        age: '99',
+      })
+
+      await expect(
+        credentialService.createOffer(
+          {
+            ...credentialTemplate,
+            preview: credentialPreviewWithExtra,
+          },
+          connection
+        )
+      ).rejects.toThrowError(
+        `The credential preview attributes do not match the schema attributes (difference is: test,error, needs: name,age)`
+      )
     })
   })
 
