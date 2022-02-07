@@ -53,16 +53,19 @@ export function didToNumAlgo2DidDocument(did: string) {
 
     // Handle service entry first
     if (purpose === DidPeerPurpose.Service) {
-      let service = JsonEncoder.fromBase64(entryContent)
+      let services = JsonEncoder.fromBase64(entryContent)
 
-      // Expand abbreviations used for service key/values
-      service = expandServiceAbbreviations(service)
+      // Make sure we have an array of services (can be both json or array)
+      services = Array.isArray(services) ? services : [services]
 
-      // FIXME: Not sure how the service id should be encoded. Using #service-<serviceIndex>
-      // for now. See https://github.com/decentralized-identity/peer-did-method-spec/issues/39
-      service.id = `${did}#service-${serviceIndex++}`
+      for (let service of services) {
+        // Expand abbreviations used for service key/values
+        service = expandServiceAbbreviations(service)
 
-      didDocument.addService(JsonTransformer.fromJSON(service, DidDocumentService))
+        service.id = `${did}#${service.type.toLowerCase()}-${serviceIndex++}`
+
+        didDocument.addService(JsonTransformer.fromJSON(service, DidDocumentService))
+      }
     }
     // Otherwise we can be sure it is a key
     else {
@@ -118,16 +121,22 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
     did += encoded.join('')
   }
 
-  for (const service of didDocument.service) {
-    // Transform to JSON, remove id property
-    const serviceJson = JsonTransformer.toJSON(service)
-    delete serviceJson.id
+  if (didDocument.service.length > 0) {
+    const abbreviatedServices = didDocument.service.map((service) => {
+      // Transform to JSON, remove id property
+      const serviceJson = JsonTransformer.toJSON(service)
+      delete serviceJson.id
 
-    const abbreviatedService = abbreviateServiceJson(serviceJson)
+      return abbreviateServiceJson(serviceJson)
+    })
 
-    const encodedService = JsonEncoder.toBase64URL(abbreviatedService)
+    const encodedServices = JsonEncoder.toBase64URL(
+      // If array length is 1, encode as json object. Otherwise as array
+      // This is how it's done in the python peer did implementation.
+      abbreviatedServices.length === 1 ? abbreviatedServices[0] : abbreviatedServices
+    )
 
-    did += `.${DidPeerPurpose.Service}${encodedService}`
+    did += `.${DidPeerPurpose.Service}${encodedServices}`
   }
 
   return did
