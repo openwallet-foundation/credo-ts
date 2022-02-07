@@ -4,14 +4,14 @@ import type { MediationRecipientService } from '../../../../routing'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
 import type { V1LegacyProofService } from '../V1LegacyProofService'
 
-import { RequestPresentationMessage } from '../messages'
+import { V1RequestPresentationMessage } from '../messages'
 
 export class RequestPresentationHandler implements Handler {
   private proofService: V1LegacyProofService
   private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator
   private mediationRecipientService: MediationRecipientService
-  public supportedMessages = [RequestPresentationMessage]
+  public supportedMessages = [V1RequestPresentationMessage]
 
   public constructor(
     proofService: V1LegacyProofService,

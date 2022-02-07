@@ -1,18 +1,21 @@
 import type { ProofState, ProofStateChangedEvent } from '.'
+import type { AgentConfig } from '../../agent/AgentConfig'
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { EventEmitter } from '../../agent/EventEmitter'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
+import type { Logger } from '../../logger'
 import type { DidCommMessageRepository } from '../../storage'
+import type { ConnectionService } from '../connections/services'
 import type { ProofFormatService } from './formats/ProofFormatService'
 import type { CreateProblemReportOptions } from './formats/models/ProofFormatServiceOptions'
 import type { ProofProtocolVersion } from './models/ProofProtocolVersion'
 import type {
   CreateAckOptions,
+  CreatePresentationOptions,
   CreateProposalAsResponseOptions,
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
-  PresentationOptions,
   RequestedCredentialForProofRequestOptions,
 } from './models/ProofServiceOptions'
 import type { RetrievedCredentials } from './protocol/v1/models'
@@ -35,15 +38,21 @@ export abstract class ProofService {
   protected proofRepository: ProofRepository
   protected didCommMessageRepository: DidCommMessageRepository
   protected eventEmitter: EventEmitter
+  protected connectionService: ConnectionService
+  protected logger: Logger
 
   public constructor(
+    agentConfig: AgentConfig,
     proofRepository: ProofRepository,
+    connectionService: ConnectionService,
     didCommMessageRepository: DidCommMessageRepository,
     eventEmitter: EventEmitter
   ) {
     this.proofRepository = proofRepository
+    this.connectionService = connectionService
     this.didCommMessageRepository = didCommMessageRepository
     this.eventEmitter = eventEmitter
+    this.logger = agentConfig.logger
   }
 
   /**
@@ -120,7 +129,7 @@ export abstract class ProofService {
   abstract processRequest(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
 
   abstract createPresentation(
-    options: PresentationOptions
+    options: CreatePresentationOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
 
   abstract processPresentation(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
@@ -133,10 +142,6 @@ export abstract class ProofService {
     options: CreateProblemReportOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
   abstract processProblemReport(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
-
-  abstract getRequestedCredentialsForProofRequest(
-    options: RequestedCredentialForProofRequestOptions
-  ): Promise<{ indy?: RetrievedCredentials; w3c?: never }>
 
   public getFormatService(presentationRecordType: PresentationRecordType): ProofFormatService {
     logger.debug(presentationRecordType.toString())

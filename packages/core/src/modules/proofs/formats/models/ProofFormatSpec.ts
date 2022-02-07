@@ -1,15 +1,17 @@
 import { Expose } from 'class-transformer'
 import { IsString } from 'class-validator'
 
+import { uuid } from '../../../../utils/uuid'
+
 export interface ProofFormatSpecOptions {
-  attachmentId: string
+  attachmentId?: string
   format: string
 }
 
 export class ProofFormatSpec {
   public constructor(options: ProofFormatSpecOptions) {
     if (options) {
-      this.attachmentId = options.attachmentId
+      this.attachmentId = options.attachmentId ?? uuid()
       this.format = options.format
     }
   }

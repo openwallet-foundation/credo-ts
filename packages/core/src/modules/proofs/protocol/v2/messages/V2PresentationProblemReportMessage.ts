@@ -4,21 +4,21 @@ import { Equals } from 'class-validator'
 
 import { ProblemReportMessage } from '../../../../problem-reports/messages/ProblemReportMessage'
 
-export type PresentationProblemReportMessageOptions = ProblemReportMessageOptions
+export type V2PresentationProblemReportMessageOptions = ProblemReportMessageOptions
 
 /**
  * @see https://github.com/hyperledger/aries-rfcs/blob/main/features/0035-report-problem/README.md
  */
-export class PresentationProblemReportMessage extends ProblemReportMessage {
+export class V2PresentationProblemReportMessage extends ProblemReportMessage {
   /**
    * Create new PresentationProblemReportMessage instance.
    * @param options
    */
-  public constructor(options: PresentationProblemReportMessageOptions) {
+  public constructor(options: V2PresentationProblemReportMessageOptions) {
     super(options)
   }
 
-  @Equals(PresentationProblemReportMessage.type)
-  public readonly type = PresentationProblemReportMessage.type
-  public static readonly type = 'https://didcomm.org/present-proof/1.0/problem-report'
+  @Equals(V2PresentationProblemReportMessage.type)
+  public readonly type = V2PresentationProblemReportMessage.type
+  public static readonly type = 'https://didcomm.org/present-proof/2.0/problem-report'
 }

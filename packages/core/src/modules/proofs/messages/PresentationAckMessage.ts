@@ -1,5 +1,5 @@
+import type { ProtocolVersion } from '../../../types'
 import type { AckMessageOptions } from '../../common'
-import type { ProtocolVersion } from 'packages/core/src/types'
 
 export type PresentationAckMessageOptions = AckMessageOptions
 

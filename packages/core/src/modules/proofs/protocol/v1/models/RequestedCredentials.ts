@@ -9,7 +9,7 @@ import { RecordTransformer } from '../../../../../utils/transformers'
 import { RequestedAttribute } from './RequestedAttribute'
 import { RequestedPredicate } from './RequestedPredicate'
 
-interface RequestedCredentialsOptions {
+export interface RequestedCredentialsOptions {
   requestedAttributes?: Record<string, RequestedAttribute>
   requestedPredicates?: Record<string, RequestedPredicate>
   selfAttestedAttributes?: Record<string, string>

@@ -12,17 +12,17 @@ import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyLedgerService } from '../../ledger/services'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofState } from '../models/ProofState'
-import { PresentationProblemReportReason } from '../errors/PresentationProblemReportReason'
+import { V1PresentationProblemReportReason } from '../protocol/v1/errors/V1PresentationProblemReportReason'
 import { ProofRecord } from '../repository/ProofRecord'
 import { ProofRepository } from '../repository/ProofRepository'
 import { V1LegacyProofService } from '../protocol/v1/V1LegacyProofService'
 
 import { IndyVerifierService } from './../../indy/services/IndyVerifierService'
-import { PresentationProblemReportMessage } from '../protocol/v1/messages/PresentationProblemReportMessage'
+import { V1PresentationProblemReportMessage } from '../protocol/v1/messages/V1PresentationProblemReportMessage'
 import {
   INDY_PROOF_REQUEST_ATTACHMENT_ID,
-  RequestPresentationMessage,
-} from '../protocol/v1/messages/RequestPresentationMessage'
+  V1RequestPresentationMessage,
+} from '../protocol/v1/messages/V1RequestPresentationMessage'
 import { credDef } from './fixtures'
 
 // Mock classes
@@ -65,13 +65,13 @@ const mockProofRecord = ({
   id,
 }: {
   state?: ProofState
-  requestMessage?: RequestPresentationMessage
+  requestMessage?: V1RequestPresentationMessage
   tags?: CustomProofTags
   threadId?: string
   connectionId?: string
   id?: string
 } = {}) => {
-  const requestPresentationMessage = new RequestPresentationMessage({
+  const requestPresentationMessage = new V1RequestPresentationMessage({
     comment: 'some comment',
     requestPresentationAttachments: [requestAttachment],
   })
@@ -124,11 +124,11 @@ describe('ProofService', () => {
   })
 
   describe('processProofRequest', () => {
-    let presentationRequest: RequestPresentationMessage
-    let messageContext: InboundMessageContext<RequestPresentationMessage>
+    let presentationRequest: V1RequestPresentationMessage
+    let messageContext: InboundMessageContext<V1RequestPresentationMessage>
 
     beforeEach(() => {
-      presentationRequest = new RequestPresentationMessage({
+      presentationRequest = new V1RequestPresentationMessage({
         comment: 'abcd',
         requestPresentationAttachments: [requestAttachment],
       })
@@ -195,10 +195,10 @@ describe('ProofService', () => {
       mockFunction(proofRepository.getById).mockReturnValue(Promise.resolve(proof))
 
       // when
-      const presentationProblemReportMessage = await new PresentationProblemReportMessage({
+      const presentationProblemReportMessage = await new V1PresentationProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: PresentationProblemReportReason.Abandoned,
+          code: V1PresentationProblemReportReason.Abandoned,
         },
       })
 
@@ -216,17 +216,17 @@ describe('ProofService', () => {
 
   describe('processProblemReport', () => {
     let proof: ProofRecord
-    let messageContext: InboundMessageContext<PresentationProblemReportMessage>
+    let messageContext: InboundMessageContext<V1PresentationProblemReportMessage>
 
     beforeEach(() => {
       proof = mockProofRecord({
         state: ProofState.RequestReceived,
       })
 
-      const presentationProblemReportMessage = new PresentationProblemReportMessage({
+      const presentationProblemReportMessage = new V1PresentationProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: PresentationProblemReportReason.Abandoned,
+          code: V1PresentationProblemReportReason.Abandoned,
         },
       })
       presentationProblemReportMessage.setThread({ threadId: 'somethreadid' })

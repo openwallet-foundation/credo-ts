@@ -7,13 +7,13 @@ import {
   AttributeFilter,
   JsonTransformer,
   PredicateType,
-  PresentationMessage,
+  V1PresentationMessage,
   ProofAttributeInfo,
   ProofPredicateInfo,
   ProofRecord,
   ProofState,
-  ProposePresentationMessage,
-  RequestPresentationMessage,
+  V1ProposePresentationMessage,
+  V1RequestPresentationMessage,
 } from '../src'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 
@@ -177,9 +177,9 @@ describe('Present Proof', () => {
       connectionId: expect.any(String),
       isVerified: true,
       state: ProofState.PresentationReceived,
-      proposalMessage: expect.any(ProposePresentationMessage),
-      requestMessage: expect.any(RequestPresentationMessage),
-      presentationMessage: expect.any(PresentationMessage),
+      proposalMessage: expect.any(V1ProposePresentationMessage),
+      requestMessage: expect.any(V1RequestPresentationMessage),
+      presentationMessage: expect.any(V1PresentationMessage),
     })
 
     expect(aliceProofRecord).toMatchObject({
@@ -189,9 +189,9 @@ describe('Present Proof', () => {
       threadId: faberProofRecord.threadId,
       connectionId: expect.any(String),
       state: ProofState.Done,
-      proposalMessage: expect.any(ProposePresentationMessage),
-      requestMessage: expect.any(RequestPresentationMessage),
-      presentationMessage: expect.any(PresentationMessage),
+      proposalMessage: expect.any(V1ProposePresentationMessage),
+      requestMessage: expect.any(V1RequestPresentationMessage),
+      presentationMessage: expect.any(V1PresentationMessage),
     })
   })
 
@@ -291,7 +291,7 @@ describe('Present Proof', () => {
       id: expect.any(String),
       createdAt: expect.any(Date),
       state: ProofState.PresentationReceived,
-      requestMessage: expect.any(RequestPresentationMessage),
+      requestMessage: expect.any(V1RequestPresentationMessage),
       isVerified: true,
       presentationMessage: {
         type: 'https://didcomm.org/present-proof/1.0/presentation',
@@ -340,8 +340,8 @@ describe('Present Proof', () => {
       connectionId: expect.any(String),
       isVerified: true,
       state: ProofState.PresentationReceived,
-      requestMessage: expect.any(RequestPresentationMessage),
-      presentationMessage: expect.any(PresentationMessage),
+      requestMessage: expect.any(V1RequestPresentationMessage),
+      presentationMessage: expect.any(V1PresentationMessage),
     })
 
     expect(aliceProofRecord).toMatchObject({
@@ -351,8 +351,8 @@ describe('Present Proof', () => {
       threadId: faberProofRecord.threadId,
       connectionId: expect.any(String),
       state: ProofState.Done,
-      requestMessage: expect.any(RequestPresentationMessage),
-      presentationMessage: expect.any(PresentationMessage),
+      requestMessage: expect.any(V1RequestPresentationMessage),
+      presentationMessage: expect.any(V1PresentationMessage),
     })
   })
 })

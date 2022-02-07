@@ -1,17 +1,23 @@
-import type { ProofRecord, ProofRequestOptions } from '../..'
-import type { AttachmentData } from '../../../../decorators/attachment/Attachment'
-import type { ProposeProofFormats } from '../../models/SharedOptions'
+import type {
+  ProofRecord,
+  ProofRequest,
+  ProofRequestOptions,
+  V1PresentationMessage,
+  V1RequestPresentationMessage,
+} from '../..'
+import type { RequestedCredentials } from '../../../..'
+import type { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
+import type { CreatePresentationFormats, ProposeProofFormats, VerifyProofFormats } from '../../models/SharedOptions'
 import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
+import type { IndyProof } from 'indy-sdk'
 
 export interface CreateRequestAttachmentOptions {
   attachId?: string
-  messageType: string
   proofRequestOptions: ProofRequestOptions
 }
 
 export interface CreateProposalOptions {
   attachId?: string
-  messageType: string
   formats: ProposeProofFormats
 }
 
@@ -23,7 +29,6 @@ export interface ProcessProposalOptions {
 
 export interface CreateRequestOptions {
   attachId?: string
-  messageType: string
   formats: ProposeProofFormats
 }
 
@@ -35,15 +40,27 @@ export interface ProcessRequestOptions {
 
 export interface CreatePresentationOptions {
   attachId?: string
-  messageType: string
-  attachData: AttachmentData
+  attachment: Attachment
+  formats: CreatePresentationFormats
 }
 
 export interface ProcessPresentationOptions {
   record: ProofRecord
-  presentation: ProofAttachmentFormat
-  options: never // TBD
+  presentation: {
+    request: ProofAttachmentFormat[]
+    proof: ProofAttachmentFormat[]
+  }
+  options?: never // TBD
+}
+
+export interface VerifyProofOptions {
+  request: Attachment
+  proof: Attachment
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface CreateProblemReportOptions {} // TBD
+export interface CreateProblemReportOptions {
+  proofRecord: ProofRecord
+  problemCode: string
+  description: string
+} // TBD
