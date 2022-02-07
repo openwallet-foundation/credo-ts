@@ -5,13 +5,13 @@ import type { ProofRecord } from '../../../repository'
 import type { V1LegacyProofService } from '../V1LegacyProofService'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
-import { PresentationMessage } from '../messages'
+import { V1PresentationMessage } from '../messages'
 
 export class PresentationHandler implements Handler {
   private proofService: V1LegacyProofService
   private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator
-  public supportedMessages = [PresentationMessage]
+  public supportedMessages = [V1PresentationMessage]
 
   public constructor(
     proofService: V1LegacyProofService,

@@ -3,13 +3,13 @@ import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handle
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
 import type { V1LegacyProofService } from '../V1LegacyProofService'
 
-import { ProposePresentationMessage } from '../messages'
+import { V1ProposePresentationMessage } from '../messages'
 
 export class ProposePresentationHandler implements Handler {
   private proofService: V1LegacyProofService
   private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator
-  public supportedMessages = [ProposePresentationMessage]
+  public supportedMessages = [V1ProposePresentationMessage]
 
   public constructor(
     proofService: V1LegacyProofService,

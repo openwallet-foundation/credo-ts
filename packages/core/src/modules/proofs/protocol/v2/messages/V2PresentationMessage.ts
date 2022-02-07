@@ -3,17 +3,17 @@ import type { ProofAttachmentFormat } from '../../../formats/models/ProofAttachm
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
+import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
+import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { uuid } from '../../../../../utils/uuid'
 import { ProofFormatSpec } from '../../../formats/models/ProofFormatSpec'
-
-import { AgentMessage } from '@aries-framework/core'
 
 export interface V2PresentationMessageOptions {
   id?: string
   goalCode?: string
   comment?: string
-  willConfirm?: boolean
+  lastPresentation?: boolean
   attachmentInfo: ProofAttachmentFormat[]
 }
 
@@ -24,7 +24,7 @@ export class V2PresentationMessage extends AgentMessage {
       this.id = options.id ?? uuid()
       this.comment = options.comment
       this.goalCode = options.goalCode
-      this.willConfirm = options.willConfirm ?? false
+      this.lastPresentation = options.lastPresentation ?? true
 
       for (const entry of options.attachmentInfo) {
         this.addPresentationsAttachment(entry)
@@ -35,6 +35,28 @@ export class V2PresentationMessage extends AgentMessage {
   public addPresentationsAttachment(attachment: ProofAttachmentFormat) {
     this.formats.push(attachment.format)
     this.presentationsAttach.push(attachment.attachment)
+  }
+
+  /**
+   * Every attachment has a corresponding entry in the formats array.
+   * This method pairs those together in a {@link ProofAttachmentFormat} object.
+   */
+  public getAttachmentFormats(): ProofAttachmentFormat[] {
+    const attachmentFormats: ProofAttachmentFormat[] = []
+
+    this.formats.forEach((format) => {
+      const attachment = this.presentationsAttach.find((attachment) => attachment.id === format.attachmentId)
+
+      if (!attachment) {
+        throw new AriesFrameworkError(`Could not find a matching attachment with attachId: ${format.attachmentId}`)
+      }
+
+      attachmentFormats.push({
+        format: format,
+        attachment: attachment,
+      })
+    })
+    return attachmentFormats
   }
 
   @Equals(V2PresentationMessage.type)
@@ -50,9 +72,9 @@ export class V2PresentationMessage extends AgentMessage {
   @IsOptional()
   public goalCode?: string
 
-  @Expose({ name: 'will_confirm' })
+  @Expose({ name: 'last_presentation' })
   @IsBoolean()
-  public willConfirm = false
+  public lastPresentation = true
 
   @Expose({ name: 'formats' })
   @Type(() => ProofFormatSpec)

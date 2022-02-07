@@ -4,7 +4,7 @@ import type { Logger } from '../../../../logger'
 import type { ConnectionRecord } from '../../../connections'
 import type { ProofStateChangedEvent } from '../../ProofEvents'
 import type { AutoAcceptProof } from '../../models/ProofAutoAcceptType'
-import type { PresentationProblemReportMessage } from './messages/PresentationProblemReportMessage'
+import type { V1PresentationProblemReportMessage } from './messages/V1PresentationProblemReportMessage'
 import type { PresentationPreview, PresentationPreviewAttribute } from './models/PresentationPreview'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
@@ -26,7 +26,7 @@ import { CredentialUtils, Credential, CredentialRepository } from '../../../cred
 import { IndyHolderService, IndyVerifierService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../../ProofEvents'
-import { PresentationProblemReportError, PresentationProblemReportReason } from '../../errors'
+import { V1PresentationProblemReportError, V1PresentationProblemReportReason } from './errors'
 import { ProofState } from '../../models/ProofState'
 import { ProofRepository } from '../../repository'
 import { ProofRecord } from '../../repository/ProofRecord'
@@ -34,10 +34,10 @@ import { ProofRecord } from '../../repository/ProofRecord'
 import {
   INDY_PROOF_ATTACHMENT_ID,
   INDY_PROOF_REQUEST_ATTACHMENT_ID,
-  PresentationAckMessage,
-  PresentationMessage,
-  ProposePresentationMessage,
-  RequestPresentationMessage,
+  V1PresentationAckMessage,
+  V1PresentationMessage,
+  V1ProposePresentationMessage,
+  V1RequestPresentationMessage,
 } from './messages'
 import {
   AttributeFilter,
@@ -107,12 +107,12 @@ export class V1LegacyProofService {
       comment?: string
       autoAcceptProof?: AutoAcceptProof
     }
-  ): Promise<ProofProtocolMsgReturnType<ProposePresentationMessage>> {
+  ): Promise<ProofProtocolMsgReturnType<V1ProposePresentationMessage>> {
     // Assert
     connectionRecord.assertReady()
 
     // Create message
-    const proposalMessage = new ProposePresentationMessage({
+    const proposalMessage = new V1ProposePresentationMessage({
       comment: config?.comment,
       presentationProposal,
     })
@@ -150,12 +150,12 @@ export class V1LegacyProofService {
     config?: {
       comment?: string
     }
-  ): Promise<ProofProtocolMsgReturnType<ProposePresentationMessage>> {
+  ): Promise<ProofProtocolMsgReturnType<V1ProposePresentationMessage>> {
     // Assert
     proofRecord.assertState(ProofState.RequestReceived)
 
     // Create message
-    const proposalMessage = new ProposePresentationMessage({
+    const proposalMessage = new V1ProposePresentationMessage({
       comment: config?.comment,
       presentationProposal,
     })
@@ -191,7 +191,7 @@ export class V1LegacyProofService {
    *
    */
   public async processProposal(
-    messageContext: InboundMessageContext<ProposePresentationMessage>
+    messageContext: InboundMessageContext<V1ProposePresentationMessage>
   ): Promise<ProofRecord> {
     let proofRecord: ProofRecord
     const { message: proposalMessage, connection } = messageContext
@@ -254,7 +254,7 @@ export class V1LegacyProofService {
     config?: {
       comment?: string
     }
-  ): Promise<ProofProtocolMsgReturnType<RequestPresentationMessage>> {
+  ): Promise<ProofProtocolMsgReturnType<V1RequestPresentationMessage>> {
     // Assert
     proofRecord.assertState(ProofState.ProposalReceived)
 
@@ -266,7 +266,7 @@ export class V1LegacyProofService {
         base64: JsonEncoder.toBase64(proofRequest),
       }),
     })
-    const requestPresentationMessage = new RequestPresentationMessage({
+    const requestPresentationMessage = new V1RequestPresentationMessage({
       comment: config?.comment,
       requestPresentationAttachments: [attachment],
     })
@@ -297,7 +297,7 @@ export class V1LegacyProofService {
       comment?: string
       autoAcceptProof?: AutoAcceptProof
     }
-  ): Promise<ProofProtocolMsgReturnType<RequestPresentationMessage>> {
+  ): Promise<ProofProtocolMsgReturnType<V1RequestPresentationMessage>> {
     this.logger.debug(`Creating proof request`)
 
     // Assert
@@ -311,7 +311,7 @@ export class V1LegacyProofService {
         base64: JsonEncoder.toBase64(proofRequest),
       }),
     })
-    const requestPresentationMessage = new RequestPresentationMessage({
+    const requestPresentationMessage = new V1RequestPresentationMessage({
       comment: config?.comment,
       requestPresentationAttachments: [attachment],
     })
@@ -344,7 +344,9 @@ export class V1LegacyProofService {
    * @returns proof record associated with the presentation request message
    *
    */
-  public async processRequest(messageContext: InboundMessageContext<RequestPresentationMessage>): Promise<ProofRecord> {
+  public async processRequest(
+    messageContext: InboundMessageContext<V1RequestPresentationMessage>
+  ): Promise<ProofRecord> {
     let proofRecord: ProofRecord
     const { message: proofRequestMessage, connection } = messageContext
 
@@ -354,9 +356,9 @@ export class V1LegacyProofService {
 
     // Assert attachment
     if (!proofRequest) {
-      throw new PresentationProblemReportError(
+      throw new V1PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation request with thread id ${proofRequestMessage.threadId}`,
-        { problemCode: PresentationProblemReportReason.Abandoned }
+        { problemCode: V1PresentationProblemReportReason.Abandoned }
       )
     }
     await validateOrReject(proofRequest)
@@ -415,7 +417,7 @@ export class V1LegacyProofService {
     config?: {
       comment?: string
     }
-  ): Promise<ProofProtocolMsgReturnType<PresentationMessage>> {
+  ): Promise<ProofProtocolMsgReturnType<V1PresentationMessage>> {
     this.logger.debug(`Creating presentation for proof record with id ${proofRecord.id}`)
 
     // Assert
@@ -423,9 +425,9 @@ export class V1LegacyProofService {
 
     const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
     if (!indyProofRequest) {
-      throw new PresentationProblemReportError(
+      throw new V1PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation with thread id ${proofRecord.threadId}`,
-        { problemCode: PresentationProblemReportReason.Abandoned }
+        { problemCode: V1PresentationProblemReportReason.Abandoned }
       )
     }
 
@@ -447,7 +449,7 @@ export class V1LegacyProofService {
       }),
     })
 
-    const presentationMessage = new PresentationMessage({
+    const presentationMessage = new V1PresentationMessage({
       comment: config?.comment,
       presentationAttachments: [attachment],
       attachments,
@@ -471,7 +473,7 @@ export class V1LegacyProofService {
    * @returns proof record associated with the presentation message
    *
    */
-  public async processPresentation(messageContext: InboundMessageContext<PresentationMessage>): Promise<ProofRecord> {
+  public async processPresentation(messageContext: InboundMessageContext<V1PresentationMessage>): Promise<ProofRecord> {
     const { message: presentationMessage, connection } = messageContext
 
     this.logger.debug(`Processing presentation with id ${presentationMessage.id}`)
@@ -490,16 +492,16 @@ export class V1LegacyProofService {
     const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
 
     if (!indyProofJson) {
-      throw new PresentationProblemReportError(
+      throw new V1PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation with thread id ${presentationMessage.threadId}`,
-        { problemCode: PresentationProblemReportReason.Abandoned }
+        { problemCode: V1PresentationProblemReportReason.Abandoned }
       )
     }
 
     if (!indyProofRequest) {
-      throw new PresentationProblemReportError(
+      throw new V1PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation request with thread id ${presentationMessage.threadId}`,
-        { problemCode: PresentationProblemReportReason.Abandoned }
+        { problemCode: V1PresentationProblemReportReason.Abandoned }
       )
     }
 
@@ -573,7 +575,7 @@ export class V1LegacyProofService {
    *
    */
   public async processProblemReport(
-    messageContext: InboundMessageContext<PresentationProblemReportMessage>
+    messageContext: InboundMessageContext<V1PresentationProblemReportMessage>
   ): Promise<ProofRecord> {
     const { message: presentationProblemReportMessage } = messageContext
 
@@ -852,11 +854,11 @@ export class V1LegacyProofService {
 
     for (const [referent, attribute] of proof.requestedProof.revealedAttributes.entries()) {
       if (!CredentialUtils.checkValidEncoding(attribute.raw, attribute.encoded)) {
-        throw new PresentationProblemReportError(
+        throw new V1PresentationProblemReportError(
           `The encoded value for '${referent}' is invalid. ` +
             `Expected '${CredentialUtils.encode(attribute.raw)}'. ` +
             `Actual '${attribute.encoded}'`,
-          { problemCode: PresentationProblemReportReason.Abandoned }
+          { problemCode: V1PresentationProblemReportReason.Abandoned }
         )
       }
     }

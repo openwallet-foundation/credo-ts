@@ -46,11 +46,13 @@ export interface CreateRequestAsResponseOptions {
 }
 
 // ----- Create Presentation ----- //
-export interface PresentationOptions {
+export interface CreatePresentationOptions {
   proofRecord: ProofRecord
   proofFormats: CreatePresentationFormats
+  lastPresentation?: boolean
+  goalCode?: string
   comment?: string
-  // TODO: add other options such as comment, etc...
+  protocolVersion: ProofProtocolVersion
 }
 
 export interface CreateAckOptions {
