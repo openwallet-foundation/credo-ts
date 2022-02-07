@@ -6,9 +6,11 @@ import type { ConnectionRecord } from '../../connections'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialProblemReportMessage, ProposeCredentialMessageOptions } from './messages'
+import type { CredOffer } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
+import { DidCommMessageRepository, DidCommMessageRole } from '../../../../src/storage'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
@@ -25,7 +27,7 @@ import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../errors'
 import { CredentialRepository } from '../repository'
-import { CredentialRecord } from '../repository/CredentialRecord'
+import { CredentialExchangeRecord } from '../repository/CredentialRecord'
 import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 
 import { V1CredentialPreview } from './V1CredentialPreview'
@@ -49,6 +51,7 @@ export class V1LegacyCredentialService {
   private indyIssuerService: IndyIssuerService
   private indyHolderService: IndyHolderService
   private eventEmitter: EventEmitter
+  private didCommMessageRepository: DidCommMessageRepository
 
   public constructor(
     credentialRepository: CredentialRepository,
@@ -57,7 +60,8 @@ export class V1LegacyCredentialService {
     agentConfig: AgentConfig,
     indyIssuerService: IndyIssuerService,
     indyHolderService: IndyHolderService,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    didCommMessageRepository: DidCommMessageRepository
   ) {
     this.credentialRepository = credentialRepository
     this.connectionService = connectionService
@@ -66,6 +70,7 @@ export class V1LegacyCredentialService {
     this.indyIssuerService = indyIssuerService
     this.indyHolderService = indyHolderService
     this.eventEmitter = eventEmitter
+    this.didCommMessageRepository = didCommMessageRepository
   }
 
   /**
@@ -99,11 +104,10 @@ export class V1LegacyCredentialService {
     const proposalMessage = new ProposeCredentialMessage(options ?? {})
 
     // Create record
-    const credentialRecord = new CredentialRecord({
+    const credentialRecord = new CredentialExchangeRecord({
       connectionId: connectionRecord.id,
       threadId: proposalMessage.threadId,
       state: CredentialState.ProposalSent,
-      proposalMessage,
       linkedAttachments: config?.linkedAttachments?.map((linkedAttachment) => linkedAttachment.attachment),
       credentialAttributes: proposalMessage.credentialProposal?.attributes,
       autoAcceptCredential: config?.autoAcceptCredential,
@@ -115,6 +119,13 @@ export class V1LegacyCredentialService {
       credentialDefinitionId: options.credentialDefinitionId,
     })
     await this.credentialRepository.save(credentialRecord)
+
+    await this.didCommMessageRepository.saveAgentMessage({
+      agentMessage: proposalMessage,
+      role: DidCommMessageRole.Sender,
+      associatedRecordId: credentialRecord.id,
+    })
+
     this.eventEmitter.emit<CredentialStateChangedEvent>({
       type: CredentialEventTypes.CredentialStateChanged,
       payload: {
@@ -136,7 +147,7 @@ export class V1LegacyCredentialService {
    *
    */
   public async createProposalAsResponse(
-    credentialRecord: CredentialRecord,
+    credentialRecord: CredentialExchangeRecord,
     config?: CredentialProposeOptions
   ): Promise<CredentialProtocolMsgReturnType<ProposeCredentialMessage>> {
     // Assert
@@ -148,9 +159,13 @@ export class V1LegacyCredentialService {
     proposalMessage.setThread({ threadId: credentialRecord.threadId })
 
     // Update record
-    credentialRecord.proposalMessage = proposalMessage
     credentialRecord.credentialAttributes = proposalMessage.credentialProposal?.attributes
     this.updateState(credentialRecord, CredentialState.ProposalSent)
+    await this.didCommMessageRepository.saveAgentMessage({
+      agentMessage: proposalMessage,
+      role: DidCommMessageRole.Sender,
+      associatedRecordId: credentialRecord.id,
+    })
 
     return { message: proposalMessage, credentialRecord }
   }
@@ -167,8 +182,8 @@ export class V1LegacyCredentialService {
    */
   public async processProposal(
     messageContext: InboundMessageContext<ProposeCredentialMessage>
-  ): Promise<CredentialRecord> {
-    let credentialRecord: CredentialRecord
+  ): Promise<CredentialExchangeRecord> {
+    let credentialRecord: CredentialExchangeRecord
     const { message: proposalMessage, connection } = messageContext
 
     this.logger.debug(`Processing credential proposal with id ${proposalMessage.id}`)
@@ -176,23 +191,39 @@ export class V1LegacyCredentialService {
     try {
       // Credential record already exists
       credentialRecord = await this.getByThreadAndConnectionId(proposalMessage.threadId, connection?.id)
-
       // Assert
       credentialRecord.assertState(CredentialState.OfferSent)
+
+      let proposalCredentialMessage, offerCredentialMessage
+      try {
+        proposalCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
+          associatedRecordId: credentialRecord.id,
+          messageClass: ProposeCredentialMessage,
+        })
+        offerCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
+          associatedRecordId: credentialRecord.id,
+          messageClass: OfferCredentialMessage,
+        })
+      } catch (RecordNotFoundError) {
+        // record not found - expected (sometimes)
+      }
       this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-        previousReceivedMessage: credentialRecord.proposalMessage,
-        previousSentMessage: credentialRecord.offerMessage,
+        previousReceivedMessage: proposalCredentialMessage,
+        previousSentMessage: offerCredentialMessage,
       })
 
       // Update record
-      credentialRecord.proposalMessage = proposalMessage
       await this.updateState(credentialRecord, CredentialState.ProposalReceived)
+      await this.didCommMessageRepository.saveAgentMessage({
+        agentMessage: proposalMessage,
+        role: DidCommMessageRole.Receiver,
+        associatedRecordId: credentialRecord.id,
+      })
     } catch {
       // No credential record exists with thread id
-      credentialRecord = new CredentialRecord({
+      credentialRecord = new CredentialExchangeRecord({
         connectionId: connection?.id,
         threadId: proposalMessage.threadId,
-        proposalMessage,
         credentialAttributes: proposalMessage.credentialProposal?.attributes,
         state: CredentialState.ProposalReceived,
       })
@@ -214,6 +245,11 @@ export class V1LegacyCredentialService {
           previousState: null,
         },
       })
+      await this.didCommMessageRepository.saveAgentMessage({
+        agentMessage: proposalMessage,
+        role: DidCommMessageRole.Receiver,
+        associatedRecordId: credentialRecord.id,
+      })
     }
     return credentialRecord
   }
@@ -228,7 +264,7 @@ export class V1LegacyCredentialService {
    *
    */
   public async createOfferAsResponse(
-    credentialRecord: CredentialRecord,
+    credentialRecord: CredentialExchangeRecord,
     credentialTemplate: CredentialOfferTemplate
   ): Promise<CredentialProtocolMsgReturnType<OfferCredentialMessage>> {
     // Assert
@@ -246,18 +282,16 @@ export class V1LegacyCredentialService {
       }),
     })
 
-    const credentialOfferMessage = new OfferCredentialMessage({
+    const offerMessage = new OfferCredentialMessage({
       comment,
       offerAttachments: [offerAttachment],
       credentialPreview: preview,
       attachments,
     })
 
-    credentialOfferMessage.setThread({
+    offerMessage.setThread({
       threadId: credentialRecord.threadId,
     })
-
-    credentialRecord.offerMessage = credentialOfferMessage
 
     credentialRecord.credentialAttributes = preview.attributes
     credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
@@ -269,8 +303,12 @@ export class V1LegacyCredentialService {
       credentialTemplate.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
     await this.updateState(credentialRecord, CredentialState.OfferSent)
-
-    return { message: credentialOfferMessage, credentialRecord }
+    await this.didCommMessageRepository.saveAgentMessage({
+      agentMessage: offerMessage,
+      role: DidCommMessageRole.Sender,
+      associatedRecordId: credentialRecord.id,
+    })
+    return { message: offerMessage, credentialRecord }
   }
 
   /**
@@ -306,7 +344,7 @@ export class V1LegacyCredentialService {
       : preview
 
     // Construct offer message
-    const credentialOfferMessage = new OfferCredentialMessage({
+    const offerMessage = new OfferCredentialMessage({
       comment,
       offerAttachments: [offerAttachment],
       credentialPreview,
@@ -314,10 +352,9 @@ export class V1LegacyCredentialService {
     })
 
     // Create record
-    const credentialRecord = new CredentialRecord({
+    const credentialRecord = new CredentialExchangeRecord({
       connectionId: connectionRecord?.id,
-      threadId: credentialOfferMessage.id,
-      offerMessage: credentialOfferMessage,
+      threadId: offerMessage.id,
       credentialAttributes: credentialPreview.attributes,
       linkedAttachments: linkedAttachments?.map((linkedAttachments) => linkedAttachments.attachment),
       state: CredentialState.OfferSent,
@@ -330,6 +367,11 @@ export class V1LegacyCredentialService {
     })
 
     await this.credentialRepository.save(credentialRecord)
+    await this.didCommMessageRepository.saveAgentMessage({
+      agentMessage: offerMessage,
+      role: DidCommMessageRole.Receiver,
+      associatedRecordId: credentialRecord.id,
+    })
     this.eventEmitter.emit<CredentialStateChangedEvent>({
       type: CredentialEventTypes.CredentialStateChanged,
       payload: {
@@ -338,7 +380,7 @@ export class V1LegacyCredentialService {
       },
     })
 
-    return { message: credentialOfferMessage, credentialRecord }
+    return { message: offerMessage, credentialRecord }
   }
 
   /**
@@ -351,33 +393,49 @@ export class V1LegacyCredentialService {
    * @returns credential record associated with the credential offer message
    *
    */
-  public async processOffer(messageContext: InboundMessageContext<OfferCredentialMessage>): Promise<CredentialRecord> {
-    let credentialRecord: CredentialRecord
-    const { message: credentialOfferMessage, connection } = messageContext
+  public async processOffer(
+    messageContext: InboundMessageContext<OfferCredentialMessage>
+  ): Promise<CredentialExchangeRecord> {
+    let credentialRecord: CredentialExchangeRecord
+    const { message: offerMessage, connection } = messageContext
 
-    this.logger.debug(`Processing credential offer with id ${credentialOfferMessage.id}`)
-    const indyCredentialOffer = credentialOfferMessage.indyCredentialOffer
+    this.logger.debug(`Processing credential offer with id ${offerMessage.id}`)
+    const indyCredentialOffer = offerMessage.indyCredentialOffer
 
     if (!indyCredentialOffer) {
       throw new CredentialProblemReportError(
-        `Missing required base64 or json encoded attachment data for credential offer with thread id ${credentialOfferMessage.threadId}`,
+        `Missing required base64 or json encoded attachment data for credential offer with thread id ${offerMessage.threadId}`,
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
 
     try {
       // Credential record already exists
-      credentialRecord = await this.getByThreadAndConnectionId(credentialOfferMessage.threadId, connection?.id)
+      credentialRecord = await this.getByThreadAndConnectionId(offerMessage.threadId, connection?.id)
+
+      let proposalCredentialMessage, offerCredentialMessage
+
+      try {
+        proposalCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
+          associatedRecordId: credentialRecord.id,
+          messageClass: ProposeCredentialMessage,
+        })
+        offerCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
+          associatedRecordId: credentialRecord.id,
+          messageClass: OfferCredentialMessage,
+        })
+      } catch (error) {
+        // record not found error - MJR-TODO is this ok?
+      }
 
       // Assert
       credentialRecord.assertState(CredentialState.ProposalSent)
       this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-        previousReceivedMessage: credentialRecord.offerMessage,
-        previousSentMessage: credentialRecord.proposalMessage,
+        previousReceivedMessage: offerCredentialMessage,
+        previousSentMessage: proposalCredentialMessage,
       })
 
-      credentialRecord.offerMessage = credentialOfferMessage
-      credentialRecord.linkedAttachments = credentialOfferMessage.messageAttachment?.filter(isLinkedAttachment)
+      credentialRecord.linkedAttachments = offerMessage.messageAttachment?.filter(isLinkedAttachment)
 
       credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
         schemaId: indyCredentialOffer.schema_id,
@@ -385,13 +443,17 @@ export class V1LegacyCredentialService {
       })
 
       await this.updateState(credentialRecord, CredentialState.OfferReceived)
+      await this.didCommMessageRepository.saveAgentMessage({
+        agentMessage: offerMessage,
+        role: DidCommMessageRole.Receiver,
+        associatedRecordId: credentialRecord.id,
+      })
     } catch {
       // No credential record exists with thread id
-      credentialRecord = new CredentialRecord({
+      credentialRecord = new CredentialExchangeRecord({
         connectionId: connection?.id,
-        threadId: credentialOfferMessage.id,
-        offerMessage: credentialOfferMessage,
-        credentialAttributes: credentialOfferMessage.credentialPreview.attributes,
+        threadId: offerMessage.id,
+        credentialAttributes: offerMessage.credentialPreview.attributes,
         state: CredentialState.OfferReceived,
       })
 
@@ -405,6 +467,11 @@ export class V1LegacyCredentialService {
 
       // Save in repository
       await this.credentialRepository.save(credentialRecord)
+      await this.didCommMessageRepository.saveAgentMessage({
+        agentMessage: offerMessage,
+        role: DidCommMessageRole.Receiver,
+        associatedRecordId: credentialRecord.id,
+      })
       this.eventEmitter.emit<CredentialStateChangedEvent>({
         type: CredentialEventTypes.CredentialStateChanged,
         payload: {
@@ -426,21 +493,24 @@ export class V1LegacyCredentialService {
    *
    */
   public async createRequest(
-    credentialRecord: CredentialRecord,
+    credentialRecord: CredentialExchangeRecord,
     options: CredentialRequestOptions
   ): Promise<CredentialProtocolMsgReturnType<RequestCredentialMessage>> {
     // Assert credential
     credentialRecord.assertState(CredentialState.OfferReceived)
 
-    const credentialOffer = credentialRecord.offerMessage?.indyCredentialOffer
+    const offerCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: OfferCredentialMessage,
+    })
 
-    if (!credentialOffer) {
+    const credentialOffer: CredOffer | null = offerCredentialMessage?.indyCredentialOffer
+    if (!offerCredentialMessage || !credentialOffer) {
       throw new CredentialProblemReportError(
         `Missing required base64 or json encoded attachment data for credential offer with thread id ${credentialRecord.threadId}`,
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
-
     const credentialDefinition = await this.ledgerService.getCredentialDefinition(credentialOffer.cred_def_id)
 
     const [credReq, credReqMetadata] = await this.indyHolderService.createCredentialRequest({
@@ -457,25 +527,27 @@ export class V1LegacyCredentialService {
       }),
     })
 
-    const credentialRequest = new RequestCredentialMessage({
+    const requestMessage = new RequestCredentialMessage({
       comment: options?.comment,
       requestAttachments: [requestAttachment],
-      attachments: credentialRecord.offerMessage?.messageAttachment?.filter((attachment) =>
-        isLinkedAttachment(attachment)
-      ),
+      attachments: offerCredentialMessage?.messageAttachment?.filter((attachment) => isLinkedAttachment(attachment)),
     })
-    credentialRequest.setThread({ threadId: credentialRecord.threadId })
+    requestMessage.setThread({ threadId: credentialRecord.threadId })
 
     credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, credReqMetadata)
-    credentialRecord.requestMessage = credentialRequest
     credentialRecord.autoAcceptCredential = options?.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
-    credentialRecord.linkedAttachments = credentialRecord.offerMessage?.messageAttachment?.filter((attachment) =>
+    credentialRecord.linkedAttachments = offerCredentialMessage?.messageAttachment?.filter((attachment) =>
       isLinkedAttachment(attachment)
     )
     await this.updateState(credentialRecord, CredentialState.RequestSent)
+    await this.didCommMessageRepository.saveAgentMessage({
+      agentMessage: requestMessage,
+      role: DidCommMessageRole.Sender,
+      associatedRecordId: credentialRecord.id,
+    })
 
-    return { message: credentialRequest, credentialRecord }
+    return { message: requestMessage, credentialRecord }
   }
 
   /**
@@ -490,32 +562,51 @@ export class V1LegacyCredentialService {
    */
   public async processRequest(
     messageContext: InboundMessageContext<RequestCredentialMessage>
-  ): Promise<CredentialRecord> {
-    const { message: credentialRequestMessage, connection } = messageContext
+  ): Promise<CredentialExchangeRecord> {
+    const { message: requestMessage, connection } = messageContext
 
-    this.logger.debug(`Processing credential request with id ${credentialRequestMessage.id}`)
+    this.logger.debug(`Processing credential request with id ${requestMessage.id}`)
 
-    const indyCredentialRequest = credentialRequestMessage?.indyCredentialRequest
+    const indyCredentialRequest = requestMessage?.indyCredentialRequest
 
     if (!indyCredentialRequest) {
       throw new CredentialProblemReportError(
-        `Missing required base64 or json encoded attachment data for credential request with thread id ${credentialRequestMessage.threadId}`,
+        `Missing required base64 or json encoded attachment data for credential request with thread id ${requestMessage.threadId}`,
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
 
-    const credentialRecord = await this.getByThreadAndConnectionId(credentialRequestMessage.threadId, connection?.id)
-
+    const credentialRecord = await this.getByThreadAndConnectionId(requestMessage.threadId, connection?.id)
+    let proposalCredentialMessage, offerCredentialMessage
+    try {
+      proposalCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
+        associatedRecordId: credentialRecord.id,
+        messageClass: ProposeCredentialMessage,
+      })
+    } catch {
+      // record not found - this can happen
+    }
+    try {
+      offerCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
+        associatedRecordId: credentialRecord.id,
+        messageClass: OfferCredentialMessage,
+      })
+    } catch (error) {
+      // record not found - this can happen
+    }
     // Assert
     credentialRecord.assertState(CredentialState.OfferSent)
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: credentialRecord.proposalMessage,
-      previousSentMessage: credentialRecord.offerMessage,
+      previousReceivedMessage: proposalCredentialMessage,
+      previousSentMessage: offerCredentialMessage,
     })
 
     this.logger.debug('Credential record found when processing credential request', credentialRecord)
-
-    credentialRecord.requestMessage = credentialRequestMessage
+    await this.didCommMessageRepository.saveAgentMessage({
+      agentMessage: requestMessage,
+      role: DidCommMessageRole.Receiver,
+      associatedRecordId: credentialRecord.id,
+    })
     await this.updateState(credentialRecord, CredentialState.RequestReceived)
 
     return credentialRecord
@@ -530,15 +621,19 @@ export class V1LegacyCredentialService {
    *
    */
   public async createCredential(
-    credentialRecord: CredentialRecord,
+    credentialRecord: CredentialExchangeRecord,
     options?: CredentialResponseOptions
   ): Promise<CredentialProtocolMsgReturnType<IssueCredentialMessage>> {
     // Assert
     credentialRecord.assertState(CredentialState.RequestReceived)
-
-    const requestMessage = credentialRecord.requestMessage
-    const offerMessage = credentialRecord.offerMessage
-
+    const offerMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: OfferCredentialMessage,
+    })
+    const requestMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: RequestCredentialMessage,
+    })
     // Assert offer message
     if (!offerMessage) {
       throw new AriesFrameworkError(
@@ -587,24 +682,27 @@ export class V1LegacyCredentialService {
       }),
     })
 
-    const issueCredentialMessage = new IssueCredentialMessage({
+    const issueMessage = new IssueCredentialMessage({
       comment: options?.comment,
       credentialAttachments: [credentialAttachment],
       attachments:
         offerMessage?.messageAttachment?.filter((attachment) => isLinkedAttachment(attachment)) ||
         requestMessage?.messageAttachment?.filter((attachment: Attachment) => isLinkedAttachment(attachment)),
     })
-    issueCredentialMessage.setThread({
+    issueMessage.setThread({
       threadId: credentialRecord.threadId,
     })
-    issueCredentialMessage.setPleaseAck()
+    issueMessage.setPleaseAck()
 
-    credentialRecord.credentialMessage = issueCredentialMessage
     credentialRecord.autoAcceptCredential = options?.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
     await this.updateState(credentialRecord, CredentialState.CredentialIssued)
-
-    return { message: issueCredentialMessage, credentialRecord }
+    await this.didCommMessageRepository.saveAgentMessage({
+      agentMessage: issueMessage,
+      role: DidCommMessageRole.Sender,
+      associatedRecordId: credentialRecord.id,
+    })
+    return { message: issueMessage, credentialRecord }
   }
 
   /**
@@ -620,18 +718,26 @@ export class V1LegacyCredentialService {
    */
   public async processCredential(
     messageContext: InboundMessageContext<IssueCredentialMessage>
-  ): Promise<CredentialRecord> {
-    const { message: issueCredentialMessage, connection } = messageContext
+  ): Promise<CredentialExchangeRecord> {
+    const { message: issueMessage, connection } = messageContext
 
-    this.logger.debug(`Processing credential with id ${issueCredentialMessage.id}`)
+    this.logger.debug(`Processing credential with id ${issueMessage.id}`)
 
-    const credentialRecord = await this.getByThreadAndConnectionId(issueCredentialMessage.threadId, connection?.id)
+    const credentialRecord = await this.getByThreadAndConnectionId(issueMessage.threadId, connection?.id)
 
+    const requestCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: RequestCredentialMessage,
+    })
+    const offerCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: OfferCredentialMessage,
+    })
     // Assert
     credentialRecord.assertState(CredentialState.RequestSent)
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: credentialRecord.offerMessage,
-      previousSentMessage: credentialRecord.requestMessage,
+      previousReceivedMessage: offerCredentialMessage,
+      previousSentMessage: requestCredentialMessage,
     })
 
     const credentialRequestMetadata = credentialRecord.metadata.get(CredentialMetadataKeys.IndyRequest)
@@ -643,10 +749,10 @@ export class V1LegacyCredentialService {
       )
     }
 
-    const indyCredential = issueCredentialMessage.indyCredential
+    const indyCredential = issueMessage.indyCredential
     if (!indyCredential) {
       throw new CredentialProblemReportError(
-        `Missing required base64 or json encoded attachment data for credential with thread id ${issueCredentialMessage.threadId}`,
+        `Missing required base64 or json encoded attachment data for credential with thread id ${issueMessage.threadId}`,
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
@@ -660,9 +766,12 @@ export class V1LegacyCredentialService {
       credentialDefinition,
     })
     credentialRecord.credentialId = credentialId
-    credentialRecord.credentialMessage = issueCredentialMessage
     await this.updateState(credentialRecord, CredentialState.CredentialReceived)
-
+    await this.didCommMessageRepository.saveAgentMessage({
+      agentMessage: issueMessage,
+      role: DidCommMessageRole.Receiver,
+      associatedRecordId: credentialRecord.id,
+    })
     return credentialRecord
   }
 
@@ -674,7 +783,7 @@ export class V1LegacyCredentialService {
    *
    */
   public async createAck(
-    credentialRecord: CredentialRecord
+    credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialProtocolMsgReturnType<CredentialAckMessage>> {
     credentialRecord.assertState(CredentialState.CredentialReceived)
 
@@ -693,7 +802,7 @@ export class V1LegacyCredentialService {
    * Decline a credential offer
    * @param credentialRecord The credential to be declined
    */
-  public async declineOffer(credentialRecord: CredentialRecord): Promise<CredentialRecord> {
+  public async declineOffer(credentialRecord: CredentialExchangeRecord): Promise<CredentialExchangeRecord> {
     credentialRecord.assertState(CredentialState.OfferReceived)
 
     await this.updateState(credentialRecord, CredentialState.Declined)
@@ -708,18 +817,28 @@ export class V1LegacyCredentialService {
    * @returns credential record associated with the credential acknowledgement message
    *
    */
-  public async processAck(messageContext: InboundMessageContext<CredentialAckMessage>): Promise<CredentialRecord> {
+  public async processAck(
+    messageContext: InboundMessageContext<CredentialAckMessage>
+  ): Promise<CredentialExchangeRecord> {
     const { message: credentialAckMessage, connection } = messageContext
 
     this.logger.debug(`Processing credential ack with id ${credentialAckMessage.id}`)
 
     const credentialRecord = await this.getByThreadAndConnectionId(credentialAckMessage.threadId, connection?.id)
 
+    const requestCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: RequestCredentialMessage,
+    })
+    const issueCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: IssueCredentialMessage,
+    })
     // Assert
     credentialRecord.assertState(CredentialState.CredentialIssued)
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: credentialRecord.requestMessage,
-      previousSentMessage: credentialRecord.credentialMessage,
+      previousReceivedMessage: requestCredentialMessage,
+      previousSentMessage: issueCredentialMessage,
     })
 
     // Update record
@@ -737,7 +856,7 @@ export class V1LegacyCredentialService {
    */
   public async processProblemReport(
     messageContext: InboundMessageContext<CredentialProblemReportMessage>
-  ): Promise<CredentialRecord> {
+  ): Promise<CredentialExchangeRecord> {
     const { message: credentialProblemReportMessage } = messageContext
 
     const connection = messageContext.assertReadyConnection()
@@ -760,7 +879,7 @@ export class V1LegacyCredentialService {
    *
    * @returns List containing all credential records
    */
-  public getAll(): Promise<CredentialRecord[]> {
+  public getAll(): Promise<CredentialExchangeRecord[]> {
     return this.credentialRepository.getAll()
   }
 
@@ -772,7 +891,7 @@ export class V1LegacyCredentialService {
    * @return The credential record
    *
    */
-  public getById(credentialRecordId: string): Promise<CredentialRecord> {
+  public getById(credentialRecordId: string): Promise<CredentialExchangeRecord> {
     return this.credentialRepository.getById(credentialRecordId)
   }
 
@@ -782,7 +901,7 @@ export class V1LegacyCredentialService {
    * @param credentialRecordId the credential record id
    * @returns The credential record or null if not found
    */
-  public findById(connectionId: string): Promise<CredentialRecord | null> {
+  public findById(connectionId: string): Promise<CredentialExchangeRecord | null> {
     return this.credentialRepository.findById(connectionId)
   }
 
@@ -805,14 +924,14 @@ export class V1LegacyCredentialService {
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The credential record
    */
-  public getByThreadAndConnectionId(threadId: string, connectionId?: string): Promise<CredentialRecord> {
+  public getByThreadAndConnectionId(threadId: string, connectionId?: string): Promise<CredentialExchangeRecord> {
     return this.credentialRepository.getSingleByQuery({
       connectionId,
       threadId,
     })
   }
 
-  public update(credentialRecord: CredentialRecord) {
+  public update(credentialRecord: CredentialExchangeRecord) {
     return this.credentialRepository.update(credentialRecord)
   }
 
@@ -824,7 +943,7 @@ export class V1LegacyCredentialService {
    * @param newState The state to update to
    *
    */
-  private async updateState(credentialRecord: CredentialRecord, newState: CredentialState) {
+  private async updateState(credentialRecord: CredentialExchangeRecord, newState: CredentialState) {
     const previousState = credentialRecord.state
     credentialRecord.state = newState
     await this.credentialRepository.update(credentialRecord)
@@ -841,7 +960,7 @@ export class V1LegacyCredentialService {
 
 export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessage> {
   message: MessageType
-  credentialRecord: CredentialRecord
+  credentialRecord: CredentialExchangeRecord
 }
 
 export interface CredentialOfferTemplate {

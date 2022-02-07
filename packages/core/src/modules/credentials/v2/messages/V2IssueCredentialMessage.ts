@@ -12,7 +12,6 @@ export interface V2IssueCredentialMessageProps {
   comment?: string
   formats: V2CredentialFormatSpec[]
   credentialsAttach: Attachment[]
-  attachments: Attachment[]
 }
 
 export class V2IssueCredentialMessage extends AgentMessage {

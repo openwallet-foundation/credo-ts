@@ -28,7 +28,7 @@ import { uuid } from '../../../../src/utils/uuid'
 import { isLinkedAttachment } from '../../../utils/attachment'
 import { credOffer } from '../__tests__/fixtures'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../errors'
-import { CredentialRecord } from '../repository/CredentialRecord'
+import { CredentialExchangeRecord } from '../repository/CredentialRecord'
 
 import { V2IssueCredentialMessage } from './messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from './messages/V2OfferCredentialMessage'
@@ -37,7 +37,7 @@ import { V2RequestCredentialMessage } from './messages/V2RequestCredentialMessag
 
 export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessage> {
   message: MessageType
-  credentialRecord: CredentialRecord
+  credentialRecord: CredentialExchangeRecord
 }
 
 export class CredentialMessageBuilder {
@@ -94,8 +94,7 @@ export class CredentialMessageBuilder {
     }
 
     // Create the v2 record
-    const credentialRecord = new CredentialRecord(props)
-    credentialRecord.proposalMessage = message // new V2 field
+    const credentialRecord = new CredentialExchangeRecord(props)
 
     return { message, credentialRecord }
   }
@@ -108,15 +107,14 @@ export class CredentialMessageBuilder {
    * @param connectionId optional connection id for the agent to agent connection
    * @return a version 2.0 credential record object see {@link CredentialRecord}
    */
-  public acceptProposal(message: V2ProposeCredentialMessage, connectionId?: string): CredentialRecord {
+  public acceptProposal(message: V2ProposeCredentialMessage, connectionId?: string): CredentialExchangeRecord {
     const props: CredentialRecordProps = {
       connectionId: connectionId,
       threadId: message.threadId,
-      proposalMessage: message,
       state: CredentialState.ProposalReceived,
       credentialAttributes: message.credentialProposal?.attributes,
     }
-    return new CredentialRecord(props)
+    return new CredentialExchangeRecord(props)
   }
 
   /**
@@ -131,7 +129,7 @@ export class CredentialMessageBuilder {
    */
   public async createOfferAsResponse(
     formatServices: CredentialFormatService[],
-    credentialRecord: CredentialRecord,
+    credentialRecord: CredentialExchangeRecord,
     proposal: AcceptProposalOptions | NegotiateProposalOptions
   ): Promise<V2OfferCredentialMessage> {
     assert(formatServices.length > 0)
@@ -176,7 +174,6 @@ export class CredentialMessageBuilder {
     credentialOfferMessage.setThread({
       threadId: credentialRecord.threadId,
     })
-    credentialRecord.offerMessage = credentialOfferMessage
 
     credentialRecord.credentialAttributes = previewAttachments?.attributes
 
@@ -219,7 +216,7 @@ export class CredentialMessageBuilder {
    */
   public async createRequest(
     formatServices: CredentialFormatService[],
-    credentialRecord: CredentialRecord,
+    credentialRecord: CredentialExchangeRecord,
     requestOptions: RequestCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<V2RequestCredentialMessage>> {
     // Assert credential
@@ -251,7 +248,6 @@ export class CredentialMessageBuilder {
         }
         service.getMetaDataService().setMetaDataForRequest(credOfferRequest, credentialRecord)
 
-        credentialRecord.requestMessage = credentialRequestMessage
         credentialRecord.autoAcceptCredential =
           requestOptions.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
@@ -291,7 +287,7 @@ export class CredentialMessageBuilder {
   public async createOffer(
     formatServices: CredentialFormatService[],
     options: OfferCredentialOptions
-  ): Promise<{ credentialRecord: CredentialRecord; message: V2OfferCredentialMessage }> {
+  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: V2OfferCredentialMessage }> {
     const formatsArray: V2CredentialFormatSpec[] = []
     const offersAttachArray: Attachment[] | undefined = []
     let previewAttachments: V2CredentialPreview | undefined
@@ -329,14 +325,13 @@ export class CredentialMessageBuilder {
     const recordProps: CredentialRecordProps = {
       connectionId: options.connectionId,
       threadId: credentialOfferMessage.threadId,
-      offerMessage: credentialOfferMessage,
       autoAcceptCredential: options?.autoAcceptCredential,
       state: CredentialState.OfferSent,
       credentialAttributes: previewAttachments?.attributes,
     }
 
     // Create the v2 record
-    const credentialRecord = new CredentialRecord(recordProps)
+    const credentialRecord = new CredentialExchangeRecord(recordProps)
 
     // set meta data and emit event - MJR-TODO how do we do this for multiple formats?
     formatServices[0].getMetaDataService().setMetaDataForOffer(credOffer, credentialRecord)
@@ -354,7 +349,7 @@ export class CredentialMessageBuilder {
    */
   public async createCredential(
     credentialFormats: CredentialFormatService[],
-    credentialRecord: CredentialRecord,
+    credentialRecord: CredentialExchangeRecord,
     options: AcceptRequestOptions
   ): Promise<CredentialProtocolMsgReturnType<V2IssueCredentialMessage>> {
     const formatsArray: V2CredentialFormatSpec[] = []
@@ -373,17 +368,11 @@ export class CredentialMessageBuilder {
       }
       credAttachArray.push(credentialsAttach)
     })
-
-    const offerMessage: V2OfferCredentialMessage = credentialRecord.offerMessage as V2OfferCredentialMessage
-    const requestMessage: V2RequestCredentialMessage = credentialRecord.requestMessage as V2RequestCredentialMessage
-    const offerAttachments = offerMessage?.messageAttachment
-    const requestAttachments = requestMessage?.messageAttachment
     const messageOptions: V2IssueCredentialMessageProps = {
       id: this.generateId(),
       formats: formatsArray,
       credentialsAttach: credAttachArray,
       comment: options.comment,
-      attachments: offerAttachments || requestAttachments,
     }
 
     const message: V2IssueCredentialMessage = new V2IssueCredentialMessage(messageOptions)

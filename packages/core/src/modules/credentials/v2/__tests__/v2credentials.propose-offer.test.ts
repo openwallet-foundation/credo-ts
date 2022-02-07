@@ -8,10 +8,9 @@ import type {
   OfferCredentialOptions,
   ProposeCredentialOptions,
 } from '../../interfaces'
-import type { CredentialExchangeRecord } from '../CredentialExchangeRecord'
 import type { Schema } from 'indy-sdk'
 
-import { CredentialRecord, CredentialState } from '../..'
+import { CredentialExchangeRecord, CredentialState } from '../..'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../core/tests/helpers'
 import { unitTestLogger } from '../../../../../src/logger'
 import testLogger from '../../../../../tests/logger'
@@ -19,9 +18,8 @@ import { Attachment, AttachmentData } from '../../../../decorators/attachment/At
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { LinkedAttachment } from '../../../../utils/LinkedAttachment'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
+import { CredentialRecordType } from '../../interfaces'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
-import { CredentialRecordType } from '../CredentialExchangeRecord'
-import { CredentialRole } from '../CredentialRole'
 
 describe('credentials', () => {
   let faberAgent: Agent
@@ -29,8 +27,8 @@ describe('credentials', () => {
   let credDefId: string
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
-  let aliceCredentialRecord: CredentialRecord
-  let faberCredentialRecord: CredentialRecord
+  let aliceCredentialRecord: CredentialExchangeRecord
+  let faberCredentialRecord: CredentialExchangeRecord
   let schema: Schema
 
   const credentialPreview = V1CredentialPreview.fromRecord({
@@ -95,7 +93,6 @@ describe('credentials', () => {
     expect(credentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
     expect(credentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V1_0)
     expect(credentialExchangeRecord.state).toEqual(CredentialState.ProposalSent)
-    expect(credentialExchangeRecord.role).toEqual(CredentialRole.Holder)
     expect(credentialExchangeRecord.threadId).not.toBeNull()
     testLogger.test('Faber waits for credential proposal from Alice')
     faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
@@ -125,36 +122,36 @@ describe('credentials', () => {
       state: CredentialState.OfferReceived,
     })
 
-    expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
-      createdAt: expect.any(Date),
-      offerMessage: {
-        '@id': expect.any(String),
-        '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
-        comment: 'V1 Indy Proposal',
-        credential_preview: {
-          '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
-          attributes: [
-            {
-              name: 'name',
-              'mime-type': 'text/plain',
-              value: 'John',
-            },
-            {
-              name: 'age',
-              'mime-type': 'text/plain',
-              value: '99',
-            },
-            {
-              name: 'profile_picture',
-              'mime-type': 'image/png',
-              value: 'hl:zQmcKEWE6eZWpVqGKhbmhd8SxWBa9fgLX7aYW8RJzeHQMZg',
-            },
-          ],
-        },
-        'offers~attach': expect.any(Array),
-      },
-      state: CredentialState.OfferReceived,
-    })
+    // expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
+    //   createdAt: expect.any(Date),
+    //   offerMessage: {
+    //     '@id': expect.any(String),
+    //     '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
+    //     comment: 'V1 Indy Proposal',
+    //     credential_preview: {
+    //       '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
+    //       attributes: [
+    //         {
+    //           name: 'name',
+    //           'mime-type': 'text/plain',
+    //           value: 'John',
+    //         },
+    //         {
+    //           name: 'age',
+    //           'mime-type': 'text/plain',
+    //           value: '99',
+    //         },
+    //         {
+    //           name: 'profile_picture',
+    //           'mime-type': 'image/png',
+    //           value: 'hl:zQmcKEWE6eZWpVqGKhbmhd8SxWBa9fgLX7aYW8RJzeHQMZg',
+    //         },
+    //       ],
+    //     },
+    //     'offers~attach': expect.any(Array),
+    //   },
+    //   state: CredentialState.OfferReceived,
+    // })
     // below values are not in json object
     expect(aliceCredentialRecord.id).not.toBeNull()
     expect(aliceCredentialRecord.getTags()).toEqual({
@@ -162,7 +159,7 @@ describe('credentials', () => {
       connectionId: aliceCredentialRecord.connectionId,
       state: aliceCredentialRecord.state,
     })
-    expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
+    expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
     if (aliceCredentialRecord.connectionId) {
       const acceptOfferOptions: AcceptOfferOptions = {
         credentialRecordId: aliceCredentialRecord.id,
@@ -176,7 +173,6 @@ describe('credentials', () => {
       expect(offerCredentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
       expect(offerCredentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V1_0)
       expect(offerCredentialExchangeRecord.state).toEqual(CredentialState.RequestSent)
-      expect(offerCredentialExchangeRecord.role).toEqual(CredentialRole.Holder)
       expect(offerCredentialExchangeRecord.threadId).not.toBeNull()
       testLogger.test('Faber waits for credential request from Alice')
       faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
@@ -236,7 +232,6 @@ describe('credentials', () => {
     expect(credentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
     expect(credentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V2_0)
     expect(credentialExchangeRecord.state).toEqual(CredentialState.ProposalSent)
-    expect(credentialExchangeRecord.role).toEqual(CredentialRole.Holder)
     expect(credentialExchangeRecord.threadId).not.toBeNull()
 
     testLogger.test('Faber waits for credential proposal from Alice')
@@ -265,47 +260,49 @@ describe('credentials', () => {
       threadId: faberCredentialRecord.threadId,
       state: CredentialState.OfferReceived,
     })
-    if (aliceCredentialRecord.offerMessage) {
-      expect(aliceCredentialRecord.offerMessage?.messageAttachment).toBeTruthy
-      expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
-        createdAt: expect.any(Date),
-        offerMessage: {
-          // '@id': expect.any(String), MJR-TODO fix this
-          '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
-          comment: 'V2 Indy Offer',
-          credential_preview: {
-            '@type': 'https://didcomm.org/issue-credential/2.0/credential-preview',
-            attributes: [
-              {
-                name: 'name',
-                'mime-type': 'text/plain',
-                value: 'John',
-              },
-              {
-                name: 'age',
-                'mime-type': 'text/plain',
-                value: '99',
-              },
-              {
-                name: 'profile_picture',
-                'mime-type': 'image/png',
-                value: 'hl:zQmcKEWE6eZWpVqGKhbmhd8SxWBa9fgLX7aYW8RJzeHQMZg',
-              },
-            ],
-          },
-          // 'offers~attach': expect.any(Array), MJR-TODO fix this
-        },
-        state: CredentialState.OfferReceived,
-      })
-      expect(aliceCredentialRecord.offerMessage?.id).toBeTruthy
-    }
+
+    // MJR-TODO how do we get the offer message out of the didcomm message repository from inside tests??
+    // if (aliceCredentialRecord.offerMessage) {
+    // expect(aliceCredentialRecord.offerMessage?.messageAttachment).toBeTruthy
+    // expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
+    //   createdAt: expect.any(Date),
+    //   offerMessage: {
+    //     // '@id': expect.any(String), MJR-TODO fix this
+    //     '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
+    //     comment: 'V2 Indy Offer',
+    //     credential_preview: {
+    //       '@type': 'https://didcomm.org/issue-credential/2.0/credential-preview',
+    //       attributes: [
+    //         {
+    //           name: 'name',
+    //           'mime-type': 'text/plain',
+    //           value: 'John',
+    //         },
+    //         {
+    //           name: 'age',
+    //           'mime-type': 'text/plain',
+    //           value: '99',
+    //         },
+    //         {
+    //           name: 'profile_picture',
+    //           'mime-type': 'image/png',
+    //           value: 'hl:zQmcKEWE6eZWpVqGKhbmhd8SxWBa9fgLX7aYW8RJzeHQMZg',
+    //         },
+    //       ],
+    //     },
+    //     // 'offers~attach': expect.any(Array), MJR-TODO fix this
+    //   },
+    //   state: CredentialState.OfferReceived,
+    // })
+    // expect(aliceCredentialRecord.offerMessage?.id).toBeTruthy
+    // }
     expect(aliceCredentialRecord.id).not.toBeNull()
     expect(aliceCredentialRecord.getTags()).toEqual({
       threadId: faberCredentialRecord.threadId,
       connectionId: aliceCredentialRecord.connectionId,
       state: aliceCredentialRecord.state,
     })
-    expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
+    expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
 
     if (aliceCredentialRecord.connectionId) {
       const acceptOfferOptions: AcceptOfferOptions = {
@@ -320,7 +317,6 @@ describe('credentials', () => {
       expect(offerCredentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
       expect(offerCredentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V2_0)
       expect(offerCredentialExchangeRecord.state).toEqual(CredentialState.RequestSent)
-      expect(offerCredentialExchangeRecord.role).toEqual(CredentialRole.Holder)
       expect(offerCredentialExchangeRecord.threadId).not.toBeNull()
 
       testLogger.test('Faber waits for credential request from Alice')
@@ -355,13 +351,11 @@ describe('credentials', () => {
         state: CredentialState.Done,
       })
       expect(aliceCredentialRecord).toMatchObject({
-        type: CredentialRecord.name,
+        type: CredentialExchangeRecord.name,
         id: expect.any(String),
         createdAt: expect.any(Date),
         threadId: expect.any(String),
         connectionId: expect.any(String),
-        offerMessage: expect.any(Object),
-        requestMessage: expect.any(Object),
         credentialId: expect.any(String),
         state: CredentialState.CredentialReceived,
       })
@@ -396,7 +390,7 @@ describe('credentials', () => {
       state: aliceCredentialRecord.state,
       connectionId: aliceConnection.id,
     })
-    expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
+    expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
     testLogger.test('Alice declines offer')
     if (aliceCredentialRecord.id) {
       await aliceAgent.credentials.declineCredentialOffer(aliceCredentialRecord.id, CredentialProtocolVersion.V2_0)

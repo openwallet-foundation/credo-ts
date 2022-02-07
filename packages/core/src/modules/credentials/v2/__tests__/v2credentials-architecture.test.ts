@@ -5,13 +5,11 @@ import type { CredOffer } from 'indy-sdk'
 
 import { getBaseConfig } from '../../../../../tests/helpers'
 import { Agent } from '../../../../agent/Agent'
-import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { unitTestLogger } from '../../../../logger'
-import { LinkedAttachment } from '../../../../utils/LinkedAttachment'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
 import { CredentialsAPI } from '../../CredentialsAPI'
+import { CredentialFormatType } from '../../interfaces'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
-import { CredentialFormatType } from '../CredentialExchangeRecord'
 import { CredentialMessageBuilder } from '../CredentialMessageBuilder'
 
 const { config, agentDependencies: dependencies } = getBaseConfig('Format Servive Test')

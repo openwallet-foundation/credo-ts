@@ -7,17 +7,17 @@ import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
 import type {
   AcceptProposalOptions,
   AcceptRequestOptions,
+  CredentialFormatType,
   NegotiateProposalOptions,
   OfferCredentialFormats,
   OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from './interfaces'
-import type { CredentialRecord } from './repository'
+import type { CredentialExchangeRecord } from './repository'
 import type { V1CredentialService } from './v1/V1CredentialService'
 import type { CredentialProtocolMsgReturnType } from './v1/V1LegacyCredentialService'
 import type { CredentialAckMessage, IssueCredentialMessage, RequestCredentialMessage } from './v1/messages'
-import type { CredentialFormatType } from './v2/CredentialExchangeRecord'
 import type { V2CredentialService } from './v2/V2CredentialService'
 import type { CredentialFormatService, V2CredProposeOfferRequestFormat } from './v2/formats/CredentialFormatService'
 import type { V2CredentialAckMessage } from './v2/messages/V2CredentialAckMessage'
@@ -35,54 +35,54 @@ export abstract class CredentialService {
   // methods for proposal
   abstract createProposal(
     proposal: ProposeCredentialOptions
-  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }>
-  abstract processProposal(messageContext: HandlerInboundMessage<Handler>): Promise<CredentialRecord>
+  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
+  abstract processProposal(messageContext: HandlerInboundMessage<Handler>): Promise<CredentialExchangeRecord>
   abstract acceptProposal(
     proposal: AcceptProposalOptions
-  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }>
+  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
   abstract negotiateProposal(
     credentialOptions: NegotiateProposalOptions
-  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }>
+  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
 
   // methods for offer
   abstract createOffer(
     credentialOptions: OfferCredentialOptions
-  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }>
-  abstract processOffer(messageContext: HandlerInboundMessage<Handler>): Promise<CredentialRecord>
+  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
+  abstract processOffer(messageContext: HandlerInboundMessage<Handler>): Promise<CredentialExchangeRecord>
 
   // methods for request
   abstract createRequest(
-    credentialRecord: CredentialRecord,
+    credentialRecord: CredentialExchangeRecord,
     options: RequestCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   abstract negotiateOffer(
     credentialOptions: ProposeCredentialOptions
-  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }>
+  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
 
   // methods for issue
 
   abstract processRequest(
     messageContext: InboundMessageContext<RequestCredentialMessage | V2RequestCredentialMessage>
-  ): Promise<CredentialRecord>
+  ): Promise<CredentialExchangeRecord>
 
   // methods for issue
   abstract createCredential(
-    credentialRecord: CredentialRecord,
+    credentialRecord: CredentialExchangeRecord,
     options?: AcceptRequestOptions
   ): Promise<CredentialProtocolMsgReturnType<IssueCredentialMessage | V2IssueCredentialMessage>>
 
   abstract processCredential(
     messageContext: InboundMessageContext<IssueCredentialMessage | V2IssueCredentialMessage>
-  ): Promise<CredentialRecord>
+  ): Promise<CredentialExchangeRecord>
 
   abstract createAck(
-    credentialRecord: CredentialRecord
+    credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialProtocolMsgReturnType<CredentialAckMessage | V2CredentialAckMessage>>
 
   public getFormatService(credentialFormatType: CredentialFormatType): CredentialFormatService {
     throw Error('Not Implemented')
   }
 
-  abstract updateState(credentialRecord: CredentialRecord, newState: CredentialState): Promise<void>
+  abstract updateState(credentialRecord: CredentialExchangeRecord, newState: CredentialState): Promise<void>
 }

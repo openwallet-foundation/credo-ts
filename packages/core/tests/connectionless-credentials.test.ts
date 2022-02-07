@@ -10,7 +10,7 @@ import {
   V1CredentialPreview,
   AutoAcceptCredential,
   CredentialEventTypes,
-  CredentialRecord,
+  CredentialExchangeRecord,
   CredentialState,
 } from '../src/modules/credentials'
 
@@ -120,7 +120,7 @@ describe('credentials', () => {
     })
 
     expect(aliceCredentialRecord).toMatchObject({
-      type: CredentialRecord.name,
+      type: CredentialExchangeRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
       offerMessage: expect.any(Object),
@@ -138,7 +138,7 @@ describe('credentials', () => {
     })
 
     expect(faberCredentialRecord).toMatchObject({
-      type: CredentialRecord.name,
+      type: CredentialExchangeRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
       offerMessage: expect.any(Object),
@@ -188,7 +188,7 @@ describe('credentials', () => {
     })
 
     expect(aliceCredentialRecord).toMatchObject({
-      type: CredentialRecord.name,
+      type: CredentialExchangeRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
       offerMessage: expect.any(Object),
@@ -206,7 +206,7 @@ describe('credentials', () => {
     })
 
     expect(faberCredentialRecord).toMatchObject({
-      type: CredentialRecord.name,
+      type: CredentialExchangeRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
       offerMessage: expect.any(Object),

@@ -74,7 +74,7 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
         genesisPath,
       },
     ],
-    logger: new TestLogger(LogLevel.error, name),
+    logger: new TestLogger(LogLevel.info, name),
     ...extraConfig,
   }
 

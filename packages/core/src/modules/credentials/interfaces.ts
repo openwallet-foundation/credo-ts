@@ -3,11 +3,21 @@ import type { AnyJson } from '../generic'
 import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
 import type { CredentialPreviewAttribute } from './CredentialPreviewAttributes'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
-import type { CredentialFormatType, CredentialRecordType } from './v2/CredentialExchangeRecord'
 import type { V2CredProposeOfferRequestFormat } from './v2/formats/CredentialFormatService'
 import type { CredDef } from 'indy-sdk'
 
 type IssuerId = string
+
+export enum CredentialRecordType {
+  Indy = 'Indy',
+  W3c = 'W3c',
+}
+
+export enum CredentialFormatType {
+  Indy = 'Indy',
+  JsonLd = 'JsonLd',
+  // others to follow
+}
 
 interface IssuerNode {
   id: string

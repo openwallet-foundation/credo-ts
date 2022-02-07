@@ -13,7 +13,7 @@ import type {
   V2CredDefinitionFormat,
   W3CCredentialFormat,
 } from '../../interfaces'
-import type { CredentialRecord, CredentialRepository } from '../../repository'
+import type { CredentialExchangeRecord, CredentialRepository } from '../../repository'
 import type { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 import type { V2CredentialPreview } from '../V2CredentialPreview'
 import type { V2CredentialFormatSpec } from '../formats/V2CredentialFormat'
@@ -25,7 +25,7 @@ import type { MetaDataService } from './MetaDataService'
 import type { CredReq, CredReqMetadata, CredOffer, Cred } from 'indy-sdk'
 
 import { uuid } from '../../../../utils/uuid'
-import { CredentialFormatType } from '../CredentialExchangeRecord'
+import { CredentialFormatType } from '../../interfaces'
 
 type FormatKeys = {
   [id: string]: CredentialFormatType
@@ -77,11 +77,16 @@ export abstract class CredentialFormatService {
   }
 
   // PROPOSE METHODS
-  abstract processProposal(options: AcceptProposalOptions, credentialRecord: CredentialRecord): AcceptProposalOptions
+  abstract processProposal(
+    options: AcceptProposalOptions,
+    credentialRecord: CredentialExchangeRecord
+  ): Promise<AcceptProposalOptions>
   abstract createProposalAttachFormats(proposal: ProposeCredentialOptions, messageType: string): V2AttachmentFormats
   abstract shouldAutoRespondToProposal(
-    credentialRecord: CredentialRecord,
-    autoAcceptType: AutoAcceptCredential
+    credentialRecord: CredentialExchangeRecord,
+    autoAcceptType: AutoAcceptCredential,
+    proposeMessage: V2ProposeCredentialMessage,
+    offerMessage?: V2OfferCredentialMessage
   ): boolean
 
   // OFFER METHODS
@@ -93,19 +98,37 @@ export abstract class CredentialFormatService {
     offer: V2CredProposeOfferRequestFormat,
     messageType: string
   ): V2AttachmentFormats
-  abstract shouldAutoRespondToOffer(credentialRecord: CredentialRecord, autoAcceptType: AutoAcceptCredential): boolean
+  abstract shouldAutoRespondToOffer(
+    credentialRecord: CredentialExchangeRecord,
+    autoAcceptType: AutoAcceptCredential,
+    proposeMessage?: V2ProposeCredentialMessage,
+    offerMessage?: V2OfferCredentialMessage
+  ): boolean
 
   // REQUEST METHODS
   abstract createRequestAttachFormats(
     requestOptions: RequestCredentialOptions,
-    credentialRecord: CredentialRecord
+    credentialRecord: CredentialExchangeRecord
   ): Promise<V2AttachmentFormats>
-  abstract shouldAutoRespondToRequest(credentialRecord: CredentialRecord, autoAcceptType: AutoAcceptCredential): boolean
+  abstract shouldAutoRespondToRequest(
+    credentialRecord: CredentialExchangeRecord,
+    autoAcceptType: AutoAcceptCredential,
+    requestMessage: V2RequestCredentialMessage,
+    proposeMessage?: V2ProposeCredentialMessage,
+    offerMessage?: V2OfferCredentialMessage
+  ): boolean
 
   // ISSUE METHODS
-  abstract createIssueAttachFormats(credentialRecord: CredentialRecord): Promise<V2AttachmentFormats>
-  abstract processCredential(message: V2IssueCredentialMessage, credentialRecord: CredentialRecord): Promise<void>
-  abstract shouldAutoRespondToIssue(credentialRecord: CredentialRecord, autoAcceptType: AutoAcceptCredential): boolean
+  abstract createIssueAttachFormats(credentialRecord: CredentialExchangeRecord): Promise<V2AttachmentFormats>
+  abstract processCredential(
+    message: V2IssueCredentialMessage,
+    credentialRecord: CredentialExchangeRecord
+  ): Promise<void>
+  abstract shouldAutoRespondToIssue(
+    credentialRecord: CredentialExchangeRecord,
+    credentialMessage: V2IssueCredentialMessage,
+    autoAcceptType: AutoAcceptCredential
+  ): boolean
 
   // helper methods
 

@@ -22,7 +22,7 @@ import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
 import { CredentialProblemReportReason } from '../errors/CredentialProblemReportReason'
-import { CredentialRecord } from '../repository/CredentialRecord'
+import { CredentialExchangeRecord } from '../repository/CredentialRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
 import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 import { V1LegacyCredentialService } from '../v1'
@@ -116,7 +116,7 @@ const mockCredentialRecord = ({
     offerAttachments: [offerAttachment],
   })
 
-  const credentialRecord = new CredentialRecord({
+  const credentialRecord = new CredentialExchangeRecord({
     offerMessage,
     id,
     credentialAttributes: credentialAttributes || credentialPreview.attributes,
@@ -200,7 +200,7 @@ describe('CredentialService', () => {
       expect(repositorySaveSpy).toHaveBeenCalledTimes(1)
       const [[createdCredentialRecord]] = repositorySaveSpy.mock.calls
       expect(createdCredentialRecord).toMatchObject({
-        type: CredentialRecord.name,
+        type: CredentialExchangeRecord.name,
         id: expect.any(String),
         createdAt: expect.any(Date),
         offerMessage: credentialOffer,
@@ -286,7 +286,7 @@ describe('CredentialService', () => {
 
       // then
       const expectedCredentialRecord = {
-        type: CredentialRecord.name,
+        type: CredentialExchangeRecord.name,
         id: expect.any(String),
         createdAt: expect.any(Date),
         offerMessage: credentialOfferMessage,
@@ -321,7 +321,7 @@ describe('CredentialService', () => {
   })
 
   describe('createCredentialRequest', () => {
-    let credentialRecord: CredentialRecord
+    let credentialRecord: CredentialExchangeRecord
 
     beforeEach(() => {
       credentialRecord = mockCredentialRecord({
@@ -413,7 +413,7 @@ describe('CredentialService', () => {
   })
 
   describe('processCredentialRequest', () => {
-    let credential: CredentialRecord
+    let credential: CredentialExchangeRecord
     let messageContext: InboundMessageContext<RequestCredentialMessage>
 
     beforeEach(() => {
@@ -489,7 +489,7 @@ describe('CredentialService', () => {
 
   describe('createCredential', () => {
     const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249746'
-    let credential: CredentialRecord
+    let credential: CredentialExchangeRecord
 
     beforeEach(() => {
       credential = mockCredentialRecord({
@@ -616,7 +616,7 @@ describe('CredentialService', () => {
   })
 
   describe('processCredential', () => {
-    let credential: CredentialRecord
+    let credential: CredentialExchangeRecord
     let messageContext: InboundMessageContext<IssueCredentialMessage>
 
     beforeEach(() => {
@@ -761,7 +761,7 @@ describe('CredentialService', () => {
 
   describe('createAck', () => {
     const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249746'
-    let credential: CredentialRecord
+    let credential: CredentialExchangeRecord
 
     beforeEach(() => {
       credential = mockCredentialRecord({
@@ -838,7 +838,7 @@ describe('CredentialService', () => {
   })
 
   describe('processAck', () => {
-    let credential: CredentialRecord
+    let credential: CredentialExchangeRecord
     let messageContext: InboundMessageContext<CredentialAckMessage>
 
     beforeEach(() => {
@@ -903,7 +903,7 @@ describe('CredentialService', () => {
     test('throws error when there is no credential found by thread ID', async () => {
       // given
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(
-        Promise.reject(new RecordNotFoundError('not found', { recordType: CredentialRecord.type }))
+        Promise.reject(new RecordNotFoundError('not found', { recordType: CredentialExchangeRecord.type }))
       )
 
       // when, then
@@ -928,7 +928,7 @@ describe('CredentialService', () => {
 
   describe('createProblemReport', () => {
     const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249746'
-    let credential: CredentialRecord
+    let credential: CredentialExchangeRecord
 
     beforeEach(() => {
       credential = mockCredentialRecord({
@@ -963,7 +963,7 @@ describe('CredentialService', () => {
   })
 
   describe('processProblemReport', () => {
-    let credential: CredentialRecord
+    let credential: CredentialExchangeRecord
     let messageContext: InboundMessageContext<CredentialProblemReportMessage>
 
     beforeEach(() => {
@@ -1051,7 +1051,7 @@ describe('CredentialService', () => {
 
   describe('declineOffer', () => {
     const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249754'
-    let credential: CredentialRecord
+    let credential: CredentialExchangeRecord
 
     beforeEach(() => {
       credential = mockCredentialRecord({

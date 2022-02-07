@@ -1,36 +1,49 @@
 import type { InboundMessageContext } from '../../../../../src/agent/models/InboundMessageContext'
+import type { DidCommMessageRepository } from '../../../../../src/storage'
 import type { AgentConfig } from '../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 import type { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
-import type { CredentialRecord } from '../../repository/CredentialRecord'
+import type { CredentialExchangeRecord } from '../../repository/CredentialRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 import type { CredentialFormatService } from '../formats/CredentialFormatService'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../agent/helpers'
 import { unitTestLogger } from '../../../../logger'
 import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
+import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
 
 export class V2IssueCredentialHandler implements Handler {
   private credentialService: V2CredentialService
   private agentConfig: AgentConfig
   private credentialResponseCoordinator: CredentialResponseCoordinator
+  private didCommMessageRepository: DidCommMessageRepository
+
   public supportedMessages = [V2IssueCredentialMessage]
 
   public constructor(
     credentialService: V2CredentialService,
     agentConfig: AgentConfig,
-    credentialResponseCoordinator: CredentialResponseCoordinator
+    credentialResponseCoordinator: CredentialResponseCoordinator,
+    didCommMessageRepository: DidCommMessageRepository
   ) {
     this.credentialService = credentialService
     this.agentConfig = agentConfig
     this.credentialResponseCoordinator = credentialResponseCoordinator
+    this.didCommMessageRepository = didCommMessageRepository
   }
   public async handle(messageContext: InboundMessageContext<V2IssueCredentialMessage>) {
     unitTestLogger('----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR ISSUE CREDENTIAL')
 
     const credentialRecord = await this.credentialService.processCredential(messageContext)
+    const credentialMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2IssueCredentialMessage,
+    })
 
-    const credentialMessage: V2IssueCredentialMessage = credentialRecord.credentialMessage as V2IssueCredentialMessage
+    const requestMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2RequestCredentialMessage,
+    })
 
     // 1. Get all formats for this message
     const formatServices: CredentialFormatService[] = this.credentialService.getFormatsFromMessage(
@@ -43,27 +56,33 @@ export class V2IssueCredentialHandler implements Handler {
       // 3. Call format.shouldRespondToProposal for each one
       const formatShouldAutoRespond = formatService.shouldAutoRespondToIssue(
         credentialRecord,
+        credentialMessage,
         this.agentConfig.autoAcceptCredentials
       )
       shouldAutoRespond = shouldAutoRespond && formatShouldAutoRespond
     }
     // 4. if all formats are eligibile for auto response then call create offer
     if (shouldAutoRespond) {
-      return await this.createAck(credentialRecord, messageContext)
+      return await this.createAck(credentialRecord, messageContext, requestMessage, credentialMessage)
     }
   }
 
-  private async createAck(record: CredentialRecord, messageContext: HandlerInboundMessage<V2IssueCredentialHandler>) {
+  private async createAck(
+    record: CredentialExchangeRecord,
+    messageContext: HandlerInboundMessage<V2IssueCredentialHandler>,
+    requestMessage?: V2RequestCredentialMessage,
+    credentialMessage?: V2IssueCredentialMessage
+  ) {
     this.agentConfig.logger.info(
       `Automatically sending acknowledgement with autoAccept on ${this.agentConfig.autoAcceptCredentials}`
     )
-    const { message, credentialRecord } = await this.credentialService.createAck(record)
+    const { message } = await this.credentialService.createAck(record)
 
     if (messageContext.connection) {
       return createOutboundMessage(messageContext.connection, message)
-    } else if (credentialRecord.credentialMessage?.service && credentialRecord.requestMessage?.service) {
-      const recipientService = credentialRecord.credentialMessage.service
-      const ourService = credentialRecord.requestMessage.service
+    } else if (message.service && requestMessage?.service && credentialMessage?.service) {
+      const recipientService = credentialMessage.service
+      const ourService = requestMessage.service
 
       return createOutboundServiceMessage({
         payload: message,

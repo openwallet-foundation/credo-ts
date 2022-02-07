@@ -6,6 +6,7 @@ import type {
 } from '.'
 import type { HandlerInboundMessage } from '../../../../src/agent/Handler'
 import type { InboundMessageContext } from '../../../../src/agent/models/InboundMessageContext'
+import type { DidCommMessageRepository } from '../../../../src/storage'
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { CredentialState } from '../CredentialState'
@@ -18,7 +19,7 @@ import type {
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../interfaces'
-import type { CredentialRecord } from '../repository'
+import type { CredentialExchangeRecord } from '../repository'
 import type { V2CredProposeOfferRequestFormat, CredentialFormatService } from '../v2/formats/CredentialFormatService'
 import type { V2CredentialAckMessage } from '../v2/messages/V2CredentialAckMessage'
 import type { V2IssueCredentialMessage } from '../v2/messages/V2IssueCredentialMessage'
@@ -28,7 +29,6 @@ import type {
   CredentialAckMessage,
   IssueCredentialMessage,
   OfferCredentialMessage,
-  ProposeCredentialMessage,
   RequestCredentialMessage,
 } from './messages'
 
@@ -39,26 +39,27 @@ import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import { CredentialService } from '../CredentialService'
 
 import { V1CredentialPreview } from './V1CredentialPreview'
+import { ProposeCredentialMessage } from './messages'
 
 const logger = new ConsoleLogger(LogLevel.debug)
 
 export class V1CredentialService extends CredentialService {
-  public updateState(credentialRecord: CredentialRecord, newState: CredentialState): Promise<void> {
+  public updateState(credentialRecord: CredentialExchangeRecord, newState: CredentialState): Promise<void> {
     throw new Error('Method not implemented.')
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public processCredential(
     messageContext: InboundMessageContext<V2IssueCredentialMessage | IssueCredentialMessage>
-  ): Promise<CredentialRecord> {
+  ): Promise<CredentialExchangeRecord> {
     throw new Error('Method not implemented.')
   }
   public createAck(
-    credentialRecord: CredentialRecord
+    credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialProtocolMsgReturnType<CredentialAckMessage | V2CredentialAckMessage>> {
     throw new Error('Method not implemented.')
   }
   public createCredential(
-    credentialRecord: CredentialRecord,
+    credentialRecord: CredentialExchangeRecord,
     options?: AcceptRequestOptions
   ): Promise<CredentialProtocolMsgReturnType<IssueCredentialMessage | V2IssueCredentialMessage>> {
     return this.legacyCredentialService.createCredential(credentialRecord, options)
@@ -67,16 +68,22 @@ export class V1CredentialService extends CredentialService {
   public processRequest(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     messageContext: InboundMessageContext<RequestCredentialMessage | V2RequestCredentialMessage>
-  ): Promise<CredentialRecord> {
+  ): Promise<CredentialExchangeRecord> {
     throw new Error('Method not implemented.')
   }
   private legacyCredentialService: V1LegacyCredentialService // MJR-TODO move all functionality from that class into here
   private connectionService: ConnectionService
+  private didCommMessageRepository: DidCommMessageRepository
 
-  public constructor(connectionService: ConnectionService, credentialService: V1LegacyCredentialService) {
+  public constructor(
+    connectionService: ConnectionService,
+    credentialService: V1LegacyCredentialService,
+    didCommMessageRepository: DidCommMessageRepository
+  ) {
     super()
     this.legacyCredentialService = credentialService
     this.connectionService = connectionService
+    this.didCommMessageRepository = didCommMessageRepository
   }
 
   /**
@@ -89,7 +96,9 @@ export class V1CredentialService extends CredentialService {
    * @returns credential record associated with the credential proposal message
    *
    */
-  public processProposal(messageContext: HandlerInboundMessage<ProposeCredentialHandler>): Promise<CredentialRecord> {
+  public processProposal(
+    messageContext: HandlerInboundMessage<ProposeCredentialHandler>
+  ): Promise<CredentialExchangeRecord> {
     return this.legacyCredentialService.processProposal(messageContext)
   }
 
@@ -103,7 +112,9 @@ export class V1CredentialService extends CredentialService {
    * @returns credential record associated with the credential offer message
    *
    */
-  public processOffer(messageContext: HandlerInboundMessage<OfferCredentialHandler>): Promise<CredentialRecord> {
+  public processOffer(
+    messageContext: HandlerInboundMessage<OfferCredentialHandler>
+  ): Promise<CredentialExchangeRecord> {
     return this.legacyCredentialService.processOffer(messageContext)
   }
 
@@ -117,7 +128,7 @@ export class V1CredentialService extends CredentialService {
    *
    */
   public async createOfferAsResponse(
-    credentialRecord: CredentialRecord,
+    credentialRecord: CredentialExchangeRecord,
     credentialTemplate: CredentialOfferTemplate
   ): Promise<CredentialProtocolMsgReturnType<OfferCredentialMessage>> {
     return this.legacyCredentialService.createOfferAsResponse(credentialRecord, credentialTemplate)
@@ -146,7 +157,7 @@ export class V1CredentialService extends CredentialService {
    */
   public async createProposal(
     proposal: ProposeCredentialOptions
-  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }> {
+  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
     logger.debug('>> IN SERVICE V1 => createProposal')
 
     const connection = await this.connectionService.getById(proposal.connectionId)
@@ -178,7 +189,7 @@ export class V1CredentialService extends CredentialService {
    */
   public async acceptProposal(
     proposal: AcceptProposalOptions
-  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }> {
+  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
     logger.debug('>> IN SERVICE V1 => acceptProposal')
 
     const credentialRecord = await this.legacyCredentialService.getById(proposal.credentialRecordId)
@@ -188,17 +199,20 @@ export class V1CredentialService extends CredentialService {
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
       )
     }
-    const credentialProposalMessage: ProposeCredentialMessage =
-      credentialRecord.proposalMessage as ProposeCredentialMessage
-    if (!credentialProposalMessage?.credentialProposal) {
+    const proposalCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: ProposeCredentialMessage,
+    })
+
+    if (!proposalCredentialMessage?.credentialProposal) {
       throw new AriesFrameworkError(
         `Credential record with id ${proposal.credentialRecordId} is missing required credential proposal`
       )
     }
 
     const credentialDefinitionId =
-      proposal.credentialFormats.indy?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
-    credentialRecord.linkedAttachments = credentialProposalMessage.messageAttachment?.filter((attachment) =>
+      proposal.credentialFormats.indy?.credentialDefinitionId ?? proposalCredentialMessage.credentialDefinitionId
+    credentialRecord.linkedAttachments = proposalCredentialMessage.messageAttachment?.filter((attachment) =>
       isLinkedAttachment(attachment)
     )
 
@@ -209,7 +223,7 @@ export class V1CredentialService extends CredentialService {
     }
 
     const { message } = await this.createOfferAsResponse(credentialRecord, {
-      preview: credentialProposalMessage.credentialProposal,
+      preview: proposalCredentialMessage.credentialProposal,
       credentialDefinitionId,
       comment: proposal.comment,
       autoAcceptCredential: proposal.autoAcceptCredential,
@@ -228,7 +242,7 @@ export class V1CredentialService extends CredentialService {
    *
    */
   public async createRequest(
-    credentialRecord: CredentialRecord,
+    credentialRecord: CredentialExchangeRecord,
     options: RequestCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<RequestCredentialMessage>> {
     // mapping from RequestCredentialOptions -> CredentialRequesOptions happens
@@ -246,7 +260,7 @@ export class V1CredentialService extends CredentialService {
    */
   public async negotiateProposal(
     credentialOptions: NegotiateProposalOptions
-  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }> {
+  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
     const credentialRecord = await this.legacyCredentialService.getById(credentialOptions.credentialRecordId)
 
     if (!credentialRecord.connectionId) {
@@ -255,8 +269,10 @@ export class V1CredentialService extends CredentialService {
       )
     }
 
-    const credentialProposalMessage: ProposeCredentialMessage =
-      credentialRecord.proposalMessage as ProposeCredentialMessage
+    const credentialProposalMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: ProposeCredentialMessage,
+    })
 
     if (!credentialProposalMessage?.credentialProposal) {
       throw new AriesFrameworkError(
@@ -303,7 +319,7 @@ export class V1CredentialService extends CredentialService {
    */
   public async negotiateOffer(
     credentialOptions: ProposeCredentialOptions
-  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }> {
+  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
     if (!credentialOptions.credentialRecordId) {
       throw Error('No credential record id found in credential options')
     }
@@ -339,7 +355,7 @@ export class V1CredentialService extends CredentialService {
    */
   public async createOffer(
     credentialOptions: OfferCredentialOptions
-  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }> {
+  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
     const connection = await this.connectionService.getById(credentialOptions.connectionId)
 
     if (

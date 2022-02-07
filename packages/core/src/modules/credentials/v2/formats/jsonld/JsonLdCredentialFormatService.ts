@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { CredentialRecord } from '../../..'
+import type { CredentialExchangeRecord } from '../../..'
 import type { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
 import type { CredentialPreviewAttribute } from '../../../CredentialPreviewAttributes'
 import type {
@@ -20,7 +20,6 @@ import type {
 } from '../CredentialFormatService'
 import type { MetaDataService } from '../MetaDataService'
 import type { V2CredentialFormatSpec } from '../V2CredentialFormat'
-import type { AgentConfig } from '@aries-framework/core'
 import type { CredOffer, CredReq } from 'indy-sdk'
 
 import { Attachment, AttachmentData } from '../../../../../../src/decorators/attachment/Attachment'
@@ -29,25 +28,30 @@ import { ATTACHMENT_FORMAT } from '../V2CredentialFormat'
 
 import { JsonLdMetaDataService } from './JsonLdMetaDataService'
 
-
 export class JsonLdCredentialFormatService extends CredentialFormatService {
-  public shouldAutoRespondToOffer(credentialRecord: CredentialRecord, autoAcceptType: AutoAcceptCredential): boolean {
+  public shouldAutoRespondToOffer(credentialRecord: CredentialExchangeRecord, autoAcceptType: AutoAcceptCredential, proposeMessage?: V2ProposeCredentialMessage, offerMessage?: V2OfferCredentialMessage): boolean {
     throw new Error('Method not implemented.')
   }
-  public shouldAutoRespondToRequest(credentialRecord: CredentialRecord, autoAcceptType: AutoAcceptCredential): boolean {
+  public shouldAutoRespondToRequest(credentialRecord: CredentialExchangeRecord, autoAcceptType: AutoAcceptCredential, requestMessage: V2RequestCredentialMessage, proposeMessage?: V2ProposeCredentialMessage, offerMessage?: V2OfferCredentialMessage): boolean {
     throw new Error('Method not implemented.')
   }
-  public shouldAutoRespondToIssue(credentialRecord: CredentialRecord, autoAcceptType: AutoAcceptCredential): boolean {
+
+  public shouldAutoRespondToIssue(credentialRecord: CredentialExchangeRecord, credentialMessage: V2IssueCredentialMessage, autoAcceptType: AutoAcceptCredential): boolean {
     throw new Error('Method not implemented.')
   }
-  public shouldAutoRespondToProposal(credentialRecord: CredentialRecord, autoAcceptType: AutoAcceptCredential): boolean {
+
+  public shouldAutoRespondToProposal(credentialRecord: CredentialExchangeRecord,
+    autoAcceptType: AutoAcceptCredential,
+    proposeMessage: V2ProposeCredentialMessage,
+    offerMessage: V2OfferCredentialMessage,
+  ): boolean {
     throw new Error('Method not implemented.')
   }
- 
-  public processCredential(message: V2IssueCredentialMessage, credentialRecord: CredentialRecord): Promise<void> {
+
+  public processCredential(message: V2IssueCredentialMessage, credentialRecord: CredentialExchangeRecord): Promise<void> {
     throw new Error('Method not implemented.')
   }
-  public createRequestAttachFormats(requestOptions: RequestCredentialOptions, credentialRecord: CredentialRecord): Promise<V2AttachmentFormats> {
+  public createRequestAttachFormats(requestOptions: RequestCredentialOptions, credentialRecord: CredentialExchangeRecord): Promise<V2AttachmentFormats> {
     throw new Error('Method not implemented.')
   }
   public getAttachment(
@@ -56,10 +60,10 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     throw new Error('Method not implemented.')
   }
   // eslint-disable-next-line prettier/prettier
-  public createIssueAttachFormats(credentialRecord: CredentialRecord): Promise<V2AttachmentFormats> {
+  public createIssueAttachFormats(credentialRecord: CredentialExchangeRecord): Promise<V2AttachmentFormats> {
     throw new Error('Method not implemented.')
   }
-  public processProposal(options: AcceptProposalOptions, credentialRecord: CredentialRecord): AcceptProposalOptions {
+  public processProposal(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): Promise<AcceptProposalOptions> {
     throw new Error('Method not implemented.')
   }
   public getFormatData(data: unknown, id: string): Attachment {
@@ -73,11 +77,11 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   }
   public setMetaDataAndEmitEventForOffer(
     proposal: V2CredProposeOfferRequestFormat,
-    credentialRecord: CredentialRecord
+    credentialRecord: CredentialExchangeRecord
   ): Promise<void> {
     throw new Error('Method not implemented.')
   }
-  public setMetaDataForRequest(request: V2CredProposeOfferRequestFormat, credentialRecord: CredentialRecord): void {
+  public setMetaDataForRequest(request: V2CredProposeOfferRequestFormat, credentialRecord: CredentialExchangeRecord): void {
     throw new Error('Method not implemented.')
   }
   public getCredentialPayload<T extends CredOffer | CredReq>(data: Attachment): V2CredProposeOfferRequestFormat {
@@ -90,11 +94,11 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
 
   public setMetaDataAndEmitEventForProposal(
     _proposal: V2CredProposeOfferRequestFormat,
-    _credentialRecord: CredentialRecord
+    _credentialRecord: CredentialExchangeRecord
   ): Promise<void> {
     throw new Error('Method not implemented.')
   }
-  public setMetaDataForOffer(_offer: V2CredProposeOfferRequestFormat, _credentialRecord: CredentialRecord): void {
+  public setMetaDataForOffer(_offer: V2CredProposeOfferRequestFormat, _credentialRecord: CredentialExchangeRecord): void {
     throw new Error('Method not implemented.')
   }
   public createOffer(_proposal: AcceptProposalOptions): Promise<V2CredProposeOfferRequestFormat> {
@@ -112,7 +116,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   }
   public setMetaDataAndEmitEvent(
     _proposal: ProposeCredentialOptions,
-    _credentialRecord: CredentialRecord
+    _credentialRecord: CredentialExchangeRecord
   ): Promise<void> {
     throw new Error('Method not implemented.')
   }

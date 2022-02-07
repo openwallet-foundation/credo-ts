@@ -1,8 +1,7 @@
 import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
-import type { CredentialRecord } from './repository/CredentialRecord'
+import type { CredentialExchangeRecord } from './repository/CredentialRecord'
 import type { CredentialOfferTemplate, CredentialProposeOptions } from './v1'
 import type { V1CredentialPreview } from './v1/V1CredentialPreview'
-import type { OfferCredentialMessage, ProposeCredentialMessage } from './v1/messages'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -12,6 +11,7 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import { isLinkedAttachment } from '../../utils/attachment'
 import { ConnectionService } from '../connections/services/ConnectionService'
 import { MediationRecipientService } from '../routing'
@@ -27,7 +27,13 @@ import {
   RequestCredentialHandler,
   CredentialProblemReportHandler,
 } from './v1/handlers'
-import { CredentialProblemReportMessage } from './v1/messages'
+import {
+  RequestCredentialMessage,
+  OfferCredentialMessage,
+  CredentialProblemReportMessage,
+  ProposeCredentialMessage,
+  IssueCredentialMessage,
+} from './v1/messages'
 
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialsModule {
@@ -37,6 +43,7 @@ export class CredentialsModule {
   private agentConfig: AgentConfig
   private credentialResponseCoordinator: CredentialResponseCoordinator
   private mediationRecipientService: MediationRecipientService
+  private didCommMessageRepository: DidCommMessageRepository
 
   public constructor(
     dispatcher: Dispatcher,
@@ -45,7 +52,8 @@ export class CredentialsModule {
     messageSender: MessageSender,
     agentConfig: AgentConfig,
     credentialResponseCoordinator: CredentialResponseCoordinator,
-    mediationRecipientService: MediationRecipientService
+    mediationRecipientService: MediationRecipientService,
+    didCommMessageRepository: DidCommMessageRepository
   ) {
     this.connectionService = connectionService
     this.credentialService = credentialService
@@ -53,6 +61,7 @@ export class CredentialsModule {
     this.agentConfig = agentConfig
     this.credentialResponseCoordinator = credentialResponseCoordinator
     this.mediationRecipientService = mediationRecipientService
+    this.didCommMessageRepository = didCommMessageRepository
     this.registerHandlers(dispatcher)
   }
 
@@ -106,16 +115,19 @@ export class CredentialsModule {
 
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
-    const credentialProposalMessage = credentialRecord.proposalMessage as ProposeCredentialMessage
-    if (!credentialProposalMessage?.credentialProposal) {
+    const proposalMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: ProposeCredentialMessage,
+    })
+    if (!proposalMessage?.credentialProposal) {
       throw new AriesFrameworkError(
         `Credential record with id ${credentialRecordId} is missing required credential proposal`
       )
     }
 
-    const credentialDefinitionId = config?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
+    const credentialDefinitionId = config?.credentialDefinitionId ?? proposalMessage.credentialDefinitionId
 
-    credentialRecord.linkedAttachments = credentialProposalMessage.messageAttachment?.filter((attachment) =>
+    credentialRecord.linkedAttachments = proposalMessage.messageAttachment?.filter((attachment) =>
       isLinkedAttachment(attachment)
     )
 
@@ -127,7 +139,7 @@ export class CredentialsModule {
 
     // TODO: check if it is possible to issue credential based on proposal filters
     const { message } = await this.credentialService.createOfferAsResponse(credentialRecord, {
-      preview: credentialProposalMessage.credentialProposal,
+      preview: proposalMessage.credentialProposal,
       credentialDefinitionId,
       comment: config?.comment,
       autoAcceptCredential: config?.autoAcceptCredential,
@@ -168,15 +180,18 @@ export class CredentialsModule {
     }
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
-    const credentialProposalMessage = credentialRecord.proposalMessage as ProposeCredentialMessage
+    const proposalMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: ProposeCredentialMessage,
+    })
 
-    if (!credentialProposalMessage?.credentialProposal) {
+    if (!proposalMessage?.credentialProposal) {
       throw new AriesFrameworkError(
         `Credential record with id ${credentialRecordId} is missing required credential proposal`
       )
     }
 
-    const credentialDefinitionId = config?.credentialDefinitionId ?? credentialProposalMessage.credentialDefinitionId
+    const credentialDefinitionId = config?.credentialDefinitionId ?? proposalMessage.credentialDefinitionId
 
     if (!credentialDefinitionId) {
       throw new AriesFrameworkError(
@@ -209,7 +224,7 @@ export class CredentialsModule {
   public async OLDofferCredential(
     connectionId: string,
     credentialTemplate: CredentialOfferTemplate
-  ): Promise<CredentialRecord> {
+  ): Promise<CredentialExchangeRecord> {
     const connection = await this.connectionService.getById(connectionId)
 
     const { message, credentialRecord } = await this.credentialService.createOffer(credentialTemplate, connection)
@@ -230,7 +245,7 @@ export class CredentialsModule {
    */
   public async createOutOfBandOffer(credentialTemplate: CredentialOfferTemplate): Promise<{
     offerMessage: OfferCredentialMessage
-    credentialRecord: CredentialRecord
+    credentialRecord: CredentialExchangeRecord
   }> {
     const { message, credentialRecord } = await this.credentialService.createOffer(credentialTemplate)
 
@@ -243,9 +258,13 @@ export class CredentialsModule {
     })
 
     // Save ~service decorator to record (to remember our verkey)
-    credentialRecord.offerMessage = message
     await this.credentialService.update(credentialRecord)
 
+    await this.didCommMessageRepository.saveAgentMessage({
+      agentMessage: message,
+      role: DidCommMessageRole.Receiver,
+      associatedRecordId: credentialRecord.id,
+    })
     return { credentialRecord, offerMessage: message }
   }
 
@@ -265,9 +284,17 @@ export class CredentialsModule {
   public async OLDacceptOffer(
     credentialRecordId: string,
     config?: { comment?: string; autoAcceptCredential?: AutoAcceptCredential }
-  ): Promise<CredentialRecord> {
+  ): Promise<CredentialExchangeRecord> {
     const record = await this.credentialService.getById(credentialRecordId)
 
+    const offerMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: record.id,
+      messageClass: OfferCredentialMessage,
+    })
+    const requestMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: record.id,
+      messageClass: RequestCredentialMessage,
+    })
     // Use connection if present
     if (record.connectionId) {
       const connection = await this.connectionService.getById(record.connectionId)
@@ -282,7 +309,7 @@ export class CredentialsModule {
       return credentialRecord
     }
     // Use ~service decorator otherwise
-    else if (record.offerMessage?.service) {
+    else if (offerMessage?.service) {
       // Create ~service decorator
       const routing = await this.mediationRecipientService.getRouting()
       const ourService = new ServiceDecorator({
@@ -290,7 +317,7 @@ export class CredentialsModule {
         recipientKeys: [routing.verkey],
         routingKeys: routing.routingKeys,
       })
-      const recipientService = record.offerMessage.service
+      const recipientService = offerMessage.service
 
       const { message, credentialRecord } = await this.credentialService.createRequest(record, {
         ...config,
@@ -299,9 +326,12 @@ export class CredentialsModule {
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
-      credentialRecord.requestMessage = message
       await this.credentialService.update(credentialRecord)
-
+      await this.didCommMessageRepository.saveAgentMessage({
+        agentMessage: requestMessage,
+        role: DidCommMessageRole.Sender,
+        associatedRecordId: credentialRecord.id,
+      })
       await this.messageSender.sendMessageToService({
         message,
         service: recipientService.toDidCommService(),
@@ -381,6 +411,14 @@ export class CredentialsModule {
     const record = await this.credentialService.getById(credentialRecordId)
     const { message, credentialRecord } = await this.credentialService.createCredential(record, config)
 
+    const requestMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: RequestCredentialMessage,
+    })
+    const offerMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: OfferCredentialMessage,
+    })
     // Use connection if present
     if (credentialRecord.connectionId) {
       const connection = await this.connectionService.getById(credentialRecord.connectionId)
@@ -389,15 +427,18 @@ export class CredentialsModule {
       await this.messageSender.sendMessage(outboundMessage)
     }
     // Use ~service decorator otherwise
-    else if (credentialRecord.requestMessage?.service && credentialRecord.offerMessage?.service) {
-      const recipientService = credentialRecord.requestMessage.service
-      const ourService = credentialRecord.offerMessage.service
+    else if (requestMessage?.service && offerMessage?.service) {
+      const recipientService = requestMessage.service
+      const ourService = offerMessage.service
 
       // Set ~service, update message in record (for later use)
       message.setService(ourService)
-      credentialRecord.credentialMessage = message
       await this.credentialService.update(credentialRecord)
-
+      await this.didCommMessageRepository.saveAgentMessage({
+        agentMessage: message,
+        role: DidCommMessageRole.Receiver,
+        associatedRecordId: credentialRecord.id,
+      })
       await this.messageSender.sendMessageToService({
         message,
         service: recipientService.toDidCommService(),
@@ -427,6 +468,14 @@ export class CredentialsModule {
     const record = await this.credentialService.getById(credentialRecordId)
     const { message, credentialRecord } = await this.credentialService.createAck(record)
 
+    const credentialMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: record.id,
+      messageClass: IssueCredentialMessage,
+    })
+    const requestMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: record.id,
+      messageClass: RequestCredentialMessage,
+    })
     if (credentialRecord.connectionId) {
       const connection = await this.connectionService.getById(credentialRecord.connectionId)
       const outboundMessage = createOutboundMessage(connection, message)
@@ -434,9 +483,9 @@ export class CredentialsModule {
       await this.messageSender.sendMessage(outboundMessage)
     }
     // Use ~service decorator otherwise
-    else if (credentialRecord.credentialMessage?.service && credentialRecord.requestMessage?.service) {
-      const recipientService = credentialRecord.credentialMessage.service
-      const ourService = credentialRecord.requestMessage.service
+    else if (credentialMessage?.service && requestMessage?.service) {
+      const recipientService = credentialMessage.service
+      const ourService = requestMessage.service
 
       await this.messageSender.sendMessageToService({
         message,
@@ -487,7 +536,7 @@ export class CredentialsModule {
    *
    * @returns List containing all credential records
    */
-  public getAll(): Promise<CredentialRecord[]> {
+  public OLDgetAll(): Promise<CredentialExchangeRecord[]> {
     return this.credentialService.getAll()
   }
 
@@ -499,7 +548,7 @@ export class CredentialsModule {
    * @return The credential record
    *
    */
-  public getById(credentialRecordId: string) {
+  public OLDgetById(credentialRecordId: string) {
     return this.credentialService.getById(credentialRecordId)
   }
 
@@ -509,7 +558,7 @@ export class CredentialsModule {
    * @param credentialRecordId the credential record id
    * @returns The credential record or null if not found
    */
-  public findById(connectionId: string): Promise<CredentialRecord | null> {
+  public OLDfindById(connectionId: string): Promise<CredentialExchangeRecord | null> {
     return this.credentialService.findById(connectionId)
   }
 
@@ -518,27 +567,43 @@ export class CredentialsModule {
    *
    * @param credentialId the credential record id
    */
-  public async deleteById(credentialId: string) {
+  public async OLDdeleteById(credentialId: string) {
     return this.credentialService.deleteById(credentialId)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(
-      new ProposeCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
+      new ProposeCredentialHandler(
+        this.credentialService,
+        this.agentConfig,
+        this.credentialResponseCoordinator,
+        this.didCommMessageRepository
+      )
     )
     dispatcher.registerHandler(
       new OfferCredentialHandler(
         this.credentialService,
         this.agentConfig,
         this.credentialResponseCoordinator,
-        this.mediationRecipientService
+        this.mediationRecipientService,
+        this.didCommMessageRepository
       )
     )
     dispatcher.registerHandler(
-      new RequestCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
+      new RequestCredentialHandler(
+        this.credentialService,
+        this.agentConfig,
+        this.credentialResponseCoordinator,
+        this.didCommMessageRepository
+      )
     )
     dispatcher.registerHandler(
-      new IssueCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
+      new IssueCredentialHandler(
+        this.credentialService,
+        this.agentConfig,
+        this.credentialResponseCoordinator,
+        this.didCommMessageRepository
+      )
     )
     dispatcher.registerHandler(new CredentialAckHandler(this.credentialService))
     dispatcher.registerHandler(new CredentialProblemReportHandler(this.credentialService))

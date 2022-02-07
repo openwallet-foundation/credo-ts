@@ -9,9 +9,7 @@ import type {
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from './interfaces'
-import type { CredentialRecord } from './repository'
-import type { CredentialRecordBinding, CredentialExchangeRecordProps } from './v2/CredentialExchangeRecord'
-import type { V2IssueCredentialMessage } from './v2/messages/V2IssueCredentialMessage'
+import type { CredentialExchangeRecord } from './repository'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -22,7 +20,8 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
-import { unitTestLogger } from '../../logger'
+import { ConsoleLogger, LogLevel } from '../../logger'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import { ConnectionService } from '../connections/services/ConnectionService'
 import { IndyHolderService, IndyIssuerService } from '../indy'
 import { IndyLedgerService } from '../ledger'
@@ -35,9 +34,12 @@ import { CredentialsModule } from './CredentialsModule'
 import { CredentialRepository } from './repository'
 import { V1CredentialService } from './v1/V1CredentialService'
 import { V1LegacyCredentialService } from './v1/V1LegacyCredentialService'
-import { CredentialRecordType, CredentialExchangeRecord } from './v2/CredentialExchangeRecord'
-import { CredentialRole } from './v2/CredentialRole'
 import { V2CredentialService } from './v2/V2CredentialService'
+import { V2IssueCredentialMessage } from './v2/messages/V2IssueCredentialMessage'
+import { V2OfferCredentialMessage } from './v2/messages/V2OfferCredentialMessage'
+import { V2RequestCredentialMessage } from './v2/messages/V2RequestCredentialMessage'
+
+import { IssueCredentialMessage, OfferCredentialMessage, RequestCredentialMessage } from '.'
 
 export interface CredentialsAPI {
   // Proposal methods
@@ -63,14 +65,17 @@ export interface CredentialsAPI {
   acceptCredentialRequest(credentialOptions: AcceptRequestOptions): Promise<CredentialExchangeRecord>
 
   // // Credential
+
   acceptCredential(credentialRecordId: string, version: CredentialProtocolVersion): Promise<CredentialExchangeRecord>
-  // // Record Methods
-  // getAll(): Promise<CredentialExchangeRecord[]>
-  getById(credentialRecordId: string): Promise<CredentialRecord>
-  // findById(credentialRecordId: string): Promise<CredentialExchangeRecord | null>
-  // deleteById(credentialRecordId: string): Promise<void>
-  // findByQuery(query: Record<string, Tag | string[]>): Promise<CredentialExchangeRecord[]>
+
+  // Record Methods
+  getAll(): Promise<CredentialExchangeRecord[]>
+  getById(credentialRecordId: string): Promise<CredentialExchangeRecord>
+  findById(credentialRecordId: string): Promise<CredentialExchangeRecord | null>
+  deleteById(credentialRecordId: string): Promise<void>
 }
+
+const logger = new ConsoleLogger(LogLevel.info)
 
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialsAPI extends CredentialsModule implements CredentialsAPI {
@@ -82,6 +87,7 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
   private dispatcher: Dispatcher
   private agConfig: AgentConfig
   private credentialResponseCoord: CredentialResponseCoordinator
+  private didCommMessageRepo: DidCommMessageRepository
   private v1Service: V1CredentialService
   private v2Service: V2CredentialService
   private indyIssuerService: IndyIssuerService
@@ -104,7 +110,8 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
     indyIssuerService: IndyIssuerService,
     mediationRecipientService: MediationRecipientService,
     indyLedgerService: IndyLedgerService,
-    indyHolderService: IndyHolderService
+    indyHolderService: IndyHolderService,
+    didCommMessageRepository: DidCommMessageRepository
   ) {
     super(
       dispatcher,
@@ -113,7 +120,8 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
       messageSender,
       agentConfig,
       credentialResponseCoordinator,
-      mediationRecipientService
+      mediationRecipientService,
+      didCommMessageRepository
     )
     this.v2messageSender = messageSender
     this.v1CredentialService = v1CredentialService
@@ -127,8 +135,13 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
     this.mediatorRecipientService = mediationRecipientService
     this.indyLedgerService = indyLedgerService
     this.indyHolderService = indyHolderService
+    this.didCommMessageRepo = didCommMessageRepository
 
-    this.v1Service = new V1CredentialService(this.v2connectionService, this.v1CredentialService)
+    this.v1Service = new V1CredentialService(
+      this.v2connectionService,
+      this.v1CredentialService,
+      this.didCommMessageRepo
+    )
 
     this.v2Service = new V2CredentialService(
       this.v2connectionService,
@@ -142,14 +155,15 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
       this.indyIssuerService,
       this.mediatorRecipientService,
       this.indyLedgerService,
-      this.indyHolderService
+      this.indyHolderService,
+      this.didCommMessageRepo
     )
 
     this.serviceMap = {
       [CredentialProtocolVersion.V1_0]: this.v1Service,
       [CredentialProtocolVersion.V2_0]: this.v2Service,
     }
-    unitTestLogger(
+    logger.debug(
       `+++++++++++++++++++++ CREATE CREDENTIALS API (AIP2.0) FOR ${this.agConfig.label} +++++++++++++++++++++++++++`
     )
 
@@ -165,41 +179,33 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
     credentialRecordId: string,
     version: CredentialProtocolVersion
   ): Promise<CredentialExchangeRecord> {
-    unitTestLogger('>> IN CREDENTIAL API => declineCredentialOffer')
+    logger.debug('>> IN CREDENTIAL API => declineCredentialOffer')
 
-    unitTestLogger(`version =${version}`)
+    logger.debug(`version =${version}`)
 
     // with version we can get the Service
     const service: CredentialService = this.getService(version)
 
-    const credentialRecord: CredentialRecord = await this.getById(credentialRecordId)
+    const credentialRecord: CredentialExchangeRecord = await this.OLDgetById(credentialRecordId)
 
     credentialRecord.assertState(CredentialState.OfferReceived)
 
     await service.updateState(credentialRecord, CredentialState.Declined)
 
-    const props: CredentialExchangeRecordProps = {
-      connectionId: credentialRecord.connectionId,
-      threadId: credentialRecord.threadId,
-      protocolVersion: version,
-      state: CredentialState.Declined,
-      role: CredentialRole.Holder,
-      credentials: [],
-    }
-    const credentialExchangeRecord = new CredentialExchangeRecord(props)
+    credentialRecord.protocolVersion = version
 
-    return credentialExchangeRecord
+    return credentialRecord
   }
 
   public async negotiateCredentialOffer(
     credentialOptions: ProposeCredentialOptions
   ): Promise<CredentialExchangeRecord> {
-    unitTestLogger('>> IN CREDENTIAL API => negotiateCredentialOffer')
+    logger.info('>> IN CREDENTIAL API => negotiateCredentialOffer')
 
     // get the version
     const version: CredentialProtocolVersion = credentialOptions.protocolVersion
 
-    unitTestLogger(`version =${version}`)
+    logger.debug(`version =${version}`)
 
     // with version we can get the Service
     const service: CredentialService = this.getService(version)
@@ -218,27 +224,9 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
 
     await this.v2messageSender.sendMessage(outboundMessage)
 
-    const recordBinding: CredentialRecordBinding = {
-      credentialRecordType: credentialOptions.credentialFormats.indy
-        ? CredentialRecordType.Indy
-        : CredentialRecordType.W3c,
-      credentialRecordId: credentialRecord.id,
-    }
+    credentialRecord.protocolVersion = version
 
-    const bindings: CredentialRecordBinding[] = []
-    bindings.push(recordBinding)
-
-    const props: CredentialExchangeRecordProps = {
-      connectionId: credentialRecord.connectionId,
-      threadId: credentialRecord.threadId,
-      protocolVersion: version,
-      state: CredentialState.ProposalSent,
-      role: CredentialRole.Holder,
-      credentials: bindings,
-    }
-    const credentialExchangeRecord = new CredentialExchangeRecord(props)
-
-    return credentialExchangeRecord
+    return credentialRecord
   }
 
   /**
@@ -250,54 +238,32 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
    */
 
   public async proposeCredential(credentialOptions: ProposeCredentialOptions): Promise<CredentialExchangeRecord> {
-    unitTestLogger('>> IN CREDENTIAL API => proposeCredential')
+    logger.info('>> IN CREDENTIAL API => proposeCredential')
 
     // get the version
     const version: CredentialProtocolVersion = credentialOptions.protocolVersion
 
-    unitTestLogger(`version =${version}`)
+    logger.debug(`version =${version}`)
 
     // with version we can get the Service
     const service: CredentialService = this.getService(version)
 
-    unitTestLogger('Got a CredentialService object for this version')
+    logger.debug('Got a CredentialService object for this version')
 
     const connection = await this.v2connectionService.getById(credentialOptions.connectionId)
 
     // will get back a credential record -> map to Credential Exchange Record
     const { credentialRecord, message } = await service.createProposal(credentialOptions)
 
-    unitTestLogger('We have a message (sending outbound): ', message)
+    logger.debug('We have a message (sending outbound): ', message)
 
     // send the message here
     const outbound = createOutboundMessage(connection, message)
 
-    unitTestLogger('Send Proposal to Issuer')
+    logger.debug('In proposeCredential: Send Proposal to Issuer')
     await this.v2messageSender.sendMessage(outbound)
-
-    const recordBinding: CredentialRecordBinding = {
-      credentialRecordType: credentialOptions.credentialFormats.indy
-        ? CredentialRecordType.Indy
-        : CredentialRecordType.W3c,
-      credentialRecordId: credentialRecord.id,
-    }
-
-    const bindings: CredentialRecordBinding[] = []
-    bindings.push(recordBinding)
-
-    // MJR-TODO get credential exchange record from the getById call??
-
-    const props: CredentialExchangeRecordProps = {
-      connectionId: credentialRecord.connectionId,
-      threadId: credentialRecord.threadId,
-      protocolVersion: version,
-      state: CredentialState.ProposalSent,
-      role: CredentialRole.Holder,
-      credentials: bindings,
-    }
-    const credentialExchangeRecord = new CredentialExchangeRecord(props)
-
-    return credentialExchangeRecord
+    credentialRecord.protocolVersion = version
+    return credentialRecord
   }
 
   /**
@@ -309,6 +275,8 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
    *
    */
   public async acceptCredentialProposal(credentialOptions: AcceptProposalOptions): Promise<CredentialExchangeRecord> {
+    logger.info('>> IN CREDENTIAL API => acceptCredentialProposal')
+
     // get the version
     const version: CredentialProtocolVersion = credentialOptions.protocolVersion
 
@@ -318,37 +286,18 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
     // will get back a credential record -> map to Credential Exchange Record
     const { credentialRecord, message } = await service.acceptProposal(credentialOptions)
 
-    const recordBinding: CredentialRecordBinding = {
-      credentialRecordType: credentialOptions.credentialFormats.indy
-        ? CredentialRecordType.Indy
-        : CredentialRecordType.W3c,
-      credentialRecordId: credentialRecord.id,
-    }
-
     const connection = await this.v2connectionService.getById(credentialOptions.connectionId)
 
-    unitTestLogger('We have an offer message (sending outbound): ', message)
+    logger.debug('We have an offer message (sending outbound): ', message)
 
     // send the message here
     const outbound = createOutboundMessage(connection, message)
 
-    unitTestLogger('Send Proposal to Issuer')
+    logger.debug('In acceptCredentialProposal: Send Proposal to Issuer')
     await this.v2messageSender.sendMessage(outbound)
-    const bindings: CredentialRecordBinding[] = []
-    bindings.push(recordBinding)
+    credentialRecord.protocolVersion = version
 
-    const props: CredentialExchangeRecordProps = {
-      connectionId: credentialRecord.connectionId,
-      threadId: credentialRecord.threadId,
-      protocolVersion: version,
-      state: CredentialState.ProposalSent,
-      role: CredentialRole.Holder,
-      credentials: bindings,
-    }
-
-    const credentialExchangeRecord = new CredentialExchangeRecord(props)
-
-    return credentialExchangeRecord
+    return credentialRecord
   }
 
   /**
@@ -361,36 +310,12 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
    *
    */
   public async acceptCredentialOffer(credentialOptions: AcceptOfferOptions): Promise<CredentialExchangeRecord> {
-    unitTestLogger('>> IN CREDENTIAL API => acceptCredentialOffer')
-
-    // get the version
-    const version: CredentialProtocolVersion = credentialOptions.protocolVersion
+    logger.info('>> IN CREDENTIAL API => acceptCredentialOffer')
 
     // will get back a credential record -> map to Credential Exchange Record
     const { credentialRecord } = await this.acceptOffer(credentialOptions)
 
-    const recordBinding: CredentialRecordBinding = {
-      credentialRecordType: credentialOptions.credentialRecordType
-        ? CredentialRecordType.Indy
-        : CredentialRecordType.W3c,
-      credentialRecordId: credentialRecord.id,
-    }
-
-    const bindings: CredentialRecordBinding[] = []
-    bindings.push(recordBinding)
-
-    const props: CredentialExchangeRecordProps = {
-      connectionId: credentialRecord.connectionId,
-      threadId: credentialRecord.threadId,
-      protocolVersion: version,
-      state: CredentialState.RequestSent,
-      role: CredentialRole.Holder,
-      credentials: bindings,
-    }
-
-    const credentialExchangeRecord = new CredentialExchangeRecord(props)
-
-    return credentialExchangeRecord
+    return credentialRecord
   }
   /**
    * Accept a credential offer as holder (by sending a credential request message) to the connection
@@ -401,14 +326,22 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
    */
   private async acceptOffer(
     offer: AcceptOfferOptions
-  ): Promise<{ credentialRecord: CredentialRecord; message: AgentMessage }> {
-    unitTestLogger('>> IN CREDENTIAL API => acceptOffer')
+  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+    logger.info('>> IN CREDENTIAL API => acceptOffer')
 
     const service: CredentialService = this.getService(offer.protocolVersion)
 
-    unitTestLogger(`Got a CredentialService object for this version; version = ${service.getVersion()}`)
+    logger.debug(`Got a CredentialService object for this version; version = ${service.getVersion()}`)
 
-    const record: CredentialRecord = await this.getById(offer.credentialRecordId)
+    const record: CredentialExchangeRecord = await this.getById(offer.credentialRecordId)
+
+    // could move this into service classes
+    const offerMessageClass =
+      offer.protocolVersion == CredentialProtocolVersion.V1_0 ? OfferCredentialMessage : V2OfferCredentialMessage
+    const offerMessage = await this.didCommMessageRepo.getAgentMessage({
+      associatedRecordId: record.id,
+      messageClass: offerMessageClass,
+    })
 
     // Use connection if present
     if (record.connectionId) {
@@ -422,17 +355,18 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
       }
       const { message, credentialRecord } = await service.createRequest(record, requestOptions)
 
-      unitTestLogger('We have sent a credential request')
+      logger.debug('We have sent a credential request')
       const outboundMessage = createOutboundMessage(connection, message)
 
-      unitTestLogger('We have a PROPOSAL message (sending outbound): ', message)
+      logger.debug('We have a proposal message (sending outbound): ', message)
 
       await this.v2messageSender.sendMessage(outboundMessage)
+      credentialRecord.protocolVersion = offer.protocolVersion
 
       return { credentialRecord, message }
     }
     // Use ~service decorator otherwise
-    else if (record.offerMessage?.service) {
+    else if (offerMessage?.service) {
       // Create ~service decorator
       const routing = await this.mediatorRecipientService.getRouting()
       const ourService = new ServiceDecorator({
@@ -440,7 +374,7 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
         recipientKeys: [routing.verkey],
         routingKeys: routing.routingKeys,
       })
-      const recipientService = record.offerMessage.service
+      const recipientService = offerMessage.service
 
       const requestOptions: RequestCredentialOptions = {
         holderDid: ourService.recipientKeys[0],
@@ -482,12 +416,12 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
   public async negotiateCredentialProposal(
     credentialOptions: NegotiateProposalOptions
   ): Promise<CredentialExchangeRecord> {
-    unitTestLogger('>> IN CREDENTIAL API => negotiateCredentialProposal')
+    logger.info('>> IN CREDENTIAL API => negotiateCredentialProposal')
 
     // get the version
     const version: CredentialProtocolVersion = credentialOptions.protocolVersion
 
-    unitTestLogger(`version =${version}`)
+    logger.debug(`version =${version}`)
 
     // with version we can get the Service
     const service: CredentialService = this.getService(version)
@@ -506,28 +440,9 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
     const outboundMessage = createOutboundMessage(connection, message)
 
     await this.v2messageSender.sendMessage(outboundMessage)
+    credentialRecord.protocolVersion = version
 
-    const recordBinding: CredentialRecordBinding = {
-      credentialRecordType: credentialOptions.credentialFormats.indy
-        ? CredentialRecordType.Indy
-        : CredentialRecordType.W3c,
-      credentialRecordId: credentialRecord.id,
-    }
-
-    const bindings: CredentialRecordBinding[] = []
-    bindings.push(recordBinding)
-
-    const props: CredentialExchangeRecordProps = {
-      connectionId: credentialRecord.connectionId,
-      threadId: credentialRecord.threadId,
-      protocolVersion: version,
-      state: CredentialState.ProposalSent,
-      role: CredentialRole.Holder,
-      credentials: bindings,
-    }
-    const credentialExchangeRecord = new CredentialExchangeRecord(props)
-
-    return credentialExchangeRecord
+    return credentialRecord
   }
 
   /**
@@ -538,39 +453,22 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
    * @returns Credential exchange record associated with the sent credential offer message
    */
   public async offerCredential(credentialOptions: OfferCredentialOptions): Promise<CredentialExchangeRecord> {
+    logger.info('>> IN CREDENTIAL API => offerCredential')
+
     const connection = await this.v2connectionService.getById(credentialOptions.connectionId)
 
     // with version we can get the Service
     const service: CredentialService = this.getService(credentialOptions.protocolVersion)
 
-    unitTestLogger('Got a CredentialService object for this version')
+    logger.debug('Got a CredentialService object for this version')
     const { message, credentialRecord } = await service.createOffer(credentialOptions)
 
-    unitTestLogger('V2 Offer Message successfully created; message= ', message)
+    logger.debug('V2 Offer Message successfully created; message= ', message)
     const outboundMessage = createOutboundMessage(connection, message)
     await this.v2messageSender.sendMessage(outboundMessage)
+    credentialRecord.protocolVersion = credentialOptions.protocolVersion
 
-    const recordBinding: CredentialRecordBinding = {
-      credentialRecordType: credentialOptions.credentialFormats.indy
-        ? CredentialRecordType.Indy
-        : CredentialRecordType.W3c,
-      credentialRecordId: credentialRecord.id,
-    }
-
-    const bindings: CredentialRecordBinding[] = []
-    bindings.push(recordBinding)
-
-    const props: CredentialExchangeRecordProps = {
-      connectionId: credentialRecord.connectionId,
-      threadId: credentialRecord.threadId,
-      protocolVersion: credentialOptions.protocolVersion,
-      state: CredentialState.ProposalSent,
-      role: CredentialRole.Holder,
-      credentials: bindings,
-    }
-    const credentialExchangeRecord = new CredentialExchangeRecord(props)
-
-    return credentialExchangeRecord
+    return credentialRecord
   }
 
   /**
@@ -581,18 +479,31 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
    * @returns CredentialExchangeRecord updated with information pertaining to this request
    */
   public async acceptCredentialRequest(options: AcceptRequestOptions): Promise<CredentialExchangeRecord> {
-    unitTestLogger('>> IN CREDENTIAL API => acceptCredentialRequest')
+    logger.info('>> IN CREDENTIAL API => acceptCredentialRequest')
 
-    const record: CredentialRecord = await this.getById(options.credentialRecordId)
+    const record: CredentialExchangeRecord = await this.getById(options.credentialRecordId)
 
     // with version we can get the Service
     const service: CredentialService = this.getService(options.protocolVersion)
 
-    unitTestLogger('Got a CredentialService object for this version')
+    logger.debug('Got a CredentialService object for this version')
 
     const { message, credentialRecord } = await service.createCredential(record, options)
-    unitTestLogger('We have a CREDENTIAL message (sending outbound): ', message)
+    logger.debug('We have a CREDENTIAL message (sending outbound): ', message)
 
+    // could move this into service classes
+    const requestMessageClass =
+      options.protocolVersion == CredentialProtocolVersion.V1_0 ? RequestCredentialMessage : V2RequestCredentialMessage
+    const offerMessageClass =
+      options.protocolVersion == CredentialProtocolVersion.V1_0 ? OfferCredentialMessage : V2OfferCredentialMessage
+    const requestMessage = await this.didCommMessageRepo.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: requestMessageClass,
+    })
+    const offerMessage = await this.didCommMessageRepo.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: offerMessageClass,
+    })
     // Use connection if present
     if (credentialRecord.connectionId) {
       const connection = await this.v2connectionService.getById(credentialRecord.connectionId)
@@ -602,13 +513,17 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
       await this.v2messageSender.sendMessage(outboundMessage)
     }
     // Use ~service decorator otherwise
-    else if (credentialRecord.requestMessage?.service && credentialRecord.offerMessage?.service) {
-      const recipientService = credentialRecord.requestMessage.service
-      const ourService = credentialRecord.offerMessage.service
+    else if (requestMessage?.service && offerMessage?.service) {
+      const recipientService = requestMessage.service
+      const ourService = offerMessage.service
 
       // Set ~service, update message in record (for later use)
       message.setService(ourService)
-      credentialRecord.credentialMessage = message as V2IssueCredentialMessage
+      await this.didCommMessageRepo.saveAgentMessage({
+        agentMessage: message,
+        role: DidCommMessageRole.Sender,
+        associatedRecordId: credentialRecord.id,
+      })
       await this.credentialRepository.update(credentialRecord)
 
       await this.v2messageSender.sendMessageToService({
@@ -624,18 +539,9 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
         `Cannot accept request for credential record without connectionId or ~service decorator on credential offer / request.`
       )
     }
+    credentialRecord.protocolVersion = options.protocolVersion
 
-    const props: CredentialExchangeRecordProps = {
-      connectionId: credentialRecord.connectionId,
-      threadId: credentialRecord.threadId,
-      protocolVersion: options.protocolVersion,
-      state: CredentialState.ProposalSent,
-      role: CredentialRole.Holder,
-      credentials: [],
-    }
-    const credentialExchangeRecord = new CredentialExchangeRecord(props)
-
-    return credentialExchangeRecord
+    return credentialRecord
   }
 
   /**
@@ -650,17 +556,29 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
     credentialRecordId: string,
     version: CredentialProtocolVersion
   ): Promise<CredentialExchangeRecord> {
-    unitTestLogger('>> IN CREDENTIAL API => acceptCredential')
+    logger.info('>> IN CREDENTIAL API => acceptCredential')
 
-    const record: CredentialRecord = await this.getById(credentialRecordId)
+    const record: CredentialExchangeRecord = await this.getById(credentialRecordId)
 
     // with version we can get the Service
     const service: CredentialService = this.getService(version)
 
-    unitTestLogger('Got a CredentialService object for this version')
+    logger.debug('Got a CredentialService object for this version')
 
     const { message, credentialRecord } = await service.createAck(record)
 
+    const requestMessageClass =
+      version == CredentialProtocolVersion.V1_0 ? RequestCredentialMessage : V2RequestCredentialMessage
+    const credentialMessageClass =
+      version == CredentialProtocolVersion.V1_0 ? IssueCredentialMessage : V2IssueCredentialMessage
+    const requestMessage = await this.didCommMessageRepo.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: requestMessageClass,
+    })
+    const credentialMessage = await this.didCommMessageRepo.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: credentialMessageClass,
+    })
     if (credentialRecord.connectionId) {
       const connection = await this.v2connectionService.getById(credentialRecord.connectionId)
       const outboundMessage = createOutboundMessage(connection, message)
@@ -668,9 +586,9 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
       await this.v2messageSender.sendMessage(outboundMessage)
     }
     // Use ~service decorator otherwise
-    else if (credentialRecord.credentialMessage?.service && credentialRecord.requestMessage?.service) {
-      const recipientService = credentialRecord.credentialMessage.service
-      const ourService = credentialRecord.requestMessage.service
+    else if (credentialMessage?.service && requestMessage?.service) {
+      const recipientService = credentialMessage.service
+      const ourService = requestMessage.service
 
       await this.v2messageSender.sendMessageToService({
         message,
@@ -685,16 +603,48 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
         `Cannot accept credential without connectionId or ~service decorator on credential message.`
       )
     }
-    const props: CredentialExchangeRecordProps = {
-      connectionId: credentialRecord.connectionId,
-      threadId: credentialRecord.threadId,
-      protocolVersion: version,
-      state: CredentialState.Done,
-      role: CredentialRole.Holder,
-      credentials: [],
-    }
-    const credentialExchangeRecord = new CredentialExchangeRecord(props)
+    credentialRecord.protocolVersion = version
 
-    return credentialExchangeRecord
+    return credentialRecord
+  }
+
+  /**
+   * Retrieve a credential record by id
+   *
+   * @param credentialRecordId The credential record id
+   * @throws {RecordNotFoundError} If no record is found
+   * @return The credential record
+   *
+   */
+  public getById(credentialRecordId: string): Promise<CredentialExchangeRecord> {
+    return this.credentialRepository.getById(credentialRecordId)
+  }
+
+  /**
+   * Retrieve all credential records
+   *
+   * @returns List containing all credential records
+   */
+  public getAll(): Promise<CredentialExchangeRecord[]> {
+    return this.credentialRepository.getAll()
+  }
+
+  /**
+   * Find a credential record by id
+   *
+   * @param credentialRecordId the credential record id
+   * @returns The credential record or null if not found
+   */
+  public findById(credentialRecordId: string): Promise<CredentialExchangeRecord | null> {
+    return this.credentialRepository.findById(credentialRecordId)
+  }
+  /**
+   * Delete a credential record by id
+   *
+   * @param credentialId the credential record id
+   */
+  public async deleteById(credentialId: string) {
+    const credentialRecord = await this.getById(credentialId)
+    return this.credentialRepository.delete(credentialRecord)
   }
 }
