@@ -246,14 +246,18 @@ export class CredentialService {
 
     // Check if credential preview attributes match the schema attributes
     const schema = await this.ledgerService.getSchema(credOffer.schema_id)
-    const credAttributes = credentialTemplate.preview.attributes
-    const schemaAttribute = schema.attrNames
+    const credAttributes = credentialTemplate.preview.attributes.map((a) => a.name)
+    const schemaAttributes = schema.attrNames
 
-    credAttributes.forEach((credAtrr) => {
-      if (schemaAttribute.indexOf(credAtrr.name) === -1) {
-        throw new AriesFrameworkError(`The credential preview attributes do not match the schema attributes`)
-      }
-    })
+    const difference = schemaAttributes
+      .filter((x) => !credAttributes.includes(x))
+      .concat(credAttributes.filter((x) => !schemaAttributes.includes(x)))
+
+    if (difference.length >= 1) {
+      throw new AriesFrameworkError(
+        `The credential preview attributes do not match the schema attributes (difference is: ${difference}, needs: ${schemaAttributes})`
+      )
+    }
 
     const credentialOfferMessage = new OfferCredentialMessage({
       comment,
