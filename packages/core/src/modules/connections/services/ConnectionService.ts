@@ -391,7 +391,10 @@ export class ConnectionService {
     //  - maybe this shouldn't be in the connection service?
     const trustPing = new TrustPingMessage(config)
 
-    await this.updateState(connectionRecord, ConnectionState.Complete)
+    // Only update connection record and emit an event if the state is not already 'Complete'
+    if (connectionRecord.state !== ConnectionState.Complete) {
+      await this.updateState(connectionRecord, ConnectionState.Complete)
+    }
 
     return {
       connectionRecord: connectionRecord,
