@@ -153,7 +153,7 @@ export class CredentialUtils {
 
     // If value is an int32 number string return as number string
     if (isString(value) && !isEmpty(value) && !isNaN(Number(value)) && this.isInt32(Number(value))) {
-      return value
+      return Number(value).toString()
     }
 
     if (isNumber(value)) {
