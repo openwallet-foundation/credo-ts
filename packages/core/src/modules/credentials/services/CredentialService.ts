@@ -651,8 +651,10 @@ export class CredentialService {
     //Fetch Revocation Registry Definition if the issued credential has an associated revocation registry id
     let revocationRegistryDefinition
     if (indyCredential.rev_reg_id) {
-      const { revocRegDef } = await this.ledgerService.getRevocationRegistryDefinition(indyCredential.rev_reg_id)
-      revocationRegistryDefinition = revocRegDef
+      const revocationRegistryDefinitionData = await this.ledgerService.getRevocationRegistryDefinition(
+        indyCredential.rev_reg_id
+      )
+      revocationRegistryDefinition = revocationRegistryDefinitionData.revocationRegistryDefinition
     }
 
     const credentialId = await this.indyHolderService.storeCredential({

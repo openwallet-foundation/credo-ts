@@ -267,7 +267,7 @@ export class IndyLedgerService {
 
   public async getRevocationRegistryDefinition(
     revocationRegistryDefinitionId: string
-  ): Promise<ParseRevRegDefTemplate> {
+  ): Promise<ParseRevocationRegistryDefitinionTemplate> {
     const did = didFromRevocationRegistryDefinitionId(revocationRegistryDefinitionId)
     const { pool } = await this.indyPoolService.getPoolForDid(did)
 
@@ -293,13 +293,13 @@ export class IndyLedgerService {
         }
       )
 
-      const [, revocRegDef] = await this.indy.parseGetRevocRegDefResponse(response)
+      const [, revocationRegistryDefinition] = await this.indy.parseGetRevocRegDefResponse(response)
 
       this.logger.debug(`Got revocation registry definition '${revocationRegistryDefinitionId}' from ledger`, {
-        revocRegDef,
+        revocationRegistryDefinition,
       })
 
-      return { revocRegDef, revocRegDefTxnTime: response.result.txnTime }
+      return { revocationRegistryDefinition, revocationRegistryDefinitionTxnTime: response.result.txnTime }
     } catch (error) {
       this.logger.error(
         `Error retrieving revocation registry definition '${revocationRegistryDefinitionId}' from ledger`,
@@ -318,7 +318,7 @@ export class IndyLedgerService {
     revocationRegistryDefinitionId: string,
     to: number = new Date().getTime(),
     from = 0
-  ): Promise<ParseRevRegDeltaTemplate> {
+  ): Promise<ParseRevocationRegistryDeltaTemplate> {
     //TODO - implement a cache
     const did = didFromRevocationRegistryDefinitionId(revocationRegistryDefinitionId)
     const { pool } = await this.indyPoolService.getPoolForDid(did)
@@ -346,16 +346,16 @@ export class IndyLedgerService {
         }
       )
 
-      const [, revocRegDelta, deltaTimestamp] = await this.indy.parseGetRevocRegDeltaResponse(response)
+      const [, revocationRegistryDelta, deltaTimestamp] = await this.indy.parseGetRevocRegDeltaResponse(response)
 
       this.logger.debug(`Got revocation registry delta '${revocationRegistryDefinitionId}' from ledger`, {
-        revocRegDelta,
+        revocationRegistryDelta,
         deltaTimestamp,
         to,
         from,
       })
 
-      return { revocRegDelta, deltaTimestamp }
+      return { revocationRegistryDelta, deltaTimestamp }
     } catch (error) {
       this.logger.error(
         `Error retrieving revocation registry delta '${revocationRegistryDefinitionId}' from ledger, potentially revocation interval ends before revocation registry creation?"`,
@@ -373,7 +373,7 @@ export class IndyLedgerService {
   public async getRevocationRegistry(
     revocationRegistryDefinitionId: string,
     timestamp: number
-  ): Promise<ParseRevRegTemplate> {
+  ): Promise<ParseRevocationRegistryTemplate> {
     //TODO - implement a cache
     const did = didFromRevocationRegistryDefinitionId(revocationRegistryDefinitionId)
     const { pool } = await this.indyPoolService.getPoolForDid(did)
@@ -399,13 +399,13 @@ export class IndyLedgerService {
         }
       )
 
-      const [, revocReg, ledgerTimestamp] = await this.indy.parseGetRevocRegResponse(response)
+      const [, revocationRegistry, ledgerTimestamp] = await this.indy.parseGetRevocRegResponse(response)
       this.logger.debug(`Got revocation registry '${revocationRegistryDefinitionId}' from ledger`, {
         ledgerTimestamp,
-        revocReg,
+        revocationRegistry,
       })
 
-      return { revocReg, ledgerTimestamp }
+      return { revocationRegistry, ledgerTimestamp }
     } catch (error) {
       this.logger.error(`Error retrieving revocation registry '${revocationRegistryDefinitionId}' from ledger`, {
         error,
@@ -527,18 +527,18 @@ export interface CredentialDefinitionTemplate {
   supportRevocation: boolean
 }
 
-export interface ParseRevRegDefTemplate {
-  revocRegDef: Indy.RevocRegDef
-  revocRegDefTxnTime: number
+export interface ParseRevocationRegistryDefitinionTemplate {
+  revocationRegistryDefinition: Indy.RevocRegDef
+  revocationRegistryDefinitionTxnTime: number
 }
 
-export interface ParseRevRegDeltaTemplate {
-  revocRegDelta: Indy.RevocRegDelta
+export interface ParseRevocationRegistryDeltaTemplate {
+  revocationRegistryDelta: Indy.RevocRegDelta
   deltaTimestamp: number
 }
 
-export interface ParseRevRegTemplate {
-  revocReg: Indy.RevocReg
+export interface ParseRevocationRegistryTemplate {
+  revocationRegistry: Indy.RevocReg
   ledgerTimestamp: number
 }
 

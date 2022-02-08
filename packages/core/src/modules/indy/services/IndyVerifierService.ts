@@ -43,22 +43,24 @@ export class IndyVerifierService {
     const revocationRegistryDefinitions: Indy.RevocRegDefs = {}
     const revocationRegistryStates: Indy.RevStates = {}
     for (const identifier of proof.identifiers) {
-      const revRegId = identifier.rev_reg_id
+      const revocationRegistryId = identifier.rev_reg_id
       const timestamp = identifier.timestamp
 
       //Fetch Revocation Registry Definition if not already fetched
-      if (revRegId && !revocationRegistryDefinitions[revRegId]) {
-        const { revocRegDef } = await this.ledgerService.getRevocationRegistryDefinition(revRegId)
-        revocationRegistryDefinitions[revRegId] = revocRegDef
+      if (revocationRegistryId && !revocationRegistryDefinitions[revocationRegistryId]) {
+        const { revocationRegistryDefinition } = await this.ledgerService.getRevocationRegistryDefinition(
+          revocationRegistryId
+        )
+        revocationRegistryDefinitions[revocationRegistryId] = revocationRegistryDefinition
       }
 
       //Fetch Revocation Registry by Timestamp if not already fetched
-      if (revRegId && timestamp && !revocationRegistryStates[revRegId]?.[timestamp]) {
-        if (!revocationRegistryStates[revRegId]) {
-          revocationRegistryStates[revRegId] = {}
+      if (revocationRegistryId && timestamp && !revocationRegistryStates[revocationRegistryId]?.[timestamp]) {
+        if (!revocationRegistryStates[revocationRegistryId]) {
+          revocationRegistryStates[revocationRegistryId] = {}
         }
-        const { revocReg } = await this.ledgerService.getRevocationRegistry(revRegId, timestamp)
-        revocationRegistryStates[revRegId][timestamp] = revocReg
+        const { revocationRegistry } = await this.ledgerService.getRevocationRegistry(revocationRegistryId, timestamp)
+        revocationRegistryStates[revocationRegistryId][timestamp] = revocationRegistry
       }
     }
     return { revocationRegistryDefinitions, revocationRegistryStates }

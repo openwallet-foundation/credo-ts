@@ -101,21 +101,23 @@ export class IndyRevocationService {
 
           this.assertRevocationInterval(requestRevocationInterval)
 
-          const { revocRegDef } = await this.ledgerService.getRevocationRegistryDefinition(revocationRegistryId)
+          const { revocationRegistryDefinition } = await this.ledgerService.getRevocationRegistryDefinition(
+            revocationRegistryId
+          )
 
-          const { revocRegDelta, deltaTimestamp } = await this.ledgerService.getRevocationRegistryDelta(
+          const { revocationRegistryDelta, deltaTimestamp } = await this.ledgerService.getRevocationRegistryDelta(
             revocationRegistryId,
             requestRevocationInterval?.to,
             0
           )
 
-          const { tailsLocation, tailsHash } = revocRegDef.value
+          const { tailsLocation, tailsHash } = revocationRegistryDefinition.value
           const tails = await this.indyUtilitiesService.downloadTails(tailsHash, tailsLocation)
 
           const revocationState = await this.indy.createRevocationState(
             tails,
-            revocRegDef,
-            revocRegDelta,
+            revocationRegistryDefinition,
+            revocationRegistryDelta,
             deltaTimestamp,
             credentialRevocationId
           )
@@ -157,13 +159,13 @@ export class IndyRevocationService {
 
     this.assertRevocationInterval(requestRevocationInterval)
 
-    const { revocRegDelta, deltaTimestamp } = await this.ledgerService.getRevocationRegistryDelta(
+    const { revocationRegistryDelta, deltaTimestamp } = await this.ledgerService.getRevocationRegistryDelta(
       revocationRegistryDefinitionId,
       requestRevocationInterval.to,
       0
     )
 
-    const revoked: boolean = revocRegDelta.value.revoked?.includes(parseInt(credentialRevocationId)) || false
+    const revoked: boolean = revocationRegistryDelta.value.revoked?.includes(parseInt(credentialRevocationId)) || false
     this.logger.trace(
       `Credental with Credential Revocation Id '${credentialRevocationId}' is ${
         revoked ? '' : 'not '
