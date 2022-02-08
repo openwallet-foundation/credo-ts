@@ -40,7 +40,7 @@ import { V2RequestCredentialMessage } from './v2/messages/V2RequestCredentialMes
 
 import { IssueCredentialMessage, OfferCredentialMessage, RequestCredentialMessage } from '.'
 
-export interface CredentialsAPI {
+export interface CredentialsModule {
   // Proposal methods
   proposeCredential(credentialOptions: ProposeCredentialOptions): Promise<CredentialExchangeRecord>
   acceptCredentialProposal(credentialOptions: AcceptProposalOptions): Promise<CredentialExchangeRecord>
@@ -81,7 +81,7 @@ export interface CredentialsAPI {
 const logger = new ConsoleLogger(LogLevel.info)
 
 @scoped(Lifecycle.ContainerScoped)
-export class CredentialsAPI implements CredentialsAPI {
+export class CredentialsModule implements CredentialsModule {
   private v2connectionService: ConnectionService
   private v2messageSender: MessageSender
   private v1CredentialService: V1LegacyCredentialService

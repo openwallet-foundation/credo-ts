@@ -291,7 +291,6 @@ describe('credentials', () => {
         state: CredentialState.OfferReceived,
       })
       // expect(aliceCredentialRecord.offerMessage?.messageAttachment).toBeTruthy()
-      // // console.log(">>>>>>>>>>>> aliceCredentialRecord = ", JsonTransformer.toJSON(aliceCredentialRecord))
       // expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
       //   createdAt: expect.any(Date),
       //   offerMessage: {

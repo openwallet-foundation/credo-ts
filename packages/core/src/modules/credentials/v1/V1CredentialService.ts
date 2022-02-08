@@ -20,14 +20,17 @@ import type { CredentialState } from '../CredentialState'
 import type {
   AcceptProposalOptions,
   AcceptRequestOptions,
-  CredPropose,
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../interfaces'
 import type { CredentialExchangeRecord, CredentialRepository } from '../repository'
-import type { V2CredProposeOfferRequestFormat, CredentialFormatService } from '../v2/formats/CredentialFormatService'
+import type {
+  V2CredProposeOfferRequestFormat,
+  CredentialFormatService,
+  CredPropose,
+} from '../v2/formats/CredentialFormatService'
 import type { V2CredentialAckMessage } from '../v2/messages/V2CredentialAckMessage'
 import type { V2IssueCredentialMessage } from '../v2/messages/V2IssueCredentialMessage'
 import type { V2RequestCredentialMessage } from '../v2/messages/V2RequestCredentialMessage'

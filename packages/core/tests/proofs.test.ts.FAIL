@@ -1,4 +1,4 @@
-import type { Agent, ConnectionRecord, PresentationPreview } from '../src'
+import { Agent, ConnectionRecord, ConsoleLogger, PresentationPreview } from '../src'
 import type { CredDefId } from 'indy-sdk'
 
 import {

@@ -23,11 +23,11 @@ import { CredentialRecordType } from '../../../../../src/modules/credentials/int
 import testLogger from '../../../../../tests/logger'
 import { V2CredentialPreview } from '../V2CredentialPreview'
 
-const faberConfig = getBaseConfig('Faber connection-less Credentials', {
+const faberConfig = getBaseConfig('Faber connection-less Credentials V2', {
   endpoints: ['rxjs:faber'],
 })
 
-const aliceConfig = getBaseConfig('Alice connection-less Credentials', {
+const aliceConfig = getBaseConfig('Alice connection-less Credentials V2', {
   endpoints: ['rxjs:alice'],
 })
 

@@ -392,7 +392,6 @@ export async function issueCredential({
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.Done,
   })
-
   issuerCredentialRecord = await waitForCredentialRecordSubject(issuerReplay, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.Done,
@@ -678,7 +677,6 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
       ],
     },
   })
-
   const faberReplay = new ReplaySubject<ProofStateChangedEvent>()
   const aliceReplay = new ReplaySubject<ProofStateChangedEvent>()
 

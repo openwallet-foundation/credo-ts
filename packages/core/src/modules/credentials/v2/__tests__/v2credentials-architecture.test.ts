@@ -7,7 +7,7 @@ import { getBaseConfig } from '../../../../../tests/helpers'
 import { Agent } from '../../../../agent/Agent'
 import { unitTestLogger } from '../../../../logger'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
-import { CredentialsAPI } from '../../CredentialsAPI'
+import { CredentialsModule } from '../../CredentialsModule'
 import { CredentialFormatType } from '../../interfaces'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 import { CredentialMessageBuilder } from '../CredentialMessageBuilder'
@@ -88,12 +88,12 @@ const credOffer: CredOffer = {
 describe('V2 Credential Architecture', () => {
   const agent = new Agent(config, dependencies)
   const container = agent.injectionContainer
-  const api = container.resolve(CredentialsAPI)
+  const api = container.resolve(CredentialsModule)
 
   describe('Credential Service', () => {
     test('returns the correct credential service for a protocol version 1.0', () => {
       const version: CredentialProtocolVersion = CredentialProtocolVersion.V1_0
-      expect(container.resolve(CredentialsAPI)).toBeInstanceOf(CredentialsAPI)
+      expect(container.resolve(CredentialsModule)).toBeInstanceOf(CredentialsModule)
       const service: CredentialService = api.getService(version)
       expect(service.getVersion()).toEqual(CredentialProtocolVersion.V1_0)
     })

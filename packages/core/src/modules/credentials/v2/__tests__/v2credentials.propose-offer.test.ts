@@ -4,10 +4,10 @@ import type {
   AcceptOfferOptions,
   AcceptProposalOptions,
   AcceptRequestOptions,
-  CredPropose,
   OfferCredentialOptions,
   ProposeCredentialOptions,
 } from '../../interfaces'
+import type { CredPropose } from '../formats/CredentialFormatService'
 
 import { CredentialExchangeRecord, CredentialState } from '../..'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../core/tests/helpers'
