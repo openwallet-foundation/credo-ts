@@ -1,14 +1,21 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import type {
   CredentialOfferTemplate,
   CredentialProposeOptions,
   CredentialProtocolMsgReturnType,
   V1LegacyCredentialService,
 } from '.'
+import type { EventEmitter } from '../../../../src/agent/EventEmitter'
 import type { HandlerInboundMessage } from '../../../../src/agent/Handler'
 import type { InboundMessageContext } from '../../../../src/agent/models/InboundMessageContext'
 import type { DidCommMessageRepository } from '../../../../src/storage'
+import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { Dispatcher } from '../../../agent/Dispatcher'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
+import type { MediationRecipientService, MediatorService } from '../../routing'
+import type { CredentialStateChangedEvent } from '../CredentialEvents'
+import type { CredentialResponseCoordinator } from '../CredentialResponseCoordinator'
 import type { CredentialState } from '../CredentialState'
 import type {
   AcceptProposalOptions,
@@ -19,12 +26,11 @@ import type {
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../interfaces'
-import type { CredentialExchangeRecord } from '../repository'
+import type { CredentialExchangeRecord, CredentialRepository } from '../repository'
 import type { V2CredProposeOfferRequestFormat, CredentialFormatService } from '../v2/formats/CredentialFormatService'
 import type { V2CredentialAckMessage } from '../v2/messages/V2CredentialAckMessage'
 import type { V2IssueCredentialMessage } from '../v2/messages/V2IssueCredentialMessage'
 import type { V2RequestCredentialMessage } from '../v2/messages/V2RequestCredentialMessage'
-import type { OfferCredentialHandler, ProposeCredentialHandler } from './handlers'
 import type {
   CredentialAckMessage,
   IssueCredentialMessage,
@@ -32,18 +38,32 @@ import type {
   RequestCredentialMessage,
 } from './messages'
 
+import { ServiceDecorator } from '../../../../src/decorators/service/ServiceDecorator'
+import { DidCommMessageRole } from '../../../../src/storage'
 import { AriesFrameworkError } from '../../../error'
 import { ConsoleLogger, LogLevel } from '../../../logger'
 import { isLinkedAttachment } from '../../../utils/attachment'
+import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import { CredentialService } from '../CredentialService'
 
 import { V1CredentialPreview } from './V1CredentialPreview'
+import {
+  CredentialAckHandler,
+  CredentialProblemReportHandler,
+  IssueCredentialHandler,
+  OfferCredentialHandler,
+  ProposeCredentialHandler,
+  RequestCredentialHandler,
+} from './handlers'
 import { ProposeCredentialMessage } from './messages'
 
 const logger = new ConsoleLogger(LogLevel.debug)
 
 export class V1CredentialService extends CredentialService {
+  public update(credentialRecord: CredentialExchangeRecord): Promise<void> {
+    return this.legacyCredentialService.update(credentialRecord)
+  }
   public updateState(credentialRecord: CredentialExchangeRecord, newState: CredentialState): Promise<void> {
     throw new Error('Method not implemented.')
   }
@@ -53,10 +73,10 @@ export class V1CredentialService extends CredentialService {
   ): Promise<CredentialExchangeRecord> {
     throw new Error('Method not implemented.')
   }
-  public createAck(
+  public async createAck(
     credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialProtocolMsgReturnType<CredentialAckMessage | V2CredentialAckMessage>> {
-    throw new Error('Method not implemented.')
+    return await this.legacyCredentialService.createAck(credentialRecord)
   }
   public createCredential(
     credentialRecord: CredentialExchangeRecord,
@@ -74,16 +94,34 @@ export class V1CredentialService extends CredentialService {
   private legacyCredentialService: V1LegacyCredentialService // MJR-TODO move all functionality from that class into here
   private connectionService: ConnectionService
   private didCommMessageRepository: DidCommMessageRepository
+  private agentConfig: AgentConfig
+  private credentialResponseCoordinator: CredentialResponseCoordinator
+  private mediationRecipientService: MediationRecipientService
+  private dispatcher: Dispatcher
+  private eventEmitter: EventEmitter
+  private credentialRepository: CredentialRepository
 
   public constructor(
     connectionService: ConnectionService,
     credentialService: V1LegacyCredentialService,
-    didCommMessageRepository: DidCommMessageRepository
+    didCommMessageRepository: DidCommMessageRepository,
+    agentConfig: AgentConfig,
+    credentialResponseCoordinator: CredentialResponseCoordinator,
+    mediationRecipientService: MediationRecipientService,
+    dispatcher: Dispatcher,
+    eventEmitter: EventEmitter,
+    credentialRepository: CredentialRepository
   ) {
     super()
     this.legacyCredentialService = credentialService
     this.connectionService = connectionService
     this.didCommMessageRepository = didCommMessageRepository
+    this.agentConfig = agentConfig
+    this.credentialResponseCoordinator = credentialResponseCoordinator
+    this.mediationRecipientService = mediationRecipientService
+    this.dispatcher = dispatcher
+    this.eventEmitter = eventEmitter
+    this.credentialRepository = credentialRepository
   }
 
   /**
@@ -135,7 +173,41 @@ export class V1CredentialService extends CredentialService {
   }
 
   public registerHandlers() {
-    throw new Error('Method not implemented.')
+    this.dispatcher.registerHandler(
+      new ProposeCredentialHandler(
+        this.legacyCredentialService,
+        this.agentConfig,
+        this.credentialResponseCoordinator,
+        this.didCommMessageRepository
+      )
+    )
+    this.dispatcher.registerHandler(
+      new OfferCredentialHandler(
+        this.legacyCredentialService,
+        this.agentConfig,
+        this.credentialResponseCoordinator,
+        this.mediationRecipientService,
+        this.didCommMessageRepository
+      )
+    )
+    this.dispatcher.registerHandler(
+      new RequestCredentialHandler(
+        this.legacyCredentialService,
+        this.agentConfig,
+        this.credentialResponseCoordinator,
+        this.didCommMessageRepository
+      )
+    )
+    this.dispatcher.registerHandler(
+      new IssueCredentialHandler(
+        this.legacyCredentialService,
+        this.agentConfig,
+        this.credentialResponseCoordinator,
+        this.didCommMessageRepository
+      )
+    )
+    this.dispatcher.registerHandler(new CredentialAckHandler(this.legacyCredentialService))
+    this.dispatcher.registerHandler(new CredentialProblemReportHandler(this.legacyCredentialService))
   }
 
   /**
@@ -345,6 +417,46 @@ export class V1CredentialService extends CredentialService {
     throw Error('Missing attributes in V1 Negotiate Offer Options')
   }
 
+  public async createOutOfBandOffer(
+    credentialOptions: OfferCredentialOptions
+  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+    if (!credentialOptions.credentialFormats.indy?.credentialDefinitionId) {
+      throw Error('Missing credential definition id for out of band credential')
+    }
+    const v1Preview = new V1CredentialPreview({
+      attributes: credentialOptions.credentialFormats.indy?.attributes,
+    })
+    const template: CredentialOfferTemplate = {
+      credentialDefinitionId: credentialOptions.credentialFormats.indy?.credentialDefinitionId,
+      comment: credentialOptions.comment,
+      preview: v1Preview,
+      autoAcceptCredential: credentialOptions.autoAcceptCredential,
+    }
+
+    const { credentialRecord, message } = await this.legacyCredentialService.createOffer(template)
+
+    // Create and set ~service decorator
+    const routing = await this.mediationRecipientService.getRouting()
+    message.service = new ServiceDecorator({
+      serviceEndpoint: routing.endpoints[0],
+      recipientKeys: [routing.verkey],
+      routingKeys: routing.routingKeys,
+    })
+    await this.credentialRepository.save(credentialRecord)
+    await this.didCommMessageRepository.saveAgentMessage({
+      agentMessage: message,
+      role: DidCommMessageRole.Receiver,
+      associatedRecordId: credentialRecord.id,
+    })
+    this.eventEmitter.emit<CredentialStateChangedEvent>({
+      type: CredentialEventTypes.CredentialStateChanged,
+      payload: {
+        credentialRecord,
+        previousState: null,
+      },
+    })
+    return { credentialRecord, message }
+  }
   /**
    * Create a {@link OfferCredentialMessage} not bound to an existing credential exchange.
    * To create an offer as response to an existing credential exchange, use {@link V1CredentialService#createOfferAsResponse}.
@@ -356,6 +468,9 @@ export class V1CredentialService extends CredentialService {
   public async createOffer(
     credentialOptions: OfferCredentialOptions
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+    if (!credentialOptions.connectionId) {
+      throw Error('Connection id missing from offer credential options')
+    }
     const connection = await this.connectionService.getById(credentialOptions.connectionId)
 
     if (
@@ -371,7 +486,18 @@ export class V1CredentialService extends CredentialService {
         preview: credentialPreview,
         credentialDefinitionId: credentialOptions?.credentialFormats.indy?.credentialDefinitionId,
       }
-      return await this.legacyCredentialService.createOffer(template, connection)
+
+      const { credentialRecord, message } = await this.legacyCredentialService.createOffer(template, connection)
+
+      await this.credentialRepository.save(credentialRecord)
+      this.eventEmitter.emit<CredentialStateChangedEvent>({
+        type: CredentialEventTypes.CredentialStateChanged,
+        payload: {
+          credentialRecord,
+          previousState: null,
+        },
+      })
+      return { credentialRecord, message }
     }
 
     throw Error('Missing properties from OfferCredentialOptions object: cannot create Offer!')

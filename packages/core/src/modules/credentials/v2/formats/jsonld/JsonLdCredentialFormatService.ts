@@ -16,15 +16,14 @@ import type { V2ProposeCredentialMessage } from '../../messages/V2ProposeCredent
 import type { V2RequestCredentialMessage } from '../../messages/V2RequestCredentialMessage'
 import type {
   V2AttachmentFormats,
+  V2CredentialFormatSpec,
   V2CredProposeOfferRequestFormat,
 } from '../CredentialFormatService'
 import type { MetaDataService } from '../MetaDataService'
-import type { V2CredentialFormatSpec } from '../V2CredentialFormat'
 import type { CredOffer, CredReq } from 'indy-sdk'
 
 import { Attachment, AttachmentData } from '../../../../../../src/decorators/attachment/Attachment'
 import { CredentialFormatService } from '../CredentialFormatService'
-import { ATTACHMENT_FORMAT } from '../V2CredentialFormat'
 
 import { JsonLdMetaDataService } from './JsonLdMetaDataService'
 
@@ -106,9 +105,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   }
   public createOfferAttachFormats(
     proposal: AcceptProposalOptions,
-    offer: V2CredProposeOfferRequestFormat,
-    messageType: string
-  ): V2AttachmentFormats {
+    offer: V2CredProposeOfferRequestFormat): V2AttachmentFormats {
     throw new Error('Method not implemented.')
   }
   public getCredentialAttributes(_proposal: ProposeCredentialOptions): CredentialPreviewAttribute[] | undefined {
@@ -120,9 +117,12 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   ): Promise<void> {
     throw new Error('Method not implemented.')
   }
-  public createProposalAttachFormats(_proposal: ProposeCredentialOptions, _messageType: string): V2AttachmentFormats {
+  public createProposalAttachFormats(_proposal: ProposeCredentialOptions): V2AttachmentFormats {
     // implementation for test purposes only
-    const formats = ATTACHMENT_FORMAT['CRED_20_PROPOSAL'].ldproof
+    const formats: V2CredentialFormatSpec = {
+      attachId: this.generateId(),
+      format: 'aries/ld-proof-vc-detail@v1.0',
+    }
     const filtersAttach: Attachment = new Attachment({
       id: '',
       mimeType: 'application/json',
@@ -131,9 +131,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
       }),
     })
     return { formats, filtersAttach }
-  }
-  public getFormatIdentifier(_messageType: string): V2CredentialFormatSpec {
-    throw new Error('Method not implemented.')
   }
   public getCredentialDefinition(offer: V2CredProposeOfferRequestFormat): Promise<V2CredDefinitionFormat | undefined> {
     throw new Error('Method not implemented.')

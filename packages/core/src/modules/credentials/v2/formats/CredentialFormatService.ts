@@ -1,11 +1,10 @@
 import type { AutoAcceptCredential } from '../..'
-import type { AgentConfig } from '../../../../../src/agent/AgentConfig'
+import type { LinkedAttachment } from '../../../../../src/utils/LinkedAttachment'
 import type { EventEmitter } from '../../../../agent/EventEmitter'
-import type { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
+import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { CredentialPreviewAttribute } from '../../CredentialPreviewAttributes'
 import type {
   AcceptProposalOptions,
-  CredPropose,
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
@@ -16,7 +15,6 @@ import type {
 import type { CredentialExchangeRecord, CredentialRepository } from '../../repository'
 import type { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 import type { V2CredentialPreview } from '../V2CredentialPreview'
-import type { V2CredentialFormatSpec } from '../formats/V2CredentialFormat'
 import type { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
 import type { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import type { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
@@ -26,6 +24,23 @@ import type { CredReq, CredReqMetadata, CredOffer, Cred } from 'indy-sdk'
 
 import { uuid } from '../../../../utils/uuid'
 import { CredentialFormatType } from '../../interfaces'
+
+export interface CredPropose {
+  attributes?: CredentialPreviewAttribute[]
+  schemaIssuerDid?: string
+  schemaName?: string
+  schemaVersion?: string
+  schemaId?: string
+  issuerDid?: string
+  credentialDefinitionId?: string
+  linkedAttachments?: LinkedAttachment[]
+  cred_def_id?: string
+}
+
+export type V2CredentialFormatSpec = {
+  attachId: string
+  format: string
+}
 
 type FormatKeys = {
   [id: string]: CredentialFormatType
@@ -81,7 +96,7 @@ export abstract class CredentialFormatService {
     options: AcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<AcceptProposalOptions>
-  abstract createProposalAttachFormats(proposal: ProposeCredentialOptions, messageType: string): V2AttachmentFormats
+  abstract createProposalAttachFormats(proposal: ProposeCredentialOptions): V2AttachmentFormats
   abstract shouldAutoRespondToProposal(
     credentialRecord: CredentialExchangeRecord,
     autoAcceptType: AutoAcceptCredential,
@@ -95,8 +110,7 @@ export abstract class CredentialFormatService {
   ): Promise<V2CredProposeOfferRequestFormat>
   abstract createOfferAttachFormats(
     proposal: AcceptProposalOptions | NegotiateProposalOptions | OfferCredentialOptions,
-    offer: V2CredProposeOfferRequestFormat,
-    messageType: string
+    offer: V2CredProposeOfferRequestFormat
   ): V2AttachmentFormats
   abstract shouldAutoRespondToOffer(
     credentialRecord: CredentialExchangeRecord,
@@ -134,7 +148,6 @@ export abstract class CredentialFormatService {
 
   abstract getCredentialDefinition(offer: V2CredProposeOfferRequestFormat): Promise<V2CredDefinitionFormat | undefined>
   abstract getCredentialPayload(data: Attachment): V2CredProposeOfferRequestFormat
-  abstract getFormatIdentifier(messageType: string): V2CredentialFormatSpec
   abstract getFormatData(data: unknown, id: string): Attachment
   abstract getCredentialAttributes(proposal: ProposeCredentialOptions): CredentialPreviewAttribute[] | undefined
   abstract setPreview(proposal: AcceptProposalOptions, preview: V1CredentialPreview): AcceptProposalOptions

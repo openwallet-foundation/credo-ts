@@ -80,7 +80,7 @@ export class V2IssueCredentialHandler implements Handler {
 
     if (messageContext.connection) {
       return createOutboundMessage(messageContext.connection, message)
-    } else if (message.service && requestMessage?.service && credentialMessage?.service) {
+    } else if (requestMessage?.service && credentialMessage?.service) {
       const recipientService = credentialMessage.service
       const ourService = requestMessage.service
 

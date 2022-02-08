@@ -3,7 +3,6 @@ import type { Attachment } from '../../../../src/decorators/attachment/Attachmen
 import type {
   AcceptProposalOptions,
   AcceptRequestOptions,
-  CredPropose,
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
@@ -11,8 +10,11 @@ import type {
 } from '../interfaces'
 import type { CredentialRecordProps } from '../repository/CredentialRecord'
 import type { V2CredentialPreview } from './V2CredentialPreview'
-import type { CredentialFormatService, V2CredProposeOfferRequestFormat } from './formats/CredentialFormatService'
-import type { V2CredentialFormatSpec } from './formats/V2CredentialFormat'
+import type {
+  CredentialFormatService,
+  V2CredentialFormatSpec,
+  V2CredProposeOfferRequestFormat,
+} from './formats/CredentialFormatService'
 import type { V2IssueCredentialMessageProps } from './messages/V2IssueCredentialMessage'
 import type { V2OfferCredentialMessageOptions } from './messages/V2OfferCredentialMessage'
 import type { V2ProposeCredentialMessageProps } from './messages/V2ProposeCredentialMessage'
@@ -20,14 +22,8 @@ import type { V2RequestCredentialMessageOptions } from './messages/V2RequestCred
 
 import { assert } from 'console'
 
-import { CredentialState, CredentialUtils, INDY_CREDENTIAL_ATTACHMENT_ID } from '..'
-import { AttachmentData } from '../../../../src/decorators/attachment/Attachment'
-import { AriesFrameworkError } from '../../../../src/error'
-import { JsonEncoder } from '../../../../src/utils/JsonEncoder'
+import { CredentialState } from '..'
 import { uuid } from '../../../../src/utils/uuid'
-import { isLinkedAttachment } from '../../../utils/attachment'
-import { credOffer } from '../__tests__/fixtures'
-import { CredentialProblemReportError, CredentialProblemReportReason } from '../errors'
 import { CredentialExchangeRecord } from '../repository/CredentialRecord'
 
 import { V2IssueCredentialMessage } from './messages/V2IssueCredentialMessage'
@@ -62,10 +58,7 @@ export class CredentialMessageBuilder {
     const filtersAttachArray: Attachment[] | undefined = []
     let previewAttachments: V2CredentialPreview | undefined
     for (const formatService of formatServices) {
-      const { formats, filtersAttach, previewWithAttachments } = formatService.createProposalAttachFormats(
-        proposal,
-        'CRED_20_PROPOSAL'
-      )
+      const { formats, filtersAttach, previewWithAttachments } = formatService.createProposalAttachFormats(proposal)
       if (filtersAttach) {
         filtersAttachArray.push(filtersAttach)
       } else {
@@ -145,7 +138,7 @@ export class CredentialMessageBuilder {
 
       credOffer = await service.createOffer(proposal)
 
-      const { preview, formats, offersAttach } = service.createOfferAttachFormats(proposal, credOffer, 'CRED_20_OFFER')
+      const { preview, formats, offersAttach } = service.createOfferAttachFormats(proposal, credOffer)
       if (offersAttach === undefined) {
         throw Error('offersAttach not initialized for credential offer')
       }
@@ -296,7 +289,7 @@ export class CredentialMessageBuilder {
     for (const service of formatServices) {
       // Create the offer message for the correct format
       credOffer = await service.createOffer(options)
-      const { preview, formats, offersAttach } = service.createOfferAttachFormats(options, credOffer, 'CRED_20_OFFER')
+      const { preview, formats, offersAttach } = service.createOfferAttachFormats(options, credOffer)
       if (offersAttach) {
         offersAttachArray.push(offersAttach)
       } else {

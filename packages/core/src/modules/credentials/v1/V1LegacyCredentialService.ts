@@ -366,20 +366,6 @@ export class V1LegacyCredentialService {
       schemaId: credOffer.schema_id,
     })
 
-    await this.credentialRepository.save(credentialRecord)
-    await this.didCommMessageRepository.saveAgentMessage({
-      agentMessage: offerMessage,
-      role: DidCommMessageRole.Receiver,
-      associatedRecordId: credentialRecord.id,
-    })
-    this.eventEmitter.emit<CredentialStateChangedEvent>({
-      type: CredentialEventTypes.CredentialStateChanged,
-      payload: {
-        credentialRecord,
-        previousState: null,
-      },
-    })
-
     return { message: offerMessage, credentialRecord }
   }
 
@@ -541,11 +527,6 @@ export class V1LegacyCredentialService {
       isLinkedAttachment(attachment)
     )
     await this.updateState(credentialRecord, CredentialState.RequestSent)
-    await this.didCommMessageRepository.saveAgentMessage({
-      agentMessage: requestMessage,
-      role: DidCommMessageRole.Sender,
-      associatedRecordId: credentialRecord.id,
-    })
 
     return { message: requestMessage, credentialRecord }
   }
@@ -577,9 +558,9 @@ export class V1LegacyCredentialService {
     }
 
     const credentialRecord = await this.getByThreadAndConnectionId(requestMessage.threadId, connection?.id)
-    let proposalCredentialMessage, offerCredentialMessage
+    let proposalMessage, offerMessage
     try {
-      proposalCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
+      proposalMessage = await this.didCommMessageRepository.getAgentMessage({
         associatedRecordId: credentialRecord.id,
         messageClass: ProposeCredentialMessage,
       })
@@ -587,7 +568,7 @@ export class V1LegacyCredentialService {
       // record not found - this can happen
     }
     try {
-      offerCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
+      offerMessage = await this.didCommMessageRepository.getAgentMessage({
         associatedRecordId: credentialRecord.id,
         messageClass: OfferCredentialMessage,
       })
@@ -596,9 +577,10 @@ export class V1LegacyCredentialService {
     }
     // Assert
     credentialRecord.assertState(CredentialState.OfferSent)
+
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: proposalCredentialMessage,
-      previousSentMessage: offerCredentialMessage,
+      previousReceivedMessage: proposalMessage,
+      previousSentMessage: offerMessage,
     })
 
     this.logger.debug('Credential record found when processing credential request', credentialRecord)
@@ -697,11 +679,6 @@ export class V1LegacyCredentialService {
     credentialRecord.autoAcceptCredential = options?.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
     await this.updateState(credentialRecord, CredentialState.CredentialIssued)
-    await this.didCommMessageRepository.saveAgentMessage({
-      agentMessage: issueMessage,
-      role: DidCommMessageRole.Sender,
-      associatedRecordId: credentialRecord.id,
-    })
     return { message: issueMessage, credentialRecord }
   }
 
@@ -735,6 +712,7 @@ export class V1LegacyCredentialService {
     })
     // Assert
     credentialRecord.assertState(CredentialState.RequestSent)
+
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
       previousReceivedMessage: offerCredentialMessage,
       previousSentMessage: requestCredentialMessage,
@@ -931,8 +909,8 @@ export class V1LegacyCredentialService {
     })
   }
 
-  public update(credentialRecord: CredentialExchangeRecord) {
-    return this.credentialRepository.update(credentialRecord)
+  public async update(credentialRecord: CredentialExchangeRecord) {
+    return await this.credentialRepository.update(credentialRecord)
   }
 
   /**

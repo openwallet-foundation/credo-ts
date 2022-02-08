@@ -499,6 +499,7 @@ export class ConnectionService {
 
         // Check if the inbound message recipient key is present
         // in the recipientKeys of previously sent message ~service decorator
+
         if (
           !previousSentMessage?.service ||
           !previousSentMessage.service.recipientKeys.includes(messageContext.recipientVerkey)
@@ -519,6 +520,7 @@ export class ConnectionService {
 
         // Check if the inbound message sender key is present
         // in the recipientKeys of previously received message ~service decorator
+
         if (
           !previousReceivedMessage.service ||
           !previousReceivedMessage.service.recipientKeys.includes(messageContext.senderVerkey)

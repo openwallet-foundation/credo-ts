@@ -1,11 +1,10 @@
 import type { CredentialPreviewOptions } from '../CredentialPreviewAttributes'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsInstance, IsString, ValidateNested } from 'class-validator'
+import { Equals, IsInstance, ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
-import { credOffer } from '../__tests__/fixtures'
 
 /**
  * Credential preview inner message class.
@@ -44,7 +43,7 @@ export class V2CredentialPreview {
    *   age: "20"
    * })
    */
-  public static fromRecord(record: Record<string, string>, credDefId?: string) {
+  public static fromRecord(record: Record<string, string>) {
     const attributes = Object.entries(record).map(
       ([name, value]) =>
         new CredentialPreviewAttribute({

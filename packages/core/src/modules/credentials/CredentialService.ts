@@ -29,6 +29,8 @@ export type CredentialServiceType = V1CredentialService | V2CredentialService
 export abstract class CredentialService {
   abstract getVersion(): CredentialProtocolVersion
 
+  abstract update(credentialRecord: CredentialExchangeRecord): Promise<void>
+
   abstract getFormats(
     credentialFormats: OfferCredentialFormats | V2CredProposeOfferRequestFormat
   ): CredentialFormatService[]
@@ -49,6 +51,10 @@ export abstract class CredentialService {
     credentialOptions: OfferCredentialOptions
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
   abstract processOffer(messageContext: HandlerInboundMessage<Handler>): Promise<CredentialExchangeRecord>
+
+  abstract createOutOfBandOffer(
+    credentialOptions: OfferCredentialOptions
+  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
 
   // methods for request
   abstract createRequest(

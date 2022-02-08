@@ -6,7 +6,6 @@ import type { CredValues } from 'indy-sdk'
 import { hash as sha256 } from '@stablelib/sha256'
 import BigNumber from 'bn.js'
 
-import { AriesFrameworkError } from '../../error/AriesFrameworkError'
 import { encodeAttachment } from '../../utils/attachment'
 import { Buffer } from '../../utils/buffer'
 import { isBoolean, isNumber, isString } from '../../utils/type'

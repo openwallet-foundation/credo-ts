@@ -8,14 +8,12 @@ import type {
   OfferCredentialOptions,
   ProposeCredentialOptions,
 } from '../../interfaces'
-import type { Schema } from 'indy-sdk'
 
 import { CredentialExchangeRecord, CredentialState } from '../..'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../core/tests/helpers'
 import { unitTestLogger } from '../../../../../src/logger'
 import testLogger from '../../../../../tests/logger'
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
-import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { LinkedAttachment } from '../../../../utils/LinkedAttachment'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
 import { CredentialRecordType } from '../../interfaces'
@@ -29,14 +27,13 @@ describe('credentials', () => {
   let aliceConnection: ConnectionRecord
   let aliceCredentialRecord: CredentialExchangeRecord
   let faberCredentialRecord: CredentialExchangeRecord
-  let schema: Schema
 
   const credentialPreview = V1CredentialPreview.fromRecord({
     name: 'John',
     age: '99',
   })
   beforeAll(async () => {
-    ;({ faberAgent, aliceAgent, credDefId, schema, faberConnection, aliceConnection } = await setupCredentialTests(
+    ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
       'Faber Agent Credentials',
       'Alice Agent Credential'
     ))
@@ -186,7 +183,7 @@ describe('credentials', () => {
         comment: 'V1 Indy Credential',
       }
       testLogger.test('Faber sends credential to Alice')
-      const credExRecord = await faberAgent.credentials.acceptCredentialRequest(options)
+      await faberAgent.credentials.acceptCredentialRequest(options)
 
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -340,10 +337,7 @@ describe('credentials', () => {
       })
 
       // testLogger.test('Alice sends credential ack to Faber')
-      const aliceCredentialExchangeRecord = await aliceAgent.credentials.acceptCredential(
-        aliceCredentialRecord.id,
-        CredentialProtocolVersion.V2_0
-      )
+      await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id, CredentialProtocolVersion.V2_0)
 
       testLogger.test('Faber waits for credential ack from Alice')
       faberCredentialRecord = await waitForCredentialRecord(faberAgent, {

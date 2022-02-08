@@ -98,10 +98,14 @@ export class V2OfferCredentialHandler implements Handler {
 
     if (messageContext.connection) {
       unitTestLogger('  AutoAccept is ON => createRequest')
-      const { message } = await this.credentialService.createRequest(record, {
+      const { message, credentialRecord } = await this.credentialService.createRequest(record, {
         holderDid: messageContext.connection.did,
       })
-
+      await this.didCommMessageRepository.saveAgentMessage({
+        agentMessage: message,
+        role: DidCommMessageRole.Receiver,
+        associatedRecordId: credentialRecord.id,
+      })
       return createOutboundMessage(messageContext.connection, message)
     } else if (offerMessage?.service) {
       const routing = await this.mediationRecipientService.getRouting()
@@ -124,7 +128,11 @@ export class V2OfferCredentialHandler implements Handler {
         associatedRecordId: credentialRecord.id,
       })
       await this.credentialService.update(credentialRecord)
-
+      await this.didCommMessageRepository.saveAgentMessage({
+        agentMessage: message,
+        role: DidCommMessageRole.Receiver,
+        associatedRecordId: credentialRecord.id,
+      })
       return createOutboundServiceMessage({
         payload: message,
         service: recipientService.toDidCommService(),

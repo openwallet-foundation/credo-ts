@@ -66,14 +66,13 @@ export class RequestCredentialHandler implements Handler {
         requestMessage
       )
     ) {
-      return await this.createCredential(credentialRecord, messageContext)
+      return await this.createCredential(credentialRecord, messageContext, offerMessage, requestMessage)
     }
   }
 
   private async createCredential(
     record: CredentialExchangeRecord,
     messageContext: HandlerInboundMessage<RequestCredentialHandler>,
-    proposeMessage?: ProposeCredentialMessage,
     offerMessage?: OfferCredentialMessage,
     requestMessage?: RequestCredentialMessage
   ) {
@@ -84,6 +83,11 @@ export class RequestCredentialHandler implements Handler {
     const { message, credentialRecord } = await this.credentialService.createCredential(record)
 
     if (messageContext.connection) {
+      await this.didCommMessageRepository.saveAgentMessage({
+        agentMessage: message,
+        role: DidCommMessageRole.Sender,
+        associatedRecordId: credentialRecord.id,
+      })
       return createOutboundMessage(messageContext.connection, message)
     } else if (requestMessage?.service && offerMessage?.service) {
       const recipientService = requestMessage.service

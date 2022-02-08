@@ -11,7 +11,6 @@ import type { Schema } from 'indy-sdk'
 
 import { CredentialExchangeRecord, AutoAcceptCredential, CredentialState } from '../..'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../core/tests/helpers'
-import { JsonTransformer } from '../../../../../src/utils/JsonTransformer'
 import { sleep } from '../../../../../src/utils/sleep'
 import testLogger from '../../../../../tests/logger'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
@@ -38,16 +37,11 @@ describe('credentials', () => {
     lastname: 'Appleseed',
   })
 
-  const newV2CredentialPreview = V2CredentialPreview.fromRecord({
-    name: 'John',
-    age: '99',
-    lastname: 'Appleseed',
-  })
   describe('Auto accept on `always`', () => {
     beforeAll(async () => {
       ;({ faberAgent, aliceAgent, credDefId, schema, faberConnection, aliceConnection } = await setupCredentialTests(
-        'faber agent: always',
-        'alice agent: always',
+        'faber agent: always v2',
+        'alice agent: always v2',
         AutoAcceptCredential.Always
       ))
     })
@@ -173,8 +167,8 @@ describe('credentials', () => {
   describe('Auto accept on `contentApproved`', () => {
     beforeAll(async () => {
       ;({ faberAgent, aliceAgent, credDefId, schema, faberConnection, aliceConnection } = await setupCredentialTests(
-        'faber agent: contentApproved',
-        'alice agent: contentApproved',
+        'faber agent: contentApproved v2',
+        'alice agent: contentApproved v2',
         AutoAcceptCredential.ContentApproved
       ))
     })
@@ -417,7 +411,7 @@ describe('credentials', () => {
           },
         },
       }
-      const faberCredentialExchangeRecord = await faberAgent.credentials.negotiateCredentialProposal(negotiateOptions)
+      await faberAgent.credentials.negotiateCredentialProposal(negotiateOptions)
 
       testLogger.test('Alice waits for credential offer from Faber')
 
@@ -462,10 +456,10 @@ describe('credentials', () => {
       expect(record.type).toBe(CredentialExchangeRecord.name)
 
       // Check if the state of the credential records did not change
-      faberCredentialRecord = await faberAgent.credentials.OLDgetById(faberCredentialRecord.id)
+      faberCredentialRecord = await faberAgent.credentials.getById(faberCredentialRecord.id)
       faberCredentialRecord.assertState(CredentialState.OfferSent)
 
-      const aliceRecord = await aliceAgent.credentials.OLDgetById(record.id)
+      const aliceRecord = await aliceAgent.credentials.getById(record.id)
       aliceRecord.assertState(CredentialState.OfferReceived)
     })
     test('Faber starts with V2 credential offer to Alice, both have autoAcceptCredential on `contentApproved` and attributes did change', async () => {

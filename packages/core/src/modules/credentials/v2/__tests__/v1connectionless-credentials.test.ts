@@ -1,21 +1,27 @@
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { CredentialStateChangedEvent } from '../src/modules/credentials'
+import type { SubjectMessage } from '../../../../../../../tests/transport/SubjectInboundTransport'
+import type { CredentialStateChangedEvent } from '../../../../../src/modules/credentials'
+import type {
+  AcceptOfferOptions,
+  AcceptRequestOptions,
+  OfferCredentialOptions,
+} from '../../../../../src/modules/credentials/interfaces'
 
 import { ReplaySubject, Subject } from 'rxjs'
 
-import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { Agent } from '../src/agent/Agent'
+import { SubjectInboundTransport } from '../../../../../../../tests/transport/SubjectInboundTransport'
+import { SubjectOutboundTransport } from '../../../../../../../tests/transport/SubjectOutboundTransport'
+import { prepareForIssuance, waitForCredentialRecordSubject, getBaseConfig } from '../../../../../../core/tests/helpers'
+import { Agent } from '../../../../../src/agent/Agent'
 import {
   V1CredentialPreview,
   AutoAcceptCredential,
   CredentialEventTypes,
   CredentialExchangeRecord,
   CredentialState,
-} from '../src/modules/credentials'
-
-import { getBaseConfig, prepareForIssuance, waitForCredentialRecordSubject } from './helpers'
-import testLogger from './logger'
+} from '../../../../../src/modules/credentials'
+import { CredentialProtocolVersion } from '../../../../../src/modules/credentials/CredentialProtocolVersion'
+import { CredentialRecordType } from '../../../../../src/modules/credentials/interfaces'
+import testLogger from '../../../../../tests/logger'
 
 const faberConfig = getBaseConfig('Faber connection-less Credentials', {
   endpoints: ['rxjs:faber'],
@@ -79,13 +85,23 @@ describe('credentials', () => {
   test('Faber starts with connection-less credential offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
     // eslint-disable-next-line prefer-const
-    let { offerMessage, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOutOfBandOffer({
-      preview: credentialPreview,
-      credentialDefinitionId: credDefId,
-      comment: 'some comment about credential',
-    })
 
-    await aliceAgent.receiveMessage(offerMessage.toJSON())
+    const offerOptions: OfferCredentialOptions = {
+      comment: 'V1 Out of Band offer',
+      credentialFormats: {
+        indy: {
+          attributes: credentialPreview.attributes,
+          credentialDefinitionId: credDefId,
+        },
+      },
+      protocolVersion: CredentialProtocolVersion.V1_0,
+    }
+    // eslint-disable-next-line prefer-const
+    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOutOfBandOffer(
+      offerOptions
+    )
+
+    await aliceAgent.receiveMessage(message.toJSON())
 
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
@@ -93,16 +109,27 @@ describe('credentials', () => {
     })
 
     testLogger.test('Alice sends credential request to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.OLDacceptOffer(aliceCredentialRecord.id)
+    const acceptOfferOptions: AcceptOfferOptions = {
+      credentialRecordId: aliceCredentialRecord.id,
+      connectionId: aliceCredentialRecord.connectionId,
+      credentialRecordType: CredentialRecordType.Indy,
+      protocolVersion: CredentialProtocolVersion.V1_0,
+    }
+    const { credentialRecord } = await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
 
     testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
-      threadId: aliceCredentialRecord.threadId,
+      threadId: credentialRecord.threadId,
       state: CredentialState.RequestReceived,
     })
 
     testLogger.test('Faber sends credential to Alice')
-    faberCredentialRecord = await faberAgent.credentials.OLDacceptRequest(faberCredentialRecord.id)
+    const options: AcceptRequestOptions = {
+      protocolVersion: CredentialProtocolVersion.V1_0,
+      credentialRecordId: faberCredentialRecord.id,
+      comment: 'V1 Indy Credential',
+    }
+    faberCredentialRecord = await faberAgent.credentials.acceptCredentialRequest(options)
 
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
@@ -111,7 +138,10 @@ describe('credentials', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.OLDacceptCredential(aliceCredentialRecord.id)
+    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(
+      aliceCredentialRecord.id,
+      CredentialProtocolVersion.V1_0
+    )
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
@@ -123,8 +153,6 @@ describe('credentials', () => {
       type: CredentialExchangeRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      offerMessage: expect.any(Object),
-      requestMessage: expect.any(Object),
       metadata: {
         data: {
           '_internal/indyCredential': {
@@ -141,8 +169,6 @@ describe('credentials', () => {
       type: CredentialExchangeRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      offerMessage: expect.any(Object),
-      requestMessage: expect.any(Object),
       metadata: {
         data: {
           '_internal/indyCredential': {
@@ -157,15 +183,24 @@ describe('credentials', () => {
 
   test('Faber starts with connection-less credential offer to Alice with auto-accept enabled', async () => {
     // eslint-disable-next-line prefer-const
-    let { offerMessage, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOutOfBandOffer({
-      preview: credentialPreview,
-      credentialDefinitionId: credDefId,
-      comment: 'some comment about credential',
+    const offerOptions: OfferCredentialOptions = {
+      comment: 'V1 Out of Band offer',
+      credentialFormats: {
+        indy: {
+          attributes: credentialPreview.attributes,
+          credentialDefinitionId: credDefId,
+        },
+      },
+      protocolVersion: CredentialProtocolVersion.V1_0,
       autoAcceptCredential: AutoAcceptCredential.ContentApproved,
-    })
+    }
+    // eslint-disable-next-line prefer-const
+    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOutOfBandOffer(
+      offerOptions
+    )
 
     // Receive Message
-    await aliceAgent.receiveMessage(offerMessage.toJSON())
+    await aliceAgent.receiveMessage(message.toJSON())
 
     // Wait for it to be processed
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
@@ -173,9 +208,14 @@ describe('credentials', () => {
       state: CredentialState.OfferReceived,
     })
 
-    await aliceAgent.credentials.OLDacceptOffer(aliceCredentialRecord.id, {
+    const acceptOfferOptions: AcceptOfferOptions = {
+      credentialRecordId: aliceCredentialRecord.id,
+      credentialRecordType: CredentialRecordType.Indy,
+      protocolVersion: CredentialProtocolVersion.V1_0,
       autoAcceptCredential: AutoAcceptCredential.ContentApproved,
-    })
+    }
+
+    await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
 
     aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
@@ -191,8 +231,6 @@ describe('credentials', () => {
       type: CredentialExchangeRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      offerMessage: expect.any(Object),
-      requestMessage: expect.any(Object),
       metadata: {
         data: {
           '_internal/indyCredential': {
@@ -209,8 +247,6 @@ describe('credentials', () => {
       type: CredentialExchangeRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      offerMessage: expect.any(Object),
-      requestMessage: expect.any(Object),
       state: CredentialState.Done,
       threadId: expect.any(String),
     })

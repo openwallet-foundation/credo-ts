@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/explicit-member-accessibility */
 import type { DidCommMessageRepository } from '../../../../src/storage'
 import type { AgentConfig } from '../../../agent/AgentConfig'
@@ -27,9 +28,13 @@ import type { CredentialRepository } from '../repository'
 import type { V1LegacyCredentialService } from '../v1/V1LegacyCredentialService' // tmp
 import type { CredentialAckMessage, IssueCredentialMessage } from '../v1/messages'
 import type { CredentialProtocolMsgReturnType } from './CredentialMessageBuilder'
-import type { CredentialFormatService, V2CredProposeOfferRequestFormat } from './formats/CredentialFormatService'
-import type { V2CredentialFormatSpec } from './formats/V2CredentialFormat'
+import type {
+  CredentialFormatService,
+  V2CredentialFormatSpec,
+  V2CredProposeOfferRequestFormat,
+} from './formats/CredentialFormatService'
 
+import { ServiceDecorator } from '../../../../src/decorators/service/ServiceDecorator'
 import { DidCommMessageRole } from '../../../../src/storage'
 import { AriesFrameworkError } from '../../../error'
 import { ConsoleLogger, LogLevel } from '../../../logger'
@@ -637,11 +642,6 @@ export class V2CredentialService extends CredentialService {
       const { message, credentialRecord } = await this.credentialMessageBuilder.createRequest(formats, record, options)
 
       await this.updateState(credentialRecord, CredentialState.RequestSent)
-      await this.didCommMessageRepository.saveAgentMessage({
-        agentMessage: message,
-        role: DidCommMessageRole.Receiver,
-        associatedRecordId: credentialRecord.id,
-      })
       return { message, credentialRecord }
     } else {
       throw Error('No format keys found on the RequestCredentialOptions object')
@@ -817,6 +817,9 @@ export class V2CredentialService extends CredentialService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     credentialOptions: OfferCredentialOptions
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: V2OfferCredentialMessage }> {
+    if (!credentialOptions.connectionId) {
+      throw Error('Connection id missing from offer credential options')
+    }
     const connection = await this.connectionService.getById(credentialOptions.connectionId)
 
     connection?.assertReady()
@@ -836,11 +839,6 @@ export class V2CredentialService extends CredentialService {
       }
     }
     await this.credentialRepository.save(credentialRecord)
-    await this.didCommMessageRepository.saveAgentMessage({
-      agentMessage: message,
-      role: DidCommMessageRole.Receiver,
-      associatedRecordId: credentialRecord.id,
-    })
     await this.emitEvent(credentialRecord)
     return { credentialRecord, message }
   }
@@ -1071,6 +1069,50 @@ export class V2CredentialService extends CredentialService {
     await this.updateState(credentialRecord, CredentialState.Done)
 
     return credentialRecord
+  }
+
+  /**
+   * Create an offer message for an out-of-band (connectionless) credential
+   * @param credentialOptions the options (parameters) object for the offer
+   * @returns the credential record and the offer message
+   */
+  public async createOutOfBandOffer(
+    credentialOptions: OfferCredentialOptions
+  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+    if (!credentialOptions.credentialFormats.indy?.credentialDefinitionId) {
+      throw Error('Missing credential definition id for out of band credential')
+    }
+
+    const formats: CredentialFormatService[] = this.getFormats(credentialOptions.credentialFormats)
+
+    // Create message
+    const { credentialRecord, message } = await this.credentialMessageBuilder.createOffer(formats, credentialOptions)
+
+    for (const format of formats) {
+      const attachment = format.getAttachment(message)
+      if (attachment) {
+        const credOffer: V2CredProposeOfferRequestFormat | undefined = format.getCredentialPayload(attachment)
+        if (credOffer) {
+          format.getMetaDataService().setMetaDataForOffer(credOffer, credentialRecord)
+        }
+      }
+    }
+
+    // Create and set ~service decorator
+    const routing = await this.mediationRecipientService.getRouting()
+    message.service = new ServiceDecorator({
+      serviceEndpoint: routing.endpoints[0],
+      recipientKeys: [routing.verkey],
+      routingKeys: routing.routingKeys,
+    })
+    await this.credentialRepository.save(credentialRecord)
+    await this.didCommMessageRepository.saveAgentMessage({
+      agentMessage: message,
+      role: DidCommMessageRole.Receiver,
+      associatedRecordId: credentialRecord.id,
+    })
+    await this.emitEvent(credentialRecord)
+    return { credentialRecord, message }
   }
 
   public update(credentialRecord: CredentialExchangeRecord) {

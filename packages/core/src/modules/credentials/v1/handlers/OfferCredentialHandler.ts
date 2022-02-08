@@ -69,8 +69,13 @@ export class OfferCredentialHandler implements Handler {
       `Automatically sending request with autoAccept on ${this.agentConfig.autoAcceptCredentials}`
     )
     if (messageContext.connection) {
-      const { message } = await this.credentialService.createRequest(record, {
+      const { message, credentialRecord } = await this.credentialService.createRequest(record, {
         holderDid: messageContext.connection.did,
+      })
+      await this.didCommMessageRepository.saveAgentMessage({
+        agentMessage: message,
+        role: DidCommMessageRole.Sender,
+        associatedRecordId: credentialRecord.id,
       })
 
       return createOutboundMessage(messageContext.connection, message)

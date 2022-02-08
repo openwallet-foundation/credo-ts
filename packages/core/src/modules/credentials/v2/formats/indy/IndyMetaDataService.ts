@@ -1,7 +1,6 @@
 import type { EventEmitter } from '../../../../../agent/EventEmitter'
-import type { CredPropose } from '../../../interfaces'
 import type { CredentialExchangeRecord, CredentialRepository } from '../../../repository'
-import type { V2CredProposeOfferRequestFormat } from '../CredentialFormatService'
+import type { CredPropose, V2CredProposeOfferRequestFormat } from '../CredentialFormatService'
 import type { MetaDataService } from '../MetaDataService'
 import type { CredOffer } from 'indy-sdk'
 

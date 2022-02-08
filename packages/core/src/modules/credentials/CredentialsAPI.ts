@@ -30,7 +30,6 @@ import { MediationRecipientService } from '../routing'
 import { CredentialProtocolVersion } from './CredentialProtocolVersion'
 import { CredentialResponseCoordinator } from './CredentialResponseCoordinator'
 import { CredentialState } from './CredentialState'
-import { CredentialsModule } from './CredentialsModule'
 import { CredentialRepository } from './repository'
 import { V1CredentialService } from './v1/V1CredentialService'
 import { V1LegacyCredentialService } from './v1/V1LegacyCredentialService'
@@ -55,7 +54,11 @@ export interface CredentialsAPI {
     version: CredentialProtocolVersion
   ): Promise<CredentialExchangeRecord>
   negotiateCredentialOffer(credentialOptions: ProposeCredentialOptions): Promise<CredentialExchangeRecord>
-
+  // out of band
+  createOutOfBandOffer(credentialOptions: OfferCredentialOptions): Promise<{
+    message: AgentMessage
+    credentialRecord: CredentialExchangeRecord
+  }>
   // // Request
   // This is for beginning the exchange with a request (no proposal or offer). Only possible
   // (currently) with W3C. We will not implement this in phase I
@@ -78,7 +81,7 @@ export interface CredentialsAPI {
 const logger = new ConsoleLogger(LogLevel.info)
 
 @scoped(Lifecycle.ContainerScoped)
-export class CredentialsAPI extends CredentialsModule implements CredentialsAPI {
+export class CredentialsAPI implements CredentialsAPI {
   private v2connectionService: ConnectionService
   private v2messageSender: MessageSender
   private v1CredentialService: V1LegacyCredentialService
@@ -113,16 +116,6 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
     indyHolderService: IndyHolderService,
     didCommMessageRepository: DidCommMessageRepository
   ) {
-    super(
-      dispatcher,
-      connectionService,
-      v1CredentialService,
-      messageSender,
-      agentConfig,
-      credentialResponseCoordinator,
-      mediationRecipientService,
-      didCommMessageRepository
-    )
     this.v2messageSender = messageSender
     this.v1CredentialService = v1CredentialService
     this.v2connectionService = connectionService
@@ -140,7 +133,13 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
     this.v1Service = new V1CredentialService(
       this.v2connectionService,
       this.v1CredentialService,
-      this.didCommMessageRepo
+      this.didCommMessageRepo,
+      this.agConfig,
+      this.credentialResponseCoord,
+      this.mediatorRecipientService,
+      this.dispatcher,
+      this.eventEmitter,
+      this.credentialRepository
     )
 
     this.v2Service = new V2CredentialService(
@@ -168,6 +167,7 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
     )
 
     // register handlers here
+    this.v1Service.registerHandlers()
     this.v2Service.registerHandlers()
   }
 
@@ -186,7 +186,7 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
     // with version we can get the Service
     const service: CredentialService = this.getService(version)
 
-    const credentialRecord: CredentialExchangeRecord = await this.OLDgetById(credentialRecordId)
+    const credentialRecord: CredentialExchangeRecord = await this.getById(credentialRecordId)
 
     credentialRecord.assertState(CredentialState.OfferReceived)
 
@@ -324,7 +324,7 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
    * @param offer The object containing config options of the offer to be accepted
    * @returns Object containing offer associated credential record
    */
-  private async acceptOffer(
+  public async acceptOffer(
     offer: AcceptOfferOptions
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
     logger.info('>> IN CREDENTIAL API => acceptOffer')
@@ -355,6 +355,11 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
       }
       const { message, credentialRecord } = await service.createRequest(record, requestOptions)
 
+      await this.didCommMessageRepo.saveAgentMessage({
+        agentMessage: message,
+        role: DidCommMessageRole.Sender,
+        associatedRecordId: credentialRecord.id,
+      })
       logger.debug('We have sent a credential request')
       const outboundMessage = createOutboundMessage(connection, message)
 
@@ -386,6 +391,11 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
+      await this.didCommMessageRepo.saveAgentMessage({
+        agentMessage: message,
+        role: DidCommMessageRole.Sender,
+        associatedRecordId: credentialRecord.id,
+      })
       await this.credentialRepository.update(credentialRecord)
 
       await this.v2messageSender.sendMessageToService({
@@ -455,6 +465,9 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
   public async offerCredential(credentialOptions: OfferCredentialOptions): Promise<CredentialExchangeRecord> {
     logger.info('>> IN CREDENTIAL API => offerCredential')
 
+    if (!credentialOptions.connectionId) {
+      throw Error('Connection id missing from offer credential options')
+    }
     const connection = await this.v2connectionService.getById(credentialOptions.connectionId)
 
     // with version we can get the Service
@@ -463,6 +476,11 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
     logger.debug('Got a CredentialService object for this version')
     const { message, credentialRecord } = await service.createOffer(credentialOptions)
 
+    await this.didCommMessageRepo.saveAgentMessage({
+      agentMessage: message,
+      role: DidCommMessageRole.Sender,
+      associatedRecordId: credentialRecord.id,
+    })
     logger.debug('V2 Offer Message successfully created; message= ', message)
     const outboundMessage = createOutboundMessage(connection, message)
     await this.v2messageSender.sendMessage(outboundMessage)
@@ -646,5 +664,30 @@ export class CredentialsAPI extends CredentialsModule implements CredentialsAPI 
   public async deleteById(credentialId: string) {
     const credentialRecord = await this.getById(credentialId)
     return this.credentialRepository.delete(credentialRecord)
+  }
+
+  /**
+   * Initiate a new credential exchange as issuer by creating a credential offer
+   * not bound to any connection. The offer must be delivered out-of-band to the holder
+   * @param credentialOptions The credential options to use for the offer
+   * @returns The credential record and credential offer message
+   */
+  public async createOutOfBandOffer(credentialOptions: OfferCredentialOptions): Promise<{
+    message: AgentMessage
+    credentialRecord: CredentialExchangeRecord
+  }> {
+    logger.info('>> IN CREDENTIAL API => createOutOfBandOffer')
+
+    // with version we can get the Service
+    const service: CredentialService = this.getService(credentialOptions.protocolVersion)
+
+    logger.debug('Got a CredentialService object for this version')
+    const { message, credentialRecord } = await service.createOutOfBandOffer(credentialOptions)
+
+    logger.debug('V2 Offer Message successfully created; message= ', message)
+
+    credentialRecord.protocolVersion = credentialOptions.protocolVersion
+
+    return { message, credentialRecord }
   }
 }
