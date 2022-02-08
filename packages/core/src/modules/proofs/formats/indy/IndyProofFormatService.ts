@@ -25,7 +25,9 @@ import { ProofFormatService } from '../ProofFormatService'
 import { ProofFormatSpec } from '../models/ProofFormatSpec'
 import { MissingIndyProofMessageError } from '../errors/MissingIndyProofMessageError'
 import { InvalidEncodedValueError } from '../errors/InvalidEncodedValueError'
+import { Lifecycle, scoped } from 'tsyringe'
 
+@scoped(Lifecycle.ContainerScoped)
 export class IndyProofFormatService extends ProofFormatService {
   private indyHolderService: IndyHolderService
   private indyVerifierService: IndyVerifierService
@@ -189,7 +191,33 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   // K-TODO compare presentation attrs with request/proposal attrs (auto-accept)
-  public hasEqualContent() {}
+  public proposalAndRequestAreEqual(
+    proposalAttachments: ProofAttachmentFormat[],
+    requestAttachments: ProofAttachmentFormat[]
+  ) {
+    const proposalAttachment = proposalAttachments.find((x) => x.format.format === 'hlindy/proof-req@2.0')?.attachment
+    const requestAttachment = requestAttachments.find((x) => x.format.format === 'hlindy/proof-req@2.0')?.attachment
+
+    if (!proposalAttachment) {
+      throw new AriesFrameworkError('Proposal message has no attachment linked to it')
+    }
+
+    if (!requestAttachment) {
+      throw new AriesFrameworkError('Request message has no attachment linked to it')
+    }
+
+    const proposalAttachmentData = proposalAttachment.getDataAsJson<ProofRequest>()
+    const requestAttachmentData = requestAttachment.getDataAsJson<ProofRequest>()
+
+    if (
+      proposalAttachmentData.requestedAttributes === requestAttachmentData.requestedAttributes &&
+      proposalAttachmentData.requestedPredicates === requestAttachmentData.requestedPredicates
+    ) {
+      return true
+    }
+
+    return false
+  }
 
   /**
    * Build credential definitions object needed to create and verify proof objects.

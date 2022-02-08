@@ -30,7 +30,10 @@ export abstract class ProofFormatService {
 
   abstract processPresentation(options: ProcessPresentationOptions): Promise<boolean>
 
-  // private abstract verifyProof(options: VerifyProofOptions): Promise<boolean>
+  abstract proposalAndRequestAreEqual(
+    proposalAttachments: ProofAttachmentFormat[],
+    requestAttachments: ProofAttachmentFormat[]
+  ): boolean
 
   abstract supportsFormat(formatIdentifier: string): boolean
 

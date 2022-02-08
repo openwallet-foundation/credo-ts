@@ -1,8 +1,26 @@
+import { validateOrReject } from 'class-validator'
+import type { CredDef, Schema } from 'indy-sdk'
+import { inject, Lifecycle, scoped } from 'tsyringe'
+import { AgentConfig } from '../../../../agent/AgentConfig'
 import type { AgentMessage } from '../../../../agent/AgentMessage'
+import { Dispatcher } from '../../../../agent/Dispatcher'
+import { EventEmitter } from '../../../../agent/EventEmitter'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
+import { InjectionSymbols } from '../../../../constants'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
-import type { Logger } from '../../../../logger'
-import type { ProofStateChangedEvent } from '../../ProofEvents'
+import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
+import { DidCommMessageRole } from '../../../../storage'
+import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
+import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import { uuid } from '../../../../utils/uuid'
+import { Wallet } from '../../../../wallet'
+import { ConnectionService } from '../../../connections'
+import { CredentialRepository } from '../../../credentials'
+import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
+import { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
+import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
+import { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
+import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
 import type {
   CreateAckOptions,
   CreatePresentationOptions,
@@ -10,59 +28,40 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
-  RequestedCredentialForProofRequestOptions,
 } from '../../models/ProofServiceOptions'
-import type { V1PresentationProblemReportMessage } from './messages'
-import type { PresentationPreviewAttribute } from './models/PresentationPreview'
-import type { CredDef, IndyProof, Schema } from 'indy-sdk'
-
-import { validateOrReject } from 'class-validator'
-import { inject, Lifecycle, scoped } from 'tsyringe'
-
-import { AgentConfig } from '../../../../agent/AgentConfig'
-import { EventEmitter } from '../../../../agent/EventEmitter'
-import { InjectionSymbols } from '../../../../constants'
-import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
-import { DidCommMessageRole } from '../../../../storage'
-import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
-import { JsonTransformer } from '../../../../utils/JsonTransformer'
-import { uuid } from '../../../../utils/uuid'
-import { Wallet } from '../../../../wallet'
-import { AckStatus } from '../../../common/messages/AckMessage'
-import { ConnectionService } from '../../../connections'
-import { Credential, CredentialRepository, CredentialUtils } from '../../../credentials'
-import { IndyHolderService, IndyVerifierService } from '../../../indy/services'
-import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
-import { ProofEventTypes } from '../../ProofEvents'
-import { ProofService } from '../../ProofService'
-import { V1PresentationProblemReportError, V1PresentationProblemReportReason } from './errors'
-import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
-import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
 import { ProofState } from '../../models/ProofState'
+import type { ProofStateChangedEvent } from '../../ProofEvents'
+import { ProofEventTypes } from '../../ProofEvents'
+import { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
+import { ProofService } from '../../ProofService'
 import { ProofRecord } from '../../repository/ProofRecord'
 import { ProofRepository } from '../../repository/ProofRepository'
-
+import { V1PresentationProblemReportError, V1PresentationProblemReportReason } from './errors'
+import {
+  V1PresentationAckHandler,
+  V1PresentationHandler,
+  V1PresentationProblemReportHandler,
+  V1ProposePresentationHandler,
+  V1RequestPresentationHandler,
+} from './handlers'
 import {
   INDY_PROOF_ATTACHMENT_ID,
   INDY_PROOF_REQUEST_ATTACHMENT_ID,
-  V1PresentationAckMessage,
   V1PresentationMessage,
+  V1PresentationProblemReportMessage,
   V1ProposePresentationMessage,
   V1RequestPresentationMessage,
 } from './messages'
 import {
   AttributeFilter,
-  PartialProof,
   ProofAttributeInfo,
   ProofPredicateInfo,
   ProofRequest,
-  RequestedAttribute,
   RequestedCredentials,
-  RequestedPredicate,
   RetrievedCredentials,
 } from './models'
+import type { PresentationPreviewAttribute } from './models/PresentationPreview'
 import { PresentationPreview } from './models/PresentationPreview'
-import { request } from 'http'
 
 // const logger = new ConsoleLogger(LogLevel.debug)
 
@@ -76,29 +75,35 @@ export class V1ProofService extends ProofService {
   private credentialRepository: CredentialRepository
   private ledgerService: IndyLedgerService
   private wallet: Wallet
-  private indyHolderService: IndyHolderService
-  private indyVerifierService: IndyVerifierService
   private indyProofFormatService: IndyProofFormatService
 
   public constructor(
+    dispatcher: Dispatcher,
     proofRepository: ProofRepository,
     didCommMessageRepository: DidCommMessageRepository,
     ledgerService: IndyLedgerService,
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
     agentConfig: AgentConfig,
-    indyHolderService: IndyHolderService,
-    indyVerifierService: IndyVerifierService,
     connectionService: ConnectionService,
     eventEmitter: EventEmitter,
     credentialRepository: CredentialRepository,
-    indyProofFormatService: IndyProofFormatService
+    indyProofFormatService: IndyProofFormatService,
+    proofResponseCoordinator: ProofResponseCoordinator,
+    mediationRecipientService: MediationRecipientService
   ) {
-    super(agentConfig, proofRepository, connectionService, didCommMessageRepository, eventEmitter)
+    super(
+      dispatcher,
+      agentConfig,
+      proofRepository,
+      connectionService,
+      didCommMessageRepository,
+      eventEmitter,
+      proofResponseCoordinator,
+      mediationRecipientService
+    )
     this.credentialRepository = credentialRepository
     this.ledgerService = ledgerService
     this.wallet = wallet
-    this.indyHolderService = indyHolderService
-    this.indyVerifierService = indyVerifierService
     this.indyProofFormatService = indyProofFormatService
   }
 
@@ -566,8 +571,24 @@ export class V1ProofService extends ProofService {
     return proofRecord
   }
 
-  public createProblemReport(): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
-    throw new Error('Method not implemented.')
+  public async createProblemReport(
+    options: CreateProblemReportOptions
+  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+    const msg = new V1PresentationProblemReportMessage({
+      description: {
+        code: V1PresentationProblemReportReason.Abandoned,
+        en: options.description,
+      },
+    })
+
+    msg.setThread({
+      threadId: options.proofRecord.threadId,
+    })
+
+    return {
+      proofRecord: options.proofRecord,
+      message: msg,
+    }
   }
 
   public async processProblemReport(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
@@ -732,63 +753,135 @@ export class V1ProofService extends ProofService {
     return attachments.length ? attachments : undefined
   }
 
-  public async getRequestedCredentialsForProofRequest(
-    options: RequestedCredentialForProofRequestOptions
-  ): Promise<{ indy?: RetrievedCredentials | undefined; w3c?: undefined }> {
-    const retrievedCredentials = new RetrievedCredentials({})
-    const { proofRequest, presentationProposal } = options
+  public async shouldAutoRespondToRequest(proofRecord: ProofRecord): Promise<boolean> {
+    const proposal = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: proofRecord.id,
+      messageClass: V1ProposePresentationMessage,
+    })
 
-    for (const [referent, requestedAttribute] of proofRequest.requestedAttributes.entries()) {
-      let credentialMatch: Credential[] = []
-      const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
-
-      // If we have exactly one credential, or no proposal to pick preferences
-      // on the credentials to use, we will use the first one
-      if (credentials.length === 1 || !presentationProposal) {
-        credentialMatch = credentials
-      }
-      // If we have a proposal we will use that to determine the credentials to use
-      else {
-        const names = requestedAttribute.names ?? [requestedAttribute.name]
-
-        // Find credentials that matches all parameters from the proposal
-        credentialMatch = credentials.filter((credential) => {
-          const { attributes, credentialDefinitionId } = credential.credentialInfo
-
-          // Check if credentials matches all parameters from proposal
-          return names.every((name) =>
-            presentationProposal.attributes.find(
-              (a) =>
-                a.name === name &&
-                a.credentialDefinitionId === credentialDefinitionId &&
-                (!a.value || a.value === attributes[name])
-            )
-          )
-        })
-      }
-
-      retrievedCredentials.requestedAttributes[referent] = credentialMatch.map((credential: Credential) => {
-        return new RequestedAttribute({
-          credentialId: credential.credentialInfo.referent,
-          revealed: true,
-          credentialInfo: credential.credentialInfo,
-        })
-      })
+    if (!proposal) {
+      return false
     }
 
-    for (const [referent] of proofRequest.requestedPredicates.entries()) {
-      const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
+    const request = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: proofRecord.id,
+      messageClass: V1RequestPresentationMessage,
+    })
 
-      retrievedCredentials.requestedPredicates[referent] = credentials.map((credential) => {
-        return new RequestedPredicate({
-          credentialId: credential.credentialInfo.referent,
-          credentialInfo: credential.credentialInfo,
-        })
-      })
+    if (!request) {
+      throw new AriesFrameworkError(`Expected to find a request message for ProofRecord with id ${proofRecord.id}`)
     }
 
-    return { indy: retrievedCredentials }
+    const requestAttachment = request
+      .getAttachmentFormats()
+      .find((x) => x.format.format === 'hlindy/proof-req@2.0')?.attachment
+
+    if (!requestAttachment) {
+      throw new AriesFrameworkError('Request message has no attachment linked to it')
+    }
+
+    const requestAttachmentData = requestAttachment.getDataAsJson<ProofRequest>()
+
+    const proposalAttributes = proposal.presentationProposal.attributes
+    const requestedAttributes = requestAttachmentData.requestedAttributes
+
+    const proposedAttributeNames = proposalAttributes.map((x) => x.name)
+    let requestedAttributeNames: string[] = []
+
+    const requestedAttributeList = Array.from(requestedAttributes.values())
+
+    requestedAttributeList.forEach((x) => {
+      if (x.name) {
+        requestedAttributeNames.push(x.name)
+      } else if (x.names) {
+        requestedAttributeNames = requestedAttributeNames.concat(x.names)
+      }
+    })
+
+    if (requestedAttributeNames.length > proposedAttributeNames.length) {
+      // more attributes are requested than have been proposed
+      return false
+    }
+
+    requestedAttributeNames.forEach((x) => {
+      if (!proposedAttributeNames.includes(x)) {
+        this.logger.debug(`Attribute ${x} was requested but wasn't proposed.`)
+        return false
+      }
+    })
+
+    // assert that all requested attributes are provided
+    const providedPredicateNames = proposal.presentationProposal.predicates.map((x) => x.name)
+    requestAttachmentData.requestedPredicates.forEach((x) => {
+      if (!providedPredicateNames.includes(x.name)) {
+        return false
+      }
+    })
+
+    return true
   }
+
+  public async shouldAutoRespondToPresentation(proofRecord: ProofRecord): Promise<boolean> {
+    return true
+  }
+
+  // public async getRequestedCredentialsForProofRequest(
+  //   options: RequestedCredentialForProofRequestOptions
+  // ): Promise<{ indy?: RetrievedCredentials | undefined; w3c?: undefined }> {
+  //   const retrievedCredentials = new RetrievedCredentials({})
+  //   const { proofRequest, presentationProposal } = options
+
+  //   for (const [referent, requestedAttribute] of proofRequest.requestedAttributes.entries()) {
+  //     let credentialMatch: Credential[] = []
+  //     const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
+
+  //     // If we have exactly one credential, or no proposal to pick preferences
+  //     // on the credentials to use, we will use the first one
+  //     if (credentials.length === 1 || !presentationProposal) {
+  //       credentialMatch = credentials
+  //     }
+  //     // If we have a proposal we will use that to determine the credentials to use
+  //     else {
+  //       const names = requestedAttribute.names ?? [requestedAttribute.name]
+
+  //       // Find credentials that matches all parameters from the proposal
+  //       credentialMatch = credentials.filter((credential) => {
+  //         const { attributes, credentialDefinitionId } = credential.credentialInfo
+
+  //         // Check if credentials matches all parameters from proposal
+  //         return names.every((name) =>
+  //           presentationProposal.attributes.find(
+  //             (a) =>
+  //               a.name === name &&
+  //               a.credentialDefinitionId === credentialDefinitionId &&
+  //               (!a.value || a.value === attributes[name])
+  //           )
+  //         )
+  //       })
+  //     }
+
+  //     retrievedCredentials.requestedAttributes[referent] = credentialMatch.map((credential: Credential) => {
+  //       return new RequestedAttribute({
+  //         credentialId: credential.credentialInfo.referent,
+  //         revealed: true,
+  //         credentialInfo: credential.credentialInfo,
+  //       })
+  //     })
+  //   }
+
+  //   for (const [referent] of proofRequest.requestedPredicates.entries()) {
+  //     const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
+
+  //     retrievedCredentials.requestedPredicates[referent] = credentials.map((credential) => {
+  //       return new RequestedPredicate({
+  //         credentialId: credential.credentialInfo.referent,
+  //         credentialInfo: credential.credentialInfo,
+  //       })
+  //     })
+  //   }
+
+  //   return { indy: retrievedCredentials }
+  // }
 
   /**
    * Takes a RetrievedCredentials object and auto selects credentials in a RequestedCredentials object
@@ -825,44 +918,71 @@ export class V1ProofService extends ProofService {
     return requestedCredentials
   }
 
-  /**
-   * Verify an indy proof object. Will also verify raw values against encodings.
-   *
-   * @param proofRequest The proof request to use for proof verification
-   * @param proofJson The proof object to verify
-   * @throws {Error} If the raw values do not match the encoded values
-   * @returns Boolean whether the proof is valid
-   *
-   */
-  public async verifyProof(proofJson: IndyProof, proofRequest: ProofRequest): Promise<boolean> {
-    const proof = JsonTransformer.fromJSON(proofJson, PartialProof)
+  // /**
+  //  * Verify an indy proof object. Will also verify raw values against encodings.
+  //  *
+  //  * @param proofRequest The proof request to use for proof verification
+  //  * @param proofJson The proof object to verify
+  //  * @throws {Error} If the raw values do not match the encoded values
+  //  * @returns Boolean whether the proof is valid
+  //  *
+  //  */
+  // public async verifyProof(proofJson: IndyProof, proofRequest: ProofRequest): Promise<boolean> {
+  //   const proof = JsonTransformer.fromJSON(proofJson, PartialProof)
 
-    for (const [referent, attribute] of proof.requestedProof.revealedAttributes.entries()) {
-      if (!CredentialUtils.checkValidEncoding(attribute.raw, attribute.encoded)) {
-        throw new V1PresentationProblemReportError(
-          `The encoded value for '${referent}' is invalid. ` +
-            `Expected '${CredentialUtils.encode(attribute.raw)}'. ` +
-            `Actual '${attribute.encoded}'`,
-          { problemCode: V1PresentationProblemReportReason.Abandoned }
-        )
-      }
-    }
+  //   for (const [referent, attribute] of proof.requestedProof.revealedAttributes.entries()) {
+  //     if (!CredentialUtils.checkValidEncoding(attribute.raw, attribute.encoded)) {
+  //       throw new V1PresentationProblemReportError(
+  //         `The encoded value for '${referent}' is invalid. ` +
+  //           `Expected '${CredentialUtils.encode(attribute.raw)}'. ` +
+  //           `Actual '${attribute.encoded}'`,
+  //         { problemCode: V1PresentationProblemReportReason.Abandoned }
+  //       )
+  //     }
+  //   }
 
-    // TODO: pre verify proof json
-    // I'm not 100% sure how much indy does. Also if it checks whether the proof requests matches the proof
-    // @see https://github.com/hyperledger/aries-cloudagent-python/blob/master/aries_cloudagent/indy/sdk/verifier.py#L79-L164
+  //   // TODO: pre verify proof json
+  //   // I'm not 100% sure how much indy does. Also if it checks whether the proof requests matches the proof
+  //   // @see https://github.com/hyperledger/aries-cloudagent-python/blob/master/aries_cloudagent/indy/sdk/verifier.py#L79-L164
 
-    const schemas = await this.getSchemas(new Set(proof.identifiers.map((i) => i.schemaId)))
-    const credentialDefinitions = await this.getCredentialDefinitions(
-      new Set(proof.identifiers.map((i) => i.credentialDefinitionId))
+  //   const schemas = await this.getSchemas(new Set(proof.identifiers.map((i) => i.schemaId)))
+  //   const credentialDefinitions = await this.getCredentialDefinitions(
+  //     new Set(proof.identifiers.map((i) => i.credentialDefinitionId))
+  //   )
+
+  //   return await this.indyVerifierService.verifyProof({
+  //     proofRequest: proofRequest.toJSON(),
+  //     proof: proofJson,
+  //     schemas,
+  //     credentialDefinitions,
+  //   })
+  // }
+
+  public async registerHandlers(
+    dispatcher: Dispatcher,
+    agentConfig: AgentConfig,
+    proofResponseCoordinator: ProofResponseCoordinator,
+    mediationRecipientService: MediationRecipientService
+  ): Promise<void> {
+    dispatcher.registerHandler(
+      new V1ProposePresentationHandler(this, agentConfig, proofResponseCoordinator, this.didCommMessageRepository)
     )
 
-    return await this.indyVerifierService.verifyProof({
-      proofRequest: proofRequest.toJSON(),
-      proof: proofJson,
-      schemas,
-      credentialDefinitions,
-    })
+    dispatcher.registerHandler(
+      new V1RequestPresentationHandler(
+        this,
+        agentConfig,
+        proofResponseCoordinator,
+        mediationRecipientService,
+        this.didCommMessageRepository
+      )
+    )
+
+    dispatcher.registerHandler(
+      new V1PresentationHandler(this, agentConfig, proofResponseCoordinator, this.didCommMessageRepository)
+    )
+    dispatcher.registerHandler(new V1PresentationAckHandler(this))
+    dispatcher.registerHandler(new V1PresentationProblemReportHandler(this))
   }
 
   /**
@@ -928,17 +1048,17 @@ export class V1ProofService extends ProofService {
     throw new Error('Method not implemented.')
   }
 
-  private async getCredentialsForProofRequest(
-    proofRequest: ProofRequest,
-    attributeReferent: string
-  ): Promise<Credential[]> {
-    const credentialsJson = await this.indyHolderService.getCredentialsForProofRequest({
-      proofRequest: proofRequest.toJSON(),
-      attributeReferent,
-    })
+  // private async getCredentialsForProofRequest(
+  //   proofRequest: ProofRequest,
+  //   attributeReferent: string
+  // ): Promise<Credential[]> {
+  //   const credentialsJson = await this.indyHolderService.getCredentialsForProofRequest({
+  //     proofRequest: proofRequest.toJSON(),
+  //     attributeReferent,
+  //   })
 
-    return JsonTransformer.fromJSON(credentialsJson, Credential) as unknown as Credential[]
-  }
+  //   return JsonTransformer.fromJSON(credentialsJson, Credential) as unknown as Credential[]
+  // }
 
   /**
    * Build schemas object needed to create and verify proof objects.

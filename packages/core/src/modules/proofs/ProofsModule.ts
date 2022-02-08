@@ -11,7 +11,7 @@ import type {
   CreateRequestAsResponseOptions,
   PresentationOptions,
   RequestedCredentialForProofRequestOptions,
-  RequestProofOptions,
+  CreateRequestOptions,
 } from './models/ProofServiceOptions'
 import type { V1RequestPresentationMessage } from './protocol/v1/messages'
 import type { ProofRequestOptions, RequestedCredentials, RetrievedCredentials } from './protocol/v1/models'
@@ -50,85 +50,31 @@ import { V1PresentationProblemReportMessage } from './protocol/v1/messages'
 import { ProofRequest } from './protocol/v1/models'
 import { V2ProofService } from './protocol/v2/V2ProofService'
 import { ProofRepository } from './repository'
+import { ProofService } from './ProofService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ProofsModule {
-  private v1Service: V1ProofService
-  private v2Service: V2ProofService
   private connectionService: ConnectionService
   private messageSender: MessageSender
-  private mediationRecipientService: MediationRecipientService
   private agentConfig: AgentConfig
-  private proofResponseCoordinator: ProofResponseCoordinator
-  private proofRepository: ProofRepository
-  private wallet: Wallet
-  private indyHolderService: IndyHolderService
-  private indyVerifierService: IndyVerifierService
-  private indyLedgerService: IndyLedgerService
-  private eventEmitter: EventEmitter
-  private credentialRepository: CredentialRepository
-  private indyProofFormatService: IndyProofFormatService
-  // private serviceMap: { [key in ProofProtocolVersion]: ProofService }
-  private serviceMap: { '1.0': V1ProofService; '2.0': V2ProofService }
+  private serviceMap: { [key in ProofProtocolVersion]: ProofService }
+  // private serviceMap: { '1.0': V1ProofService; '2.0': V2ProofService }
 
   public constructor(
     dispatcher: Dispatcher,
     connectionService: ConnectionService,
-    v1Service: V1ProofService,
-    v2Service: V2ProofService,
     messageSender: MessageSender,
     agentConfig: AgentConfig,
-    proofResponseCoordinator: ProofResponseCoordinator,
-    proofRepository: ProofRepository,
-    mediationRecipientService: MediationRecipientService,
-    indyHolderService: IndyHolderService,
-    indyVerifierService: IndyVerifierService,
-    indyLedgerService: IndyLedgerService,
-    wallet: Wallet,
-    eventEmitter: EventEmitter,
-    credentialRepository: CredentialRepository,
-    indyProofFormatService: IndyProofFormatService
+    v1ProofService: V1ProofService,
+    v2ProofService: V2ProofService
   ) {
     this.connectionService = connectionService
-    // this.proofService = proofService
     this.messageSender = messageSender
     this.agentConfig = agentConfig
-    this.indyHolderService = indyHolderService
-    this.indyVerifierService = indyVerifierService
-    this.proofResponseCoordinator = proofResponseCoordinator
-    this.mediationRecipientService = mediationRecipientService
-    this.indyLedgerService = indyLedgerService
-    this.proofRepository = proofRepository
-    this.wallet = wallet
-    this.eventEmitter = eventEmitter
-    this.credentialRepository = credentialRepository
-    this.indyProofFormatService = indyProofFormatService
-    this.v1Service = new V1ProofService(
-      this.proofRepository,
-      this.indyLedgerService,
-      this.wallet,
-      this.agentConfig,
-      this.indyHolderService,
-      this.indyVerifierService,
-      this.connectionService,
-      this.eventEmitter,
-      this.credentialRepository,
-      this.indyProofFormatService
-    )
-    this.v2Service = new V2ProofService(
-      this.proofRepository,
-      this.connectionService,
-      this.eventEmitter,
-      this.agentConfig,
-      this.dispatcher,
-      this.proofResponseCoord,
-      this.wallet,
-      this.indyHolderService
-    )
 
     this.serviceMap = {
-      [ProofProtocolVersion.V1_0]: this.v1Service,
-      [ProofProtocolVersion.V2_0]: this.v2Service,
+      [ProofProtocolVersion.V1_0]: v1ProofService,
+      [ProofProtocolVersion.V2_0]: v2ProofService,
     }
 
     this.registerHandlers(dispatcher)
@@ -163,8 +109,11 @@ export class ProofsModule {
       protocolVersion: version,
       proofFormats: options.proofFormats,
       autoAcceptProof: options.autoAcceptProof,
+      goalCode: options.goalCode,
+      willConfirm: options.willConfirm,
       comment: options.comment,
     }
+
     const { message, proofRecord } = await service.createProposal(proposalOptions)
 
     const outbound = createOutboundMessage(connection, message)
@@ -197,25 +146,15 @@ export class ProofsModule {
 
     const connection = await this.connectionService.getById(proofRecord.connectionId)
 
-    const presentationProposal = proofRecord.proposalMessage?.presentationProposal
-    if (!presentationProposal) {
-      throw new AriesFrameworkError(`Proof record with id ${proofRecordId} is missing required presentation proposal`)
-    }
-
-    const proofRequest = await service.createProofRequestFromProposal(presentationProposal, {
-      name: proofFormats.indy?.request?.name ?? 'proof-request',
-      version: proofFormats.indy?.request?.version ?? '1.0',
-      nonce: proofFormats.indy?.request?.nonce,
-    })
-
-    const createRequestAsResponseOptions: CreateRequestAsResponseOptions = {
-      proofRecord,
-      proofFormats: proofRequest,
-      comment: options.comment,
+    const { message } = await service.createRequestAsResponse({
+      proofRecord: proofRecord,
+      protocolVersion: version,
+      proofFormats: options.proofFormats,
       autoAcceptProof: options.autoAcceptProof,
-    }
-
-    const { message } = await service.createRequestAsResponse(createRequestAsResponseOptions)
+      goalCode: options.goalCode,
+      willConfirm: options.willConfirm,
+      comment: options.comment,
+    })
 
     const outboundMessage = createOutboundMessage(connection, message)
     await this.messageSender.sendMessage(outboundMessage)
@@ -242,19 +181,9 @@ export class ProofsModule {
     const { connectionId, proofRequestOptions } = options
     const connection = await this.connectionService.getById(connectionId)
 
-    const nonce = proofRequestOptions.nonce ?? (await service.generateProofRequestNonce())
-
-    const proofRequest = new ProofRequest({
-      name: proofRequestOptions.name ?? 'proof-request',
-      version: proofRequestOptions.name ?? '1.0',
-      nonce,
-      requestedAttributes: proofRequestOptions.requestedAttributes,
-      requestedPredicates: proofRequestOptions.requestedPredicates,
-    })
-
-    const createProofRequest: RequestProofOptions = {
+    const createProofRequest: CreateRequestOptions = {
       connectionRecord: connection,
-      proofFormats: proofRequest,
+      proofFormats: options.proofRequestOptions,
       protocolVersion: version,
       autoAcceptProof: options.autoAcceptProof,
       comment: options.comment,
@@ -509,16 +438,13 @@ export class ProofsModule {
       throw new AriesFrameworkError(`No connectionId found for proof record '${record.id}'.`)
     }
     const connection = await this.connectionService.getById(record.connectionId)
-    const presentationProblemReportMessage = new V1PresentationProblemReportMessage({
-      description: {
-        en: message,
-        code: V1PresentationProblemReportReason.Abandoned,
-      },
+
+    const { message: problemReport } = await service.createProblemReport({
+      proofRecord: record,
+      description: message,
     })
-    presentationProblemReportMessage.setThread({
-      threadId: record.threadId,
-    })
-    const outboundMessage = createOutboundMessage(connection, presentationProblemReportMessage)
+
+    const outboundMessage = createOutboundMessage(connection, problemReport)
     await this.messageSender.sendMessage(outboundMessage)
 
     return record
@@ -567,24 +493,11 @@ export class ProofsModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(
-      new ProposePresentationHandler(this.proofService, this.agentConfig, this.proofResponseCoordinator)
-    )
-    dispatcher.registerHandler(
-      new RequestPresentationHandler(
-        this.proofService,
-        this.agentConfig,
-        this.proofResponseCoordinator,
-        this.mediationRecipientService
-      )
-    )
-    dispatcher.registerHandler(
-      new PresentationHandler(this.proofService, this.agentConfig, this.proofResponseCoordinator)
-    )
-    dispatcher.registerHandler(new PresentationAckHandler(this.proofService))
-    dispatcher.registerHandler(new PresentationProblemReportHandler(this.proofService))
-  }
+    for (const service of Object.values(this.serviceMap)) {
+      await service.registerHandlers(dispatcher, this.agentConfig, this.proofResponseCoordinator, this.mediation)
+    }
 }
+
 
 export type CreateProofRequestOptions = Partial<
   Pick<ProofRequestOptions, 'name' | 'nonce' | 'requestedAttributes' | 'requestedPredicates'>

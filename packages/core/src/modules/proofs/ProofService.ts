@@ -25,6 +25,9 @@ import type { PresentationRecordType } from './repository/PresentationExchangeRe
 import { ConsoleLogger, LogLevel } from '../../logger'
 
 import { ProofEventTypes } from './ProofEvents'
+import { Dispatcher } from '../../agent/Dispatcher'
+import { ProofResponseCoordinator } from './ProofResponseCoordinator'
+import { MediationRecipientService } from '../routing'
 
 const logger = new ConsoleLogger(LogLevel.debug)
 
@@ -42,17 +45,22 @@ export abstract class ProofService {
   protected logger: Logger
 
   public constructor(
+    dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     proofRepository: ProofRepository,
     connectionService: ConnectionService,
     didCommMessageRepository: DidCommMessageRepository,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    proofResponseCoordinator: ProofResponseCoordinator,
+    mediationRecipientService: MediationRecipientService
   ) {
     this.proofRepository = proofRepository
     this.connectionService = connectionService
     this.didCommMessageRepository = didCommMessageRepository
     this.eventEmitter = eventEmitter
     this.logger = agentConfig.logger
+
+    this.registerHandlers(dispatcher, agentConfig, proofResponseCoordinator, mediationRecipientService)
   }
 
   /**
@@ -122,6 +130,8 @@ export abstract class ProofService {
 
   abstract createRequest(options: CreateRequestOptions): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
 
+  abstract declineRequest(proofRecord: ProofRecord): Promise<ProofRecord>
+
   abstract createRequestAsResponse(
     options: CreateRequestAsResponseOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
@@ -147,6 +157,17 @@ export abstract class ProofService {
     logger.debug(presentationRecordType.toString())
     throw Error('Not Implemented')
   }
+
+  public abstract shouldAutoRespondToRequest(proofRecord: ProofRecord): Promise<boolean>
+
+  public abstract shouldAutoRespondToPresentation(proofRecord: ProofRecord): Promise<boolean>
+
+  public abstract registerHandlers(
+    dispatcher: Dispatcher,
+    agentConfig: AgentConfig,
+    proofResponseCoordinator: ProofResponseCoordinator,
+    mediationRecipientService: MediationRecipientService
+  ): Promise<void>
 
   /**
    * Retrieve all proof records
