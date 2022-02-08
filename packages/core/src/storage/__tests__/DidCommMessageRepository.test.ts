@@ -51,6 +51,37 @@ describe('Repository', () => {
       expect(invitation).toBeInstanceOf(ConnectionInvitationMessage)
     })
   })
+  describe('findAgentMessage()', () => {
+    it('should get the record using the storage service', async () => {
+      const record = getRecord({ id: 'test-id' })
+      mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record]))
+
+      const invitation = await repository.findAgentMessage({
+        messageClass: ConnectionInvitationMessage,
+        associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
+      })
+
+      expect(storageMock.findByQuery).toBeCalledWith(DidCommMessageRecord, {
+        associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
+        messageType: 'https://didcomm.org/connections/1.0/invitation',
+      })
+      expect(invitation).toBeInstanceOf(ConnectionInvitationMessage)
+    })
+    it("should return null because the record doesn't exist", async () => {
+      mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([]))
+
+      const invitation = await repository.findAgentMessage({
+        messageClass: ConnectionInvitationMessage,
+        associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
+      })
+
+      expect(storageMock.findByQuery).toBeCalledWith(DidCommMessageRecord, {
+        associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
+        messageType: 'https://didcomm.org/connections/1.0/invitation',
+      })
+      expect(invitation).toBeNull()
+    })
+  })
 
   describe('saveAgentMessage()', () => {
     it('should transform and save the agent message', async () => {
@@ -67,6 +98,36 @@ describe('Repository', () => {
           associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
         })
       )
+    })
+  })
+
+  describe('saveOrUpdateAgentMessage()', () => {
+    it('should transform and save the agent message', async () => {
+      mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([]))
+      await repository.saveOrUpdateAgentMessage({
+        role: DidCommMessageRole.Receiver,
+        agentMessage: JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage),
+        associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
+      })
+
+      expect(storageMock.save).toBeCalledWith(
+        expect.objectContaining({
+          role: DidCommMessageRole.Receiver,
+          message: invitationJson,
+          associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
+        })
+      )
+    })
+    it('should transform and update the agent message', async () => {
+      const record = getRecord({ id: 'test-id' })
+      mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record]))
+      await repository.saveOrUpdateAgentMessage({
+        role: DidCommMessageRole.Receiver,
+        agentMessage: JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage),
+        associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
+      })
+
+      expect(storageMock.update).toBeCalledWith(record)
     })
   })
 })
