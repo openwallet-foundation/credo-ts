@@ -7,6 +7,8 @@ export interface ProposeProofOptions {
   protocolVersion: ProofProtocolVersion
   proofFormats: ProposeProofFormats
   comment?: string
+  willConfirm?: boolean
+  goalCode?: string
   autoAcceptProof?: AutoAcceptProof
 }
 
@@ -20,7 +22,9 @@ export interface NegotiateRequestOptions {
 export interface AcceptProposalOptions {
   protocolVersion: ProofProtocolVersion
   proofRecordId: string
-  proofFormats: AcceptProposalFormats
+  proofFormats: ProposeProofFormats
+  goalCode?: string
+  willConfirm?: boolean
   comment?: string
   autoAcceptProof?: AutoAcceptProof
 }
@@ -28,7 +32,7 @@ export interface AcceptProposalOptions {
 export interface RequestProofsOptions {
   protocolVersion: ProofProtocolVersion
   connectionId: string
-  proofRequestOptions: CreateProofRequestOptions
+  proofRequestOptions: ProposeProofFormats
   comment?: string
   autoAcceptProof?: AutoAcceptProof
 }

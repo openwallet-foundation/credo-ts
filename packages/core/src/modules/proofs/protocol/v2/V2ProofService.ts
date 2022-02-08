@@ -1,4 +1,6 @@
-import type { AgentConfig, AgentMessage } from '@aries-framework/core'
+import type { AgentMessage } from '../../../../agent/AgentMessage'
+import type { AgentConfig } from '../../../../agent/AgentConfig'
+import type { Dispatcher } from '../../../../agent/Dispatcher'
 import { validateOrReject } from 'class-validator'
 import { Lifecycle, scoped } from 'tsyringe'
 import { EventEmitter } from '../../../../agent/EventEmitter'
@@ -33,6 +35,8 @@ import { V2PresentationMessage } from './messages/V2PresentationMessage'
 import { V2PresentationProblemReportMessage } from './messages/V2PresentationProblemReportMessage'
 import { V2ProposalPresentationMessage } from './messages/V2ProposalPresentationMessage'
 import { V2RequestPresentationMessage } from './messages/V2RequestPresentationMessage'
+import { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
+import { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class V2ProofService extends ProofService {
@@ -40,16 +44,29 @@ export class V2ProofService extends ProofService {
   private formatServiceMap: { [key: string]: ProofFormatService }
 
   public constructor(
+    dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
     proofRepository: ProofRepository,
     didCommMessageRepository: DidCommMessageRepository,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    indyProofFormatService: IndyProofFormatService,
+    proofResponseCoordinator: ProofResponseCoordinator,
+    mediationRecipientService: MediationRecipientService
   ) {
-    super(agentConfig, proofRepository, connectionService, didCommMessageRepository, eventEmitter)
+    super(
+      dispatcher,
+      agentConfig,
+      proofRepository,
+      connectionService,
+      didCommMessageRepository,
+      eventEmitter,
+      proofResponseCoordinator,
+      mediationRecipientService
+    )
     this.protocolVersion = ProofProtocolVersion.V2_0
     this.formatServiceMap = {
-      [PresentationRecordType.Indy]: new IndyProofFormatService(),
+      [PresentationRecordType.Indy]: indyProofFormatService,
     }
   }
 
@@ -235,6 +252,17 @@ export class V2ProofService extends ProofService {
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     options.proofRecord.assertState(ProofState.ProposalReceived)
 
+    const proposal = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: options.proofRecord.id,
+      messageClass: V2ProposalPresentationMessage,
+    })
+
+    if (!proposal) {
+      throw new AriesFrameworkError(
+        `Proof record with id ${options.proofRecord.id} is missing required presentation proposal`
+      )
+    }
+
     // create attachment formats
     const formats = []
     for (const key of Object.keys(options.proofFormats)) {
@@ -346,6 +374,19 @@ export class V2ProofService extends ProofService {
 
     return proofRecord
   }
+
+  /**
+   * Decline a proof request
+   * @param proofRecord The proof request to be declined
+   */
+  public async declineRequest(proofRecord: ProofRecord): Promise<ProofRecord> {
+    proofRecord.assertState(ProofState.RequestReceived)
+
+    await this.updateState(proofRecord, ProofState.Declined)
+
+    return proofRecord
+  }
+
   public async createPresentation(
     options: CreatePresentationOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
@@ -461,15 +502,6 @@ export class V2ProofService extends ProofService {
     return proofRecord
   }
 
-  private getFormatServiceForFormat(format: ProofFormatSpec) {
-    for (const service of Object.values(this.formatServiceMap)) {
-      if (service.supportsFormat(format.format)) {
-        return service
-      }
-    }
-    return null
-  }
-
   public async createAck(options: CreateAckOptions): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     // assert we've received the final presentation
     const presentation = await this.didCommMessageRepository.getAgentMessage({
@@ -530,7 +562,7 @@ export class V2ProofService extends ProofService {
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     const msg = new V2PresentationProblemReportMessage({
       description: {
-        code: options.problemCode,
+        code: V2PresentationProblemReportReason.Abandoned,
         en: options.description,
       },
     })
@@ -561,5 +593,61 @@ export class V2ProofService extends ProofService {
     proofRecord.errorMessage = `${presentationProblemReportMessage.description.code}: ${presentationProblemReportMessage.description.en}`
     await this.proofRepository.update(proofRecord)
     return proofRecord
+  }
+
+  public async shouldAutoRespondToRequest(proofRecord: ProofRecord): Promise<boolean> {
+    const proposal = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: proofRecord.id,
+      messageClass: V2ProposalPresentationMessage,
+    })
+
+    if (!proposal) {
+      return false
+    }
+
+    const request = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: proofRecord.id,
+      messageClass: V2RequestPresentationMessage,
+    })
+
+    if (!request) {
+      throw new AriesFrameworkError(`Expected to find a request message for ProofRecord with id ${proofRecord.id}`)
+    }
+
+    const proposalAttachments = proposal.getAttachmentFormats()
+    const requestAttachments = request.getAttachmentFormats()
+
+    const equalityResults = []
+    for (const attachmentFormat of proposalAttachments) {
+      const service = this.getFormatServiceForFormat(attachmentFormat.format)
+      equalityResults.push(service?.proposalAndRequestAreEqual(proposalAttachments, requestAttachments))
+    }
+
+    return equalityResults.every((x) => x === true)
+  }
+
+  public async shouldAutoRespondToPresentation(proofRecord: ProofRecord): Promise<boolean> {
+    const request = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: proofRecord.id,
+      messageClass: V2RequestPresentationMessage,
+    })
+
+    return request.willConfirm
+  }
+
+  public async registerHandlers(
+    dispatcher: Dispatcher,
+    agentConfig: AgentConfig,
+    proofResponseCoordinator: ProofResponseCoordinator,
+    mediationRecipientService: MediationRecipientService
+  ): Promise<void> {}
+
+  private getFormatServiceForFormat(format: ProofFormatSpec) {
+    for (const service of Object.values(this.formatServiceMap)) {
+      if (service.supportsFormat(format.format)) {
+        return service
+      }
+    }
+    return null
   }
 }
