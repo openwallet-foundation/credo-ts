@@ -75,14 +75,14 @@ export class DidExchangeProtocol {
     const { goal, goalCode, routing, autoAcceptConnection } = params
     const label = params.label ?? this.config.label
     const { verkey } = routing
-    const peerDid = await this.createPeerDidDoc(routing)
+    const { peerDid, didDocument } = await this.createPeerDidDoc(routing)
     const parentThreadId = connectionRecord.invitation?.id
 
     const message = new DidExchangeRequestMessage({ label, parentThreadId, did: peerDid.did, goal, goalCode })
 
     // Create sign attachment containing didDoc
     if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
-      const didDocAttach = await this.createSignedAttachment(peerDid.didDocument, verkey)
+      const didDocAttach = await this.createSignedAttachment(didDocument, verkey)
       message.didDoc = didDocAttach
     }
 
@@ -165,7 +165,7 @@ export class DidExchangeProtocol {
       )
     }
 
-    const didDocument = await this.resolveDidDocument(message)
+    const didDocument = await this.extractDidDocument(message)
     const didRecord = new DidRecord({
       id: message.did,
       role: DidDocumentRole.Received,
@@ -222,11 +222,11 @@ export class DidExchangeProtocol {
       }
     }
 
-    const peerDid = await this.createPeerDidDoc(peerDidRouting)
+    const { peerDid, didDocument } = await this.createPeerDidDoc(peerDidRouting)
     const message = new DidExchangeResponseMessage({ did: peerDid.did, threadId })
 
     if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
-      const didDocAttach = await this.createSignedAttachment(peerDid.didDocument, peerDidRouting.verkey)
+      const didDocAttach = await this.createSignedAttachment(didDocument, peerDidRouting.verkey)
       message.didDoc = didDocAttach
     }
 
@@ -273,7 +273,7 @@ export class DidExchangeProtocol {
       )
     }
 
-    const didDocument = await this.resolveDidDocument(message, connectionRecord.invitation?.recipientKeys)
+    const didDocument = await this.extractDidDocument(message, connectionRecord.invitation?.recipientKeys)
     const didRecord = new DidRecord({
       id: message.did,
       role: DidDocumentRole.Received,
@@ -421,10 +421,11 @@ export class DidExchangeProtocol {
 
     await this.didRepository.save(didRecord)
     this.logger.debug('Did record created.', didRecord)
-    return peerDid
+    return { peerDid, didDocument }
   }
 
   private async createSignedAttachment(didDoc: DidDocument, verkey: string) {
+    this.logger.debug('===== didDoc =====', didDoc)
     const didDocAttach = new Attachment({
       mimeType: 'application/json',
       data: new AttachmentData({
@@ -449,13 +450,13 @@ export class DidExchangeProtocol {
   }
 
   /**
-   * Resolves DID document from reqeust or response message attachment and verifies its signature.
+   * Extracts DID document as is from reqeust or response message attachment and verifies its signature.
    *
    * @param message DID request or DID response message
    * @param invitationKeys array containing keys from connection invitation that could be used for signing of DID document
-   * @returns resovled and verified DID document from message attachment
+   * @returns verified DID document content from message attachment
    */
-  private async resolveDidDocument(
+  private async extractDidDocument(
     message: DidExchangeRequestMessage | DidExchangeResponseMessage,
     invitationKeys: string[] = []
   ): Promise<DidDocument> {
