@@ -244,24 +244,6 @@ export class CredentialService {
       }),
     })
 
-    // Check if credential preview attributes match the schema attributes
-    const schema = await this.ledgerService.getSchema(credOffer.schema_id)
-    const credAttributes = credentialTemplate.preview.attributes.map((a) => a.name)
-    const schemaAttributes = schema.attrNames
-
-    const difference: string[] = []
-    credAttributes.forEach((credAtrr) => {
-      if (schemaAttributes.indexOf(credAtrr) === -1) {
-        difference.push(credAtrr)
-      }
-    })
-
-    if (difference.length > 0) {
-      throw new AriesFrameworkError(
-        `The credential preview attributes do not match the schema attributes (difference is: ${difference}, needs: ${schemaAttributes})`
-      )
-    }
-
     const credentialOfferMessage = new OfferCredentialMessage({
       comment,
       offerAttachments: [offerAttachment],
@@ -282,6 +264,9 @@ export class CredentialService {
     credentialRecord.linkedAttachments = attachments?.filter((attachment) => isLinkedAttachment(attachment))
     credentialRecord.autoAcceptCredential =
       credentialTemplate.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
+
+    // Check if credential preview attributes match the schema attributes
+    CredentialUtils.checkAttributesMatch(this.ledgerService, preview, credOffer.schema_id)
 
     await this.updateState(credentialRecord, CredentialState.OfferSent)
 
@@ -315,28 +300,13 @@ export class CredentialService {
       }),
     })
 
-    // Check if credential preview attributes match the schema attributes
-    const schema = await this.ledgerService.getSchema(credOffer.schema_id)
-    const credAttributes = credentialTemplate.preview.attributes.map((a) => a.name)
-    const schemaAttributes = schema.attrNames
-
-    const difference: string[] = []
-    credAttributes.forEach((credAtrr) => {
-      if (schemaAttributes.indexOf(credAtrr) === -1) {
-        difference.push(credAtrr)
-      }
-    })
-
-    if (difference.length > 0) {
-      throw new AriesFrameworkError(
-        `The credential preview attributes do not match the schema attributes (difference is: ${difference}, needs: ${schemaAttributes})`
-      )
-    }
-
     // Create and link credential to attacment
     const credentialPreview = linkedAttachments
       ? CredentialUtils.createAndLinkAttachmentsToPreview(linkedAttachments, preview)
       : preview
+
+    // Check if credential preview attributes match the schema attributes
+    CredentialUtils.checkAttributesMatch(this.ledgerService, credentialPreview, credOffer.schema_id)
 
     // Construct offer message
     const credentialOfferMessage = new OfferCredentialMessage({
