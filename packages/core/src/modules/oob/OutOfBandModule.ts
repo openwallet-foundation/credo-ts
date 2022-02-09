@@ -2,7 +2,7 @@ import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
 import type { Logger } from '../../logger'
 import type { PlaintextMessage } from '../../types'
-import type { ConnectionRecord } from '../connections'
+import type { ConnectionRecord, HandshakeProtocol } from '../connections'
 
 import { parseUrl } from 'query-string'
 import { EmptyError } from 'rxjs'
@@ -27,7 +27,7 @@ export interface CreateOutOfBandMessageConfig {
   goalCode?: string
   goal?: string
   handshake: boolean
-  handshakeProtocols?: string[]
+  handshakeProtocols?: HandshakeProtocol[]
   messages?: AgentMessage[]
   multiUseInvitation?: boolean
 }
@@ -281,7 +281,7 @@ export class OutOfBandModule {
     }
   }
 
-  private assertHandshakeProtocols(handshakeProtocols: string[]) {
+  private assertHandshakeProtocols(handshakeProtocols: HandshakeProtocol[]) {
     if (!this.areHandshakeProtocolsSupported(handshakeProtocols)) {
       const supportedProtocols = this.getSupportedHandshakeProtocols()
       throw new AriesFrameworkError(
@@ -290,12 +290,12 @@ export class OutOfBandModule {
     }
   }
 
-  private areHandshakeProtocolsSupported(handshakeProtocols: string[]) {
+  private areHandshakeProtocolsSupported(handshakeProtocols: HandshakeProtocol[]) {
     const supportedProtocols = this.getSupportedHandshakeProtocols()
     return handshakeProtocols.every((p) => supportedProtocols.includes(p))
   }
 
-  private getSupportedHandshakeProtocols() {
+  private getSupportedHandshakeProtocols(): HandshakeProtocol[] {
     const handshakeMessageFamilies = ['https://didcomm.org/didexchange', 'https://didcomm.org/connections']
     const handshakeProtocols = this.dispatcher.filterSupportedProtocolsByMessageFamilies(handshakeMessageFamilies)
 
@@ -308,10 +308,10 @@ export class OutOfBandModule {
       .map((messageFamily) => handshakeProtocols.find((p) => p.startsWith(messageFamily)))
       .filter((item): item is string => !!item)
 
-    return orederedProtocols
+    return orederedProtocols as HandshakeProtocol[]
   }
 
-  private getFirstSupportedProtocol(handshakeProtocols: string[]) {
+  private getFirstSupportedProtocol(handshakeProtocols: HandshakeProtocol[]) {
     const supportedProtocols = this.getSupportedHandshakeProtocols()
     const handshakeProtocol = handshakeProtocols.find((p) => supportedProtocols.includes(p))
     if (!handshakeProtocol) {
@@ -349,7 +349,7 @@ export class OutOfBandModule {
 
   private async createConnection(
     outOfBandMessage: OutOfBandMessage,
-    config: { handshakeProtocol: string; autoAcceptConnection: boolean }
+    config: { handshakeProtocol: HandshakeProtocol; autoAcceptConnection: boolean }
   ) {
     this.logger.debug('Creating a new connection.', { outOfBandMessage, config })
     const { services, label } = outOfBandMessage

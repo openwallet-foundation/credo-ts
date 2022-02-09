@@ -58,7 +58,7 @@ export class ConnectionsModule {
     multiUseInvitation?: boolean
     myLabel?: string
     myImageUrl?: string
-    protocol?: string
+    protocol?: HandshakeProtocol
   }): Promise<{
     invitation: ConnectionInvitationMessage
     connectionRecord: ConnectionRecord
@@ -96,7 +96,7 @@ export class ConnectionsModule {
       autoAcceptConnection?: boolean
       alias?: string
       mediatorId?: string
-      protocol?: string
+      protocol?: HandshakeProtocol
     }
   ): Promise<ConnectionRecord> {
     const routing = await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId })
@@ -130,7 +130,7 @@ export class ConnectionsModule {
       autoAcceptConnection?: boolean
       alias?: string
       mediatorId?: string
-      protocol?: string
+      protocol?: HandshakeProtocol
     }
   ): Promise<ConnectionRecord> {
     const invitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)

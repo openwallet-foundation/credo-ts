@@ -1,5 +1,5 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { ConnectionRole, DidExchangeRole } from '../models'
+import type { ConnectionRole, DidExchangeRole, HandshakeProtocol } from '../models'
 
 import { Type } from 'class-transformer'
 
@@ -29,7 +29,7 @@ export interface ConnectionRecordProps {
   multiUseInvitation: boolean
   mediatorId?: string
   errorMessage?: string
-  protocol?: string
+  protocol?: HandshakeProtocol
 }
 
 export type CustomConnectionTags = TagsBase
@@ -72,7 +72,7 @@ export class ConnectionRecord
   public threadId?: string
   public mediatorId?: string
   public errorMessage?: string
-  public protocol?: string
+  public protocol?: HandshakeProtocol
 
   public static readonly type = 'ConnectionRecord'
   public readonly type = ConnectionRecord.type

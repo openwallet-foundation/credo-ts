@@ -75,7 +75,7 @@ export class ConnectionService {
     multiUseInvitation?: boolean
     myLabel?: string
     myImageUrl?: string
-    protocol?: string
+    protocol?: HandshakeProtocol
   }): Promise<ConnectionProtocolMsgReturnType<ConnectionInvitationMessage>> {
     // TODO: public did
 
@@ -139,7 +139,7 @@ export class ConnectionService {
       routing: Routing
       autoAcceptConnection?: boolean
       alias?: string
-      protocol?: string
+      protocol?: HandshakeProtocol
     }
   ): Promise<ConnectionRecord> {
     let role
@@ -680,7 +680,7 @@ export class ConnectionService {
     multiUseInvitation: boolean
     tags?: CustomConnectionTags
     imageUrl?: string
-    protocol?: string
+    protocol?: HandshakeProtocol
   }): Promise<ConnectionRecord> {
     const { endpoints, did, verkey, routingKeys, mediatorId } = options.routing
 

@@ -437,7 +437,7 @@ describe('out of band', () => {
     test('throw an error when handshake protocols are not supported', async () => {
       const outOfBandMessage = new OutOfBandMessage({ label: 'test-connection', services: [] })
       const unsupportedProtocol = 'https://didcomm.org/unsupported-connections-protocol/1.0'
-      outOfBandMessage.handshakeProtocols = [unsupportedProtocol]
+      outOfBandMessage.handshakeProtocols = [unsupportedProtocol as HandshakeProtocol]
 
       await expect(aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)).rejects.toEqual(
         new AriesFrameworkError(
