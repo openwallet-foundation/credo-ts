@@ -41,7 +41,7 @@ export class IndyVerifierService {
 
   private async getRevocationRegistries(proof: Indy.IndyProof) {
     const revocationRegistryDefinitions: Indy.RevocRegDefs = {}
-    const revocationRegistryStates: Indy.RevStates = {}
+    const revocationRegistryStates: Indy.RevStates = Object.create(null)
     for (const identifier of proof.identifiers) {
       const revocationRegistryId = identifier.rev_reg_id
       const timestamp = identifier.timestamp
@@ -57,7 +57,7 @@ export class IndyVerifierService {
       //Fetch Revocation Registry by Timestamp if not already fetched
       if (revocationRegistryId && timestamp && !revocationRegistryStates[revocationRegistryId]?.[timestamp]) {
         if (!revocationRegistryStates[revocationRegistryId]) {
-          revocationRegistryStates[revocationRegistryId] = {}
+          revocationRegistryStates[revocationRegistryId] = Object.create(null)
         }
         const { revocationRegistry } = await this.ledgerService.getRevocationRegistry(revocationRegistryId, timestamp)
         revocationRegistryStates[revocationRegistryId][timestamp] = revocationRegistry
