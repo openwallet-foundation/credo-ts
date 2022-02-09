@@ -11,12 +11,16 @@ import testLogger from './logger'
 const credentialPreview = CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
+  'x-ray': 'some x-ray',
+  profile_picture: 'profile picture',
 })
 
 const newCredentialPreview = CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
   lastname: 'Appleseed',
+  'x-ray': 'some x-ray',
+  profile_picture: 'profile picture',
 })
 
 describe('auto accept credentials', () => {
@@ -261,6 +265,16 @@ describe('auto accept credentials', () => {
                 name: 'age',
                 value: '99',
               },
+              {
+                name: 'x-ray',
+                'mime-type': 'text/plain',
+                value: 'some x-ray',
+              },
+              {
+                name: 'profile_picture',
+                'mime-type': 'text/plain',
+                value: 'profile picture',
+              },
             ],
           },
           'offers~attach': expect.any(Array),
@@ -366,6 +380,16 @@ describe('auto accept credentials', () => {
                 name: 'lastname',
                 value: 'Appleseed',
               },
+              {
+                name: 'x-ray',
+                'mime-type': 'text/plain',
+                value: 'some x-ray',
+              },
+              {
+                name: 'profile_picture',
+                'mime-type': 'text/plain',
+                value: 'profile picture',
+              },
             ],
           },
           'offers~attach': expect.any(Array),
@@ -422,6 +446,16 @@ describe('auto accept credentials', () => {
                 name: 'age',
                 value: '99',
               },
+              {
+                name: 'x-ray',
+                'mime-type': 'text/plain',
+                value: 'some x-ray',
+              },
+              {
+                name: 'profile_picture',
+                'mime-type': 'text/plain',
+                value: 'profile picture',
+              },
             ],
           },
           'offers~attach': expect.any(Array),
@@ -463,6 +497,16 @@ describe('auto accept credentials', () => {
               {
                 name: 'lastname',
                 value: 'Appleseed',
+              },
+              {
+                name: 'x-ray',
+                'mime-type': 'text/plain',
+                value: 'some x-ray',
+              },
+              {
+                name: 'profile_picture',
+                'mime-type': 'text/plain',
+                value: 'profile picture',
               },
             ],
           },
