@@ -1,4 +1,3 @@
-import type { CredentialOfferTemplate } from '.'
 import type { LinkedAttachment } from '../../utils/LinkedAttachment'
 import type { IndyLedgerService } from '../ledger'
 import type { CredValues } from 'indy-sdk'
