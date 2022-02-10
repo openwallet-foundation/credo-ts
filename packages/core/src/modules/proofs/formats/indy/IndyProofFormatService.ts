@@ -1,5 +1,6 @@
-import type { IndyHolderService, IndyVerifierService } from '../../../indy'
-import type { IndyLedgerService } from '../../../ledger'
+import type { GetRequestedCredentialsConfig } from '../../ProofsModule'
+import type { RequestedCredentialForProofRequestOptions } from '../../models/ProofServiceOptions'
+import type { ProofRecord } from '../../repository'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
   CreatePresentationOptions,
@@ -13,19 +14,32 @@ import type {
 } from '../models/ProofFormatServiceOptions'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
+import { Lifecycle, scoped } from 'tsyringe'
+
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
+import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
-import { CredentialRepository, CredentialUtils } from '../../../credentials'
+import { Credential, CredentialRepository, CredentialUtils } from '../../../credentials'
+import { IndyHolderService, IndyVerifierService } from '../../../indy'
+import { IndyLedgerService } from '../../../ledger'
 import { V1PresentationProblemReportError } from '../../protocol/v1/errors/V1PresentationProblemReportError'
 import { V1PresentationProblemReportReason } from '../../protocol/v1/errors/V1PresentationProblemReportReason'
-import { PartialProof, ProofRequest, RequestedCredentials } from '../../protocol/v1/models'
+import { V1ProposePresentationMessage } from '../../protocol/v1/messages/V1ProposePresentationMessage'
+import { V1RequestPresentationMessage } from '../../protocol/v1/messages/V1RequestPresentationMessage'
+import {
+  RetrievedCredentials,
+  PartialProof,
+  ProofRequest,
+  RequestedCredentials,
+  RequestedPredicate,
+  RequestedAttribute,
+} from '../../protocol/v1/models'
 import { ProofFormatService } from '../ProofFormatService'
-import { ProofFormatSpec } from '../models/ProofFormatSpec'
-import { MissingIndyProofMessageError } from '../errors/MissingIndyProofMessageError'
 import { InvalidEncodedValueError } from '../errors/InvalidEncodedValueError'
-import { Lifecycle, scoped } from 'tsyringe'
+import { MissingIndyProofMessageError } from '../errors/MissingIndyProofMessageError'
+import { ProofFormatSpec } from '../models/ProofFormatSpec'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyProofFormatService extends ProofFormatService {
@@ -36,9 +50,10 @@ export class IndyProofFormatService extends ProofFormatService {
   public constructor(
     indyHolderService: IndyHolderService,
     indyVerifierService: IndyVerifierService,
-    ledgerService: IndyLedgerService
+    ledgerService: IndyLedgerService,
+    didCommMessageRepository: DidCommMessageRepository
   ) {
-    super()
+    super(didCommMessageRepository)
     this.indyHolderService = indyHolderService
     this.indyVerifierService = indyVerifierService
     this.ledgerService = ledgerService
@@ -237,6 +252,145 @@ export class IndyProofFormatService extends ProofFormatService {
     }
 
     return credentialDefinitions
+  }
+
+  public async getRequestedCredentialsForProofRequest(options: {
+    proofRecord: ProofRecord
+    config: { indy?: GetRequestedCredentialsConfig | undefined; jsonLd?: undefined }
+  }): Promise<{ indy?: RetrievedCredentials | undefined; jsonLd?: undefined }> {
+    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: options.proofRecord.id,
+      messageClass: V1RequestPresentationMessage,
+    })
+
+    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: options.proofRecord.id,
+      messageClass: V1ProposePresentationMessage,
+    })
+
+    const indyProofRequest = requestMessage?.indyProofRequest
+    const presentationPreview = options.config.indy?.filterByPresentationPreview
+      ? proposalMessage?.presentationProposal
+      : undefined
+
+    if (!indyProofRequest) {
+      throw new AriesFrameworkError(
+        'Unable to get requested credentials for proof request. No proof request message was found or the proof request message does not contain an indy proof request.'
+      )
+    }
+    const requestedCredentialsForProofRequest: RequestedCredentialForProofRequestOptions = {
+      proofRequest: indyProofRequest,
+      presentationProposal: presentationPreview,
+    }
+
+    const retrievedCredentials = new RetrievedCredentials({})
+    // const { proofRequest, presentationProposal } = options
+
+    const proofRequest = requestMessage.getAttachmentById('hlindy/proof-req@2.0')?.getDataAsJson<ProofRequest>() ?? null
+
+    if (!proofRequest) {
+      throw new AriesFrameworkError('Could not find proof request')
+    }
+
+    for (const [referent, requestedAttribute] of proofRequest.requestedAttributes.entries()) {
+      let credentialMatch: Credential[] = []
+      const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
+
+      // If we have exactly one credential, or no proposal to pick preferences
+      // on the credentials to use, we will use the first one
+      if (credentials.length === 1 || !proposalMessage?.presentationProposal) {
+        credentialMatch = credentials
+      }
+      // If we have a proposal we will use that to determine the credentials to use
+      else {
+        const names = requestedAttribute.names ?? [requestedAttribute.name]
+
+        // Find credentials that matches all parameters from the proposal
+        credentialMatch = credentials.filter((credential) => {
+          const { attributes, credentialDefinitionId } = credential.credentialInfo
+
+          // Check if credentials matches all parameters from proposal
+          return names.every((name) =>
+            proposalMessage?.presentationProposal.attributes.find(
+              (a) =>
+                a.name === name &&
+                a.credentialDefinitionId === credentialDefinitionId &&
+                (!a.value || a.value === attributes[name])
+            )
+          )
+        })
+      }
+
+      retrievedCredentials.requestedAttributes[referent] = credentialMatch.map((credential: Credential) => {
+        return new RequestedAttribute({
+          credentialId: credential.credentialInfo.referent,
+          revealed: true,
+          credentialInfo: credential.credentialInfo,
+        })
+      })
+    }
+
+    for (const [referent] of proofRequest.requestedPredicates.entries()) {
+      const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
+
+      retrievedCredentials.requestedPredicates[referent] = credentials.map((credential) => {
+        return new RequestedPredicate({
+          credentialId: credential.credentialInfo.referent,
+          credentialInfo: credential.credentialInfo,
+        })
+      })
+    }
+
+    return {
+      indy: retrievedCredentials,
+    }
+  }
+
+  private async getCredentialsForProofRequest(
+    proofRequest: ProofRequest,
+    attributeReferent: string
+  ): Promise<Credential[]> {
+    const credentialsJson = await this.indyHolderService.getCredentialsForProofRequest({
+      proofRequest: proofRequest.toJSON(),
+      attributeReferent,
+    })
+
+    return JsonTransformer.fromJSON(credentialsJson, Credential) as unknown as Credential[]
+  }
+
+  public async autoSelectCredentialsForProofRequest(options: {
+    indy?: RetrievedCredentials | undefined
+    jsonLd?: undefined
+  }): Promise<{ indy?: RequestedCredentials | undefined; jsonLd?: undefined }> {
+    const indy = options.indy
+
+    if (!indy) {
+      throw new AriesFrameworkError('No indy options provided')
+    }
+
+    const requestedCredentials = new RequestedCredentials({})
+
+    Object.keys(indy.requestedAttributes).forEach((attributeName) => {
+      const attributeArray = indy.requestedAttributes[attributeName]
+
+      if (attributeArray.length === 0) {
+        throw new AriesFrameworkError('Unable to automatically select requested attributes.')
+      } else {
+        requestedCredentials.requestedAttributes[attributeName] = attributeArray[0]
+      }
+    })
+
+    Object.keys(indy.requestedPredicates).forEach((attributeName) => {
+      if (indy.requestedPredicates[attributeName].length === 0) {
+        throw new AriesFrameworkError('Unable to automatically select requested predicates.')
+      } else {
+        requestedCredentials.requestedPredicates[attributeName] = indy.requestedPredicates[attributeName][0]
+      }
+    })
+
+    return {
+      indy: requestedCredentials,
+    }
   }
 
   /**

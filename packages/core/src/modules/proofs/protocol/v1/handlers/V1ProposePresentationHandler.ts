@@ -1,23 +1,23 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
+import type { ProofService } from '../../../ProofService'
+import type { ProofRecord } from '../../../repository/ProofRecord'
 
-import { V1ProposePresentationMessage } from '../messages'
-import { V1ProofService } from '..'
-import { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 import { createOutboundMessage } from '../../../../../agent/helpers'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
-import { ProofRecord } from '../../../repository/ProofRecord'
+import { V1ProposePresentationMessage } from '../messages'
 
 export class V1ProposePresentationHandler implements Handler {
-  private proofService: V1ProofService
+  private proofService: ProofService
   private agentConfig: AgentConfig
   private didCommMessageRepository: DidCommMessageRepository
   private proofResponseCoordinator: ProofResponseCoordinator
   public supportedMessages = [V1ProposePresentationMessage]
 
   public constructor(
-    proofService: V1ProofService,
+    proofService: ProofService,
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,
     didCommMessageRepository: DidCommMessageRepository

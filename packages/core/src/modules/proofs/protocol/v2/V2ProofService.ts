@@ -1,19 +1,9 @@
 import type { AgentMessage } from '../../../../agent/AgentMessage'
-import type { AgentConfig } from '../../../../agent/AgentConfig'
-import type { Dispatcher } from '../../../../agent/Dispatcher'
-import { validateOrReject } from 'class-validator'
-import { Lifecycle, scoped } from 'tsyringe'
-import { EventEmitter } from '../../../../agent/EventEmitter'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
-import { AriesFrameworkError } from '../../../../error'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
-import { AckStatus } from '../../../common'
-import { ConnectionService } from '../../../connections'
-import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
-import { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
-import { ProofFormatSpec } from '../../formats/models/ProofFormatSpec'
+import type { ProofStateChangedEvent } from '../../ProofEvents'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
-import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
+import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
+import type { ProofFormatSpec } from '../../formats/models/ProofFormatSpec'
 import type {
   CreateAckOptions,
   CreatePresentationOptions,
@@ -22,21 +12,34 @@ import type {
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
 } from '../../models/ProofServiceOptions'
-import { ProofState } from '../../models/ProofState'
-import type { ProofStateChangedEvent } from '../../ProofEvents'
+
+import { validateOrReject } from 'class-validator'
+import { Lifecycle, scoped } from 'tsyringe'
+
+import { AgentConfig } from '../../../../agent/AgentConfig'
+import { Dispatcher } from '../../../../agent/Dispatcher'
+import { EventEmitter } from '../../../../agent/EventEmitter'
+import { AriesFrameworkError } from '../../../../error'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
+import { AckStatus } from '../../../common'
+import { ConnectionService } from '../../../connections'
+import { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import { ProofEventTypes } from '../../ProofEvents'
+import { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import { ProofService } from '../../ProofService'
+import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
+import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
+import { ProofState } from '../../models/ProofState'
 import { PresentationRecordType, ProofRecord, ProofRepository } from '../../repository'
 import { V1PresentationProblemReportError } from '../v1/errors/V1PresentationProblemReportError'
 import { V1PresentationProblemReportReason } from '../v1/errors/V1PresentationProblemReportReason'
+
 import { V2PresentationProblemReportError, V2PresentationProblemReportReason } from './errors'
 import { V2PresentationAckMessage } from './messages'
 import { V2PresentationMessage } from './messages/V2PresentationMessage'
 import { V2PresentationProblemReportMessage } from './messages/V2PresentationProblemReportMessage'
 import { V2ProposalPresentationMessage } from './messages/V2ProposalPresentationMessage'
 import { V2RequestPresentationMessage } from './messages/V2RequestPresentationMessage'
-import { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
-import { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class V2ProofService extends ProofService {

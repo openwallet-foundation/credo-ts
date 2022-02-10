@@ -1,11 +1,21 @@
-import type { ProofState, ProofStateChangedEvent } from '.'
+import type {
+  GetRequestedCredentialsConfig,
+  ProofState,
+  ProofStateChangedEvent,
+  RequestedCredentials,
+  RetrievedCredentials,
+} from '.'
 import type { AgentConfig } from '../../agent/AgentConfig'
 import type { AgentMessage } from '../../agent/AgentMessage'
+import type { Dispatcher } from '../../agent/Dispatcher'
 import type { EventEmitter } from '../../agent/EventEmitter'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import type { Logger } from '../../logger'
-import type { DidCommMessageRepository } from '../../storage'
+import type { DidCommMessageRole, DidCommMessageRepository } from '../../storage'
+import type { Wallet } from '../../wallet/Wallet'
 import type { ConnectionService } from '../connections/services'
+import type { MediationRecipientService } from '../routing'
+import type { ProofResponseCoordinator } from './ProofResponseCoordinator'
 import type { ProofFormatService } from './formats/ProofFormatService'
 import type { CreateProblemReportOptions } from './formats/models/ProofFormatServiceOptions'
 import type { ProofProtocolVersion } from './models/ProofProtocolVersion'
@@ -16,18 +26,16 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
-  RequestedCredentialForProofRequestOptions,
 } from './models/ProofServiceOptions'
-import type { RetrievedCredentials } from './protocol/v1/models'
 import type { ProofRecord, ProofRepository } from './repository'
 import type { PresentationRecordType } from './repository/PresentationExchangeRecord'
 
+import { inject } from 'tsyringe'
+
+import { InjectionSymbols } from '../../constants'
 import { ConsoleLogger, LogLevel } from '../../logger'
 
 import { ProofEventTypes } from './ProofEvents'
-import { Dispatcher } from '../../agent/Dispatcher'
-import { ProofResponseCoordinator } from './ProofResponseCoordinator'
-import { MediationRecipientService } from '../routing'
 
 const logger = new ConsoleLogger(LogLevel.debug)
 
@@ -42,25 +50,29 @@ export abstract class ProofService {
   protected didCommMessageRepository: DidCommMessageRepository
   protected eventEmitter: EventEmitter
   protected connectionService: ConnectionService
+  protected wallet: Wallet
   protected logger: Logger
 
   public constructor(
-    dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     proofRepository: ProofRepository,
     connectionService: ConnectionService,
     didCommMessageRepository: DidCommMessageRepository,
-    eventEmitter: EventEmitter,
-    proofResponseCoordinator: ProofResponseCoordinator,
-    mediationRecipientService: MediationRecipientService
+    wallet: Wallet,
+    eventEmitter: EventEmitter
   ) {
     this.proofRepository = proofRepository
     this.connectionService = connectionService
     this.didCommMessageRepository = didCommMessageRepository
     this.eventEmitter = eventEmitter
+    this.wallet = wallet
     this.logger = agentConfig.logger
 
-    this.registerHandlers(dispatcher, agentConfig, proofResponseCoordinator, mediationRecipientService)
+    // this.registerHandlers(dispatcher, agentConfig, mediationRecipientService)
+  }
+
+  public async generateProofRequestNonce() {
+    return this.wallet.generateNonce()
   }
 
   /**
@@ -168,6 +180,41 @@ export abstract class ProofService {
     proofResponseCoordinator: ProofResponseCoordinator,
     mediationRecipientService: MediationRecipientService
   ): Promise<void>
+
+  public abstract findRequestMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null>
+
+  public abstract findPresentationMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null>
+
+  public async saveOrUpdatePresentationMessage(options: {
+    proofRecord: ProofRecord
+    message: AgentMessage
+    role: DidCommMessageRole
+  }): Promise<void> {
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      associatedRecordId: options.proofRecord.id,
+      agentMessage: options.message,
+      role: options.role,
+    })
+  }
+
+  public abstract getRequestedCredentialsForProofRequest(options: {
+    proofRecord: ProofRecord
+    config: {
+      indy?: GetRequestedCredentialsConfig
+      jsonLd?: never
+    }
+  }): Promise<{
+    indy?: RetrievedCredentials
+    jsonLd?: never
+  }>
+
+  public abstract autoSelectCredentialsForProofRequest(options: {
+    indy?: RetrievedCredentials
+    jsonLd?: never
+  }): Promise<{
+    indy?: RequestedCredentials
+    jsonLd?: never
+  }>
 
   /**
    * Retrieve all proof records
