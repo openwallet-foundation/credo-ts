@@ -7,7 +7,7 @@ import { AriesFrameworkError, IndySdkError } from '../../error'
 import { isIndyError } from '../../utils/indyError'
 
 import { LedgerError } from './error/LedgerError'
-import { isLedgerRejectResponse } from './ledgerUtil'
+import { isLedgerRejectResponse, isLedgerReqnackResponse } from './ledgerUtil'
 
 export interface IndyPoolConfig {
   genesisPath?: string
@@ -122,7 +122,7 @@ export class IndyPool {
   public async submitReadRequest(request: Indy.LedgerRequest) {
     const response = await this.submitRequest(request)
 
-    if (isLedgerRejectResponse(response)) {
+    if (isLedgerRejectResponse(response) || isLedgerReqnackResponse(response)) {
       throw new LedgerError(`Ledger '${this.id}' rejected read transaction request: ${response.reason}`)
     }
 
