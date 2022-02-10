@@ -18,9 +18,8 @@ const credentialPreview = CredentialPreview.fromRecord({
 const newCredentialPreview = CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
-  lastname: 'Appleseed',
-  'x-ray': 'some x-ray',
-  profile_picture: 'profile picture',
+  'x-ray': 'another x-ray value',
+  profile_picture: 'another profile picture',
 })
 
 describe('auto accept credentials', () => {
@@ -377,18 +376,14 @@ describe('auto accept credentials', () => {
                 value: '99',
               },
               {
-                name: 'lastname',
-                value: 'Appleseed',
-              },
-              {
                 name: 'x-ray',
                 'mime-type': 'text/plain',
-                value: 'some x-ray',
+                value: 'another x-ray value',
               },
               {
                 name: 'profile_picture',
                 'mime-type': 'text/plain',
-                value: 'profile picture',
+                value: 'another profile picture',
               },
             ],
           },
@@ -487,26 +482,24 @@ describe('auto accept credentials', () => {
             '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
             attributes: [
               {
+                'mime-type': 'text/plain',
                 name: 'name',
                 value: 'John',
               },
               {
+                'mime-type': 'text/plain',
                 name: 'age',
                 value: '99',
               },
               {
-                name: 'lastname',
-                value: 'Appleseed',
-              },
-              {
                 name: 'x-ray',
                 'mime-type': 'text/plain',
-                value: 'some x-ray',
+                value: 'another x-ray value',
               },
               {
                 name: 'profile_picture',
                 'mime-type': 'text/plain',
-                value: 'profile picture',
+                value: 'another profile picture',
               },
             ],
           },
