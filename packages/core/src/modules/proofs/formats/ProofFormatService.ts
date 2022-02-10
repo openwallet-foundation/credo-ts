@@ -1,3 +1,5 @@
+import type { ProofRecord, GetRequestedCredentialsConfig, RetrievedCredentials, RequestedCredentials } from '..'
+import type { DidCommMessageRepository } from '../../../storage'
 import type { ProofAttachmentFormat } from './models/ProofAttachmentFormat'
 import type {
   CreatePresentationOptions,
@@ -6,7 +8,6 @@ import type {
   ProcessPresentationOptions,
   ProcessProposalOptions,
   ProcessRequestOptions,
-  VerifyProofOptions,
 } from './models/ProofFormatServiceOptions'
 
 /**
@@ -18,6 +19,12 @@ import type {
  * @class ProofFormatService
  */
 export abstract class ProofFormatService {
+  protected didCommMessageRepository: DidCommMessageRepository
+
+  public constructor(didCommMessageRepository: DidCommMessageRepository) {
+    this.didCommMessageRepository = didCommMessageRepository
+  }
+
   abstract createProposal(options: CreateProposalOptions): ProofAttachmentFormat
 
   abstract processProposal(options: ProcessProposalOptions): void
@@ -29,6 +36,25 @@ export abstract class ProofFormatService {
   abstract createPresentation(options: CreatePresentationOptions): Promise<ProofAttachmentFormat>
 
   abstract processPresentation(options: ProcessPresentationOptions): Promise<boolean>
+
+  public abstract getRequestedCredentialsForProofRequest(options: {
+    proofRecord: ProofRecord
+    config: {
+      indy?: GetRequestedCredentialsConfig
+      jsonLd?: never
+    }
+  }): Promise<{
+    indy?: RetrievedCredentials
+    jsonLd?: never
+  }>
+
+  public abstract autoSelectCredentialsForProofRequest(options: {
+    indy?: RetrievedCredentials
+    jsonLd?: never
+  }): Promise<{
+    indy?: RequestedCredentials
+    jsonLd?: never
+  }>
 
   abstract proposalAndRequestAreEqual(
     proposalAttachments: ProofAttachmentFormat[],

@@ -3,7 +3,6 @@ import type { ProofRecord } from './repository'
 import { scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
-import { DidCommMessageRepository } from '../../storage'
 
 import { ProofService } from './ProofService'
 import { AutoAcceptProof } from './models/ProofAutoAcceptType'

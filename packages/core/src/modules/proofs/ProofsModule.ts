@@ -1,3 +1,4 @@
+import type { ProofService } from './ProofService'
 import type {
   AcceptPresentationOptions,
   AcceptProposalOptions,
@@ -7,13 +8,10 @@ import type {
 } from './models/ModuleOptions'
 import type { AutoAcceptProof } from './models/ProofAutoAcceptType'
 import type {
+  CreatePresentationOptions,
   CreateProposalOptions,
-  CreateRequestAsResponseOptions,
-  PresentationOptions,
-  RequestedCredentialForProofRequestOptions,
   CreateRequestOptions,
 } from './models/ProofServiceOptions'
-import type { V1RequestPresentationMessage } from './protocol/v1/messages'
 import type { ProofRequestOptions, RequestedCredentials, RetrievedCredentials } from './protocol/v1/models'
 import type { ProofRecord } from './repository/ProofRecord'
 
@@ -21,63 +19,48 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
-import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
-import { Wallet } from '../../wallet'
+import { DidCommMessageRole } from '../../storage'
 import { ConnectionService } from '../connections/services/ConnectionService'
-import { CredentialRepository } from '../credentials/repository'
-import { IndyVerifierService } from '../indy'
-import { IndyHolderService } from '../indy/services/IndyHolderService'
-import { IndyLedgerService } from '../ledger'
 import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
-import { V1PresentationProblemReportReason } from './protocol/v1/errors'
-import { IndyProofFormatService } from './formats/indy/IndyProofFormatService'
 import { ProofProtocolVersion } from './models/ProofProtocolVersion'
 import { V1ProofService } from './protocol/v1/V1ProofService'
-import {
-  ProposePresentationHandler,
-  RequestPresentationHandler,
-  PresentationAckHandler,
-  PresentationHandler,
-  PresentationProblemReportHandler,
-} from './protocol/v1/handlers'
-import { V1PresentationProblemReportMessage } from './protocol/v1/messages'
 import { ProofRequest } from './protocol/v1/models'
 import { V2ProofService } from './protocol/v2/V2ProofService'
-import { ProofRepository } from './repository'
-import { ProofService } from './ProofService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ProofsModule {
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private agentConfig: AgentConfig
+  private mediationRecipientService: MediationRecipientService
   private serviceMap: { [key in ProofProtocolVersion]: ProofService }
-  // private serviceMap: { '1.0': V1ProofService; '2.0': V2ProofService }
 
   public constructor(
     dispatcher: Dispatcher,
     connectionService: ConnectionService,
     messageSender: MessageSender,
     agentConfig: AgentConfig,
+    mediationRecipientService: MediationRecipientService,
     v1ProofService: V1ProofService,
     v2ProofService: V2ProofService
   ) {
     this.connectionService = connectionService
     this.messageSender = messageSender
     this.agentConfig = agentConfig
+    this.mediationRecipientService = mediationRecipientService
 
     this.serviceMap = {
       [ProofProtocolVersion.V1_0]: v1ProofService,
       [ProofProtocolVersion.V2_0]: v2ProofService,
     }
 
-    this.registerHandlers(dispatcher)
+    this.registerHandlers(dispatcher, mediationRecipientService)
   }
 
   public getService(protocolVersion: ProofProtocolVersion) {
@@ -178,8 +161,7 @@ export class ProofsModule {
     const version: ProofProtocolVersion = options.protocolVersion
     const service = this.getService(version)
 
-    const { connectionId, proofRequestOptions } = options
-    const connection = await this.connectionService.getById(connectionId)
+    const connection = await this.connectionService.getById(options.connectionId)
 
     const createProofRequest: CreateRequestOptions = {
       connectionRecord: connection,
@@ -196,57 +178,57 @@ export class ProofsModule {
     return proofRecord
   }
 
-  /**
-   * Initiate a new presentation exchange as verifier by creating a presentation request
-   * not bound to any connection. The request must be delivered out-of-band to the holder
-   *
-   * @param proofRequestOptions Options to build the proof request
-   * @returns The proof record and proof request message
-   *
-   */
-  public async createOutOfBandRequest(options: CreateOutOfBandRequestOptions): Promise<{
-    requestMessage: V1RequestPresentationMessage
-    proofRecord: ProofRecord
-  }> {
-    const { proofRequestOptions } = options
-    const version: ProofProtocolVersion = options.protocolVersion
+  // /**
+  //  * Initiate a new presentation exchange as verifier by creating a presentation request
+  //  * not bound to any connection. The request must be delivered out-of-band to the holder
+  //  *
+  //  * @param proofRequestOptions Options to build the proof request
+  //  * @returns The proof record and proof request message
+  //  *
+  //  */
+  // public async createOutOfBandRequest(options: CreateOutOfBandRequestOptions): Promise<{
+  //   requestMessage: V1RequestPresentationMessage
+  //   proofRecord: ProofRecord
+  // }> {
+  //   const { proofRequestOptions } = options
+  //   const version: ProofProtocolVersion = options.protocolVersion
 
-    const service = this.getService(version)
+  //   const service = this.getService(version)
 
-    const nonce = proofRequestOptions.nonce ?? (await service.generateProofRequestNonce())
+  //   const nonce = proofRequestOptions.nonce ?? (await service.generateProofRequestNonce())
 
-    const proofRequest = new ProofRequest({
-      name: proofRequestOptions.name ?? 'proof-request',
-      version: proofRequestOptions.name ?? '1.0',
-      nonce,
-      requestedAttributes: proofRequestOptions.requestedAttributes,
-      requestedPredicates: proofRequestOptions.requestedPredicates,
-    })
+  //   const proofRequest = new ProofRequest({
+  //     name: proofRequestOptions.name ?? 'proof-request',
+  //     version: proofRequestOptions.name ?? '1.0',
+  //     nonce,
+  //     requestedAttributes: proofRequestOptions.requestedAttributes,
+  //     requestedPredicates: proofRequestOptions.requestedPredicates,
+  //   })
 
-    const createProofRequest: RequestProofOptions = {
-      connectionRecord: undefined,
-      proofFormats: proofRequest,
-      protocolVersion: version,
-      autoAcceptProof: options.autoAcceptProof,
-      comment: options.comment,
-    }
+  //   const createProofRequest: CreateRequestOptions = {
+  //     connectionRecord: undefined,
+  //     proofFormats: proofRequest,
+  //     protocolVersion: version,
+  //     autoAcceptProof: options.autoAcceptProof,
+  //     comment: options.comment,
+  //   }
 
-    const { message, proofRecord } = await service.createRequest(createProofRequest)
+  //   const { message, proofRecord } = await service.createRequest(createProofRequest)
 
-    // Create and set ~service decorator
-    const routing = await this.mediationRecipientService.getRouting()
-    message.service = new ServiceDecorator({
-      serviceEndpoint: routing.endpoints[0],
-      recipientKeys: [routing.verkey],
-      routingKeys: routing.routingKeys,
-    })
+  //   // Create and set ~service decorator
+  //   const routing = await this.mediationRecipientService.getRouting()
+  //   message.service = new ServiceDecorator({
+  //     serviceEndpoint: routing.endpoints[0],
+  //     recipientKeys: [routing.verkey],
+  //     routingKeys: routing.routingKeys,
+  //   })
 
-    // Save ~service decorator to record (to remember our verkey)
-    proofRecord.requestMessage = message
-    await service.update(proofRecord)
+  //   // Save ~service decorator to record (to remember our verkey)
+  //   proofRecord.requestMessage = message
+  //   await service.update(proofRecord)
 
-    return { proofRecord, requestMessage: message }
-  }
+  //   return { proofRecord, requestMessage: message }
+  // }
 
   /**
    * Accept a presentation request as prover (by sending a presentation message) to the connection
@@ -265,12 +247,15 @@ export class ProofsModule {
     const service = this.getService(version)
 
     const record = await service.getById(proofRecordId)
-    const presentationOptions: PresentationOptions = {
+    const presentationOptions: CreatePresentationOptions = {
       proofFormats,
       proofRecord: record,
+      protocolVersion: version,
       comment,
     }
     const { message, proofRecord } = await service.createPresentation(presentationOptions)
+
+    const requestMessage = await service.findRequestMessage({ proofRecord: proofRecord })
 
     // Use connection if present
     if (proofRecord.connectionId) {
@@ -281,8 +266,9 @@ export class ProofsModule {
 
       return proofRecord
     }
+
     // Use ~service decorator otherwise
-    else if (proofRecord.requestMessage?.service) {
+    else if (requestMessage?.service) {
       // Create ~service decorator
       const routing = await this.mediationRecipientService.getRouting()
       const ourService = new ServiceDecorator({
@@ -291,12 +277,16 @@ export class ProofsModule {
         routingKeys: routing.routingKeys,
       })
 
-      const recipientService = proofRecord.requestMessage.service
+      const recipientService = requestMessage.service
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
-      proofRecord.presentationMessage = message
-      await service.update(proofRecord)
+
+      await service.saveOrUpdatePresentationMessage({
+        proofRecord: proofRecord,
+        message: message,
+        role: DidCommMessageRole.Sender,
+      })
 
       await this.messageSender.sendMessageToService({
         message,
@@ -340,7 +330,9 @@ export class ProofsModule {
     const service = this.getService(version)
 
     const record = await service.getById(proofRecordId)
-    const { message, proofRecord } = await service.createAck(record)
+    const { message, proofRecord } = await service.createAck({
+      proofRecord: record,
+    })
 
     // Use connection if present
     if (proofRecord.connectionId) {
@@ -349,26 +341,34 @@ export class ProofsModule {
       await this.messageSender.sendMessage(outboundMessage)
     }
     // Use ~service decorator otherwise
-    else if (proofRecord.requestMessage?.service && proofRecord.presentationMessage?.service) {
-      const recipientService = proofRecord.presentationMessage?.service
-      const ourService = proofRecord.requestMessage?.service
-
-      await this.messageSender.sendMessageToService({
-        message,
-        service: recipientService.toDidCommService(),
-        senderKey: ourService.recipientKeys[0],
-        returnRoute: true,
-      })
-    }
-
-    // Cannot send message without credentialId or ~service decorator
     else {
-      throw new AriesFrameworkError(
-        `Cannot accept presentation without connectionId or ~service decorator on presentation message.`
-      )
-    }
+      const requestMessage = await service.findRequestMessage({
+        proofRecord: record,
+      })
 
-    return proofRecord
+      const presentationMessage = await service.findPresentationMessage({
+        proofRecord: record,
+      })
+
+      if (requestMessage?.service && presentationMessage?.service) {
+        const recipientService = presentationMessage.service
+        const ourService = requestMessage.service
+
+        await this.messageSender.sendMessageToService({
+          message,
+          service: recipientService.toDidCommService(),
+          senderKey: ourService.recipientKeys[0],
+          returnRoute: true,
+        })
+      }
+      // Cannot send message without credentialId or ~service decorator
+      else {
+        throw new AriesFrameworkError(
+          `Cannot accept presentation without connectionId or ~service decorator on presentation message.`
+        )
+      }
+    }
+    return record
   }
 
   /**
@@ -387,24 +387,20 @@ export class ProofsModule {
     proofRecordId: string,
     version: ProofProtocolVersion,
     config?: GetRequestedCredentialsConfig
-  ): Promise<RetrievedCredentials> {
+  ): Promise<{
+    indy?: RetrievedCredentials
+    jsonLd?: never
+  }> {
     const service = this.getService(version)
 
     const proofRecord = await service.getById(proofRecordId)
 
-    const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
-    const presentationPreview = config?.filterByPresentationPreview ? proofRecord.proposalMessage : undefined
-
-    if (!indyProofRequest) {
-      throw new AriesFrameworkError(
-        'Unable to get requested credentials for proof request. No proof request message was found or the proof request message does not contain an indy proof request.'
-      )
-    }
-    const requestedCredentialsForProofRequest: RequestedCredentialForProofRequestOptions = {
-      proofRequest: indyProofRequest,
-      presentationProposal: presentationPreview,
-    }
-    return service.getRequestedCredentialsForProofRequest(requestedCredentialsForProofRequest)
+    return service.getRequestedCredentialsForProofRequest({
+      proofRecord: proofRecord,
+      config: {
+        indy: config,
+      },
+    })
   }
 
   /**
@@ -417,12 +413,18 @@ export class ProofsModule {
    *
    * @returns RequestedCredentials
    */
-  public autoSelectCredentialsForProofRequest(
-    retrievedCredentials: RetrievedCredentials,
+  public async autoSelectCredentialsForProofRequest(options: {
+    formats: {
+      indy?: RetrievedCredentials
+      jsonLd?: never
+    }
     version: ProofProtocolVersion
-  ): RequestedCredentials {
-    const service = this.getService(version)
-    return service.autoSelectCredentialsForProofRequest(retrievedCredentials)
+  }): Promise<{
+    indy?: RequestedCredentials
+    jsonLd?: never
+  }> {
+    const service = this.getService(options.version)
+    return await service.autoSelectCredentialsForProofRequest(options.formats)
   }
 
   /**
@@ -456,7 +458,7 @@ export class ProofsModule {
    * @returns List containing all proof records
    */
   public getAll(): Promise<ProofRecord[]> {
-    return this.proofService.getAll()
+    return this.serviceMap['1.0'].getAll()
   }
 
   /**
@@ -469,7 +471,7 @@ export class ProofsModule {
    *
    */
   public async getById(proofRecordId: string): Promise<ProofRecord> {
-    return this.proofService.getById(proofRecordId)
+    return this.serviceMap['1.0'].getById(proofRecordId)
   }
 
   /**
@@ -480,7 +482,7 @@ export class ProofsModule {
    *
    */
   public async findById(proofRecordId: string): Promise<ProofRecord | null> {
-    return this.proofService.findById(proofRecordId)
+    return this.serviceMap['1.0'].findById(proofRecordId)
   }
 
   /**
@@ -489,15 +491,20 @@ export class ProofsModule {
    * @param proofId the proof record id
    */
   public async deleteById(proofId: string) {
-    return this.proofService.deleteById(proofId)
+    return this.serviceMap['1.0'].deleteById(proofId)
   }
 
-  private registerHandlers(dispatcher: Dispatcher) {
+  private async registerHandlers(dispatcher: Dispatcher, mediationRecipientService: MediationRecipientService) {
     for (const service of Object.values(this.serviceMap)) {
-      await service.registerHandlers(dispatcher, this.agentConfig, this.proofResponseCoordinator, this.mediation)
+      await service.registerHandlers(
+        dispatcher,
+        this.agentConfig,
+        new ProofResponseCoordinator(this.agentConfig, service),
+        mediationRecipientService
+      )
     }
+  }
 }
-
 
 export type CreateProofRequestOptions = Partial<
   Pick<ProofRequestOptions, 'name' | 'nonce' | 'requestedAttributes' | 'requestedPredicates'>
