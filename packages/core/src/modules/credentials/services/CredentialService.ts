@@ -266,7 +266,8 @@ export class CredentialService {
       credentialTemplate.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
     // Check if credential preview attributes match the schema attributes
-    CredentialUtils.checkAttributesMatch(this.ledgerService, preview, credOffer.schema_id)
+    const schema = await this.ledgerService.getSchema(credOffer.schema_id)
+    CredentialUtils.checkAttributesMatch(schema, preview)
 
     await this.updateState(credentialRecord, CredentialState.OfferSent)
 
@@ -306,7 +307,8 @@ export class CredentialService {
       : preview
 
     // Check if credential preview attributes match the schema attributes
-    CredentialUtils.checkAttributesMatch(this.ledgerService, credentialPreview, credOffer.schema_id)
+    const schema = await this.ledgerService.getSchema(credOffer.schema_id)
+    CredentialUtils.checkAttributesMatch(schema, credentialPreview)
 
     // Construct offer message
     const credentialOfferMessage = new OfferCredentialMessage({

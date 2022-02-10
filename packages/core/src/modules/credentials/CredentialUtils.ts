@@ -1,6 +1,6 @@
 import type { LinkedAttachment } from '../../utils/LinkedAttachment'
 import type { IndyLedgerService } from '../ledger'
-import type { CredValues } from 'indy-sdk'
+import type { CredValues, Schema } from 'indy-sdk'
 
 import { hash as sha256 } from '@stablelib/sha256'
 import BigNumber from 'bn.js'
@@ -177,12 +177,7 @@ export class CredentialUtils {
     return Number.isInteger(number) && number >= minI32 && number <= maxI32
   }
 
-  public static async checkAttributesMatch(
-    ledgerService: IndyLedgerService,
-    credentialPreview: CredentialPreview,
-    schema_id: string
-  ) {
-    const schema = await ledgerService.getSchema(schema_id)
+  public static checkAttributesMatch(schema: Schema, credentialPreview: CredentialPreview) {
     const schemaAttributes = schema.attrNames
     const credAttributes = credentialPreview.attributes.map((a) => a.name)
 
