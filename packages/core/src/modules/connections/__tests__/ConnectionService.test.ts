@@ -69,8 +69,8 @@ describe('ConnectionService', () => {
       const { connectionRecord, message } = await connectionService.createInvitation({ routing: myRouting })
 
       expect(connectionRecord.type).toBe('ConnectionRecord')
-      expect(connectionRecord.role).toBe(ConnectionRole.Inviter)
-      expect(connectionRecord.state).toBe(ConnectionState.Invited)
+      expect(connectionRecord.role).toBe(undefined)
+      expect(connectionRecord.state).toBe(undefined)
       expect(connectionRecord.autoAcceptConnection).toBeUndefined()
       expect(connectionRecord.id).toEqual(expect.any(String))
       expect(connectionRecord.verkey).toEqual(expect.any(String))
@@ -445,23 +445,6 @@ describe('ConnectionService', () => {
       expect(processedConnection.id).not.toBe(connectionRecord.id)
       expect(connectionRecord.id).toBe('test')
       expect(connectionRecord.state).toBe(ConnectionState.Invited)
-    })
-
-    it(`throws an error when connection role is ${ConnectionRole.Invitee} and not ${ConnectionRole.Inviter}`, async () => {
-      expect.assertions(1)
-
-      mockFunction(connectionRepository.findByVerkey).mockReturnValue(
-        Promise.resolve(getMockConnection({ role: ConnectionRole.Invitee }))
-      )
-
-      const inboundMessage = new InboundMessageContext(jest.fn()(), {
-        senderVerkey: 'senderVerkey',
-        recipientVerkey: 'recipientVerkey',
-      })
-
-      return expect(connectionService.processRequest(inboundMessage)).rejects.toThrowError(
-        `Connection record has invalid role ${ConnectionRole.Invitee}. Expected role ${ConnectionRole.Inviter}.`
-      )
     })
 
     it('throws an error when the message does not contain a did doc with any recipientKeys', async () => {

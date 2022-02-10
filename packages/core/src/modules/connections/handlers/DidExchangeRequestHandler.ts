@@ -1,6 +1,5 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { Logger } from '../../../logger'
 import type { MediationRecipientService } from '../../routing/services/MediationRecipientService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 import type { ConnectionService, Routing } from '../services/ConnectionService'
@@ -8,10 +7,9 @@ import type { ConnectionService, Routing } from '../services/ConnectionService'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { DidExchangeRequestMessage } from '../messages'
-import { HandshakeProtocol } from '../models'
+import { HandshakeProtocol, DidExchangeRole, DidExchangeState } from '../models'
 
 export class DidExchangeRequestHandler implements Handler {
-  private logger: Logger
   private didExchangeProtocol: DidExchangeProtocol
   private connectionService: ConnectionService
   private agentConfig: AgentConfig
@@ -24,7 +22,6 @@ export class DidExchangeRequestHandler implements Handler {
     agentConfig: AgentConfig,
     mediationRecipientService: MediationRecipientService
   ) {
-    this.logger = agentConfig.logger
     this.didExchangeProtocol = didExchangeProtocol
     this.connectionService = connectionService
     this.agentConfig = agentConfig
@@ -42,7 +39,7 @@ export class DidExchangeRequestHandler implements Handler {
     }
 
     const { protocol } = connectionRecord
-    if (protocol !== HandshakeProtocol.DidExchange) {
+    if (protocol && protocol !== HandshakeProtocol.DidExchange) {
       throw new AriesFrameworkError(
         `Connection record protocol is ${protocol} but handler supports only ${HandshakeProtocol.DidExchange}.`
       )
@@ -64,6 +61,8 @@ export class DidExchangeRequestHandler implements Handler {
     // The question is if we should do it here in this way or rather somewhere else to keep
     // responsibility of all handlers aligned.
     //
+    connectionRecord.role = DidExchangeRole.Responder
+    connectionRecord.state = DidExchangeState.InvitationSent
     messageContext.connection = connectionRecord
     connectionRecord = await this.didExchangeProtocol.processRequest(messageContext, routing)
 

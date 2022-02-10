@@ -58,7 +58,6 @@ export class ConnectionsModule {
     multiUseInvitation?: boolean
     myLabel?: string
     myImageUrl?: string
-    protocol?: HandshakeProtocol
   }): Promise<{
     invitation: ConnectionInvitationMessage
     connectionRecord: ConnectionRecord
@@ -75,7 +74,6 @@ export class ConnectionsModule {
       multiUseInvitation: config?.multiUseInvitation,
       myLabel: config?.myLabel,
       myImageUrl: config?.myImageUrl,
-      protocol: config?.protocol,
     })
 
     return { connectionRecord, invitation }

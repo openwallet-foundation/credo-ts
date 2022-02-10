@@ -198,7 +198,7 @@ describe('out of band', () => {
       expect(createdConnectionRecordService?.serviceEndpoint).toEqual(service.serviceEndpoint)
       expect(createdConnectionRecordService?.recipientKeys).toEqual(service.recipientKeys)
       expect(createdConnectionRecordService?.routingKeys).toEqual(service.routingKeys)
-      expect(createdConnectionRecord?.protocol).toEqual(HandshakeProtocol.Connections)
+      expect(createdConnectionRecord?.protocol).toBe(undefined)
     })
   })
 
@@ -418,7 +418,7 @@ describe('out of band', () => {
 
       expect(faberConnections).toHaveLength(3)
       expect(faberAliceConnection?.multiUseInvitation).toBe(true)
-      expect(faberAliceConnection?.state).toBe(DidExchangeState.InvitationSent)
+      expect(faberAliceConnection?.state).toBe(undefined)
 
       expect(firstConnection.getTag('invitationKey')).toEqual(faberAliceConnection?.verkey)
       expect(secondConnection.getTag('invitationKey')).toEqual(faberAliceConnection?.verkey)

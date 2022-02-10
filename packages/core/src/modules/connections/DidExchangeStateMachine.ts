@@ -77,7 +77,9 @@ export class DidExchangeStateMachine {
       .concat(this.processMessageStateRules)
       .find((r) => r.message === messageType && r.role === record.role)
     if (!rule) {
-      throw new AriesFrameworkError(`Could not find create message rule for ${messageType}`)
+      throw new AriesFrameworkError(
+        `Could not find create message rule for messageType ${messageType}, state ${record.state} and role ${record.role}`
+      )
     }
     return rule.nextState
   }

@@ -19,8 +19,8 @@ export interface ConnectionRecordProps {
   theirDidDoc?: DidDoc
   theirLabel?: string
   invitation?: ConnectionInvitationMessage
-  state: ConnectionState | DidExchangeState
-  role: ConnectionRole | DidExchangeRole
+  state?: ConnectionState | DidExchangeState
+  role?: ConnectionRole | DidExchangeRole
   alias?: string
   autoAcceptConnection?: boolean
   threadId?: string
@@ -34,8 +34,8 @@ export interface ConnectionRecordProps {
 
 export type CustomConnectionTags = TagsBase
 export type DefaultConnectionTags = {
-  state: ConnectionState | DidExchangeState
-  role: ConnectionRole | DidExchangeRole
+  state?: ConnectionState | DidExchangeState
+  role?: ConnectionRole | DidExchangeRole
   invitationKey?: string
   threadId?: string
   verkey?: string
@@ -49,8 +49,8 @@ export class ConnectionRecord
   extends BaseRecord<DefaultConnectionTags, CustomConnectionTags>
   implements ConnectionRecordProps
 {
-  public state!: ConnectionState | DidExchangeState
-  public role!: ConnectionRole | DidExchangeRole
+  public state?: ConnectionState | DidExchangeState
+  public role?: ConnectionRole | DidExchangeRole
 
   @Type(() => DidDoc)
   public didDoc!: DidDoc
@@ -142,12 +142,15 @@ export class ConnectionRecord
   }
 
   public get isReady() {
-    return [
-      ConnectionState.Responded,
-      ConnectionState.Complete,
-      DidExchangeState.Completed,
-      DidExchangeState.ResponseSent,
-    ].includes(this.state)
+    return (
+      this.state &&
+      [
+        ConnectionState.Responded,
+        ConnectionState.Complete,
+        DidExchangeState.Completed,
+        DidExchangeState.ResponseSent,
+      ].includes(this.state)
+    )
   }
 
   public assertReady() {
@@ -163,14 +166,14 @@ export class ConnectionRecord
       expectedStates = [expectedStates]
     }
 
-    if (!expectedStates.includes(this.state)) {
+    if (this.state && !expectedStates.includes(this.state)) {
       throw new AriesFrameworkError(
         `Connection record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`
       )
     }
   }
 
-  public assertRole(expectedRole: ConnectionRole) {
+  public assertRole(expectedRole: ConnectionRole | undefined) {
     if (this.role !== expectedRole) {
       throw new AriesFrameworkError(`Connection record has invalid role ${this.role}. Expected role ${expectedRole}.`)
     }

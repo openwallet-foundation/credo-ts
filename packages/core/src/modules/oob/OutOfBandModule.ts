@@ -114,13 +114,9 @@ export class OutOfBandModule {
         handshakeProtocols = this.getSupportedHandshakeProtocols()
       }
 
-      // TODO Currently, we need one protocol to create connection invitation to set connection state and
-      const [handshakeProtocol] = handshakeProtocols
-
       const connectionWithInvitation = await this.connectionsModule.createConnection({
         myLabel: label,
         multiUseInvitation,
-        protocol: handshakeProtocol,
       })
 
       connectionRecord = connectionWithInvitation.connectionRecord
@@ -139,7 +135,7 @@ export class OutOfBandModule {
         id: connectionRecord.invitation?.id,
         accept: ['didcomm/aip1'],
         services,
-        handshakeProtocols: [handshakeProtocol],
+        handshakeProtocols,
       }
       outOfBandMessage = new OutOfBandMessage(options)
     } else {

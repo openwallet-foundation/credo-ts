@@ -75,29 +75,14 @@ export class ConnectionService {
     multiUseInvitation?: boolean
     myLabel?: string
     myImageUrl?: string
-    protocol?: HandshakeProtocol
   }): Promise<ConnectionProtocolMsgReturnType<ConnectionInvitationMessage>> {
     // TODO: public did
 
-    let role
-    let state
-
-    if (config?.protocol === HandshakeProtocol.DidExchange) {
-      role = DidExchangeRole.Responder
-      state = DidExchangeState.InvitationSent
-    } else {
-      role = ConnectionRole.Inviter
-      state = ConnectionState.Invited
-    }
-
     const connectionRecord = await this.createConnection({
-      role,
-      state,
       alias: config?.alias,
       routing: config.routing,
       autoAcceptConnection: config?.autoAcceptConnection,
       multiUseInvitation: config.multiUseInvitation ?? false,
-      protocol: config?.protocol,
     })
     const { didDoc } = connectionRecord
     const [service] = didDoc.didCommServices
@@ -244,6 +229,7 @@ export class ConnectionService {
         `Unable to process connection request: connection for verkey ${recipientVerkey} not found`
       )
     }
+    connectionRecord.role = ConnectionRole.Inviter
     connectionRecord.assertState(ConnectionState.Invited)
     connectionRecord.assertRole(ConnectionRole.Inviter)
 
@@ -570,7 +556,7 @@ export class ConnectionService {
       type: ConnectionEventTypes.ConnectionStateChanged,
       payload: {
         connectionRecord: connectionRecord,
-        previousState,
+        previousState: previousState || null,
       },
     })
   }
@@ -670,8 +656,8 @@ export class ConnectionService {
   }
 
   public async createConnection(options: {
-    role: ConnectionRole | DidExchangeRole
-    state: ConnectionState | DidExchangeState
+    role?: ConnectionRole | DidExchangeRole
+    state?: ConnectionState | DidExchangeState
     invitation?: ConnectionInvitationMessage
     alias?: string
     routing: Routing
