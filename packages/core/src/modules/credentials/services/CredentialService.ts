@@ -265,6 +265,10 @@ export class CredentialService {
     credentialRecord.autoAcceptCredential =
       credentialTemplate.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
+    // Check if credential preview attributes match the schema attributes
+    const schema = await this.ledgerService.getSchema(credOffer.schema_id)
+    CredentialUtils.checkAttributesMatch(schema, preview)
+
     await this.updateState(credentialRecord, CredentialState.OfferSent)
 
     return { message: credentialOfferMessage, credentialRecord }
@@ -301,6 +305,10 @@ export class CredentialService {
     const credentialPreview = linkedAttachments
       ? CredentialUtils.createAndLinkAttachmentsToPreview(linkedAttachments, preview)
       : preview
+
+    // Check if credential preview attributes match the schema attributes
+    const schema = await this.ledgerService.getSchema(credOffer.schema_id)
+    CredentialUtils.checkAttributesMatch(schema, credentialPreview)
 
     // Construct offer message
     const credentialOfferMessage = new OfferCredentialMessage({
