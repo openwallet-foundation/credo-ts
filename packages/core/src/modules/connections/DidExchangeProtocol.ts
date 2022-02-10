@@ -394,7 +394,7 @@ export class DidExchangeProtocol {
         // TODO we should perhaps use keyAgreement instead of authentication key in here, then it must be changed also in connection record verkey
         recipientKeys: [ed25519Key.publicKeyBase58],
         serviceEndpoint: endpoint,
-        accept: ['didcomm/aip2;env=rfc19'],
+        accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
         // It is important that we encode the routing keys as key references.
         // So instead of using plain verkeys, we should encode them as did:key dids
         routingKeys,

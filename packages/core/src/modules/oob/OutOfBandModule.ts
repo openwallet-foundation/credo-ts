@@ -22,6 +22,8 @@ import { MediationRecipientService } from '../routing'
 import { HandshakeReuseHandler } from './handlers'
 import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
 
+const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
+
 export interface CreateOutOfBandMessageConfig {
   label: string
   goalCode?: string
@@ -133,7 +135,7 @@ export class OutOfBandModule {
       const options = {
         ...config,
         id: connectionRecord.invitation?.id,
-        accept: ['didcomm/aip1'],
+        accept: didCommProfiles,
         services,
         handshakeProtocols,
       }
@@ -149,7 +151,7 @@ export class OutOfBandModule {
       })
       const options = {
         ...config,
-        accept: ['didcomm/aip1'],
+        accept: didCommProfiles,
         services: [service],
       }
       outOfBandMessage = new OutOfBandMessage(options)
