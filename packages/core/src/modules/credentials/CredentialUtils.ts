@@ -1,5 +1,4 @@
 import type { LinkedAttachment } from '../../utils/LinkedAttachment'
-import type { IndyLedgerService } from '../ledger'
 import type { CredValues, Schema } from 'indy-sdk'
 
 import { hash as sha256 } from '@stablelib/sha256'
