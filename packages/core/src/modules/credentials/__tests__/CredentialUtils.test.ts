@@ -74,6 +74,10 @@ const testEncodings: { [key: string]: { raw: string | number | boolean | null; e
     raw: '0.1',
     encoded: '9382477430624249591204401974786823110077201914483282671737639310288175260432',
   },
+  'leading zero number string': {
+    raw: '012345',
+    encoded: '12345',
+  },
   'chr 0': {
     raw: String.fromCharCode(0),
     encoded: '49846369543417741186729467304575255505141344055555831574636310663216789168157',
