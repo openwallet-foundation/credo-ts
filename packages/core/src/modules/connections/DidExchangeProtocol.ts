@@ -14,7 +14,7 @@ import { AriesFrameworkError } from '../../error'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import { uuid } from '../../utils/uuid'
-import { DidCommService, DidDocument, DidDocumentBuilder, Key } from '../dids'
+import { DidCommService, DidDocument, DidDocumentBuilder, Key, VerificationMethod } from '../dids'
 import { DidDocumentRole } from '../dids/domain/DidDocumentRole'
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
 import { getEd25519VerificationMethod } from '../dids/domain/key-type/ed25519'
@@ -374,16 +374,14 @@ export class DidExchangeProtocol {
       .addAuthentication(ed25519VerificationMethod)
       .addKeyAgreement(x25519VerificationMethod)
 
-    const routingKeys = routing.routingKeys.map((routingKey) => {
-      const mediatorEd25519Key = Key.fromPublicKeyBase58(routingKey, KeyType.Ed25519)
-      const mediatorEd25519DidKey = new DidKey(mediatorEd25519Key)
-      const mediatorX25519Key = Key.fromPublicKey(
-        convertPublicKeyToX25519(mediatorEd25519Key.publicKey),
-        KeyType.X25519
-      )
-      // Use ed25519 did:key, which also includes the x25519 key used for didcomm
-      const mediatorRoutingKey = `${mediatorEd25519DidKey.did}#${mediatorX25519Key.fingerprint}`
-      return mediatorRoutingKey
+    const routingKeys = routing.routingKeys.map((rk) => Key.fromPublicKeyBase58(rk, KeyType.Ed25519))
+    routingKeys.forEach((ed25519Key) => {
+      const verificationMethod = getEd25519VerificationMethod({
+        id: uuid(),
+        key: ed25519Key,
+        controller: '#id',
+      })
+      didDocumentBuilder.addVerificationMethod(verificationMethod)
     })
 
     routing.endpoints.forEach((endpoint) => {
@@ -397,7 +395,7 @@ export class DidExchangeProtocol {
         accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
         // It is important that we encode the routing keys as key references.
         // So instead of using plain verkeys, we should encode them as did:key dids
-        routingKeys,
+        routingKeys: routingKeys.map((rk) => rk.publicKeyBase58),
       })
       didDocumentBuilder.addService(service)
     })
