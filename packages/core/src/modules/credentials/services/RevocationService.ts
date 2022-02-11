@@ -33,7 +33,7 @@ export class RevocationService {
     const comment = messageContext.message.comment
 
     const credentialRecord = await this.credentialRepository.getSingleByQuery({ threadId })
-    
+
     credentialRecord.revocationNotification = new RevocationNotification(comment)
     await this.credentialRepository.update(credentialRecord)
 
