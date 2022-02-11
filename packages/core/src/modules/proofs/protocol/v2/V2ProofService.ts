@@ -1,6 +1,9 @@
 import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
+import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { ProofStateChangedEvent } from '../../ProofEvents'
+import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
+import type { GetRequestedCredentialsConfig } from '../../ProofsModule'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
 import type { ProofFormatSpec } from '../../formats/models/ProofFormatSpec'
@@ -12,20 +15,21 @@ import type {
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
 } from '../../models/ProofServiceOptions'
+import type { RetrievedCredentials, RequestedCredentials } from '../v1/models'
 
 import { validateOrReject } from 'class-validator'
-import { Lifecycle, scoped } from 'tsyringe'
+import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../../agent/AgentConfig'
 import { Dispatcher } from '../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../agent/EventEmitter'
+import { InjectionSymbols } from '../../../../constants'
 import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
+import { Wallet } from '../../../../wallet/Wallet'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections'
-import { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import { ProofEventTypes } from '../../ProofEvents'
-import { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import { ProofService } from '../../ProofService'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
@@ -43,6 +47,24 @@ import { V2RequestPresentationMessage } from './messages/V2RequestPresentationMe
 
 @scoped(Lifecycle.ContainerScoped)
 export class V2ProofService extends ProofService {
+  public findRequestMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
+    throw new Error('Method not implemented.')
+  }
+  public findPresentationMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
+    throw new Error('Method not implemented.')
+  }
+  public getRequestedCredentialsForProofRequest(options: {
+    proofRecord: ProofRecord
+    config: { indy?: GetRequestedCredentialsConfig | undefined; jsonLd?: undefined }
+  }): Promise<{ indy?: RetrievedCredentials | undefined; jsonLd?: undefined }> {
+    throw new Error('Method not implemented.')
+  }
+  public autoSelectCredentialsForProofRequest(options: {
+    indy?: RetrievedCredentials | undefined
+    jsonLd?: undefined
+  }): Promise<{ indy?: RequestedCredentials | undefined; jsonLd?: undefined }> {
+    throw new Error('Method not implemented.')
+  }
   private protocolVersion: ProofProtocolVersion
   private formatServiceMap: { [key: string]: ProofFormatService }
 
@@ -54,19 +76,9 @@ export class V2ProofService extends ProofService {
     didCommMessageRepository: DidCommMessageRepository,
     eventEmitter: EventEmitter,
     indyProofFormatService: IndyProofFormatService,
-    proofResponseCoordinator: ProofResponseCoordinator,
-    mediationRecipientService: MediationRecipientService
+    @inject(InjectionSymbols.Wallet) wallet: Wallet
   ) {
-    super(
-      dispatcher,
-      agentConfig,
-      proofRepository,
-      connectionService,
-      didCommMessageRepository,
-      eventEmitter,
-      proofResponseCoordinator,
-      mediationRecipientService
-    )
+    super(agentConfig, proofRepository, connectionService, didCommMessageRepository, wallet, eventEmitter)
     this.protocolVersion = ProofProtocolVersion.V2_0
     this.formatServiceMap = {
       [PresentationRecordType.Indy]: indyProofFormatService,
@@ -643,7 +655,9 @@ export class V2ProofService extends ProofService {
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,
     mediationRecipientService: MediationRecipientService
-  ): Promise<void> {}
+  ): Promise<void> {
+    throw Error('Not yet implemented')
+  }
 
   private getFormatServiceForFormat(format: ProofFormatSpec) {
     for (const service of Object.values(this.formatServiceMap)) {
