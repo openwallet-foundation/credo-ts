@@ -1,6 +1,6 @@
 import { IsString } from 'class-validator'
 
-export class Service {
+export class DidDocumentService {
   public constructor(options: { id: string; serviceEndpoint: string; type: string }) {
     if (options) {
       this.id = options.id

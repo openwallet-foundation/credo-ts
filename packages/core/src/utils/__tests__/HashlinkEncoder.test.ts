@@ -1,4 +1,5 @@
 import { HashlinkEncoder } from '../HashlinkEncoder'
+import { Buffer } from '../buffer'
 
 const validData = {
   data: Buffer.from('Hello World!'),

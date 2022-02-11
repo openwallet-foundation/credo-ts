@@ -1,27 +1,25 @@
 import { ArrayNotEmpty, IsOptional, IsString } from 'class-validator'
 
-import { Service } from './Service'
+import { DidDocumentService } from './DidDocumentService'
 
-export class DidCommService extends Service {
+export class IndyAgentService extends DidDocumentService {
   public constructor(options: {
     id: string
     serviceEndpoint: string
     recipientKeys: string[]
     routingKeys?: string[]
-    accept?: string[]
     priority?: number
   }) {
-    super({ ...options, type: DidCommService.type })
+    super({ ...options, type: IndyAgentService.type })
 
     if (options) {
       this.recipientKeys = options.recipientKeys
       this.routingKeys = options.routingKeys
-      this.accept = options.accept
       if (options.priority) this.priority = options.priority
     }
   }
 
-  public static type = 'did-communication'
+  public static type = 'IndyAgent'
 
   @ArrayNotEmpty()
   @IsString({ each: true })
@@ -30,10 +28,6 @@ export class DidCommService extends Service {
   @IsString({ each: true })
   @IsOptional()
   public routingKeys?: string[]
-
-  @IsString({ each: true })
-  @IsOptional()
-  public accept?: string[]
 
   public priority = 0
 }

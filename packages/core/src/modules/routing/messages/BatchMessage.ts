@@ -3,11 +3,11 @@ import { Equals, Matches, IsArray, ValidateNested, IsObject, IsInstance } from '
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { MessageIdRegExp } from '../../../agent/BaseMessage'
-import { WireMessage } from '../../../types'
+import { EncryptedMessage } from '../../../types'
 import { uuid } from '../../../utils/uuid'
 
 export class BatchMessageMessage {
-  public constructor(options: { id?: string; message: WireMessage }) {
+  public constructor(options: { id?: string; message: EncryptedMessage }) {
     if (options) {
       this.id = options.id || uuid()
       this.message = options.message
@@ -18,7 +18,7 @@ export class BatchMessageMessage {
   public id!: string
 
   @IsObject()
-  public message!: WireMessage
+  public message!: EncryptedMessage
 }
 
 export interface BatchMessageOptions {

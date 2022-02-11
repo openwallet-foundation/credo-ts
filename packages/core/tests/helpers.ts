@@ -37,7 +37,6 @@ import {
   CredentialEventTypes,
   CredentialPreview,
   CredentialState,
-  DidCommService,
   DidDoc,
   PredicateType,
   PresentationPreview,
@@ -49,6 +48,7 @@ import {
 } from '../src'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
+import { DidCommService } from '../src/modules/dids'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -523,6 +523,14 @@ export async function presentProof({
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.MockedFunction<T> {
   return fn as jest.MockedFunction<T>
+}
+
+/**
+ * Set a property using a getter value on a mocked oject.
+ */
+// eslint-disable-next-line @typescript-eslint/ban-types
+export function mockProperty<T extends {}, K extends keyof T>(object: T, property: K, value: T[K]) {
+  Object.defineProperty(object, property, { get: () => value })
 }
 
 export async function setupCredentialTests(

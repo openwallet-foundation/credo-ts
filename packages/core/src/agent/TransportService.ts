@@ -1,13 +1,15 @@
-import type { DidDoc, IndyAgentService } from '../modules/connections/models'
+import type { DidDoc } from '../modules/connections/models'
 import type { ConnectionRecord } from '../modules/connections/repository'
-import type { WireMessage } from '../types'
+import type { IndyAgentService } from '../modules/dids/domain/service'
+import type { EncryptedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
-import { ConnectionRole, DidCommService } from '../modules/connections/models'
+import { ConnectionRole } from '../modules/connections/models'
+import { DidCommService } from '../modules/dids/domain/service'
 
 @scoped(Lifecycle.ContainerScoped)
 export class TransportService {
@@ -64,5 +66,5 @@ export interface TransportSession {
   keys?: EnvelopeKeys
   inboundMessage?: AgentMessage
   connection?: ConnectionRecord
-  send(wireMessage: WireMessage): Promise<void>
+  send(encryptedMessage: EncryptedMessage): Promise<void>
 }

@@ -17,6 +17,20 @@ import testLogger from './logger'
 const credentialPreview = CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
+  'x-ray': 'some x-ray',
+  profile_picture: 'profile picture',
+})
+
+const credentialPreviewWithoutProfilePicture = CredentialPreview.fromRecord({
+  name: 'John',
+  age: '99',
+  'x-ray': 'some x-ray',
+})
+
+const credentialPreviewWithoutXray = CredentialPreview.fromRecord({
+  name: 'John',
+  age: '99',
+  profile_picture: 'profile picture',
 })
 
 describe('credentials', () => {
@@ -84,6 +98,16 @@ describe('credentials', () => {
               name: 'age',
               'mime-type': 'text/plain',
               value: '99',
+            },
+            {
+              name: 'x-ray',
+              'mime-type': 'text/plain',
+              value: 'some x-ray',
+            },
+            {
+              name: 'profile_picture',
+              'mime-type': 'text/plain',
+              value: 'profile picture',
             },
           ],
         },
@@ -185,6 +209,16 @@ describe('credentials', () => {
               'mime-type': 'text/plain',
               value: '99',
             },
+            {
+              name: 'x-ray',
+              'mime-type': 'text/plain',
+              value: 'some x-ray',
+            },
+            {
+              name: 'profile_picture',
+              'mime-type': 'text/plain',
+              value: 'profile picture',
+            },
           ],
         },
         'offers~attach': expect.any(Array),
@@ -256,7 +290,7 @@ describe('credentials', () => {
   test('Alice starts with credential proposal, with attachments, to Faber', async () => {
     testLogger.test('Alice sends credential proposal to Faber')
     let aliceCredentialRecord = await aliceAgent.credentials.proposeCredential(aliceConnection.id, {
-      credentialProposal: credentialPreview,
+      credentialProposal: credentialPreviewWithoutProfilePicture,
       credentialDefinitionId: credDefId,
       linkedAttachments: [
         new LinkedAttachment({
@@ -304,6 +338,11 @@ describe('credentials', () => {
               name: 'age',
               'mime-type': 'text/plain',
               value: '99',
+            },
+            {
+              name: 'x-ray',
+              'mime-type': 'text/plain',
+              value: 'some x-ray',
             },
             {
               name: 'profile_picture',
@@ -379,7 +418,7 @@ describe('credentials', () => {
   test('Faber starts with credential, with attachments, offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
     faberCredentialRecord = await faberAgent.credentials.offerCredential(faberConnection.id, {
-      preview: credentialPreview,
+      preview: credentialPreviewWithoutXray,
       credentialDefinitionId: credDefId,
       comment: 'some comment about credential',
       linkedAttachments: [
@@ -418,6 +457,11 @@ describe('credentials', () => {
               name: 'age',
               'mime-type': 'text/plain',
               value: '99',
+            },
+            {
+              name: 'profile_picture',
+              'mime-type': 'text/plain',
+              value: 'profile picture',
             },
             {
               name: 'x-ray',

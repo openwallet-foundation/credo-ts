@@ -2,12 +2,12 @@ import { Expose } from 'class-transformer'
 import { Equals, IsObject, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { WireMessage } from '../../../types'
+import { EncryptedMessage } from '../../../types'
 
 export interface ForwardMessageOptions {
   id?: string
   to: string
-  message: WireMessage
+  message: EncryptedMessage
 }
 
 /**
@@ -38,5 +38,5 @@ export class ForwardMessage extends AgentMessage {
 
   @Expose({ name: 'msg' })
   @IsObject()
-  public message!: WireMessage
+  public message!: EncryptedMessage
 }

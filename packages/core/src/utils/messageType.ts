@@ -1,6 +1,6 @@
-import type { UnpackedMessage } from '../types'
+import type { PlaintextMessage } from '../types'
 
-export function replaceLegacyDidSovPrefixOnMessage(message: UnpackedMessage | Record<string, unknown>) {
+export function replaceLegacyDidSovPrefixOnMessage(message: PlaintextMessage | Record<string, unknown>) {
   message['@type'] = replaceLegacyDidSovPrefix(message['@type'] as string)
 }
 

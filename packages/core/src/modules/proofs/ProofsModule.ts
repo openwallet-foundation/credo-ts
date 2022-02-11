@@ -354,7 +354,9 @@ export class ProofsModule {
       )
     }
 
-    return this.proofService.getRequestedCredentialsForProofRequest(indyProofRequest, presentationPreview)
+    return this.proofService.getRequestedCredentialsForProofRequest(indyProofRequest, {
+      presentationProposal: presentationPreview,
+    })
   }
 
   /**
@@ -386,7 +388,7 @@ export class ProofsModule {
     const presentationProblemReportMessage = new PresentationProblemReportMessage({
       description: {
         en: message,
-        code: PresentationProblemReportReason.abandoned,
+        code: PresentationProblemReportReason.Abandoned,
       },
     })
     presentationProblemReportMessage.setThread({

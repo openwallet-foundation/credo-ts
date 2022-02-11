@@ -88,12 +88,12 @@ export class ConnectionsModule {
       mediatorId?: string
     }
   ): Promise<ConnectionRecord> {
-    const myRouting = await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId })
+    const routing = await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId })
 
     let connection = await this.connectionService.processInvitation(invitation, {
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
-      routing: myRouting,
+      routing,
     })
     // if auto accept is enabled (either on the record or the global agent config)
     // we directly send a connection request
@@ -131,8 +131,16 @@ export class ConnectionsModule {
    * @param connectionId the id of the connection for which to accept the invitation
    * @returns connection record
    */
-  public async acceptInvitation(connectionId: string): Promise<ConnectionRecord> {
-    const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(connectionId)
+  public async acceptInvitation(
+    connectionId: string,
+    config?: {
+      autoAcceptConnection?: boolean
+    }
+  ): Promise<ConnectionRecord> {
+    const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(
+      connectionId,
+      config
+    )
     const outbound = createOutboundMessage(connectionRecord, message)
     await this.messageSender.sendMessage(outbound)
 
@@ -173,8 +181,8 @@ export class ConnectionsModule {
     return connectionRecord
   }
 
-  public async returnWhenIsConnected(connectionId: string): Promise<ConnectionRecord> {
-    return this.connectionService.returnWhenIsConnected(connectionId)
+  public async returnWhenIsConnected(connectionId: string, options?: { timeoutMs: number }): Promise<ConnectionRecord> {
+    return this.connectionService.returnWhenIsConnected(connectionId, options?.timeoutMs)
   }
 
   /**

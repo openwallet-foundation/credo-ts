@@ -9,6 +9,7 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { ConnectionService, ConnectionState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
+import { IndyRevocationService } from '../../indy/services/IndyRevocationService'
 import { IndyLedgerService } from '../../ledger/services'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofState } from '../ProofState'
@@ -29,6 +30,7 @@ jest.mock('../../../modules/ledger/services/IndyLedgerService')
 jest.mock('../../indy/services/IndyHolderService')
 jest.mock('../../indy/services/IndyIssuerService')
 jest.mock('../../indy/services/IndyVerifierService')
+jest.mock('../../indy/services/IndyRevocationService')
 jest.mock('../../connections/services/ConnectionService')
 
 // Mock typed object
@@ -36,6 +38,7 @@ const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 const IndyHolderServiceMock = IndyHolderService as jest.Mock<IndyHolderService>
 const IndyVerifierServiceMock = IndyVerifierService as jest.Mock<IndyVerifierService>
+const IndyRevocationServiceMock = IndyRevocationService as jest.Mock<IndyRevocationService>
 const connectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 
 const connection = getMockConnection({
@@ -93,6 +96,7 @@ describe('ProofService', () => {
   let wallet: Wallet
   let indyVerifierService: IndyVerifierService
   let indyHolderService: IndyHolderService
+  let indyRevocationService: IndyRevocationService
   let eventEmitter: EventEmitter
   let credentialRepository: CredentialRepository
   let connectionService: ConnectionService
@@ -102,6 +106,7 @@ describe('ProofService', () => {
     proofRepository = new ProofRepositoryMock()
     indyVerifierService = new IndyVerifierServiceMock()
     indyHolderService = new IndyHolderServiceMock()
+    indyRevocationService = new IndyRevocationServiceMock()
     ledgerService = new IndyLedgerServiceMock()
     eventEmitter = new EventEmitter(agentConfig)
     connectionService = new connectionServiceMock()
@@ -113,6 +118,7 @@ describe('ProofService', () => {
       agentConfig,
       indyHolderService,
       indyVerifierService,
+      indyRevocationService,
       connectionService,
       eventEmitter,
       credentialRepository
@@ -196,7 +202,7 @@ describe('ProofService', () => {
       const presentationProblemReportMessage = await new PresentationProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: PresentationProblemReportReason.abandoned,
+          code: PresentationProblemReportReason.Abandoned,
         },
       })
 
@@ -224,7 +230,7 @@ describe('ProofService', () => {
       const presentationProblemReportMessage = new PresentationProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: PresentationProblemReportReason.abandoned,
+          code: PresentationProblemReportReason.Abandoned,
         },
       })
       presentationProblemReportMessage.setThread({ threadId: 'somethreadid' })
@@ -233,7 +239,7 @@ describe('ProofService', () => {
       })
     })
 
-    test(`updates state to ${ProofState.None} and returns proof record`, async () => {
+    test(`updates problem report error message and returns proof record`, async () => {
       const repositoryUpdateSpy = jest.spyOn(proofRepository, 'update')
 
       // given
@@ -244,7 +250,7 @@ describe('ProofService', () => {
 
       // then
       const expectedCredentialRecord = {
-        state: ProofState.None,
+        errorMessage: 'abandoned: Indy error',
       }
       expect(proofRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, {
         threadId: 'somethreadid',
@@ -254,28 +260,6 @@ describe('ProofService', () => {
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
       expect(updatedCredentialRecord).toMatchObject(expectedCredentialRecord)
       expect(returnedCredentialRecord).toMatchObject(expectedCredentialRecord)
-    })
-
-    test(`emits stateChange event from ${ProofState.RequestReceived} to ${ProofState.None}`, async () => {
-      const eventListenerMock = jest.fn()
-      eventEmitter.on<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged, eventListenerMock)
-
-      // given
-      mockFunction(proofRepository.getSingleByQuery).mockReturnValue(Promise.resolve(proof))
-
-      // when
-      await proofService.processProblemReport(messageContext)
-
-      // then
-      expect(eventListenerMock).toHaveBeenCalledWith({
-        type: 'ProofStateChanged',
-        payload: {
-          previousState: ProofState.RequestReceived,
-          proofRecord: expect.objectContaining({
-            state: ProofState.None,
-          }),
-        },
-      })
     })
   })
 })

@@ -1,3 +1,5 @@
+import type { Schema } from 'indy-sdk'
+
 export const credDef = {
   ver: '1.0',
   id: 'TL1EaPFCZ8Si5aUrqScBDt:3:CL:16:TAG',
@@ -48,4 +50,13 @@ export const credReq = {
     r_caps: {},
   },
   nonce: '784158051402761459123237',
+}
+
+export const schema: Schema = {
+  name: 'schema',
+  attrNames: ['name', 'age'],
+  id: 'TL1EaPFCZ8Si5aUrqScBDt:2:test-schema-1599055118161:1.0',
+  seqNo: 989798923653,
+  ver: '1.0',
+  version: '1.0',
 }

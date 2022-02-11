@@ -18,6 +18,7 @@ import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
+import { IndyAgentService } from '../../dids/domain/service'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
 import {
@@ -34,7 +35,6 @@ import {
   Ed25119Sig2018,
   authenticationTypes,
   ReferencedAuthentication,
-  IndyAgentService,
 } from '../models'
 import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
@@ -160,23 +160,31 @@ export class ConnectionService {
    */
   public async createRequest(
     connectionId: string,
-    config?: {
+    config: {
       myLabel?: string
       myImageUrl?: string
-    }
+      autoAcceptConnection?: boolean
+    } = {}
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
     const connectionRecord = await this.connectionRepository.getById(connectionId)
 
     connectionRecord.assertState(ConnectionState.Invited)
     connectionRecord.assertRole(ConnectionRole.Invitee)
 
+    const { myLabel, myImageUrl, autoAcceptConnection } = config
+
     const connectionRequest = new ConnectionRequestMessage({
-      label: config?.myLabel ?? this.config.label,
+      label: myLabel ?? this.config.label,
       did: connectionRecord.did,
       didDoc: connectionRecord.didDoc,
-      imageUrl: config?.myImageUrl ?? this.config.connectionImageUrl,
+      imageUrl: myImageUrl ?? this.config.connectionImageUrl,
     })
 
+    if (autoAcceptConnection !== undefined || autoAcceptConnection !== null) {
+      connectionRecord.autoAcceptConnection = config?.autoAcceptConnection
+    }
+
+    connectionRecord.autoAcceptConnection = config?.autoAcceptConnection
     await this.updateState(connectionRecord, ConnectionState.Requested)
 
     return {
@@ -323,7 +331,16 @@ export class ConnectionService {
     connectionRecord.assertState(ConnectionState.Requested)
     connectionRecord.assertRole(ConnectionRole.Invitee)
 
-    const connectionJson = await unpackAndVerifySignatureDecorator(message.connectionSig, this.wallet)
+    let connectionJson = null
+    try {
+      connectionJson = await unpackAndVerifySignatureDecorator(message.connectionSig, this.wallet)
+    } catch (error) {
+      if (error instanceof AriesFrameworkError) {
+        throw new ConnectionProblemReportError(error.message, {
+          problemCode: ConnectionProblemReportReason.RequestProcessingError,
+        })
+      }
+    }
 
     const connection = JsonTransformer.fromJSON(connectionJson, Connection)
     await MessageValidator.validate(connection)
@@ -374,7 +391,10 @@ export class ConnectionService {
     //  - maybe this shouldn't be in the connection service?
     const trustPing = new TrustPingMessage(config)
 
-    await this.updateState(connectionRecord, ConnectionState.Complete)
+    // Only update connection record and emit an event if the state is not already 'Complete'
+    if (connectionRecord.state !== ConnectionState.Complete) {
+      await this.updateState(connectionRecord, ConnectionState.Complete)
+    }
 
     return {
       connectionRecord: connectionRecord,
@@ -417,7 +437,7 @@ export class ConnectionService {
   public async processProblemReport(
     messageContext: InboundMessageContext<ConnectionProblemReportMessage>
   ): Promise<ConnectionRecord> {
-    const { message: connectionProblemReportMessage, recipientVerkey } = messageContext
+    const { message: connectionProblemReportMessage, recipientVerkey, senderVerkey } = messageContext
 
     this.logger.debug(`Processing connection problem report for verkey ${recipientVerkey}`)
 
@@ -433,8 +453,12 @@ export class ConnectionService {
       )
     }
 
-    connectionRecord.errorMsg = `${connectionProblemReportMessage.description.code} : ${connectionProblemReportMessage.description.en}`
-    await this.updateState(connectionRecord, ConnectionState.None)
+    if (connectionRecord.theirKey && connectionRecord.theirKey !== senderVerkey) {
+      throw new AriesFrameworkError("Sender verkey doesn't match verkey of connection record")
+    }
+
+    connectionRecord.errorMessage = `${connectionProblemReportMessage.description.code} : ${connectionProblemReportMessage.description.en}`
+    await this.update(connectionRecord)
     return connectionRecord
   }
 
@@ -529,6 +553,10 @@ export class ConnectionService {
     })
   }
 
+  public update(connectionRecord: ConnectionRecord) {
+    return this.connectionRepository.update(connectionRecord)
+  }
+
   /**
    * Retrieve all connections records
    *
@@ -578,9 +606,7 @@ export class ConnectionService {
    * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
    */
   public findByVerkey(verkey: string): Promise<ConnectionRecord | null> {
-    return this.connectionRepository.findSingleByQuery({
-      verkey,
-    })
+    return this.connectionRepository.findByVerkey(verkey)
   }
 
   /**
@@ -591,9 +617,7 @@ export class ConnectionService {
    * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
    */
   public findByTheirKey(verkey: string): Promise<ConnectionRecord | null> {
-    return this.connectionRepository.findSingleByQuery({
-      theirKey: verkey,
-    })
+    return this.connectionRepository.findByTheirKey(verkey)
   }
 
   /**
@@ -604,9 +628,7 @@ export class ConnectionService {
    * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
    */
   public findByInvitationKey(key: string): Promise<ConnectionRecord | null> {
-    return this.connectionRepository.findSingleByQuery({
-      invitationKey: key,
-    })
+    return this.connectionRepository.findByInvitationKey(key)
   }
 
   /**
@@ -618,7 +640,7 @@ export class ConnectionService {
    * @returns The connection record
    */
   public getByThreadId(threadId: string): Promise<ConnectionRecord> {
-    return this.connectionRepository.getSingleByQuery({ threadId })
+    return this.connectionRepository.getByThreadId(threadId)
   }
 
   private async createConnection(options: {

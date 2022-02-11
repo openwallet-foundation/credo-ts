@@ -33,10 +33,11 @@ import {
 } from '../messages'
 import { CredentialRecord } from '../repository/CredentialRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
+import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 import { CredentialService } from '../services'
 
 import { CredentialProblemReportMessage } from './../messages/CredentialProblemReportMessage'
-import { credDef, credOffer, credReq } from './fixtures'
+import { credDef, credOffer, credReq, schema } from './fixtures'
 
 // Mock classes
 jest.mock('../repository/CredentialRepository')
@@ -126,17 +127,17 @@ const mockCredentialRecord = ({
   })
 
   if (metadata?.indyRequest) {
-    credentialRecord.metadata.set('_internal/indyRequest', { ...metadata.indyRequest })
+    credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, { ...metadata.indyRequest })
   }
 
   if (metadata?.schemaId) {
-    credentialRecord.metadata.add('_internal/indyCredential', {
+    credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
       schemaId: metadata.schemaId,
     })
   }
 
   if (metadata?.credentialDefinitionId) {
-    credentialRecord.metadata.add('_internal/indyCredential', {
+    credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
       credentialDefinitionId: metadata.credentialDefinitionId,
     })
   }
@@ -174,6 +175,7 @@ describe('CredentialService', () => {
     )
 
     mockFunction(ledgerService.getCredentialDefinition).mockReturnValue(Promise.resolve(credDef))
+    mockFunction(ledgerService.getSchema).mockReturnValue(Promise.resolve(schema))
   })
 
   describe('createCredentialOffer', () => {
@@ -257,6 +259,44 @@ describe('CredentialService', () => {
           },
         ],
       })
+    })
+
+    test('throw error if credential preview attributes do not match with schema attributes', async () => {
+      const credentialPreview = CredentialPreview.fromRecord({
+        test: 'credential',
+        error: 'yes',
+      })
+
+      expect(
+        credentialService.createOffer(
+          {
+            ...credentialTemplate,
+            preview: credentialPreview,
+          },
+          connection
+        )
+      ).rejects.toThrowError(
+        `The credential preview attributes do not match the schema attributes (difference is: test,error,name,age, needs: name,age)`
+      )
+
+      const credentialPreviewWithExtra = CredentialPreview.fromRecord({
+        test: 'credential',
+        error: 'yes',
+        name: 'John',
+        age: '99',
+      })
+
+      await expect(
+        credentialService.createOffer(
+          {
+            ...credentialTemplate,
+            preview: credentialPreviewWithExtra,
+          },
+          connection
+        )
+      ).rejects.toThrowError(
+        `The credential preview attributes do not match the schema attributes (difference is: test,error, needs: name,age)`
+      )
     })
   })
 
@@ -587,7 +627,7 @@ describe('CredentialService', () => {
           })
         )
       ).rejects.toThrowError(
-        `Missing required base64 encoded attachment data for credential request with thread id ${threadId}`
+        `Missing required base64 or json encoded attachment data for credential request with thread id ${threadId}`
       )
     })
 
@@ -981,7 +1021,7 @@ describe('CredentialService', () => {
       })
     })
 
-    test(`updates state to ${CredentialState.None} and returns credential record`, async () => {
+    test(`updates problem report error message and returns credential record`, async () => {
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
 
       // given
@@ -992,7 +1032,7 @@ describe('CredentialService', () => {
 
       // then
       const expectedCredentialRecord = {
-        state: CredentialState.None,
+        errorMessage: 'issuance-abandoned: Indy error',
       }
       expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, {
         threadId: 'somethreadid',
@@ -1002,28 +1042,6 @@ describe('CredentialService', () => {
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
       expect(updatedCredentialRecord).toMatchObject(expectedCredentialRecord)
       expect(returnedCredentialRecord).toMatchObject(expectedCredentialRecord)
-    })
-
-    test(`emits stateChange event from ${CredentialState.OfferReceived} to ${CredentialState.None}`, async () => {
-      const eventListenerMock = jest.fn()
-      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
-
-      // given
-      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
-
-      // when
-      await credentialService.processProblemReport(messageContext)
-
-      // then
-      expect(eventListenerMock).toHaveBeenCalledWith({
-        type: 'CredentialStateChanged',
-        payload: {
-          previousState: CredentialState.OfferReceived,
-          credentialRecord: expect.objectContaining({
-            state: CredentialState.None,
-          }),
-        },
-      })
     })
   })
 

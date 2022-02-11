@@ -3,12 +3,14 @@ import type { ClassConstructor } from 'class-transformer'
 import { Transform, plainToInstance } from 'class-transformer'
 
 import { DidCommService } from './DidCommService'
+import { DidCommV2Service } from './DidCommV2Service'
+import { DidDocumentService } from './DidDocumentService'
 import { IndyAgentService } from './IndyAgentService'
-import { Service } from './Service'
 
 export const serviceTypes: { [key: string]: unknown | undefined } = {
   [IndyAgentService.type]: IndyAgentService,
   [DidCommService.type]: DidCommService,
+  [DidCommV2Service.type]: DidCommV2Service,
 }
 
 /**
@@ -24,8 +26,9 @@ export function ServiceTransformer() {
   return Transform(
     ({ value }: { value: { type: string }[] }) => {
       return value.map((serviceJson) => {
-        const serviceClass = (serviceTypes[serviceJson.type] ?? Service) as ClassConstructor<Service>
-        const service = plainToInstance<Service, unknown>(serviceClass, serviceJson)
+        const serviceClass = (serviceTypes[serviceJson.type] ??
+          DidDocumentService) as ClassConstructor<DidDocumentService>
+        const service = plainToInstance<DidDocumentService, unknown>(serviceClass, serviceJson)
 
         return service
       })
@@ -35,5 +38,3 @@ export function ServiceTransformer() {
     }
   )
 }
-
-export { IndyAgentService, DidCommService, Service }

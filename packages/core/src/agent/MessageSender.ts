@@ -1,6 +1,7 @@
-import type { DidCommService, ConnectionRecord } from '../modules/connections'
+import type { ConnectionRecord } from '../modules/connections'
+import type { DidCommService, IndyAgentService } from '../modules/dids/domain/service'
 import type { OutboundTransport } from '../transport/OutboundTransport'
-import type { OutboundMessage, OutboundPackage, WireMessage } from '../types'
+import type { OutboundMessage, OutboundPackage, EncryptedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
 import type { TransportSession } from './TransportService'
@@ -11,6 +12,7 @@ import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
+import { DidResolverService } from '../modules/dids/services/DidResolverService'
 import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
 
@@ -28,18 +30,21 @@ export class MessageSender {
   private transportService: TransportService
   private messageRepository: MessageRepository
   private logger: Logger
+  private didResolverService: DidResolverService
   public readonly outboundTransports: OutboundTransport[] = []
 
   public constructor(
     envelopeService: EnvelopeService,
     transportService: TransportService,
     @inject(InjectionSymbols.MessageRepository) messageRepository: MessageRepository,
-    @inject(InjectionSymbols.Logger) logger: Logger
+    @inject(InjectionSymbols.Logger) logger: Logger,
+    didResolverService: DidResolverService
   ) {
     this.envelopeService = envelopeService
     this.transportService = transportService
     this.messageRepository = messageRepository
     this.logger = logger
+    this.didResolverService = didResolverService
     this.outboundTransports = []
   }
 
@@ -56,10 +61,10 @@ export class MessageSender {
     message: AgentMessage
     endpoint: string
   }): Promise<OutboundPackage> {
-    const wireMessage = await this.envelopeService.packMessage(message, keys)
+    const encryptedMessage = await this.envelopeService.packMessage(message, keys)
 
     return {
-      payload: wireMessage,
+      payload: encryptedMessage,
       responseRequested: message.hasAnyReturnRoute(),
       endpoint,
     }
@@ -72,18 +77,17 @@ export class MessageSender {
     if (!session.keys) {
       throw new AriesFrameworkError(`There are no keys for the given ${session.type} transport session.`)
     }
-    const wireMessage = await this.envelopeService.packMessage(message, session.keys)
-
-    await session.send(wireMessage)
+    const encryptedMessage = await this.envelopeService.packMessage(message, session.keys)
+    await session.send(encryptedMessage)
   }
 
   public async sendPackage({
     connection,
-    packedMessage,
+    encryptedMessage,
     options,
   }: {
     connection: ConnectionRecord
-    packedMessage: WireMessage
+    encryptedMessage: EncryptedMessage
     options?: { transportPriority?: TransportPriorityOptions }
   }) {
     const errors: Error[] = []
@@ -92,7 +96,7 @@ export class MessageSender {
     const session = this.transportService.findSessionByConnectionId(connection.id)
     if (session?.inboundMessage?.hasReturnRouting()) {
       try {
-        await session.send(packedMessage)
+        await session.send(encryptedMessage)
         return
       } catch (error) {
         errors.push(error)
@@ -114,7 +118,7 @@ export class MessageSender {
         for (const transport of this.outboundTransports) {
           if (transport.supportedSchemes.includes(service.protocolScheme)) {
             await transport.sendMessage({
-              payload: packedMessage,
+              payload: encryptedMessage,
               endpoint: service.serviceEndpoint,
               connectionId: connection.id,
             })
@@ -137,13 +141,13 @@ export class MessageSender {
     // If the other party shared a queue service endpoint in their did doc we queue the message
     if (queueService) {
       this.logger.debug(`Queue packed message for connection ${connection.id} (${connection.theirLabel})`)
-      this.messageRepository.add(connection.id, packedMessage)
+      this.messageRepository.add(connection.id, encryptedMessage)
       return
     }
 
     // Message is undeliverable
     this.logger.error(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`, {
-      message: packedMessage,
+      message: encryptedMessage,
       errors,
       connection,
     })
@@ -217,8 +221,8 @@ export class MessageSender {
         senderKey: connection.verkey,
       }
 
-      const wireMessage = await this.envelopeService.packMessage(payload, keys)
-      this.messageRepository.add(connection.id, wireMessage)
+      const encryptedMessage = await this.envelopeService.packMessage(payload, keys)
+      this.messageRepository.add(connection.id, encryptedMessage)
       return
     }
 
@@ -293,14 +297,36 @@ export class MessageSender {
     this.logger.debug(`Retrieving services for connection '${connection.id}' (${connection.theirLabel})`, {
       transportPriority,
     })
-    // Retrieve DIDComm services
-    const allServices = this.transportService.findDidCommServices(connection)
 
-    //Separate queue service out
-    let services = allServices.filter((s) => !isDidCommTransportQueue(s.serviceEndpoint))
-    const queueService = allServices.find((s) => isDidCommTransportQueue(s.serviceEndpoint))
+    let didCommServices: Array<IndyAgentService | DidCommService>
 
-    //If restrictive will remove services not listed in schemes list
+    // If theirDid starts with a did: prefix it means we're using the new did syntax
+    // and we should use the did resolver
+    if (connection.theirDid?.startsWith('did:')) {
+      const {
+        didDocument,
+        didResolutionMetadata: { error, message },
+      } = await this.didResolverService.resolve(connection.theirDid)
+
+      if (!didDocument) {
+        throw new AriesFrameworkError(
+          `Unable to resolve did document for did '${connection.theirDid}': ${error} ${message}`
+        )
+      }
+
+      didCommServices = didDocument.didCommServices
+    }
+    // Old school method, did document is stored inside the connection record
+    else {
+      // Retrieve DIDComm services
+      didCommServices = this.transportService.findDidCommServices(connection)
+    }
+
+    // Separate queue service out
+    let services = didCommServices.filter((s) => !isDidCommTransportQueue(s.serviceEndpoint))
+    const queueService = didCommServices.find((s) => isDidCommTransportQueue(s.serviceEndpoint))
+
+    // If restrictive will remove services not listed in schemes list
     if (transportPriority?.restrictive) {
       services = services.filter((service) => {
         const serviceSchema = service.protocolScheme
@@ -308,7 +334,7 @@ export class MessageSender {
       })
     }
 
-    //If transport priority is set we will sort services by our priority
+    // If transport priority is set we will sort services by our priority
     if (transportPriority?.schemes) {
       services = services.sort(function (a, b) {
         const aScheme = a.protocolScheme
