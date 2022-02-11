@@ -1,5 +1,6 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
+import type { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import type { CredentialState } from '../CredentialState'
 import type { CredentialMetadata } from './credentialMetadataTypes'
 
@@ -9,14 +10,8 @@ import { Attachment } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import {
-  CredentialPreviewAttribute,
-  IssueCredentialMessage,
-  OfferCredentialMessage,
-  ProposeCredentialMessage,
-  RequestCredentialMessage,
-} from '../messages'
-import { CredentialInfo } from '../models/CredentialInfo'
+import { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
+import { CredentialInfo } from '../v1/models/CredentialInfo'
 
 export interface CredentialRecordProps {
   id?: string
@@ -27,10 +22,6 @@ export interface CredentialRecordProps {
 
   credentialId?: string
   tags?: CustomCredentialTags
-  proposalMessage?: ProposeCredentialMessage
-  offerMessage?: OfferCredentialMessage
-  requestMessage?: RequestCredentialMessage
-  credentialMessage?: IssueCredentialMessage
   credentialAttributes?: CredentialPreviewAttribute[]
   autoAcceptCredential?: AutoAcceptCredential
   linkedAttachments?: Attachment[]
@@ -45,23 +36,18 @@ export type DefaultCredentialTags = {
   credentialId?: string
 }
 
-export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCredentialTags, CredentialMetadata> {
+export class CredentialExchangeRecord extends BaseRecord<
+  DefaultCredentialTags,
+  CustomCredentialTags,
+  CredentialMetadata
+> {
   public connectionId?: string
   public threadId!: string
   public credentialId?: string
   public state!: CredentialState
   public autoAcceptCredential?: AutoAcceptCredential
   public errorMessage?: string
-
-  // message data
-  @Type(() => ProposeCredentialMessage)
-  public proposalMessage?: ProposeCredentialMessage
-  @Type(() => OfferCredentialMessage)
-  public offerMessage?: OfferCredentialMessage
-  @Type(() => RequestCredentialMessage)
-  public requestMessage?: RequestCredentialMessage
-  @Type(() => IssueCredentialMessage)
-  public credentialMessage?: IssueCredentialMessage
+  public protocolVersion!: CredentialProtocolVersion
 
   @Type(() => CredentialPreviewAttribute)
   public credentialAttributes?: CredentialPreviewAttribute[]
@@ -69,8 +55,8 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
   @Type(() => Attachment)
   public linkedAttachments?: Attachment[]
 
-  public static readonly type = 'CredentialRecord'
-  public readonly type = CredentialRecord.type
+  public static readonly type = 'CredentialExchangeRecord'
+  public readonly type = CredentialExchangeRecord.type
 
   public constructor(props: CredentialRecordProps) {
     super()
@@ -84,10 +70,11 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       this.threadId = props.threadId
       this._tags = props.tags ?? {}
 
-      this.proposalMessage = props.proposalMessage
-      this.offerMessage = props.offerMessage
-      this.requestMessage = props.requestMessage
-      this.credentialMessage = props.credentialMessage
+      // this.proposalMessage = props.proposalMessage
+
+      // this.offerMessage = props.offerMessage
+      // this.requestMessage = props.requestMessage
+      // this.credentialMessage = props.credentialMessage
       this.credentialAttributes = props.credentialAttributes
       this.autoAcceptCredential = props.autoAcceptCredential
       this.linkedAttachments = props.linkedAttachments

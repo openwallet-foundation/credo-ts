@@ -1,12 +1,12 @@
+import { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
 import { CredentialState } from '../CredentialState'
-import { CredentialPreviewAttribute } from '../messages'
-import { CredentialRecord } from '../repository/CredentialRecord'
+import { CredentialExchangeRecord } from '../repository/CredentialRecord'
 import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 
 describe('CredentialRecord', () => {
   describe('getCredentialInfo()', () => {
     test('creates credential info object from credential record data', () => {
-      const credentialRecord = new CredentialRecord({
+      const credentialRecord = new CredentialExchangeRecord({
         connectionId: '28790bfe-1345-4c64-b21a-7d98982b3894',
         threadId: 'threadId',
         state: CredentialState.Done,

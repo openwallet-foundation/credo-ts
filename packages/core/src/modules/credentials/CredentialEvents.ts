@@ -1,6 +1,6 @@
 import type { BaseEvent } from '../../agent/Events'
 import type { CredentialState } from './CredentialState'
-import type { CredentialRecord } from './repository/CredentialRecord'
+import type { CredentialExchangeRecord } from './repository/CredentialRecord'
 
 export enum CredentialEventTypes {
   CredentialStateChanged = 'CredentialStateChanged',
@@ -8,7 +8,7 @@ export enum CredentialEventTypes {
 export interface CredentialStateChangedEvent extends BaseEvent {
   type: typeof CredentialEventTypes.CredentialStateChanged
   payload: {
-    credentialRecord: CredentialRecord
+    credentialRecord: CredentialExchangeRecord
     previousState: CredentialState | null
   }
 }
