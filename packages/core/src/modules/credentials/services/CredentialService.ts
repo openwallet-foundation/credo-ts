@@ -672,6 +672,15 @@ export class CredentialService {
       credentialDefinition,
       revocationRegistryDefinition,
     })
+
+    // If we have the rev_reg_id, then we also want to set the cred_rev_id, which only can be fetched by retrieving credential from indy
+    if (indyCredential.rev_reg_id) {
+      const credential = await this.indyHolderService.getCredential(credentialId)
+
+      credentialRecord.credentialRevocationId = credential.cred_rev_id?.toString()
+      credentialRecord.revocationRegistryId = indyCredential.rev_reg_id
+    }
+
     credentialRecord.credentialId = credentialId
     credentialRecord.credentialMessage = issueCredentialMessage
     await this.updateState(credentialRecord, CredentialState.CredentialReceived)

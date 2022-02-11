@@ -33,5 +33,5 @@ export class RevocationNotificationMessage extends AgentMessage {
 
   @Expose({ name: 'thread_id' })
   @IsString()
-  public issueThread?: string
+  public issueThread!: string
 }
