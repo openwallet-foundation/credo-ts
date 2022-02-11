@@ -31,9 +31,12 @@ export class RevocationService {
   ): Promise<void> {
     const threadId = messageContext.message.issueThread
     const comment = messageContext.message.comment
+
     const credentialRecord = await this.credentialRepository.getSingleByQuery({ threadId })
+    
     credentialRecord.revocationNotification = new RevocationNotification(comment)
     await this.credentialRepository.update(credentialRecord)
+
     this.eventEmitter.emit<RevocationNotificationReceivedEvent>({
       type: CredentialEventTypes.RevocationNotificationReceived,
       payload: {
