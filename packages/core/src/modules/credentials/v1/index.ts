@@ -1,1 +1,1 @@
-export * from './V1LegacyCredentialService'
+export * from './CredentialServiceOptions'

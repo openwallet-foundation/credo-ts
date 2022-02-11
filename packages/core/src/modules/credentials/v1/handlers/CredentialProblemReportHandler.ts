@@ -1,13 +1,13 @@
-import type { V1LegacyCredentialService } from '../..'
 import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
+import type { V1CredentialService } from '../V1CredentialService'
 
 import { CredentialProblemReportMessage } from '../messages'
 
 export class CredentialProblemReportHandler implements Handler {
-  private credentialService: V1LegacyCredentialService
+  private credentialService: V1CredentialService
   public supportedMessages = [CredentialProblemReportMessage]
 
-  public constructor(credentialService: V1LegacyCredentialService) {
+  public constructor(credentialService: V1CredentialService) {
     this.credentialService = credentialService
   }
 

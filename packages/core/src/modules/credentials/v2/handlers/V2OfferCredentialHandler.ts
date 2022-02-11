@@ -122,15 +122,15 @@ export class V2OfferCredentialHandler implements Handler {
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
-      await this.didCommMessageRepository.saveAgentMessage({
-        agentMessage: message,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credentialRecord.id,
-      })
+      // await this.didCommMessageRepository.saveAgentMessage({
+      //   agentMessage: message,
+      //   role: DidCommMessageRole.Sender,
+      //   associatedRecordId: credentialRecord.id,
+      // })
       await this.credentialService.update(credentialRecord)
       await this.didCommMessageRepository.saveAgentMessage({
         agentMessage: message,
-        role: DidCommMessageRole.Receiver,
+        role: DidCommMessageRole.Sender,
         associatedRecordId: credentialRecord.id,
       })
       return createOutboundServiceMessage({

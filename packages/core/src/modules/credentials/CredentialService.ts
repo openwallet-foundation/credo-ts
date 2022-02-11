@@ -1,9 +1,15 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { CredentialState } from '.'
+import type { CredentialState, CredentialStateChangedEvent } from '.'
+import type { AgentConfig } from '../../agent/AgentConfig'
 import type { AgentMessage } from '../../agent/AgentMessage'
+import type { Dispatcher } from '../../agent/Dispatcher'
+import type { EventEmitter } from '../../agent/EventEmitter'
 import type { Handler, HandlerInboundMessage } from '../../agent/Handler'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
+import type { DidCommMessageRepository } from '../../storage'
+import type { MediationRecipientService } from '../routing'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
+import type { CredentialResponseCoordinator } from './CredentialResponseCoordinator'
 import type {
   AcceptProposalOptions,
   AcceptRequestOptions,
@@ -14,9 +20,9 @@ import type {
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from './interfaces'
-import type { CredentialExchangeRecord } from './repository'
+import type { CredentialExchangeRecord, CredentialRepository } from './repository'
+import type { CredentialProtocolMsgReturnType } from './v1'
 import type { V1CredentialService } from './v1/V1CredentialService'
-import type { CredentialProtocolMsgReturnType } from './v1/V1LegacyCredentialService'
 import type { CredentialAckMessage, IssueCredentialMessage, RequestCredentialMessage } from './v1/messages'
 import type { V2CredentialService } from './v2/V2CredentialService'
 import type { CredentialFormatService, V2CredProposeOfferRequestFormat } from './v2/formats/CredentialFormatService'
@@ -24,12 +30,40 @@ import type { V2CredentialAckMessage } from './v2/messages/V2CredentialAckMessag
 import type { V2IssueCredentialMessage } from './v2/messages/V2IssueCredentialMessage'
 import type { V2RequestCredentialMessage } from './v2/messages/V2RequestCredentialMessage'
 
+import { CredentialEventTypes } from '.'
+
 export type CredentialServiceType = V1CredentialService | V2CredentialService
 
 export abstract class CredentialService {
-  abstract getVersion(): CredentialProtocolVersion
+  protected credentialRepository: CredentialRepository
+  protected eventEmitter: EventEmitter
+  protected dispatcher: Dispatcher
+  protected agentConfig: AgentConfig
+  protected credentialResponseCoordinator: CredentialResponseCoordinator
+  protected mediationRecipientService: MediationRecipientService
+  protected didCommMessageRepository: DidCommMessageRepository
 
-  abstract update(credentialRecord: CredentialExchangeRecord): Promise<void>
+  public constructor(
+    credentialRepository: CredentialRepository,
+    eventEmitter: EventEmitter,
+    dispatcher: Dispatcher,
+    agentConfig: AgentConfig,
+    credentialResponseCoordinator: CredentialResponseCoordinator,
+    mediationRecipientService: MediationRecipientService,
+    didCommMessageRepository: DidCommMessageRepository
+  ) {
+    this.credentialRepository = credentialRepository
+    this.eventEmitter = eventEmitter
+    this.dispatcher = dispatcher
+    this.agentConfig = agentConfig
+    this.credentialResponseCoordinator = credentialResponseCoordinator
+    this.mediationRecipientService = mediationRecipientService
+    this.didCommMessageRepository = didCommMessageRepository
+
+    this.registerHandlers()
+  }
+
+  abstract getVersion(): CredentialProtocolVersion
 
   abstract getFormats(
     credentialFormats: OfferCredentialFormats | V2CredProposeOfferRequestFormat
@@ -46,6 +80,11 @@ export abstract class CredentialService {
     credentialOptions: NegotiateProposalOptions
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
 
+  abstract createProposalAsResponse(
+    credentialRecord: CredentialExchangeRecord,
+    options: ProposeCredentialOptions
+  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+
   // methods for offer
   abstract createOffer(
     credentialOptions: OfferCredentialOptions
@@ -61,6 +100,8 @@ export abstract class CredentialService {
     credentialRecord: CredentialExchangeRecord,
     options: RequestCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+
+  abstract processAck(messageContext: InboundMessageContext<CredentialAckMessage>): Promise<CredentialExchangeRecord>
 
   abstract negotiateOffer(
     credentialOptions: ProposeCredentialOptions
@@ -86,9 +127,91 @@ export abstract class CredentialService {
     credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialProtocolMsgReturnType<CredentialAckMessage | V2CredentialAckMessage>>
 
+  abstract registerHandlers(): void
+
   public getFormatService(credentialFormatType: CredentialFormatType): CredentialFormatService {
     throw Error('Not Implemented')
   }
 
-  abstract updateState(credentialRecord: CredentialExchangeRecord, newState: CredentialState): Promise<void>
+  /**
+   * Update the record to a new state and emit an state changed event. Also updates the record
+   * in storage.
+   *
+   * @param credentialRecord The credential record to update the state for
+   * @param newState The state to update to
+   *
+   */
+  public async updateState(credentialRecord: CredentialExchangeRecord, newState: CredentialState) {
+    const previousState = credentialRecord.state
+    credentialRecord.state = newState
+    await this.credentialRepository.update(credentialRecord)
+
+    this.eventEmitter.emit<CredentialStateChangedEvent>({
+      type: CredentialEventTypes.CredentialStateChanged,
+      payload: {
+        credentialRecord,
+        previousState: previousState,
+      },
+    })
+  }
+  /**
+   * Retrieve a credential record by id
+   *
+   * @param credentialRecordId The credential record id
+   * @throws {RecordNotFoundError} If no record is found
+   * @return The credential record
+   *
+   */
+  public getById(credentialRecordId: string): Promise<CredentialExchangeRecord> {
+    return this.credentialRepository.getById(credentialRecordId)
+  }
+
+  /**
+   * Retrieve all credential records
+   *
+   * @returns List containing all credential records
+   */
+  public getAll(): Promise<CredentialExchangeRecord[]> {
+    return this.credentialRepository.getAll()
+  }
+
+  /**
+   * Find a credential record by id
+   *
+   * @param credentialRecordId the credential record id
+   * @returns The credential record or null if not found
+   */
+  public findById(connectionId: string): Promise<CredentialExchangeRecord | null> {
+    return this.credentialRepository.findById(connectionId)
+  }
+
+  /**
+   * Delete a credential record by id
+   *
+   * @param credentialId the credential record id
+   */
+  public async deleteById(credentialId: string) {
+    const credentialRecord = await this.getById(credentialId)
+    return this.credentialRepository.delete(credentialRecord)
+  }
+
+  /**
+   * Retrieve a credential record by connection id and thread id
+   *
+   * @param connectionId The connection id
+   * @param threadId The thread id
+   * @throws {RecordNotFoundError} If no record is found
+   * @throws {RecordDuplicateError} If multiple records are found
+   * @returns The credential record
+   */
+  public getByThreadAndConnectionId(threadId: string, connectionId?: string): Promise<CredentialExchangeRecord> {
+    return this.credentialRepository.getSingleByQuery({
+      connectionId,
+      threadId,
+    })
+  }
+
+  public async update(credentialRecord: CredentialExchangeRecord) {
+    return await this.credentialRepository.update(credentialRecord)
+  }
 }

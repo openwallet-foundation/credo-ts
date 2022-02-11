@@ -4,7 +4,7 @@ import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
 import type { CredentialPreviewAttribute } from './CredentialPreviewAttributes'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
 import type { V2CredProposeOfferRequestFormat } from './v2/formats/CredentialFormatService'
-import type { CredDef } from 'indy-sdk'
+import type { CredDef, CredDefId } from 'indy-sdk'
 
 type IssuerId = string
 
@@ -88,7 +88,7 @@ interface ProposeCredentialOptions {
 
 export interface V2CredDefinitionFormat {
   indy?: {
-    credentialDefinition: CredDef
+    credDef: CredDef
   }
   w3c?: {
     // MJR-TODO

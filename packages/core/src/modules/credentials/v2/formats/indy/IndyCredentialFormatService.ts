@@ -218,7 +218,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
         )
         return {
           indy: {
-            credentialDefinition: indyCredDef,
+            credDef: indyCredDef,
           },
         }
       }
@@ -346,13 +346,13 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       options.offer &&
       options.offer.indy?.payload.credentialPayload &&
       options.credentialDefinition &&
-      options.credentialDefinition.indy?.credentialDefinition
+      options.credentialDefinition.indy?.credDef
     ) {
       const credoffer: CredOffer = options.offer.indy?.payload.credentialPayload as CredOffer
       const [credReq, credReqMetadata] = await this.indyHolderService.createCredentialRequest({
         holderDid: options.holderDid,
         credentialOffer: credoffer,
-        credentialDefinition: options.credentialDefinition.indy?.credentialDefinition,
+        credentialDefinition: options.credentialDefinition.indy?.credDef,
       })
       const request: V2CredProposeOfferRequestFormat = {
         indy: {

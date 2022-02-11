@@ -1,9 +1,9 @@
-import type { V1LegacyCredentialService } from '../..'
 import type { DidCommMessageRepository } from '../../../../../src/storage'
 import type { AgentConfig } from '../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 import type { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import type { CredentialExchangeRecord } from '../../repository/CredentialRecord'
+import type { V1CredentialService } from '../V1CredentialService'
 
 import { DidCommMessageRole } from '../../../../../src/storage'
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../agent/helpers'
@@ -11,13 +11,13 @@ import { OfferCredentialMessage, ProposeCredentialMessage, RequestCredentialMess
 
 export class RequestCredentialHandler implements Handler {
   private agentConfig: AgentConfig
-  private credentialService: V1LegacyCredentialService
+  private credentialService: V1CredentialService
   private credentialResponseCoordinator: CredentialResponseCoordinator
   private didCommMessageRepository: DidCommMessageRepository
   public supportedMessages = [RequestCredentialMessage]
 
   public constructor(
-    credentialService: V1LegacyCredentialService,
+    credentialService: V1CredentialService,
     agentConfig: AgentConfig,
     credentialResponseCoordinator: CredentialResponseCoordinator,
     didCommMessageRepository: DidCommMessageRepository

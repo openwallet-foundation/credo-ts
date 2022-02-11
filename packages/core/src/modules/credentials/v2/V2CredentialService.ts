@@ -25,7 +25,6 @@ import type {
   RequestCredentialOptions,
 } from '../interfaces'
 import type { CredentialRepository } from '../repository'
-import type { V1LegacyCredentialService } from '../v1/V1LegacyCredentialService' // tmp
 import type { CredentialAckMessage, IssueCredentialMessage } from '../v1/messages'
 import type { CredentialProtocolMsgReturnType } from './CredentialMessageBuilder'
 import type {
@@ -65,24 +64,15 @@ import { V2RequestCredentialMessage } from './messages/V2RequestCredentialMessag
 const logger = new ConsoleLogger(LogLevel.info)
 
 export class V2CredentialService extends CredentialService {
-  private credentialService: V1LegacyCredentialService // Temporary while v1 constructor needs this
   private connectionService: ConnectionService
-  private credentialRepository: CredentialRepository
-  private eventEmitter: EventEmitter
-  private agentConfig: AgentConfig
-  private credentialResponseCoordinator: CredentialResponseCoordinator
-  private dispatcher: Dispatcher
   private logger: Logger
   private indyIssuerService: IndyIssuerService
   private indyLedgerService: IndyLedgerService
   private indyHolderService: IndyHolderService
-  private didCommMessageRepository: DidCommMessageRepository
-  private mediationRecipientService: MediationRecipientService
   private credentialMessageBuilder: CredentialMessageBuilder
 
   public constructor(
     connectionService: ConnectionService,
-    credentialService: V1LegacyCredentialService,
     credentialRepository: CredentialRepository,
     eventEmitter: EventEmitter,
     msgSender: MessageSender,
@@ -95,21 +85,21 @@ export class V2CredentialService extends CredentialService {
     indyHolderService: IndyHolderService,
     didCommMessageRepository: DidCommMessageRepository
   ) {
-    super()
-    this.credentialRepository = credentialRepository
-    this.eventEmitter = eventEmitter
-    this.credentialService = credentialService
+    super(
+      credentialRepository,
+      eventEmitter,
+      dispatcher,
+      agentConfig,
+      credentialResponseCoordinator,
+      mediationRecipientService,
+      didCommMessageRepository
+    )
     this.connectionService = connectionService
-    this.agentConfig = agentConfig
-    this.credentialResponseCoordinator = credentialResponseCoordinator
-    this.dispatcher = dispatcher
     this.logger = agentConfig.logger
     this.indyIssuerService = indyIssuerService
-    this.mediationRecipientService = mediationRecipientService
     this.indyLedgerService = indyLedgerService
     this.indyHolderService = indyHolderService
     this.credentialMessageBuilder = new CredentialMessageBuilder()
-    this.didCommMessageRepository = didCommMessageRepository
   }
   /**
    * Returns the protocol version for this credential service
@@ -338,7 +328,7 @@ export class V2CredentialService extends CredentialService {
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
     this.logger.debug('>> IN SERVICE V2 => acceptProposal')
 
-    const credentialRecord = await this.credentialService.getById(proposal.credentialRecordId)
+    const credentialRecord = await this.getById(proposal.credentialRecordId)
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
@@ -587,28 +577,6 @@ export class V2CredentialService extends CredentialService {
   }
 
   /**
-   * Update the record to a new state and emit an state changed event. Also updates the record
-   * in storage.
-   *
-   * @param credentialRecord The credential record to update the state for
-   * @param newState The state to update to
-   *
-   */
-  public async updateState(credentialRecord: CredentialExchangeRecord, newState: CredentialState) {
-    const previousState = credentialRecord.state
-    credentialRecord.state = newState
-    await this.credentialRepository.update(credentialRecord)
-
-    this.eventEmitter.emit<CredentialStateChangedEvent>({
-      type: CredentialEventTypes.CredentialStateChanged,
-      payload: {
-        credentialRecord,
-        previousState: previousState,
-      },
-    })
-  }
-
-  /**
    * Create a {@link V2RequestCredentialMessage}
    *
    * @param credentialRecord The credential record for which to create the credential request
@@ -651,7 +619,7 @@ export class V2CredentialService extends CredentialService {
   /**
    * Process a received {@link RequestCredentialMessage}. This will not accept the credential request
    * or send a credential. It will only update the existing credential record with
-   * the information from the credential request message. Use {@link V1LegacyCredentialService#createCredential}
+   * the information from the credential request message. Use {@link createCredential}
    * after calling this method to create a credential.
    *
    * @param messageContext The message context containing a v2 credential request message
@@ -717,7 +685,7 @@ export class V2CredentialService extends CredentialService {
   public async negotiateProposal(
     credentialOptions: NegotiateProposalOptions
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
-    const credentialRecord = await this.credentialService.getById(credentialOptions.credentialRecordId)
+    const credentialRecord = await this.getById(credentialOptions.credentialRecordId)
 
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
@@ -759,7 +727,7 @@ export class V2CredentialService extends CredentialService {
     if (!credentialOptions.credentialRecordId) {
       throw Error('No credential record id found in propose options')
     }
-    const credentialRecord = await this.credentialService.getById(credentialOptions.credentialRecordId)
+    const credentialRecord = await this.getById(credentialOptions.credentialRecordId)
 
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
@@ -773,7 +741,7 @@ export class V2CredentialService extends CredentialService {
 
   /**
    * Create a {@link ProposePresentationMessage} as response to a received credential offer.
-   * To create a proposal not bound to an existing credential exchange, use {@link V1LegacyCredentialService#createProposal}.
+   * To create a proposal not bound to an existing credential exchange, use {@link createProposal}.
    *
    * @param credentialRecord The credential record for which to create the credential proposal
    * @param config Additional configuration to use for the proposal
@@ -946,7 +914,7 @@ export class V2CredentialService extends CredentialService {
   /**
    * Process a received {@link IssueCredentialMessage}. This will not accept the credential
    * or send a credential acknowledgement. It will only update the existing credential record with
-   * the information from the issue credential message. Use {@link V1LegacyCredentialService#createAck}
+   * the information from the issue credential message. Use {@link createAck}
    * after calling this method to create a credential acknowledgement.
    *
    * @param messageContext The message context containing an issue credential message

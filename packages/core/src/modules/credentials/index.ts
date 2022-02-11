@@ -1,5 +1,4 @@
 export * from './v1/messages'
-export * from './v1'
 export * from './CredentialUtils'
 export * from './v1/models'
 export * from './repository'

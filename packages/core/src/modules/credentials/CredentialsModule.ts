@@ -32,7 +32,6 @@ import { CredentialResponseCoordinator } from './CredentialResponseCoordinator'
 import { CredentialState } from './CredentialState'
 import { CredentialRepository } from './repository'
 import { V1CredentialService } from './v1/V1CredentialService'
-import { V1LegacyCredentialService } from './v1/V1LegacyCredentialService'
 import { V2CredentialService } from './v2/V2CredentialService'
 import { V2IssueCredentialMessage } from './v2/messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from './v2/messages/V2OfferCredentialMessage'
@@ -84,7 +83,6 @@ const logger = new ConsoleLogger(LogLevel.info)
 export class CredentialsModule implements CredentialsModule {
   private v2connectionService: ConnectionService
   private v2messageSender: MessageSender
-  private v1CredentialService: V1LegacyCredentialService
   private credentialRepository: CredentialRepository
   private eventEmitter: EventEmitter
   private dispatcher: Dispatcher
@@ -107,7 +105,6 @@ export class CredentialsModule implements CredentialsModule {
     connectionService: ConnectionService,
     agentConfig: AgentConfig,
     credentialResponseCoordinator: CredentialResponseCoordinator,
-    v1CredentialService: V1LegacyCredentialService,
     credentialRepository: CredentialRepository,
     eventEmitter: EventEmitter,
     indyIssuerService: IndyIssuerService,
@@ -117,7 +114,6 @@ export class CredentialsModule implements CredentialsModule {
     didCommMessageRepository: DidCommMessageRepository
   ) {
     this.v2messageSender = messageSender
-    this.v1CredentialService = v1CredentialService
     this.v2connectionService = connectionService
     this.credentialRepository = credentialRepository
     this.eventEmitter = eventEmitter
@@ -132,19 +128,20 @@ export class CredentialsModule implements CredentialsModule {
 
     this.v1Service = new V1CredentialService(
       this.v2connectionService,
-      this.v1CredentialService,
       this.didCommMessageRepo,
       this.agConfig,
       this.credentialResponseCoord,
       this.mediatorRecipientService,
       this.dispatcher,
       this.eventEmitter,
-      this.credentialRepository
+      this.credentialRepository,
+      this.indyIssuerService,
+      this.indyLedgerService,
+      this.indyHolderService
     )
 
     this.v2Service = new V2CredentialService(
       this.v2connectionService,
-      this.v1CredentialService,
       this.credentialRepository,
       this.eventEmitter,
       this.v2messageSender,
@@ -167,8 +164,8 @@ export class CredentialsModule implements CredentialsModule {
     )
 
     // register handlers here
-    this.v1Service.registerHandlers()
-    this.v2Service.registerHandlers()
+    // this.v1Service.registerHandlers()
+    // this.v2Service.registerHandlers()
   }
 
   public getService(protocolVersion: CredentialProtocolVersion): CredentialService {

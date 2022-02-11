@@ -1,10 +1,10 @@
-import type { V1LegacyCredentialService } from '../..'
 import type { DidCommMessageRepository } from '../../../../../src/storage'
 import type { AgentConfig } from '../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import type { CredentialExchangeRecord } from '../../repository/CredentialRecord'
+import type { V1CredentialService } from '../V1CredentialService'
 
 import { DidCommMessageRole } from '../../../../../src/storage'
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../agent/helpers'
@@ -12,7 +12,7 @@ import { ServiceDecorator } from '../../../../decorators/service/ServiceDecorato
 import { OfferCredentialMessage, ProposeCredentialMessage } from '../messages'
 
 export class OfferCredentialHandler implements Handler {
-  private credentialService: V1LegacyCredentialService
+  private credentialService: V1CredentialService
   private agentConfig: AgentConfig
   private credentialResponseCoordinator: CredentialResponseCoordinator
   private mediationRecipientService: MediationRecipientService
@@ -20,7 +20,7 @@ export class OfferCredentialHandler implements Handler {
   public supportedMessages = [OfferCredentialMessage]
 
   public constructor(
-    credentialService: V1LegacyCredentialService,
+    credentialService: V1CredentialService,
     agentConfig: AgentConfig,
     credentialResponseCoordinator: CredentialResponseCoordinator,
     mediationRecipientService: MediationRecipientService,
