@@ -533,8 +533,11 @@ describe('credentials', () => {
     expect(faberCredentialRecord.revocationNotification).toBeUndefined()
 
     testLogger.test('Creating revocation notification message')
+    const {revocationRegistryId, credentialRevocationId} = faberCredentialRecord
+    const revocationNotificationThreadId = `indy::${revocationRegistryId}::${credentialRevocationId}`
+    
     const revNotifMessage = new RevocationNotificationMessage({
-      issueThread: faberCredentialRecord.getTag('threadId') as string,
+      issueThread: revocationNotificationThreadId,
       comment: 'Credential has been revoked',
     })
 
