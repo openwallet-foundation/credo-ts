@@ -26,7 +26,7 @@ export class AgentConfig {
   public constructor(initConfig: InitConfig, agentDependencies: AgentDependencies) {
     this.initConfig = initConfig
     this.label = initConfig.label
-    this.logger = initConfig.logger ?? new ConsoleLogger(LogLevel.off)
+    this.logger = initConfig.logger ?? new ConsoleLogger(LogLevel.info)
     this.agentDependencies = agentDependencies
     this.fileSystem = new agentDependencies.FileSystem()
 

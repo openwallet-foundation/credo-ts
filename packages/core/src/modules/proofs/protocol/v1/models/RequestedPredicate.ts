@@ -12,6 +12,7 @@ export class RequestedPredicate {
       this.credentialId = options.credentialId
       this.timestamp = options.timestamp
       this.credentialInfo = options.credentialInfo
+      this.revoked = options.revoked
     }
   }
 
@@ -25,5 +26,8 @@ export class RequestedPredicate {
   public timestamp?: number
 
   @Exclude({ toPlainOnly: true })
-  public credentialInfo!: IndyCredentialInfo
+  public credentialInfo?: IndyCredentialInfo
+
+  @Exclude({ toPlainOnly: true })
+  public revoked?: boolean
 }

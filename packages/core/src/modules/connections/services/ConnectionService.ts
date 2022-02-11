@@ -391,7 +391,10 @@ export class ConnectionService {
     //  - maybe this shouldn't be in the connection service?
     const trustPing = new TrustPingMessage(config)
 
-    await this.updateState(connectionRecord, ConnectionState.Complete)
+    // Only update connection record and emit an event if the state is not already 'Complete'
+    if (connectionRecord.state !== ConnectionState.Complete) {
+      await this.updateState(connectionRecord, ConnectionState.Complete)
+    }
 
     return {
       connectionRecord: connectionRecord,
@@ -499,6 +502,7 @@ export class ConnectionService {
 
         // Check if the inbound message recipient key is present
         // in the recipientKeys of previously sent message ~service decorator
+
         if (
           !previousSentMessage?.service ||
           !previousSentMessage.service.recipientKeys.includes(messageContext.recipientVerkey)
@@ -519,6 +523,7 @@ export class ConnectionService {
 
         // Check if the inbound message sender key is present
         // in the recipientKeys of previously received message ~service decorator
+
         if (
           !previousReceivedMessage.service ||
           !previousReceivedMessage.service.recipientKeys.includes(messageContext.senderVerkey)
