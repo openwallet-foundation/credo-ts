@@ -530,10 +530,17 @@ describe('credentials', () => {
   })
 
   test('Test revocation notification for Faber credential id', async () => {
+    testLogger.test('faberCredentialRecord.revocationNotification starts as undefined')
     expect(faberCredentialRecord.revocationNotification).toBeUndefined()
 
+    testLogger.test("Set faberCredentialRecord's revocationRegistryId & credentialRevocationId")
+    const revocationRegistryId =
+      'RmbvMQPRMnerJ5Lpv9dRny:4:RmbvMQPRMnerJ5Lpv9dRny:3:CL:7473:rev:CL_ACCUM:332aa053-d8d8-4a24-a788-3fc81a007cf8'
+    const credentialRevocationId = '22'
+
+    faberCredentialRecord.setTags({ revocationRegistryId, credentialRevocationId })
+
     testLogger.test('Creating revocation notification message')
-    const { revocationRegistryId, credentialRevocationId } = faberCredentialRecord
     const revocationNotificationThreadId = `indy::${revocationRegistryId}::${credentialRevocationId}`
 
     const revNotifMessage = new RevocationNotificationMessage({
