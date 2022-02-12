@@ -87,12 +87,12 @@ export class MessageReceiver {
     const decryptedMessage = await this.decryptMessage(encryptedMessage)
     const { plaintextMessage, senderKey, recipientKey } = decryptedMessage
 
-    const connection = await this.findConnectionByMessageKeys(decryptedMessage)
-
     this.logger.info(
-      `Received message with type '${plaintextMessage['@type']}' from connection ${connection?.id} (${connection?.theirLabel})`,
+      `Received message with type '${plaintextMessage['@type']}', recipient key ${recipientKey} and sender key ${senderKey}`,
       plaintextMessage
     )
+
+    const connection = await this.findConnectionByMessageKeys(decryptedMessage)
 
     const message = await this.transformAndValidate(plaintextMessage, connection)
 
