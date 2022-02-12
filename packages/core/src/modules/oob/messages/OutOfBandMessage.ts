@@ -1,4 +1,5 @@
 import type { PlaintextMessage } from '../../../types'
+import type { HandshakeProtocol } from '../../connections'
 import type { DidCommService } from '../../dids'
 
 import { Expose, Type } from 'class-transformer'
@@ -18,7 +19,7 @@ interface OutOfBandMessageOptions {
   goalCode?: string
   goal?: string
   accept?: string[]
-  handshakeProtocols?: string[]
+  handshakeProtocols?: HandshakeProtocol[]
   services: Array<DidCommService | string>
 }
 
@@ -96,7 +97,7 @@ export class OutOfBandMessage extends AgentMessage {
   public readonly accept?: string[]
 
   @Expose({ name: 'handshake_protocols' })
-  public handshakeProtocols?: string[]
+  public handshakeProtocols?: HandshakeProtocol[]
 
   @Expose({ name: 'requests~attach' })
   @Type(() => Attachment)
