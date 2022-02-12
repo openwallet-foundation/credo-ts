@@ -18,5 +18,7 @@ export class PublicKey {
 
   @IsString()
   public type!: string
+
+  @IsString()
   public value?: string
 }

@@ -40,6 +40,7 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
       this.role = props.role
       this.didDocument = props.didDocument
       this.createdAt = props.createdAt ?? new Date()
+      this._tags = props.tags ?? {}
     }
   }
 
