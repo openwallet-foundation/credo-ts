@@ -18,7 +18,7 @@ import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
-import { IndyAgentService } from '../../dids/domain/service'
+import { IndyAgentService } from '../../dids'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
 import {
@@ -28,13 +28,15 @@ import {
   TrustPingMessage,
 } from '../messages'
 import {
+  DidExchangeState,
+  DidExchangeRole,
   Connection,
   ConnectionState,
   ConnectionRole,
   DidDoc,
   Ed25119Sig2018,
-  authenticationTypes,
-  ReferencedAuthentication,
+  EmbeddedAuthentication,
+  HandshakeProtocol,
 } from '../models'
 import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
@@ -75,9 +77,8 @@ export class ConnectionService {
     myImageUrl?: string
   }): Promise<ConnectionProtocolMsgReturnType<ConnectionInvitationMessage>> {
     // TODO: public did
+
     const connectionRecord = await this.createConnection({
-      role: ConnectionRole.Inviter,
-      state: ConnectionState.Invited,
       alias: config?.alias,
       routing: config.routing,
       autoAcceptConnection: config?.autoAcceptConnection,
@@ -105,7 +106,7 @@ export class ConnectionService {
       },
     })
 
-    return { connectionRecord: connectionRecord, message: invitation }
+    return { connectionRecord, message: invitation }
   }
 
   /**
@@ -123,11 +124,23 @@ export class ConnectionService {
       routing: Routing
       autoAcceptConnection?: boolean
       alias?: string
+      protocol?: HandshakeProtocol
     }
   ): Promise<ConnectionRecord> {
+    let role
+    let state
+
+    if (config?.protocol === HandshakeProtocol.DidExchange) {
+      role = DidExchangeRole.Requester
+      state = DidExchangeState.InvitationReceived
+    } else {
+      role = ConnectionRole.Invitee
+      state = ConnectionState.Invited
+    }
+
     const connectionRecord = await this.createConnection({
-      role: ConnectionRole.Invitee,
-      state: ConnectionState.Invited,
+      role,
+      state,
       alias: config?.alias,
       theirLabel: invitation.label,
       autoAcceptConnection: config?.autoAcceptConnection,
@@ -138,6 +151,7 @@ export class ConnectionService {
         invitationKey: invitation.recipientKeys && invitation.recipientKeys[0],
       },
       multiUseInvitation: false,
+      protocol: config?.protocol,
     })
     await this.connectionRepository.update(connectionRecord)
     this.eventEmitter.emit<ConnectionStateChangedEvent>({
@@ -154,20 +168,18 @@ export class ConnectionService {
   /**
    * Create a connection request message for the connection with the specified connection id.
    *
-   * @param connectionId the id of the connection for which to create a connection request
+   * @param connectionRecord the connection for which to create a connection request
    * @param config config for creation of connection request
    * @returns outbound message containing connection request
    */
   public async createRequest(
-    connectionId: string,
+    connectionRecord: ConnectionRecord,
     config: {
       myLabel?: string
       myImageUrl?: string
       autoAcceptConnection?: boolean
     } = {}
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
-    const connectionRecord = await this.connectionRepository.getById(connectionId)
-
     connectionRecord.assertState(ConnectionState.Invited)
     connectionRecord.assertRole(ConnectionRole.Invitee)
 
@@ -187,7 +199,7 @@ export class ConnectionService {
     await this.updateState(connectionRecord, ConnectionState.Requested)
 
     return {
-      connectionRecord: connectionRecord,
+      connectionRecord,
       message: connectionRequest,
     }
   }
@@ -217,6 +229,7 @@ export class ConnectionService {
         `Unable to process connection request: connection for verkey ${recipientVerkey} not found`
       )
     }
+    connectionRecord.role = ConnectionRole.Inviter
     connectionRecord.assertState(ConnectionState.Invited)
     connectionRecord.assertRole(ConnectionRole.Inviter)
 
@@ -263,14 +276,12 @@ export class ConnectionService {
   /**
    * Create a connection response message for the connection with the specified connection id.
    *
-   * @param connectionId the id of the connection for which to create a connection response
+   * @param connectionRecord the connection for which to create a connection response
    * @returns outbound message containing connection response
    */
   public async createResponse(
-    connectionId: string
+    connectionRecord: ConnectionRecord
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionResponseMessage>> {
-    const connectionRecord = await this.connectionRepository.getById(connectionId)
-
     connectionRecord.assertState(ConnectionState.Requested)
     connectionRecord.assertRole(ConnectionRole.Inviter)
 
@@ -282,7 +293,7 @@ export class ConnectionService {
     const connectionJson = JsonTransformer.toJSON(connection)
 
     if (!connectionRecord.threadId) {
-      throw new AriesFrameworkError(`Connection record with id ${connectionId} does not have a thread id`)
+      throw new AriesFrameworkError(`Connection record with id ${connectionRecord.id} does not have a thread id`)
     }
 
     // Use invitationKey by default, fall back to verkey
@@ -296,7 +307,7 @@ export class ConnectionService {
     await this.updateState(connectionRecord, ConnectionState.Responded)
 
     return {
-      connectionRecord: connectionRecord,
+      connectionRecord,
       message: connectionResponse,
     }
   }
@@ -373,16 +384,14 @@ export class ConnectionService {
    * By default a trust ping message should elicit a response. If this is not desired the
    * `config.responseRequested` property can be set to `false`.
    *
-   * @param connectionId the id of the connection for which to create a trust ping message
+   * @param connectionRecord the connection for which to create a trust ping message
    * @param config the config for the trust ping message
    * @returns outbound message containing trust ping message
    */
   public async createTrustPing(
-    connectionId: string,
+    connectionRecord: ConnectionRecord,
     config: { responseRequested?: boolean; comment?: string } = {}
   ): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
-    const connectionRecord = await this.connectionRepository.getById(connectionId)
-
     connectionRecord.assertState([ConnectionState.Responded, ConnectionState.Complete])
 
     // TODO:
@@ -396,7 +405,7 @@ export class ConnectionService {
     }
 
     return {
-      connectionRecord: connectionRecord,
+      connectionRecord,
       message: trustPing,
     }
   }
@@ -538,7 +547,7 @@ export class ConnectionService {
     }
   }
 
-  public async updateState(connectionRecord: ConnectionRecord, newState: ConnectionState) {
+  public async updateState(connectionRecord: ConnectionRecord, newState: ConnectionState | DidExchangeState) {
     const previousState = connectionRecord.state
     connectionRecord.state = newState
     await this.connectionRepository.update(connectionRecord)
@@ -547,7 +556,7 @@ export class ConnectionService {
       type: ConnectionEventTypes.ConnectionStateChanged,
       payload: {
         connectionRecord: connectionRecord,
-        previousState,
+        previousState: previousState || null,
       },
     })
   }
@@ -642,9 +651,13 @@ export class ConnectionService {
     return this.connectionRepository.getByThreadId(threadId)
   }
 
-  private async createConnection(options: {
-    role: ConnectionRole
-    state: ConnectionState
+  public async findByTheirDid(did: string): Promise<ConnectionRecord | null> {
+    return this.connectionRepository.findSingleByQuery({ theirDid: did })
+  }
+
+  public async createConnection(options: {
+    role?: ConnectionRole | DidExchangeRole
+    state?: ConnectionState | DidExchangeState
     invitation?: ConnectionInvitationMessage
     alias?: string
     routing: Routing
@@ -653,6 +666,7 @@ export class ConnectionService {
     multiUseInvitation: boolean
     tags?: CustomConnectionTags
     imageUrl?: string
+    protocol?: HandshakeProtocol
   }): Promise<ConnectionRecord> {
     const { endpoints, did, verkey, routingKeys, mediatorId } = options.routing
 
@@ -677,7 +691,7 @@ export class ConnectionService {
 
     // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
     // inferred from the publicKey class instance
-    const auth = new ReferencedAuthentication(publicKey, authenticationTypes[publicKey.type])
+    const auth = new EmbeddedAuthentication(publicKey)
 
     const didDoc = new DidDoc({
       id: did,
@@ -700,6 +714,7 @@ export class ConnectionService {
       imageUrl: options.imageUrl,
       multiUseInvitation: options.multiUseInvitation,
       mediatorId,
+      protocol: options.protocol,
     })
 
     await this.connectionRepository.save(connectionRecord)
@@ -708,7 +723,10 @@ export class ConnectionService {
 
   public async returnWhenIsConnected(connectionId: string, timeoutMs = 20000): Promise<ConnectionRecord> {
     const isConnected = (connection: ConnectionRecord) => {
-      return connection.id === connectionId && connection.state === ConnectionState.Complete
+      return (
+        connection.id === connectionId &&
+        (connection.state === ConnectionState.Complete || connection.state === DidExchangeState.Completed)
+      )
     }
 
     const observable = this.eventEmitter.observable<ConnectionStateChangedEvent>(
