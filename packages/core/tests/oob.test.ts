@@ -82,7 +82,12 @@ describe('out of band', () => {
 
     credentialTemplate = {
       credentialDefinitionId: definition.id,
-      preview: CredentialPreview.fromRecord({}),
+      preview: CredentialPreview.fromRecord({
+        name: 'name',
+        age: 'age',
+        profile_picture: 'profile_picture',
+        'x-ray': 'x-ray',
+      }),
       autoAcceptCredential: AutoAcceptCredential.Never,
     }
   })
