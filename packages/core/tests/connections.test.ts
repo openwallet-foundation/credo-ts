@@ -134,6 +134,6 @@ describe('connections', () => {
 
     const faberConnection = await faberAgent.connections.getById(faberConnectionId)
     // Expect initial connection to still be in state invited
-    return expect(faberConnection.state).toBe(ConnectionState.Invited)
+    return expect(faberConnection.state).toBe(undefined)
   })
 })

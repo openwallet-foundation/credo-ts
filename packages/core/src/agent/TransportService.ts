@@ -8,7 +8,7 @@ import type { EnvelopeKeys } from './EnvelopeService'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
-import { ConnectionRole } from '../modules/connections/models'
+import { ConnectionRole, DidExchangeRole } from '../modules/connections/models'
 import { DidCommService } from '../modules/dids/domain/service'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -40,7 +40,10 @@ export class TransportService {
       return connection.theirDidDoc.didCommServices
     }
 
-    if (connection.role === ConnectionRole.Invitee && connection.invitation) {
+    if (
+      (connection.role === ConnectionRole.Invitee || connection.role === DidExchangeRole.Requester) &&
+      connection.invitation
+    ) {
       const { invitation } = connection
       if (invitation.serviceEndpoint) {
         const service = new DidCommService({

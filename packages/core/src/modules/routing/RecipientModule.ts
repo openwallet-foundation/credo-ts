@@ -106,7 +106,8 @@ export class RecipientModule {
   }
 
   private async openMediationWebSocket(mediator: MediationRecord) {
-    const { message, connectionRecord } = await this.connectionService.createTrustPing(mediator.connectionId, {
+    const connection = await this.connectionService.getById(mediator.connectionId)
+    const { message, connectionRecord } = await this.connectionService.createTrustPing(connection, {
       responseRequested: false,
     })
 
@@ -357,13 +358,15 @@ export class RecipientModule {
         routing,
       })
       this.logger.debug('Processed mediation invitation', {
-        connectionId: invitationConnectionRecord,
+        connectionId: invitationConnectionRecord.id,
       })
-      const { message, connectionRecord } = await this.connectionService.createRequest(invitationConnectionRecord.id)
-      const outbound = createOutboundMessage(connectionRecord, message)
+      const { message } = await this.connectionService.createRequest(invitationConnectionRecord)
+      const outbound = createOutboundMessage(invitationConnectionRecord, message)
       await this.messageSender.sendMessage(outbound)
 
-      const completedConnectionRecord = await this.connectionService.returnWhenIsConnected(connectionRecord.id)
+      const completedConnectionRecord = await this.connectionService.returnWhenIsConnected(
+        invitationConnectionRecord.id
+      )
       this.logger.debug('Connection completed, requesting mediation')
       mediationRecord = await this.requestAndAwaitGrant(completedConnectionRecord, 60000) // TODO: put timeout as a config parameter
       this.logger.debug('Mediation Granted, setting as default mediator')
