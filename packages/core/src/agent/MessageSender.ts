@@ -296,6 +296,7 @@ export class MessageSender {
   ) {
     this.logger.debug(`Retrieving services for connection '${connection.id}' (${connection.theirLabel})`, {
       transportPriority,
+      connection,
     })
 
     let didCommServices: Array<IndyAgentService | DidCommService>
