@@ -652,7 +652,7 @@ export class V2ProofService extends ProofService {
       const service = this.formatServiceMap[format]
       result = {
         ...result,
-        ...(await service.createProofRequestFromProposal(options)),
+        ...(await this.createProofRequestFromProposal(options)),
       }
     }
     return result
@@ -686,7 +686,15 @@ export class V2ProofService extends ProofService {
     indy?: RetrievedCredentials | undefined
     jsonLd?: undefined
   }): Promise<{ indy?: RequestedCredentials | undefined; jsonLd?: undefined }> {
-    throw new Error('Method not implemented.')
+    let returnValue = {}
+
+    for (const [id, format] of Object.entries(options)) {
+      const service = this.formatServiceMap[id]
+      const credentials = await service.autoSelectCredentialsForProofRequest(options)
+      returnValue = { ...returnValue, credentials }
+    }
+
+    return returnValue
   }
 
   public async registerHandlers(
