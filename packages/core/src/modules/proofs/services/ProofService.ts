@@ -254,6 +254,9 @@ export class ProofService {
       comment?: string
     }
   ): Promise<ProofProtocolMsgReturnType<RequestPresentationMessage>> {
+    // Check if Attribute names match Predicate names
+    this.checkAttributePredicateMatch(proofRequest)
+
     // Assert
     proofRecord.assertState(ProofState.ProposalReceived)
 
@@ -298,6 +301,9 @@ export class ProofService {
     }
   ): Promise<ProofProtocolMsgReturnType<RequestPresentationMessage>> {
     this.logger.debug(`Creating proof request`)
+
+    // Check if Attribute names match Predicate names
+    this.checkAttributePredicateMatch(proofRequest)
 
     // Assert
     connectionRecord?.assertReady()
@@ -359,6 +365,9 @@ export class ProofService {
       )
     }
     await validateOrReject(proofRequest)
+
+    // Check if Attribute names match Predicate names
+    this.checkAttributePredicateMatch(proofRequest)
 
     this.logger.debug('received proof request', proofRequest)
 
@@ -1036,6 +1045,16 @@ export class ProofService {
     }
 
     return credentialDefinitions
+  }
+
+  private async checkAttributePredicateMatch(proofRequest: ProofRequest) {
+    for (const attribute of proofRequest.requestedAttributes.keys()) {
+      for (const predicate of proofRequest.requestedPredicates.keys()) {
+        if (attribute === predicate) {
+          throw new AriesFrameworkError(`The proof request contains attributes that match the predicates: ${attribute}`)
+        }
+      }
+    }
   }
 }
 
