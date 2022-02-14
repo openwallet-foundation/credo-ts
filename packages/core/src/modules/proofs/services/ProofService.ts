@@ -254,8 +254,8 @@ export class ProofService {
       comment?: string
     }
   ): Promise<ProofProtocolMsgReturnType<RequestPresentationMessage>> {
-    // Check if Attribute names match Predicate names
-    this.checkAttributePredicateMatch(proofRequest)
+    // Assert attribute and predicate group names do not match
+    this.assertAttributePredicateGroupNamesDoNotMatch(proofRequest)
 
     // Assert
     proofRecord.assertState(ProofState.ProposalReceived)
@@ -302,8 +302,8 @@ export class ProofService {
   ): Promise<ProofProtocolMsgReturnType<RequestPresentationMessage>> {
     this.logger.debug(`Creating proof request`)
 
-    // Check if Attribute names match Predicate names
-    this.checkAttributePredicateMatch(proofRequest)
+    // Assert attribute and predicate group names do not match
+    this.assertAttributePredicateGroupNamesDoNotMatch(proofRequest)
 
     // Assert
     connectionRecord?.assertReady()
@@ -366,8 +366,8 @@ export class ProofService {
     }
     await validateOrReject(proofRequest)
 
-    // Check if Attribute names match Predicate names
-    this.checkAttributePredicateMatch(proofRequest)
+    // Assert attribute and predicate group names do not match
+    this.assertAttributePredicateGroupNamesDoNotMatch(proofRequest)
 
     this.logger.debug('received proof request', proofRequest)
 
@@ -1047,13 +1047,15 @@ export class ProofService {
     return credentialDefinitions
   }
 
-  public checkAttributePredicateMatch(proofRequest: ProofRequest) {
-    for (const attribute of proofRequest.requestedAttributes.keys()) {
-      for (const predicate of proofRequest.requestedPredicates.keys()) {
-        if (attribute === predicate) {
-          throw new AriesFrameworkError(`The proof request contains attributes that match the predicates: ${attribute}`)
-        }
-      }
+  public assertAttributePredicateGroupNamesDoNotMatch(proofRequest: ProofRequest) {
+    const attributes = Array.from(proofRequest.requestedAttributes.keys())
+    const predicates = Array.from(proofRequest.requestedPredicates.keys())
+    const intersection = attributes.filter((x) => predicates.includes(x))
+
+    if (intersection.length > 0) {
+      throw new AriesFrameworkError(
+        `The proof request contains an attribute group name that matches a predicate group name: ${intersection}`
+      )
     }
   }
 }

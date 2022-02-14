@@ -332,7 +332,7 @@ describe('Present Proof', () => {
     })
   })
 
-  test('Faber starts with proof request to Alice, but the attributes match with the predicates', async () => {
+  test('an attribute group name matches with a predicate group name so an error is thrown', async () => {
     // Age attribute
     const attributes = {
       age: new ProofAttributeInfo({
@@ -365,6 +365,8 @@ describe('Present Proof', () => {
         requestedAttributes: attributes,
         requestedPredicates: predicates,
       })
-    ).rejects.toThrowError(`The proof request contains attributes that match the predicates: age`)
+    ).rejects.toThrowError(
+      `The proof request contains an attribute group name that matches a predicate group name: age`
+    )
   })
 })
