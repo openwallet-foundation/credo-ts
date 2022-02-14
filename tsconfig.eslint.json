@@ -7,6 +7,15 @@
       "@aries-framework/*": ["packages/*/src"]
     }
   },
-  "include": ["packages", "./.eslintrc.js", "./jest.config.ts", "./jest.config.base.ts", "types", "tests", "samples"],
+  "include": [
+    "packages",
+    "./.eslintrc.js",
+    "./jest.config.ts",
+    "./jest.config.base.ts",
+    "types",
+    "tests",
+    "samples",
+    "demo"
+  ],
   "exclude": ["node_modules", "build"]
 }
