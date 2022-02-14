@@ -331,4 +331,40 @@ describe('Present Proof', () => {
       presentationMessage: expect.any(PresentationMessage),
     })
   })
+
+  test('Faber starts with proof request to Alice, but the attributes match with the predicates', async () => {
+    // Age attribute
+    const attributes = {
+      age: new ProofAttributeInfo({
+        name: 'age',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    // Age predicate
+    const predicates = {
+      age: new ProofPredicateInfo({
+        name: 'age',
+        predicateType: PredicateType.GreaterThanOrEqualTo,
+        predicateValue: 50,
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    await expect(
+      faberAgent.proofs.requestProof(faberConnection.id, {
+        name: 'test-proof-request',
+        requestedAttributes: attributes,
+        requestedPredicates: predicates,
+      })
+    ).rejects.toThrowError(`The proof request contains attributes that match the predicates: age`)
+  })
 })

@@ -1047,7 +1047,7 @@ export class ProofService {
     return credentialDefinitions
   }
 
-  private async checkAttributePredicateMatch(proofRequest: ProofRequest) {
+  public checkAttributePredicateMatch(proofRequest: ProofRequest) {
     for (const attribute of proofRequest.requestedAttributes.keys()) {
       for (const predicate of proofRequest.requestedPredicates.keys()) {
         if (attribute === predicate) {
