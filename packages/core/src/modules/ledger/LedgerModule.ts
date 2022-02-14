@@ -72,4 +72,16 @@ export class LedgerModule {
   public async getCredentialDefinition(id: string) {
     return this.ledgerService.getCredentialDefinition(id)
   }
+
+  public async getRevocationRegistryDefinition(revocationRegistryDefinitionId: string) {
+    return this.ledgerService.getRevocationRegistryDefinition(revocationRegistryDefinitionId)
+  }
+
+  public async getRevocationRegistryDelta(
+    revocationRegistryDefinitionId: string,
+    fromSeconds = 0,
+    toSeconds = new Date().getTime()
+  ) {
+    return this.ledgerService.getRevocationRegistryDelta(revocationRegistryDefinitionId, fromSeconds, toSeconds)
+  }
 }
