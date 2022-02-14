@@ -1,27 +1,31 @@
-import type { AgentConfig } from '../../../../agent/AgentConfig'
-import type { Handler, HandlerInboundMessage } from '../../../../agent/Handler'
-import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
-import type { ProofRequestAsResponse, ProofRequestsOptions } from '../../interface'
-import type { ProofRecord } from '../../repository'
+import type { AgentConfig } from '../../../../../agent/AgentConfig'
+import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { DidCommMessageRepository } from '../../../../../storage'
+import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
+import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { V2ProofService } from '../V2ProofService'
 
-import { createOutboundMessage } from '../../../../agent/helpers'
-import { ProofRequestOptions } from '../../v1/models/ProofRequest'
+import { AriesFrameworkError } from '../../../../..'
+import { createOutboundMessage } from '../../../../../agent/helpers'
+import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
 export class V2ProposePresentationHandler implements Handler {
   private proofService: V2ProofService
   private agentConfig: AgentConfig
+  private didCommMessageRepository: DidCommMessageRepository
   private proofResponseCoordinator: ProofResponseCoordinator
   public supportedMessages = [V2ProposalPresentationMessage]
 
   public constructor(
     proofService: V2ProofService,
     agentConfig: AgentConfig,
+    didCommMessageRepository: DidCommMessageRepository,
     proofResponseCoordinator: ProofResponseCoordinator
   ) {
     this.proofService = proofService
     this.agentConfig = agentConfig
+    this.didCommMessageRepository = didCommMessageRepository
     this.proofResponseCoordinator = proofResponseCoordinator
   }
 
@@ -45,26 +49,60 @@ export class V2ProposePresentationHandler implements Handler {
       this.agentConfig.logger.error('No connection on the messageContext')
       return
     }
-    if (!proofRecord.proposalMessage) {
+
+    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: proofRecord.id,
+      messageClass: V2ProposalPresentationMessage,
+    })
+
+    if (!proposalMessage) {
       this.agentConfig.logger.error(`Proof record with id ${proofRecord.id} is missing required credential proposal`)
       return
     }
 
-    const proofRequestsOptions: ProofRequestsOptions = {
+    const proofRequestsOptions = {
       name: 'proof-request',
       version: '1.0',
     }
 
-    const proofRequest = await this.proofService.createProofRequestFromProposal(
-      proofRecord.proposalMessage?.presentationProposal,
-      proofRequestsOptions
-    )
+    const proposalAttachment = proposalMessage.getAttachmentById('hlindy/proof-req@2.0')
 
-    const proofRequestAsResponse: ProofRequestAsResponse = {
-      proofRecord,
-      proofRequest,
+    if (!proposalAttachment) {
+      throw new AriesFrameworkError('No proposal message could be found')
     }
-    const { message } = await this.proofService.createRequestAsResponse(proofRequestAsResponse)
+
+    const proofRequest = await this.proofService.createProofRequestFromProposal({
+      formats: {
+        indy: {
+          presentationProposal: proposalAttachment,
+        },
+      },
+      config: {
+        indy: proofRequestsOptions,
+      },
+    })
+
+    if (!proofRequest.indy) {
+      throw new AriesFrameworkError('Failed to create proof request')
+    }
+
+    const { message } = await this.proofService.createRequestAsResponse({
+      proofRecord: proofRecord,
+      protocolVersion: ProofProtocolVersion.V2_0,
+      autoAcceptProof: proofRecord.autoAcceptProof,
+      proofFormats: {
+        indy: {
+          name: proofRequest.indy.name,
+          nonce: proofRequest.indy.nonce,
+          version: proofRequest.indy.version,
+          nonRevoked: proofRequest.indy.nonRevoked,
+          requestedAttributes: proofRequest.indy.requestedAttributes,
+          requestedPredicates: proofRequest.indy.requestedPredicates,
+          ver: proofRequest.indy.ver,
+          proofRequest: proofRequest.indy,
+        },
+      },
+    })
 
     return createOutboundMessage(messageContext.connection, message)
   }

@@ -1,5 +1,6 @@
 import type { GetRequestedCredentialsConfig } from '../../ProofsModule'
 import type { RequestedCredentialForProofRequestOptions } from '../../models/ProofServiceOptions'
+import type { PresentationPreview, PresentationPreviewAttribute } from '../../protocol/v1/models/PresentationPreview'
 import type { ProofRecord } from '../../repository'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
@@ -21,6 +22,7 @@ import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
 import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import { uuid } from '../../../../utils/uuid'
 import { Credential, CredentialRepository, CredentialUtils } from '../../../credentials'
 import { IndyHolderService, IndyVerifierService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
@@ -35,6 +37,9 @@ import {
   RequestedCredentials,
   RequestedPredicate,
   RequestedAttribute,
+  AttributeFilter,
+  ProofPredicateInfo,
+  ProofAttributeInfo,
 } from '../../protocol/v1/models'
 import { ProofFormatService } from '../ProofFormatService'
 import { InvalidEncodedValueError } from '../errors/InvalidEncodedValueError'
@@ -277,10 +282,6 @@ export class IndyProofFormatService extends ProofFormatService {
       throw new AriesFrameworkError(
         'Unable to get requested credentials for proof request. No proof request message was found or the proof request message does not contain an indy proof request.'
       )
-    }
-    const requestedCredentialsForProofRequest: RequestedCredentialForProofRequestOptions = {
-      proofRequest: indyProofRequest,
-      presentationProposal: presentationPreview,
     }
 
     const retrievedCredentials = new RetrievedCredentials({})

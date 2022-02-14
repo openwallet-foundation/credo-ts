@@ -1,6 +1,11 @@
 import type { AgentMessage } from '../../../../agent/AgentMessage'
+import type { Dispatcher } from '../../../../agent/Dispatcher'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
+import type { Attachment } from '../../../../decorators/attachment/Attachment'
+import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { ProofStateChangedEvent } from '../../ProofEvents'
+import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
+import type { GetRequestedCredentialsConfig } from '../../ProofsModule'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
 import type { ProofFormatSpec } from '../../formats/models/ProofFormatSpec'
@@ -12,20 +17,22 @@ import type {
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
 } from '../../models/ProofServiceOptions'
+import type { RetrievedCredentials, RequestedCredentials } from '../v1/models'
+import type { PresentationPreview } from '../v1/models/PresentationPreview'
+import type { ProofRequest } from '../v1/models/ProofRequest'
 
 import { validateOrReject } from 'class-validator'
-import { Lifecycle, scoped } from 'tsyringe'
+import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../../agent/AgentConfig'
-import { Dispatcher } from '../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../agent/EventEmitter'
+import { InjectionSymbols } from '../../../../constants'
 import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
+import { Wallet } from '../../../../wallet/Wallet'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections'
-import { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import { ProofEventTypes } from '../../ProofEvents'
-import { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import { ProofService } from '../../ProofService'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
@@ -47,26 +54,15 @@ export class V2ProofService extends ProofService {
   private formatServiceMap: { [key: string]: ProofFormatService }
 
   public constructor(
-    dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
     proofRepository: ProofRepository,
     didCommMessageRepository: DidCommMessageRepository,
     eventEmitter: EventEmitter,
     indyProofFormatService: IndyProofFormatService,
-    proofResponseCoordinator: ProofResponseCoordinator,
-    mediationRecipientService: MediationRecipientService
+    @inject(InjectionSymbols.Wallet) wallet: Wallet
   ) {
-    super(
-      dispatcher,
-      agentConfig,
-      proofRepository,
-      connectionService,
-      didCommMessageRepository,
-      eventEmitter,
-      proofResponseCoordinator,
-      mediationRecipientService
-    )
+    super(agentConfig, proofRepository, connectionService, didCommMessageRepository, wallet, eventEmitter)
     this.protocolVersion = ProofProtocolVersion.V2_0
     this.formatServiceMap = {
       [PresentationRecordType.Indy]: indyProofFormatService,
@@ -636,6 +632,61 @@ export class V2ProofService extends ProofService {
     })
 
     return request.willConfirm
+  }
+
+  public async createProofRequestFromProposal(options: {
+    formats: {
+      indy?: {
+        presentationProposal: Attachment
+      }
+      jsonLd?: never
+    }
+    config?: { indy?: { name: string; version: string; nonce?: string }; jsonLd?: never }
+  }): Promise<{
+    indy?: ProofRequest
+    jsonLd?: never
+  }> {
+    let result = {}
+
+    for (const [format, value] of Object.entries(options.formats)) {
+      const service = this.formatServiceMap[format]
+      result = {
+        ...result,
+        ...(await service.createProofRequestFromProposal(options)),
+      }
+    }
+    return result
+  }
+
+  public async findRequestMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: options.proofRecord.id,
+      messageClass: V2RequestPresentationMessage,
+    })
+  }
+  public async findPresentationMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: options.proofRecord.id,
+      messageClass: V2PresentationMessage,
+    })
+  }
+  public async findProposalMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: options.proofRecord.id,
+      messageClass: V2ProposalPresentationMessage,
+    })
+  }
+  public async getRequestedCredentialsForProofRequest(options: {
+    proofRecord: ProofRecord
+    config: { indy?: GetRequestedCredentialsConfig | undefined; jsonLd?: undefined }
+  }): Promise<{ indy?: RetrievedCredentials | undefined; jsonLd?: undefined }> {
+    throw new Error('Method not implemented.')
+  }
+  public async autoSelectCredentialsForProofRequest(options: {
+    indy?: RetrievedCredentials | undefined
+    jsonLd?: undefined
+  }): Promise<{ indy?: RequestedCredentials | undefined; jsonLd?: undefined }> {
+    throw new Error('Method not implemented.')
   }
 
   public async registerHandlers(

@@ -1,3 +1,4 @@
+import type { V1ProofService } from '..'
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
@@ -6,18 +7,19 @@ import type { ProofService } from '../../../ProofService'
 import type { ProofRecord } from '../../../repository/ProofRecord'
 
 import { createOutboundMessage } from '../../../../../agent/helpers'
+import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { V1ProposePresentationMessage } from '../messages'
 
 export class V1ProposePresentationHandler implements Handler {
-  private proofService: ProofService
+  private proofService: V1ProofService
   private agentConfig: AgentConfig
   private didCommMessageRepository: DidCommMessageRepository
   private proofResponseCoordinator: ProofResponseCoordinator
   public supportedMessages = [V1ProposePresentationMessage]
 
   public constructor(
-    proofService: ProofService,
+    proofService: V1ProofService,
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,
     didCommMessageRepository: DidCommMessageRepository
@@ -57,22 +59,31 @@ export class V1ProposePresentationHandler implements Handler {
       this.agentConfig.logger.error(`Proof record with id ${proofRecord.id} is missing required credential proposal`)
       return
     }
-    const proofRequest = await this.proofService.createProofRequestFromProposal(proposalMessage.presentationProposal, {
-      name: 'proof-request',
-      version: '1.0',
+    const proofRequest = await this.proofService.createProofRequestFromProposal({
+      formats: {
+        indy: {
+          presentationProposal: proposalMessage.presentationProposal,
+        },
+      },
     })
+
+    const indyProofRequest = proofRequest.indy
+
+    if (!indyProofRequest) {
+      throw new AriesFrameworkError('No Indy proof request was found')
+    }
 
     const { message } = await this.proofService.createRequestAsResponse({
       proofFormats: {
         indy: {
-          name: proofRequest.name,
-          version: proofRequest.version,
-          nonRevoked: proofRequest.nonRevoked,
-          requestedAttributes: proofRequest.requestedAttributes,
-          requestedPredicates: proofRequest.requestedPredicates,
-          ver: proofRequest.ver,
-          proofRequest: proofRequest,
-          nonce: proofRequest.nonce,
+          name: indyProofRequest.name,
+          version: indyProofRequest.version,
+          nonRevoked: indyProofRequest.nonRevoked,
+          requestedAttributes: indyProofRequest.requestedAttributes,
+          requestedPredicates: indyProofRequest.requestedPredicates,
+          ver: indyProofRequest.ver,
+          proofRequest: indyProofRequest,
+          nonce: indyProofRequest.nonce,
         },
       },
       proofRecord: proofRecord,

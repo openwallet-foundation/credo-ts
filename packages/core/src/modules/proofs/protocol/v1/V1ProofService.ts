@@ -63,12 +63,12 @@ import {
 } from './messages'
 import {
   AttributeFilter,
-  ProofAttributeInfo,
   ProofPredicateInfo,
   ProofRequest,
   RequestedAttribute,
   RequestedCredentials,
   RequestedPredicate,
+  ProofAttributeInfo,
 } from './models'
 import { PresentationPreview } from './models/PresentationPreview'
 
@@ -609,25 +609,35 @@ export class V1ProofService extends ProofService {
     return this.wallet.generateNonce()
   }
 
-  /**
-   * Create a {@link ProofRequest} from a presentation proposal. This method can be used to create the
-   * proof request from a received proposal for use in {@link ProofService.createRequestAsResponse}
-   *
-   * @param presentationProposal The presentation proposal to create a proof request from
-   * @param config Additional configuration to use for the proof request
-   * @returns proof request object
-   *
-   */
-  public async createProofRequestFromProposal(
-    presentationProposal: PresentationPreview,
-    config: { name: string; version: string; nonce?: string }
-  ): Promise<ProofRequest> {
-    const nonce = config.nonce ?? (await this.generateProofRequestNonce())
+  public async createProofRequestFromProposal(options: {
+    formats: {
+      indy?: {
+        presentationProposal: PresentationPreview
+      }
+      jsonLd?: never
+    }
+    config?: { indy?: { name: string; version: string; nonce: string }; jsonLd?: never }
+  }): Promise<{
+    indy?: ProofRequest
+    jsonLd?: never
+  }> {
+    const indyFormat = options.formats.indy
+    const indyConfig = options.config?.indy
+
+    if (!indyFormat) {
+      throw new AriesFrameworkError('Indy format must be provided')
+    }
+
+    if (!indyConfig) {
+      throw new AriesFrameworkError('Indy config must be provided')
+    }
+
+    const nonce = indyConfig.nonce ?? (await this.generateProofRequestNonce())
 
     const proofRequest = new ProofRequest({
-      name: config.name,
-      version: config.version,
-      nonce,
+      name: indyConfig.name,
+      version: indyConfig.version,
+      nonce: nonce,
     })
 
     /**
@@ -641,7 +651,7 @@ export class V1ProofService extends ProofService {
      * }
      */
     const attributesByReferent: Record<string, PresentationPreviewAttribute[]> = {}
-    for (const proposedAttributes of presentationProposal.attributes) {
+    for (const proposedAttributes of indyFormat.presentationProposal.attributes) {
       if (!proposedAttributes.referent) proposedAttributes.referent = uuid()
 
       const referentAttributes = attributesByReferent[proposedAttributes.referent]
@@ -675,9 +685,9 @@ export class V1ProofService extends ProofService {
       proofRequest.requestedAttributes.set(referent, requestedAttribute)
     }
 
-    this.logger.debug('proposal predicates', presentationProposal.predicates)
+    // this.logger.debug('proposal predicates', indyFormat.presentationProposal.predicates)
     // Transform proposed predicates to requested predicates
-    for (const proposedPredicate of presentationProposal.predicates) {
+    for (const proposedPredicate of indyFormat.presentationProposal.predicates) {
       const requestedPredicate = new ProofPredicateInfo({
         name: proposedPredicate.name,
         predicateType: proposedPredicate.predicate,
@@ -692,7 +702,9 @@ export class V1ProofService extends ProofService {
       proofRequest.requestedPredicates.set(uuid(), requestedPredicate)
     }
 
-    return proofRequest
+    return {
+      indy: proofRequest,
+    }
   }
 
   /**
@@ -881,6 +893,13 @@ export class V1ProofService extends ProofService {
     return await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: options.proofRecord.id,
       messageClass: V1PresentationMessage,
+    })
+  }
+
+  public async findProposalMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: options.proofRecord.id,
+      messageClass: V1ProposePresentationMessage,
     })
   }
 

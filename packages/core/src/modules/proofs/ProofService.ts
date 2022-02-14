@@ -1,5 +1,6 @@
 import type {
   GetRequestedCredentialsConfig,
+  ProofRequest,
   ProofState,
   ProofStateChangedEvent,
   RequestedCredentials,
@@ -10,6 +11,7 @@ import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Dispatcher } from '../../agent/Dispatcher'
 import type { EventEmitter } from '../../agent/EventEmitter'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
+import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { Logger } from '../../logger'
 import type { DidCommMessageRole, DidCommMessageRepository } from '../../storage'
 import type { Wallet } from '../../wallet/Wallet'
@@ -27,6 +29,7 @@ import type {
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
 } from './models/ProofServiceOptions'
+import type { PresentationPreview } from './protocol/v1/models/PresentationPreview'
 import type { ProofRecord, ProofRepository } from './repository'
 import type { PresentationRecordType } from './repository/PresentationExchangeRecord'
 
@@ -185,6 +188,8 @@ export abstract class ProofService {
 
   public abstract findPresentationMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null>
 
+  public abstract findProposalMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null>
+
   public async saveOrUpdatePresentationMessage(options: {
     proofRecord: ProofRecord
     message: AgentMessage
@@ -215,6 +220,19 @@ export abstract class ProofService {
     indy?: RequestedCredentials
     jsonLd?: never
   }>
+
+  // public abstract createProofRequestFromProposal(options: {
+  //   formats: {
+  //     indy?: {
+  //       presentationProposal: PresentationPreview
+  //     }
+  //     jsonLd?: never
+  //   }
+  //   config?: { indy?: { name: string; version: string; nonce?: string }; jsonLd?: never }
+  // }): Promise<{
+  //   indy?: ProofRequest
+  //   jsonLd?: never
+  // }>
 
   /**
    * Retrieve all proof records
