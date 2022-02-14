@@ -257,6 +257,9 @@ export class ProofService {
       comment?: string
     }
   ): Promise<ProofProtocolMsgReturnType<RequestPresentationMessage>> {
+    // Assert attribute and predicate group names do not match
+    this.assertAttributePredicateGroupNamesDoNotMatch(proofRequest)
+
     // Assert
     proofRecord.assertState(ProofState.ProposalReceived)
 
@@ -301,6 +304,9 @@ export class ProofService {
     }
   ): Promise<ProofProtocolMsgReturnType<RequestPresentationMessage>> {
     this.logger.debug(`Creating proof request`)
+
+    // Assert attribute and predicate group names do not match
+    this.assertAttributePredicateGroupNamesDoNotMatch(proofRequest)
 
     // Assert
     connectionRecord?.assertReady()
@@ -362,6 +368,9 @@ export class ProofService {
       )
     }
     await validateOrReject(proofRequest)
+
+    // Assert attribute and predicate group names do not match
+    this.assertAttributePredicateGroupNamesDoNotMatch(proofRequest)
 
     this.logger.debug('received proof request', proofRequest)
 
@@ -1115,6 +1124,18 @@ export class ProofService {
     }
 
     return credentialDefinitions
+  }
+
+  public assertAttributePredicateGroupNamesDoNotMatch(proofRequest: ProofRequest) {
+    const attributes = Array.from(proofRequest.requestedAttributes.keys())
+    const predicates = Array.from(proofRequest.requestedPredicates.keys())
+    const intersection = attributes.filter((x) => predicates.includes(x))
+
+    if (intersection.length > 0) {
+      throw new AriesFrameworkError(
+        `The proof request contains an attribute group name that matches a predicate group name: ${intersection}`
+      )
+    }
   }
 }
 
