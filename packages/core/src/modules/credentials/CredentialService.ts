@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { CredentialState, CredentialStateChangedEvent } from '.'
+import type { CredentialStateChangedEvent } from '.'
 import type { AgentConfig } from '../../agent/AgentConfig'
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Dispatcher } from '../../agent/Dispatcher'
@@ -40,7 +40,7 @@ import type { CredentialExchangeRecord, CredentialRepository } from './repositor
 
 import { ConsoleLogger, LogLevel } from '../../logger'
 
-import { CredentialEventTypes } from '.'
+import { CredentialEventTypes, CredentialState } from '.'
 
 export type CredentialServiceType = V1CredentialService | V2CredentialService
 
@@ -145,6 +145,17 @@ export abstract class CredentialService {
     throw Error('Not Implemented')
   }
 
+  /**
+   * Decline a credential offer
+   * @param credentialRecord The credential to be declined
+   */
+  public async declineOffer(credentialRecord: CredentialExchangeRecord): Promise<CredentialExchangeRecord> {
+    credentialRecord.assertState(CredentialState.OfferReceived)
+
+    await this.updateState(credentialRecord, CredentialState.Declined)
+
+    return credentialRecord
+  }
   /**
    * Process a received {@link ProblemReportMessage}.
    *

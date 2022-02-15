@@ -4,12 +4,12 @@ import type { StoreCredentialOptions } from '../../indy/services/IndyHolderServi
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
 import type { AcceptRequestOptions, RequestCredentialOptions } from '../interfaces'
-import type { CustomCredentialTags } from '../repository/CredentialRecord'
 import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
 import type { V2CredProposeOfferRequestFormat } from '../protocol/v2/formats/CredentialFormatService'
 import type { V2IssueCredentialMessageProps } from '../protocol/v2/messages/V2IssueCredentialMessage'
 import type { V2OfferCredentialMessageOptions } from '../protocol/v2/messages/V2OfferCredentialMessage'
 import type { V2RequestCredentialMessageOptions } from '../protocol/v2/messages/V2RequestCredentialMessage'
+import type { CustomCredentialTags } from '../repository/CredentialRecord'
 import type { AgentConfig } from '@aries-framework/core'
 
 import { Agent } from '../../../../src/agent/Agent'
@@ -35,9 +35,6 @@ import { CredentialResponseCoordinator } from '../CredentialResponseCoordinator'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
 import { CredentialProblemReportReason } from '../errors/CredentialProblemReportReason'
-import { CredentialExchangeRecord } from '../repository/CredentialRecord'
-import { CredentialRepository } from '../repository/CredentialRepository'
-import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
 import {
   CredentialAckMessage,
@@ -52,6 +49,9 @@ import { V2CredentialService } from '../protocol/v2/V2CredentialService'
 import { V2IssueCredentialMessage } from '../protocol/v2/messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from '../protocol/v2/messages/V2OfferCredentialMessage'
 import { V2RequestCredentialMessage } from '../protocol/v2/messages/V2RequestCredentialMessage'
+import { CredentialExchangeRecord } from '../repository/CredentialRecord'
+import { CredentialRepository } from '../repository/CredentialRepository'
+import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 
 import { credDef, credReq, credOffer } from './fixtures'
 
@@ -952,108 +952,108 @@ describe('CredentialService', () => {
     })
   })
 
-  // describe('repository methods', () => {
-  //   it('getById should return value from credentialRepository.getById', async () => {
-  //     const expected = mockCredentialRecord()
-  //     mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(expected))
-  //     const result = await credentialService.getById(expected.id)
-  //     expect(credentialRepository.getById).toBeCalledWith(expected.id)
+  describe('repository methods', () => {
+    it('getById should return value from credentialRepository.getById', async () => {
+      const expected = mockCredentialRecord()
+      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(expected))
+      const result = await credentialService.getById(expected.id)
+      expect(credentialRepository.getById).toBeCalledWith(expected.id)
 
-  //     expect(result).toBe(expected)
-  //   })
+      expect(result).toBe(expected)
+    })
 
-  //   it('getById should return value from credentialRepository.getSingleByQuery', async () => {
-  //     const expected = mockCredentialRecord()
-  //     mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(expected))
-  //     const result = await credentialService.getByThreadAndConnectionId('threadId', 'connectionId')
-  //     expect(credentialRepository.getSingleByQuery).toBeCalledWith({
-  //       threadId: 'threadId',
-  //       connectionId: 'connectionId',
-  //     })
+    it('getById should return value from credentialRepository.getSingleByQuery', async () => {
+      const expected = mockCredentialRecord()
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(expected))
+      const result = await credentialService.getByThreadAndConnectionId('threadId', 'connectionId')
+      expect(credentialRepository.getSingleByQuery).toBeCalledWith({
+        threadId: 'threadId',
+        connectionId: 'connectionId',
+      })
 
-  //     expect(result).toBe(expected)
-  //   })
+      expect(result).toBe(expected)
+    })
 
-  //   it('findById should return value from credentialRepository.findById', async () => {
-  //     const expected = mockCredentialRecord()
-  //     mockFunction(credentialRepository.findById).mockReturnValue(Promise.resolve(expected))
-  //     const result = await credentialService.findById(expected.id)
-  //     expect(credentialRepository.findById).toBeCalledWith(expected.id)
+    it('findById should return value from credentialRepository.findById', async () => {
+      const expected = mockCredentialRecord()
+      mockFunction(credentialRepository.findById).mockReturnValue(Promise.resolve(expected))
+      const result = await credentialService.findById(expected.id)
+      expect(credentialRepository.findById).toBeCalledWith(expected.id)
 
-  //     expect(result).toBe(expected)
-  //   })
+      expect(result).toBe(expected)
+    })
 
-  //   it('getAll should return value from credentialRepository.getAll', async () => {
-  //     const expected = [mockCredentialRecord(), mockCredentialRecord()]
+    it('getAll should return value from credentialRepository.getAll', async () => {
+      const expected = [mockCredentialRecord(), mockCredentialRecord()]
 
-  //     mockFunction(credentialRepository.getAll).mockReturnValue(Promise.resolve(expected))
-  //     const result = await credentialService.getAll()
-  //     expect(credentialRepository.getAll).toBeCalledWith()
+      mockFunction(credentialRepository.getAll).mockReturnValue(Promise.resolve(expected))
+      const result = await credentialService.getAll()
+      expect(credentialRepository.getAll).toBeCalledWith()
 
-  //     expect(result).toEqual(expect.arrayContaining(expected))
-  //   })
-  // })
+      expect(result).toEqual(expect.arrayContaining(expected))
+    })
+  })
 
-  // describe('declineOffer', () => {
-  //   const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249754'
-  //   let credential: CredentialExchangeRecord
+  describe('declineOffer', () => {
+    const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249754'
+    let credential: CredentialExchangeRecord
 
-  //   beforeEach(() => {
-  //     credential = mockCredentialRecord({
-  //       state: CredentialState.OfferReceived,
-  //       tags: { threadId },
-  //     })
-  //   })
+    beforeEach(() => {
+      credential = mockCredentialRecord({
+        state: CredentialState.OfferReceived,
+        tags: { threadId },
+      })
+    })
 
-  //   test(`updates state to ${CredentialState.Declined}`, async () => {
-  //     // given
-  //     const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
+    test(`updates state to ${CredentialState.Declined}`, async () => {
+      // given
+      const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
 
-  //     // when
-  //     await credentialService.declineOffer(credential)
+      // when
+      await credentialService.declineOffer(credential)
 
-  //     // then
-  //     const expectedCredentialState = {
-  //       state: CredentialState.Declined,
-  //     }
-  //     expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
-  //     expect(repositoryUpdateSpy).toHaveBeenNthCalledWith(1, expect.objectContaining(expectedCredentialState))
-  //   })
+      // then
+      const expectedCredentialState = {
+        state: CredentialState.Declined,
+      }
+      expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
+      expect(repositoryUpdateSpy).toHaveBeenNthCalledWith(1, expect.objectContaining(expectedCredentialState))
+    })
 
-  //   test(`emits stateChange event from ${CredentialState.OfferReceived} to ${CredentialState.Declined}`, async () => {
-  //     const eventListenerMock = jest.fn()
-  //     eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
+    test(`emits stateChange event from ${CredentialState.OfferReceived} to ${CredentialState.Declined}`, async () => {
+      const eventListenerMock = jest.fn()
+      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
-  //     // given
-  //     mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
+      // given
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
 
-  //     // when
-  //     await credentialService.declineOffer(credential)
+      // when
+      await credentialService.declineOffer(credential)
 
-  //     // then
-  //     expect(eventListenerMock).toHaveBeenCalledTimes(1)
-  //     const [[event]] = eventListenerMock.mock.calls
-  //     expect(event).toMatchObject({
-  //       type: 'CredentialStateChanged',
-  //       payload: {
-  //         previousState: CredentialState.OfferReceived,
-  //         credentialRecord: expect.objectContaining({
-  //           state: CredentialState.Declined,
-  //         }),
-  //       },
-  //     })
-  //   })
+      // then
+      expect(eventListenerMock).toHaveBeenCalledTimes(1)
+      const [[event]] = eventListenerMock.mock.calls
+      expect(event).toMatchObject({
+        type: 'CredentialStateChanged',
+        payload: {
+          previousState: CredentialState.OfferReceived,
+          credentialRecord: expect.objectContaining({
+            state: CredentialState.Declined,
+          }),
+        },
+      })
+    })
 
-  //   const validState = CredentialState.OfferReceived
-  //   const invalidCredentialStates = Object.values(CredentialState).filter((state) => state !== validState)
-  //   test(`throws an error when state transition is invalid`, async () => {
-  //     await Promise.all(
-  //       invalidCredentialStates.map(async (state) => {
-  //         await expect(
-  //           credentialService.declineOffer(mockCredentialRecord({ state, tags: { threadId } }))
-  //         ).rejects.toThrowError(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
-  //       })
-  //     )
-  //   })
-  // })
+    const validState = CredentialState.OfferReceived
+    const invalidCredentialStates = Object.values(CredentialState).filter((state) => state !== validState)
+    test(`throws an error when state transition is invalid`, async () => {
+      await Promise.all(
+        invalidCredentialStates.map(async (state) => {
+          await expect(
+            credentialService.declineOffer(mockCredentialRecord({ state, tags: { threadId } }))
+          ).rejects.toThrowError(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
+        })
+      )
+    })
+  })
 })

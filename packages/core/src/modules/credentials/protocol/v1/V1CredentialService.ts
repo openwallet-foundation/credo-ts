@@ -339,17 +339,6 @@ export class V1CredentialService extends CredentialService {
 
     return { message: proposalMessage, credentialRecord }
   }
-  /**
-   * Decline a credential offer
-   * @param credentialRecord The credential to be declined
-   */
-  public async declineOffer(credentialRecord: CredentialExchangeRecord): Promise<CredentialExchangeRecord> {
-    credentialRecord.assertState(CredentialState.OfferReceived)
-
-    await this.updateState(credentialRecord, CredentialState.Declined)
-
-    return credentialRecord
-  }
 
   /**
    * Process a received {@link OfferCredentialMessage}. This will not accept the credential offer
