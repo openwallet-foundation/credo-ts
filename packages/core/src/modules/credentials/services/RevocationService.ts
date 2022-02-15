@@ -40,9 +40,8 @@ export class RevocationService {
     const threadId = messageContext.message.issueThread
     try {
       const threadIdGroups = threadId.match(threadRegex)
-
       if (threadIdGroups) {
-        const [credentialFormat, revocationRegistryId, credentialRevocationId] = threadIdGroups
+        const [credentialFormat, revocationRegistryId, credentialRevocationId] = threadIdGroups.slice(1)
         const comment = messageContext.message.comment
         const query = { revocationRegistryId, credentialRevocationId }
         this.logger.trace(
