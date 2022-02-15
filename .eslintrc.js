@@ -82,7 +82,13 @@ module.exports = {
       },
     },
     {
-      files: ['*.test.ts', '**/__tests__/**', '**/tests/**', 'jest.*.ts', 'samples/**'],
+      files: ['demo/**'],
+      rules: {
+        'no-console': 'off',
+      },
+    },
+    {
+      files: ['*.test.ts', '**/__tests__/**', '**/tests/**', 'jest.*.ts', 'samples/**', 'demo/**'],
       env: {
         jest: true,
         node: false,

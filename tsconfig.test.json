@@ -10,6 +10,6 @@
     },
     "types": ["jest", "node"]
   },
-  "include": ["tests", "samples", "packages/core/types/jest.d.ts"],
+  "include": ["tests", "samples", "demo", "packages/core/types/jest.d.ts"],
   "exclude": ["node_modules", "build", "**/build/**"]
 }

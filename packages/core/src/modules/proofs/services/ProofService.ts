@@ -22,8 +22,8 @@ import { uuid } from '../../../utils/uuid'
 import { Wallet } from '../../../wallet/Wallet'
 import { AckStatus } from '../../common'
 import { ConnectionService } from '../../connections'
-import { CredentialUtils, Credential, CredentialRepository } from '../../credentials'
-import { IndyHolderService, IndyVerifierService } from '../../indy'
+import { CredentialUtils, Credential, CredentialRepository, IndyCredentialInfo } from '../../credentials'
+import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../indy'
 import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofState } from '../ProofState'
@@ -64,6 +64,7 @@ export class ProofService {
   private logger: Logger
   private indyHolderService: IndyHolderService
   private indyVerifierService: IndyVerifierService
+  private indyRevocationService: IndyRevocationService
   private connectionService: ConnectionService
   private eventEmitter: EventEmitter
 
@@ -74,6 +75,7 @@ export class ProofService {
     agentConfig: AgentConfig,
     indyHolderService: IndyHolderService,
     indyVerifierService: IndyVerifierService,
+    indyRevocationService: IndyRevocationService,
     connectionService: ConnectionService,
     eventEmitter: EventEmitter,
     credentialRepository: CredentialRepository
@@ -85,6 +87,7 @@ export class ProofService {
     this.logger = agentConfig.logger
     this.indyHolderService = indyHolderService
     this.indyVerifierService = indyVerifierService
+    this.indyRevocationService = indyRevocationService
     this.connectionService = connectionService
     this.eventEmitter = eventEmitter
   }
@@ -254,6 +257,9 @@ export class ProofService {
       comment?: string
     }
   ): Promise<ProofProtocolMsgReturnType<RequestPresentationMessage>> {
+    // Assert attribute and predicate group names do not match
+    this.assertAttributePredicateGroupNamesDoNotMatch(proofRequest)
+
     // Assert
     proofRecord.assertState(ProofState.ProposalReceived)
 
@@ -298,6 +304,9 @@ export class ProofService {
     }
   ): Promise<ProofProtocolMsgReturnType<RequestPresentationMessage>> {
     this.logger.debug(`Creating proof request`)
+
+    // Assert attribute and predicate group names do not match
+    this.assertAttributePredicateGroupNamesDoNotMatch(proofRequest)
 
     // Assert
     connectionRecord?.assertReady()
@@ -359,6 +368,9 @@ export class ProofService {
       )
     }
     await validateOrReject(proofRequest)
+
+    // Assert attribute and predicate group names do not match
+    this.assertAttributePredicateGroupNamesDoNotMatch(proofRequest)
 
     this.logger.debug('received proof request', proofRequest)
 
@@ -699,6 +711,12 @@ export class ProofService {
       // List the requested attributes
       requestedAttributesNames.push(...(requestedAttributes.names ?? [requestedAttributes.name]))
 
+      //Get credentialInfo
+      if (!requestedAttribute.credentialInfo) {
+        const indyCredentialInfo = await this.indyHolderService.getCredential(requestedAttribute.credentialId)
+        requestedAttribute.credentialInfo = JsonTransformer.fromJSON(indyCredentialInfo, IndyCredentialInfo)
+      }
+
       // Find the attributes that have a hashlink as a value
       for (const attribute of Object.values(requestedAttribute.credentialInfo.attributes)) {
         if (attribute.toLowerCase().startsWith('hl:')) {
@@ -746,7 +764,9 @@ export class ProofService {
    */
   public async getRequestedCredentialsForProofRequest(
     proofRequest: ProofRequest,
-    presentationProposal?: PresentationPreview
+    config: {
+      presentationProposal?: PresentationPreview
+    } = {}
   ): Promise<RetrievedCredentials> {
     const retrievedCredentials = new RetrievedCredentials({})
 
@@ -756,7 +776,7 @@ export class ProofService {
 
       // If we have exactly one credential, or no proposal to pick preferences
       // on the credentials to use, we will use the first one
-      if (credentials.length === 1 || !presentationProposal) {
+      if (credentials.length === 1 || !config.presentationProposal) {
         credentialMatch = credentials
       }
       // If we have a proposal we will use that to determine the credentials to use
@@ -769,7 +789,7 @@ export class ProofService {
 
           // Check if credentials matches all parameters from proposal
           return names.every((name) =>
-            presentationProposal.attributes.find(
+            config.presentationProposal?.attributes.find(
               (a) =>
                 a.name === name &&
                 a.credentialDefinitionId === credentialDefinitionId &&
@@ -779,24 +799,86 @@ export class ProofService {
         })
       }
 
-      retrievedCredentials.requestedAttributes[referent] = credentialMatch.map((credential: Credential) => {
-        return new RequestedAttribute({
-          credentialId: credential.credentialInfo.referent,
-          revealed: true,
-          credentialInfo: credential.credentialInfo,
+      retrievedCredentials.requestedAttributes[referent] = await Promise.all(
+        credentialMatch.map(async (credential: Credential) => {
+          const requestNonRevoked = requestedAttribute.nonRevoked ?? proofRequest.nonRevoked
+          const credentialRevocationId = credential.credentialInfo.credentialRevocationId
+          const revocationRegistryId = credential.credentialInfo.revocationRegistryId
+          let revoked: boolean | undefined
+          let deltaTimestamp: number | undefined
+
+          // If revocation interval is present and the credential is revocable then fetch the revocation status of credentials for display
+          if (requestNonRevoked && credentialRevocationId && revocationRegistryId) {
+            this.logger.trace(
+              `Presentation is requesting proof of non revocation for referent '${referent}', getting revocation status for credential`,
+              {
+                requestNonRevoked,
+                credentialRevocationId,
+                revocationRegistryId,
+              }
+            )
+
+            // Note presentation from-to's vs ledger from-to's: https://github.com/hyperledger/indy-hipe/blob/master/text/0011-cred-revocation/README.md#indy-node-revocation-registry-intervals
+            const status = await this.indyRevocationService.getRevocationStatus(
+              credentialRevocationId,
+              revocationRegistryId,
+              requestNonRevoked
+            )
+            revoked = status.revoked
+            deltaTimestamp = status.deltaTimestamp
+          }
+
+          return new RequestedAttribute({
+            credentialId: credential.credentialInfo.referent,
+            revealed: true,
+            credentialInfo: credential.credentialInfo,
+            timestamp: deltaTimestamp,
+            revoked,
+          })
         })
-      })
+      )
     }
 
-    for (const [referent] of proofRequest.requestedPredicates.entries()) {
+    for (const [referent, requestedPredicate] of proofRequest.requestedPredicates.entries()) {
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
-      retrievedCredentials.requestedPredicates[referent] = credentials.map((credential) => {
-        return new RequestedPredicate({
-          credentialId: credential.credentialInfo.referent,
-          credentialInfo: credential.credentialInfo,
+      retrievedCredentials.requestedPredicates[referent] = await Promise.all(
+        credentials.map(async (credential) => {
+          const requestNonRevoked = requestedPredicate.nonRevoked ?? proofRequest.nonRevoked
+          const credentialRevocationId = credential.credentialInfo.credentialRevocationId
+          const revocationRegistryId = credential.credentialInfo.revocationRegistryId
+          let revoked: boolean | undefined
+          let deltaTimestamp: number | undefined
+
+          // If revocation interval is present and the credential is revocable then fetch the revocation status of credentials for display
+          if (requestNonRevoked && credentialRevocationId && revocationRegistryId) {
+            this.logger.trace(
+              `Presentation is requesting proof of non revocation for referent '${referent}', getting revocation status for credential`,
+              {
+                requestNonRevoked,
+                credentialRevocationId,
+                revocationRegistryId,
+              }
+            )
+
+            // Note presentation from-to's vs ledger from-to's: https://github.com/hyperledger/indy-hipe/blob/master/text/0011-cred-revocation/README.md#indy-node-revocation-registry-intervals
+            const status = await this.indyRevocationService.getRevocationStatus(
+              credentialRevocationId,
+              revocationRegistryId,
+              requestNonRevoked
+            )
+            revoked = status.revoked
+            deltaTimestamp = status.deltaTimestamp
+          }
+
+          return new RequestedPredicate({
+            credentialId: credential.credentialInfo.referent,
+            credentialInfo: credential.credentialInfo,
+            timestamp: deltaTimestamp,
+            revoked,
+          })
         })
-      })
+      )
     }
 
     return retrievedCredentials
@@ -947,24 +1029,30 @@ export class ProofService {
     proofRequest: ProofRequest,
     requestedCredentials: RequestedCredentials
   ): Promise<IndyProof> {
-    const credentialObjects = [
-      ...Object.values(requestedCredentials.requestedAttributes),
-      ...Object.values(requestedCredentials.requestedPredicates),
-    ].map((c) => c.credentialInfo)
+    const credentialObjects = await Promise.all(
+      [
+        ...Object.values(requestedCredentials.requestedAttributes),
+        ...Object.values(requestedCredentials.requestedPredicates),
+      ].map(async (c) => {
+        if (c.credentialInfo) {
+          return c.credentialInfo
+        }
+        const credentialInfo = await this.indyHolderService.getCredential(c.credentialId)
+        return JsonTransformer.fromJSON(credentialInfo, IndyCredentialInfo)
+      })
+    )
 
     const schemas = await this.getSchemas(new Set(credentialObjects.map((c) => c.schemaId)))
     const credentialDefinitions = await this.getCredentialDefinitions(
       new Set(credentialObjects.map((c) => c.credentialDefinitionId))
     )
 
-    const proof = await this.indyHolderService.createProof({
+    return this.indyHolderService.createProof({
       proofRequest: proofRequest.toJSON(),
-      requestedCredentials: requestedCredentials.toJSON(),
+      requestedCredentials: requestedCredentials,
       schemas,
       credentialDefinitions,
     })
-
-    return proof
   }
 
   private async getCredentialsForProofRequest(
@@ -1036,6 +1124,18 @@ export class ProofService {
     }
 
     return credentialDefinitions
+  }
+
+  public assertAttributePredicateGroupNamesDoNotMatch(proofRequest: ProofRequest) {
+    const attributes = Array.from(proofRequest.requestedAttributes.keys())
+    const predicates = Array.from(proofRequest.requestedPredicates.keys())
+    const intersection = attributes.filter((x) => predicates.includes(x))
+
+    if (intersection.length > 0) {
+      throw new AriesFrameworkError(
+        `The proof request contains an attribute group name that matches a predicate group name: ${intersection}`
+      )
+    }
   }
 }
 
