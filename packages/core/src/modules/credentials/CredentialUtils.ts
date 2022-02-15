@@ -1,11 +1,12 @@
 import type { LinkedAttachment } from '../../utils/LinkedAttachment'
-import type { V1CredentialPreview } from './v1/V1CredentialPreview'
-import type { V2CredentialPreview } from './v2/V2CredentialPreview'
-import type { CredValues } from 'indy-sdk'
+import type { V1CredentialPreview } from './protocol/v1/V1CredentialPreview'
+import type { V2CredentialPreview } from './protocol/v2/V2CredentialPreview'
+import type { CredValues, Schema } from 'indy-sdk'
 
 import { hash as sha256 } from '@stablelib/sha256'
 import BigNumber from 'bn.js'
 
+import { AriesFrameworkError } from '../../error'
 import { encodeAttachment } from '../../utils/attachment'
 import { Buffer } from '../../utils/buffer'
 import { isBoolean, isNumber, isString } from '../../utils/type'
@@ -180,7 +181,7 @@ export class CredentialUtils {
     return Number.isInteger(number) && number >= minI32 && number <= maxI32
   }
 
-  public static checkAttributesMatch(schema: Schema, credentialPreview: CredentialPreview) {
+  public static checkAttributesMatch(schema: Schema, credentialPreview: V1CredentialPreview) {
     const schemaAttributes = schema.attrNames
     const credAttributes = credentialPreview.attributes.map((a) => a.name)
 

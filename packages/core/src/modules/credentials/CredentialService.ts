@@ -20,19 +20,31 @@ import type {
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from './interfaces'
+import type { CredentialProtocolMsgReturnType } from './protocol/v1'
+import type { V1CredentialService } from './protocol/v1/V1CredentialService'
+import type {
+  CredentialAckMessage,
+  CredentialProblemReportMessage,
+  IssueCredentialMessage,
+  RequestCredentialMessage,
+} from './protocol/v1/messages'
+import type { V2CredentialService } from './protocol/v2/V2CredentialService'
+import type {
+  CredentialFormatService,
+  V2CredProposeOfferRequestFormat,
+} from './protocol/v2/formats/CredentialFormatService'
+import type { V2CredentialAckMessage } from './protocol/v2/messages/V2CredentialAckMessage'
+import type { V2IssueCredentialMessage } from './protocol/v2/messages/V2IssueCredentialMessage'
+import type { V2RequestCredentialMessage } from './protocol/v2/messages/V2RequestCredentialMessage'
 import type { CredentialExchangeRecord, CredentialRepository } from './repository'
-import type { CredentialProtocolMsgReturnType } from './v1'
-import type { V1CredentialService } from './v1/V1CredentialService'
-import type { CredentialAckMessage, IssueCredentialMessage, RequestCredentialMessage } from './v1/messages'
-import type { V2CredentialService } from './v2/V2CredentialService'
-import type { CredentialFormatService, V2CredProposeOfferRequestFormat } from './v2/formats/CredentialFormatService'
-import type { V2CredentialAckMessage } from './v2/messages/V2CredentialAckMessage'
-import type { V2IssueCredentialMessage } from './v2/messages/V2IssueCredentialMessage'
-import type { V2RequestCredentialMessage } from './v2/messages/V2RequestCredentialMessage'
+
+import { ConsoleLogger, LogLevel } from '../../logger'
 
 import { CredentialEventTypes } from '.'
 
 export type CredentialServiceType = V1CredentialService | V2CredentialService
+
+const logger = new ConsoleLogger(LogLevel.debug)
 
 export abstract class CredentialService {
   protected credentialRepository: CredentialRepository
@@ -133,6 +145,32 @@ export abstract class CredentialService {
     throw Error('Not Implemented')
   }
 
+  /**
+   * Process a received {@link ProblemReportMessage}.
+   *
+   * @param messageContext The message context containing a credential problem report message
+   * @returns credential record associated with the credential problem report message
+   *
+   */
+  public async processProblemReport(
+    messageContext: InboundMessageContext<CredentialProblemReportMessage>
+  ): Promise<CredentialExchangeRecord> {
+    const { message: credentialProblemReportMessage } = messageContext
+
+    const connection = messageContext.assertReadyConnection()
+
+    logger.debug(`Processing problem report with id ${credentialProblemReportMessage.id}`)
+
+    const credentialRecord = await this.getByThreadAndConnectionId(
+      credentialProblemReportMessage.threadId,
+      connection?.id
+    )
+
+    // Update record
+    credentialRecord.errorMessage = `${credentialProblemReportMessage.description.code}: ${credentialProblemReportMessage.description.en}`
+    await this.update(credentialRecord)
+    return credentialRecord
+  }
   /**
    * Update the record to a new state and emit an state changed event. Also updates the record
    * in storage.

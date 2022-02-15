@@ -11,7 +11,7 @@ import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 import { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
-import { CredentialInfo } from '../v1/models/CredentialInfo'
+import { CredentialInfo } from '../protocol/v1/models/CredentialInfo'
 
 export interface CredentialRecordProps {
   id?: string

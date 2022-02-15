@@ -5,8 +5,8 @@ import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
 import type { OfferCredentialOptions } from '../interfaces'
 import type { CustomCredentialTags } from '../repository/CredentialRecord'
-import type { RequestCredentialMessage } from '../v1/messages'
-import type { IndyCredentialMetadata } from '../v1/models/CredentialInfo'
+import type { RequestCredentialMessage } from '../protocol/v1/messages'
+import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
 import type { AgentConfig } from '@aries-framework/core'
 
 import { getAgentConfig, getBaseConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
@@ -36,15 +36,15 @@ import { CredentialProblemReportReason } from '../errors/CredentialProblemReport
 import { CredentialExchangeRecord } from '../repository/CredentialRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
 import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
-import { V1CredentialPreview } from '../v1/V1CredentialPreview'
-import { V1CredentialService } from '../v1/V1CredentialService'
+import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
+import { V1CredentialService } from '../protocol/v1/V1CredentialService'
 import {
   CredentialAckMessage,
   INDY_CREDENTIAL_ATTACHMENT_ID,
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   OfferCredentialMessage,
-} from '../v1/messages'
+} from '../protocol/v1/messages'
 
 import { credDef, credReq } from './fixtures'
 
@@ -154,7 +154,7 @@ const mockCredentialRecord = ({
   return credentialRecord
 }
 
-const { config, agentDependencies: dependencies } = getBaseConfig('Agent Class Test')
+const { config, agentDependencies: dependencies } = getBaseConfig('Agent Class Test V2 Offer')
 
 describe('CredentialService', () => {
   beforeEach(async () => {
