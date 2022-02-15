@@ -757,6 +757,7 @@ export class ProofService {
     proofRequest: ProofRequest,
     config: {
       presentationProposal?: PresentationPreview
+      filterByNonRevocationRequirements?: boolean
     } = {}
   ): Promise<RetrievedCredentials> {
     const retrievedCredentials = new RetrievedCredentials({})
@@ -790,7 +791,7 @@ export class ProofService {
         })
       }
 
-      const requestedAttributes = await Promise.all(
+      retrievedCredentials.requestedAttributes[referent] = await Promise.all(
         credentialMatch.map(async (credential: Credential) => {
           const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem({
             proofRequest,
@@ -810,13 +811,17 @@ export class ProofService {
 
       // We only attach revoked state if non-revocation is requested. So if revoked is true it means
       // the credential is not applicable to the proof request
-      retrievedCredentials.requestedAttributes[referent] = requestedAttributes.filter((r) => !r.revoked)
+      if (config.filterByNonRevocationRequirements) {
+        retrievedCredentials.requestedAttributes[referent] = retrievedCredentials.requestedAttributes[referent].filter(
+          (r) => !r.revoked
+        )
+      }
     }
 
     for (const [referent, requestedPredicate] of proofRequest.requestedPredicates.entries()) {
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
-      const requestedPredicates = await Promise.all(
+      retrievedCredentials.requestedPredicates[referent] = await Promise.all(
         credentials.map(async (credential) => {
           const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem({
             proofRequest,
@@ -835,7 +840,11 @@ export class ProofService {
 
       // We only attach revoked state if non-revocation is requested. So if revoked is true it means
       // the credential is not applicable to the proof request
-      retrievedCredentials.requestedPredicates[referent] = requestedPredicates.filter((r) => !r.revoked)
+      if (config.filterByNonRevocationRequirements) {
+        retrievedCredentials.requestedPredicates[referent] = retrievedCredentials.requestedPredicates[referent].filter(
+          (r) => !r.revoked
+        )
+      }
     }
 
     return retrievedCredentials

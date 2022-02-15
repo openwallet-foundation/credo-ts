@@ -356,6 +356,7 @@ export class ProofsModule {
 
     return this.proofService.getRequestedCredentialsForProofRequest(indyProofRequest, {
       presentationProposal: presentationPreview,
+      filterByNonRevocationRequirements: config?.filterByNonRevocationRequirements,
     })
   }
 
@@ -478,4 +479,10 @@ export interface GetRequestedCredentialsConfig {
    * containing a presentation preview.
    */
   filterByPresentationPreview?: boolean
+
+  /**
+   * Whether to filter the retrieved credentials using the non-revocation request in the proof request.
+   * This configuration will only have effect if the proof request requires proof on non-revocation of any kind.
+   */
+  filterByNonRevocationRequirements?: boolean
 }
