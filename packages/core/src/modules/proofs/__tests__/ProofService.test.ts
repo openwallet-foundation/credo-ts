@@ -9,18 +9,21 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { ConnectionService, ConnectionState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
+import { IndyRevocationService } from '../../indy/services/IndyRevocationService'
 import { IndyLedgerService } from '../../ledger/services'
 import { ProofEventTypes } from '../ProofEvents'
-import { ProofState } from '../ProofState'
-import { PresentationProblemReportReason } from '../errors/PresentationProblemReportReason'
-import { INDY_PROOF_REQUEST_ATTACHMENT_ID } from '../messages'
+import { ProofState } from '../models/ProofState'
+import { V1PresentationProblemReportReason } from '../protocol/v1/errors/V1PresentationProblemReportReason'
 import { ProofRecord } from '../repository/ProofRecord'
 import { ProofRepository } from '../repository/ProofRepository'
-import { ProofService } from '../services'
+import { V1LegacyProofService } from '../protocol/v1/V1LegacyProofService'
 
 import { IndyVerifierService } from './../../indy/services/IndyVerifierService'
-import { PresentationProblemReportMessage } from './../messages/PresentationProblemReportMessage'
-import { RequestPresentationMessage } from './../messages/RequestPresentationMessage'
+import { V1PresentationProblemReportMessage } from '../protocol/v1/messages/V1PresentationProblemReportMessage'
+import {
+  INDY_PROOF_REQUEST_ATTACHMENT_ID,
+  V1RequestPresentationMessage,
+} from '../protocol/v1/messages/V1RequestPresentationMessage'
 import { credDef } from './fixtures'
 
 // Mock classes
@@ -29,6 +32,7 @@ jest.mock('../../../modules/ledger/services/IndyLedgerService')
 jest.mock('../../indy/services/IndyHolderService')
 jest.mock('../../indy/services/IndyIssuerService')
 jest.mock('../../indy/services/IndyVerifierService')
+jest.mock('../../indy/services/IndyRevocationService')
 jest.mock('../../connections/services/ConnectionService')
 
 // Mock typed object
@@ -36,6 +40,7 @@ const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 const IndyHolderServiceMock = IndyHolderService as jest.Mock<IndyHolderService>
 const IndyVerifierServiceMock = IndyVerifierService as jest.Mock<IndyVerifierService>
+const IndyRevocationServiceMock = IndyRevocationService as jest.Mock<IndyRevocationService>
 const connectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 
 const connection = getMockConnection({
@@ -63,13 +68,13 @@ const mockProofRecord = ({
   id,
 }: {
   state?: ProofState
-  requestMessage?: RequestPresentationMessage
+  requestMessage?: V1RequestPresentationMessage
   tags?: CustomProofTags
   threadId?: string
   connectionId?: string
   id?: string
 } = {}) => {
-  const requestPresentationMessage = new RequestPresentationMessage({
+  const requestPresentationMessage = new V1RequestPresentationMessage({
     comment: 'some comment',
     requestPresentationAttachments: [requestAttachment],
   })
@@ -88,11 +93,12 @@ const mockProofRecord = ({
 
 describe('ProofService', () => {
   let proofRepository: ProofRepository
-  let proofService: ProofService
+  let proofService: V1LegacyProofService
   let ledgerService: IndyLedgerService
   let wallet: Wallet
   let indyVerifierService: IndyVerifierService
   let indyHolderService: IndyHolderService
+  let indyRevocationService: IndyRevocationService
   let eventEmitter: EventEmitter
   let credentialRepository: CredentialRepository
   let connectionService: ConnectionService
@@ -102,17 +108,19 @@ describe('ProofService', () => {
     proofRepository = new ProofRepositoryMock()
     indyVerifierService = new IndyVerifierServiceMock()
     indyHolderService = new IndyHolderServiceMock()
+    indyRevocationService = new IndyRevocationServiceMock()
     ledgerService = new IndyLedgerServiceMock()
     eventEmitter = new EventEmitter(agentConfig)
     connectionService = new connectionServiceMock()
 
-    proofService = new ProofService(
+    proofService = new V1LegacyProofService(
       proofRepository,
       ledgerService,
       wallet,
       agentConfig,
       indyHolderService,
       indyVerifierService,
+      indyRevocationService,
       connectionService,
       eventEmitter,
       credentialRepository
@@ -122,11 +130,11 @@ describe('ProofService', () => {
   })
 
   describe('processProofRequest', () => {
-    let presentationRequest: RequestPresentationMessage
-    let messageContext: InboundMessageContext<RequestPresentationMessage>
+    let presentationRequest: V1RequestPresentationMessage
+    let messageContext: InboundMessageContext<V1RequestPresentationMessage>
 
     beforeEach(() => {
-      presentationRequest = new RequestPresentationMessage({
+      presentationRequest = new V1RequestPresentationMessage({
         comment: 'abcd',
         requestPresentationAttachments: [requestAttachment],
       })
@@ -193,10 +201,10 @@ describe('ProofService', () => {
       mockFunction(proofRepository.getById).mockReturnValue(Promise.resolve(proof))
 
       // when
-      const presentationProblemReportMessage = await new PresentationProblemReportMessage({
+      const presentationProblemReportMessage = await new V1PresentationProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: PresentationProblemReportReason.Abandoned,
+          code: V1PresentationProblemReportReason.Abandoned,
         },
       })
 
@@ -214,17 +222,17 @@ describe('ProofService', () => {
 
   describe('processProblemReport', () => {
     let proof: ProofRecord
-    let messageContext: InboundMessageContext<PresentationProblemReportMessage>
+    let messageContext: InboundMessageContext<V1PresentationProblemReportMessage>
 
     beforeEach(() => {
       proof = mockProofRecord({
         state: ProofState.RequestReceived,
       })
 
-      const presentationProblemReportMessage = new PresentationProblemReportMessage({
+      const presentationProblemReportMessage = new V1PresentationProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: PresentationProblemReportReason.Abandoned,
+          code: V1PresentationProblemReportReason.Abandoned,
         },
       })
       presentationProblemReportMessage.setThread({ threadId: 'somethreadid' })

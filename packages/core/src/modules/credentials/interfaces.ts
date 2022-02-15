@@ -3,11 +3,21 @@ import type { AnyJson } from '../generic'
 import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
 import type { CredentialPreviewAttribute } from './CredentialPreviewAttributes'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
-import type { CredentialFormatType, CredentialRecordType } from './v2/CredentialExchangeRecord'
 import type { V2CredProposeOfferRequestFormat } from './v2/formats/CredentialFormatService'
-import type { CredDef } from 'indy-sdk'
+import type { CredDef, CredDefId } from 'indy-sdk'
 
 type IssuerId = string
+
+export enum CredentialRecordType {
+  Indy = 'Indy',
+  W3c = 'W3c',
+}
+
+export enum CredentialFormatType {
+  Indy = 'Indy',
+  JsonLd = 'JsonLd',
+  // others to follow
+}
 
 interface IssuerNode {
   id: string
@@ -15,6 +25,7 @@ interface IssuerNode {
 }
 
 export type Issuer = IssuerId | IssuerNode
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 type LDSignatureSuite = 'Ed25519Signature2018' | 'BbsBlsSignature2020'
 
 export interface W3CCredentialFormat {
@@ -48,7 +59,7 @@ export interface OfferCredentialFormats {
 
 // Used in OfferCredential
 interface OfferCredentialOptions {
-  connectionId: string
+  connectionId?: string // this needs to be optional for out of band messages
   protocolVersion: CredentialProtocolVersion
   credentialFormats: OfferCredentialFormats
   autoAcceptCredential?: AutoAcceptCredential
@@ -56,36 +67,15 @@ interface OfferCredentialOptions {
 }
 
 interface AcceptOfferOptions {
-  connectionId: string
   protocolVersion: CredentialProtocolVersion
   credentialRecordId: string
   credentialRecordType: CredentialRecordType
+  connectionId?: string // this needs to be optional for out of band messages
   comment?: string
   autoAcceptCredential?: AutoAcceptCredential
 }
 
-// interface NegotiateOfferOptions {
-//   protocolVersion: CredentialProtocolVersion
-//   credentialRecordId: string
-//   credentialFormats: OfferCredentialFormats
-//   autoAcceptCredential?: AutoAcceptCredential
-//   comment?: string
-// }
-
 /// CREDENTIAL PROPOSAL
-
-// this is the base64 encoded data payload for [Indy] credential proposal
-export interface CredPropose {
-  attributes?: CredentialPreviewAttribute[]
-  schemaIssuerDid?: string
-  schemaName?: string
-  schemaVersion?: string
-  schemaId?: string
-  issuerDid?: string
-  credentialDefinitionId?: string
-  linkedAttachments?: LinkedAttachment[]
-  cred_def_id?: string
-}
 
 interface ProposeCredentialOptions {
   connectionId: string
@@ -98,7 +88,7 @@ interface ProposeCredentialOptions {
 
 export interface V2CredDefinitionFormat {
   indy?: {
-    credentialDefinition: CredDef
+    credDef: CredDef
   }
   w3c?: {
     // MJR-TODO
@@ -164,5 +154,4 @@ export {
   AcceptOfferOptions,
   RequestCredentialOptions,
   AcceptRequestOptions,
-  CredPropose as IndyProposeCredentialFormat,
 }

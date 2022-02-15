@@ -31,4 +31,16 @@ export class ReactNativeFileSystem implements FileSystem {
   public async read(path: string): Promise<string> {
     return RNFS.readFile(path, 'utf8')
   }
+
+  public async downloadToFile(url: string, path: string) {
+    // Make sure parent directories exist
+    await RNFS.mkdir(getDirFromFilePath(path))
+
+    const { promise } = RNFS.downloadFile({
+      fromUrl: url,
+      toFile: path,
+    })
+
+    await promise
+  }
 }

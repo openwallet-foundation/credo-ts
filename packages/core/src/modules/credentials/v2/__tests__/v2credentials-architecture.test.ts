@@ -5,13 +5,11 @@ import type { CredOffer } from 'indy-sdk'
 
 import { getBaseConfig } from '../../../../../tests/helpers'
 import { Agent } from '../../../../agent/Agent'
-import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { unitTestLogger } from '../../../../logger'
-import { LinkedAttachment } from '../../../../utils/LinkedAttachment'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
-import { CredentialsAPI } from '../../CredentialsAPI'
+import { CredentialsModule } from '../../CredentialsModule'
+import { CredentialFormatType } from '../../interfaces'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
-import { CredentialFormatType } from '../CredentialExchangeRecord'
 import { CredentialMessageBuilder } from '../CredentialMessageBuilder'
 
 const { config, agentDependencies: dependencies } = getBaseConfig('Format Servive Test')
@@ -90,12 +88,12 @@ const credOffer: CredOffer = {
 describe('V2 Credential Architecture', () => {
   const agent = new Agent(config, dependencies)
   const container = agent.injectionContainer
-  const api = container.resolve(CredentialsAPI)
+  const api = container.resolve(CredentialsModule)
 
   describe('Credential Service', () => {
     test('returns the correct credential service for a protocol version 1.0', () => {
       const version: CredentialProtocolVersion = CredentialProtocolVersion.V1_0
-      expect(container.resolve(CredentialsAPI)).toBeInstanceOf(CredentialsAPI)
+      expect(container.resolve(CredentialsModule)).toBeInstanceOf(CredentialsModule)
       const service: CredentialService = api.getService(version)
       expect(service.getVersion()).toEqual(CredentialProtocolVersion.V1_0)
     })
@@ -121,7 +119,7 @@ describe('V2 Credential Architecture', () => {
       const version: CredentialProtocolVersion = CredentialProtocolVersion.V2_0
       const service: CredentialService = api.getService(version)
       const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.Indy)
-      const { formats, filtersAttach } = formatService.createProposalAttachFormats(proposal, 'CRED_20_PROPOSAL')
+      const { formats, filtersAttach } = formatService.createProposalAttachFormats(proposal)
 
       expect(formats.attachId.length).toBeGreaterThan(0)
       expect(formats.format).toEqual('hlindy/cred-filter@v2.0')
@@ -167,11 +165,7 @@ describe('V2 Credential Architecture', () => {
           },
         },
       }
-      const { preview, formats, offersAttach } = formatService.createOfferAttachFormats(
-        options,
-        v2Offer,
-        'CRED_20_OFFER'
-      )
+      const { preview, formats, offersAttach } = formatService.createOfferAttachFormats(options, v2Offer)
       expect(preview?.type).toEqual('https://didcomm.org/issue-credential/2.0/credential-preview')
       expect(preview?.attributes.length).toEqual(2)
 
@@ -183,45 +177,6 @@ describe('V2 Credential Architecture', () => {
 
       unitTestLogger('3. offersAttach = ', offersAttach)
       expect(offersAttach).toBeTruthy()
-    })
-    test('issue credential format service returns correct format and credentials~attach', async () => {
-      const version: CredentialProtocolVersion = CredentialProtocolVersion.V2_0
-      const service: CredentialService = api.getService(version)
-      const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.Indy)
-
-      const v2Offer: V2CredProposeOfferRequestFormat = {
-        indy: {
-          payload: {
-            credentialPayload: credOffer,
-          },
-        },
-      }
-
-      // TODO need to mock the messages within a credential record (request and offer)
-      // const options: AcceptProposalOptions = {
-      //   connectionId: '',
-      //   protocolVersion: CredentialProtocolVersion.V1_0,
-      //   credentialRecordId: '',
-      //   comment: 'v2 offer credential as response test',
-      //   credentialFormats: {
-      //     indy: {
-      //       attributes: credentialPreview.attributes,
-      //     },
-      //   },
-      // }
-      // const { formats, credentialsAttach } = await formatService.createIssueAttachFormats(faberCredentialRecord)
-
-      // expect(preview?.type).toEqual('https://didcomm.org/issue-credential/2.0/credential-preview')
-      // expect(preview?.attributes.length).toEqual(2)
-
-      // unitTestLogger('1. preview = ', preview)
-
-      // expect(formats.attachId.length).toBeGreaterThan(0)
-      // expect(formats.format).toEqual('hlindy/cred-abstract@v2.0')
-      // unitTestLogger('2. formats = ', formats)
-
-      // unitTestLogger('3. offersAttach = ', offersAttach)
-      // expect(offersAttach).toBeTruthy()
     })
   })
 })

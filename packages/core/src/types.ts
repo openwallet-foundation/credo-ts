@@ -50,6 +50,7 @@ export interface InitConfig {
   connectionImageUrl?: string
 }
 
+export type ProtocolVersion = `${number}.${number}`
 export interface PlaintextMessage {
   '@type': string
   '@id': string

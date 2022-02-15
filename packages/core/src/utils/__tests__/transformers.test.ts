@@ -1,11 +1,11 @@
 import { plainToInstance } from 'class-transformer'
 
-import { CredentialRecord, CredentialState } from '../../modules/credentials'
+import { CredentialExchangeRecord, CredentialState } from '../../modules/credentials'
 
 describe('transformers', () => {
   it('transforms an old credential record', () => {
     // Mocked old credentialRecord
-    const credentialRecord = new CredentialRecord({ state: CredentialState.Done, threadId: '0' })
+    const credentialRecord = new CredentialExchangeRecord({ state: CredentialState.Done, threadId: '0' })
     const jsonCredentialRecord = credentialRecord.toJSON()
 
     const metadata = jsonCredentialRecord.metadata as Record<string, Record<string, string> | string>
@@ -14,7 +14,7 @@ describe('transformers', () => {
     metadata.credentialDefinitionId = 'abc:def:CL'
 
     // Converted old to new credentialRecord
-    const cr = plainToInstance(CredentialRecord, jsonCredentialRecord)
+    const cr = plainToInstance(CredentialExchangeRecord, jsonCredentialRecord)
 
     expect(cr.metadata.data).toEqual({
       '_internal/indyRequest': {

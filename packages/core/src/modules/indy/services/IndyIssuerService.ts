@@ -9,7 +9,6 @@ import type {
   CredReq,
   CredRevocId,
   CredValues,
-  BlobReaderHandle,
 } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -18,18 +17,21 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { IndySdkError } from '../../../error/IndySdkError'
 import { isIndyError } from '../../../utils/indyError'
-import { getDirFromFilePath } from '../../../utils/path'
 import { IndyWallet } from '../../../wallet/IndyWallet'
+
+import { IndyUtilitiesService } from './IndyUtilitiesService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyIssuerService {
   private indy: typeof Indy
   private wallet: IndyWallet
+  private indyUtilitiesService: IndyUtilitiesService
   private fileSystem: FileSystem
 
-  public constructor(agentConfig: AgentConfig, wallet: IndyWallet) {
+  public constructor(agentConfig: AgentConfig, wallet: IndyWallet, indyUtilitiesService: IndyUtilitiesService) {
     this.indy = agentConfig.agentDependencies.indy
     this.wallet = wallet
+    this.indyUtilitiesService = indyUtilitiesService
     this.fileSystem = agentConfig.fileSystem
   }
 
@@ -44,7 +46,7 @@ export class IndyIssuerService {
 
       return schema
     } catch (error) {
-      throw new IndySdkError(error)
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 
@@ -74,7 +76,7 @@ export class IndyIssuerService {
 
       return credentialDefinition
     } catch (error) {
-      throw new IndySdkError(error)
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 
@@ -88,7 +90,7 @@ export class IndyIssuerService {
     try {
       return await this.indy.issuerCreateCredentialOffer(this.wallet.handle, credentialDefinitionId)
     } catch (error) {
-      throw new IndySdkError(error)
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 
@@ -106,7 +108,7 @@ export class IndyIssuerService {
   }: CreateCredentialOptions): Promise<[Cred, CredRevocId]> {
     try {
       // Indy SDK requires tailsReaderHandle. Use null if no tailsFilePath is present
-      const tailsReaderHandle = tailsFilePath ? await this.createTailsReader(tailsFilePath) : 0
+      const tailsReaderHandle = tailsFilePath ? await this.indyUtilitiesService.createTailsReader(tailsFilePath) : 0
 
       if (revocationRegistryId || tailsFilePath) {
         throw new AriesFrameworkError('Revocation not supported yet')
@@ -123,42 +125,7 @@ export class IndyIssuerService {
 
       return [credential, credentialRevocationId]
     } catch (error) {
-      if (isIndyError(error)) {
-        throw new IndySdkError(error)
-      }
-
-      throw error
-    }
-  }
-
-  /**
-   * Get a handler for the blob storage tails file reader.
-   *
-   * @param tailsFilePath The path of the tails file
-   * @returns The blob storage reader handle
-   */
-  private async createTailsReader(tailsFilePath: string): Promise<BlobReaderHandle> {
-    try {
-      const tailsFileExists = await this.fileSystem.exists(tailsFilePath)
-
-      // Extract directory from path (should also work with windows paths)
-      const dirname = getDirFromFilePath(tailsFilePath)
-
-      if (!tailsFileExists) {
-        throw new AriesFrameworkError(`Tails file does not exist at path ${tailsFilePath}`)
-      }
-
-      const tailsReaderConfig = {
-        base_dir: dirname,
-      }
-
-      return await this.indy.openBlobStorageReader('default', tailsReaderConfig)
-    } catch (error) {
-      if (isIndyError(error)) {
-        throw new IndySdkError(error)
-      }
-
-      throw error
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 }

@@ -1,32 +1,42 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { InboundMessageContext } from '../../../../../src/agent/models/InboundMessageContext'
+import type { DidCommMessageRepository } from '../../../../../src/storage'
 import type { AgentConfig } from '../../../../agent/AgentConfig'
 import type { Handler } from '../../../../agent/Handler'
 import type { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import type { AcceptRequestOptions } from '../../interfaces'
-import type { CredentialRecord } from '../../repository'
+import type { CredentialExchangeRecord } from '../../repository'
 import type { V2CredentialService } from '../V2CredentialService'
 import type { CredentialFormatService } from '../formats/CredentialFormatService'
 
+import { DidCommMessageRole } from '../../../../../src/storage'
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../agent/helpers'
 import { ConsoleLogger, unitTestLogger } from '../../../../logger'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
+import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
+import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
 
 export class V2RequestCredentialHandler implements Handler {
   private credentialService: V2CredentialService
   private agentConfig: AgentConfig
   private credentialAutoResponseCoordinator: CredentialResponseCoordinator
+  private requestMessage: V2RequestCredentialMessage | undefined
+  private offerMessage: V2OfferCredentialMessage | undefined
+  private proposeMessage: V2ProposeCredentialMessage | undefined
+  private didCommMessageRepository: DidCommMessageRepository
   public supportedMessages = [V2RequestCredentialMessage]
 
   public constructor(
     credentialService: V2CredentialService,
     agentConfig: AgentConfig,
-    responseCoordinator: CredentialResponseCoordinator
+    responseCoordinator: CredentialResponseCoordinator,
+    didCommMessageRepostitory: DidCommMessageRepository
   ) {
     this.credentialAutoResponseCoordinator = responseCoordinator
     this.credentialService = credentialService
     this.agentConfig = agentConfig
+    this.didCommMessageRepository = didCommMessageRepostitory
   }
 
   public async handle(messageContext: InboundMessageContext<V2RequestCredentialMessage>) {
@@ -34,11 +44,37 @@ export class V2RequestCredentialHandler implements Handler {
     unitTestLogger('----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR REQUEST CREDENTIAL')
     const credentialRecord = await this.credentialService.processRequest(messageContext)
 
-    const requestMessage: V2RequestCredentialMessage = credentialRecord.requestMessage as V2RequestCredentialMessage
+    try {
+      this.requestMessage = await this.didCommMessageRepository.getAgentMessage({
+        associatedRecordId: credentialRecord.id,
+        messageClass: V2RequestCredentialMessage,
+      })
+    } catch (NoRecordFoundError) {
+      // can happen in normal processing
+    }
 
+    try {
+      this.offerMessage = await this.didCommMessageRepository.getAgentMessage({
+        associatedRecordId: credentialRecord.id,
+        messageClass: V2OfferCredentialMessage,
+      })
+    } catch (NoRecordFoundError) {
+      // can happen in normal processing *in W3C*)
+    }
+    try {
+      this.proposeMessage = await this.didCommMessageRepository.getAgentMessage({
+        associatedRecordId: credentialRecord.id,
+        messageClass: V2ProposeCredentialMessage,
+      })
+    } catch (NoRecordFoundError) {
+      // can happen in normal processing
+    }
+    if (!this.requestMessage) {
+      throw Error('Missing request message in V2OfferCredentialHandler')
+    }
     // 1. Get all formats for this message
     const formatServices: CredentialFormatService[] = this.credentialService.getFormatsFromMessage(
-      requestMessage.formats
+      this.requestMessage.formats
     )
 
     // 2. loop through found formats
@@ -47,7 +83,10 @@ export class V2RequestCredentialHandler implements Handler {
       // 3. Call format.shouldRespondToProposal for each one
       const formatShouldAutoRespond = formatService.shouldAutoRespondToRequest(
         credentialRecord,
-        this.agentConfig.autoAcceptCredentials
+        this.agentConfig.autoAcceptCredentials,
+        this.requestMessage,
+        this.proposeMessage,
+        this.offerMessage
       )
       shouldAutoRespond = shouldAutoRespond && formatShouldAutoRespond
     }
@@ -60,14 +99,14 @@ export class V2RequestCredentialHandler implements Handler {
   }
 
   private async createCredential(
-    record: CredentialRecord,
+    record: CredentialExchangeRecord,
     messageContext: InboundMessageContext<V2RequestCredentialMessage>
   ) {
     this.agentConfig.logger.info(
       `Automatically sending credential with autoAccept on ${this.agentConfig.autoAcceptCredentials}`
     )
     const options: AcceptRequestOptions = {
-      comment: record.requestMessage?.comment,
+      comment: this.requestMessage?.comment,
       autoAcceptCredential: record.autoAcceptCredential,
       protocolVersion: CredentialProtocolVersion.V2_0,
       credentialRecordId: record.id,
@@ -78,13 +117,17 @@ export class V2RequestCredentialHandler implements Handler {
       unitTestLogger('Sending ISSUE CREDENTIAL message: ' + message)
 
       return createOutboundMessage(messageContext.connection, message)
-    } else if (credentialRecord.requestMessage?.service && credentialRecord.offerMessage?.service) {
-      const recipientService = credentialRecord.requestMessage.service
-      const ourService = credentialRecord.offerMessage.service
+    } else if (this.requestMessage?.service && this.offerMessage?.service) {
+      const recipientService = this.requestMessage.service
+      const ourService = this.offerMessage.service
 
       // Set ~service, update message in record (for later use)
       message.setService(ourService)
-      credentialRecord.credentialMessage = message
+      await this.didCommMessageRepository.saveAgentMessage({
+        agentMessage: message,
+        role: DidCommMessageRole.Sender,
+        associatedRecordId: credentialRecord.id,
+      })
       await this.credentialService.update(credentialRecord)
 
       return createOutboundServiceMessage({
