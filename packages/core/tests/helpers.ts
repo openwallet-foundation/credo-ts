@@ -6,13 +6,11 @@ import type {
   ConnectionRecordProps,
   CredentialDefinitionTemplate,
   CredentialOfferTemplate,
-  CredentialRecord,
   CredentialStateChangedEvent,
   InitConfig,
   ProofAttributeInfo,
   ProofPredicateInfo,
   ProofStateChangedEvent,
-  RevocationNotificationReceivedEvent,
   SchemaTemplate,
 } from '../src'
 import type { Schema, CredDef } from 'indy-sdk'

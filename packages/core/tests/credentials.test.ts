@@ -2,16 +2,11 @@ import type { Agent } from '../src/agent/Agent'
 import type { ConnectionRecord } from '../src/modules/connections'
 
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
-import {
-  CredentialPreview,
-  CredentialRecord,
-  CredentialState,
-  RevocationNotificationMessage,
-} from '../src/modules/credentials'
+import { CredentialPreview, CredentialRecord, CredentialState } from '../src/modules/credentials'
 import { JsonTransformer } from '../src/utils/JsonTransformer'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 
-import { setupCredentialTests, waitForCredentialRecord, waitForRevocationNotification } from './helpers'
+import { setupCredentialTests, waitForCredentialRecord } from './helpers'
 import testLogger from './logger'
 
 const credentialPreview = CredentialPreview.fromRecord({
