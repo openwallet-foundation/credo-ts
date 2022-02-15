@@ -1064,7 +1064,7 @@ export class ProofService {
         requestNonRevoked
       )
 
-      return { revoked: status.revoked, deltaTimestamp: status.deltaTimestamp }
+      return status
     }
 
     return { revoked: undefined, deltaTimestamp: undefined }
