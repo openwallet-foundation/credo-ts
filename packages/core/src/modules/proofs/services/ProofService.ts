@@ -790,34 +790,13 @@ export class ProofService {
         })
       }
 
-      retrievedCredentials.requestedAttributes[referent] = await Promise.all(
+      const requestedAttributes = await Promise.all(
         credentialMatch.map(async (credential: Credential) => {
-          const requestNonRevoked = requestedAttribute.nonRevoked ?? proofRequest.nonRevoked
-          const credentialRevocationId = credential.credentialInfo.credentialRevocationId
-          const revocationRegistryId = credential.credentialInfo.revocationRegistryId
-          let revoked: boolean | undefined
-          let deltaTimestamp: number | undefined
-
-          // If revocation interval is present and the credential is revocable then fetch the revocation status of credentials for display
-          if (requestNonRevoked && credentialRevocationId && revocationRegistryId) {
-            this.logger.trace(
-              `Presentation is requesting proof of non revocation for referent '${referent}', getting revocation status for credential`,
-              {
-                requestNonRevoked,
-                credentialRevocationId,
-                revocationRegistryId,
-              }
-            )
-
-            // Note presentation from-to's vs ledger from-to's: https://github.com/hyperledger/indy-hipe/blob/master/text/0011-cred-revocation/README.md#indy-node-revocation-registry-intervals
-            const status = await this.indyRevocationService.getRevocationStatus(
-              credentialRevocationId,
-              revocationRegistryId,
-              requestNonRevoked
-            )
-            revoked = status.revoked
-            deltaTimestamp = status.deltaTimestamp
-          }
+          const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem({
+            proofRequest,
+            requestedItem: requestedAttribute,
+            credential,
+          })
 
           return new RequestedAttribute({
             credentialId: credential.credentialInfo.referent,
@@ -828,39 +807,22 @@ export class ProofService {
           })
         })
       )
+
+      // We only attach revoked state if non-revocation is requested. So if revoked is true it means
+      // the credential is not applicable to the proof request
+      retrievedCredentials.requestedAttributes[referent] = requestedAttributes.filter((r) => !r.revoked)
     }
 
     for (const [referent, requestedPredicate] of proofRequest.requestedPredicates.entries()) {
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
-      retrievedCredentials.requestedPredicates[referent] = await Promise.all(
+      const requestedPredicates = await Promise.all(
         credentials.map(async (credential) => {
-          const requestNonRevoked = requestedPredicate.nonRevoked ?? proofRequest.nonRevoked
-          const credentialRevocationId = credential.credentialInfo.credentialRevocationId
-          const revocationRegistryId = credential.credentialInfo.revocationRegistryId
-          let revoked: boolean | undefined
-          let deltaTimestamp: number | undefined
-
-          // If revocation interval is present and the credential is revocable then fetch the revocation status of credentials for display
-          if (requestNonRevoked && credentialRevocationId && revocationRegistryId) {
-            this.logger.trace(
-              `Presentation is requesting proof of non revocation for referent '${referent}', getting revocation status for credential`,
-              {
-                requestNonRevoked,
-                credentialRevocationId,
-                revocationRegistryId,
-              }
-            )
-
-            // Note presentation from-to's vs ledger from-to's: https://github.com/hyperledger/indy-hipe/blob/master/text/0011-cred-revocation/README.md#indy-node-revocation-registry-intervals
-            const status = await this.indyRevocationService.getRevocationStatus(
-              credentialRevocationId,
-              revocationRegistryId,
-              requestNonRevoked
-            )
-            revoked = status.revoked
-            deltaTimestamp = status.deltaTimestamp
-          }
+          const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem({
+            proofRequest,
+            requestedItem: requestedPredicate,
+            credential,
+          })
 
           return new RequestedPredicate({
             credentialId: credential.credentialInfo.referent,
@@ -870,6 +832,10 @@ export class ProofService {
           })
         })
       )
+
+      // We only attach revoked state if non-revocation is requested. So if revoked is true it means
+      // the credential is not applicable to the proof request
+      retrievedCredentials.requestedPredicates[referent] = requestedPredicates.filter((r) => !r.revoked)
     }
 
     return retrievedCredentials
@@ -1056,6 +1022,43 @@ export class ProofService {
     })
 
     return JsonTransformer.fromJSON(credentialsJson, Credential) as unknown as Credential[]
+  }
+
+  private async getRevocationStatusForRequestedItem({
+    proofRequest,
+    requestedItem,
+    credential,
+  }: {
+    proofRequest: ProofRequest
+    requestedItem: ProofAttributeInfo | ProofPredicateInfo
+    credential: Credential
+  }) {
+    const requestNonRevoked = requestedItem.nonRevoked ?? proofRequest.nonRevoked
+    const credentialRevocationId = credential.credentialInfo.credentialRevocationId
+    const revocationRegistryId = credential.credentialInfo.revocationRegistryId
+
+    // If revocation interval is present and the credential is revocable then fetch the revocation status of credentials for display
+    if (requestNonRevoked && credentialRevocationId && revocationRegistryId) {
+      this.logger.trace(
+        `Presentation is requesting proof of non revocation, getting revocation status for credential`,
+        {
+          requestNonRevoked,
+          credentialRevocationId,
+          revocationRegistryId,
+        }
+      )
+
+      // Note presentation from-to's vs ledger from-to's: https://github.com/hyperledger/indy-hipe/blob/master/text/0011-cred-revocation/README.md#indy-node-revocation-registry-intervals
+      const status = await this.indyRevocationService.getRevocationStatus(
+        credentialRevocationId,
+        revocationRegistryId,
+        requestNonRevoked
+      )
+
+      return { revoked: status.revoked, deltaTimestamp: status.deltaTimestamp }
+    }
+
+    return { revoked: undefined, deltaTimestamp: undefined }
   }
 
   /**
