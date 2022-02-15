@@ -1,7 +1,7 @@
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
-import type { CredentialPreviewAttribute } from '../messages'
+import { CredentialPreviewAttribute, RevocationNotificationMessage } from '../messages'
 import type { IndyCredentialMetadata } from '../models/CredentialInfo'
 import type { CustomCredentialTags } from '../repository/CredentialRecord'
 import type { CredentialOfferTemplate } from '../services'
@@ -34,10 +34,11 @@ import {
 import { CredentialRecord } from '../repository/CredentialRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
 import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
-import { CredentialService } from '../services'
+import { CredentialService, RevocationService } from '../services'
 
 import { CredentialProblemReportMessage } from './../messages/CredentialProblemReportMessage'
 import { credDef, credOffer, credReq, schema } from './fixtures'
+import { RevocationNotificationReceivedEvent } from '..'
 
 // Mock classes
 jest.mock('../repository/CredentialRepository')
@@ -99,6 +100,8 @@ const mockCredentialRecord = ({
   tags,
   id,
   credentialAttributes,
+  revocationRegistryId,
+  credentialRevocationId
 }: {
   state?: CredentialState
   requestMessage?: RequestCredentialMessage
@@ -107,7 +110,9 @@ const mockCredentialRecord = ({
   threadId?: string
   connectionId?: string
   id?: string
-  credentialAttributes?: CredentialPreviewAttribute[]
+  credentialAttributes?: CredentialPreviewAttribute[],
+  revocationRegistryId?: string,
+  credentialRevocationId?: string,
 } = {}) => {
   const offerMessage = new OfferCredentialMessage({
     comment: 'some comment',
@@ -124,6 +129,8 @@ const mockCredentialRecord = ({
     threadId: threadId ?? offerMessage.id,
     connectionId: connectionId ?? '123',
     tags,
+    revocationRegistryId,
+    credentialRevocationId
   })
 
   if (metadata?.indyRequest) {
@@ -148,6 +155,7 @@ const mockCredentialRecord = ({
 describe('CredentialService', () => {
   let credentialRepository: CredentialRepository
   let credentialService: CredentialService
+  let revocationService: RevocationService
   let ledgerService: IndyLedgerService
   let indyIssuerService: IndyIssuerService
   let indyHolderService: IndyHolderService
@@ -172,6 +180,12 @@ describe('CredentialService', () => {
       indyIssuerService,
       indyHolderService,
       eventEmitter
+    )
+
+    revocationService = new RevocationService(
+      credentialRepository,
+      eventEmitter,
+      agentConfig
     )
 
     mockFunction(ledgerService.getCredentialDefinition).mockReturnValue(Promise.resolve(credDef))
@@ -1147,6 +1161,52 @@ describe('CredentialService', () => {
           ).rejects.toThrowError(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
         })
       )
+    })
+  })
+  describe('revocationNotification', ()=>{
+    let credential: CredentialRecord
+
+    beforeEach(() => {
+      credential = mockCredentialRecord({
+        state: CredentialState.Done,
+        revocationRegistryId: 'AsB27X6KRrJFsqZ3unNAH6:4:AsB27X6KRrJFsqZ3unNAH6:3:cl:48187:default:CL_ACCUM:3b24a9b0-a979-41e0-9964-2292f2b1b7e9',
+        credentialRevocationId: '1'
+      })
+    })
+
+    test('Test revocation notification for Alice credential id', async () => {
+      const eventListenerMock = jest.fn()
+      eventEmitter.on<RevocationNotificationReceivedEvent>(CredentialEventTypes.RevocationNotificationReceived, eventListenerMock)
+      const date = new Date(2022)
+
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
+      const spy = jest.spyOn(global, 'Date').mockImplementation(() => date)
+      
+      const {revocationRegistryId, credentialRevocationId} = credential
+      const revocationNotificationThreadId = `indy::${revocationRegistryId}::${credentialRevocationId}`
+  
+      const revocationNotificationMessage = new RevocationNotificationMessage({
+        issueThread: revocationNotificationThreadId,
+        comment: 'Credential has been revoked',
+      })
+      let messageContext = new InboundMessageContext(revocationNotificationMessage)
+
+      await revocationService.processRevocationNotification(messageContext)
+  
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: "RevocationNotificationReceived",
+        payload: {
+          credentialRecord: {
+            ...credential, 
+            revocationNotification: {
+              revocationDate: date,
+              comment: 'Credential has been revoked'
+            }
+          }
+        }
+      })
+
+      spy.mockRestore()
     })
   })
 })

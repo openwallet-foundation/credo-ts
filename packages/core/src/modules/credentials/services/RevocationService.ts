@@ -36,7 +36,7 @@ export class RevocationService {
   ): Promise<void> {
     this.logger.info('Processing revocation notification', { message: messageContext.message })
     // ThreadID = indy::<revocation_registry_id>::<credential_revocation_id>
-    const threadRegex = /(indy)::(.+)::(\d+)/g
+    const threadRegex = /(indy)::(.+)::(\d+)$/
     const threadId = messageContext.message.issueThread
     try {
       const threadIdGroups = threadId.match(threadRegex)
