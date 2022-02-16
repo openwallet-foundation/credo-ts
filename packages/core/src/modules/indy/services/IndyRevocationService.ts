@@ -167,7 +167,7 @@ export class IndyRevocationService {
 
     const revoked: boolean = revocationRegistryDelta.value.revoked?.includes(parseInt(credentialRevocationId)) || false
     this.logger.trace(
-      `Credental with Credential Revocation Id '${credentialRevocationId}' is ${
+      `Credential with Credential Revocation Id '${credentialRevocationId}' is ${
         revoked ? '' : 'not '
       }revoked with revocation interval with to '${requestRevocationInterval.to}' & from '${
         requestRevocationInterval.from
