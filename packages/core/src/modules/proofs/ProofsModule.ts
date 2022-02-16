@@ -1,8 +1,8 @@
 import type { ProofService } from './ProofService'
+import type { GetRequestedCredentialsConfig } from './models/GetRequestedCredentialsConfig'
 import type {
   AcceptPresentationOptions,
   AcceptProposalOptions,
-  CreateOutOfBandRequestOptions,
   ProposeProofOptions,
   RequestProofsOptions,
 } from './models/ModuleOptions'
@@ -30,7 +30,6 @@ import { MediationRecipientService } from '../routing/services/MediationRecipien
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
 import { ProofProtocolVersion } from './models/ProofProtocolVersion'
 import { V1ProofService } from './protocol/v1/V1ProofService'
-import { ProofRequest } from './protocol/v1/models'
 import { V2ProofService } from './protocol/v2/V2ProofService'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -513,13 +512,4 @@ export type CreateProofRequestOptions = Partial<
 export interface ProofRequestConfig {
   comment?: string
   autoAcceptProof?: AutoAcceptProof
-}
-
-export interface GetRequestedCredentialsConfig {
-  /**
-   * Whether to filter the retrieved credentials using the presentation preview.
-   * This configuration will only have effect if a presentation proposal message is available
-   * containing a presentation preview.
-   */
-  filterByPresentationPreview?: boolean
 }

@@ -5,8 +5,8 @@ import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator
 import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { V2ProofService } from '../V2ProofService'
 
-import { AriesFrameworkError } from '../../../../..'
 import { createOutboundMessage } from '../../../../../agent/helpers'
+import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 

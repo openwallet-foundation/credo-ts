@@ -1,25 +1,18 @@
-import type {
-  GetRequestedCredentialsConfig,
-  ProofRequest,
-  ProofState,
-  ProofStateChangedEvent,
-  RequestedCredentials,
-  RetrievedCredentials,
-} from '.'
+import type { ProofState, ProofStateChangedEvent, RequestedCredentials, RetrievedCredentials } from '.'
 import type { AgentConfig } from '../../agent/AgentConfig'
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Dispatcher } from '../../agent/Dispatcher'
 import type { EventEmitter } from '../../agent/EventEmitter'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
-import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { Logger } from '../../logger'
-import type { DidCommMessageRole, DidCommMessageRepository } from '../../storage'
+import type { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import type { Wallet } from '../../wallet/Wallet'
 import type { ConnectionService } from '../connections/services'
 import type { MediationRecipientService } from '../routing'
 import type { ProofResponseCoordinator } from './ProofResponseCoordinator'
 import type { ProofFormatService } from './formats/ProofFormatService'
 import type { CreateProblemReportOptions } from './formats/models/ProofFormatServiceOptions'
+import type { GetRequestedCredentialsConfig } from './models/GetRequestedCredentialsConfig'
 import type { ProofProtocolVersion } from './models/ProofProtocolVersion'
 import type {
   CreateAckOptions,
@@ -29,13 +22,9 @@ import type {
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
 } from './models/ProofServiceOptions'
-import type { PresentationPreview } from './protocol/v1/models/PresentationPreview'
 import type { ProofRecord, ProofRepository } from './repository'
 import type { PresentationRecordType } from './repository/PresentationExchangeRecord'
 
-import { inject } from 'tsyringe'
-
-import { InjectionSymbols } from '../../constants'
 import { ConsoleLogger, LogLevel } from '../../logger'
 
 import { ProofEventTypes } from './ProofEvents'

@@ -5,8 +5,8 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { ProofStateChangedEvent } from '../../ProofEvents'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
-import type { GetRequestedCredentialsConfig } from '../../ProofsModule'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
+import type { GetRequestedCredentialsConfig } from '../../models/GetRequestedCredentialsConfig'
 import type {
   CreateAckOptions,
   CreatePresentationOptions,

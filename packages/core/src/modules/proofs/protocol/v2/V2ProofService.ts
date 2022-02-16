@@ -5,10 +5,10 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { ProofStateChangedEvent } from '../../ProofEvents'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
-import type { GetRequestedCredentialsConfig } from '../../ProofsModule'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
 import type { ProofFormatSpec } from '../../formats/models/ProofFormatSpec'
+import type { GetRequestedCredentialsConfig } from '../../models/GetRequestedCredentialsConfig'
 import type {
   CreateAckOptions,
   CreatePresentationOptions,
@@ -42,6 +42,11 @@ import { V1PresentationProblemReportError } from '../v1/errors/V1PresentationPro
 import { V1PresentationProblemReportReason } from '../v1/errors/V1PresentationProblemReportReason'
 
 import { V2PresentationProblemReportError, V2PresentationProblemReportReason } from './errors'
+import { V2PresentationAckHandler } from './handlers/V2PresentationAckHandler'
+import { V2PresentationHandler } from './handlers/V2PresentationHandler'
+import { V2PresentationProblemReportHandler } from './handlers/V2PresentationProblemReportHandler'
+import { V2ProposePresentationHandler } from './handlers/V2ProposePresentationHandler'
+import { V2RequestPresentationHandler } from './handlers/V2RequestPresentationHandler'
 import { V2PresentationAckMessage } from './messages'
 import { V2PresentationMessage } from './messages/V2PresentationMessage'
 import { V2PresentationProblemReportMessage } from './messages/V2PresentationProblemReportMessage'
@@ -702,7 +707,27 @@ export class V2ProofService extends ProofService {
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,
     mediationRecipientService: MediationRecipientService
-  ): Promise<void> {}
+  ): Promise<void> {
+    dispatcher.registerHandler(
+      new V2ProposePresentationHandler(this, agentConfig, this.didCommMessageRepository, proofResponseCoordinator)
+    )
+
+    dispatcher.registerHandler(
+      new V2RequestPresentationHandler(
+        this,
+        agentConfig,
+        proofResponseCoordinator,
+        mediationRecipientService,
+        this.didCommMessageRepository
+      )
+    )
+
+    dispatcher.registerHandler(
+      new V2PresentationHandler(this, agentConfig, proofResponseCoordinator, this.didCommMessageRepository)
+    )
+    dispatcher.registerHandler(new V2PresentationAckHandler(this))
+    dispatcher.registerHandler(new V2PresentationProblemReportHandler(this))
+  }
 
   private getFormatServiceForFormat(format: ProofFormatSpec) {
     for (const service of Object.values(this.formatServiceMap)) {

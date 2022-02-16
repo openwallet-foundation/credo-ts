@@ -9,7 +9,7 @@ import type { ProofRecord } from '../../../repository'
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'
 
-export class V1PresentationHandler implements Handler {
+export class V2PresentationHandler implements Handler {
   private proofService: V2ProofService
   private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator
@@ -28,7 +28,7 @@ export class V1PresentationHandler implements Handler {
     this.didCommMessageRepository = didCommMessageRepository
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V1PresentationHandler>) {
+  public async handle(messageContext: HandlerInboundMessage<V2PresentationHandler>) {
     const proofRecord = await this.proofService.processPresentation(messageContext)
 
     if (this.proofResponseCoordinator.shouldAutoRespondToPresentation(proofRecord)) {
@@ -36,7 +36,7 @@ export class V1PresentationHandler implements Handler {
     }
   }
 
-  private async createAck(record: ProofRecord, messageContext: HandlerInboundMessage<V1PresentationHandler>) {
+  private async createAck(record: ProofRecord, messageContext: HandlerInboundMessage<V2PresentationHandler>) {
     this.agentConfig.logger.info(
       `Automatically sending acknowledgement with autoAccept on ${this.agentConfig.autoAcceptProofs}`
     )
