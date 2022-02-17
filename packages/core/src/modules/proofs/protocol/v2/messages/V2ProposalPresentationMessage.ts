@@ -5,6 +5,7 @@ import { Equals, IsArray, IsBoolean, IsInstance, IsOptional, IsString, ValidateN
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
+import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { uuid } from '../../../../../utils/uuid'
 import { ProofFormatSpec } from '../../../formats/models/ProofFormatSpec'
 
@@ -34,6 +35,28 @@ export class V2ProposalPresentationMessage extends AgentMessage {
   public addProposalsAttachment(attachment: ProofAttachmentFormat) {
     this.formats.push(attachment.format)
     this.proposalsAttach.push(attachment.attachment)
+  }
+
+  /**
+   * Every attachment has a corresponding entry in the formats array.
+   * This method pairs those together in a {@link ProofAttachmentFormat} object.
+   */
+  public getAttachmentFormats(): ProofAttachmentFormat[] {
+    const attachmentFormats: ProofAttachmentFormat[] = []
+
+    this.formats.forEach((format) => {
+      const attachment = this.proposalsAttach.find((attachment) => attachment.id === format.attachmentId)
+
+      if (!attachment) {
+        throw new AriesFrameworkError(`Could not find a matching attachment with attachId: ${format.attachmentId}`)
+      }
+
+      attachmentFormats.push({
+        format: format,
+        attachment: attachment,
+      })
+    })
+    return attachmentFormats
   }
 
   @Equals(V2ProposalPresentationMessage.type)

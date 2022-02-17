@@ -1,3 +1,13 @@
+import type {
+  ProofRecord,
+  GetRequestedCredentialsConfig,
+  RetrievedCredentials,
+  RequestedCredentials,
+  ProofRequest,
+} from '..'
+import type { Attachment } from '../../../decorators/attachment/Attachment'
+import type { DidCommMessageRepository } from '../../../storage'
+import type { PresentationPreview } from '../protocol/v1/models/PresentationPreview'
 import type { ProofAttachmentFormat } from './models/ProofAttachmentFormat'
 import type {
   CreatePresentationOptions,
@@ -6,7 +16,6 @@ import type {
   ProcessPresentationOptions,
   ProcessProposalOptions,
   ProcessRequestOptions,
-  VerifyProofOptions,
 } from './models/ProofFormatServiceOptions'
 
 /**
@@ -18,6 +27,12 @@ import type {
  * @class ProofFormatService
  */
 export abstract class ProofFormatService {
+  protected didCommMessageRepository: DidCommMessageRepository
+
+  public constructor(didCommMessageRepository: DidCommMessageRepository) {
+    this.didCommMessageRepository = didCommMessageRepository
+  }
+
   abstract createProposal(options: CreateProposalOptions): ProofAttachmentFormat
 
   abstract processProposal(options: ProcessProposalOptions): void
@@ -30,7 +45,42 @@ export abstract class ProofFormatService {
 
   abstract processPresentation(options: ProcessPresentationOptions): Promise<boolean>
 
-  // private abstract verifyProof(options: VerifyProofOptions): Promise<boolean>
+  // abstract createProofRequestFromProposal(options: {
+  //   formats: {
+  //     indy?: {
+  //       presentationProposal: Attachment
+  //     }
+  //     jsonLd?: never
+  //   }
+  //   config?: { indy?: { name: string; version: string; nonce?: string }; jsonLd?: never }
+  // }): Promise<{
+  //   indy?: ProofRequest
+  //   jsonLd?: never
+  // }>
+
+  public abstract getRequestedCredentialsForProofRequest(options: {
+    proofRecord: ProofRecord
+    config: {
+      indy?: GetRequestedCredentialsConfig
+      jsonLd?: never
+    }
+  }): Promise<{
+    indy?: RetrievedCredentials
+    jsonLd?: never
+  }>
+
+  public abstract autoSelectCredentialsForProofRequest(options: {
+    indy?: RetrievedCredentials
+    jsonLd?: never
+  }): Promise<{
+    indy?: RequestedCredentials
+    jsonLd?: never
+  }>
+
+  abstract proposalAndRequestAreEqual(
+    proposalAttachments: ProofAttachmentFormat[],
+    requestAttachments: ProofAttachmentFormat[]
+  ): boolean
 
   abstract supportsFormat(formatIdentifier: string): boolean
 

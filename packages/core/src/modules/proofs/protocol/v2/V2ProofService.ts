@@ -1,17 +1,14 @@
-import type { AgentConfig, AgentMessage } from '@aries-framework/core'
-import { validateOrReject } from 'class-validator'
-import { Lifecycle, scoped } from 'tsyringe'
-import { EventEmitter } from '../../../../agent/EventEmitter'
+import type { AgentMessage } from '../../../../agent/AgentMessage'
+import type { Dispatcher } from '../../../../agent/Dispatcher'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
-import { AriesFrameworkError } from '../../../../error'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
-import { AckStatus } from '../../../common'
-import { ConnectionService } from '../../../connections'
-import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
-import { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
-import { ProofFormatSpec } from '../../formats/models/ProofFormatSpec'
+import type { Attachment } from '../../../../decorators/attachment/Attachment'
+import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
+import type { ProofStateChangedEvent } from '../../ProofEvents'
+import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
-import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
+import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
+import type { ProofFormatSpec } from '../../formats/models/ProofFormatSpec'
+import type { GetRequestedCredentialsConfig } from '../../models/GetRequestedCredentialsConfig'
 import type {
   CreateAckOptions,
   CreatePresentationOptions,
@@ -20,14 +17,36 @@ import type {
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
 } from '../../models/ProofServiceOptions'
-import { ProofState } from '../../models/ProofState'
-import type { ProofStateChangedEvent } from '../../ProofEvents'
+import type { RetrievedCredentials, RequestedCredentials } from '../v1/models'
+import type { PresentationPreview } from '../v1/models/PresentationPreview'
+import type { ProofRequest } from '../v1/models/ProofRequest'
+
+import { validateOrReject } from 'class-validator'
+import { inject, Lifecycle, scoped } from 'tsyringe'
+
+import { AgentConfig } from '../../../../agent/AgentConfig'
+import { EventEmitter } from '../../../../agent/EventEmitter'
+import { InjectionSymbols } from '../../../../constants'
+import { AriesFrameworkError } from '../../../../error'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
+import { Wallet } from '../../../../wallet/Wallet'
+import { AckStatus } from '../../../common'
+import { ConnectionService } from '../../../connections'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
+import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
+import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
+import { ProofState } from '../../models/ProofState'
 import { PresentationRecordType, ProofRecord, ProofRepository } from '../../repository'
 import { V1PresentationProblemReportError } from '../v1/errors/V1PresentationProblemReportError'
 import { V1PresentationProblemReportReason } from '../v1/errors/V1PresentationProblemReportReason'
+
 import { V2PresentationProblemReportError, V2PresentationProblemReportReason } from './errors'
+import { V2PresentationAckHandler } from './handlers/V2PresentationAckHandler'
+import { V2PresentationHandler } from './handlers/V2PresentationHandler'
+import { V2PresentationProblemReportHandler } from './handlers/V2PresentationProblemReportHandler'
+import { V2ProposePresentationHandler } from './handlers/V2ProposePresentationHandler'
+import { V2RequestPresentationHandler } from './handlers/V2RequestPresentationHandler'
 import { V2PresentationAckMessage } from './messages'
 import { V2PresentationMessage } from './messages/V2PresentationMessage'
 import { V2PresentationProblemReportMessage } from './messages/V2PresentationProblemReportMessage'
@@ -44,12 +63,14 @@ export class V2ProofService extends ProofService {
     connectionService: ConnectionService,
     proofRepository: ProofRepository,
     didCommMessageRepository: DidCommMessageRepository,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    indyProofFormatService: IndyProofFormatService,
+    @inject(InjectionSymbols.Wallet) wallet: Wallet
   ) {
-    super(agentConfig, proofRepository, connectionService, didCommMessageRepository, eventEmitter)
+    super(agentConfig, proofRepository, connectionService, didCommMessageRepository, wallet, eventEmitter)
     this.protocolVersion = ProofProtocolVersion.V2_0
     this.formatServiceMap = {
-      [PresentationRecordType.Indy]: new IndyProofFormatService(),
+      [PresentationRecordType.Indy]: indyProofFormatService,
     }
   }
 
@@ -235,6 +256,17 @@ export class V2ProofService extends ProofService {
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     options.proofRecord.assertState(ProofState.ProposalReceived)
 
+    const proposal = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: options.proofRecord.id,
+      messageClass: V2ProposalPresentationMessage,
+    })
+
+    if (!proposal) {
+      throw new AriesFrameworkError(
+        `Proof record with id ${options.proofRecord.id} is missing required presentation proposal`
+      )
+    }
+
     // create attachment formats
     const formats = []
     for (const key of Object.keys(options.proofFormats)) {
@@ -346,6 +378,19 @@ export class V2ProofService extends ProofService {
 
     return proofRecord
   }
+
+  /**
+   * Decline a proof request
+   * @param proofRecord The proof request to be declined
+   */
+  public async declineRequest(proofRecord: ProofRecord): Promise<ProofRecord> {
+    proofRecord.assertState(ProofState.RequestReceived)
+
+    await this.updateState(proofRecord, ProofState.Declined)
+
+    return proofRecord
+  }
+
   public async createPresentation(
     options: CreatePresentationOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
@@ -461,15 +506,6 @@ export class V2ProofService extends ProofService {
     return proofRecord
   }
 
-  private getFormatServiceForFormat(format: ProofFormatSpec) {
-    for (const service of Object.values(this.formatServiceMap)) {
-      if (service.supportsFormat(format.format)) {
-        return service
-      }
-    }
-    return null
-  }
-
   public async createAck(options: CreateAckOptions): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     // assert we've received the final presentation
     const presentation = await this.didCommMessageRepository.getAgentMessage({
@@ -530,7 +566,7 @@ export class V2ProofService extends ProofService {
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     const msg = new V2PresentationProblemReportMessage({
       description: {
-        code: options.problemCode,
+        code: V2PresentationProblemReportReason.Abandoned,
         en: options.description,
       },
     })
@@ -561,5 +597,144 @@ export class V2ProofService extends ProofService {
     proofRecord.errorMessage = `${presentationProblemReportMessage.description.code}: ${presentationProblemReportMessage.description.en}`
     await this.proofRepository.update(proofRecord)
     return proofRecord
+  }
+
+  public async shouldAutoRespondToRequest(proofRecord: ProofRecord): Promise<boolean> {
+    const proposal = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: proofRecord.id,
+      messageClass: V2ProposalPresentationMessage,
+    })
+
+    if (!proposal) {
+      return false
+    }
+
+    const request = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: proofRecord.id,
+      messageClass: V2RequestPresentationMessage,
+    })
+
+    if (!request) {
+      throw new AriesFrameworkError(`Expected to find a request message for ProofRecord with id ${proofRecord.id}`)
+    }
+
+    const proposalAttachments = proposal.getAttachmentFormats()
+    const requestAttachments = request.getAttachmentFormats()
+
+    const equalityResults = []
+    for (const attachmentFormat of proposalAttachments) {
+      const service = this.getFormatServiceForFormat(attachmentFormat.format)
+      equalityResults.push(service?.proposalAndRequestAreEqual(proposalAttachments, requestAttachments))
+    }
+
+    return equalityResults.every((x) => x === true)
+  }
+
+  public async shouldAutoRespondToPresentation(proofRecord: ProofRecord): Promise<boolean> {
+    const request = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: proofRecord.id,
+      messageClass: V2RequestPresentationMessage,
+    })
+
+    return request.willConfirm
+  }
+
+  public async createProofRequestFromProposal(options: {
+    formats: {
+      indy?: {
+        presentationProposal: Attachment
+      }
+      jsonLd?: never
+    }
+    config?: { indy?: { name: string; version: string; nonce?: string }; jsonLd?: never }
+  }): Promise<{
+    indy?: ProofRequest
+    jsonLd?: never
+  }> {
+    let result = {}
+
+    for (const [format, value] of Object.entries(options.formats)) {
+      const service = this.formatServiceMap[format]
+      result = {
+        ...result,
+        ...(await this.createProofRequestFromProposal(options)),
+      }
+    }
+    return result
+  }
+
+  public async findRequestMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: options.proofRecord.id,
+      messageClass: V2RequestPresentationMessage,
+    })
+  }
+  public async findPresentationMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: options.proofRecord.id,
+      messageClass: V2PresentationMessage,
+    })
+  }
+  public async findProposalMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: options.proofRecord.id,
+      messageClass: V2ProposalPresentationMessage,
+    })
+  }
+  public async getRequestedCredentialsForProofRequest(options: {
+    proofRecord: ProofRecord
+    config: { indy?: GetRequestedCredentialsConfig | undefined; jsonLd?: undefined }
+  }): Promise<{ indy?: RetrievedCredentials | undefined; jsonLd?: undefined }> {
+    throw new Error('Method not implemented.')
+  }
+  public async autoSelectCredentialsForProofRequest(options: {
+    indy?: RetrievedCredentials | undefined
+    jsonLd?: undefined
+  }): Promise<{ indy?: RequestedCredentials | undefined; jsonLd?: undefined }> {
+    let returnValue = {}
+
+    for (const [id, format] of Object.entries(options)) {
+      const service = this.formatServiceMap[id]
+      const credentials = await service.autoSelectCredentialsForProofRequest(options)
+      returnValue = { ...returnValue, credentials }
+    }
+
+    return returnValue
+  }
+
+  public async registerHandlers(
+    dispatcher: Dispatcher,
+    agentConfig: AgentConfig,
+    proofResponseCoordinator: ProofResponseCoordinator,
+    mediationRecipientService: MediationRecipientService
+  ): Promise<void> {
+    dispatcher.registerHandler(
+      new V2ProposePresentationHandler(this, agentConfig, this.didCommMessageRepository, proofResponseCoordinator)
+    )
+
+    dispatcher.registerHandler(
+      new V2RequestPresentationHandler(
+        this,
+        agentConfig,
+        proofResponseCoordinator,
+        mediationRecipientService,
+        this.didCommMessageRepository
+      )
+    )
+
+    dispatcher.registerHandler(
+      new V2PresentationHandler(this, agentConfig, proofResponseCoordinator, this.didCommMessageRepository)
+    )
+    dispatcher.registerHandler(new V2PresentationAckHandler(this))
+    dispatcher.registerHandler(new V2PresentationProblemReportHandler(this))
+  }
+
+  private getFormatServiceForFormat(format: ProofFormatSpec) {
+    for (const service of Object.values(this.formatServiceMap)) {
+      if (service.supportsFormat(format.format)) {
+        return service
+      }
+    }
+    return null
   }
 }
