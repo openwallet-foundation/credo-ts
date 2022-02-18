@@ -8,6 +8,7 @@ import { AbortController } from 'abort-controller'
 
 import { AgentConfig } from '../agent/AgentConfig'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { isValidJweStucture, JsonEncoder } from '../utils'
 
 export class HttpOutboundTransport implements OutboundTransport {
   private agent!: Agent
@@ -76,7 +77,13 @@ export class HttpOutboundTransport implements OutboundTransport {
         this.logger.debug(`Response received`, { responseMessage, status: response.status })
 
         try {
-          const encryptedMessage = JSON.parse(responseMessage)
+          const encryptedMessage = JsonEncoder.fromString(responseMessage)
+          if (!isValidJweStucture(encryptedMessage)) {
+            this.logger.error(
+              `Received a response from the other agent but the structure of the incoming message is not a DIDComm message: ${responseMessage}`
+            )
+            return
+          }
           this.agent.receiveMessage(encryptedMessage)
         } catch (error) {
           this.logger.debug('Unable to parse response message')
