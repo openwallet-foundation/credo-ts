@@ -11,7 +11,7 @@
   "scripts": {
     "alice": "ts-node src/AliceInquirer.ts",
     "faber": "ts-node src/FaberInquirer.ts",
-    "refresh": "rm -rf ./node_modules ./yarn.lock && npm install"
+    "refresh": "rm -rf ./node_modules ./yarn.lock && yarn"
   },
   "devDependencies": {
     "@aries-framework/core": "^0.1.0",

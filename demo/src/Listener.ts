@@ -4,20 +4,21 @@ import type { Faber } from './Faber'
 import type { FaberInquirer } from './FaberInquirer'
 import type {
   Agent,
-  CredentialStateChangedEvent,
-  ProofStateChangedEvent,
   BasicMessageStateChangedEvent,
-  ProofRecord,
   CredentialRecord,
+  CredentialStateChangedEvent,
+  ProofRecord,
+  ProofStateChangedEvent,
 } from '@aries-framework/core'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
 import {
-  CredentialState,
-  ProofState,
   BasicMessageEventTypes,
-  ProofEventTypes,
+  BasicMessageRole,
   CredentialEventTypes,
+  CredentialState,
+  ProofEventTypes,
+  ProofState,
 } from '@aries-framework/core'
 import { ui } from 'inquirer'
 
@@ -41,11 +42,11 @@ export class Listener {
   }
 
   private printCredentialAttributes(credentialRecord: CredentialRecord) {
-    if (credentialRecord.credentialAttributes !== undefined) {
+    if (credentialRecord.credentialAttributes) {
       const attribute = credentialRecord.credentialAttributes
       console.log('\n\nCredential preview:')
       attribute.forEach((element) => {
-        console.log(purpleText(`${element.name} ${Color.reset}${element.value}`))
+        console.log(purpleText(`${element.name} ${Color.Reset}${element.value}`))
       })
     }
   }
@@ -55,7 +56,7 @@ export class Listener {
     this.turnListenerOn()
     await aliceInquirer.acceptCredentialOffer(credentialRecord)
     this.turnListenerOff()
-    aliceInquirer.processAnswer()
+    await aliceInquirer.processAnswer()
   }
 
   public credentialOfferListener(alice: Alice, aliceInquirer: AliceInquirer) {
@@ -71,7 +72,7 @@ export class Listener {
 
   public messageListener(agent: Agent, name: string) {
     agent.events.on(BasicMessageEventTypes.BasicMessageStateChanged, async (event: BasicMessageStateChangedEvent) => {
-      if (event.payload.basicMessageRecord.role === 'receiver') {
+      if (event.payload.basicMessageRecord.role === BasicMessageRole.Receiver) {
         this.ui.updateBottomBar(purpleText(`\n${name} received a message: ${event.payload.message.content}\n`))
       }
     })
@@ -81,7 +82,7 @@ export class Listener {
     this.turnListenerOn()
     await aliceInquirer.acceptProofRequest(proofRecord)
     this.turnListenerOff()
-    aliceInquirer.processAnswer()
+    await aliceInquirer.processAnswer()
   }
 
   public proofRequestListener(alice: Alice, aliceInquirer: AliceInquirer) {
@@ -95,15 +96,15 @@ export class Listener {
   public proofAcceptedListener(faber: Faber, faberInquirer: FaberInquirer) {
     faber.agent.events.on(ProofEventTypes.ProofStateChanged, async ({ payload }: ProofStateChangedEvent) => {
       if (payload.proofRecord.state === ProofState.Done) {
-        faberInquirer.processAnswer()
+        await faberInquirer.processAnswer()
       }
     })
   }
 
-  public async newAcceptedPrompt(title: string, faber: Faber, faberInquirer: FaberInquirer) {
+  public async newAcceptedPrompt(title: string, faberInquirer: FaberInquirer) {
     this.turnListenerOn()
     await faberInquirer.exitUseCase(title)
     this.turnListenerOff()
-    faberInquirer.processAnswer()
+    await faberInquirer.processAnswer()
   }
 }
