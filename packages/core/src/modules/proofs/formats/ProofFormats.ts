@@ -13,8 +13,8 @@
 // const PRES_20_PROOF = 'hlindy/proof@v2.0'
 // const V1_PROOF = 'v1_proof'
 
-// const LD_ATTACH_ID = '...' // MJR-TODO
-// const LD_PROPOSE_FORMAT = '...' // MJR-TODO
+// const LD_ATTACH_ID = '...' 
+// const LD_PROPOSE_FORMAT = '...' 
 // const LD_REQUEST_FORMAT = '...' // TODO
 
 // const V2IndyProposeProofFormat: ProofFormatSpec = {
@@ -69,8 +69,6 @@
 //     indy: V1IndyProofFormat,
 //     ldproof: V1IndyProofFormat,
 //   },
-
-//   // MJR-TODO
 //   // CRED_20_REQUEST: {
 //   //     V20CredFormat.Format.Indy.api: "hlindy/cred-req@v2.0",
 //   //     V20CredFormat.Format.LD_PROOF.api: "aries/ld-proof-vc-detail@v1.0",

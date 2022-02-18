@@ -1,13 +1,21 @@
-import type { DidCommMessageRepository } from '../../../../../storage'
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { DidCommMessageRepository } from '../../../../../storage'
 import type { CredentialResponseCoordinator } from '../../../CredentialResponseCoordinator'
+import type { CredProposeOfferRequestFormat, CredentialFormatService } from '../../../formats/CredentialFormatService'
+import type { AcceptRequestOptions } from '../../../interfaces'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
-import { DidCommMessageRole } from '../../../../../storage'
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
-import { OfferCredentialMessage, ProposeCredentialMessage, RequestCredentialMessage } from '../messages'
+import { DidCommMessageRole } from '../../../../../storage'
+import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
+import {
+  INDY_CREDENTIAL_ATTACHMENT_ID,
+  OfferCredentialMessage,
+  ProposeCredentialMessage,
+  RequestCredentialMessage,
+} from '../messages'
 
 export class RequestCredentialHandler implements Handler {
   private agentConfig: AgentConfig
@@ -57,13 +65,34 @@ export class RequestCredentialHandler implements Handler {
     } catch (RecordNotFoundError) {
       // can happen in normal processing
     }
+    let offerPayload: CredProposeOfferRequestFormat | undefined
+    let proposalPayload: CredProposeOfferRequestFormat | undefined
+    let requestPayload: CredProposeOfferRequestFormat | undefined
 
+    const formatService: CredentialFormatService = this.credentialService.getFormatService()
+
+    if (proposeMessage) {
+      proposalPayload = proposeMessage.credentialPayload
+    }
+    if (offerMessage) {
+      const attachment = offerMessage.getAttachmentIncludingFormatId('indy')
+      if (attachment) {
+        offerPayload = formatService.getCredentialPayload(attachment)
+      }
+    }
+    if (requestMessage) {
+      const attachment = requestMessage.getAttachmentIncludingFormatId('indy')
+      if (attachment) {
+        requestPayload = formatService.getCredentialPayload(attachment)
+      }
+    }
     if (
-      this.credentialResponseCoordinator.shouldAutoRespondToRequest(
+      formatService.shouldAutoRespondToRequestNEW(
         credentialRecord,
-        proposeMessage,
-        offerMessage,
-        requestMessage
+        this.agentConfig.autoAcceptCredentials,
+        requestPayload,
+        offerPayload,
+        proposalPayload
       )
     ) {
       return await this.createCredential(credentialRecord, messageContext, offerMessage, requestMessage)
@@ -80,7 +109,13 @@ export class RequestCredentialHandler implements Handler {
       `Automatically sending credential with autoAccept on ${this.agentConfig.autoAcceptCredentials}`
     )
 
-    const { message, credentialRecord } = await this.credentialService.createCredential(record)
+    const options: AcceptRequestOptions = {
+      attachId: INDY_CREDENTIAL_ATTACHMENT_ID,
+      protocolVersion: CredentialProtocolVersion.V1_0,
+      credentialRecordId: record.id,
+      comment: 'V1 Indy Credential',
+    }
+    const { message, credentialRecord } = await this.credentialService.createCredential(record, options)
 
     if (messageContext.connection) {
       await this.didCommMessageRepository.saveAgentMessage({

@@ -1,4 +1,4 @@
-import type { V2CredentialFormatSpec } from '../formats/CredentialFormatService'
+import type { CredentialFormatSpec } from '../../../formats/CredentialFormatService'
 
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
@@ -9,14 +9,14 @@ import { V2CredentialPreview } from '../V2CredentialPreview'
 
 export interface V2ProposeCredentialMessageProps {
   id?: string
-  formats: V2CredentialFormatSpec[]
+  formats: CredentialFormatSpec[]
   filtersAttach: Attachment[]
   comment?: string
   credentialProposal?: V2CredentialPreview
 }
 
 export class V2ProposeCredentialMessage extends AgentMessage {
-  public formats!: V2CredentialFormatSpec[]
+  public formats!: CredentialFormatSpec[]
 
   public constructor(props: V2ProposeCredentialMessageProps) {
     super()

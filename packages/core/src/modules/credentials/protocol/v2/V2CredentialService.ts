@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/explicit-member-accessibility */
-import type { DidCommMessageRepository } from '../../../../storage'
+import type { Attachment } from '../../../../../src/decorators/attachment/Attachment'
 import type { AgentConfig } from '../../../../agent/AgentConfig'
 import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { Dispatcher } from '../../../../agent/Dispatcher'
@@ -9,12 +9,19 @@ import type { HandlerInboundMessage } from '../../../../agent/Handler'
 import type { MessageSender } from '../../../../agent/MessageSender'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../../logger'
+import type { DidCommMessageRepository } from '../../../../storage'
 import type { ConnectionService } from '../../../connections/services/ConnectionService'
 import type { IndyHolderService, IndyIssuerService } from '../../../indy'
 import type { IndyLedgerService } from '../../../ledger'
 import type { MediationRecipientService } from '../../../routing'
 import type { CredentialStateChangedEvent } from '../../CredentialEvents'
 import type { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
+import type {
+  CredentialFormatService,
+  CredentialFormatSpec,
+  CredProposeOfferRequestFormat,
+  Payload,
+} from '../../formats/CredentialFormatService'
 import type {
   AcceptProposalOptions,
   AcceptRequestOptions,
@@ -27,29 +34,24 @@ import type {
 import type { CredentialRepository } from '../../repository'
 import type { CredentialAckMessage, IssueCredentialMessage } from '../v1/messages'
 import type { CredentialProtocolMsgReturnType } from './CredentialMessageBuilder'
-import type {
-  CredentialFormatService,
-  V2CredentialFormatSpec,
-  V2CredProposeOfferRequestFormat,
-} from './formats/CredentialFormatService'
 
 import { ServiceDecorator } from '../../../../decorators/service/ServiceDecorator'
-import { DidCommMessageRole } from '../../../../storage'
 import { AriesFrameworkError } from '../../../../error'
 import { ConsoleLogger, LogLevel } from '../../../../logger'
+import { DidCommMessageRole } from '../../../../storage'
 import { AckStatus } from '../../../common'
 import { CredentialEventTypes } from '../../CredentialEvents'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
 import { CredentialService } from '../../CredentialService'
 import { CredentialState } from '../../CredentialState'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
+import { FORMAT_KEYS } from '../../formats/CredentialFormatService'
+import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
+import { JsonLdCredentialFormatService } from '../../formats/jsonld/JsonLdCredentialFormatService'
 import { CredentialFormatType } from '../../interfaces'
 import { CredentialExchangeRecord } from '../../repository'
 
 import { CredentialMessageBuilder } from './CredentialMessageBuilder'
-import { FORMAT_KEYS } from './formats/CredentialFormatService'
-import { IndyCredentialFormatService } from './formats/indy/IndyCredentialFormatService'
-import { JsonLdCredentialFormatService } from './formats/jsonld/JsonLdCredentialFormatService'
 import { V2CredentialAckHandler } from './handlers/V2CredentialAckHandler'
 import { V2IssueCredentialHandler } from './handlers/V2IssueCredentialHandler'
 import { V2OfferCredentialHandler } from './handlers/V2OfferCredentialHandler'
@@ -187,7 +189,7 @@ export class V2CredentialService extends CredentialService {
    * @param messageFormats the format objects containing the format name (eg indy)
    * @return the credential format service objects in an array - derived from format object keys
    */
-  public getFormatsFromMessage(messageFormats: V2CredentialFormatSpec[]): CredentialFormatService[] {
+  public getFormatsFromMessage(messageFormats: CredentialFormatSpec[]): CredentialFormatService[] {
     const formats: CredentialFormatService[] = []
     for (const msg of messageFormats) {
       if (msg.format.includes('indy')) {
@@ -206,7 +208,7 @@ export class V2CredentialService extends CredentialService {
    * @return the credential format service objects in an array - derived from format object keys
    */
   public getFormats(
-    credentialFormats: OfferCredentialFormats | V2CredProposeOfferRequestFormat
+    credentialFormats: OfferCredentialFormats | CredProposeOfferRequestFormat
   ): CredentialFormatService[] {
     const formats: CredentialFormatService[] = []
     const formatKeys = Object.keys(credentialFormats)
@@ -281,7 +283,7 @@ export class V2CredentialService extends CredentialService {
       for (const format of formats) {
         const attachment = format.getAttachment(proposalMessage)
         if (attachment) {
-          const credProposal: V2CredProposeOfferRequestFormat | undefined = format.getCredentialPayload(attachment)
+          const credProposal: CredProposeOfferRequestFormat | undefined = format.getCredentialPayload(attachment)
           if (credProposal) {
             format.getMetaDataService().setMetaDataForProposal(credProposal, credentialRecord)
           }
@@ -348,7 +350,6 @@ export class V2CredentialService extends CredentialService {
     // only do this if Indy format present in the message
     // credential preview is Indy specific
 
-    // MJR-TODO not sure we need this; is this done inside createOfferAsResponse anyway??
     for (const msg of proposeCredentialMessage.formats) {
       if (msg.format.includes('indy')) {
         const formatService: CredentialFormatService = this.getFormatService(CredentialFormatType.Indy)
@@ -413,7 +414,7 @@ export class V2CredentialService extends CredentialService {
     logger.debug(`Processing credential offer with id ${credentialOfferMessage.id}`)
 
     const formats: CredentialFormatService[] = this.getFormatsFromMessage(credentialOfferMessage.formats)
-    let credOffer: V2CredProposeOfferRequestFormat | undefined
+    let credOffer: CredProposeOfferRequestFormat | undefined
 
     try {
       // Credential record already exists
@@ -432,7 +433,7 @@ export class V2CredentialService extends CredentialService {
           messageClass: V2OfferCredentialMessage,
         })
       } catch (error) {
-        // record not found error - MJR-TODO is this ok?
+        // no record found
       }
 
       credentialRecord.assertState(CredentialState.ProposalSent)
@@ -533,12 +534,7 @@ export class V2CredentialService extends CredentialService {
     logger.debug('  => V2ProposeCredentialHandler')
 
     this.dispatcher.registerHandler(
-      new V2ProposeCredentialHandler(
-        this,
-        this.agentConfig,
-        this.credentialResponseCoordinator,
-        this.didCommMessageRepository
-      )
+      new V2ProposeCredentialHandler(this, this.agentConfig, this.didCommMessageRepository)
     )
 
     logger.debug('  => V2OfferCredentialHandler')
@@ -546,7 +542,6 @@ export class V2CredentialService extends CredentialService {
       new V2OfferCredentialHandler(
         this,
         this.agentConfig,
-        this.credentialResponseCoordinator,
         this.mediationRecipientService,
         this.didCommMessageRepository
       )
@@ -554,23 +549,11 @@ export class V2CredentialService extends CredentialService {
 
     logger.debug('  => V2RequestCredentialHandler')
     this.dispatcher.registerHandler(
-      new V2RequestCredentialHandler(
-        this,
-        this.agentConfig,
-        this.credentialResponseCoordinator,
-        this.didCommMessageRepository
-      )
+      new V2RequestCredentialHandler(this, this.agentConfig, this.didCommMessageRepository)
     )
 
     logger.debug('  => V2IssueCredentialHandler')
-    this.dispatcher.registerHandler(
-      new V2IssueCredentialHandler(
-        this,
-        this.agentConfig,
-        this.credentialResponseCoordinator,
-        this.didCommMessageRepository
-      )
-    )
+    this.dispatcher.registerHandler(new V2IssueCredentialHandler(this, this.agentConfig, this.didCommMessageRepository))
 
     logger.debug('  => V2CredentialAckHandler')
     this.dispatcher.registerHandler(new V2CredentialAckHandler(this))
@@ -594,20 +577,25 @@ export class V2CredentialService extends CredentialService {
 
     record.assertState(CredentialState.OfferReceived)
 
-    const credentialOffer = await this.didCommMessageRepository.getAgentMessage({
+    const offerMessage = await this.didCommMessageRepository.getAgentMessage({
       associatedRecordId: record.id,
       messageClass: V2OfferCredentialMessage,
     })
 
-    if (!credentialOffer) {
+    if (!offerMessage) {
       throw new CredentialProblemReportError(
         `Missing required base64 or json encoded attachment data for credential offer with thread id ${record.threadId}`,
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
-    const formats: CredentialFormatService[] = this.getFormatsFromMessage(credentialOffer.formats)
+    const formats: CredentialFormatService[] = this.getFormatsFromMessage(offerMessage.formats)
     if (formats) {
-      const { message, credentialRecord } = await this.credentialMessageBuilder.createRequest(formats, record, options)
+      const { message, credentialRecord } = await this.credentialMessageBuilder.createRequest(
+        formats,
+        record,
+        options,
+        offerMessage
+      )
 
       await this.updateState(credentialRecord, CredentialState.RequestSent)
       return { message, credentialRecord }
@@ -800,7 +788,7 @@ export class V2CredentialService extends CredentialService {
     for (const format of formats) {
       const attachment = format.getAttachment(message)
       if (attachment) {
-        const credOffer: V2CredProposeOfferRequestFormat | undefined = format.getCredentialPayload(attachment)
+        const credOffer: CredProposeOfferRequestFormat | undefined = format.getCredentialPayload(attachment)
         if (credOffer) {
           format.getMetaDataService().setMetaDataForOffer(credOffer, credentialRecord)
         }
@@ -874,6 +862,16 @@ export class V2CredentialService extends CredentialService {
   ): Promise<CredentialProtocolMsgReturnType<IssueCredentialMessage | V2IssueCredentialMessage>> {
     record.assertState(CredentialState.RequestReceived)
 
+    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: record.id,
+      messageClass: V2RequestCredentialMessage,
+    })
+
+    if (!requestMessage) {
+      throw new AriesFrameworkError(
+        `Missing credential request for credential exchange with thread id ${record.threadId}`
+      )
+    }
     let offerMessage
     try {
       offerMessage = await this.didCommMessageRepository.getAgentMessage({
@@ -883,16 +881,14 @@ export class V2CredentialService extends CredentialService {
     } catch (error) {
       // record not found - this can happen
     }
-    if (!offerMessage) {
-      // this needs to change in W3C - there might not be an offer
-      throw Error('No offer message found - cannot create credential')
-    }
 
-    const credentialFormats: CredentialFormatService[] = this.getFormatsFromMessage(offerMessage.formats)
+    const credentialFormats: CredentialFormatService[] = this.getFormatsFromMessage(requestMessage.formats)
     const { message: issueCredentialMessage, credentialRecord } = await this.credentialMessageBuilder.createCredential(
       credentialFormats,
       record,
-      options
+      options,
+      requestMessage,
+      offerMessage
     )
 
     issueCredentialMessage.setThread({
@@ -1060,7 +1056,7 @@ export class V2CredentialService extends CredentialService {
     for (const format of formats) {
       const attachment = format.getAttachment(message)
       if (attachment) {
-        const credOffer: V2CredProposeOfferRequestFormat | undefined = format.getCredentialPayload(attachment)
+        const credOffer: CredProposeOfferRequestFormat | undefined = format.getCredentialPayload(attachment)
         if (credOffer) {
           format.getMetaDataService().setMetaDataForOffer(credOffer, credentialRecord)
         }

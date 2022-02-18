@@ -1,24 +1,24 @@
-import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
-import type { DidCommMessageRepository } from '../../../../../storage'
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
+import type { DidCommMessageRepository } from '../../../../../storage'
 import type { MediationRecipientService } from '../../../../routing/services/MediationRecipientService'
+import type { CredentialPreviewAttribute } from '../../../CredentialPreviewAttributes'
 import type { CredentialResponseCoordinator } from '../../../CredentialResponseCoordinator'
+import type { CredentialFormatService, CredProposeOfferRequestFormat } from '../../../formats/CredentialFormatService'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import type { V2CredentialService } from '../V2CredentialService'
-import type { CredentialFormatService } from '../formats/CredentialFormatService'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
-import { DidCommMessageRole } from '../../../../../storage'
 import { unitTestLogger } from '../../../../../logger'
+import { DidCommMessageRole } from '../../../../../storage'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 
 export class V2OfferCredentialHandler implements Handler {
   private credentialService: V2CredentialService
   private agentConfig: AgentConfig
-  private credentialResponseCoordinator: CredentialResponseCoordinator
   private mediationRecipientService: MediationRecipientService
   public supportedMessages = [V2OfferCredentialMessage]
 
@@ -27,13 +27,11 @@ export class V2OfferCredentialHandler implements Handler {
   public constructor(
     credentialService: V2CredentialService,
     agentConfig: AgentConfig,
-    credentialResponseCoordinator: CredentialResponseCoordinator,
     mediationRecipientService: MediationRecipientService,
     didCommMessageRepository: DidCommMessageRepository
   ) {
     this.credentialService = credentialService
     this.agentConfig = agentConfig
-    this.credentialResponseCoordinator = credentialResponseCoordinator
     this.mediationRecipientService = mediationRecipientService
     this.didCommMessageRepository = didCommMessageRepository
   }
@@ -65,16 +63,33 @@ export class V2OfferCredentialHandler implements Handler {
     if (!offerMessage) {
       throw Error('Missing offer message in V2OfferCredentialHandler')
     }
+    let offerPayload: CredProposeOfferRequestFormat | undefined
+    let proposalPayload: CredProposeOfferRequestFormat | undefined
+    let offerValues: CredentialPreviewAttribute[] | undefined
+
     const formatServices: CredentialFormatService[] = this.credentialService.getFormatsFromMessage(offerMessage.formats)
     // 2. loop through found formats
     let shouldAutoRespond = true
     for (const formatService of formatServices) {
       // 3. Call format.shouldRespondToProposal for each one
-      const formatShouldAutoRespond = formatService.shouldAutoRespondToOffer(
+      if (proposeMessage) {
+        const attachment = formatService.getAttachment(proposeMessage)
+        if (attachment) {
+          proposalPayload = formatService.getCredentialPayload(attachment)
+        }
+      }
+      const attachment = formatService.getAttachment(offerMessage)
+      if (attachment) {
+        offerPayload = formatService.getCredentialPayload(attachment)
+      }
+      offerValues = offerMessage.credentialPreview?.attributes
+
+      const formatShouldAutoRespond = formatService.shouldAutoRespondToOfferNEW(
         credentialRecord,
         this.agentConfig.autoAcceptCredentials,
-        proposeMessage,
-        offerMessage
+        offerPayload,
+        offerValues,
+        proposalPayload
       )
 
       shouldAutoRespond = shouldAutoRespond && formatShouldAutoRespond

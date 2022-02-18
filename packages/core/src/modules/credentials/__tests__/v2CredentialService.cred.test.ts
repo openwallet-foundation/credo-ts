@@ -3,9 +3,9 @@ import type { ConnectionService } from '../../connections/services/ConnectionSer
 import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
+import type { CredProposeOfferRequestFormat } from '../formats/CredentialFormatService'
 import type { AcceptRequestOptions, RequestCredentialOptions } from '../interfaces'
 import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
-import type { V2CredProposeOfferRequestFormat } from '../protocol/v2/formats/CredentialFormatService'
 import type { V2IssueCredentialMessageProps } from '../protocol/v2/messages/V2IssueCredentialMessage'
 import type { V2OfferCredentialMessageOptions } from '../protocol/v2/messages/V2OfferCredentialMessage'
 import type { V2RequestCredentialMessageOptions } from '../protocol/v2/messages/V2RequestCredentialMessage'
@@ -122,7 +122,7 @@ const credentialAttachment = new Attachment({
   }),
 })
 
-const v2CredentialFormats: V2CredProposeOfferRequestFormat = {
+const v2CredentialFormats: CredProposeOfferRequestFormat = {
   indy: {
     payload: {
       credentialPayload: {
@@ -534,7 +534,7 @@ describe('CredentialService', () => {
       const acceptRequestOptions: AcceptRequestOptions = {
         protocolVersion: CredentialProtocolVersion.V2_0,
         credentialRecordId: credential.id,
-        comment: 'Accept Comment',
+        comment: 'credential response comment',
       }
       await credentialService.createCredential(credential, acceptRequestOptions)
 
@@ -576,7 +576,7 @@ describe('CredentialService', () => {
       const acceptRequestOptions: AcceptRequestOptions = {
         protocolVersion: CredentialProtocolVersion.V2_0,
         credentialRecordId: credential.id,
-        comment: 'Accept Comment',
+        comment: 'credential response comment',
       }
       await credentialService.createCredential(credential, acceptRequestOptions)
 

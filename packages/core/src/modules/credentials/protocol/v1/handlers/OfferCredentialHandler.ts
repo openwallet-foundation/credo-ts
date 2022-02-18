@@ -1,14 +1,16 @@
-import type { DidCommMessageRepository } from '../../../../../storage'
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { DidCommMessageRepository } from '../../../../../storage'
 import type { MediationRecipientService } from '../../../../routing/services/MediationRecipientService'
+import type { CredentialPreviewAttribute } from '../../../CredentialPreviewAttributes'
 import type { CredentialResponseCoordinator } from '../../../CredentialResponseCoordinator'
+import type { CredentialFormatService, CredProposeOfferRequestFormat } from '../../../formats/CredentialFormatService'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
-import { DidCommMessageRole } from '../../../../../storage'
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
+import { DidCommMessageRole } from '../../../../../storage'
 import { OfferCredentialMessage, ProposeCredentialMessage } from '../messages'
 
 export class OfferCredentialHandler implements Handler {
@@ -55,7 +57,32 @@ export class OfferCredentialHandler implements Handler {
       // can happen in normal processing
     }
 
-    if (this.credentialResponseCoordinator.shouldAutoRespondToOffer(credentialRecord, proposeMessage, offerMessage)) {
+    let offerPayload: CredProposeOfferRequestFormat | undefined
+    let proposalPayload: CredProposeOfferRequestFormat | undefined
+    let offerValues: CredentialPreviewAttribute[] | undefined
+
+    const formatService: CredentialFormatService = this.credentialService.getFormatService()
+
+    if (proposeMessage && proposeMessage.credentialProposal && proposeMessage.messageAttachment) {
+      proposalPayload = proposeMessage.credentialPayload
+    }
+    if (offerMessage) {
+      const attachment = offerMessage.getAttachmentIncludingFormatId('indy')
+      if (attachment) {
+        offerPayload = formatService.getCredentialPayload(attachment)
+      }
+      offerValues = offerMessage.credentialPreview?.attributes
+    }
+
+    if (
+      formatService.shouldAutoRespondToOfferNEW(
+        credentialRecord,
+        this.agentConfig.autoAcceptCredentials,
+        offerPayload,
+        offerValues,
+        proposalPayload
+      )
+    ) {
       return await this.createRequest(credentialRecord, messageContext, offerMessage)
     }
   }

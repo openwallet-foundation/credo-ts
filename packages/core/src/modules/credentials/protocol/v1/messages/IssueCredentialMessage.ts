@@ -1,3 +1,4 @@
+import type { CredProposeOfferRequestFormat } from '../../../formats/models/CredentialFormatServiceOptions'
 import type { Cred } from 'indy-sdk'
 
 import { Expose, Type } from 'class-transformer'
@@ -51,5 +52,24 @@ export class IssueCredentialMessage extends AgentMessage {
     const credentialJson = attachment?.getDataAsJson<Cred>() ?? null
 
     return credentialJson
+  }
+
+  /**
+   * turn the message content into a reusable object to be used within the format service
+   * @return CredProposeOfferRequestFormat object containing the CredPropose object
+   */
+  public get credentialPayload(): CredProposeOfferRequestFormat | null {
+    const cred: Cred | null = this.indyCredential
+
+    if (cred) {
+      return {
+        indy: {
+          payload: {
+            credentialPayload: cred,
+          },
+        },
+      }
+    }
+    return null
   }
 }

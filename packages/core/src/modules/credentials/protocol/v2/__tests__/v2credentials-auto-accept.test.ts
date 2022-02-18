@@ -11,8 +11,8 @@ import type { Schema } from 'indy-sdk'
 
 import { CredentialExchangeRecord, AutoAcceptCredential, CredentialState } from '../../..'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
-import { sleep } from '../../../../../utils/sleep'
 import testLogger from '../../../../../../tests/logger'
+import { sleep } from '../../../../../utils/sleep'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialRecordType } from '../../../interfaces'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
@@ -130,7 +130,6 @@ describe('credentials', () => {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.OfferReceived,
       })
-      // PUT THIS BACK WHEN WE ARE ABLE TO ISSUE CREDENTIALS MJR-TODO
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialExchangeRecord.threadId,

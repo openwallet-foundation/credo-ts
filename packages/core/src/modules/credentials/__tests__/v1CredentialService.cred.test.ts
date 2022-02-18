@@ -116,6 +116,13 @@ const credentialAttachment = new Attachment({
   }),
 })
 
+const acceptRequestOptions: AcceptRequestOptions = {
+  attachId: INDY_CREDENTIAL_ATTACHMENT_ID,
+  protocolVersion: CredentialProtocolVersion.V1_0,
+  comment: 'credential response comment',
+  credentialRecordId: '',
+}
+
 // A record is deserialized to JSON when it's stored into the storage. We want to simulate this behaviour for `offer`
 // object to test our service would behave correctly. We use type assertion for `offer` attribute to `any`.
 const mockCredentialRecord = ({
@@ -513,7 +520,7 @@ describe('CredentialService', () => {
         associatedRecordId: credential.id,
       })
       // when
-      await credentialService.createCredential(credential)
+      await credentialService.createCredential(credential, acceptRequestOptions)
 
       // then
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
@@ -550,7 +557,7 @@ describe('CredentialService', () => {
         associatedRecordId: credential.id,
       })
       // when
-      await credentialService.createCredential(credential)
+      await credentialService.createCredential(credential, acceptRequestOptions)
 
       // then
       expect(eventListenerMock).toHaveBeenCalledWith({
@@ -590,13 +597,8 @@ describe('CredentialService', () => {
         role: DidCommMessageRole.Sender,
         associatedRecordId: credential.id,
       })
-      const options: AcceptRequestOptions = {
-        comment: 'credential response comment',
-        protocolVersion: CredentialProtocolVersion.V1_0,
-        credentialRecordId: credential.id,
-      }
-      const { message: credentialResponse } = await credentialService.createCredential(credential, options)
 
+      const { message: credentialResponse } = await credentialService.createCredential(credential, acceptRequestOptions)
       // then
       expect(credentialResponse.toJSON()).toMatchObject({
         '@id': expect.any(String),
@@ -624,7 +626,7 @@ describe('CredentialService', () => {
         credentialValues: {},
       })
       if (credentialResponse.messageAttachment) {
-        const [responseAttachment] = credentialResponse.messageAttachment
+        const [responseAttachment] = credentialResponse.credentialAttachments
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         expect(JsonEncoder.fromBase64(responseAttachment.data.base64!)).toEqual(cred)
       }

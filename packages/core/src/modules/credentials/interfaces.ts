@@ -3,8 +3,8 @@ import type { AnyJson } from '../generic'
 import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
 import type { CredentialPreviewAttribute } from './CredentialPreviewAttributes'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
-import type { V2CredProposeOfferRequestFormat } from './protocol/v2/formats/CredentialFormatService'
-import type { CredDef, CredDefId } from 'indy-sdk'
+import type { CredProposeOfferRequestFormat } from './formats/CredentialFormatService'
+import type { CredentialDefinitionFormat } from './formats/models/CredentialFormatServiceOptions'
 
 type IssuerId = string
 
@@ -80,19 +80,10 @@ interface AcceptOfferOptions {
 interface ProposeCredentialOptions {
   connectionId: string
   protocolVersion: CredentialProtocolVersion
-  credentialFormats: V2CredProposeOfferRequestFormat
+  credentialFormats: CredProposeOfferRequestFormat
   credentialRecordId?: string
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
-}
-
-export interface V2CredDefinitionFormat {
-  indy?: {
-    credDef: CredDef
-  }
-  w3c?: {
-    // MJR-TODO
-  }
 }
 
 interface IndyCredentialPreview {
@@ -104,6 +95,7 @@ interface IndyCredentialPreview {
 export type FormatType = AcceptProposalOptions | ProposeCredentialOptions | NegotiateProposalOptions
 
 interface AcceptProposalOptions {
+  attachId?: string
   connectionId: string
   protocolVersion: CredentialProtocolVersion
   credentialRecordId: string
@@ -112,7 +104,6 @@ interface AcceptProposalOptions {
   credentialFormats: {
     indy?: IndyCredentialPreview
     w3c?: {
-      // MJR-TODO
     }
   }
 }
@@ -129,21 +120,25 @@ interface NegotiateProposalOptions {
 // this is the base64 encoded data payload for [Indy] credential request
 
 interface RequestCredentialOptions {
+  attachId?: string
   connectionId?: string
   holderDid: string
   // As indy cannot start from request and w3c is not supported in v1 we always use v2 here
-  credentialFormats?: V2CredProposeOfferRequestFormat
+  credentialFormats?: CredProposeOfferRequestFormat
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
-  offer?: V2CredProposeOfferRequestFormat // will not be there if this is a W3C request rather than an indy response to offer
-  credentialDefinition?: V2CredDefinitionFormat
+  offer?: CredProposeOfferRequestFormat // will not be there if this is a W3C request rather than an indy response to offer
+  credentialDefinition?: CredentialDefinitionFormat
 }
 
 interface AcceptRequestOptions {
+  attachId?: string
   protocolVersion: CredentialProtocolVersion
   credentialRecordId: string
   comment?: string
   autoAcceptCredential?: AutoAcceptCredential
+  offer?: CredProposeOfferRequestFormat // might not be there if this is a W3C request rather than an indy response to offer
+  request?: CredProposeOfferRequestFormat
 }
 
 export {

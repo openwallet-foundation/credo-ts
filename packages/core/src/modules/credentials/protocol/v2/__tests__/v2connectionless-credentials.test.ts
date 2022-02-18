@@ -1,26 +1,17 @@
-import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import type { CredentialStateChangedEvent } from '../../..'
-import type {
-  AcceptOfferOptions,
-  AcceptRequestOptions,
-  OfferCredentialOptions,
-} from '../../../interfaces'
+import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
+import type { AcceptOfferOptions, AcceptRequestOptions, OfferCredentialOptions } from '../../../interfaces'
 
 import { ReplaySubject, Subject } from 'rxjs'
 
+import { AutoAcceptCredential, CredentialEventTypes, CredentialExchangeRecord, CredentialState } from '../../..'
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
 import { prepareForIssuance, waitForCredentialRecordSubject, getBaseConfig } from '../../../../../../tests/helpers'
+import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
-import {
-  AutoAcceptCredential,
-  CredentialEventTypes,
-  CredentialExchangeRecord,
-  CredentialState,
-} from '../../..'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialRecordType } from '../../../interfaces'
-import testLogger from '../../../../../../tests/logger'
 import { V2CredentialPreview } from '../V2CredentialPreview'
 
 const faberConfig = getBaseConfig('Faber connection-less Credentials V2', {

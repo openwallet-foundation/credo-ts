@@ -1,10 +1,10 @@
-import type { EventEmitter } from '../../../../../../agent/EventEmitter'
-import type { CredentialExchangeRecord, CredentialRepository } from '../../../../repository'
-import type { CredPropose, V2CredProposeOfferRequestFormat } from '../CredentialFormatService'
+import type { EventEmitter } from '../../../../agent/EventEmitter'
+import type { CredentialExchangeRecord, CredentialRepository } from '../../repository'
+import type { CredPropose, CredProposeOfferRequestFormat } from '../CredentialFormatService'
 import type { MetaDataService } from '../MetaDataService'
 import type { CredOffer } from 'indy-sdk'
 
-import { CredentialMetadataKeys } from '../../../../repository'
+import { CredentialMetadataKeys } from '../../repository'
 
 export class IndyMetaDataService implements MetaDataService {
   protected credentialRepository: CredentialRepository // protected as in base class
@@ -20,7 +20,7 @@ export class IndyMetaDataService implements MetaDataService {
    * @param credentialRecord the credential record containing the credential data and surrounding v2 attachments
    * @returns void
    */
-  public setMetaDataForOffer(offer: V2CredProposeOfferRequestFormat, credentialRecord: CredentialExchangeRecord): void {
+  public setMetaDataForOffer(offer: CredProposeOfferRequestFormat, credentialRecord: CredentialExchangeRecord): void {
     if (offer.indy?.payload.credentialPayload) {
       const credOffer: CredOffer = offer.indy.payload.credentialPayload as CredOffer
 
@@ -38,7 +38,7 @@ export class IndyMetaDataService implements MetaDataService {
    * @returns void
    */
   public setMetaDataForRequest(
-    request: V2CredProposeOfferRequestFormat,
+    request: CredProposeOfferRequestFormat,
     credentialRecord: CredentialExchangeRecord
   ): void {
     if (request.indy?.payload.requestMetaData) {
@@ -53,7 +53,7 @@ export class IndyMetaDataService implements MetaDataService {
    * @param credentialRecord the record containing attributes for this credentual
    */
   public async setMetaDataForProposal(
-    proposal: V2CredProposeOfferRequestFormat,
+    proposal: CredProposeOfferRequestFormat,
     credentialRecord: CredentialExchangeRecord
   ): Promise<void> {
     const credPropose: CredPropose = proposal.indy?.payload.credentialPayload as CredPropose

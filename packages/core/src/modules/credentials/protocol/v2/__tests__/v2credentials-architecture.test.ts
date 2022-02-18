@@ -1,6 +1,6 @@
 import type { CredentialService } from '../../../CredentialService'
+import type { CredentialFormatService, CredProposeOfferRequestFormat } from '../../../formats/CredentialFormatService'
 import type { AcceptProposalOptions, ProposeCredentialOptions } from '../../../interfaces'
-import type { CredentialFormatService, V2CredProposeOfferRequestFormat } from '../formats/CredentialFormatService'
 import type { CredOffer } from 'indy-sdk'
 
 import { getBaseConfig } from '../../../../../../tests/helpers'
@@ -147,7 +147,7 @@ describe('V2 Credential Architecture', () => {
       const service: CredentialService = api.getService(version)
       const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.Indy)
 
-      const v2Offer: V2CredProposeOfferRequestFormat = {
+      const v2Offer: CredProposeOfferRequestFormat = {
         indy: {
           payload: {
             credentialPayload: credOffer,
@@ -165,17 +165,13 @@ describe('V2 Credential Architecture', () => {
           },
         },
       }
-      const { preview, formats, offersAttach } = formatService.createOfferAttachFormats(options, v2Offer)
-      expect(preview?.type).toEqual('https://didcomm.org/issue-credential/2.0/credential-preview')
-      expect(preview?.attributes.length).toEqual(2)
-
-      unitTestLogger('1. preview = ', preview)
+      const { formats, offersAttach } = formatService.createOfferAttachFormats(options, v2Offer)
 
       expect(formats.attachId.length).toBeGreaterThan(0)
       expect(formats.format).toEqual('hlindy/cred-abstract@v2.0')
-      unitTestLogger('2. formats = ', formats)
+      unitTestLogger('1. formats = ', formats)
 
-      unitTestLogger('3. offersAttach = ', offersAttach)
+      unitTestLogger('2. offersAttach = ', offersAttach)
       expect(offersAttach).toBeTruthy()
     })
   })

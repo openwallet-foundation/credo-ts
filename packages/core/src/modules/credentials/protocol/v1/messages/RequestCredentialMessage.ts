@@ -22,8 +22,7 @@ export class RequestCredentialMessage extends AgentMessage {
     if (options) {
       this.id = options.id || this.generateId()
       this.comment = options.comment
-      this.requestAttachments = options.requestAttachments
-      this.messageAttachment = options.attachments
+      this.messageAttachment = options.requestAttachments
     }
   }
 
@@ -42,10 +41,10 @@ export class RequestCredentialMessage extends AgentMessage {
     each: true,
   })
   @IsInstance(Attachment, { each: true })
-  public requestAttachments!: Attachment[]
+  public messageAttachment!: Attachment[]
 
   public get indyCredentialRequest(): CredReq | null {
-    const attachment = this.requestAttachments.find(
+    const attachment = this.messageAttachment.find(
       (attachment) => attachment.id === INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID
     )
     // Extract proof request from attachment

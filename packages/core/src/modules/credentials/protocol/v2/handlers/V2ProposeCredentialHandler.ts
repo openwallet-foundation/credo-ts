@@ -3,10 +3,11 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { DidCommMessageRepository } from '../../../../../storage'
+import type { CredentialPreviewAttribute } from '../../../CredentialPreviewAttributes'
 import type { CredentialResponseCoordinator } from '../../../CredentialResponseCoordinator'
+import type { CredentialFormatService, CredProposeOfferRequestFormat } from '../../../formats/CredentialFormatService'
 import type { AcceptProposalOptions } from '../../../interfaces'
 import type { V2CredentialService } from '../V2CredentialService'
-import type { CredentialFormatService } from '../formats/CredentialFormatService'
 
 import { createOutboundMessage } from '../../../../../agent/helpers'
 import { ConsoleLogger, LogLevel } from '../../../../../logger'
@@ -18,7 +19,6 @@ const logger = new ConsoleLogger(LogLevel.debug)
 export class V2ProposeCredentialHandler implements Handler {
   private credentialService: V2CredentialService
   private agentConfig: AgentConfig
-  private credentialAutoResponseCoordinator: CredentialResponseCoordinator
   private didCommMessageRepository: DidCommMessageRepository
 
   public supportedMessages = [V2ProposeCredentialMessage]
@@ -26,10 +26,8 @@ export class V2ProposeCredentialHandler implements Handler {
   public constructor(
     credentialService: V2CredentialService,
     agentConfig: AgentConfig,
-    responseCoordinator: CredentialResponseCoordinator,
     didCommMessageRepository: DidCommMessageRepository
   ) {
-    this.credentialAutoResponseCoordinator = responseCoordinator
     this.credentialService = credentialService
     this.agentConfig = agentConfig
     this.didCommMessageRepository = didCommMessageRepository
@@ -65,19 +63,40 @@ export class V2ProposeCredentialHandler implements Handler {
 
     // 2. loop through found formats
     let shouldAutoRespond = true
+    let offerPayload: CredProposeOfferRequestFormat | undefined
+    let proposalPayload: CredProposeOfferRequestFormat | undefined
+    let proposalValues: CredentialPreviewAttribute[] | undefined
     for (const formatService of formatServices) {
       // 3. Call format.shouldRespondToProposal for each one
-      const formatShouldAutoRespond = formatService.shouldAutoRespondToProposal(
+
+      if (!proposalMessage.credentialProposal || !proposalMessage.credentialProposal.attributes) {
+        throw Error('Missing attributes in proposal message')
+      }
+      if (proposalMessage) {
+        proposalValues = proposalMessage.credentialProposal.attributes
+        const attachment = formatService.getAttachment(proposalMessage)
+        if (attachment) {
+          proposalPayload = formatService.getCredentialPayload(attachment)
+        }
+      }
+      if (offerMessage) {
+        const attachment = formatService.getAttachment(offerMessage)
+        if (attachment) {
+          offerPayload = formatService.getCredentialPayload(attachment)
+        }
+      }
+      const formatShouldAutoRespond = formatService.shouldAutoRespondToProposalNEW(
         credentialRecord,
         this.agentConfig.autoAcceptCredentials,
-        proposalMessage,
-        offerMessage
+        proposalValues,
+        proposalPayload,
+        offerPayload
       )
       shouldAutoRespond = shouldAutoRespond && formatShouldAutoRespond
-    }
-    // 4. if all formats are eligibile for auto response then call create offer
-    if (shouldAutoRespond) {
-      return await this.createOffer(credentialRecord, messageContext, proposalMessage)
+      // 4. if all formats are eligibile for auto response then call create offer
+      if (shouldAutoRespond) {
+        return await this.createOffer(credentialRecord, messageContext, proposalMessage)
+      }
     }
   }
 

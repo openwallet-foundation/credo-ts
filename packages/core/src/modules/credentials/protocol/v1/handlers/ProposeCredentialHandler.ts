@@ -1,11 +1,15 @@
-import type { DidCommMessageRepository } from '../../../../../storage'
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { DidCommMessageRepository } from '../../../../../storage'
+import type { CredentialPreviewAttribute } from '../../../CredentialPreviewAttributes'
 import type { CredentialResponseCoordinator } from '../../../CredentialResponseCoordinator'
+import type { CredentialFormatService, CredProposeOfferRequestFormat } from '../../../formats/CredentialFormatService'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
 import { createOutboundMessage } from '../../../../../agent/helpers'
+import { IndyCredentialFormatService } from '../../../formats/indy/IndyCredentialFormatService'
+import { CredentialFormatType } from '../../../interfaces'
 import { OfferCredentialMessage, ProposeCredentialMessage } from '../messages'
 
 export class ProposeCredentialHandler implements Handler {
@@ -50,11 +54,35 @@ export class ProposeCredentialHandler implements Handler {
     } catch (RecordNotFoundError) {
       // can happen sometimes
     }
+    let offerPayload: CredProposeOfferRequestFormat | undefined
+    let proposalPayload: CredProposeOfferRequestFormat | undefined
+    let proposalValues: CredentialPreviewAttribute[] | undefined
+
+    if (!proposalMessage || !proposalMessage.credentialProposal || !proposalMessage.credentialProposal.attributes) {
+      throw Error('Missing attributes in proposal message')
+    }
+    const formatService: CredentialFormatService = this.credentialService.getFormatService()
+
+    if (proposalMessage && proposalMessage.messageAttachment) {
+      proposalValues = proposalMessage.credentialProposal.attributes
+      const attachment = proposalMessage.messageAttachment[0] // MJR: is this right for propose messages?
+      if (attachment) {
+        proposalPayload = formatService.getCredentialPayload(attachment)
+      }
+    }
+    if (offerMessage) {
+      const attachment = offerMessage.getAttachmentIncludingFormatId('indy')
+      if (attachment) {
+        offerPayload = formatService.getCredentialPayload(attachment)
+      }
+    }
     if (
-      this.credentialAutoResponseCoordinator.shouldAutoRespondToProposal(
+      formatService.shouldAutoRespondToProposalNEW(
         credentialRecord,
-        proposalMessage,
-        offerMessage
+        this.agentConfig.autoAcceptCredentials,
+        proposalValues,
+        proposalPayload,
+        offerPayload
       )
     ) {
       return await this.createOffer(credentialRecord, messageContext, proposalMessage)

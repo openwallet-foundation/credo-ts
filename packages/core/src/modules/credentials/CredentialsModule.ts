@@ -30,12 +30,12 @@ import { MediationRecipientService } from '../routing'
 import { CredentialProtocolVersion } from './CredentialProtocolVersion'
 import { CredentialResponseCoordinator } from './CredentialResponseCoordinator'
 import { CredentialState } from './CredentialState'
-import { CredentialRepository } from './repository'
 import { V1CredentialService } from './protocol/v1/V1CredentialService'
 import { V2CredentialService } from './protocol/v2/V2CredentialService'
 import { V2IssueCredentialMessage } from './protocol/v2/messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from './protocol/v2/messages/V2OfferCredentialMessage'
 import { V2RequestCredentialMessage } from './protocol/v2/messages/V2RequestCredentialMessage'
+import { CredentialRepository } from './repository'
 
 import { IssueCredentialMessage, OfferCredentialMessage, RequestCredentialMessage } from '.'
 
@@ -81,8 +81,8 @@ const logger = new ConsoleLogger(LogLevel.info)
 
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialsModule implements CredentialsModule {
-  private v2connectionService: ConnectionService
-  private v2messageSender: MessageSender
+  private connectionService: ConnectionService
+  private messageSender: MessageSender
   private credentialRepository: CredentialRepository
   private eventEmitter: EventEmitter
   private dispatcher: Dispatcher
@@ -113,8 +113,8 @@ export class CredentialsModule implements CredentialsModule {
     indyHolderService: IndyHolderService,
     didCommMessageRepository: DidCommMessageRepository
   ) {
-    this.v2messageSender = messageSender
-    this.v2connectionService = connectionService
+    this.messageSender = messageSender
+    this.connectionService = connectionService
     this.credentialRepository = credentialRepository
     this.eventEmitter = eventEmitter
     this.dispatcher = dispatcher
@@ -127,7 +127,7 @@ export class CredentialsModule implements CredentialsModule {
     this.didCommMessageRepo = didCommMessageRepository
 
     this.v1Service = new V1CredentialService(
-      this.v2connectionService,
+      this.connectionService,
       this.didCommMessageRepo,
       this.agConfig,
       this.credentialResponseCoord,
@@ -141,10 +141,10 @@ export class CredentialsModule implements CredentialsModule {
     )
 
     this.v2Service = new V2CredentialService(
-      this.v2connectionService,
+      this.connectionService,
       this.credentialRepository,
       this.eventEmitter,
-      this.v2messageSender,
+      this.messageSender,
       this.dispatcher,
       this.agConfig,
       this.credentialResponseCoord,
@@ -212,14 +212,14 @@ export class CredentialsModule implements CredentialsModule {
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(`Connection id for credential record ${credentialRecord.credentialId} not found!`)
     }
-    const connection = await this.v2connectionService.getById(credentialRecord.connectionId)
+    const connection = await this.connectionService.getById(credentialRecord.connectionId)
     if (!connection) {
       throw new AriesFrameworkError(`Connection for ${credentialRecord.connectionId} not found!`)
     }
 
     const outboundMessage = createOutboundMessage(connection, message)
 
-    await this.v2messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendMessage(outboundMessage)
 
     credentialRecord.protocolVersion = version
 
@@ -247,7 +247,7 @@ export class CredentialsModule implements CredentialsModule {
 
     logger.debug('Got a CredentialService object for this version')
 
-    const connection = await this.v2connectionService.getById(credentialOptions.connectionId)
+    const connection = await this.connectionService.getById(credentialOptions.connectionId)
 
     // will get back a credential record -> map to Credential Exchange Record
     const { credentialRecord, message } = await service.createProposal(credentialOptions)
@@ -258,7 +258,7 @@ export class CredentialsModule implements CredentialsModule {
     const outbound = createOutboundMessage(connection, message)
 
     logger.debug('In proposeCredential: Send Proposal to Issuer')
-    await this.v2messageSender.sendMessage(outbound)
+    await this.messageSender.sendMessage(outbound)
     credentialRecord.protocolVersion = version
     return credentialRecord
   }
@@ -283,7 +283,7 @@ export class CredentialsModule implements CredentialsModule {
     // will get back a credential record -> map to Credential Exchange Record
     const { credentialRecord, message } = await service.acceptProposal(credentialOptions)
 
-    const connection = await this.v2connectionService.getById(credentialOptions.connectionId)
+    const connection = await this.connectionService.getById(credentialOptions.connectionId)
 
     logger.debug('We have an offer message (sending outbound): ', message)
 
@@ -291,7 +291,7 @@ export class CredentialsModule implements CredentialsModule {
     const outbound = createOutboundMessage(connection, message)
 
     logger.debug('In acceptCredentialProposal: Send Proposal to Issuer')
-    await this.v2messageSender.sendMessage(outbound)
+    await this.messageSender.sendMessage(outbound)
     credentialRecord.protocolVersion = version
 
     return credentialRecord
@@ -342,7 +342,7 @@ export class CredentialsModule implements CredentialsModule {
 
     // Use connection if present
     if (record.connectionId) {
-      const connection = await this.v2connectionService.getById(record.connectionId)
+      const connection = await this.connectionService.getById(record.connectionId)
 
       const requestOptions: RequestCredentialOptions = {
         holderDid: connection.did,
@@ -362,7 +362,7 @@ export class CredentialsModule implements CredentialsModule {
 
       logger.debug('We have a proposal message (sending outbound): ', message)
 
-      await this.v2messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendMessage(outboundMessage)
       credentialRecord.protocolVersion = offer.protocolVersion
 
       return { credentialRecord, message }
@@ -395,7 +395,7 @@ export class CredentialsModule implements CredentialsModule {
       })
       await this.credentialRepository.update(credentialRecord)
 
-      await this.v2messageSender.sendMessageToService({
+      await this.messageSender.sendMessageToService({
         message,
         service: recipientService.toDidCommService(),
         senderKey: ourService.recipientKeys[0],
@@ -438,7 +438,7 @@ export class CredentialsModule implements CredentialsModule {
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(`Connection id for credential record ${credentialRecord.credentialId} not found!`)
     }
-    const connection = await this.v2connectionService.getById(credentialRecord.connectionId)
+    const connection = await this.connectionService.getById(credentialRecord.connectionId)
     if (!connection) {
       throw new AriesFrameworkError(`Connection for ${credentialRecord.connectionId} not found!`)
     }
@@ -446,7 +446,7 @@ export class CredentialsModule implements CredentialsModule {
 
     const outboundMessage = createOutboundMessage(connection, message)
 
-    await this.v2messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendMessage(outboundMessage)
     credentialRecord.protocolVersion = version
 
     return credentialRecord
@@ -465,7 +465,7 @@ export class CredentialsModule implements CredentialsModule {
     if (!credentialOptions.connectionId) {
       throw Error('Connection id missing from offer credential options')
     }
-    const connection = await this.v2connectionService.getById(credentialOptions.connectionId)
+    const connection = await this.connectionService.getById(credentialOptions.connectionId)
 
     // with version we can get the Service
     const service: CredentialService = this.getService(credentialOptions.protocolVersion)
@@ -480,7 +480,7 @@ export class CredentialsModule implements CredentialsModule {
     })
     logger.debug('V2 Offer Message successfully created; message= ', message)
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.v2messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendMessage(outboundMessage)
     credentialRecord.protocolVersion = credentialOptions.protocolVersion
 
     return credentialRecord
@@ -521,11 +521,11 @@ export class CredentialsModule implements CredentialsModule {
     })
     // Use connection if present
     if (credentialRecord.connectionId) {
-      const connection = await this.v2connectionService.getById(credentialRecord.connectionId)
+      const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
       const outboundMessage = createOutboundMessage(connection, message)
 
-      await this.v2messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendMessage(outboundMessage)
     }
     // Use ~service decorator otherwise
     else if (requestMessage?.service && offerMessage?.service) {
@@ -541,7 +541,7 @@ export class CredentialsModule implements CredentialsModule {
       })
       await this.credentialRepository.update(credentialRecord)
 
-      await this.v2messageSender.sendMessageToService({
+      await this.messageSender.sendMessageToService({
         message,
         service: recipientService.toDidCommService(),
         senderKey: ourService.recipientKeys[0],
@@ -595,17 +595,17 @@ export class CredentialsModule implements CredentialsModule {
       messageClass: credentialMessageClass,
     })
     if (credentialRecord.connectionId) {
-      const connection = await this.v2connectionService.getById(credentialRecord.connectionId)
+      const connection = await this.connectionService.getById(credentialRecord.connectionId)
       const outboundMessage = createOutboundMessage(connection, message)
 
-      await this.v2messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendMessage(outboundMessage)
     }
     // Use ~service decorator otherwise
     else if (credentialMessage?.service && requestMessage?.service) {
       const recipientService = credentialMessage.service
       const ourService = requestMessage.service
 
-      await this.v2messageSender.sendMessageToService({
+      await this.messageSender.sendMessageToService({
         message,
         service: recipientService.toDidCommService(),
         senderKey: ourService.recipientKeys[0],

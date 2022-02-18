@@ -30,8 +30,7 @@ export class OfferCredentialMessage extends AgentMessage {
       this.id = options.id || this.generateId()
       this.comment = options.comment
       this.credentialPreview = options.credentialPreview
-      this.offerAttachments = options.offerAttachments
-      this.messageAttachment = options.attachments
+      this.messageAttachment = options.offerAttachments
     }
   }
 
@@ -56,10 +55,12 @@ export class OfferCredentialMessage extends AgentMessage {
     each: true,
   })
   @IsInstance(Attachment, { each: true })
-  public offerAttachments!: Attachment[]
+  public messageAttachment!: Attachment[]
 
   public get indyCredentialOffer(): CredOffer | null {
-    const attachment = this.offerAttachments.find((attachment) => attachment.id === INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
+    const attachment = this.messageAttachment.find(
+      (attachment) => attachment.id === INDY_CREDENTIAL_OFFER_ATTACHMENT_ID
+    )
 
     // Extract credential offer from attachment
     const credentialOfferJson = attachment?.getDataAsJson<CredOffer>() ?? null

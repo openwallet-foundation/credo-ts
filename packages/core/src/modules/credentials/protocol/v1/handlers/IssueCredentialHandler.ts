@@ -1,7 +1,8 @@
-import type { DidCommMessageRepository } from '../../../../../storage'
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { DidCommMessageRepository } from '../../../../../storage'
 import type { CredentialResponseCoordinator } from '../../../CredentialResponseCoordinator'
+import type { CredentialFormatService, CredProposeOfferRequestFormat } from '../../../formats/CredentialFormatService'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
@@ -33,7 +34,21 @@ export class IssueCredentialHandler implements Handler {
       associatedRecordId: credentialRecord.id,
       messageClass: IssueCredentialMessage,
     })
-    if (this.credentialResponseCoordinator.shouldAutoRespondToIssue(credentialRecord, credentialMessage)) {
+    const formatService: CredentialFormatService = this.credentialService.getFormatService()
+
+    const credentialPayload = credentialMessage.credentialPayload
+
+    if (!credentialPayload) {
+      throw Error(`Missing credential payload`)
+    }
+    // 3. Call format.shouldRespondToProposal for each one
+    if (
+      formatService.shouldAutoRespondToIssueNEW(
+        credentialRecord,
+        this.agentConfig.autoAcceptCredentials,
+        credentialPayload
+      )
+    ) {
       return await this.createAck(credentialRecord, credentialMessage, messageContext)
     }
   }

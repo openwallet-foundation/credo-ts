@@ -225,8 +225,7 @@ describe('CredentialService', () => {
       // expect(agent.isInitialized).toBe(true)
       const repositorySaveSpy = jest.spyOn(credentialRepository, 'save')
 
-      // MJR-TODO call new V1CredentialService method
-      const { message: credentialOffer } = await credentialService.createOffer(offerOptions)
+      await credentialService.createOffer(offerOptions)
 
       // then
       expect(repositorySaveSpy).toHaveBeenCalledTimes(1)

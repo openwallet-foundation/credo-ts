@@ -1,5 +1,6 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
+import type { CredPropose } from '../../../formats/CredentialFormatService'
 import type {
   AcceptOfferOptions,
   AcceptProposalOptions,
@@ -7,13 +8,12 @@ import type {
   OfferCredentialOptions,
   ProposeCredentialOptions,
 } from '../../../interfaces'
-import type { CredPropose } from '../formats/CredentialFormatService'
 
 import { CredentialExchangeRecord, CredentialState } from '../../..'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
-import { unitTestLogger } from '../../../../../logger'
 import testLogger from '../../../../../../tests/logger'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
+import { unitTestLogger } from '../../../../../logger'
 import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialRecordType } from '../../../interfaces'

@@ -1,6 +1,11 @@
 import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type {
+  CredentialFormatService,
+  CredentialFormatSpec,
+  CredProposeOfferRequestFormat,
+} from '../../formats/CredentialFormatService'
+import type {
   AcceptProposalOptions,
   AcceptRequestOptions,
   NegotiateProposalOptions,
@@ -9,12 +14,6 @@ import type {
   RequestCredentialOptions,
 } from '../../interfaces'
 import type { CredentialRecordProps } from '../../repository/CredentialRecord'
-import type { V2CredentialPreview } from './V2CredentialPreview'
-import type {
-  CredentialFormatService,
-  V2CredentialFormatSpec,
-  V2CredProposeOfferRequestFormat,
-} from './formats/CredentialFormatService'
 import type { V2IssueCredentialMessageProps } from './messages/V2IssueCredentialMessage'
 import type { V2OfferCredentialMessageOptions } from './messages/V2OfferCredentialMessage'
 import type { V2ProposeCredentialMessageProps } from './messages/V2ProposeCredentialMessage'
@@ -26,6 +25,7 @@ import { CredentialState } from '../..'
 import { uuid } from '../../../../utils/uuid'
 import { CredentialExchangeRecord } from '../../repository/CredentialRecord'
 
+import { V2CredentialPreview } from './V2CredentialPreview'
 import { V2IssueCredentialMessage } from './messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from './messages/V2OfferCredentialMessage'
 import { V2ProposeCredentialMessage } from './messages/V2ProposeCredentialMessage'
@@ -54,7 +54,7 @@ export class CredentialMessageBuilder {
 
     // create message
     // there are two arrays in each message, one for formats the other for attachments
-    const formatsArray: V2CredentialFormatSpec[] = []
+    const formatsArray: CredentialFormatSpec[] = []
     const filtersAttachArray: Attachment[] | undefined = []
     let previewAttachments: V2CredentialPreview | undefined
     for (const formatService of formatServices) {
@@ -129,16 +129,23 @@ export class CredentialMessageBuilder {
 
     // create message
     // there are two arrays in each message, one for formats the other for attachments
-    const formatsArray: V2CredentialFormatSpec[] = []
+    const formatsArray: CredentialFormatSpec[] = []
     const offersAttachArray: Attachment[] | undefined = []
     let previewAttachments: V2CredentialPreview | undefined
-    let credOffer: V2CredProposeOfferRequestFormat | undefined
+    let credOffer: CredProposeOfferRequestFormat | undefined
     for (const service of formatServices) {
       // Create the offer message for the correct format
 
       credOffer = await service.createOffer(proposal)
 
-      const { preview, formats, offersAttach } = service.createOfferAttachFormats(proposal, credOffer)
+      let preview: V2CredentialPreview | undefined
+
+      if (proposal?.credentialFormats.indy?.attributes) {
+        preview = new V2CredentialPreview({
+          attributes: proposal?.credentialFormats.indy?.attributes,
+        })
+      }
+      const { formats, offersAttach } = service.createOfferAttachFormats(proposal, credOffer)
       if (offersAttach === undefined) {
         throw Error('offersAttach not initialized for credential offer')
       }
@@ -202,24 +209,39 @@ export class CredentialMessageBuilder {
    * Create a {@link V2RequestCredentialMessage}
    *
    * @param formatService correct service for format, indy, w3c etc.
-   * @param credentialRecord The credential record for which to create the credential request
+   * @param record The credential record for which to create the credential request
    * @param offer Additional configuration for the offer if present (might not be for W3C)
    * @returns Object containing request message and associated credential record
    *
    */
   public async createRequest(
     formatServices: CredentialFormatService[],
-    credentialRecord: CredentialExchangeRecord,
-    requestOptions: RequestCredentialOptions
+    record: CredentialExchangeRecord,
+    requestOptions: RequestCredentialOptions,
+    offerMessage: V2OfferCredentialMessage
   ): Promise<CredentialProtocolMsgReturnType<V2RequestCredentialMessage>> {
     // Assert credential
-    credentialRecord.assertState(CredentialState.OfferReceived)
-    const formatsArray: V2CredentialFormatSpec[] = []
+    record.assertState(CredentialState.OfferReceived)
+    if (!offerMessage) {
+      throw Error(`Missing message for credential Record ${record.id}`)
+    }
+    const formatsArray: CredentialFormatSpec[] = []
     const requestAttachArray: Attachment[] | undefined = []
-    for (const service of formatServices) {
-      const { formats, requestAttach, credOfferRequest } = await service.createRequestAttachFormats(
+    for (const formatService of formatServices) {
+      let offer: CredProposeOfferRequestFormat | undefined
+
+      // use the attach id in the formats object to find the correct attachment
+      const attachment = formatService.getAttachment(offerMessage)
+      if (attachment) {
+        offer = formatService.getCredentialPayload(attachment)
+      } else {
+        throw Error(`Missing data payload in attachment in credential Record ${record.id}`)
+      }
+
+      requestOptions.offer = offer
+      const { formats, requestAttach, credOfferRequest } = await formatService.createRequestAttachFormats(
         requestOptions,
-        credentialRecord
+        record
       )
 
       if (formats && requestAttach) {
@@ -230,7 +252,7 @@ export class CredentialMessageBuilder {
       if (!credOfferRequest) {
         throw Error('Error creating credential request')
       }
-      service.getMetaDataService().setMetaDataForRequest(credOfferRequest, credentialRecord)
+      formatService.getMetaDataService().setMetaDataForRequest(credOfferRequest, record)
     }
     const options: V2RequestCredentialMessageOptions = {
       id: this.generateId(),
@@ -239,11 +261,11 @@ export class CredentialMessageBuilder {
       comment: requestOptions.comment,
     }
     const credentialRequestMessage = new V2RequestCredentialMessage(options)
-    credentialRequestMessage.setThread({ threadId: credentialRecord.threadId })
+    credentialRequestMessage.setThread({ threadId: record.threadId })
 
-    credentialRecord.autoAcceptCredential = requestOptions.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
+    record.autoAcceptCredential = requestOptions.autoAcceptCredential ?? record.autoAcceptCredential
 
-    return { message: credentialRequestMessage, credentialRecord }
+    return { message: credentialRequestMessage, credentialRecord: record }
     throw Error('Error: No formats specified in message')
   }
 
@@ -259,15 +281,22 @@ export class CredentialMessageBuilder {
     formatServices: CredentialFormatService[],
     options: OfferCredentialOptions
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: V2OfferCredentialMessage }> {
-    const formatsArray: V2CredentialFormatSpec[] = []
+    const formatsArray: CredentialFormatSpec[] = []
     const offersAttachArray: Attachment[] | undefined = []
     let previewAttachments: V2CredentialPreview | undefined
-    let credOffer: V2CredProposeOfferRequestFormat = {}
+    let credOffer: CredProposeOfferRequestFormat = {}
 
     for (const service of formatServices) {
       // Create the offer message for the correct format
       credOffer = await service.createOffer(options)
-      const { preview, formats, offersAttach } = service.createOfferAttachFormats(options, credOffer)
+      let preview: V2CredentialPreview | undefined
+
+      if (options?.credentialFormats.indy?.attributes) {
+        preview = new V2CredentialPreview({
+          attributes: options?.credentialFormats.indy?.attributes,
+        })
+      }
+      const { formats, offersAttach } = service.createOfferAttachFormats(options, credOffer)
       if (offersAttach) {
         offersAttachArray.push(offersAttach)
       } else {
@@ -320,14 +349,38 @@ export class CredentialMessageBuilder {
    */
   public async createCredential(
     credentialFormats: CredentialFormatService[],
-    credentialRecord: CredentialExchangeRecord,
-    options: AcceptRequestOptions
+    record: CredentialExchangeRecord,
+    options: AcceptRequestOptions,
+    requestMessage: V2RequestCredentialMessage,
+    offerMessage?: V2OfferCredentialMessage
   ): Promise<CredentialProtocolMsgReturnType<V2IssueCredentialMessage>> {
-    const formatsArray: V2CredentialFormatSpec[] = []
+    const formatsArray: CredentialFormatSpec[] = []
     const credAttachArray: Attachment[] | undefined = []
 
     for (const formatService of credentialFormats) {
-      const { formats, credentialsAttach } = await formatService.createIssueAttachFormats(credentialRecord)
+      let offer, request: CredProposeOfferRequestFormat | undefined
+
+      // use the attach id in the formats object to find the correct attachment for
+      // offer and request messages if present
+      if (offerMessage) {
+        const attachment = formatService.getAttachment(offerMessage)
+        if (attachment) {
+          offer = formatService.getCredentialPayload(attachment)
+        } else {
+          throw Error(`Missing data payload in attachment in credential Record ${record.id}`)
+        }
+      }
+
+      const attachment = formatService.getAttachment(requestMessage)
+      if (attachment) {
+        request = formatService.getCredentialPayload(attachment)
+      } else {
+        throw Error(`Missing data payload in attachment in credential Record ${record.id}`)
+      }
+
+      options.offer = offer
+      options.request = request
+      const { formats, credentialsAttach } = await formatService.createIssueAttachFormats(options, record)
 
       if (!formats) {
         throw Error('formats not initialized for credential')
@@ -347,7 +400,7 @@ export class CredentialMessageBuilder {
 
     const message: V2IssueCredentialMessage = new V2IssueCredentialMessage(messageOptions)
 
-    return { message, credentialRecord }
+    return { message, credentialRecord: record }
   }
 
   public generateId(): string {

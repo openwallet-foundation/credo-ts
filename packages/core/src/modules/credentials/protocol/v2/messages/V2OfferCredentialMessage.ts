@@ -1,4 +1,4 @@
-import type { V2CredentialFormatSpec } from '../formats/CredentialFormatService'
+import type { CredentialFormatSpec } from '../../../formats/CredentialFormatService'
 import type { CredOffer } from 'indy-sdk'
 
 import { Expose, Type } from 'class-transformer'
@@ -10,7 +10,7 @@ import { V2CredentialPreview } from '../V2CredentialPreview'
 
 export interface V2OfferCredentialMessageOptions {
   id: string
-  formats: V2CredentialFormatSpec[]
+  formats: CredentialFormatSpec[]
   offerAttachments: Attachment[]
   credentialPreview?: V2CredentialPreview
   replacementId: string
@@ -20,7 +20,7 @@ export interface V2OfferCredentialMessageOptions {
 export const CRED_20_OFFER = 'https://didcomm.org/issue-credential/2.0/offer-credential'
 
 export class V2OfferCredentialMessage extends AgentMessage {
-  public formats!: V2CredentialFormatSpec[]
+  public formats!: CredentialFormatSpec[]
 
   public constructor(options: V2OfferCredentialMessageOptions) {
     super()
@@ -60,10 +60,4 @@ export class V2OfferCredentialMessage extends AgentMessage {
   @IsString()
   @IsOptional()
   public replacementId?: string
-
-  // this is needed for the CredentialResponseCoordinator (which needs reworking into V1 and V2 versions)
-  // MJR-TODO rework CredentialResponseCoordinator for new V2 architecture
-  public get indyCredentialOffer(): CredOffer | null {
-    return null
-  }
 }

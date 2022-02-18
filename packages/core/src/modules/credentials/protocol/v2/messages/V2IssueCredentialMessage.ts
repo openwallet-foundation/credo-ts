@@ -1,4 +1,4 @@
-import type { V2CredentialFormatSpec } from '../formats/CredentialFormatService'
+import type { CredentialFormatSpec } from '../../../formats/CredentialFormatService'
 import type { Cred } from 'indy-sdk'
 
 import { Expose, Type } from 'class-transformer'
@@ -10,12 +10,12 @@ import { Attachment } from '../../../../../decorators/attachment/Attachment'
 export interface V2IssueCredentialMessageProps {
   id?: string
   comment?: string
-  formats: V2CredentialFormatSpec[]
+  formats: CredentialFormatSpec[]
   credentialsAttach: Attachment[]
 }
 
 export class V2IssueCredentialMessage extends AgentMessage {
-  public formats!: V2CredentialFormatSpec[]
+  public formats!: CredentialFormatSpec[]
 
   public constructor(options: V2IssueCredentialMessageProps) {
     super()
@@ -44,10 +44,4 @@ export class V2IssueCredentialMessage extends AgentMessage {
   })
   @IsInstance(Attachment, { each: true })
   public messageAttachment!: Attachment[]
-
-  // this is needed for the CredentialResponseCoordinator (which needs reworking into V1 and V2 versions)
-  // MJR-TODO rework CredentialResponseCoordinator for new V2 architecture
-  public get indyCredentialOffer(): Cred | null {
-    return null
-  }
 }

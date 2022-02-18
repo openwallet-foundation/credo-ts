@@ -26,11 +26,6 @@ export interface CredentialRequestOptions {
   autoAcceptCredential?: AutoAcceptCredential
 }
 
-export interface CredentialResponseOptions {
-  comment?: string
-  autoAcceptCredential?: AutoAcceptCredential
-}
-
 export type CredentialProposeOptions = Omit<ProposeCredentialMessageOptions, 'id'> & {
   linkedAttachments?: LinkedAttachment[]
   autoAcceptCredential?: AutoAcceptCredential

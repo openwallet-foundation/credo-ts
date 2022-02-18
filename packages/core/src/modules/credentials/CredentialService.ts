@@ -10,6 +10,7 @@ import type { DidCommMessageRepository } from '../../storage'
 import type { MediationRecipientService } from '../routing'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
 import type { CredentialResponseCoordinator } from './CredentialResponseCoordinator'
+import type { CredentialFormatService, CredProposeOfferRequestFormat } from './formats/CredentialFormatService'
 import type {
   AcceptProposalOptions,
   AcceptRequestOptions,
@@ -29,10 +30,6 @@ import type {
   RequestCredentialMessage,
 } from './protocol/v1/messages'
 import type { V2CredentialService } from './protocol/v2/V2CredentialService'
-import type {
-  CredentialFormatService,
-  V2CredProposeOfferRequestFormat,
-} from './protocol/v2/formats/CredentialFormatService'
 import type { V2CredentialAckMessage } from './protocol/v2/messages/V2CredentialAckMessage'
 import type { V2IssueCredentialMessage } from './protocol/v2/messages/V2IssueCredentialMessage'
 import type { V2RequestCredentialMessage } from './protocol/v2/messages/V2RequestCredentialMessage'
@@ -78,7 +75,7 @@ export abstract class CredentialService {
   abstract getVersion(): CredentialProtocolVersion
 
   abstract getFormats(
-    credentialFormats: OfferCredentialFormats | V2CredProposeOfferRequestFormat
+    credentialFormats: OfferCredentialFormats | CredProposeOfferRequestFormat
   ): CredentialFormatService[]
   // methods for proposal
   abstract createProposal(
@@ -141,9 +138,7 @@ export abstract class CredentialService {
 
   abstract registerHandlers(): void
 
-  public getFormatService(credentialFormatType: CredentialFormatType): CredentialFormatService {
-    throw Error('Not Implemented')
-  }
+  abstract getFormatService(credentialFormatType?: CredentialFormatType): CredentialFormatService
 
   /**
    * Decline a credential offer
