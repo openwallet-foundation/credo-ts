@@ -359,4 +359,42 @@ describe('Present Proof', () => {
       presentationMessage: expect.any(V1PresentationMessage),
     })
   })
+
+  test('an attribute group name matches with a predicate group name so an error is thrown', async () => {
+    // Age attribute
+    const attributes = {
+      age: new ProofAttributeInfo({
+        name: 'age',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    // Age predicate
+    const predicates = {
+      age: new ProofPredicateInfo({
+        name: 'age',
+        predicateType: PredicateType.GreaterThanOrEqualTo,
+        predicateValue: 50,
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    await expect(
+      faberAgent.proofs.requestProof(faberConnection.id, {
+        name: 'test-proof-request',
+        requestedAttributes: attributes,
+        requestedPredicates: predicates,
+      })
+    ).rejects.toThrowError(
+      `The proof request contains an attribute group name that matches a predicate group name: age`
+    )
+  })
 })
