@@ -11,7 +11,7 @@ export const runFaber = async () => {
   clear()
   console.log(textSync('Faber', { horizontalLayout: 'full' }))
   const faber = await FaberInquirer.build()
-  faber.processAnswer()
+  await faber.processAnswer()
 }
 
 enum PromptOptions {
@@ -42,18 +42,16 @@ export class FaberInquirer extends BaseInquirer {
   }
 
   private async getPromptChoice() {
-    if (this.faber.connectionRecordAliceId !== undefined) {
-      return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
-    }
+    if (this.faber.connectionRecordAliceId) return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
+
     const reducedOption = [PromptOptions.ReceiveConnectionUrl, PromptOptions.Exit, PromptOptions.Restart]
     return inquirer.prompt([this.inquireOptions(reducedOption)])
   }
 
   public async processAnswer() {
     const choice = await this.getPromptChoice()
-    if (this.listener.on === true) {
-      return
-    }
+    if (this.listener.on) return
+
     switch (choice.options) {
       case PromptOptions.ReceiveConnectionUrl:
         await this.connection()
@@ -74,11 +72,11 @@ export class FaberInquirer extends BaseInquirer {
         await this.restart()
         return
     }
-    this.processAnswer()
+    await this.processAnswer()
   }
 
   public async connection() {
-    const title = Title.invitationTitle
+    const title = Title.InvitationTitle
     const getUrl = await inquirer.prompt([this.inquireInput(title)])
     await this.faber.acceptConnection(getUrl.input)
   }
@@ -94,26 +92,25 @@ export class FaberInquirer extends BaseInquirer {
 
   public async credential() {
     await this.faber.issueCredential()
-    const title = `Is the credential offer accepted?`
-    this.listener.newAcceptedPrompt(title, this.faber, this)
+    const title = 'Is the credential offer accepted?'
+    await this.listener.newAcceptedPrompt(title, this)
   }
 
   public async proof() {
     await this.faber.sendProofRequest()
-    const title = `Is the proof request accepted?`
-    this.listener.newAcceptedPrompt(title, this.faber, this)
+    const title = 'Is the proof request accepted?'
+    await this.listener.newAcceptedPrompt(title, this)
   }
 
   public async message() {
     const message = await this.inquireMessage()
-    if (message === null) {
-      return
-    }
-    this.faber.sendMessage(message)
+    if (message) return
+
+    await this.faber.sendMessage(message)
   }
 
   public async exit() {
-    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
+    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.ConfirmTitle)])
     if (confirm.options === ConfirmOptions.No) {
       return
     } else if (confirm.options === ConfirmOptions.Yes) {
@@ -122,15 +119,15 @@ export class FaberInquirer extends BaseInquirer {
   }
 
   public async restart() {
-    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.confirmTitle)])
+    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.ConfirmTitle)])
     if (confirm.options === ConfirmOptions.No) {
-      this.processAnswer()
+      await this.processAnswer()
       return
     } else if (confirm.options === ConfirmOptions.Yes) {
       await this.faber.restart()
-      runFaber()
+      await runFaber()
     }
   }
 }
 
-runFaber()
+void runFaber()
