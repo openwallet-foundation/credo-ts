@@ -21,7 +21,7 @@ export class Alice extends BaseAgent {
 
   private async getConnectionRecord() {
     if (!this.connectionRecordFaberId) {
-      throw Error(redText(Output.missingConnectionRecord))
+      throw Error(redText(Output.MissingConnectionRecord))
     }
     return await this.agent.connections.getById(this.connectionRecordFaberId)
   }
@@ -30,7 +30,7 @@ export class Alice extends BaseAgent {
     const invite = await this.agent.connections.createConnection()
     this.connectionRecordFaberId = invite.connectionRecord.id
 
-    console.log(Output.connectionLink, invite.invitation.toUrl({ domain: `http://localhost:${this.port}` }), '\n')
+    console.log(Output.ConnectionLink, invite.invitation.toUrl({ domain: `http://localhost:${this.port}` }), '\n')
     return invite.connectionRecord
   }
 
@@ -44,7 +44,7 @@ export class Alice extends BaseAgent {
       console.log(redText(`\nTimeout of 20 seconds reached.. Returning to home screen.\n`))
       return
     }
-    console.log(greenText(Output.connectionEstablished))
+    console.log(greenText(Output.ConnectionEstablished))
     this.connected = true
   }
 
@@ -73,9 +73,9 @@ export class Alice extends BaseAgent {
   }
 
   public async exit() {
-    console.log(Output.exit)
+    console.log(Output.Exit)
     await this.agent.shutdown()
-    process.exit()
+    process.exit(0)
   }
 
   public async restart() {

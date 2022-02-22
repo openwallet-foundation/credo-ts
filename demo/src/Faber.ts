@@ -2,7 +2,7 @@ import type { ConnectionRecord } from '@aries-framework/core'
 import type { CredDef, Schema } from 'indy-sdk-react-native'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-import { CredentialPreview, ProofAttributeInfo, AttributeFilter, utils } from '@aries-framework/core'
+import { AttributeFilter, CredentialPreview, ProofAttributeInfo, utils } from '@aries-framework/core'
 import { ui } from 'inquirer'
 
 import { BaseAgent } from './BaseAgent'
@@ -26,7 +26,7 @@ export class Faber extends BaseAgent {
 
   private async getConnectionRecord() {
     if (!this.connectionRecordAliceId) {
-      throw Error(redText(Output.missingConnectionRecord))
+      throw Error(redText(Output.MissingConnectionRecord))
     }
     return await this.agent.connections.getById(this.connectionRecordAliceId)
   }
@@ -37,23 +37,21 @@ export class Faber extends BaseAgent {
 
   private async waitForConnection(connectionRecord: ConnectionRecord) {
     connectionRecord = await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
-    console.log(greenText(Output.connectionEstablished))
+    console.log(greenText(Output.ConnectionEstablished))
     return connectionRecord.id
   }
 
   public async acceptConnection(invitation_url: string) {
     const connectionRecord = await this.receiveConnectionRequest(invitation_url)
-    if (connectionRecord === undefined) {
-      return
-    }
+
     this.connectionRecordAliceId = await this.waitForConnection(connectionRecord)
   }
 
   private printSchema(name: string, version: string, attributes: string[]) {
     console.log(`\n\nThe credential definition will look like this:\n`)
-    console.log(purpleText(`Name: ${Color.reset}${name}`))
-    console.log(purpleText(`Version: ${Color.reset}${version}`))
-    console.log(purpleText(`Attributes: ${Color.reset}${attributes[0]}, ${attributes[1]}, ${attributes[2]}\n`))
+    console.log(purpleText(`Name: ${Color.Reset}${name}`))
+    console.log(purpleText(`Version: ${Color.Reset}${version}`))
+    console.log(purpleText(`Attributes: ${Color.Reset}${attributes[0]}, ${attributes[1]}, ${attributes[2]}\n`))
   }
 
   private async registerSchema() {
@@ -101,7 +99,7 @@ export class Faber extends BaseAgent {
       preview: credentialPreview,
     })
     this.ui.updateBottomBar(
-      `\nCredential offer sent!\n\nGo to the Alice agent to accept the credential offer\n\n${Color.reset}`
+      `\nCredential offer sent!\n\nGo to the Alice agent to accept the credential offer\n\n${Color.Reset}`
     )
   }
 
@@ -133,7 +131,7 @@ export class Faber extends BaseAgent {
       requestedAttributes: proofAttribute,
     })
     this.ui.updateBottomBar(
-      `\nProof request sent!\n\nGo to the Alice agent to accept the proof request\n\n${Color.reset}`
+      `\nProof request sent!\n\nGo to the Alice agent to accept the proof request\n\n${Color.Reset}`
     )
   }
 
@@ -143,9 +141,9 @@ export class Faber extends BaseAgent {
   }
 
   public async exit() {
-    console.log(Output.exit)
+    console.log(Output.Exit)
     await this.agent.shutdown()
-    process.exit()
+    process.exit(0)
   }
 
   public async restart() {

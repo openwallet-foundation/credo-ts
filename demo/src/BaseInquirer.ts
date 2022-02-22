@@ -30,34 +30,26 @@ export class BaseInquirer {
   }
 
   public inquireOptions(promptOptions: string[]) {
-    const optionsInquirer = this.optionsInquirer
-    optionsInquirer.message = Title.optionsTitle
-    optionsInquirer.choices = promptOptions
-    return optionsInquirer
+    this.optionsInquirer.message = Title.OptionsTitle
+    this.optionsInquirer.choices = promptOptions
+    return this.optionsInquirer
   }
 
   public inquireInput(title: string) {
-    const inputInquirer = this.inputInquirer
-    inputInquirer.message = title
-    return inputInquirer
+    this.inputInquirer.message = title
+    return this.inputInquirer
   }
 
   public inquireConfirmation(title: string) {
-    const optionsInquirer = this.optionsInquirer
-    optionsInquirer.message = title
-    optionsInquirer.choices = [ConfirmOptions.Yes, ConfirmOptions.No]
-    return optionsInquirer
+    this.optionsInquirer.message = title
+    this.optionsInquirer.choices = [ConfirmOptions.Yes, ConfirmOptions.No]
+    return this.optionsInquirer
   }
 
   public async inquireMessage() {
-    const inputInquirer = this.inputInquirer
-    inputInquirer.message = Title.messageTitle
-    const message = await inquirer.prompt([inputInquirer])
+    this.inputInquirer.message = Title.MessageTitle
+    const message = await inquirer.prompt([this.inputInquirer])
 
-    if (message.input[0] == 'q') {
-      return null
-    } else {
-      return message.input
-    }
+    return message.input[0] === 'q' ? null : message.input
   }
 }

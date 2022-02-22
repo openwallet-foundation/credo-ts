@@ -21,16 +21,16 @@ export class BaseAgent {
     this.port = port
 
     const config: InitConfig = {
-      label: this.name,
+      label: name,
       walletConfig: {
-        id: this.name,
-        key: this.name,
+        id: name,
+        key: name,
       },
       publicDidSeed: '6b8b882e2618fa5d45ee7229ca880083',
       indyLedgers: [
         {
           genesisTransactions: bcovrin,
-          id: 'greenlights' + this.name,
+          id: 'greenlights' + name,
           isProduction: false,
         },
       ],
@@ -42,8 +42,8 @@ export class BaseAgent {
 
     this.config = config
 
-    this.agent = new Agent(this.config, agentDependencies)
-    this.agent.registerInboundTransport(new HttpInboundTransport({ port: this.port }))
+    this.agent = new Agent(config, agentDependencies)
+    this.agent.registerInboundTransport(new HttpInboundTransport({ port }))
     this.agent.registerOutboundTransport(new HttpOutboundTransport())
   }
 
