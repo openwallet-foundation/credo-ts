@@ -29,6 +29,18 @@ import { CredentialFormatService } from '../CredentialFormatService'
 import { JsonLdMetaDataService } from './JsonLdMetaDataService'
 
 export class JsonLdCredentialFormatService extends CredentialFormatService {
+  public shouldAutoRespondToProposal(credentialRecord: CredentialExchangeRecord, autoAcceptType: AutoAcceptCredential, proposeMessageAttributes?: CredentialPreviewAttribute[], proposePayload?: CredProposeOfferRequestFormat, offerPayload?: CredProposeOfferRequestFormat): boolean {
+    throw new Error('Method not implemented.')
+  }
+  public shouldAutoRespondToOffer(credentialRecord: CredentialExchangeRecord, autoAcceptType: AutoAcceptCredential, offerPayload?: CredProposeOfferRequestFormat, offerMessageAttributes?: CredentialPreviewAttribute[], proposePayload?: CredProposeOfferRequestFormat): boolean {
+    throw new Error('Method not implemented.')
+  }
+  public shouldAutoRespondToRequest(credentialRecord: CredentialExchangeRecord, autoAcceptType: AutoAcceptCredential, requestPayload?: CredProposeOfferRequestFormat, offerPayload?: CredProposeOfferRequestFormat, proposePayload?: CredProposeOfferRequestFormat): boolean {
+    throw new Error('Method not implemented.')
+  }
+  public shouldAutoRespondToIssue(credentialRecord: CredentialExchangeRecord, autoAcceptType: AutoAcceptCredential, credentialPayload?: CredProposeOfferRequestFormat): boolean {
+    throw new Error('Method not implemented.')
+  }
 
   public processCredential(message: V2IssueCredentialMessage, credentialRecord: CredentialExchangeRecord): Promise<void> {
     throw new Error('Method not implemented.')

@@ -37,7 +37,7 @@ export class V2OfferCredentialHandler implements Handler {
   }
 
   public async handle(messageContext: InboundMessageContext<V2OfferCredentialMessage>) {
-    unitTestLogger('----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR OFFER CREDENTIAL')
+    // unitTestLogger('----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR OFFER CREDENTIAL')
 
     const credentialRecord = await this.credentialService.processOffer(messageContext)
 
@@ -84,7 +84,7 @@ export class V2OfferCredentialHandler implements Handler {
       }
       offerValues = offerMessage.credentialPreview?.attributes
 
-      const formatShouldAutoRespond = formatService.shouldAutoRespondToOfferNEW(
+      const formatShouldAutoRespond = formatService.shouldAutoRespondToOffer(
         credentialRecord,
         this.agentConfig.autoAcceptCredentials,
         offerPayload,
@@ -95,7 +95,7 @@ export class V2OfferCredentialHandler implements Handler {
       shouldAutoRespond = shouldAutoRespond && formatShouldAutoRespond
     }
 
-    unitTestLogger('----------------->>> OFFER HANDLER shouldAutoRespond = ' + shouldAutoRespond)
+    // unitTestLogger('----------------->>> OFFER HANDLER shouldAutoRespond = ' + shouldAutoRespond)
     // 4. if all formats are eligibile for auto response then call create offer
     if (shouldAutoRespond) {
       return await this.createRequest(credentialRecord, messageContext, offerMessage)
@@ -112,7 +112,7 @@ export class V2OfferCredentialHandler implements Handler {
     )
 
     if (messageContext.connection) {
-      unitTestLogger('  AutoAccept is ON => createRequest')
+      // unitTestLogger('  AutoAccept is ON => createRequest')
       const { message, credentialRecord } = await this.credentialService.createRequest(record, {
         holderDid: messageContext.connection.did,
       })

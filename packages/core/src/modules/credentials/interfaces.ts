@@ -104,6 +104,7 @@ interface AcceptProposalOptions {
   credentialFormats: {
     indy?: IndyCredentialPreview
     w3c?: {
+      // todo
     }
   }
 }

@@ -87,7 +87,7 @@ export class RequestCredentialHandler implements Handler {
       }
     }
     if (
-      formatService.shouldAutoRespondToRequestNEW(
+      formatService.shouldAutoRespondToRequest(
         credentialRecord,
         this.agentConfig.autoAcceptCredentials,
         requestPayload,

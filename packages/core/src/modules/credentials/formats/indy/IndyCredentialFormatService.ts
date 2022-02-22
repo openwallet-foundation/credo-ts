@@ -538,7 +538,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
  * @returns true if we should auto respond, false otherwise
 
  */
-  public shouldAutoRespondToProposalNEW(
+  public shouldAutoRespondToProposal(
     credentialRecord: CredentialExchangeRecord,
     autoAcceptType: AutoAcceptCredential,
     proposeMessageAttributes?: CredentialPreviewAttribute[],
@@ -569,7 +569,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @returns true if we should auto respond, false otherwise
 
    */
-  public shouldAutoRespondToOfferNEW(
+  public shouldAutoRespondToOffer(
     credentialRecord: CredentialExchangeRecord,
     autoAcceptType: AutoAcceptCredential,
     offerPayload?: CredProposeOfferRequestFormat,
@@ -600,7 +600,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
  * @returns true if we should auto respond, false otherwise
 
  */
-  public shouldAutoRespondToRequestNEW(
+  public shouldAutoRespondToRequest(
     credentialRecord: CredentialExchangeRecord,
     autoAcceptType: AutoAcceptCredential,
     requestPayload?: CredProposeOfferRequestFormat,
@@ -627,7 +627,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @param autoAcceptType auto accept type for this credential exchange - normal auto or content approved
    * @returns true if we should auto respond, false otherwise
    */
-  public shouldAutoRespondToIssueNEW(
+  public shouldAutoRespondToIssue(
     credentialRecord: CredentialExchangeRecord,
     autoAcceptType: AutoAcceptCredential,
     credentialPayload?: CredProposeOfferRequestFormat

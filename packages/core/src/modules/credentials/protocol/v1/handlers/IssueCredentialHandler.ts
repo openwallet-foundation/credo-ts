@@ -43,7 +43,7 @@ export class IssueCredentialHandler implements Handler {
     }
     // 3. Call format.shouldRespondToProposal for each one
     if (
-      formatService.shouldAutoRespondToIssueNEW(
+      formatService.shouldAutoRespondToIssue(
         credentialRecord,
         this.agentConfig.autoAcceptCredentials,
         credentialPayload

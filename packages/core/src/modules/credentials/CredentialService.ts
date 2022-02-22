@@ -41,7 +41,7 @@ import { CredentialEventTypes, CredentialState } from '.'
 
 export type CredentialServiceType = V1CredentialService | V2CredentialService
 
-const logger = new ConsoleLogger(LogLevel.debug)
+const logger = new ConsoleLogger(LogLevel.info)
 
 export abstract class CredentialService {
   protected credentialRepository: CredentialRepository

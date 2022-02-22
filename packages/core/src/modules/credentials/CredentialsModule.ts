@@ -176,9 +176,9 @@ export class CredentialsModule implements CredentialsModule {
     credentialRecordId: string,
     version: CredentialProtocolVersion
   ): Promise<CredentialExchangeRecord> {
-    logger.debug('>> IN CREDENTIAL API => declineCredentialOffer')
+    logger.trace('>> IN CREDENTIAL API => declineCredentialOffer')
 
-    logger.debug(`version =${version}`)
+    logger.trace(`version =${version}`)
 
     // with version we can get the Service
     const service: CredentialService = this.getService(version)
@@ -197,7 +197,7 @@ export class CredentialsModule implements CredentialsModule {
   public async negotiateCredentialOffer(
     credentialOptions: ProposeCredentialOptions
   ): Promise<CredentialExchangeRecord> {
-    logger.info('>> IN CREDENTIAL API => negotiateCredentialOffer')
+    // logger.info('>> IN CREDENTIAL API => negotiateCredentialOffer')
 
     // get the version
     const version: CredentialProtocolVersion = credentialOptions.protocolVersion
@@ -235,7 +235,7 @@ export class CredentialsModule implements CredentialsModule {
    */
 
   public async proposeCredential(credentialOptions: ProposeCredentialOptions): Promise<CredentialExchangeRecord> {
-    logger.info('>> IN CREDENTIAL API => proposeCredential')
+    // logger.info('>> IN CREDENTIAL API => proposeCredential')
 
     // get the version
     const version: CredentialProtocolVersion = credentialOptions.protocolVersion
@@ -272,7 +272,7 @@ export class CredentialsModule implements CredentialsModule {
    *
    */
   public async acceptCredentialProposal(credentialOptions: AcceptProposalOptions): Promise<CredentialExchangeRecord> {
-    logger.info('>> IN CREDENTIAL API => acceptCredentialProposal')
+    // logger.info('>> IN CREDENTIAL API => acceptCredentialProposal')
 
     // get the version
     const version: CredentialProtocolVersion = credentialOptions.protocolVersion
@@ -307,7 +307,7 @@ export class CredentialsModule implements CredentialsModule {
    *
    */
   public async acceptCredentialOffer(credentialOptions: AcceptOfferOptions): Promise<CredentialExchangeRecord> {
-    logger.info('>> IN CREDENTIAL API => acceptCredentialOffer')
+    // logger.info('>> IN CREDENTIAL API => acceptCredentialOffer')
 
     // will get back a credential record -> map to Credential Exchange Record
     const { credentialRecord } = await this.acceptOffer(credentialOptions)
@@ -324,7 +324,7 @@ export class CredentialsModule implements CredentialsModule {
   public async acceptOffer(
     offer: AcceptOfferOptions
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
-    logger.info('>> IN CREDENTIAL API => acceptOffer')
+    // logger.info('>> IN CREDENTIAL API => acceptOffer')
 
     const service: CredentialService = this.getService(offer.protocolVersion)
 
@@ -423,7 +423,7 @@ export class CredentialsModule implements CredentialsModule {
   public async negotiateCredentialProposal(
     credentialOptions: NegotiateProposalOptions
   ): Promise<CredentialExchangeRecord> {
-    logger.info('>> IN CREDENTIAL API => negotiateCredentialProposal')
+    // logger.info('>> IN CREDENTIAL API => negotiateCredentialProposal')
 
     // get the version
     const version: CredentialProtocolVersion = credentialOptions.protocolVersion
@@ -460,7 +460,7 @@ export class CredentialsModule implements CredentialsModule {
    * @returns Credential exchange record associated with the sent credential offer message
    */
   public async offerCredential(credentialOptions: OfferCredentialOptions): Promise<CredentialExchangeRecord> {
-    logger.info('>> IN CREDENTIAL API => offerCredential')
+    // logger.info('>> IN CREDENTIAL API => offerCredential')
 
     if (!credentialOptions.connectionId) {
       throw Error('Connection id missing from offer credential options')
@@ -494,7 +494,7 @@ export class CredentialsModule implements CredentialsModule {
    * @returns CredentialExchangeRecord updated with information pertaining to this request
    */
   public async acceptCredentialRequest(options: AcceptRequestOptions): Promise<CredentialExchangeRecord> {
-    logger.info('>> IN CREDENTIAL API => acceptCredentialRequest')
+    // logger.info('>> IN CREDENTIAL API => acceptCredentialRequest')
 
     const record: CredentialExchangeRecord = await this.getById(options.credentialRecordId)
 
@@ -571,7 +571,7 @@ export class CredentialsModule implements CredentialsModule {
     credentialRecordId: string,
     version: CredentialProtocolVersion
   ): Promise<CredentialExchangeRecord> {
-    logger.info('>> IN CREDENTIAL API => acceptCredential')
+    // logger.info('>> IN CREDENTIAL API => acceptCredential')
 
     const record: CredentialExchangeRecord = await this.getById(credentialRecordId)
 
@@ -673,7 +673,7 @@ export class CredentialsModule implements CredentialsModule {
     message: AgentMessage
     credentialRecord: CredentialExchangeRecord
   }> {
-    logger.info('>> IN CREDENTIAL API => createOutOfBandOffer')
+    // logger.info('>> IN CREDENTIAL API => createOutOfBandOffer')
 
     // with version we can get the Service
     const service: CredentialService = this.getService(credentialOptions.protocolVersion)

@@ -123,9 +123,9 @@ describe('V2 Credential Architecture', () => {
 
       expect(formats.attachId.length).toBeGreaterThan(0)
       expect(formats.format).toEqual('hlindy/cred-filter@v2.0')
-      unitTestLogger('1. formats = ', formats)
+      // unitTestLogger('1. formats = ', formats)
 
-      unitTestLogger('2. filtersAttach = ', filtersAttach)
+      // unitTestLogger('2. filtersAttach = ', filtersAttach)
       expect(filtersAttach).toBeTruthy()
     })
     test('propose credential format service creates message with multiple formats', () => {
@@ -169,9 +169,9 @@ describe('V2 Credential Architecture', () => {
 
       expect(formats.attachId.length).toBeGreaterThan(0)
       expect(formats.format).toEqual('hlindy/cred-abstract@v2.0')
-      unitTestLogger('1. formats = ', formats)
+      // unitTestLogger('1. formats = ', formats)
 
-      unitTestLogger('2. offersAttach = ', offersAttach)
+      // unitTestLogger('2. offersAttach = ', offersAttach)
       expect(offersAttach).toBeTruthy()
     })
   })

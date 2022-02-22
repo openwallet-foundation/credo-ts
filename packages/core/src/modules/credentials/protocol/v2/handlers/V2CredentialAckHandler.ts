@@ -13,7 +13,7 @@ export class V2CredentialAckHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<V2CredentialAckHandler>) {
-    unitTestLogger('----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR CREDENTIAL ACK')
+    // unitTestLogger('----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR CREDENTIAL ACK')
 
     await this.credentialService.processAck(messageContext)
   }

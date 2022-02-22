@@ -37,7 +37,7 @@ import { ConsoleLogger, LogLevel } from '../../logger'
 
 import { ProofEventTypes } from './ProofEvents'
 
-const logger = new ConsoleLogger(LogLevel.debug)
+const logger = new ConsoleLogger(LogLevel.info)
 
 /**
  * - creates records & messages

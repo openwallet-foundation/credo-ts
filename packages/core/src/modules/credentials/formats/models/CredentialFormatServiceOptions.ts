@@ -11,7 +11,9 @@ export interface CredentialDefinitionFormat {
   indy?: {
     credDef: CredDef
   }
-  w3c?: {}
+  w3c?: {
+    // todo
+  }
 }
 export interface CredPropose {
   attributes?: CredentialPreviewAttribute[]

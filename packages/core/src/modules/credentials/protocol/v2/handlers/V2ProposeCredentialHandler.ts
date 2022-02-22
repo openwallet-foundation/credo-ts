@@ -14,7 +14,7 @@ import { ConsoleLogger, LogLevel } from '../../../../../logger'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 
-const logger = new ConsoleLogger(LogLevel.debug)
+const logger = new ConsoleLogger(LogLevel.info)
 
 export class V2ProposeCredentialHandler implements Handler {
   private credentialService: V2CredentialService
@@ -85,7 +85,7 @@ export class V2ProposeCredentialHandler implements Handler {
           offerPayload = formatService.getCredentialPayload(attachment)
         }
       }
-      const formatShouldAutoRespond = formatService.shouldAutoRespondToProposalNEW(
+      const formatShouldAutoRespond = formatService.shouldAutoRespondToProposal(
         credentialRecord,
         this.agentConfig.autoAcceptCredentials,
         proposalValues,

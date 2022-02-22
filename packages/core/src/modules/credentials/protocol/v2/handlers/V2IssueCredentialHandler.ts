@@ -29,7 +29,7 @@ export class V2IssueCredentialHandler implements Handler {
     this.didCommMessageRepository = didCommMessageRepository
   }
   public async handle(messageContext: InboundMessageContext<V2IssueCredentialMessage>) {
-    unitTestLogger('----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR ISSUE CREDENTIAL')
+    // unitTestLogger('----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR ISSUE CREDENTIAL')
 
     const credentialRecord = await this.credentialService.processCredential(messageContext)
     const credentialMessage = await this.didCommMessageRepository.getAgentMessage({
@@ -57,7 +57,7 @@ export class V2IssueCredentialHandler implements Handler {
         credentialPayload = formatService.getCredentialPayload(attachment)
       }
       // 3. Call format.shouldRespondToProposal for each one
-      const formatShouldAutoRespond = formatService.shouldAutoRespondToIssueNEW(
+      const formatShouldAutoRespond = formatService.shouldAutoRespondToIssue(
         credentialRecord,
         this.agentConfig.autoAcceptCredentials,
         credentialPayload

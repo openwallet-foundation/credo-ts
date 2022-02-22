@@ -68,7 +68,7 @@ import {
   CredentialAckMessage,
 } from './messages'
 
-const logger = new ConsoleLogger(LogLevel.debug)
+const logger = new ConsoleLogger(LogLevel.info)
 
 export class V1CredentialService extends CredentialService {
   private connectionService: ConnectionService
@@ -299,7 +299,7 @@ export class V1CredentialService extends CredentialService {
       previousSentMessage: offerMessage,
     })
 
-    logger.debug('Credential record found when processing credential request', credentialRecord)
+    logger.trace('Credential record found when processing credential request', credentialRecord)
     await this.didCommMessageRepository.saveAgentMessage({
       agentMessage: requestMessage,
       role: DidCommMessageRole.Receiver,

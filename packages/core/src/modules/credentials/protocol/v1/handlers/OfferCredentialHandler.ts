@@ -75,7 +75,7 @@ export class OfferCredentialHandler implements Handler {
     }
 
     if (
-      formatService.shouldAutoRespondToOfferNEW(
+      formatService.shouldAutoRespondToOffer(
         credentialRecord,
         this.agentConfig.autoAcceptCredentials,
         offerPayload,

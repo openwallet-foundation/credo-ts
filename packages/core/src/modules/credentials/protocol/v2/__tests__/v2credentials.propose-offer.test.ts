@@ -83,7 +83,7 @@ describe('credentials', () => {
     }
 
     const credPropose: CredPropose = proposeOptions.credentialFormats.indy?.payload as CredPropose
-    unitTestLogger('ProposeCredentialOptions indy proposeOptions attributes = ', credPropose.attributes)
+    // unitTestLogger('ProposeCredentialOptions indy proposeOptions attributes = ', credPropose.attributes)
 
     const credentialExchangeRecord = await aliceAgent.credentials.proposeCredential(proposeOptions)
 

@@ -148,7 +148,7 @@ export abstract class CredentialFormatService {
   }
 
   // credential response coordinator methods
-  abstract shouldAutoRespondToProposalNEW(
+  abstract shouldAutoRespondToProposal(
     credentialRecord: CredentialExchangeRecord,
     autoAcceptType: AutoAcceptCredential,
     proposeMessageAttributes?: CredentialPreviewAttribute[],
@@ -156,7 +156,7 @@ export abstract class CredentialFormatService {
     offerPayload?: CredProposeOfferRequestFormat
   ): boolean
 
-  abstract shouldAutoRespondToOfferNEW(
+  abstract shouldAutoRespondToOffer(
     credentialRecord: CredentialExchangeRecord,
     autoAcceptType: AutoAcceptCredential,
     offerPayload?: CredProposeOfferRequestFormat,
@@ -164,7 +164,7 @@ export abstract class CredentialFormatService {
     proposePayload?: CredProposeOfferRequestFormat
   ): boolean
 
-  abstract shouldAutoRespondToRequestNEW(
+  abstract shouldAutoRespondToRequest(
     credentialRecord: CredentialExchangeRecord,
     autoAcceptType: AutoAcceptCredential,
     requestPayload?: CredProposeOfferRequestFormat,
@@ -172,7 +172,7 @@ export abstract class CredentialFormatService {
     proposePayload?: CredProposeOfferRequestFormat
   ): boolean
 
-  abstract shouldAutoRespondToIssueNEW(
+  abstract shouldAutoRespondToIssue(
     credentialRecord: CredentialExchangeRecord,
     autoAcceptType: AutoAcceptCredential,
     credentialPayload?: CredProposeOfferRequestFormat

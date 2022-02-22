@@ -16,7 +16,7 @@ import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
 
-const logger = new ConsoleLogger(LogLevel.debug)
+const logger = new ConsoleLogger(LogLevel.info)
 
 export class V2RequestCredentialHandler implements Handler {
   private credentialService: V2CredentialService
@@ -99,7 +99,7 @@ export class V2RequestCredentialHandler implements Handler {
       if (attachment) {
         requestPayload = formatService.getCredentialPayload(attachment)
 
-        const formatShouldAutoRespond = formatService.shouldAutoRespondToRequestNEW(
+        const formatShouldAutoRespond = formatService.shouldAutoRespondToRequest(
           credentialRecord,
           this.agentConfig.autoAcceptCredentials,
           requestPayload,

@@ -77,7 +77,7 @@ export class ProposeCredentialHandler implements Handler {
       }
     }
     if (
-      formatService.shouldAutoRespondToProposalNEW(
+      formatService.shouldAutoRespondToProposal(
         credentialRecord,
         this.agentConfig.autoAcceptCredentials,
         proposalValues,

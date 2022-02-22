@@ -4,9 +4,9 @@ import type { StoreCredentialOptions } from '../../indy/services/IndyHolderServi
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
 import type { OfferCredentialOptions } from '../interfaces'
-import type { CustomCredentialTags } from '../repository/CredentialRecord'
 import type { RequestCredentialMessage } from '../protocol/v1/messages'
 import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
+import type { CustomCredentialTags } from '../repository/CredentialRecord'
 import type { AgentConfig } from '@aries-framework/core'
 
 import { getAgentConfig, getBaseConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
@@ -33,9 +33,6 @@ import { CredentialResponseCoordinator } from '../CredentialResponseCoordinator'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
 import { CredentialProblemReportReason } from '../errors/CredentialProblemReportReason'
-import { CredentialExchangeRecord } from '../repository/CredentialRecord'
-import { CredentialRepository } from '../repository/CredentialRepository'
-import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
 import { V1CredentialService } from '../protocol/v1/V1CredentialService'
 import {
@@ -45,6 +42,9 @@ import {
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   OfferCredentialMessage,
 } from '../protocol/v1/messages'
+import { CredentialExchangeRecord } from '../repository/CredentialRecord'
+import { CredentialRepository } from '../repository/CredentialRepository'
+import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 
 import { credDef, credReq } from './fixtures'
 
