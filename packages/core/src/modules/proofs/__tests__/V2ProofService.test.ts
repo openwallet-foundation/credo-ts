@@ -1,28 +1,26 @@
 import type { Wallet } from '../../../wallet/Wallet'
 import type { CredentialRepository } from '../../credentials/repository'
 import type { ProofStateChangedEvent } from '../ProofEvents'
-import type { CustomProofTags } from './../repository/ProofRecord'
+import type { IndyProofFormatService } from '../formats/indy/IndyProofFormatService'
+import type { CustomProofTags } from '../repository/ProofRecord'
 
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
+import { DidCommMessageRepository } from '../../../storage'
 import { ConnectionService, ConnectionState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyLedgerService } from '../../ledger/services'
 import { ProofEventTypes } from '../ProofEvents'
+import { ProofProtocolVersion } from '../models/ProofProtocolVersion'
 import { ProofState } from '../models/ProofState'
-import { V1PresentationProblemReportReason } from '../protocol/v1/errors/V1PresentationProblemReportReason'
+import { V2ProofService } from '../protocol/v2/V2ProofService'
+import { V2PresentationProblemReportReason } from '../protocol/v2/errors'
+import { V2PresentationProblemReportMessage, V2RequestPresentationMessage } from '../protocol/v2/messages'
 import { ProofRecord } from '../repository/ProofRecord'
 import { ProofRepository } from '../repository/ProofRepository'
-import { V1LegacyProofService } from '../protocol/v1/V1LegacyProofService'
 
-import { IndyVerifierService } from './../../indy/services/IndyVerifierService'
-import { V1PresentationProblemReportMessage } from '../protocol/v1/messages/V1PresentationProblemReportMessage'
-import {
-  INDY_PROOF_REQUEST_ATTACHMENT_ID,
-  V1RequestPresentationMessage,
-} from '../protocol/v1/messages/V1RequestPresentationMessage'
 import { credDef } from './fixtures'
 
 // Mock classes
@@ -32,13 +30,14 @@ jest.mock('../../indy/services/IndyHolderService')
 jest.mock('../../indy/services/IndyIssuerService')
 jest.mock('../../indy/services/IndyVerifierService')
 jest.mock('../../connections/services/ConnectionService')
+jest.mock('../../../storage/Repository')
 
 // Mock typed object
 const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 const IndyHolderServiceMock = IndyHolderService as jest.Mock<IndyHolderService>
-const IndyVerifierServiceMock = IndyVerifierService as jest.Mock<IndyVerifierService>
 const connectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
+const didCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 
 const connection = getMockConnection({
   id: '123',
@@ -46,7 +45,7 @@ const connection = getMockConnection({
 })
 
 const requestAttachment = new Attachment({
-  id: INDY_PROOF_REQUEST_ATTACHMENT_ID,
+  id: '123',
   mimeType: 'application/json',
   data: new AttachmentData({
     base64:
@@ -58,26 +57,33 @@ const requestAttachment = new Attachment({
 // object to test our service would behave correctly. We use type assertion for `offer` attribute to `any`.
 const mockProofRecord = ({
   state,
-  requestMessage,
   threadId,
   connectionId,
   tags,
   id,
 }: {
   state?: ProofState
-  requestMessage?: V1RequestPresentationMessage
+  requestMessage?: V2RequestPresentationMessage
   tags?: CustomProofTags
   threadId?: string
   connectionId?: string
   id?: string
 } = {}) => {
-  const requestPresentationMessage = new V1RequestPresentationMessage({
+  const requestPresentationMessage = new V2RequestPresentationMessage({
+    attachmentInfo: [
+      {
+        format: {
+          attachmentId: '123',
+          format: 'hlindy/proof@v2.0',
+        },
+        attachment: requestAttachment,
+      },
+    ],
     comment: 'some comment',
-    requestPresentationAttachments: [requestAttachment],
   })
 
   const proofRecord = new ProofRecord({
-    requestMessage,
+    protocolVersion: ProofProtocolVersion.V2_0,
     id,
     state: state || ProofState.RequestSent,
     threadId: threadId ?? requestPresentationMessage.id,
@@ -90,47 +96,54 @@ const mockProofRecord = ({
 
 describe('ProofService', () => {
   let proofRepository: ProofRepository
-  let proofService: V1LegacyProofService
+  let proofService: V2ProofService
   let ledgerService: IndyLedgerService
   let wallet: Wallet
-  let indyVerifierService: IndyVerifierService
   let indyHolderService: IndyHolderService
   let eventEmitter: EventEmitter
   let credentialRepository: CredentialRepository
   let connectionService: ConnectionService
+  let didCommMessageRepository: DidCommMessageRepository
+  let indyProofFormatService: IndyProofFormatService
 
   beforeEach(() => {
-    const agentConfig = getAgentConfig('ProofServiceTest')
+    const agentConfig = getAgentConfig('V2ProofServiceTest')
     proofRepository = new ProofRepositoryMock()
-    indyVerifierService = new IndyVerifierServiceMock()
     indyHolderService = new IndyHolderServiceMock()
     ledgerService = new IndyLedgerServiceMock()
     eventEmitter = new EventEmitter(agentConfig)
     connectionService = new connectionServiceMock()
+    didCommMessageRepository = new didCommMessageRepositoryMock()
 
-    proofService = new V1LegacyProofService(
-      proofRepository,
-      ledgerService,
-      wallet,
+    proofService = new V2ProofService(
       agentConfig,
-      indyHolderService,
-      indyVerifierService,
       connectionService,
+      proofRepository,
+      didCommMessageRepository,
       eventEmitter,
-      credentialRepository
+      indyProofFormatService,
+      wallet
     )
 
     mockFunction(ledgerService.getCredentialDefinition).mockReturnValue(Promise.resolve(credDef))
   })
 
   describe('processProofRequest', () => {
-    let presentationRequest: V1RequestPresentationMessage
-    let messageContext: InboundMessageContext<V1RequestPresentationMessage>
+    let presentationRequest: V2RequestPresentationMessage
+    let messageContext: InboundMessageContext<V2RequestPresentationMessage>
 
     beforeEach(() => {
-      presentationRequest = new V1RequestPresentationMessage({
+      presentationRequest = new V2RequestPresentationMessage({
+        attachmentInfo: [
+          {
+            format: {
+              attachmentId: '123',
+              format: 'hlindy/proof@v2.0',
+            },
+            attachment: requestAttachment,
+          },
+        ],
         comment: 'abcd',
-        requestPresentationAttachments: [requestAttachment],
       })
       messageContext = new InboundMessageContext(presentationRequest, {
         connection,
@@ -195,10 +208,10 @@ describe('ProofService', () => {
       mockFunction(proofRepository.getById).mockReturnValue(Promise.resolve(proof))
 
       // when
-      const presentationProblemReportMessage = await new V1PresentationProblemReportMessage({
+      const presentationProblemReportMessage = await new V2PresentationProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: V1PresentationProblemReportReason.Abandoned,
+          code: V2PresentationProblemReportReason.Abandoned,
         },
       })
 
@@ -206,7 +219,7 @@ describe('ProofService', () => {
       // then
       expect(presentationProblemReportMessage.toJSON()).toMatchObject({
         '@id': expect.any(String),
-        '@type': 'https://didcomm.org/present-proof/1.0/problem-report',
+        '@type': 'https://didcomm.org/present-proof/2.0/problem-report',
         '~thread': {
           thid: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
         },
@@ -216,17 +229,17 @@ describe('ProofService', () => {
 
   describe('processProblemReport', () => {
     let proof: ProofRecord
-    let messageContext: InboundMessageContext<V1PresentationProblemReportMessage>
+    let messageContext: InboundMessageContext<V2PresentationProblemReportMessage>
 
     beforeEach(() => {
       proof = mockProofRecord({
         state: ProofState.RequestReceived,
       })
 
-      const presentationProblemReportMessage = new V1PresentationProblemReportMessage({
+      const presentationProblemReportMessage = new V2PresentationProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: V1PresentationProblemReportReason.Abandoned,
+          code: V2PresentationProblemReportReason.Abandoned,
         },
       })
       presentationProblemReportMessage.setThread({ threadId: 'somethreadid' })

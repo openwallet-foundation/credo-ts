@@ -13,6 +13,7 @@ import type {
   ProofStateChangedEvent,
   SchemaTemplate,
 } from '../src'
+import type { AcceptPresentationOptions, RequestProofsOptions } from '../src/modules/proofs/models/ModuleOptions'
 import type { Schema, CredDef } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
@@ -44,6 +45,12 @@ import {
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
 import { DidCommService } from '../src/modules/dids'
+import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
+import {
+  PresentationPreview,
+  PresentationPreviewAttribute,
+  PresentationPreviewPredicate,
+} from '../src/modules/proofs/protocol/v1/models/PresentationPreview'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -455,11 +462,21 @@ export async function presentProof({
   verifierAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(verifierReplay)
   holderAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(holderReplay)
 
-  let verifierRecord = await verifierAgent.proofs.requestProof(verifierConnectionId, {
-    name: 'test-proof-request',
-    requestedAttributes: attributes,
-    requestedPredicates: predicates,
-  })
+  const requestProofsOptions: RequestProofsOptions = {
+    protocolVersion: ProofProtocolVersion.V1_0,
+    connectionId: verifierConnectionId,
+    proofRequestOptions: {
+      indy: {
+        name: 'test-proof-request',
+        requestedAttributes: attributes,
+        requestedPredicates: predicates,
+        version: '1.0',
+        nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
+      },
+    },
+  }
+
+  let verifierRecord = await verifierAgent.proofs.requestProof(requestProofsOptions)
 
   let holderRecord = await waitForProofRecordSubject(holderReplay, {
     threadId: verifierRecord.threadId,
@@ -467,11 +484,23 @@ export async function presentProof({
   })
 
   const retrievedCredentials = await holderAgent.proofs.getRequestedCredentialsForProofRequest(
-    ProofProtocolVersion.V1_0,
-    holderRecord.id
+    holderRecord.id,
+    ProofProtocolVersion.V1_0
   )
-  const requestedCredentials = holderAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
-  await holderAgent.proofs.acceptRequest(holderRecord.id, requestedCredentials)
+
+  const requestedCredentials = await holderAgent.proofs.autoSelectCredentialsForProofRequest({
+    formats: {
+      indy: retrievedCredentials.indy,
+    },
+    version: ProofProtocolVersion.V1_0,
+  })
+
+  const acceptPresentationOptions: AcceptPresentationOptions = {
+    protocolVersion: ProofProtocolVersion.V1_0,
+    proofRecordId: holderRecord.id,
+    proofFormats: { indy: requestedCredentials.indy },
+  }
+  await holderAgent.proofs.acceptRequest(acceptPresentationOptions)
 
   verifierRecord = await waitForProofRecordSubject(verifierReplay, {
     threadId: holderRecord.threadId,
@@ -481,7 +510,7 @@ export async function presentProof({
   // assert presentation is valid
   expect(verifierRecord.isVerified).toBe(true)
 
-  verifierRecord = await verifierAgent.proofs.acceptPresentation(verifierRecord.id)
+  verifierRecord = await verifierAgent.proofs.acceptPresentation(verifierRecord.id, ProofProtocolVersion.V1_0)
   holderRecord = await waitForProofRecordSubject(holderReplay, {
     threadId: holderRecord.threadId,
     state: ProofState.Done,

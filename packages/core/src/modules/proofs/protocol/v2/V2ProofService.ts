@@ -183,7 +183,7 @@ export class V2ProofService extends ProofService {
         connectionId: connectionRecord?.id,
         threadId: proposalMessage.threadId,
         state: ProofState.ProposalReceived,
-        protocolVersion: ProofProtocolVersion.V1_0,
+        protocolVersion: ProofProtocolVersion.V2_0,
       })
 
       // Assert

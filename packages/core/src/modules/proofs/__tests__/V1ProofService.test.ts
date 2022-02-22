@@ -1,32 +1,31 @@
-import type { DidCommMessageRepository } from '../../../../../storage'
-import type { Wallet } from '../../../../../wallet/Wallet'
-import type { CredentialRepository } from '../../../../credentials/repository/CredentialRepository'
-import type { ProofStateChangedEvent } from '../../../ProofEvents'
-import type { IndyProofFormatService } from '../../../formats/indy/IndyProofFormatService'
-import type { CustomProofTags } from '../../../repository/ProofRecord'
+import type { Wallet } from '../../../wallet/Wallet'
+import type { CredentialRepository } from '../../credentials/repository'
+import type { ProofStateChangedEvent } from '../ProofEvents'
+import type { IndyProofFormatService } from '../formats/indy/IndyProofFormatService'
+import type { CustomProofTags } from './../repository/ProofRecord'
 
-import { getAgentConfig, getMockConnection, mockFunction } from '../../../../../../tests/helpers'
-import { EventEmitter } from '../../../../../agent/EventEmitter'
-import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
-import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
-import { ConnectionState } from '../../../../connections/models/ConnectionState'
-import { ConnectionService } from '../../../../connections/services/ConnectionService'
-import { IndyHolderService } from '../../../../indy/services/IndyHolderService'
-import { IndyVerifierService } from '../../../../indy/services/IndyVerifierService'
-import { IndyLedgerService } from '../../../../ledger/services/IndyLedgerService'
-import { ProofEventTypes } from '../../../ProofEvents'
-import { credDef } from '../../../__tests__/fixtures'
-import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
-import { ProofState } from '../../../models/ProofState'
-import { ProofRecord } from '../../../repository/ProofRecord'
-import { ProofRepository } from '../../../repository/ProofRepository'
-import { V1ProofService } from '../V1ProofService'
-import { V1PresentationProblemReportReason } from '../errors'
+import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
+import { DidCommMessageRepository } from '../../../storage'
+import { ConnectionService, ConnectionState } from '../../connections'
+import { IndyHolderService } from '../../indy/services/IndyHolderService'
+import { IndyLedgerService } from '../../ledger/services'
+import { ProofEventTypes } from '../ProofEvents'
+import { ProofProtocolVersion } from '../models/ProofProtocolVersion'
+import { ProofState } from '../models/ProofState'
+import { V1ProofService } from '../protocol/v1'
+import { V1PresentationProblemReportReason } from '../protocol/v1/errors'
 import {
   INDY_PROOF_REQUEST_ATTACHMENT_ID,
   V1PresentationProblemReportMessage,
   V1RequestPresentationMessage,
-} from '../messages'
+} from '../protocol/v1/messages'
+import { ProofRecord } from '../repository/ProofRecord'
+import { ProofRepository } from '../repository/ProofRepository'
+
+import { credDef } from './fixtures'
 
 // Mock classes
 jest.mock('../repository/ProofRepository')
@@ -35,13 +34,14 @@ jest.mock('../../indy/services/IndyHolderService')
 jest.mock('../../indy/services/IndyIssuerService')
 jest.mock('../../indy/services/IndyVerifierService')
 jest.mock('../../connections/services/ConnectionService')
+jest.mock('../../../storage/Repository')
 
 // Mock typed object
 const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 const IndyHolderServiceMock = IndyHolderService as jest.Mock<IndyHolderService>
-const IndyVerifierServiceMock = IndyVerifierService as jest.Mock<IndyVerifierService>
 const connectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
+const didCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 
 const connection = getMockConnection({
   id: '123',
@@ -61,7 +61,6 @@ const requestAttachment = new Attachment({
 // object to test our service would behave correctly. We use type assertion for `offer` attribute to `any`.
 const mockProofRecord = ({
   state,
-  requestMessage,
   threadId,
   connectionId,
   tags,
@@ -79,14 +78,13 @@ const mockProofRecord = ({
     requestPresentationAttachments: [requestAttachment],
   })
 
-  // requestMessage,
   const proofRecord = new ProofRecord({
+    protocolVersion: ProofProtocolVersion.V1_0,
     id,
     state: state || ProofState.RequestSent,
     threadId: threadId ?? requestPresentationMessage.id,
     connectionId: connectionId ?? '123',
     tags,
-    protocolVersion: ProofProtocolVersion.V1_0,
   })
 
   return proofRecord
@@ -97,7 +95,6 @@ describe('ProofService', () => {
   let proofService: V1ProofService
   let ledgerService: IndyLedgerService
   let wallet: Wallet
-  let indyVerifierService: IndyVerifierService
   let indyHolderService: IndyHolderService
   let eventEmitter: EventEmitter
   let credentialRepository: CredentialRepository
@@ -106,13 +103,13 @@ describe('ProofService', () => {
   let indyProofFormatService: IndyProofFormatService
 
   beforeEach(() => {
-    const agentConfig = getAgentConfig('ProofServiceTest')
+    const agentConfig = getAgentConfig('V1ProofServiceTest')
     proofRepository = new ProofRepositoryMock()
-    indyVerifierService = new IndyVerifierServiceMock()
     indyHolderService = new IndyHolderServiceMock()
     ledgerService = new IndyLedgerServiceMock()
     eventEmitter = new EventEmitter(agentConfig)
     connectionService = new connectionServiceMock()
+    didCommMessageRepository = new didCommMessageRepositoryMock()
 
     proofService = new V1ProofService(
       proofRepository,
@@ -120,12 +117,11 @@ describe('ProofService', () => {
       ledgerService,
       wallet,
       agentConfig,
-      indyHolderService,
-      indyVerifierService,
       connectionService,
       eventEmitter,
       credentialRepository,
-      indyProofFormatService
+      indyProofFormatService,
+      indyHolderService
     )
 
     mockFunction(ledgerService.getCredentialDefinition).mockReturnValue(Promise.resolve(credDef))

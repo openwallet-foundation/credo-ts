@@ -1,6 +1,11 @@
 import type { AutoAcceptProof, ProofRequestOptions } from '..'
 import type { ProofProtocolVersion } from './ProofProtocolVersion'
-import type { AcceptProposalFormats, CreatePresentationFormats, ProposeProofFormats } from './SharedOptions'
+import type {
+  AcceptProposalFormats,
+  CreatePresentationFormats,
+  ProposeProofFormats,
+  RequestProofFormats,
+} from './SharedOptions'
 
 export interface ProposeProofOptions {
   connectionId: string
@@ -22,7 +27,7 @@ export interface NegotiateRequestOptions {
 export interface AcceptProposalOptions {
   protocolVersion: ProofProtocolVersion
   proofRecordId: string
-  proofFormats: ProposeProofFormats
+  proofFormats: ProposeProofFormats | AcceptProposalFormats
   goalCode?: string
   willConfirm?: boolean
   comment?: string
@@ -32,7 +37,7 @@ export interface AcceptProposalOptions {
 export interface RequestProofsOptions {
   protocolVersion: ProofProtocolVersion
   connectionId: string
-  proofRequestOptions: ProposeProofFormats
+  proofRequestOptions: ProposeProofFormats | RequestProofFormats
   comment?: string
   autoAcceptProof?: AutoAcceptProof
 }

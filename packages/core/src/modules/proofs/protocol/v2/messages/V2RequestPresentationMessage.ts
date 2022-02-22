@@ -21,6 +21,10 @@ export interface V2RequestPresentationMessageOptions {
 export class V2RequestPresentationMessage extends AgentMessage {
   public constructor(options: V2RequestPresentationMessageOptions) {
     super()
+
+    this.formats = []
+    this.requestPresentationsAttach = []
+
     if (options) {
       this.id = options.id ?? uuid()
       this.comment = options.comment
