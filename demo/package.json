@@ -1,0 +1,26 @@
+{
+  "name": "afj-demo",
+  "version": "1.0.0",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "directory": "demo/"
+  },
+  "license": "Apache-2.0",
+  "scripts": {
+    "alice": "ts-node src/AliceInquirer.ts",
+    "faber": "ts-node src/FaberInquirer.ts",
+    "refresh": "rm -rf ./node_modules ./yarn.lock && yarn"
+  },
+  "devDependencies": {
+    "@aries-framework/core": "^0.1.0",
+    "@aries-framework/node": "^0.1.0",
+    "@types/figlet": "^1.5.4",
+    "@types/inquirer": "^8.1.3",
+    "clear": "^0.1.0",
+    "commander": "^8.3.0",
+    "figlet": "^1.5.2",
+    "ts-node": "^10.4.0"
+  }
+}
