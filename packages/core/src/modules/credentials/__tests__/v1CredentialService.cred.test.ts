@@ -4,8 +4,8 @@ import type { StoreCredentialOptions } from '../../indy/services/IndyHolderServi
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
 import type { AcceptRequestOptions, OfferCredentialOptions, RequestCredentialOptions } from '../interfaces'
+import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
 import type { CustomCredentialTags } from '../repository/CredentialRecord'
-import type { IndyCredentialMetadata } from '../v1/models/CredentialInfo'
 import type { AgentConfig } from '@aries-framework/core'
 
 import { Agent } from '../../../../src/agent/Agent'
@@ -30,11 +30,8 @@ import { CredentialResponseCoordinator } from '../CredentialResponseCoordinator'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
 import { CredentialProblemReportReason } from '../errors/CredentialProblemReportReason'
-import { CredentialExchangeRecord } from '../repository/CredentialRecord'
-import { CredentialRepository } from '../repository/CredentialRepository'
-import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
-import { V1CredentialPreview } from '../v1/V1CredentialPreview'
-import { V1CredentialService } from '../v1/V1CredentialService'
+import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
+import { V1CredentialService } from '../protocol/v1/V1CredentialService'
 import {
   RequestCredentialMessage,
   CredentialAckMessage,
@@ -44,7 +41,10 @@ import {
   OfferCredentialMessage,
   IssueCredentialMessage,
   CredentialProblemReportMessage,
-} from '../v1/messages'
+} from '../protocol/v1/messages'
+import { CredentialExchangeRecord } from '../repository/CredentialRecord'
+import { CredentialRepository } from '../repository/CredentialRepository'
+import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 
 import { credDef, credReq, credOffer } from './fixtures'
 
@@ -116,6 +116,13 @@ const credentialAttachment = new Attachment({
   }),
 })
 
+const acceptRequestOptions: AcceptRequestOptions = {
+  attachId: INDY_CREDENTIAL_ATTACHMENT_ID,
+  protocolVersion: CredentialProtocolVersion.V1_0,
+  comment: 'credential response comment',
+  credentialRecordId: '',
+}
+
 // A record is deserialized to JSON when it's stored into the storage. We want to simulate this behaviour for `offer`
 // object to test our service would behave correctly. We use type assertion for `offer` attribute to `any`.
 const mockCredentialRecord = ({
@@ -170,7 +177,7 @@ const mockCredentialRecord = ({
   return credentialRecord
 }
 
-const { config, agentDependencies: dependencies } = getBaseConfig('Agent Class Test')
+const { config, agentDependencies: dependencies } = getBaseConfig('Agent Class Test V1 Offer')
 
 const init = (didCommMessageRepo: DidCommMessageRepository) => {
   credentialService = new V1CredentialService(
@@ -513,7 +520,7 @@ describe('CredentialService', () => {
         associatedRecordId: credential.id,
       })
       // when
-      await credentialService.createCredential(credential)
+      await credentialService.createCredential(credential, acceptRequestOptions)
 
       // then
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
@@ -550,7 +557,7 @@ describe('CredentialService', () => {
         associatedRecordId: credential.id,
       })
       // when
-      await credentialService.createCredential(credential)
+      await credentialService.createCredential(credential, acceptRequestOptions)
 
       // then
       expect(eventListenerMock).toHaveBeenCalledWith({
@@ -590,13 +597,8 @@ describe('CredentialService', () => {
         role: DidCommMessageRole.Sender,
         associatedRecordId: credential.id,
       })
-      const options: AcceptRequestOptions = {
-        comment: 'credential response comment',
-        protocolVersion: CredentialProtocolVersion.V1_0,
-        credentialRecordId: credential.id,
-      }
-      const { message: credentialResponse } = await credentialService.createCredential(credential, options)
 
+      const { message: credentialResponse } = await credentialService.createCredential(credential, acceptRequestOptions)
       // then
       expect(credentialResponse.toJSON()).toMatchObject({
         '@id': expect.any(String),
@@ -624,7 +626,7 @@ describe('CredentialService', () => {
         credentialValues: {},
       })
       if (credentialResponse.messageAttachment) {
-        const [responseAttachment] = credentialResponse.messageAttachment
+        const [responseAttachment] = credentialResponse.credentialAttachments
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         expect(JsonEncoder.fromBase64(responseAttachment.data.base64!)).toEqual(cred)
       }

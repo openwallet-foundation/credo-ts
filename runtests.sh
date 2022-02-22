@@ -48,7 +48,7 @@ then
 
 fi
 
-yarn test $tests
+# yarn test $tests
 
 # to run ony files in a specific folder use something like the following example:
 #yarn test ./packages/core/src/modules/credentials/__tests__
