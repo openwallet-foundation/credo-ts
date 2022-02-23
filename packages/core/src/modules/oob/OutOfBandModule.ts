@@ -1,7 +1,7 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
 import type { Logger } from '../../logger'
-import type { PlaintextMessage } from '../../types'
+import type { JsonObject, PlaintextMessage } from '../../types'
 import type { ConnectionRecord, HandshakeProtocol } from '../connections'
 
 import { parseUrl } from 'query-string'
@@ -21,6 +21,9 @@ import { MediationRecipientService } from '../routing'
 
 import { HandshakeReuseHandler } from './handlers'
 import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
+import { OutOfBandRecord } from './repository/OutOfBandRecord'
+import { OutOfBandState } from './repository/OutOfBandState'
+import { OutOfBandRepository } from './repository'
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
 
@@ -41,6 +44,7 @@ export interface ReceiveOutOfBandMessageConfig {
 
 @scoped(Lifecycle.ContainerScoped)
 export class OutOfBandModule {
+  private outOfBandRepository: OutOfBandRepository
   private connectionsModule: ConnectionsModule
   private dids: DidsModule
   private mediationRecipientService: MediationRecipientService
@@ -52,6 +56,7 @@ export class OutOfBandModule {
   public constructor(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
+    outOfBandRepository: OutOfBandRepository,
     connectionsModule: ConnectionsModule,
     dids: DidsModule,
     mediationRecipientService: MediationRecipientService,
@@ -60,6 +65,7 @@ export class OutOfBandModule {
   ) {
     this.dispatcher = dispatcher
     this.logger = agentConfig.logger
+    this.outOfBandRepository = outOfBandRepository
     this.connectionsModule = connectionsModule
     this.dids = dids
     this.mediationRecipientService = mediationRecipientService
@@ -89,9 +95,7 @@ export class OutOfBandModule {
    * @param messages Messages that will be sent inside out-of-band message
    * @returns Out-of-band message and optionally connection record created based on `handshakeProtocol`
    */
-  public async createMessage(
-    config: CreateOutOfBandMessageConfig
-  ): Promise<{ outOfBandMessage: OutOfBandMessage; connectionRecord?: ConnectionRecord }> {
+  public async createMessage(config: CreateOutOfBandMessageConfig): Promise<OutOfBandRecord> {
     const { label, multiUseInvitation, handshake, handshakeProtocols: customHandshakeProtocols, messages } = config
     if (!handshake && !messages) {
       throw new AriesFrameworkError(
@@ -99,15 +103,8 @@ export class OutOfBandModule {
       )
     }
 
-    let outOfBandMessage: OutOfBandMessage
-
-    // Eventually, we can create just an OutOfBand record here.
-    // The OOB record can be also used for connection-less communication in general.
-    // When we create oob record we need to count with it inside connection request handler.
-    let connectionRecord: ConnectionRecord | undefined
-
+    let handshakeProtocols
     if (handshake) {
-      let handshakeProtocols
       // Find first supported handshake protocol preserving the order of handshake protocols defined by agent
       if (customHandshakeProtocols) {
         this.assertHandshakeProtocols(customHandshakeProtocols)
@@ -115,47 +112,26 @@ export class OutOfBandModule {
       } else {
         handshakeProtocols = this.getSupportedHandshakeProtocols()
       }
-
-      const connectionWithInvitation = await this.connectionsModule.createConnection({
-        myLabel: label,
-        multiUseInvitation,
-      })
-
-      connectionRecord = connectionWithInvitation.connectionRecord
-      const services = connectionRecord.didDoc.didCommServices.map((s) => {
-        return new DidCommService({
-          id: `${connectionRecord?.did};#${s.priority}`,
-          priority: 0,
-          serviceEndpoint: s.serviceEndpoint,
-          recipientKeys: s.recipientKeys,
-          routingKeys: s.routingKeys,
-        })
-      })
-
-      const options = {
-        ...config,
-        id: connectionRecord.invitation?.id,
-        accept: didCommProfiles,
-        services,
-        handshakeProtocols,
-      }
-      outOfBandMessage = new OutOfBandMessage(options)
-    } else {
-      const routing = await this.mediationRecipientService.getRouting()
-      const service = new DidCommService({
-        id: '#inline',
-        priority: 0,
-        serviceEndpoint: routing.endpoints[0],
-        recipientKeys: [routing.verkey],
-        routingKeys: routing.routingKeys,
-      })
-      const options = {
-        ...config,
-        accept: didCommProfiles,
-        services: [service],
-      }
-      outOfBandMessage = new OutOfBandMessage(options)
     }
+
+    // create did, verkey
+    // update mediation
+    // create service
+    const routing = await this.mediationRecipientService.getRouting()
+    const service = new DidCommService({
+      id: '#inline',
+      priority: 0,
+      serviceEndpoint: routing.endpoints[0],
+      recipientKeys: [routing.verkey],
+      routingKeys: routing.routingKeys,
+    })
+    const options = {
+      label,
+      accept: didCommProfiles,
+      services: [service],
+      handshakeProtocols,
+    }
+    const outOfBandMessage = new OutOfBandMessage(options)
 
     if (messages) {
       messages.forEach((message) => {
@@ -167,7 +143,15 @@ export class OutOfBandModule {
       })
     }
 
-    return { outOfBandMessage, connectionRecord }
+    const outOfBandRecord = new OutOfBandRecord({
+      state: OutOfBandState.Initial,
+      outOfBandMessage: outOfBandMessage,
+      reusable: multiUseInvitation,
+    })
+
+    await this.outOfBandRepository.save(outOfBandRecord)
+
+    return outOfBandRecord
   }
 
   /**

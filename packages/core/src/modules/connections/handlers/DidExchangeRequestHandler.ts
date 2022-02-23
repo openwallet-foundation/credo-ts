@@ -1,29 +1,28 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { OutOfBandRepository } from '../../oob/repository'
 import type { MediationRecipientService } from '../../routing/services/MediationRecipientService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
-import type { ConnectionService, Routing } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { DidExchangeRequestMessage } from '../messages'
-import { HandshakeProtocol, DidExchangeRole, DidExchangeState } from '../models'
 
 export class DidExchangeRequestHandler implements Handler {
   private didExchangeProtocol: DidExchangeProtocol
-  private connectionService: ConnectionService
+  private outOfBandRepository: OutOfBandRepository
   private agentConfig: AgentConfig
   private mediationRecipientService: MediationRecipientService
   public supportedMessages = [DidExchangeRequestMessage]
 
   public constructor(
     didExchangeProtocol: DidExchangeProtocol,
-    connectionService: ConnectionService,
+    outOfBandRepository: OutOfBandRepository,
     agentConfig: AgentConfig,
     mediationRecipientService: MediationRecipientService
   ) {
     this.didExchangeProtocol = didExchangeProtocol
-    this.connectionService = connectionService
+    this.outOfBandRepository = outOfBandRepository
     this.agentConfig = agentConfig
     this.mediationRecipientService = mediationRecipientService
   }
@@ -33,41 +32,25 @@ export class DidExchangeRequestHandler implements Handler {
       throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
     }
 
-    let connectionRecord = await this.connectionService.findByVerkey(messageContext.recipientVerkey)
-    if (!connectionRecord) {
-      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+    const { message } = messageContext
+    const outOfBandRecord = await this.outOfBandRepository.findSingleByQuery({
+      messageId: message.thread?.parentThreadId,
+    })
+
+    if (!outOfBandRecord) {
+      throw new AriesFrameworkError(`OutOfBand record for message ID ${message.thread?.parentThreadId} not found!`)
     }
 
-    const { protocol } = connectionRecord
-    if (protocol && protocol !== HandshakeProtocol.DidExchange) {
-      throw new AriesFrameworkError(
-        `Connection record protocol is ${protocol} but handler supports only ${HandshakeProtocol.DidExchange}.`
-      )
-    }
+    // TODO Shouln't we check also if the keys match the keys from oob invitation services?
 
-    let routing: Routing | undefined
+    // TODO Rotate keys or reuse the keys from oob invitation according to a config flag or method param.
+    const routing = await this.mediationRecipientService.getRouting()
 
-    // routing object is required for multi use invitation, because we're creating a
-    // new keypair that possibly needs to be registered at a mediator
-    if (connectionRecord.multiUseInvitation) {
-      routing = await this.mediationRecipientService.getRouting()
-    }
-
-    // TODO
-    //
-    // A connection request message is the only case when I can use the connection record found
-    // only based on recipient key without checking that `theirKey` is equal to sender key.
-    //
-    // The question is if we should do it here in this way or rather somewhere else to keep
-    // responsibility of all handlers aligned.
-    //
-    connectionRecord.role = DidExchangeRole.Responder
-    connectionRecord.state = DidExchangeState.InvitationSent
-    messageContext.connection = connectionRecord
-    connectionRecord = await this.didExchangeProtocol.processRequest(messageContext, routing)
+    const connectionRecord = await this.didExchangeProtocol.processRequest(messageContext, outOfBandRecord, routing)
 
     if (connectionRecord?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      const message = await this.didExchangeProtocol.createResponse(connectionRecord, routing)
+      // TODO We should add an option to not pass routing and therefore do not rotate keys and use the keys from the invitation
+      const message = await this.didExchangeProtocol.createResponse(connectionRecord, outOfBandRecord, routing)
       return createOutboundMessage(connectionRecord, message)
     }
   }

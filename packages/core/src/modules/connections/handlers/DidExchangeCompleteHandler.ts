@@ -1,4 +1,5 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { OutOfBandRepository } from '../../oob/repository'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
 import { AriesFrameworkError } from '../../../error'
@@ -7,10 +8,12 @@ import { HandshakeProtocol } from '../models'
 
 export class DidExchangeCompleteHandler implements Handler {
   private didExchangeProtocol: DidExchangeProtocol
+  private outOfBandRepository: OutOfBandRepository
   public supportedMessages = [DidExchangeCompleteMessage]
 
-  public constructor(didExchangeProtocol: DidExchangeProtocol) {
+  public constructor(didExchangeProtocol: DidExchangeProtocol, outOfBandRepository: OutOfBandRepository) {
     this.didExchangeProtocol = didExchangeProtocol
+    this.outOfBandRepository = outOfBandRepository
   }
 
   public async handle(messageContext: HandlerInboundMessage<DidExchangeCompleteHandler>) {
@@ -27,6 +30,15 @@ export class DidExchangeCompleteHandler implements Handler {
       )
     }
 
-    await this.didExchangeProtocol.processComplete(messageContext)
+    const { message } = messageContext
+    const outOfBandRecord = await this.outOfBandRepository.findSingleByQuery({
+      messageId: message.thread?.parentThreadId,
+    })
+
+    if (!outOfBandRecord) {
+      throw new AriesFrameworkError(`OutOfBand record for message ID ${message.thread?.parentThreadId} not found!`)
+    }
+
+    await this.didExchangeProtocol.processComplete(messageContext, outOfBandRecord)
   }
 }

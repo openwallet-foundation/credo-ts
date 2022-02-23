@@ -6,6 +6,7 @@ import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
+import { OutOfBandRepository } from '../oob/repository'
 import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 
 import { DidExchangeProtocol } from './DidExchangeProtocol'
@@ -29,6 +30,7 @@ export class ConnectionsModule {
   private agentConfig: AgentConfig
   private didExchangeProtocol: DidExchangeProtocol
   private connectionService: ConnectionService
+  private outOfBandRepository: OutOfBandRepository
   private messageSender: MessageSender
   private trustPingService: TrustPingService
   private mediationRecipientService: MediationRecipientService
@@ -38,6 +40,7 @@ export class ConnectionsModule {
     agentConfig: AgentConfig,
     didExchangeProtocol: DidExchangeProtocol,
     connectionService: ConnectionService,
+    outOfBandRepository: OutOfBandRepository,
     trustPingService: TrustPingService,
     mediationRecipientService: MediationRecipientService,
     messageSender: MessageSender
@@ -45,6 +48,7 @@ export class ConnectionsModule {
     this.agentConfig = agentConfig
     this.didExchangeProtocol = didExchangeProtocol
     this.connectionService = connectionService
+    this.outOfBandRepository = outOfBandRepository
     this.trustPingService = trustPingService
     this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
@@ -296,6 +300,10 @@ export class ConnectionsModule {
     return this.connectionService.findByInvitationKey(key)
   }
 
+  public async findByOutOfBandId(outOfBandId: string) {
+    return this.connectionService.findByOutOfBandId(outOfBandId)
+  }
+
   /**
    * Retrieve a connection record by thread id
    *
@@ -324,7 +332,7 @@ export class ConnectionsModule {
     dispatcher.registerHandler(
       new DidExchangeRequestHandler(
         this.didExchangeProtocol,
-        this.connectionService,
+        this.outOfBandRepository,
         this.agentConfig,
         this.mediationRecipientService
       )
@@ -333,6 +341,6 @@ export class ConnectionsModule {
     dispatcher.registerHandler(
       new DidExchangeResponseHandler(this.didExchangeProtocol, this.connectionService, this.agentConfig)
     )
-    dispatcher.registerHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol))
+    dispatcher.registerHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandRepository))
   }
 }

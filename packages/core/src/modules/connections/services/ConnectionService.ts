@@ -655,6 +655,10 @@ export class ConnectionService {
     return this.connectionRepository.findSingleByQuery({ theirDid: did })
   }
 
+  public async findByOutOfBandId(outOfBandId: string) {
+    return this.connectionRepository.findSingleByQuery({ outOfBandId })
+  }
+
   public async createConnection(options: {
     role?: ConnectionRole | DidExchangeRole
     state?: ConnectionState | DidExchangeState

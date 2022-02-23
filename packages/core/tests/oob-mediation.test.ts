@@ -27,7 +27,7 @@ const mediatorConfig = getBaseConfig('OOB mediation - Mediator Agent', {
   autoAcceptMediationRequests: true,
 })
 
-describe('out of band with mediation', () => {
+describe.skip('out of band with mediation', () => {
   const makeConnectionConfig = {
     goal: 'To make a connection',
     goalCode: 'p2p-messaging',

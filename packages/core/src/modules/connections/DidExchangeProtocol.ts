@@ -1,5 +1,6 @@
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import type { Logger } from '../../logger'
+import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository'
 import type { Routing } from './services/ConnectionService'
 
@@ -28,7 +29,7 @@ import { DidExchangeProblemReportError, DidExchangeProblemReportReason } from '.
 import { DidExchangeCompleteMessage } from './messages/DidExchangeCompleteMessage'
 import { DidExchangeRequestMessage } from './messages/DidExchangeRequestMessage'
 import { DidExchangeResponseMessage } from './messages/DidExchangeResponseMessage'
-import { HandshakeProtocol } from './models'
+import { HandshakeProtocol, DidExchangeRole, DidExchangeState } from './models'
 import { ConnectionService } from './services'
 
 interface DidExchangeRequestParams {
@@ -104,48 +105,26 @@ export class DidExchangeProtocol {
 
   public async processRequest(
     messageContext: InboundMessageContext<DidExchangeRequestMessage>,
-    routing?: Routing
+    outOfBandRecord: OutOfBandRecord,
+    routing: Routing
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${DidExchangeRequestMessage.type} start`, messageContext)
 
-    // eslint-disable-next-line prefer-const
-    let { connection: connectionRecord, message } = messageContext
+    // TODO check oob role is sender
+    // TODO check oob state is await-respons
+    // TODO check there is no connection record for particular oob record
 
-    if (!connectionRecord) {
-      throw new AriesFrameworkError('No connection record in message context.')
-    }
+    const { message } = messageContext
 
-    DidExchangeStateMachine.assertProcessMessageState(DidExchangeRequestMessage.type, connectionRecord)
-
-    // check corresponding invitation ID is the request's ~thread.pthid
-
-    if (connectionRecord.invitation?.id !== message.thread?.parentThreadId) {
+    // Check corresponding invitation ID is the request's ~thread.pthid
+    // TODO Maybe we can do it in handler, but that actually does not make sense because we try to find oob by parent thread ID there.
+    if (!message.thread?.parentThreadId || message.thread?.parentThreadId !== outOfBandRecord.getTags().messageId) {
       throw new DidExchangeProblemReportError('Missing reference to invitation.', {
         problemCode: DidExchangeProblemReportReason.RequestNotAccepted,
       })
     }
 
     // If the responder wishes to continue the exchange, they will persist the received information in their wallet.
-
-    // Create new connection if using a multi use invitation
-    if (connectionRecord.multiUseInvitation) {
-      if (!routing) {
-        throw new AriesFrameworkError(
-          'Cannot process request for multi-use invitation without routing object. Make sure to call processRequest with the routing parameter provided.'
-        )
-      }
-
-      connectionRecord = await this.connectionService.createConnection({
-        role: connectionRecord.role,
-        state: connectionRecord.state,
-        multiUseInvitation: false,
-        routing,
-        autoAcceptConnection: connectionRecord.autoAcceptConnection,
-        invitation: connectionRecord.invitation,
-        tags: connectionRecord.getTags(),
-        protocol: connectionRecord.protocol,
-      })
-    }
 
     if (!message.did.startsWith('did:peer:')) {
       throw new DidExchangeProblemReportError(
@@ -178,11 +157,30 @@ export class DidExchangeProtocol {
         recipientKeys: didDocument.recipientKeys,
       },
     })
+
+    this.logger.debug('Saving DID record', {
+      id: didRecord.id,
+      role: didRecord.role,
+      tags: didRecord.getTags(),
+      didDocument: 'omitted...',
+    })
+
     await this.didRepository.save(didRecord)
 
+    const connectionRecord = await this.connectionService.createConnection({
+      role: DidExchangeRole.Responder,
+      state: DidExchangeState.InvitationSent,
+      multiUseInvitation: false,
+      routing,
+      // autoAcceptConnection: connectionRecord.autoAcceptConnection,
+      protocol: HandshakeProtocol.DidExchange,
+    })
     connectionRecord.theirDid = message.did
     connectionRecord.theirLabel = message.label
     connectionRecord.threadId = message.threadId || message.id
+    connectionRecord.outOfBandId = outOfBandRecord.id
+    connectionRecord.role = DidExchangeRole.Responder
+    connectionRecord.state = DidExchangeState.RequestReceived
     connectionRecord.protocol = HandshakeProtocol.DidExchange
 
     await this.updateState(DidExchangeRequestMessage.type, connectionRecord)
@@ -192,6 +190,7 @@ export class DidExchangeProtocol {
 
   public async createResponse(
     connectionRecord: ConnectionRecord,
+    outOfBandRecord?: OutOfBandRecord,
     routing?: Routing
   ): Promise<DidExchangeResponseMessage> {
     this.logger.debug(`Create message ${DidExchangeResponseMessage.type} start`, connectionRecord)
@@ -207,7 +206,8 @@ export class DidExchangeProtocol {
     if (routing) {
       peerDidRouting = routing
     } else {
-      const { serviceEndpoint, recipientKeys, routingKeys } = connectionRecord.invitation || {}
+      const { serviceEndpoint, recipientKeys, routingKeys } =
+        (outOfBandRecord?.outOfBandMessage.services[0] as DidCommService) || {}
       if (serviceEndpoint && recipientKeys && routingKeys) {
         peerDidRouting = {
           endpoints: [serviceEndpoint],
@@ -284,6 +284,14 @@ export class DidExchangeProtocol {
         recipientKeys: didDocument.recipientKeys,
       },
     })
+
+    this.logger.debug('Saving DID record', {
+      id: didRecord.id,
+      role: didRecord.role,
+      tags: didRecord.getTags(),
+      didDocument: 'omitted...',
+    })
+
     await this.didRepository.save(didRecord)
 
     connectionRecord.theirDid = message.did
@@ -318,7 +326,8 @@ export class DidExchangeProtocol {
   }
 
   public async processComplete(
-    messageContext: InboundMessageContext<DidExchangeCompleteMessage>
+    messageContext: InboundMessageContext<DidExchangeCompleteMessage>,
+    outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${DidExchangeCompleteMessage.type} start`, messageContext)
     const { connection: connectionRecord, message } = messageContext
@@ -335,7 +344,7 @@ export class DidExchangeProtocol {
       })
     }
 
-    if (!message.thread?.parentThreadId || message.thread?.parentThreadId !== connectionRecord.invitation?.id) {
+    if (!message.thread?.parentThreadId || message.thread?.parentThreadId !== outOfBandRecord.getTags().messageId) {
       throw new DidExchangeProblemReportError('Invalid or missing parent thread ID referencing to the invitation.', {
         problemCode: DidExchangeProblemReportReason.CompleteRejected,
       })
@@ -415,6 +424,13 @@ export class DidExchangeProtocol {
         // of a key when we receive a message from another connection.
         recipientKeys: peerDid.didDocument.recipientKeys,
       },
+    })
+
+    this.logger.debug('Saving DID record', {
+      id: didRecord.id,
+      role: didRecord.role,
+      tags: didRecord.getTags(),
+      didDocument: 'omitted...',
     })
 
     await this.didRepository.save(didRecord)
