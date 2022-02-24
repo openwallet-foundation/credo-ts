@@ -9,7 +9,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
-import { DidCommService, DidDocumentService } from '../src/modules/dids'
+import { DidCommService } from '../src/modules/dids'
 import { OutOfBandMessage } from '../src/modules/oob/messages'
 
 import { TestMessage } from './TestMessage'
@@ -25,7 +25,6 @@ import {
   CredentialState,
   LogLevel,
 } from '@aries-framework/core' // Maybe it's not bad to import from package?
-import exp from 'constants'
 
 const faberConfig = getBaseConfig('Faber Agent OOB', {
   endpoints: ['rxjs:faber'],
@@ -240,12 +239,12 @@ describe('out of band', () => {
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
     })
 
-    test.skip(`make a connection with ${HandshakeProtocol.Connections} based on OOB invitation encoded in URL`, async () => {
-      // eslint-disable-next-line prefer-const
-      let { outOfBandMessage, connectionRecord: faberAliceConnection } = await faberAgent.oob.createMessage({
+    test(`make a connection with ${HandshakeProtocol.Connections} based on OOB invitation encoded in URL`, async () => {
+      const outOfBandRecord = await faberAgent.oob.createMessage({
         ...makeConnectionConfig,
         handshakeProtocols: [HandshakeProtocol.Connections],
       })
+      const { outOfBandMessage } = outOfBandRecord
       const urlMessage = outOfBandMessage.toUrl({ domain: 'http://example.com' })
 
       let aliceFaberConnection = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, {
@@ -255,6 +254,7 @@ describe('out of band', () => {
       aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
       expect(aliceFaberConnection.state).toBe(ConnectionState.Complete)
 
+      let faberAliceConnection = await faberAgent.connections.findByOutOfBandId(outOfBandRecord!.id)
       faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
       expect(faberAliceConnection.state).toBe(ConnectionState.Complete)
 
@@ -262,7 +262,7 @@ describe('out of band', () => {
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
     })
 
-    test.skip('make a connection based on old connection invitation encoded in URL', async () => {
+    test('make a connection based on old connection invitation encoded in URL', async () => {
       // eslint-disable-next-line prefer-const
       let { invitation, connectionRecord: faberAliceConnection } = await faberAgent.connections.createConnection()
       const urlMessage = invitation.toUrl({ domain: 'http://example.com' })

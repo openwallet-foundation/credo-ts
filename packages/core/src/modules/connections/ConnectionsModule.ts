@@ -322,7 +322,12 @@ export class ConnectionsModule {
 
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(
-      new ConnectionRequestHandler(this.connectionService, this.agentConfig, this.mediationRecipientService)
+      new ConnectionRequestHandler(
+        this.connectionService,
+        this.outOfBandRepository,
+        this.agentConfig,
+        this.mediationRecipientService
+      )
     )
     dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService, this.agentConfig))
     dispatcher.registerHandler(new AckMessageHandler(this.connectionService))

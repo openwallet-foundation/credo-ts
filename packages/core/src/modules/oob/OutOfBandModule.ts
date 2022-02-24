@@ -1,7 +1,7 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
 import type { Logger } from '../../logger'
-import type { JsonObject, PlaintextMessage } from '../../types'
+import type { PlaintextMessage } from '../../types'
 import type { ConnectionRecord, HandshakeProtocol } from '../connections'
 
 import { parseUrl } from 'query-string'
@@ -21,9 +21,16 @@ import { MediationRecipientService } from '../routing'
 
 import { HandshakeReuseHandler } from './handlers'
 import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
+import { OutOfBandRepository } from './repository'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
 import { OutOfBandState } from './repository/OutOfBandState'
-import { OutOfBandRepository } from './repository'
+
+// TODO
+// 1. routing keys,
+// 2. out-of-band record (we can do in two steps, 1. use it with oob and DID Exchange, 2. use it also for the Connection protocol)
+//  - autoAcceptConnection flag in oob
+// 3. roles and states,
+// 4. get rid of did doc and verkey
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
 

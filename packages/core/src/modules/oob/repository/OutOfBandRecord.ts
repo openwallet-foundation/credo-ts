@@ -1,4 +1,5 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
+import type { DidCommService } from '../../dids'
 import type { OutOfBandState } from './OutOfBandState'
 
 import { Type } from 'class-transformer'
@@ -41,10 +42,16 @@ export class OutOfBandRecord extends BaseRecord<TagsBase> {
   }
 
   public getTags() {
+    const [recipientKey] = this.outOfBandMessage.services
+      .filter((s): s is DidCommService => typeof s !== 'string')
+      .map((s) => s.recipientKeys)
+      .reduce((acc, curr) => [...acc, ...curr], [])
+
     return {
       ...this._tags,
       state: this.state,
       messageId: this.outOfBandMessage.id,
+      recipientKey,
     }
   }
 

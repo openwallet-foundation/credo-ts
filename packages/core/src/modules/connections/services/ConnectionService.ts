@@ -2,6 +2,7 @@ import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
+import type { OutOfBandRecord } from '../../oob/repository'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
@@ -60,6 +61,45 @@ export class ConnectionService {
     this.connectionRepository = connectionRepository
     this.eventEmitter = eventEmitter
     this.logger = config.logger
+  }
+
+  public async protocolProcessRequest(
+    messageContext: InboundMessageContext<ConnectionRequestMessage>,
+    outOfBandRecord: OutOfBandRecord,
+    routing: Routing
+  ): Promise<ConnectionRecord> {
+    this.logger.debug(`Process message ${ConnectionRequestMessage.type} start`, messageContext)
+
+    // TODO check oob role is sender
+    // TODO check oob state is await-respons
+    // TODO check there is no connection record for particular oob record
+
+    const { message } = messageContext
+
+    const connectionRecord = await this.createConnection({
+      role: DidExchangeRole.Responder,
+      state: DidExchangeState.InvitationSent,
+      multiUseInvitation: false,
+      routing,
+      // autoAcceptConnection: connectionRecord.autoAcceptConnection,
+      protocol: HandshakeProtocol.DidExchange,
+      tags: {
+        invitationKey: outOfBandRecord.getTags().recipientKey,
+      },
+    })
+
+    connectionRecord.theirDid = message.connection.did
+    connectionRecord.theirDidDoc = message.connection.didDoc
+    connectionRecord.theirLabel = message.label
+    connectionRecord.threadId = message.id
+    connectionRecord.imageUrl = message.imageUrl
+    connectionRecord.outOfBandId = outOfBandRecord.id
+    connectionRecord.role = ConnectionRole.Inviter
+    connectionRecord.protocol = HandshakeProtocol.Connections
+
+    await this.updateState(connectionRecord, ConnectionState.Requested)
+    this.logger.debug(`Process message ${ConnectionRequestMessage.type} end`, connectionRecord)
+    return connectionRecord
   }
 
   /**
@@ -280,8 +320,10 @@ export class ConnectionService {
    * @returns outbound message containing connection response
    */
   public async createResponse(
-    connectionRecord: ConnectionRecord
+    connectionRecord: ConnectionRecord,
+    outOfBandRecord?: OutOfBandRecord
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionResponseMessage>> {
+    this.logger.debug(`Process message ${ConnectionResponseMessage.type} start`, connectionRecord)
     connectionRecord.assertState(ConnectionState.Requested)
     connectionRecord.assertRole(ConnectionRole.Inviter)
 
@@ -296,8 +338,15 @@ export class ConnectionService {
       throw new AriesFrameworkError(`Connection record with id ${connectionRecord.id} does not have a thread id`)
     }
 
+    let invitationKey
+    if (outOfBandRecord) {
+      invitationKey = outOfBandRecord.getTags().recipientKey
+    } else {
+      invitationKey = connectionRecord.getTags().invitationKey
+    }
+
     // Use invitationKey by default, fall back to verkey
-    const signingKey = (connectionRecord.getTag('invitationKey') as string) ?? connectionRecord.verkey
+    const signingKey = invitationKey ?? connectionRecord.verkey
 
     const connectionResponse = new ConnectionResponseMessage({
       threadId: connectionRecord.threadId,
