@@ -828,7 +828,6 @@ export class V1CredentialService extends CredentialService {
       options.attachments = config.linkedAttachments.map((linkedAttachment) => linkedAttachment.attachment)
     }
 
-    // MJR-TODO this creates the attachment array which we don't want for V1
     const { filtersAttach } = this.formatService.createProposalAttachFormats(proposal)
 
     if (!filtersAttach) {

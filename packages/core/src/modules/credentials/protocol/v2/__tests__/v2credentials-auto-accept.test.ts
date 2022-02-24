@@ -96,7 +96,6 @@ describe('credentials', () => {
           data: {
             '_internal/indyCredential': {
               schemaId,
-              // credentialDefinitionId: credDefId, TMP FIX THIS MJR-TODO
             },
           },
         },

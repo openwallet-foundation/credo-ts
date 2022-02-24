@@ -622,6 +622,7 @@ describe('CredentialService', () => {
       }
       const { message: credentialResponse } = await credentialService.createCredential(credential, options)
 
+      const v2CredentialResponse = credentialResponse as V2IssueCredentialMessage
       // then
       expect(credentialResponse.toJSON()).toMatchObject({
         '@id': expect.any(String),
@@ -648,11 +649,9 @@ describe('CredentialService', () => {
         credentialRequest: credReq,
         credentialValues: {},
       })
-      if (credentialResponse.attachment) {
-        const [responseAttachment] = credentialResponse.attachment
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        expect(JsonEncoder.fromBase64(responseAttachment.data.base64!)).toEqual(cred)
-      }
+      const [responseAttachment] = v2CredentialResponse.messageAttachment
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      expect(JsonEncoder.fromBase64(responseAttachment.data.base64!)).toEqual(cred)
     })
   })
 

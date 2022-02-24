@@ -268,7 +268,6 @@ describe('credentials', () => {
     })
 
     expect(JsonTransformer.toJSON(offerMessage)).toMatchObject({
-      // '@id': expect.any(String), MJR-TODO fix this
       '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
       comment: 'V2 Indy Offer',
       credential_preview: {
@@ -291,7 +290,6 @@ describe('credentials', () => {
           },
         ],
       },
-      // 'offers~attach': expect.any(Array), MJR-TODO fix this
     })
     expect(aliceCredentialRecord.id).not.toBeNull()
     expect(aliceCredentialRecord.getTags()).toEqual({
