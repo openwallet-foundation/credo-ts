@@ -81,7 +81,8 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     throw new Error('Method not implemented.')
   }
   // eslint-disable-next-line prettier/prettier
-  public createIssueAttachFormats(options: AcceptRequestOptions,
+  public createIssueAttachFormats(
+    options: AcceptRequestOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<CredAttachmentFormats> {
     throw new Error('Method not implemented.')
