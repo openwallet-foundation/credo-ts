@@ -1,4 +1,4 @@
-import type { CredentialRecord, ProofRecord } from '@aries-framework/core'
+import type { CredentialExchangeRecord, ProofRecord } from '@aries-framework/core'
 
 import { clear } from 'console'
 import { textSync } from 'figlet'
@@ -69,10 +69,10 @@ export class AliceInquirer extends BaseInquirer {
     await this.processAnswer()
   }
 
-  public async acceptCredentialOffer(credentialRecord: CredentialRecord) {
+  public async acceptCredentialOffer(credentialRecord: CredentialExchangeRecord) {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.CredentialOfferTitle)])
     if (confirm.options === ConfirmOptions.No) {
-      await this.alice.agent.credentials.declineOffer(credentialRecord.id)
+      await this.alice.agent.credentials.declineOffer(credentialRecord)
     } else if (confirm.options === ConfirmOptions.Yes) {
       await this.alice.acceptCredentialOffer(credentialRecord)
     }

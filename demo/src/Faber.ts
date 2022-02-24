@@ -2,7 +2,8 @@ import type { ConnectionRecord } from '@aries-framework/core'
 import type { CredDef, Schema } from 'indy-sdk-react-native'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-import { AttributeFilter, CredentialPreview, ProofAttributeInfo, utils } from '@aries-framework/core'
+// eslint-disable-next-line import/no-unresolved
+import { V1CredentialPreview, AttributeFilter, ProofAttributeInfo, utils } from '@aries-framework/core'
 import { ui } from 'inquirer'
 
 import { BaseAgent } from './BaseAgent'
@@ -79,7 +80,7 @@ export class Faber extends BaseAgent {
   }
 
   private getCredentialPreview() {
-    const credentialPreview = CredentialPreview.fromRecord({
+    const credentialPreview = V1CredentialPreview.fromRecord({
       name: 'Alice Smith',
       degree: 'Computer Science',
       date: '01/01/2022',
@@ -94,9 +95,15 @@ export class Faber extends BaseAgent {
     const connectionRecord = await this.getConnectionRecord()
 
     this.ui.updateBottomBar('\nSending credential offer...\n')
-    await this.agent.credentials.offerCredential(connectionRecord.id, {
-      credentialDefinitionId: credDef.id,
-      preview: credentialPreview,
+
+    await this.agent.credentials.offerCredential({
+      connectionId: connectionRecord.id,
+      credentialFormats: {
+        indy: {
+          attributes: credentialPreview.attributes,
+          credentialDefinitionId: credDef.id,
+        },
+      },
     })
     this.ui.updateBottomBar(
       `\nCredential offer sent!\n\nGo to the Alice agent to accept the credential offer\n\n${Color.Reset}`

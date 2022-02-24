@@ -326,6 +326,9 @@ export class CredentialsModule implements CredentialsModule {
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
     // logger.info('>> IN CREDENTIAL API => acceptOffer')
 
+    if (!offer.protocolVersion) {
+      throw Error('Missing Protocol Version')
+    }
     const service: CredentialService = this.getService(offer.protocolVersion)
 
     logger.debug(`Got a CredentialService object for this version; version = ${service.getVersion()}`)
@@ -468,6 +471,9 @@ export class CredentialsModule implements CredentialsModule {
     const connection = await this.connectionService.getById(credentialOptions.connectionId)
 
     // with version we can get the Service
+    if (!credentialOptions.protocolVersion) {
+      credentialOptions.protocolVersion = CredentialProtocolVersion.V1_0 // default
+    }
     const service: CredentialService = this.getService(credentialOptions.protocolVersion)
 
     logger.debug('Got a CredentialService object for this version')
@@ -482,7 +488,6 @@ export class CredentialsModule implements CredentialsModule {
     const outboundMessage = createOutboundMessage(connection, message)
     await this.messageSender.sendMessage(outboundMessage)
     credentialRecord.protocolVersion = credentialOptions.protocolVersion
-
     return credentialRecord
   }
 
@@ -624,6 +629,21 @@ export class CredentialsModule implements CredentialsModule {
   }
 
   /**
+   * Decline a credential offer
+   * @param credentialRecord The credential to be declined
+   */
+  public async declineOffer(
+    credentialRecord: CredentialExchangeRecord,
+    version: CredentialProtocolVersion = CredentialProtocolVersion.V1_0
+  ): Promise<CredentialExchangeRecord> {
+    credentialRecord.assertState(CredentialState.OfferReceived)
+    const service: CredentialService = this.getService(version)
+
+    await service.declineOffer(credentialRecord)
+
+    return credentialRecord
+  }
+  /**
    * Retrieve a credential record by id
    *
    * @param credentialRecordId The credential record id
@@ -673,9 +693,10 @@ export class CredentialsModule implements CredentialsModule {
     message: AgentMessage
     credentialRecord: CredentialExchangeRecord
   }> {
-    // logger.info('>> IN CREDENTIAL API => createOutOfBandOffer')
-
     // with version we can get the Service
+    if (!credentialOptions.protocolVersion) {
+      credentialOptions.protocolVersion = CredentialProtocolVersion.V1_0 // default
+    }
     const service: CredentialService = this.getService(credentialOptions.protocolVersion)
 
     logger.debug('Got a CredentialService object for this version')
