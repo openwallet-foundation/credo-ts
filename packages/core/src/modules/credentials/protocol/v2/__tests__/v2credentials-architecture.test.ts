@@ -5,7 +5,6 @@ import type { CredOffer } from 'indy-sdk'
 
 import { getBaseConfig } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
-import { unitTestLogger } from '../../../../../logger'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialsModule } from '../../../CredentialsModule'
 import { CredentialFormatType } from '../../../interfaces'
@@ -123,9 +122,6 @@ describe('V2 Credential Architecture', () => {
 
       expect(formats.attachId.length).toBeGreaterThan(0)
       expect(formats.format).toEqual('hlindy/cred-filter@v2.0')
-      // unitTestLogger('1. formats = ', formats)
-
-      // unitTestLogger('2. filtersAttach = ', filtersAttach)
       expect(filtersAttach).toBeTruthy()
     })
     test('propose credential format service creates message with multiple formats', () => {
@@ -169,9 +165,6 @@ describe('V2 Credential Architecture', () => {
 
       expect(formats.attachId.length).toBeGreaterThan(0)
       expect(formats.format).toEqual('hlindy/cred-abstract@v2.0')
-      // unitTestLogger('1. formats = ', formats)
-
-      // unitTestLogger('2. offersAttach = ', offersAttach)
       expect(offersAttach).toBeTruthy()
     })
   })

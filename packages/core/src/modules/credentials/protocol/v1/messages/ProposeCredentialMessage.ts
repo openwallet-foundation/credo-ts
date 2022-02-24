@@ -4,7 +4,6 @@ import type { CredProposeOfferRequestFormat } from '../../../formats/models/Cred
 
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
-import { runInThisContext } from 'vm'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { V1CredentialPreview } from '../V1CredentialPreview'
@@ -41,7 +40,7 @@ export class ProposeCredentialMessage extends AgentMessage {
       this.schemaVersion = options.schemaVersion
       this.credentialDefinitionId = options.credentialDefinitionId
       this.issuerDid = options.issuerDid
-      this.messageAttachment = options.attachments
+      this.genericAttachments = options.attachments
     }
   }
 

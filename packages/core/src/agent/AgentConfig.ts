@@ -9,7 +9,7 @@ import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { AriesFrameworkError } from '../error'
 import { ConsoleLogger, LogLevel } from '../logger'
 import { AutoAcceptCredential } from '../modules/credentials/CredentialAutoAcceptType'
-import { AutoAcceptProof } from '../modules/proofs/models/ProofAutoAcceptType'
+import { AutoAcceptProof } from '../modules/proofs/ProofAutoAcceptType'
 import { MediatorPickupStrategy } from '../modules/routing/MediatorPickupStrategy'
 import { DidCommMimeType } from '../types'
 
@@ -26,7 +26,7 @@ export class AgentConfig {
   public constructor(initConfig: InitConfig, agentDependencies: AgentDependencies) {
     this.initConfig = initConfig
     this.label = initConfig.label
-    this.logger = initConfig.logger ?? new ConsoleLogger(LogLevel.info)
+    this.logger = initConfig.logger ?? new ConsoleLogger(LogLevel.off)
     this.agentDependencies = agentDependencies
     this.fileSystem = new agentDependencies.FileSystem()
 

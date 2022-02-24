@@ -13,6 +13,7 @@ export interface V2ProposeCredentialMessageProps {
   filtersAttach: Attachment[]
   comment?: string
   credentialProposal?: V2CredentialPreview
+  attachments?: Attachment[]
 }
 
 export class V2ProposeCredentialMessage extends AgentMessage {
@@ -26,6 +27,7 @@ export class V2ProposeCredentialMessage extends AgentMessage {
       this.credentialProposal = props.credentialProposal
       this.formats = props.formats
       this.messageAttachment = props.filtersAttach
+      this.genericAttachments = props.attachments
     }
   }
 

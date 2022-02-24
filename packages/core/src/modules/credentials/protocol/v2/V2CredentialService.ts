@@ -20,7 +20,6 @@ import type {
   CredentialFormatService,
   CredentialFormatSpec,
   CredProposeOfferRequestFormat,
-  Payload,
 } from '../../formats/CredentialFormatService'
 import type {
   AcceptProposalOptions,
@@ -388,7 +387,6 @@ export class V2CredentialService extends CredentialService {
       credentialRecord,
       proposal
     )
-
     await this.updateState(credentialRecord, CredentialState.OfferSent)
     await this.didCommMessageRepository.saveAgentMessage({
       agentMessage: credentialOfferMessage,

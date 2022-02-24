@@ -874,7 +874,6 @@ export class ProofService {
 
     Object.keys(retrievedCredentials.requestedAttributes).forEach((attributeName) => {
       const attributeArray = retrievedCredentials.requestedAttributes[attributeName]
-
       if (attributeArray.length === 0) {
         throw new AriesFrameworkError('Unable to automatically select requested attributes.')
       } else {

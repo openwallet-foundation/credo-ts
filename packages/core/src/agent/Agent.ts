@@ -20,7 +20,7 @@ import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
-// import { ProofsModule } from '../modules/proofs/ProofsModule'
+import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
@@ -47,11 +47,10 @@ export class Agent {
   public messageSubscription: Subscription
 
   public readonly connections: ConnectionsModule
-  // public readonly proofs: ProofsModule
+  public readonly proofs: ProofsModule
   public readonly basicMessages: BasicMessagesModule
   public readonly ledger: LedgerModule
   public readonly credentials!: CredentialsModule
-  // public readonly credentials: CredentialsModule
   public readonly mediationRecipient: RecipientModule
   public readonly mediator: MediatorModule
   public readonly discovery: DiscoverFeaturesModule
@@ -102,7 +101,7 @@ export class Agent {
     // this.credentials = this.container.resolve(CredentialsModule)
     this.credentials = this.container.resolve(CredentialsModule)
 
-    // this.proofs = this.container.resolve(ProofsModule)
+    this.proofs = this.container.resolve(ProofsModule)
     this.mediator = this.container.resolve(MediatorModule)
     this.mediationRecipient = this.container.resolve(RecipientModule)
     this.basicMessages = this.container.resolve(BasicMessagesModule)

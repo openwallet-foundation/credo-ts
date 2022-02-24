@@ -50,6 +50,7 @@ export interface W3CCredentialFormat {
 export interface IndyOfferCredentialFormat {
   credentialDefinitionId: string
   attributes: CredentialPreviewAttribute[]
+  linkedAttachments?: LinkedAttachment[]
 }
 
 export interface OfferCredentialFormats {

@@ -4,14 +4,12 @@ import type { InboundMessageContext } from '../../../../../agent/models/InboundM
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { MediationRecipientService } from '../../../../routing/services/MediationRecipientService'
 import type { CredentialPreviewAttribute } from '../../../CredentialPreviewAttributes'
-import type { CredentialResponseCoordinator } from '../../../CredentialResponseCoordinator'
 import type { CredentialFormatService, CredProposeOfferRequestFormat } from '../../../formats/CredentialFormatService'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
-import { unitTestLogger } from '../../../../../logger'
 import { DidCommMessageRole } from '../../../../../storage'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
@@ -37,8 +35,6 @@ export class V2OfferCredentialHandler implements Handler {
   }
 
   public async handle(messageContext: InboundMessageContext<V2OfferCredentialMessage>) {
-    // unitTestLogger('----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR OFFER CREDENTIAL')
-
     const credentialRecord = await this.credentialService.processOffer(messageContext)
 
     let offerMessage: V2OfferCredentialMessage | undefined
@@ -94,8 +90,6 @@ export class V2OfferCredentialHandler implements Handler {
 
       shouldAutoRespond = shouldAutoRespond && formatShouldAutoRespond
     }
-
-    // unitTestLogger('----------------->>> OFFER HANDLER shouldAutoRespond = ' + shouldAutoRespond)
     // 4. if all formats are eligibile for auto response then call create offer
     if (shouldAutoRespond) {
       return await this.createRequest(credentialRecord, messageContext, offerMessage)
@@ -112,7 +106,6 @@ export class V2OfferCredentialHandler implements Handler {
     )
 
     if (messageContext.connection) {
-      // unitTestLogger('  AutoAccept is ON => createRequest')
       const { message, credentialRecord } = await this.credentialService.createRequest(record, {
         holderDid: messageContext.connection.did,
       })

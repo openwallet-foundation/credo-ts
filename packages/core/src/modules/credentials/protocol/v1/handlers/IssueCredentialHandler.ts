@@ -1,8 +1,7 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage'
-import type { CredentialResponseCoordinator } from '../../../CredentialResponseCoordinator'
-import type { CredentialFormatService, CredProposeOfferRequestFormat } from '../../../formats/CredentialFormatService'
+import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
@@ -12,19 +11,16 @@ import { IssueCredentialMessage, RequestCredentialMessage } from '../messages'
 export class IssueCredentialHandler implements Handler {
   private credentialService: V1CredentialService
   private agentConfig: AgentConfig
-  private credentialResponseCoordinator: CredentialResponseCoordinator
   private didCommMessageRepository: DidCommMessageRepository
   public supportedMessages = [IssueCredentialMessage]
 
   public constructor(
     credentialService: V1CredentialService,
     agentConfig: AgentConfig,
-    credentialResponseCoordinator: CredentialResponseCoordinator,
     didCommMessageRepository: DidCommMessageRepository
   ) {
     this.credentialService = credentialService
     this.agentConfig = agentConfig
-    this.credentialResponseCoordinator = credentialResponseCoordinator
     this.didCommMessageRepository = didCommMessageRepository
   }
 

@@ -4,7 +4,6 @@ import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handle
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { CredentialPreviewAttribute } from '../../../CredentialPreviewAttributes'
-import type { CredentialResponseCoordinator } from '../../../CredentialResponseCoordinator'
 import type { CredentialFormatService, CredProposeOfferRequestFormat } from '../../../formats/CredentialFormatService'
 import type { AcceptProposalOptions } from '../../../interfaces'
 import type { V2CredentialService } from '../V2CredentialService'

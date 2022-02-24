@@ -3,7 +3,6 @@ import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handle
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { MediationRecipientService } from '../../../../routing/services/MediationRecipientService'
 import type { CredentialPreviewAttribute } from '../../../CredentialPreviewAttributes'
-import type { CredentialResponseCoordinator } from '../../../CredentialResponseCoordinator'
 import type { CredentialFormatService, CredProposeOfferRequestFormat } from '../../../formats/CredentialFormatService'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import type { V1CredentialService } from '../V1CredentialService'
@@ -16,7 +15,6 @@ import { OfferCredentialMessage, ProposeCredentialMessage } from '../messages'
 export class OfferCredentialHandler implements Handler {
   private credentialService: V1CredentialService
   private agentConfig: AgentConfig
-  private credentialResponseCoordinator: CredentialResponseCoordinator
   private mediationRecipientService: MediationRecipientService
   private didCommMessageRepository: DidCommMessageRepository
   public supportedMessages = [OfferCredentialMessage]
@@ -24,13 +22,11 @@ export class OfferCredentialHandler implements Handler {
   public constructor(
     credentialService: V1CredentialService,
     agentConfig: AgentConfig,
-    credentialResponseCoordinator: CredentialResponseCoordinator,
     mediationRecipientService: MediationRecipientService,
     didCommMessageRepository: DidCommMessageRepository
   ) {
     this.credentialService = credentialService
     this.agentConfig = agentConfig
-    this.credentialResponseCoordinator = credentialResponseCoordinator
     this.mediationRecipientService = mediationRecipientService
     this.didCommMessageRepository = didCommMessageRepository
   }
@@ -63,7 +59,7 @@ export class OfferCredentialHandler implements Handler {
 
     const formatService: CredentialFormatService = this.credentialService.getFormatService()
 
-    if (proposeMessage && proposeMessage.credentialProposal && proposeMessage.messageAttachment) {
+    if (proposeMessage && proposeMessage.credentialProposal && proposeMessage.genericAttachments) {
       proposalPayload = proposeMessage.credentialPayload
     }
     if (offerMessage) {

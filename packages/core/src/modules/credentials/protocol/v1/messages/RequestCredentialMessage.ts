@@ -22,7 +22,8 @@ export class RequestCredentialMessage extends AgentMessage {
     if (options) {
       this.id = options.id || this.generateId()
       this.comment = options.comment
-      this.messageAttachment = options.requestAttachments
+      this.messageAttachments = options.requestAttachments
+      this.genericAttachments = options.attachments
     }
   }
 
@@ -41,15 +42,19 @@ export class RequestCredentialMessage extends AgentMessage {
     each: true,
   })
   @IsInstance(Attachment, { each: true })
-  public messageAttachment!: Attachment[]
+  public messageAttachments!: Attachment[]
 
   public get indyCredentialRequest(): CredReq | null {
-    const attachment = this.messageAttachment.find(
+    const attachment = this.messageAttachments.find(
       (attachment) => attachment.id === INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID
     )
     // Extract proof request from attachment
     const credentialReqJson = attachment?.getDataAsJson<CredReq>() ?? null
 
     return credentialReqJson
+  }
+
+  public getAttachmentIncludingFormatId(id: string): Attachment | undefined {
+    return this.messageAttachments?.find((attachment) => attachment.id.includes(id))
   }
 }

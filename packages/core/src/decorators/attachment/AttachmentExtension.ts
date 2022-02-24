@@ -16,28 +16,19 @@ export function AttachmentDecorated<T extends BaseMessageConstructor>(Base: T) {
     @ValidateNested()
     @IsInstance(Attachment, { each: true })
     @IsOptional()
-    public messageAttachment?: Attachment[]
+    public genericAttachments?: Attachment[]
 
     public formats!: CredentialFormatSpec[]
 
     public getAttachmentById(id: string): Attachment | undefined {
-      return this.messageAttachment?.find((attachment) => attachment.id === id)
-    }
-
-    public getAttachmentIncludingFormatId(id: string): Attachment | undefined {
-      if (!this.formats) {
-        return this.messageAttachment?.find((attachment) => attachment.id.includes(id))
-      }
-      const format = this.formats.find((f) => f.format.includes(id))
-      const attachment = this.messageAttachment?.find((attachment) => attachment.id === format?.attachId)
-      return attachment
+      return this.genericAttachments?.find((attachment) => attachment.id === id)
     }
 
     public addAttachment(attachment: Attachment): void {
-      if (this.messageAttachment) {
-        this.messageAttachment?.push(attachment)
+      if (this.genericAttachments) {
+        this.genericAttachments?.push(attachment)
       } else {
-        this.messageAttachment = [attachment]
+        this.genericAttachments = [attachment]
       }
     }
   }

@@ -3,7 +3,7 @@ import type { ConnectionService } from '../../connections/services/ConnectionSer
 import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
-import type { AcceptRequestOptions, OfferCredentialOptions, RequestCredentialOptions } from '../interfaces'
+import type { AcceptRequestOptions, RequestCredentialOptions } from '../interfaces'
 import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
 import type { CustomCredentialTags } from '../repository/CredentialRecord'
 import type { AgentConfig } from '@aries-framework/core'
@@ -72,7 +72,6 @@ let eventEmitter: EventEmitter
 let didCommMessageRepository: DidCommMessageRepository
 let mediationRecipientService: MediationRecipientService
 let messageSender: MessageSender
-let offerOptions: OfferCredentialOptions
 let agentConfig: AgentConfig
 
 let dispatcher: Dispatcher
@@ -207,17 +206,6 @@ describe('CredentialService', () => {
     indyHolderService = new IndyHolderServiceMock()
     indyLedgerService = new IndyLedgerServiceMock()
     mockFunction(indyLedgerService.getCredentialDefinition).mockReturnValue(Promise.resolve(credDef))
-    offerOptions = {
-      comment: 'some comment',
-      connectionId: connection.id,
-      credentialFormats: {
-        indy: {
-          attributes: credentialPreview.attributes,
-          credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
-        },
-      },
-      protocolVersion: CredentialProtocolVersion.V1_0,
-    }
     agentConfig = getAgentConfig('CredentialServiceTest')
     eventEmitter = new EventEmitter(agentConfig)
 
@@ -625,11 +613,9 @@ describe('CredentialService', () => {
         credentialRequest: credReq,
         credentialValues: {},
       })
-      if (credentialResponse.messageAttachment) {
-        const [responseAttachment] = credentialResponse.credentialAttachments
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        expect(JsonEncoder.fromBase64(responseAttachment.data.base64!)).toEqual(cred)
-      }
+      const [responseAttachment] = credentialResponse.credentialAttachments
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      expect(JsonEncoder.fromBase64(responseAttachment.data.base64!)).toEqual(cred)
     })
   })
 

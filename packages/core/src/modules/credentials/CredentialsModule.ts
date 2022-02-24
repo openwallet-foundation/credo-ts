@@ -478,7 +478,7 @@ export class CredentialsModule implements CredentialsModule {
       role: DidCommMessageRole.Sender,
       associatedRecordId: credentialRecord.id,
     })
-    logger.debug('V2 Offer Message successfully created; message= ', message)
+    logger.debug('Offer Message successfully created; message= ', message)
     const outboundMessage = createOutboundMessage(connection, message)
     await this.messageSender.sendMessage(outboundMessage)
     credentialRecord.protocolVersion = credentialOptions.protocolVersion
@@ -681,7 +681,7 @@ export class CredentialsModule implements CredentialsModule {
     logger.debug('Got a CredentialService object for this version')
     const { message, credentialRecord } = await service.createOutOfBandOffer(credentialOptions)
 
-    logger.debug('V2 Offer Message successfully created; message= ', message)
+    logger.debug('Offer Message successfully created; message= ', message)
 
     credentialRecord.protocolVersion = credentialOptions.protocolVersion
 

@@ -1,4 +1,9 @@
-import type { CredentialExchangeRecord, CredentialRepository, OfferCredentialMessage } from '../..'
+import type {
+  CredentialExchangeRecord,
+  CredentialRepository,
+  OfferCredentialMessage,
+  RequestCredentialMessage,
+} from '../..'
 import type { EventEmitter } from '../../../../agent/EventEmitter'
 import type { DidCommMessageRepository } from '../../../../storage'
 import type { IndyHolderService, IndyIssuerService } from '../../../indy'
@@ -393,6 +398,15 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     throw Error('Unable to create accept proposal options object')
   }
 
+  public getCredProposeOfferRequestFormat(message: RequestCredentialMessage | OfferCredentialMessage, id: string) {
+    const attachment = message.getAttachmentIncludingFormatId('indy')
+
+    if (attachment) {
+      return this.getCredentialPayload(attachment)
+    } else {
+      throw Error(`Missing (request) attachment in credential Record ${id}`)
+    }
+  }
   /**
    * Gets the attachment object for a given attachId. We need to get out the correct attachId for
    * indy and then find the corresponding attachment (if there is one)

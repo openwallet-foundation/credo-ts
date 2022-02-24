@@ -5,7 +5,6 @@ import type {
   BasicMessageStateChangedEvent,
   ConnectionRecordProps,
   CredentialDefinitionTemplate,
-  CredentialOfferTemplate,
   CredentialStateChangedEvent,
   InitConfig,
   ProofAttributeInfo,
@@ -14,6 +13,7 @@ import type {
   SchemaTemplate,
 } from '../src'
 import type { AcceptOfferOptions, OfferCredentialOptions } from '../src/modules/credentials/interfaces'
+import type { CredentialOfferTemplate } from '../src/modules/credentials/protocol/v1'
 import type { Schema, CredDef } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
@@ -25,6 +25,9 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { agentDependencies } from '../../node/src'
 import {
+  PresentationPreview,
+  PresentationPreviewAttribute,
+  PresentationPreviewPredicate,
   LogLevel,
   AgentConfig,
   AriesFrameworkError,
@@ -362,6 +365,7 @@ export async function issueCredential({
       indy: {
         attributes: credentialTemplate.preview.attributes,
         credentialDefinitionId: credentialTemplate.credentialDefinitionId,
+        linkedAttachments: credentialTemplate.linkedAttachments,
       },
     },
     protocolVersion: CredentialProtocolVersion.V1_0,
@@ -427,7 +431,7 @@ export async function issueConnectionLessCredential({
         credentialDefinitionId: credentialTemplate.credentialDefinitionId,
       },
     },
-    protocolVersion: CredentialProtocolVersion.V2_0,
+    protocolVersion: CredentialProtocolVersion.V1_0,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   }
   // eslint-disable-next-line prefer-const
@@ -497,10 +501,7 @@ export async function presentProof({
     state: ProofState.RequestReceived,
   })
 
-  const retrievedCredentials = await holderAgent.proofs.getRequestedCredentialsForProofRequest(
-    ProofProtocolVersion.V1_0,
-    holderRecord.id
-  )
+  const retrievedCredentials = await holderAgent.proofs.getRequestedCredentialsForProofRequest(holderRecord.id)
   const requestedCredentials = holderAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
   await holderAgent.proofs.acceptRequest(holderRecord.id, requestedCredentials)
 

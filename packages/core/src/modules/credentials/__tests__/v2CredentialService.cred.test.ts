@@ -1,6 +1,5 @@
 import type { Wallet } from '../../../../src/wallet/Wallet'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
-import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
 import type { CredProposeOfferRequestFormat } from '../formats/CredentialFormatService'
@@ -16,7 +15,6 @@ import { Agent } from '../../../../src/agent/Agent'
 import { Dispatcher } from '../../../../src/agent/Dispatcher'
 import { InjectionSymbols } from '../../../../src/constants'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../src/storage'
-import { sleep } from '../../../../src/utils/sleep'
 import { getAgentConfig, getBaseConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
@@ -42,7 +40,6 @@ import {
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   OfferCredentialMessage,
-  IssueCredentialMessage,
   CredentialProblemReportMessage,
 } from '../protocol/v1/messages'
 import { V2CredentialService } from '../protocol/v2/V2CredentialService'
@@ -66,7 +63,6 @@ const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRep
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 const IndyHolderServiceMock = IndyHolderService as jest.Mock<IndyHolderService>
 const IndyIssuerServiceMock = IndyIssuerService as jest.Mock<IndyIssuerService>
-const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
 const MediationRecipientServiceMock = MediationRecipientService as jest.Mock<MediationRecipientService>
 
@@ -652,8 +648,8 @@ describe('CredentialService', () => {
         credentialRequest: credReq,
         credentialValues: {},
       })
-      if (credentialResponse.messageAttachment) {
-        const [responseAttachment] = credentialResponse.messageAttachment
+      if (credentialResponse.attachment) {
+        const [responseAttachment] = credentialResponse.attachment
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         expect(JsonEncoder.fromBase64(responseAttachment.data.base64!)).toEqual(cred)
       }
@@ -689,10 +685,6 @@ describe('CredentialService', () => {
     })
 
     test('finds credential record by thread ID and saves credential attachment into the wallet', async () => {
-      const storeCredentialMock = indyHolderService.storeCredential as jest.Mock<
-        Promise<string>,
-        [StoreCredentialOptions]
-      >
       expect(agent.isInitialized).toBe(true)
       const agentConfig = getAgentConfig('CredentialServiceTest')
       eventEmitter = new EventEmitter(agentConfig)

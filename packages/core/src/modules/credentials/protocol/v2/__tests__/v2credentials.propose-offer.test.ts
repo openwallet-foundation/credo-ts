@@ -1,6 +1,5 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
-import type { CredPropose } from '../../../formats/CredentialFormatService'
 import type {
   AcceptOfferOptions,
   AcceptProposalOptions,
@@ -9,15 +8,17 @@ import type {
   ProposeCredentialOptions,
 } from '../../../interfaces'
 
-import { CredentialExchangeRecord, CredentialState } from '../../..'
+import { CredentialExchangeRecord, CredentialState, OfferCredentialMessage } from '../../..'
+import { DidCommMessageRepository } from '../../../../../../src/storage'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
-import { unitTestLogger } from '../../../../../logger'
+import { JsonTransformer } from '../../../../../utils'
 import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialRecordType } from '../../../interfaces'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
+import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
 describe('credentials', () => {
   let faberAgent: Agent
@@ -32,6 +33,7 @@ describe('credentials', () => {
     name: 'John',
     age: '99',
   })
+  let didCommMessageRepository: DidCommMessageRepository
   beforeAll(async () => {
     ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
       'Faber Agent Credentials',
@@ -82,9 +84,6 @@ describe('credentials', () => {
       comment: 'v1 propose credential test',
     }
 
-    const credPropose: CredPropose = proposeOptions.credentialFormats.indy?.payload as CredPropose
-    // unitTestLogger('ProposeCredentialOptions indy proposeOptions attributes = ', credPropose.attributes)
-
     const credentialExchangeRecord = await aliceAgent.credentials.proposeCredential(proposeOptions)
 
     expect(credentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
@@ -119,36 +118,39 @@ describe('credentials', () => {
       state: CredentialState.OfferReceived,
     })
 
-    // expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
-    //   createdAt: expect.any(Date),
-    //   offerMessage: {
-    //     '@id': expect.any(String),
-    //     '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
-    //     comment: 'V1 Indy Proposal',
-    //     credential_preview: {
-    //       '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
-    //       attributes: [
-    //         {
-    //           name: 'name',
-    //           'mime-type': 'text/plain',
-    //           value: 'John',
-    //         },
-    //         {
-    //           name: 'age',
-    //           'mime-type': 'text/plain',
-    //           value: '99',
-    //         },
-    //         {
-    //           name: 'profile_picture',
-    //           'mime-type': 'image/png',
-    //           value: 'hl:zQmcKEWE6eZWpVqGKhbmhd8SxWBa9fgLX7aYW8RJzeHQMZg',
-    //         },
-    //       ],
-    //     },
-    //     'offers~attach': expect.any(Array),
-    //   },
-    //   state: CredentialState.OfferReceived,
-    // })
+    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
+
+    const offerMessage = await didCommMessageRepository.findAgentMessage({
+      associatedRecordId: faberCredentialRecord.id,
+      messageClass: OfferCredentialMessage,
+    })
+
+    expect(JsonTransformer.toJSON(offerMessage)).toMatchObject({
+      '@id': expect.any(String),
+      '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
+      comment: 'V1 Indy Proposal',
+      credential_preview: {
+        '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
+        attributes: [
+          {
+            name: 'name',
+            'mime-type': 'text/plain',
+            value: 'John',
+          },
+          {
+            name: 'age',
+            'mime-type': 'text/plain',
+            value: '99',
+          },
+          {
+            name: 'profile_picture',
+            'mime-type': 'image/png',
+            value: 'hl:zQmcKEWE6eZWpVqGKhbmhd8SxWBa9fgLX7aYW8RJzeHQMZg',
+          },
+        ],
+      },
+      'offers~attach': expect.any(Array),
+    })
     // below values are not in json object
     expect(aliceCredentialRecord.id).not.toBeNull()
     expect(aliceCredentialRecord.getTags()).toEqual({
@@ -258,41 +260,39 @@ describe('credentials', () => {
       state: CredentialState.OfferReceived,
     })
 
-    // MJR-TODO how do we get the offer message out of the didcomm message repository from inside tests??
-    // if (aliceCredentialRecord.offerMessage) {
-    // expect(aliceCredentialRecord.offerMessage?.messageAttachment).toBeTruthy
-    // expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
-    //   createdAt: expect.any(Date),
-    //   offerMessage: {
-    //     // '@id': expect.any(String), MJR-TODO fix this
-    //     '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
-    //     comment: 'V2 Indy Offer',
-    //     credential_preview: {
-    //       '@type': 'https://didcomm.org/issue-credential/2.0/credential-preview',
-    //       attributes: [
-    //         {
-    //           name: 'name',
-    //           'mime-type': 'text/plain',
-    //           value: 'John',
-    //         },
-    //         {
-    //           name: 'age',
-    //           'mime-type': 'text/plain',
-    //           value: '99',
-    //         },
-    //         {
-    //           name: 'profile_picture',
-    //           'mime-type': 'image/png',
-    //           value: 'hl:zQmcKEWE6eZWpVqGKhbmhd8SxWBa9fgLX7aYW8RJzeHQMZg',
-    //         },
-    //       ],
-    //     },
-    //     // 'offers~attach': expect.any(Array), MJR-TODO fix this
-    //   },
-    //   state: CredentialState.OfferReceived,
-    // })
-    // expect(aliceCredentialRecord.offerMessage?.id).toBeTruthy
-    // }
+    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
+
+    const offerMessage = await didCommMessageRepository.findAgentMessage({
+      associatedRecordId: faberCredentialRecord.id,
+      messageClass: V2OfferCredentialMessage,
+    })
+
+    expect(JsonTransformer.toJSON(offerMessage)).toMatchObject({
+      // '@id': expect.any(String), MJR-TODO fix this
+      '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
+      comment: 'V2 Indy Offer',
+      credential_preview: {
+        '@type': 'https://didcomm.org/issue-credential/2.0/credential-preview',
+        attributes: [
+          {
+            name: 'name',
+            'mime-type': 'text/plain',
+            value: 'John',
+          },
+          {
+            name: 'age',
+            'mime-type': 'text/plain',
+            value: '99',
+          },
+          {
+            name: 'profile_picture',
+            'mime-type': 'image/png',
+            value: 'hl:zQmcKEWE6eZWpVqGKhbmhd8SxWBa9fgLX7aYW8RJzeHQMZg',
+          },
+        ],
+      },
+      // 'offers~attach': expect.any(Array), MJR-TODO fix this
+    })
     expect(aliceCredentialRecord.id).not.toBeNull()
     expect(aliceCredentialRecord.getTags()).toEqual({
       threadId: faberCredentialRecord.threadId,

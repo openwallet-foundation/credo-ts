@@ -133,22 +133,17 @@ export class V1CredentialService extends CredentialService {
       messageClass: OfferCredentialMessage,
     })
 
-    const credentialOffer: CredOffer | null = offerCredentialMessage?.indyCredentialOffer
-    if (!offerCredentialMessage || !credentialOffer) {
-      throw new CredentialProblemReportError(
-        `Missing required base64 or json encoded attachment data for credential offer with thread id ${record.threadId}`,
-        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
-      )
+    // remove
+    if (!offerCredentialMessage) {
+      throw new CredentialProblemReportError(`Missing required credential offer with thread id ${record.threadId}`, {
+        problemCode: CredentialProblemReportReason.IssuanceAbandoned,
+      })
     }
-    let offer: CredProposeOfferRequestFormat | undefined
 
-    const attachment = offerCredentialMessage.getAttachmentIncludingFormatId('indy')
-
-    if (attachment) {
-      offer = this.formatService.getCredentialPayload(attachment)
-    } else {
-      throw Error(`Missing attachment in credential Record ${record.id}`)
-    }
+    const offer: CredProposeOfferRequestFormat | undefined = this.formatService.getCredProposeOfferRequestFormat(
+      offerCredentialMessage,
+      record.id
+    )
 
     options.offer = offer
     options.attachId = INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID
@@ -160,7 +155,7 @@ export class V1CredentialService extends CredentialService {
     const requestMessage = new RequestCredentialMessage({
       comment: options?.comment,
       requestAttachments: [requestAttach],
-      attachments: offerCredentialMessage?.messageAttachment?.filter((attachment) => isLinkedAttachment(attachment)),
+      attachments: offerCredentialMessage?.genericAttachments?.filter((attachment) => isLinkedAttachment(attachment)),
     })
     requestMessage.setThread({ threadId: record.threadId })
 
@@ -170,7 +165,7 @@ export class V1CredentialService extends CredentialService {
     record.metadata.set(CredentialMetadataKeys.IndyRequest, credOfferRequest?.indy?.payload.requestMetaData)
     record.autoAcceptCredential = options?.autoAcceptCredential ?? record.autoAcceptCredential
 
-    record.linkedAttachments = offerCredentialMessage?.messageAttachment?.filter((attachment) =>
+    record.linkedAttachments = offerCredentialMessage?.genericAttachments?.filter((attachment) =>
       isLinkedAttachment(attachment)
     )
     await this.updateState(record, CredentialState.RequestSent)
@@ -264,14 +259,6 @@ export class V1CredentialService extends CredentialService {
 
     logger.debug(`Processing credential request with id ${requestMessage.id}`)
 
-    const indyCredentialRequest = requestMessage?.indyCredentialRequest
-    if (!indyCredentialRequest) {
-      throw new CredentialProblemReportError(
-        `Missing required base64 or json encoded attachment data for credential request with thread id ${requestMessage.threadId}`,
-        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
-      )
-    }
-
     const credentialRecord = await this.getByThreadAndConnectionId(requestMessage.threadId, connection?.id)
     let proposalMessage, offerMessage
     try {
@@ -359,6 +346,7 @@ export class V1CredentialService extends CredentialService {
     const { message: offerMessage, connection } = messageContext
 
     logger.debug(`Processing credential offer with id ${offerMessage.id}`)
+
     const indyCredentialOffer = offerMessage.indyCredentialOffer
 
     if (!indyCredentialOffer) {
@@ -394,7 +382,7 @@ export class V1CredentialService extends CredentialService {
         previousSentMessage: proposalCredentialMessage,
       })
 
-      credentialRecord.linkedAttachments = offerMessage.messageAttachment?.filter(isLinkedAttachment)
+      credentialRecord.linkedAttachments = offerMessage.genericAttachments?.filter(isLinkedAttachment)
 
       credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
         schemaId: indyCredentialOffer.schema_id,
@@ -538,38 +526,14 @@ export class V1CredentialService extends CredentialService {
       )
     }
 
-    const credentialOffer: CredOffer | null = offerMessage?.indyCredentialOffer
-    if (!offerMessage || !credentialOffer) {
-      throw new CredentialProblemReportError(
-        `Missing required base64 or json encoded attachment data for credential offer with thread id ${record.threadId}`,
-        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
-      )
-    }
-    let offer: CredProposeOfferRequestFormat | undefined
-
-    let attachment = offerMessage.getAttachmentIncludingFormatId('indy')
-
-    if (attachment) {
-      offer = this.formatService.getCredentialPayload(attachment)
-    } else {
-      throw Error(`Missing (offer) attachment in credential Record ${record.id}`)
-    }
-    const credentialRequest: CredReq | null = requestMessage?.indyCredentialRequest
-    if (!requestMessage || !credentialRequest) {
-      throw new CredentialProblemReportError(
-        `Missing required base64 or json encoded attachment data for credential request with thread id ${record.threadId}`,
-        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
-      )
-    }
-    let request: CredProposeOfferRequestFormat | undefined
-
-    attachment = requestMessage.getAttachmentIncludingFormatId('indy')
-
-    if (attachment) {
-      request = this.formatService.getCredentialPayload(attachment)
-    } else {
-      throw Error(`Missing (request) attachment in credential Record ${record.id}`)
-    }
+    const offer: CredProposeOfferRequestFormat | undefined = this.formatService.getCredProposeOfferRequestFormat(
+      offerMessage,
+      record.id
+    )
+    const request: CredProposeOfferRequestFormat | undefined = this.formatService.getCredProposeOfferRequestFormat(
+      requestMessage,
+      record.id
+    )
 
     options.offer = offer
     options.request = request
@@ -593,8 +557,8 @@ export class V1CredentialService extends CredentialService {
       comment: options?.comment,
       credentialAttachments: [credentialsAttach],
       attachments:
-        offerMessage?.messageAttachment?.filter((attachment) => isLinkedAttachment(attachment)) ||
-        requestMessage?.messageAttachment?.filter((attachment: Attachment) => isLinkedAttachment(attachment)),
+        offerMessage?.genericAttachments?.filter((attachment) => isLinkedAttachment(attachment)) ||
+        requestMessage?.genericAttachments?.filter((attachment: Attachment) => isLinkedAttachment(attachment)),
     })
     issueMessage.setThread({
       threadId: record.threadId,
@@ -791,6 +755,7 @@ export class V1CredentialService extends CredentialService {
       credentialTemplate.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
     await this.updateState(credentialRecord, CredentialState.OfferSent)
+
     await this.didCommMessageRepository.saveAgentMessage({
       agentMessage: offerMessage,
       role: DidCommMessageRole.Sender,
@@ -800,39 +765,12 @@ export class V1CredentialService extends CredentialService {
   }
 
   public registerHandlers() {
+    this.dispatcher.registerHandler(new ProposeCredentialHandler(this, this.agentConfig, this.didCommMessageRepository))
     this.dispatcher.registerHandler(
-      new ProposeCredentialHandler(
-        this,
-        this.agentConfig,
-        this.credentialResponseCoordinator,
-        this.didCommMessageRepository
-      )
+      new OfferCredentialHandler(this, this.agentConfig, this.mediationRecipientService, this.didCommMessageRepository)
     )
-    this.dispatcher.registerHandler(
-      new OfferCredentialHandler(
-        this,
-        this.agentConfig,
-        this.credentialResponseCoordinator,
-        this.mediationRecipientService,
-        this.didCommMessageRepository
-      )
-    )
-    this.dispatcher.registerHandler(
-      new RequestCredentialHandler(
-        this,
-        this.agentConfig,
-        this.credentialResponseCoordinator,
-        this.didCommMessageRepository
-      )
-    )
-    this.dispatcher.registerHandler(
-      new IssueCredentialHandler(
-        this,
-        this.agentConfig,
-        this.credentialResponseCoordinator,
-        this.didCommMessageRepository
-      )
-    )
+    this.dispatcher.registerHandler(new RequestCredentialHandler(this, this.agentConfig, this.didCommMessageRepository))
+    this.dispatcher.registerHandler(new IssueCredentialHandler(this, this.agentConfig, this.didCommMessageRepository))
     this.dispatcher.registerHandler(new CredentialAckHandler(this))
     this.dispatcher.registerHandler(new CredentialProblemReportHandler(this))
   }
@@ -1139,14 +1077,21 @@ export class V1CredentialService extends CredentialService {
       credentialOptions?.credentialFormats.indy?.attributes &&
       credentialOptions?.credentialFormats.indy?.credentialDefinitionId
     ) {
-      const credentialPreview: V1CredentialPreview = new V1CredentialPreview({
+      const preview: V1CredentialPreview = new V1CredentialPreview({
         attributes: credentialOptions.credentialFormats.indy?.attributes,
       })
+
+      const linkedAttachments = credentialOptions.credentialFormats.indy?.linkedAttachments
+      // Create and link credential to attacment
+      const credentialPreview = linkedAttachments
+        ? CredentialUtils.createAndLinkAttachmentsToPreview(linkedAttachments, preview)
+        : preview
 
       const template: CredentialOfferTemplate = {
         ...credentialOptions,
         preview: credentialPreview,
         credentialDefinitionId: credentialOptions?.credentialFormats.indy?.credentialDefinitionId,
+        linkedAttachments,
       }
 
       const { credentialRecord, message } = await this.createOfferProcessing(template, connection)

@@ -1,12 +1,6 @@
-import type { Wallet } from '../../../wallet/Wallet'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
-import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
-import type { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
 import type { OfferCredentialOptions } from '../interfaces'
-import type { RequestCredentialMessage } from '../protocol/v1/messages'
-import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
-import type { CustomCredentialTags } from '../repository/CredentialRecord'
 import type { AgentConfig } from '@aries-framework/core'
 
 import { getAgentConfig, getBaseConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
@@ -15,13 +9,8 @@ import { Dispatcher } from '../../../agent/Dispatcher'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import { InjectionSymbols } from '../../../constants'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
-import { RecordNotFoundError } from '../../../error'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../storage'
-import { JsonEncoder } from '../../../utils/JsonEncoder'
-import { WalletError } from '../../../wallet/error'
-import { AckStatus } from '../../common'
+import { DidCommMessageRepository } from '../../../storage'
 import { ConnectionState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
@@ -31,22 +20,13 @@ import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import { CredentialResponseCoordinator } from '../CredentialResponseCoordinator'
 import { CredentialState } from '../CredentialState'
-import { CredentialUtils } from '../CredentialUtils'
-import { CredentialProblemReportReason } from '../errors/CredentialProblemReportReason'
 import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
 import { V1CredentialService } from '../protocol/v1/V1CredentialService'
-import {
-  CredentialAckMessage,
-  INDY_CREDENTIAL_ATTACHMENT_ID,
-  INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
-  INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
-  OfferCredentialMessage,
-} from '../protocol/v1/messages'
+import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, OfferCredentialMessage } from '../protocol/v1/messages'
 import { CredentialExchangeRecord } from '../repository/CredentialRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
-import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 
-import { credDef, credReq } from './fixtures'
+import { credDef } from './fixtures'
 
 // Mock classes
 jest.mock('../repository/CredentialRepository')
@@ -73,7 +53,6 @@ let eventEmitter: EventEmitter
 let didCommMessageRepository: DidCommMessageRepository
 let mediationRecipientService: MediationRecipientService
 let messageSender: MessageSender
-let offerOptions: OfferCredentialOptions
 let agentConfig: AgentConfig
 
 let dispatcher: Dispatcher
@@ -100,60 +79,6 @@ const offerAttachment = new Attachment({
   }),
 })
 
-// A record is deserialized to JSON when it's stored into the storage. We want to simulate this behaviour for `offer`
-// object to test our service would behave correctly. We use type assertion for `offer` attribute to `any`.
-const mockCredentialRecord = ({
-  state,
-  metadata,
-  threadId,
-  connectionId,
-  tags,
-  id,
-  credentialAttributes,
-}: {
-  state?: CredentialState
-  requestMessage?: RequestCredentialMessage
-  metadata?: IndyCredentialMetadata & { indyRequest: Record<string, unknown> }
-  tags?: CustomCredentialTags
-  threadId?: string
-  connectionId?: string
-  id?: string
-  credentialAttributes?: CredentialPreviewAttribute[]
-} = {}) => {
-  const offerMessage = new OfferCredentialMessage({
-    comment: 'some comment',
-    credentialPreview: credentialPreview,
-    offerAttachments: [offerAttachment],
-  })
-
-  const credentialRecord = new CredentialExchangeRecord({
-    id,
-    credentialAttributes: credentialAttributes || credentialPreview.attributes,
-    state: state || CredentialState.OfferSent,
-    threadId: threadId ?? offerMessage.id,
-    connectionId: connectionId ?? '123',
-    tags,
-  })
-
-  if (metadata?.indyRequest) {
-    credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, { ...metadata.indyRequest })
-  }
-
-  if (metadata?.schemaId) {
-    credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
-      schemaId: metadata.schemaId,
-    })
-  }
-
-  if (metadata?.credentialDefinitionId) {
-    credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
-      credentialDefinitionId: metadata.credentialDefinitionId,
-    })
-  }
-
-  return credentialRecord
-}
-
 const { config, agentDependencies: dependencies } = getBaseConfig('Agent Class Test V2 Offer')
 
 describe('CredentialService', () => {
@@ -166,17 +91,6 @@ describe('CredentialService', () => {
     indyHolderService = new IndyHolderServiceMock()
     indyLedgerService = new IndyLedgerServiceMock()
     mockFunction(indyLedgerService.getCredentialDefinition).mockReturnValue(Promise.resolve(credDef))
-    offerOptions = {
-      comment: 'some comment',
-      connectionId: connection.id,
-      credentialFormats: {
-        indy: {
-          attributes: credentialPreview.attributes,
-          credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
-        },
-      },
-      protocolVersion: CredentialProtocolVersion.V1_0,
-    }
     agentConfig = getAgentConfig('CredentialServiceTest')
     eventEmitter = new EventEmitter(agentConfig)
 

@@ -2,30 +2,24 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { CredentialPreviewAttribute } from '../../../CredentialPreviewAttributes'
-import type { CredentialResponseCoordinator } from '../../../CredentialResponseCoordinator'
 import type { CredentialFormatService, CredProposeOfferRequestFormat } from '../../../formats/CredentialFormatService'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
 import { createOutboundMessage } from '../../../../../agent/helpers'
-import { IndyCredentialFormatService } from '../../../formats/indy/IndyCredentialFormatService'
-import { CredentialFormatType } from '../../../interfaces'
 import { OfferCredentialMessage, ProposeCredentialMessage } from '../messages'
 
 export class ProposeCredentialHandler implements Handler {
   private credentialService: V1CredentialService
   private agentConfig: AgentConfig
-  private credentialAutoResponseCoordinator: CredentialResponseCoordinator
   private didCommMessageRepository: DidCommMessageRepository
   public supportedMessages = [ProposeCredentialMessage]
 
   public constructor(
     credentialService: V1CredentialService,
     agentConfig: AgentConfig,
-    responseCoordinator: CredentialResponseCoordinator,
     didCommMessageRepository: DidCommMessageRepository
   ) {
-    this.credentialAutoResponseCoordinator = responseCoordinator
     this.credentialService = credentialService
     this.agentConfig = agentConfig
     this.didCommMessageRepository = didCommMessageRepository
@@ -63,9 +57,9 @@ export class ProposeCredentialHandler implements Handler {
     }
     const formatService: CredentialFormatService = this.credentialService.getFormatService()
 
-    if (proposalMessage && proposalMessage.messageAttachment) {
+    if (proposalMessage && proposalMessage.genericAttachments) {
       proposalValues = proposalMessage.credentialProposal.attributes
-      const attachment = proposalMessage.messageAttachment[0] // MJR: is this right for propose messages?
+      const attachment = proposalMessage.genericAttachments[0] // MJR: is this right for propose messages?
       if (attachment) {
         proposalPayload = formatService.getCredentialPayload(attachment)
       }

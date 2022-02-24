@@ -1,5 +1,4 @@
 import type { CredentialFormatSpec } from '../../../formats/CredentialFormatService'
-import type { CredOffer } from 'indy-sdk'
 
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'

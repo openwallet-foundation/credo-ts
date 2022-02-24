@@ -12,18 +12,16 @@ import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyRevocationService } from '../../indy/services/IndyRevocationService'
 import { IndyLedgerService } from '../../ledger/services'
 import { ProofEventTypes } from '../ProofEvents'
-import { ProofState } from '../models/ProofState'
-import { V1PresentationProblemReportReason } from '../protocol/v1/errors/V1PresentationProblemReportReason'
+import { ProofState } from '../ProofState'
+import { PresentationProblemReportReason } from '../errors/PresentationProblemReportReason'
+import { INDY_PROOF_REQUEST_ATTACHMENT_ID } from '../messages'
 import { ProofRecord } from '../repository/ProofRecord'
 import { ProofRepository } from '../repository/ProofRepository'
-import { V1LegacyProofService } from '../protocol/v1/V1LegacyProofService'
+import { ProofService } from '../services'
 
 import { IndyVerifierService } from './../../indy/services/IndyVerifierService'
-import { V1PresentationProblemReportMessage } from '../protocol/v1/messages/V1PresentationProblemReportMessage'
-import {
-  INDY_PROOF_REQUEST_ATTACHMENT_ID,
-  V1RequestPresentationMessage,
-} from '../protocol/v1/messages/V1RequestPresentationMessage'
+import { PresentationProblemReportMessage } from './../messages/PresentationProblemReportMessage'
+import { RequestPresentationMessage } from './../messages/RequestPresentationMessage'
 import { credDef } from './fixtures'
 
 // Mock classes
@@ -68,13 +66,13 @@ const mockProofRecord = ({
   id,
 }: {
   state?: ProofState
-  requestMessage?: V1RequestPresentationMessage
+  requestMessage?: RequestPresentationMessage
   tags?: CustomProofTags
   threadId?: string
   connectionId?: string
   id?: string
 } = {}) => {
-  const requestPresentationMessage = new V1RequestPresentationMessage({
+  const requestPresentationMessage = new RequestPresentationMessage({
     comment: 'some comment',
     requestPresentationAttachments: [requestAttachment],
   })
@@ -93,7 +91,7 @@ const mockProofRecord = ({
 
 describe('ProofService', () => {
   let proofRepository: ProofRepository
-  let proofService: V1LegacyProofService
+  let proofService: ProofService
   let ledgerService: IndyLedgerService
   let wallet: Wallet
   let indyVerifierService: IndyVerifierService
@@ -113,7 +111,7 @@ describe('ProofService', () => {
     eventEmitter = new EventEmitter(agentConfig)
     connectionService = new connectionServiceMock()
 
-    proofService = new V1LegacyProofService(
+    proofService = new ProofService(
       proofRepository,
       ledgerService,
       wallet,
@@ -130,11 +128,11 @@ describe('ProofService', () => {
   })
 
   describe('processProofRequest', () => {
-    let presentationRequest: V1RequestPresentationMessage
-    let messageContext: InboundMessageContext<V1RequestPresentationMessage>
+    let presentationRequest: RequestPresentationMessage
+    let messageContext: InboundMessageContext<RequestPresentationMessage>
 
     beforeEach(() => {
-      presentationRequest = new V1RequestPresentationMessage({
+      presentationRequest = new RequestPresentationMessage({
         comment: 'abcd',
         requestPresentationAttachments: [requestAttachment],
       })
@@ -201,10 +199,10 @@ describe('ProofService', () => {
       mockFunction(proofRepository.getById).mockReturnValue(Promise.resolve(proof))
 
       // when
-      const presentationProblemReportMessage = await new V1PresentationProblemReportMessage({
+      const presentationProblemReportMessage = await new PresentationProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: V1PresentationProblemReportReason.Abandoned,
+          code: PresentationProblemReportReason.Abandoned,
         },
       })
 
@@ -222,17 +220,17 @@ describe('ProofService', () => {
 
   describe('processProblemReport', () => {
     let proof: ProofRecord
-    let messageContext: InboundMessageContext<V1PresentationProblemReportMessage>
+    let messageContext: InboundMessageContext<PresentationProblemReportMessage>
 
     beforeEach(() => {
       proof = mockProofRecord({
         state: ProofState.RequestReceived,
       })
 
-      const presentationProblemReportMessage = new V1PresentationProblemReportMessage({
+      const presentationProblemReportMessage = new PresentationProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: V1PresentationProblemReportReason.Abandoned,
+          code: PresentationProblemReportReason.Abandoned,
         },
       })
       presentationProblemReportMessage.setThread({ threadId: 'somethreadid' })

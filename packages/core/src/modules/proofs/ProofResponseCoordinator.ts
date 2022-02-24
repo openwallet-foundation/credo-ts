@@ -4,8 +4,7 @@ import { scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 
-import { ProofService } from './ProofService'
-import { AutoAcceptProof } from './models/ProofAutoAcceptType'
+import { AutoAcceptProof } from './ProofAutoAcceptType'
 
 /**
  * This class handles all the automation with all the messages in the present proof protocol
@@ -14,11 +13,9 @@ import { AutoAcceptProof } from './models/ProofAutoAcceptType'
 @scoped(Lifecycle.ContainerScoped)
 export class ProofResponseCoordinator {
   private agentConfig: AgentConfig
-  private proofService: ProofService
 
-  public constructor(agentConfig: AgentConfig, proofService: ProofService) {
+  public constructor(agentConfig: AgentConfig) {
     this.agentConfig = agentConfig
-    this.proofService = proofService
   }
 
   /**
@@ -58,12 +55,11 @@ export class ProofResponseCoordinator {
       this.agentConfig.autoAcceptProofs
     )
 
-    if (autoAccept === AutoAcceptProof.Always) {
+    if (
+      autoAccept === AutoAcceptProof.Always ||
+      (autoAccept === AutoAcceptProof.ContentApproved && proofRecord.proposalMessage)
+    ) {
       return true
-    }
-
-    if (autoAccept === AutoAcceptProof.ContentApproved) {
-      return this.proofService.shouldAutoRespondToRequest(proofRecord)
     }
 
     return false
@@ -73,19 +69,16 @@ export class ProofResponseCoordinator {
    * Checks whether it should automatically respond to a presentation of proof
    */
   public shouldAutoRespondToPresentation(proofRecord: ProofRecord) {
-    // K-TODO:
-
     const autoAccept = ProofResponseCoordinator.composeAutoAccept(
       proofRecord.autoAcceptProof,
       this.agentConfig.autoAcceptProofs
     )
 
-    if (autoAccept === AutoAcceptProof.Always) {
+    if (
+      autoAccept === AutoAcceptProof.Always ||
+      (autoAccept === AutoAcceptProof.ContentApproved && proofRecord.requestMessage)
+    ) {
       return true
-    }
-
-    if (autoAccept === AutoAcceptProof.ContentApproved) {
-      return this.proofService.shouldAutoRespondToRequest(proofRecord)
     }
 
     return false
