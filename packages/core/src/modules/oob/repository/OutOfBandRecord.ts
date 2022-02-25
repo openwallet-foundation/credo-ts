@@ -16,6 +16,7 @@ export interface OutOfBandRecordProps {
   tags?: TagsBase
   outOfBandMessage: OutOfBandMessage
   state: OutOfBandState
+  autoAcceptConnection: boolean
   reusable?: boolean
 }
 
@@ -24,6 +25,7 @@ export class OutOfBandRecord extends BaseRecord<TagsBase> {
   public outOfBandMessage!: OutOfBandMessage
   public state!: OutOfBandState
   public reusable!: boolean
+  public autoAcceptConnection!: boolean
 
   public static readonly type = 'OutOfBandRecord'
   public readonly type = OutOfBandRecord.type
@@ -36,6 +38,7 @@ export class OutOfBandRecord extends BaseRecord<TagsBase> {
       this.createdAt = props.createdAt ?? new Date()
       this.outOfBandMessage = props.outOfBandMessage
       this.state = props.state
+      this.autoAcceptConnection = props.autoAcceptConnection
       this.reusable = props.reusable ?? false
       this._tags = props.tags ?? {}
     }

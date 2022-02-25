@@ -71,7 +71,7 @@ export class ConnectionService {
     this.logger.debug(`Process message ${ConnectionRequestMessage.type} start`, messageContext)
 
     // TODO check oob role is sender
-    // TODO check oob state is await-respons
+    // TODO check oob state is await-response
     // TODO check there is no connection record for particular oob record
 
     const { message } = messageContext
@@ -81,7 +81,7 @@ export class ConnectionService {
       state: DidExchangeState.InvitationSent,
       multiUseInvitation: false,
       routing,
-      // autoAcceptConnection: connectionRecord.autoAcceptConnection,
+      autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
       protocol: HandshakeProtocol.DidExchange,
       tags: {
         invitationKey: outOfBandRecord.getTags().recipientKey,

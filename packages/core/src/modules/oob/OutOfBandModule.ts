@@ -28,7 +28,6 @@ import { OutOfBandState } from './repository/OutOfBandState'
 // TODO
 // 1. routing keys,
 // 2. out-of-band record (we can do in two steps, 1. use it with oob and DID Exchange, 2. use it also for the Connection protocol)
-//  - autoAcceptConnection flag in oob
 // 3. roles and states,
 // 4. get rid of did doc and verkey
 
@@ -42,6 +41,7 @@ export interface CreateOutOfBandMessageConfig {
   handshakeProtocols?: HandshakeProtocol[]
   messages?: AgentMessage[]
   multiUseInvitation?: boolean
+  autoAcceptConnection?: boolean
 }
 
 export interface ReceiveOutOfBandMessageConfig {
@@ -58,6 +58,7 @@ export class OutOfBandModule {
   private dispatcher: Dispatcher
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
+  private agentConfig: AgentConfig
   private logger: Logger
 
   public constructor(
@@ -71,6 +72,7 @@ export class OutOfBandModule {
     eventEmitter: EventEmitter
   ) {
     this.dispatcher = dispatcher
+    this.agentConfig = agentConfig
     this.logger = agentConfig.logger
     this.outOfBandRepository = outOfBandRepository
     this.connectionsModule = connectionsModule
@@ -154,6 +156,7 @@ export class OutOfBandModule {
       state: OutOfBandState.Initial,
       outOfBandMessage: outOfBandMessage,
       reusable: multiUseInvitation,
+      autoAcceptConnection: config.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections,
     })
 
     await this.outOfBandRepository.save(outOfBandRecord)

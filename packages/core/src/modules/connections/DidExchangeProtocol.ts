@@ -172,7 +172,7 @@ export class DidExchangeProtocol {
       state: DidExchangeState.InvitationSent,
       multiUseInvitation: false,
       routing,
-      // autoAcceptConnection: connectionRecord.autoAcceptConnection,
+      autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
       protocol: HandshakeProtocol.DidExchange,
     })
     connectionRecord.theirDid = message.did
