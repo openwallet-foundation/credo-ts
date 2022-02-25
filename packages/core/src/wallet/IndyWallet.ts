@@ -93,12 +93,12 @@ export class IndyWallet implements Wallet {
     this.logger.debug(`Creating wallet '${walletConfig.id}' using SQLite storage`)
 
     try {
-      await this.indy.createWallet({ id: walletConfig.id }, { key: walletConfig.key })
+      await this.indy.createWallet(
+        { id: walletConfig.id },
+        { key: walletConfig.key, key_derivation_method: walletConfig.keyDerivationMethod }
+      )
 
-      this.walletConfig = {
-        id: walletConfig.id,
-        key: walletConfig.key,
-      }
+      this.walletConfig = walletConfig
 
       // We usually want to create master secret only once, therefore, we can to do so when creating a wallet.
       await this.open(walletConfig)
@@ -141,11 +141,11 @@ export class IndyWallet implements Wallet {
     }
 
     try {
-      this.walletHandle = await this.indy.openWallet({ id: walletConfig.id }, { key: walletConfig.key })
-      this.walletConfig = {
-        id: walletConfig.id,
-        key: walletConfig.key,
-      }
+      this.walletHandle = await this.indy.openWallet(
+        { id: walletConfig.id },
+        { key: walletConfig.key, key_derivation_method: walletConfig.keyDerivationMethod }
+      )
+      this.walletConfig = walletConfig
     } catch (error) {
       if (isIndyError(error, 'WalletNotFoundError')) {
         const errorMessage = `Wallet '${walletConfig.id}' not found`
@@ -192,7 +192,10 @@ export class IndyWallet implements Wallet {
     }
 
     try {
-      await this.indy.deleteWallet({ id: this.walletConfig.id }, { key: this.walletConfig.key })
+      await this.indy.deleteWallet(
+        { id: this.walletConfig.id },
+        { key: this.walletConfig.key, key_derivation_method: this.walletConfig.keyDerivationMethod }
+      )
     } catch (error) {
       if (isIndyError(error, 'WalletNotFoundError')) {
         const errorMessage = `Error deleting wallet: wallet '${this.walletConfig.id}' not found`
@@ -219,7 +222,7 @@ export class IndyWallet implements Wallet {
    */
   public async close(): Promise<void> {
     if (!this.walletHandle) {
-      throw new WalletError('Wallet is in inavlid state, you are trying to close wallet that has no `walletHandle`.')
+      throw new WalletError('Wallet is in invalid state, you are trying to close wallet that has no `walletHandle`.')
     }
 
     try {
