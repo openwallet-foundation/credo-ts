@@ -23,6 +23,7 @@ import { HandshakeReuseHandler } from './handlers'
 import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
 import { OutOfBandRepository } from './repository'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
+import { OutOfBandRole } from './repository/OutOfBandRole'
 import { OutOfBandState } from './repository/OutOfBandState'
 
 // TODO
@@ -105,7 +106,14 @@ export class OutOfBandModule {
    * @returns Out-of-band message and optionally connection record created based on `handshakeProtocol`
    */
   public async createMessage(config: CreateOutOfBandMessageConfig): Promise<OutOfBandRecord> {
-    const { label, multiUseInvitation, handshake, handshakeProtocols: customHandshakeProtocols, messages } = config
+    const {
+      label,
+      multiUseInvitation,
+      handshake,
+      handshakeProtocols: customHandshakeProtocols,
+      autoAcceptConnection,
+      messages,
+    } = config
     if (!handshake && !messages) {
       throw new AriesFrameworkError(
         'One or both of handshake_protocols and requests~attach MUST be included in the message.'
@@ -153,12 +161,12 @@ export class OutOfBandModule {
     }
 
     const outOfBandRecord = new OutOfBandRecord({
+      role: OutOfBandRole.Sender,
       state: OutOfBandState.Initial,
       outOfBandMessage: outOfBandMessage,
       reusable: multiUseInvitation,
-      autoAcceptConnection: config.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections,
+      autoAcceptConnection: autoAcceptConnection ?? this.agentConfig.autoAcceptConnections,
     })
-
     await this.outOfBandRepository.save(outOfBandRecord)
 
     return outOfBandRecord
@@ -214,6 +222,14 @@ export class OutOfBandModule {
 
     const existingConnection = await this.findExistingConnection(services)
 
+    const outOfBandRecord = new OutOfBandRecord({
+      role: OutOfBandRole.Receiver,
+      state: OutOfBandState.PrepareResponse,
+      outOfBandMessage: outOfBandMessage,
+      autoAcceptConnection: autoAcceptConnection ?? this.agentConfig.autoAcceptConnections,
+    })
+    await this.outOfBandRepository.save(outOfBandRecord)
+
     if (handshakeProtocols) {
       this.logger.debug('Out of band message contains handshake protocols.')
       // Find first supported handshake protocol preserving the order of `handshake_protocols`
@@ -221,21 +237,16 @@ export class OutOfBandModule {
       const handshakeProtocol = this.getFirstSupportedProtocol(handshakeProtocols)
 
       let connectionRecord: ConnectionRecord
-      if (existingConnection) {
-        this.logger.debug('Connection already exists.', { connectionId: existingConnection.id })
-        if (reuseConnection) {
-          this.logger.debug('Reuse is enabled. Reusing an existing connection.')
-          connectionRecord = existingConnection
-          if (!messages) {
-            this.logger.debug('Out of band message does not contain any request messages.')
-            await this.sendReuse(outOfBandMessage, connectionRecord)
-          }
-        } else {
-          this.logger.debug('Reuse is disabled.')
-          connectionRecord = await this.createConnection(outOfBandMessage, { handshakeProtocol, autoAcceptConnection })
+
+      if (existingConnection && reuseConnection) {
+        this.logger.debug(`Reuse is enabled. Reusing an existing connection with ID ${existingConnection.id}.`)
+        connectionRecord = existingConnection
+        if (!messages) {
+          this.logger.debug('Out of band message does not contain any request messages.')
+          await this.sendReuse(outOfBandMessage, connectionRecord)
         }
       } else {
-        this.logger.debug('Connection does not exists.')
+        this.logger.debug('Reuse is disabled or connection does not exist.')
         connectionRecord = await this.createConnection(outOfBandMessage, { handshakeProtocol, autoAcceptConnection })
       }
 

@@ -1,4 +1,4 @@
-export const enum OutOfBandState {
+export const enum OutOfBandRole {
   Sender = 'sender',
   Receiver = 'receiver',
 }

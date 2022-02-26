@@ -77,12 +77,11 @@ export class ConnectionService {
     const { message } = messageContext
 
     const connectionRecord = await this.createConnection({
-      role: DidExchangeRole.Responder,
-      state: DidExchangeState.InvitationSent,
+      protocol: HandshakeProtocol.Connections,
+      role: ConnectionRole.Inviter,
       multiUseInvitation: false,
       routing,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
-      protocol: HandshakeProtocol.DidExchange,
       tags: {
         invitationKey: outOfBandRecord.getTags().recipientKey,
       },
@@ -94,8 +93,6 @@ export class ConnectionService {
     connectionRecord.threadId = message.id
     connectionRecord.imageUrl = message.imageUrl
     connectionRecord.outOfBandId = outOfBandRecord.id
-    connectionRecord.role = ConnectionRole.Inviter
-    connectionRecord.protocol = HandshakeProtocol.Connections
 
     await this.updateState(connectionRecord, ConnectionState.Requested)
     this.logger.debug(`Process message ${ConnectionRequestMessage.type} end`, connectionRecord)

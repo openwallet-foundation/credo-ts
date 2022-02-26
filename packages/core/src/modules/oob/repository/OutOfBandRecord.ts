@@ -1,5 +1,6 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { DidCommService } from '../../dids'
+import type { OutOfBandRole } from './OutOfBandRole'
 import type { OutOfBandState } from './OutOfBandState'
 
 import { Type } from 'class-transformer'
@@ -15,6 +16,7 @@ export interface OutOfBandRecordProps {
   updatedAt?: Date
   tags?: TagsBase
   outOfBandMessage: OutOfBandMessage
+  role: OutOfBandRole
   state: OutOfBandState
   autoAcceptConnection: boolean
   reusable?: boolean
@@ -23,6 +25,7 @@ export interface OutOfBandRecordProps {
 export class OutOfBandRecord extends BaseRecord<TagsBase> {
   @Type(() => OutOfBandMessage)
   public outOfBandMessage!: OutOfBandMessage
+  public role!: OutOfBandRole
   public state!: OutOfBandState
   public reusable!: boolean
   public autoAcceptConnection!: boolean
@@ -37,6 +40,7 @@ export class OutOfBandRecord extends BaseRecord<TagsBase> {
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
       this.outOfBandMessage = props.outOfBandMessage
+      this.role = props.role
       this.state = props.state
       this.autoAcceptConnection = props.autoAcceptConnection
       this.reusable = props.reusable ?? false
@@ -52,6 +56,7 @@ export class OutOfBandRecord extends BaseRecord<TagsBase> {
 
     return {
       ...this._tags,
+      role: this.role,
       state: this.state,
       messageId: this.outOfBandMessage.id,
       recipientKey,
