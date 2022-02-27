@@ -5,6 +5,7 @@ import type { AckMessage } from '../../common'
 import type { OutOfBandRecord } from '../../oob/repository'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
+import type { DidExchangeRole } from '../models'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
@@ -30,7 +31,6 @@ import {
 } from '../messages'
 import {
   DidExchangeState,
-  DidExchangeRole,
   Connection,
   ConnectionState,
   ConnectionRole,
@@ -164,20 +164,9 @@ export class ConnectionService {
       protocol?: HandshakeProtocol
     }
   ): Promise<ConnectionRecord> {
-    let role
-    let state
-
-    if (config?.protocol === HandshakeProtocol.DidExchange) {
-      role = DidExchangeRole.Requester
-      state = DidExchangeState.InvitationReceived
-    } else {
-      role = ConnectionRole.Invitee
-      state = ConnectionState.Invited
-    }
-
     const connectionRecord = await this.createConnection({
-      role,
-      state,
+      role: ConnectionRole.Invitee,
+      state: ConnectionState.Invited,
       alias: config?.alias,
       theirLabel: invitation.label,
       autoAcceptConnection: config?.autoAcceptConnection,

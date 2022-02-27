@@ -62,22 +62,33 @@ export class DidExchangeProtocol {
   }
 
   public async createRequest(
-    connectionRecord: ConnectionRecord,
+    outOfBandRecord: OutOfBandRecord,
     params: DidExchangeRequestParams
-  ): Promise<DidExchangeRequestMessage> {
-    this.logger.debug(`Create message ${DidExchangeRequestMessage.type} start`, connectionRecord)
+  ): Promise<{ message: DidExchangeRequestMessage; connectionRecord: ConnectionRecord }> {
+    this.logger.debug(`Create message ${DidExchangeRequestMessage.type} start`, { outOfBandRecord, params })
 
-    if (!connectionRecord.invitation) {
-      throw new AriesFrameworkError('Connection invitation is missing.')
-    }
+    const { outOfBandMessage } = outOfBandRecord
+    const { goal, goalCode, routing, autoAcceptConnection } = params
+
+    // Create connection
+    const connectionRecord = await this.connectionService.createConnection({
+      protocol: HandshakeProtocol.DidExchange,
+      role: DidExchangeRole.Requester,
+      state: DidExchangeState.InvitationReceived,
+      theirLabel: outOfBandMessage.label,
+      multiUseInvitation: false,
+      routing,
+      autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
+    })
+    connectionRecord.outOfBandId = outOfBandRecord.id
 
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeRequestMessage.type, connectionRecord)
 
-    const { goal, goalCode, routing, autoAcceptConnection } = params
+    // Create message
     const label = params.label ?? this.config.label
     const { verkey } = routing
     const { peerDid, didDocument } = await this.createPeerDidDoc(routing)
-    const parentThreadId = connectionRecord.invitation?.id
+    const parentThreadId = outOfBandMessage.id
 
     const message = new DidExchangeRequestMessage({ label, parentThreadId, did: peerDid.did, goal, goalCode })
 
@@ -100,7 +111,7 @@ export class DidExchangeProtocol {
       connectionRecord,
       message,
     })
-    return message
+    return { message, connectionRecord }
   }
 
   public async processRequest(
@@ -168,20 +179,17 @@ export class DidExchangeProtocol {
     await this.didRepository.save(didRecord)
 
     const connectionRecord = await this.connectionService.createConnection({
+      protocol: HandshakeProtocol.DidExchange,
       role: DidExchangeRole.Responder,
-      state: DidExchangeState.InvitationSent,
+      state: DidExchangeState.RequestReceived,
       multiUseInvitation: false,
       routing,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
-      protocol: HandshakeProtocol.DidExchange,
     })
     connectionRecord.theirDid = message.did
     connectionRecord.theirLabel = message.label
     connectionRecord.threadId = message.threadId || message.id
     connectionRecord.outOfBandId = outOfBandRecord.id
-    connectionRecord.role = DidExchangeRole.Responder
-    connectionRecord.state = DidExchangeState.RequestReceived
-    connectionRecord.protocol = HandshakeProtocol.DidExchange
 
     await this.updateState(DidExchangeRequestMessage.type, connectionRecord)
     this.logger.debug(`Process message ${DidExchangeRequestMessage.type} end`, connectionRecord)
@@ -301,12 +309,15 @@ export class DidExchangeProtocol {
     return connectionRecord
   }
 
-  public async createComplete(connectionRecord: ConnectionRecord): Promise<DidExchangeCompleteMessage> {
+  public async createComplete(
+    connectionRecord: ConnectionRecord,
+    outOfBandRecord: OutOfBandRecord
+  ): Promise<DidExchangeCompleteMessage> {
     this.logger.debug(`Create message ${DidExchangeCompleteMessage.type} start`, connectionRecord)
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeCompleteMessage.type, connectionRecord)
 
     const threadId = connectionRecord.threadId
-    const parentThreadId = connectionRecord.invitation?.id
+    const parentThreadId = outOfBandRecord.outOfBandMessage.id
 
     if (!threadId) {
       throw new AriesFrameworkError(`Connection record ${connectionRecord.id} does not have 'threadId' attribute.`)

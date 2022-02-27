@@ -81,9 +81,13 @@ describe('out of band with mediation', () => {
     const { outOfBandMessage: mediatorOutOfBandMessage } = mediationOutOfBandRecord
     const mediatorUrlMessage = mediatorOutOfBandMessage.toUrl({ domain: 'http://example.com' })
 
-    let aliceMediatorConnection = await aliceAgent.oob.receiveInvitationFromUrl(mediatorUrlMessage, {
-      autoAcceptConnection: true,
-    })
+    let { connectionRecord: aliceMediatorConnection } = await aliceAgent.oob.receiveInvitationFromUrl(
+      mediatorUrlMessage,
+      {
+        autoAcceptMessage: true,
+        autoAcceptConnection: true,
+      }
+    )
 
     aliceMediatorConnection = await aliceAgent.connections.returnWhenIsConnected(aliceMediatorConnection?.id || '')
     expect(aliceMediatorConnection.state).toBe(DidExchangeState.Completed)
@@ -106,7 +110,8 @@ describe('out of band with mediation', () => {
     const { outOfBandMessage } = outOfBandRecord
     const urlMessage = outOfBandMessage.toUrl({ domain: 'http://example.com' })
 
-    let aliceFaberConnection = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, {
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, {
+      autoAcceptMessage: true,
       autoAcceptConnection: true,
     })
 
