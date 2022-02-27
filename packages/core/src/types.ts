@@ -8,7 +8,7 @@ import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
 
 export const enum KeyDerivationMethod {
-  /** default */
+  /** default value in indy-sdk. Will be used when no value is provided */
   Argon2IMod = 'ARGON2I_MOD',
   /** less secure, but faster */
   Argon2IInt = 'ARGON2I_INT',
