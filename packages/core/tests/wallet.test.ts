@@ -1,41 +1,42 @@
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
+import { tmpdir } from 'os'
+import path from 'path'
 
-import { Subject } from 'rxjs'
-
-import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
+import { uuid } from '../src/utils/uuid'
 
 import { getBaseConfig } from './helpers'
 
-import { WalletDuplicateError, WalletInvalidKeyError, WalletNotFoundError } from '@aries-framework/core'
+import {
+  BasicMessageRecord,
+  BasicMessageRepository,
+  BasicMessageRole,
+  WalletDuplicateError,
+  WalletInvalidKeyError,
+  WalletNotFoundError,
+} from '@aries-framework/core'
 
-const aliceConfig = getBaseConfig('wallet-tests-Alice', {
-  endpoints: ['rxjs:alice'],
-})
+const aliceConfig = getBaseConfig('wallet-tests-Alice')
+const bobConfig = getBaseConfig('wallet-tests-Bob')
 
 describe('=== wallet', () => {
   let aliceAgent: Agent
+  let bobAgent: Agent
 
   beforeEach(async () => {
-    const aliceMessages = new Subject<SubjectMessage>()
-    const bobMessages = new Subject<SubjectMessage>()
-
-    const subjectMap = {
-      'rxjs:alice': aliceMessages,
-      'rxjs:bob': bobMessages,
-    }
-
     aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
-    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
-    return aliceAgent
+    bobAgent = new Agent(bobConfig.config, bobConfig.agentDependencies)
   })
 
   afterEach(async () => {
     await aliceAgent.shutdown()
+    await bobAgent.shutdown()
+
     if (aliceAgent.wallet.isProvisioned) {
       await aliceAgent.wallet.delete()
+    }
+
+    if (bobAgent.wallet.isProvisioned) {
+      await bobAgent.wallet.delete()
     }
   })
 
@@ -100,5 +101,42 @@ describe('=== wallet', () => {
     await aliceAgent.shutdown()
 
     await expect(aliceAgent.wallet.open(walletConfig)).resolves.toBeUndefined()
+  })
+
+  test('when exporting and importing a wallet, content is copied', async () => {
+    await bobAgent.initialize()
+    const bobBasicMessageRepository = bobAgent.injectionContainer.resolve(BasicMessageRepository)
+
+    const basicMessageRecord = new BasicMessageRecord({
+      id: 'some-id',
+      connectionId: 'connId',
+      content: 'hello',
+      role: BasicMessageRole.Receiver,
+      sentTime: 'sentIt',
+    })
+
+    // Save in wallet
+    await bobBasicMessageRepository.save(basicMessageRecord)
+
+    if (!bobAgent.config.walletConfig) {
+      throw new Error('No wallet config on bobAgent')
+    }
+
+    const backupKey = 'someBackupKey'
+    const backupWalletName = `backup-${uuid()}`
+    const backupPath = path.join(tmpdir(), backupWalletName)
+
+    // Create backup and delete wallet
+    await bobAgent.wallet.export({ path: backupPath, key: backupKey })
+    await bobAgent.wallet.delete()
+
+    // Import backup with different wallet id and initialize
+    await bobAgent.wallet.import({ id: backupWalletName, key: backupWalletName }, { path: backupPath, key: backupKey })
+    await bobAgent.wallet.initialize({ id: backupWalletName, key: backupWalletName })
+
+    // Expect same basic message record to exist in new wallet
+    expect(await bobBasicMessageRepository.getById(basicMessageRecord.id)).toMatchObject(basicMessageRecord)
+
+    // TODO: remove the created backup file afterwards? Not sure how tmpdir works in Node.JS
   })
 })

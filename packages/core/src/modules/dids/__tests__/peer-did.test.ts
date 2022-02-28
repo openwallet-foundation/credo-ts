@@ -26,7 +26,7 @@ describe('peer dids', () => {
   beforeEach(async () => {
     wallet = new IndyWallet(config)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.initialize(config.walletConfig!)
+    await wallet.create({ ...config.walletConfig!, keepOpenAfterCreate: true })
 
     const storageService = new IndyStorageService<DidRecord>(wallet, config)
     didRepository = new DidRepository(storageService)

@@ -1,16 +1,21 @@
-import type { EncryptedMessage, DecryptedMessageContext, WalletConfig } from '../types'
+import type { EncryptedMessage, DecryptedMessageContext, WalletConfig, WalletExportImportConfig } from '../types'
 import type { Buffer } from '../utils/buffer'
+
+export interface WalletCreateConfig extends WalletConfig {
+  keepOpenAfterCreate?: boolean
+}
 
 export interface Wallet {
   publicDid: DidInfo | undefined
   isInitialized: boolean
   isProvisioned: boolean
 
-  initialize(walletConfig: WalletConfig): Promise<void>
-  create(walletConfig: WalletConfig): Promise<void>
+  create(walletConfig: WalletCreateConfig): Promise<void>
   open(walletConfig: WalletConfig): Promise<void>
   close(): Promise<void>
   delete(): Promise<void>
+  export(exportConfig: WalletExportImportConfig): Promise<void>
+  import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig): Promise<void>
 
   initPublicDid(didConfig: DidConfig): Promise<void>
   createDid(didConfig?: DidConfig): Promise<DidInfo>
