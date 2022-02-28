@@ -1229,6 +1229,7 @@ describe('CredentialService', () => {
         `No record found for given query '${JSON.stringify({ revocationRegistryId, credentialRevocationId })}'`,
         {
           recordType: CredentialRecord.type,
+          cause: undefined,
         }
       )
 
@@ -1270,6 +1271,48 @@ describe('CredentialService', () => {
       })
     })
 
+    test('Test revocation notification event being emitted for V2', async () => {
+      const eventListenerMock = jest.fn()
+      eventEmitter.on<RevocationNotificationReceivedEvent>(
+        CredentialEventTypes.RevocationNotificationReceived,
+        eventListenerMock
+      )
+      const date = new Date(2022)
+
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValueOnce(Promise.resolve(credential))
+
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      const spy = jest.spyOn(global, 'Date').mockImplementation(() => date)
+
+      const { revocationRegistryId, credentialRevocationId } = credential
+      const revocationNotificationCredentialId = `${revocationRegistryId}::${credentialRevocationId}`
+
+      const revocationNotificationMessage = new RevocationNotificationMessageV2({
+        credentialId: revocationNotificationCredentialId,
+        revocationFormat: 'indy',
+        comment: 'Credential has been revoked',
+      })
+      const messageContext = new InboundMessageContext(revocationNotificationMessage)
+
+      await revocationService.processRevocationNotificationV2(messageContext)
+
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: 'RevocationNotificationReceived',
+        payload: {
+          credentialRecord: {
+            ...credential,
+            revocationNotification: {
+              revocationDate: date,
+              comment: 'Credential has been revoked',
+            },
+          },
+        },
+      })
+
+      spy.mockRestore()
+    })
+
     test('Error is logged when no matching credential found for revocation notification V2', async () => {
       const loggerSpy = jest.spyOn(logger, 'warn')
 
@@ -1307,7 +1350,7 @@ describe('CredentialService', () => {
 
       const invalidCredentialId = 'notIndy::invalidRevRegId::invalidCredRevId'
       const invalidFormatError = new AriesFrameworkError(
-        `Incorrect revocation notification credentialId format: \n${invalidCredentialId}\ndoes not match\n"indy::<revocation_registry_id>::<credential_revocation_id>"`
+        `Incorrect revocation notification credentialId format: \n${invalidCredentialId}\ndoes not match\n"<revocation_registry_id>::<credential_revocation_id>"`
       )
 
       const revocationNotificationMessage = new RevocationNotificationMessageV2({

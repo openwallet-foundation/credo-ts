@@ -63,7 +63,7 @@ export class RevocationService {
       if (threadIdGroups) {
         const [, , revocationRegistryId, credentialRevocationId] = threadIdGroups
         const comment = messageContext.message.comment
-        this.processRevocationNotification(revocationRegistryId, credentialRevocationId, comment)
+        await this.processRevocationNotification(revocationRegistryId, credentialRevocationId, comment)
       } else {
         throw new AriesFrameworkError(
           `Incorrect revocation notification threadId format: \n${threadId}\ndoes not match\n"indy::<revocation_registry_id>::<credential_revocation_id>"`
@@ -92,7 +92,7 @@ export class RevocationService {
       if (credentialIdGroups) {
         const [, revocationRegistryId, credentialRevocationId] = credentialIdGroups
         const comment = messageContext.message.comment
-        this.processRevocationNotification(revocationRegistryId, credentialRevocationId, comment)
+        await this.processRevocationNotification(revocationRegistryId, credentialRevocationId, comment)
       } else {
         throw new AriesFrameworkError(
           `Incorrect revocation notification credentialId format: \n${credentialId}\ndoes not match\n"<revocation_registry_id>::<credential_revocation_id>"`
