@@ -177,6 +177,8 @@ export class V2ProofService extends ProofService {
         previousReceivedMessage: proposalMessage,
         previousSentMessage: requestMessage ?? undefined,
       })
+
+      await this.updateState(proofRecord, ProofState.ProposalReceived)
     } catch {
       // No proof record exists with thread id
       proofRecord = new ProofRecord({
@@ -199,6 +201,13 @@ export class V2ProofService extends ProofService {
         },
       })
     }
+
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      agentMessage: proposalMessage,
+      associatedRecordId: proofRecord.id,
+      role: DidCommMessageRole.Receiver,
+    })
+
     return proofRecord
   }
   public async createRequest(
@@ -285,6 +294,7 @@ export class V2ProofService extends ProofService {
       willConfirm: options.willConfirm,
       goalCode: options.goalCode,
     })
+    requestMessage.setThread({ threadId: options.proofRecord.threadId })
 
     await this.didCommMessageRepository.saveOrUpdateAgentMessage({
       agentMessage: requestMessage,
@@ -309,11 +319,11 @@ export class V2ProofService extends ProofService {
       )
     }
 
-    // K-TODO remove this
-    proofRequestMessage.getAttachmentFormats().forEach(async (x) => {
-      await validateOrReject(x.format)
-      await validateOrReject(x.attachment)
-    })
+    // // K-TODO remove this
+    // proofRequestMessage.getAttachmentFormats().forEach(async (x) => {
+    //   await validateOrReject(x.format)
+    //   await validateOrReject(x.attachment)
+    // })
 
     this.logger.debug(`Received proof request`, proofRequestMessage)
 
@@ -642,7 +652,7 @@ export class V2ProofService extends ProofService {
   public async createProofRequestFromProposal(options: {
     formats: {
       indy?: {
-        presentationProposal: Attachment
+        proofRecord: ProofRecord
       }
       jsonLd?: never
     }

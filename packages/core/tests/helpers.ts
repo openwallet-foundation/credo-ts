@@ -8,10 +8,10 @@ import type {
   CredentialOfferTemplate,
   CredentialStateChangedEvent,
   InitConfig,
-  ProofAttributeInfo,
-  ProofPredicateInfo,
   ProofStateChangedEvent,
   SchemaTemplate,
+  ProofPredicateInfo,
+  ProofAttributeInfo,
 } from '../src'
 import type { AcceptPresentationOptions, RequestProofsOptions } from '../src/modules/proofs/models/ModuleOptions'
 import type { Schema, CredDef } from 'indy-sdk'

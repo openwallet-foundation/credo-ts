@@ -32,6 +32,7 @@ import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMes
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { uuid } from '../../../../utils/uuid'
 import { Wallet } from '../../../../wallet'
+import { AckStatus } from '../../../common/messages/AckMessage'
 import { ConnectionService } from '../../../connections'
 import { Credential, CredentialRepository } from '../../../credentials'
 import { IndyHolderService } from '../../../indy'
@@ -43,7 +44,6 @@ import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
 import { ProofState } from '../../models/ProofState'
 import { ProofRecord } from '../../repository/ProofRecord'
 import { ProofRepository } from '../../repository/ProofRepository'
-import { V2RequestPresentationMessage } from '../v2/messages'
 
 import { V1PresentationProblemReportError, V1PresentationProblemReportReason } from './errors'
 import {
@@ -56,20 +56,13 @@ import {
 import {
   INDY_PROOF_ATTACHMENT_ID,
   INDY_PROOF_REQUEST_ATTACHMENT_ID,
+  V1PresentationAckMessage,
   V1PresentationMessage,
   V1PresentationProblemReportMessage,
   V1ProposePresentationMessage,
   V1RequestPresentationMessage,
 } from './messages'
-import {
-  AttributeFilter,
-  ProofPredicateInfo,
-  ProofRequest,
-  RequestedAttribute,
-  RequestedCredentials,
-  RequestedPredicate,
-  ProofAttributeInfo,
-} from './models'
+import { AttributeFilter, ProofPredicateInfo, ProofRequest, RequestedCredentials, ProofAttributeInfo } from './models'
 import { PresentationPreview } from './models/PresentationPreview'
 
 // const logger = new ConsoleLogger(LogLevel.debug)
@@ -246,6 +239,12 @@ export class V1ProofService extends ProofService {
       this.connectionService.assertConnectionOrServiceDecorator(messageContext)
 
       // Save record
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+        agentMessage: proposalMessage,
+        associatedRecordId: proofRecord.id,
+        role: DidCommMessageRole.Sender,
+      })
+
       await this.proofRepository.save(proofRecord)
       this.eventEmitter.emit<ProofStateChangedEvent>({
         type: ProofEventTypes.ProofStateChanged,
@@ -612,7 +611,7 @@ export class V1ProofService extends ProofService {
   public async createProofRequestFromProposal(options: {
     formats: {
       indy?: {
-        presentationProposal: PresentationPreview
+        proofRecord: ProofRecord
       }
       jsonLd?: never
     }
@@ -630,6 +629,16 @@ export class V1ProofService extends ProofService {
 
     if (!indyConfig) {
       throw new AriesFrameworkError('Indy config must be provided')
+    }
+
+    const proofRecordId = indyFormat?.proofRecord.id
+    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: proofRecordId,
+      messageClass: V1ProposePresentationMessage,
+    })
+
+    if (!proposalMessage) {
+      throw new AriesFrameworkError(`Proof record with id ${proofRecordId} is missing required presentation proposal`)
     }
 
     const nonce = indyConfig.nonce ?? (await this.generateProofRequestNonce())
@@ -651,7 +660,7 @@ export class V1ProofService extends ProofService {
      * }
      */
     const attributesByReferent: Record<string, PresentationPreviewAttribute[]> = {}
-    for (const proposedAttributes of indyFormat.presentationProposal.attributes) {
+    for (const proposedAttributes of proposalMessage.presentationProposal.attributes) {
       if (!proposedAttributes.referent) proposedAttributes.referent = uuid()
 
       const referentAttributes = attributesByReferent[proposedAttributes.referent]
@@ -687,7 +696,7 @@ export class V1ProofService extends ProofService {
 
     // this.logger.debug('proposal predicates', indyFormat.presentationProposal.predicates)
     // Transform proposed predicates to requested predicates
-    for (const proposedPredicate of indyFormat.presentationProposal.predicates) {
+    for (const proposedPredicate of proposalMessage.presentationProposal.predicates) {
       const requestedPredicate = new ProofPredicateInfo({
         name: proposedPredicate.name,
         predicateType: proposedPredicate.predicate,
@@ -843,8 +852,25 @@ export class V1ProofService extends ProofService {
       jsonLd?: never
     }
   }): Promise<{ indy?: RetrievedCredentials | undefined; w3c?: undefined }> {
+    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: options.proofRecord.id,
+      messageClass: V1RequestPresentationMessage,
+    })
+
+    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: options.proofRecord.id,
+      messageClass: V1ProposePresentationMessage,
+    })
+
+    const indyProofRequest = requestMessage?.indyProofRequest
+
+    if (!indyProofRequest) {
+      throw new AriesFrameworkError('Could not find proof request')
+    }
+
     return await this.indyProofFormatService.getRequestedCredentialsForProofRequest({
-      proofRecord: options.proofRecord,
+      proofRequest: indyProofRequest,
+      presentationProposal: proposalMessage?.presentationProposal,
       config: options.config,
     })
   }
@@ -962,8 +988,23 @@ export class V1ProofService extends ProofService {
     return this.proofRepository.update(proofRecord)
   }
 
-  public createAck(options: CreateAckOptions): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
-    throw new Error('Method not implemented.')
+  public async createAck(options: CreateAckOptions): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+    const { proofRecord } = options
+    this.logger.debug(`Creating presentation ack for proof record with id ${proofRecord.id}`)
+
+    // Assert
+    proofRecord.assertState(ProofState.PresentationReceived)
+
+    // Create message
+    const ackMessage = new V1PresentationAckMessage({
+      status: AckStatus.OK,
+      threadId: proofRecord.threadId,
+    })
+
+    // Update record
+    await this.updateState(proofRecord, ProofState.Done)
+
+    return { message: ackMessage, proofRecord }
   }
 
   private async getCredentialsForProofRequest(

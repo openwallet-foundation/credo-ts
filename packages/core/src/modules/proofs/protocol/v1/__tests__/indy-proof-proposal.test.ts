@@ -14,8 +14,8 @@ describe('Present Proof', () => {
   let aliceAgent: Agent
   let aliceConnection: ConnectionRecord
   let presentationPreview: PresentationPreview
-  let faberPresentationRecord: ProofRecord
-  let alicePresentationRecord: ProofRecord
+  let faberProofRecord: ProofRecord
+  let aliceProofRecord: ProofRecord
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
@@ -50,17 +50,17 @@ describe('Present Proof', () => {
       comment: 'V1 propose proof test',
     }
 
-    alicePresentationRecord = await aliceAgent.proofs.proposeProof(proposeOptions)
+    aliceProofRecord = await aliceAgent.proofs.proposeProof(proposeOptions)
 
     testLogger.test('Faber waits for presentation from Alice')
-    faberPresentationRecord = await waitForProofRecord(faberAgent, {
-      threadId: alicePresentationRecord.threadId,
+    faberProofRecord = await waitForProofRecord(faberAgent, {
+      threadId: aliceProofRecord.threadId,
       state: ProofState.ProposalReceived,
     })
 
-    expect(faberPresentationRecord.id).not.toBeNull()
-    expect(faberPresentationRecord).toMatchObject({
-      threadId: faberPresentationRecord.threadId,
+    expect(faberProofRecord.id).not.toBeNull()
+    expect(faberProofRecord).toMatchObject({
+      threadId: faberProofRecord.threadId,
       state: ProofState.ProposalReceived,
       protocolVersion: ProofProtocolVersion.V1_0,
     })

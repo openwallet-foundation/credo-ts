@@ -2,7 +2,7 @@ import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
 import type { AcceptProposalOptions, ProposeProofOptions } from '../../../models/ModuleOptions'
 import type { ProofRecord } from '../../../repository/ProofRecord'
-import type { PresentationPreview } from '../models/PresentationPreview'
+import type { PresentationPreview } from '../../v1/models/PresentationPreview'
 
 import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
@@ -34,11 +34,11 @@ describe('Present Proof', () => {
   })
 
   test(`Alice Creates and sends Proof Proposal to Faber`, async () => {
-    testLogger.test('Alice sends (v1) proof proposal to Faber')
+    testLogger.test('Alice sends (v2) proof proposal to Faber')
 
     const proposeOptions: ProposeProofOptions = {
       connectionId: aliceConnection.id,
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V2_0,
       proofFormats: {
         indy: {
           name: 'ProofRequest',
@@ -47,7 +47,7 @@ describe('Present Proof', () => {
           proofPreview: presentationPreview,
         },
       },
-      comment: 'V1 propose proof test',
+      comment: 'V2 propose proof test',
     }
 
     aliceProofRecord = await aliceAgent.proofs.proposeProof(proposeOptions)
@@ -62,7 +62,7 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.ProposalReceived,
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V2_0,
     })
   })
 
@@ -79,7 +79,7 @@ describe('Present Proof', () => {
         },
       },
       proofRecordId: faberProofRecord.id,
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V2_0,
     }
 
     testLogger.test('Faber accepts presentation proposal from Alice')
@@ -95,7 +95,7 @@ describe('Present Proof', () => {
     expect(aliceProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.RequestReceived,
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V2_0,
     })
   })
 })

@@ -1,7 +1,5 @@
-import type { GetRequestedCredentialsConfig } from '../../ProofsModule'
-import type { RequestedCredentialForProofRequestOptions } from '../../models/ProofServiceOptions'
-import type { PresentationPreview, PresentationPreviewAttribute } from '../../protocol/v1/models/PresentationPreview'
-import type { ProofRecord } from '../../repository'
+import type { GetRequestedCredentialsConfig } from '../../models/GetRequestedCredentialsConfig'
+import type { PresentationPreview } from '../../protocol/v1/models/PresentationPreview'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
   CreatePresentationOptions,
@@ -22,14 +20,9 @@ import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
 import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
-import { uuid } from '../../../../utils/uuid'
-import { Credential, CredentialRepository, CredentialUtils } from '../../../credentials'
+import { Credential, CredentialUtils } from '../../../credentials'
 import { IndyHolderService, IndyVerifierService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
-import { V1PresentationProblemReportError } from '../../protocol/v1/errors/V1PresentationProblemReportError'
-import { V1PresentationProblemReportReason } from '../../protocol/v1/errors/V1PresentationProblemReportReason'
-import { V1ProposePresentationMessage } from '../../protocol/v1/messages/V1ProposePresentationMessage'
-import { V1RequestPresentationMessage } from '../../protocol/v1/messages/V1RequestPresentationMessage'
 import {
   RetrievedCredentials,
   PartialProof,
@@ -37,9 +30,6 @@ import {
   RequestedCredentials,
   RequestedPredicate,
   RequestedAttribute,
-  AttributeFilter,
-  ProofPredicateInfo,
-  ProofAttributeInfo,
 } from '../../protocol/v1/models'
 import { ProofFormatService } from '../ProofFormatService'
 import { InvalidEncodedValueError } from '../errors/InvalidEncodedValueError'
@@ -148,9 +138,11 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async processPresentation(options: ProcessPresentationOptions): Promise<boolean> {
-    const requestFormat = options.presentation.request.find((x) => x.format.attachmentId === 'hlindy/proof-req@v2.0')
+    // const requestFormat = options.presentation.request.find((x) => x.format.attachmentId === 'hlindy/proof-req@v2.0')
+    const requestFormat = options.presentation.request.find((x) => x.format.format === 'hlindy/proof-req@v2.0')
 
-    const proofFormat = options.presentation.proof.find((x) => x.format.attachmentId === 'hlindy/proof@v2.0')
+    const proofFormat = options.presentation.proof.find((x) => x.format.format === 'hlindy/proof@v2.0')
+    // const proofFormat = options.presentation.proof.find((x) => x.format.attachmentId === 'hlindy/proof@v2.0')
 
     if (!proofFormat) {
       throw new MissingIndyProofMessageError(
@@ -182,8 +174,8 @@ export class IndyProofFormatService extends ProofFormatService {
       if (!CredentialUtils.checkValidEncoding(attribute.raw, attribute.encoded)) {
         throw new InvalidEncodedValueError(
           `The encoded value for '${referent}' is invalid. ` +
-            `Expected '${CredentialUtils.encode(attribute.raw)}'. ` +
-            `Actual '${attribute.encoded}'`
+          `Expected '${CredentialUtils.encode(attribute.raw)}'. ` +
+          `Actual '${attribute.encoded}'`
         )
       }
     }
@@ -260,46 +252,48 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async getRequestedCredentialsForProofRequest(options: {
-    proofRecord: ProofRecord
+    proofRequest: ProofRequest
+    presentationProposal?: PresentationPreview
     config: { indy?: GetRequestedCredentialsConfig | undefined; jsonLd?: undefined }
   }): Promise<{ indy?: RetrievedCredentials | undefined; jsonLd?: undefined }> {
-    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: options.proofRecord.id,
-      messageClass: V1RequestPresentationMessage,
-    })
+    // const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+    //   associatedRecordId: options.proofRecord.id,
+    //   messageClass: V1RequestPresentationMessage,`
+    // })
 
-    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: options.proofRecord.id,
-      messageClass: V1ProposePresentationMessage,
-    })
+    // const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+    //   associatedRecordId: options.proofRecord.id,
+    //   messageClass: V1ProposePresentationMessage,
+    // })
 
-    const indyProofRequest = requestMessage?.indyProofRequest
-    const presentationPreview = options.config.indy?.filterByPresentationPreview
-      ? proposalMessage?.presentationProposal
-      : undefined
+    // const indyProofRequest = requestMessage?.indyProofRequest
+    // const presentationPreview = options.config.indy?.filterByPresentationPreview
+    //   ? proposalMessage?.presentationProposal
+    //   : undefined
 
-    if (!indyProofRequest) {
-      throw new AriesFrameworkError(
-        'Unable to get requested credentials for proof request. No proof request message was found or the proof request message does not contain an indy proof request.'
-      )
-    }
+    // if (!indyProofRequest) {
+    //   throw new AriesFrameworkError(
+    //     'Unable to get requested credentials for proof request. No proof request message was found or the proof request message does not contain an indy proof request.'
+    //   )
+    // }
 
     const retrievedCredentials = new RetrievedCredentials({})
-    // const { proofRequest, presentationProposal } = options
+    const { proofRequest, presentationProposal } = options
 
-    const proofRequest = requestMessage.getAttachmentById('hlindy/proof-req@2.0')?.getDataAsJson<ProofRequest>() ?? null
+    // const proofRequest = requestMessage.getAttachmentById('hlindy/proof-req@2.0')?.getDataAsJson<ProofRequest>() ?? null
 
-    if (!proofRequest) {
-      throw new AriesFrameworkError('Could not find proof request')
-    }
+    // console.log('indyProofFormatService - getRequestedCredentialsForProofRequest - proofRequest', proofRequest)
 
+    // if (!proofRequest) {
+    //   throw new AriesFrameworkError('Could not find proof request')
+    // }
     for (const [referent, requestedAttribute] of proofRequest.requestedAttributes.entries()) {
       let credentialMatch: Credential[] = []
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
       // If we have exactly one credential, or no proposal to pick preferences
       // on the credentials to use, we will use the first one
-      if (credentials.length === 1 || !proposalMessage?.presentationProposal) {
+      if (credentials.length === 1 || !presentationProposal) {
         credentialMatch = credentials
       }
       // If we have a proposal we will use that to determine the credentials to use
@@ -312,7 +306,7 @@ export class IndyProofFormatService extends ProofFormatService {
 
           // Check if credentials matches all parameters from proposal
           return names.every((name) =>
-            proposalMessage?.presentationProposal.attributes.find(
+            presentationProposal.attributes.find(
               (a) =>
                 a.name === name &&
                 a.credentialDefinitionId === credentialDefinitionId &&

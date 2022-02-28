@@ -27,7 +27,7 @@ export interface NegotiateRequestOptions {
 export interface AcceptProposalOptions {
   protocolVersion: ProofProtocolVersion
   proofRecordId: string
-  proofFormats: ProposeProofFormats | AcceptProposalFormats
+  proofFormats: ProposeProofFormats
   goalCode?: string
   willConfirm?: boolean
   comment?: string

@@ -59,7 +59,8 @@ export abstract class ProofFormatService {
   // }>
 
   public abstract getRequestedCredentialsForProofRequest(options: {
-    proofRecord: ProofRecord
+    proofRequest: ProofRequest
+    presentationProposal?: PresentationPreview
     config: {
       indy?: GetRequestedCredentialsConfig
       jsonLd?: never

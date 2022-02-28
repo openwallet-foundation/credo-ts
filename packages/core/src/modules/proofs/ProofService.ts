@@ -1,4 +1,4 @@
-import type { ProofState, ProofStateChangedEvent, RequestedCredentials, RetrievedCredentials } from '.'
+import type { ProofRequest, ProofState, ProofStateChangedEvent, RequestedCredentials, RetrievedCredentials } from '.'
 import type { AgentConfig } from '../../agent/AgentConfig'
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Dispatcher } from '../../agent/Dispatcher'
@@ -210,18 +210,18 @@ export abstract class ProofService {
     jsonLd?: never
   }>
 
-  // public abstract createProofRequestFromProposal(options: {
-  //   formats: {
-  //     indy?: {
-  //       presentationProposal: PresentationPreview
-  //     }
-  //     jsonLd?: never
-  //   }
-  //   config?: { indy?: { name: string; version: string; nonce?: string }; jsonLd?: never }
-  // }): Promise<{
-  //   indy?: ProofRequest
-  //   jsonLd?: never
-  // }>
+  public abstract createProofRequestFromProposal(options: {
+    formats: {
+      indy?: {
+        proofRecord: ProofRecord
+      }
+      jsonLd?: never
+    }
+    config?: { indy?: { name: string; version: string; nonce?: string }; jsonLd?: never }
+  }): Promise<{
+    indy?: ProofRequest
+    jsonLd?: never
+  }>
 
   /**
    * Retrieve all proof records

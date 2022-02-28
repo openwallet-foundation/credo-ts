@@ -117,7 +117,7 @@ export class ProofsModule {
     const version: ProofProtocolVersion = options.protocolVersion
 
     const service = this.getService(version)
-    const { proofRecordId, proofFormats } = options
+    const { proofRecordId } = options
     const proofRecord = await service.getById(proofRecordId)
 
     if (!proofRecord.connectionId) {
@@ -127,11 +127,37 @@ export class ProofsModule {
     }
 
     const connection = await this.connectionService.getById(proofRecord.connectionId)
+    // console.log('indy:', options.proofFormats.indy)
+    // console.log('preview:', options.proofFormats.indy?.proofPreview)
+
+    // // const presentationProposal = proofRecord.proposalMessage?.presentationProposal
+    // const presentationProposal = options.proofFormats.indy?.proofPreview
+
+    // console.log('presentationProposal:', presentationProposal)
+
+    // if (!presentationProposal) {
+    //   throw new AriesFrameworkError(`Proof record with id ${proofRecordId} is missing required presentation proposal`)
+    // }
+
+    const proofRequest = await service.createProofRequestFromProposal({
+      formats: {
+        indy: {
+          proofRecord,
+        },
+      },
+      config: {
+        indy: {
+          name: 'proof request',
+          version: '1.0',
+          nonce: '1298236324864',
+        },
+      },
+    })
 
     const { message } = await service.createRequestAsResponse({
       proofRecord: proofRecord,
       protocolVersion: version,
-      proofFormats: options.proofFormats,
+      proofFormats: proofRequest,
       autoAcceptProof: options.autoAcceptProof,
       goalCode: options.goalCode,
       willConfirm: options.willConfirm,
