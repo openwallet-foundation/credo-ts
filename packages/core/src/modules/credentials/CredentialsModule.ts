@@ -23,7 +23,8 @@ import {
   OfferCredentialHandler,
   ProposeCredentialHandler,
   RequestCredentialHandler,
-  RevocationNotificationHandler,
+  RevocationNotificationV1Handler,
+  RevocationNotificationV2Handler,
   CredentialProblemReportHandler,
 } from './handlers'
 import { CredentialProblemReportMessage } from './messages'
@@ -534,7 +535,8 @@ export class CredentialsModule {
       new IssueCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
     )
     dispatcher.registerHandler(new CredentialAckHandler(this.credentialService))
-    dispatcher.registerHandler(new RevocationNotificationHandler(this.revocationService))
+    dispatcher.registerHandler(new RevocationNotificationV1Handler(this.revocationService))
+    dispatcher.registerHandler(new RevocationNotificationV2Handler(this.revocationService))
     dispatcher.registerHandler(new CredentialProblemReportHandler(this.credentialService))
   }
 }
