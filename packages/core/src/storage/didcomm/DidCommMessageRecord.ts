@@ -16,8 +16,6 @@ export type DefaultDidCommMessageTags = {
   // Computed
   protocolName: string
   messageName: string
-  versionMajor: string
-  versionMinor: string
   messageType: string
   messageId: string
   threadId: string
@@ -61,8 +59,7 @@ export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> 
   public getTags() {
     const messageId = this.message['@id'] as string
     const messageType = this.message['@type'] as string
-    const [, protocolName, protocolVersion, messageName] = rightSplit(messageType, '/', 3)
-    const [versionMajor, versionMinor] = protocolVersion.split('.')
+    const [, /* baseUri, */ protocolName /* , protocolVersion, */, , messageName] = rightSplit(messageType, '/', 3)
 
     const thread = this.message['~thread']
     let threadId = messageId
@@ -80,8 +77,6 @@ export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> 
       threadId,
       protocolName,
       messageName,
-      versionMajor,
-      versionMinor,
       messageType,
       messageId,
     }

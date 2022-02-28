@@ -23,6 +23,7 @@ import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
+import { StorageUpgradeService } from '../storage'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
 import { IndyWallet } from '../wallet/IndyWallet'
@@ -159,6 +160,22 @@ export class Agent {
         'Wallet config has not been set on the agent config. ' +
           'Make sure to initialize the wallet yourself before initializing the agent, ' +
           'or provide the required wallet configuration in the agent constructor'
+      )
+    }
+
+    // Make sure the storage is up to date
+    const storageUpgradeService = this.container.resolve(StorageUpgradeService)
+    const isStorageUpToDate = await storageUpgradeService.isUpToDate()
+    this.logger.info(`Agent storage is ${isStorageUpToDate ? '' : 'not '}up to date.`)
+
+    if (!isStorageUpToDate) {
+      const currentVersion = await storageUpgradeService.getCurrentStorageVersion()
+      throw new AriesFrameworkError(
+        // TODO: add link to where documentation on how to upgrade can be found.
+        `Current agent storage is not up to date. ` +
+          `To prevent the framework state from getting corrupted the agent initialization is aborted. ` +
+          `Make sure to update the agent storage (currently at ${currentVersion}) to the latest version (${storageUpgradeService.frameworkStorageVersion}). ` +
+          `You can also downgrade your version of Aries Framework JavaScript.`
       )
     }
 
