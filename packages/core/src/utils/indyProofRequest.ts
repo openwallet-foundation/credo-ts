@@ -18,7 +18,5 @@ export function predicatesToArray(proofRequest: ProofRequest) {
 export function checkProofRequestForDuplicates(proofRequest: ProofRequest) {
   const attributes = attributesToArray(proofRequest)
   const predicates = predicatesToArray(proofRequest)
-  assertNoDuplicatesInArray(attributes)
-  assertNoDuplicatesInArray(predicates)
   assertNoDuplicatesInArray(attributes.concat(predicates))
 }
