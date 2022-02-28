@@ -54,11 +54,11 @@ export class RevocationService {
   public async processRevocationNotificationV1(
     messageContext: InboundMessageContext<RevocationNotificationMessageV1>
   ): Promise<void> {
+    this.logger.info('Processing revocation notification v1', { message: messageContext.message })
+    // ThreadID = indy::<revocation_registry_id>::<credential_revocation_id>
+    const threadRegex = /(indy)::(.+)::(\d+)$/
+    const threadId = messageContext.message.issueThread
     try {
-      this.logger.info('Processing revocation notification v1', { message: messageContext.message })
-      // ThreadID = indy::<revocation_registry_id>::<credential_revocation_id>
-      const threadRegex = /(indy)::(.+)::(\d+)$/
-      const threadId = messageContext.message.issueThread
       const threadIdGroups = threadId.match(threadRegex)
       if (threadIdGroups) {
         const [, , revocationRegistryId, credentialRevocationId] = threadIdGroups
@@ -83,11 +83,11 @@ export class RevocationService {
   public async processRevocationNotificationV2(
     messageContext: InboundMessageContext<RevocationNotificationMessageV2>
   ): Promise<void> {
+    this.logger.info('Processing revocation notification v2', { message: messageContext.message })
+    // CredentialId = <revocation_registry_id>::<credential_revocation_id>
+    const credentialIdRegex = /(.*)::(\d+)$/
+    const credentialId = messageContext.message.credentialId
     try {
-      this.logger.info('Processing revocation notification v2', { message: messageContext.message })
-      // CredentialId = <revocation_registry_id>::<credential_revocation_id>
-      const credentialIdRegex = /(.*)::(\d+)$/
-      const credentialId = messageContext.message.credentialId
       const credentialIdGroups = credentialId.match(credentialIdRegex)
       if (credentialIdGroups) {
         const [, revocationRegistryId, credentialRevocationId] = credentialIdGroups
