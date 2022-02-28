@@ -12,15 +12,19 @@ import {
   ProofState,
   ProposePresentationMessage,
   RequestPresentationMessage,
+  ProofRequest,
+  AriesFrameworkError,
 } from '../src'
+import { checkProofRequestForDuplicates } from '../src/utils'
 
-import { setupProofsTest, waitForProofRecord } from './helpers'
+import { setupProofsTest, setupSecondCredential, waitForProofRecord } from './helpers'
 import testLogger from './logger'
 
 describe('Present Proof', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
   let credDefId: CredDefId
+  let secCredDefId: string
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
   let presentationPreview: PresentationPreview
@@ -29,6 +33,8 @@ describe('Present Proof', () => {
     testLogger.test('Initializing the agents')
     ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
       await setupProofsTest('Faber agent', 'Alice agent'))
+    testLogger.test('Issuing second credential')
+    secCredDefId = await setupSecondCredential(faberAgent, aliceAgent, faberConnection)
   })
 
   afterAll(async () => {
@@ -365,8 +371,162 @@ describe('Present Proof', () => {
         requestedAttributes: attributes,
         requestedPredicates: predicates,
       })
-    ).rejects.toThrowError(
-      `The proof request contains an attribute group name that matches a predicate group name: age`
-    )
+    ).rejects.toThrowError(`The proof request contains duplicate items: age`)
+  })
+
+  test('attribute names match, same cred def filter', async () => {
+    const attributes = {
+      name: new ProofAttributeInfo({
+        name: 'age',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+      age: new ProofAttributeInfo({
+        name: 'age',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    const proofRequestOptions = {
+      name: 'test-proof-request',
+      requestedAttributes: attributes,
+    }
+
+    const nonce = 'testtesttest12345'
+
+    const proofRequest = new ProofRequest({
+      name: 'proof-request',
+      version: '1.0',
+      nonce,
+      requestedAttributes: proofRequestOptions.requestedAttributes,
+    })
+
+    expect(() => checkProofRequestForDuplicates(proofRequest)).toThrowError(AriesFrameworkError)
+  })
+
+  test('attribute names match with predicates name, same cred def filter', async () => {
+    const attributes = {
+      name: new ProofAttributeInfo({
+        name: 'age',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    const predicates = {
+      age: new ProofPredicateInfo({
+        name: 'age',
+        predicateType: PredicateType.GreaterThanOrEqualTo,
+        predicateValue: 50,
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    const nonce = 'testtesttest12345'
+
+    const proofRequest = new ProofRequest({
+      name: 'proof-request',
+      version: '1.0',
+      nonce,
+      requestedAttributes: attributes,
+      requestedPredicates: predicates,
+    })
+
+    expect(() => checkProofRequestForDuplicates(proofRequest)).toThrowError(AriesFrameworkError)
+  })
+
+  test('attribute names match, different cred def filter', async () => {
+    const attributes = {
+      name: new ProofAttributeInfo({
+        name: 'age',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    const predicates = {
+      age: new ProofPredicateInfo({
+        name: 'age',
+        predicateType: PredicateType.GreaterThanOrEqualTo,
+        predicateValue: 50,
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: secCredDefId,
+          }),
+        ],
+      }),
+    }
+
+    const proofRequestOptions = {
+      name: 'test-proof-request',
+      requestedAttributes: attributes,
+      predicates: predicates,
+    }
+
+    const nonce = 'testtesttest12345'
+
+    const proofRequest = new ProofRequest({
+      name: 'proof-request',
+      version: '1.0',
+      nonce,
+      requestedAttributes: proofRequestOptions.requestedAttributes,
+    })
+
+    expect(() => checkProofRequestForDuplicates(proofRequest)).resolves
+  })
+
+  test('attribute name matches with predicate name, different cred def filter', async () => {
+    const attributes = {
+      name: new ProofAttributeInfo({
+        name: 'age',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    const predicates = {
+      age: new ProofPredicateInfo({
+        name: 'age',
+        predicateType: PredicateType.GreaterThanOrEqualTo,
+        predicateValue: 50,
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: secCredDefId,
+          }),
+        ],
+      }),
+    }
+
+    const nonce = 'testtesttest12345'
+
+    const proofRequest = new ProofRequest({
+      name: 'proof-request',
+      version: '1.0',
+      nonce,
+      requestedAttributes: attributes,
+      requestedPredicates: predicates,
+    })
+
+    expect(() => checkProofRequestForDuplicates(proofRequest)).resolves
   })
 })
