@@ -2,7 +2,7 @@ import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
 import type { Logger } from '../../logger'
 import type { PlaintextMessage } from '../../types'
-import type { ConnectionRecord } from '../connections'
+import type { ConnectionRecord, HandshakeProtocol } from '../connections'
 
 import { parseUrl } from 'query-string'
 import { EmptyError } from 'rxjs'
@@ -15,7 +15,7 @@ import { AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
-import { ConnectionInvitationMessage, ConnectionState, ConnectionsModule, HandshakeProtocol } from '../connections'
+import { ConnectionInvitationMessage, ConnectionState, ConnectionsModule } from '../connections'
 import { DidCommService, DidsModule } from '../dids'
 import { MediationRecipientService } from '../routing'
 
@@ -381,7 +381,7 @@ export class OutOfBandModule {
   ) {
     this.logger.debug('Creating a new connection.', { outOfBandRecord, config })
     const { outOfBandMessage } = outOfBandRecord
-    const { handshakeProtocols, services } = outOfBandMessage
+    const { handshakeProtocols } = outOfBandMessage
     const { label, autoAcceptConnection } = config
 
     if (!handshakeProtocols) {
@@ -389,39 +389,11 @@ export class OutOfBandModule {
     }
 
     const handshakeProtocol = this.getFirstSupportedProtocol(handshakeProtocols)
-
-    let connectionRecord
-    if (handshakeProtocol === HandshakeProtocol.DidExchange) {
-      connectionRecord = await this.connectionsModule.acceptInvitation2(outOfBandRecord, {
-        label,
-        autoAcceptConnection,
-      })
-    } else {
-      if (services.length > 1) {
-        throw new AriesFrameworkError(`Agent currently does not support more than one item in 'service' attribute.`)
-      }
-
-      const [service] = services
-      let options
-      if (typeof service === 'string') {
-        options = {
-          did: service,
-        }
-      } else {
-        options = {
-          recipientKeys: service.recipientKeys,
-          serviceEndpoint: service.serviceEndpoint,
-          routingKeys: service.routingKeys,
-        }
-      }
-
-      const invitation = new ConnectionInvitationMessage({
-        id: outOfBandMessage.id,
-        label: outOfBandMessage.label,
-        ...options,
-      })
-      connectionRecord = await this.connectionsModule.receiveInvitation(invitation, { autoAcceptConnection })
-    }
+    const connectionRecord = await this.connectionsModule.acceptOutOfBandInvitation(outOfBandRecord, {
+      label,
+      autoAcceptConnection,
+      protocol: handshakeProtocol,
+    })
 
     return connectionRecord
   }

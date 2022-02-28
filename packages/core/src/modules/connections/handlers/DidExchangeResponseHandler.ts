@@ -45,6 +45,18 @@ export class DidExchangeResponseHandler implements Handler {
       )
     }
 
+    if (!connectionRecord.outOfBandId) {
+      throw new AriesFrameworkError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
+    }
+
+    const outOfBandRecord = await this.outOfBandRepository.findById(connectionRecord.outOfBandId)
+
+    if (!outOfBandRecord) {
+      throw new AriesFrameworkError(
+        `OutOfBand record for connection ${connectionRecord.id} with outOfBandId ${connectionRecord.outOfBandId} not found!`
+      )
+    }
+
     // TODO
     //
     // A connection request message is the only case when I can use the connection record found
@@ -54,19 +66,7 @@ export class DidExchangeResponseHandler implements Handler {
     // responsibility of all handlers aligned.
     //
     messageContext.connection = connectionRecord
-    const connection = await this.didExchangeProtocol.processResponse(messageContext)
-
-    if (!connection.outOfBandId) {
-      throw new AriesFrameworkError(`Connection ${connection.id} does not have outOfBandId!`)
-    }
-
-    const outOfBandRecord = await this.outOfBandRepository.findById(connection.outOfBandId)
-
-    if (!outOfBandRecord) {
-      throw new AriesFrameworkError(
-        `OutOfBand record for connection ${connection.id} with outOfBandId ${connection.outOfBandId} not found!`
-      )
-    }
+    const connection = await this.didExchangeProtocol.processResponse(messageContext, outOfBandRecord)
 
     // TODO: should we only send complete message in case of autoAcceptConnection or always?
     // In AATH we have a separate step to send the complete. So for now we'll only do it

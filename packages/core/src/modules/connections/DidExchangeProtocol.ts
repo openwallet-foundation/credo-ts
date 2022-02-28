@@ -246,7 +246,8 @@ export class DidExchangeProtocol {
   }
 
   public async processResponse(
-    messageContext: InboundMessageContext<DidExchangeResponseMessage>
+    messageContext: InboundMessageContext<DidExchangeResponseMessage>,
+    outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${DidExchangeResponseMessage.type} start`, messageContext)
     const { connection: connectionRecord, message } = messageContext
@@ -281,7 +282,7 @@ export class DidExchangeProtocol {
       )
     }
 
-    const didDocument = await this.extractDidDocument(message, connectionRecord.invitation?.recipientKeys)
+    const didDocument = await this.extractDidDocument(message, outOfBandRecord.getRecipientKeys())
     const didRecord = new DidRecord({
       id: message.did,
       role: DidDocumentRole.Received,

@@ -9,7 +9,10 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { DidCommService } from '../dids'
+import { OutOfBandMessage } from '../oob/messages'
 import { OutOfBandRepository } from '../oob/repository'
+import { OutOfBandRole } from '../oob/repository/OutOfBandRole'
+import { OutOfBandState } from '../oob/repository/OutOfBandState'
 import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 
 import { DidExchangeProtocol } from './DidExchangeProtocol'
@@ -58,20 +61,36 @@ export class ConnectionsModule {
     this.registerHandlers(dispatcher)
   }
 
-  public async acceptInvitation2(
+  public async acceptOutOfBandInvitation(
     outOfBandRecord: OutOfBandRecord,
-    config?: {
+    config: {
       autoAcceptConnection?: boolean
       label?: string
       mediatorId?: string
+      protocol: HandshakeProtocol
     }
   ) {
+    const { protocol, label, autoAcceptConnection } = config
     const routing = await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId })
-    const { message, connectionRecord } = await this.didExchangeProtocol.createRequest(outOfBandRecord, {
-      label: config?.label || this.agentConfig.label,
-      routing,
-      autoAcceptConnection: config?.autoAcceptConnection,
-    })
+
+    let result
+    if (protocol === HandshakeProtocol.DidExchange) {
+      result = await this.didExchangeProtocol.createRequest(outOfBandRecord, {
+        label: label || this.agentConfig.label,
+        routing,
+        autoAcceptConnection,
+      })
+    } else if (protocol === HandshakeProtocol.Connections) {
+      result = await this.connectionService.protocolCreateRequest(outOfBandRecord, {
+        myLabel: label || this.agentConfig.label,
+        routing,
+        autoAcceptConnection,
+      })
+    } else {
+      throw new AriesFrameworkError(`Unsupported handshake protocol ${protocol}.`)
+    }
+
+    const { message, connectionRecord } = result
     await this.messageSender.sendMessageToService({
       message,
       service: new DidCommService(outOfBandRecord.outOfBandMessage.services[0] as DidCommService),
@@ -125,11 +144,12 @@ export class ConnectionsModule {
       mediatorId?: string
     }
   ): Promise<ConnectionRecord> {
-    const routing = await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId })
+    const { alias, autoAcceptConnection, mediatorId } = config || {}
+    const routing = await this.mediationRecipientService.getRouting({ mediatorId })
 
     let connection = await this.connectionService.processInvitation(invitation, {
-      autoAcceptConnection: config?.autoAcceptConnection,
-      alias: config?.alias,
+      autoAcceptConnection,
+      alias,
       routing,
       protocol: HandshakeProtocol.Connections,
     })
@@ -351,7 +371,9 @@ export class ConnectionsModule {
         this.mediationRecipientService
       )
     )
-    dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService, this.agentConfig))
+    dispatcher.registerHandler(
+      new ConnectionResponseHandler(this.connectionService, this.outOfBandRepository, this.agentConfig)
+    )
     dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
     dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
     dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService))

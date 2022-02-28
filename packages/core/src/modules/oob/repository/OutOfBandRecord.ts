@@ -49,10 +49,7 @@ export class OutOfBandRecord extends BaseRecord<TagsBase> {
   }
 
   public getTags() {
-    const [recipientKey] = this.outOfBandMessage.services
-      .filter((s): s is DidCommService => typeof s !== 'string')
-      .map((s) => s.recipientKeys)
-      .reduce((acc, curr) => [...acc, ...curr], [])
+    const [recipientKey] = this.getRecipientKeys()
 
     return {
       ...this._tags,
@@ -61,6 +58,13 @@ export class OutOfBandRecord extends BaseRecord<TagsBase> {
       messageId: this.outOfBandMessage.id,
       recipientKey,
     }
+  }
+
+  public getRecipientKeys() {
+    return this.outOfBandMessage.services
+      .filter((s): s is DidCommService => typeof s !== 'string')
+      .map((s) => s.recipientKeys)
+      .reduce((acc, curr) => [...acc, ...curr], [])
   }
 
   public assertState(expectedStates: OutOfBandState | OutOfBandState[]) {
