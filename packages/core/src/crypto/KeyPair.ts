@@ -1,14 +1,14 @@
-export type Bytes = Uint8Array
-export type BytesArray = Uint8Array[]
+import type { Buffer } from '../utils/buffer'
 
 export abstract class KeyPair {
-  abstract sign(message: Bytes | BytesArray): Promise<Bytes>
+  abstract sign(message: Buffer): Promise<Buffer>
 
-  abstract verify(message: Bytes | BytesArray, signature: Bytes): Promise<boolean>
+  abstract verify(message: Buffer, signature: Buffer): Promise<boolean>
 
   abstract get hasPublicKey(): boolean
 
-  abstract get publicKey(): Bytes | undefined
+  abstract get publicKey(): Buffer | undefined
 
-  abstract fromVerificationMethod(verificationMethod: Record<string, string>): KeyPair
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  abstract fromVerificationMethod(verificationMethod: Record<string, any>): KeyPair
 }
