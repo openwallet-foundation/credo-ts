@@ -2,7 +2,8 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { DidCommMessageRepository } from '../../../../../storage'
-import type { CredentialFormatService, CredProposeOfferRequestFormat } from '../../../formats/CredentialFormatService'
+import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
+import type { CredProposeOfferRequestFormat } from '../../../formats/models/CredentialFormatServiceOptions'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
@@ -48,12 +49,12 @@ export class V2IssueCredentialHandler implements Handler {
     let credentialPayload: CredProposeOfferRequestFormat | undefined
 
     for (const formatService of formatServices) {
-      const attachment = formatService.getAttachment(credentialMessage)
+      const attachment = this.credentialService.getAttachment(credentialMessage)
       if (attachment) {
         credentialPayload = formatService.getCredentialPayload(attachment)
       }
       // 3. Call format.shouldRespondToProposal for each one
-      const formatShouldAutoRespond = formatService.shouldAutoRespondToIssue(
+      const formatShouldAutoRespond = formatService.shouldAutoRespondToCredential(
         credentialRecord,
         this.agentConfig.autoAcceptCredentials,
         credentialPayload

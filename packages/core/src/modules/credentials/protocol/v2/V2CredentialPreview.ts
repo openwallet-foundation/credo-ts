@@ -1,10 +1,10 @@
-import type { CredentialPreviewOptions } from '../../CredentialPreviewAttributes'
+import type { CredentialPreviewOptions } from '../../models/CredentialPreviewAttributes'
 
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsInstance, ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
-import { CredentialPreviewAttribute } from '../../CredentialPreviewAttributes'
+import { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
 
 /**
  * Credential preview inner message class.

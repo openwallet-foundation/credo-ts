@@ -90,7 +90,7 @@ describe('credentials', () => {
           credentialDefinitionId: credDefId,
         },
       },
-      protocolVersion: CredentialProtocolVersion.V1_0,
+      protocolVersion: CredentialProtocolVersion.V1,
     }
     // eslint-disable-next-line prefer-const
     let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOutOfBandOffer(
@@ -109,7 +109,7 @@ describe('credentials', () => {
       credentialRecordId: aliceCredentialRecord.id,
       connectionId: aliceCredentialRecord.connectionId,
       credentialRecordType: CredentialRecordType.Indy,
-      protocolVersion: CredentialProtocolVersion.V1_0,
+      protocolVersion: CredentialProtocolVersion.V1,
     }
     const { credentialRecord } = await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
 
@@ -121,7 +121,7 @@ describe('credentials', () => {
 
     testLogger.test('Faber sends credential to Alice')
     const options: AcceptRequestOptions = {
-      protocolVersion: CredentialProtocolVersion.V1_0,
+      protocolVersion: CredentialProtocolVersion.V1,
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V1 Indy Credential',
     }
@@ -134,10 +134,7 @@ describe('credentials', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(
-      aliceCredentialRecord.id,
-      CredentialProtocolVersion.V1_0
-    )
+    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
@@ -187,7 +184,7 @@ describe('credentials', () => {
           credentialDefinitionId: credDefId,
         },
       },
-      protocolVersion: CredentialProtocolVersion.V1_0,
+      protocolVersion: CredentialProtocolVersion.V1,
       autoAcceptCredential: AutoAcceptCredential.ContentApproved,
     }
     // eslint-disable-next-line prefer-const
@@ -207,7 +204,7 @@ describe('credentials', () => {
     const acceptOfferOptions: AcceptOfferOptions = {
       credentialRecordId: aliceCredentialRecord.id,
       credentialRecordType: CredentialRecordType.Indy,
-      protocolVersion: CredentialProtocolVersion.V1_0,
+      protocolVersion: CredentialProtocolVersion.V1,
       autoAcceptCredential: AutoAcceptCredential.ContentApproved,
     }
 

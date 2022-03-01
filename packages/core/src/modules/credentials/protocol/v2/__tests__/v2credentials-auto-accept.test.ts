@@ -59,7 +59,7 @@ describe('credentials', () => {
       const schemaId = schema.id
       const proposeOptions: ProposeCredentialOptions = {
         connectionId: aliceConnection.id,
-        protocolVersion: CredentialProtocolVersion.V2_0,
+        protocolVersion: CredentialProtocolVersion.V2,
         credentialFormats: {
           indy: {
             payload: {
@@ -118,7 +118,7 @@ describe('credentials', () => {
             credentialDefinitionId: credDefId,
           },
         },
-        protocolVersion: CredentialProtocolVersion.V2_0,
+        protocolVersion: CredentialProtocolVersion.V2,
       }
       const faberCredentialExchangeRecord: CredentialExchangeRecord = await faberAgent.credentials.offerCredential(
         offerOptions
@@ -184,7 +184,7 @@ describe('credentials', () => {
 
       const proposeOptions: ProposeCredentialOptions = {
         connectionId: aliceConnection.id,
-        protocolVersion: CredentialProtocolVersion.V2_0,
+        protocolVersion: CredentialProtocolVersion.V2,
         credentialFormats: {
           indy: {
             payload: {
@@ -279,7 +279,7 @@ describe('credentials', () => {
             credentialDefinitionId: credDefId,
           },
         },
-        protocolVersion: CredentialProtocolVersion.V2_0,
+        protocolVersion: CredentialProtocolVersion.V2,
       }
       const faberCredentialExchangeRecord = await faberAgent.credentials.offerCredential(offerOptions)
 
@@ -325,7 +325,7 @@ describe('credentials', () => {
           credentialRecordId: aliceCredentialRecord.id,
           connectionId: aliceCredentialRecord.connectionId,
           credentialRecordType: CredentialRecordType.Indy,
-          protocolVersion: CredentialProtocolVersion.V2_0,
+          protocolVersion: CredentialProtocolVersion.V2,
         }
         testLogger.test('Alice sends credential request to faber')
         const faberCredentialExchangeRecord: CredentialExchangeRecord =
@@ -371,7 +371,7 @@ describe('credentials', () => {
     test('Alice starts with V2 credential proposal to Faber, both have autoAcceptCredential on `contentApproved` and attributes did change', async () => {
       const proposeOptions: ProposeCredentialOptions = {
         connectionId: aliceConnection.id,
-        protocolVersion: CredentialProtocolVersion.V2_0,
+        protocolVersion: CredentialProtocolVersion.V2,
         credentialFormats: {
           indy: {
             payload: {
@@ -399,7 +399,7 @@ describe('credentials', () => {
       })
 
       const negotiateOptions: NegotiateProposalOptions = {
-        protocolVersion: CredentialProtocolVersion.V2_0,
+        protocolVersion: CredentialProtocolVersion.V2,
         credentialRecordId: faberCredentialRecord.id,
         credentialFormats: {
           indy: {
@@ -470,7 +470,7 @@ describe('credentials', () => {
             credentialDefinitionId: credDefId,
           },
         },
-        protocolVersion: CredentialProtocolVersion.V2_0,
+        protocolVersion: CredentialProtocolVersion.V2,
       }
       const faberCredentialExchangeRecord = await faberAgent.credentials.offerCredential(offerOptions)
 
@@ -514,7 +514,7 @@ describe('credentials', () => {
       testLogger.test('Alice sends credential request to Faber')
       const proposeOptions: ProposeCredentialOptions = {
         connectionId: aliceConnection.id,
-        protocolVersion: CredentialProtocolVersion.V2_0,
+        protocolVersion: CredentialProtocolVersion.V2,
         credentialRecordId: aliceCredentialRecord.id,
         credentialFormats: {
           indy: {

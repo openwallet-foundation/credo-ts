@@ -2,7 +2,7 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { MediationRecipientService } from '../../../../routing/services/MediationRecipientService'
-import type { CredentialPreviewAttribute } from '../../../CredentialPreviewAttributes'
+import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttributes'
 import type { CredentialFormatService, CredProposeOfferRequestFormat } from '../../../formats/CredentialFormatService'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import type { V1CredentialService } from '../V1CredentialService'
@@ -10,14 +10,14 @@ import type { V1CredentialService } from '../V1CredentialService'
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
 import { DidCommMessageRole } from '../../../../../storage'
-import { OfferCredentialMessage, ProposeCredentialMessage } from '../messages'
+import { V1OfferCredentialMessage, V1ProposeCredentialMessage } from '../messages'
 
 export class OfferCredentialHandler implements Handler {
   private credentialService: V1CredentialService
   private agentConfig: AgentConfig
   private mediationRecipientService: MediationRecipientService
   private didCommMessageRepository: DidCommMessageRepository
-  public supportedMessages = [OfferCredentialMessage]
+  public supportedMessages = [V1OfferCredentialMessage]
 
   public constructor(
     credentialService: V1CredentialService,
@@ -34,12 +34,12 @@ export class OfferCredentialHandler implements Handler {
   public async handle(messageContext: HandlerInboundMessage<OfferCredentialHandler>) {
     const credentialRecord = await this.credentialService.processOffer(messageContext)
 
-    let offerMessage: OfferCredentialMessage | undefined
-    let proposeMessage: ProposeCredentialMessage | undefined
+    let offerMessage: V1OfferCredentialMessage | undefined
+    let proposeMessage: V1ProposeCredentialMessage | undefined
     try {
       offerMessage = await this.didCommMessageRepository.getAgentMessage({
         associatedRecordId: credentialRecord.id,
-        messageClass: OfferCredentialMessage,
+        messageClass: V1OfferCredentialMessage,
       })
     } catch (RecordNotFoundError) {
       // can happen
@@ -47,7 +47,7 @@ export class OfferCredentialHandler implements Handler {
     try {
       proposeMessage = await this.didCommMessageRepository.getAgentMessage({
         associatedRecordId: credentialRecord.id,
-        messageClass: ProposeCredentialMessage,
+        messageClass: V1ProposeCredentialMessage,
       })
     } catch (RecordNotFoundError) {
       // can happen in normal processing
@@ -59,7 +59,7 @@ export class OfferCredentialHandler implements Handler {
 
     const formatService: CredentialFormatService = this.credentialService.getFormatService()
 
-    if (proposeMessage && proposeMessage.credentialProposal && proposeMessage.genericAttachments) {
+    if (proposeMessage && proposeMessage.credentialProposal && proposeMessage.appendedAttachments) {
       proposalPayload = proposeMessage.credentialPayload
     }
     if (offerMessage) {
@@ -86,7 +86,7 @@ export class OfferCredentialHandler implements Handler {
   private async createRequest(
     record: CredentialExchangeRecord,
     messageContext: HandlerInboundMessage<OfferCredentialHandler>,
-    offerMessage?: OfferCredentialMessage
+    offerMessage?: V1OfferCredentialMessage
   ) {
     this.agentConfig.logger.info(
       `Automatically sending request with autoAccept on ${this.agentConfig.autoAcceptCredentials}`

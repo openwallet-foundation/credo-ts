@@ -3,14 +3,14 @@ import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { OfferCredentialOptions } from '../interfaces'
 import type { AgentConfig } from '@aries-framework/core'
 
-import { Agent } from '../../../../src/agent/Agent'
-import { Dispatcher } from '../../../../src/agent/Dispatcher'
-import { DidCommMessageRepository } from '../../../../src/storage'
 import { getAgentConfig, getBaseConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
+import { Agent } from '../../../agent/Agent'
+import { Dispatcher } from '../../../agent/Dispatcher'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
+import { DidCommMessageRepository } from '../../../storage'
 import { ConnectionState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
@@ -18,11 +18,10 @@ import { IndyLedgerService } from '../../ledger/services'
 import { MediationRecipientService } from '../../routing'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
-import { CredentialResponseCoordinator } from '../CredentialResponseCoordinator'
 import { CredentialState } from '../CredentialState'
 import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
 import { V1CredentialService } from '../protocol/v1/V1CredentialService'
-import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, OfferCredentialMessage } from '../protocol/v1/messages'
+import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V1OfferCredentialMessage } from '../protocol/v1/messages'
 import { CredentialExchangeRecord } from '../repository/CredentialRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
 
@@ -44,22 +43,6 @@ const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCo
 const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
 const MediationRecipientServiceMock = MediationRecipientService as jest.Mock<MediationRecipientService>
 
-let agent: Agent
-let credentialRepository: CredentialRepository
-let indyLedgerService: IndyLedgerService
-let indyIssuerService: IndyIssuerService
-let indyHolderService: IndyHolderService
-let eventEmitter: EventEmitter
-let didCommMessageRepository: DidCommMessageRepository
-let mediationRecipientService: MediationRecipientService
-let messageSender: MessageSender
-let agentConfig: AgentConfig
-
-let dispatcher: Dispatcher
-// didCommMessageRepository = agent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-let credentialResponseCoordinator: CredentialResponseCoordinator
-let credentialService: V1CredentialService
-
 const connection = getMockConnection({
   id: '123',
   state: ConnectionState.Complete,
@@ -79,9 +62,22 @@ const offerAttachment = new Attachment({
   }),
 })
 
-const { config, agentDependencies: dependencies } = getBaseConfig('Agent Class Test V1 Cred')
+const { config, agentDependencies: dependencies } = getBaseConfig('Agent Class Test V2 Offer')
 
 describe('CredentialService', () => {
+  let agent: Agent
+  let credentialRepository: CredentialRepository
+  let indyLedgerService: IndyLedgerService
+  let indyIssuerService: IndyIssuerService
+  let indyHolderService: IndyHolderService
+  let eventEmitter: EventEmitter
+  let didCommMessageRepository: DidCommMessageRepository
+  let mediationRecipientService: MediationRecipientService
+  let messageSender: MessageSender
+  let agentConfig: AgentConfig
+
+  let dispatcher: Dispatcher
+  let credentialService: V1CredentialService
   beforeEach(async () => {
     credentialRepository = new CredentialRepositoryMock()
     indyIssuerService = new IndyIssuerServiceMock()
@@ -95,8 +91,6 @@ describe('CredentialService', () => {
     eventEmitter = new EventEmitter(agentConfig)
 
     dispatcher = new Dispatcher(messageSender, eventEmitter, agentConfig)
-    // didCommMessageRepository = agent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-    credentialResponseCoordinator = new CredentialResponseCoordinator(agentConfig, didCommMessageRepository)
 
     credentialService = new V1CredentialService(
       {
@@ -105,7 +99,6 @@ describe('CredentialService', () => {
       } as unknown as ConnectionService,
       didCommMessageRepository,
       agentConfig,
-      credentialResponseCoordinator,
       mediationRecipientService,
       dispatcher,
       eventEmitter,
@@ -129,7 +122,7 @@ describe('CredentialService', () => {
             credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
           },
         },
-        protocolVersion: CredentialProtocolVersion.V1_0,
+        protocolVersion: CredentialProtocolVersion.V1,
       }
     })
 
@@ -209,11 +202,11 @@ describe('CredentialService', () => {
     // })
   })
   describe('processCredentialOffer', () => {
-    let messageContext: InboundMessageContext<OfferCredentialMessage>
-    let credentialOfferMessage: OfferCredentialMessage
+    let messageContext: InboundMessageContext<V1OfferCredentialMessage>
+    let credentialOfferMessage: V1OfferCredentialMessage
 
     beforeEach(async () => {
-      credentialOfferMessage = new OfferCredentialMessage({
+      credentialOfferMessage = new V1OfferCredentialMessage({
         comment: 'some comment',
         credentialPreview: credentialPreview,
         offerAttachments: [offerAttachment],
@@ -233,8 +226,6 @@ describe('CredentialService', () => {
       eventEmitter = new EventEmitter(agentConfig)
 
       const dispatcher = agent.injectionContainer.resolve<Dispatcher>(Dispatcher)
-      // didCommMessageRepository = agent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-      const credentialResponseCoordinator = new CredentialResponseCoordinator(agentConfig, didCommMessageRepository)
       const mediationRecipientService = agent.injectionContainer.resolve(MediationRecipientService)
 
       credentialService = new V1CredentialService(
@@ -244,7 +235,6 @@ describe('CredentialService', () => {
         } as unknown as ConnectionService,
         didCommMessageRepository,
         agentConfig,
-        credentialResponseCoordinator,
         mediationRecipientService,
         dispatcher,
         eventEmitter,

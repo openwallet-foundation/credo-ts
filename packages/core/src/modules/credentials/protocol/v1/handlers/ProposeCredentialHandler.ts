@@ -1,19 +1,19 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage'
-import type { CredentialPreviewAttribute } from '../../../CredentialPreviewAttributes'
+import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttributes'
 import type { CredentialFormatService, CredProposeOfferRequestFormat } from '../../../formats/CredentialFormatService'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
 import { createOutboundMessage } from '../../../../../agent/helpers'
-import { OfferCredentialMessage, ProposeCredentialMessage } from '../messages'
+import { V1OfferCredentialMessage, V1ProposeCredentialMessage } from '../messages'
 
 export class ProposeCredentialHandler implements Handler {
   private credentialService: V1CredentialService
   private agentConfig: AgentConfig
   private didCommMessageRepository: DidCommMessageRepository
-  public supportedMessages = [ProposeCredentialMessage]
+  public supportedMessages = [V1ProposeCredentialMessage]
 
   public constructor(
     credentialService: V1CredentialService,
@@ -28,14 +28,14 @@ export class ProposeCredentialHandler implements Handler {
   public async handle(messageContext: HandlerInboundMessage<ProposeCredentialHandler>) {
     const credentialRecord = await this.credentialService.processProposal(messageContext)
 
-    let proposalMessage: ProposeCredentialMessage | undefined
-    let offerMessage: OfferCredentialMessage | undefined
+    let proposalMessage: V1ProposeCredentialMessage | undefined
+    let offerMessage: V1OfferCredentialMessage | undefined
     // note that these two messages can be present (or not) and there is no
     // guarantee which one is present so we need two try-catch blocks
     try {
       proposalMessage = await this.didCommMessageRepository.getAgentMessage({
         associatedRecordId: credentialRecord.id,
-        messageClass: ProposeCredentialMessage,
+        messageClass: V1ProposeCredentialMessage,
       })
     } catch (RecordNotFoundError) {
       // can happen sometimes
@@ -43,7 +43,7 @@ export class ProposeCredentialHandler implements Handler {
     try {
       offerMessage = await this.didCommMessageRepository.getAgentMessage({
         associatedRecordId: credentialRecord.id,
-        messageClass: OfferCredentialMessage,
+        messageClass: V1OfferCredentialMessage,
       })
     } catch (RecordNotFoundError) {
       // can happen sometimes
@@ -57,9 +57,9 @@ export class ProposeCredentialHandler implements Handler {
     }
     const formatService: CredentialFormatService = this.credentialService.getFormatService()
 
-    if (proposalMessage && proposalMessage.genericAttachments) {
+    if (proposalMessage && proposalMessage.appendedAttachments) {
       proposalValues = proposalMessage.credentialProposal.attributes
-      const attachment = proposalMessage.genericAttachments[0] // MJR: is this right for propose messages?
+      const attachment = proposalMessage.appendedAttachments[0] // MJR: is this right for propose messages?
       if (attachment) {
         proposalPayload = formatService.getCredentialPayload(attachment)
       }
@@ -86,7 +86,7 @@ export class ProposeCredentialHandler implements Handler {
   private async createOffer(
     credentialRecord: CredentialExchangeRecord,
     messageContext: HandlerInboundMessage<ProposeCredentialHandler>,
-    proposalMessage?: ProposeCredentialMessage
+    proposalMessage?: V1ProposeCredentialMessage
   ) {
     this.agentConfig.logger.info(
       `Automatically sending offer with autoAccept on ${this.agentConfig.autoAcceptCredentials}`

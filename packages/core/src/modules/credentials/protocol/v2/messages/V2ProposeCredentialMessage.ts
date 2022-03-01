@@ -27,7 +27,7 @@ export class V2ProposeCredentialMessage extends AgentMessage {
       this.credentialProposal = props.credentialProposal
       this.formats = props.formats
       this.messageAttachment = props.filtersAttach
-      this.genericAttachments = props.attachments
+      this.appendedAttachments = props.attachments
     }
   }
 

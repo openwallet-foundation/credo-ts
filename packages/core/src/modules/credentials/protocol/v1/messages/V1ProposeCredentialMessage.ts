@@ -1,6 +1,6 @@
 import type { Attachment } from '../../../../../decorators/attachment/Attachment'
-import type { CredPropose } from '../../../formats/CredentialFormatService'
 import type { CredProposeOfferRequestFormat } from '../../../formats/models/CredentialFormatServiceOptions'
+import type { CredPropose } from '../models/CredentialFormatOptions'
 
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
@@ -26,7 +26,7 @@ export interface ProposeCredentialMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#propose-credential
  */
-export class ProposeCredentialMessage extends AgentMessage {
+export class V1ProposeCredentialMessage extends AgentMessage {
   public constructor(options: ProposeCredentialMessageOptions) {
     super()
 
@@ -40,12 +40,12 @@ export class ProposeCredentialMessage extends AgentMessage {
       this.schemaVersion = options.schemaVersion
       this.credentialDefinitionId = options.credentialDefinitionId
       this.issuerDid = options.issuerDid
-      this.genericAttachments = options.attachments
+      this.appendedAttachments = options.attachments
     }
   }
 
-  @Equals(ProposeCredentialMessage.type)
-  public readonly type = ProposeCredentialMessage.type
+  @Equals(V1ProposeCredentialMessage.type)
+  public readonly type = V1ProposeCredentialMessage.type
   public static readonly type = 'https://didcomm.org/issue-credential/1.0/propose-credential'
 
   /**

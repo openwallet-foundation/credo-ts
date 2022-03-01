@@ -1,10 +1,12 @@
 import type { LinkedAttachment } from '../../utils/LinkedAttachment'
 import type { AnyJson } from '../generic'
 import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
-import type { CredentialPreviewAttribute } from './CredentialPreviewAttributes'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
-import type { CredProposeOfferRequestFormat } from './formats/CredentialFormatService'
-import type { CredentialDefinitionFormat } from './formats/models/CredentialFormatServiceOptions'
+import type {
+  CredProposeOfferRequestFormat,
+  CredentialDefinitionFormat,
+} from './formats/models/CredentialFormatServiceOptions'
+import type { CredentialPreviewAttribute } from './models/CredentialPreviewAttributes'
 
 type IssuerId = string
 
@@ -73,7 +75,16 @@ interface AcceptOfferOptions {
   credentialRecordType?: CredentialRecordType
   connectionId?: string // this needs to be optional for out of band messages
   comment?: string
+  autoAcceptCredential?: AutoAcceptCredential,
+}
+
+interface NegotiateOfferOptions {
+  connectionId: string
+  protocolVersion: CredentialProtocolVersion
+  credentialFormats: CredProposeOfferRequestFormat
+  credentialRecordId?: string
   autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
 }
 
 /// CREDENTIAL PROPOSAL
@@ -148,6 +159,7 @@ export {
   ProposeCredentialOptions,
   AcceptProposalOptions,
   NegotiateProposalOptions,
+  NegotiateOfferOptions,
   AcceptOfferOptions,
   RequestCredentialOptions,
   AcceptRequestOptions,

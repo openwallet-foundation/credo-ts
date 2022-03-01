@@ -87,7 +87,7 @@ describe('credentials', () => {
           credentialDefinitionId: credDefId,
         },
       },
-      protocolVersion: CredentialProtocolVersion.V2_0,
+      protocolVersion: CredentialProtocolVersion.V2,
     }
     // eslint-disable-next-line prefer-const
     let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOutOfBandOffer(
@@ -106,7 +106,7 @@ describe('credentials', () => {
       credentialRecordId: aliceCredentialRecord.id,
       connectionId: aliceCredentialRecord.connectionId,
       credentialRecordType: CredentialRecordType.Indy,
-      protocolVersion: CredentialProtocolVersion.V2_0,
+      protocolVersion: CredentialProtocolVersion.V2,
     }
     const { credentialRecord } = await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
 
@@ -118,7 +118,7 @@ describe('credentials', () => {
 
     testLogger.test('Faber sends credential to Alice')
     const options: AcceptRequestOptions = {
-      protocolVersion: CredentialProtocolVersion.V2_0,
+      protocolVersion: CredentialProtocolVersion.V2,
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Credential',
     }
@@ -133,7 +133,7 @@ describe('credentials', () => {
     testLogger.test('Alice sends credential ack to Faber')
     aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(
       aliceCredentialRecord.id,
-      CredentialProtocolVersion.V2_0
+      CredentialProtocolVersion.V2
     )
 
     testLogger.test('Faber waits for credential ack from Alice')
@@ -184,7 +184,7 @@ describe('credentials', () => {
           credentialDefinitionId: credDefId,
         },
       },
-      protocolVersion: CredentialProtocolVersion.V2_0,
+      protocolVersion: CredentialProtocolVersion.V2,
       autoAcceptCredential: AutoAcceptCredential.ContentApproved,
     }
     // eslint-disable-next-line prefer-const
@@ -204,7 +204,7 @@ describe('credentials', () => {
     const acceptOfferOptions: AcceptOfferOptions = {
       credentialRecordId: aliceCredentialRecord.id,
       credentialRecordType: CredentialRecordType.Indy,
-      protocolVersion: CredentialProtocolVersion.V2_0,
+      protocolVersion: CredentialProtocolVersion.V2,
       autoAcceptCredential: AutoAcceptCredential.ContentApproved,
     }
 

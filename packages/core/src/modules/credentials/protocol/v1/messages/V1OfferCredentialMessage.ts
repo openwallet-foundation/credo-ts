@@ -22,7 +22,7 @@ export interface OfferCredentialMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#offer-credential
  */
-export class OfferCredentialMessage extends AgentMessage {
+export class V1OfferCredentialMessage extends AgentMessage {
   public constructor(options: OfferCredentialMessageOptions) {
     super()
 
@@ -31,12 +31,12 @@ export class OfferCredentialMessage extends AgentMessage {
       this.comment = options.comment
       this.credentialPreview = options.credentialPreview
       this.messageAttachments = options.offerAttachments
-      this.genericAttachments = options.attachments
+      this.appendedAttachments = options.attachments
     }
   }
 
-  @Equals(OfferCredentialMessage.type)
-  public readonly type = OfferCredentialMessage.type
+  @Equals(V1OfferCredentialMessage.type)
+  public readonly type = V1OfferCredentialMessage.type
   public static readonly type = 'https://didcomm.org/issue-credential/1.0/offer-credential'
 
   @IsString()

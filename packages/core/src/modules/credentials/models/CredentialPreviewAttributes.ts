@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
 import { IsMimeType, IsOptional, IsString } from 'class-validator'
 
-import { JsonTransformer } from '../../utils/JsonTransformer'
+import { JsonTransformer } from '../../../utils/JsonTransformer'
 
 export interface CredentialPreviewAttributeOptions {
   name: string

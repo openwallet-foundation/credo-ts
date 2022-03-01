@@ -1,8 +1,10 @@
+import type { Wallet } from '../../../../../../src/wallet'
 import type { CredentialService } from '../../../CredentialService'
-import type { CredentialFormatService, CredProposeOfferRequestFormat } from '../../../formats/CredentialFormatService'
+import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
 import type { AcceptProposalOptions, ProposeCredentialOptions } from '../../../interfaces'
 import type { CredOffer } from 'indy-sdk'
 
+import { InjectionSymbols } from '../../../../../../src/constants'
 import { getBaseConfig } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
@@ -28,7 +30,7 @@ const testAttributes = {
 }
 const proposal: ProposeCredentialOptions = {
   connectionId: '',
-  protocolVersion: CredentialProtocolVersion.V1_0,
+  protocolVersion: CredentialProtocolVersion.V1,
   credentialFormats: {
     indy: {
       payload: {
@@ -41,7 +43,7 @@ const proposal: ProposeCredentialOptions = {
 
 const multiFormatProposal: ProposeCredentialOptions = {
   connectionId: '',
-  protocolVersion: CredentialProtocolVersion.V2_0,
+  protocolVersion: CredentialProtocolVersion.V2,
   credentialFormats: {
     indy: {
       payload: {
@@ -91,41 +93,41 @@ describe('V2 Credential Architecture', () => {
 
   describe('Credential Service', () => {
     test('returns the correct credential service for a protocol version 1.0', () => {
-      const version: CredentialProtocolVersion = CredentialProtocolVersion.V1_0
+      const version: CredentialProtocolVersion = CredentialProtocolVersion.V1
       expect(container.resolve(CredentialsModule)).toBeInstanceOf(CredentialsModule)
       const service: CredentialService = api.getService(version)
-      expect(service.getVersion()).toEqual(CredentialProtocolVersion.V1_0)
+      expect(service.getVersion()).toEqual(CredentialProtocolVersion.V1)
     })
 
     test('returns the correct credential service for a protocol version 2.0', () => {
-      const version: CredentialProtocolVersion = CredentialProtocolVersion.V2_0
+      const version: CredentialProtocolVersion = CredentialProtocolVersion.V2
       const service: CredentialService = api.getService(version)
-      expect(service.getVersion()).toEqual(CredentialProtocolVersion.V2_0)
+      expect(service.getVersion()).toEqual(CredentialProtocolVersion.V2)
     })
   })
 
   describe('Credential Format Service', () => {
     test('returns the correct credential format service for indy', () => {
-      const version: CredentialProtocolVersion = CredentialProtocolVersion.V2_0
+      const version: CredentialProtocolVersion = CredentialProtocolVersion.V2
       const service: CredentialService = api.getService(version)
       const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.Indy)
       expect(formatService).not.toBeNull()
-      const type: string = formatService.getType()
+      const type: string = formatService.constructor.name
       expect(type).toEqual('IndyCredentialFormatService')
     })
 
     test('propose credential format service returns correct format and filters~attach', () => {
-      const version: CredentialProtocolVersion = CredentialProtocolVersion.V2_0
+      const version: CredentialProtocolVersion = CredentialProtocolVersion.V2
       const service: CredentialService = api.getService(version)
       const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.Indy)
-      const { formats, filtersAttach } = formatService.createProposalAttachFormats(proposal)
+      const { format: formats, attachment: filtersAttach } = formatService.createProposal(proposal)
 
       expect(formats.attachId.length).toBeGreaterThan(0)
       expect(formats.format).toEqual('hlindy/cred-filter@v2.0')
       expect(filtersAttach).toBeTruthy()
     })
     test('propose credential format service creates message with multiple formats', () => {
-      const version: CredentialProtocolVersion = CredentialProtocolVersion.V2_0
+      const version: CredentialProtocolVersion = CredentialProtocolVersion.V2
       const service: CredentialService = api.getService(version)
 
       const formats: CredentialFormatService[] = service.getFormats(multiFormatProposal.credentialFormats)
@@ -137,35 +139,6 @@ describe('V2 Credential Architecture', () => {
       expect(v2Proposal.message.formats.length).toBe(2)
       expect(v2Proposal.message.formats[0].format).toEqual('hlindy/cred-filter@v2.0')
       expect(v2Proposal.message.formats[1].format).toEqual('aries/ld-proof-vc-detail@v1.0')
-    })
-    test('offer credential format service returns correct preview, format and offers~attach', () => {
-      const version: CredentialProtocolVersion = CredentialProtocolVersion.V2_0
-      const service: CredentialService = api.getService(version)
-      const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.Indy)
-
-      const v2Offer: CredProposeOfferRequestFormat = {
-        indy: {
-          payload: {
-            credentialPayload: credOffer,
-          },
-        },
-      }
-      const options: AcceptProposalOptions = {
-        connectionId: '',
-        protocolVersion: CredentialProtocolVersion.V2_0,
-        credentialRecordId: '',
-        comment: 'v2 offer credential as response test',
-        credentialFormats: {
-          indy: {
-            attributes: credentialPreview.attributes,
-          },
-        },
-      }
-      const { formats, offersAttach } = formatService.createOfferAttachFormats(options, v2Offer)
-
-      expect(formats.attachId.length).toBeGreaterThan(0)
-      expect(formats.format).toEqual('hlindy/cred-abstract@v2.0')
-      expect(offersAttach).toBeTruthy()
     })
   })
 })

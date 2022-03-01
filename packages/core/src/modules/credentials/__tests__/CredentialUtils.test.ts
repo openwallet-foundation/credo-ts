@@ -1,4 +1,4 @@
-import { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
+import { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
 import { CredentialUtils } from '../CredentialUtils'
 
 /**

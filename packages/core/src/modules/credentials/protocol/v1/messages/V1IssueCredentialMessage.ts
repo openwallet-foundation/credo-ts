@@ -16,7 +16,7 @@ interface IssueCredentialMessageOptions {
   attachments?: Attachment[]
 }
 
-export class IssueCredentialMessage extends AgentMessage {
+export class V1IssueCredentialMessage extends AgentMessage {
   public constructor(options: IssueCredentialMessageOptions) {
     super()
 
@@ -24,12 +24,12 @@ export class IssueCredentialMessage extends AgentMessage {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
       this.credentialAttachments = options.credentialAttachments
-      this.genericAttachments = options.attachments
+      this.appendedAttachments = options.attachments
     }
   }
 
-  @Equals(IssueCredentialMessage.type)
-  public readonly type = IssueCredentialMessage.type
+  @Equals(V1IssueCredentialMessage.type)
+  public readonly type = V1IssueCredentialMessage.type
   public static readonly type = 'https://didcomm.org/issue-credential/1.0/issue-credential'
 
   @IsString()

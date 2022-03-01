@@ -502,7 +502,6 @@ export class ConnectionService {
 
         // Check if the inbound message recipient key is present
         // in the recipientKeys of previously sent message ~service decorator
-
         if (
           !previousSentMessage?.service ||
           !previousSentMessage.service.recipientKeys.includes(messageContext.recipientVerkey)

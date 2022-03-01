@@ -1,33 +1,44 @@
+/* eslint-disable @typescript-eslint/explicit-member-accessibility */
+/* eslint-disable @typescript-eslint/adjacent-overload-signatures */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { CredentialExchangeRecord } from '../..'
 import type { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
-import type { CredentialPreviewAttribute } from '../../CredentialPreviewAttributes'
 import type {
+  AcceptOfferOptions,
   AcceptProposalOptions,
   AcceptRequestOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../../interfaces'
+import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
 import type { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import type { V2IssueCredentialMessage } from '../../protocol/v2/messages/V2IssueCredentialMessage'
 import type { V2OfferCredentialMessage } from '../../protocol/v2/messages/V2OfferCredentialMessage'
 import type { V2ProposeCredentialMessage } from '../../protocol/v2/messages/V2ProposeCredentialMessage'
 import type { V2RequestCredentialMessage } from '../../protocol/v2/messages/V2RequestCredentialMessage'
 import type {
-  CredAttachmentFormats,
+  CredentialAttachmentFormats,
+  CredentialDefinitionFormat,
   CredentialFormatSpec,
   CredProposeOfferRequestFormat,
-} from '../CredentialFormatService'
-import type { MetaDataService } from '../MetaDataService'
-import type { CredentialDefinitionFormat } from '../models/CredentialFormatServiceOptions'
+  OfferAttachmentFormats,
+} from '../models/CredentialFormatServiceOptions'
 import type { CredOffer, CredReq } from 'indy-sdk'
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { CredentialFormatService } from '../CredentialFormatService'
 
-import { JsonLdMetaDataService } from './JsonLdMetaDataService'
-
 export class JsonLdCredentialFormatService extends CredentialFormatService {
+  processRequest(credentialRequest: CredProposeOfferRequestFormat, credentialRecord: CredentialExchangeRecord): void {
+    throw new Error('Method not implemented.')
+  }
+  processOffer(
+    credentialOffer: CredProposeOfferRequestFormat,
+    credentialRecord: CredentialExchangeRecord
+  ): Promise<void> {
+    throw new Error('Method not implemented.')
+  }
+
   public shouldAutoRespondToProposal(
     credentialRecord: CredentialExchangeRecord,
     autoAcceptType: AutoAcceptCredential,
@@ -55,7 +66,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   ): boolean {
     throw new Error('Method not implemented.')
   }
-  public shouldAutoRespondToIssue(
+  public shouldAutoRespondToCredential(
     credentialRecord: CredentialExchangeRecord,
     autoAcceptType: AutoAcceptCredential,
     credentialPayload?: CredProposeOfferRequestFormat
@@ -69,10 +80,10 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   ): Promise<void> {
     throw new Error('Method not implemented.')
   }
-  public createRequestAttachFormats(
+  public createRequest(
     requestOptions: RequestCredentialOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<CredAttachmentFormats> {
+  ): Promise<CredentialAttachmentFormats> {
     throw new Error('Method not implemented.')
   }
   public getAttachment(
@@ -81,10 +92,10 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     throw new Error('Method not implemented.')
   }
   // eslint-disable-next-line prettier/prettier
-  public createIssueAttachFormats(
+  public createCredential(
     options: AcceptRequestOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<CredAttachmentFormats> {
+  ): Promise<CredentialAttachmentFormats> {
     throw new Error('Method not implemented.')
   }
   public processProposal(
@@ -98,9 +109,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   }
   public getCredentialRequest(data: AttachmentData): CredProposeOfferRequestFormat | undefined {
     throw new Error('Method not implemented.')
-  }
-  public getMetaDataService(): MetaDataService {
-    return new JsonLdMetaDataService()
   }
   public setMetaDataForRequest(
     request: CredProposeOfferRequestFormat,
@@ -125,40 +133,27 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   public setMetaDataForOffer(_offer: CredProposeOfferRequestFormat, _credentialRecord: CredentialExchangeRecord): void {
     throw new Error('Method not implemented.')
   }
-  public createOffer(_proposal: AcceptProposalOptions): Promise<CredProposeOfferRequestFormat> {
-    throw new Error('Method not implemented.')
-  }
-  public createOfferAttachFormats(
-    proposal: AcceptProposalOptions,
-    offer: CredProposeOfferRequestFormat
-  ): CredAttachmentFormats {
+
+  public createOffer(proposal: AcceptProposalOptions): Promise<OfferAttachmentFormats> {
     throw new Error('Method not implemented.')
   }
   public getCredentialAttributes(_proposal: ProposeCredentialOptions): CredentialPreviewAttribute[] | undefined {
     throw new Error('Method not implemented.')
   }
 
-  public createProposalAttachFormats(proposal: ProposeCredentialOptions): CredAttachmentFormats {
+  public createProposal(proposal: ProposeCredentialOptions): CredentialAttachmentFormats {
     // implementation for test purposes only
-    const formats: CredentialFormatSpec = {
+    const format: CredentialFormatSpec = {
       attachId: this.generateId(),
       format: 'aries/ld-proof-vc-detail@v1.0',
     }
-    const filtersAttach: Attachment = new Attachment({
+    const attachment: Attachment = new Attachment({
       id: '',
       mimeType: 'application/json',
       data: new AttachmentData({
         base64: '',
       }),
     })
-    return { formats, filtersAttach }
-  }
-  public getCredentialDefinition(
-    offer: CredProposeOfferRequestFormat
-  ): Promise<CredentialDefinitionFormat | undefined> {
-    throw new Error('Method not implemented.')
-  }
-  public createRequest(options: RequestCredentialOptions): Promise<CredProposeOfferRequestFormat> {
-    throw new Error('Method not implemented.')
+    return { format, attachment }
   }
 }

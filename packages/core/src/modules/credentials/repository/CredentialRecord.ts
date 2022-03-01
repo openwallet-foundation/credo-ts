@@ -10,7 +10,7 @@ import { Attachment } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
+import { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
 import { CredentialInfo } from '../protocol/v1/models/CredentialInfo'
 
 export interface CredentialRecordProps {

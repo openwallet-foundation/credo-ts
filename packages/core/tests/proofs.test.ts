@@ -277,7 +277,7 @@ describe('Present Proof', () => {
             mimeType: 'application/json',
           },
         ],
-        genericAttachments: [
+        appendedAttachments: [
           {
             id: 'zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
             filename: 'picture-of-a-cat.png',

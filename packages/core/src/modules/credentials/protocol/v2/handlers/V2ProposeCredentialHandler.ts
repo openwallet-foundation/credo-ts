@@ -3,9 +3,10 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { DidCommMessageRepository } from '../../../../../storage'
-import type { CredentialPreviewAttribute } from '../../../CredentialPreviewAttributes'
-import type { CredentialFormatService, CredProposeOfferRequestFormat } from '../../../formats/CredentialFormatService'
+import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
+import type { CredProposeOfferRequestFormat } from '../../../formats/models/CredentialFormatServiceOptions'
 import type { AcceptProposalOptions } from '../../../interfaces'
+import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttributes'
 import type { V2CredentialService } from '../V2CredentialService'
 
 import { createOutboundMessage } from '../../../../../agent/helpers'
@@ -73,13 +74,13 @@ export class V2ProposeCredentialHandler implements Handler {
       }
       if (proposalMessage) {
         proposalValues = proposalMessage.credentialProposal.attributes
-        const attachment = formatService.getAttachment(proposalMessage)
+        const attachment = this.credentialService.getAttachment(proposalMessage)
         if (attachment) {
           proposalPayload = formatService.getCredentialPayload(attachment)
         }
       }
       if (offerMessage) {
-        const attachment = formatService.getAttachment(offerMessage)
+        const attachment = this.credentialService.getAttachment(offerMessage)
         if (attachment) {
           offerPayload = formatService.getCredentialPayload(attachment)
         }

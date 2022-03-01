@@ -11,7 +11,7 @@ import { encodeAttachment } from '../../utils/attachment'
 import { Buffer } from '../../utils/buffer'
 import { isBoolean, isNumber, isString } from '../../utils/type'
 
-import { CredentialPreviewAttribute } from './CredentialPreviewAttributes'
+import { CredentialPreviewAttribute } from './models/CredentialPreviewAttributes'
 
 export class CredentialUtils {
   /**
@@ -29,10 +29,9 @@ export class CredentialUtils {
     const credentialPreviewAttributeNames = credentialPreview.attributes.map((attribute) => attribute.name)
     attachments.forEach((linkedAttachment) => {
       if (credentialPreviewAttributeNames.includes(linkedAttachment.attributeName)) {
-        // MJR -> This is causing an issue remove for now
-        // throw new AriesFrameworkError(
-        //   `linkedAttachment ${linkedAttachment.attributeName} already exists in the preview`
-        // )
+        throw new AriesFrameworkError(
+          `linkedAttachment ${linkedAttachment.attributeName} already exists in the preview`
+        )
       } else {
         const credentialPreviewAttribute = new CredentialPreviewAttribute({
           name: linkedAttachment.attributeName,
@@ -179,20 +178,5 @@ export class CredentialUtils {
 
     // Check if number is integer and in range of int32
     return Number.isInteger(number) && number >= minI32 && number <= maxI32
-  }
-
-  public static checkAttributesMatch(schema: Schema, credentialPreview: V1CredentialPreview) {
-    const schemaAttributes = schema.attrNames
-    const credAttributes = credentialPreview.attributes.map((a) => a.name)
-
-    const difference = credAttributes
-      .filter((x) => !schemaAttributes.includes(x))
-      .concat(schemaAttributes.filter((x) => !credAttributes.includes(x)))
-
-    if (difference.length > 0) {
-      throw new AriesFrameworkError(
-        `The credential preview attributes do not match the schema attributes (difference is: ${difference}, needs: ${schemaAttributes})`
-      )
-    }
   }
 }

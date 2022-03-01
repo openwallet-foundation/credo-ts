@@ -368,7 +368,7 @@ export async function issueCredential({
         linkedAttachments: credentialTemplate.linkedAttachments,
       },
     },
-    protocolVersion: CredentialProtocolVersion.V1_0,
+    protocolVersion: CredentialProtocolVersion.V1,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   }
   let issuerCredentialRecord = await issuerAgent.credentials.offerCredential(offerOptions)
@@ -381,7 +381,7 @@ export async function issueCredential({
   const acceptOfferOptions: AcceptOfferOptions = {
     credentialRecordId: holderCredentialRecord.id,
     credentialRecordType: CredentialRecordType.Indy,
-    protocolVersion: CredentialProtocolVersion.V1_0,
+    protocolVersion: CredentialProtocolVersion.V1,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   }
 
@@ -431,7 +431,7 @@ export async function issueConnectionLessCredential({
         credentialDefinitionId: credentialTemplate.credentialDefinitionId,
       },
     },
-    protocolVersion: CredentialProtocolVersion.V1_0,
+    protocolVersion: CredentialProtocolVersion.V1,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   }
   // eslint-disable-next-line prefer-const
@@ -448,7 +448,7 @@ export async function issueConnectionLessCredential({
   const acceptOfferOptions: AcceptOfferOptions = {
     credentialRecordId: holderCredentialRecord.id,
     credentialRecordType: CredentialRecordType.Indy,
-    protocolVersion: CredentialProtocolVersion.V1_0,
+    protocolVersion: CredentialProtocolVersion.V1,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   }
 

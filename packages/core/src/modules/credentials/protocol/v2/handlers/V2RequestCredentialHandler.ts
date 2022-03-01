@@ -3,7 +3,8 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler } from '../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { DidCommMessageRepository } from '../../../../../storage'
-import type { CredentialFormatService, CredProposeOfferRequestFormat } from '../../../formats/CredentialFormatService'
+import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
+import type { CredProposeOfferRequestFormat } from '../../../formats/models/CredentialFormatServiceOptions'
 import type { AcceptRequestOptions } from '../../../interfaces'
 import type { CredentialExchangeRecord } from '../../../repository'
 import type { V2CredentialService } from '../V2CredentialService'
@@ -84,18 +85,18 @@ export class V2RequestCredentialHandler implements Handler {
     for (const formatService of formatServices) {
       // 3. Call format.shouldRespondToProposal for each one
       if (proposeMessage) {
-        const attachment = formatService.getAttachment(proposeMessage)
+        const attachment = this.credentialService.getAttachment(proposeMessage)
         if (attachment) {
           proposalPayload = formatService.getCredentialPayload(attachment)
         }
       }
       if (offerMessage) {
-        const attachment = formatService.getAttachment(offerMessage)
+        const attachment = this.credentialService.getAttachment(offerMessage)
         if (attachment) {
           offerPayload = formatService.getCredentialPayload(attachment)
         }
       }
-      const attachment = formatService.getAttachment(requestMessage)
+      const attachment = this.credentialService.getAttachment(requestMessage)
       if (attachment) {
         requestPayload = formatService.getCredentialPayload(attachment)
 
@@ -129,7 +130,7 @@ export class V2RequestCredentialHandler implements Handler {
     const options: AcceptRequestOptions = {
       comment: requestMessage.comment,
       autoAcceptCredential: record.autoAcceptCredential,
-      protocolVersion: CredentialProtocolVersion.V2_0,
+      protocolVersion: CredentialProtocolVersion.V2,
       credentialRecordId: record.id,
     }
 

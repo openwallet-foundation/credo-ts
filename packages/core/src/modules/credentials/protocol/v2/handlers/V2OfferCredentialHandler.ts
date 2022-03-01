@@ -3,8 +3,9 @@ import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handle
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { MediationRecipientService } from '../../../../routing/services/MediationRecipientService'
-import type { CredentialPreviewAttribute } from '../../../CredentialPreviewAttributes'
-import type { CredentialFormatService, CredProposeOfferRequestFormat } from '../../../formats/CredentialFormatService'
+import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
+import type { CredProposeOfferRequestFormat } from '../../../formats/models/CredentialFormatServiceOptions'
+import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttributes'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
@@ -69,12 +70,12 @@ export class V2OfferCredentialHandler implements Handler {
     for (const formatService of formatServices) {
       // 3. Call format.shouldRespondToProposal for each one
       if (proposeMessage) {
-        const attachment = formatService.getAttachment(proposeMessage)
+        const attachment = this.credentialService.getAttachment(proposeMessage)
         if (attachment) {
           proposalPayload = formatService.getCredentialPayload(attachment)
         }
       }
-      const attachment = formatService.getAttachment(offerMessage)
+      const attachment = this.credentialService.getAttachment(offerMessage)
       if (attachment) {
         offerPayload = formatService.getCredentialPayload(attachment)
       }

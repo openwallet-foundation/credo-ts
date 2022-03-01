@@ -15,11 +15,7 @@ export function AckDecorated<T extends BaseMessageConstructor>(Base: T) {
     public pleaseAck?: AckDecorator
 
     public setPleaseAck(on?: [AckValues.Receipt]) {
-      if (on) {
-        this.pleaseAck = new AckDecorator({ on: on })
-      } else {
-        this.pleaseAck = new AckDecorator({ on: [AckValues.Receipt] })
-      }
+      this.pleaseAck = new AckDecorator({ on: on ?? [AckValues.Receipt] })
     }
 
     public getPleaseAck(): AckDecorator | undefined {

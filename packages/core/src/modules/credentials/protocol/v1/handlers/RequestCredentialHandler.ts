@@ -12,15 +12,15 @@ import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import {
   INDY_CREDENTIAL_ATTACHMENT_ID,
   OfferCredentialMessage,
-  ProposeCredentialMessage,
-  RequestCredentialMessage,
+  V1ProposeCredentialMessage,
+  V1RequestCredentialMessage,
 } from '../messages'
 
 export class RequestCredentialHandler implements Handler {
   private agentConfig: AgentConfig
   private credentialService: V1CredentialService
   private didCommMessageRepository: DidCommMessageRepository
-  public supportedMessages = [RequestCredentialMessage]
+  public supportedMessages = [V1RequestCredentialMessage]
 
   public constructor(
     credentialService: V1CredentialService,
@@ -34,13 +34,13 @@ export class RequestCredentialHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<RequestCredentialHandler>) {
     const credentialRecord = await this.credentialService.processRequest(messageContext)
-    let requestMessage: RequestCredentialMessage | undefined
+    let requestMessage: V1RequestCredentialMessage | undefined
     let offerMessage: OfferCredentialMessage | undefined
-    let proposeMessage: ProposeCredentialMessage | undefined
+    let proposeMessage: V1ProposeCredentialMessage | undefined
     try {
       requestMessage = await this.didCommMessageRepository.getAgentMessage({
         associatedRecordId: credentialRecord.id,
-        messageClass: RequestCredentialMessage,
+        messageClass: V1RequestCredentialMessage,
       })
     } catch (RecordNotFoundError) {
       // can happen in normal processing
@@ -56,7 +56,7 @@ export class RequestCredentialHandler implements Handler {
     try {
       proposeMessage = await this.didCommMessageRepository.getAgentMessage({
         associatedRecordId: credentialRecord.id,
-        messageClass: ProposeCredentialMessage,
+        messageClass: V1ProposeCredentialMessage,
       })
     } catch (RecordNotFoundError) {
       // can happen in normal processing
@@ -99,7 +99,7 @@ export class RequestCredentialHandler implements Handler {
     record: CredentialExchangeRecord,
     messageContext: HandlerInboundMessage<RequestCredentialHandler>,
     offerMessage?: OfferCredentialMessage,
-    requestMessage?: RequestCredentialMessage
+    requestMessage?: V1RequestCredentialMessage
   ) {
     this.agentConfig.logger.info(
       `Automatically sending credential with autoAccept on ${this.agentConfig.autoAcceptCredentials}`
@@ -107,7 +107,7 @@ export class RequestCredentialHandler implements Handler {
 
     const options: AcceptRequestOptions = {
       attachId: INDY_CREDENTIAL_ATTACHMENT_ID,
-      protocolVersion: CredentialProtocolVersion.V1_0,
+      protocolVersion: CredentialProtocolVersion.V1,
       credentialRecordId: record.id,
       comment: 'V1 Indy Credential',
     }

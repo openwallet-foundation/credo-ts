@@ -6,13 +6,13 @@ import type { CredentialExchangeRecord } from '../../../repository/CredentialRec
 import type { V1CredentialService } from '../V1CredentialService'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
-import { IssueCredentialMessage, RequestCredentialMessage } from '../messages'
+import { V1IssueCredentialMessage, V1RequestCredentialMessage } from '../messages'
 
 export class IssueCredentialHandler implements Handler {
   private credentialService: V1CredentialService
   private agentConfig: AgentConfig
   private didCommMessageRepository: DidCommMessageRepository
-  public supportedMessages = [IssueCredentialMessage]
+  public supportedMessages = [V1IssueCredentialMessage]
 
   public constructor(
     credentialService: V1CredentialService,
@@ -28,7 +28,7 @@ export class IssueCredentialHandler implements Handler {
     const credentialRecord = await this.credentialService.processCredential(messageContext)
     const credentialMessage = await this.didCommMessageRepository.getAgentMessage({
       associatedRecordId: credentialRecord.id,
-      messageClass: IssueCredentialMessage,
+      messageClass: V1IssueCredentialMessage,
     })
     const formatService: CredentialFormatService = this.credentialService.getFormatService()
 
@@ -39,7 +39,7 @@ export class IssueCredentialHandler implements Handler {
     }
     // 3. Call format.shouldRespondToProposal for each one
     if (
-      formatService.shouldAutoRespondToIssue(
+      formatService.shouldAutoRespondToCredential(
         credentialRecord,
         this.agentConfig.autoAcceptCredentials,
         credentialPayload
@@ -51,7 +51,7 @@ export class IssueCredentialHandler implements Handler {
 
   private async createAck(
     record: CredentialExchangeRecord,
-    credentialMessage: IssueCredentialMessage,
+    credentialMessage: V1IssueCredentialMessage,
     messageContext: HandlerInboundMessage<IssueCredentialHandler>
   ) {
     this.agentConfig.logger.info(
@@ -61,7 +61,7 @@ export class IssueCredentialHandler implements Handler {
 
     const requestMessage = await this.didCommMessageRepository.getAgentMessage({
       associatedRecordId: credentialRecord.id,
-      messageClass: RequestCredentialMessage,
+      messageClass: V1RequestCredentialMessage,
     })
     if (messageContext.connection) {
       return createOutboundMessage(messageContext.connection, message)

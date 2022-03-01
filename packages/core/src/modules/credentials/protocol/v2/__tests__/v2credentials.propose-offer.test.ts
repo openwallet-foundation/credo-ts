@@ -8,7 +8,7 @@ import type {
   ProposeCredentialOptions,
 } from '../../../interfaces'
 
-import { CredentialExchangeRecord, CredentialState, OfferCredentialMessage } from '../../..'
+import { CredentialExchangeRecord, CredentialState, V1OfferCredentialMessage } from '../../..'
 import { DidCommMessageRepository } from '../../../../../../src/storage'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
@@ -18,6 +18,7 @@ import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialRecordType } from '../../../interfaces'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
+import { V2CredentialPreview } from '../V2CredentialPreview'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
 describe('credentials', () => {
@@ -29,10 +30,6 @@ describe('credentials', () => {
   let aliceCredentialRecord: CredentialExchangeRecord
   let faberCredentialRecord: CredentialExchangeRecord
 
-  const credentialPreview = V1CredentialPreview.fromRecord({
-    name: 'John',
-    age: '99',
-  })
   let didCommMessageRepository: DidCommMessageRepository
   beforeAll(async () => {
     ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
@@ -47,33 +44,37 @@ describe('credentials', () => {
     await aliceAgent.shutdown()
     await aliceAgent.wallet.delete()
   })
-  const testAttributes = {
-    attributes: credentialPreview.attributes,
-    schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
-    schemaName: 'ahoy',
-    schemaVersion: '1.0',
-    schemaId: '1560364003',
-    issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
-    credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
-    linkedAttachments: [
-      new LinkedAttachment({
-        name: 'profile_picture',
-        attachment: new Attachment({
-          mimeType: 'image/png',
-          data: new AttachmentData({ base64: 'base64encodedpic' }),
-        }),
-      }),
-    ],
-  }
   // ==============================
   // TEST v1 BEGIN
   // ==========================
   test('Alice starts with V1 credential proposal to Faber', async () => {
+    const credentialPreview = V1CredentialPreview.fromRecord({
+      name: 'John',
+      age: '99',
+    })
+    const testAttributes = {
+      attributes: credentialPreview.attributes,
+      schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+      schemaName: 'ahoy',
+      schemaVersion: '1.0',
+      schemaId: '1560364003',
+      issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+      credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
+      linkedAttachments: [
+        new LinkedAttachment({
+          name: 'profile_picture',
+          attachment: new Attachment({
+            mimeType: 'image/png',
+            data: new AttachmentData({ base64: 'base64encodedpic' }),
+          }),
+        }),
+      ],
+    }
     testLogger.test('Alice sends (v1) credential proposal to Faber')
     // set the propose options
     const proposeOptions: ProposeCredentialOptions = {
       connectionId: aliceConnection.id,
-      protocolVersion: CredentialProtocolVersion.V1_0,
+      protocolVersion: CredentialProtocolVersion.V1,
       credentialFormats: {
         indy: {
           payload: {
@@ -87,7 +88,7 @@ describe('credentials', () => {
     const credentialExchangeRecord = await aliceAgent.credentials.proposeCredential(proposeOptions)
 
     expect(credentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
-    expect(credentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V1_0)
+    expect(credentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V1)
     expect(credentialExchangeRecord.state).toEqual(CredentialState.ProposalSent)
     expect(credentialExchangeRecord.threadId).not.toBeNull()
     testLogger.test('Faber waits for credential proposal from Alice')
@@ -122,7 +123,7 @@ describe('credentials', () => {
 
     const offerMessage = await didCommMessageRepository.findAgentMessage({
       associatedRecordId: faberCredentialRecord.id,
-      messageClass: OfferCredentialMessage,
+      messageClass: V1OfferCredentialMessage,
     })
 
     expect(JsonTransformer.toJSON(offerMessage)).toMatchObject({
@@ -164,13 +165,13 @@ describe('credentials', () => {
         credentialRecordId: aliceCredentialRecord.id,
         connectionId: aliceCredentialRecord.connectionId,
         credentialRecordType: CredentialRecordType.Indy,
-        protocolVersion: CredentialProtocolVersion.V1_0,
+        protocolVersion: CredentialProtocolVersion.V1,
       }
       const offerCredentialExchangeRecord: CredentialExchangeRecord =
         await aliceAgent.credentials.acceptCredentialOffer(acceptOfferOptions)
 
       expect(offerCredentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
-      expect(offerCredentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V1_0)
+      expect(offerCredentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V1)
       expect(offerCredentialExchangeRecord.state).toEqual(CredentialState.RequestSent)
       expect(offerCredentialExchangeRecord.threadId).not.toBeNull()
       testLogger.test('Faber waits for credential request from Alice')
@@ -203,16 +204,34 @@ describe('credentials', () => {
   // -------------------------- V2 TEST BEGIN --------------------------------------------
 
   test('Alice starts with V2 (Indy format) credential proposal to Faber', async () => {
-    const credentialPreview = V1CredentialPreview.fromRecord({
+    const credentialPreview = V2CredentialPreview.fromRecord({
       name: 'John',
       age: '99',
     })
+    const testAttributes = {
+      attributes: credentialPreview.attributes,
+      schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+      schemaName: 'ahoy',
+      schemaVersion: '1.0',
+      schemaId: '1560364003',
+      issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+      credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
+      linkedAttachments: [
+        new LinkedAttachment({
+          name: 'profile_picture',
+          attachment: new Attachment({
+            mimeType: 'image/png',
+            data: new AttachmentData({ base64: 'base64encodedpic' }),
+          }),
+        }),
+      ],
+    }
     testLogger.test('Alice sends (v2) credential proposal to Faber')
     // set the propose options
     // we should set the version to V1.0 and V2.0 in separate tests, one as a regression test
     const proposeOptions: ProposeCredentialOptions = {
       connectionId: aliceConnection.id,
-      protocolVersion: CredentialProtocolVersion.V2_0,
+      protocolVersion: CredentialProtocolVersion.V2,
       credentialFormats: {
         indy: {
           payload: {
@@ -229,7 +248,7 @@ describe('credentials', () => {
     )
 
     expect(credentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
-    expect(credentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V2_0)
+    expect(credentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V2)
     expect(credentialExchangeRecord.state).toEqual(CredentialState.ProposalSent)
     expect(credentialExchangeRecord.threadId).not.toBeNull()
 
@@ -304,13 +323,13 @@ describe('credentials', () => {
         credentialRecordId: aliceCredentialRecord.id,
         connectionId: aliceCredentialRecord.connectionId,
         credentialRecordType: CredentialRecordType.Indy,
-        protocolVersion: CredentialProtocolVersion.V2_0,
+        protocolVersion: CredentialProtocolVersion.V2,
       }
       const offerCredentialExchangeRecord: CredentialExchangeRecord =
         await aliceAgent.credentials.acceptCredentialOffer(acceptOfferOptions)
 
       expect(offerCredentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
-      expect(offerCredentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V2_0)
+      expect(offerCredentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V2)
       expect(offerCredentialExchangeRecord.state).toEqual(CredentialState.RequestSent)
       expect(offerCredentialExchangeRecord.threadId).not.toBeNull()
 
@@ -321,6 +340,7 @@ describe('credentials', () => {
       })
 
       testLogger.test('Faber sends credential to Alice')
+
       const options: AcceptRequestOptions = {
         protocolVersion: credentialExchangeRecord.protocolVersion,
         credentialRecordId: faberCredentialRecord.id,
@@ -335,7 +355,7 @@ describe('credentials', () => {
       })
 
       // testLogger.test('Alice sends credential ack to Faber')
-      await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id, CredentialProtocolVersion.V2_0)
+      await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id, CredentialProtocolVersion.V2)
 
       testLogger.test('Faber waits for credential ack from Alice')
       faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
@@ -357,6 +377,10 @@ describe('credentials', () => {
   })
   test('Feber starts with V2 offer; Alice declines', async () => {
     testLogger.test('Faber sends credential offer to Alice')
+    const credentialPreview = V2CredentialPreview.fromRecord({
+      name: 'John',
+      age: '99',
+    })
     const offerOptions: OfferCredentialOptions = {
       comment: 'some comment about credential',
       connectionId: faberConnection.id,
@@ -366,7 +390,7 @@ describe('credentials', () => {
           credentialDefinitionId: credDefId,
         },
       },
-      protocolVersion: CredentialProtocolVersion.V2_0,
+      protocolVersion: CredentialProtocolVersion.V2,
     }
     const faberCredentialExchangeRecord = await faberAgent.credentials.offerCredential(offerOptions)
 
@@ -385,7 +409,7 @@ describe('credentials', () => {
     expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
     testLogger.test('Alice declines offer')
     if (aliceCredentialRecord.id) {
-      await aliceAgent.credentials.declineCredentialOffer(aliceCredentialRecord.id, CredentialProtocolVersion.V2_0)
+      await aliceAgent.credentials.declineCredentialOffer(aliceCredentialRecord.id, CredentialProtocolVersion.V2)
     } else {
       throw Error('Missing credential record id')
     }
