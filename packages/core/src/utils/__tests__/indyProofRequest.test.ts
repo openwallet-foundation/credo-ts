@@ -14,11 +14,11 @@ export const INDY_CREDENTIAL_OFFER_ATTACHMENT_ID = 'libindy-cred-offer-0'
 describe('Present Proof', () => {
   let credDefId: string
 
-  beforeAll(async () => {
+  beforeAll(() => {
     credDefId = '9vPXgSpQJPkJEALbLXueBp:3:CL:57753:tag1'
   })
 
-  test('attribute names match, same cred def filter', async () => {
+  test('attribute names match, same cred def filter', () => {
     const attributes = {
       name: new ProofAttributeInfo({
         name: 'age',
@@ -50,7 +50,7 @@ describe('Present Proof', () => {
     expect(() => checkProofRequestForDuplicates(proofRequest)).toThrowError(AriesFrameworkError)
   })
 
-  test('attribute names match with predicates name, same cred def filter', async () => {
+  test('attribute names match with predicates name, same cred def filter', () => {
     const attributes = {
       name: new ProofAttributeInfo({
         name: 'age',
