@@ -1,5 +1,5 @@
+import type { IndyCredentialMetadata } from '../../modules/credentials/models/CredentialInfo'
 import type { CustomCredentialTags, CredentialPreviewAttribute, RequestCredentialMessage } from '@aries-framework/core'
-import type { IndyCredentialMetadata } from '@aries-framework/core/build/types'
 
 import { checkProofRequestForDuplicates } from '..'
 import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
