@@ -1,10 +1,12 @@
-import type { KeyType } from '../../../crypto'
+import type { KeyType } from '.'
 
 import { varint } from 'multiformats'
 
-import { Buffer, BufferEncoder, MultiBaseEncoder } from '../../../utils'
-
-import { getKeyTypeByMultiCodecPrefix, getMultiCodecPrefixByKeytype } from './key-type/multiCodecKey'
+import {
+  getKeyTypeByMultiCodecPrefix,
+  getMultiCodecPrefixByKeytype,
+} from '../modules/dids/domain/key-type/multiCodecKey'
+import { Buffer, BufferEncoder, MultiBaseEncoder } from '../utils'
 
 export class Key {
   public readonly publicKey: Buffer

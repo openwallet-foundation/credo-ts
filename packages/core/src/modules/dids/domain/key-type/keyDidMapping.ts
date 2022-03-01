@@ -1,5 +1,5 @@
 import type { DidDocument } from '../DidDocument'
-import type { Key } from '../Key'
+import type { Key } from '../../../../crypto/Key'
 import type { VerificationMethod } from '../verificationMethod'
 
 import { KeyType } from '../../../../crypto'
