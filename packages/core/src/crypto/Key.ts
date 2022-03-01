@@ -2,11 +2,9 @@ import type { KeyType } from '.'
 
 import { varint } from 'multiformats'
 
-import {
-  getKeyTypeByMultiCodecPrefix,
-  getMultiCodecPrefixByKeytype,
-} from '../modules/dids/domain/key-type/multiCodecKey'
 import { Buffer, BufferEncoder, MultiBaseEncoder } from '../utils'
+
+import { getKeyTypeByMultiCodecPrefix, getMultiCodecPrefixByKeytype } from './multiCodecKey'
 
 export class Key {
   public readonly publicKey: Buffer
