@@ -9,6 +9,7 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { DidCommService } from '../dids'
+import { OutOfBandService } from '../oob/OutOfBandService'
 import { OutOfBandMessage } from '../oob/messages'
 import { OutOfBandRepository } from '../oob/repository'
 import { OutOfBandRole } from '../oob/repository/OutOfBandRole'
@@ -36,7 +37,7 @@ export class ConnectionsModule {
   private agentConfig: AgentConfig
   private didExchangeProtocol: DidExchangeProtocol
   private connectionService: ConnectionService
-  private outOfBandRepository: OutOfBandRepository
+  private outOfBandService: OutOfBandService
   private messageSender: MessageSender
   private trustPingService: TrustPingService
   private mediationRecipientService: MediationRecipientService
@@ -46,7 +47,7 @@ export class ConnectionsModule {
     agentConfig: AgentConfig,
     didExchangeProtocol: DidExchangeProtocol,
     connectionService: ConnectionService,
-    outOfBandRepository: OutOfBandRepository,
+    outOfBandService: OutOfBandService,
     trustPingService: TrustPingService,
     mediationRecipientService: MediationRecipientService,
     messageSender: MessageSender
@@ -54,7 +55,7 @@ export class ConnectionsModule {
     this.agentConfig = agentConfig
     this.didExchangeProtocol = didExchangeProtocol
     this.connectionService = connectionService
-    this.outOfBandRepository = outOfBandRepository
+    this.outOfBandService = outOfBandService
     this.trustPingService = trustPingService
     this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
@@ -246,7 +247,7 @@ export class ConnectionsModule {
       if (!connectionRecord.outOfBandId) {
         throw new AriesFrameworkError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
       }
-      const outOfBandRecord = await this.outOfBandRepository.findById(connectionRecord.outOfBandId)
+      const outOfBandRecord = await this.outOfBandService.findById(connectionRecord.outOfBandId)
       if (!outOfBandRecord) {
         throw new AriesFrameworkError(
           `OutOfBand record for connection ${connectionRecord.id} with outOfBandId ${connectionRecord.outOfBandId} not found!`
@@ -366,13 +367,13 @@ export class ConnectionsModule {
     dispatcher.registerHandler(
       new ConnectionRequestHandler(
         this.connectionService,
-        this.outOfBandRepository,
+        this.outOfBandService,
         this.agentConfig,
         this.mediationRecipientService
       )
     )
     dispatcher.registerHandler(
-      new ConnectionResponseHandler(this.connectionService, this.outOfBandRepository, this.agentConfig)
+      new ConnectionResponseHandler(this.connectionService, this.outOfBandService, this.agentConfig)
     )
     dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
     dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
@@ -381,7 +382,7 @@ export class ConnectionsModule {
     dispatcher.registerHandler(
       new DidExchangeRequestHandler(
         this.didExchangeProtocol,
-        this.outOfBandRepository,
+        this.outOfBandService,
         this.agentConfig,
         this.mediationRecipientService
       )
@@ -390,11 +391,11 @@ export class ConnectionsModule {
     dispatcher.registerHandler(
       new DidExchangeResponseHandler(
         this.didExchangeProtocol,
-        this.outOfBandRepository,
+        this.outOfBandService,
         this.connectionService,
         this.agentConfig
       )
     )
-    dispatcher.registerHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandRepository))
+    dispatcher.registerHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService))
   }
 }

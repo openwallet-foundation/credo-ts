@@ -1,6 +1,6 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { OutOfBandRepository } from '../../oob/repository'
+import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 import type { ConnectionService } from '../services'
 
@@ -11,19 +11,19 @@ import { HandshakeProtocol } from '../models'
 
 export class DidExchangeResponseHandler implements Handler {
   private didExchangeProtocol: DidExchangeProtocol
-  private outOfBandRepository: OutOfBandRepository
+  private outOfBandService: OutOfBandService
   private connectionService: ConnectionService
   private agentConfig: AgentConfig
   public supportedMessages = [DidExchangeResponseMessage]
 
   public constructor(
     didExchangeProtocol: DidExchangeProtocol,
-    outOfBandRepository: OutOfBandRepository,
+    outOfBandService: OutOfBandService,
     connectionService: ConnectionService,
     agentConfig: AgentConfig
   ) {
     this.didExchangeProtocol = didExchangeProtocol
-    this.outOfBandRepository = outOfBandRepository
+    this.outOfBandService = outOfBandService
     this.connectionService = connectionService
     this.agentConfig = agentConfig
   }
@@ -49,7 +49,7 @@ export class DidExchangeResponseHandler implements Handler {
       throw new AriesFrameworkError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
     }
 
-    const outOfBandRecord = await this.outOfBandRepository.findById(connectionRecord.outOfBandId)
+    const outOfBandRecord = await this.outOfBandService.findById(connectionRecord.outOfBandId)
 
     if (!outOfBandRecord) {
       throw new AriesFrameworkError(

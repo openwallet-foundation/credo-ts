@@ -1,6 +1,6 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { OutOfBandRepository } from '../../oob/repository'
+import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { MediationRecipientService } from '../../routing/services/MediationRecipientService'
 import type { ConnectionService, Routing } from '../services/ConnectionService'
 
@@ -10,19 +10,19 @@ import { ConnectionRequestMessage } from '../messages'
 
 export class ConnectionRequestHandler implements Handler {
   private connectionService: ConnectionService
-  private outOfBandRepository: OutOfBandRepository
+  private outOfBandService: OutOfBandService
   private agentConfig: AgentConfig
   private mediationRecipientService: MediationRecipientService
   public supportedMessages = [ConnectionRequestMessage]
 
   public constructor(
     connectionService: ConnectionService,
-    outOfBandRepository: OutOfBandRepository,
+    outOfBandRepository: OutOfBandService,
     agentConfig: AgentConfig,
     mediationRecipientService: MediationRecipientService
   ) {
     this.connectionService = connectionService
-    this.outOfBandRepository = outOfBandRepository
+    this.outOfBandService = outOfBandRepository
     this.agentConfig = agentConfig
     this.mediationRecipientService = mediationRecipientService
   }
@@ -33,9 +33,7 @@ export class ConnectionRequestHandler implements Handler {
     }
 
     const { recipientVerkey } = messageContext
-    const outOfBandRecord = await this.outOfBandRepository.findSingleByQuery({
-      recipientKey: recipientVerkey,
-    })
+    const outOfBandRecord = await this.outOfBandService.findByRecipientKey(recipientVerkey)
 
     let connectionRecord
     if (outOfBandRecord) {

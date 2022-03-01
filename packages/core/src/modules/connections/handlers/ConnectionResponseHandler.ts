@@ -1,6 +1,6 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { OutOfBandRepository } from '../../oob/repository'
+import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { ConnectionService } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
@@ -9,18 +9,18 @@ import { ConnectionResponseMessage } from '../messages'
 
 export class ConnectionResponseHandler implements Handler {
   private connectionService: ConnectionService
-  private outOfBandRepository: OutOfBandRepository
+  private outOfBandService: OutOfBandService
 
   private agentConfig: AgentConfig
   public supportedMessages = [ConnectionResponseMessage]
 
   public constructor(
     connectionService: ConnectionService,
-    outOfBandRepository: OutOfBandRepository,
+    outOfBandService: OutOfBandService,
     agentConfig: AgentConfig
   ) {
     this.connectionService = connectionService
-    this.outOfBandRepository = outOfBandRepository
+    this.outOfBandService = outOfBandService
     this.agentConfig = agentConfig
   }
 
@@ -35,7 +35,7 @@ export class ConnectionResponseHandler implements Handler {
     }
 
     const outOfBandRecord =
-      connectionRecord.outOfBandId && (await this.outOfBandRepository.findById(connectionRecord.outOfBandId))
+      connectionRecord.outOfBandId && (await this.outOfBandService.findById(connectionRecord.outOfBandId))
 
     // The presence of outOfBandRecord is not mandatory when the old connection invitation is used
     const connection = await this.connectionService.processResponse(messageContext, outOfBandRecord || undefined)

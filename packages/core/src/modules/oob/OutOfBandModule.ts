@@ -19,9 +19,9 @@ import { ConnectionInvitationMessage, ConnectionState, ConnectionsModule } from 
 import { DidCommService, DidsModule } from '../dids'
 import { MediationRecipientService } from '../routing'
 
+import { OutOfBandService } from './OutOfBandService'
 import { HandshakeReuseHandler } from './handlers'
 import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
-import { OutOfBandRepository } from './repository'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
 import { OutOfBandRole } from './repository/OutOfBandRole'
 import { OutOfBandState } from './repository/OutOfBandState'
@@ -54,7 +54,7 @@ export interface ReceiveOutOfBandMessageConfig {
 
 @scoped(Lifecycle.ContainerScoped)
 export class OutOfBandModule {
-  private outOfBandRepository: OutOfBandRepository
+  private outOfBandService: OutOfBandService
   private connectionsModule: ConnectionsModule
   private dids: DidsModule
   private mediationRecipientService: MediationRecipientService
@@ -67,7 +67,7 @@ export class OutOfBandModule {
   public constructor(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
-    outOfBandRepository: OutOfBandRepository,
+    outOfBandService: OutOfBandService,
     connectionsModule: ConnectionsModule,
     dids: DidsModule,
     mediationRecipientService: MediationRecipientService,
@@ -77,7 +77,7 @@ export class OutOfBandModule {
     this.dispatcher = dispatcher
     this.agentConfig = agentConfig
     this.logger = agentConfig.logger
-    this.outOfBandRepository = outOfBandRepository
+    this.outOfBandService = outOfBandService
     this.connectionsModule = connectionsModule
     this.dids = dids
     this.mediationRecipientService = mediationRecipientService
@@ -169,7 +169,7 @@ export class OutOfBandModule {
       reusable: multiUseInvitation,
       autoAcceptConnection: autoAcceptConnection ?? this.agentConfig.autoAcceptConnections,
     })
-    await this.outOfBandRepository.save(outOfBandRecord)
+    await this.outOfBandService.save(outOfBandRecord)
 
     return outOfBandRecord
   }
@@ -229,7 +229,7 @@ export class OutOfBandModule {
       outOfBandMessage: outOfBandMessage,
       autoAcceptConnection: autoAcceptConnection ?? this.agentConfig.autoAcceptConnections,
     })
-    await this.outOfBandRepository.save(outOfBandRecord)
+    await this.outOfBandService.save(outOfBandRecord)
 
     if (autoAcceptMessage) {
       return await this.acceptMessage(outOfBandRecord, { label, autoAcceptConnection, reuseConnection })

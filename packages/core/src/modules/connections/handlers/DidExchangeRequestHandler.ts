@@ -1,6 +1,6 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { OutOfBandRepository } from '../../oob/repository'
+import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { MediationRecipientService } from '../../routing/services/MediationRecipientService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
@@ -10,19 +10,19 @@ import { DidExchangeRequestMessage } from '../messages'
 
 export class DidExchangeRequestHandler implements Handler {
   private didExchangeProtocol: DidExchangeProtocol
-  private outOfBandRepository: OutOfBandRepository
+  private outOfBandService: OutOfBandService
   private agentConfig: AgentConfig
   private mediationRecipientService: MediationRecipientService
   public supportedMessages = [DidExchangeRequestMessage]
 
   public constructor(
     didExchangeProtocol: DidExchangeProtocol,
-    outOfBandRepository: OutOfBandRepository,
+    outOfBandService: OutOfBandService,
     agentConfig: AgentConfig,
     mediationRecipientService: MediationRecipientService
   ) {
     this.didExchangeProtocol = didExchangeProtocol
-    this.outOfBandRepository = outOfBandRepository
+    this.outOfBandService = outOfBandService
     this.agentConfig = agentConfig
     this.mediationRecipientService = mediationRecipientService
   }
@@ -33,9 +33,10 @@ export class DidExchangeRequestHandler implements Handler {
     }
 
     const { message } = messageContext
-    const outOfBandRecord = await this.outOfBandRepository.findSingleByQuery({
-      messageId: message.thread?.parentThreadId,
-    })
+    if (!message.thread?.parentThreadId) {
+      throw new AriesFrameworkError(`Message does not contain 'pthid' attribute`)
+    }
+    const outOfBandRecord = await this.outOfBandService.findByMessageId(message.thread.parentThreadId)
 
     if (!outOfBandRecord) {
       throw new AriesFrameworkError(`OutOfBand record for message ID ${message.thread?.parentThreadId} not found!`)
