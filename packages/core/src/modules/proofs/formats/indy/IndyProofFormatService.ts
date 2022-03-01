@@ -174,8 +174,8 @@ export class IndyProofFormatService extends ProofFormatService {
       if (!CredentialUtils.checkValidEncoding(attribute.raw, attribute.encoded)) {
         throw new InvalidEncodedValueError(
           `The encoded value for '${referent}' is invalid. ` +
-          `Expected '${CredentialUtils.encode(attribute.raw)}'. ` +
-          `Actual '${attribute.encoded}'`
+            `Expected '${CredentialUtils.encode(attribute.raw)}'. ` +
+            `Actual '${attribute.encoded}'`
         )
       }
     }

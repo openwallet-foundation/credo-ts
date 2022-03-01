@@ -73,6 +73,9 @@ export class Agent {
     this.container.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
     this.container.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
 
+    console.log('Creating agent with config', initialConfig)
+    console.log('Creating agent with dependencies', dependencies)
+
     this.logger.info('Creating agent with config', {
       ...initialConfig,
       // Prevent large object being logged.
@@ -83,8 +86,8 @@ export class Agent {
     if (!this.agentConfig.walletConfig) {
       this.logger.warn(
         'Wallet config has not been set on the agent config. ' +
-          'Make sure to initialize the wallet yourself before initializing the agent, ' +
-          'or provide the required wallet configuration in the agent constructor'
+        'Make sure to initialize the wallet yourself before initializing the agent, ' +
+        'or provide the required wallet configuration in the agent constructor'
       )
     }
 
@@ -154,8 +157,8 @@ export class Agent {
     } else if (!this.wallet.isInitialized) {
       throw new WalletError(
         'Wallet config has not been set on the agent config. ' +
-          'Make sure to initialize the wallet yourself before initializing the agent, ' +
-          'or provide the required wallet configuration in the agent constructor'
+        'Make sure to initialize the wallet yourself before initializing the agent, ' +
+        'or provide the required wallet configuration in the agent constructor'
       )
     }
 

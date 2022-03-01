@@ -195,14 +195,6 @@ describe('Present Proof', () => {
           }),
         ],
       }),
-      image_1: new ProofAttributeInfo({
-        name: 'image_1',
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
     }
 
     // Sample predicates
@@ -226,17 +218,9 @@ describe('Present Proof', () => {
         indy: {
           name: 'proof-request',
           version: '1.0',
-          nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
-          // attributes: presentationPreview.attributes,
-          // predicates: presentationPreview.predicates,
+          nonce: '1298236324864',
           requestedAttributes: attributes,
           requestedPredicates: predicates,
-          // requestedAttributes: {
-          //   attr1_referent: presentationPreview.attributes[0],
-          // },
-          // requestedPredicates: {
-          //   predicate1_referent: presentationPreview.predicates[0],
-          // },
         },
       },
     }
@@ -268,101 +252,63 @@ describe('Present Proof', () => {
         filterByPresentationPreview: true,
       }
     )
-    // const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
-    //   formats: {
-    //     indy: retrievedCredentials.indy,
-    //   },
-    //   version: ProofProtocolVersion.V1_0,
-    // })
+    const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
+      formats: {
+        indy: retrievedCredentials.indy,
+      },
+      version: ProofProtocolVersion.V1_0,
+    })
 
-    // const acceptPresentationOptions: AcceptPresentationOptions = {
-    //   protocolVersion: ProofProtocolVersion.V1_0,
-    //   proofRecordId: aliceProofRecord.id,
-    //   proofFormats: { indy: requestedCredentials.indy },
-    // }
+    const acceptPresentationOptions: AcceptPresentationOptions = {
+      protocolVersion: ProofProtocolVersion.V1_0,
+      proofRecordId: aliceProofRecord.id,
+      proofFormats: { indy: requestedCredentials.indy },
+    }
 
-    // await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
+    await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
 
-    // // Faber waits until it receives a presentation from Alice
-    // testLogger.test('Faber waits for presentation from Alice')
-    // faberProofRecord = await waitForProofRecord(faberAgent, {
-    //   threadId: aliceProofRecord.threadId,
-    //   state: ProofState.PresentationReceived,
-    // })
+    // Faber waits until it receives a presentation from Alice
+    testLogger.test('Faber waits for presentation from Alice')
+    faberProofRecord = await waitForProofRecord(faberAgent, {
+      threadId: aliceProofRecord.threadId,
+      state: ProofState.PresentationReceived,
+    })
 
-    // expect(faberProofRecord.id).not.toBeNull()
-    // expect(faberProofRecord).toMatchObject({
-    //   threadId: faberProofRecord.threadId,
-    //   state: ProofState.PresentationReceived,
-    //   protocolVersion: ProofProtocolVersion.V1_0,
-    // })
+    expect(faberProofRecord.id).not.toBeNull()
+    expect(faberProofRecord).toMatchObject({
+      threadId: faberProofRecord.threadId,
+      state: ProofState.PresentationReceived,
+      protocolVersion: ProofProtocolVersion.V1_0,
+    })
 
-    // expect(faberProofRecord).toMatchObject({
-    //   id: expect.any(String),
-    //   createdAt: expect.any(Date),
-    //   state: ProofState.PresentationReceived,
-    //   requestMessage: expect.any(V1RequestPresentationMessage),
-    //   isVerified: true,
-    //   presentationMessage: {
-    //     type: 'https://didcomm.org/present-proof/1.0/presentation',
-    //     id: expect.any(String),
-    //     presentationAttachments: [
-    //       {
-    //         id: 'libindy-presentation-0',
-    //         mimeType: 'application/json',
-    //       },
-    //     ],
-    //     attachments: [
-    //       {
-    //         id: 'zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
-    //         filename: 'picture-of-a-cat.png',
-    //         data: {
-    //           base64: expect.any(String),
-    //         },
-    //       },
-    //       {
-    //         id: 'zQmRHBT9rDs5QhsnYuPY3mNpXxgLcnNXkhjWJvTSAPMmcVd',
-    //         filename: 'picture-of-a-dog.png',
-    //       },
-    //     ],
-    //     thread: {
-    //       threadId: aliceProofRecord.threadId,
-    //     },
-    //   },
-    // })
+    // Faber accepts the presentation
+    testLogger.test('Faber accept the presentation from Alice')
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id, ProofProtocolVersion.V1_0)
 
-    // // Faber accepts the presentation
-    // testLogger.test('Faber accept the presentation from Alice')
-    // await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
+    // Alice waits until she receives a presentation acknowledgement
+    testLogger.test('Alice waits for acceptance by Faber')
+    aliceProofRecord = await waitForProofRecord(aliceAgent, {
+      threadId: aliceProofRecord.threadId,
+      state: ProofState.Done,
+    })
 
-    // // Alice waits until she receives a presentation acknowledgement
-    // testLogger.test('Alice waits for acceptance by Faber')
-    // aliceProofRecord = await waitForProofRecord(aliceAgent, {
-    //   threadId: aliceProofRecord.threadId,
-    //   state: ProofState.Done,
-    // })
+    expect(faberProofRecord).toMatchObject({
+      // type: ProofRecord.name,
+      id: expect.any(String),
+      createdAt: expect.any(Date),
+      threadId: aliceProofRecord.threadId,
+      connectionId: expect.any(String),
+      isVerified: true,
+      state: ProofState.PresentationReceived,
+    })
 
-    // expect(faberProofRecord).toMatchObject({
-    //   type: ProofRecord.name,
-    //   id: expect.any(String),
-    //   createdAt: expect.any(Date),
-    //   threadId: aliceProofRecord.threadId,
-    //   connectionId: expect.any(String),
-    //   isVerified: true,
-    //   state: ProofState.PresentationReceived,
-    //   requestMessage: expect.any(V1RequestPresentationMessage),
-    //   presentationMessage: expect.any(V1PresentationMessage),
-    // })
-
-    // expect(aliceProofRecord).toMatchObject({
-    //   type: ProofRecord.name,
-    //   id: expect.any(String),
-    //   createdAt: expect.any(Date),
-    //   threadId: faberProofRecord.threadId,
-    //   connectionId: expect.any(String),
-    //   state: ProofState.Done,
-    //   requestMessage: expect.any(V1RequestPresentationMessage),
-    //   presentationMessage: expect.any(V1PresentationMessage),
-    // })
+    expect(aliceProofRecord).toMatchObject({
+      // type: ProofRecord.name,
+      id: expect.any(String),
+      createdAt: expect.any(Date),
+      threadId: faberProofRecord.threadId,
+      connectionId: expect.any(String),
+      state: ProofState.Done,
+    })
   })
 })

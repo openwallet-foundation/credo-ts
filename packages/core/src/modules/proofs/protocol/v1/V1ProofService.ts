@@ -493,10 +493,13 @@ export class V1ProofService extends ProofService {
 
     const proofRecord = await this.getByThreadAndConnectionId(presentationMessage.threadId, connection?.id)
 
-    const proposalMessage = await this.didCommMessageRepository.getAgentMessage({
-      associatedRecordId: proofRecord.id,
-      messageClass: V1ProposePresentationMessage,
-    })
+
+    // const proposalMessage = await this.didCommMessageRepository.getAgentMessage({
+    //   associatedRecordId: proofRecord.id,
+    //   messageClass: V1ProposePresentationMessage,
+    // })
+
+    // console.log('processPresentation>>>>>>>>>>>>>>>>>>proposalMessage:', proposalMessage)
 
     const requestMessage = await this.didCommMessageRepository.getAgentMessage({
       associatedRecordId: proofRecord.id,
@@ -506,7 +509,7 @@ export class V1ProofService extends ProofService {
     // Assert
     proofRecord.assertState(ProofState.RequestSent)
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: proposalMessage ?? undefined,
+      // previousReceivedMessage: proposalMessage ?? undefined,
       previousSentMessage: requestMessage ?? undefined,
     })
 
