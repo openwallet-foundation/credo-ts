@@ -11,6 +11,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { AckValues } from '../../../decorators/ack/AckDecorator'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
@@ -592,7 +593,7 @@ export class CredentialService {
     issueCredentialMessage.setThread({
       threadId: credentialRecord.threadId,
     })
-    issueCredentialMessage.setPleaseAck()
+    issueCredentialMessage.setPleaseAck([AckValues.Receipt])
 
     credentialRecord.credentialMessage = issueCredentialMessage
     credentialRecord.autoAcceptCredential = options?.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
