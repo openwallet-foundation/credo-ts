@@ -1,3 +1,4 @@
+import type { OutOfBandState } from './domain/OutOfBandState'
 import type { OutOfBandRecord } from './repository'
 
 import { scoped, Lifecycle } from 'tsyringe'
@@ -14,6 +15,11 @@ export class OutOfBandService {
 
   public async save(outOfBandRecord: OutOfBandRecord) {
     return this.outOfBandRepository.save(outOfBandRecord)
+  }
+
+  public async updateState(outOfBandRecord: OutOfBandRecord, newState: OutOfBandState) {
+    outOfBandRecord.state = newState
+    return this.outOfBandRepository.update(outOfBandRecord)
   }
 
   public async findById(outOfBandRecordId: string) {

@@ -6,6 +6,7 @@ import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
+import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeRequestMessage } from '../messages'
 
 export class DidExchangeRequestHandler implements Handler {
@@ -43,6 +44,12 @@ export class DidExchangeRequestHandler implements Handler {
     }
 
     // TODO Shouln't we check also if the keys match the keys from oob invitation services?
+
+    if (outOfBandRecord.state === OutOfBandState.Done) {
+      throw new AriesFrameworkError(
+        'Out-of-band record has been already processed and it does not accept any new requests'
+      )
+    }
 
     // TODO Rotate keys or reuse the keys from oob invitation according to a config flag or method param.
     const routing = await this.mediationRecipientService.getRouting()

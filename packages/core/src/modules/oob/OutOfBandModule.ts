@@ -20,11 +20,11 @@ import { DidCommService, DidsModule } from '../dids'
 import { MediationRecipientService } from '../routing'
 
 import { OutOfBandService } from './OutOfBandService'
+import { OutOfBandRole } from './domain/OutOfBandRole'
+import { OutOfBandState } from './domain/OutOfBandState'
 import { HandshakeReuseHandler } from './handlers'
 import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
-import { OutOfBandRole } from './repository/OutOfBandRole'
-import { OutOfBandState } from './repository/OutOfBandState'
 
 // TODO
 // 1. routing keys,

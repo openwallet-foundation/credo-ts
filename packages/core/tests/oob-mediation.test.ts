@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 
 import { Subject } from 'rxjs'
@@ -89,11 +90,11 @@ describe('out of band with mediation', () => {
       }
     )
 
-    aliceMediatorConnection = await aliceAgent.connections.returnWhenIsConnected(aliceMediatorConnection?.id || '')
+    aliceMediatorConnection = await aliceAgent.connections.returnWhenIsConnected(aliceMediatorConnection!.id)
     expect(aliceMediatorConnection.state).toBe(DidExchangeState.Completed)
 
     let mediatorAliceConnection = await mediatorAgent.connections.findByOutOfBandId(mediationOutOfBandRecord.id)
-    mediatorAliceConnection = await mediatorAgent.connections.returnWhenIsConnected(mediatorAliceConnection?.id || '')
+    mediatorAliceConnection = await mediatorAgent.connections.returnWhenIsConnected(mediatorAliceConnection!.id)
     expect(mediatorAliceConnection.state).toBe(DidExchangeState.Completed)
 
     // ========== Set meadiation between Alice and Mediator agents ==========
@@ -115,11 +116,11 @@ describe('out of band with mediation', () => {
       autoAcceptConnection: true,
     })
 
-    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection?.id || '')
+    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     let faberAliceConnection = await faberAgent.connections.findByOutOfBandId(outOfBandRecord.id)
-    faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection?.id || '')
+    faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
     expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)

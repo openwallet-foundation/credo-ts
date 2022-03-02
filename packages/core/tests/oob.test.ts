@@ -10,6 +10,8 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { Agent } from '../src/agent/Agent'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
 import { DidCommService } from '../src/modules/dids'
+import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
+import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandMessage } from '../src/modules/oob/messages'
 
 import { TestMessage } from './TestMessage'
@@ -196,28 +198,26 @@ describe('out of band', () => {
   })
 
   describe('receiveMessage', () => {
-    test.skip('receive OOB connection invitation', async () => {
+    test('receive OOB connection invitation', async () => {
       const outOfBandRecord = await faberAgent.oob.createMessage(makeConnectionConfig)
       const { outOfBandMessage } = outOfBandRecord
 
-      const connectionRecord = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
-        autoAcceptMessage: true,
-        autoAcceptConnection: false,
-      })
-
-      // expect contains services
-      const [service] = outOfBandMessage.services as DidCommService[]
-      expect(service).toMatchObject(
-        new DidCommService({
-          id: expect.any(String),
-          serviceEndpoint: 'rxjs:faber',
-          priority: 0,
-          recipientKeys: [expect.any(String)],
-          routingKeys: [],
-        })
+      const { outOfBandRecord: receivedOutOfBandRecord, connectionRecord } = await aliceAgent.oob.receiveMessage(
+        outOfBandMessage,
+        {
+          autoAcceptMessage: false,
+          autoAcceptConnection: false,
+        }
       )
 
-      expect(connectionRecord).toBeNull()
+      expect(connectionRecord).not.toBeDefined()
+      expect(outOfBandRecord.role).toBe(OutOfBandRole.Sender)
+      expect(outOfBandRecord.state).toBe(OutOfBandState.Initial)
+
+      expect(connectionRecord).not.toBeDefined()
+      expect(receivedOutOfBandRecord.outOfBandMessage).toEqual(outOfBandMessage)
+      expect(receivedOutOfBandRecord.role).toBe(OutOfBandRole.Receiver)
+      expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
     })
 
     test(`make a connection with ${HandshakeProtocol.DidExchange} on OOB invitation encoded in URL`, async () => {
@@ -388,14 +388,41 @@ describe('out of band', () => {
 
       await aliceAgent.connections.returnWhenIsConnected(secondAliceFaberConnection!.id)
 
-      // We need to wait for the faber connection to be completed because there is a clean up
-      // after each test that removes all connections. If we didn't wait here it could case flaky
-      // tests when we're trying to access removed records.
       let faberAliceConnection = await faberAgent.connections.findByOutOfBandId(outOfBandRecord!.id)
       faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
       await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
 
       expect(firstAliceFaberConnection.id).toEqual(secondAliceFaberConnection?.id)
+    })
+
+    test.skip('do not create a new connection when connection exists and multiuse is false', async () => {
+      const outOfBandRecord = await faberAgent.oob.createMessage({
+        ...makeConnectionConfig,
+        multiUseInvitation: false,
+      })
+      const { outOfBandMessage } = outOfBandRecord
+
+      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
+        autoAcceptMessage: true,
+        autoAcceptConnection: true,
+      })
+      firstAliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(firstAliceFaberConnection!.id)
+
+      await aliceAgent.oob.receiveMessage(outOfBandMessage, {
+        autoAcceptMessage: true,
+        autoAcceptConnection: true,
+        reuseConnection: false,
+      })
+
+      // TODO Somehow check agents throws an error or sends problem report
+
+      let faberAliceConnection = await faberAgent.connections.findByOutOfBandId(outOfBandRecord!.id)
+      faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
+
+      const faberConnections = await faberAgent.connections.getAll()
+      expect(faberConnections).toHaveLength(1)
+      expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
+      expect(firstAliceFaberConnection.state).toBe(DidExchangeState.Completed)
     })
 
     test('create a new connection when connection exists and reuse is false', async () => {

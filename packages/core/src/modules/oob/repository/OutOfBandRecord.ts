@@ -1,7 +1,7 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { DidCommService } from '../../dids'
-import type { OutOfBandRole } from './OutOfBandRole'
-import type { OutOfBandState } from './OutOfBandState'
+import type { OutOfBandRole } from '../domain/OutOfBandRole'
+import type { OutOfBandState } from '../domain/OutOfBandState'
 
 import { Type } from 'class-transformer'
 

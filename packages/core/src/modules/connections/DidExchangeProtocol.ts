@@ -451,7 +451,6 @@ export class DidExchangeProtocol {
   }
 
   private async createSignedAttachment(didDoc: DidDocument, verkey: string) {
-    this.logger.debug('===== didDoc =====', didDoc)
     const didDocAttach = new Attachment({
       mimeType: 'application/json',
       data: new AttachmentData({
