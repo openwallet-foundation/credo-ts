@@ -87,7 +87,7 @@ export class DidExchangeProtocol {
     // Create message
     const label = params.label ?? this.config.label
     const { verkey } = routing
-    const { peerDid, didDocument } = await this.createPeerDidDoc(routing)
+    const { peerDid, didDocument } = await this.createPeerDidDoc(this.routingToServices(routing))
     const parentThreadId = outOfBandMessage.id
 
     const message = new DidExchangeRequestMessage({ label, parentThreadId, did: peerDid.did, goal, goalCode })
@@ -204,37 +204,21 @@ export class DidExchangeProtocol {
     this.logger.debug(`Create message ${DidExchangeResponseMessage.type} start`, connectionRecord)
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeResponseMessage.type, connectionRecord)
 
-    const { did, threadId } = connectionRecord
+    const { threadId } = connectionRecord
 
     if (!threadId) {
       throw new AriesFrameworkError('Missing threadId on connection record.')
     }
 
-    let peerDidRouting
-    if (routing) {
-      peerDidRouting = routing
-    } else {
-      const { serviceEndpoint, recipientKeys, routingKeys } =
-        (outOfBandRecord?.outOfBandMessage.services[0] as DidCommService) || {}
-      if (serviceEndpoint && recipientKeys && routingKeys) {
-        peerDidRouting = {
-          endpoints: [serviceEndpoint],
-          did,
-          verkey: recipientKeys[0],
-          routingKeys: routingKeys,
-        }
-      } else {
-        throw new AriesFrameworkError(
-          'Connection record does not have an invitation with serviceEndpoint, recipientKeys or routingKeys.'
-        )
-      }
-    }
+    const services = routing
+      ? this.routingToServices(routing)
+      : (outOfBandRecord?.outOfBandMessage.services as DidCommService[])
 
-    const { peerDid, didDocument } = await this.createPeerDidDoc(peerDidRouting)
+    const { peerDid, didDocument } = await this.createPeerDidDoc(services)
     const message = new DidExchangeResponseMessage({ did: peerDid.did, threadId })
 
     if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
-      const didDocAttach = await this.createSignedAttachment(didDocument, peerDidRouting.verkey)
+      const didDocAttach = await this.createSignedAttachment(didDocument, services[0].recipientKeys[0])
       message.didDoc = didDocAttach
     }
 
@@ -373,51 +357,40 @@ export class DidExchangeProtocol {
     return this.connectionService.updateState(connectionRecord, nextState)
   }
 
-  private async createPeerDidDoc(routing: Routing) {
-    const publicKeyBase58 = routing.verkey
-
-    const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
-    const x25519Key = Key.fromPublicKey(convertPublicKeyToX25519(ed25519Key.publicKey), KeyType.X25519)
-
-    // For peer dids generated with method 1, the controller MUST be #id as we don't know the did yet
-    const ed25519VerificationMethod = getEd25519VerificationMethod({
-      id: uuid(),
-      key: ed25519Key,
-      controller: '#id',
-    })
-    const x25519VerificationMethod = getX25519VerificationMethod({
-      id: uuid(),
-      key: x25519Key,
-      controller: '#id',
-    })
-
+  private async createPeerDidDoc(services: DidCommService[]) {
     const didDocumentBuilder = new DidDocumentBuilder('')
-      .addAuthentication(ed25519VerificationMethod)
-      .addKeyAgreement(x25519VerificationMethod)
 
-    const routingKeys = routing.routingKeys.map((rk) => Key.fromPublicKeyBase58(rk, KeyType.Ed25519))
-    routingKeys.forEach((ed25519Key) => {
-      const verificationMethod = getEd25519VerificationMethod({
-        id: uuid(),
-        key: ed25519Key,
-        controller: '#id',
-      })
-      didDocumentBuilder.addVerificationMethod(verificationMethod)
-    })
+    services.forEach((service) => {
+      service.recipientKeys.forEach((recipientKey) => {
+        const publicKeyBase58 = recipientKey
+        const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
+        const x25519Key = Key.fromPublicKey(convertPublicKeyToX25519(ed25519Key.publicKey), KeyType.X25519)
 
-    routing.endpoints.forEach((endpoint) => {
-      const service = new DidCommService({
-        id: '#service-0',
-        // Fixme: can we use relative reference (#id) instead of absolute reference here (did:example:123#id)?
-        // We don't know the did yet
-        // TODO we should perhaps use keyAgreement instead of authentication key in here, then it must be changed also in connection record verkey
-        recipientKeys: [ed25519Key.publicKeyBase58],
-        serviceEndpoint: endpoint,
-        accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
-        // It is important that we encode the routing keys as key references.
-        // So instead of using plain verkeys, we should encode them as did:key dids
-        routingKeys: routingKeys.map((rk) => rk.publicKeyBase58),
+        const ed25519VerificationMethod = getEd25519VerificationMethod({
+          id: uuid(),
+          key: ed25519Key,
+          controller: '#id',
+        })
+        const x25519VerificationMethod = getX25519VerificationMethod({
+          id: uuid(),
+          key: x25519Key,
+          controller: '#id',
+        })
+
+        // We should not add duplicated keys for services
+        didDocumentBuilder.addAuthentication(ed25519VerificationMethod).addKeyAgreement(x25519VerificationMethod)
       })
+
+      const routingKeys = service.routingKeys?.map((rk) => Key.fromPublicKeyBase58(rk, KeyType.Ed25519))
+      routingKeys?.forEach((ed25519Key) => {
+        const verificationMethod = getEd25519VerificationMethod({
+          id: uuid(),
+          key: ed25519Key,
+          controller: '#id',
+        })
+        didDocumentBuilder.addVerificationMethod(verificationMethod)
+      })
+
       didDocumentBuilder.addService(service)
     })
 
@@ -531,5 +504,17 @@ export class DidExchangeProtocol {
     }
 
     return didDocument
+  }
+
+  private routingToServices(routing: Routing) {
+    return routing.endpoints.map((endpoint, index) => {
+      return new DidCommService({
+        id: `#inline-${index}`,
+        priority: 0,
+        serviceEndpoint: endpoint,
+        recipientKeys: [routing.verkey],
+        routingKeys: routing.routingKeys,
+      })
+    })
   }
 }

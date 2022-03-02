@@ -133,21 +133,22 @@ export class OutOfBandModule {
       }
     }
 
-    // create did, verkey
-    // update mediation
-    // create service
     const routing = await this.mediationRecipientService.getRouting()
-    const service = new DidCommService({
-      id: '#inline',
-      priority: 0,
-      serviceEndpoint: routing.endpoints[0],
-      recipientKeys: [routing.verkey],
-      routingKeys: routing.routingKeys,
+
+    const services = routing.endpoints.map((endpoint, index) => {
+      return new DidCommService({
+        id: `#inline-${index}`,
+        priority: 0,
+        serviceEndpoint: endpoint,
+        recipientKeys: [routing.verkey],
+        routingKeys: routing.routingKeys,
+      })
     })
+
     const options = {
       label,
       accept: didCommProfiles,
-      services: [service],
+      services,
       handshakeProtocols,
     }
     const outOfBandMessage = new OutOfBandMessage(options)
