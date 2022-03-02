@@ -69,6 +69,7 @@ export class V2ProofService extends ProofService {
   ) {
     super(agentConfig, proofRepository, connectionService, didCommMessageRepository, wallet, eventEmitter)
     this.protocolVersion = ProofProtocolVersion.V2_0
+    this.wallet = wallet
     this.formatServiceMap = {
       [PresentationRecordType.Indy]: indyProofFormatService,
     }

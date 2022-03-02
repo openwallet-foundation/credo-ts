@@ -73,9 +73,6 @@ export class Agent {
     this.container.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
     this.container.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
 
-    console.log('Creating agent with config', initialConfig)
-    console.log('Creating agent with dependencies', dependencies)
-
     this.logger.info('Creating agent with config', {
       ...initialConfig,
       // Prevent large object being logged.
