@@ -147,7 +147,7 @@ export class V1CredentialService extends CredentialService {
     }
     // options.offer = offer
     options.attachId = INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID
-    const { attachment: requestAttach, credOfferRequest } = await this.formatService.createRequest(options, record)
+    const { attachment: requestAttach } = await this.formatService.createRequest(options, record)
     if (!requestAttach) {
       throw Error(`Failed to create attachment for request; credential record = ${record.id}`)
     }
@@ -159,10 +159,6 @@ export class V1CredentialService extends CredentialService {
     })
     requestMessage.setThread({ threadId: record.threadId })
 
-    if (!credOfferRequest?.indy?.payload.requestMetaData) {
-      throw Error(`Missing request metad data in request forcredential Record ${record.id}`)
-    }
-    record.metadata.set(CredentialMetadataKeys.IndyRequest, credOfferRequest?.indy?.payload.requestMetaData)
     record.autoAcceptCredential = options?.autoAcceptCredential ?? record.autoAcceptCredential
 
     record.linkedAttachments = offerCredentialMessage?.appendedAttachments?.filter((attachment) =>
@@ -452,7 +448,7 @@ export class V1CredentialService extends CredentialService {
         w3c: undefined,
       },
     }
-    const { attachment: offersAttach, credOfferRequest } = await this.formatService.createOffer(options)
+    const { attachment: offersAttach } = await this.formatService.createOffer(options)
 
     if (!offersAttach) {
       throw new AriesFrameworkError('Missing offers attach in Offer')

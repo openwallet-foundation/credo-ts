@@ -29,7 +29,7 @@ import { Attachment, AttachmentData } from '../../../../decorators/attachment/At
 import { CredentialFormatService } from '../CredentialFormatService'
 
 export class JsonLdCredentialFormatService extends CredentialFormatService {
-  processRequest(credentialRequest: CredProposeOfferRequestFormat, credentialRecord: CredentialExchangeRecord): void {
+  processRequest(options: RequestCredentialOptions, credentialRecord: CredentialExchangeRecord): void {
     throw new Error('Method not implemented.')
   }
 

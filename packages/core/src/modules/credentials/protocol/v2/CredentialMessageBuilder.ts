@@ -215,22 +215,13 @@ export class CredentialMessageBuilder {
       } else {
         throw Error(`Missing data payload in attachment in credential Record ${record.id}`)
       }
-      const {
-        format: formats,
-        attachment: requestAttach,
-        credOfferRequest,
-      } = await formatService.createRequest(requestOptions, record)
+      const { format: formats, attachment: requestAttach } = await formatService.createRequest(requestOptions, record)
 
       requestOptions.requestAttachment = requestAttach
       if (formats && requestAttach) {
         formatsArray.push(formats)
         requestAttachArray.push(requestAttach)
       }
-
-      if (!credOfferRequest) {
-        throw Error('Error creating credential request')
-      }
-      formatService.processRequest(credOfferRequest, record)
     }
     const options: V2RequestCredentialMessageOptions = {
       id: this.generateId(),
