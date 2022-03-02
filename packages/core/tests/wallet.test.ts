@@ -5,6 +5,7 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
+import { KeyDerivationMethod } from '../src/types'
 
 import { getBaseConfig } from './helpers'
 
@@ -100,5 +101,18 @@ describe('=== wallet', () => {
     await aliceAgent.shutdown()
 
     await expect(aliceAgent.wallet.open(walletConfig)).resolves.toBeUndefined()
+  })
+
+  test('create wallet with custom key derivation method', async () => {
+    const walletConfig = {
+      id: 'mywallet',
+      key: 'mysecretwalletkey',
+      keyDerivationMethod: KeyDerivationMethod.Argon2IInt,
+    }
+
+    await aliceAgent.wallet.create(walletConfig)
+    await aliceAgent.wallet.open(walletConfig)
+
+    expect(aliceAgent.wallet.isInitialized).toBe(true)
   })
 })

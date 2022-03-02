@@ -7,9 +7,19 @@ import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
 
+export const enum KeyDerivationMethod {
+  /** default value in indy-sdk. Will be used when no value is provided */
+  Argon2IMod = 'ARGON2I_MOD',
+  /** less secure, but faster */
+  Argon2IInt = 'ARGON2I_INT',
+  /** raw wallet master key */
+  Raw = 'RAW',
+}
+
 export interface WalletConfig {
   id: string
   key: string
+  keyDerivationMethod?: KeyDerivationMethod
 }
 
 export type EncryptedMessage = {
