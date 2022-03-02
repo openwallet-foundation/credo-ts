@@ -32,12 +32,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   processRequest(credentialRequest: CredProposeOfferRequestFormat, credentialRecord: CredentialExchangeRecord): void {
     throw new Error('Method not implemented.')
   }
-  processOffer(
-    credentialOffer: CredProposeOfferRequestFormat,
-    credentialRecord: CredentialExchangeRecord
-  ): Promise<void> {
-    throw new Error('Method not implemented.')
-  }
 
   public shouldAutoRespondToProposal(
     credentialRecord: CredentialExchangeRecord,

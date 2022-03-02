@@ -17,6 +17,7 @@ import type {
   OfferAttachmentFormats,
   ProposeAttachmentFormats,
 } from './models/CredentialFormatServiceOptions'
+import type { CredOffer } from 'indy-sdk'
 
 import { uuid } from '../../../utils/uuid'
 
@@ -38,11 +39,16 @@ export abstract class CredentialFormatService {
 
   abstract createOffer(options: AcceptProposalOptions): Promise<OfferAttachmentFormats>
 
-  abstract processOffer(
-    credentialOffer: CredProposeOfferRequestFormat,
-    credentialRecord: CredentialExchangeRecord
-  ): void
+  public processOffer(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): void {
+    if (options.offer) {
+      const credOffer: CredOffer = options.offer.getDataAsJson<CredOffer>()
 
+      credentialRecord.metadata.set('_internal/indyCredential', {
+        schemaId: credOffer.schema_id,
+        credentialDefinintionId: credOffer.cred_def_id,
+      })
+    }
+  }
   abstract createRequest(
     options: RequestCredentialOptions,
     credentialRecord: CredentialExchangeRecord

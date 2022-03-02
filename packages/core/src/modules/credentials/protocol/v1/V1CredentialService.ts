@@ -139,12 +139,13 @@ export class V1CredentialService extends CredentialService {
       })
     }
 
-    const offer: CredProposeOfferRequestFormat | undefined = this.formatService.getCredProposeOfferRequestFormat(
-      offerCredentialMessage,
-      record.id
-    )
-
-    options.offer = offer
+    const attachment = offerCredentialMessage.getAttachmentIncludingFormatId(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
+    if (attachment) {
+      options.offerAttachment = attachment
+    } else {
+      throw Error(`Missing data payload in attachment in credential Record ${record.id}`)
+    }
+    // options.offer = offer
     options.attachId = INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID
     const { attachment: requestAttach, credOfferRequest } = await this.formatService.createRequest(options, record)
     if (!requestAttach) {
@@ -480,7 +481,7 @@ export class V1CredentialService extends CredentialService {
       autoAcceptCredential: credentialTemplate.autoAcceptCredential,
     })
 
-    const offer = credOfferRequest?.indy?.payload.credentialPayload as CredOffer
+    const offer = offersAttach.getDataAsJson<CredOffer>()
     credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
       credentialDefinitionId: credentialDefinitionId,
       schemaId: offer.schema_id,
@@ -518,17 +519,12 @@ export class V1CredentialService extends CredentialService {
       )
     }
 
-    const offer: CredProposeOfferRequestFormat | undefined = this.formatService.getCredProposeOfferRequestFormat(
-      offerMessage,
-      record.id
-    )
-    const request: CredProposeOfferRequestFormat | undefined = this.formatService.getCredProposeOfferRequestFormat(
-      requestMessage,
-      record.id
-    )
-
-    options.offer = offer
-    options.request = request
+    if (offerMessage) {
+      options.offerAttachment = offerMessage.getAttachmentIncludingFormatId(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
+    } else {
+      throw Error(`Missing data payload in attachment in credential Record ${record.id}`)
+    }
+    options.requestAttachment = requestMessage.getAttachmentIncludingFormatId(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
     options.attachId = INDY_CREDENTIAL_ATTACHMENT_ID
 
     // Assert credential attributes

@@ -179,8 +179,6 @@ export class CredentialsModule implements CredentialsModule {
    */
 
   public async proposeCredential(credentialOptions: ProposeCredentialOptions): Promise<CredentialExchangeRecord> {
-    // logger.info('>> IN CREDENTIAL API => proposeCredential')
-
     // get the version
     const version = credentialOptions.protocolVersion
 

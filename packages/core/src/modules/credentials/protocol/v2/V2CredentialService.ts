@@ -401,8 +401,12 @@ export class V2CredentialService extends CredentialService {
     logger.debug(`Processing credential offer with id ${credentialOfferMessage.id}`)
 
     const formats: CredentialFormatService[] = this.getFormatsFromMessage(credentialOfferMessage.formats)
-    let credOffer: CredProposeOfferRequestFormat | undefined
-
+    const options: AcceptProposalOptions = {
+      connectionId: '',
+      protocolVersion: CredentialProtocolVersion.V2,
+      credentialRecordId: '',
+      credentialFormats: {},
+    }
     try {
       // Credential record already exists
       credentialRecord = await this.getByThreadAndConnectionId(credentialOfferMessage.threadId, connection?.id)
@@ -430,29 +434,11 @@ export class V2CredentialService extends CredentialService {
       })
 
       for (const format of formats) {
-        const attachment = this.getAttachment(credentialOfferMessage)
-        if (attachment) {
-          credOffer = format.getCredentialPayload(attachment)
-
-          if (!credOffer) {
-            throw new CredentialProblemReportError(
-              `Missing required base64 or json encoded attachment data for credential offer with thread id ${credentialOfferMessage.threadId}`,
-              { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
-            )
-          }
-        } else {
-          throw new CredentialProblemReportError(
-            `Missing required attachment for credential offer with thread id ${credentialOfferMessage.threadId}`,
-            { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
-          )
-        }
+        options.offer = this.getAttachment(credentialOfferMessage)
         logger.debug('Save metadata for offer')
-        if (credOffer) {
-          format.processOffer(credOffer, credentialRecord)
-          await this.updateState(credentialRecord, CredentialState.OfferReceived)
-        }
+        format.processOffer(options, credentialRecord)
       }
-
+      await this.updateState(credentialRecord, CredentialState.OfferReceived)
       await this.didCommMessageRepository.saveAgentMessage({
         agentMessage: credentialOfferMessage,
         role: DidCommMessageRole.Receiver,
@@ -471,26 +457,11 @@ export class V2CredentialService extends CredentialService {
       })
 
       for (const format of formats) {
-        const attachment = this.getAttachment(credentialOfferMessage)
-        if (attachment) {
-          credOffer = format.getCredentialPayload(attachment)
-
-          if (!credOffer) {
-            throw new CredentialProblemReportError(
-              `Missing required base64 or json encoded attachment data for credential offer with thread id ${credentialOfferMessage.threadId}`,
-              { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
-            )
-          }
-        } else {
-          throw new CredentialProblemReportError(
-            `Missing required attachment for credential offer with thread id ${credentialOfferMessage.threadId}`,
-            { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
-          )
-        }
-        if (credOffer) {
-          format.processOffer(credOffer, credentialRecord)
-        }
+        options.offer = this.getAttachment(credentialOfferMessage)
+        logger.debug('Save metadata for offer')
+        format.processOffer(options, credentialRecord)
       }
+
       // Save in repository
       logger.debug('Saving credential record and emit offer-received event')
       await this.credentialRepository.save(credentialRecord)
@@ -757,13 +728,9 @@ export class V2CredentialService extends CredentialService {
     const { credentialRecord, message } = await this.credentialMessageBuilder.createOffer(formats, credentialOptions)
 
     for (const format of formats) {
-      const attachment = this.getAttachment(message)
-      if (attachment) {
-        const credOffer: CredProposeOfferRequestFormat | undefined = format.getCredentialPayload(attachment)
-        if (credOffer) {
-          format.processOffer(credOffer, credentialRecord)
-        }
-      }
+      const options: AcceptProposalOptions = credentialOptions as AcceptProposalOptions
+      options.offer = this.getAttachment(message)
+      format.processOffer(options, credentialRecord)
     }
     await this.credentialRepository.save(credentialRecord)
     await this.emitEvent(credentialRecord)
@@ -1016,14 +983,11 @@ export class V2CredentialService extends CredentialService {
     // Create message
     const { credentialRecord, message } = await this.credentialMessageBuilder.createOffer(formats, credentialOptions)
 
+    const options: AcceptProposalOptions = credentialOptions as AcceptProposalOptions
     for (const format of formats) {
-      const attachment = this.getAttachment(message)
-      if (attachment) {
-        const credOffer: CredProposeOfferRequestFormat | undefined = format.getCredentialPayload(attachment)
-        if (credOffer) {
-          format.processOffer(credOffer, credentialRecord)
-        }
-      }
+      options.offer = this.getAttachment(message)
+      logger.debug('Save metadata for offer')
+      format.processOffer(options, credentialRecord)
     }
 
     // Create and set ~service decorator

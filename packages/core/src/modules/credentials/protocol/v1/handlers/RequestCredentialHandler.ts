@@ -1,7 +1,8 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage'
-import type { CredProposeOfferRequestFormat, CredentialFormatService } from '../../../formats/CredentialFormatService'
+import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
+import type { CredProposeOfferRequestFormat } from '../../../formats/models/CredentialFormatServiceOptions'
 import type { AcceptRequestOptions } from '../../../interfaces'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import type { V1CredentialService } from '../V1CredentialService'
@@ -11,9 +12,9 @@ import { DidCommMessageRole } from '../../../../../storage'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import {
   INDY_CREDENTIAL_ATTACHMENT_ID,
-  OfferCredentialMessage,
   V1ProposeCredentialMessage,
   V1RequestCredentialMessage,
+  V1OfferCredentialMessage,
 } from '../messages'
 
 export class RequestCredentialHandler implements Handler {
@@ -35,7 +36,7 @@ export class RequestCredentialHandler implements Handler {
   public async handle(messageContext: HandlerInboundMessage<RequestCredentialHandler>) {
     const credentialRecord = await this.credentialService.processRequest(messageContext)
     let requestMessage: V1RequestCredentialMessage | undefined
-    let offerMessage: OfferCredentialMessage | undefined
+    let offerMessage: V1OfferCredentialMessage | undefined
     let proposeMessage: V1ProposeCredentialMessage | undefined
     try {
       requestMessage = await this.didCommMessageRepository.getAgentMessage({
@@ -48,7 +49,7 @@ export class RequestCredentialHandler implements Handler {
     try {
       offerMessage = await this.didCommMessageRepository.getAgentMessage({
         associatedRecordId: credentialRecord.id,
-        messageClass: OfferCredentialMessage,
+        messageClass: V1OfferCredentialMessage,
       })
     } catch (RecordNotFoundError) {
       // can happen in normal processing
@@ -98,7 +99,7 @@ export class RequestCredentialHandler implements Handler {
   private async createCredential(
     record: CredentialExchangeRecord,
     messageContext: HandlerInboundMessage<RequestCredentialHandler>,
-    offerMessage?: OfferCredentialMessage,
+    offerMessage?: V1OfferCredentialMessage,
     requestMessage?: V1RequestCredentialMessage
   ) {
     this.agentConfig.logger.info(

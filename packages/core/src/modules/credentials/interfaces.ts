@@ -1,3 +1,4 @@
+import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { LinkedAttachment } from '../../utils/LinkedAttachment'
 import type { AnyJson } from '../generic'
 import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
@@ -67,6 +68,7 @@ interface OfferCredentialOptions {
   credentialFormats: OfferCredentialFormats
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
+  offer?: Attachment
 }
 
 interface AcceptOfferOptions {
@@ -75,7 +77,7 @@ interface AcceptOfferOptions {
   credentialRecordType?: CredentialRecordType
   connectionId?: string // this needs to be optional for out of band messages
   comment?: string
-  autoAcceptCredential?: AutoAcceptCredential,
+  autoAcceptCredential?: AutoAcceptCredential
 }
 
 interface NegotiateOfferOptions {
@@ -84,6 +86,7 @@ interface NegotiateOfferOptions {
   credentialFormats: CredProposeOfferRequestFormat
   credentialRecordId?: string
   autoAcceptCredential?: AutoAcceptCredential
+  offer?: Attachment
   comment?: string
 }
 
@@ -113,6 +116,7 @@ interface AcceptProposalOptions {
   credentialRecordId: string
   comment?: string
   autoAcceptCredential?: AutoAcceptCredential
+  offer?: Attachment
   credentialFormats: {
     indy?: IndyCredentialPreview
     w3c?: {
@@ -126,6 +130,7 @@ interface NegotiateProposalOptions {
   credentialRecordId: string
   credentialFormats: OfferCredentialFormats
   autoAcceptCredential?: AutoAcceptCredential
+  offer?: Attachment
   comment?: string
 }
 
@@ -141,6 +146,8 @@ interface RequestCredentialOptions {
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
   offer?: CredProposeOfferRequestFormat // will not be there if this is a W3C request rather than an indy response to offer
+  offerAttachment?: Attachment
+  requestAttachment?: Attachment
   credentialDefinition?: CredentialDefinitionFormat
 }
 
@@ -152,6 +159,8 @@ interface AcceptRequestOptions {
   autoAcceptCredential?: AutoAcceptCredential
   offer?: CredProposeOfferRequestFormat // might not be there if this is a W3C request rather than an indy response to offer
   request?: CredProposeOfferRequestFormat
+  offerAttachment?: Attachment
+  requestAttachment?: Attachment
 }
 
 export {

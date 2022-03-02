@@ -52,12 +52,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, credentialRequest.indy?.payload.requestMetaData)
     }
   }
-  public processOffer(
-    credentialOffer: CredProposeOfferRequestFormat,
-    credentialRecord: CredentialExchangeRecord
-  ): void {
-    if (credentialOffer.indy?.payload.credentialPayload) {
-      const credOffer: CredOffer = credentialOffer.indy.payload.credentialPayload as CredOffer
+
+  public processOffer(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): void {
+    if (options.offer) {
+      const credOffer: CredOffer = options.offer.getDataAsJson<CredOffer>()
 
       credentialRecord.metadata.set('_internal/indyCredential', {
         schemaId: credOffer.schema_id,
@@ -66,9 +64,9 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     }
   }
 
-  private indyIssuerService?: IndyIssuerService
-  private indyLedgerService?: IndyLedgerService
-  private indyHolderService?: IndyHolderService
+  private indyIssuerService: IndyIssuerService
+  private indyLedgerService: IndyLedgerService
+  private indyHolderService: IndyHolderService
   protected credentialRepository: CredentialRepository // protected as in base class
   private didCommMessageRepository: DidCommMessageRepository
 
@@ -134,11 +132,11 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     }
     // if the proposal has an attachment Id use that, otherwise the generated id of the formats object
     const attachmentId = proposal.attachId ? proposal.attachId : formats.attachId
+
     const offersAttach: Attachment = this.getFormatData(offer.indy?.payload.credentialPayload, attachmentId)
 
     return { format: formats, attachment: offersAttach, preview, credOfferRequest: offer }
   }
-
   /**
    * Create a {@link AttachmentFormats} object dependent on the message type.
    *
@@ -149,27 +147,29 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    *
    */
   public async createRequest(
-    requestOptions: RequestCredentialOptions,
+    options: RequestCredentialOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialAttachmentFormats> {
-    if (requestOptions.offer) {
+    if (options.offerAttachment) {
+      const offer = options.offerAttachment.getDataAsJson<CredOffer>()
+
       // format service -> get the credential definition and create the [indy] credential request
-      requestOptions.credentialDefinition = await this.getCredentialDefinition(requestOptions.offer)
-      const credOfferRequest: CredProposeOfferRequestFormat = await this.createIndyCredentialRequest(requestOptions)
+      options.credentialDefinition = await this.getCredentialDefinition(offer)
+      const credOfferRequest: CredProposeOfferRequestFormat = await this.createIndyCredentialRequest(options, offer)
 
       const formats: CredentialFormatSpec = {
         attachId: this.generateId(),
         format: 'hlindy/cred-req@v2.0',
       }
 
-      const attachmentId = requestOptions.attachId ? requestOptions.attachId : formats.attachId
+      const attachmentId = options.attachId ? options.attachId : formats.attachId
       const requestAttach: Attachment = this.getFormatData(
         credOfferRequest.indy?.payload.credentialPayload,
         attachmentId
       )
       return { format: formats, attachment: requestAttach, credOfferRequest }
     } else {
-      throw Error(`Indy cannot begin credential exchange without offer; credential record = ${credentialRecord.id}`)
+      throw Error(`Missing attachment from offer messagte, credential record id = ${credentialRecord.id}`)
     }
   }
 
@@ -191,26 +191,12 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     }
   }
 
-  /**
-   * Retrieve the credential definition from the ledger, currently Indy SDK but
-   * will have other possibilities in the future
-   * @param offer the offer object containing the id of the credential definition on on the ledger
-   * @return CredentialDefinition in v2 format (currently only Indy {@link CredDef})
-   */
-  private async getCredentialDefinition(
-    offer: CredProposeOfferRequestFormat
-  ): Promise<CredentialDefinitionFormat | undefined> {
-    let indyCredDef: CredDef
-
-    if (this.indyLedgerService && offer.indy?.payload.credentialPayload) {
-      const credOffer: CredOffer = offer.indy.payload.credentialPayload as CredOffer
-
-      indyCredDef = await this.indyLedgerService.getCredentialDefinition(credOffer.cred_def_id)
-      return {
-        indy: {
-          credDef: indyCredDef,
-        },
-      }
+  private async getCredentialDefinition(credOffer: CredOffer) {
+    const indyCredDef = await this.indyLedgerService.getCredentialDefinition(credOffer.cred_def_id)
+    return {
+      indy: {
+        credDef: indyCredDef,
+      },
     }
   }
 
@@ -328,19 +314,19 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @throws Error if unable to create the request
    * @returns The created credential offer
    */
-  private async createIndyCredentialRequest(options: RequestCredentialOptions): Promise<CredProposeOfferRequestFormat> {
+  private async createIndyCredentialRequest(
+    options: RequestCredentialOptions,
+    offer: CredOffer
+  ): Promise<CredProposeOfferRequestFormat> {
     if (
       this.indyHolderService &&
       options.holderDid &&
-      options.offer &&
-      options.offer.indy?.payload.credentialPayload &&
       options.credentialDefinition &&
       options.credentialDefinition.indy?.credDef
     ) {
-      const credoffer: CredOffer = options.offer.indy?.payload.credentialPayload as CredOffer
       const [credReq, credReqMetadata] = await this.indyHolderService.createCredentialRequest({
         holderDid: options.holderDid,
-        credentialOffer: credoffer,
+        credentialOffer: offer,
         credentialDefinition: options.credentialDefinition.indy?.credDef,
       })
       const request: CredProposeOfferRequestFormat = {
@@ -444,13 +430,6 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     options: AcceptRequestOptions,
     record: CredentialExchangeRecord
   ): Promise<CredentialAttachmentFormats> {
-    if (!options.offer || !options.offer.indy?.payload.credentialPayload) {
-      throw Error(`Missing offer from options for record ${record.id}`)
-    }
-
-    if (!options.request) {
-      throw Error(`Missing request from options for record ${record.id}`)
-    }
     // Assert credential attributes
     const credentialAttributes = record.credentialAttributes
     if (!credentialAttributes) {
@@ -460,27 +439,34 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       )
     }
 
-    const credOffer: CredOffer = options.offer.indy?.payload.credentialPayload as CredOffer
-    const credRequest: CredReq = options.request.indy?.payload.credentialPayload as CredReq
-
-    if (this.indyIssuerService) {
-      const [credential] = await this.indyIssuerService.createCredential({
-        credentialOffer: credOffer,
-        credentialRequest: credRequest,
-        credentialValues: CredentialUtils.convertAttributesToValues(credentialAttributes),
-      })
-
-      const formats: CredentialFormatSpec = {
-        attachId: this.generateId(),
-        format: 'hlindy/cred-abstract@v2.0',
-      }
-
-      const attachmentId = options.attachId ? options.attachId : formats.attachId
-      const issueAttachment: Attachment = this.getFormatData(credential, attachmentId)
-      return { format: formats, attachment: issueAttachment }
+    let credOffer: CredOffer | undefined
+    let credRequest: CredReq | undefined
+    if (options.offerAttachment) {
+      credOffer = options.offerAttachment.getDataAsJson<CredOffer>()
+    }
+    if (options.requestAttachment) {
+      credRequest = options.requestAttachment.getDataAsJson<CredReq>()
     }
 
-    throw Error('Missing Indy Issuer Service for createIssueCredentialAttachFormats')
+    if (credOffer && credRequest) {
+      if (this.indyIssuerService) {
+        const [credential] = await this.indyIssuerService.createCredential({
+          credentialOffer: credOffer,
+          credentialRequest: credRequest,
+          credentialValues: CredentialUtils.convertAttributesToValues(credentialAttributes),
+        })
+
+        const formats: CredentialFormatSpec = {
+          attachId: this.generateId(),
+          format: 'hlindy/cred-abstract@v2.0',
+        }
+
+        const attachmentId = options.attachId ? options.attachId : formats.attachId
+        const issueAttachment: Attachment = this.getFormatData(credential, attachmentId)
+        return { format: formats, attachment: issueAttachment }
+      }
+    }
+    throw Error('Missing CredOffer or CredReq for createIssueCredentialAttachFormats')
   }
   /**
    * Processes an incoming credential - retreive metadata, retrievepayload and store it in the Indy wallet
