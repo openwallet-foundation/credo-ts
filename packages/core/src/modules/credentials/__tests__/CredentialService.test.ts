@@ -1,4 +1,4 @@
-import type { RevocationNotificationReceivedEvent } from '..'
+import type { RevocationNotificationReceivedEvent } from '../CredentialEvents'
 import type { Logger } from '../../../logger'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
@@ -24,8 +24,8 @@ import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
 import { CredentialProblemReportReason } from '../errors/CredentialProblemReportReason'
 import {
-  RevocationNotificationMessageV2,
-  RevocationNotificationMessageV1,
+  V2RevocationNotificationMessage,
+  V1RevocationNotificationMessage,
   CredentialAckMessage,
   CredentialPreview,
   INDY_CREDENTIAL_ATTACHMENT_ID,
@@ -1194,13 +1194,13 @@ describe('CredentialService', () => {
       const { revocationRegistryId, credentialRevocationId } = credential
       const revocationNotificationThreadId = `indy::${revocationRegistryId}::${credentialRevocationId}`
 
-      const revocationNotificationMessage = new RevocationNotificationMessageV1({
+      const revocationNotificationMessage = new V1RevocationNotificationMessage({
         issueThread: revocationNotificationThreadId,
         comment: 'Credential has been revoked',
       })
       const messageContext = new InboundMessageContext(revocationNotificationMessage)
 
-      await revocationService.processRevocationNotificationV1(messageContext)
+      await revocationService.v1ProcessRevocationNotification(messageContext)
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'RevocationNotificationReceived',
@@ -1235,13 +1235,13 @@ describe('CredentialService', () => {
 
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.reject(recordNotFoundError))
 
-      const revocationNotificationMessage = new RevocationNotificationMessageV1({
+      const revocationNotificationMessage = new V1RevocationNotificationMessage({
         issueThread: revocationNotificationThreadId,
         comment: 'Credential has been revoked',
       })
       const messageContext = new InboundMessageContext(revocationNotificationMessage)
 
-      await revocationService.processRevocationNotificationV1(messageContext)
+      await revocationService.v1ProcessRevocationNotification(messageContext)
 
       expect(loggerSpy).toBeCalledWith('Failed to process revocation notification message', {
         error: recordNotFoundError,
@@ -1257,13 +1257,13 @@ describe('CredentialService', () => {
         `Incorrect revocation notification threadId format: \n${revocationNotificationThreadId}\ndoes not match\n"indy::<revocation_registry_id>::<credential_revocation_id>"`
       )
 
-      const revocationNotificationMessage = new RevocationNotificationMessageV1({
+      const revocationNotificationMessage = new V1RevocationNotificationMessage({
         issueThread: revocationNotificationThreadId,
         comment: 'Credenti1al has been revoked',
       })
       const messageContext = new InboundMessageContext(revocationNotificationMessage)
 
-      await revocationService.processRevocationNotificationV1(messageContext)
+      await revocationService.v1ProcessRevocationNotification(messageContext)
 
       expect(loggerSpy).toBeCalledWith('Failed to process revocation notification message', {
         error: invalidThreadFormatError,
@@ -1288,14 +1288,14 @@ describe('CredentialService', () => {
       const { revocationRegistryId, credentialRevocationId } = credential
       const revocationNotificationCredentialId = `${revocationRegistryId}::${credentialRevocationId}`
 
-      const revocationNotificationMessage = new RevocationNotificationMessageV2({
+      const revocationNotificationMessage = new V2RevocationNotificationMessage({
         credentialId: revocationNotificationCredentialId,
         revocationFormat: 'indy',
         comment: 'Credential has been revoked',
       })
       const messageContext = new InboundMessageContext(revocationNotificationMessage)
 
-      await revocationService.processRevocationNotificationV2(messageContext)
+      await revocationService.v2ProcessRevocationNotification(messageContext)
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'RevocationNotificationReceived',
@@ -1330,14 +1330,14 @@ describe('CredentialService', () => {
 
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.reject(recordNotFoundError))
 
-      const revocationNotificationMessage = new RevocationNotificationMessageV2({
+      const revocationNotificationMessage = new V2RevocationNotificationMessage({
         credentialId,
         revocationFormat: 'indy',
         comment: 'Credential has been revoked',
       })
       const messageContext = new InboundMessageContext(revocationNotificationMessage)
 
-      await revocationService.processRevocationNotificationV2(messageContext)
+      await revocationService.v2ProcessRevocationNotification(messageContext)
 
       expect(loggerSpy).toBeCalledWith('Failed to process revocation notification message', {
         error: recordNotFoundError,
@@ -1353,14 +1353,14 @@ describe('CredentialService', () => {
         `Incorrect revocation notification credentialId format: \n${invalidCredentialId}\ndoes not match\n"<revocation_registry_id>::<credential_revocation_id>"`
       )
 
-      const revocationNotificationMessage = new RevocationNotificationMessageV2({
+      const revocationNotificationMessage = new V2RevocationNotificationMessage({
         credentialId: invalidCredentialId,
         revocationFormat: 'indy',
         comment: 'Credenti1al has been revoked',
       })
       const messageContext = new InboundMessageContext(revocationNotificationMessage)
 
-      await revocationService.processRevocationNotificationV2(messageContext)
+      await revocationService.v2ProcessRevocationNotification(messageContext)
 
       expect(loggerSpy).toBeCalledWith('Failed to process revocation notification message', {
         error: invalidFormatError,

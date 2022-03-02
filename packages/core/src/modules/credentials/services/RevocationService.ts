@@ -1,7 +1,7 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { RevocationNotificationReceivedEvent } from '../CredentialEvents'
-import type { RevocationNotificationMessageV1, RevocationNotificationMessageV2 } from '../messages'
+import type { V1RevocationNotificationMessage, V2RevocationNotificationMessage } from '../messages'
 
 import { scoped, Lifecycle } from 'tsyringe'
 
@@ -51,8 +51,8 @@ export class RevocationService {
    *
    * @param messageContext message context of RevocationNotificationMessageV1
    */
-  public async processRevocationNotificationV1(
-    messageContext: InboundMessageContext<RevocationNotificationMessageV1>
+  public async v1ProcessRevocationNotification(
+    messageContext: InboundMessageContext<V1RevocationNotificationMessage>
   ): Promise<void> {
     this.logger.info('Processing revocation notification v1', { message: messageContext.message })
     // ThreadID = indy::<revocation_registry_id>::<credential_revocation_id>
@@ -80,8 +80,8 @@ export class RevocationService {
    *
    * @param messageContext message context of RevocationNotificationMessageV2
    */
-  public async processRevocationNotificationV2(
-    messageContext: InboundMessageContext<RevocationNotificationMessageV2>
+  public async v2ProcessRevocationNotification(
+    messageContext: InboundMessageContext<V2RevocationNotificationMessage>
   ): Promise<void> {
     this.logger.info('Processing revocation notification v2', { message: messageContext.message })
     // CredentialId = <revocation_registry_id>::<credential_revocation_id>

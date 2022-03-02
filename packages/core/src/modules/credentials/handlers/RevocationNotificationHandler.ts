@@ -1,30 +1,30 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { RevocationService } from '../services'
 
-import { RevocationNotificationMessageV1, RevocationNotificationMessageV2 } from '../messages'
+import { V1RevocationNotificationMessage, V2RevocationNotificationMessage } from '../messages'
 
-export class RevocationNotificationV1Handler implements Handler {
+export class V1RevocationNotificationHandler implements Handler {
   private revocationService: RevocationService
-  public supportedMessages = [RevocationNotificationMessageV1]
+  public supportedMessages = [V1RevocationNotificationMessage]
 
   public constructor(revocationService: RevocationService) {
     this.revocationService = revocationService
   }
 
-  public async handle(messageContext: HandlerInboundMessage<RevocationNotificationV1Handler>) {
-    await this.revocationService.processRevocationNotificationV1(messageContext)
+  public async handle(messageContext: HandlerInboundMessage<V1RevocationNotificationHandler>) {
+    await this.revocationService.v1ProcessRevocationNotification(messageContext)
   }
 }
 
-export class RevocationNotificationV2Handler implements Handler {
+export class V2RevocationNotificationHandler implements Handler {
   private revocationService: RevocationService
-  public supportedMessages = [RevocationNotificationMessageV2]
+  public supportedMessages = [V2RevocationNotificationMessage]
 
   public constructor(revocationService: RevocationService) {
     this.revocationService = revocationService
   }
 
-  public async handle(messageContext: HandlerInboundMessage<RevocationNotificationV2Handler>) {
-    await this.revocationService.processRevocationNotificationV2(messageContext)
+  public async handle(messageContext: HandlerInboundMessage<V2RevocationNotificationHandler>) {
+    await this.revocationService.v2ProcessRevocationNotification(messageContext)
   }
 }

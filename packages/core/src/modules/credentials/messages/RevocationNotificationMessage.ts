@@ -12,7 +12,7 @@ export interface RevocationNotificationMessageV1Options {
   pleaseAck?: AckDecorator
 }
 
-export class RevocationNotificationMessageV1 extends AgentMessage {
+export class V1RevocationNotificationMessage extends AgentMessage {
   public constructor(options: RevocationNotificationMessageV1Options) {
     super()
     if (options) {
@@ -23,8 +23,8 @@ export class RevocationNotificationMessageV1 extends AgentMessage {
     }
   }
 
-  @Equals(RevocationNotificationMessageV1.type)
-  public readonly type = RevocationNotificationMessageV1.type
+  @Equals(V1RevocationNotificationMessage.type)
+  public readonly type = V1RevocationNotificationMessage.type
   public static readonly type = 'https://didcomm.org/revocation_notification/1.0/revoke'
 
   @IsString()
@@ -44,7 +44,7 @@ export interface RevocationNotificationMessageV2Options {
   pleaseAck?: AckDecorator
 }
 
-export class RevocationNotificationMessageV2 extends AgentMessage {
+export class V2RevocationNotificationMessage extends AgentMessage {
   public constructor(options: RevocationNotificationMessageV2Options) {
     super()
     if (options) {
@@ -56,8 +56,8 @@ export class RevocationNotificationMessageV2 extends AgentMessage {
     }
   }
 
-  @Equals(RevocationNotificationMessageV2.type)
-  public readonly type = RevocationNotificationMessageV2.type
+  @Equals(V2RevocationNotificationMessage.type)
+  public readonly type = V2RevocationNotificationMessage.type
   public static readonly type = 'https://didcomm.org/revocation_notification/2.0/revoke'
 
   @IsString()
