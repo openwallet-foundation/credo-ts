@@ -664,29 +664,3 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
     aliceReplay,
   }
 }
-
-export async function setupSecondCredential(
-  faberAgent: Agent,
-  aliceAgent: Agent,
-  faberConnection: ConnectionRecord
-): Promise<string> {
-  const { definition } = await prepareForIssuance(faberAgent, ['name', 'age'])
-
-  const credentialPreview = CredentialPreview.fromRecord({
-    name: 'John',
-    age: '99',
-  })
-
-  await issueCredential({
-    issuerAgent: faberAgent,
-    issuerConnectionId: faberConnection.id,
-    holderAgent: aliceAgent,
-    credentialTemplate: {
-      credentialDefinitionId: definition.id,
-      comment: 'some comment about credential',
-      preview: credentialPreview,
-    },
-  })
-
-  return definition.id
-}
