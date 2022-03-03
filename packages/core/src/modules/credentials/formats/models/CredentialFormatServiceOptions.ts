@@ -1,5 +1,4 @@
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
-import type { W3CCredentialFormat } from '../../interfaces'
 import type { Payload } from '../../protocol/v1/models/CredentialFormatOptions'
 import type { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import type { CredDef } from 'indy-sdk'
@@ -28,7 +27,7 @@ export interface CredProposeOfferRequestFormat {
   indy?: {
     payload: Payload
   }
-  jsonld?: W3CCredentialFormat
+  jsonld?: undefined
 }
 
 export interface CredentialAttachmentFormats {

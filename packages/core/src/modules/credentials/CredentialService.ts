@@ -8,6 +8,7 @@ import type { DidCommMessageRepository } from '../../storage'
 import type { MediationRecipientService } from '../routing'
 import type { CredentialStateChangedEvent } from './CredentialEvents'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
+import type { ServiceRequestCredentialOptions } from './CredentialServiceOptions'
 import type { CredentialFormatService } from './formats/CredentialFormatService'
 import type { CredProposeOfferRequestFormat } from './formats/models/CredentialFormatServiceOptions'
 import type {
@@ -19,7 +20,6 @@ import type {
   OfferCredentialFormats,
   OfferCredentialOptions,
   ProposeCredentialOptions,
-  RequestCredentialOptions,
 } from './interfaces'
 import type { V1CredentialService } from './protocol/v1/V1CredentialService'
 import type {
@@ -105,7 +105,7 @@ export abstract class CredentialService {
   // methods for request
   abstract createRequest(
     credentialRecord: CredentialExchangeRecord,
-    options: RequestCredentialOptions
+    options: ServiceRequestCredentialOptions
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
 
   abstract processAck(messageContext: InboundMessageContext<CredentialAckMessage>): Promise<CredentialExchangeRecord>

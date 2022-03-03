@@ -4,6 +4,7 @@
 import type { CredentialExchangeRecord } from '../..'
 import type { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import type {
+  AcceptCredentialOptions,
   AcceptOfferOptions,
   AcceptProposalOptions,
   AcceptRequestOptions,
@@ -29,6 +30,12 @@ import { Attachment, AttachmentData } from '../../../../decorators/attachment/At
 import { CredentialFormatService } from '../CredentialFormatService'
 
 export class JsonLdCredentialFormatService extends CredentialFormatService {
+  processOffer(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): void {
+    throw new Error('Method not implemented.')
+  }
+  processCredential(options: AcceptCredentialOptions, credentialRecord: CredentialExchangeRecord): Promise<void> {
+    throw new Error('Method not implemented.')
+  }
   processRequest(options: RequestCredentialOptions, credentialRecord: CredentialExchangeRecord): void {
     throw new Error('Method not implemented.')
   }
@@ -68,12 +75,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     throw new Error('Method not implemented.')
   }
 
-  public processCredential(
-    message: V2IssueCredentialMessage,
-    credentialRecord: CredentialExchangeRecord
-  ): Promise<void> {
-    throw new Error('Method not implemented.')
-  }
   public createRequest(
     requestOptions: RequestCredentialOptions,
     credentialRecord: CredentialExchangeRecord

@@ -10,7 +10,7 @@ import type { V1CredentialService } from '../V1CredentialService'
 import { createOutboundMessage } from '../../../../../agent/helpers'
 import { V1OfferCredentialMessage, V1ProposeCredentialMessage } from '../messages'
 
-export class ProposeCredentialHandler implements Handler {
+export class V1ProposeCredentialHandler implements Handler {
   private credentialService: V1CredentialService
   private agentConfig: AgentConfig
   private didCommMessageRepository: DidCommMessageRepository
@@ -26,7 +26,7 @@ export class ProposeCredentialHandler implements Handler {
     this.didCommMessageRepository = didCommMessageRepository
   }
 
-  public async handle(messageContext: HandlerInboundMessage<ProposeCredentialHandler>) {
+  public async handle(messageContext: HandlerInboundMessage<V1ProposeCredentialHandler>) {
     const credentialRecord = await this.credentialService.processProposal(messageContext)
 
     let proposalMessage: V1ProposeCredentialMessage | undefined
@@ -86,7 +86,7 @@ export class ProposeCredentialHandler implements Handler {
 
   private async createOffer(
     credentialRecord: CredentialExchangeRecord,
-    messageContext: HandlerInboundMessage<ProposeCredentialHandler>,
+    messageContext: HandlerInboundMessage<V1ProposeCredentialHandler>,
     proposalMessage?: V1ProposeCredentialMessage
   ) {
     this.agentConfig.logger.info(

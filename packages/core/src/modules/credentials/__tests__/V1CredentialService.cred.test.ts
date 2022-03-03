@@ -2,7 +2,7 @@ import type { Wallet } from '../../../wallet/Wallet'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
-import type { AcceptRequestOptions, RequestCredentialOptions } from '../interfaces'
+import type { ServiceAcceptRequestOptions, ServiceRequestCredentialOptions } from '../CredentialServiceOptions'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
 import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
 import type { CustomCredentialTags } from '../repository/CredentialRecord'
@@ -99,9 +99,8 @@ const credentialAttachment = new Attachment({
   }),
 })
 
-const acceptRequestOptions: AcceptRequestOptions = {
+const acceptRequestOptions: ServiceAcceptRequestOptions = {
   attachId: INDY_CREDENTIAL_ATTACHMENT_ID,
-  protocolVersion: CredentialProtocolVersion.V1,
   comment: 'credential response comment',
   credentialRecordId: '',
 }
@@ -139,6 +138,7 @@ const mockCredentialRecord = ({
     threadId: threadId ?? offerMessage.id,
     connectionId: connectionId ?? '123',
     tags,
+    protocolVersion: CredentialProtocolVersion.V1,
   })
 
   if (metadata?.indyRequest) {
@@ -272,7 +272,7 @@ describe('CredentialService', () => {
       const didCommMessageRepo = agent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
       mediationRecipientService = agent.injectionContainer.resolve(MediationRecipientService)
       init(didCommMessageRepo)
-      const options: RequestCredentialOptions = {
+      const options: ServiceRequestCredentialOptions = {
         connectionId: credentialRecord.connectionId,
         holderDid: connection.did,
         comment: 'credential request comment',

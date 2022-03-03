@@ -19,6 +19,7 @@ export interface CredentialRecordProps {
   state: CredentialState
   connectionId?: string
   threadId: string
+  protocolVersion: CredentialProtocolVersion
 
   credentialId?: string
   tags?: CustomCredentialTags
@@ -68,13 +69,9 @@ export class CredentialExchangeRecord extends BaseRecord<
       this.connectionId = props.connectionId
       this.credentialId = props.credentialId
       this.threadId = props.threadId
+      this.protocolVersion = props.protocolVersion
       this._tags = props.tags ?? {}
 
-      // this.proposalMessage = props.proposalMessage
-
-      // this.offerMessage = props.offerMessage
-      // this.requestMessage = props.requestMessage
-      // this.credentialMessage = props.credentialMessage
       this.credentialAttributes = props.credentialAttributes
       this.autoAcceptCredential = props.autoAcceptCredential
       this.linkedAttachments = props.linkedAttachments

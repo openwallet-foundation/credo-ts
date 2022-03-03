@@ -104,10 +104,9 @@ describe('credentials', () => {
     testLogger.test('Alice sends credential request to Faber')
     const acceptOfferOptions: AcceptOfferOptions = {
       credentialRecordId: aliceCredentialRecord.id,
-      connectionId: aliceCredentialRecord.connectionId,
-      credentialRecordType: CredentialRecordType.Indy,
-      protocolVersion: CredentialProtocolVersion.V2,
     }
+    aliceCredentialRecord.protocolVersion = CredentialProtocolVersion.V2
+
     const { credentialRecord } = await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
 
     testLogger.test('Faber waits for credential request from Alice')
@@ -118,7 +117,6 @@ describe('credentials', () => {
 
     testLogger.test('Faber sends credential to Alice')
     const options: AcceptRequestOptions = {
-      protocolVersion: CredentialProtocolVersion.V2,
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Credential',
     }
@@ -203,10 +201,9 @@ describe('credentials', () => {
 
     const acceptOfferOptions: AcceptOfferOptions = {
       credentialRecordId: aliceCredentialRecord.id,
-      credentialRecordType: CredentialRecordType.Indy,
-      protocolVersion: CredentialProtocolVersion.V2,
       autoAcceptCredential: AutoAcceptCredential.ContentApproved,
     }
+    aliceCredentialRecord.protocolVersion = CredentialProtocolVersion.V2
 
     await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
 

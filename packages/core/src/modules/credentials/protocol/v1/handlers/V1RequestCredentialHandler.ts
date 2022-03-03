@@ -1,9 +1,9 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage'
+import type { ServiceAcceptRequestOptions } from '../../../CredentialServiceOptions'
 import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
 import type { CredProposeOfferRequestFormat } from '../../../formats/models/CredentialFormatServiceOptions'
-import type { AcceptRequestOptions } from '../../../interfaces'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
@@ -17,7 +17,7 @@ import {
   V1OfferCredentialMessage,
 } from '../messages'
 
-export class RequestCredentialHandler implements Handler {
+export class V1RequestCredentialHandler implements Handler {
   private agentConfig: AgentConfig
   private credentialService: V1CredentialService
   private didCommMessageRepository: DidCommMessageRepository
@@ -33,7 +33,7 @@ export class RequestCredentialHandler implements Handler {
     this.didCommMessageRepository = didCommMessageRepository
   }
 
-  public async handle(messageContext: HandlerInboundMessage<RequestCredentialHandler>) {
+  public async handle(messageContext: HandlerInboundMessage<V1RequestCredentialHandler>) {
     const credentialRecord = await this.credentialService.processRequest(messageContext)
     let requestMessage: V1RequestCredentialMessage | undefined
     let offerMessage: V1OfferCredentialMessage | undefined
@@ -98,7 +98,7 @@ export class RequestCredentialHandler implements Handler {
 
   private async createCredential(
     record: CredentialExchangeRecord,
-    messageContext: HandlerInboundMessage<RequestCredentialHandler>,
+    messageContext: HandlerInboundMessage<V1RequestCredentialHandler>,
     offerMessage?: V1OfferCredentialMessage,
     requestMessage?: V1RequestCredentialMessage
   ) {
@@ -106,9 +106,8 @@ export class RequestCredentialHandler implements Handler {
       `Automatically sending credential with autoAccept on ${this.agentConfig.autoAcceptCredentials}`
     )
 
-    const options: AcceptRequestOptions = {
+    const options: ServiceAcceptRequestOptions = {
       attachId: INDY_CREDENTIAL_ATTACHMENT_ID,
-      protocolVersion: CredentialProtocolVersion.V1,
       credentialRecordId: record.id,
       comment: 'V1 Indy Credential',
     }

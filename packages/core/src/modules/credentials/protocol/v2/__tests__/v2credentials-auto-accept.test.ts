@@ -3,6 +3,7 @@ import type { ConnectionRecord } from '../../../../connections'
 import type {
   AcceptOfferOptions,
   AcceptProposalOptions,
+  NegotiateOfferOptions,
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
@@ -213,7 +214,6 @@ describe('credentials', () => {
       testLogger.test('Faber sends credential offer to Alice')
       const options: AcceptProposalOptions = {
         connectionId: faberConnection.id,
-        protocolVersion: aliceCredentialExchangeRecord.protocolVersion,
         credentialRecordId: faberCredentialRecord.id,
         comment: 'V2 Indy Offer',
         credentialFormats: {
@@ -321,11 +321,13 @@ describe('credentials', () => {
       expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
 
       if (aliceCredentialRecord.connectionId) {
+        // we do not need to specify connection id in this object
+        // it is either connectionless or included in the offer message
         const acceptOfferOptions: AcceptOfferOptions = {
           credentialRecordId: aliceCredentialRecord.id,
-          connectionId: aliceCredentialRecord.connectionId,
-          credentialRecordType: CredentialRecordType.Indy,
-          protocolVersion: CredentialProtocolVersion.V2,
+          // connectionId: aliceCredentialRecord.connectionId,
+          // credentialRecordType: CredentialRecordType.Indy,
+          // protocolVersion: CredentialProtocolVersion.V2,
         }
         testLogger.test('Alice sends credential request to faber')
         const faberCredentialExchangeRecord: CredentialExchangeRecord =
@@ -399,7 +401,6 @@ describe('credentials', () => {
       })
 
       const negotiateOptions: NegotiateProposalOptions = {
-        protocolVersion: CredentialProtocolVersion.V2,
         credentialRecordId: faberCredentialRecord.id,
         credentialFormats: {
           indy: {
@@ -512,7 +513,7 @@ describe('credentials', () => {
       expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
 
       testLogger.test('Alice sends credential request to Faber')
-      const proposeOptions: ProposeCredentialOptions = {
+      const proposeOptions: NegotiateOfferOptions = {
         connectionId: aliceConnection.id,
         protocolVersion: CredentialProtocolVersion.V2,
         credentialRecordId: aliceCredentialRecord.id,

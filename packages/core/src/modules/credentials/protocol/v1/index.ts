@@ -1,1 +1,1 @@
-export * from './CredentialServiceOptions'
+export * from '../../CredentialServiceOptions'

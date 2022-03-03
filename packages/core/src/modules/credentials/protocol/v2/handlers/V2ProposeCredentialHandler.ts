@@ -122,7 +122,7 @@ export class V2ProposeCredentialHandler implements Handler {
     }
 
     const options: AcceptProposalOptions = await this.credentialService.createAcceptProposalOptions(credentialRecord)
-    options.offer = this.credentialService.getAttachment(proposalMessage)
+    options.offerAttachment = this.credentialService.getAttachment(proposalMessage)
     const message = await this.credentialService.createOfferAsResponse(credentialRecord, options)
     return createOutboundMessage(messageContext.connection, message)
   }

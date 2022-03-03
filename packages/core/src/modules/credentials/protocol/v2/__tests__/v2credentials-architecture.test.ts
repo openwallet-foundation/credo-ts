@@ -50,29 +50,29 @@ const multiFormatProposal: ProposeCredentialOptions = {
         credentialPayload: testAttributes,
       },
     },
-    jsonld: {
-      credential: {
-        '@context': 'https://www.w3.org/2018/',
-        issuer: 'did:key:z6MkodKV3mnjQQMB9jhMZtKD9Sm75ajiYq51JDLuRSPZTXrr',
-        type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-        issuanceDate: '2020-01-01T19:23:24Z',
-        expirationDate: '2021-01-01T19:23:24Z',
-        credentialSubject: {
-          id: 'did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
-          degree: {
-            type: 'BachelorDegree',
-            name: 'Bachelor of Science and Arts',
-          },
-        },
-      },
-      options: {
-        proofPurpose: 'assertionMethod',
-        created: '2020-04-02T18:48:36Z',
-        domain: 'example.com',
-        challenge: '9450a9c1-4db5-4ab9-bc0c-b7a9b2edac38',
-        proofType: 'Ed25519Signature2018',
-      },
-    },
+    // jsonld: {
+    //   credential: {
+    //     '@context': 'https://www.w3.org/2018/',
+    //     issuer: 'did:key:z6MkodKV3mnjQQMB9jhMZtKD9Sm75ajiYq51JDLuRSPZTXrr',
+    //     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+    //     issuanceDate: '2020-01-01T19:23:24Z',
+    //     expirationDate: '2021-01-01T19:23:24Z',
+    //     credentialSubject: {
+    //       id: 'did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
+    //       degree: {
+    //         type: 'BachelorDegree',
+    //         name: 'Bachelor of Science and Arts',
+    //       },
+    //     },
+    //   },
+    //   options: {
+    //     proofPurpose: 'assertionMethod',
+    //     created: '2020-04-02T18:48:36Z',
+    //     domain: 'example.com',
+    //     challenge: '9450a9c1-4db5-4ab9-bc0c-b7a9b2edac38',
+    //     proofType: 'Ed25519Signature2018',
+    //   },
+    // },
   },
   comment: 'v2 propose credential test',
 }
@@ -131,14 +131,14 @@ describe('V2 Credential Architecture', () => {
       const service: CredentialService = api.getService(version)
 
       const formats: CredentialFormatService[] = service.getFormats(multiFormatProposal.credentialFormats)
-      expect(formats.length).toBe(2)
+      expect(formats.length).toBe(1) // for now will be added to with jsonld
       const messageBuilder: CredentialMessageBuilder = new CredentialMessageBuilder()
 
       const v2Proposal = messageBuilder.createProposal(formats, multiFormatProposal)
 
-      expect(v2Proposal.message.formats.length).toBe(2)
+      expect(v2Proposal.message.formats.length).toBe(1)
       expect(v2Proposal.message.formats[0].format).toEqual('hlindy/cred-filter@v2.0')
-      expect(v2Proposal.message.formats[1].format).toEqual('aries/ld-proof-vc-detail@v1.0')
+      // expect(v2Proposal.message.formats[1].format).toEqual('aries/ld-proof-vc-detail@v1.0')
     })
   })
 })

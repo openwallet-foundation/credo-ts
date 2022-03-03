@@ -21,6 +21,7 @@ import { assert } from 'console'
 
 import { CredentialState } from '../..'
 import { uuid } from '../../../../utils/uuid'
+import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
 import { CredentialExchangeRecord } from '../../repository/CredentialRecord'
 
 import { V2IssueCredentialMessage } from './messages/V2IssueCredentialMessage'
@@ -81,6 +82,7 @@ export class CredentialMessageBuilder {
       threadId: message.threadId,
       state: CredentialState.ProposalSent,
       autoAcceptCredential: proposal?.autoAcceptCredential,
+      protocolVersion: CredentialProtocolVersion.V2,
     }
 
     // Create the v2 record
@@ -103,6 +105,7 @@ export class CredentialMessageBuilder {
       threadId: message.threadId,
       state: CredentialState.ProposalReceived,
       credentialAttributes: message.credentialProposal?.attributes,
+      protocolVersion: CredentialProtocolVersion.V2,
     }
     return new CredentialExchangeRecord(props)
   }
@@ -122,12 +125,12 @@ export class CredentialMessageBuilder {
 
     const options = proposal as AcceptProposalOptions
     for (const service of formatServices) {
-      if (proposal.offer) {
-        options.offer = proposal.offer
+      if (proposal.offerAttachment) {
+        options.offerAttachment = proposal.offerAttachment
       }
       const { attachment: offersAttach, preview, format } = await service.createOffer(options)
 
-      options.offer = offersAttach
+      options.offerAttachment = offersAttach
       if (offersAttach === undefined) {
         throw Error('offersAttach not initialized for credential offer')
       }
@@ -141,7 +144,7 @@ export class CredentialMessageBuilder {
       }
       formatsArray.push(format)
 
-      if (options.offer) {
+      if (options.offerAttachment) {
         service.processOffer(options, credentialRecord)
       }
     }
@@ -254,7 +257,7 @@ export class CredentialMessageBuilder {
     let previewAttachments: V2CredentialPreview | undefined
 
     for (const service of formatServices) {
-      const offerOptions = options as AcceptProposalOptions
+      const offerOptions = options as unknown as AcceptProposalOptions
       const { attachment: offersAttach, preview, format } = await service.createOffer(offerOptions)
 
       if (offersAttach) {
@@ -289,12 +292,13 @@ export class CredentialMessageBuilder {
       autoAcceptCredential: options?.autoAcceptCredential,
       state: CredentialState.OfferSent,
       credentialAttributes: previewAttachments?.attributes,
+      protocolVersion: CredentialProtocolVersion.V2,
     }
 
-    // Create the v2 record
     const credentialRecord = new CredentialExchangeRecord(recordProps)
+
     for (const service of formatServices) {
-      const offerOptions: AcceptProposalOptions = options as AcceptProposalOptions
+      const offerOptions: AcceptProposalOptions = options as unknown as AcceptProposalOptions
       if (options.offer) {
         service.processOffer(offerOptions, credentialRecord)
       }

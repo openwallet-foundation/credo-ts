@@ -3,6 +3,7 @@ import type { ConnectionRecord } from '../../../../connections'
 import type {
   AcceptOfferOptions,
   AcceptProposalOptions,
+  NegotiateOfferOptions,
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
@@ -215,7 +216,6 @@ describe('credentials', () => {
 
       const options: AcceptProposalOptions = {
         connectionId: faberConnection.id,
-        protocolVersion: aliceCredentialExchangeRecord.protocolVersion,
         credentialRecordId: faberCredentialExchangeRecord.id,
         comment: 'V2 Indy Offer',
         credentialFormats: {
@@ -334,9 +334,6 @@ describe('credentials', () => {
       if (aliceCredentialExchangeRecord.connectionId) {
         const acceptOfferOptions: AcceptOfferOptions = {
           credentialRecordId: aliceCredentialExchangeRecord.id,
-          connectionId: aliceCredentialExchangeRecord.connectionId,
-          credentialRecordType: CredentialRecordType.Indy,
-          protocolVersion: CredentialProtocolVersion.V1,
         }
         testLogger.test('alice sends credential request to faber')
         faberCredentialExchangeRecord = await aliceAgent.credentials.acceptCredentialOffer(acceptOfferOptions)
@@ -412,7 +409,6 @@ describe('credentials', () => {
       })
 
       const negotiateOptions: NegotiateProposalOptions = {
-        protocolVersion: CredentialProtocolVersion.V1,
         credentialRecordId: faberCredentialExchangeRecord.id,
         credentialFormats: {
           indy: {
@@ -528,7 +524,7 @@ describe('credentials', () => {
       expect(aliceCredentialExchangeRecord.type).toBe(CredentialExchangeRecord.name)
 
       testLogger.test('Alice sends credential request to Faber')
-      const negotiateOfferOptions: ProposeCredentialOptions = {
+      const negotiateOfferOptions: NegotiateOfferOptions = {
         connectionId: aliceConnection.id,
         protocolVersion: CredentialProtocolVersion.V1,
         credentialRecordId: aliceCredentialExchangeRecord.id,

@@ -8,7 +8,7 @@ import type { V1CredentialService } from '../V1CredentialService'
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { V1IssueCredentialMessage, V1RequestCredentialMessage } from '../messages'
 
-export class IssueCredentialHandler implements Handler {
+export class V1IssueCredentialHandler implements Handler {
   private credentialService: V1CredentialService
   private agentConfig: AgentConfig
   private didCommMessageRepository: DidCommMessageRepository
@@ -24,7 +24,7 @@ export class IssueCredentialHandler implements Handler {
     this.didCommMessageRepository = didCommMessageRepository
   }
 
-  public async handle(messageContext: HandlerInboundMessage<IssueCredentialHandler>) {
+  public async handle(messageContext: HandlerInboundMessage<V1IssueCredentialHandler>) {
     const credentialRecord = await this.credentialService.processCredential(messageContext)
     const credentialMessage = await this.didCommMessageRepository.getAgentMessage({
       associatedRecordId: credentialRecord.id,
@@ -52,7 +52,7 @@ export class IssueCredentialHandler implements Handler {
   private async createAck(
     record: CredentialExchangeRecord,
     credentialMessage: V1IssueCredentialMessage,
-    messageContext: HandlerInboundMessage<IssueCredentialHandler>
+    messageContext: HandlerInboundMessage<V1IssueCredentialHandler>
   ) {
     this.agentConfig.logger.info(
       `Automatically sending acknowledgement with autoAccept on ${this.agentConfig.autoAcceptCredentials}`

@@ -169,6 +169,7 @@ const mockCredentialRecord = ({
     threadId: threadId ?? offerMessage.id,
     connectionId: connectionId ?? '123',
     tags,
+    protocolVersion: CredentialProtocolVersion.V2,
   })
 
   if (metadata?.indyRequest) {
@@ -517,7 +518,6 @@ describe('CredentialService', () => {
       // when
 
       const acceptRequestOptions: AcceptRequestOptions = {
-        protocolVersion: CredentialProtocolVersion.V2,
         credentialRecordId: credential.id,
         comment: 'credential response comment',
       }
@@ -558,7 +558,6 @@ describe('CredentialService', () => {
       })
       // when
       const acceptRequestOptions: AcceptRequestOptions = {
-        protocolVersion: CredentialProtocolVersion.V2,
         credentialRecordId: credential.id,
         comment: 'credential response comment',
       }
@@ -604,7 +603,6 @@ describe('CredentialService', () => {
       })
       const options: AcceptRequestOptions = {
         comment: 'credential response comment',
-        protocolVersion: CredentialProtocolVersion.V1,
         credentialRecordId: credential.id,
       }
       const { message: credentialResponse } = await credentialService.createCredential(credential, options)

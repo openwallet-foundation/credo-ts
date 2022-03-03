@@ -12,6 +12,7 @@ import type {
   CredProposeOfferRequestFormat,
 } from '../../formats/models/CredentialFormatServiceOptions'
 import type {
+  AcceptCredentialOptions,
   AcceptProposalOptions,
   AcceptRequestOptions,
   NegotiateOfferOptions,
@@ -175,6 +176,15 @@ export class V2CredentialService extends CredentialService {
 
     for (const format of formats) {
       const options = await this.createAcceptProposalOptions(credentialRecord)
+
+      const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+        associatedRecordId: credentialRecord.id,
+        messageClass: V2ProposeCredentialMessage,
+      })
+      if (proposalMessage) {
+        options.proposal = this.getAttachment(proposalMessage)
+      }
+
       format.processProposal(options, credentialRecord)
     }
 
@@ -403,7 +413,6 @@ export class V2CredentialService extends CredentialService {
     const formats: CredentialFormatService[] = this.getFormatsFromMessage(credentialOfferMessage.formats)
     const options: AcceptProposalOptions = {
       connectionId: '',
-      protocolVersion: CredentialProtocolVersion.V2,
       credentialRecordId: '',
       credentialFormats: {},
     }
@@ -434,7 +443,7 @@ export class V2CredentialService extends CredentialService {
       })
 
       for (const format of formats) {
-        options.offer = this.getAttachment(credentialOfferMessage)
+        options.offerAttachment = this.getAttachment(credentialOfferMessage)
         logger.debug('Save metadata for offer')
         format.processOffer(options, credentialRecord)
       }
@@ -454,10 +463,11 @@ export class V2CredentialService extends CredentialService {
         threadId: credentialOfferMessage.id,
         credentialAttributes: credentialOfferMessage.credentialPreview?.attributes,
         state: CredentialState.OfferReceived,
+        protocolVersion: CredentialProtocolVersion.V2,
       })
 
       for (const format of formats) {
-        options.offer = this.getAttachment(credentialOfferMessage)
+        options.offerAttachment = this.getAttachment(credentialOfferMessage)
         logger.debug('Save metadata for offer')
         format.processOffer(options, credentialRecord)
       }
@@ -728,8 +738,8 @@ export class V2CredentialService extends CredentialService {
     const { credentialRecord, message } = await this.credentialMessageBuilder.createOffer(formats, credentialOptions)
 
     for (const format of formats) {
-      const options: AcceptProposalOptions = credentialOptions as AcceptProposalOptions
-      options.offer = this.getAttachment(message)
+      const options: AcceptProposalOptions = credentialOptions as unknown as AcceptProposalOptions
+      options.offerAttachment = this.getAttachment(message)
       format.processOffer(options, credentialRecord)
     }
     await this.credentialRepository.save(credentialRecord)
@@ -745,45 +755,25 @@ export class V2CredentialService extends CredentialService {
    *
    */
   public async createAcceptProposalOptions(credentialRecord: CredentialExchangeRecord): Promise<AcceptProposalOptions> {
-    let proposalMessage
-    try {
-      proposalMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V2ProposeCredentialMessage,
-      })
-    } catch (RecordNotFoundError) {
-      // record not found - expected (sometimes)
+    const proposalMessage: V2ProposeCredentialMessage | null = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2ProposeCredentialMessage,
+    })
+
+    const formats: CredentialFormatService[] = this.getFormatsFromMessage(proposalMessage.formats)
+
+    let options: AcceptProposalOptions = {
+      connectionId: '',
+      credentialRecordId: credentialRecord.id,
+      credentialFormats: {},
+      proposal: this.getAttachment(proposalMessage),
     }
 
-    if (proposalMessage && proposalMessage.credentialProposal?.attributes) {
-      const msg: V2ProposeCredentialMessage = proposalMessage as V2ProposeCredentialMessage
-      const formats: CredentialFormatService[] = this.getFormatsFromMessage(msg.formats)
-
-      let options: AcceptProposalOptions = {
-        connectionId: '',
-        protocolVersion: CredentialProtocolVersion.V2,
-        credentialRecordId: credentialRecord.id,
-        credentialFormats: {},
-      }
-
-      for (const formatService of formats) {
-        options = await formatService.processProposal(options, credentialRecord)
-      }
-
-      const proposeMessage: V2ProposeCredentialMessage = proposalMessage as V2ProposeCredentialMessage
-      if (proposeMessage && proposeMessage.credentialProposal) {
-        options.credentialRecordId = credentialRecord.id
-        options.credentialFormats = {
-          indy: {
-            attributes: proposeMessage.credentialProposal.attributes,
-            credentialDefinitionId: options.credentialFormats.indy?.credentialDefinitionId,
-          },
-        }
-      }
-
-      return options
+    for (const formatService of formats) {
+      // should fill in the credential formats
+      options = await formatService.processProposal(options, credentialRecord)
     }
-    throw Error('Unable to create accept proposal options object')
+    return options
   }
 
   /**
@@ -888,8 +878,11 @@ export class V2CredentialService extends CredentialService {
 
     const formatServices: CredentialFormatService[] = this.getFormatsFromMessage(issueCredentialMessage.formats)
 
+    const options: AcceptCredentialOptions = {
+      credential: this.getAttachment(issueCredentialMessage),
+    }
     for (const formatService of formatServices) {
-      await formatService.processCredential(issueCredentialMessage, credentialRecord)
+      await formatService.processCredential(options, credentialRecord)
     }
 
     await this.updateState(credentialRecord, CredentialState.CredentialReceived)
@@ -983,9 +976,9 @@ export class V2CredentialService extends CredentialService {
     // Create message
     const { credentialRecord, message } = await this.credentialMessageBuilder.createOffer(formats, credentialOptions)
 
-    const options: AcceptProposalOptions = credentialOptions as AcceptProposalOptions
+    const options: AcceptProposalOptions = credentialOptions as unknown as AcceptProposalOptions
     for (const format of formats) {
-      options.offer = this.getAttachment(message)
+      options.offerAttachment = this.getAttachment(message)
       logger.debug('Save metadata for offer')
       format.processOffer(options, credentialRecord)
     }

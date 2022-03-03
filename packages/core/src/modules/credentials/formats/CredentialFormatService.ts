@@ -2,6 +2,7 @@ import type { AutoAcceptCredential } from '..'
 import type { EventEmitter } from '../../../agent/EventEmitter'
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type {
+  AcceptCredentialOptions,
   AcceptProposalOptions,
   AcceptRequestOptions,
   ProposeCredentialOptions,
@@ -9,7 +10,6 @@ import type {
 } from '../interfaces'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
 import type { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
-import type { V2IssueCredentialMessage } from '../protocol/v2/messages/V2IssueCredentialMessage'
 import type { CredentialExchangeRecord, CredentialRepository } from '../repository'
 import type {
   CredentialAttachmentFormats,
@@ -17,7 +17,6 @@ import type {
   OfferAttachmentFormats,
   ProposeAttachmentFormats,
 } from './models/CredentialFormatServiceOptions'
-import type { CredOffer } from 'indy-sdk'
 
 import { uuid } from '../../../utils/uuid'
 
@@ -39,16 +38,8 @@ export abstract class CredentialFormatService {
 
   abstract createOffer(options: AcceptProposalOptions): Promise<OfferAttachmentFormats>
 
-  public processOffer(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): void {
-    if (options.offer) {
-      const credOffer: CredOffer = options.offer.getDataAsJson<CredOffer>()
+  abstract processOffer(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): void
 
-      credentialRecord.metadata.set('_internal/indyCredential', {
-        schemaId: credOffer.schema_id,
-        credentialDefinintionId: credOffer.cred_def_id,
-      })
-    }
-  }
   abstract createRequest(
     options: RequestCredentialOptions,
     credentialRecord: CredentialExchangeRecord
@@ -62,7 +53,7 @@ export abstract class CredentialFormatService {
   ): Promise<CredentialAttachmentFormats>
 
   abstract processCredential(
-    message: V2IssueCredentialMessage,
+    options: AcceptCredentialOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<void>
 

@@ -11,7 +11,7 @@ import type { V1CredentialService } from '../V1CredentialService'
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
 import { DidCommMessageRole } from '../../../../../storage'
-import { V1OfferCredentialMessage, V1ProposeCredentialMessage } from '../messages'
+import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V1OfferCredentialMessage, V1ProposeCredentialMessage } from '../messages'
 
 export class OfferCredentialHandler implements Handler {
   private credentialService: V1CredentialService
@@ -35,24 +35,15 @@ export class OfferCredentialHandler implements Handler {
   public async handle(messageContext: HandlerInboundMessage<OfferCredentialHandler>) {
     const credentialRecord = await this.credentialService.processOffer(messageContext)
 
-    let offerMessage: V1OfferCredentialMessage | undefined
-    let proposeMessage: V1ProposeCredentialMessage | undefined
-    try {
-      offerMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V1OfferCredentialMessage,
-      })
-    } catch (RecordNotFoundError) {
-      // can happen
-    }
-    try {
-      proposeMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V1ProposeCredentialMessage,
-      })
-    } catch (RecordNotFoundError) {
-      // can happen in normal processing
-    }
+    const offerMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V1OfferCredentialMessage,
+    })
+
+    const proposeMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V1ProposeCredentialMessage,
+    })
 
     let offerPayload: CredProposeOfferRequestFormat | undefined
     let proposalPayload: CredProposeOfferRequestFormat | undefined
@@ -64,23 +55,22 @@ export class OfferCredentialHandler implements Handler {
       proposalPayload = proposeMessage.credentialPayload
     }
     if (offerMessage) {
-      const attachment = offerMessage.getAttachmentIncludingFormatId('indy')
+      const attachment = offerMessage.getAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
       if (attachment) {
         offerPayload = formatService.getCredentialPayload(attachment)
       }
       offerValues = offerMessage.credentialPreview?.attributes
-    }
-
-    if (
-      formatService.shouldAutoRespondToOffer(
-        credentialRecord,
-        this.agentConfig.autoAcceptCredentials,
-        offerPayload,
-        offerValues,
-        proposalPayload
-      )
-    ) {
-      return await this.createRequest(credentialRecord, messageContext, offerMessage)
+      if (
+        formatService.shouldAutoRespondToOffer(
+          credentialRecord,
+          this.agentConfig.autoAcceptCredentials,
+          offerPayload,
+          offerValues,
+          proposalPayload
+        )
+      ) {
+        return await this.createRequest(credentialRecord, messageContext, offerMessage)
+      }
     }
   }
 

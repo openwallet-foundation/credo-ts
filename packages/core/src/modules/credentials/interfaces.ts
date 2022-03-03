@@ -31,24 +31,6 @@ export type Issuer = IssuerId | IssuerNode
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type LDSignatureSuite = 'Ed25519Signature2018' | 'BbsBlsSignature2020'
 
-export interface W3CCredentialFormat {
-  credential: {
-    '@context': string | Record<string, AnyJson>
-    issuer: Issuer
-    type: string | string[]
-    issuanceDate: string
-    proof?: Record<string, AnyJson> | Array<Record<string, AnyJson>>
-    [x: string]: unknown
-  }
-  options: {
-    proofPurpose: string
-    created: string
-    domain: string
-    challenge: string
-    proofType: string
-  }
-}
-
 /// CREDENTIAL OFFER
 export interface IndyOfferCredentialFormat {
   credentialDefinitionId: string
@@ -58,13 +40,12 @@ export interface IndyOfferCredentialFormat {
 
 export interface OfferCredentialFormats {
   indy?: IndyOfferCredentialFormat
-  w3c?: W3CCredentialFormat
+  w3c?: undefined
 }
 
-// Used in OfferCredential
 interface OfferCredentialOptions {
   connectionId?: string // this needs to be optional for out of band messages
-  protocolVersion?: CredentialProtocolVersion
+  protocolVersion: CredentialProtocolVersion
   credentialFormats: OfferCredentialFormats
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
@@ -73,9 +54,6 @@ interface OfferCredentialOptions {
 
 interface AcceptOfferOptions {
   credentialRecordId: string
-  protocolVersion?: CredentialProtocolVersion
-  credentialRecordType?: CredentialRecordType
-  connectionId?: string // this needs to be optional for out of band messages
   comment?: string
   autoAcceptCredential?: AutoAcceptCredential
 }
@@ -96,12 +74,11 @@ interface ProposeCredentialOptions {
   connectionId: string
   protocolVersion: CredentialProtocolVersion
   credentialFormats: CredProposeOfferRequestFormat
-  credentialRecordId?: string
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
 }
 
-interface IndyCredentialPreview {
+export interface IndyCredentialPreview {
   // Could be that credential definition id and attributes are already defined
   // But could also be that they are undefined. So we can't make them required
   credentialDefinitionId?: string
@@ -110,13 +87,12 @@ interface IndyCredentialPreview {
 export type FormatType = AcceptProposalOptions | ProposeCredentialOptions | NegotiateProposalOptions
 
 interface AcceptProposalOptions {
-  attachId?: string
   connectionId: string
-  protocolVersion: CredentialProtocolVersion
   credentialRecordId: string
   comment?: string
   autoAcceptCredential?: AutoAcceptCredential
-  offer?: Attachment
+  offerAttachment?: Attachment
+  proposal?: Attachment
   credentialFormats: {
     indy?: IndyCredentialPreview
     w3c?: {
@@ -126,41 +102,35 @@ interface AcceptProposalOptions {
 }
 
 interface NegotiateProposalOptions {
-  protocolVersion: CredentialProtocolVersion
   credentialRecordId: string
   credentialFormats: OfferCredentialFormats
   autoAcceptCredential?: AutoAcceptCredential
-  offer?: Attachment
+  offerAttachment?: Attachment
   comment?: string
 }
 
 /// CREDENTIAL REQUEST
-// this is the base64 encoded data payload for [Indy] credential request
-
 interface RequestCredentialOptions {
-  attachId?: string
   connectionId?: string
   holderDid: string
   // As indy cannot start from request and w3c is not supported in v1 we always use v2 here
-  credentialFormats?: CredProposeOfferRequestFormat
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
-  offer?: CredProposeOfferRequestFormat // will not be there if this is a W3C request rather than an indy response to offer
   offerAttachment?: Attachment
   requestAttachment?: Attachment
   credentialDefinition?: CredentialDefinitionFormat
 }
 
 interface AcceptRequestOptions {
-  attachId?: string
-  protocolVersion: CredentialProtocolVersion
   credentialRecordId: string
   comment?: string
   autoAcceptCredential?: AutoAcceptCredential
-  offer?: CredProposeOfferRequestFormat // might not be there if this is a W3C request rather than an indy response to offer
-  request?: CredProposeOfferRequestFormat
   offerAttachment?: Attachment
   requestAttachment?: Attachment
+}
+
+interface AcceptCredentialOptions {
+  credential?: Attachment
 }
 
 export {
@@ -172,4 +142,5 @@ export {
   AcceptOfferOptions,
   RequestCredentialOptions,
   AcceptRequestOptions,
+  AcceptCredentialOptions,
 }

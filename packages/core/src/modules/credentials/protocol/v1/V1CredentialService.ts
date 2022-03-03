@@ -4,6 +4,14 @@ import type { InboundMessageContext } from '../../../../agent/models/InboundMess
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { ConnectionRecord } from '../../../connections'
 import type { CredentialStateChangedEvent } from '../../CredentialEvents'
+import type {
+  CredentialOfferTemplate,
+  CredentialProposeOptions,
+  CredentialProtocolMsgReturnType,
+  ServiceAcceptOfferOptions,
+  ServiceAcceptRequestOptions,
+  ServiceRequestCredentialOptions,
+} from '../../CredentialServiceOptions'
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
 import type { CredProposeOfferRequestFormat } from '../../formats/models/CredentialFormatServiceOptions'
 import type {
@@ -13,13 +21,7 @@ import type {
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
-  RequestCredentialOptions,
 } from '../../interfaces'
-import type {
-  CredentialOfferTemplate,
-  CredentialProposeOptions,
-  CredentialProtocolMsgReturnType,
-} from './CredentialServiceOptions'
 import type { CredPropose } from './models/CredentialFormatOptions'
 import type { CredOffer } from 'indy-sdk'
 
@@ -52,10 +54,10 @@ import { V1CredentialPreview } from './V1CredentialPreview'
 import {
   CredentialAckHandler,
   CredentialProblemReportHandler,
-  IssueCredentialHandler,
-  OfferCredentialHandler,
-  ProposeCredentialHandler,
-  RequestCredentialHandler,
+  V1IssueCredentialHandler,
+  OfferCredentialHandler as V1OfferCredentialHandler,
+  V1ProposeCredentialHandler,
+  V1RequestCredentialHandler,
 } from './handlers'
 import {
   INDY_CREDENTIAL_ATTACHMENT_ID,
@@ -122,7 +124,7 @@ export class V1CredentialService extends CredentialService {
    */
   public async createRequest(
     record: CredentialExchangeRecord,
-    options: RequestCredentialOptions
+    options: ServiceRequestCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<V1RequestCredentialMessage>> {
     // Assert credential
     record.assertState(CredentialState.OfferReceived)
@@ -336,7 +338,7 @@ export class V1CredentialService extends CredentialService {
    *
    */
   public async processOffer(
-    messageContext: HandlerInboundMessage<OfferCredentialHandler>
+    messageContext: HandlerInboundMessage<V1OfferCredentialHandler>
   ): Promise<CredentialExchangeRecord> {
     let credentialRecord: CredentialExchangeRecord
     const { message: offerMessage, connection } = messageContext
@@ -398,6 +400,7 @@ export class V1CredentialService extends CredentialService {
         threadId: offerMessage.id,
         credentialAttributes: offerMessage.credentialPreview.attributes,
         state: CredentialState.OfferReceived,
+        protocolVersion: CredentialProtocolVersion.V1,
       })
 
       credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
@@ -436,10 +439,8 @@ export class V1CredentialService extends CredentialService {
 
     // Create message
     const { credentialDefinitionId, comment, preview, linkedAttachments } = credentialTemplate
-    const options: AcceptProposalOptions = {
+    const options: ServiceAcceptOfferOptions = {
       attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
-      connectionId: '',
-      protocolVersion: CredentialProtocolVersion.V1,
       credentialRecordId: '',
       credentialFormats: {
         indy: {
@@ -475,6 +476,7 @@ export class V1CredentialService extends CredentialService {
       linkedAttachments: linkedAttachments?.map((linkedAttachments) => linkedAttachments.attachment),
       state: CredentialState.OfferSent,
       autoAcceptCredential: credentialTemplate.autoAcceptCredential,
+      protocolVersion: CredentialProtocolVersion.V1,
     })
 
     const offer = offersAttach.getDataAsJson<CredOffer>()
@@ -496,7 +498,7 @@ export class V1CredentialService extends CredentialService {
    */
   public async createCredential(
     record: CredentialExchangeRecord,
-    options: AcceptRequestOptions
+    options: ServiceAcceptRequestOptions
   ): Promise<CredentialProtocolMsgReturnType<V1IssueCredentialMessage>> {
     // Assert
     record.assertState(CredentialState.RequestReceived)
@@ -647,6 +649,7 @@ export class V1CredentialService extends CredentialService {
         threadId: proposalMessage.threadId,
         credentialAttributes: proposalMessage.credentialProposal?.attributes,
         state: CredentialState.ProposalReceived,
+        protocolVersion: CredentialProtocolVersion.V1,
       })
 
       credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
@@ -695,10 +698,8 @@ export class V1CredentialService extends CredentialService {
     const { credentialDefinitionId, comment, preview, attachments } = credentialTemplate
 
     const credOffer = await this.indyIssuerService.createCredentialOffer(credentialDefinitionId)
-    const options: AcceptProposalOptions = {
+    const options: ServiceAcceptOfferOptions = {
       attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
-      connectionId: '',
-      protocolVersion: CredentialProtocolVersion.V1,
       credentialRecordId: '',
       credentialFormats: {
         indy: {
@@ -745,12 +746,21 @@ export class V1CredentialService extends CredentialService {
   }
 
   public registerHandlers() {
-    this.dispatcher.registerHandler(new ProposeCredentialHandler(this, this.agentConfig, this.didCommMessageRepository))
     this.dispatcher.registerHandler(
-      new OfferCredentialHandler(this, this.agentConfig, this.mediationRecipientService, this.didCommMessageRepository)
+      new V1ProposeCredentialHandler(this, this.agentConfig, this.didCommMessageRepository)
     )
-    this.dispatcher.registerHandler(new RequestCredentialHandler(this, this.agentConfig, this.didCommMessageRepository))
-    this.dispatcher.registerHandler(new IssueCredentialHandler(this, this.agentConfig, this.didCommMessageRepository))
+    this.dispatcher.registerHandler(
+      new V1OfferCredentialHandler(
+        this,
+        this.agentConfig,
+        this.mediationRecipientService,
+        this.didCommMessageRepository
+      )
+    )
+    this.dispatcher.registerHandler(
+      new V1RequestCredentialHandler(this, this.agentConfig, this.didCommMessageRepository)
+    )
+    this.dispatcher.registerHandler(new V1IssueCredentialHandler(this, this.agentConfig, this.didCommMessageRepository))
     this.dispatcher.registerHandler(new CredentialAckHandler(this))
     this.dispatcher.registerHandler(new CredentialProblemReportHandler(this))
   }
@@ -816,6 +826,7 @@ export class V1CredentialService extends CredentialService {
       linkedAttachments: config?.linkedAttachments?.map((linkedAttachment) => linkedAttachment.attachment),
       credentialAttributes: message.credentialProposal?.attributes,
       autoAcceptCredential: config?.autoAcceptCredential,
+      protocolVersion: CredentialProtocolVersion.V1,
     })
 
     // Set the metadata
@@ -960,9 +971,6 @@ export class V1CredentialService extends CredentialService {
     credentialOptions: ProposeCredentialOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
-    if (!credentialOptions.credentialRecordId) {
-      throw Error('No credential record id found in credential options')
-    }
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`

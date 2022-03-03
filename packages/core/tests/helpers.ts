@@ -380,10 +380,9 @@ export async function issueCredential({
 
   const acceptOfferOptions: AcceptOfferOptions = {
     credentialRecordId: holderCredentialRecord.id,
-    credentialRecordType: CredentialRecordType.Indy,
-    protocolVersion: CredentialProtocolVersion.V1,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   }
+  holderCredentialRecord.protocolVersion = CredentialProtocolVersion.V1
 
   await holderAgent.credentials.acceptOffer(acceptOfferOptions)
 
@@ -447,10 +446,9 @@ export async function issueConnectionLessCredential({
   })
   const acceptOfferOptions: AcceptOfferOptions = {
     credentialRecordId: holderCredentialRecord.id,
-    credentialRecordType: CredentialRecordType.Indy,
-    protocolVersion: CredentialProtocolVersion.V1,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   }
+  holderCredentialRecord.protocolVersion = CredentialProtocolVersion.V1
 
   await holderAgent.credentials.acceptOffer(acceptOfferOptions)
 
