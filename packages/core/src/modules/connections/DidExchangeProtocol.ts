@@ -94,7 +94,7 @@ export class DidExchangeProtocol {
 
     // Create sign attachment containing didDoc
     if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
-      const didDocAttach = await this.createSignedAttachment(didDocument, verkey)
+      const didDocAttach = await this.createSignedAttachment(didDocument, [verkey])
       message.didDoc = didDocAttach
     }
 
@@ -218,7 +218,10 @@ export class DidExchangeProtocol {
     const message = new DidExchangeResponseMessage({ did: peerDid.did, threadId })
 
     if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
-      const didDocAttach = await this.createSignedAttachment(didDocument, services[0].recipientKeys[0])
+      const didDocAttach = await this.createSignedAttachment(
+        didDocument,
+        Array.from(new Set(services.map((s) => s.recipientKeys).reduce((acc, curr) => acc.concat(curr), [])))
+      )
       message.didDoc = didDocAttach
     }
 
@@ -360,37 +363,47 @@ export class DidExchangeProtocol {
   private async createPeerDidDoc(services: DidCommService[]) {
     const didDocumentBuilder = new DidDocumentBuilder('')
 
+    // We need to all reciepient and routing keys from all services but we don't want to duplicated items
+    const recipientKeys = new Set(services.map((s) => s.recipientKeys).reduce((acc, curr) => acc.concat(curr), []))
+    const routingKeys = new Set(
+      services
+        .map((s) => s.routingKeys)
+        .filter((r): r is string[] => r !== undefined)
+        .reduce((acc, curr) => acc.concat(curr), [])
+    )
+
+    for (const recipientKey of recipientKeys) {
+      const publicKeyBase58 = recipientKey
+      const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
+      const x25519Key = Key.fromPublicKey(convertPublicKeyToX25519(ed25519Key.publicKey), KeyType.X25519)
+
+      const ed25519VerificationMethod = getEd25519VerificationMethod({
+        id: uuid(),
+        key: ed25519Key,
+        controller: '#id',
+      })
+      const x25519VerificationMethod = getX25519VerificationMethod({
+        id: uuid(),
+        key: x25519Key,
+        controller: '#id',
+      })
+
+      // We should not add duplicated keys for services
+      didDocumentBuilder.addAuthentication(ed25519VerificationMethod).addKeyAgreement(x25519VerificationMethod)
+    }
+
+    for (const routingKey of routingKeys) {
+      const publicKeyBase58 = routingKey
+      const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
+      const verificationMethod = getEd25519VerificationMethod({
+        id: uuid(),
+        key: ed25519Key,
+        controller: '#id',
+      })
+      didDocumentBuilder.addVerificationMethod(verificationMethod)
+    }
+
     services.forEach((service) => {
-      service.recipientKeys.forEach((recipientKey) => {
-        const publicKeyBase58 = recipientKey
-        const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
-        const x25519Key = Key.fromPublicKey(convertPublicKeyToX25519(ed25519Key.publicKey), KeyType.X25519)
-
-        const ed25519VerificationMethod = getEd25519VerificationMethod({
-          id: uuid(),
-          key: ed25519Key,
-          controller: '#id',
-        })
-        const x25519VerificationMethod = getX25519VerificationMethod({
-          id: uuid(),
-          key: x25519Key,
-          controller: '#id',
-        })
-
-        // We should not add duplicated keys for services
-        didDocumentBuilder.addAuthentication(ed25519VerificationMethod).addKeyAgreement(x25519VerificationMethod)
-      })
-
-      const routingKeys = service.routingKeys?.map((rk) => Key.fromPublicKeyBase58(rk, KeyType.Ed25519))
-      routingKeys?.forEach((ed25519Key) => {
-        const verificationMethod = getEd25519VerificationMethod({
-          id: uuid(),
-          key: ed25519Key,
-          controller: '#id',
-        })
-        didDocumentBuilder.addVerificationMethod(verificationMethod)
-      })
-
       didDocumentBuilder.addService(service)
     })
 
@@ -423,7 +436,7 @@ export class DidExchangeProtocol {
     return { peerDid, didDocument }
   }
 
-  private async createSignedAttachment(didDoc: DidDocument, verkey: string) {
+  private async createSignedAttachment(didDoc: DidDocument, verkeys: string[]) {
     const didDocAttach = new Attachment({
       mimeType: 'application/json',
       data: new AttachmentData({
@@ -431,19 +444,23 @@ export class DidExchangeProtocol {
       }),
     })
 
-    const key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
-    const kid = new DidKey(key).did
-    const payload = JsonEncoder.toBuffer(didDoc)
+    await Promise.all(
+      verkeys.map(async (verkey) => {
+        const key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
+        const kid = new DidKey(key).did
+        const payload = JsonEncoder.toBuffer(didDoc)
 
-    const jws = await this.jwsService.createJws({
-      payload,
-      verkey,
-      header: {
-        kid,
-      },
-    })
+        const jws = await this.jwsService.createJws({
+          payload,
+          verkey,
+          header: {
+            kid,
+          },
+        })
+        didDocAttach.addJws(jws)
+      })
+    )
 
-    didDocAttach.addJws(jws)
     return didDocAttach
   }
 
