@@ -26,7 +26,7 @@ export interface ConnectionRecordProps {
   threadId?: string
   tags?: CustomConnectionTags
   imageUrl?: string
-  multiUseInvitation: boolean
+  multiUseInvitation?: boolean
   mediatorId?: string
   errorMessage?: string
   protocol?: HandshakeProtocol
@@ -100,7 +100,7 @@ export class ConnectionRecord
       this.invitation = props.invitation
       this.threadId = props.threadId
       this.imageUrl = props.imageUrl
-      this.multiUseInvitation = props.multiUseInvitation
+      this.multiUseInvitation = props.multiUseInvitation || false
       this.mediatorId = props.mediatorId
       this.errorMessage = props.errorMessage
       this.protocol = props.protocol

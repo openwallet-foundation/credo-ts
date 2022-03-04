@@ -26,12 +26,6 @@ import { HandshakeReuseHandler } from './handlers'
 import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
 
-// TODO
-// 1. routing keys,
-// 2. out-of-band record (we can do in two steps, 1. use it with oob and DID Exchange, 2. use it also for the Connection protocol)
-// 3. roles and states,
-// 4. get rid of did doc and verkey
-
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
 
 export interface CreateOutOfBandMessageConfig {

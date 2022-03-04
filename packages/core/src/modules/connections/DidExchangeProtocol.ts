@@ -70,7 +70,6 @@ export class DidExchangeProtocol {
     const { outOfBandMessage } = outOfBandRecord
     const { goal, goalCode, routing, autoAcceptConnection } = params
 
-    // Create connection
     const connectionRecord = await this.connectionService.createConnection({
       protocol: HandshakeProtocol.DidExchange,
       role: DidExchangeRole.Requester,
@@ -79,8 +78,8 @@ export class DidExchangeProtocol {
       multiUseInvitation: false,
       routing,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
+      outOfBandId: outOfBandRecord.id,
     })
-    connectionRecord.outOfBandId = outOfBandRecord.id
 
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeRequestMessage.type, connectionRecord)
 
@@ -185,11 +184,11 @@ export class DidExchangeProtocol {
       multiUseInvitation: false,
       routing,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
+      outOfBandId: outOfBandRecord.id,
     })
     connectionRecord.theirDid = message.did
     connectionRecord.theirLabel = message.label
     connectionRecord.threadId = message.threadId || message.id
-    connectionRecord.outOfBandId = outOfBandRecord.id
 
     await this.updateState(DidExchangeRequestMessage.type, connectionRecord)
     this.logger.debug(`Process message ${DidExchangeRequestMessage.type} end`, connectionRecord)

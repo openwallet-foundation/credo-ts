@@ -219,9 +219,9 @@ export class ConnectionService {
     const connectionRecord = await this.createConnection({
       role: ConnectionRole.Invitee,
       state: ConnectionState.Invited,
-      alias: config?.alias,
+      alias: config.alias,
       theirLabel: invitation.label,
-      autoAcceptConnection: config?.autoAcceptConnection,
+      autoAcceptConnection: config.autoAcceptConnection,
       routing: config.routing,
       invitation,
       imageUrl: invitation.imageUrl,
@@ -229,7 +229,7 @@ export class ConnectionService {
         invitationKey: invitation.recipientKeys && invitation.recipientKeys[0],
       },
       multiUseInvitation: false,
-      protocol: config?.protocol,
+      protocol: config.protocol,
     })
     await this.connectionRepository.update(connectionRecord)
     this.eventEmitter.emit<ConnectionStateChangedEvent>({
@@ -767,6 +767,7 @@ export class ConnectionService {
     tags?: CustomConnectionTags
     imageUrl?: string
     protocol?: HandshakeProtocol
+    outOfBandId?: string
   }): Promise<ConnectionRecord> {
     const { endpoints, did, verkey, routingKeys, mediatorId } = options.routing
 
@@ -815,6 +816,7 @@ export class ConnectionService {
       multiUseInvitation: options.multiUseInvitation,
       mediatorId,
       protocol: options.protocol,
+      outOfBandId: options.outOfBandId,
     })
 
     await this.connectionRepository.save(connectionRecord)
