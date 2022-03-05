@@ -18,7 +18,7 @@ export interface OutOfBandRecordProps {
   outOfBandMessage: OutOfBandMessage
   role: OutOfBandRole
   state: OutOfBandState
-  autoAcceptConnection: boolean
+  autoAcceptConnection?: boolean
   reusable?: boolean
 }
 
@@ -28,7 +28,7 @@ export class OutOfBandRecord extends BaseRecord<TagsBase> {
   public role!: OutOfBandRole
   public state!: OutOfBandState
   public reusable!: boolean
-  public autoAcceptConnection!: boolean
+  public autoAcceptConnection?: boolean
 
   public static readonly type = 'OutOfBandRecord'
   public readonly type = OutOfBandRecord.type

@@ -132,7 +132,7 @@ export class OutOfBandModule {
     const services = routing.endpoints.map((endpoint, index) => {
       return new DidCommService({
         id: `#inline-${index}`,
-        priority: 0,
+        priority: index,
         serviceEndpoint: endpoint,
         recipientKeys: [routing.verkey],
         routingKeys: routing.routingKeys,
@@ -162,7 +162,7 @@ export class OutOfBandModule {
       state: OutOfBandState.Initial,
       outOfBandMessage: outOfBandMessage,
       reusable: multiUseInvitation,
-      autoAcceptConnection: autoAcceptConnection ?? this.agentConfig.autoAcceptConnections,
+      autoAcceptConnection,
     })
     await this.outOfBandService.save(outOfBandRecord)
 
@@ -222,7 +222,7 @@ export class OutOfBandModule {
       role: OutOfBandRole.Receiver,
       state: OutOfBandState.PrepareResponse,
       outOfBandMessage: outOfBandMessage,
-      autoAcceptConnection: autoAcceptConnection ?? this.agentConfig.autoAcceptConnections,
+      autoAcceptConnection,
     })
     await this.outOfBandService.save(outOfBandRecord)
 
