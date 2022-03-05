@@ -1,3 +1,4 @@
+import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -6,6 +7,9 @@ import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
+import { AriesFrameworkError } from '../../error'
+import { DidCommService } from '../dids'
+import { OutOfBandService } from '../oob/OutOfBandService'
 import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 
 import { DidExchangeProtocol } from './DidExchangeProtocol'
@@ -29,6 +33,7 @@ export class ConnectionsModule {
   private agentConfig: AgentConfig
   private didExchangeProtocol: DidExchangeProtocol
   private connectionService: ConnectionService
+  private outOfBandService: OutOfBandService
   private messageSender: MessageSender
   private trustPingService: TrustPingService
   private mediationRecipientService: MediationRecipientService
@@ -38,6 +43,7 @@ export class ConnectionsModule {
     agentConfig: AgentConfig,
     didExchangeProtocol: DidExchangeProtocol,
     connectionService: ConnectionService,
+    outOfBandService: OutOfBandService,
     trustPingService: TrustPingService,
     mediationRecipientService: MediationRecipientService,
     messageSender: MessageSender
@@ -45,10 +51,49 @@ export class ConnectionsModule {
     this.agentConfig = agentConfig
     this.didExchangeProtocol = didExchangeProtocol
     this.connectionService = connectionService
+    this.outOfBandService = outOfBandService
     this.trustPingService = trustPingService
     this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
     this.registerHandlers(dispatcher)
+  }
+
+  public async acceptOutOfBandInvitation(
+    outOfBandRecord: OutOfBandRecord,
+    config: {
+      autoAcceptConnection?: boolean
+      label?: string
+      mediatorId?: string
+      protocol: HandshakeProtocol
+    }
+  ) {
+    const { protocol, label, autoAcceptConnection } = config
+    const routing = await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId })
+
+    let result
+    if (protocol === HandshakeProtocol.DidExchange) {
+      result = await this.didExchangeProtocol.createRequest(outOfBandRecord, {
+        label: label || this.agentConfig.label,
+        routing,
+        autoAcceptConnection,
+      })
+    } else if (protocol === HandshakeProtocol.Connections) {
+      result = await this.connectionService.protocolCreateRequest(outOfBandRecord, {
+        myLabel: label || this.agentConfig.label,
+        routing,
+        autoAcceptConnection,
+      })
+    } else {
+      throw new AriesFrameworkError(`Unsupported handshake protocol ${protocol}.`)
+    }
+
+    const { message, connectionRecord } = result
+    await this.messageSender.sendMessageToService({
+      message,
+      service: new DidCommService(outOfBandRecord.outOfBandMessage.services[0] as DidCommService),
+      senderKey: connectionRecord.verkey,
+    })
+    return connectionRecord
   }
 
   public async createConnection(config?: {
@@ -94,16 +139,16 @@ export class ConnectionsModule {
       autoAcceptConnection?: boolean
       alias?: string
       mediatorId?: string
-      protocol?: HandshakeProtocol
     }
   ): Promise<ConnectionRecord> {
-    const routing = await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId })
+    const { alias, autoAcceptConnection, mediatorId } = config || {}
+    const routing = await this.mediationRecipientService.getRouting({ mediatorId })
 
     let connection = await this.connectionService.processInvitation(invitation, {
-      autoAcceptConnection: config?.autoAcceptConnection,
-      alias: config?.alias,
+      autoAcceptConnection,
+      alias,
       routing,
-      protocol: config?.protocol,
+      protocol: HandshakeProtocol.Connections,
     })
 
     if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
@@ -153,19 +198,8 @@ export class ConnectionsModule {
     this.agentConfig.logger.debug('Accepting invitaion', { connectionId, config })
     const connectionRecord = await this.connectionService.getById(connectionId)
 
-    let outboundMessage
-    if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
-      const routing = await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId })
-      const message = await this.didExchangeProtocol.createRequest(connectionRecord, {
-        label: config?.label,
-        routing,
-        autoAcceptConnection: config?.autoAcceptConnection,
-      })
-      outboundMessage = createOutboundMessage(connectionRecord, message)
-    } else {
-      const { message } = await this.connectionService.createRequest(connectionRecord, config)
-      outboundMessage = createOutboundMessage(connectionRecord, message)
-    }
+    const { message } = await this.connectionService.createRequest(connectionRecord, config)
+    const outboundMessage = createOutboundMessage(connectionRecord, message)
 
     await this.messageSender.sendMessage(outboundMessage)
     return connectionRecord
@@ -206,7 +240,16 @@ export class ConnectionsModule {
 
     let outboundMessage
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
-      const message = await this.didExchangeProtocol.createComplete(connectionRecord)
+      if (!connectionRecord.outOfBandId) {
+        throw new AriesFrameworkError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
+      }
+      const outOfBandRecord = await this.outOfBandService.findById(connectionRecord.outOfBandId)
+      if (!outOfBandRecord) {
+        throw new AriesFrameworkError(
+          `OutOfBand record for connection ${connectionRecord.id} with outOfBandId ${connectionRecord.outOfBandId} not found!`
+        )
+      }
+      const message = await this.didExchangeProtocol.createComplete(connectionRecord, outOfBandRecord)
       outboundMessage = createOutboundMessage(connectionRecord, message)
     } else {
       const { message } = await this.connectionService.createTrustPing(connectionRecord, {
@@ -296,6 +339,10 @@ export class ConnectionsModule {
     return this.connectionService.findByInvitationKey(key)
   }
 
+  public async findByOutOfBandId(outOfBandId: string) {
+    return this.connectionService.findByOutOfBandId(outOfBandId)
+  }
+
   /**
    * Retrieve a connection record by thread id
    *
@@ -314,9 +361,16 @@ export class ConnectionsModule {
 
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(
-      new ConnectionRequestHandler(this.connectionService, this.agentConfig, this.mediationRecipientService)
+      new ConnectionRequestHandler(
+        this.connectionService,
+        this.outOfBandService,
+        this.agentConfig,
+        this.mediationRecipientService
+      )
     )
-    dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService, this.agentConfig))
+    dispatcher.registerHandler(
+      new ConnectionResponseHandler(this.connectionService, this.outOfBandService, this.agentConfig)
+    )
     dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
     dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
     dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService))
@@ -324,15 +378,20 @@ export class ConnectionsModule {
     dispatcher.registerHandler(
       new DidExchangeRequestHandler(
         this.didExchangeProtocol,
-        this.connectionService,
+        this.outOfBandService,
         this.agentConfig,
         this.mediationRecipientService
       )
     )
 
     dispatcher.registerHandler(
-      new DidExchangeResponseHandler(this.didExchangeProtocol, this.connectionService, this.agentConfig)
+      new DidExchangeResponseHandler(
+        this.didExchangeProtocol,
+        this.outOfBandService,
+        this.connectionService,
+        this.agentConfig
+      )
     )
-    dispatcher.registerHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol))
+    dispatcher.registerHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService))
   }
 }
