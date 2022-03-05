@@ -1,5 +1,6 @@
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import type { Logger } from '../../logger'
+import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository'
 import type { Routing } from './services/ConnectionService'
 
@@ -28,7 +29,7 @@ import { DidExchangeProblemReportError, DidExchangeProblemReportReason } from '.
 import { DidExchangeCompleteMessage } from './messages/DidExchangeCompleteMessage'
 import { DidExchangeRequestMessage } from './messages/DidExchangeRequestMessage'
 import { DidExchangeResponseMessage } from './messages/DidExchangeResponseMessage'
-import { HandshakeProtocol } from './models'
+import { HandshakeProtocol, DidExchangeRole, DidExchangeState } from './models'
 import { ConnectionService } from './services'
 
 interface DidExchangeRequestParams {
@@ -61,28 +62,38 @@ export class DidExchangeProtocol {
   }
 
   public async createRequest(
-    connectionRecord: ConnectionRecord,
+    outOfBandRecord: OutOfBandRecord,
     params: DidExchangeRequestParams
-  ): Promise<DidExchangeRequestMessage> {
-    this.logger.debug(`Create message ${DidExchangeRequestMessage.type} start`, connectionRecord)
+  ): Promise<{ message: DidExchangeRequestMessage; connectionRecord: ConnectionRecord }> {
+    this.logger.debug(`Create message ${DidExchangeRequestMessage.type} start`, { outOfBandRecord, params })
 
-    if (!connectionRecord.invitation) {
-      throw new AriesFrameworkError('Connection invitation is missing.')
-    }
+    const { outOfBandMessage } = outOfBandRecord
+    const { goal, goalCode, routing, autoAcceptConnection } = params
+
+    const connectionRecord = await this.connectionService.createConnection({
+      protocol: HandshakeProtocol.DidExchange,
+      role: DidExchangeRole.Requester,
+      state: DidExchangeState.InvitationReceived,
+      theirLabel: outOfBandMessage.label,
+      multiUseInvitation: false,
+      routing,
+      autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
+      outOfBandId: outOfBandRecord.id,
+    })
 
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeRequestMessage.type, connectionRecord)
 
-    const { goal, goalCode, routing, autoAcceptConnection } = params
+    // Create message
     const label = params.label ?? this.config.label
     const { verkey } = routing
-    const { peerDid, didDocument } = await this.createPeerDidDoc(routing)
-    const parentThreadId = connectionRecord.invitation?.id
+    const { peerDid, didDocument } = await this.createPeerDidDoc(this.routingToServices(routing))
+    const parentThreadId = outOfBandMessage.id
 
     const message = new DidExchangeRequestMessage({ label, parentThreadId, did: peerDid.did, goal, goalCode })
 
     // Create sign attachment containing didDoc
     if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
-      const didDocAttach = await this.createSignedAttachment(didDocument, verkey)
+      const didDocAttach = await this.createSignedAttachment(didDocument, [verkey])
       message.didDoc = didDocAttach
     }
 
@@ -99,53 +110,31 @@ export class DidExchangeProtocol {
       connectionRecord,
       message,
     })
-    return message
+    return { message, connectionRecord }
   }
 
   public async processRequest(
     messageContext: InboundMessageContext<DidExchangeRequestMessage>,
-    routing?: Routing
+    outOfBandRecord: OutOfBandRecord,
+    routing: Routing
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${DidExchangeRequestMessage.type} start`, messageContext)
 
-    // eslint-disable-next-line prefer-const
-    let { connection: connectionRecord, message } = messageContext
+    // TODO check oob role is sender
+    // TODO check oob state is await-respons
+    // TODO check there is no connection record for particular oob record
 
-    if (!connectionRecord) {
-      throw new AriesFrameworkError('No connection record in message context.')
-    }
+    const { message } = messageContext
 
-    DidExchangeStateMachine.assertProcessMessageState(DidExchangeRequestMessage.type, connectionRecord)
-
-    // check corresponding invitation ID is the request's ~thread.pthid
-
-    if (connectionRecord.invitation?.id !== message.thread?.parentThreadId) {
+    // Check corresponding invitation ID is the request's ~thread.pthid
+    // TODO Maybe we can do it in handler, but that actually does not make sense because we try to find oob by parent thread ID there.
+    if (!message.thread?.parentThreadId || message.thread?.parentThreadId !== outOfBandRecord.getTags().messageId) {
       throw new DidExchangeProblemReportError('Missing reference to invitation.', {
         problemCode: DidExchangeProblemReportReason.RequestNotAccepted,
       })
     }
 
     // If the responder wishes to continue the exchange, they will persist the received information in their wallet.
-
-    // Create new connection if using a multi use invitation
-    if (connectionRecord.multiUseInvitation) {
-      if (!routing) {
-        throw new AriesFrameworkError(
-          'Cannot process request for multi-use invitation without routing object. Make sure to call processRequest with the routing parameter provided.'
-        )
-      }
-
-      connectionRecord = await this.connectionService.createConnection({
-        role: connectionRecord.role,
-        state: connectionRecord.state,
-        multiUseInvitation: false,
-        routing,
-        autoAcceptConnection: connectionRecord.autoAcceptConnection,
-        invitation: connectionRecord.invitation,
-        tags: connectionRecord.getTags(),
-        protocol: connectionRecord.protocol,
-      })
-    }
 
     if (!message.did.startsWith('did:peer:')) {
       throw new DidExchangeProblemReportError(
@@ -178,12 +167,28 @@ export class DidExchangeProtocol {
         recipientKeys: didDocument.recipientKeys,
       },
     })
+
+    this.logger.debug('Saving DID record', {
+      id: didRecord.id,
+      role: didRecord.role,
+      tags: didRecord.getTags(),
+      didDocument: 'omitted...',
+    })
+
     await this.didRepository.save(didRecord)
 
+    const connectionRecord = await this.connectionService.createConnection({
+      protocol: HandshakeProtocol.DidExchange,
+      role: DidExchangeRole.Responder,
+      state: DidExchangeState.RequestReceived,
+      multiUseInvitation: false,
+      routing,
+      autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
+      outOfBandId: outOfBandRecord.id,
+    })
     connectionRecord.theirDid = message.did
     connectionRecord.theirLabel = message.label
     connectionRecord.threadId = message.threadId || message.id
-    connectionRecord.protocol = HandshakeProtocol.DidExchange
 
     await this.updateState(DidExchangeRequestMessage.type, connectionRecord)
     this.logger.debug(`Process message ${DidExchangeRequestMessage.type} end`, connectionRecord)
@@ -192,41 +197,30 @@ export class DidExchangeProtocol {
 
   public async createResponse(
     connectionRecord: ConnectionRecord,
+    outOfBandRecord?: OutOfBandRecord,
     routing?: Routing
   ): Promise<DidExchangeResponseMessage> {
     this.logger.debug(`Create message ${DidExchangeResponseMessage.type} start`, connectionRecord)
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeResponseMessage.type, connectionRecord)
 
-    const { did, threadId } = connectionRecord
+    const { threadId } = connectionRecord
 
     if (!threadId) {
       throw new AriesFrameworkError('Missing threadId on connection record.')
     }
 
-    let peerDidRouting
-    if (routing) {
-      peerDidRouting = routing
-    } else {
-      const { serviceEndpoint, recipientKeys, routingKeys } = connectionRecord.invitation || {}
-      if (serviceEndpoint && recipientKeys && routingKeys) {
-        peerDidRouting = {
-          endpoints: [serviceEndpoint],
-          did,
-          verkey: recipientKeys[0],
-          routingKeys: routingKeys,
-        }
-      } else {
-        throw new AriesFrameworkError(
-          'Connection record does not have an invitation with serviceEndpoint, recipientKeys or routingKeys.'
-        )
-      }
-    }
+    const services = routing
+      ? this.routingToServices(routing)
+      : (outOfBandRecord?.outOfBandMessage.services as DidCommService[])
 
-    const { peerDid, didDocument } = await this.createPeerDidDoc(peerDidRouting)
+    const { peerDid, didDocument } = await this.createPeerDidDoc(services)
     const message = new DidExchangeResponseMessage({ did: peerDid.did, threadId })
 
     if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
-      const didDocAttach = await this.createSignedAttachment(didDocument, peerDidRouting.verkey)
+      const didDocAttach = await this.createSignedAttachment(
+        didDocument,
+        Array.from(new Set(services.map((s) => s.recipientKeys).reduce((acc, curr) => acc.concat(curr), [])))
+      )
       message.didDoc = didDocAttach
     }
 
@@ -238,7 +232,8 @@ export class DidExchangeProtocol {
   }
 
   public async processResponse(
-    messageContext: InboundMessageContext<DidExchangeResponseMessage>
+    messageContext: InboundMessageContext<DidExchangeResponseMessage>,
+    outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${DidExchangeResponseMessage.type} start`, messageContext)
     const { connection: connectionRecord, message } = messageContext
@@ -273,7 +268,7 @@ export class DidExchangeProtocol {
       )
     }
 
-    const didDocument = await this.extractDidDocument(message, connectionRecord.invitation?.recipientKeys)
+    const didDocument = await this.extractDidDocument(message, outOfBandRecord.getRecipientKeys())
     const didRecord = new DidRecord({
       id: message.did,
       role: DidDocumentRole.Received,
@@ -284,6 +279,14 @@ export class DidExchangeProtocol {
         recipientKeys: didDocument.recipientKeys,
       },
     })
+
+    this.logger.debug('Saving DID record', {
+      id: didRecord.id,
+      role: didRecord.role,
+      tags: didRecord.getTags(),
+      didDocument: 'omitted...',
+    })
+
     await this.didRepository.save(didRecord)
 
     connectionRecord.theirDid = message.did
@@ -293,12 +296,15 @@ export class DidExchangeProtocol {
     return connectionRecord
   }
 
-  public async createComplete(connectionRecord: ConnectionRecord): Promise<DidExchangeCompleteMessage> {
+  public async createComplete(
+    connectionRecord: ConnectionRecord,
+    outOfBandRecord: OutOfBandRecord
+  ): Promise<DidExchangeCompleteMessage> {
     this.logger.debug(`Create message ${DidExchangeCompleteMessage.type} start`, connectionRecord)
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeCompleteMessage.type, connectionRecord)
 
     const threadId = connectionRecord.threadId
-    const parentThreadId = connectionRecord.invitation?.id
+    const parentThreadId = outOfBandRecord.outOfBandMessage.id
 
     if (!threadId) {
       throw new AriesFrameworkError(`Connection record ${connectionRecord.id} does not have 'threadId' attribute.`)
@@ -318,7 +324,8 @@ export class DidExchangeProtocol {
   }
 
   public async processComplete(
-    messageContext: InboundMessageContext<DidExchangeCompleteMessage>
+    messageContext: InboundMessageContext<DidExchangeCompleteMessage>,
+    outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${DidExchangeCompleteMessage.type} start`, messageContext)
     const { connection: connectionRecord, message } = messageContext
@@ -335,7 +342,7 @@ export class DidExchangeProtocol {
       })
     }
 
-    if (!message.thread?.parentThreadId || message.thread?.parentThreadId !== connectionRecord.invitation?.id) {
+    if (!message.thread?.parentThreadId || message.thread?.parentThreadId !== outOfBandRecord.getTags().messageId) {
       throw new DidExchangeProblemReportError('Invalid or missing parent thread ID referencing to the invitation.', {
         problemCode: DidExchangeProblemReportReason.CompleteRejected,
       })
@@ -352,51 +359,50 @@ export class DidExchangeProtocol {
     return this.connectionService.updateState(connectionRecord, nextState)
   }
 
-  private async createPeerDidDoc(routing: Routing) {
-    const publicKeyBase58 = routing.verkey
-
-    const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
-    const x25519Key = Key.fromPublicKey(convertPublicKeyToX25519(ed25519Key.publicKey), KeyType.X25519)
-
-    // For peer dids generated with method 1, the controller MUST be #id as we don't know the did yet
-    const ed25519VerificationMethod = getEd25519VerificationMethod({
-      id: uuid(),
-      key: ed25519Key,
-      controller: '#id',
-    })
-    const x25519VerificationMethod = getX25519VerificationMethod({
-      id: uuid(),
-      key: x25519Key,
-      controller: '#id',
-    })
-
+  private async createPeerDidDoc(services: DidCommService[]) {
     const didDocumentBuilder = new DidDocumentBuilder('')
-      .addAuthentication(ed25519VerificationMethod)
-      .addKeyAgreement(x25519VerificationMethod)
 
-    const routingKeys = routing.routingKeys.map((rk) => Key.fromPublicKeyBase58(rk, KeyType.Ed25519))
-    routingKeys.forEach((ed25519Key) => {
+    // We need to all reciepient and routing keys from all services but we don't want to duplicated items
+    const recipientKeys = new Set(services.map((s) => s.recipientKeys).reduce((acc, curr) => acc.concat(curr), []))
+    const routingKeys = new Set(
+      services
+        .map((s) => s.routingKeys)
+        .filter((r): r is string[] => r !== undefined)
+        .reduce((acc, curr) => acc.concat(curr), [])
+    )
+
+    for (const recipientKey of recipientKeys) {
+      const publicKeyBase58 = recipientKey
+      const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
+      const x25519Key = Key.fromPublicKey(convertPublicKeyToX25519(ed25519Key.publicKey), KeyType.X25519)
+
+      const ed25519VerificationMethod = getEd25519VerificationMethod({
+        id: uuid(),
+        key: ed25519Key,
+        controller: '#id',
+      })
+      const x25519VerificationMethod = getX25519VerificationMethod({
+        id: uuid(),
+        key: x25519Key,
+        controller: '#id',
+      })
+
+      // We should not add duplicated keys for services
+      didDocumentBuilder.addAuthentication(ed25519VerificationMethod).addKeyAgreement(x25519VerificationMethod)
+    }
+
+    for (const routingKey of routingKeys) {
+      const publicKeyBase58 = routingKey
+      const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
       const verificationMethod = getEd25519VerificationMethod({
         id: uuid(),
         key: ed25519Key,
         controller: '#id',
       })
       didDocumentBuilder.addVerificationMethod(verificationMethod)
-    })
+    }
 
-    routing.endpoints.forEach((endpoint) => {
-      const service = new DidCommService({
-        id: '#service-0',
-        // Fixme: can we use relative reference (#id) instead of absolute reference here (did:example:123#id)?
-        // We don't know the did yet
-        // TODO we should perhaps use keyAgreement instead of authentication key in here, then it must be changed also in connection record verkey
-        recipientKeys: [ed25519Key.publicKeyBase58],
-        serviceEndpoint: endpoint,
-        accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
-        // It is important that we encode the routing keys as key references.
-        // So instead of using plain verkeys, we should encode them as did:key dids
-        routingKeys: routingKeys.map((rk) => rk.publicKeyBase58),
-      })
+    services.forEach((service) => {
       didDocumentBuilder.addService(service)
     })
 
@@ -417,13 +423,19 @@ export class DidExchangeProtocol {
       },
     })
 
+    this.logger.debug('Saving DID record', {
+      id: didRecord.id,
+      role: didRecord.role,
+      tags: didRecord.getTags(),
+      didDocument: 'omitted...',
+    })
+
     await this.didRepository.save(didRecord)
     this.logger.debug('Did record created.', didRecord)
     return { peerDid, didDocument }
   }
 
-  private async createSignedAttachment(didDoc: DidDocument, verkey: string) {
-    this.logger.debug('===== didDoc =====', didDoc)
+  private async createSignedAttachment(didDoc: DidDocument, verkeys: string[]) {
     const didDocAttach = new Attachment({
       mimeType: 'application/json',
       data: new AttachmentData({
@@ -431,19 +443,23 @@ export class DidExchangeProtocol {
       }),
     })
 
-    const key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
-    const kid = new DidKey(key).did
-    const payload = JsonEncoder.toBuffer(didDoc)
+    await Promise.all(
+      verkeys.map(async (verkey) => {
+        const key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
+        const kid = new DidKey(key).did
+        const payload = JsonEncoder.toBuffer(didDoc)
 
-    const jws = await this.jwsService.createJws({
-      payload,
-      verkey,
-      header: {
-        kid,
-      },
-    })
+        const jws = await this.jwsService.createJws({
+          payload,
+          verkey,
+          header: {
+            kid,
+          },
+        })
+        didDocAttach.addJws(jws)
+      })
+    )
 
-    didDocAttach.addJws(jws)
     return didDocAttach
   }
 
@@ -504,5 +520,17 @@ export class DidExchangeProtocol {
     }
 
     return didDocument
+  }
+
+  private routingToServices(routing: Routing) {
+    return routing.endpoints.map((endpoint, index) => {
+      return new DidCommService({
+        id: `#inline-${index}`,
+        priority: 0,
+        serviceEndpoint: endpoint,
+        recipientKeys: [routing.verkey],
+        routingKeys: routing.routingKeys,
+      })
+    })
   }
 }
