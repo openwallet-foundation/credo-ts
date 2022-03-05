@@ -19,8 +19,12 @@ import { ConnectionInvitationMessage, ConnectionState, ConnectionsModule } from 
 import { DidCommService, DidsModule } from '../dids'
 import { MediationRecipientService } from '../routing'
 
+import { OutOfBandService } from './OutOfBandService'
+import { OutOfBandRole } from './domain/OutOfBandRole'
+import { OutOfBandState } from './domain/OutOfBandState'
 import { HandshakeReuseHandler } from './handlers'
 import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
+import { OutOfBandRecord } from './repository/OutOfBandRecord'
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
 
@@ -32,26 +36,32 @@ export interface CreateOutOfBandMessageConfig {
   handshakeProtocols?: HandshakeProtocol[]
   messages?: AgentMessage[]
   multiUseInvitation?: boolean
+  autoAcceptConnection?: boolean
 }
 
 export interface ReceiveOutOfBandMessageConfig {
+  autoAcceptMessage: boolean
   autoAcceptConnection: boolean
   reuseConnection?: boolean
+  label?: string
 }
 
 @scoped(Lifecycle.ContainerScoped)
 export class OutOfBandModule {
+  private outOfBandService: OutOfBandService
   private connectionsModule: ConnectionsModule
   private dids: DidsModule
   private mediationRecipientService: MediationRecipientService
   private dispatcher: Dispatcher
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
+  private agentConfig: AgentConfig
   private logger: Logger
 
   public constructor(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
+    outOfBandService: OutOfBandService,
     connectionsModule: ConnectionsModule,
     dids: DidsModule,
     mediationRecipientService: MediationRecipientService,
@@ -59,7 +69,9 @@ export class OutOfBandModule {
     eventEmitter: EventEmitter
   ) {
     this.dispatcher = dispatcher
+    this.agentConfig = agentConfig
     this.logger = agentConfig.logger
+    this.outOfBandService = outOfBandService
     this.connectionsModule = connectionsModule
     this.dids = dids
     this.mediationRecipientService = mediationRecipientService
@@ -89,25 +101,23 @@ export class OutOfBandModule {
    * @param messages Messages that will be sent inside out-of-band message
    * @returns Out-of-band message and optionally connection record created based on `handshakeProtocol`
    */
-  public async createMessage(
-    config: CreateOutOfBandMessageConfig
-  ): Promise<{ outOfBandMessage: OutOfBandMessage; connectionRecord?: ConnectionRecord }> {
-    const { label, multiUseInvitation, handshake, handshakeProtocols: customHandshakeProtocols, messages } = config
+  public async createMessage(config: CreateOutOfBandMessageConfig): Promise<OutOfBandRecord> {
+    const {
+      label,
+      multiUseInvitation,
+      handshake,
+      handshakeProtocols: customHandshakeProtocols,
+      autoAcceptConnection,
+      messages,
+    } = config
     if (!handshake && !messages) {
       throw new AriesFrameworkError(
         'One or both of handshake_protocols and requests~attach MUST be included in the message.'
       )
     }
 
-    let outOfBandMessage: OutOfBandMessage
-
-    // Eventually, we can create just an OutOfBand record here.
-    // The OOB record can be also used for connection-less communication in general.
-    // When we create oob record we need to count with it inside connection request handler.
-    let connectionRecord: ConnectionRecord | undefined
-
+    let handshakeProtocols
     if (handshake) {
-      let handshakeProtocols
       // Find first supported handshake protocol preserving the order of handshake protocols defined by agent
       if (customHandshakeProtocols) {
         this.assertHandshakeProtocols(customHandshakeProtocols)
@@ -115,47 +125,27 @@ export class OutOfBandModule {
       } else {
         handshakeProtocols = this.getSupportedHandshakeProtocols()
       }
+    }
 
-      const connectionWithInvitation = await this.connectionsModule.createConnection({
-        myLabel: label,
-        multiUseInvitation,
-      })
+    const routing = await this.mediationRecipientService.getRouting()
 
-      connectionRecord = connectionWithInvitation.connectionRecord
-      const services = connectionRecord.didDoc.didCommServices.map((s) => {
-        return new DidCommService({
-          id: `${connectionRecord?.did};#${s.priority}`,
-          priority: 0,
-          serviceEndpoint: s.serviceEndpoint,
-          recipientKeys: s.recipientKeys,
-          routingKeys: s.routingKeys,
-        })
-      })
-
-      const options = {
-        ...config,
-        id: connectionRecord.invitation?.id,
-        accept: didCommProfiles,
-        services,
-        handshakeProtocols,
-      }
-      outOfBandMessage = new OutOfBandMessage(options)
-    } else {
-      const routing = await this.mediationRecipientService.getRouting()
-      const service = new DidCommService({
-        id: '#inline',
-        priority: 0,
-        serviceEndpoint: routing.endpoints[0],
+    const services = routing.endpoints.map((endpoint, index) => {
+      return new DidCommService({
+        id: `#inline-${index}`,
+        priority: index,
+        serviceEndpoint: endpoint,
         recipientKeys: [routing.verkey],
         routingKeys: routing.routingKeys,
       })
-      const options = {
-        ...config,
-        accept: didCommProfiles,
-        services: [service],
-      }
-      outOfBandMessage = new OutOfBandMessage(options)
+    })
+
+    const options = {
+      label,
+      accept: didCommProfiles,
+      services,
+      handshakeProtocols,
     }
+    const outOfBandMessage = new OutOfBandMessage(options)
 
     if (messages) {
       messages.forEach((message) => {
@@ -167,7 +157,16 @@ export class OutOfBandModule {
       })
     }
 
-    return { outOfBandMessage, connectionRecord }
+    const outOfBandRecord = new OutOfBandRecord({
+      role: OutOfBandRole.Sender,
+      state: OutOfBandState.Initial,
+      outOfBandMessage: outOfBandMessage,
+      reusable: multiUseInvitation,
+      autoAcceptConnection,
+    })
+    await this.outOfBandService.save(outOfBandRecord)
+
+    return outOfBandRecord
   }
 
   /**
@@ -186,7 +185,8 @@ export class OutOfBandModule {
     } else if (parsedUrl['c_i'] || parsedUrl['d_m']) {
       const invitation = await ConnectionInvitationMessage.fromUrl(urlMessage)
       const { autoAcceptConnection } = config
-      return this.connectionsModule.receiveInvitation(invitation, { autoAcceptConnection })
+      const connectionRecord = await this.connectionsModule.receiveInvitation(invitation, { autoAcceptConnection })
+      return { connectionRecord }
     }
     throw new AriesFrameworkError(
       'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`.'
@@ -207,9 +207,9 @@ export class OutOfBandModule {
   public async receiveMessage(
     outOfBandMessage: OutOfBandMessage,
     config: ReceiveOutOfBandMessageConfig
-  ): Promise<ConnectionRecord | undefined> {
-    const { handshakeProtocols, services } = outOfBandMessage
-    const { autoAcceptConnection, reuseConnection } = config
+  ): Promise<{ outOfBandRecord: OutOfBandRecord; connectionRecord?: ConnectionRecord }> {
+    const { handshakeProtocols } = outOfBandMessage
+    const { autoAcceptMessage, autoAcceptConnection, reuseConnection, label } = config
     const messages = outOfBandMessage.getRequests()
 
     if ((!handshakeProtocols || handshakeProtocols.length === 0) && (!messages || messages?.length === 0)) {
@@ -218,36 +218,63 @@ export class OutOfBandModule {
       )
     }
 
+    const outOfBandRecord = new OutOfBandRecord({
+      role: OutOfBandRole.Receiver,
+      state: OutOfBandState.PrepareResponse,
+      outOfBandMessage: outOfBandMessage,
+      autoAcceptConnection,
+    })
+    await this.outOfBandService.save(outOfBandRecord)
+
+    if (autoAcceptMessage) {
+      return await this.acceptMessage(outOfBandRecord, { label, autoAcceptConnection, reuseConnection })
+    }
+
+    return { outOfBandRecord }
+  }
+
+  public async acceptMessage(
+    outOfBandRecord: OutOfBandRecord,
+    config: {
+      autoAcceptConnection?: boolean
+      reuseConnection?: boolean
+      label?: string
+      mediatorId?: string
+    }
+  ) {
+    const { outOfBandMessage } = outOfBandRecord
+    const { label, autoAcceptConnection, reuseConnection } = config
+    const { handshakeProtocols, services } = outOfBandMessage
+    const messages = outOfBandMessage.getRequests()
+
     const existingConnection = await this.findExistingConnection(services)
 
     if (handshakeProtocols) {
       this.logger.debug('Out of band message contains handshake protocols.')
       // Find first supported handshake protocol preserving the order of `handshake_protocols`
       // in out-of-band message.
-      const handshakeProtocol = this.getFirstSupportedProtocol(handshakeProtocols)
 
-      let connectionRecord: ConnectionRecord
-      if (existingConnection) {
-        this.logger.debug('Connection already exists.', { connectionId: existingConnection.id })
-        if (reuseConnection) {
-          this.logger.debug('Reuse is enabled. Reusing an existing connection.')
-          connectionRecord = existingConnection
-          if (!messages) {
-            this.logger.debug('Out of band message does not contain any request messages.')
-            await this.sendReuse(outOfBandMessage, connectionRecord)
-          }
-        } else {
-          this.logger.debug('Reuse is disabled.')
-          connectionRecord = await this.createConnection(outOfBandMessage, { handshakeProtocol, autoAcceptConnection })
+      let connectionRecord
+      if (existingConnection && reuseConnection) {
+        this.logger.debug(`Reuse is enabled. Reusing an existing connection with ID ${existingConnection.id}.`)
+        connectionRecord = existingConnection
+        if (!messages) {
+          this.logger.debug('Out of band message does not contain any request messages.')
+          await this.sendReuse(outOfBandMessage, connectionRecord)
         }
       } else {
-        this.logger.debug('Connection does not exists.')
-        connectionRecord = await this.createConnection(outOfBandMessage, { handshakeProtocol, autoAcceptConnection })
+        this.logger.debug('Reuse is disabled or connection does not exist.')
+        connectionRecord = await this.createConnection(outOfBandRecord, {
+          label,
+          autoAcceptConnection,
+        })
       }
 
       if (messages) {
         this.logger.debug('Out of band message contains request messages.')
-        if (!connectionRecord.isReady) {
+        if (connectionRecord.isReady) {
+          await this.emitWithConnection(connectionRecord, messages)
+        } else {
           // Wait until the connecion is ready and then pass the messages to the agent for further processing
           this.connectionsModule
             .returnWhenIsConnected(connectionRecord.id)
@@ -262,12 +289,9 @@ export class OutOfBandModule {
                 this.logger.error('Promise waiting for the connection to be complete failed.', error)
               }
             })
-        } else {
-          await this.emitWithConnection(connectionRecord, messages)
         }
       }
-
-      return connectionRecord
+      return { outOfBandRecord, connectionRecord }
     } else if (messages) {
       this.logger.debug('Out of band message contains only request messages.')
       if (existingConnection) {
@@ -277,6 +301,7 @@ export class OutOfBandModule {
         await this.emitWithServices(services, messages)
       }
     }
+    return { outOfBandRecord }
   }
 
   private assertHandshakeProtocols(handshakeProtocols: HandshakeProtocol[]) {
@@ -346,37 +371,25 @@ export class OutOfBandModule {
   }
 
   private async createConnection(
-    outOfBandMessage: OutOfBandMessage,
-    config: { handshakeProtocol: HandshakeProtocol; autoAcceptConnection: boolean }
+    outOfBandRecord: OutOfBandRecord,
+    config: { label?: string; autoAcceptConnection?: boolean }
   ) {
-    this.logger.debug('Creating a new connection.', { outOfBandMessage, config })
-    const { services, label } = outOfBandMessage
-    const { handshakeProtocol, autoAcceptConnection } = config
+    this.logger.debug('Creating a new connection.', { outOfBandRecord, config })
+    const { outOfBandMessage } = outOfBandRecord
+    const { handshakeProtocols } = outOfBandMessage
+    const { label, autoAcceptConnection } = config
 
-    if (services.length > 1) {
-      throw new AriesFrameworkError(`Agent currently does not support more than one item in 'service' attribute.`)
+    if (!handshakeProtocols) {
+      throw new AriesFrameworkError('Threre are no handshake protocols in out-of-band message')
     }
 
-    const [service] = services
-    let options
-    if (typeof service === 'string') {
-      options = {
-        did: service,
-      }
-    } else {
-      options = {
-        recipientKeys: service.recipientKeys,
-        serviceEndpoint: service.serviceEndpoint,
-        routingKeys: service.routingKeys,
-      }
-    }
-
-    const invitation = new ConnectionInvitationMessage({ id: outOfBandMessage.id, label, ...options })
-    const connectionRecord = await this.connectionsModule.receiveInvitation(invitation, {
+    const handshakeProtocol = this.getFirstSupportedProtocol(handshakeProtocols)
+    const connectionRecord = await this.connectionsModule.acceptOutOfBandInvitation(outOfBandRecord, {
+      label,
       autoAcceptConnection,
       protocol: handshakeProtocol,
     })
-    this.logger.debug('Connection created.', connectionRecord)
+
     return connectionRecord
   }
 
