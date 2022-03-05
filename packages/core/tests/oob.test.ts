@@ -10,6 +10,8 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { Agent } from '../src/agent/Agent'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
 import { DidCommService } from '../src/modules/dids'
+import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
+import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandMessage } from '../src/modules/oob/messages'
 
 import { TestMessage } from './TestMessage'
@@ -53,6 +55,7 @@ describe('out of band', () => {
   }
 
   const receiveMessageConfig = {
+    autoAcceptMessage: true,
     autoAcceptConnection: false,
   }
 
@@ -123,7 +126,7 @@ describe('out of band', () => {
     })
 
     test('create OOB message only with handshake', async () => {
-      const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createMessage(makeConnectionConfig)
+      const { outOfBandMessage } = await faberAgent.oob.createMessage(makeConnectionConfig)
 
       // expect supported handshake protocols
       expect(outOfBandMessage.handshakeProtocols).toContain(HandshakeProtocol.DidExchange)
@@ -140,17 +143,11 @@ describe('out of band', () => {
           routingKeys: [],
         })
       )
-
-      const createdConnectionRecord = await faberAgent.connections.findById(connectionRecord!.id)
-      const createdConnectionRecordService = createdConnectionRecord?.didDoc.service[0] as DidCommService
-      expect(createdConnectionRecordService?.serviceEndpoint).toEqual(service.serviceEndpoint)
-      expect(createdConnectionRecordService?.recipientKeys).toEqual(service.recipientKeys)
-      expect(createdConnectionRecordService?.routingKeys).toEqual(service.routingKeys)
     })
 
     test('create OOB message only with requests', async () => {
       const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
-      const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createMessage({
+      const { outOfBandMessage } = await faberAgent.oob.createMessage({
         label: 'test-connection',
         handshake: false,
         messages: [offerMessage],
@@ -158,7 +155,6 @@ describe('out of band', () => {
 
       // expect supported handshake protocols
       expect(outOfBandMessage.handshakeProtocols).toBeUndefined()
-      expect(connectionRecord).toBeUndefined()
       expect(outOfBandMessage.getRequests()).toHaveLength(1)
 
       // expect contains services
@@ -176,7 +172,7 @@ describe('out of band', () => {
 
     test('create OOB message with both handshake and requests', async () => {
       const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
-      const { outOfBandMessage, connectionRecord } = await faberAgent.oob.createMessage({
+      const { outOfBandMessage } = await faberAgent.oob.createMessage({
         label: 'test-connection',
         handshake: true,
         handshakeProtocols: [HandshakeProtocol.Connections],
@@ -198,77 +194,70 @@ describe('out of band', () => {
           routingKeys: [],
         })
       )
-
-      const createdConnectionRecord = await faberAgent.connections.findById(connectionRecord!.id)
-      const createdConnectionRecordService = createdConnectionRecord?.didDoc.service[0] as DidCommService
-      expect(createdConnectionRecordService?.serviceEndpoint).toEqual(service.serviceEndpoint)
-      expect(createdConnectionRecordService?.recipientKeys).toEqual(service.recipientKeys)
-      expect(createdConnectionRecordService?.routingKeys).toEqual(service.routingKeys)
-      expect(createdConnectionRecord?.protocol).toBe(undefined)
     })
   })
 
   describe('receiveMessage', () => {
     test('receive OOB connection invitation', async () => {
-      const { outOfBandMessage } = await faberAgent.oob.createMessage(makeConnectionConfig)
+      const outOfBandRecord = await faberAgent.oob.createMessage(makeConnectionConfig)
+      const { outOfBandMessage } = outOfBandRecord
 
-      const connectionRecord = await aliceAgent.oob.receiveMessage(outOfBandMessage, { autoAcceptConnection: false })
-
-      // expect contains services
-      const [service] = outOfBandMessage.services as DidCommService[]
-      expect(service).toMatchObject(
-        new DidCommService({
-          id: expect.any(String),
-          serviceEndpoint: 'rxjs:faber',
-          priority: 0,
-          recipientKeys: [expect.any(String)],
-          routingKeys: [],
-        })
+      const { outOfBandRecord: receivedOutOfBandRecord, connectionRecord } = await aliceAgent.oob.receiveMessage(
+        outOfBandMessage,
+        {
+          autoAcceptMessage: false,
+          autoAcceptConnection: false,
+        }
       )
 
-      const createdConnectionRecord = await aliceAgent.connections.findById(connectionRecord!.id)
-      expect(createdConnectionRecord?.invitation?.serviceEndpoint).toEqual(service.serviceEndpoint)
-      expect(createdConnectionRecord?.invitation?.recipientKeys).toEqual(service.recipientKeys)
-      expect(createdConnectionRecord?.invitation?.routingKeys).toEqual(service.routingKeys)
-      expect(createdConnectionRecord?.state).toEqual(DidExchangeState.InvitationReceived)
+      expect(connectionRecord).not.toBeDefined()
+      expect(outOfBandRecord.role).toBe(OutOfBandRole.Sender)
+      expect(outOfBandRecord.state).toBe(OutOfBandState.Initial)
+
+      expect(connectionRecord).not.toBeDefined()
+      expect(receivedOutOfBandRecord.outOfBandMessage).toEqual(outOfBandMessage)
+      expect(receivedOutOfBandRecord.role).toBe(OutOfBandRole.Receiver)
+      expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
     })
 
     test(`make a connection with ${HandshakeProtocol.DidExchange} on OOB invitation encoded in URL`, async () => {
-      // eslint-disable-next-line prefer-const
-      let { outOfBandMessage, connectionRecord: faberAliceConnection } = await faberAgent.oob.createMessage(
-        makeConnectionConfig
-      )
+      const outOfBandRecord = await faberAgent.oob.createMessage(makeConnectionConfig)
+      const { outOfBandMessage } = outOfBandRecord
       const urlMessage = outOfBandMessage.toUrl({ domain: 'http://example.com' })
 
-      let aliceFaberConnection = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, {
+      let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, {
+        autoAcceptMessage: true,
         autoAcceptConnection: true,
       })
 
       aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
       expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
+      let faberAliceConnection = await faberAgent.connections.findByOutOfBandId(outOfBandRecord!.id)
       faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
-      expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
+      expect(faberAliceConnection?.state).toBe(DidExchangeState.Completed)
 
-      expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
+      expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection!)
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
     })
 
     test(`make a connection with ${HandshakeProtocol.Connections} based on OOB invitation encoded in URL`, async () => {
-      // eslint-disable-next-line prefer-const
-      let { outOfBandMessage, connectionRecord: faberAliceConnection } = await faberAgent.oob.createMessage({
+      const outOfBandRecord = await faberAgent.oob.createMessage({
         ...makeConnectionConfig,
         handshakeProtocols: [HandshakeProtocol.Connections],
       })
+      const { outOfBandMessage } = outOfBandRecord
       const urlMessage = outOfBandMessage.toUrl({ domain: 'http://example.com' })
 
-      let aliceFaberConnection = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, {
+      let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, {
+        autoAcceptMessage: true,
         autoAcceptConnection: true,
       })
 
       aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
       expect(aliceFaberConnection.state).toBe(ConnectionState.Complete)
 
+      let faberAliceConnection = await faberAgent.connections.findByOutOfBandId(outOfBandRecord!.id)
       faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
       expect(faberAliceConnection.state).toBe(ConnectionState.Complete)
 
@@ -281,7 +270,8 @@ describe('out of band', () => {
       let { invitation, connectionRecord: faberAliceConnection } = await faberAgent.connections.createConnection()
       const urlMessage = invitation.toUrl({ domain: 'http://example.com' })
 
-      let aliceFaberConnection = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, {
+      let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, {
+        autoAcceptMessage: true,
         autoAcceptConnection: true,
       })
 
@@ -328,7 +318,7 @@ describe('out of band', () => {
       })
 
       // First, we crate a connection but we won't accept it, therefore it won't be ready
-      await aliceAgent.oob.receiveMessage(outOfBandMessage, { autoAcceptConnection: false })
+      await aliceAgent.oob.receiveMessage(outOfBandMessage, { autoAcceptMessage: true, autoAcceptConnection: false })
 
       // Event should not be emitted because an agent must wait until the connection is ready
       expect(eventListener).toHaveBeenCalledTimes(0)
@@ -338,23 +328,28 @@ describe('out of band', () => {
 
     test('make a connection based on OOB invitation and process requests after the acceptation', async () => {
       const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
-      // eslint-disable-next-line prefer-const
-      let { outOfBandMessage, connectionRecord: faberAliceConnection } = await faberAgent.oob.createMessage({
+      const outOfBandRecord = await faberAgent.oob.createMessage({
         ...makeConnectionConfig,
         messages: [offerMessage],
       })
+      const { outOfBandMessage } = outOfBandRecord
 
       // First, we crate a connection but we won't accept it, therefore it won't be ready
-      let aliceFaberConnection = await aliceAgent.oob.receiveMessage(outOfBandMessage, { autoAcceptConnection: false })
+      const { outOfBandRecord: aliceFaberOutOfBandRecord } = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
+        autoAcceptMessage: false,
+        autoAcceptConnection: false,
+      })
 
       // Accept connection invitation
-      await aliceAgent.connections.acceptInvitation(aliceFaberConnection!.id, {
+      let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.acceptMessage(aliceFaberOutOfBandRecord, {
         label: 'alice',
         autoAcceptConnection: true,
       })
 
       // Wait until connection is ready
       aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+
+      let faberAliceConnection = await faberAgent.connections.findByOutOfBandId(outOfBandRecord!.id)
       faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
@@ -372,66 +367,99 @@ describe('out of band', () => {
     })
 
     test('do not create a new connection when connection exists', async () => {
-      const { connectionRecord: faberAliceConnection, outOfBandMessage } = await faberAgent.oob.createMessage(
-        makeConnectionConfig
-      )
-      let firstAliceFaberConnection = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
+      const outOfBandRecord = await faberAgent.oob.createMessage(makeConnectionConfig)
+      const { outOfBandMessage } = outOfBandRecord
+      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
+        autoAcceptMessage: true,
         autoAcceptConnection: true,
       })
       firstAliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(firstAliceFaberConnection!.id)
 
-      const secondAliceFaberConnection = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
+      // To simulate the usage of the same connection we set up the same service as it is in
+      // the existing faber connection to the out-of-band message services attribute.
+      const theirDidDoc = await aliceAgent.dids.resolve(firstAliceFaberConnection.theirDid!)
+      outOfBandMessage.services = [theirDidDoc.didDocument?.service[0] as DidCommService]
+
+      const { connectionRecord: secondAliceFaberConnection } = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
+        autoAcceptMessage: true,
         autoAcceptConnection: true,
         reuseConnection: true,
       })
 
       await aliceAgent.connections.returnWhenIsConnected(secondAliceFaberConnection!.id)
 
-      // We need to wait for the faber connection to be completed because there is a clean up
-      // after each test that removes all connections. If we didn't wait here it could case flaky
-      // tests when we're trying to access removed records.
+      let faberAliceConnection = await faberAgent.connections.findByOutOfBandId(outOfBandRecord!.id)
+      faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
       await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
 
       expect(firstAliceFaberConnection.id).toEqual(secondAliceFaberConnection?.id)
     })
 
-    test('create a new connection when connection exists and reuse is false', async () => {
-      const { outOfBandMessage, connectionRecord: faberAliceConnection } = await faberAgent.oob.createMessage({
+    test.skip('do not create a new connection when connection exists and multiuse is false', async () => {
+      const outOfBandRecord = await faberAgent.oob.createMessage({
         ...makeConnectionConfig,
-        multiUseInvitation: true,
+        multiUseInvitation: false,
       })
-      let firstAliceFaberConnection = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
+      const { outOfBandMessage } = outOfBandRecord
+
+      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
+        autoAcceptMessage: true,
         autoAcceptConnection: true,
       })
       firstAliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(firstAliceFaberConnection!.id)
 
-      let secondAliceFaberConnection = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
+      await aliceAgent.oob.receiveMessage(outOfBandMessage, {
+        autoAcceptMessage: true,
         autoAcceptConnection: true,
         reuseConnection: false,
       })
 
-      secondAliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(secondAliceFaberConnection!.id)
+      // TODO Somehow check agents throws an error or sends problem report
+
+      let faberAliceConnection = await faberAgent.connections.findByOutOfBandId(outOfBandRecord!.id)
+      faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
+
       const faberConnections = await faberAgent.connections.getAll()
-      const [firstConnection, secondConnection] = faberConnections.filter((c) => c.id !== faberAliceConnection?.id)
+      expect(faberConnections).toHaveLength(1)
+      expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
+      expect(firstAliceFaberConnection.state).toBe(DidExchangeState.Completed)
+    })
+
+    test('create a new connection when connection exists and reuse is false', async () => {
+      const { outOfBandMessage } = await faberAgent.oob.createMessage({
+        ...makeConnectionConfig,
+        multiUseInvitation: true,
+      })
+      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
+        autoAcceptMessage: true,
+        autoAcceptConnection: true,
+      })
+      firstAliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(firstAliceFaberConnection!.id)
+
+      let { connectionRecord: secondAliceFaberConnection } = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
+        autoAcceptMessage: true,
+        autoAcceptConnection: true,
+        reuseConnection: false,
+      })
+      secondAliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(secondAliceFaberConnection!.id)
 
       expect(firstAliceFaberConnection.id).not.toEqual(secondAliceFaberConnection?.id)
 
-      expect(faberConnections).toHaveLength(3)
-      expect(faberAliceConnection?.multiUseInvitation).toBe(true)
-      expect(faberAliceConnection?.state).toBe(undefined)
+      const faberConnections = await faberAgent.connections.getAll()
+      let [firstFaberAliceConnection, secondFaberAliceConnection] = faberConnections
+      firstFaberAliceConnection = await faberAgent.connections.returnWhenIsConnected(firstFaberAliceConnection.id)
+      secondFaberAliceConnection = await faberAgent.connections.returnWhenIsConnected(secondFaberAliceConnection.id)
 
-      expect(firstConnection.getTag('invitationKey')).toEqual(faberAliceConnection?.verkey)
-      expect(secondConnection.getTag('invitationKey')).toEqual(faberAliceConnection?.verkey)
+      expect(faberConnections).toHaveLength(2)
+      expect(firstFaberAliceConnection.state).toBe(DidExchangeState.Completed)
+      expect(secondFaberAliceConnection.state).toBe(DidExchangeState.Completed)
 
-      // We need to wait for the faber connection to be completed because there is a clean up
-      // after each test that removes all connections. If we didn't wait here it could case flaky
-      // tests when we're trying to access removed records.
-      const connections = await faberAgent.connections.getAll()
-      for (const connection of connections) {
-        if (!connection.multiUseInvitation) {
-          await faberAgent.connections.returnWhenIsConnected(connection.id)
-        }
-      }
+      // TODO Check correct state of out-of-band record
+      // expect(faberAliceConnection?.multiUseInvitation).toBe(true)
+      // expect(faberAliceConnection?.state).toBe(undefined)
+
+      // expect(firstConnection.getTag('invitationKey')).toEqual(faberAliceConnection?.verkey)
+      // expect(secondConnection.getTag('invitationKey')).toEqual(faberAliceConnection?.verkey)
     })
 
     test('throw an error when handshake protocols are not supported', async () => {
@@ -489,3 +517,7 @@ function wait(ms = 1000) {
     setTimeout(resolve, ms)
   })
 }
+
+// When Alice use the same out-of-band message twice and the message is not reusable, then Faber should throw an error.
+// When Alice use the same out-of-band message twice and the message is reusable, then Alice should create a new connection
+// When Alice use out-of-band message containg services for already existing connection and reuse is false then Alice should create a new connection.

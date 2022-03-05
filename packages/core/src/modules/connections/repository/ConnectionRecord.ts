@@ -26,10 +26,11 @@ export interface ConnectionRecordProps {
   threadId?: string
   tags?: CustomConnectionTags
   imageUrl?: string
-  multiUseInvitation: boolean
+  multiUseInvitation?: boolean
   mediatorId?: string
   errorMessage?: string
   protocol?: HandshakeProtocol
+  outOfBandId?: string
 }
 
 export type CustomConnectionTags = TagsBase
@@ -43,6 +44,7 @@ export type DefaultConnectionTags = {
   mediatorId?: string
   did: string
   theirDid?: string
+  outOfBandId?: string
 }
 
 export class ConnectionRecord
@@ -73,6 +75,7 @@ export class ConnectionRecord
   public mediatorId?: string
   public errorMessage?: string
   public protocol?: HandshakeProtocol
+  public outOfBandId?: string
 
   public static readonly type = 'ConnectionRecord'
   public readonly type = ConnectionRecord.type
@@ -97,10 +100,11 @@ export class ConnectionRecord
       this.invitation = props.invitation
       this.threadId = props.threadId
       this.imageUrl = props.imageUrl
-      this.multiUseInvitation = props.multiUseInvitation
+      this.multiUseInvitation = props.multiUseInvitation || false
       this.mediatorId = props.mediatorId
       this.errorMessage = props.errorMessage
       this.protocol = props.protocol
+      this.outOfBandId = props.outOfBandId
     }
   }
 
@@ -118,6 +122,7 @@ export class ConnectionRecord
       mediatorId: this.mediatorId,
       did: this.did,
       theirDid: this.theirDid,
+      outOfBandId: this.outOfBandId,
     }
   }
 
