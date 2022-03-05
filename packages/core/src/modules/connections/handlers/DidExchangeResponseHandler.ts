@@ -1,5 +1,6 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 import type { ConnectionService } from '../services'
 
@@ -10,16 +11,19 @@ import { HandshakeProtocol } from '../models'
 
 export class DidExchangeResponseHandler implements Handler {
   private didExchangeProtocol: DidExchangeProtocol
+  private outOfBandService: OutOfBandService
   private connectionService: ConnectionService
   private agentConfig: AgentConfig
   public supportedMessages = [DidExchangeResponseMessage]
 
   public constructor(
     didExchangeProtocol: DidExchangeProtocol,
+    outOfBandService: OutOfBandService,
     connectionService: ConnectionService,
     agentConfig: AgentConfig
   ) {
     this.didExchangeProtocol = didExchangeProtocol
+    this.outOfBandService = outOfBandService
     this.connectionService = connectionService
     this.agentConfig = agentConfig
   }
@@ -41,6 +45,18 @@ export class DidExchangeResponseHandler implements Handler {
       )
     }
 
+    if (!connectionRecord.outOfBandId) {
+      throw new AriesFrameworkError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
+    }
+
+    const outOfBandRecord = await this.outOfBandService.findById(connectionRecord.outOfBandId)
+
+    if (!outOfBandRecord) {
+      throw new AriesFrameworkError(
+        `OutOfBand record for connection ${connectionRecord.id} with outOfBandId ${connectionRecord.outOfBandId} not found!`
+      )
+    }
+
     // TODO
     //
     // A connection request message is the only case when I can use the connection record found
@@ -50,13 +66,13 @@ export class DidExchangeResponseHandler implements Handler {
     // responsibility of all handlers aligned.
     //
     messageContext.connection = connectionRecord
-    const connection = await this.didExchangeProtocol.processResponse(messageContext)
+    const connection = await this.didExchangeProtocol.processResponse(messageContext, outOfBandRecord)
 
     // TODO: should we only send complete message in case of autoAcceptConnection or always?
     // In AATH we have a separate step to send the complete. So for now we'll only do it
     // if auto accept is enable
     if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      const message = await this.didExchangeProtocol.createComplete(connection)
+      const message = await this.didExchangeProtocol.createComplete(connection, outOfBandRecord)
       return createOutboundMessage(connection, message)
     }
   }
