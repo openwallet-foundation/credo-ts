@@ -23,6 +23,7 @@
     "prepublishOnly": "yarn run build"
   },
   "dependencies": {
+    "@digitalcredentials/jsonld-signatures": "^9.3.1",
     "@multiformats/base-x": "^4.0.1",
     "@stablelib/ed25519": "^1.0.2",
     "@stablelib/sha256": "^1.0.1",
@@ -30,6 +31,7 @@
     "@types/node-fetch": "^2.5.10",
     "@types/ws": "^7.4.4",
     "abort-controller": "^3.0.0",
+    "base64url-universal": "^1.1.0",
     "bn.js": "^5.2.0",
     "borc": "^3.0.0",
     "buffer": "^6.0.3",
