@@ -15,7 +15,7 @@ const aliceConfig = getBaseConfig('wallet-tests-Alice', {
   endpoints: ['rxjs:alice'],
 })
 
-describe('=== wallet', () => {
+describe('wallet', () => {
   let aliceAgent: Agent
 
   beforeEach(async () => {
@@ -51,10 +51,10 @@ describe('=== wallet', () => {
     } catch (error) {
       if (error instanceof WalletNotFoundError) {
         await aliceAgent.wallet.create(walletConfig)
+        await aliceAgent.wallet.open(walletConfig)
       }
     }
 
-    await aliceAgent.wallet.open(walletConfig)
     await aliceAgent.initialize()
 
     expect(aliceAgent.isInitialized).toBe(true)
