@@ -1,14 +1,8 @@
 import type { Agent, ConnectionRecord, ProofRecord } from '../src'
-import type {
-  AcceptPresentationOptions,
-  AcceptProposalOptions,
-  ProposeProofOptions,
-  RequestProofsOptions,
-} from '../src/modules/proofs/models/ModuleOptions'
+import type { AcceptProposalOptions, ProposeProofOptions } from '../src/modules/proofs/models/ModuleOptions'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/PresentationPreview'
-import type { CredDefId } from 'indy-sdk'
 
-import { AttributeFilter, PredicateType, ProofAttributeInfo, ProofPredicateInfo, ProofState } from '../src'
+import { ProofState } from '../src'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 
 import { setupProofsTest, waitForProofRecord } from './helpers'
@@ -17,8 +11,6 @@ import testLogger from './logger'
 describe('Present Proof', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
-  let credDefId: CredDefId
-  let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
   let faberProofRecord: ProofRecord
   let aliceProofRecord: ProofRecord
@@ -26,8 +18,10 @@ describe('Present Proof', () => {
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
-    ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
-      await setupProofsTest('Faber agent', 'Alice agent'))
+    ;({ faberAgent, aliceAgent, aliceConnection, presentationPreview } = await setupProofsTest(
+      'Faber agent',
+      'Alice agent'
+    ))
   })
 
   afterAll(async () => {

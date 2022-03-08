@@ -3,7 +3,6 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
-import type { ProofService } from '../../../ProofService'
 import type { ProofRecord } from '../../../repository'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'

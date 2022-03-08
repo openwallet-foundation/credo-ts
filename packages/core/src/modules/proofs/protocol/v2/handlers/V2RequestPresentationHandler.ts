@@ -4,12 +4,10 @@ import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handle
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 import type { MediationRecipientService } from '../../../../routing'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
-import type { ProofService } from '../../../ProofService'
 import type { ProofRecord } from '../../../repository/ProofRecord'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
-import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { DidCommMessageRole } from '../../../../../storage'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { V2RequestPresentationMessage } from '../messages/V2RequestPresentationMessage'

@@ -74,7 +74,7 @@ export class V2ProposePresentationHandler implements Handler {
     const proofRequest = await this.proofService.createProofRequestFromProposal({
       formats: {
         indy: {
-          presentationProposal: proposalAttachment,
+          proofRecord: proofRecord,
         },
       },
       config: {

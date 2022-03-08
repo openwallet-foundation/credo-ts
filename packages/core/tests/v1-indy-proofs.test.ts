@@ -5,23 +5,10 @@ import type {
   ProposeProofOptions,
   RequestProofsOptions,
 } from '../src/modules/proofs/models/ModuleOptions'
-import type { RequestProofFormats } from '../src/modules/proofs/models/SharedOptions'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
-import { version } from 'os'
-
-import {
-  AttributeFilter,
-  JsonTransformer,
-  PredicateType,
-  V1PresentationMessage,
-  ProofAttributeInfo,
-  ProofPredicateInfo,
-  ProofState,
-  V1ProposePresentationMessage,
-  V1RequestPresentationMessage,
-} from '../src'
+import { AttributeFilter, PredicateType, ProofAttributeInfo, ProofPredicateInfo, ProofState } from '../src'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 
 import { setupProofsTest, waitForProofRecord } from './helpers'

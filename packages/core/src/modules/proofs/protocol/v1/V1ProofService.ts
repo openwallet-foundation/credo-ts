@@ -14,7 +14,6 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
-  RequestedCredentialForProofRequestOptions,
 } from '../../models/ProofServiceOptions'
 import type { RetrievedCredentials } from './models'
 import type { PresentationPreviewAttribute } from './models/PresentationPreview'

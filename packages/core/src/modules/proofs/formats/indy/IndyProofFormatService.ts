@@ -1,8 +1,9 @@
 import type { GetRequestedCredentialsConfig } from '../../models/GetRequestedCredentialsConfig'
-import type { PresentationPreview } from '../../protocol/v1/models/PresentationPreview'
+import type { PresentationPreview, PresentationPreviewAttribute } from '../../protocol/v1/models/PresentationPreview'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
   CreatePresentationOptions,
+  CreateProofAttachmentOptions,
   CreateProposalOptions,
   CreateRequestAttachmentOptions,
   CreateRequestOptions,
@@ -20,6 +21,7 @@ import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
 import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import { uuid } from '../../../../utils/uuid'
 import { Credential, CredentialUtils } from '../../../credentials'
 import { IndyHolderService, IndyVerifierService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
@@ -30,6 +32,9 @@ import {
   RequestedCredentials,
   RequestedPredicate,
   RequestedAttribute,
+  ProofAttributeInfo,
+  AttributeFilter,
+  ProofPredicateInfo,
 } from '../../protocol/v1/models'
 import { ProofFormatService } from '../ProofFormatService'
 import { InvalidEncodedValueError } from '../errors/InvalidEncodedValueError'
@@ -72,14 +77,34 @@ export class IndyProofFormatService extends ProofFormatService {
     return { format, attachment }
   }
 
+  private createProofAttachment(options: CreateProofAttachmentOptions): ProofAttachmentFormat {
+    const format = new ProofFormatSpec({
+      attachmentId: options.attachId,
+      format: 'hlindy/proof-req@v2.0',
+    })
+
+    const attachment = new Attachment({
+      id: options.attachId,
+      mimeType: 'application/json',
+      data: new AttachmentData({
+        base64: JsonEncoder.toBase64(options.proofProposalOptions),
+      }),
+    })
+    return { format, attachment }
+  }
+
   public createProposal(options: CreateProposalOptions): ProofAttachmentFormat {
     if (!options.formats.indy) {
       throw Error('Indy format missing')
     }
 
-    return this.createRequestAttachment({
+    if (!options.formats.indy.proofPreview) {
+      throw Error('Presentation Preview missing')
+    }
+
+    return this.createProofAttachment({
       attachId: options.attachId,
-      proofRequestOptions: options.formats.indy,
+      proofProposalOptions: options.formats.indy.proofPreview,
     })
   }
 
@@ -437,5 +462,110 @@ export class IndyProofFormatService extends ProofFormatService {
     })
 
     return proof
+  }
+
+  public async createProofRequestFromProposal(options: {
+    formats: {
+      indy?:
+        | {
+            presentationProposal: Attachment
+          }
+        | undefined
+      jsonLd?: undefined
+    }
+    config?:
+      | { indy?: { name: string; version: string; nonce?: string | undefined } | undefined; jsonLd?: undefined }
+      | undefined
+  }): Promise<{ indy?: ProofRequest | undefined; jsonLd?: undefined }> {
+    const indyFormat = options.formats.indy
+    const indyConfig = options.config?.indy
+
+    if (!indyFormat) {
+      throw new AriesFrameworkError('Indy format must be provided')
+    }
+
+    if (!indyConfig) {
+      throw new AriesFrameworkError('Indy config must be provided')
+    }
+
+    const proposalJson = indyFormat.presentationProposal.getDataAsJson<PresentationPreview>() ?? null
+
+    if (!proposalJson) {
+      throw new AriesFrameworkError(`Presentation Preview is missing`)
+    }
+
+    const nonce = indyConfig.nonce ?? (await uuid())
+
+    const proofRequest = new ProofRequest({
+      name: indyConfig.name,
+      version: indyConfig.version,
+      nonce: nonce,
+    })
+
+    /**
+     * Create mapping of attributes by referent. This required the
+     * attributes to come from the same credential.
+     * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#referent
+     *
+     * {
+     *  "referent1": [Attribute1, Attribute2],
+     *  "referent2": [Attribute3]
+     * }
+     */
+    const attributesByReferent: Record<string, PresentationPreviewAttribute[]> = {}
+    for (const proposedAttributes of proposalJson.attributes) {
+      if (!proposedAttributes.referent) proposedAttributes.referent = uuid()
+
+      const referentAttributes = attributesByReferent[proposedAttributes.referent]
+
+      // Referent key already exist, add to list
+      if (referentAttributes) {
+        referentAttributes.push(proposedAttributes)
+      }
+      // Referent key does not exist yet, create new entry
+      else {
+        attributesByReferent[proposedAttributes.referent] = [proposedAttributes]
+      }
+    }
+
+    // Transform attributes by referent to requested attributes
+    for (const [referent, proposedAttributes] of Object.entries(attributesByReferent)) {
+      // Either attributeName or attributeNames will be undefined
+      const attributeName = proposedAttributes.length == 1 ? proposedAttributes[0].name : undefined
+      const attributeNames = proposedAttributes.length > 1 ? proposedAttributes.map((a) => a.name) : undefined
+
+      const requestedAttribute = new ProofAttributeInfo({
+        name: attributeName,
+        names: attributeNames,
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: proposedAttributes[0].credentialDefinitionId,
+          }),
+        ],
+      })
+
+      proofRequest.requestedAttributes.set(referent, requestedAttribute)
+    }
+
+    // this.logger.debug('proposal predicates', indyFormat.presentationProposal.predicates)
+    // Transform proposed predicates to requested predicates
+    for (const proposedPredicate of proposalJson.predicates) {
+      const requestedPredicate = new ProofPredicateInfo({
+        name: proposedPredicate.name,
+        predicateType: proposedPredicate.predicate,
+        predicateValue: proposedPredicate.threshold,
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: proposedPredicate.credentialDefinitionId,
+          }),
+        ],
+      })
+
+      proofRequest.requestedPredicates.set(uuid(), requestedPredicate)
+    }
+
+    return {
+      indy: proofRequest,
+    }
   }
 }

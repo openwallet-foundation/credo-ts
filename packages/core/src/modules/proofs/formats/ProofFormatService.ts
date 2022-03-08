@@ -1,12 +1,7 @@
-import type {
-  ProofRecord,
-  GetRequestedCredentialsConfig,
-  RetrievedCredentials,
-  RequestedCredentials,
-  ProofRequest,
-} from '..'
+import type { RetrievedCredentials, RequestedCredentials, ProofRequest } from '..'
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type { DidCommMessageRepository } from '../../../storage'
+import type { GetRequestedCredentialsConfig } from '../models/GetRequestedCredentialsConfig'
 import type { PresentationPreview } from '../protocol/v1/models/PresentationPreview'
 import type { ProofAttachmentFormat } from './models/ProofAttachmentFormat'
 import type {
@@ -45,18 +40,18 @@ export abstract class ProofFormatService {
 
   abstract processPresentation(options: ProcessPresentationOptions): Promise<boolean>
 
-  // abstract createProofRequestFromProposal(options: {
-  //   formats: {
-  //     indy?: {
-  //       presentationProposal: Attachment
-  //     }
-  //     jsonLd?: never
-  //   }
-  //   config?: { indy?: { name: string; version: string; nonce?: string }; jsonLd?: never }
-  // }): Promise<{
-  //   indy?: ProofRequest
-  //   jsonLd?: never
-  // }>
+  abstract createProofRequestFromProposal(options: {
+    formats: {
+      indy?: {
+        presentationProposal: Attachment
+      }
+      jsonLd?: never
+    }
+    config?: { indy?: { name: string; version: string; nonce?: string }; jsonLd?: never }
+  }): Promise<{
+    indy?: ProofRequest
+    jsonLd?: never
+  }>
 
   public abstract getRequestedCredentialsForProofRequest(options: {
     proofRequest: ProofRequest

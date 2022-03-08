@@ -1,9 +1,8 @@
 import type { ProblemReportErrorOptions } from '../../../../problem-reports'
 import type { V1PresentationProblemReportReason } from './V1PresentationProblemReportReason'
 
+import { ProblemReportError } from '../../../../problem-reports'
 import { V1PresentationProblemReportMessage } from '../messages'
-
-import { ProblemReportError } from '../../../../problem-reports/errors/ProblemReportError'
 
 interface V1PresentationProblemReportErrorOptions extends ProblemReportErrorOptions {
   problemCode: V1PresentationProblemReportReason

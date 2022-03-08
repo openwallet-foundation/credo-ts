@@ -1,5 +1,4 @@
 import type { Wallet } from '../../../wallet/Wallet'
-import type { CredentialRepository } from '../../credentials/repository'
 import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { IndyProofFormatService } from '../formats/indy/IndyProofFormatService'
 import type { CustomProofTags } from '../repository/ProofRecord'
@@ -10,7 +9,6 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { DidCommMessageRepository } from '../../../storage'
 import { ConnectionService, ConnectionState } from '../../connections'
-import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyLedgerService } from '../../ledger/services'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofProtocolVersion } from '../models/ProofProtocolVersion'
@@ -35,7 +33,6 @@ jest.mock('../../../storage/Repository')
 // Mock typed object
 const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
-const IndyHolderServiceMock = IndyHolderService as jest.Mock<IndyHolderService>
 const connectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 const didCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 
@@ -99,9 +96,7 @@ describe('ProofService', () => {
   let proofService: V2ProofService
   let ledgerService: IndyLedgerService
   let wallet: Wallet
-  let indyHolderService: IndyHolderService
   let eventEmitter: EventEmitter
-  let credentialRepository: CredentialRepository
   let connectionService: ConnectionService
   let didCommMessageRepository: DidCommMessageRepository
   let indyProofFormatService: IndyProofFormatService
@@ -109,7 +104,6 @@ describe('ProofService', () => {
   beforeEach(() => {
     const agentConfig = getAgentConfig('V2ProofServiceTest')
     proofRepository = new ProofRepositoryMock()
-    indyHolderService = new IndyHolderServiceMock()
     ledgerService = new IndyLedgerServiceMock()
     eventEmitter = new EventEmitter(agentConfig)
     connectionService = new connectionServiceMock()

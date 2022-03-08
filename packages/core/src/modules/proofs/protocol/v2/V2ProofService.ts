@@ -1,7 +1,6 @@
 import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { Dispatcher } from '../../../../agent/Dispatcher'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
-import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { ProofStateChangedEvent } from '../../ProofEvents'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
@@ -18,10 +17,8 @@ import type {
   CreateRequestOptions,
 } from '../../models/ProofServiceOptions'
 import type { RetrievedCredentials, RequestedCredentials } from '../v1/models'
-import type { PresentationPreview } from '../v1/models/PresentationPreview'
 import type { ProofRequest } from '../v1/models/ProofRequest'
 
-import { validateOrReject } from 'class-validator'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../../agent/AgentConfig'
@@ -179,6 +176,12 @@ export class V2ProofService extends ProofService {
         previousSentMessage: requestMessage ?? undefined,
       })
 
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+        agentMessage: proposalMessage,
+        associatedRecordId: proofRecord.id,
+        role: DidCommMessageRole.Receiver,
+      })
+
       await this.updateState(proofRecord, ProofState.ProposalReceived)
     } catch {
       // No proof record exists with thread id
@@ -193,6 +196,12 @@ export class V2ProofService extends ProofService {
       this.connectionService.assertConnectionOrServiceDecorator(messageContext)
 
       // Save record
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+        agentMessage: proposalMessage,
+        associatedRecordId: proofRecord.id,
+        role: DidCommMessageRole.Receiver,
+      })
+
       await this.proofRepository.save(proofRecord)
       this.eventEmitter.emit<ProofStateChangedEvent>({
         type: ProofEventTypes.ProofStateChanged,
@@ -202,12 +211,6 @@ export class V2ProofService extends ProofService {
         },
       })
     }
-
-    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
-      agentMessage: proposalMessage,
-      associatedRecordId: proofRecord.id,
-      role: DidCommMessageRole.Receiver,
-    })
 
     return proofRecord
   }
@@ -666,9 +669,38 @@ export class V2ProofService extends ProofService {
 
     for (const [format, value] of Object.entries(options.formats)) {
       const service = this.formatServiceMap[format]
+
+      const indyFormat = options.formats.indy
+      const indyConfig = options.config?.indy
+
+      if (!indyFormat) {
+        throw new AriesFrameworkError('Indy format must be provided')
+      }
+
+      if (!indyConfig) {
+        throw new AriesFrameworkError('Indy config must be provided')
+      }
+
+      const proofRecordId = indyFormat.proofRecord.id
+      const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+        associatedRecordId: proofRecordId,
+        messageClass: V2ProposalPresentationMessage,
+      })
+
+      if (!proposalMessage) {
+        throw new AriesFrameworkError(`Proof record with id ${proofRecordId} is missing required presentation proposal`)
+      }
+
       result = {
         ...result,
-        ...(await this.createProofRequestFromProposal(options)),
+        ...(await service.createProofRequestFromProposal({
+          formats: {
+            indy: {
+              presentationProposal: proposalMessage?.proposalsAttach[0],
+            },
+          },
+          config: { indy: indyConfig, jsonLd: undefined },
+        })),
       }
     }
     return result

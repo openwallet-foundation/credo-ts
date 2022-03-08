@@ -3,7 +3,6 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
-import type { ProofService } from '../../../ProofService'
 import type { ProofRecord } from '../../../repository/ProofRecord'
 
 import { createOutboundMessage } from '../../../../../agent/helpers'
@@ -62,7 +61,7 @@ export class V1ProposePresentationHandler implements Handler {
     const proofRequest = await this.proofService.createProofRequestFromProposal({
       formats: {
         indy: {
-          presentationProposal: proposalMessage.presentationProposal,
+          proofRecord: proofRecord,
         },
       },
     })

@@ -1,19 +1,17 @@
-import type {
-  ProofRecord,
-  ProofRequest,
-  ProofRequestOptions,
-  V1PresentationMessage,
-  V1RequestPresentationMessage,
-} from '../..'
-import type { RequestedCredentials } from '../../../..'
-import type { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
-import type { CreatePresentationFormats, ProposeProofFormats, VerifyProofFormats } from '../../models/SharedOptions'
+import type { ProofRecord, ProofRequestOptions } from '../..'
+import type { Attachment } from '../../../../decorators/attachment/Attachment'
+import type { CreatePresentationFormats, ProposeProofFormats } from '../../models/SharedOptions'
+import type { PresentationPreview } from '../../protocol/v1/models/PresentationPreview'
 import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
-import type { IndyProof } from 'indy-sdk'
 
 export interface CreateRequestAttachmentOptions {
   attachId?: string
   proofRequestOptions: ProofRequestOptions
+}
+
+export interface CreateProofAttachmentOptions {
+  attachId?: string
+  proofProposalOptions: PresentationPreview
 }
 
 export interface CreateProposalOptions {
