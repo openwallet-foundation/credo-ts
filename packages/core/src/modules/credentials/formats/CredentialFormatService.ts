@@ -1,6 +1,5 @@
 import type { AgentMessage } from '../../../../src/agent/AgentMessage'
 import type { EventEmitter } from '../../../agent/EventEmitter'
-import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type {
   AcceptCredentialOptions,
   AcceptProposalOptions,
@@ -8,8 +7,6 @@ import type {
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../interfaces'
-import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
-import type { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
 import type { CredentialExchangeRecord, CredentialRepository } from '../repository'
 import type {
   CredentialAttachmentFormats,
@@ -18,7 +15,8 @@ import type {
   ProposeAttachmentFormats,
 } from './models/CredentialFormatServiceOptions'
 
-import { uuid } from '../../../utils/uuid'
+import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
+import { JsonEncoder } from '../../../utils/JsonEncoder'
 
 export abstract class CredentialFormatService {
   protected credentialRepository: CredentialRepository
@@ -58,19 +56,40 @@ export abstract class CredentialFormatService {
     credentialRecord: CredentialExchangeRecord
   ): Promise<void>
 
-  // helper methods
-
-  abstract getFormatData(data: unknown, id: string): Attachment
-  abstract getCredentialAttributes(proposal: ProposeCredentialOptions): CredentialPreviewAttribute[] | undefined
-  abstract setPreview(proposal: AcceptProposalOptions, preview: V1CredentialPreview): AcceptProposalOptions
-
-  abstract getAttachment(message: AgentMessage): Attachment | undefined
-
-  public generateId(): string {
-    return uuid()
-  }
-
+  // methods previously in the CredentialResponseCoordinator
   abstract shouldAutoRespondToProposal(options: HandlerAutoAcceptOptions): boolean
   abstract shouldAutoRespondToRequest(options: HandlerAutoAcceptOptions): boolean
   abstract shouldAutoRespondToCredential(options: HandlerAutoAcceptOptions): boolean
+
+  /**
+   *
+   * Returns an object of type {@link Attachment} for use in credential exchange messages.
+   * It looks up the correct format identifier and encodes the data as a base64 attachment.
+   *
+   * @param data The data to include in the attach object
+   * @param id the attach id from the formats component of the message
+   * @returns attachment to the credential proposal
+   */
+  public getFormatData(data: unknown, id: string): Attachment {
+    const attachment: Attachment = new Attachment({
+      id,
+      mimeType: 'application/json',
+      data: new AttachmentData({
+        base64: JsonEncoder.toBase64(data),
+      }),
+    })
+    return attachment
+  }
+
+  /**
+   * Gets the attachment object for a given attachId. We need to get out the correct attachId for
+   * indy and then find the corresponding attachment (if there is one)
+   * @param message Gets the
+   * @returns The Attachment if found or undefined
+   */
+  public getAttachment(message: AgentMessage): Attachment | undefined {
+    const formatId = message.formats.find((f) => f.format.includes('indy'))
+    const attachment = message.messageAttachment?.find((attachment) => attachment.id === formatId?.attachId)
+    return attachment
+  }
 }

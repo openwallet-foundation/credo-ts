@@ -1,7 +1,7 @@
 import type { LinkedAttachment } from '../../utils/LinkedAttachment'
 import type { V1CredentialPreview } from './protocol/v1/V1CredentialPreview'
 import type { V2CredentialPreview } from './protocol/v2/V2CredentialPreview'
-import type { CredValues, Schema } from 'indy-sdk'
+import type { CredValues } from 'indy-sdk'
 
 import { hash as sha256 } from '@stablelib/sha256'
 import BigNumber from 'bn.js'

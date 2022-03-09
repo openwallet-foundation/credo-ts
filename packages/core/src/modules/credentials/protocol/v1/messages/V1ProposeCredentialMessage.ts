@@ -1,6 +1,4 @@
 import type { Attachment } from '../../../../../decorators/attachment/Attachment'
-import type { CredProposeOfferRequestFormat } from '../../../formats/models/CredentialFormatServiceOptions'
-import type { CredPropose } from '../models/CredentialFormatOptions'
 
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'

@@ -1,5 +1,5 @@
-import type { AgentMessage } from '../../../../../src/agent/AgentMessage'
 import type { EventEmitter } from '../../../../agent/EventEmitter'
+import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { ConnectionService } from '../../../connections'
 import type { IndyHolderService, IndyIssuerService } from '../../../indy'
 import type { IndyLedgerService } from '../../../ledger'
@@ -30,8 +30,7 @@ import type {
 import type { Cred, CredOffer, CredReq, CredReqMetadata } from 'indy-sdk'
 
 import { AriesFrameworkError } from '../../../../../src/error'
-import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
-import { JsonEncoder } from '../../../../utils/JsonEncoder'
+import { uuid } from '../../../../utils/uuid'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import { CredentialUtils } from '../../CredentialUtils'
@@ -244,37 +243,6 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     const credPropose: CredPropose = options.credentialFormats.indy?.payload.credentialPayload as CredPropose
     return credPropose.credentialDefinitionId
   }
-  /**
-   * Get attributes for indy format from a proposal message. This allows attributes
-   * to be copied across to old style credential records
-   *
-   * @param proposal ProposeCredentialOptions object containing (optionally) the attributes
-   * @return array of attributes or undefined if none present
-   */
-  public getCredentialAttributes(proposal: ProposeCredentialOptions): CredentialPreviewAttribute[] | undefined {
-    const credPropose: CredPropose = proposal.credentialFormats.indy?.payload as CredPropose
-    return credPropose.attributes
-  }
-
-  /**
-   *
-   * Returns an object of type {@link Attachment} for use in credential exchange messages.
-   * It looks up the correct format identifier and encodes the data as a base64 attachment.
-   *
-   * @param data The data to include in the attach object
-   * @param id the attach id from the formats component of the message
-   * @returns attachment to the credential proposal
-   */
-  public getFormatData(data: unknown, id: string): Attachment {
-    const attachment: Attachment = new Attachment({
-      id,
-      mimeType: 'application/json',
-      data: new AttachmentData({
-        base64: JsonEncoder.toBase64(data),
-      }),
-    })
-    return attachment
-  }
 
   /**
    * Create a credential offer for the given credential definition id.
@@ -319,21 +287,6 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       return { credReq, credReqMetadata }
     }
     throw new AriesFrameworkError('Unable to create Credential Request')
-  }
-
-  /**
-   * Method to insert a preview object into a proposal. This can occur when we retrieve a
-   * preview object as part of the stored credential record and need to add it to the
-   * proposal object used for processing credential proposals
-   * @param proposal the proposal object needed for acceptance processing
-   * @param preview the preview containing stored attributes
-   * @returns proposal object with extra preview attached
-   */
-  public setPreview(proposal: AcceptProposalOptions, preview: V2CredentialPreview): AcceptProposalOptions {
-    if (proposal.credentialFormats.indy) {
-      proposal.credentialFormats.indy.attributes = preview.attributes
-    }
-    return proposal
   }
 
   public async processProposal(
@@ -466,17 +419,6 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     }
   }
 
-  /**
-   * Gets the attachment object for a given attachId. We need to get out the correct attachId for
-   * indy and then find the corresponding attachment (if there is one)
-   * @param message Gets the
-   * @returns The Attachment if found or undefined
-   */
-  public getAttachment(message: AgentMessage): Attachment | undefined {
-    const formatId = message.formats.find((f) => f.format.includes('indy'))
-    const attachment = message.messageAttachment?.find((attachment) => attachment.id === formatId?.attachId)
-    return attachment
-  }
   /**
    * Checks whether it should automatically respond to a proposal. Moved from CredentialResponseCoordinator
    * as this contains format-specific logic
@@ -625,5 +567,8 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       return false
     }
     return false
+  }
+  private generateId(): string {
+    return uuid()
   }
 }

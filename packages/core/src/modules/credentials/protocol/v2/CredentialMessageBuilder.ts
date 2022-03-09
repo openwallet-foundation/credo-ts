@@ -169,25 +169,6 @@ export class CredentialMessageBuilder {
 
     return credentialOfferMessage
   }
-  /**
-   * Method to insert a preview object into a proposal. This can occur when we retrieve a
-   * preview object as part of the stored credential record and need to add it to the
-   * proposal object used for processing credential proposals
-   * @param formatService correct service for format, indy, w3c etc.
-   * @param proposal the proposal object needed for acceptance processing
-   * @param preview the preview containing stored attributes
-   * @returns proposal object with extra preview attached
-   */
-  public setPreview(
-    formatService: CredentialFormatService,
-    proposal: AcceptProposalOptions,
-    preview?: V2CredentialPreview
-  ): AcceptProposalOptions {
-    if (preview) {
-      formatService.setPreview(proposal, preview)
-    }
-    return proposal
-  }
 
   /**
    * Create a {@link V2RequestCredentialMessage}

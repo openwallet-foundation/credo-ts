@@ -22,6 +22,7 @@ import type {
 } from '../models/CredentialFormatServiceOptions'
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
+import { uuid } from '../../../../utils/uuid'
 import { CredentialFormatService } from '../CredentialFormatService'
 
 export class JsonLdCredentialFormatService extends CredentialFormatService {
@@ -46,18 +47,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   ): Promise<CredentialAttachmentFormats> {
     throw new Error('Method not implemented.')
   }
-  getFormatData(data: unknown, id: string): Attachment {
-    throw new Error('Method not implemented.')
-  }
-  getCredentialAttributes(proposal: ProposeCredentialOptions): CredentialPreviewAttribute[] | undefined {
-    throw new Error('Method not implemented.')
-  }
-  setPreview(proposal: AcceptProposalOptions, preview: V1CredentialPreview): AcceptProposalOptions {
-    throw new Error('Method not implemented.')
-  }
-  getAttachment(message: AgentMessage): Attachment | undefined {
-    throw new Error('Method not implemented.')
-  }
   shouldAutoRespondToProposal(options: HandlerAutoAcceptOptions): boolean {
     throw new Error('Method not implemented.')
   }
@@ -80,7 +69,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   public createProposal(proposal: ProposeCredentialOptions): CredentialAttachmentFormats {
     // implementation for test purposes only
     const format: CredentialFormatSpec = {
-      attachId: this.generateId(),
+      attachId: uuid(),
       format: 'aries/ld-proof-vc-detail@v1.0',
     }
     const attachment: Attachment = new Attachment({
