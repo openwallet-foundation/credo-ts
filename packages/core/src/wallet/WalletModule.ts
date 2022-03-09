@@ -1,6 +1,5 @@
 import type { Logger } from '../logger'
 import type { WalletConfig, WalletExportImportConfig } from '../types'
-import type { WalletCreateConfig } from './Wallet'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
@@ -46,14 +45,18 @@ export class WalletModule {
       if (error instanceof WalletNotFoundError) {
         // Keep the wallet open after creating it, this saves an extra round trip of closing/opening
         // the wallet, which can save quite some time.
-        await this.create({ ...walletConfig, keepOpenAfterCreate: true })
+        await this.createAndOpen(walletConfig)
       } else {
         throw error
       }
     }
   }
 
-  public async create(walletConfig: WalletCreateConfig): Promise<void> {
+  public async createAndOpen(walletConfig: WalletConfig): Promise<void> {
+    await this.wallet.createAndOpen(walletConfig)
+  }
+
+  public async create(walletConfig: WalletConfig): Promise<void> {
     await this.wallet.create(walletConfig)
   }
 

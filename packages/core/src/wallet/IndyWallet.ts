@@ -1,7 +1,7 @@
 import type { Logger } from '../logger'
 import type { EncryptedMessage, DecryptedMessageContext, WalletConfig, WalletExportImportConfig } from '../types'
 import type { Buffer } from '../utils/buffer'
-import type { Wallet, DidInfo, DidConfig, WalletCreateConfig } from './Wallet'
+import type { Wallet, DidInfo, DidConfig } from './Wallet'
 import type { default as Indy } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -64,11 +64,17 @@ export class IndyWallet implements Wallet {
    * @throws {WalletDuplicateError} if the wallet already exists
    * @throws {WalletError} if another error occurs
    */
-  public async create(walletConfig: WalletCreateConfig): Promise<void> {
-    this.logger.debug(`Creating wallet '${walletConfig.id}' using SQLite storage`)
+  public async create(walletConfig: WalletConfig): Promise<void> {
+    await this.createAndOpen(walletConfig)
+    await this.close()
+  }
 
-    // Close wallet by default after creating it
-    const keepOpenAfterCreate = walletConfig.keepOpenAfterCreate ?? false
+  /**
+   * @throws {WalletDuplicateError} if the wallet already exists
+   * @throws {WalletError} if another error occurs
+   */
+  public async createAndOpen(walletConfig: WalletConfig): Promise<void> {
+    this.logger.debug(`Creating wallet '${walletConfig.id}' using SQLite storage`)
 
     try {
       await this.indy.createWallet(
@@ -83,12 +89,10 @@ export class IndyWallet implements Wallet {
 
       // We need to open wallet before creating master secret because we need wallet handle here.
       await this.createMasterSecret(this.handle, walletConfig.id)
-
-      // We opened wallet just to create master secret. Close it if desired
-      if (!keepOpenAfterCreate) {
-        await this.close()
-      }
     } catch (error) {
+      // If an error ocurred while creating the master secret, we should close the wallet
+      if (this.isInitialized) await this.close()
+
       if (isIndyError(error, 'WalletAlreadyExistsError')) {
         const errorMessage = `Wallet '${walletConfig.id}' already exists`
         this.logger.debug(errorMessage)
