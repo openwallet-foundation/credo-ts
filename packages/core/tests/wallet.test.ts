@@ -111,8 +111,7 @@ describe('wallet', () => {
       keyDerivationMethod: KeyDerivationMethod.Argon2IInt,
     }
 
-    await aliceAgent.wallet.create(walletConfig)
-    await aliceAgent.wallet.open(walletConfig)
+    await aliceAgent.wallet.createAndOpen(walletConfig)
 
     expect(aliceAgent.wallet.isInitialized).toBe(true)
   })

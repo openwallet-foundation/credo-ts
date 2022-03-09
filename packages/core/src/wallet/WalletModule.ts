@@ -1,6 +1,5 @@
 import type { Logger } from '../logger'
 import type { WalletConfig, WalletExportImportConfig } from '../types'
-import type { WalletCreateConfig } from './Wallet'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
@@ -53,27 +52,24 @@ export class WalletModule {
       if (error instanceof WalletNotFoundError) {
         // Keep the wallet open after creating it, this saves an extra round trip of closing/opening
         // the wallet, which can save quite some time.
-        await this.create({ ...walletConfig, keepOpenAfterCreate: true })
+        await this.createAndOpen(walletConfig)
       } else {
         throw error
       }
     }
   }
 
-  public async create(walletConfig: WalletCreateConfig): Promise<void> {
-    // Close wallet by default after creating it
-    const keepOpenAfterCreate = walletConfig.keepOpenAfterCreate ?? false
-
+  public async createAndOpen(walletConfig: WalletConfig): Promise<void> {
     // Always keep the wallet open, as we still need to store the storage version in the wallet.
-    await this.wallet.create({ ...walletConfig, keepOpenAfterCreate: true })
+    await this.wallet.create(walletConfig)
 
     // Store the storage version in the wallet
     await this.storageUpgradeService.setCurrentStorageVersion(this.storageUpgradeService.frameworkStorageVersion)
+  }
 
-    // We kept wallet open just to store some initial data in it, closing if desired
-    if (!keepOpenAfterCreate) {
-      await this.wallet.close()
-    }
+  public async create(walletConfig: WalletConfig): Promise<void> {
+    await this.createAndOpen(walletConfig)
+    await this.close()
   }
 
   public async open(walletConfig: WalletConfig): Promise<void> {

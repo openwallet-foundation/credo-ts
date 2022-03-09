@@ -18,7 +18,7 @@ describe('JwsService', () => {
     const config = getAgentConfig('JwsService')
     wallet = new IndyWallet(config)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.create({ ...config.walletConfig!, keepOpenAfterCreate: true })
+    await wallet.createAndOpen(config.walletConfig!)
 
     jwsService = new JwsService(wallet)
   })
