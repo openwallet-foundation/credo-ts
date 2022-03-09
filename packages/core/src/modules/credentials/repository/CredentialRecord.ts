@@ -1,12 +1,6 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialState } from '../CredentialState'
-import type {
-  OfferCredentialMessage,
-  IssueCredentialMessage,
-  ProposeCredentialMessage,
-  RequestCredentialMessage,
-} from '../messages'
 import type { CredentialMetadata } from './credentialMetadataTypes'
 
 import { Type } from 'class-transformer'
@@ -15,7 +9,13 @@ import { Attachment } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { CredentialPreviewAttribute } from '../messages'
+import {
+  OfferCredentialMessage,
+  IssueCredentialMessage,
+  ProposeCredentialMessage,
+  RequestCredentialMessage,
+  CredentialPreviewAttribute,
+} from '../messages'
 import { CredentialInfo } from '../models/CredentialInfo'
 
 export interface CredentialRecordProps {
@@ -53,15 +53,15 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
   public autoAcceptCredential?: AutoAcceptCredential
   public errorMessage?: string
 
-  // // message data
-  // @Type(() => ProposeCredentialMessage)
-  // public proposalMessage?: ProposeCredentialMessage
-  // @Type(() => OfferCredentialMessage)
-  // public offerMessage?: OfferCredentialMessage
-  // @Type(() => RequestCredentialMessage)
-  // public requestMessage?: RequestCredentialMessage
-  // @Type(() => IssueCredentialMessage)
-  // public credentialMessage?: IssueCredentialMessage
+  // message data
+  @Type(() => ProposeCredentialMessage)
+  public proposalMessage?: ProposeCredentialMessage
+  @Type(() => OfferCredentialMessage)
+  public offerMessage?: OfferCredentialMessage
+  @Type(() => RequestCredentialMessage)
+  public requestMessage?: RequestCredentialMessage
+  @Type(() => IssueCredentialMessage)
+  public credentialMessage?: IssueCredentialMessage
 
   @Type(() => CredentialPreviewAttribute)
   public credentialAttributes?: CredentialPreviewAttribute[]
@@ -84,10 +84,10 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       this.threadId = props.threadId
       this._tags = props.tags ?? {}
 
-      // this.proposalMessage = props.proposalMessage
-      // this.offerMessage = props.offerMessage
-      // this.requestMessage = props.requestMessage
-      // this.credentialMessage = props.credentialMessage
+      this.proposalMessage = props.proposalMessage
+      this.offerMessage = props.offerMessage
+      this.requestMessage = props.requestMessage
+      this.credentialMessage = props.credentialMessage
       this.credentialAttributes = props.credentialAttributes
       this.autoAcceptCredential = props.autoAcceptCredential
       this.linkedAttachments = props.linkedAttachments

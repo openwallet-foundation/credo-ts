@@ -1,7 +1,7 @@
-import { AriesFrameworkError } from './AriesFrameworkError'
+import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 
 export class StorageUpgradeError extends AriesFrameworkError {
-  public constructor(message: string, { recordType, cause }: { recordType: string; cause?: Error }) {
-    super(`${recordType}: ${message}`, { cause })
+  public constructor(message: string, { cause }: { cause?: Error }) {
+    super(message, { cause })
   }
 }

@@ -4,8 +4,10 @@ import type { WalletConfig } from '../../types'
 
 import { Agent } from '../../agent/Agent'
 import { AriesFrameworkError } from '../../error'
+import { uuid } from '../../utils/uuid'
 
 import { StorageUpgradeService } from './StorageUpgradeService'
+import { StorageUpgradeError } from './error/StorageUpgradeError'
 import { supportedUpgrades } from './upgrades'
 import { isFirstVersionHigherThanSecond, parseVersionString } from './version'
 
@@ -72,39 +74,49 @@ export class UpgradeAssistant {
   }
 
   public async upgrade() {
-    this.agent.config.logger.info('Starting upgrade of agent storage')
-    const neededUpgrades = await this.getNeededUpgrades()
+    const upgradeIdentifier = uuid()
 
-    if (neededUpgrades.length == 0) {
-      this.agent.config.logger.info('No upgrade needed. Agent storage is up to date.')
-      return
-    }
+    try {
+      this.agent.config.logger.info('Starting upgrade of agent storage')
+      const neededUpgrades = await this.getNeededUpgrades()
 
-    const fromVersion = neededUpgrades[0].fromVersion
-    const toVersion = neededUpgrades[neededUpgrades.length - 1].toVersion
-    this.agent.config.logger.info(
-      `Starting upgrade process. Total of ${neededUpgrades.length} update(s) will be applied to update the agent storage from version ${fromVersion} to version ${toVersion}`
-    )
+      if (neededUpgrades.length == 0) {
+        this.agent.config.logger.info('No upgrade needed. Agent storage is up to date.')
+        return
+      }
 
-    for (const upgrade of neededUpgrades) {
+      const fromVersion = neededUpgrades[0].fromVersion
+      const toVersion = neededUpgrades[neededUpgrades.length - 1].toVersion
       this.agent.config.logger.info(
-        `Starting upgrade of agent storage from version ${upgrade.fromVersion} to version ${upgrade.toVersion}`
+        `Starting upgrade process. Total of ${neededUpgrades.length} update(s) will be applied to update the agent storage from version ${fromVersion} to version ${toVersion}`
       )
-      await upgrade.doUpgrade(this.agent)
 
-      // Update the framework version in storage
-      await this.storageUpgradeService.setCurrentStorageVersion(upgrade.toVersion)
-      this.agent.config.logger.info(
-        `Successfully updated agent storage from version ${upgrade.fromVersion} to version ${upgrade.toVersion}`
-      )
+      // Create backup in case migration goes wrong
+      await this.createBackup(upgradeIdentifier)
+
+      for (const upgrade of neededUpgrades) {
+        this.agent.config.logger.info(
+          `Starting upgrade of agent storage from version ${upgrade.fromVersion} to version ${upgrade.toVersion}`
+        )
+        await upgrade.doUpgrade(this.agent)
+
+        // Update the framework version in storage
+        await this.storageUpgradeService.setCurrentStorageVersion(upgrade.toVersion)
+        this.agent.config.logger.info(
+          `Successfully updated agent storage from version ${upgrade.fromVersion} to version ${upgrade.toVersion}`
+        )
+      }
+    } catch (error) {
+      throw new StorageUpgradeError(`Error upgrading storage (upgradeIdentifier: ${upgradeIdentifier})`, {
+        cause: error,
+      })
     }
   }
 
-  private async backup() {
-    const backupPath = '/a'
-    try {
+  private async createBackup(backupIdentifier: string) {
+    const fileSystem = this.agent.config.fileSystem
+    const backupPath = `${fileSystem.basePath}/afj/backup/${backupIdentifier}`
 
-      await this.agent.wallet.export({ key: this.walletConfig.key, path: backupPath })
-    }
+    await this.agent.wallet.export({ key: this.walletConfig.key, path: backupPath })
   }
 }
