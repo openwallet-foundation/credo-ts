@@ -1,4 +1,4 @@
-import type { Agent } from '../../../agent/Agent'
+import type { Agent } from '../../../../agent/Agent'
 
 import { migrateCredentialRecordToV0_2 } from './credential'
 

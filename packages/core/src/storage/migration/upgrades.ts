@@ -1,7 +1,7 @@
 import type { Agent } from '../../agent/Agent'
 import type { VersionString } from './version'
 
-import { upgradeV0_1ToV0_2 } from './0.1-0.2'
+import { upgradeV0_1ToV0_2 } from './upgrades/0.1-0.2'
 
 export const INITIAL_STORAGE_VERSION = '0.1'
 

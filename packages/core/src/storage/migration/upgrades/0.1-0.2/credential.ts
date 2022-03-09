@@ -1,9 +1,9 @@
-import type { Agent } from '../../../agent/Agent'
-import type { CredentialMetadata, CredentialRecord } from '../../../modules/credentials'
+import type { Agent } from '../../../../agent/Agent'
+import type { CredentialMetadata, CredentialRecord } from '../../../../modules/credentials'
 
-import { CredentialMetadataKeys } from '../../../modules/credentials'
-import { CredentialRepository } from '../../../modules/credentials/repository/CredentialRepository'
-import { Metadata } from '../../Metadata'
+import { CredentialMetadataKeys } from '../../../../modules/credentials'
+import { CredentialRepository } from '../../../../modules/credentials/repository/CredentialRepository'
+import { Metadata } from '../../../Metadata'
 
 /**
  * Migrates the {@link CredentialRecord} to 0.2 compatible format. It fetches all records from storage

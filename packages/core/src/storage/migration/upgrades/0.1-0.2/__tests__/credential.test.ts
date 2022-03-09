@@ -1,8 +1,8 @@
-import { getAgentConfig, mockFunction } from '../../../../../tests/helpers'
-import { Agent } from '../../../../agent/Agent'
-import { CredentialRecord } from '../../../../modules/credentials'
-import { CredentialRepository } from '../../../../modules/credentials/repository/CredentialRepository'
-import { JsonTransformer } from '../../../../utils'
+import { getAgentConfig, mockFunction } from '../../../../../../tests/helpers'
+import { Agent } from '../../../../../agent/Agent'
+import { CredentialRecord } from '../../../../../modules/credentials'
+import { CredentialRepository } from '../../../../../modules/credentials/repository/CredentialRepository'
+import { JsonTransformer } from '../../../../../utils'
 import * as testModule from '../credential'
 
 const agentConfig = getAgentConfig('Migration CredentialRecord 0.1-0.2')
