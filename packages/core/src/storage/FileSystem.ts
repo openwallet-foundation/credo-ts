@@ -4,4 +4,5 @@ export interface FileSystem {
   exists(path: string): Promise<boolean>
   write(path: string, data: string): Promise<void>
   read(path: string): Promise<string>
+  downloadToFile(url: string, path: string): Promise<void>
 }

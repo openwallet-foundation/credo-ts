@@ -2,6 +2,7 @@ import { tmpdir } from 'os'
 import path from 'path'
 
 import { Agent } from '../src/agent/Agent'
+import { KeyDerivationMethod } from '../src/types'
 import { uuid } from '../src/utils/uuid'
 
 import { getBaseConfig } from './helpers'
@@ -18,7 +19,7 @@ import {
 const aliceConfig = getBaseConfig('wallet-tests-Alice')
 const bobConfig = getBaseConfig('wallet-tests-Bob')
 
-describe('=== wallet', () => {
+describe('wallet', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
 
@@ -51,10 +52,10 @@ describe('=== wallet', () => {
     } catch (error) {
       if (error instanceof WalletNotFoundError) {
         await aliceAgent.wallet.create(walletConfig)
+        await aliceAgent.wallet.open(walletConfig)
       }
     }
 
-    await aliceAgent.wallet.open(walletConfig)
     await aliceAgent.initialize()
 
     expect(aliceAgent.isInitialized).toBe(true)
@@ -103,6 +104,19 @@ describe('=== wallet', () => {
     await expect(aliceAgent.wallet.open(walletConfig)).resolves.toBeUndefined()
   })
 
+  test('create wallet with custom key derivation method', async () => {
+    const walletConfig = {
+      id: 'mywallet',
+      key: 'mysecretwalletkey',
+      keyDerivationMethod: KeyDerivationMethod.Argon2IInt,
+    }
+
+    await aliceAgent.wallet.create(walletConfig)
+    await aliceAgent.wallet.open(walletConfig)
+
+    expect(aliceAgent.wallet.isInitialized).toBe(true)
+  })
+
   test('when exporting and importing a wallet, content is copied', async () => {
     await bobAgent.initialize()
     const bobBasicMessageRepository = bobAgent.injectionContainer.resolve(BasicMessageRepository)
@@ -130,13 +144,18 @@ describe('=== wallet', () => {
     await bobAgent.wallet.export({ path: backupPath, key: backupKey })
     await bobAgent.wallet.delete()
 
+    // Initialize the wallet again and assert record does not exist
+    // This should create a new wallet
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    await bobAgent.wallet.initialize(bobConfig.config.walletConfig!)
+    expect(await bobBasicMessageRepository.findById(basicMessageRecord.id)).toBeNull()
+    await bobAgent.wallet.delete()
+
     // Import backup with different wallet id and initialize
     await bobAgent.wallet.import({ id: backupWalletName, key: backupWalletName }, { path: backupPath, key: backupKey })
     await bobAgent.wallet.initialize({ id: backupWalletName, key: backupWalletName })
 
     // Expect same basic message record to exist in new wallet
     expect(await bobBasicMessageRepository.getById(basicMessageRecord.id)).toMatchObject(basicMessageRecord)
-
-    // TODO: remove the created backup file afterwards? Not sure how tmpdir works in Node.JS
   })
 })
