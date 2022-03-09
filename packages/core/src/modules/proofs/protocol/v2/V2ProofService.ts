@@ -17,7 +17,6 @@ import type {
   CreateRequestOptions,
 } from '../../models/ProofServiceOptions'
 import type { RetrievedCredentials, RequestedCredentials } from '../v1/models'
-import type { ProofRequest } from '../v1/models/ProofRequest'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
@@ -26,6 +25,7 @@ import { EventEmitter } from '../../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../../constants'
 import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
+import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { Wallet } from '../../../../wallet/Wallet'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections'
@@ -37,6 +37,8 @@ import { ProofState } from '../../models/ProofState'
 import { PresentationRecordType, ProofRecord, ProofRepository } from '../../repository'
 import { V1PresentationProblemReportError } from '../v1/errors/V1PresentationProblemReportError'
 import { V1PresentationProblemReportReason } from '../v1/errors/V1PresentationProblemReportReason'
+import { PresentationPreview } from '../v1/models/PresentationPreview'
+import { ProofRequest } from '../v1/models/ProofRequest'
 
 import { V2PresentationProblemReportError, V2PresentationProblemReportReason } from './errors'
 import { V2PresentationAckHandler } from './handlers/V2PresentationAckHandler'
@@ -310,6 +312,7 @@ export class V2ProofService extends ProofService {
 
     return { message: requestMessage, proofRecord: options.proofRecord }
   }
+
   public async processRequest(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
     const { message: _proofRequestMessage, connection: connectionRecord } = messageContext
 
@@ -421,7 +424,7 @@ export class V2ProofService extends ProofService {
       const service = this.formatServiceMap[key]
       formats.push(
         await service.createPresentation({
-          attachment: proofRequest.getAttachmentByFormatIdentifier('hlindy/proof-req@2.0'),
+          attachment: proofRequest.getAttachmentByFormatIdentifier('hlindy/proof-req@v2.0'),
           formats: options.proofFormats,
         })
       )
@@ -433,7 +436,6 @@ export class V2ProofService extends ProofService {
       goalCode: options.goalCode,
       lastPresentation: options.lastPresentation,
     })
-
     presentationMessage.setThread({ threadId: options.proofRecord.threadId })
 
     await this.didCommMessageRepository.saveOrUpdateAgentMessage({
@@ -446,6 +448,7 @@ export class V2ProofService extends ProofService {
 
     return { message: presentationMessage, proofRecord: options.proofRecord }
   }
+
   public async processPresentation(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
     const { message: _presentationMessage, connection: connectionRecord } = messageContext
 
@@ -543,6 +546,7 @@ export class V2ProofService extends ProofService {
       proofRecord: options.proofRecord,
     }
   }
+
   public async processAck(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
     const { message: _ackMessage, connection: connectionRecord } = messageContext
 
@@ -575,6 +579,7 @@ export class V2ProofService extends ProofService {
 
     return proofRecord
   }
+
   public async createProblemReport(
     options: CreateProblemReportOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
@@ -724,11 +729,56 @@ export class V2ProofService extends ProofService {
       messageClass: V2ProposalPresentationMessage,
     })
   }
+
   public async getRequestedCredentialsForProofRequest(options: {
     proofRecord: ProofRecord
     config: { indy?: GetRequestedCredentialsConfig | undefined; jsonLd?: undefined }
   }): Promise<{ indy?: RetrievedCredentials | undefined; jsonLd?: undefined }> {
-    throw new Error('Method not implemented.')
+    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: options.proofRecord.id,
+      messageClass: V2RequestPresentationMessage,
+    })
+
+    if (!requestMessage) {
+      throw new AriesFrameworkError('No proof request found.')
+    }
+
+    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: options.proofRecord.id,
+      messageClass: V2ProposalPresentationMessage,
+    })
+
+    if (!proposalMessage) {
+      throw new AriesFrameworkError('No proposal found.')
+    }
+
+    const proposalJson = proposalMessage.proposalsAttach[0].getDataAsJson<PresentationPreview>() ?? null
+    const proofPreview = JsonTransformer.fromJSON(proposalJson, PresentationPreview)
+
+    const proofRequestJson = requestMessage.requestPresentationsAttach[0].getDataAsJson<ProofRequest>() ?? null
+    const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
+
+    const requestAttachments = requestMessage.formats
+
+    let result = {}
+    for (const attachmentFormat of requestAttachments) {
+      const service = this.getFormatServiceForFormat(attachmentFormat)
+
+      if (!service) {
+        throw new AriesFrameworkError('')
+      }
+
+      result = {
+        ...result,
+        ...(await service.getRequestedCredentialsForProofRequest({
+          proofRequest: proofRequest,
+          presentationProposal: proofPreview,
+          config: options.config,
+        })),
+      }
+    }
+
+    return result
   }
   public async autoSelectCredentialsForProofRequest(options: {
     indy?: RetrievedCredentials | undefined
@@ -739,7 +789,7 @@ export class V2ProofService extends ProofService {
     for (const [id, format] of Object.entries(options)) {
       const service = this.formatServiceMap[id]
       const credentials = await service.autoSelectCredentialsForProofRequest(options)
-      returnValue = { ...returnValue, credentials }
+      returnValue = { ...returnValue, ...credentials }
     }
 
     return returnValue

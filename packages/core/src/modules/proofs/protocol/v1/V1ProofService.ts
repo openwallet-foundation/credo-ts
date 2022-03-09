@@ -793,7 +793,7 @@ export class V1ProofService extends ProofService {
 
     const requestAttachment = request
       .getAttachmentFormats()
-      .find((x) => x.format.format === 'hlindy/proof-req@2.0')?.attachment
+      .find((x) => x.format.format === 'hlindy/proof-req@v2.0')?.attachment
 
     if (!requestAttachment) {
       throw new AriesFrameworkError('Request message has no attachment linked to it')

@@ -1,5 +1,9 @@
 import type { Agent, ConnectionRecord, ProofRecord } from '../src'
-import type { AcceptProposalOptions, ProposeProofOptions } from '../src/modules/proofs/models/ModuleOptions'
+import type {
+  AcceptPresentationOptions,
+  AcceptProposalOptions,
+  ProposeProofOptions,
+} from '../src/modules/proofs/models/ModuleOptions'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/PresentationPreview'
 
 import { ProofState } from '../src'
@@ -41,7 +45,7 @@ describe('Present Proof', () => {
       protocolVersion: ProofProtocolVersion.V2_0,
       proofFormats: {
         indy: {
-          nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
+          nonce: '58d223e5fc4d4448b74c5eb11c6b558f',
           proofPreview: presentationPreview,
           name: 'abc',
           version: '1.0',
@@ -90,72 +94,72 @@ describe('Present Proof', () => {
     })
 
     // Alice retrieves the requested credentials and accepts the presentation request
-    // testLogger.test('Alice accepts presentation request from Faber')
-    // const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
-    //   aliceProofRecord.id,
-    //   ProofProtocolVersion.V2_0,
-    //   {
-    //     filterByPresentationPreview: true,
-    //   }
-    // )
+    testLogger.test('Alice accepts presentation request from Faber')
+    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
+      aliceProofRecord.id,
+      ProofProtocolVersion.V2_0,
+      {
+        filterByPresentationPreview: true,
+      }
+    )
 
-    // const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
-    //   formats: {
-    //     indy: retrievedCredentials.indy,
-    //   },
-    //   version: ProofProtocolVersion.V2_0,
-    // })
+    const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
+      formats: {
+        indy: retrievedCredentials.indy,
+      },
+      version: ProofProtocolVersion.V2_0,
+    })
 
-    // const acceptPresentationOptions: AcceptPresentationOptions = {
-    //   protocolVersion: ProofProtocolVersion.V2_0,
-    //   proofRecordId: aliceProofRecord.id,
-    //   proofFormats: { indy: requestedCredentials.indy },
-    // }
-    // await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
+    const acceptPresentationOptions: AcceptPresentationOptions = {
+      protocolVersion: ProofProtocolVersion.V2_0,
+      proofRecordId: aliceProofRecord.id,
+      proofFormats: { indy: requestedCredentials.indy },
+    }
+    await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
 
-    // // Faber waits for the presentation from Alice
-    // testLogger.test('Faber waits for presentation from Alice')
-    // faberProofRecord = await waitForProofRecord(faberAgent, {
-    //   threadId: aliceProofRecord.threadId,
-    //   state: ProofState.PresentationReceived,
-    // })
+    // Faber waits for the presentation from Alice
+    testLogger.test('Faber waits for presentation from Alice')
+    faberProofRecord = await waitForProofRecord(faberAgent, {
+      threadId: aliceProofRecord.threadId,
+      state: ProofState.PresentationReceived,
+    })
 
-    // expect(faberProofRecord.id).not.toBeNull()
-    // expect(faberProofRecord).toMatchObject({
-    //   threadId: faberProofRecord.threadId,
-    //   state: ProofState.PresentationReceived,
-    //   protocolVersion: ProofProtocolVersion.V2_0,
-    // })
+    expect(faberProofRecord.id).not.toBeNull()
+    expect(faberProofRecord).toMatchObject({
+      threadId: faberProofRecord.threadId,
+      state: ProofState.PresentationReceived,
+      protocolVersion: ProofProtocolVersion.V2_0,
+    })
 
-    // // Faber accepts the presentation provided by Alice
-    // testLogger.test('Faber accepts the presentation provided by Alice')
-    // await faberAgent.proofs.acceptPresentation(faberProofRecord.id, ProofProtocolVersion.V2_0)
+    // Faber accepts the presentation provided by Alice
+    testLogger.test('Faber accepts the presentation provided by Alice')
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id, ProofProtocolVersion.V2_0)
 
-    // // Alice waits until she received a presentation acknowledgement
-    // testLogger.test('Alice waits until she receives a presentation acknowledgement')
-    // aliceProofRecord = await waitForProofRecord(aliceAgent, {
-    //   threadId: aliceProofRecord.threadId,
-    //   state: ProofState.Done,
-    // })
+    // Alice waits until she received a presentation acknowledgement
+    testLogger.test('Alice waits until she receives a presentation acknowledgement')
+    aliceProofRecord = await waitForProofRecord(aliceAgent, {
+      threadId: aliceProofRecord.threadId,
+      state: ProofState.Done,
+    })
 
-    // expect(faberProofRecord).toMatchObject({
-    //   // type: ProofRecord.name,
-    //   id: expect.any(String),
-    //   createdAt: expect.any(Date),
-    //   threadId: aliceProofRecord.threadId,
-    //   connectionId: expect.any(String),
-    //   isVerified: true,
-    //   state: ProofState.PresentationReceived,
-    // })
+    expect(faberProofRecord).toMatchObject({
+      // type: ProofRecord.name,
+      id: expect.any(String),
+      createdAt: expect.any(Date),
+      threadId: aliceProofRecord.threadId,
+      connectionId: expect.any(String),
+      isVerified: true,
+      state: ProofState.PresentationReceived,
+    })
 
-    // expect(aliceProofRecord).toMatchObject({
-    //   // type: ProofRecord.name,
-    //   id: expect.any(String),
-    //   createdAt: expect.any(Date),
-    //   threadId: faberProofRecord.threadId,
-    //   connectionId: expect.any(String),
-    //   state: ProofState.Done,
-    // })
+    expect(aliceProofRecord).toMatchObject({
+      // type: ProofRecord.name,
+      id: expect.any(String),
+      createdAt: expect.any(Date),
+      threadId: faberProofRecord.threadId,
+      connectionId: expect.any(String),
+      state: ProofState.Done,
+    })
   })
 
   // test('Faber starts with proof request to Alice', async () => {

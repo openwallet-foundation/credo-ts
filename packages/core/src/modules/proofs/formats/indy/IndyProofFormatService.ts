@@ -103,7 +103,7 @@ export class IndyProofFormatService extends ProofFormatService {
     }
 
     return this.createProofAttachment({
-      attachId: options.attachId,
+      attachId: options.attachId ?? uuid(),
       proofProposalOptions: options.formats.indy.proofPreview,
     })
   }
@@ -120,7 +120,7 @@ export class IndyProofFormatService extends ProofFormatService {
     }
 
     return this.createRequestAttachment({
-      attachId: options.attachId,
+      attachId: options.attachId ?? uuid(),
       proofRequestOptions: options.formats.indy,
     })
   }
@@ -147,13 +147,15 @@ export class IndyProofFormatService extends ProofFormatService {
 
     const proof = await this.createProof(proofRequest, requestedCredentials)
 
+    const attachmentId = options.attachId ?? uuid()
+
     const format = new ProofFormatSpec({
-      attachmentId: options.attachId,
+      attachmentId,
       format: 'hlindy/proof@v2.0',
     })
 
     const attachment = new Attachment({
-      id: options.attachId,
+      id: attachmentId,
       mimeType: 'application/json',
       data: new AttachmentData({
         base64: JsonEncoder.toBase64(proof),
@@ -232,8 +234,8 @@ export class IndyProofFormatService extends ProofFormatService {
     proposalAttachments: ProofAttachmentFormat[],
     requestAttachments: ProofAttachmentFormat[]
   ) {
-    const proposalAttachment = proposalAttachments.find((x) => x.format.format === 'hlindy/proof-req@2.0')?.attachment
-    const requestAttachment = requestAttachments.find((x) => x.format.format === 'hlindy/proof-req@2.0')?.attachment
+    const proposalAttachment = proposalAttachments.find((x) => x.format.format === 'hlindy/proof-req@v2.0')?.attachment
+    const requestAttachment = requestAttachments.find((x) => x.format.format === 'hlindy/proof-req@v2.0')?.attachment
 
     if (!proposalAttachment) {
       throw new AriesFrameworkError('Proposal message has no attachment linked to it')
@@ -305,7 +307,7 @@ export class IndyProofFormatService extends ProofFormatService {
     const retrievedCredentials = new RetrievedCredentials({})
     const { proofRequest, presentationProposal } = options
 
-    // const proofRequest = requestMessage.getAttachmentById('hlindy/proof-req@2.0')?.getDataAsJson<ProofRequest>() ?? null
+    // const proofRequest = requestMessage.getAttachmentById('hlindy/proof-req@v2.0')?.getDataAsJson<ProofRequest>() ?? null
 
     // console.log('indyProofFormatService - getRequestedCredentialsForProofRequest - proofRequest', proofRequest)
 

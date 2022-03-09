@@ -65,7 +65,7 @@ export class V2ProposePresentationHandler implements Handler {
       version: '1.0',
     }
 
-    const proposalAttachment = proposalMessage.getAttachmentById('hlindy/proof-req@2.0')
+    const proposalAttachment = proposalMessage.getAttachmentById('hlindy/proof-req@v2.0')
 
     if (!proposalAttachment) {
       throw new AriesFrameworkError('No proposal message could be found')
