@@ -1,8 +1,8 @@
 import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import { CredentialState } from '../CredentialState'
 import { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
+import { CredentialMetadataKeys } from '../repository/CredentialMetadataTypes'
 import { CredentialExchangeRecord } from '../repository/CredentialRecord'
-import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 
 describe('CredentialRecord', () => {
   describe('getCredentialInfo()', () => {

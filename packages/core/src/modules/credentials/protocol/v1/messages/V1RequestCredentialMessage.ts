@@ -22,7 +22,7 @@ export class V1RequestCredentialMessage extends AgentMessage {
     if (options) {
       this.id = options.id || this.generateId()
       this.comment = options.comment
-      this.messageAttachments = options.requestAttachments
+      this.messageAttachment = options.requestAttachments
       this.appendedAttachments = options.attachments
     }
   }
@@ -42,10 +42,10 @@ export class V1RequestCredentialMessage extends AgentMessage {
     each: true,
   })
   @IsInstance(Attachment, { each: true })
-  public messageAttachments!: Attachment[]
+  public messageAttachment!: Attachment[]
 
   public get indyCredentialRequest(): CredReq | null {
-    const attachment = this.messageAttachments.find(
+    const attachment = this.messageAttachment.find(
       (attachment) => attachment.id === INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID
     )
     // Extract proof request from attachment
@@ -55,6 +55,6 @@ export class V1RequestCredentialMessage extends AgentMessage {
   }
 
   public getAttachmentIncludingFormatId(id: string): Attachment | undefined {
-    return this.messageAttachments?.find((attachment) => attachment.id.includes(id))
+    return this.messageAttachment?.find((attachment) => attachment.id.includes(id))
   }
 }

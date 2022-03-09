@@ -10,13 +10,15 @@ import type {
 } from '../../../interfaces'
 import type { Schema } from 'indy-sdk'
 
-import { CredentialExchangeRecord, AutoAcceptCredential, CredentialState } from '../../..'
+import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { sleep } from '../../../../../utils/sleep'
+import { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
-import { CredentialRecordType } from '../../../interfaces'
+import { CredentialState } from '../../../CredentialState'
+import { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 import { V2CredentialPreview } from '../V2CredentialPreview'
 
@@ -217,7 +219,7 @@ describe('credentials', () => {
       const options: AcceptProposalOptions = {
         connectionId: faberConnection.id,
         credentialRecordId: faberCredentialExchangeRecord.id,
-        comment: 'V2 Indy Offer',
+        comment: 'V1 Indy Offer',
         credentialFormats: {
           indy: {
             attributes: credentialPreview.attributes,
@@ -374,7 +376,7 @@ describe('credentials', () => {
           state: CredentialState.Done,
         })
       } else {
-        throw Error('missing alice connection id')
+        throw new AriesFrameworkError('missing alice connection id')
       }
     })
 
@@ -538,7 +540,7 @@ describe('credentials', () => {
             },
           },
         },
-        comment: 'v2 propose credential test',
+        comment: 'v1 propose credential test',
       }
       const aliceExchangeCredentialRecord = await aliceAgent.credentials.negotiateCredentialOffer(negotiateOfferOptions)
 

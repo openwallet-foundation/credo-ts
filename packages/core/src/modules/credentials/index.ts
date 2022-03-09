@@ -1,4 +1,4 @@
-// export * from './CredentialsModule' - Dependency Cycle
+export * from './CredentialsModule'
 export * from './protocol/v1/messages'
 export * from './CredentialUtils'
 export * from './protocol/v1/models'

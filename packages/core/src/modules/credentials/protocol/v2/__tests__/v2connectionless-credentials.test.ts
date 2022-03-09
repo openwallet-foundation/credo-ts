@@ -1,17 +1,19 @@
-import type { CredentialStateChangedEvent } from '../../..'
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
+import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
 import type { AcceptOfferOptions, AcceptRequestOptions, OfferCredentialOptions } from '../../../interfaces'
 
 import { ReplaySubject, Subject } from 'rxjs'
 
-import { AutoAcceptCredential, CredentialEventTypes, CredentialExchangeRecord, CredentialState } from '../../..'
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
 import { prepareForIssuance, waitForCredentialRecordSubject, getBaseConfig } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
+import { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
+import { CredentialEventTypes } from '../../../CredentialEvents'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
-import { CredentialRecordType } from '../../../interfaces'
+import { CredentialState } from '../../../CredentialState'
+import { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import { V2CredentialPreview } from '../V2CredentialPreview'
 
 const faberConfig = getBaseConfig('Faber connection-less Credentials V2', {
@@ -151,7 +153,6 @@ describe('credentials', () => {
           },
         },
       },
-      credentialId: expect.any(String),
       state: CredentialState.Done,
       threadId: expect.any(String),
     })

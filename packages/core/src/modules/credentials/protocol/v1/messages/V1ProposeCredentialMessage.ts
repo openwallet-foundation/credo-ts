@@ -113,28 +113,4 @@ export class V1ProposeCredentialMessage extends AgentMessage {
   @IsString()
   @IsOptional()
   public issuerDid?: string
-
-  /**
-   * turn the message content into a reusable object to be used within the format service
-   * @return CredProposeOfferRequestFormat object containing the CredPropose object
-   */
-  public get credentialPayload(): CredProposeOfferRequestFormat {
-    const credPropose: CredPropose = {
-      attributes: this.credentialProposal?.attributes,
-      schemaIssuerDid: this.schemaIssuerDid,
-      schemaName: this.schemaName,
-      schemaVersion: this.schemaVersion,
-      schemaId: this.schemaId,
-      issuerDid: this.issuerDid,
-      credentialDefinitionId: this.credentialDefinitionId,
-    }
-
-    return {
-      indy: {
-        payload: {
-          credentialPayload: credPropose,
-        },
-      },
-    }
-  }
 }

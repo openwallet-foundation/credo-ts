@@ -30,7 +30,7 @@ export class V1OfferCredentialMessage extends AgentMessage {
       this.id = options.id || this.generateId()
       this.comment = options.comment
       this.credentialPreview = options.credentialPreview
-      this.messageAttachments = options.offerAttachments
+      this.messageAttachment = options.offerAttachments
       this.appendedAttachments = options.attachments
     }
   }
@@ -56,10 +56,10 @@ export class V1OfferCredentialMessage extends AgentMessage {
     each: true,
   })
   @IsInstance(Attachment, { each: true })
-  public messageAttachments!: Attachment[]
+  public messageAttachment!: Attachment[]
 
   public get indyCredentialOffer(): CredOffer | null {
-    const attachment = this.messageAttachments.find(
+    const attachment = this.messageAttachment.find(
       (attachment) => attachment.id === INDY_CREDENTIAL_OFFER_ATTACHMENT_ID
     )
 
@@ -69,11 +69,7 @@ export class V1OfferCredentialMessage extends AgentMessage {
     return credentialOfferJson
   }
 
-  public getAttachmentIncludingFormatId(id: string): Attachment | undefined {
-    return this.messageAttachments?.find((attachment) => attachment.id.includes(id))
-  }
-
   public getAttachmentById(id: string): Attachment | undefined {
-    return this.messageAttachments?.find((attachment) => attachment.id == id)
+    return this.messageAttachment?.find((attachment) => attachment.id == id)
   }
 }

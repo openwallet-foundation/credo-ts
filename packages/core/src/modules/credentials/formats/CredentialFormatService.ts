@@ -1,4 +1,4 @@
-import type { AutoAcceptCredential } from '..'
+import type { AgentMessage } from '../../../../src/agent/AgentMessage'
 import type { EventEmitter } from '../../../agent/EventEmitter'
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type {
@@ -13,7 +13,7 @@ import type { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
 import type { CredentialExchangeRecord, CredentialRepository } from '../repository'
 import type {
   CredentialAttachmentFormats,
-  CredProposeOfferRequestFormat,
+  HandlerAutoAcceptOptions,
   OfferAttachmentFormats,
   ProposeAttachmentFormats,
 } from './models/CredentialFormatServiceOptions'
@@ -42,7 +42,8 @@ export abstract class CredentialFormatService {
 
   abstract createRequest(
     options: RequestCredentialOptions,
-    credentialRecord: CredentialExchangeRecord
+    credentialRecord: CredentialExchangeRecord,
+    holderDid?: string // temporary workaround as this is not in the options object
   ): Promise<CredentialAttachmentFormats>
 
   abstract processRequest(options: RequestCredentialOptions, credentialRecord: CredentialExchangeRecord): void
@@ -59,43 +60,17 @@ export abstract class CredentialFormatService {
 
   // helper methods
 
-  abstract getCredentialPayload(data: Attachment): CredProposeOfferRequestFormat
   abstract getFormatData(data: unknown, id: string): Attachment
   abstract getCredentialAttributes(proposal: ProposeCredentialOptions): CredentialPreviewAttribute[] | undefined
   abstract setPreview(proposal: AcceptProposalOptions, preview: V1CredentialPreview): AcceptProposalOptions
+
+  abstract getAttachment(message: AgentMessage): Attachment | undefined
 
   public generateId(): string {
     return uuid()
   }
 
-  // credential response coordinator methods
-  abstract shouldAutoRespondToProposal(
-    credentialRecord: CredentialExchangeRecord,
-    autoAcceptType: AutoAcceptCredential,
-    proposeMessageAttributes?: CredentialPreviewAttribute[],
-    proposePayload?: CredProposeOfferRequestFormat,
-    offerPayload?: CredProposeOfferRequestFormat
-  ): boolean
-
-  abstract shouldAutoRespondToOffer(
-    credentialRecord: CredentialExchangeRecord,
-    autoAcceptType: AutoAcceptCredential,
-    offerPayload?: CredProposeOfferRequestFormat,
-    offerMessageAttributes?: CredentialPreviewAttribute[],
-    proposePayload?: CredProposeOfferRequestFormat
-  ): boolean
-
-  abstract shouldAutoRespondToRequest(
-    credentialRecord: CredentialExchangeRecord,
-    autoAcceptType: AutoAcceptCredential,
-    requestPayload?: CredProposeOfferRequestFormat,
-    offerPayload?: CredProposeOfferRequestFormat,
-    proposePayload?: CredProposeOfferRequestFormat
-  ): boolean
-
-  abstract shouldAutoRespondToCredential(
-    credentialRecord: CredentialExchangeRecord,
-    autoAcceptType: AutoAcceptCredential,
-    credentialPayload?: CredProposeOfferRequestFormat
-  ): boolean
+  abstract shouldAutoRespondToProposal(options: HandlerAutoAcceptOptions): boolean
+  abstract shouldAutoRespondToRequest(options: HandlerAutoAcceptOptions): boolean
+  abstract shouldAutoRespondToCredential(options: HandlerAutoAcceptOptions): boolean
 }

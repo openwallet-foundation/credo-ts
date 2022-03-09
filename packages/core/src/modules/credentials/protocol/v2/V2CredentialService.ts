@@ -3,7 +3,6 @@
 import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { HandlerInboundMessage } from '../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
-import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { Logger } from '../../../../logger'
 import type { CredentialStateChangedEvent } from '../../CredentialEvents'
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
@@ -42,7 +41,6 @@ import { IndyLedgerService } from '../../../ledger'
 import { MediationRecipientService } from '../../../routing'
 import { CredentialEventTypes } from '../../CredentialEvents'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
-import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import { CredentialService } from '../../CredentialService'
 import { CredentialState } from '../../CredentialState'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
@@ -126,10 +124,10 @@ export class V2CredentialService extends CredentialService {
     return new serviceFormatMap[credentialFormatType](
       this.credentialRepository,
       this.eventEmitter,
-      this.didCommMessageRepository,
       this.indyIssuerService,
       this.indyLedgerService,
-      this.indyHolderService
+      this.indyHolderService,
+      this.connectionService
     )
   }
 
@@ -155,6 +153,7 @@ export class V2CredentialService extends CredentialService {
     )
 
     credentialRecord.credentialAttributes = proposalMessage.credentialProposal?.attributes
+    credentialRecord.connectionId = proposal.connectionId
 
     logger.debug('Save meta data and emit state change event')
 
@@ -182,7 +181,7 @@ export class V2CredentialService extends CredentialService {
         messageClass: V2ProposeCredentialMessage,
       })
       if (proposalMessage) {
-        options.proposal = this.getAttachment(proposalMessage)
+        options.proposal = format.getAttachment(proposalMessage)
       }
 
       format.processProposal(options, credentialRecord)
@@ -204,7 +203,7 @@ export class V2CredentialService extends CredentialService {
       } else if (msg.format.includes('aries')) {
         formats.push(this.getFormatService(CredentialFormatType.JsonLd))
       } else {
-        throw Error(`Unknown Message Format: ${msg.format}`)
+        throw new AriesFrameworkError(`Unknown Message Format: ${msg.format}`)
       }
     }
     return formats
@@ -246,15 +245,16 @@ export class V2CredentialService extends CredentialService {
     try {
       // Credential record already exists
       credentialRecord = await this.getByThreadAndConnectionId(proposalMessage.threadId, connection?.id)
-      // Assert
+      credentialRecord.connectionId = connection?.id
+
       // this may not be the first proposal message...
       let proposalCredentialMessage, offerCredentialMessage
       try {
-        proposalCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
+        proposalCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
           associatedRecordId: credentialRecord.id,
           messageClass: V2ProposeCredentialMessage,
         })
-        offerCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
+        offerCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
           associatedRecordId: credentialRecord.id,
           messageClass: V2OfferCredentialMessage,
         })
@@ -263,8 +263,8 @@ export class V2CredentialService extends CredentialService {
       }
       credentialRecord.assertState(CredentialState.OfferSent)
       this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-        previousReceivedMessage: proposalCredentialMessage,
-        previousSentMessage: offerCredentialMessage,
+        previousReceivedMessage: proposalCredentialMessage ? proposalCredentialMessage : undefined,
+        previousSentMessage: offerCredentialMessage ? offerCredentialMessage : undefined,
       })
 
       // Update record
@@ -333,7 +333,7 @@ export class V2CredentialService extends CredentialService {
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
       )
     }
-    const proposeCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
+    const proposeCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: V2ProposeCredentialMessage,
     })
@@ -342,17 +342,6 @@ export class V2CredentialService extends CredentialService {
       throw new AriesFrameworkError(
         `Credential record with id ${proposal.credentialRecordId} is missing required credential proposal`
       )
-    }
-
-    // only do this if Indy format present in the message
-    // credential preview is Indy specific
-
-    for (const msg of proposeCredentialMessage.formats) {
-      if (msg.format.includes('indy')) {
-        const formatService: CredentialFormatService = this.getFormatService(CredentialFormatType.Indy)
-
-        this.credentialMessageBuilder.setPreview(formatService, proposal, proposeCredentialMessage?.credentialProposal)
-      }
     }
 
     const message = await this.createOfferAsResponse(credentialRecord, proposal)
@@ -419,31 +408,25 @@ export class V2CredentialService extends CredentialService {
     try {
       // Credential record already exists
       credentialRecord = await this.getByThreadAndConnectionId(credentialOfferMessage.threadId, connection?.id)
+      credentialRecord.connectionId = connection?.id
 
-      // Assert
-      let proposeCredentialMessage, offerCredentialMessage
-
-      try {
-        proposeCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
-          associatedRecordId: credentialRecord.id,
-          messageClass: V2ProposeCredentialMessage,
-        })
-        offerCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
-          associatedRecordId: credentialRecord.id,
-          messageClass: V2OfferCredentialMessage,
-        })
-      } catch (error) {
-        // no record found
-      }
+      const proposeCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
+        associatedRecordId: credentialRecord.id,
+        messageClass: V2ProposeCredentialMessage,
+      })
+      const offerCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
+        associatedRecordId: credentialRecord.id,
+        messageClass: V2OfferCredentialMessage,
+      })
 
       credentialRecord.assertState(CredentialState.ProposalSent)
       this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-        previousReceivedMessage: offerCredentialMessage,
-        previousSentMessage: proposeCredentialMessage,
+        previousReceivedMessage: offerCredentialMessage ? offerCredentialMessage : undefined,
+        previousSentMessage: proposeCredentialMessage ? proposeCredentialMessage : undefined,
       })
 
       for (const format of formats) {
-        options.offerAttachment = this.getAttachment(credentialOfferMessage)
+        options.offerAttachment = format.getAttachment(credentialOfferMessage)
         logger.debug('Save metadata for offer')
         format.processOffer(options, credentialRecord)
       }
@@ -467,7 +450,7 @@ export class V2CredentialService extends CredentialService {
       })
 
       for (const format of formats) {
-        options.offerAttachment = this.getAttachment(credentialOfferMessage)
+        options.offerAttachment = format.getAttachment(credentialOfferMessage)
         logger.debug('Save metadata for offer')
         format.processOffer(options, credentialRecord)
       }
@@ -531,13 +514,14 @@ export class V2CredentialService extends CredentialService {
    */
   public async createRequest(
     record: CredentialExchangeRecord,
-    options: RequestCredentialOptions
+    options: RequestCredentialOptions,
+    holderDid?: string // temporary workaround as this is no longer in the options object
   ): Promise<CredentialProtocolMsgReturnType<V2RequestCredentialMessage>> {
     logger.debug('Get the Format Service and Create Request Message')
 
     record.assertState(CredentialState.OfferReceived)
 
-    const offerMessage = await this.didCommMessageRepository.getAgentMessage({
+    const offerMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: record.id,
       messageClass: V2OfferCredentialMessage,
     })
@@ -554,13 +538,14 @@ export class V2CredentialService extends CredentialService {
         formats,
         record,
         options,
-        offerMessage
+        offerMessage,
+        holderDid
       )
 
       await this.updateState(credentialRecord, CredentialState.RequestSent)
       return { message, credentialRecord }
     } else {
-      throw Error('No format keys found on the RequestCredentialOptions object')
+      throw new AriesFrameworkError('No format keys found on the RequestCredentialOptions object')
     }
   }
 
@@ -580,29 +565,23 @@ export class V2CredentialService extends CredentialService {
     const { message: credentialRequestMessage, connection } = messageContext
 
     const credentialRecord = await this.getByThreadAndConnectionId(credentialRequestMessage.threadId, connection?.id)
+    credentialRecord.connectionId = connection?.id
 
-    let proposalMessage, offerMessage
-    try {
-      proposalMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V2ProposeCredentialMessage,
-      })
-    } catch {
-      // record not found - this can happen
-    }
-    try {
-      offerMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V2OfferCredentialMessage,
-      })
-    } catch (error) {
-      // record not found - this can happen
-    }
+    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2ProposeCredentialMessage,
+    })
+
+    const offerMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2OfferCredentialMessage,
+    })
+
     // Assert
     credentialRecord.assertState(CredentialState.OfferSent)
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: proposalMessage,
-      previousSentMessage: offerMessage,
+      previousReceivedMessage: proposalMessage ? proposalMessage : undefined,
+      previousSentMessage: offerMessage ? offerMessage : undefined,
     })
 
     this.logger.debug('Credential record found when processing credential request', credentialRecord)
@@ -633,15 +612,10 @@ export class V2CredentialService extends CredentialService {
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
       )
     }
-    let proposalMessage
-    try {
-      proposalMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V2ProposeCredentialMessage,
-      })
-    } catch {
-      // record not found - this can happen
-    }
+    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2ProposeCredentialMessage,
+    })
 
     if (!proposalMessage?.credentialProposal) {
       throw new AriesFrameworkError(
@@ -667,7 +641,7 @@ export class V2CredentialService extends CredentialService {
     credentialRecord: CredentialExchangeRecord
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
     if (!credentialOptions.credentialRecordId) {
-      throw Error('No credential record id found in propose options')
+      throw new AriesFrameworkError('No credential record id found in propose options')
     }
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
@@ -699,19 +673,19 @@ export class V2CredentialService extends CredentialService {
 
     const formats: CredentialFormatService[] = this.getFormats(options.credentialFormats)
 
-    const { message } = this.credentialMessageBuilder.createProposal(formats, options)
-    message.setThread({ threadId: credentialRecord.threadId })
+    const { message: proposalMessage } = this.credentialMessageBuilder.createProposal(formats, options)
+    proposalMessage.setThread({ threadId: credentialRecord.threadId })
 
     // Update record
     await this.didCommMessageRepository.saveAgentMessage({
-      agentMessage: message,
+      agentMessage: proposalMessage,
       role: DidCommMessageRole.Sender,
       associatedRecordId: credentialRecord.id,
     })
-    credentialRecord.credentialAttributes = message.credentialProposal?.attributes
+    credentialRecord.credentialAttributes = proposalMessage.credentialProposal?.attributes
     this.updateState(credentialRecord, CredentialState.ProposalSent)
 
-    return { message: message, credentialRecord }
+    return { message: proposalMessage, credentialRecord }
   }
   /**
    * Create a {@link V2OfferCredentialMessage} as begonning of protocol process.
@@ -726,7 +700,7 @@ export class V2CredentialService extends CredentialService {
     credentialOptions: OfferCredentialOptions
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: V2OfferCredentialMessage }> {
     if (!credentialOptions.connectionId) {
-      throw Error('Connection id missing from offer credential options')
+      throw new AriesFrameworkError('Connection id missing from offer credential options')
     }
     const connection = await this.connectionService.getById(credentialOptions.connectionId)
 
@@ -736,10 +710,11 @@ export class V2CredentialService extends CredentialService {
 
     // Create message
     const { credentialRecord, message } = await this.credentialMessageBuilder.createOffer(formats, credentialOptions)
+    credentialRecord.connectionId = credentialOptions.connectionId
 
     for (const format of formats) {
       const options: AcceptProposalOptions = credentialOptions as unknown as AcceptProposalOptions
-      options.offerAttachment = this.getAttachment(message)
+      options.offerAttachment = format.getAttachment(message)
       format.processOffer(options, credentialRecord)
     }
     await this.credentialRepository.save(credentialRecord)
@@ -755,21 +730,33 @@ export class V2CredentialService extends CredentialService {
    *
    */
   public async createAcceptProposalOptions(credentialRecord: CredentialExchangeRecord): Promise<AcceptProposalOptions> {
-    const proposalMessage: V2ProposeCredentialMessage | null = await this.didCommMessageRepository.getAgentMessage({
+    const proposalMessage: V2ProposeCredentialMessage | null = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: V2ProposeCredentialMessage,
     })
 
+    if (!proposalMessage) {
+      throw new AriesFrameworkError(`Missing proposal message for credentia record ${credentialRecord.id}`)
+    }
     const formats: CredentialFormatService[] = this.getFormatsFromMessage(proposalMessage.formats)
 
+    // MJR TODO why do we need to return options??
     let options: AcceptProposalOptions = {
       connectionId: '',
-      credentialRecordId: credentialRecord.id,
-      credentialFormats: {},
-      proposal: this.getAttachment(proposalMessage),
+      credentialRecordId: '',
+      credentialFormats: {
+        indy: undefined,
+        w3c: undefined,
+      },
     }
 
     for (const formatService of formats) {
+      options = {
+        connectionId: '',
+        credentialRecordId: credentialRecord.id,
+        credentialFormats: {},
+        proposal: formatService.getAttachment(proposalMessage),
+      }
       // should fill in the credential formats
       options = await formatService.processProposal(options, credentialRecord)
     }
@@ -800,23 +787,17 @@ export class V2CredentialService extends CredentialService {
         `Missing credential request for credential exchange with thread id ${record.threadId}`
       )
     }
-    let offerMessage
-    try {
-      offerMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: record.id,
-        messageClass: V2OfferCredentialMessage,
-      })
-    } catch (error) {
-      // record not found - this can happen
-    }
-
+    const offerMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: record.id,
+      messageClass: V2OfferCredentialMessage,
+    })
     const credentialFormats: CredentialFormatService[] = this.getFormatsFromMessage(requestMessage.formats)
     const { message: issueCredentialMessage, credentialRecord } = await this.credentialMessageBuilder.createCredential(
       credentialFormats,
       record,
       options,
       requestMessage,
-      offerMessage
+      offerMessage ? offerMessage : undefined
     )
 
     issueCredentialMessage.setThread({
@@ -824,11 +805,6 @@ export class V2CredentialService extends CredentialService {
     })
     issueCredentialMessage.setPleaseAck()
 
-    await this.didCommMessageRepository.saveAgentMessage({
-      agentMessage: issueCredentialMessage,
-      role: DidCommMessageRole.Sender,
-      associatedRecordId: credentialRecord.id,
-    })
     credentialRecord.autoAcceptCredential = options?.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
     await this.updateState(credentialRecord, CredentialState.CredentialIssued)
@@ -856,36 +832,35 @@ export class V2CredentialService extends CredentialService {
 
     const credentialRecord = await this.getByThreadAndConnectionId(issueCredentialMessage.threadId, connection?.id)
 
-    let requestMessage, offerMessage
-    try {
-      requestMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V2RequestCredentialMessage,
-      })
-      offerMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V2OfferCredentialMessage,
-      })
-    } catch (RecordNotFoundError) {
-      // record not found - expected (sometimes)
-    }
+    credentialRecord.connectionId = connection?.id
+
+    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2RequestCredentialMessage,
+    })
+    const offerMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2OfferCredentialMessage,
+    })
+
     // Assert
     credentialRecord.assertState(CredentialState.RequestSent)
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: offerMessage,
-      previousSentMessage: requestMessage,
+      previousReceivedMessage: offerMessage ? offerMessage : undefined,
+      previousSentMessage: requestMessage ? requestMessage : undefined,
     })
 
     const formatServices: CredentialFormatService[] = this.getFormatsFromMessage(issueCredentialMessage.formats)
 
-    const options: AcceptCredentialOptions = {
-      credential: this.getAttachment(issueCredentialMessage),
-    }
     for (const formatService of formatServices) {
+      const options: AcceptCredentialOptions = {
+        credential: formatService.getAttachment(issueCredentialMessage),
+      }
       await formatService.processCredential(options, credentialRecord)
     }
 
     await this.updateState(credentialRecord, CredentialState.CredentialReceived)
+
     await this.didCommMessageRepository.saveAgentMessage({
       agentMessage: issueCredentialMessage,
       role: DidCommMessageRole.Receiver,
@@ -932,25 +907,23 @@ export class V2CredentialService extends CredentialService {
     this.logger.debug(`Processing credential ack with id ${credentialAckMessage.id}`)
 
     const credentialRecord = await this.getByThreadAndConnectionId(credentialAckMessage.threadId, connection?.id)
+    credentialRecord.connectionId = connection?.id
 
-    let requestMessage, credentialMessage
-    try {
-      requestMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V2RequestCredentialMessage,
-      })
-      credentialMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V2IssueCredentialMessage,
-      })
-    } catch (RecordNotFoundError) {
-      // record not found - expected (sometimes)
-    }
+    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2RequestCredentialMessage,
+    })
+
+    const credentialMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2IssueCredentialMessage,
+    })
+
     // Assert
     credentialRecord.assertState(CredentialState.CredentialIssued)
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: requestMessage,
-      previousSentMessage: credentialMessage,
+      previousReceivedMessage: requestMessage ? requestMessage : undefined,
+      previousSentMessage: credentialMessage ? credentialMessage : undefined,
     })
 
     // Update record
@@ -968,55 +941,42 @@ export class V2CredentialService extends CredentialService {
     credentialOptions: OfferCredentialOptions
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
     if (!credentialOptions.credentialFormats.indy?.credentialDefinitionId) {
-      throw Error('Missing credential definition id for out of band credential')
+      throw new AriesFrameworkError('Missing credential definition id for out of band credential')
     }
 
     const formats: CredentialFormatService[] = this.getFormats(credentialOptions.credentialFormats)
 
     // Create message
-    const { credentialRecord, message } = await this.credentialMessageBuilder.createOffer(formats, credentialOptions)
+    const { credentialRecord, message: offerCredentialMessage } = await this.credentialMessageBuilder.createOffer(
+      formats,
+      credentialOptions
+    )
 
     const options: AcceptProposalOptions = credentialOptions as unknown as AcceptProposalOptions
     for (const format of formats) {
-      options.offerAttachment = this.getAttachment(message)
+      options.offerAttachment = format.getAttachment(offerCredentialMessage)
       logger.debug('Save metadata for offer')
       format.processOffer(options, credentialRecord)
     }
 
     // Create and set ~service decorator
     const routing = await this.mediationRecipientService.getRouting()
-    message.service = new ServiceDecorator({
+    offerCredentialMessage.service = new ServiceDecorator({
       serviceEndpoint: routing.endpoints[0],
       recipientKeys: [routing.verkey],
       routingKeys: routing.routingKeys,
     })
     await this.credentialRepository.save(credentialRecord)
     await this.didCommMessageRepository.saveAgentMessage({
-      agentMessage: message,
+      agentMessage: offerCredentialMessage,
       role: DidCommMessageRole.Receiver,
       associatedRecordId: credentialRecord.id,
     })
     await this.emitEvent(credentialRecord)
-    return { credentialRecord, message }
+    return { credentialRecord, message: offerCredentialMessage }
   }
 
   public update(credentialRecord: CredentialExchangeRecord) {
     return this.credentialRepository.update(credentialRecord)
-  }
-
-  /**
-   * Gets the attachment object for a given attachId. We need to get out the correct attachId for
-   * indy and then find the corresponding attachment (if there is one)
-   * @param message Gets the
-   * @returns The Attachment if found or undefined
-   */
-  public getAttachment(
-    message:
-      | V2RequestCredentialMessage
-      | V2ProposeCredentialMessage
-      | V2OfferCredentialMessage
-      | V2IssueCredentialMessage
-  ): Attachment | undefined {
-    return this.credentialMessageBuilder.getAttachment(message)
   }
 }

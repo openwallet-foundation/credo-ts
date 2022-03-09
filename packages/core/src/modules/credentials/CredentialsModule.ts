@@ -273,7 +273,7 @@ export class CredentialsModule implements CredentialsModule {
     // could move this into service classes
     const offerMessageClass =
       record.protocolVersion == CredentialProtocolVersion.V1 ? V1OfferCredentialMessage : V2OfferCredentialMessage
-    const offerMessage = await this.didCommMessageRepo.getAgentMessage({
+    const offerMessage = await this.didCommMessageRepo.findAgentMessage({
       associatedRecordId: record.id,
       messageClass: offerMessageClass,
     })
@@ -283,7 +283,6 @@ export class CredentialsModule implements CredentialsModule {
       const connection = await this.connectionService.getById(record.connectionId)
 
       const requestOptions: RequestCredentialOptions = {
-        holderDid: connection.did,
         comment: offer.comment,
         autoAcceptCredential: offer.autoAcceptCredential,
       }
@@ -316,11 +315,14 @@ export class CredentialsModule implements CredentialsModule {
       const recipientService = offerMessage.service
 
       const requestOptions: RequestCredentialOptions = {
-        holderDid: ourService.recipientKeys[0],
         comment: offer.comment,
         autoAcceptCredential: offer.autoAcceptCredential,
       }
-      const { message, credentialRecord } = await service.createRequest(record, requestOptions)
+      const { message, credentialRecord } = await service.createRequest(
+        record,
+        requestOptions,
+        ourService.recipientKeys[0]
+      )
 
       credentialRecord.protocolVersion = record.protocolVersion
 
@@ -397,7 +399,7 @@ export class CredentialsModule implements CredentialsModule {
    */
   public async offerCredential(credentialOptions: OfferCredentialOptions): Promise<CredentialExchangeRecord> {
     if (!credentialOptions.connectionId) {
-      throw Error('Connection id missing from offer credential options')
+      throw new AriesFrameworkError('Connection id missing from offer credential options')
     }
     const connection = await this.connectionService.getById(credentialOptions.connectionId)
 
@@ -445,11 +447,11 @@ export class CredentialsModule implements CredentialsModule {
       record.protocolVersion == CredentialProtocolVersion.V1 ? V1RequestCredentialMessage : V2RequestCredentialMessage
     const offerMessageClass =
       record.protocolVersion == CredentialProtocolVersion.V1 ? V1OfferCredentialMessage : V2OfferCredentialMessage
-    const requestMessage = await this.didCommMessageRepo.getAgentMessage({
+    const requestMessage = await this.didCommMessageRepo.findAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: requestMessageClass,
     })
-    const offerMessage = await this.didCommMessageRepo.getAgentMessage({
+    const offerMessage = await this.didCommMessageRepo.findAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: offerMessageClass,
     })
@@ -466,13 +468,7 @@ export class CredentialsModule implements CredentialsModule {
       const recipientService = requestMessage.service
       const ourService = offerMessage.service
 
-      // Set ~service, update message in record (for later use)
-      message.setService(ourService)
-      await this.didCommMessageRepo.saveAgentMessage({
-        agentMessage: message,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credentialRecord.id,
-      })
+      message.service = ourService
       await this.credentialRepository.update(credentialRecord)
 
       await this.messageSender.sendMessageToService({
@@ -488,6 +484,12 @@ export class CredentialsModule implements CredentialsModule {
         `Cannot accept request for credential record without connectionId or ~service decorator on credential offer / request.`
       )
     }
+    await this.didCommMessageRepo.saveAgentMessage({
+      agentMessage: message,
+      role: DidCommMessageRole.Sender,
+      associatedRecordId: credentialRecord.id,
+    })
+
     return credentialRecord
   }
 
@@ -513,11 +515,11 @@ export class CredentialsModule implements CredentialsModule {
       record.protocolVersion == CredentialProtocolVersion.V1 ? V1RequestCredentialMessage : V2RequestCredentialMessage
     const credentialMessageClass =
       record.protocolVersion == CredentialProtocolVersion.V1 ? V1IssueCredentialMessage : V2IssueCredentialMessage
-    const requestMessage = await this.didCommMessageRepo.getAgentMessage({
+    const requestMessage = await this.didCommMessageRepo.findAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: requestMessageClass,
     })
-    const credentialMessage = await this.didCommMessageRepo.getAgentMessage({
+    const credentialMessage = await this.didCommMessageRepo.findAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: credentialMessageClass,
     })

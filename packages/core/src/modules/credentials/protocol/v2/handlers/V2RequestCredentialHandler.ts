@@ -1,18 +1,17 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+import type { Attachment } from '../../../../../../src/decorators/attachment/Attachment'
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler } from '../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
-import type { CredProposeOfferRequestFormat } from '../../../formats/models/CredentialFormatServiceOptions'
+import type { HandlerAutoAcceptOptions } from '../../../formats/models/CredentialFormatServiceOptions'
 import type { AcceptRequestOptions } from '../../../interfaces'
 import type { CredentialExchangeRecord } from '../../../repository'
 import type { V2CredentialService } from '../V2CredentialService'
 
+import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
 import { ConsoleLogger, LogLevel } from '../../../../../../src/logger'
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
-import { DidCommMessageRole } from '../../../../../storage'
-import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
@@ -36,85 +35,54 @@ export class V2RequestCredentialHandler implements Handler {
   }
 
   public async handle(messageContext: InboundMessageContext<V2RequestCredentialMessage>) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    logger.debug('----------------------------- >>>>TEST-DEBUG WE ARE IN THE v2 HANDLER FOR REQUEST CREDENTIAL')
     const credentialRecord = await this.credentialService.processRequest(messageContext)
 
-    let requestMessage: V2RequestCredentialMessage | undefined
-    let offerMessage: V2OfferCredentialMessage | undefined
-    let proposeMessage: V2ProposeCredentialMessage | undefined
-    try {
-      requestMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V2RequestCredentialMessage,
-      })
-    } catch (NoRecordFoundError) {
-      // can happen in normal processing
-    }
+    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2RequestCredentialMessage,
+    })
 
-    try {
-      offerMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V2OfferCredentialMessage,
-      })
-    } catch (NoRecordFoundError) {
-      // can happen in normal processing *in W3C*)
-    }
-    try {
-      proposeMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V2ProposeCredentialMessage,
-      })
-    } catch (NoRecordFoundError) {
-      // can happen in normal processing
-    }
+    const offerMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2OfferCredentialMessage,
+    })
+
+    const proposeMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2ProposeCredentialMessage,
+    })
+
     if (!requestMessage) {
-      throw Error('Missing request message in V2OfferCredentialHandler')
+      throw new AriesFrameworkError('Missing request message in V2OfferCredentialHandler')
     }
-    // 1. Get all formats for this message
     const formatServices: CredentialFormatService[] = this.credentialService.getFormatsFromMessage(
       requestMessage.formats
     )
-
-    // 2. loop through found formats
     let shouldAutoRespond = true
-    let offerPayload: CredProposeOfferRequestFormat | undefined
-    let proposalPayload: CredProposeOfferRequestFormat | undefined
-    let requestPayload: CredProposeOfferRequestFormat | undefined
 
     for (const formatService of formatServices) {
-      // 3. Call format.shouldRespondToProposal for each one
+      let proposalAttachment, offerAttachment, requestAttachment: Attachment | undefined
       if (proposeMessage) {
-        const attachment = this.credentialService.getAttachment(proposeMessage)
-        if (attachment) {
-          proposalPayload = formatService.getCredentialPayload(attachment)
-        }
+        proposalAttachment = formatService.getAttachment(proposeMessage)
       }
       if (offerMessage) {
-        const attachment = this.credentialService.getAttachment(offerMessage)
-        if (attachment) {
-          offerPayload = formatService.getCredentialPayload(attachment)
-        }
+        offerAttachment = formatService.getAttachment(offerMessage)
       }
-      const attachment = this.credentialService.getAttachment(requestMessage)
-      if (attachment) {
-        requestPayload = formatService.getCredentialPayload(attachment)
-
-        const formatShouldAutoRespond = formatService.shouldAutoRespondToRequest(
-          credentialRecord,
-          this.agentConfig.autoAcceptCredentials,
-          requestPayload,
-          offerPayload,
-          proposalPayload
-        )
-        shouldAutoRespond = shouldAutoRespond && formatShouldAutoRespond
+      if (requestMessage) {
+        requestAttachment = formatService.getAttachment(requestMessage)
       }
-
-      logger.debug('----------------->>> REQUEST HANDLER shouldAutoRespond = ' + shouldAutoRespond)
-      // 4. if all formats are eligibile for auto response then call create offer
-      if (shouldAutoRespond) {
-        return await this.createCredential(credentialRecord, messageContext, requestMessage, offerMessage)
+      const handlerOptions: HandlerAutoAcceptOptions = {
+        credentialRecord,
+        autoAcceptType: this.agentConfig.autoAcceptCredentials,
+        proposalAttachment,
+        offerAttachment,
+        requestAttachment,
       }
+      const formatShouldAutoRespond = formatService.shouldAutoRespondToRequest(handlerOptions)
+      shouldAutoRespond = shouldAutoRespond && formatShouldAutoRespond
+    }
+    if (shouldAutoRespond) {
+      return await this.createCredential(credentialRecord, messageContext, requestMessage, offerMessage)
     }
   }
 
@@ -122,7 +90,7 @@ export class V2RequestCredentialHandler implements Handler {
     record: CredentialExchangeRecord,
     messageContext: InboundMessageContext<V2RequestCredentialMessage>,
     requestMessage: V2RequestCredentialMessage,
-    offerMessage?: V2OfferCredentialMessage
+    offerMessage?: V2OfferCredentialMessage | null
   ) {
     this.agentConfig.logger.info(
       `Automatically sending credential with autoAccept on ${this.agentConfig.autoAcceptCredentials}`
@@ -130,7 +98,6 @@ export class V2RequestCredentialHandler implements Handler {
     const options: AcceptRequestOptions = {
       comment: requestMessage.comment,
       autoAcceptCredential: record.autoAcceptCredential,
-      protocolVersion: CredentialProtocolVersion.V2,
       credentialRecordId: record.id,
     }
 
@@ -145,11 +112,6 @@ export class V2RequestCredentialHandler implements Handler {
 
       // Set ~service, update message in record (for later use)
       message.setService(ourService)
-      await this.didCommMessageRepository.saveAgentMessage({
-        agentMessage: message,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credentialRecord.id,
-      })
       await this.credentialService.update(credentialRecord)
 
       return createOutboundServiceMessage({

@@ -1,12 +1,14 @@
+import type { Attachment } from '../../../../../../src/decorators/attachment/Attachment'
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
+import type { HandlerAutoAcceptOptions } from '../../../formats/models/CredentialFormatServiceOptions'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
-import { V1IssueCredentialMessage, V1RequestCredentialMessage } from '../messages'
+import { INDY_CREDENTIAL_ATTACHMENT_ID, V1IssueCredentialMessage, V1RequestCredentialMessage } from '../messages'
 
 export class V1IssueCredentialHandler implements Handler {
   private credentialService: V1CredentialService
@@ -26,32 +28,29 @@ export class V1IssueCredentialHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<V1IssueCredentialHandler>) {
     const credentialRecord = await this.credentialService.processCredential(messageContext)
-    const credentialMessage = await this.didCommMessageRepository.getAgentMessage({
+    const credentialMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: V1IssueCredentialMessage,
     })
     const formatService: CredentialFormatService = this.credentialService.getFormatService()
 
-    const credentialPayload = credentialMessage.credentialPayload
-
-    if (!credentialPayload) {
-      throw Error(`Missing credential payload`)
+    let credentialAttachment: Attachment | undefined
+    if (credentialMessage) {
+      credentialAttachment = credentialMessage.getAttachmentById(INDY_CREDENTIAL_ATTACHMENT_ID)
     }
-    // 3. Call format.shouldRespondToProposal for each one
-    if (
-      formatService.shouldAutoRespondToCredential(
-        credentialRecord,
-        this.agentConfig.autoAcceptCredentials,
-        credentialPayload
-      )
-    ) {
+    const handlerOptions: HandlerAutoAcceptOptions = {
+      credentialRecord,
+      autoAcceptType: this.agentConfig.autoAcceptCredentials,
+      credentialAttachment,
+    }
+    if (formatService.shouldAutoRespondToCredential(handlerOptions)) {
       return await this.createAck(credentialRecord, credentialMessage, messageContext)
     }
   }
 
   private async createAck(
     record: CredentialExchangeRecord,
-    credentialMessage: V1IssueCredentialMessage,
+    credentialMessage: V1IssueCredentialMessage | null,
     messageContext: HandlerInboundMessage<V1IssueCredentialHandler>
   ) {
     this.agentConfig.logger.info(
@@ -59,7 +58,7 @@ export class V1IssueCredentialHandler implements Handler {
     )
     const { message, credentialRecord } = await this.credentialService.createAck(record)
 
-    const requestMessage = await this.didCommMessageRepository.getAgentMessage({
+    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: V1RequestCredentialMessage,
     })

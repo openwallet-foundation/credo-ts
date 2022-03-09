@@ -10,12 +10,14 @@ import type {
 } from '../../../interfaces'
 import type { Schema } from 'indy-sdk'
 
-import { CredentialExchangeRecord, AutoAcceptCredential, CredentialState } from '../../..'
+import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { sleep } from '../../../../../utils/sleep'
+import { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
-import { CredentialRecordType } from '../../../interfaces'
+import { CredentialState } from '../../../CredentialState'
+import { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 import { V2CredentialPreview } from '../V2CredentialPreview'
 
@@ -367,7 +369,7 @@ describe('credentials', () => {
           state: CredentialState.Done,
         })
       } else {
-        throw Error('missing alice connection id')
+        throw new AriesFrameworkError('missing alice connection id')
       }
     })
     test('Alice starts with V2 credential proposal to Faber, both have autoAcceptCredential on `contentApproved` and attributes did change', async () => {

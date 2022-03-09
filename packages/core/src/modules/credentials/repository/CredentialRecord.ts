@@ -2,7 +2,8 @@ import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import type { CredentialState } from '../CredentialState'
-import type { CredentialMetadata } from './credentialMetadataTypes'
+import type { CredentialRecordType } from '../interfaces'
+import type { CredentialMetadata } from './CredentialMetadataTypes'
 
 import { Type } from 'class-transformer'
 
@@ -37,6 +38,11 @@ export type DefaultCredentialTags = {
   credentialId?: string
 }
 
+export interface CredentialRecordBinding {
+  credentialRecordType: CredentialRecordType
+  credentialRecordId: string
+}
+
 export class CredentialExchangeRecord extends BaseRecord<
   DefaultCredentialTags,
   CustomCredentialTags,
@@ -49,6 +55,7 @@ export class CredentialExchangeRecord extends BaseRecord<
   public autoAcceptCredential?: AutoAcceptCredential
   public errorMessage?: string
   public protocolVersion!: CredentialProtocolVersion
+  public credentials!: CredentialRecordBinding[]
 
   @Type(() => CredentialPreviewAttribute)
   public credentialAttributes?: CredentialPreviewAttribute[]
@@ -77,6 +84,7 @@ export class CredentialExchangeRecord extends BaseRecord<
       this.linkedAttachments = props.linkedAttachments
       this.errorMessage = props.errorMessage
     }
+    this.credentials = []
   }
 
   public getTags() {

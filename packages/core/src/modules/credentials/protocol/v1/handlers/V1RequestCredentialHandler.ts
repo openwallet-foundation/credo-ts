@@ -1,20 +1,22 @@
+import type { Attachment } from '../../../../../../src/decorators/attachment/Attachment'
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { ServiceAcceptRequestOptions } from '../../../CredentialServiceOptions'
 import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
-import type { CredProposeOfferRequestFormat } from '../../../formats/models/CredentialFormatServiceOptions'
+import type { HandlerAutoAcceptOptions } from '../../../formats/models/CredentialFormatServiceOptions'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { DidCommMessageRole } from '../../../../../storage'
-import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import {
   INDY_CREDENTIAL_ATTACHMENT_ID,
   V1ProposeCredentialMessage,
   V1RequestCredentialMessage,
   V1OfferCredentialMessage,
+  INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
+  INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
 } from '../messages'
 
 export class V1RequestCredentialHandler implements Handler {
@@ -35,63 +37,42 @@ export class V1RequestCredentialHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<V1RequestCredentialHandler>) {
     const credentialRecord = await this.credentialService.processRequest(messageContext)
-    let requestMessage: V1RequestCredentialMessage | undefined
-    let offerMessage: V1OfferCredentialMessage | undefined
-    let proposeMessage: V1ProposeCredentialMessage | undefined
-    try {
-      requestMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V1RequestCredentialMessage,
-      })
-    } catch (RecordNotFoundError) {
-      // can happen in normal processing
-    }
-    try {
-      offerMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V1OfferCredentialMessage,
-      })
-    } catch (RecordNotFoundError) {
-      // can happen in normal processing
-    }
-    try {
-      proposeMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V1ProposeCredentialMessage,
-      })
-    } catch (RecordNotFoundError) {
-      // can happen in normal processing
-    }
-    let offerPayload: CredProposeOfferRequestFormat | undefined
-    let proposalPayload: CredProposeOfferRequestFormat | undefined
-    let requestPayload: CredProposeOfferRequestFormat | undefined
+
+    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V1RequestCredentialMessage,
+    })
+
+    const offerMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V1OfferCredentialMessage,
+    })
+
+    const proposeMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V1ProposeCredentialMessage,
+    })
 
     const formatService: CredentialFormatService = this.credentialService.getFormatService()
 
-    if (proposeMessage) {
-      proposalPayload = proposeMessage.credentialPayload
+    let proposalAttachment, offerAttachment, requestAttachment: Attachment | undefined
+    if (proposeMessage && proposeMessage.appendedAttachments) {
+      proposalAttachment = proposeMessage.appendedAttachments[0] // MJR: is this right for propose messages?
     }
     if (offerMessage) {
-      const attachment = offerMessage.getAttachmentIncludingFormatId('indy')
-      if (attachment) {
-        offerPayload = formatService.getCredentialPayload(attachment)
-      }
+      offerAttachment = offerMessage.getAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
     }
     if (requestMessage) {
-      const attachment = requestMessage.getAttachmentIncludingFormatId('indy')
-      if (attachment) {
-        requestPayload = formatService.getCredentialPayload(attachment)
-      }
+      requestAttachment = requestMessage.getAttachmentIncludingFormatId(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
     }
-    if (
-      formatService.shouldAutoRespondToRequest(
-        credentialRecord,
-        this.agentConfig.autoAcceptCredentials,
-        requestPayload,
-        offerPayload,
-        proposalPayload
-      )
-    ) {
+    const handlerOptions: HandlerAutoAcceptOptions = {
+      credentialRecord,
+      autoAcceptType: this.agentConfig.autoAcceptCredentials,
+      proposalAttachment,
+      offerAttachment,
+      requestAttachment,
+    }
+    if (formatService.shouldAutoRespondToRequest(handlerOptions)) {
       return await this.createCredential(credentialRecord, messageContext, offerMessage, requestMessage)
     }
   }
@@ -99,8 +80,8 @@ export class V1RequestCredentialHandler implements Handler {
   private async createCredential(
     record: CredentialExchangeRecord,
     messageContext: HandlerInboundMessage<V1RequestCredentialHandler>,
-    offerMessage?: V1OfferCredentialMessage,
-    requestMessage?: V1RequestCredentialMessage
+    offerMessage?: V1OfferCredentialMessage | null,
+    requestMessage?: V1RequestCredentialMessage | null
   ) {
     this.agentConfig.logger.info(
       `Automatically sending credential with autoAccept on ${this.agentConfig.autoAcceptCredentials}`

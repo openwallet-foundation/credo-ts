@@ -20,6 +20,8 @@ export function AttachmentDecorated<T extends BaseMessageConstructor>(Base: T) {
 
     public formats!: CredentialFormatSpec[]
 
+    public messageAttachment!: Attachment[]
+
     public getAppendedAttachmentById(id: string): Attachment | undefined {
       return this.appendedAttachments?.find((attachment) => attachment.id === id)
     }

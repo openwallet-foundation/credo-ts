@@ -1,10 +1,7 @@
-import type { Wallet } from '../../../../../../src/wallet'
 import type { CredentialService } from '../../../CredentialService'
 import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
-import type { AcceptProposalOptions, ProposeCredentialOptions } from '../../../interfaces'
-import type { CredOffer } from 'indy-sdk'
+import type { ProposeCredentialOptions } from '../../../interfaces'
 
-import { InjectionSymbols } from '../../../../../../src/constants'
 import { getBaseConfig } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
@@ -75,15 +72,6 @@ const multiFormatProposal: ProposeCredentialOptions = {
     // },
   },
   comment: 'v2 propose credential test',
-}
-
-const proof = { a: '' }
-
-const credOffer: CredOffer = {
-  schema_id: '',
-  cred_def_id: '',
-  nonce: '',
-  key_correctness_proof: proof,
 }
 
 describe('V2 Credential Architecture', () => {

@@ -49,7 +49,7 @@ export interface ServiceAcceptOfferOptions extends AcceptOfferOptions {
 export interface ServiceRequestCredentialOptions extends RequestCredentialOptions {
   attachId?: string
   connectionId?: string
-  holderDid: string
+  // holderDid: string
   // As indy cannot start from request and w3c is not supported in v1 we always use v2 here
   credentialFormats?: CredProposeOfferRequestFormat
   autoAcceptCredential?: AutoAcceptCredential

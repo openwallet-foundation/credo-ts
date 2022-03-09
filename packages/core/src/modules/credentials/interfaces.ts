@@ -102,6 +102,7 @@ interface AcceptProposalOptions {
 }
 
 interface NegotiateProposalOptions {
+  connectionId?: string
   credentialRecordId: string
   credentialFormats: OfferCredentialFormats
   autoAcceptCredential?: AutoAcceptCredential
@@ -112,7 +113,7 @@ interface NegotiateProposalOptions {
 /// CREDENTIAL REQUEST
 interface RequestCredentialOptions {
   connectionId?: string
-  holderDid: string
+  // holderDid: string
   // As indy cannot start from request and w3c is not supported in v1 we always use v2 here
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string

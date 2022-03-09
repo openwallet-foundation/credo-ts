@@ -1,14 +1,16 @@
+import type { Attachment } from '../../../../../../src/decorators/attachment/Attachment'
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { MediationRecipientService } from '../../../../routing/services/MediationRecipientService'
 import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
-import type { CredProposeOfferRequestFormat } from '../../../formats/models/CredentialFormatServiceOptions'
+import type { HandlerAutoAcceptOptions } from '../../../formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttributes'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
+import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
 import { DidCommMessageRole } from '../../../../../storage'
@@ -38,60 +40,44 @@ export class V2OfferCredentialHandler implements Handler {
   public async handle(messageContext: InboundMessageContext<V2OfferCredentialMessage>) {
     const credentialRecord = await this.credentialService.processOffer(messageContext)
 
-    let offerMessage: V2OfferCredentialMessage | undefined
-    let proposeMessage: V2ProposeCredentialMessage | undefined
-    try {
-      offerMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V2OfferCredentialMessage,
-      })
-    } catch (RecordNotFoundError) {
-      // can happen
-    }
-    try {
-      proposeMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V2ProposeCredentialMessage,
-      })
-    } catch (RecordNotFoundError) {
-      // can happen in normal processing
-    }
-    // 1. Get all formats for this message
+    const offerMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2OfferCredentialMessage,
+    })
+
+    const proposeMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2ProposeCredentialMessage,
+    })
+
     if (!offerMessage) {
-      throw Error('Missing offer message in V2OfferCredentialHandler')
+      throw new AriesFrameworkError('Missing offer message in V2OfferCredentialHandler')
     }
-    let offerPayload: CredProposeOfferRequestFormat | undefined
-    let proposalPayload: CredProposeOfferRequestFormat | undefined
     let offerValues: CredentialPreviewAttribute[] | undefined
 
     const formatServices: CredentialFormatService[] = this.credentialService.getFormatsFromMessage(offerMessage.formats)
-    // 2. loop through found formats
     let shouldAutoRespond = true
     for (const formatService of formatServices) {
-      // 3. Call format.shouldRespondToProposal for each one
-      if (proposeMessage) {
-        const attachment = this.credentialService.getAttachment(proposeMessage)
-        if (attachment) {
-          proposalPayload = formatService.getCredentialPayload(attachment)
-        }
-      }
-      const attachment = this.credentialService.getAttachment(offerMessage)
-      if (attachment) {
-        offerPayload = formatService.getCredentialPayload(attachment)
-      }
-      offerValues = offerMessage.credentialPreview?.attributes
+      let proposalAttachment, offerAttachment: Attachment | undefined
 
-      const formatShouldAutoRespond = formatService.shouldAutoRespondToOffer(
+      if (proposeMessage) {
+        proposalAttachment = formatService.getAttachment(proposeMessage)
+      }
+      if (offerMessage) {
+        offerAttachment = formatService.getAttachment(offerMessage)
+        offerValues = offerMessage.credentialPreview?.attributes
+      }
+      const handlerOptions: HandlerAutoAcceptOptions = {
         credentialRecord,
-        this.agentConfig.autoAcceptCredentials,
-        offerPayload,
-        offerValues,
-        proposalPayload
-      )
+        autoAcceptType: this.agentConfig.autoAcceptCredentials,
+        messageAttributes: offerValues,
+        proposalAttachment,
+        offerAttachment,
+      }
+      const formatShouldAutoRespond = formatService.shouldAutoRespondToProposal(handlerOptions)
 
       shouldAutoRespond = shouldAutoRespond && formatShouldAutoRespond
     }
-    // 4. if all formats are eligibile for auto response then call create offer
     if (shouldAutoRespond) {
       return await this.createRequest(credentialRecord, messageContext, offerMessage)
     }
@@ -107,9 +93,7 @@ export class V2OfferCredentialHandler implements Handler {
     )
 
     if (messageContext.connection) {
-      const { message, credentialRecord } = await this.credentialService.createRequest(record, {
-        holderDid: messageContext.connection.did,
-      })
+      const { message, credentialRecord } = await this.credentialService.createRequest(record, {})
       await this.didCommMessageRepository.saveAgentMessage({
         agentMessage: message,
         role: DidCommMessageRole.Receiver,
@@ -125,17 +109,15 @@ export class V2OfferCredentialHandler implements Handler {
       })
       const recipientService = offerMessage.service
 
-      const { message, credentialRecord } = await this.credentialService.createRequest(record, {
-        holderDid: ourService.recipientKeys[0],
-      })
+      const { message, credentialRecord } = await this.credentialService.createRequest(
+        record,
+        {},
+        ourService.recipientKeys[0]
+      )
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
-      // await this.didCommMessageRepository.saveAgentMessage({
-      //   agentMessage: message,
-      //   role: DidCommMessageRole.Sender,
-      //   associatedRecordId: credentialRecord.id,
-      // })
+
       await this.credentialService.update(credentialRecord)
       await this.didCommMessageRepository.saveAgentMessage({
         agentMessage: message,

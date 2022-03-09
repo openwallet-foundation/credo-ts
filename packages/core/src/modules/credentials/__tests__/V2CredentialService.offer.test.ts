@@ -1,7 +1,7 @@
+import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { OfferCredentialOptions } from '../interfaces'
-import type { AgentConfig } from '@aries-framework/core'
 
 import { getAgentConfig, getBaseConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'

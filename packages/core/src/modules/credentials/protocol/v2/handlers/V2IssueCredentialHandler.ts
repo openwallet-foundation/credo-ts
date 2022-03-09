@@ -1,12 +1,14 @@
+import type { Attachment } from '../../../../../../src/decorators/attachment/Attachment'
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
-import type { CredProposeOfferRequestFormat } from '../../../formats/models/CredentialFormatServiceOptions'
+import type { HandlerAutoAcceptOptions } from '../../../formats/models/CredentialFormatServiceOptions'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
+import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
@@ -29,16 +31,19 @@ export class V2IssueCredentialHandler implements Handler {
   }
   public async handle(messageContext: InboundMessageContext<V2IssueCredentialMessage>) {
     const credentialRecord = await this.credentialService.processCredential(messageContext)
-    const credentialMessage = await this.didCommMessageRepository.getAgentMessage({
+    const credentialMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: V2IssueCredentialMessage,
     })
 
-    const requestMessage = await this.didCommMessageRepository.getAgentMessage({
+    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: V2RequestCredentialMessage,
     })
 
+    if (!credentialMessage) {
+      throw new AriesFrameworkError(`Missing credential message from credential record ${credentialRecord.id}`)
+    }
     // 1. Get all formats for this message
     const formatServices: CredentialFormatService[] = this.credentialService.getFormatsFromMessage(
       credentialMessage.formats
@@ -46,24 +51,29 @@ export class V2IssueCredentialHandler implements Handler {
 
     // 2. loop through found formats
     let shouldAutoRespond = true
-    let credentialPayload: CredProposeOfferRequestFormat | undefined
+    let credentialAttachment: Attachment | undefined
 
     for (const formatService of formatServices) {
-      const attachment = this.credentialService.getAttachment(credentialMessage)
-      if (attachment) {
-        credentialPayload = formatService.getCredentialPayload(attachment)
+      if (credentialMessage) {
+        credentialAttachment = formatService.getAttachment(credentialMessage)
+      }
+      const handlerOptions: HandlerAutoAcceptOptions = {
+        credentialRecord,
+        autoAcceptType: this.agentConfig.autoAcceptCredentials,
+        credentialAttachment,
       }
       // 3. Call format.shouldRespondToProposal for each one
-      const formatShouldAutoRespond = formatService.shouldAutoRespondToCredential(
-        credentialRecord,
-        this.agentConfig.autoAcceptCredentials,
-        credentialPayload
-      )
+      const formatShouldAutoRespond = formatService.shouldAutoRespondToCredential(handlerOptions)
       shouldAutoRespond = shouldAutoRespond && formatShouldAutoRespond
     }
     // 4. if all formats are eligibile for auto response then call create offer
     if (shouldAutoRespond) {
-      return await this.createAck(credentialRecord, messageContext, requestMessage, credentialMessage)
+      return await this.createAck(
+        credentialRecord,
+        messageContext,
+        requestMessage ? requestMessage : undefined,
+        credentialMessage
+      )
     }
   }
 

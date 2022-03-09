@@ -1,4 +1,4 @@
-import type { Wallet } from '../../../wallet/Wallet'
+import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
@@ -6,17 +6,14 @@ import type { ServiceAcceptRequestOptions, ServiceRequestCredentialOptions } fro
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
 import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
 import type { CustomCredentialTags } from '../repository/CredentialRecord'
-import type { AgentConfig } from '@aries-framework/core'
 
-import { getAgentConfig, getBaseConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
-import { Agent } from '../../../agent/Agent'
+import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { Dispatcher } from '../../../agent/Dispatcher'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import { InjectionSymbols } from '../../../constants'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../storage'
+import { DidCommMessageRepository } from '../../../storage'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { AckStatus } from '../../common'
 import { ConnectionState } from '../../connections'
@@ -41,9 +38,9 @@ import {
   V1IssueCredentialMessage,
   CredentialProblemReportMessage,
 } from '../protocol/v1/messages'
+import { CredentialMetadataKeys } from '../repository/CredentialMetadataTypes'
 import { CredentialExchangeRecord } from '../repository/CredentialRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
-import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
 
 import { credDef, credReq, credOffer } from './fixtures'
 
@@ -52,6 +49,7 @@ jest.mock('../repository/CredentialRepository')
 jest.mock('../../../modules/ledger/services/IndyLedgerService')
 jest.mock('../../indy/services/IndyHolderService')
 jest.mock('../../indy/services/IndyIssuerService')
+jest.mock('../../../../src/storage/didcomm/DidCommMessageRepository')
 
 // Mock typed object
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
@@ -160,10 +158,11 @@ const mockCredentialRecord = ({
   return credentialRecord
 }
 
-const { config, agentDependencies: dependencies } = getBaseConfig('Agent Class Test V1 Offer')
+let credentialRequestMessage: V1RequestCredentialMessage
+let credentialOfferMessage: V1OfferCredentialMessage
+let credentialIssueMessage: V1IssueCredentialMessage
 
 describe('CredentialService', () => {
-  let agent: Agent
   let credentialRepository: CredentialRepository
   let indyLedgerService: IndyLedgerService
   let indyIssuerService: IndyIssuerService
@@ -177,22 +176,33 @@ describe('CredentialService', () => {
   let dispatcher: Dispatcher
   let credentialService: V1CredentialService
 
-  const init = (didCommMessageRepo: DidCommMessageRepository) => {
-    credentialService = new V1CredentialService(
-      {
-        getById: () => Promise.resolve(connection),
-        assertConnectionOrServiceDecorator: () => true,
-      } as unknown as ConnectionService,
-      didCommMessageRepo,
-      agentConfig,
-      mediationRecipientService,
-      dispatcher,
-      eventEmitter,
-      credentialRepository,
-      indyIssuerService,
-      indyLedgerService,
-      indyHolderService
-    )
+  const initMessages = () => {
+    credentialRequestMessage = new V1RequestCredentialMessage({
+      comment: 'abcd',
+      requestAttachments: [requestAttachment],
+    })
+    credentialOfferMessage = new V1OfferCredentialMessage({
+      comment: 'some comment',
+      credentialPreview: credentialPreview,
+      offerAttachments: [offerAttachment],
+    })
+    credentialIssueMessage = new V1IssueCredentialMessage({
+      comment: 'some comment',
+      credentialAttachments: [offerAttachment],
+    })
+
+    mockFunction(didCommMessageRepository.findAgentMessage).mockImplementation(async (options) => {
+      if (options.messageClass === V1OfferCredentialMessage) {
+        return credentialOfferMessage
+      }
+      if (options.messageClass === V1RequestCredentialMessage) {
+        return credentialRequestMessage
+      }
+      if (options.messageClass === V1IssueCredentialMessage) {
+        return credentialIssueMessage
+      }
+      return null
+    })
   }
   beforeEach(async () => {
     credentialRepository = new CredentialRepositoryMock()
@@ -207,54 +217,41 @@ describe('CredentialService', () => {
     eventEmitter = new EventEmitter(agentConfig)
 
     dispatcher = new Dispatcher(messageSender, eventEmitter, agentConfig)
-    init(didCommMessageRepository)
+    credentialService = new V1CredentialService(
+      {
+        getById: () => Promise.resolve(connection),
+        assertConnectionOrServiceDecorator: () => true,
+      } as unknown as ConnectionService,
+      didCommMessageRepository,
+      agentConfig,
+      mediationRecipientService,
+      dispatcher,
+      eventEmitter,
+      credentialRepository,
+      indyIssuerService,
+      indyLedgerService,
+      indyHolderService
+    )
   })
 
   describe('createCredentialRequest', () => {
     let credentialRecord: CredentialExchangeRecord
-    let credentialOfferMessage: V1OfferCredentialMessage
     beforeEach(() => {
       credentialRecord = mockCredentialRecord({
         state: CredentialState.OfferReceived,
         threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
-      credentialOfferMessage = new V1OfferCredentialMessage({
-        comment: 'some comment',
-        credentialPreview: credentialPreview,
-        offerAttachments: [offerAttachment],
-      })
+      initMessages()
     })
 
     test(`updates state to ${CredentialState.RequestSent}, set request metadata`, async () => {
-      agent = new Agent(config, dependencies)
-      const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-      expect(agent.isInitialized).toBe(false)
-      expect(wallet.isInitialized).toBe(false)
-      await agent.initialize()
-      expect(agent.isInitialized).toBe(true)
-      expect(wallet.isInitialized).toBe(true)
-      const agentConfig = getAgentConfig('CredentialServiceTest')
-      eventEmitter = new EventEmitter(agentConfig)
-      dispatcher = agent.injectionContainer.resolve<Dispatcher>(Dispatcher)
-      const didCommMessageRepo = agent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-      mediationRecipientService = agent.injectionContainer.resolve(MediationRecipientService)
-      init(didCommMessageRepo)
-
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
 
       // mock offer so that the request works
 
-      await didCommMessageRepo.saveAgentMessage({
-        agentMessage: credentialOfferMessage,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credentialRecord.id,
-      })
-
       // when
-      await credentialService.createRequest(credentialRecord, {
-        holderDid: connection.did,
-      })
+      await credentialService.createRequest(credentialRecord, {})
 
       // then
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
@@ -268,13 +265,8 @@ describe('CredentialService', () => {
     test('returns credential request message base on existing credential offer message', async () => {
       // given
       const comment = 'credential request comment'
-      dispatcher = agent.injectionContainer.resolve<Dispatcher>(Dispatcher)
-      const didCommMessageRepo = agent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-      mediationRecipientService = agent.injectionContainer.resolve(MediationRecipientService)
-      init(didCommMessageRepo)
       const options: ServiceRequestCredentialOptions = {
         connectionId: credentialRecord.connectionId,
-        holderDid: connection.did,
         comment: 'credential request comment',
         credentialDefinition: {
           indy: {
@@ -282,12 +274,7 @@ describe('CredentialService', () => {
           },
         },
       }
-      // mock offer so that the request works
-      await didCommMessageRepo.saveAgentMessage({
-        agentMessage: credentialOfferMessage,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credentialRecord.id,
-      })
+
       // when
       const { message: credentialRequest } = await credentialService.createRequest(credentialRecord, options)
 
@@ -316,9 +303,9 @@ describe('CredentialService', () => {
     test(`throws an error when state transition is invalid`, async () => {
       await Promise.all(
         invalidCredentialStates.map(async (state) => {
-          await expect(
-            credentialService.createRequest(mockCredentialRecord({ state }), { holderDid: connection.id })
-          ).rejects.toThrowError(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
+          await expect(credentialService.createRequest(mockCredentialRecord({ state }), {})).rejects.toThrowError(
+            `Credential record is in invalid state ${state}. Valid states are: ${validState}.`
+          )
         })
       )
     })
@@ -327,7 +314,6 @@ describe('CredentialService', () => {
   describe('processCredentialRequest', () => {
     let credential: CredentialExchangeRecord
     let messageContext: InboundMessageContext<V1RequestCredentialMessage>
-    let credentialOfferMessage: V1OfferCredentialMessage
     beforeEach(() => {
       credential = mockCredentialRecord({ state: CredentialState.OfferSent })
 
@@ -339,29 +325,12 @@ describe('CredentialService', () => {
       messageContext = new InboundMessageContext(credentialRequest, {
         connection,
       })
-      credentialOfferMessage = new V1OfferCredentialMessage({
-        comment: 'some comment',
-        credentialPreview: credentialPreview,
-        offerAttachments: [offerAttachment],
-      })
+      initMessages()
     })
 
     test(`updates state to ${CredentialState.RequestReceived}, set request and returns credential record`, async () => {
-      expect(agent.isInitialized).toBe(true)
-      const agentConfig = getAgentConfig('CredentialServiceTest')
-      eventEmitter = new EventEmitter(agentConfig)
-      dispatcher = agent.injectionContainer.resolve<Dispatcher>(Dispatcher)
-      const didCommMessageRepo = agent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-      mediationRecipientService = agent.injectionContainer.resolve(MediationRecipientService)
-      init(didCommMessageRepo)
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
 
-      // mock offer so that the request works
-      await didCommMessageRepo.saveAgentMessage({
-        agentMessage: credentialOfferMessage,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credential.id,
-      })
       // given
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
 
@@ -381,20 +350,8 @@ describe('CredentialService', () => {
       const eventListenerMock = jest.fn()
       eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
-      expect(agent.isInitialized).toBe(true)
-      const agentConfig = getAgentConfig('CredentialServiceTest')
-      eventEmitter = new EventEmitter(agentConfig)
-      dispatcher = agent.injectionContainer.resolve<Dispatcher>(Dispatcher)
-      const didCommMessageRepo = agent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-      mediationRecipientService = agent.injectionContainer.resolve(MediationRecipientService)
-      init(didCommMessageRepo)
 
       // mock offer so that the request works
-      await didCommMessageRepo.saveAgentMessage({
-        agentMessage: credentialOfferMessage,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credential.id,
-      })
       const returnedCredentialRecord = await credentialService.processRequest(messageContext)
 
       // then
@@ -408,20 +365,6 @@ describe('CredentialService', () => {
     const validState = CredentialState.OfferSent
     const invalidCredentialStates = Object.values(CredentialState).filter((state) => state !== validState)
     test(`throws an error when state transition is invalid`, async () => {
-      expect(agent.isInitialized).toBe(true)
-      const agentConfig = getAgentConfig('CredentialServiceTest')
-      eventEmitter = new EventEmitter(agentConfig)
-      dispatcher = agent.injectionContainer.resolve<Dispatcher>(Dispatcher)
-      const didCommMessageRepo = agent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-      mediationRecipientService = agent.injectionContainer.resolve(MediationRecipientService)
-      init(didCommMessageRepo)
-
-      // mock offer so that the request works
-      await didCommMessageRepo.saveAgentMessage({
-        agentMessage: credentialOfferMessage,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credential.id,
-      })
       await Promise.all(
         invalidCredentialStates.map(async (state) => {
           mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(
@@ -438,17 +381,7 @@ describe('CredentialService', () => {
   describe('createCredential', () => {
     const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249746'
     let credential: CredentialExchangeRecord
-    let credentialRequestMessage: V1RequestCredentialMessage
-    let credentialOfferMessage: V1OfferCredentialMessage
     beforeEach(() => {
-      credentialRequestMessage = new V1RequestCredentialMessage({
-        requestAttachments: [requestAttachment],
-      })
-      credentialOfferMessage = new V1OfferCredentialMessage({
-        comment: 'some comment',
-        credentialPreview: credentialPreview,
-        offerAttachments: [offerAttachment],
-      })
       credential = mockCredentialRecord({
         state: CredentialState.RequestReceived,
         requestMessage: new V1RequestCredentialMessage({
@@ -458,28 +391,11 @@ describe('CredentialService', () => {
         threadId,
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
+      initMessages()
     })
     test(`updates state to ${CredentialState.CredentialIssued}`, async () => {
-      expect(agent.isInitialized).toBe(true)
-      const agentConfig = getAgentConfig('CredentialServiceTest')
-      eventEmitter = new EventEmitter(agentConfig)
-      dispatcher = agent.injectionContainer.resolve<Dispatcher>(Dispatcher)
-      const didCommMessageRepo = agent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-      mediationRecipientService = agent.injectionContainer.resolve(MediationRecipientService)
-      init(didCommMessageRepo)
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
 
-      // mock request and offer so that the issue works
-      await didCommMessageRepo.saveAgentMessage({
-        agentMessage: credentialRequestMessage,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credential.id,
-      })
-      await didCommMessageRepo.saveAgentMessage({
-        agentMessage: credentialOfferMessage,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credential.id,
-      })
       // when
       await credentialService.createCredential(credential, acceptRequestOptions)
 
@@ -496,26 +412,8 @@ describe('CredentialService', () => {
 
       // given
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
-      expect(agent.isInitialized).toBe(true)
-      const agentConfig = getAgentConfig('CredentialServiceTest')
-      eventEmitter = new EventEmitter(agentConfig)
-      dispatcher = agent.injectionContainer.resolve<Dispatcher>(Dispatcher)
-      const didCommMessageRepo = agent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-      mediationRecipientService = agent.injectionContainer.resolve(MediationRecipientService)
-      init(didCommMessageRepo)
       eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
-      // mock request and offer so that the issue works
-      await didCommMessageRepo.saveAgentMessage({
-        agentMessage: credentialRequestMessage,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credential.id,
-      })
-      await didCommMessageRepo.saveAgentMessage({
-        agentMessage: credentialOfferMessage,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credential.id,
-      })
       // when
       await credentialService.createCredential(credential, acceptRequestOptions)
 
@@ -537,25 +435,6 @@ describe('CredentialService', () => {
       const comment = 'credential response comment'
 
       // when
-      expect(agent.isInitialized).toBe(true)
-      const agentConfig = getAgentConfig('CredentialServiceTest')
-      eventEmitter = new EventEmitter(agentConfig)
-      dispatcher = agent.injectionContainer.resolve<Dispatcher>(Dispatcher)
-      const didCommMessageRepo = agent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-      mediationRecipientService = agent.injectionContainer.resolve(MediationRecipientService)
-      init(didCommMessageRepo)
-
-      // mock request and offer so that the issue works
-      await didCommMessageRepo.saveAgentMessage({
-        agentMessage: credentialRequestMessage,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credential.id,
-      })
-      await didCommMessageRepo.saveAgentMessage({
-        agentMessage: credentialOfferMessage,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credential.id,
-      })
 
       const { message: credentialResponse } = await credentialService.createCredential(credential, acceptRequestOptions)
       // then
@@ -593,18 +472,7 @@ describe('CredentialService', () => {
   describe('processCredential', () => {
     let credential: CredentialExchangeRecord
     let messageContext: InboundMessageContext<V1IssueCredentialMessage>
-
-    let credentialRequestMessage: V1RequestCredentialMessage
-    let credentialOfferMessage: V1OfferCredentialMessage
     beforeEach(() => {
-      credentialRequestMessage = new V1RequestCredentialMessage({
-        requestAttachments: [requestAttachment],
-      })
-      credentialOfferMessage = new V1OfferCredentialMessage({
-        comment: 'some comment',
-        credentialPreview: credentialPreview,
-        offerAttachments: [offerAttachment],
-      })
       credential = mockCredentialRecord({
         state: CredentialState.RequestSent,
         requestMessage: new V1RequestCredentialMessage({
@@ -621,6 +489,7 @@ describe('CredentialService', () => {
       messageContext = new InboundMessageContext(credentialResponse, {
         connection,
       })
+      initMessages()
     })
 
     test('finds credential record by thread ID and saves credential attachment into the wallet', async () => {
@@ -628,26 +497,8 @@ describe('CredentialService', () => {
         Promise<string>,
         [StoreCredentialOptions]
       >
-      expect(agent.isInitialized).toBe(true)
-      const agentConfig = getAgentConfig('CredentialServiceTest')
-      eventEmitter = new EventEmitter(agentConfig)
-      dispatcher = agent.injectionContainer.resolve<Dispatcher>(Dispatcher)
-      const didCommMessageRepo = agent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-      mediationRecipientService = agent.injectionContainer.resolve(MediationRecipientService)
-      init(didCommMessageRepo)
       // given
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
-
-      await didCommMessageRepo.saveAgentMessage({
-        agentMessage: credentialRequestMessage,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credential.id,
-      })
-      await didCommMessageRepo.saveAgentMessage({
-        agentMessage: credentialOfferMessage,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credential.id,
-      })
       // when
       await credentialService.processCredential(messageContext)
 
@@ -748,16 +599,7 @@ describe('CredentialService', () => {
     let credential: CredentialExchangeRecord
     let messageContext: InboundMessageContext<CredentialAckMessage>
 
-    let credentialRequestMessage: V1RequestCredentialMessage
-    let credentialIssueMessage: V1IssueCredentialMessage
     beforeEach(() => {
-      credentialRequestMessage = new V1RequestCredentialMessage({
-        requestAttachments: [requestAttachment],
-      })
-      credentialIssueMessage = new V1IssueCredentialMessage({
-        comment: 'some comment',
-        credentialAttachments: [credentialAttachment],
-      })
       credential = mockCredentialRecord({
         state: CredentialState.CredentialIssued,
       })
@@ -769,30 +611,12 @@ describe('CredentialService', () => {
       messageContext = new InboundMessageContext(credentialRequest, {
         connection,
       })
+      initMessages()
     })
 
     test(`updates state to ${CredentialState.Done} and returns credential record`, async () => {
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
 
-      expect(agent.isInitialized).toBe(true)
-      const agentConfig = getAgentConfig('CredentialServiceTest')
-      eventEmitter = new EventEmitter(agentConfig)
-      dispatcher = agent.injectionContainer.resolve<Dispatcher>(Dispatcher)
-      const didCommMessageRepo = agent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-      mediationRecipientService = agent.injectionContainer.resolve(MediationRecipientService)
-      init(didCommMessageRepo)
-
-      // mock request and offer so that the issue works
-      await didCommMessageRepo.saveAgentMessage({
-        agentMessage: credentialRequestMessage,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credential.id,
-      })
-      await didCommMessageRepo.saveAgentMessage({
-        agentMessage: credentialIssueMessage,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credential.id,
-      })
       // given
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
 

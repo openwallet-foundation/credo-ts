@@ -1,5 +1,6 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
+import type { ServiceAcceptOfferOptions } from '../../../CredentialServiceOptions'
 import type {
   AcceptOfferOptions,
   AcceptProposalOptions,
@@ -8,7 +9,7 @@ import type {
   ProposeCredentialOptions,
 } from '../../../interfaces'
 
-import { CredentialExchangeRecord, CredentialState, V1OfferCredentialMessage } from '../../..'
+import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
 import { DidCommMessageRepository } from '../../../../../../src/storage'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
@@ -16,8 +17,10 @@ import { Attachment, AttachmentData } from '../../../../../decorators/attachment
 import { JsonTransformer } from '../../../../../utils'
 import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
-import { CredentialRecordType } from '../../../interfaces'
+import { CredentialState } from '../../../CredentialState'
+import { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
+import { V1OfferCredentialMessage } from '../../v1/messages/V1OfferCredentialMessage'
 import { V2CredentialPreview } from '../V2CredentialPreview'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
@@ -99,7 +102,6 @@ describe('credentials', () => {
 
     const options: AcceptProposalOptions = {
       connectionId: faberConnection.id,
-      protocolVersion: credentialExchangeRecord.protocolVersion,
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V1 Indy Proposal',
       credentialFormats: {
@@ -163,9 +165,6 @@ describe('credentials', () => {
     if (aliceCredentialRecord.connectionId) {
       const acceptOfferOptions: AcceptOfferOptions = {
         credentialRecordId: aliceCredentialRecord.id,
-        connectionId: aliceCredentialRecord.connectionId,
-        credentialRecordType: CredentialRecordType.Indy,
-        protocolVersion: CredentialProtocolVersion.V1,
       }
       const offerCredentialExchangeRecord: CredentialExchangeRecord =
         await aliceAgent.credentials.acceptCredentialOffer(acceptOfferOptions)
@@ -181,7 +180,6 @@ describe('credentials', () => {
       })
 
       const options: AcceptRequestOptions = {
-        protocolVersion: offerCredentialExchangeRecord.protocolVersion,
         credentialRecordId: faberCredentialRecord.id,
         comment: 'V1 Indy Credential',
       }
@@ -194,7 +192,7 @@ describe('credentials', () => {
         state: CredentialState.CredentialReceived,
       })
     } else {
-      throw Error('Missing Connection Id')
+      throw new AriesFrameworkError('Missing Connection Id')
     }
   })
   // ==============================
@@ -260,7 +258,6 @@ describe('credentials', () => {
 
     const options: AcceptProposalOptions = {
       connectionId: faberConnection.id,
-      protocolVersion: credentialExchangeRecord.protocolVersion,
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Offer',
       credentialFormats: {
@@ -319,11 +316,12 @@ describe('credentials', () => {
     expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
 
     if (aliceCredentialRecord.connectionId) {
-      const acceptOfferOptions: AcceptOfferOptions = {
+      const acceptOfferOptions: ServiceAcceptOfferOptions = {
         credentialRecordId: aliceCredentialRecord.id,
-        connectionId: aliceCredentialRecord.connectionId,
-        credentialRecordType: CredentialRecordType.Indy,
-        protocolVersion: CredentialProtocolVersion.V2,
+        credentialFormats: {
+          indy: undefined,
+          w3c: undefined,
+        },
       }
       const offerCredentialExchangeRecord: CredentialExchangeRecord =
         await aliceAgent.credentials.acceptCredentialOffer(acceptOfferOptions)
@@ -342,7 +340,6 @@ describe('credentials', () => {
       testLogger.test('Faber sends credential to Alice')
 
       const options: AcceptRequestOptions = {
-        protocolVersion: credentialExchangeRecord.protocolVersion,
         credentialRecordId: faberCredentialRecord.id,
         comment: 'V2 Indy Credential',
       }
@@ -368,11 +365,10 @@ describe('credentials', () => {
         createdAt: expect.any(Date),
         threadId: expect.any(String),
         connectionId: expect.any(String),
-        credentialId: expect.any(String),
         state: CredentialState.CredentialReceived,
       })
     } else {
-      throw Error('Missing Connection Id')
+      throw new AriesFrameworkError('Missing Connection Id')
     }
   })
   test('Feber starts with V2 offer; Alice declines', async () => {
@@ -411,7 +407,7 @@ describe('credentials', () => {
     if (aliceCredentialRecord.id) {
       await aliceAgent.credentials.declineCredentialOffer(aliceCredentialRecord.id, CredentialProtocolVersion.V2)
     } else {
-      throw Error('Missing credential record id')
+      throw new AriesFrameworkError('Missing credential record id')
     }
   })
 })

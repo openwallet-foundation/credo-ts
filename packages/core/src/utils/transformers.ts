@@ -4,7 +4,7 @@ import { Transform, TransformationType } from 'class-transformer'
 import { ValidateBy, buildMessage } from 'class-validator'
 import { DateTime } from 'luxon'
 
-import { CredentialMetadataKeys } from '../modules/credentials/repository/credentialMetadataTypes'
+import { CredentialMetadataKeys } from '../modules/credentials/repository/CredentialMetadataTypes'
 import { Metadata } from '../storage/Metadata'
 
 import { JsonTransformer } from './JsonTransformer'
