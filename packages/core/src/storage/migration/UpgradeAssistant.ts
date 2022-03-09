@@ -17,8 +17,11 @@ export interface UpgradeConfig {
 export class UpgradeAssistant {
   private agent: Agent
   private storageUpgradeService: StorageUpgradeService
+  private walletConfig: WalletConfig
 
   public constructor(upgradeConfig: UpgradeConfig, agentDependencies: AgentDependencies) {
+    this.walletConfig = upgradeConfig.walletConfig
+
     this.agent = new Agent(
       {
         label: 'Upgrade Assistant',
@@ -40,13 +43,7 @@ export class UpgradeAssistant {
   }
 
   public async isUpToDate() {
-    try {
-      const neededUpgrades = await this.getNeededUpgrades()
-
-      return neededUpgrades.length === 0
-    } catch (error) {
-      return false
-    }
+    return this.storageUpgradeService.isUpToDate()
   }
 
   private async getNeededUpgrades() {
@@ -95,10 +92,19 @@ export class UpgradeAssistant {
       )
       await upgrade.doUpgrade(this.agent)
 
-      // TODO: update framework version in storage
+      // Update the framework version in storage
+      await this.storageUpgradeService.setCurrentStorageVersion(upgrade.toVersion)
       this.agent.config.logger.info(
         `Successfully updated agent storage from version ${upgrade.fromVersion} to version ${upgrade.toVersion}`
       )
+    }
+  }
+
+  private async backup() {
+    const backupPath = '/a'
+    try {
+
+      await this.agent.wallet.export({ key: this.walletConfig.key, path: backupPath })
     }
   }
 }

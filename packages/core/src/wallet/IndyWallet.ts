@@ -218,7 +218,11 @@ export class IndyWallet implements Wallet {
   public async import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig) {
     try {
       this.logger.debug(`Importing wallet ${walletConfig.id} from path ${importConfig.path}`)
-      await this.indy.importWallet({ id: walletConfig.id }, { key: walletConfig.key }, importConfig)
+      await this.indy.importWallet(
+        { id: walletConfig.id },
+        { key: walletConfig.key, key_derivation_method: walletConfig.keyDerivationMethod },
+        importConfig
+      )
     } catch (error) {
       const errorMessage = `Error importing wallet': ${error.message}`
       this.logger.error(errorMessage, {
