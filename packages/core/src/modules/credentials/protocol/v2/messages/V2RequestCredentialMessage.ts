@@ -1,4 +1,4 @@
-import type { CredentialFormatSpec } from '../../../formats/CredentialFormatService'
+import type { CredentialFormatSpec } from '../../../formats/models/CredentialFormatServiceOptions'
 
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
