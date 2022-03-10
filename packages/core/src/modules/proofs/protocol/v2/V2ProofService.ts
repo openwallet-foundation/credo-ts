@@ -242,7 +242,7 @@ export class V2ProofService extends ProofService {
     const proofRecord = new ProofRecord({
       connectionId: options.connectionRecord.id,
       threadId: requestMessage.threadId,
-      state: ProofState.ProposalSent,
+      state: ProofState.RequestSent,
       protocolVersion: ProofProtocolVersion.V2_0,
     })
 
@@ -461,7 +461,7 @@ export class V2ProofService extends ProofService {
       connectionId: connectionRecord?.id,
     })
 
-    const proposalMessage = await this.didCommMessageRepository.getAgentMessage({
+    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: proofRecord.id,
       messageClass: V2ProposalPresentationMessage,
     })
@@ -748,11 +748,7 @@ export class V2ProofService extends ProofService {
       messageClass: V2ProposalPresentationMessage,
     })
 
-    if (!proposalMessage) {
-      throw new AriesFrameworkError('No proposal found.')
-    }
-
-    const proposalJson = proposalMessage.proposalsAttach[0].getDataAsJson<PresentationPreview>() ?? null
+    const proposalJson = proposalMessage?.proposalsAttach[0].getDataAsJson<PresentationPreview>() ?? null
     const proofPreview = JsonTransformer.fromJSON(proposalJson, PresentationPreview)
 
     const proofRequestJson = requestMessage.requestPresentationsAttach[0].getDataAsJson<ProofRequest>() ?? null
