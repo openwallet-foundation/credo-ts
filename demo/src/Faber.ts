@@ -44,7 +44,6 @@ export class Faber extends BaseAgent {
 
   public async acceptConnection(invitation_url: string) {
     const connectionRecord = await this.receiveConnectionRequest(invitation_url)
-
     this.connectionRecordAliceId = await this.waitForConnection(connectionRecord)
   }
 

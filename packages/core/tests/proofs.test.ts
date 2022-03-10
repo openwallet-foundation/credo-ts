@@ -29,6 +29,7 @@ describe('Present Proof', () => {
     testLogger.test('Initializing the agents')
     ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
       await setupProofsTest('Faber agent', 'Alice agent'))
+    testLogger.test('Issuing second credential')
   })
 
   afterAll(async () => {
@@ -364,8 +365,6 @@ describe('Present Proof', () => {
         requestedAttributes: attributes,
         requestedPredicates: predicates,
       })
-    ).rejects.toThrowError(
-      `The proof request contains an attribute group name that matches a predicate group name: age`
-    )
+    ).rejects.toThrowError(`The proof request contains duplicate items: age`)
   })
 })
