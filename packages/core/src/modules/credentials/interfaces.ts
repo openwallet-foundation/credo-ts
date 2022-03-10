@@ -18,7 +18,7 @@ export enum CredentialRecordType {
 
 export enum CredentialFormatType {
   Indy = 'Indy',
-  JsonLd = 'JsonLd',
+  JsonLd = 'jsonld',
   // others to follow
 }
 
