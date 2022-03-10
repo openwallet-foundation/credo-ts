@@ -68,4 +68,12 @@ describe('agents', () => {
 
     expect(basicMessage.content).toBe(message)
   })
+
+  test('can shutdown and re-initialize the same agent', async () => {
+    expect(aliceAgent.isInitialized).toBe(true)
+    await aliceAgent.shutdown()
+    expect(aliceAgent.isInitialized).toBe(false)
+    await aliceAgent.initialize()
+    expect(aliceAgent.isInitialized).toBe(true)
+  })
 })
