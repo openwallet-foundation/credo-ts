@@ -22,6 +22,11 @@ export interface WalletConfig {
   keyDerivationMethod?: KeyDerivationMethod
 }
 
+export interface WalletExportImportConfig {
+  key: string
+  path: string
+}
+
 export type EncryptedMessage = {
   protected: unknown
   iv: unknown

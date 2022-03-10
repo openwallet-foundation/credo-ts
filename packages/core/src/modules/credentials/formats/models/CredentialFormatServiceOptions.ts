@@ -8,6 +8,11 @@ import type { CredDef } from 'indy-sdk'
 
 import { CredentialFormatType } from '../../interfaces'
 
+export enum ProofType {
+  Ed = 'Ed25519Signature2018',
+  Bbs = '',
+}
+
 export interface CredentialDefinitionFormat {
   indy?: {
     credDef: CredDef
@@ -30,7 +35,28 @@ export interface CredProposeOfferRequestFormat {
   indy?: {
     payload: Payload
   }
-  jsonld?: undefined
+  jsonld?: {
+    credential: {
+      '@context': string
+      issuer: string
+      type: string[]
+      issuanceDate: Date
+      expirationDate: Date
+      credentialSubject: {
+        id: string
+      }
+    }
+    options: {
+      proofPurpose: string
+      created: Date
+      domain: string
+      challenge: string
+      proofType: ProofType
+      credentialStatus?: {
+        type: string
+      }
+    }
+  }
 }
 
 export interface CredentialAttachmentFormats {

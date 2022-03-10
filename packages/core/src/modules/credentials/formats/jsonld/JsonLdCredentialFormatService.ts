@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/adjacent-overload-signatures */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AgentMessage } from '../../../../../src/agent/AgentMessage'
+import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type {
   AcceptCredentialOptions,
   AcceptOfferOptions,
@@ -21,7 +22,7 @@ import type {
   OfferAttachmentFormats,
 } from '../models/CredentialFormatServiceOptions'
 
-import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
+import { AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { uuid } from '../../../../utils/uuid'
 import { CredentialFormatService } from '../CredentialFormatService'
 
@@ -66,19 +67,16 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     throw new Error('Method not implemented.')
   }
 
-  public createProposal(proposal: ProposeCredentialOptions): CredentialAttachmentFormats {
-    // implementation for test purposes only
+  public createProposal(options: ProposeCredentialOptions): CredentialAttachmentFormats {
     const format: CredentialFormatSpec = {
-      attachId: uuid(),
+      attachId: 'ld_proof',
       format: 'aries/ld-proof-vc-detail@v1.0',
     }
-    const attachment: Attachment = new Attachment({
-      id: '',
-      mimeType: 'application/json',
-      data: new AttachmentData({
-        base64: '',
-      }),
-    })
+
+    const attachment: Attachment = this.getFormatData(options.credentialFormats.jsonld, format.attachId)
+    // Q: How do we handle linked attachments?
+    // const { previewWithAttachments } = this.getCredentialLinkedAttachments(options)
+    // return { format: formats, attachment, preview: previewWithAttachments }
     return { format, attachment }
   }
 }

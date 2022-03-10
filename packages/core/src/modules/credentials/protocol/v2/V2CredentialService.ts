@@ -61,6 +61,7 @@ import { V2IssueCredentialMessage } from './messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from './messages/V2OfferCredentialMessage'
 import { V2ProposeCredentialMessage } from './messages/V2ProposeCredentialMessage'
 import { V2RequestCredentialMessage } from './messages/V2RequestCredentialMessage'
+import { format } from 'path/posix'
 
 const logger = new ConsoleLogger(LogLevel.info)
 
@@ -152,6 +153,7 @@ export class V2CredentialService extends CredentialService {
       proposal
     )
 
+    console.log("QUACK LD PROOF message = ", message)
     credentialRecord.credentialAttributes = proposalMessage.credentialProposal?.attributes
     credentialRecord.connectionId = proposal.connectionId
 
@@ -219,7 +221,9 @@ export class V2CredentialService extends CredentialService {
     const formats: CredentialFormatService[] = []
     const formatKeys = Object.keys(credentialFormats)
 
+    console.log("QUACK ++++++++++++++++++++++++++++++++ formatKeys = ", formatKeys)
     for (const key of formatKeys) {
+      console.log(">>>>>>>>>>>>>>>>> QUACK GOT A KEY: ", key)
       const credentialFormatType: CredentialFormatType = FORMAT_KEYS[key]
       const formatService: CredentialFormatService = this.getFormatService(credentialFormatType)
       formats.push(formatService)
