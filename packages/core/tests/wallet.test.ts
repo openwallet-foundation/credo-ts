@@ -6,10 +6,11 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { KeyDerivationMethod } from '../src/types'
+import { WalletDuplicateError } from '../src/wallet/error/WalletDuplicateError'
+import { WalletInvalidKeyError } from '../src/wallet/error/WalletInvalidKeyError'
+import { WalletNotFoundError } from '../src/wallet/error/WalletNotFoundError'
 
 import { getBaseConfig } from './helpers'
-
-import { WalletDuplicateError, WalletInvalidKeyError, WalletNotFoundError } from '@aries-framework/core'
 
 const aliceConfig = getBaseConfig('wallet-tests-Alice', {
   endpoints: ['rxjs:alice'],

@@ -16,9 +16,9 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
-import { checkProofRequestForDuplicates } from '../../../utils'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { checkProofRequestForDuplicates } from '../../../utils/indyProofRequest'
 import { uuid } from '../../../utils/uuid'
 import { Wallet } from '../../../wallet/Wallet'
 import { AckStatus } from '../../common'
@@ -875,6 +875,7 @@ export class ProofService {
 
     Object.keys(retrievedCredentials.requestedAttributes).forEach((attributeName) => {
       const attributeArray = retrievedCredentials.requestedAttributes[attributeName]
+
       if (attributeArray.length === 0) {
         throw new AriesFrameworkError('Unable to automatically select requested attributes.')
       } else {
