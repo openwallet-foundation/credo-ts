@@ -16,9 +16,10 @@ export enum CredentialRecordType {
   W3c = 'W3c',
 }
 
+// keys used to create a format service
 export enum CredentialFormatType {
   Indy = 'Indy',
-  JsonLd = 'JsonLd',
+  JsonLd = 'jsonld',
   // others to follow
 }
 
