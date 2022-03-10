@@ -28,13 +28,14 @@ import { InjectionSymbols } from '../../../../constants'
 import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
 import { DidCommMessageRole } from '../../../../storage'
 import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
+import { checkProofRequestForDuplicates } from '../../../../utils'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { uuid } from '../../../../utils/uuid'
 import { Wallet } from '../../../../wallet'
 import { AckStatus } from '../../../common/messages/AckMessage'
 import { ConnectionService } from '../../../connections'
-import { Credential, CredentialRepository } from '../../../credentials'
-import { IndyHolderService } from '../../../indy'
+import { Credential, CredentialRepository, IndyCredentialInfo } from '../../../credentials'
+import { IndyHolderService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
@@ -77,6 +78,7 @@ export class V1ProofService extends ProofService {
   private ledgerService: IndyLedgerService
   private indyProofFormatService: IndyProofFormatService
   private indyHolderService: IndyHolderService
+  private indyRevocationService: IndyRevocationService
 
   public constructor(
     proofRepository: ProofRepository,
@@ -88,7 +90,8 @@ export class V1ProofService extends ProofService {
     eventEmitter: EventEmitter,
     credentialRepository: CredentialRepository,
     indyProofFormatService: IndyProofFormatService,
-    indyHolderService: IndyHolderService
+    indyHolderService: IndyHolderService,
+    indyRevocationService: IndyRevocationService
   ) {
     super(agentConfig, proofRepository, connectionService, didCommMessageRepository, wallet, eventEmitter)
     this.credentialRepository = credentialRepository
@@ -96,6 +99,7 @@ export class V1ProofService extends ProofService {
     this.wallet = wallet
     this.indyProofFormatService = indyProofFormatService
     this.indyHolderService = indyHolderService
+    this.indyRevocationService = indyRevocationService
   }
 
   public getVersion(): ProofProtocolVersion {
@@ -352,6 +356,9 @@ export class V1ProofService extends ProofService {
       )
     }
     await validateOrReject(proofRequest)
+
+    // Assert attribute and predicate (group) names do not match
+    checkProofRequestForDuplicates(proofRequest)
 
     this.logger.debug('received proof request', proofRequest)
 
@@ -736,6 +743,12 @@ export class V1ProofService extends ProofService {
 
       // List the requested attributes
       requestedAttributesNames.push(...(requestedAttributes.names ?? [requestedAttributes.name]))
+
+      //Get credentialInfo
+      if (!requestedAttribute.credentialInfo) {
+        const indyCredentialInfo = await this.indyHolderService.getCredential(requestedAttribute.credentialId)
+        requestedAttribute.credentialInfo = JsonTransformer.fromJSON(indyCredentialInfo, IndyCredentialInfo)
+      }
 
       // Find the attributes that have a hashlink as a value
       for (const attribute of Object.values(requestedAttribute.credentialInfo.attributes)) {

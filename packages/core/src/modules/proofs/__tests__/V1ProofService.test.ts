@@ -11,6 +11,7 @@ import { Attachment, AttachmentData } from '../../../decorators/attachment/Attac
 import { DidCommMessageRepository } from '../../../storage'
 import { ConnectionService, ConnectionState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
+import { IndyRevocationService } from '../../indy/services/IndyRevocationService'
 import { IndyLedgerService } from '../../ledger/services'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofProtocolVersion } from '../models/ProofProtocolVersion'
@@ -33,6 +34,7 @@ jest.mock('../../../modules/ledger/services/IndyLedgerService')
 jest.mock('../../indy/services/IndyHolderService')
 jest.mock('../../indy/services/IndyIssuerService')
 jest.mock('../../indy/services/IndyVerifierService')
+jest.mock('../../indy/services/IndyRevocationService')
 jest.mock('../../connections/services/ConnectionService')
 jest.mock('../../../storage/Repository')
 
@@ -40,6 +42,7 @@ jest.mock('../../../storage/Repository')
 const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 const IndyHolderServiceMock = IndyHolderService as jest.Mock<IndyHolderService>
+const IndyRevocationServiceMock = IndyRevocationService as jest.Mock<IndyRevocationService>
 const connectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 const didCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 
@@ -96,6 +99,7 @@ describe('ProofService', () => {
   let ledgerService: IndyLedgerService
   let wallet: Wallet
   let indyHolderService: IndyHolderService
+  let indyRevocationService: IndyRevocationService
   let eventEmitter: EventEmitter
   let credentialRepository: CredentialRepository
   let connectionService: ConnectionService
@@ -106,6 +110,7 @@ describe('ProofService', () => {
     const agentConfig = getAgentConfig('V1ProofServiceTest')
     proofRepository = new ProofRepositoryMock()
     indyHolderService = new IndyHolderServiceMock()
+    indyRevocationService = new IndyRevocationServiceMock()
     ledgerService = new IndyLedgerServiceMock()
     eventEmitter = new EventEmitter(agentConfig)
     connectionService = new connectionServiceMock()
@@ -121,7 +126,8 @@ describe('ProofService', () => {
       eventEmitter,
       credentialRepository,
       indyProofFormatService,
-      indyHolderService
+      indyHolderService,
+      indyRevocationService
     )
 
     mockFunction(ledgerService.getCredentialDefinition).mockReturnValue(Promise.resolve(credDef))

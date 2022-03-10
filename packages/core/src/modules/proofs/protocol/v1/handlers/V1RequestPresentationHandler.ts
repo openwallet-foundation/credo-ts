@@ -58,6 +58,7 @@ export class V1RequestPresentationHandler implements Handler {
     )
 
     if (!indyProofRequest) {
+      this.agentConfig.logger.error('Proof request is undefined.')
       return
     }
 

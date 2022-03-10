@@ -77,6 +77,7 @@ export class V2ProofService extends ProofService {
   public getVersion(): ProofProtocolVersion {
     return this.protocolVersion
   }
+
   public async createProposal(
     options: CreateProposalOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
@@ -124,6 +125,7 @@ export class V2ProofService extends ProofService {
       message: proposalMessage,
     }
   }
+
   public async createProposalAsResponse(
     options: CreateProposalAsResponseOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
@@ -156,6 +158,7 @@ export class V2ProofService extends ProofService {
 
     return { message: proposalMessage, proofRecord: options.proofRecord }
   }
+
   public async processProposal(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
     const { message: proposalMessage, connection: connectionRecord } = messageContext
     let proofRecord: ProofRecord
@@ -216,6 +219,7 @@ export class V2ProofService extends ProofService {
 
     return proofRecord
   }
+
   public async createRequest(
     options: CreateRequestOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
@@ -717,12 +721,14 @@ export class V2ProofService extends ProofService {
       messageClass: V2RequestPresentationMessage,
     })
   }
+
   public async findPresentationMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
     return await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: options.proofRecord.id,
       messageClass: V2PresentationMessage,
     })
   }
+
   public async findProposalMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
     return await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: options.proofRecord.id,
@@ -776,6 +782,7 @@ export class V2ProofService extends ProofService {
 
     return result
   }
+
   public async autoSelectCredentialsForProofRequest(options: {
     indy?: RetrievedCredentials | undefined
     jsonLd?: undefined

@@ -76,22 +76,20 @@ describe('Agent', () => {
       const { walletConfig, ...withoutWalletConfig } = config
       agent = new Agent(withoutWalletConfig, dependencies)
 
-      const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-
       expect(agent.isInitialized).toBe(false)
-      expect(wallet.isInitialized).toBe(false)
+      expect(agent.wallet.isInitialized).toBe(false)
 
       expect(agent.initialize()).rejects.toThrowError(WalletError)
       expect(agent.isInitialized).toBe(false)
-      expect(wallet.isInitialized).toBe(false)
+      expect(agent.wallet.isInitialized).toBe(false)
 
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      await wallet.initialize(walletConfig!)
+      await agent.wallet.initialize(walletConfig!)
       expect(agent.isInitialized).toBe(false)
-      expect(wallet.isInitialized).toBe(true)
+      expect(agent.wallet.isInitialized).toBe(true)
 
       await agent.initialize()
-      expect(wallet.isInitialized).toBe(true)
+      expect(agent.wallet.isInitialized).toBe(true)
       expect(agent.isInitialized).toBe(true)
     })
   })

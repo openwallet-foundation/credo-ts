@@ -1,3 +1,4 @@
+import type { Logger } from '../../../../logger'
 import type { GetRequestedCredentialsConfig } from '../../models/GetRequestedCredentialsConfig'
 import type { PresentationPreview, PresentationPreviewAttribute } from '../../protocol/v1/models/PresentationPreview'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
@@ -18,12 +19,13 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
+import { ConsoleLogger, LogLevel } from '../../../../logger'
 import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { uuid } from '../../../../utils/uuid'
-import { Credential, CredentialUtils } from '../../../credentials'
-import { IndyHolderService, IndyVerifierService } from '../../../indy'
+import { Credential, CredentialUtils, IndyCredentialInfo } from '../../../credentials'
+import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
 import {
   RetrievedCredentials,
@@ -45,18 +47,23 @@ import { ProofFormatSpec } from '../models/ProofFormatSpec'
 export class IndyProofFormatService extends ProofFormatService {
   private indyHolderService: IndyHolderService
   private indyVerifierService: IndyVerifierService
+  private indyRevocationService: IndyRevocationService
   private ledgerService: IndyLedgerService
+  private logger: Logger
 
   public constructor(
     indyHolderService: IndyHolderService,
     indyVerifierService: IndyVerifierService,
+    indyRevocationService: IndyRevocationService,
     ledgerService: IndyLedgerService,
     didCommMessageRepository: DidCommMessageRepository
   ) {
     super(didCommMessageRepository)
     this.indyHolderService = indyHolderService
     this.indyVerifierService = indyVerifierService
+    this.indyRevocationService = indyRevocationService
     this.ledgerService = ledgerService
+    this.logger = new ConsoleLogger(LogLevel.off)
   }
 
   private createRequestAttachment(options: CreateRequestAttachmentOptions): ProofAttachmentFormat {
@@ -283,37 +290,10 @@ export class IndyProofFormatService extends ProofFormatService {
     presentationProposal?: PresentationPreview
     config: { indy?: GetRequestedCredentialsConfig | undefined; jsonLd?: undefined }
   }): Promise<{ indy?: RetrievedCredentials | undefined; jsonLd?: undefined }> {
-    // const requestMessage = await this.didCommMessageRepository.findAgentMessage({
-    //   associatedRecordId: options.proofRecord.id,
-    //   messageClass: V1RequestPresentationMessage,`
-    // })
-
-    // const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
-    //   associatedRecordId: options.proofRecord.id,
-    //   messageClass: V1ProposePresentationMessage,
-    // })
-
-    // const indyProofRequest = requestMessage?.indyProofRequest
-    // const presentationPreview = options.config.indy?.filterByPresentationPreview
-    //   ? proposalMessage?.presentationProposal
-    //   : undefined
-
-    // if (!indyProofRequest) {
-    //   throw new AriesFrameworkError(
-    //     'Unable to get requested credentials for proof request. No proof request message was found or the proof request message does not contain an indy proof request.'
-    //   )
-    // }
-
     const retrievedCredentials = new RetrievedCredentials({})
     const { proofRequest, presentationProposal } = options
+    const filterByNonRevocationRequirements = options.config.indy?.filterByNonRevocationRequirements
 
-    // const proofRequest = requestMessage.getAttachmentById('hlindy/proof-req@v2.0')?.getDataAsJson<ProofRequest>() ?? null
-
-    // console.log('indyProofFormatService - getRequestedCredentialsForProofRequest - proofRequest', proofRequest)
-
-    // if (!proofRequest) {
-    //   throw new AriesFrameworkError('Could not find proof request')
-    // }
     for (const [referent, requestedAttribute] of proofRequest.requestedAttributes.entries()) {
       let credentialMatch: Credential[] = []
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
@@ -343,24 +323,60 @@ export class IndyProofFormatService extends ProofFormatService {
         })
       }
 
-      retrievedCredentials.requestedAttributes[referent] = credentialMatch.map((credential: Credential) => {
-        return new RequestedAttribute({
-          credentialId: credential.credentialInfo.referent,
-          revealed: true,
-          credentialInfo: credential.credentialInfo,
+      retrievedCredentials.requestedAttributes[referent] = await Promise.all(
+        credentialMatch.map(async (credential: Credential) => {
+          const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem({
+            proofRequest,
+            requestedItem: requestedAttribute,
+            credential,
+          })
+
+          return new RequestedAttribute({
+            credentialId: credential.credentialInfo.referent,
+            revealed: true,
+            credentialInfo: credential.credentialInfo,
+            timestamp: deltaTimestamp,
+            revoked,
+          })
         })
-      })
+      )
+
+      // We only attach revoked state if non-revocation is requested. So if revoked is true it means
+      // the credential is not applicable to the proof request
+      if (filterByNonRevocationRequirements) {
+        retrievedCredentials.requestedAttributes[referent] = retrievedCredentials.requestedAttributes[referent].filter(
+          (r) => !r.revoked
+        )
+      }
     }
 
-    for (const [referent] of proofRequest.requestedPredicates.entries()) {
+    for (const [referent, requestedPredicate] of proofRequest.requestedPredicates.entries()) {
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
-      retrievedCredentials.requestedPredicates[referent] = credentials.map((credential) => {
-        return new RequestedPredicate({
-          credentialId: credential.credentialInfo.referent,
-          credentialInfo: credential.credentialInfo,
+      retrievedCredentials.requestedPredicates[referent] = await Promise.all(
+        credentials.map(async (credential) => {
+          const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem({
+            proofRequest,
+            requestedItem: requestedPredicate,
+            credential,
+          })
+
+          return new RequestedPredicate({
+            credentialId: credential.credentialInfo.referent,
+            credentialInfo: credential.credentialInfo,
+            timestamp: deltaTimestamp,
+            revoked,
+          })
         })
-      })
+      )
+
+      // We only attach revoked state if non-revocation is requested. So if revoked is true it means
+      // the credential is not applicable to the proof request
+      if (filterByNonRevocationRequirements) {
+        retrievedCredentials.requestedPredicates[referent] = retrievedCredentials.requestedPredicates[referent].filter(
+          (r) => !r.revoked
+        )
+      }
     }
 
     return {
@@ -446,24 +462,30 @@ export class IndyProofFormatService extends ProofFormatService {
     proofRequest: ProofRequest,
     requestedCredentials: RequestedCredentials
   ): Promise<IndyProof> {
-    const credentialObjects = [
-      ...Object.values(requestedCredentials.requestedAttributes),
-      ...Object.values(requestedCredentials.requestedPredicates),
-    ].map((c) => c.credentialInfo)
+    const credentialObjects = await Promise.all(
+      [
+        ...Object.values(requestedCredentials.requestedAttributes),
+        ...Object.values(requestedCredentials.requestedPredicates),
+      ].map(async (c) => {
+        if (c.credentialInfo) {
+          return c.credentialInfo
+        }
+        const credentialInfo = await this.indyHolderService.getCredential(c.credentialId)
+        return JsonTransformer.fromJSON(credentialInfo, IndyCredentialInfo)
+      })
+    )
 
     const schemas = await this.getSchemas(new Set(credentialObjects.map((c) => c.schemaId)))
     const credentialDefinitions = await this.getCredentialDefinitions(
       new Set(credentialObjects.map((c) => c.credentialDefinitionId))
     )
 
-    const proof = await this.indyHolderService.createProof({
+    return await this.indyHolderService.createProof({
       proofRequest: proofRequest.toJSON(),
-      requestedCredentials: requestedCredentials.toJSON(),
+      requestedCredentials: requestedCredentials,
       schemas,
       credentialDefinitions,
     })
-
-    return proof
   }
 
   public async createProofRequestFromProposal(options: {
@@ -569,5 +591,42 @@ export class IndyProofFormatService extends ProofFormatService {
     return {
       indy: proofRequest,
     }
+  }
+
+  private async getRevocationStatusForRequestedItem({
+    proofRequest,
+    requestedItem,
+    credential,
+  }: {
+    proofRequest: ProofRequest
+    requestedItem: ProofAttributeInfo | ProofPredicateInfo
+    credential: Credential
+  }) {
+    const requestNonRevoked = requestedItem.nonRevoked ?? proofRequest.nonRevoked
+    const credentialRevocationId = credential.credentialInfo.credentialRevocationId
+    const revocationRegistryId = credential.credentialInfo.revocationRegistryId
+
+    // If revocation interval is present and the credential is revocable then fetch the revocation status of credentials for display
+    if (requestNonRevoked && credentialRevocationId && revocationRegistryId) {
+      this.logger.trace(
+        `Presentation is requesting proof of non revocation, getting revocation status for credential`,
+        {
+          requestNonRevoked,
+          credentialRevocationId,
+          revocationRegistryId,
+        }
+      )
+
+      // Note presentation from-to's vs ledger from-to's: https://github.com/hyperledger/indy-hipe/blob/master/text/0011-cred-revocation/README.md#indy-node-revocation-registry-intervals
+      const status = await this.indyRevocationService.getRevocationStatus(
+        credentialRevocationId,
+        revocationRegistryId,
+        requestNonRevoked
+      )
+
+      return status
+    }
+
+    return { revoked: undefined, deltaTimestamp: undefined }
   }
 }

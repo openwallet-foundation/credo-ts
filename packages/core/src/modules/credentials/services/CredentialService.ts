@@ -266,6 +266,10 @@ export class CredentialService {
     credentialRecord.autoAcceptCredential =
       credentialTemplate.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
+    // Check if credential preview attributes match the schema attributes
+    const schema = await this.ledgerService.getSchema(credOffer.schema_id)
+    CredentialUtils.checkAttributesMatch(schema, preview)
+
     await this.updateState(credentialRecord, CredentialState.OfferSent)
 
     return { message: credentialOfferMessage, credentialRecord }
@@ -302,6 +306,10 @@ export class CredentialService {
     const credentialPreview = linkedAttachments
       ? CredentialUtils.createAndLinkAttachmentsToPreview(linkedAttachments, preview)
       : preview
+
+    // Check if credential preview attributes match the schema attributes
+    const schema = await this.ledgerService.getSchema(credOffer.schema_id)
+    CredentialUtils.checkAttributesMatch(schema, credentialPreview)
 
     // Construct offer message
     const credentialOfferMessage = new OfferCredentialMessage({
@@ -649,11 +657,21 @@ export class CredentialService {
 
     const credentialDefinition = await this.ledgerService.getCredentialDefinition(indyCredential.cred_def_id)
 
+    //Fetch Revocation Registry Definition if the issued credential has an associated revocation registry id
+    let revocationRegistryDefinition
+    if (indyCredential.rev_reg_id) {
+      const revocationRegistryDefinitionData = await this.ledgerService.getRevocationRegistryDefinition(
+        indyCredential.rev_reg_id
+      )
+      revocationRegistryDefinition = revocationRegistryDefinitionData.revocationRegistryDefinition
+    }
+
     const credentialId = await this.indyHolderService.storeCredential({
       credentialId: uuid(),
       credentialRequestMetadata,
       credential: indyCredential,
       credentialDefinition,
+      revocationRegistryDefinition,
     })
     credentialRecord.credentialId = credentialId
     credentialRecord.credentialMessage = issueCredentialMessage

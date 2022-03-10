@@ -22,6 +22,7 @@ export class BasicMessageService {
   }
 
   public async createMessage(message: string, connectionRecord: ConnectionRecord) {
+    connectionRecord.assertReady()
     const basicMessage = new BasicMessage({ content: message })
 
     const basicMessageRecord = new BasicMessageRecord({
