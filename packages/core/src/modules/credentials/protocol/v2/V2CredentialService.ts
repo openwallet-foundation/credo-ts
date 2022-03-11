@@ -338,12 +338,6 @@ export class V2CredentialService extends CredentialService {
       messageClass: V2ProposeCredentialMessage,
     })
 
-    if (!proposeCredentialMessage?.credentialProposal) {
-      throw new AriesFrameworkError(
-        `Credential record with id ${proposal.credentialRecordId} is missing required credential proposal`
-      )
-    }
-
     const message = await this.createOfferAsResponse(credentialRecord, proposal)
 
     return { credentialRecord, message }
@@ -616,12 +610,6 @@ export class V2CredentialService extends CredentialService {
       associatedRecordId: credentialRecord.id,
       messageClass: V2ProposeCredentialMessage,
     })
-
-    if (!proposalMessage?.credentialProposal) {
-      throw new AriesFrameworkError(
-        `Credential record with id ${credentialOptions.credentialRecordId} is missing required credential proposal`
-      )
-    }
 
     const message = await this.createOfferAsResponse(credentialRecord, credentialOptions)
 
