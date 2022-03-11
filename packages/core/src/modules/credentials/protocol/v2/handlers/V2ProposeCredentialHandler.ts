@@ -60,13 +60,10 @@ export class V2ProposeCredentialHandler implements Handler {
     let shouldAutoRespond = true
     let proposalValues: CredentialPreviewAttribute[] | undefined
     for (const formatService of formatServices) {
-      if (!proposalMessage.credentialProposal || !proposalMessage.credentialProposal.attributes) {
-        throw new AriesFrameworkError('Missing attributes in proposal message')
-      }
       let proposalAttachment, offerAttachment: Attachment | undefined
       if (proposalMessage && proposalMessage.appendedAttachments) {
         proposalAttachment = formatService.getAttachment(proposalMessage)
-        proposalValues = proposalMessage.credentialProposal.attributes
+        proposalValues = proposalMessage.credentialProposal?.attributes
       }
       if (offerMessage) {
         offerAttachment = formatService.getAttachment(proposalMessage)
