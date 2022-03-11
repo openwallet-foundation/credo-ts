@@ -31,32 +31,34 @@ export type FormatKeys = {
   [id: string]: CredentialFormatType
 }
 
+export interface W3CCredentialFormat {
+  credential: {
+    '@context': string
+    issuer: string
+    type: string[]
+    issuanceDate?: Date
+    expirationDate?: Date
+    credentialSubject: {
+      [key: string]: unknown
+    }
+  }
+  options?: {
+    proofPurpose: string
+    created: Date
+    domain: string
+    challenge: string
+    proofType: ProofType
+    credentialStatus?: {
+      type: string
+    }
+  }
+  extendedTypes?: string[]
+}
 export interface CredProposeOfferRequestFormat {
   indy?: {
     payload: Payload
   }
-  jsonld?: {
-    credential: {
-      '@context': string
-      issuer: string
-      type: string[]
-      issuanceDate: Date
-      expirationDate: Date
-      credentialSubject: {
-        id: string
-      }
-    }
-    options: {
-      proofPurpose: string
-      created: Date
-      domain: string
-      challenge: string
-      proofType: ProofType
-      credentialStatus?: {
-        type: string
-      }
-    }
-  }
+  jsonld?: W3CCredentialFormat
 }
 
 export interface CredentialAttachmentFormats {

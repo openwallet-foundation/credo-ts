@@ -44,6 +44,7 @@ export class CredentialUtils {
 
     return credentialPreview
   }
+
   /**
    * Converts int value to string
    * Converts string value:

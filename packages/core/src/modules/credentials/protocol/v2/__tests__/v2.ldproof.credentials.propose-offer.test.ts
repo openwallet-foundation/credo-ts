@@ -1,7 +1,7 @@
-import type { DidCommMessageRepository } from '../../../../../../src/storage'
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
 import type { ServiceAcceptOfferOptions } from '../../../CredentialServiceOptions'
+import type { W3CCredentialFormat } from '../../../formats/models/CredentialFormatServiceOptions'
 import type {
   AcceptOfferOptions,
   AcceptProposalOptions,
@@ -12,6 +12,7 @@ import type {
 import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
 
 import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
+import { DidCommMessageRepository } from '../../../../../../src/storage'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
@@ -37,19 +38,6 @@ describe('credentials', () => {
   const TEST_DID_SOV = 'did:sov:LjgpST2rjsoxYegQDRm7EL'
   const TEST_DID_KEY = 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL'
 
-  // const LD_PROOF_VC_DETAIL = {
-  //   credential: {
-  //     '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
-  //     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-  //     credentialSubject: { test: 'key' },
-  //     issuanceDate: '2021-04-12',
-  //     issuer: TEST_DID_KEY,
-  //   },
-  //   options: {
-  //     proofType: 'Ed25519Signature2018',
-  //     created: '2019-12-11T03:50:55',
-  //   },
-  // }
   let didCommMessageRepository: DidCommMessageRepository
   beforeAll(async () => {
     ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
@@ -78,8 +66,67 @@ describe('credentials', () => {
     // we should set the version to V1.0 and V2.0 in separate tests, one as a regression test
 
     // this is the aca-py definition of ld proof object...
+    //   {
+    //     "@context": [
+    //         "https://www.w3.org/2018/credentials/v1",
+    //         "https://www.w3.org/2018/credentials/examples/v1",
+    //         "https://w3id.org/security/bbs/v1",
+    //     ],
+    //     "id": "https://example.gov/credentials/3732",
+    //     "type": ["VerifiableCredential", "UniversityDegreeCredential"],
+    //     "issuer": "did:key:zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa",
+    //     "issuanceDate": "2020-03-10T04:24:12.164Z",
+    //     "credentialSubject": {
+    //         "id": "did:sov:WgWxqztrNooG92RXvxSTWv",
+    //         "degree": {
+    //             "type": "BachelorDegree",
+    //             "name": "Bachelor of Science and Arts",
+    //             "degreeType": "Underwater Basket Weaving",
+    //         },
+    //         "college": "Contoso University",
+    //     },
+    //     "proof": {
+    //         "type": "BbsBlsSignature2020",
+    //         "verificationMethod": "did:key:zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa#zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa",
+    //         "created": "2019-12-11T03:50:55",
+    //         "proofPurpose": "assertionMethod",
+    //         "proofValue": "iGAQ4bOxuqkoCbX3RoxTqFkJsoqPcEeRN2vqIzd/zWLS+VHCwYkQHu/TeMOrit4eb6eugbJFUBaoenZyy2VU/7Rsj614sNzumJFuJ6ZaDTlv0k70CkO9GheQTc+Gwv749Y3JzPJ0dwYGUzzcyytFCQ==",
+    //     },
+    // },
+    // [
+    //     "https://www.w3.org/2018/credentials#VerifiableCredential",
+    //     "https://example.org/examples#UniversityDegreeCredential",
+    // ],
 
-    const ldProofVcDetail = {
+    //   "@context": [
+    //     "https://www.w3.org/2018/credentials/v1",
+    //     "https://w3id.org/citizenship/v1",
+    //     "https://w3id.org/security/bbs/v1",
+    // ],
+    // "id": "https://issuer.oidp.uscis.gov/credentials/83627465",
+    // "type": ["VerifiableCredential", "PermanentResidentCard"],
+    // "issuer": "did:example:489398593",
+    // "identifier": "83627465",
+    // "name": "Permanent Resident Card",
+    // "description": "Government of Example Permanent Resident Card.",
+    // "issuanceDate": "2019-12-03T12:19:52Z",
+    // "expirationDate": "2029-12-03T12:19:52Z",
+    // "credentialSubject": {
+    //     "id": "did:example:b34ca6cd37bbf23",
+    //     "type": ["PermanentResident", "Person"],
+    //     "givenName": "JOHN",
+    //     "familyName": "SMITH",
+    //     "gender": "Male",
+    //     "image": "data:image/png;base64,iVBORw0KGgokJggg==",
+    //     "residentSince": "2015-01-01",
+    //     "lprCategory": "C09",
+    //     "lprNumber": "999-999-999",
+    //     "commuterClassification": "C1",
+    //     "birthCountry": "Bahamas",
+    //     "birthDate": "1958-07-17",
+    // },
+
+    const ldProofVcDetail: W3CCredentialFormat = {
       credential: {
         '@context': 'https://www.w3.org/2018/',
         issuer: 'did:key:z6MkodKV3mnjQQMB9jhMZtKD9Sm75ajiYq51JDLuRSPZTXrr',
@@ -87,11 +134,18 @@ describe('credentials', () => {
         issuanceDate: new Date('2020-01-01T19:23:24Z'),
         expirationDate: new Date('2021-01-01T19:23:24Z'),
         credentialSubject: {
-          id: 'did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
-          degree: {
-            type: 'BachelorDegree',
-            name: 'Bachelor of Science and Arts',
-          },
+          id: 'did:example:b34ca6cd37bbf23',
+          type: ['PermanentResident', 'Person'],
+          givenName: 'JOHN',
+          familyName: 'SMITH',
+          gender: 'Male',
+          image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+          residentSince: '2015-01-01',
+          lprCategory: 'C09',
+          lprNumber: '999-999-999',
+          commuterClassification: 'C1',
+          birthCountry: 'Bahamas',
+          birthDate: '1958-07-17',
         },
       },
       options: {
@@ -101,6 +155,10 @@ describe('credentials', () => {
         challenge: '9450a9c1-4db5-4ab9-bc0c-b7a9b2edac38',
         proofType: ProofType.Ed,
       },
+      extendedTypes: [
+        'https://www.w3.org/2018/credentials#VerifiableCredential',
+        'https://example.org/examples#UniversityDegreeCredential',
+      ],
     }
 
     const proposeOptions: ProposeCredentialOptions = {
@@ -140,20 +198,20 @@ describe('credentials', () => {
       },
     }
     // testLogger.test('Faber sends credential offer to Alice')
-    // await faberAgent.credentials.acceptCredentialProposal(options)
+    await faberAgent.credentials.acceptCredentialProposal(options)
 
-    // testLogger.test('Alice waits for credential offer from Faber')
-    // aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
-    //   threadId: faberCredentialRecord.threadId,
-    //   state: CredentialState.OfferReceived,
-    // })
+    testLogger.test('Alice waits for credential offer from Faber')
+    aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+      threadId: faberCredentialRecord.threadId,
+      state: CredentialState.OfferReceived,
+    })
 
-    // didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
+    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
-    // const offerMessage = await didCommMessageRepository.findAgentMessage({
-    //   associatedRecordId: faberCredentialRecord.id,
-    //   messageClass: V2OfferCredentialMessage,
-    // })
+    const offerMessage = await didCommMessageRepository.findAgentMessage({
+      associatedRecordId: faberCredentialRecord.id,
+      messageClass: V2OfferCredentialMessage,
+    })
 
     // expect(JsonTransformer.toJSON(offerMessage)).toMatchObject({
     //   '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',

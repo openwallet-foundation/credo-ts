@@ -5,34 +5,32 @@ import type { AgentMessage } from '../../../../../src/agent/AgentMessage'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type {
   AcceptCredentialOptions,
-  AcceptOfferOptions,
   AcceptProposalOptions,
   AcceptRequestOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../../interfaces'
-import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
-import type { V1CredentialPreview } from '../../protocol/v1/V1CredentialPreview'
 import type { CredentialExchangeRecord } from '../../repository/CredentialRecord'
 import type {
   CredentialAttachmentFormats,
   CredentialFormatSpec,
-  CredProposeOfferRequestFormat,
   HandlerAutoAcceptOptions,
   OfferAttachmentFormats,
 } from '../models/CredentialFormatServiceOptions'
 
-import { AttachmentData } from '../../../../decorators/attachment/Attachment'
-import { uuid } from '../../../../utils/uuid'
+import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
+import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import { CredentialFormatService } from '../CredentialFormatService'
 
 export class JsonLdCredentialFormatService extends CredentialFormatService {
-  processProposal(
+  public async processProposal(
     options: AcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<AcceptProposalOptions> {
-    throw new Error('Method not implemented.')
+    // no meta data set for ld proofs
+    return options
   }
+
   createOffer(options: AcceptProposalOptions): Promise<OfferAttachmentFormats> {
     throw new Error('Method not implemented.')
   }
@@ -48,9 +46,18 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   ): Promise<CredentialAttachmentFormats> {
     throw new Error('Method not implemented.')
   }
-  shouldAutoRespondToProposal(options: HandlerAutoAcceptOptions): boolean {
-    throw new Error('Method not implemented.')
+
+  public shouldAutoRespondToProposal(options: HandlerAutoAcceptOptions): boolean {
+    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
+      options.credentialRecord.autoAcceptCredential,
+      options.autoAcceptType
+    )
+    if (autoAccept === AutoAcceptCredential.Always) {
+      return true
+    }
+    return false
   }
+
   shouldAutoRespondToRequest(options: HandlerAutoAcceptOptions): boolean {
     throw new Error('Method not implemented.')
   }
@@ -74,9 +81,10 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     }
 
     const attachment: Attachment = this.getFormatData(options.credentialFormats.jsonld, format.attachId)
-    // Q: How do we handle linked attachments?
-    // const { previewWithAttachments } = this.getCredentialLinkedAttachments(options)
-    // return { format: formats, attachment, preview: previewWithAttachments }
+
+    // For now we will not handle linked attachments in the W3C credential. So the credentialProposal array
+    // should just contain standard crede
+
     return { format, attachment }
   }
 }

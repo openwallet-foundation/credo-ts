@@ -1,17 +1,15 @@
-import {
-  BasicMessageRecord,
-  BasicMessageRepository,
-  BasicMessageRole,
-  WalletDuplicateError,
-  WalletInvalidKeyError,
-  WalletNotFoundError,
-} from '@aries-framework/core'
 import { tmpdir } from 'os'
 import path from 'path'
 
 import { Agent } from '../src/agent/Agent'
+import { BasicMessageRole } from '../src/modules/basic-messages/BasicMessageRole'
+import { BasicMessageRecord } from '../src/modules/basic-messages/repository/BasicMessageRecord'
+import { BasicMessageRepository } from '../src/modules/basic-messages/repository/BasicMessageRepository'
 import { KeyDerivationMethod } from '../src/types'
 import { uuid } from '../src/utils/uuid'
+import { WalletDuplicateError } from '../src/wallet/error/WalletDuplicateError'
+import { WalletInvalidKeyError } from '../src/wallet/error/WalletInvalidKeyError'
+import { WalletNotFoundError } from '../src/wallet/error/WalletNotFoundError'
 
 import { getBaseConfig } from './helpers'
 

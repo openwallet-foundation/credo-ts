@@ -57,7 +57,6 @@ export class CredentialMessageBuilder {
     const filtersAttachArray: Attachment[] | undefined = []
     let previewAttachments: V2CredentialPreview | undefined
     for (const formatService of formatServices) {
-      console.log("QUACK going to create proposal...")
       const { format: formats, attachment, preview } = formatService.createProposal(proposal)
       if (attachment) {
         filtersAttachArray.push(attachment)
