@@ -812,7 +812,8 @@ export class V1ProofService extends ProofService {
       throw new AriesFrameworkError('Request message has no attachment linked to it')
     }
 
-    const requestAttachmentData = requestAttachment.getDataAsJson<ProofRequest>()
+    const requestAttachmentJSON = requestAttachment.getDataAsJson<ProofRequest>()
+    const requestAttachmentData = JsonTransformer.fromJSON(requestAttachmentJSON, ProofRequest)
 
     const proposalAttributes = proposal.presentationProposal.attributes
     const requestedAttributes = requestAttachmentData.requestedAttributes

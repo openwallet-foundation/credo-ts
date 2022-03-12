@@ -130,6 +130,7 @@ describe('Auto accept present proof', () => {
 
   describe('Auto accept on `contentApproved`', () => {
     beforeAll(async () => {
+      testLogger.test('Initializing the agents')
       ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
         await setupProofsTest(
           'Faber Auto Accept Content Approved Proofs',
@@ -138,6 +139,7 @@ describe('Auto accept present proof', () => {
         ))
     })
     afterAll(async () => {
+      testLogger.test('Shutting down both agents')
       await faberAgent.shutdown()
       await faberAgent.wallet.delete()
       await aliceAgent.shutdown()
@@ -231,7 +233,7 @@ describe('Auto accept present proof', () => {
           indy: {
             name: 'proof-request',
             version: '1.0',
-            nonce: '1298236324864',
+            nonce: '1298236324866',
             requestedAttributes: attributes,
             requestedPredicates: predicates,
           },
@@ -239,40 +241,16 @@ describe('Auto accept present proof', () => {
       }
 
       const faberProofRecord = await faberAgent.proofs.requestProof(requestProofsOptions)
-      testLogger.test('Alice waits for presentation request from Faber')
-      const aliceProofRecord = await waitForProofRecord(aliceAgent, {
-        threadId: faberProofRecord.threadId,
-        state: ProofState.RequestReceived,
-      })
-      testLogger.test('Alice accepts presentation request from Faber')
-      const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
-        aliceProofRecord.id,
-        ProofProtocolVersion.V1_0,
-        {
-          filterByPresentationPreview: true,
-        }
-      )
-      const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
-        formats: {
-          indy: retrievedCredentials.indy,
-        },
-        version: ProofProtocolVersion.V1_0,
-      })
 
-      const acceptPresentationOptions: AcceptPresentationOptions = {
-        protocolVersion: ProofProtocolVersion.V1_0,
-        proofRecordId: aliceProofRecord.id,
-        proofFormats: { indy: requestedCredentials.indy },
-      }
-      await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
       testLogger.test('Faber waits for presentation from Alice')
       await waitForProofRecord(faberAgent, {
-        threadId: aliceProofRecord.threadId,
+        threadId: faberProofRecord.threadId,
         state: ProofState.Done,
       })
+
       // Alice waits till it receives presentation ack
       await waitForProofRecord(aliceAgent, {
-        threadId: aliceProofRecord.threadId,
+        threadId: faberProofRecord.threadId,
         state: ProofState.Done,
       })
     })
