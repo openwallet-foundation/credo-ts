@@ -64,6 +64,13 @@ export class V1ProposePresentationHandler implements Handler {
           proofRecord: proofRecord,
         },
       },
+      config: {
+        indy: {
+          name: 'proof request',
+          version: '1.0',
+          nonce: await this.proofService.generateProofRequestNonce(),
+        },
+      },
     })
 
     const indyProofRequest = proofRequest.indy

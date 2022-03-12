@@ -471,7 +471,7 @@ export async function presentProof({
         requestedAttributes: attributes,
         requestedPredicates: predicates,
         version: '1.0',
-        nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
+        nonce: '947121108704767252195123',
       },
     },
   }

@@ -62,7 +62,7 @@ export class V1RequestPresentationHandler implements Handler {
       return
     }
 
-    const proposalMessage = await this.didCommMessageRepository.getAgentMessage({
+    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: record.id,
       messageClass: V1ProposePresentationMessage,
     })

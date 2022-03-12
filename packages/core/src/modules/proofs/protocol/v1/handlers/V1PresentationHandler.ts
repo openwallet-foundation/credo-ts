@@ -6,7 +6,7 @@ import type { ProofService } from '../../../ProofService'
 import type { ProofRecord } from '../../../repository'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
-import { V1PresentationMessage } from '../messages'
+import { V1PresentationMessage, V1RequestPresentationMessage } from '../messages'
 
 export class V1PresentationHandler implements Handler {
   private proofService: ProofService
@@ -46,7 +46,7 @@ export class V1PresentationHandler implements Handler {
 
     const requestMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: proofRecord.id,
-      messageClass: V1PresentationMessage,
+      messageClass: V1RequestPresentationMessage,
     })
 
     const presentationMessage = await this.didCommMessageRepository.findAgentMessage({

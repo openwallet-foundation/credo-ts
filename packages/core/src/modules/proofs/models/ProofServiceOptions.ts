@@ -24,9 +24,19 @@ export interface CreateProposalAsResponseOptions {
   autoAcceptProof?: AutoAcceptProof
 }
 
+// ----- Out Of Band Proof ----- //
+export interface CreateOutOfBandRequestOptions {
+  protocolVersion: ProofProtocolVersion
+  proofFormats: ProposeProofFormats
+  willConfirm?: boolean
+  goalCode?: string
+  comment?: string
+  autoAcceptProof?: AutoAcceptProof
+}
+
 // ----- Request Proof ----- //
 export interface CreateRequestOptions {
-  connectionRecord: ConnectionRecord
+  connectionRecord?: ConnectionRecord
   protocolVersion: ProofProtocolVersion
   proofFormats: ProposeProofFormats
   willConfirm?: boolean

@@ -244,7 +244,7 @@ export class V2ProofService extends ProofService {
 
     // create & store proof record
     const proofRecord = new ProofRecord({
-      connectionId: options.connectionRecord.id,
+      connectionId: options.connectionRecord?.id,
       threadId: requestMessage.threadId,
       state: ProofState.RequestSent,
       protocolVersion: ProofProtocolVersion.V2_0,

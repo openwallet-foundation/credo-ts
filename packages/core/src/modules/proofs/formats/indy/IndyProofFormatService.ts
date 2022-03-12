@@ -21,6 +21,7 @@ import { Attachment, AttachmentData } from '../../../../decorators/attachment/At
 import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
 import { ConsoleLogger, LogLevel } from '../../../../logger'
 import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
+import { checkProofRequestForDuplicates } from '../../../../utils'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { uuid } from '../../../../utils/uuid'
@@ -73,6 +74,9 @@ export class IndyProofFormatService extends ProofFormatService {
     })
 
     const request = new ProofRequest(options.proofRequestOptions)
+
+    // Assert attribute and predicate (group) names do not match
+    checkProofRequestForDuplicates(request)
 
     const attachment = new Attachment({
       id: options.attachId,

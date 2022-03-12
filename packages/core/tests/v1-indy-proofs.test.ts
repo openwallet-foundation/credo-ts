@@ -48,7 +48,7 @@ describe('Present Proof', () => {
       protocolVersion: ProofProtocolVersion.V1_0,
       proofFormats: {
         indy: {
-          nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
+          nonce: '947121108704767252195126',
           proofPreview: presentationPreview,
           name: 'abc',
           version: '1.0',
@@ -76,7 +76,7 @@ describe('Present Proof', () => {
         indy: {
           name: 'proof-request',
           version: '1.0',
-          nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
+          nonce: '947121108704767252195125',
           attributes: presentationPreview.attributes,
           predicates: presentationPreview.predicates,
         },
@@ -327,12 +327,22 @@ describe('Present Proof', () => {
       }),
     }
 
-    await expect(
-      faberAgent.proofs.requestProof(faberConnection.id, {
-        name: 'test-proof-request',
-        requestedAttributes: attributes,
-        requestedPredicates: predicates,
-      })
-    ).rejects.toThrowError(`The proof request contains duplicate items: age`)
+    const requestProofsOptions: RequestProofsOptions = {
+      protocolVersion: ProofProtocolVersion.V1_0,
+      connectionId: faberConnection.id,
+      proofRequestOptions: {
+        indy: {
+          name: 'proof-request',
+          version: '1.0',
+          nonce: '1298236324864',
+          requestedAttributes: attributes,
+          requestedPredicates: predicates,
+        },
+      },
+    }
+
+    await expect(faberAgent.proofs.requestProof(requestProofsOptions)).rejects.toThrowError(
+      `The proof request contains duplicate items: age`
+    )
   })
 })

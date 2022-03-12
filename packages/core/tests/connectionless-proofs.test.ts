@@ -1,5 +1,6 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { ProofStateChangedEvent } from '../src/modules/proofs'
+import type { AcceptPresentationOptions, OutOfBandRequestOptions } from '../src/modules/proofs/models/ModuleOptions'
 
 import { Subject, ReplaySubject } from 'rxjs'
 
@@ -17,6 +18,7 @@ import {
   AutoAcceptProof,
   ProofEventTypes,
 } from '../src/modules/proofs'
+import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -73,14 +75,25 @@ describe('Present Proof', () => {
       }),
     }
 
-    // eslint-disable-next-line prefer-const
-    let { proofRecord: faberProofRecord, requestMessage } = await faberAgent.proofs.createOutOfBandRequest({
-      name: 'test-proof-request',
-      requestedAttributes: attributes,
-      requestedPredicates: predicates,
-    })
+    const outOfBandRequestOptions: OutOfBandRequestOptions = {
+      protocolVersion: ProofProtocolVersion.V1_0,
+      proofRequestOptions: {
+        indy: {
+          name: 'test-proof-request',
+          version: '1.0',
+          nonce: '12345678901',
+          requestedAttributes: attributes,
+          requestedPredicates: predicates,
+        },
+      },
+    }
 
-    await aliceAgent.receiveMessage(requestMessage.toJSON())
+    // eslint-disable-next-line prefer-const
+    let { proofRecord: faberProofRecord, message } = await faberAgent.proofs.createOutOfBandRequest(
+      outOfBandRequestOptions
+    )
+
+    await aliceAgent.receiveMessage(message.toJSON())
 
     testLogger.test('Alice waits for presentation request from Faber')
     let aliceProofRecord = await waitForProofRecordSubject(aliceReplay, {
@@ -89,11 +102,27 @@ describe('Present Proof', () => {
     })
 
     testLogger.test('Alice accepts presentation request from Faber')
-    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(aliceProofRecord.id, {
-      filterByPresentationPreview: true,
+    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
+      aliceProofRecord.id,
+      ProofProtocolVersion.V1_0,
+      {
+        filterByPresentationPreview: true,
+      }
+    )
+    const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
+      formats: {
+        indy: retrievedCredentials.indy,
+      },
+      version: ProofProtocolVersion.V1_0,
     })
-    const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
-    await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
+
+    const acceptPresentationOptions: AcceptPresentationOptions = {
+      protocolVersion: ProofProtocolVersion.V1_0,
+      proofRecordId: aliceProofRecord.id,
+      proofFormats: { indy: requestedCredentials.indy },
+    }
+
+    await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
 
     testLogger.test('Faber waits for presentation from Alice')
     faberProofRecord = await waitForProofRecordSubject(faberReplay, {
@@ -105,7 +134,7 @@ describe('Present Proof', () => {
     expect(faberProofRecord.isVerified).toBe(true)
 
     // Faber accepts presentation
-    await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id, ProofProtocolVersion.V1_0)
 
     // Alice waits till it receives presentation ack
     aliceProofRecord = await waitForProofRecordSubject(aliceReplay, {
@@ -149,19 +178,26 @@ describe('Present Proof', () => {
       }),
     }
 
-    // eslint-disable-next-line prefer-const
-    let { proofRecord: faberProofRecord, requestMessage } = await faberAgent.proofs.createOutOfBandRequest(
-      {
-        name: 'test-proof-request',
-        requestedAttributes: attributes,
-        requestedPredicates: predicates,
+    const outOfBandRequestOptions: OutOfBandRequestOptions = {
+      protocolVersion: ProofProtocolVersion.V1_0,
+      proofRequestOptions: {
+        indy: {
+          name: 'test-proof-request',
+          version: '1.0',
+          nonce: '12345678901',
+          requestedAttributes: attributes,
+          requestedPredicates: predicates,
+        },
       },
-      {
-        autoAcceptProof: AutoAcceptProof.ContentApproved,
-      }
+      autoAcceptProof: AutoAcceptProof.ContentApproved,
+    }
+
+    // eslint-disable-next-line prefer-const
+    let { proofRecord: faberProofRecord, message } = await faberAgent.proofs.createOutOfBandRequest(
+      outOfBandRequestOptions
     )
 
-    await aliceAgent.receiveMessage(requestMessage.toJSON())
+    await aliceAgent.receiveMessage(message.toJSON())
 
     await waitForProofRecordSubject(aliceReplay, {
       threadId: faberProofRecord.threadId,
@@ -291,16 +327,22 @@ describe('Present Proof', () => {
       }),
     }
 
-    // eslint-disable-next-line prefer-const
-    let { proofRecord: faberProofRecord, requestMessage } = await faberAgent.proofs.createOutOfBandRequest(
-      {
-        name: 'test-proof-request',
-        requestedAttributes: attributes,
-        requestedPredicates: predicates,
+    const outOfBandRequestOptions: OutOfBandRequestOptions = {
+      protocolVersion: ProofProtocolVersion.V1_0,
+      proofRequestOptions: {
+        indy: {
+          name: 'test-proof-request',
+          version: '1.0',
+          nonce: '12345678901',
+          requestedAttributes: attributes,
+          requestedPredicates: predicates,
+        },
       },
-      {
-        autoAcceptProof: AutoAcceptProof.ContentApproved,
-      }
+      autoAcceptProof: AutoAcceptProof.ContentApproved,
+    }
+    // eslint-disable-next-line prefer-const
+    let { proofRecord: faberProofRecord, message } = await faberAgent.proofs.createOutOfBandRequest(
+      outOfBandRequestOptions
     )
 
     const mediationRecord = await faberAgent.mediationRecipient.findDefaultMediator()
@@ -308,7 +350,7 @@ describe('Present Proof', () => {
       throw new Error('Faber agent has no default mediator')
     }
 
-    expect(requestMessage).toMatchObject({
+    expect(message).toMatchObject({
       service: {
         recipientKeys: [expect.any(String)],
         routingKeys: mediationRecord.routingKeys,
@@ -316,7 +358,7 @@ describe('Present Proof', () => {
       },
     })
 
-    await aliceAgent.receiveMessage(requestMessage.toJSON())
+    await aliceAgent.receiveMessage(message.toJSON())
 
     await waitForProofRecordSubject(aliceReplay, {
       threadId: faberProofRecord.threadId,

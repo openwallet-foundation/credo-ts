@@ -264,4 +264,13 @@ export abstract class ProofService {
     const proofRecord = await this.getById(proofId)
     return this.proofRepository.delete(proofRecord)
   }
+
+  /**
+   * Update a proof record by
+   *
+   * @param proofRecord the proof record
+   */
+  public update(proofRecord: ProofRecord) {
+    return this.proofRepository.update(proofRecord)
+  }
 }
