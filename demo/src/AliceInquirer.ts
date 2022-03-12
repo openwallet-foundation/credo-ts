@@ -1,5 +1,6 @@
 import type { CredentialRecord, ProofRecord } from '@aries-framework/core'
 
+import { ProofProtocolVersion } from '@aries-framework/core'
 import { clear } from 'console'
 import { textSync } from 'figlet'
 import inquirer from 'inquirer'
@@ -81,7 +82,7 @@ export class AliceInquirer extends BaseInquirer {
   public async acceptProofRequest(proofRecord: ProofRecord) {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.ProofRequestTitle)])
     if (confirm.options === ConfirmOptions.No) {
-      await this.alice.agent.proofs.declineRequest(proofRecord.id)
+      await this.alice.agent.proofs.declineRequest(proofRecord.id, ProofProtocolVersion.V1_0)
     } else if (confirm.options === ConfirmOptions.Yes) {
       await this.alice.acceptProofRequest(proofRecord)
     }

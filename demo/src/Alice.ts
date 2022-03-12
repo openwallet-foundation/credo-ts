@@ -1,6 +1,8 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { CredentialRecord, ProofRecord } from '@aries-framework/core'
 
+import { ProofProtocolVersion } from '@aries-framework/core'
+
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
@@ -59,11 +61,25 @@ export class Alice extends BaseAgent {
   }
 
   public async acceptProofRequest(proofRecord: ProofRecord) {
-    const retrievedCredentials = await this.agent.proofs.getRequestedCredentialsForProofRequest(proofRecord.id, {
-      filterByPresentationPreview: true,
+    const retrievedCredentials = await this.agent.proofs.getRequestedCredentialsForProofRequest(
+      proofRecord.id,
+      ProofProtocolVersion.V1_0,
+      {
+        filterByPresentationPreview: true,
+      }
+    )
+    const requestedCredentials = await this.agent.proofs.autoSelectCredentialsForProofRequest({
+      formats: {
+        indy: retrievedCredentials.indy,
+      },
+      version: ProofProtocolVersion.V1_0,
     })
-    const requestedCredentials = this.agent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
-    await this.agent.proofs.acceptRequest(proofRecord.id, requestedCredentials)
+
+    await this.agent.proofs.acceptRequest({
+      protocolVersion: ProofProtocolVersion.V1_0,
+      proofRecordId: proofRecord.id,
+      proofFormats: { indy: requestedCredentials.indy },
+    })
     console.log(greenText('\nProof request accepted!\n'))
   }
 

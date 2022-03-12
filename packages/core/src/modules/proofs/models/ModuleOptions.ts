@@ -1,11 +1,6 @@
 import type { AutoAcceptProof, ProofRequestOptions } from '..'
 import type { ProofProtocolVersion } from './ProofProtocolVersion'
-import type {
-  AcceptProposalFormats,
-  CreatePresentationFormats,
-  ProposeProofFormats,
-  RequestProofFormats,
-} from './SharedOptions'
+import type { CreatePresentationFormats, ProposeProofFormats, RequestProofFormats } from './SharedOptions'
 
 export interface ProposeProofOptions {
   connectionId: string

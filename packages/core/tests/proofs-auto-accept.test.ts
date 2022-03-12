@@ -1,6 +1,5 @@
 import type { Agent, ConnectionRecord } from '../src'
 import type {
-  AcceptPresentationOptions,
   AcceptProposalOptions,
   ProposeProofOptions,
   RequestProofsOptions,

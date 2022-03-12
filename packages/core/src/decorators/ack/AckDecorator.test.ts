@@ -2,6 +2,7 @@ import { BaseMessage } from '../../agent/BaseMessage'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import { Compose } from '../../utils/mixins'
 
+import { AckValues } from './AckDecorator'
 import { AckDecorated } from './AckDecoratorExtension'
 
 describe('Decorators | AckDecoratorExtension', () => {
@@ -13,8 +14,14 @@ describe('Decorators | AckDecoratorExtension', () => {
 
   test('transforms AckDecorator class to JSON', () => {
     const message = new TestMessage()
-    message.setPleaseAck()
-    expect(message.toJSON()).toEqual({ '~please_ack': {} })
+    message.setPleaseAck([AckValues.Receipt])
+    expect(message.toJSON()).toEqual({
+      '@id': undefined,
+      '@type': undefined,
+      '~please_ack': {
+        on: ['RECEIPT'],
+      },
+    })
   })
 
   test('transforms Json to AckDecorator class', () => {

@@ -2,7 +2,13 @@ import type { ConnectionRecord } from '@aries-framework/core'
 import type { CredDef, Schema } from 'indy-sdk-react-native'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-import { AttributeFilter, CredentialPreview, ProofAttributeInfo, utils } from '@aries-framework/core'
+import {
+  AttributeFilter,
+  CredentialPreview,
+  ProofAttributeInfo,
+  utils,
+  ProofProtocolVersion,
+} from '@aries-framework/core'
 import { ui } from 'inquirer'
 
 import { BaseAgent } from './BaseAgent'
@@ -126,8 +132,18 @@ export class Faber extends BaseAgent {
     const connectionRecord = await this.getConnectionRecord()
     const proofAttribute = await this.newProofAttribute()
     await this.printProofFlow(greenText('\nRequesting proof...\n', false))
-    await this.agent.proofs.requestProof(connectionRecord.id, {
-      requestedAttributes: proofAttribute,
+
+    await this.agent.proofs.requestProof({
+      protocolVersion: ProofProtocolVersion.V1_0,
+      connectionId: connectionRecord.id,
+      proofRequestOptions: {
+        indy: {
+          name: 'proof-request',
+          version: '1.0',
+          nonce: '1298236324864',
+          requestedAttributes: proofAttribute,
+        },
+      },
     })
     this.ui.updateBottomBar(
       `\nProof request sent!\n\nGo to the Alice agent to accept the proof request\n\n${Color.Reset}`
