@@ -1138,18 +1138,6 @@ export class ProofService {
 
     return credentialDefinitions
   }
-
-  public assertAttributePredicateGroupNamesDoNotMatch(proofRequest: ProofRequest) {
-    const attributes = Array.from(proofRequest.requestedAttributes.keys())
-    const predicates = Array.from(proofRequest.requestedPredicates.keys())
-    const intersection = attributes.filter((x) => predicates.includes(x))
-
-    if (intersection.length > 0) {
-      throw new AriesFrameworkError(
-        `The proof request contains an attribute group name that matches a predicate group name: ${intersection}`
-      )
-    }
-  }
 }
 
 export interface ProofRequestTemplate {
