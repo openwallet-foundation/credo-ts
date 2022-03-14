@@ -1,5 +1,4 @@
-import { Expose, Type } from 'class-transformer'
-import { Equals, IsDate } from 'class-validator'
+import { Equals } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 
@@ -26,7 +25,6 @@ export class MediationRequestMessage extends AgentMessage {
 
     if (options) {
       this.id = options.id || this.generateId()
-      this.sentTime = options.sentTime || new Date()
       this.addLocale(options.locale || 'en')
     }
   }
@@ -34,9 +32,4 @@ export class MediationRequestMessage extends AgentMessage {
   @Equals(MediationRequestMessage.type)
   public readonly type = MediationRequestMessage.type
   public static readonly type = 'https://didcomm.org/coordinate-mediation/1.0/mediate-request'
-
-  @Expose({ name: 'sent_time' })
-  @Type(() => Date)
-  @IsDate()
-  public sentTime!: Date
 }
