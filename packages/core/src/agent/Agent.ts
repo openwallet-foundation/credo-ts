@@ -1,7 +1,7 @@
 import type { Logger } from '../logger'
 import type { InboundTransport } from '../transport/InboundTransport'
 import type { OutboundTransport } from '../transport/OutboundTransport'
-import type { InitConfig } from '../types'
+import type { InitConfig, WalletConfig } from '../types'
 import type { Wallet } from '../wallet/Wallet'
 import type { AgentDependencies } from './AgentDependencies'
 import type { AgentMessageReceivedEvent } from './Events'
@@ -27,7 +27,7 @@ import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
 import { IndyWallet } from '../wallet/IndyWallet'
 import { WalletModule } from '../wallet/WalletModule'
-import { WalletError } from '../wallet/error'
+import { WalletError, WalletNotFoundError } from '../wallet/error'
 
 import { AgentConfig } from './AgentConfig'
 import { EventEmitter } from './EventEmitter'
@@ -212,6 +212,27 @@ export class Agent {
       await this.wallet.close()
     }
     this._isInitialized = false
+  }
+
+  public async rotateKey(walletConfig: WalletConfig) {
+    // close wallet if still initialized
+    if (this.isInitialized) {
+      await this.shutdown()
+    }
+
+    try {
+      await this.wallet.open(walletConfig)
+      await this.initialize()
+      this.logger.info('Key changed')
+    } catch (error) {
+      let errorMessage = ''
+      if (error instanceof WalletNotFoundError) {
+        errorMessage = `Wallet not found with id'${walletConfig.id}'`
+      } else {
+        errorMessage = `Error changing key:'${error.message}'`
+      }
+      throw new WalletError(errorMessage)
+    }
   }
 
   public get publicDid() {

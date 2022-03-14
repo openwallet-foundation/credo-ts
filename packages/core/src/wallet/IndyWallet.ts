@@ -129,7 +129,7 @@ export class IndyWallet implements Wallet {
     try {
       this.walletHandle = await this.indy.openWallet(
         { id: walletConfig.id },
-        { key: walletConfig.key, key_derivation_method: walletConfig.keyDerivationMethod }
+        { key: walletConfig.key, rekey: walletConfig.rekey, key_derivation_method: walletConfig.keyDerivationMethod }
       )
       this.walletConfig = walletConfig
     } catch (error) {
