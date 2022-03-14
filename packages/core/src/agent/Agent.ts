@@ -215,6 +215,7 @@ export class Agent {
   }
 
   public async rotateKey(walletConfig: WalletConfig) {
+    
     // close wallet if still initialized
     if (this.isInitialized) {
       await this.shutdown()
