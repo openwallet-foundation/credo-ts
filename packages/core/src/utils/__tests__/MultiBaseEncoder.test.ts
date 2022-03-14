@@ -9,7 +9,7 @@ const invalidMultiBase = 'gKWfinQuRQ3ekD1danFHqvKRg9koFp8vpokUeREEgjSyHwweeKDFax
 describe('MultiBaseEncoder', () => {
   describe('encode()', () => {
     it('Encodes valid multibase', () => {
-      const multibase = BufferEncoder.toUtf8String(MultiBaseEncoder.encode(validData, 'base58btc'))
+      const multibase = MultiBaseEncoder.encode(validData, 'base58btc')
       expect(multibase).toEqual('z2NEpo7TZRRrLZSi2U')
     })
   })
@@ -24,7 +24,7 @@ describe('MultiBaseEncoder', () => {
     it('Decodes invalid multibase', () => {
       expect(() => {
         MultiBaseEncoder.decode(invalidMultiBase)
-      }).toThrow(/^Invalid multibase: /)
+      }).toThrow(/^No decoder found for multibase prefix/)
     })
   })
 
