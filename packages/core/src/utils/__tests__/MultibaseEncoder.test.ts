@@ -1,5 +1,5 @@
-import { TypedArrayEncoder } from '../TypedArrayEncoder'
 import { MultiBaseEncoder } from '../MultiBaseEncoder'
+import { TypedArrayEncoder } from '../TypedArrayEncoder'
 import { Buffer } from '../buffer'
 
 const validData = Buffer.from('Hello World!')
