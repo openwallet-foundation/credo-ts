@@ -1,5 +1,6 @@
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
+import type { Routing } from './services'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -7,6 +8,7 @@ import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
+import { DID_COMM_TRANSPORT_QUEUE } from '../../constants'
 import { AriesFrameworkError } from '../../error'
 import { DidCommService } from '../dids'
 import { OutOfBandService } from '../oob/OutOfBandService'
@@ -65,10 +67,13 @@ export class ConnectionsModule {
       label?: string
       mediatorId?: string
       protocol: HandshakeProtocol
+      routing?: Routing
     }
   ) {
     const { protocol, label, autoAcceptConnection } = config
-    const routing = await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId })
+
+    const routing =
+      config.routing || (await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId }))
 
     let result
     if (protocol === HandshakeProtocol.DidExchange) {
@@ -88,11 +93,7 @@ export class ConnectionsModule {
     }
 
     const { message, connectionRecord } = result
-    await this.messageSender.sendMessageToService({
-      message,
-      service: new DidCommService(outOfBandRecord.outOfBandMessage.services[0] as DidCommService),
-      senderKey: connectionRecord.verkey,
-    })
+    await this.messageSender.sendMessageToOutOfBand(outOfBandRecord, connectionRecord, message)
     return connectionRecord
   }
 

@@ -19,10 +19,6 @@ export class BasicMessageHandler implements Handler {
       throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
 
-    if (!connection.theirKey) {
-      throw new AriesFrameworkError(`Connection with verkey ${connection.verkey} has no recipient keys.`)
-    }
-
     await this.basicMessageService.save(messageContext, connection)
   }
 }

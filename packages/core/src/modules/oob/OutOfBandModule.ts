@@ -1,13 +1,8 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
-<<<<<<< HEAD
 import type { Logger } from '../../logger'
+import type { ConnectionRecord, Routing, HandshakeProtocol } from '../../modules/connections'
 import type { PlaintextMessage } from '../../types'
-import type { ConnectionRecord, HandshakeProtocol } from '../connections'
-=======
-import type { ConnectionRecord } from '../../modules/connections'
-import type { UnpackedMessageContext } from '../../types'
->>>>>>> 519d188 (Separate OOB invitation and OOB message handling)
 
 import { parseUrl } from 'query-string'
 import { EmptyError } from 'rxjs'
@@ -22,12 +17,12 @@ import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { ConnectionInvitationMessage, ConnectionState, ConnectionsModule } from '../connections'
 import { DidCommService, DidsModule } from '../dids'
-import { MediationRecipientService } from '../routing'
 
 import { OutOfBandService } from './OutOfBandService'
 import { OutOfBandRole } from './domain/OutOfBandRole'
 import { OutOfBandState } from './domain/OutOfBandState'
 import { HandshakeReuseHandler } from './handlers'
+import { convertOldInvitation } from './helpers'
 import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
 
@@ -42,6 +37,7 @@ export interface CreateOutOfBandMessageConfig {
   messages?: AgentMessage[]
   multiUseInvitation?: boolean
   autoAcceptConnection?: boolean
+  routing?: Routing
 }
 
 export interface ReceiveOutOfBandMessageConfig {
@@ -49,6 +45,7 @@ export interface ReceiveOutOfBandMessageConfig {
   autoAcceptConnection: boolean
   reuseConnection?: boolean
   label?: string
+  routing?: Routing
 }
 
 @scoped(Lifecycle.ContainerScoped)
@@ -56,7 +53,6 @@ export class OutOfBandModule {
   private outOfBandService: OutOfBandService
   private connectionsModule: ConnectionsModule
   private dids: DidsModule
-  private mediationRecipientService: MediationRecipientService
   private dispatcher: Dispatcher
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
@@ -69,7 +65,6 @@ export class OutOfBandModule {
     outOfBandService: OutOfBandService,
     connectionsModule: ConnectionsModule,
     dids: DidsModule,
-    mediationRecipientService: MediationRecipientService,
     messageSender: MessageSender,
     eventEmitter: EventEmitter
   ) {
@@ -79,7 +74,6 @@ export class OutOfBandModule {
     this.outOfBandService = outOfBandService
     this.connectionsModule = connectionsModule
     this.dids = dids
-    this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.registerHandlers(dispatcher)
@@ -114,6 +108,7 @@ export class OutOfBandModule {
       handshakeProtocols: customHandshakeProtocols,
       autoAcceptConnection,
       messages,
+      routing,
     } = config
     if (!handshake && !messages) {
       throw new AriesFrameworkError(
@@ -132,7 +127,9 @@ export class OutOfBandModule {
       }
     }
 
-    const routing = await this.mediationRecipientService.getRouting()
+    if (!routing) {
+      throw new AriesFrameworkError('Something went wrong... Missing routing...')
+    }
 
     const services = routing.endpoints.map((endpoint, index) => {
       return new DidCommService({
@@ -183,15 +180,25 @@ export class OutOfBandModule {
    * @returns Connection record if it has been created.
    */
   public async receiveInvitationFromUrl(urlMessage: string, config: ReceiveOutOfBandMessageConfig) {
+    const message = await this.parseMessage(urlMessage)
+    return this.receiveMessage(message, config)
+  }
+
+  /**
+   * Parses URL and decodes invitation.
+   * It supports both OOB (Aries RFC 0434: Out-of-Band Protocol 1.1) and Connection Invitation (0160: Connection Protocol).
+   *
+   * @param urlMessage URL containing encoded invitation
+   * @returns OutOfBandMessage
+   */
+  public async parseMessage(urlMessage: string) {
     const parsedUrl = parseUrl(urlMessage).query
     if (parsedUrl['oob']) {
       const outOfBandMessage = await OutOfBandMessage.fromUrl(urlMessage)
-      return this.receiveMessage(outOfBandMessage, config)
+      return outOfBandMessage
     } else if (parsedUrl['c_i'] || parsedUrl['d_m']) {
       const invitation = await ConnectionInvitationMessage.fromUrl(urlMessage)
-      const { autoAcceptConnection } = config
-      const connectionRecord = await this.connectionsModule.receiveInvitation(invitation, { autoAcceptConnection })
-      return { connectionRecord }
+      return convertOldInvitation(invitation)
     }
     throw new AriesFrameworkError(
       'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`.'
@@ -214,7 +221,7 @@ export class OutOfBandModule {
     config: ReceiveOutOfBandMessageConfig
   ): Promise<{ outOfBandRecord: OutOfBandRecord; connectionRecord?: ConnectionRecord }> {
     const { handshakeProtocols } = outOfBandMessage
-    const { autoAcceptMessage, autoAcceptConnection, reuseConnection, label } = config
+    const { autoAcceptMessage, autoAcceptConnection, reuseConnection, label, routing } = config
     const messages = outOfBandMessage.getRequests()
 
     if ((!handshakeProtocols || handshakeProtocols.length === 0) && (!messages || messages?.length === 0)) {
@@ -232,13 +239,12 @@ export class OutOfBandModule {
     await this.outOfBandService.save(outOfBandRecord)
 
     if (autoAcceptMessage) {
-      return await this.acceptMessage(outOfBandRecord, { label, autoAcceptConnection, reuseConnection })
+      return await this.acceptMessage(outOfBandRecord, { label, autoAcceptConnection, reuseConnection, routing })
     }
 
     return { outOfBandRecord }
   }
 
-<<<<<<< HEAD
   public async acceptMessage(
     outOfBandRecord: OutOfBandRecord,
     config: {
@@ -246,10 +252,11 @@ export class OutOfBandModule {
       reuseConnection?: boolean
       label?: string
       mediatorId?: string
+      routing?: Routing
     }
   ) {
     const { outOfBandMessage } = outOfBandRecord
-    const { label, autoAcceptConnection, reuseConnection } = config
+    const { label, autoAcceptConnection, reuseConnection, routing } = config
     const { handshakeProtocols, services } = outOfBandMessage
     const messages = outOfBandMessage.getRequests()
 
@@ -273,6 +280,7 @@ export class OutOfBandModule {
         connectionRecord = await this.createConnection(outOfBandRecord, {
           label,
           autoAcceptConnection,
+          routing,
         })
       }
 
@@ -308,6 +316,14 @@ export class OutOfBandModule {
       }
     }
     return { outOfBandRecord }
+  }
+
+  public async findByRecipientKey(recipientKey: string) {
+    return this.outOfBandService.findByRecipientKey(recipientKey)
+  }
+
+  public async findByMessageId(messageId: string) {
+    return this.outOfBandService.findByMessageId(messageId)
   }
 
   private assertHandshakeProtocols(handshakeProtocols: HandshakeProtocol[]) {
@@ -370,71 +386,6 @@ export class OutOfBandModule {
             existingConnection = await this.connectionsModule.findByDid(theirDidRecord.id)
           }
         }
-=======
-  public async createOobMessage(message: AgentMessage) {
-    if (!message.service) {
-      throw new AriesFrameworkError(
-        `Out of band message with id ${message.id} and type ${message.type} does not have a ~service decorator`
-      )
-    }
-
-    const outOfBandMessage = new OutOfBandMessage({
-      goal: 'To issue a Faber College Graduate credential',
-      goalCode: 'issue-vc',
-      label: 'Faber College',
-    })
-
-    outOfBandMessage.accept.push('didcomm/aip2;env=rfc587')
-    outOfBandMessage.accept.push('didcomm/aip2;env=rfc19')
-
-    // Protocol compatibilty!
-    // To support newer OOB messages we need to add service from message and then remove `~service` attribute from message
-    outOfBandMessage.services.push(message.service.toDidCommService())
-    message.service = undefined
-    outOfBandMessage.addRequest(message)
-
-    return outOfBandMessage
-  }
-
-  public async receiveOobMessage(outOfBandMessage: OutOfBandMessage) {
-    if (outOfBandMessage.handshakeProtocols.length > 0) {
-      throw new AriesFrameworkError('OOB message contains unsupported `handshake_protocols` attribute.')
-    }
-    const messages = outOfBandMessage.getRequests()
-    messages.forEach(async (unpackedMessage) => {
-      try {
-        // Protocol compatibilty!
-        // To support older OOB messages we need to decorate message with `~service` attribute
-        const message = await this.transformMessage({ message: unpackedMessage })
-        message.setService(outOfBandMessage.services[0])
-
-        this.eventEmitter.emit<AgentMessageReceivedEvent>({
-          type: AgentEventTypes.AgentMessageReceived,
-          payload: {
-            message: message.toJSON(),
-          },
-        })
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('error', error)
-      }
-    })
-  }
-
-  public async receiveInvitation(outOfBandMessage: OutOfBandMessage, config: { autoAccept: boolean }) {
-    const mediationRecord = await this.mediationRecipientService.discoverMediation()
-    const routing = await this.mediationRecipientService.getRouting(mediationRecord)
-    const invitation = new ConnectionInvitationMessage({ label: 'connection label', ...outOfBandMessage.services[0] })
-
-    let connectionRecord = await this.connectionService.processInvitation(invitation, { routing })
-    if (config.autoAccept) {
-      connectionRecord = await this.acceptInvitation(connectionRecord.id)
-    }
-
-    if (outOfBandMessage.getRequests().length > 0) {
-      throw new AriesFrameworkError('OOB invitation contains unsupported `request~attach` attribute.')
-    }
->>>>>>> 519d188 (Separate OOB invitation and OOB message handling)
 
         return existingConnection
       }
@@ -443,12 +394,12 @@ export class OutOfBandModule {
 
   private async createConnection(
     outOfBandRecord: OutOfBandRecord,
-    config: { label?: string; autoAcceptConnection?: boolean }
+    config: { label?: string; autoAcceptConnection?: boolean; routing?: Routing }
   ) {
     this.logger.debug('Creating a new connection.', { outOfBandRecord, config })
     const { outOfBandMessage } = outOfBandRecord
     const { handshakeProtocols } = outOfBandMessage
-    const { label, autoAcceptConnection } = config
+    const { label, autoAcceptConnection, routing } = config
 
     if (!handshakeProtocols) {
       throw new AriesFrameworkError('Threre are no handshake protocols in out-of-band message')
@@ -459,6 +410,7 @@ export class OutOfBandModule {
       label,
       autoAcceptConnection,
       protocol: handshakeProtocol,
+      routing,
     })
 
     return connectionRecord

@@ -1,5 +1,6 @@
 import type { ConnectionRecord } from '../modules/connections'
-import type { DidCommService, IndyAgentService } from '../modules/dids/domain/service'
+import type { IndyAgentService } from '../modules/dids/domain/service'
+import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { OutboundMessage, OutboundPackage, EncryptedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
@@ -12,6 +13,7 @@ import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
+import { DidCommService } from '../modules/dids/domain/service'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
 import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
@@ -233,6 +235,25 @@ export class MessageSender {
       connection,
     })
     throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
+  }
+
+  public async sendMessageToOutOfBand(
+    outOfBandRecord: OutOfBandRecord,
+    connectionRecord: ConnectionRecord,
+    message: AgentMessage
+  ) {
+    // TODO iterate over all services
+    const shouldUseReturnRoute = Boolean(
+      (outOfBandRecord.outOfBandMessage.services as DidCommService[]).find(
+        (s) => s.serviceEndpoint !== DID_COMM_TRANSPORT_QUEUE
+      )
+    )
+    return this.sendMessageToService({
+      message,
+      service: new DidCommService(outOfBandRecord.outOfBandMessage.services[0] as DidCommService),
+      senderKey: connectionRecord.verkey,
+      returnRoute: shouldUseReturnRoute,
+    })
   }
 
   public async sendMessageToService({

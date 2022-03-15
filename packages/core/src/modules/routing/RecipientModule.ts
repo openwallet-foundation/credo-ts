@@ -4,6 +4,7 @@ import type { OutboundMessage } from '../../types'
 import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './index'
+import type { GetRoutingOptions } from './services/MediationRecipientService'
 
 import { firstValueFrom, interval, ReplaySubject, timer } from 'rxjs'
 import { filter, first, takeUntil, throttleTime, timeout, tap, delayWhen } from 'rxjs/operators'
@@ -18,6 +19,8 @@ import { AriesFrameworkError } from '../../error'
 import { TransportEventTypes } from '../../transport'
 import { ConnectionInvitationMessage } from '../connections'
 import { ConnectionService } from '../connections/services'
+import { OutOfBandModule } from '../oob/OutOfBandModule'
+import { convertOldInvitation } from '../oob/helpers'
 
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
 import { RoutingEventTypes } from './RoutingEvents'
@@ -36,17 +39,20 @@ export class RecipientModule {
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
   private logger: Logger
+  private outOfBandModule: OutOfBandModule
 
   public constructor(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     mediationRecipientService: MediationRecipientService,
     connectionService: ConnectionService,
+    outOfBandModule: OutOfBandModule,
     messageSender: MessageSender,
     eventEmitter: EventEmitter
   ) {
     this.agentConfig = agentConfig
     this.connectionService = connectionService
+    this.outOfBandModule = outOfBandModule
     this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
@@ -268,32 +274,29 @@ export class RecipientModule {
     this.logger.debug('Provision Mediation with invitation', { invite: mediatorConnInvite })
     // Connect to mediator through provided invitation
     // Also requests mediation and sets as default mediator
-    // Assumption: processInvitation is a URL-encoded invitation
-    const invitation = await ConnectionInvitationMessage.fromUrl(mediatorConnInvite)
+    // We assume that mediatorConnInvite is a URL-encoded invitation
 
-    // Check if invitation has been used already
-    if (!invitation || !invitation.recipientKeys || !invitation.recipientKeys[0]) {
-      throw new AriesFrameworkError(`Invalid mediation invitation. Invitation must have at least one recipient key.`)
-    }
+    const outOfBandMessage = await this.outOfBandModule.parseMessage(mediatorConnInvite)
+    const outOfBandRecord = await this.outOfBandModule.findByMessageId(outOfBandMessage.id)
+    const connection = outOfBandRecord && (await this.connectionService.findByOutOfBandId(outOfBandRecord.id))
 
     let mediationRecord: MediationRecord | null = null
-
-    const connection = await this.connectionService.findByInvitationKey(invitation.recipientKeys[0])
     if (!connection) {
       this.logger.debug('Mediation Connection does not exist, creating connection')
       // We don't want to use the current default mediator when connecting to another mediator
       const routing = await this.mediationRecipientService.getRouting({ useDefaultMediator: false })
 
-      const invitationConnectionRecord = await this.connectionService.processInvitation(invitation, {
-        autoAcceptConnection: true,
-        routing,
-      })
-      this.logger.debug('Processed mediation invitation', {
-        connectionId: invitationConnectionRecord.id,
-      })
-      const { message } = await this.connectionService.createRequest(invitationConnectionRecord)
-      const outbound = createOutboundMessage(invitationConnectionRecord, message)
-      await this.messageSender.sendMessage(outbound)
+      this.logger.debug('Routing created', routing)
+      const { outOfBandRecord, connectionRecord: invitationConnectionRecord } =
+        await this.outOfBandModule.receiveMessage(outOfBandMessage, {
+          autoAcceptMessage: true,
+          autoAcceptConnection: true,
+          routing,
+        })
+      this.logger.debug('Processed mediation invitation', { outOfBandRecord })
+      if (!invitationConnectionRecord) {
+        throw new AriesFrameworkError('No connection record to provision do some change mediation.')
+      }
 
       const completedConnectionRecord = await this.connectionService.returnWhenIsConnected(
         invitationConnectionRecord.id
@@ -324,6 +327,10 @@ export class RecipientModule {
     }
 
     return mediationRecord
+  }
+
+  public async getRouting(options: GetRoutingOptions) {
+    return this.mediationRecipientService.getRouting(options)
   }
 
   // Register handlers for the several messages for the mediator.

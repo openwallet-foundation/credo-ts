@@ -33,4 +33,8 @@ export class OutOfBandService {
   public async findByRecipientKey(recipientKey: string) {
     return this.outOfBandRepository.findSingleByQuery({ recipientKey })
   }
+
+  public async getAll() {
+    return this.outOfBandRepository.getAll()
+  }
 }

@@ -361,7 +361,7 @@ export class ConnectionService {
     connectionRecord: ConnectionRecord,
     outOfBandRecord?: OutOfBandRecord
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionResponseMessage>> {
-    this.logger.debug(`Process message ${ConnectionResponseMessage.type} start`, connectionRecord)
+    this.logger.debug(`Create message ${ConnectionResponseMessage.type} start`, connectionRecord)
     connectionRecord.assertState(ConnectionState.Requested)
     connectionRecord.assertRole(ConnectionRole.Inviter)
 
@@ -393,6 +393,10 @@ export class ConnectionService {
 
     await this.updateState(connectionRecord, ConnectionState.Responded)
 
+    this.logger.debug(`Create message ${ConnectionResponseMessage.type} end`, {
+      connectionRecord,
+      message: connectionResponse,
+    })
     return {
       connectionRecord,
       message: connectionResponse,

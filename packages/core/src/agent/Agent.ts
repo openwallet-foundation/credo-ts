@@ -1,4 +1,5 @@
 import type { Logger } from '../logger'
+import type { CreateOutOfBandMessageConfig } from '../modules/oob/OutOfBandModule'
 import type { InboundTransport } from '../transport/InboundTransport'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { InitConfig } from '../types'
@@ -231,5 +232,10 @@ export class Agent {
 
   public get config() {
     return this.agentConfig
+  }
+
+  public async createInvitation(config: CreateOutOfBandMessageConfig) {
+    const routing = await this.mediationRecipient.getRouting({})
+    return this.oob.createMessage({ ...config, routing })
   }
 }
