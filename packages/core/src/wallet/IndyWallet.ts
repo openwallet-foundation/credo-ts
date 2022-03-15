@@ -391,20 +391,38 @@ export class IndyWallet implements Wallet {
   }
 
   public async sign(data: Buffer, key: Key): Promise<Buffer> {
-    try {
-      return await this.indy.cryptoSign(this.handle, key.publicKeyBase58, data)
-    } catch (error) {
-      throw new WalletError(`Error signing data with verkey ${key.publicKey}`, { cause: error })
+    switch (key.keyType) {
+      case KeyType.Ed25519:
+        try {
+          return await this.indy.cryptoSign(this.handle, key.publicKeyBase58, data)
+        } catch (error) {
+          throw new WalletError(`Error signing data with verkey ${key.publicKeyBase58}`, { cause: error })
+        }
+      case KeyType.Bls12381g1:
+        throw new WalletError(`METHOD NOT IMPLEMENTED G1`)
+      case KeyType.Bls12381g2:
+        throw new WalletError(`METHOD NOT IMPLEMENTED G2`)
+      default:
+        throw new WalletError(`Unsupported keyType: ${key.keyType}`)
     }
   }
 
   public async verify(data: Buffer, key: Key, signature: Buffer): Promise<boolean> {
-    try {
-      return await this.indy.cryptoVerify(key.publicKeyBase58, data, signature)
-    } catch (error) {
-      throw new WalletError(`Error verifying signature of data signed with verkey ${key.publicKeyBase58}`, {
-        cause: error,
-      })
+    switch (key.keyType) {
+      case KeyType.Ed25519:
+        try {
+          return await this.indy.cryptoVerify(key.publicKeyBase58, data, signature)
+        } catch (error) {
+          throw new WalletError(`Error verifying signature of data signed with verkey ${key.publicKeyBase58}`, {
+            cause: error,
+          })
+        }
+      case KeyType.Bls12381g1:
+        throw new WalletError(`METHOD NOT IMPLEMENTED G1`)
+      case KeyType.Bls12381g2:
+        throw new WalletError(`METHOD NOT IMPLEMENTED G2`)
+      default:
+        throw new WalletError(`Unsupported keyType: ${key.keyType}`)
     }
   }
 
