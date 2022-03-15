@@ -1,15 +1,19 @@
-import type { CredentialSubject, CredentialSubjectOptions } from './CredentialSubject'
+import type { CredentialSubjectOptions } from './CredentialSubject'
 import type { Issuer, IssuerOptions } from './Issuer'
+import type { ValidationOptions } from 'class-validator'
 import type { ContextDefinition } from 'jsonld'
 
 import { Expose } from 'class-transformer'
-import { IsOptional, IsString } from 'class-validator'
+import { buildMessage, IsOptional, IsString, ValidateBy } from 'class-validator'
 
 import { SingleOrArray } from '../../../../utils/type'
-import { IsUri } from '../../../../utils/validators'
-import { CREDENTIALS_CONTEXT_V1_URL } from '../../constants'
-import { CredentialSubjectTransformer, IssuerTransformer } from '../../transformers'
-import { IsIssuer, IsJsonLdContext, IsVerifiableCredentialType } from '../../validators'
+import { IsInstanceOrArrayOfInstances, IsUri } from '../../../../utils/validators'
+import { CREDENTIALS_CONTEXT_V1_URL, VERIFIABLE_CREDENTIAL_TYPE } from '../../constants'
+import { IsJsonLdContext } from '../../validators'
+
+import { CredentialSchema, CredentialSchemaTransformer } from './CredentialSchema'
+import { CredentialSubjectTransformer, CredentialSubject } from './CredentialSubject'
+import { IsIssuer, IssuerTransformer } from './Issuer'
 
 export interface W3cCredentialOptions {
   context: Array<string> | ContextDefinition
@@ -41,8 +45,10 @@ export class W3cCredential {
   @IsOptional()
   @IsUri()
   public id?: string
-  @IsVerifiableCredentialType()
+
+  @IsCredentialType()
   public type!: Array<string>
+
   @IssuerTransformer()
   @IsIssuer()
   public issuer!: string | Issuer
@@ -55,5 +61,34 @@ export class W3cCredential {
   public expirationDate?: string
 
   @CredentialSubjectTransformer()
+  @IsInstanceOrArrayOfInstances({ classType: CredentialSubject })
   public credentialSubject!: SingleOrArray<CredentialSubject>
+
+  @IsOptional()
+  @CredentialSchemaTransformer()
+  @IsInstanceOrArrayOfInstances({ classType: CredentialSchema })
+  public credentialSchema?: SingleOrArray<CredentialSchema>
+}
+
+// Custom validator
+
+export function IsCredentialType(validationOptions?: ValidationOptions): PropertyDecorator {
+  return ValidateBy(
+    {
+      name: 'IsVerifiableCredentialType',
+      validator: {
+        validate: (value): boolean => {
+          if (Array.isArray(value)) {
+            return value.includes(VERIFIABLE_CREDENTIAL_TYPE)
+          }
+          return false
+        },
+        defaultMessage: buildMessage(
+          (eachPrefix) => eachPrefix + '$property must be an array of strings which includes "VerifiableCredential"',
+          validationOptions
+        ),
+      },
+    },
+    validationOptions
+  )
 }

@@ -1,19 +1,11 @@
 import type { LinkedDataProofOptions } from '../LinkedDataProof'
-import type { W3cVerifiableCredentialOptions } from '../credential/W3cVerifiableCredential'
-import type { TypeHelpOptions } from 'class-transformer'
-import type { ContextDefinition } from 'jsonld'
-
-import { Type } from 'class-transformer'
-import { IsOptional } from 'class-validator'
+import type { W3cPresentationOptions } from './W3Presentation'
 
 import { SingleOrArray } from '../../../../utils/type'
-import { IsInstanceOrArrayOfInstances, IsUri } from '../../../../utils/validators'
-import { LinkedDataProofTransformer, VerifiableCredentialTransformer } from '../../transformers'
-import { IsVerifiablePresentationType } from '../../validators'
+import { IsInstanceOrArrayOfInstances } from '../../../../utils/validators'
+import { LinkedDataProof, LinkedDataProofTransformer } from '../LinkedDataProof'
 
-import { LinkedDataProof } from '../LinkedDataProof'
-import { W3cVerifiableCredential } from '../credential/W3cVerifiableCredential'
-import { W3cPresentation, W3cPresentationOptions } from './W3Presentation'
+import { W3cPresentation } from './W3Presentation'
 
 export interface W3cVerifiablePresentationOptions extends W3cPresentationOptions {
   proof: LinkedDataProofOptions
