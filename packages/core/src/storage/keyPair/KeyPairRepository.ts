@@ -1,13 +1,10 @@
-import type { KeyPairKeyTypes } from './KeyPairRecord'
-
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
+import { InjectionSymbols } from '../../constants'
 import { Repository } from '../Repository'
 import { StorageService } from '../StorageService'
 
 import { KeyPairRecord } from './KeyPairRecord'
-
-import { InjectionSymbols } from '@aries-framework/core'
 
 @scoped(Lifecycle.ContainerScoped)
 export class KeyPairRepository extends Repository<KeyPairRecord> {
@@ -15,16 +12,25 @@ export class KeyPairRepository extends Repository<KeyPairRecord> {
     super(KeyPairRecord, storageService)
   }
 
-  public async getKeyPair({ keyType, publicKeyBase58 }: GetKeyPairOptions) {
-    return await this.getSingleByQuery({ keyType, publicKeyBase58 })
+  /**
+   * Get a keyPair record based on a base58 encoded public key
+   *
+   * @inheritDoc {Repository#getSingleByQuery}
+   */
+  public async getKeyPair({ publicKeyBase58 }: GetKeyPairOptions) {
+    return await this.getSingleByQuery({ publicKeyBase58 })
   }
 
-  public async findKeyPair({ keyType, publicKeyBase58 }: GetKeyPairOptions) {
-    return await this.findSingleByQuery({ keyType, publicKeyBase58 })
+  /**
+   * Find a keyPair record based on a base58 encoded public key
+   *
+   * @inheritDoc {Repository#findSingleByQuery}
+   */
+  public async findKeyPair({ publicKeyBase58 }: GetKeyPairOptions) {
+    return await this.findSingleByQuery({ publicKeyBase58 })
   }
 }
 
 type GetKeyPairOptions = {
   publicKeyBase58?: string
-  keyType?: KeyPairKeyTypes
 }
