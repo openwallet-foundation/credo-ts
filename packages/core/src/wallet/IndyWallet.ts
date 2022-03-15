@@ -1,5 +1,5 @@
 import type { Logger } from '../logger'
-import type { EncryptedMessage, DecryptedMessageContext, WalletConfig } from '../types'
+import type { EncryptedMessage, DecryptedMessageContext, WalletConfig, WalletExportImportConfig } from '../types'
 import type { Buffer } from '../utils/buffer'
 import type { Wallet, DidInfo, DidConfig } from './Wallet'
 import type { default as Indy } from 'indy-sdk'
@@ -60,36 +60,20 @@ export class IndyWallet implements Wallet {
     return this.walletConfig.id
   }
 
-  public async initialize(walletConfig: WalletConfig) {
-    this.logger.info(`Initializing wallet '${walletConfig.id}'`, walletConfig)
-
-    if (this.isInitialized) {
-      throw new WalletError(
-        'Wallet instance already initialized. Close the currently opened wallet before re-initializing the wallet'
-      )
-    }
-
-    // Open wallet, creating if it doesn't exist yet
-    try {
-      await this.open(walletConfig)
-    } catch (error) {
-      // If the wallet does not exist yet, create it and try to open again
-      if (error instanceof WalletNotFoundError) {
-        await this.create(walletConfig)
-        await this.open(walletConfig)
-      } else {
-        throw error
-      }
-    }
-
-    this.logger.debug(`Wallet '${walletConfig.id}' initialized with handle '${this.handle}'`)
+  /**
+   * @throws {WalletDuplicateError} if the wallet already exists
+   * @throws {WalletError} if another error occurs
+   */
+  public async create(walletConfig: WalletConfig): Promise<void> {
+    await this.createAndOpen(walletConfig)
+    await this.close()
   }
 
   /**
    * @throws {WalletDuplicateError} if the wallet already exists
    * @throws {WalletError} if another error occurs
    */
-  public async create(walletConfig: WalletConfig): Promise<void> {
+  public async createAndOpen(walletConfig: WalletConfig): Promise<void> {
     this.logger.debug(`Creating wallet '${walletConfig.id}' using SQLite storage`)
 
     try {
@@ -105,10 +89,10 @@ export class IndyWallet implements Wallet {
 
       // We need to open wallet before creating master secret because we need wallet handle here.
       await this.createMasterSecret(this.handle, walletConfig.id)
-
-      // We opened wallet just to create master secret, we can close it now.
-      await this.close()
     } catch (error) {
+      // If an error ocurred while creating the master secret, we should close the wallet
+      if (this.isInitialized) await this.close()
+
       if (isIndyError(error, 'WalletAlreadyExistsError')) {
         const errorMessage = `Wallet '${walletConfig.id}' already exists`
         this.logger.debug(errorMessage)
@@ -127,6 +111,8 @@ export class IndyWallet implements Wallet {
         throw new WalletError(errorMessage, { cause: error })
       }
     }
+
+    this.logger.debug(`Successfully created wallet '${walletConfig.id}'`)
   }
 
   /**
@@ -172,6 +158,8 @@ export class IndyWallet implements Wallet {
         throw new WalletError(errorMessage, { cause: error })
       }
     }
+
+    this.logger.debug(`Wallet '${walletConfig.id}' opened with handle '${this.handle}'`)
   }
 
   /**
@@ -214,6 +202,34 @@ export class IndyWallet implements Wallet {
 
         throw new WalletError(errorMessage, { cause: error })
       }
+    }
+  }
+
+  public async export(exportConfig: WalletExportImportConfig) {
+    try {
+      this.logger.debug(`Exporting wallet ${this.walletConfig?.id} to path ${exportConfig.path}`)
+      await this.indy.exportWallet(this.handle, exportConfig)
+    } catch (error) {
+      const errorMessage = `Error exporting wallet': ${error.message}`
+      this.logger.error(errorMessage, {
+        error,
+      })
+
+      throw new WalletError(errorMessage, { cause: error })
+    }
+  }
+
+  public async import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig) {
+    try {
+      this.logger.debug(`Importing wallet ${walletConfig.id} from path ${importConfig.path}`)
+      await this.indy.importWallet({ id: walletConfig.id }, { key: walletConfig.key }, importConfig)
+    } catch (error) {
+      const errorMessage = `Error importing wallet': ${error.message}`
+      this.logger.error(errorMessage, {
+        error,
+      })
+
+      throw new WalletError(errorMessage, { cause: error })
     }
   }
 
