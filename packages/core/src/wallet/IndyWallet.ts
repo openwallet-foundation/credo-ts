@@ -378,6 +378,10 @@ export class IndyWallet implements Wallet {
       switch (keyType) {
         case KeyType.Ed25519:
           return Key.fromPublicKeyBase58(await this.indy.createKey(this.handle, { seed }), keyType)
+        case KeyType.Bls12381g1:
+          throw new WalletError(`METHOD NOT IMPLEMENTED G1`)
+        case KeyType.Bls12381g2:
+          throw new WalletError(`METHOD NOT IMPLEMENTED G2`)
         default:
           throw new WalletError(`Unsupported key type: '${keyType}' for wallet IndyWallet`)
       }
