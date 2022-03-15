@@ -1,5 +1,5 @@
-import { BufferEncoder } from '../BufferEncoder'
 import { MultiHashEncoder } from '../MultiHashEncoder'
+import { TypedArrayEncoder } from '../TypedArrayEncoder'
 import { Buffer } from '../buffer'
 
 const validData = Buffer.from('Hello World!')
@@ -18,7 +18,7 @@ describe('multihash', () => {
     it('Decodes multihash', () => {
       const { data, hashName } = MultiHashEncoder.decode(validMultiHash)
       expect(hashName).toEqual('sha2-256')
-      expect(BufferEncoder.toUtf8String(data)).toEqual('Hello World!')
+      expect(TypedArrayEncoder.toUtf8String(data)).toEqual('Hello World!')
     })
 
     it('Decodes invalid multihash', () => {

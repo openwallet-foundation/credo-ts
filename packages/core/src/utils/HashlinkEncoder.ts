@@ -6,9 +6,9 @@ import { hash as sha256 } from '@stablelib/sha256'
 // @ts-ignore ts is giving me headaches because this package has no types
 import cbor from 'borc'
 
-import { BufferEncoder } from './BufferEncoder'
 import { MultiBaseEncoder } from './MultiBaseEncoder'
 import { MultiHashEncoder } from './MultiHashEncoder'
+import { TypedArrayEncoder } from './TypedArrayEncoder'
 
 type Metadata = {
   urls?: string[]
@@ -92,7 +92,7 @@ export class HashlinkEncoder {
     const hash = sha256(buffer)
     const mh = MultiHashEncoder.encode(hash, hashName)
     const mb = MultiBaseEncoder.encode(mh, baseEncoding)
-    return BufferEncoder.toUtf8String(mb)
+    return TypedArrayEncoder.toUtf8String(mb)
   }
 
   private static encodeMetadata(metadata: Metadata, baseEncoding: BaseName): string {
@@ -110,7 +110,7 @@ export class HashlinkEncoder {
 
     const multibaseMetadata = MultiBaseEncoder.encode(cborData, baseEncoding)
 
-    return BufferEncoder.toUtf8String(multibaseMetadata)
+    return TypedArrayEncoder.toUtf8String(multibaseMetadata)
   }
 
   private static decodeMetadata(mb: string): Metadata {

@@ -1,4 +1,4 @@
-import { BufferEncoder } from '../BufferEncoder'
+import { TypedArrayEncoder } from '../TypedArrayEncoder'
 import { MultiBaseEncoder } from '../MultiBaseEncoder'
 import { Buffer } from '../buffer'
 
@@ -9,7 +9,7 @@ const invalidMultiBase = 'gKWfinQuRQ3ekD1danFHqvKRg9koFp8vpokUeREEgjSyHwweeKDFax
 describe('MultiBaseEncoder', () => {
   describe('encode()', () => {
     it('Encodes valid multibase', () => {
-      const multibase = BufferEncoder.toUtf8String(MultiBaseEncoder.encode(validData, 'base58btc'))
+      const multibase = TypedArrayEncoder.toUtf8String(MultiBaseEncoder.encode(validData, 'base58btc'))
       expect(multibase).toEqual('z2NEpo7TZRRrLZSi2U')
     })
   })
@@ -17,7 +17,7 @@ describe('MultiBaseEncoder', () => {
   describe('Decodes()', () => {
     it('Decodes multibase', () => {
       const { data, baseName } = MultiBaseEncoder.decode(validMultiBase)
-      expect(BufferEncoder.toUtf8String(data)).toEqual('This is a valid base58btc encoded string!')
+      expect(TypedArrayEncoder.toUtf8String(data)).toEqual('This is a valid base58btc encoded string!')
       expect(baseName).toEqual('base58btc')
     })
 

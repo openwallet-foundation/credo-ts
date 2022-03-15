@@ -3,8 +3,8 @@ import type { BaseName } from 'multibase'
 
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 
-import { BufferEncoder } from './BufferEncoder'
 import { HashlinkEncoder } from './HashlinkEncoder'
+import { TypedArrayEncoder } from './TypedArrayEncoder'
 
 /**
  * Encodes an attachment based on the `data` property
@@ -22,7 +22,7 @@ export function encodeAttachment(
   if (attachment.data.sha256) {
     return `hl:${attachment.data.sha256}`
   } else if (attachment.data.base64) {
-    return HashlinkEncoder.encode(BufferEncoder.fromBase64(attachment.data.base64), hashAlgorithm, baseName)
+    return HashlinkEncoder.encode(TypedArrayEncoder.fromBase64(attachment.data.base64), hashAlgorithm, baseName)
   } else if (attachment.data.json) {
     throw new AriesFrameworkError(
       `Attachment: (${attachment.id}) has json encoded data. This is currently not supported`

@@ -2,7 +2,7 @@ import type { KeyType } from '../../../crypto'
 
 import { varint } from 'multiformats'
 
-import { Buffer, BufferEncoder, MultiBaseEncoder } from '../../../utils'
+import { Buffer, TypedArrayEncoder, MultiBaseEncoder } from '../../../utils'
 
 import { getKeyTypeByMultiCodecPrefix, getMultiCodecPrefixByKeytype } from './key-type/multiCodecKey'
 
@@ -20,7 +20,7 @@ export class Key {
   }
 
   public static fromPublicKeyBase58(publicKey: string, keyType: KeyType) {
-    const publicKeyBytes = BufferEncoder.fromBase58(publicKey)
+    const publicKeyBytes = TypedArrayEncoder.fromBase58(publicKey)
 
     return Key.fromPublicKey(publicKeyBytes, keyType)
   }
@@ -46,10 +46,10 @@ export class Key {
   }
 
   public get fingerprint() {
-    return `z${BufferEncoder.toBase58(this.prefixedPublicKey)}`
+    return `z${TypedArrayEncoder.toBase58(this.prefixedPublicKey)}`
   }
 
   public get publicKeyBase58() {
-    return BufferEncoder.toBase58(this.publicKey)
+    return TypedArrayEncoder.toBase58(this.publicKey)
   }
 }
