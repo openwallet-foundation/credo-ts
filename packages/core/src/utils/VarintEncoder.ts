@@ -14,11 +14,6 @@ export class VarintEncoder {
     return target
   }
 
-  public static encodeTo(int: number, target: Buffer | Uint8Array, offset = 0) {
-    encode(int, target, offset)
-    return target
-  }
-
   public static encodingLength(int: number) {
     return encodingLength(int)
   }
