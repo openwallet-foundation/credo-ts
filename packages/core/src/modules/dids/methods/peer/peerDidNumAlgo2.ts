@@ -1,8 +1,9 @@
 import type { JsonObject } from '../../../../types'
 import type { DidDocument, VerificationMethod } from '../../domain'
 
+import { Key } from '../../../../crypto'
 import { JsonEncoder, JsonTransformer } from '../../../../utils'
-import { DidDocumentService, Key } from '../../domain'
+import { DidDocumentService } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
 import { getKeyDidMappingByKeyType, getKeyDidMappingByVerificationMethod } from '../../domain/key-type'
 import { parseDid } from '../../domain/parse'

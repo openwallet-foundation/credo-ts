@@ -1,12 +1,14 @@
 import type { Logger } from '../logger'
 import type { EncryptedMessage, DecryptedMessageContext, WalletConfig, WalletExportImportConfig } from '../types'
 import type { Buffer } from '../utils/buffer'
-import type { Wallet, DidInfo, DidConfig } from './Wallet'
+import type { Wallet, DidInfo, DidConfig, CreateKeyOptions } from './Wallet'
 import type { default as Indy } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../agent/AgentConfig'
+import { KeyType } from '../crypto'
+import { Key } from '../crypto/Key'
 import { AriesFrameworkError } from '../error'
 import { JsonEncoder } from '../utils/JsonEncoder'
 import { isIndyError } from '../utils/indyError'
@@ -321,6 +323,20 @@ export class IndyWallet implements Wallet {
       return { did, verkey }
     } catch (error) {
       throw new WalletError('Error creating Did', { cause: error })
+    }
+  }
+
+  public async createKey({ seed, keyType }: CreateKeyOptions): Promise<Key> {
+    if (keyType !== KeyType.Ed25519) {
+      throw new WalletError(`Unsupported key type: '${keyType}' for wallet IndyWallet`)
+    }
+
+    try {
+      const publicKeyBase58 = await this.indy.createKey(this.handle, { seed })
+
+      return Key.fromPublicKeyBase58(publicKeyBase58, keyType)
+    } catch (error) {
+      throw new WalletError(`Error creating key with key type '${keyType}': ${error.message}`, { cause: error })
     }
   }
 
