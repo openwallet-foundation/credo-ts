@@ -1,8 +1,8 @@
 import { KeyType } from '../../../../../crypto'
-import { JsonTransformer, TypedArrayEncoder, Buffer } from '../../../../../utils'
-import didKeyEd25519Fixture from '../../../__tests__/__fixtures__//didKeyEd25519.json'
-import { Key } from '../../../domain/Key'
+import { Key } from '../../../../../crypto/Key'
+import { Buffer, JsonTransformer, TypedArrayEncoder } from '../../../../../utils'
 import { VerificationMethod } from '../../../domain/verificationMethod'
+import didKeyEd25519Fixture from '../../../__tests__/__fixtures__//didKeyEd25519.json'
 import { keyDidEd25519 } from '../ed25519'
 
 const TEST_ED25519_BASE58_KEY = '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'

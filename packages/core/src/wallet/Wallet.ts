@@ -1,9 +1,6 @@
+import type { Key, KeyType } from '../crypto'
 import type {
-  EncryptedMessage,
-  DecryptedMessageContext,
-  WalletConfig,
-  WalletExportImportConfig,
-  WalletConfigRekey,
+  DecryptedMessageContext, EncryptedMessage, WalletConfig, WalletConfigRekey, WalletExportImportConfig
 } from '../types'
 import type { Buffer } from '../utils/buffer'
 
@@ -21,6 +18,8 @@ export interface Wallet {
   export(exportConfig: WalletExportImportConfig): Promise<void>
   import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig): Promise<void>
 
+  createKey(options: CreateKeyOptions): Promise<Key>
+
   initPublicDid(didConfig: DidConfig): Promise<void>
   createDid(didConfig?: DidConfig): Promise<DidInfo>
   pack(payload: Record<string, unknown>, recipientKeys: string[], senderVerkey?: string): Promise<EncryptedMessage>
@@ -33,6 +32,11 @@ export interface Wallet {
 export interface DidInfo {
   did: string
   verkey: string
+}
+
+export interface CreateKeyOptions {
+  keyType: KeyType
+  seed?: string
 }
 
 export interface DidConfig {

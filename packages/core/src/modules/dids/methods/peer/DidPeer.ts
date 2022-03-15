@@ -1,14 +1,14 @@
-import type { DidDocument } from '../../domain'
-import type { ParsedDid } from '../../types'
-
 import { instanceToInstance } from 'class-transformer'
-
 import { JsonEncoder, MultiBaseEncoder, MultiHashEncoder } from '../../../../utils'
+import type { DidDocument } from '../../domain'
 import { Key } from '../../domain/Key'
 import { getKeyDidMappingByKeyType } from '../../domain/key-type'
 import { parseDid } from '../../domain/parse'
-
+import type { ParsedDid } from '../../types'
 import { didDocumentToNumAlgo2Did, didToNumAlgo2DidDocument } from './peerDidNumAlgo2'
+
+
+
 
 const PEER_DID_REGEX = new RegExp(
   '^did:peer:(([01](z)([1-9a-km-zA-HJ-NP-Z]{5,200}))|(2((.[AEVID](z)([1-9a-km-zA-HJ-NP-Z]{5,200}))+(.(S)[0-9a-zA-Z=]*)?)))$'

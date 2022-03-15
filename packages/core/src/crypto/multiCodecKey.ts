@@ -1,4 +1,4 @@
-import { KeyType } from '../../../../crypto'
+import { KeyType } from './KeyType'
 
 // based on https://github.com/multiformats/multicodec/blob/master/table.csv
 const multiCodecPrefixMap: Record<string, KeyType> = {
