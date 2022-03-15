@@ -1,4 +1,4 @@
-import { Key } from '../../domain/Key'
+import { Key } from '../../../../crypto/Key'
 import { getKeyDidMappingByKeyType } from '../../domain/key-type'
 import { parseDid } from '../../domain/parse'
 

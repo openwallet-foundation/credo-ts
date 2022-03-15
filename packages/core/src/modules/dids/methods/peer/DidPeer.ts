@@ -4,8 +4,8 @@ import type { ParsedDid } from '../../types'
 import { hash as sha256 } from '@stablelib/sha256'
 import { instanceToInstance } from 'class-transformer'
 
+import { Key } from '../../../../crypto/Key'
 import { BufferEncoder, JsonEncoder, MultiBaseEncoder, MultiHashEncoder, Buffer } from '../../../../utils'
-import { Key } from '../../domain/Key'
 import { getKeyDidMappingByKeyType } from '../../domain/key-type'
 import { parseDid } from '../../domain/parse'
 
