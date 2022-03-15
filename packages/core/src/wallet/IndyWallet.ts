@@ -326,6 +326,20 @@ export class IndyWallet implements Wallet {
     }
   }
 
+  /**
+   *
+   * Create a key with an optional seed and keyType
+   *
+   * Bls12381g1g2 is not supported.
+   *
+   * @param seed string The seed for creating a key
+   * @param keyType KeyType the type of key that should be created
+   *
+   * @returns a Key instance with a publicKeyBase58
+   *
+   * @throws {WalletError} When an unsupported keytype is requested
+   * @throws {WalletError} When the key could not be created
+   */
   public async createKey({ seed, keyType }: CreateKeyOptions): Promise<Key> {
     try {
       switch (keyType) {
@@ -338,44 +352,66 @@ export class IndyWallet implements Wallet {
         default:
           throw new WalletError(`Unsupported key type: '${keyType}' for wallet IndyWallet`)
       }
-    } catch (error) {
+    } catch {
       throw new WalletError(`Error creating key with key type '${keyType}': ${error.message}`, { cause: error })
     }
   }
 
+  /**
+   * sign a Buffer with an instance of a Key class
+   *
+   * Bls12381g1g2 and Bls12381g1 are not supported.
+   *
+   * @param data Buffer The data that needs to be signed
+   * @param key Key The key that is used to sign the data
+   *
+   *
+   * @returns A signature for the data
+   */
   public async sign(data: Buffer, key: Key): Promise<Buffer> {
-    switch (key.keyType) {
-      case KeyType.Ed25519:
-        try {
+    try {
+      switch (key.keyType) {
+        case KeyType.Ed25519:
           return await this.indy.cryptoSign(this.handle, key.publicKeyBase58, data)
-        } catch (error) {
-          throw new WalletError(`Error signing data with verkey ${key.publicKeyBase58}`, { cause: error })
-        }
-      case KeyType.Bls12381g1:
-        throw new WalletError(`METHOD NOT IMPLEMENTED G1`)
-      case KeyType.Bls12381g2:
-        throw new WalletError(`METHOD NOT IMPLEMENTED G2`)
-      default:
-        throw new WalletError(`Unsupported keyType: ${key.keyType}`)
+        case KeyType.Bls12381g2:
+          throw new WalletError(`METHOD NOT IMPLEMENTED G2`)
+        default:
+          throw new WalletError(`Unsupported keyType: ${key.keyType}`)
+      }
+    } catch (error) {
+      throw new WalletError(`Error signing data with verkey ${key.publicKeyBase58}`, { cause: error })
     }
   }
 
+  /**
+   * Verify the signature with the data and the used key
+   *
+   * Bls12381g1g2 and Bls12381g1 are not supported.
+   *
+   * @param data Buffer The data that has to be confirmed to be signed
+   * @param key Key The key that was used in the signing process
+   * @param signature Buffer The signature that was created by the signing process
+   *
+   * @returns A boolean whether the signature was created with the supplied data and key
+   *
+   *
+   * @throws {WalletError} When it could not do the verification
+   * @throws {WalletError} When an unsupported keytype is used
+   */
   public async verify(data: Buffer, key: Key, signature: Buffer): Promise<boolean> {
-    switch (key.keyType) {
-      case KeyType.Ed25519:
-        try {
+    try {
+      switch (key.keyType) {
+        case KeyType.Ed25519:
           return await this.indy.cryptoVerify(key.publicKeyBase58, data, signature)
-        } catch (error) {
-          throw new WalletError(`Error verifying signature of data signed with verkey ${key.publicKeyBase58}`, {
-            cause: error,
-          })
-        }
-      case KeyType.Bls12381g1:
-        throw new WalletError(`METHOD NOT IMPLEMENTED G1`)
-      case KeyType.Bls12381g2:
-        throw new WalletError(`METHOD NOT IMPLEMENTED G2`)
-      default:
-        throw new WalletError(`Unsupported keyType: ${key.keyType}`)
+        case KeyType.Bls12381g2:
+          throw new WalletError(`METHOD NOT IMPLEMENTED G2`)
+        default:
+          throw new WalletError(`Unsupported keyType: ${key.keyType}`)
+      }
+    } catch (error) {
+      throw new WalletError(`Error verifying signature of data signed with verkey ${key.publicKeyBase58}`, {
+        cause: error,
+      })
     }
   }
 
