@@ -45,7 +45,6 @@ import { CredentialService } from '../../CredentialService'
 import { CredentialState } from '../../CredentialState'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
-import { JsonLdCredentialFormatService } from '../../formats/jsonld/JsonLdCredentialFormatService'
 import { FORMAT_KEYS } from '../../formats/models/CredentialFormatServiceOptions'
 import { CredentialFormatType } from '../../interfaces'
 import { CredentialRepository, CredentialExchangeRecord } from '../../repository'
@@ -119,7 +118,6 @@ export class V2CredentialService extends CredentialService {
   public getFormatService(credentialFormatType: CredentialFormatType): CredentialFormatService {
     const serviceFormatMap = {
       [CredentialFormatType.Indy]: IndyCredentialFormatService,
-      [CredentialFormatType.JsonLd]: JsonLdCredentialFormatService,
     }
     return new serviceFormatMap[credentialFormatType](
       this.credentialRepository,
@@ -201,7 +199,7 @@ export class V2CredentialService extends CredentialService {
       if (msg.format.includes('indy')) {
         formats.push(this.getFormatService(CredentialFormatType.Indy))
       } else if (msg.format.includes('aries')) {
-        formats.push(this.getFormatService(CredentialFormatType.JsonLd))
+        // formats.push(this.getFormatService(CredentialFormatType.JsonLd))
       } else {
         throw new AriesFrameworkError(`Unknown Message Format: ${msg.format}`)
       }
@@ -628,9 +626,6 @@ export class V2CredentialService extends CredentialService {
     credentialOptions: NegotiateOfferOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
-    if (!credentialOptions.credentialRecordId) {
-      throw new AriesFrameworkError('No credential record id found in propose options')
-    }
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`

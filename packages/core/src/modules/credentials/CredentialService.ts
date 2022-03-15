@@ -10,7 +10,12 @@ import type { CredentialStateChangedEvent } from './CredentialEvents'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
 import type { ServiceRequestCredentialOptions } from './CredentialServiceOptions'
 import type { CredentialFormatService } from './formats/CredentialFormatService'
-import type { CredProposeOfferRequestFormat } from './formats/models/CredentialFormatServiceOptions'
+import type {
+  CredentialIssueFormat,
+  CredentialOfferFormat,
+  CredentialProposeFormat,
+  CredentialRequestFormat,
+} from './formats/models/CredentialFormatServiceOptions'
 import type {
   AcceptProposalOptions,
   AcceptRequestOptions,
@@ -41,6 +46,12 @@ import { CredentialState } from './CredentialState'
 export type CredentialServiceType = V1CredentialService | V2CredentialService
 
 const logger = new ConsoleLogger(LogLevel.info)
+
+export type CredProposeOfferRequestFormat =
+  | CredentialOfferFormat
+  | CredentialProposeFormat
+  | CredentialRequestFormat
+  | CredentialIssueFormat
 
 export abstract class CredentialService {
   protected credentialRepository: CredentialRepository

@@ -2,7 +2,7 @@ import type { AgentConfig } from '../../../../src/agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { ServiceRequestCredentialOptions } from '../CredentialServiceOptions'
-import type { CredProposeOfferRequestFormat } from '../formats/models/CredentialFormatServiceOptions'
+import type { CredentialRequestFormat } from '../formats/models/CredentialFormatServiceOptions'
 import type { AcceptRequestOptions, RequestCredentialOptions } from '../interfaces'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
 import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
@@ -103,14 +103,10 @@ const credentialAttachment = new Attachment({
   }),
 })
 
-const v2CredentialFormats: CredProposeOfferRequestFormat = {
+const v2CredentialRequest: CredentialRequestFormat = {
   indy: {
-    payload: {
-      credentialPayload: {
-        attributes: credentialPreview.attributes,
-        credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
-      },
-    },
+    attributes: credentialPreview.attributes,
+    credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
   },
 }
 
@@ -280,7 +276,7 @@ describe('CredentialService', () => {
       })
 
       const requestOptions: ServiceRequestCredentialOptions = {
-        credentialFormats: v2CredentialFormats,
+        credentialFormats: v2CredentialRequest,
       }
 
       // when
