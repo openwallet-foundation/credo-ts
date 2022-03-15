@@ -5,11 +5,13 @@ import { BufferEncoder } from '../../utils'
 import { uuid } from '../../utils/uuid'
 import { BaseRecord } from '../BaseRecord'
 
+export type KeyPairKeyTypes = Exclude<KeyType, KeyType.Ed25519 | KeyType.X25519>
+
 interface KeyPairRecordProps {
   id?: string
   publicKey: Uint8Array
   privateKey: Uint8Array
-  keyType: Exclude<KeyType, KeyType.Ed25519 | KeyType.X25519>
+  keyType: KeyPairKeyTypes
 }
 
 /**
@@ -51,10 +53,9 @@ export class KeyPairRecord extends BaseRecord {
   }
 
   /**
-   * @todo which tags should be returned here?
-   *       publicKey and keyType?
+   * @returns the tags of record, this includes the default tags, the publicKeyBase58 and the keyType
    */
   public getTags(): TagsBase {
-    return this._tags
+    return { ...this._tags, publicKeyBase58: this.publicKeyBase58, keyType: this.keyType }
   }
 }
