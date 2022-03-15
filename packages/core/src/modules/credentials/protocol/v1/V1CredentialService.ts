@@ -432,7 +432,7 @@ export class V1CredentialService extends CredentialService {
         indy: {
           credentialDefinitionId,
         },
-        w3c: undefined,
+        jsonld: undefined,
       },
     }
     const { attachment: offersAttach } = await this.formatService.createOffer(options)
@@ -690,7 +690,7 @@ export class V1CredentialService extends CredentialService {
         indy: {
           credentialDefinitionId,
         },
-        w3c: undefined,
+        jsonld: undefined,
       },
     }
 

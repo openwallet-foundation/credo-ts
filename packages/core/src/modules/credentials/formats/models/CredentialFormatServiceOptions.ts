@@ -17,7 +17,7 @@ export interface CredentialDefinitionFormat {
   indy?: {
     credDef: CredDef
   }
-  w3c?: {
+  jsonld?: {
     // todo
   }
 }
@@ -52,6 +52,7 @@ export interface W3CCredentialFormat {
       type: string
     }
   }
+  credentialDefinitionId: string // QUACK temporary workaround to use Indy SDK until new W3CCredential interface is ready
   extendedTypes?: string[]
 }
 export interface CredProposeOfferRequestFormat {

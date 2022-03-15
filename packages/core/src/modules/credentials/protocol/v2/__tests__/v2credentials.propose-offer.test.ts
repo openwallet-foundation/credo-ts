@@ -320,7 +320,7 @@ describe('credentials', () => {
         credentialRecordId: aliceCredentialRecord.id,
         credentialFormats: {
           indy: undefined,
-          w3c: undefined,
+          jsonld: undefined,
         },
       }
       const offerCredentialExchangeRecord: CredentialExchangeRecord =

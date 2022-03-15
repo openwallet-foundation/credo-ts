@@ -358,7 +358,6 @@ export class V2CredentialService extends CredentialService {
   ): Promise<V2OfferCredentialMessage> {
     // Assert
     credentialRecord.assertState(CredentialState.ProposalReceived)
-
     const formats: CredentialFormatService[] = this.getFormats(proposal.credentialFormats as Record<string, unknown>)
 
     // Create the offer message
@@ -735,7 +734,7 @@ export class V2CredentialService extends CredentialService {
       credentialRecordId: '',
       credentialFormats: {
         indy: undefined,
-        w3c: undefined,
+        jsonld: undefined,
       },
     }
 

@@ -5,6 +5,7 @@ import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
 import type {
   CredentialDefinitionFormat,
   CredProposeOfferRequestFormat,
+  W3CCredentialFormat,
 } from './formats/models/CredentialFormatServiceOptions'
 import type {
   AcceptOfferOptions,
@@ -40,9 +41,7 @@ export interface ServiceAcceptOfferOptions extends AcceptOfferOptions {
   attachId?: string
   credentialFormats: {
     indy?: IndyCredentialPreview
-    w3c?: {
-      // todo
-    }
+    jsonld?: W3CCredentialFormat
   }
 }
 

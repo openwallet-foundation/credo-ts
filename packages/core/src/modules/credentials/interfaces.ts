@@ -6,6 +6,7 @@ import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
 import type {
   CredProposeOfferRequestFormat,
   CredentialDefinitionFormat,
+  W3CCredentialFormat,
 } from './formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from './models/CredentialPreviewAttributes'
 
@@ -41,7 +42,7 @@ export interface IndyOfferCredentialFormat {
 
 export interface OfferCredentialFormats {
   indy?: IndyOfferCredentialFormat
-  w3c?: undefined
+  jsonld?: undefined
 }
 
 interface OfferCredentialOptions {
@@ -96,9 +97,7 @@ interface AcceptProposalOptions {
   proposal?: Attachment
   credentialFormats: {
     indy?: IndyCredentialPreview
-    w3c?: {
-      // todo
-    }
+    jsonld?: W3CCredentialFormat
   }
 }
 
