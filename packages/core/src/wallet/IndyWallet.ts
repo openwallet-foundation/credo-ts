@@ -374,16 +374,33 @@ export class IndyWallet implements Wallet {
   }
 
   public async createKey({ seed, keyType }: CreateKeyOptions): Promise<Key> {
-    if (keyType !== KeyType.Ed25519) {
-      throw new WalletError(`Unsupported key type: '${keyType}' for wallet IndyWallet`)
-    }
-
     try {
-      const publicKeyBase58 = await this.indy.createKey(this.handle, { seed })
-
-      return Key.fromPublicKeyBase58(publicKeyBase58, keyType)
+      switch (keyType) {
+        case KeyType.Ed25519:
+          return Key.fromPublicKeyBase58(await this.indy.createKey(this.handle, { seed }), keyType)
+        default:
+          throw new WalletError(`Unsupported key type: '${keyType}' for wallet IndyWallet`)
+      }
     } catch (error) {
       throw new WalletError(`Error creating key with key type '${keyType}': ${error.message}`, { cause: error })
+    }
+  }
+
+  public async sign(data: Buffer, key: Key): Promise<Buffer> {
+    try {
+      return await this.indy.cryptoSign(this.handle, key.publicKeyBase58, data)
+    } catch (error) {
+      throw new WalletError(`Error signing data with verkey ${key.publicKey}`, { cause: error })
+    }
+  }
+
+  public async verify(data: Buffer, key: Key, signature: Buffer): Promise<boolean> {
+    try {
+      return await this.indy.cryptoVerify(key.publicKeyBase58, data, signature)
+    } catch (error) {
+      throw new WalletError(`Error verifying signature of data signed with verkey ${key.publicKeyBase58}`, {
+        cause: error,
+      })
     }
   }
 
@@ -412,25 +429,6 @@ export class IndyWallet implements Wallet {
       }
     } catch (error) {
       throw new WalletError('Error unpacking message', { cause: error })
-    }
-  }
-
-  public async sign(data: Buffer, verkey: string): Promise<Buffer> {
-    try {
-      return await this.indy.cryptoSign(this.handle, verkey, data)
-    } catch (error) {
-      throw new WalletError(`Error signing data with verkey ${verkey}`, { cause: error })
-    }
-  }
-
-  public async verify(signerVerkey: string, data: Buffer, signature: Buffer): Promise<boolean> {
-    try {
-      // check signature
-      const isValid = await this.indy.cryptoVerify(signerVerkey, data, signature)
-
-      return isValid
-    } catch (error) {
-      throw new WalletError(`Error verifying signature of data signed with verkey ${signerVerkey}`, { cause: error })
     }
   }
 
