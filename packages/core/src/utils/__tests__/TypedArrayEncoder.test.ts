@@ -1,7 +1,7 @@
 import { TypedArrayEncoder } from '../TypedArrayEncoder'
 import { Buffer } from '../buffer'
 
-describe('BufferEncoder', () => {
+describe('TypedArrayEncoder', () => {
   const mockCredentialRequestBuffer = Buffer.from(
     JSON.stringify({
       prover_did: 'did:sov:4xRwQoKEBcLMR3ni1uEVxo',
