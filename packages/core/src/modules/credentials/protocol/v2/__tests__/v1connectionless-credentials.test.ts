@@ -146,7 +146,12 @@ describe('credentials', () => {
           },
         },
       },
-      credentialId: expect.any(String),
+      credentials: [
+        {
+          credentialRecordType: 'Indy',
+          credentialRecordId: expect.any(String),
+        },
+      ],
       state: CredentialState.Done,
       threadId: expect.any(String),
     })
@@ -222,7 +227,12 @@ describe('credentials', () => {
           },
         },
       },
-      credentialId: expect.any(String),
+      credentials: [
+        {
+          credentialRecordType: 'Indy',
+          credentialRecordId: expect.any(String),
+        },
+      ],
       state: CredentialState.Done,
       threadId: expect.any(String),
     })

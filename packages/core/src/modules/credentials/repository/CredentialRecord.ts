@@ -22,7 +22,6 @@ export interface CredentialRecordProps {
   threadId: string
   protocolVersion: CredentialProtocolVersion
 
-  credentialId?: string
   tags?: CustomCredentialTags
   credentialAttributes?: CredentialPreviewAttribute[]
   autoAcceptCredential?: AutoAcceptCredential
@@ -35,7 +34,7 @@ export type DefaultCredentialTags = {
   threadId: string
   connectionId?: string
   state: CredentialState
-  credentialId?: string
+  credentialIds: string[]
 }
 
 export interface CredentialRecordBinding {
@@ -50,7 +49,6 @@ export class CredentialExchangeRecord extends BaseRecord<
 > {
   public connectionId?: string
   public threadId!: string
-  public credentialId?: string
   public state!: CredentialState
   public autoAcceptCredential?: AutoAcceptCredential
   public errorMessage?: string
@@ -74,7 +72,6 @@ export class CredentialExchangeRecord extends BaseRecord<
       this.createdAt = props.createdAt ?? new Date()
       this.state = props.state
       this.connectionId = props.connectionId
-      this.credentialId = props.credentialId
       this.threadId = props.threadId
       this.protocolVersion = props.protocolVersion
       this._tags = props.tags ?? {}
@@ -93,7 +90,7 @@ export class CredentialExchangeRecord extends BaseRecord<
       threadId: this.threadId,
       connectionId: this.connectionId,
       state: this.state,
-      credentialId: this.credentialId,
+      credentialIds: this.credentials.map((c) => c.credentialRecordId),
     }
   }
 

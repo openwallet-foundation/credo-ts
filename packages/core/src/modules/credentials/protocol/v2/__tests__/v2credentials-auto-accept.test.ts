@@ -319,6 +319,7 @@ describe('credentials', () => {
         threadId: aliceCredentialRecord.threadId,
         state: aliceCredentialRecord.state,
         connectionId: aliceConnection.id,
+        credentialIds: [],
       })
       expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
 
@@ -452,6 +453,7 @@ describe('credentials', () => {
         threadId: record.threadId,
         state: record.state,
         connectionId: aliceConnection.id,
+        credentialIds: [],
       })
       expect(record.type).toBe(CredentialExchangeRecord.name)
 
@@ -511,6 +513,7 @@ describe('credentials', () => {
         threadId: aliceCredentialRecord.threadId,
         state: aliceCredentialRecord.state,
         connectionId: aliceConnection.id,
+        credentialIds: [],
       })
       expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
 

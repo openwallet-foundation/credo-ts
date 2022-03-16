@@ -18,7 +18,7 @@ import type {
   ServiceRequestCredentialOptions,
 } from '../../protocol'
 import type { CredPropose } from '../../protocol/v1/models/CredentialFormatOptions'
-import type { CredentialExchangeRecord, CredentialRecordBinding } from '../../repository/CredentialRecord'
+import type { CredentialExchangeRecord } from '../../repository/CredentialRecord'
 import type { CredentialRepository } from '../../repository/CredentialRepository'
 import type {
   CredentialAttachmentFormats,
@@ -417,13 +417,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
         credential: indyCredential,
         credentialDefinition,
       })
-      // credentialRecord.credentialId = credentialId
-      // For v2 we no longer store the credential id but add to the credential record bindings array
-      const binding: CredentialRecordBinding = {
+      credentialRecord.credentials.push({
         credentialRecordType: CredentialRecordType.Indy,
         credentialRecordId: credentialId,
-      }
-      credentialRecord.credentials.push(binding)
+      })
     } else {
       throw new AriesFrameworkError(`Missing credential for record id ${credentialRecord.id}`)
     }

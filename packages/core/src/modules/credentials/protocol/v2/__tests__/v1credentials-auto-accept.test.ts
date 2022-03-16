@@ -152,7 +152,12 @@ describe('credentials', () => {
             },
           },
         },
-        credentialId: expect.any(String),
+        credentials: [
+          {
+            credentialRecordType: 'Indy',
+            credentialRecordId: expect.any(String),
+          },
+        ],
         state: CredentialState.Done,
       })
       expect(faberCredentialRecord).toMatchObject({
@@ -256,7 +261,12 @@ describe('credentials', () => {
             },
           },
         },
-        credentialId: expect.any(String),
+        credentials: [
+          {
+            credentialRecordType: 'Indy',
+            credentialRecordId: expect.any(String),
+          },
+        ],
         state: CredentialState.Done,
       })
 
@@ -330,6 +340,7 @@ describe('credentials', () => {
         threadId: aliceCredentialExchangeRecord.threadId,
         state: aliceCredentialExchangeRecord.state,
         connectionId: aliceConnection.id,
+        credentialIds: [],
       })
       expect(aliceCredentialExchangeRecord.type).toBe(CredentialExchangeRecord.name)
 
@@ -365,7 +376,12 @@ describe('credentials', () => {
               },
             },
           },
-          credentialId: expect.any(String),
+          credentials: [
+            {
+              credentialRecordType: 'Indy',
+              credentialRecordId: expect.any(String),
+            },
+          ],
           state: CredentialState.Done,
         })
 
@@ -461,6 +477,7 @@ describe('credentials', () => {
         threadId: record.threadId,
         state: record.state,
         connectionId: aliceConnection.id,
+        credentialIds: [],
       })
       expect(record.type).toBe(CredentialExchangeRecord.name)
 
@@ -522,6 +539,7 @@ describe('credentials', () => {
         threadId: aliceCredentialExchangeRecord.threadId,
         state: aliceCredentialExchangeRecord.state,
         connectionId: aliceConnection.id,
+        credentialIds: [],
       })
       expect(aliceCredentialExchangeRecord.type).toBe(CredentialExchangeRecord.name)
 

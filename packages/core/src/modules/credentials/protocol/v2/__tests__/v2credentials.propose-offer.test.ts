@@ -160,6 +160,7 @@ describe('credentials', () => {
       threadId: faberCredentialRecord.threadId,
       connectionId: aliceCredentialRecord.connectionId,
       state: aliceCredentialRecord.state,
+      credentialIds: [],
     })
     expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
     if (aliceCredentialRecord.connectionId) {
@@ -310,6 +311,7 @@ describe('credentials', () => {
     expect(aliceCredentialRecord.id).not.toBeNull()
     expect(aliceCredentialRecord.getTags()).toEqual({
       threadId: faberCredentialRecord.threadId,
+      credentialIds: [],
       connectionId: aliceCredentialRecord.connectionId,
       state: aliceCredentialRecord.state,
     })
@@ -371,7 +373,7 @@ describe('credentials', () => {
       throw new AriesFrameworkError('Missing Connection Id')
     }
   })
-  test('Feber starts with V2 offer; Alice declines', async () => {
+  test('Faber starts with V2 offer; Alice declines', async () => {
     testLogger.test('Faber sends credential offer to Alice')
     const credentialPreview = V2CredentialPreview.fromRecord({
       name: 'John',
@@ -401,6 +403,7 @@ describe('credentials', () => {
       threadId: aliceCredentialRecord.threadId,
       state: aliceCredentialRecord.state,
       connectionId: aliceConnection.id,
+      credentialIds: [],
     })
     expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
     testLogger.test('Alice declines offer')

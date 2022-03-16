@@ -47,6 +47,7 @@ import { CredentialState } from '../../CredentialState'
 import { CredentialUtils } from '../../CredentialUtils'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
+import { CredentialRecordType } from '../../interfaces'
 import { CredentialRepository, CredentialMetadataKeys, CredentialExchangeRecord } from '../../repository'
 
 import { V1CredentialPreview } from './V1CredentialPreview'
@@ -231,7 +232,10 @@ export class V1CredentialService extends CredentialService {
       credential: indyCredential,
       credentialDefinition,
     })
-    credentialRecord.credentialId = credentialId
+    credentialRecord.credentials.push({
+      credentialRecordType: CredentialRecordType.Indy,
+      credentialRecordId: credentialId,
+    })
     await this.updateState(credentialRecord, CredentialState.CredentialReceived)
     await this.didCommMessageRepository.saveAgentMessage({
       agentMessage: issueMessage,

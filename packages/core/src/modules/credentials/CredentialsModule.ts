@@ -156,7 +156,7 @@ export class CredentialsModule implements CredentialsModule {
 
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
-        `No connection id for credential record ${credentialRecord.credentialId} not found. Connection-less issuance does not support negotiation`
+        `No connection id for credential record ${credentialRecord.id} not found. Connection-less issuance does not support negotiation`
       )
     }
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
@@ -376,7 +376,7 @@ export class CredentialsModule implements CredentialsModule {
 
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
-        `No connection id for credential record ${credentialRecord.credentialId} not found. Connection-less issuance does not support negotiation`
+        `No connection id for credential record ${credentialRecord.id} not found. Connection-less issuance does not support negotiation`
       )
     }
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
