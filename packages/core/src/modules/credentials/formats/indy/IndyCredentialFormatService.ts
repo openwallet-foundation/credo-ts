@@ -100,13 +100,16 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       format: 'hlindy/cred-filter@v2.0',
     }
 
-    const attachment: Attachment = this.getFormatData(
-      options.credentialFormats.indy?.payload.credentialPayload,
-      formats.attachId
-    )
-    const { previewWithAttachments } = this.getCredentialLinkedAttachments(options)
+    if (options.credentialFormats.indy?.payload && options.credentialFormats.indy?.payload) {
+      const attachment: Attachment = this.getFormatData(
+        options.credentialFormats.indy?.payload.credentialPayload,
+        formats.attachId
+      )
+      const { previewWithAttachments } = this.getCredentialLinkedAttachments(options)
 
-    return { format: formats, attachment, preview: previewWithAttachments }
+      return { format: formats, attachment, preview: previewWithAttachments }
+    }
+    throw new AriesFrameworkError('Missing payload in createProposal')
   }
 
   /**
@@ -200,38 +203,43 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * Get linked attachments for indy format from a proposal message. This allows attachments
    * to be copied across to old style credential records
    *
-   * @param proposal ProposeCredentialOptions object containing (optionally) the linked attachments
+   * @param options ProposeCredentialOptions object containing (optionally) the linked attachments
    * @return array of linked attachments or undefined if none present
    */
-  private getCredentialLinkedAttachments(proposal: ProposeCredentialOptions): {
+  private getCredentialLinkedAttachments(options: ProposeCredentialOptions): {
     attachments: Attachment[] | undefined
     previewWithAttachments: V2CredentialPreview
   } {
     // Add the linked attachments to the credentialProposal
-    const credPropose: CredPropose = proposal.credentialFormats.indy?.payload.credentialPayload as CredPropose
+    let credPropose: CredPropose
+    if (options.credentialFormats.indy?.payload && options.credentialFormats.indy?.payload) {
+      credPropose = options.credentialFormats.indy?.payload.credentialPayload as CredPropose
 
-    let attachments: Attachment[] | undefined
-    let previewWithAttachments: V2CredentialPreview = new V2CredentialPreview({
-      attributes: credPropose.attributes ? credPropose.attributes : [],
-    })
-    if (proposal.credentialFormats.indy && credPropose.linkedAttachments) {
-      // there are linked attachments so transform into the attribute field of the CredentialPreview object for
-      // this proposal
-      if (credPropose.attributes && credPropose.credentialDefinitionId) {
-        previewWithAttachments = CredentialUtils.createAndLinkAttachmentsToPreview(
-          credPropose.linkedAttachments,
-          new V2CredentialPreview({
-            attributes: credPropose.attributes,
-          })
-        )
+      let attachments: Attachment[] | undefined
+      let previewWithAttachments: V2CredentialPreview = new V2CredentialPreview({
+        attributes: credPropose.attributes ? credPropose.attributes : [],
+      })
+
+      if (options.credentialFormats.indy && credPropose.linkedAttachments) {
+        // there are linked attachments so transform into the attribute field of the CredentialPreview object for
+        // this proposal
+        if (credPropose.attributes && credPropose.credentialDefinitionId) {
+          previewWithAttachments = CredentialUtils.createAndLinkAttachmentsToPreview(
+            credPropose.linkedAttachments,
+            new V2CredentialPreview({
+              attributes: credPropose.attributes,
+            })
+          )
+        }
+        attachments = credPropose.linkedAttachments.map((linkedAttachment) => linkedAttachment.attachment)
+
+        credPropose.credentialDefinitionId = this.getCredentialDefinitionId(options)
+
+        options.credentialFormats.indy.payload.credentialPayload = credPropose
       }
-      attachments = credPropose.linkedAttachments.map((linkedAttachment) => linkedAttachment.attachment)
-
-      credPropose.credentialDefinitionId = this.getCredentialDefinitionId(proposal)
-
-      proposal.credentialFormats.indy.payload.credentialPayload = credPropose
+      return { attachments, previewWithAttachments }
     }
-    return { attachments, previewWithAttachments }
+    throw new AriesFrameworkError('Missing payload in getCredentialLinkedAttachments')
   }
 
   /**
@@ -240,8 +248,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @returns the credential definition id for this credential
    */
   private getCredentialDefinitionId(options: ProposeCredentialOptions): string | undefined {
-    const credPropose: CredPropose = options.credentialFormats.indy?.payload.credentialPayload as CredPropose
-    return credPropose.credentialDefinitionId
+    if (options.credentialFormats.indy?.payload && options.credentialFormats.indy?.payload) {
+      const credPropose: CredPropose = options.credentialFormats.indy?.payload.credentialPayload as CredPropose
+      return credPropose.credentialDefinitionId
+    }
   }
 
   /**

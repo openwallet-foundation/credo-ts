@@ -4,11 +4,12 @@ import type { AnyJson } from '../generic'
 import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
 import type {
-  CredProposeOfferRequestFormat,
-  CredentialDefinitionFormat,
+  CredentialProposeFormat,
   W3CCredentialFormat,
+  CredentialDefinitionFormat,
 } from './formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from './models/CredentialPreviewAttributes'
+import type { CredOffer } from 'indy-sdk'
 
 type IssuerId = string
 
@@ -20,7 +21,7 @@ export enum CredentialRecordType {
 // keys used to create a format service
 export enum CredentialFormatType {
   Indy = 'Indy',
-  JsonLd = 'jsonld',
+  // JsonLd = 'jsonld',
   // others to follow
 }
 
@@ -30,14 +31,13 @@ interface IssuerNode {
 }
 
 export type Issuer = IssuerId | IssuerNode
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type LDSignatureSuite = 'Ed25519Signature2018' | 'BbsBlsSignature2020'
 
-/// CREDENTIAL OFFER
+// CREDENTIAL OFFER
 export interface IndyOfferCredentialFormat {
   credentialDefinitionId: string
   attributes: CredentialPreviewAttribute[]
   linkedAttachments?: LinkedAttachment[]
+  payload?: CredOffer
 }
 
 export interface OfferCredentialFormats {
@@ -60,14 +60,9 @@ interface AcceptOfferOptions {
   autoAcceptCredential?: AutoAcceptCredential
 }
 
-interface NegotiateOfferOptions {
-  connectionId: string
-  protocolVersion: CredentialProtocolVersion
-  credentialFormats: CredProposeOfferRequestFormat
+interface NegotiateOfferOptions extends ProposeCredentialOptions {
   credentialRecordId?: string
-  autoAcceptCredential?: AutoAcceptCredential
   offer?: Attachment
-  comment?: string
 }
 
 /// CREDENTIAL PROPOSAL
@@ -75,17 +70,16 @@ interface NegotiateOfferOptions {
 interface ProposeCredentialOptions {
   connectionId: string
   protocolVersion: CredentialProtocolVersion
-  credentialFormats: CredProposeOfferRequestFormat
+  credentialFormats: CredentialProposeFormat
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
 }
 
 export interface IndyCredentialPreview {
-  // Could be that credential definition id and attributes are already defined
-  // But could also be that they are undefined. So we can't make them required
   credentialDefinitionId?: string
   attributes?: CredentialPreviewAttribute[]
 }
+
 export type FormatType = AcceptProposalOptions | ProposeCredentialOptions | NegotiateProposalOptions
 
 interface AcceptProposalOptions {
@@ -110,11 +104,9 @@ interface NegotiateProposalOptions {
   comment?: string
 }
 
-/// CREDENTIAL REQUEST
+// CREDENTIAL REQUEST
 interface RequestCredentialOptions {
   connectionId?: string
-  // holderDid: string
-  // As indy cannot start from request and w3c is not supported in v1 we always use v2 here
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
   offerAttachment?: Attachment

@@ -25,7 +25,6 @@ import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 import { V1OfferCredentialMessage } from '../../v1/messages/V1OfferCredentialMessage'
 import { V2CredentialPreview } from '../V2CredentialPreview'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
-import { ConsoleLogger } from '@aries-framework/core'
 
 describe('credentials', () => {
   let faberAgent: Agent
@@ -41,13 +40,11 @@ describe('credentials', () => {
 
   let didCommMessageRepository: DidCommMessageRepository
   beforeAll(async () => {
-    ; ({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
+    ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
       'Faber Agent Credentials',
       'Alice Agent Credential'
     ))
-    console.log("QUACK cred def id = ", credDefId)
   })
-
 
   afterAll(async () => {
     await faberAgent.shutdown()
@@ -59,7 +56,6 @@ describe('credentials', () => {
   // -------------------------- V2 TEST BEGIN --------------------------------------------
 
   test('Alice starts with V2 (ld format) credential proposal to Faber', async () => {
-
     testLogger.test('Alice sends (v2 jsonld) credential proposal to Faber')
     // set the propose options
     // we should set the version to V1.0 and V2.0 in separate tests, one as a regression test
@@ -210,7 +206,7 @@ describe('credentials', () => {
       messageClass: V2OfferCredentialMessage,
     })
 
-    console.log("QUACK offerMessage= ", offerMessage)
+    console.log('QUACK offerMessage= ', offerMessage)
     // expect(JsonTransformer.toJSON(offerMessage)).toMatchObject({
     //   '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
     //   comment: 'V2 Indy Offer',

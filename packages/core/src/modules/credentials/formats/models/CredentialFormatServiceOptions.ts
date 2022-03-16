@@ -1,10 +1,10 @@
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
-import type { Payload } from '../../protocol/v1/models/CredentialFormatOptions'
+import type { CredPropose } from '../../protocol/v1/models/CredentialFormatOptions'
 import type { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import type { CredentialExchangeRecord } from '../../repository/CredentialRecord'
-import type { CredDef } from 'indy-sdk'
+import type { Cred, CredDef, CredOffer, CredReq } from 'indy-sdk'
 
 import { CredentialFormatType } from '../../interfaces'
 
@@ -12,6 +12,11 @@ export enum ProofType {
   Ed = 'Ed25519Signature2018',
   Bbs = '',
 }
+export type CredProposeOfferRequestFormat =
+  | CredentialOfferFormat
+  | CredentialProposeFormat
+  | CredentialRequestFormat
+  | CredentialIssueFormat
 
 export interface CredentialDefinitionFormat {
   indy?: {
@@ -22,6 +27,38 @@ export interface CredentialDefinitionFormat {
   }
 }
 
+export interface CredentialOfferFormat {
+  indy?: {
+    payload: {
+      credentialPayload: CredOffer
+    }
+  }
+}
+
+export interface CredentialProposeFormat {
+  indy?: {
+    payload: {
+      credentialPayload: CredPropose
+    }
+  }
+}
+export interface CredentialRequestFormat {
+  indy?: {
+    credentialDefinitionId?: string
+    attributes?: CredentialPreviewAttribute[]
+    payload?: {
+      credentialPayload: CredReq
+    }
+  }
+}
+
+export interface CredentialIssueFormat {
+  indy?: {
+    payload: {
+      credentialPayload: Cred
+    }
+  }
+}
 export type CredentialFormatSpec = {
   attachId: string
   format: string
@@ -52,20 +89,12 @@ export interface W3CCredentialFormat {
       type: string
     }
   }
-  credentialDefinitionId: string // QUACK temporary workaround to use Indy SDK until new W3CCredential interface is ready
   extendedTypes?: string[]
-}
-export interface CredProposeOfferRequestFormat {
-  indy?: {
-    payload: Payload
-  }
-  jsonld?: W3CCredentialFormat
 }
 
 export interface CredentialAttachmentFormats {
   format: CredentialFormatSpec
   attachment?: Attachment
-  credOfferRequest?: CredProposeOfferRequestFormat
 }
 
 export interface ProposeAttachmentFormats extends CredentialAttachmentFormats {
@@ -77,7 +106,6 @@ export interface OfferAttachmentFormats extends CredentialAttachmentFormats {
 }
 export const FORMAT_KEYS: FormatKeys = {
   indy: CredentialFormatType.Indy,
-  jsonld: CredentialFormatType.JsonLd,
 }
 
 export interface HandlerAutoAcceptOptions {
