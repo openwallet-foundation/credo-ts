@@ -56,7 +56,7 @@ export interface CredentialsModule {
   // requestCredential(credentialOptions: RequestCredentialOptions): Promise<CredentialExchangeRecord>
 
   // when the issuer accepts the request he issues the credential to the holder
-  acceptCredentialRequest(options: AcceptRequestOptions): Promise<CredentialExchangeRecord>
+  acceptRequest(options: AcceptRequestOptions): Promise<CredentialExchangeRecord>
 
   // Credential
   acceptCredential(credentialRecordId: string, version: CredentialProtocolVersion): Promise<CredentialExchangeRecord>
@@ -417,7 +417,7 @@ export class CredentialsModule implements CredentialsModule {
    * @param options The object containing config options of the request
    * @returns CredentialExchangeRecord updated with information pertaining to this request
    */
-  public async acceptCredentialRequest(options: AcceptRequestOptions): Promise<CredentialExchangeRecord> {
+  public async acceptRequest(options: AcceptRequestOptions): Promise<CredentialExchangeRecord> {
     const record = await this.getById(options.credentialRecordId)
 
     // with version we can get the Service

@@ -121,7 +121,7 @@ describe('credentials', () => {
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Credential',
     }
-    faberCredentialRecord = await faberAgent.credentials.acceptCredentialRequest(options)
+    faberCredentialRecord = await faberAgent.credentials.acceptRequest(options)
 
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {

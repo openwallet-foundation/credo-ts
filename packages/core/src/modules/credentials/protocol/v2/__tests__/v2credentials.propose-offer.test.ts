@@ -185,7 +185,7 @@ describe('credentials', () => {
         comment: 'V1 Indy Credential',
       }
       testLogger.test('Faber sends credential to Alice')
-      await faberAgent.credentials.acceptCredentialRequest(options)
+      await faberAgent.credentials.acceptRequest(options)
 
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -345,7 +345,7 @@ describe('credentials', () => {
         credentialRecordId: faberCredentialRecord.id,
         comment: 'V2 Indy Credential',
       }
-      await faberAgent.credentials.acceptCredentialRequest(options)
+      await faberAgent.credentials.acceptRequest(options)
 
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
