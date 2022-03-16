@@ -152,8 +152,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    */
   public async createRequest(
     options: ServiceRequestCredentialOptions,
-    credentialRecord: CredentialExchangeRecord,
-    did?: string // temporary workaround as this is not in the options object
+    credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialAttachmentFormats> {
     if (options.offerAttachment) {
       const offer = options.offerAttachment.getDataAsJson<CredOffer>()
@@ -161,18 +160,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       // format service -> get the credential definition and create the [indy] credential request
       options.credentialDefinition = await this.getCredentialDefinition(offer)
 
-      let connection, holderDid
-      if (credentialRecord.connectionId) {
-        connection = await this.connectionService.getById(credentialRecord.connectionId)
-        holderDid = connection.did
-      } else {
-        // could be the case for out of band messages
-        if (!did) {
-          throw new AriesFrameworkError('No holder did found to create credential request')
-        }
-        holderDid = did
-      }
-      const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(options, offer, holderDid)
+      const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(options, offer)
       credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, credReqMetadata)
 
       const formats: CredentialFormatSpec = {
@@ -180,7 +168,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
         format: 'hlindy/cred-req@v2.0',
       }
 
-      const attachmentId = options.attachId ? options.attachId : formats.attachId
+      const attachmentId = options.attachId ?? formats.attachId
       const requestAttach: Attachment = this.getFormatData(credReq, attachmentId)
       return { format: formats, attachment: requestAttach }
     } else {
@@ -285,12 +273,11 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    */
   private async createIndyCredentialRequest(
     options: RequestCredentialOptions,
-    offer: CredOffer,
-    holderDid: string
+    offer: CredOffer
   ): Promise<{ credReq: CredReq; credReqMetadata: CredReqMetadata }> {
     if (this.indyHolderService && options.credentialDefinition && options.credentialDefinition.indy?.credDef) {
       const [credReq, credReqMetadata] = await this.indyHolderService.createCredentialRequest({
-        holderDid,
+        holderDid: options.holderDid,
         credentialOffer: offer,
         credentialDefinition: options.credentialDefinition.indy?.credDef,
       })

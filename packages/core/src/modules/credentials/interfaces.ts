@@ -108,6 +108,8 @@ interface NegotiateProposalOptions {
 // CREDENTIAL REQUEST
 interface RequestCredentialOptions {
   connectionId?: string
+  // Indy specific. temporary workaround while we figure out out of band
+  holderDid: string
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
   offerAttachment?: Attachment

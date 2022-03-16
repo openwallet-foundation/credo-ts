@@ -183,8 +183,7 @@ export class CredentialMessageBuilder {
     formatServices: CredentialFormatService[],
     record: CredentialExchangeRecord,
     requestOptions: RequestCredentialOptions,
-    offerMessage: V2OfferCredentialMessage,
-    holderDid?: string
+    offerMessage: V2OfferCredentialMessage
   ): Promise<CredentialProtocolMsgReturnType<V2RequestCredentialMessage>> {
     // Assert credential
     record.assertState(CredentialState.OfferReceived)
@@ -201,11 +200,7 @@ export class CredentialMessageBuilder {
       } else {
         throw new AriesFrameworkError(`Missing data payload in attachment in credential Record ${record.id}`)
       }
-      const { format: formats, attachment: requestAttach } = await format.createRequest(
-        requestOptions,
-        record,
-        holderDid
-      )
+      const { format: formats, attachment: requestAttach } = await format.createRequest(requestOptions, record)
 
       requestOptions.requestAttachment = requestAttach
       if (formats && requestAttach) {

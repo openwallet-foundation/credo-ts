@@ -1,5 +1,6 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { CredentialService } from './CredentialService'
+import type { ServiceRequestCredentialOptions } from './CredentialServiceOptions'
 import type {
   AcceptOfferOptions,
   AcceptProposalOptions,
@@ -282,9 +283,10 @@ export class CredentialsModule implements CredentialsModule {
     if (record.connectionId) {
       const connection = await this.connectionService.getById(record.connectionId)
 
-      const requestOptions: RequestCredentialOptions = {
+      const requestOptions: ServiceRequestCredentialOptions = {
         comment: offer.comment,
         autoAcceptCredential: offer.autoAcceptCredential,
+        holderDid: connection.did,
       }
       const { message, credentialRecord } = await service.createRequest(record, requestOptions)
 
@@ -314,15 +316,12 @@ export class CredentialsModule implements CredentialsModule {
       })
       const recipientService = offerMessage.service
 
-      const requestOptions: RequestCredentialOptions = {
+      const requestOptions: ServiceRequestCredentialOptions = {
         comment: offer.comment,
         autoAcceptCredential: offer.autoAcceptCredential,
+        holderDid: ourService.recipientKeys[0],
       }
-      const { message, credentialRecord } = await service.createRequest(
-        record,
-        requestOptions,
-        ourService.recipientKeys[0]
-      )
+      const { message, credentialRecord } = await service.createRequest(record, requestOptions)
 
       credentialRecord.protocolVersion = record.protocolVersion
 

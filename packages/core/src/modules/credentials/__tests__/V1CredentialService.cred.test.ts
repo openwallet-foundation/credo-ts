@@ -251,7 +251,9 @@ describe('CredentialService', () => {
       // mock offer so that the request works
 
       // when
-      await credentialService.createRequest(credentialRecord, {})
+      await credentialService.createRequest(credentialRecord, {
+        holderDid: 'holderDid',
+      })
 
       // then
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
@@ -268,6 +270,7 @@ describe('CredentialService', () => {
       const options: ServiceRequestCredentialOptions = {
         connectionId: credentialRecord.connectionId,
         comment: 'credential request comment',
+        holderDid: 'holderDid',
         credentialDefinition: {
           indy: {
             credDef: credDef,
@@ -303,9 +306,11 @@ describe('CredentialService', () => {
     test(`throws an error when state transition is invalid`, async () => {
       await Promise.all(
         invalidCredentialStates.map(async (state) => {
-          await expect(credentialService.createRequest(mockCredentialRecord({ state }), {})).rejects.toThrowError(
-            `Credential record is in invalid state ${state}. Valid states are: ${validState}.`
-          )
+          await expect(
+            credentialService.createRequest(mockCredentialRecord({ state }), {
+              holderDid: 'holderDid',
+            })
+          ).rejects.toThrowError(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
         })
       )
     })

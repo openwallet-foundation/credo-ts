@@ -112,8 +112,7 @@ export abstract class CredentialService {
   // methods for request
   abstract createRequest(
     credentialRecord: CredentialExchangeRecord,
-    options: ServiceRequestCredentialOptions,
-    holderDid?: string // temporary workaround while we figure out out of band
+    options: ServiceRequestCredentialOptions
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
 
   abstract processAck(messageContext: InboundMessageContext<V1CredentialAckMessage>): Promise<CredentialExchangeRecord>

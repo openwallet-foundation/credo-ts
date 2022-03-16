@@ -506,8 +506,7 @@ export class V2CredentialService extends CredentialService {
    */
   public async createRequest(
     record: CredentialExchangeRecord,
-    options: RequestCredentialOptions,
-    holderDid?: string // temporary workaround as this is no longer in the options object
+    options: RequestCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<V2RequestCredentialMessage>> {
     logger.debug('Get the Format Service and Create Request Message')
 
@@ -530,8 +529,7 @@ export class V2CredentialService extends CredentialService {
         formats,
         record,
         options,
-        offerMessage,
-        holderDid
+        offerMessage
       )
 
       await this.updateState(credentialRecord, CredentialState.RequestSent)
