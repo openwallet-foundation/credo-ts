@@ -127,7 +127,6 @@ describe('credentials', () => {
         offerOptions
       )
       testLogger.test('Alice waits for credential from Faber')
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.OfferReceived,

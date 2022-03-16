@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/explicit-member-accessibility */
 import type { HandlerInboundMessage } from '../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { CredentialStateChangedEvent } from '../../CredentialEvents'
@@ -27,7 +25,6 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../../../agent/AgentConfig'
 import { Dispatcher } from '../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../agent/EventEmitter'
-import { MessageSender } from '../../../../agent/MessageSender'
 import { ServiceDecorator } from '../../../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
@@ -661,7 +658,6 @@ export class V2CredentialService extends CredentialService {
    *
    */
   public async createOffer(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     credentialOptions: OfferCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
     if (!credentialOptions.connectionId) {

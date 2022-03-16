@@ -79,7 +79,6 @@ describe('credentials', () => {
 
   test('Faber starts with V2 Indy connection-less credential offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
-    // eslint-disable-next-line prefer-const
 
     const offerOptions: OfferCredentialOptions = {
       comment: 'V2 Out of Band offer',
@@ -174,7 +173,6 @@ describe('credentials', () => {
   })
 
   test('Faber starts with V2 Indy connection-less credential offer to Alice with auto-accept enabled', async () => {
-    // eslint-disable-next-line prefer-const
     const offerOptions: OfferCredentialOptions = {
       comment: 'V2 Out of Band offer',
       credentialFormats: {
