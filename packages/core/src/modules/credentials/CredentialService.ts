@@ -28,8 +28,8 @@ import type {
 } from './interfaces'
 import type { V1CredentialService } from './protocol/v1/V1CredentialService'
 import type {
-  CredentialAckMessage,
-  CredentialProblemReportMessage,
+  V1CredentialAckMessage,
+  V1CredentialProblemReportMessage,
   V1IssueCredentialMessage,
   V1RequestCredentialMessage,
 } from './protocol/v1/messages'
@@ -120,7 +120,7 @@ export abstract class CredentialService {
     holderDid?: string // temporary workaround while we figure out out of band
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
 
-  abstract processAck(messageContext: InboundMessageContext<CredentialAckMessage>): Promise<CredentialExchangeRecord>
+  abstract processAck(messageContext: InboundMessageContext<V1CredentialAckMessage>): Promise<CredentialExchangeRecord>
 
   abstract negotiateOffer(
     options: NegotiateOfferOptions,
@@ -170,7 +170,7 @@ export abstract class CredentialService {
    *
    */
   public async processProblemReport(
-    messageContext: InboundMessageContext<CredentialProblemReportMessage>
+    messageContext: InboundMessageContext<V1CredentialProblemReportMessage>
   ): Promise<CredentialExchangeRecord> {
     const { message: credentialProblemReportMessage } = messageContext
 

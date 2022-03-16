@@ -21,7 +21,7 @@ import type {
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../../interfaces'
-import type { CredentialAckMessage, V1IssueCredentialMessage } from '../v1/messages'
+import type { V1CredentialAckMessage, V1IssueCredentialMessage } from '../v1/messages'
 import type { CredentialProtocolMsgReturnType } from './CredentialMessageBuilder'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -883,7 +883,7 @@ export class V2CredentialService extends CredentialService {
    *
    */
   public async processAck(
-    messageContext: InboundMessageContext<CredentialAckMessage | V2CredentialAckMessage>
+    messageContext: InboundMessageContext<V1CredentialAckMessage | V2CredentialAckMessage>
   ): Promise<CredentialExchangeRecord> {
     const { message: credentialAckMessage, connection } = messageContext
 

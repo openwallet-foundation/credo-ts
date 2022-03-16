@@ -52,8 +52,8 @@ import { CredentialRepository, CredentialMetadataKeys, CredentialExchangeRecord 
 
 import { V1CredentialPreview } from './V1CredentialPreview'
 import {
-  CredentialAckHandler,
-  CredentialProblemReportHandler,
+  V1CredentialAckHandler,
+  V1CredentialProblemReportHandler,
   V1IssueCredentialHandler,
   V1OfferCredentialHandler as V1OfferCredentialHandler,
   V1RequestCredentialHandler,
@@ -67,7 +67,7 @@ import {
   V1IssueCredentialMessage,
   V1RequestCredentialMessage,
   V1OfferCredentialMessage,
-  CredentialAckMessage,
+  V1CredentialAckMessage,
 } from './messages'
 
 const logger = new ConsoleLogger(LogLevel.info)
@@ -557,7 +557,7 @@ export class V1CredentialService extends CredentialService {
    *
    */
   public async processAck(
-    messageContext: InboundMessageContext<CredentialAckMessage>
+    messageContext: InboundMessageContext<V1CredentialAckMessage>
   ): Promise<CredentialExchangeRecord> {
     const { message: credentialAckMessage, connection } = messageContext
 
@@ -750,8 +750,8 @@ export class V1CredentialService extends CredentialService {
       new V1RequestCredentialHandler(this, this.agentConfig, this.didCommMessageRepository)
     )
     this.dispatcher.registerHandler(new V1IssueCredentialHandler(this, this.agentConfig, this.didCommMessageRepository))
-    this.dispatcher.registerHandler(new CredentialAckHandler(this))
-    this.dispatcher.registerHandler(new CredentialProblemReportHandler(this))
+    this.dispatcher.registerHandler(new V1CredentialAckHandler(this))
+    this.dispatcher.registerHandler(new V1CredentialProblemReportHandler(this))
   }
 
   /**
@@ -1077,11 +1077,11 @@ export class V1CredentialService extends CredentialService {
    */
   public async createAck(
     credentialRecord: CredentialExchangeRecord
-  ): Promise<CredentialProtocolMsgReturnType<CredentialAckMessage>> {
+  ): Promise<CredentialProtocolMsgReturnType<V1CredentialAckMessage>> {
     credentialRecord.assertState(CredentialState.CredentialReceived)
 
     // Create message
-    const ackMessage = new CredentialAckMessage({
+    const ackMessage = new V1CredentialAckMessage({
       status: AckStatus.OK,
       threadId: credentialRecord.threadId,
     })

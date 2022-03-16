@@ -30,13 +30,13 @@ import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
 import { V1CredentialService } from '../protocol/v1/V1CredentialService'
 import {
   V1RequestCredentialMessage,
-  CredentialAckMessage,
+  V1CredentialAckMessage,
   INDY_CREDENTIAL_ATTACHMENT_ID,
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   V1OfferCredentialMessage,
   V1IssueCredentialMessage,
-  CredentialProblemReportMessage,
+  V1CredentialProblemReportMessage,
 } from '../protocol/v1/messages'
 import { CredentialMetadataKeys } from '../repository/CredentialMetadataTypes'
 import { CredentialExchangeRecord } from '../repository/CredentialRecord'
@@ -597,14 +597,14 @@ describe('CredentialService', () => {
 
   describe('processAck', () => {
     let credential: CredentialExchangeRecord
-    let messageContext: InboundMessageContext<CredentialAckMessage>
+    let messageContext: InboundMessageContext<V1CredentialAckMessage>
 
     beforeEach(() => {
       credential = mockCredentialRecord({
         state: CredentialState.CredentialIssued,
       })
 
-      const credentialRequest = new CredentialAckMessage({
+      const credentialRequest = new V1CredentialAckMessage({
         status: AckStatus.OK,
         threadId: 'somethreadid',
       })
@@ -655,7 +655,7 @@ describe('CredentialService', () => {
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
 
       // when
-      const credentialProblemReportMessage = new CredentialProblemReportMessage({
+      const credentialProblemReportMessage = new V1CredentialProblemReportMessage({
         description: {
           en: 'Indy error',
           code: CredentialProblemReportReason.IssuanceAbandoned,
@@ -676,14 +676,14 @@ describe('CredentialService', () => {
 
   describe('processProblemReport', () => {
     let credential: CredentialExchangeRecord
-    let messageContext: InboundMessageContext<CredentialProblemReportMessage>
+    let messageContext: InboundMessageContext<V1CredentialProblemReportMessage>
 
     beforeEach(() => {
       credential = mockCredentialRecord({
         state: CredentialState.OfferReceived,
       })
 
-      const credentialProblemReportMessage = new CredentialProblemReportMessage({
+      const credentialProblemReportMessage = new V1CredentialProblemReportMessage({
         description: {
           en: 'Indy error',
           code: CredentialProblemReportReason.IssuanceAbandoned,
