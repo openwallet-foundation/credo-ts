@@ -408,7 +408,7 @@ describe('credentials', () => {
     expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
     testLogger.test('Alice declines offer')
     if (aliceCredentialRecord.id) {
-      await aliceAgent.credentials.declineCredentialOffer(aliceCredentialRecord.id, CredentialProtocolVersion.V2)
+      await aliceAgent.credentials.declineCredentialOffer(aliceCredentialRecord.id)
     } else {
       throw new AriesFrameworkError('Missing credential record id')
     }

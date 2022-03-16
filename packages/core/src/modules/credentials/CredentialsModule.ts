@@ -43,10 +43,7 @@ export interface CredentialsModule {
   // Offer methods
   offerCredential(options: OfferCredentialOptions): Promise<CredentialExchangeRecord>
   acceptCredentialOffer(options: AcceptOfferOptions): Promise<CredentialExchangeRecord>
-  declineCredentialOffer(
-    credentialRecordId: string,
-    version: CredentialProtocolVersion
-  ): Promise<CredentialExchangeRecord>
+  declineCredentialOffer(credentialRecordId: string): Promise<CredentialExchangeRecord>
   negotiateCredentialOffer(options: NegotiateOfferOptions): Promise<CredentialExchangeRecord>
   // out of band
   createOutOfBandOffer(options: OfferCredentialOptions): Promise<{
@@ -118,22 +115,13 @@ export class CredentialsModule implements CredentialsModule {
     return this.serviceMap[protocolVersion]
   }
 
-  public async declineCredentialOffer(
-    credentialRecordId: string,
-    version: CredentialProtocolVersion
-  ): Promise<CredentialExchangeRecord> {
-    this.logger.trace(`version =${version}`)
-
-    // with version we can get the Service
-    const service = this.getService(version)
-
+  public async declineCredentialOffer(credentialRecordId: string): Promise<CredentialExchangeRecord> {
     const credentialRecord = await this.getById(credentialRecordId)
-
     credentialRecord.assertState(CredentialState.OfferReceived)
 
+    // with version we can get the Service
+    const service = this.getService(credentialRecord.protocolVersion)
     await service.updateState(credentialRecord, CredentialState.Declined)
-
-    credentialRecord.protocolVersion = version
 
     return credentialRecord
   }
