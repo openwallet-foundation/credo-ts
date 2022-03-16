@@ -4,6 +4,7 @@ import type { Dispatcher } from '../../agent/Dispatcher'
 import type { EventEmitter } from '../../agent/EventEmitter'
 import type { Handler, HandlerInboundMessage } from '../../agent/Handler'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
+import type { Logger } from '../../logger'
 import type { DidCommMessageRepository } from '../../storage'
 import type { MediationRecipientService } from '../routing'
 import type { CredentialStateChangedEvent } from './CredentialEvents'
@@ -36,12 +37,8 @@ import type { V2IssueCredentialMessage } from './protocol/v2/messages/V2IssueCre
 import type { V2RequestCredentialMessage } from './protocol/v2/messages/V2RequestCredentialMessage'
 import type { CredentialExchangeRecord, CredentialRepository } from './repository'
 
-import { ConsoleLogger, LogLevel } from '../../logger'
-
 import { CredentialEventTypes } from './CredentialEvents'
 import { CredentialState } from './CredentialState'
-
-const logger = new ConsoleLogger(LogLevel.info)
 
 export type CredProposeOfferRequestFormat =
   | CredentialOfferFormat
@@ -56,6 +53,7 @@ export abstract class CredentialService {
   protected agentConfig: AgentConfig
   protected mediationRecipientService: MediationRecipientService
   protected didCommMessageRepository: DidCommMessageRepository
+  protected logger: Logger
 
   public constructor(
     credentialRepository: CredentialRepository,
@@ -71,6 +69,7 @@ export abstract class CredentialService {
     this.agentConfig = agentConfig
     this.mediationRecipientService = mediationRecipientService
     this.didCommMessageRepository = didCommMessageRepository
+    this.logger = this.agentConfig.logger
 
     this.registerHandlers()
   }
@@ -163,7 +162,7 @@ export abstract class CredentialService {
 
     const connection = messageContext.assertReadyConnection()
 
-    logger.debug(`Processing problem report with id ${credentialProblemReportMessage.id}`)
+    this.logger.debug(`Processing problem report with id ${credentialProblemReportMessage.id}`)
 
     const credentialRecord = await this.getByThreadAndConnectionId(
       credentialProblemReportMessage.threadId,

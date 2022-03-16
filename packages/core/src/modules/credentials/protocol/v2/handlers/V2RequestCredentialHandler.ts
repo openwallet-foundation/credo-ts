@@ -10,13 +10,10 @@ import type { CredentialExchangeRecord } from '../../../repository'
 import type { V2CredentialService } from '../V2CredentialService'
 
 import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
-import { ConsoleLogger, LogLevel } from '../../../../../../src/logger'
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
-
-const logger = new ConsoleLogger(LogLevel.info)
 
 export class V2RequestCredentialHandler implements Handler {
   private credentialService: V2CredentialService
@@ -103,7 +100,7 @@ export class V2RequestCredentialHandler implements Handler {
 
     const { message, credentialRecord } = await this.credentialService.createCredential(record, options)
     if (messageContext.connection) {
-      logger.debug('Sending ISSUE CREDENTIAL message: ' + message)
+      this.agentConfig.logger.debug('Sending ISSUE CREDENTIAL message: ' + message)
 
       return createOutboundMessage(messageContext.connection, message)
     } else if (requestMessage.service && offerMessage?.service) {

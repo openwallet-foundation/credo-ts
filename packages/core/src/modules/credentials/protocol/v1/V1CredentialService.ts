@@ -30,7 +30,6 @@ import { Dispatcher } from '../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { ServiceDecorator } from '../../../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../../../error'
-import { ConsoleLogger, LogLevel } from '../../../../logger'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
 import { isLinkedAttachment } from '../../../../utils/attachment'
 import { uuid } from '../../../../utils/uuid'
@@ -68,8 +67,6 @@ import {
   V1OfferCredentialMessage,
   V1CredentialAckMessage,
 } from './messages'
-
-const logger = new ConsoleLogger(LogLevel.info)
 
 @scoped(Lifecycle.ContainerScoped)
 export class V1CredentialService extends CredentialService {
@@ -184,7 +181,7 @@ export class V1CredentialService extends CredentialService {
   ): Promise<CredentialExchangeRecord> {
     const { message: issueMessage, connection } = messageContext
 
-    logger.debug(`Processing credential with id ${issueMessage.id}`)
+    this.logger.debug(`Processing credential with id ${issueMessage.id}`)
 
     const credentialRecord = await this.getByThreadAndConnectionId(issueMessage.threadId, connection?.id)
 
@@ -256,7 +253,7 @@ export class V1CredentialService extends CredentialService {
   ): Promise<CredentialExchangeRecord> {
     const { message: requestMessage, connection } = messageContext
 
-    logger.debug(`Processing credential request with id ${requestMessage.id}`)
+    this.logger.debug(`Processing credential request with id ${requestMessage.id}`)
 
     const credentialRecord = await this.getByThreadAndConnectionId(requestMessage.threadId, connection?.id)
 
@@ -277,7 +274,7 @@ export class V1CredentialService extends CredentialService {
       previousSentMessage: offerMessage ? offerMessage : undefined,
     })
 
-    logger.trace('Credential record found when processing credential request', credentialRecord)
+    this.logger.trace('Credential record found when processing credential request', credentialRecord)
     await this.didCommMessageRepository.saveAgentMessage({
       agentMessage: requestMessage,
       role: DidCommMessageRole.Receiver,
@@ -336,7 +333,7 @@ export class V1CredentialService extends CredentialService {
     let credentialRecord: CredentialExchangeRecord
     const { message: offerMessage, connection } = messageContext
 
-    logger.debug(`Processing credential offer with id ${offerMessage.id}`)
+    this.logger.debug(`Processing credential offer with id ${offerMessage.id}`)
 
     const indyCredentialOffer = offerMessage.indyCredentialOffer
 
@@ -558,7 +555,7 @@ export class V1CredentialService extends CredentialService {
   ): Promise<CredentialExchangeRecord> {
     const { message: credentialAckMessage, connection } = messageContext
 
-    logger.debug(`Processing credential ack with id ${credentialAckMessage.id}`)
+    this.logger.debug(`Processing credential ack with id ${credentialAckMessage.id}`)
 
     const credentialRecord = await this.getByThreadAndConnectionId(credentialAckMessage.threadId, connection?.id)
 
@@ -599,7 +596,7 @@ export class V1CredentialService extends CredentialService {
     let credentialRecord: CredentialExchangeRecord
     const { message: proposalMessage, connection } = messageContext
 
-    logger.debug(`Processing credential proposal with id ${proposalMessage.id}`)
+    this.logger.debug(`Processing credential proposal with id ${proposalMessage.id}`)
 
     try {
       // Credential record already exists

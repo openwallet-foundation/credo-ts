@@ -38,8 +38,8 @@ import {
   V1IssueCredentialMessage,
   V1CredentialProblemReportMessage,
 } from '../protocol/v1/messages'
-import { CredentialMetadataKeys } from '../repository/CredentialMetadataTypes'
 import { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
+import { CredentialMetadataKeys } from '../repository/CredentialMetadataTypes'
 import { CredentialRepository } from '../repository/CredentialRepository'
 
 import { credDef, credReq, credOffer } from './fixtures'

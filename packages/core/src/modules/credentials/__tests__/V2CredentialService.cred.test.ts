@@ -15,7 +15,6 @@ import { getAgentConfig, getBaseConfig, getMockConnection, mockFunction } from '
 import { Agent } from '../../../agent/Agent'
 import { Dispatcher } from '../../../agent/Dispatcher'
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { MessageSender } from '../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../storage'
@@ -44,8 +43,8 @@ import { V2CredentialService } from '../protocol/v2/V2CredentialService'
 import { V2IssueCredentialMessage } from '../protocol/v2/messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from '../protocol/v2/messages/V2OfferCredentialMessage'
 import { V2RequestCredentialMessage } from '../protocol/v2/messages/V2RequestCredentialMessage'
-import { CredentialMetadataKeys } from '../repository/CredentialMetadataTypes'
 import { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
+import { CredentialMetadataKeys } from '../repository/CredentialMetadataTypes'
 import { CredentialRepository } from '../repository/CredentialRepository'
 
 import { credDef, credReq, credOffer } from './fixtures'
@@ -62,7 +61,6 @@ const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRep
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 const IndyHolderServiceMock = IndyHolderService as jest.Mock<IndyHolderService>
 const IndyIssuerServiceMock = IndyIssuerService as jest.Mock<IndyIssuerService>
-const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
 const MediationRecipientServiceMock = MediationRecipientService as jest.Mock<MediationRecipientService>
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 
@@ -201,7 +199,6 @@ describe('CredentialService', () => {
   let eventEmitter: EventEmitter
   let didCommMessageRepository: DidCommMessageRepository
   let mediationRecipientService: MediationRecipientService
-  let messageSender: MessageSender
   let agentConfig: AgentConfig
 
   let dispatcher: Dispatcher
@@ -223,7 +220,6 @@ describe('CredentialService', () => {
   beforeEach(async () => {
     credentialRepository = new CredentialRepositoryMock()
     indyIssuerService = new IndyIssuerServiceMock()
-    messageSender = new MessageSenderMock()
     mediationRecipientService = new MediationRecipientServiceMock()
     indyHolderService = new IndyHolderServiceMock()
     indyLedgerService = new IndyLedgerServiceMock()
@@ -240,7 +236,6 @@ describe('CredentialService', () => {
       } as unknown as ConnectionService,
       credentialRepository,
       eventEmitter,
-      messageSender,
       dispatcher,
       agentConfig,
       indyIssuerService,
