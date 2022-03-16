@@ -64,7 +64,7 @@ export class ConnectionRequestHandler implements Handler {
 
     if (connectionRecord?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
       const { message } = await this.connectionService.createResponse(connectionRecord, outOfBandRecord || undefined)
-      return createOutboundMessage(connectionRecord, message)
+      return createOutboundMessage(connectionRecord, message, outOfBandRecord || undefined)
     }
   }
 }

@@ -162,7 +162,7 @@ export class MessageSender {
       transportPriority?: TransportPriorityOptions
     }
   ) {
-    const { connection, payload } = outboundMessage
+    const { connection, outOfBand, payload } = outboundMessage
     const errors: Error[] = []
 
     this.logger.debug('Send outbound message', {
@@ -171,7 +171,10 @@ export class MessageSender {
     })
 
     // Try to send to already open session
-    const session = this.transportService.findSessionByConnectionId(connection.id)
+    const session =
+      this.transportService.findSessionByConnectionId(connection.id) ||
+      (outOfBand && this.transportService.findSessionByOutOfBandId(outOfBand.id))
+
     if (session?.inboundMessage?.hasReturnRouting(payload.threadId)) {
       this.logger.debug(`Found session with return routing for message '${payload.id}' (connection '${connection.id}'`)
       try {
@@ -243,11 +246,7 @@ export class MessageSender {
     message: AgentMessage
   ) {
     // TODO iterate over all services
-    const shouldUseReturnRoute = Boolean(
-      (outOfBandRecord.outOfBandMessage.services as DidCommService[]).find(
-        (s) => s.serviceEndpoint !== DID_COMM_TRANSPORT_QUEUE
-      )
-    )
+    const shouldUseReturnRoute = !this.transportService.hasInboundEndpoint(connectionRecord.didDoc)
     return this.sendMessageToService({
       message,
       service: new DidCommService(outOfBandRecord.outOfBandMessage.services[0] as DidCommService),

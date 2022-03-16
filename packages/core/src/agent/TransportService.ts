@@ -1,6 +1,7 @@
 import type { DidDoc } from '../modules/connections/models'
 import type { ConnectionRecord } from '../modules/connections/repository'
 import type { IndyAgentService } from '../modules/dids/domain/service'
+import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { EncryptedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
@@ -13,7 +14,7 @@ import { DidCommService } from '../modules/dids/domain/service'
 
 @scoped(Lifecycle.ContainerScoped)
 export class TransportService {
-  private transportSessionTable: TransportSessionTable = {}
+  public transportSessionTable: TransportSessionTable = {}
 
   public saveSession(session: TransportSession) {
     this.transportSessionTable[session.id] = session
@@ -21,6 +22,10 @@ export class TransportService {
 
   public findSessionByConnectionId(connectionId: string) {
     return Object.values(this.transportSessionTable).find((session) => session.connection?.id === connectionId)
+  }
+
+  public findSessionByOutOfBandId(outOfBandId: string) {
+    return Object.values(this.transportSessionTable).find((session) => session.outOfBand?.id === outOfBandId)
   }
 
   public hasInboundEndpoint(didDoc: DidDoc): boolean {
@@ -69,5 +74,6 @@ export interface TransportSession {
   keys?: EnvelopeKeys
   inboundMessage?: AgentMessage
   connection?: ConnectionRecord
+  outOfBand?: OutOfBandRecord
   send(encryptedMessage: EncryptedMessage): Promise<void>
 }

@@ -59,7 +59,7 @@ export class DidExchangeRequestHandler implements Handler {
     if (connectionRecord?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
       // TODO We should add an option to not pass routing and therefore do not rotate keys and use the keys from the invitation
       const message = await this.didExchangeProtocol.createResponse(connectionRecord, outOfBandRecord, routing)
-      return createOutboundMessage(connectionRecord, message)
+      return createOutboundMessage(connectionRecord, message, outOfBandRecord || undefined)
     }
   }
 }

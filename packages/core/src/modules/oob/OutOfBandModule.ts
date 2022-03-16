@@ -161,7 +161,7 @@ export class OutOfBandModule {
 
     const outOfBandRecord = new OutOfBandRecord({
       role: OutOfBandRole.Sender,
-      state: OutOfBandState.Initial,
+      state: OutOfBandState.AwaitResponse,
       outOfBandMessage: outOfBandMessage,
       reusable: multiUseInvitation,
       autoAcceptConnection,

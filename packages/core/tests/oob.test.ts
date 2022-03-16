@@ -73,12 +73,12 @@ describe('out of band', () => {
 
     faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
+    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(faberMessages, subjectMap))
     await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(faberMessages, subjectMap))
+    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
     await aliceAgent.initialize()
 
     const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'profile_picture', 'x-ray'])
@@ -212,7 +212,7 @@ describe('out of band', () => {
 
       expect(connectionRecord).not.toBeDefined()
       expect(outOfBandRecord.role).toBe(OutOfBandRole.Sender)
-      expect(outOfBandRecord.state).toBe(OutOfBandState.Initial)
+      expect(outOfBandRecord.state).toBe(OutOfBandState.AwaitResponse)
 
       expect(connectionRecord).not.toBeDefined()
       expect(receivedOutOfBandRecord.outOfBandMessage).toEqual(outOfBandMessage)
@@ -265,7 +265,7 @@ describe('out of band', () => {
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
     })
 
-    test.skip('make a connection based on old connection invitation encoded in URL', async () => {
+    test('make a connection based on old connection invitation encoded in URL', async () => {
       // eslint-disable-next-line prefer-const
       let { invitation, connectionRecord: faberAliceConnection } = await faberAgent.connections.createConnection()
       const urlMessage = invitation.toUrl({ domain: 'http://example.com' })
@@ -428,6 +428,7 @@ describe('out of band', () => {
     test('create a new connection when connection exists and reuse is false', async () => {
       const { outOfBandMessage } = await faberAgent.createInvitation({
         ...makeConnectionConfig,
+        handshakeProtocols: [HandshakeProtocol.DidExchange],
         multiUseInvitation: true,
       })
       let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
