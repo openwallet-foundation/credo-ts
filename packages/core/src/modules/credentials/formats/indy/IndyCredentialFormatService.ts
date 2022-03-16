@@ -185,7 +185,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       return { format: formats, attachment: requestAttach }
     } else {
       throw new AriesFrameworkError(
-        `Missing attachment from offer messagte, credential record id = ${credentialRecord.id}`
+        `Missing attachment from offer message, credential record id = ${credentialRecord.id}`
       )
     }
   }
