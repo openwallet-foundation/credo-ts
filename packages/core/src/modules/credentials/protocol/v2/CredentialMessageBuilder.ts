@@ -1,5 +1,5 @@
-import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
+import type { CredentialProtocolMsgReturnType } from '../../CredentialServiceOptions'
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
 import type { CredentialFormatSpec } from '../../formats/models/CredentialFormatServiceOptions'
 import type {
@@ -29,11 +29,6 @@ import { V2IssueCredentialMessage } from './messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from './messages/V2OfferCredentialMessage'
 import { V2ProposeCredentialMessage } from './messages/V2ProposeCredentialMessage'
 import { V2RequestCredentialMessage } from './messages/V2RequestCredentialMessage'
-
-export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessage> {
-  message: MessageType
-  credentialRecord: CredentialExchangeRecord
-}
 
 export class CredentialMessageBuilder {
   /**

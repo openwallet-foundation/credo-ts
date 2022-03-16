@@ -8,7 +8,7 @@ import type { DidCommMessageRepository } from '../../storage'
 import type { MediationRecipientService } from '../routing'
 import type { CredentialStateChangedEvent } from './CredentialEvents'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
-import type { ServiceRequestCredentialOptions } from './CredentialServiceOptions'
+import type { CredentialProtocolMsgReturnType, ServiceRequestCredentialOptions } from './CredentialServiceOptions'
 import type { CredentialFormatService } from './formats/CredentialFormatService'
 import type {
   CredentialIssueFormat,
@@ -81,46 +81,40 @@ export abstract class CredentialService {
     credentialFormats: OfferCredentialFormats | CredProposeOfferRequestFormat
   ): CredentialFormatService[]
   // methods for proposal
-  abstract createProposal(
-    proposal: ProposeCredentialOptions
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
+  abstract createProposal(proposal: ProposeCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
   abstract processProposal(messageContext: HandlerInboundMessage<Handler>): Promise<CredentialExchangeRecord>
   abstract acceptProposal(
     proposal: AcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
+  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
   abstract negotiateProposal(
     options: NegotiateProposalOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
+  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   abstract createProposalAsResponse(
     credentialRecord: CredentialExchangeRecord,
     options: ProposeCredentialOptions
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
+  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   // methods for offer
-  abstract createOffer(
-    options: OfferCredentialOptions
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
+  abstract createOffer(options: OfferCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
   abstract processOffer(messageContext: HandlerInboundMessage<Handler>): Promise<CredentialExchangeRecord>
 
-  abstract createOutOfBandOffer(
-    options: OfferCredentialOptions
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
+  abstract createOutOfBandOffer(options: OfferCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   // methods for request
   abstract createRequest(
     credentialRecord: CredentialExchangeRecord,
     options: ServiceRequestCredentialOptions
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
+  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   abstract processAck(messageContext: InboundMessageContext<V1CredentialAckMessage>): Promise<CredentialExchangeRecord>
 
   abstract negotiateOffer(
     options: NegotiateOfferOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
+  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   // methods for issue
 
@@ -132,15 +126,13 @@ export abstract class CredentialService {
   abstract createCredential(
     credentialRecord: CredentialExchangeRecord,
     options?: AcceptRequestOptions
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
+  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   abstract processCredential(
     messageContext: InboundMessageContext<V1IssueCredentialMessage | V2IssueCredentialMessage>
   ): Promise<CredentialExchangeRecord>
 
-  abstract createAck(
-    credentialRecord: CredentialExchangeRecord
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
+  abstract createAck(credentialRecord: CredentialExchangeRecord): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   abstract registerHandlers(): void
 

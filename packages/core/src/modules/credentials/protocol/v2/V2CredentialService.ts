@@ -5,6 +5,7 @@ import type { HandlerInboundMessage } from '../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../../logger'
 import type { CredentialStateChangedEvent } from '../../CredentialEvents'
+import type { CredentialProtocolMsgReturnType } from '../../CredentialServiceOptions'
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
 import type {
   CredentialFormatSpec,
@@ -22,7 +23,6 @@ import type {
   RequestCredentialOptions,
 } from '../../interfaces'
 import type { V1CredentialAckMessage, V1IssueCredentialMessage } from '../v1/messages'
-import type { CredentialProtocolMsgReturnType } from './CredentialMessageBuilder'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -138,7 +138,7 @@ export class V2CredentialService extends CredentialService {
    */
   public async createProposal(
     proposal: ProposeCredentialOptions
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V2ProposeCredentialMessage>> {
     // should handle all formats in proposal.credentialFormats by querying and calling
     // its corresponding handler classes.
     logger.debug('Get the Format Service and Create Proposal Message')
@@ -325,16 +325,12 @@ export class V2CredentialService extends CredentialService {
   public async acceptProposal(
     proposal: AcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
       )
     }
-    const proposeCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: credentialRecord.id,
-      messageClass: V2ProposeCredentialMessage,
-    })
 
     const message = await this.createOfferAsResponse(credentialRecord, proposal)
 
@@ -596,16 +592,12 @@ export class V2CredentialService extends CredentialService {
   public async negotiateProposal(
     credentialOptions: NegotiateProposalOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
       )
     }
-    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: credentialRecord.id,
-      messageClass: V2ProposeCredentialMessage,
-    })
 
     const message = await this.createOfferAsResponse(credentialRecord, credentialOptions)
 
@@ -623,7 +615,7 @@ export class V2CredentialService extends CredentialService {
   public async negotiateOffer(
     credentialOptions: NegotiateOfferOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V2ProposeCredentialMessage>> {
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
@@ -679,7 +671,7 @@ export class V2CredentialService extends CredentialService {
   public async createOffer(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     credentialOptions: OfferCredentialOptions
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: V2OfferCredentialMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
     if (!credentialOptions.connectionId) {
       throw new AriesFrameworkError('Connection id missing from offer credential options')
     }
@@ -920,7 +912,7 @@ export class V2CredentialService extends CredentialService {
    */
   public async createOutOfBandOffer(
     credentialOptions: OfferCredentialOptions
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
     if (!credentialOptions.credentialFormats.indy?.credentialDefinitionId) {
       throw new AriesFrameworkError('Missing credential definition id for out of band credential')
     }

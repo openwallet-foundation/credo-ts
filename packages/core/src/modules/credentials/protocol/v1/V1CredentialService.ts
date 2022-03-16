@@ -1,4 +1,3 @@
-import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { HandlerInboundMessage } from '../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
@@ -771,7 +770,7 @@ export class V1CredentialService extends CredentialService {
    */
   public async createProposal(
     proposal: ProposeCredentialOptions
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V1ProposeCredentialMessage>> {
     const connection = await this.connectionService.getById(proposal.connectionId)
     connection.assertReady()
 
@@ -849,7 +848,7 @@ export class V1CredentialService extends CredentialService {
   public async acceptProposal(
     proposal: AcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
@@ -897,7 +896,7 @@ export class V1CredentialService extends CredentialService {
   public async negotiateProposal(
     credentialOptions: NegotiateProposalOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
@@ -956,7 +955,7 @@ export class V1CredentialService extends CredentialService {
   public async negotiateOffer(
     credentialOptions: ProposeCredentialOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V1ProposeCredentialMessage>> {
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
@@ -979,7 +978,7 @@ export class V1CredentialService extends CredentialService {
 
   public async createOutOfBandOffer(
     credentialOptions: OfferCredentialOptions
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     if (!credentialOptions.credentialFormats.indy?.credentialDefinitionId) {
       throw new AriesFrameworkError('Missing credential definition id for out of band credential')
     }
@@ -1027,7 +1026,7 @@ export class V1CredentialService extends CredentialService {
    */
   public async createOffer(
     credentialOptions: OfferCredentialOptions
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     if (!credentialOptions.connectionId) {
       throw new AriesFrameworkError('Connection id missing from offer credential options')
     }

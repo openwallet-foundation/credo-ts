@@ -9,7 +9,6 @@ import type {
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
-  RequestCredentialOptions,
 } from './interfaces'
 import type { CredentialExchangeRecord } from './repository'
 
