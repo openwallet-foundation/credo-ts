@@ -1,45 +1,66 @@
-import multibase from 'multibase'
+import { decodeFromBase58, encodeToBase58 } from './base58'
 
-export type BaseName = multibase.BaseName
+export type BaseName = 'base58btc'
+
+type EncodingMap = {
+  [key in BaseName]: (data: Uint8Array) => string
+}
+
+type DecodingMap = {
+  [key: string]: (data: string) => { data: Uint8Array; baseName: BaseName }
+}
+
+const multibaseEncodingMap: EncodingMap = {
+  base58btc: (data) => `z${encodeToBase58(data)}`,
+}
+
+const multibaseDecodingMap: DecodingMap = {
+  z: (data) => ({ data: decodeFromBase58(data.substring(1)), baseName: 'base58btc' }),
+}
 
 export class MultiBaseEncoder {
   /**
    *
    * Encodes a buffer into a multibase
    *
-   * @param {Uint8Array} buffer the buffer that has to be encoded
-   * @param {multibase.BaseName} baseName the encoding algorithm
+   * @param buffer the buffer that has to be encoded
+   * @param baseName the encoding algorithm
    */
-  public static encode(buffer: Uint8Array, baseName: multibase.BaseName = 'base58btc') {
-    return multibase.encode(baseName, buffer)
+  public static encode(buffer: Uint8Array, baseName: BaseName) {
+    const encode = multibaseEncodingMap[baseName]
+
+    if (!encode) {
+      throw new Error(`Unsupported encoding '${baseName}'`)
+    }
+
+    return encode(buffer)
   }
 
   /**
    *
    * Decodes a multibase into a Uint8Array
    *
-   * @param {string} data the multibase that has to be decoded
+   * @param data the multibase that has to be decoded
    *
-   * @returns {Uint8array} data the decoded multibase
-   * @returns {string} encodingAlgorithm name of the encoding algorithm
+   * @returns decoded data and the multi base name
    */
-  public static decode(data: string | Uint8Array): { data: Uint8Array; baseName: string } {
-    if (this.isValid(data)) {
-      const baseName = multibase.encodingFromData(data).name
-      return { data: multibase.decode(data), baseName }
+  public static decode(data: string): { data: Uint8Array; baseName: string } {
+    const prefix = data[0]
+    const decode = multibaseDecodingMap[prefix]
+
+    if (!decode) {
+      throw new Error(`No decoder found for multibase prefix '${prefix}'`)
     }
-    throw new Error(`Invalid multibase: ${data}`)
+
+    return decode(data)
   }
 
-  /**
-   *
-   * Validates if it is a valid multibase encoded value
-   *
-   * @param {Uint8Array} data the multibase that needs to be validated
-   *
-   * @returns {boolean} bool whether the multibase value is encoded
-   */
-  public static isValid(data: string | Uint8Array): boolean {
-    return multibase.isEncoded(data) ? true : false
+  public static isValid(data: string): boolean {
+    try {
+      MultiBaseEncoder.decode(data)
+      return true
+    } catch (error) {
+      return false
+    }
   }
 }
