@@ -36,14 +36,14 @@ export abstract class CredentialFormatService {
 
   abstract createOffer(options: AcceptProposalOptions): Promise<OfferAttachmentFormats>
 
-  abstract processOffer(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): void
+  abstract processOffer(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): Promise<void>
 
   abstract createRequest(
     options: RequestCredentialOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialAttachmentFormats>
 
-  abstract processRequest(options: RequestCredentialOptions, credentialRecord: CredentialExchangeRecord): void
+  abstract processRequest(options: RequestCredentialOptions, credentialRecord: CredentialExchangeRecord): Promise<void>
 
   abstract createCredential(
     options: AcceptRequestOptions,

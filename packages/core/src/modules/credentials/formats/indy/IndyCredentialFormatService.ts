@@ -66,8 +66,12 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   /**
    * Not implemented; there for future versions
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public processRequest(options: RequestCredentialOptions, credentialRecord: CredentialExchangeRecord): void {
+  public async processRequest(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    options: RequestCredentialOptions,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    credentialRecord: CredentialExchangeRecord
+  ): Promise<void> {
     throw new Error('Method not implemented.')
   }
 
@@ -76,7 +80,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @param options object containing the offer attachment for use here to retreive the actual cred offer
    * @param credentialRecord the credential exchange record for this offer
    */
-  public processOffer(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): void {
+  public async processOffer(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): Promise<void> {
     if (options.offerAttachment) {
       const credOffer: CredOffer = options.offerAttachment.getDataAsJson<CredOffer>()
 
