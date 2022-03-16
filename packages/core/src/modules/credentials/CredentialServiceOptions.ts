@@ -11,7 +11,7 @@ import type { AcceptOfferOptions, RequestCredentialOptions, AcceptRequestOptions
 import type { CredentialPreviewAttribute } from './models/CredentialPreviewAttributes'
 import type { V1CredentialPreview } from './protocol/v1/V1CredentialPreview'
 import type { ProposeCredentialMessageOptions } from './protocol/v1/messages'
-import type { CredentialExchangeRecord } from './repository/CredentialRecord'
+import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
 
 export interface IndyCredentialPreview {
   credentialDefinitionId?: string

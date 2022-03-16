@@ -18,7 +18,7 @@ import type {
   ServiceRequestCredentialOptions,
 } from '../../protocol'
 import type { CredPropose } from '../../protocol/v1/models/CredentialFormatOptions'
-import type { CredentialExchangeRecord } from '../../repository/CredentialRecord'
+import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 import type { CredentialRepository } from '../../repository/CredentialRepository'
 import type {
   CredentialAttachmentFormats,

@@ -14,7 +14,7 @@ import { uuid } from '../../../utils/uuid'
 import { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
 import { CredentialInfo } from '../protocol/v1/models/CredentialInfo'
 
-export interface CredentialRecordProps {
+export interface CredentialExchangeRecordProps {
   id?: string
   createdAt?: Date
   state: CredentialState
@@ -64,7 +64,7 @@ export class CredentialExchangeRecord extends BaseRecord<
   public static readonly type = 'CredentialExchangeRecord'
   public readonly type = CredentialExchangeRecord.type
 
-  public constructor(props: CredentialRecordProps) {
+  public constructor(props: CredentialExchangeRecordProps) {
     super()
 
     if (props) {

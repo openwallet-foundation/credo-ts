@@ -10,7 +10,7 @@ import type {
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../../interfaces'
-import type { CredentialRecordProps } from '../../repository/CredentialRecord'
+import type { CredentialExchangeRecordProps } from '../../repository/CredentialExchangeRecord'
 import type { V2CredentialPreview } from './V2CredentialPreview'
 import type { V2IssueCredentialMessageProps } from './messages/V2IssueCredentialMessage'
 import type { V2OfferCredentialMessageOptions } from './messages/V2OfferCredentialMessage'
@@ -23,7 +23,7 @@ import { AriesFrameworkError } from '../../../../../src/error/AriesFrameworkErro
 import { uuid } from '../../../../utils/uuid'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
 import { CredentialState } from '../../CredentialState'
-import { CredentialExchangeRecord } from '../../repository/CredentialRecord'
+import { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 
 import { V2IssueCredentialMessage } from './messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from './messages/V2OfferCredentialMessage'
@@ -73,7 +73,7 @@ export class CredentialMessageBuilder {
 
     const message: V2ProposeCredentialMessage = new V2ProposeCredentialMessage(options)
 
-    const props: CredentialRecordProps = {
+    const props: CredentialExchangeRecordProps = {
       connectionId: proposal.connectionId,
       threadId: message.threadId,
       state: CredentialState.ProposalSent,
@@ -96,7 +96,7 @@ export class CredentialMessageBuilder {
    * @return a version 2.0 credential record object see {@link CredentialRecord}
    */
   public acceptProposal(message: V2ProposeCredentialMessage, connectionId?: string): CredentialExchangeRecord {
-    const props: CredentialRecordProps = {
+    const props: CredentialExchangeRecordProps = {
       connectionId: connectionId,
       threadId: message.threadId,
       state: CredentialState.ProposalReceived,
@@ -263,7 +263,7 @@ export class CredentialMessageBuilder {
     // Construct v2 offer message
     const credentialOfferMessage: V2OfferCredentialMessage = new V2OfferCredentialMessage(messageProps)
 
-    const recordProps: CredentialRecordProps = {
+    const recordProps: CredentialExchangeRecordProps = {
       connectionId: options.connectionId,
       threadId: credentialOfferMessage.threadId,
       autoAcceptCredential: options?.autoAcceptCredential,

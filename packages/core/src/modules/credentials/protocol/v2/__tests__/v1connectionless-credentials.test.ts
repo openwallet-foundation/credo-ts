@@ -13,7 +13,7 @@ import { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
-import { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 
 const faberConfig = getBaseConfig('Faber connection-less Credentials', {

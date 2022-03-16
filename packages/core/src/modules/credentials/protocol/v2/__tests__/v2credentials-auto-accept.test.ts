@@ -17,7 +17,7 @@ import { sleep } from '../../../../../utils/sleep'
 import { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
-import { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 import { V2CredentialPreview } from '../V2CredentialPreview'
 

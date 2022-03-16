@@ -5,7 +5,7 @@ import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { ServiceAcceptRequestOptions, ServiceRequestCredentialOptions } from '../CredentialServiceOptions'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
 import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
-import type { CustomCredentialTags } from '../repository/CredentialRecord'
+import type { CustomCredentialTags } from '../repository/CredentialExchangeRecord'
 
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { Dispatcher } from '../../../agent/Dispatcher'
@@ -39,7 +39,7 @@ import {
   V1CredentialProblemReportMessage,
 } from '../protocol/v1/messages'
 import { CredentialMetadataKeys } from '../repository/CredentialMetadataTypes'
-import { CredentialExchangeRecord } from '../repository/CredentialRecord'
+import { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
 
 import { credDef, credReq, credOffer } from './fixtures'

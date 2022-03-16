@@ -9,7 +9,7 @@ import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInf
 import type { V2IssueCredentialMessageProps } from '../protocol/v2/messages/V2IssueCredentialMessage'
 import type { V2OfferCredentialMessageOptions } from '../protocol/v2/messages/V2OfferCredentialMessage'
 import type { V2RequestCredentialMessageOptions } from '../protocol/v2/messages/V2RequestCredentialMessage'
-import type { CustomCredentialTags } from '../repository/CredentialRecord'
+import type { CustomCredentialTags } from '../repository/CredentialExchangeRecord'
 
 import { getAgentConfig, getBaseConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
@@ -45,7 +45,7 @@ import { V2IssueCredentialMessage } from '../protocol/v2/messages/V2IssueCredent
 import { V2OfferCredentialMessage } from '../protocol/v2/messages/V2OfferCredentialMessage'
 import { V2RequestCredentialMessage } from '../protocol/v2/messages/V2RequestCredentialMessage'
 import { CredentialMetadataKeys } from '../repository/CredentialMetadataTypes'
-import { CredentialExchangeRecord } from '../repository/CredentialRecord'
+import { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
 
 import { credDef, credReq, credOffer } from './fixtures'

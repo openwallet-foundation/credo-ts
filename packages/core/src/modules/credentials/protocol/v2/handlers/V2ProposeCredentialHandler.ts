@@ -7,7 +7,7 @@ import type { CredentialFormatService } from '../../../formats/CredentialFormatS
 import type { HandlerAutoAcceptOptions } from '../../../formats/models/CredentialFormatServiceOptions'
 import type { AcceptProposalOptions } from '../../../interfaces'
 import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttributes'
-import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
 import { AriesFrameworkError } from '../../../../../../src/error'

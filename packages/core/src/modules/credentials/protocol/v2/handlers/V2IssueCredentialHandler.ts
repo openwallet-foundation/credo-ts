@@ -5,7 +5,7 @@ import type { InboundMessageContext } from '../../../../../agent/models/InboundM
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
 import type { HandlerAutoAcceptOptions } from '../../../formats/models/CredentialFormatServiceOptions'
-import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
 import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
