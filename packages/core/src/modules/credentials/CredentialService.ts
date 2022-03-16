@@ -26,14 +26,12 @@ import type {
   OfferCredentialOptions,
   ProposeCredentialOptions,
 } from './interfaces'
-import type { V1CredentialService } from './protocol/v1/V1CredentialService'
 import type {
   V1CredentialAckMessage,
   V1CredentialProblemReportMessage,
   V1IssueCredentialMessage,
   V1RequestCredentialMessage,
 } from './protocol/v1/messages'
-import type { V2CredentialService } from './protocol/v2/V2CredentialService'
 import type { V2IssueCredentialMessage } from './protocol/v2/messages/V2IssueCredentialMessage'
 import type { V2RequestCredentialMessage } from './protocol/v2/messages/V2RequestCredentialMessage'
 import type { CredentialExchangeRecord, CredentialRepository } from './repository'
@@ -42,8 +40,6 @@ import { ConsoleLogger, LogLevel } from '../../logger'
 
 import { CredentialEventTypes } from './CredentialEvents'
 import { CredentialState } from './CredentialState'
-
-export type CredentialServiceType = V1CredentialService | V2CredentialService
 
 const logger = new ConsoleLogger(LogLevel.info)
 
