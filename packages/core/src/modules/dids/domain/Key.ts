@@ -1,8 +1,6 @@
 import type { KeyType } from '../../../crypto'
 
-import { varint } from 'multiformats'
-
-import { Buffer, BufferEncoder, MultiBaseEncoder } from '../../../utils'
+import { Buffer, BufferEncoder, MultiBaseEncoder, VarintEncoder } from '../../../utils'
 
 import { getKeyTypeByMultiCodecPrefix, getMultiCodecPrefixByKeytype } from './key-type/multiCodecKey'
 
@@ -27,7 +25,7 @@ export class Key {
 
   public static fromFingerprint(fingerprint: string) {
     const { data } = MultiBaseEncoder.decode(fingerprint)
-    const [code, byteLength] = varint.decode(data)
+    const [code, byteLength] = VarintEncoder.decode(data)
 
     const publicKey = Buffer.from(data.slice(byteLength))
     const keyType = getKeyTypeByMultiCodecPrefix(code)
@@ -38,8 +36,8 @@ export class Key {
   public get prefixedPublicKey() {
     const multiCodecPrefix = getMultiCodecPrefixByKeytype(this.keyType)
 
-    // Create Uint8Array with length of the prefix bytes, then use varint to fill the prefix bytes
-    const prefixBytes = varint.encodeTo(multiCodecPrefix, new Uint8Array(varint.encodingLength(multiCodecPrefix)))
+    // Create Buffer with length of the prefix bytes, then use varint to fill the prefix bytes
+    const prefixBytes = VarintEncoder.encode(multiCodecPrefix)
 
     // Combine prefix with public key
     return Buffer.concat([prefixBytes, this.publicKey])

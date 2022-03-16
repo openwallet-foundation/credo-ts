@@ -3,10 +3,10 @@ import type { V1CredentialPreview } from './protocol/v1/V1CredentialPreview'
 import type { V2CredentialPreview } from './protocol/v2/V2CredentialPreview'
 import type { CredValues } from 'indy-sdk'
 
-import { hash as sha256 } from '@stablelib/sha256'
 import BigNumber from 'bn.js'
 
-import { AriesFrameworkError } from '../../error'
+import { AriesFrameworkError } from '../../error/AriesFrameworkError'
+import { Hasher } from '../../utils'
 import { encodeAttachment } from '../../utils/attachment'
 import { Buffer } from '../../utils/buffer'
 import { isBoolean, isNumber, isString } from '../../utils/type'
@@ -169,7 +169,7 @@ export class CredentialUtils {
       value = 'None'
     }
 
-    return new BigNumber(sha256(Buffer.from(value as string))).toString()
+    return new BigNumber(Hasher.hash(Buffer.from(value as string), 'sha2-256')).toString()
   }
 
   private static isInt32(number: number) {
