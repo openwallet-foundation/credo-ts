@@ -19,8 +19,8 @@ export interface Wallet {
   import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig): Promise<void>
 
   createKey(options: CreateKeyOptions): Promise<Key>
-  sign(data: Buffer, key: Key): Promise<Buffer>
-  verify(data: Buffer, key: Key, signature: Buffer): Promise<boolean>
+  sign(options: SignOptions): Promise<Buffer>
+  verify(options: VerifyOptions): Promise<boolean>
 
   initPublicDid(didConfig: DidConfig): Promise<void>
   createDid(didConfig?: DidConfig): Promise<DidInfo>
@@ -37,6 +37,17 @@ export interface DidInfo {
 export interface CreateKeyOptions {
   keyType: KeyType
   seed?: string
+}
+
+export interface SignOptions {
+  data: Buffer
+  key: Key
+}
+
+export interface VerifyOptions {
+  data: Buffer
+  key: Key
+  signature: Buffer
 }
 
 export interface DidConfig {
