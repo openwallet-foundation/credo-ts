@@ -51,8 +51,6 @@ describe('agents', () => {
     await bobAgent.initialize()
 
     const aliceBobOutOfBandRecord = await aliceAgent.createInvitation({
-      label: 'alice',
-      handshake: true,
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 

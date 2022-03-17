@@ -42,8 +42,6 @@ describe('out of band', () => {
     goal: 'To make a connection',
     goalCode: 'p2p-messaging',
     label: 'Faber College',
-    handshake: true,
-    multiUseInvitation: false,
   }
 
   const issueCredentialConfig = {
@@ -51,7 +49,6 @@ describe('out of band', () => {
     goalCode: 'issue-vc',
     label: 'Faber College',
     handshake: false,
-    multiUseInvitation: false,
   }
 
   const receiveMessageConfig = {
@@ -174,7 +171,6 @@ describe('out of band', () => {
       const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
       const { outOfBandMessage } = await faberAgent.createInvitation({
         label: 'test-connection',
-        handshake: true,
         handshakeProtocols: [HandshakeProtocol.Connections],
         messages: [offerMessage],
       })
@@ -225,10 +221,7 @@ describe('out of band', () => {
       const { outOfBandMessage } = outOfBandRecord
       const urlMessage = outOfBandMessage.toUrl({ domain: 'http://example.com' })
 
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, {
-        autoAcceptMessage: true,
-        autoAcceptConnection: true,
-      })
+      let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage)
 
       aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
       expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
@@ -249,10 +242,7 @@ describe('out of band', () => {
       const { outOfBandMessage } = outOfBandRecord
       const urlMessage = outOfBandMessage.toUrl({ domain: 'http://example.com' })
 
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, {
-        autoAcceptMessage: true,
-        autoAcceptConnection: true,
-      })
+      let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage)
 
       aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
       expect(aliceFaberConnection.state).toBe(ConnectionState.Complete)
@@ -270,10 +260,7 @@ describe('out of band', () => {
       let { invitation, connectionRecord: faberAliceConnection } = await faberAgent.connections.createConnection()
       const urlMessage = invitation.toUrl({ domain: 'http://example.com' })
 
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, {
-        autoAcceptMessage: true,
-        autoAcceptConnection: true,
-      })
+      let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage)
 
       aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
       expect(aliceFaberConnection.state).toBe(ConnectionState.Complete)
@@ -369,10 +356,7 @@ describe('out of band', () => {
     test('do not create a new connection when connection exists', async () => {
       const outOfBandRecord = await faberAgent.createInvitation(makeConnectionConfig)
       const { outOfBandMessage } = outOfBandRecord
-      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
-        autoAcceptMessage: true,
-        autoAcceptConnection: true,
-      })
+      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.oob.receiveMessage(outOfBandMessage)
       firstAliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(firstAliceFaberConnection!.id)
 
       // To simulate the usage of the same connection we set up the same service as it is in
@@ -402,10 +386,7 @@ describe('out of band', () => {
       })
       const { outOfBandMessage } = outOfBandRecord
 
-      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
-        autoAcceptMessage: true,
-        autoAcceptConnection: true,
-      })
+      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.oob.receiveMessage(outOfBandMessage)
       firstAliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(firstAliceFaberConnection!.id)
 
       await aliceAgent.oob.receiveMessage(outOfBandMessage, {

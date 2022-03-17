@@ -110,10 +110,7 @@ describe('out of band with mediation set up with provision method', () => {
     const { outOfBandMessage } = outOfBandRecord
     const urlMessage = outOfBandMessage.toUrl({ domain: 'http://example.com' })
 
-    let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, {
-      autoAcceptMessage: true,
-      autoAcceptConnection: true,
-    })
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage)
 
     aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)

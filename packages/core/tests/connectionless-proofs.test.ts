@@ -206,13 +206,11 @@ describe('Present Proof', () => {
 
     const faberMediationOutOfBandRecord = await mediatorAgent.createInvitation({
       label: 'faber invitation',
-      handshake: true,
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
     const aliceMediationOutOfBandRecord = await mediatorAgent.createInvitation({
       label: 'alice invitation',
-      handshake: true,
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 

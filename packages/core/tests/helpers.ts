@@ -260,8 +260,6 @@ export function getMockConnection({
 
 export async function makeConnection(agentA: Agent, agentB: Agent) {
   const agentAOutOfBand = await agentA.createInvitation({
-    label: 'alice invitation',
-    handshake: true,
     handshakeProtocols: [HandshakeProtocol.Connections],
   })
 

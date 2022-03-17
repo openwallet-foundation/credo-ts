@@ -52,8 +52,6 @@ describe('connections', () => {
 
   it('should be able to make multiple connections using a multi use invite', async () => {
     const faberOutOfBandRecord = await faberAgent.createInvitation({
-      label: 'faber invitation',
-      handshake: true,
       handshakeProtocols: [HandshakeProtocol.Connections],
       multiUseInvitation: true,
     })
@@ -62,17 +60,12 @@ describe('connections', () => {
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Create first connection
-    let { connectionRecord: aliceFaberConnection1 } = await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl, {
-      autoAcceptMessage: true,
-      autoAcceptConnection: true,
-    })
+    let { connectionRecord: aliceFaberConnection1 } = await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl)
     aliceFaberConnection1 = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection1!.id)
     expect(aliceFaberConnection1.state).toBe(ConnectionState.Complete)
 
     // Create second connection
     let { connectionRecord: aliceFaberConnection2 } = await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl, {
-      autoAcceptMessage: true,
-      autoAcceptConnection: true,
       reuseConnection: false,
     })
     aliceFaberConnection2 = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection2!.id)

@@ -29,10 +29,10 @@ import { OutOfBandRecord } from './repository/OutOfBandRecord'
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
 
 export interface CreateOutOfBandMessageConfig {
-  label: string
+  label?: string
   goalCode?: string
   goal?: string
-  handshake: boolean
+  handshake?: boolean
   handshakeProtocols?: HandshakeProtocol[]
   messages?: AgentMessage[]
   multiUseInvitation?: boolean
@@ -41,8 +41,8 @@ export interface CreateOutOfBandMessageConfig {
 }
 
 export interface ReceiveOutOfBandMessageConfig {
-  autoAcceptMessage: boolean
-  autoAcceptConnection: boolean
+  autoAcceptMessage?: boolean
+  autoAcceptConnection?: boolean
   reuseConnection?: boolean
   label?: string
   routing?: Routing
@@ -96,24 +96,28 @@ export class OutOfBandModule {
    *
    * Then, the out-of-band will use its keys and will work as a connection invitation.
    *
+   * Agent role: sender (inviter)
+   *
    * @param config Configuration and other attributes of out-of-band message
    * @param messages Messages that will be sent inside out-of-band message
-   * @returns Out-of-band message and optionally connection record created based on `handshakeProtocol`
+   * @returns Out-of-band record and optionally connection record created based on `handshakeProtocol`
    */
-  public async createMessage(config: CreateOutOfBandMessageConfig): Promise<OutOfBandRecord> {
-    const {
-      label,
-      multiUseInvitation,
-      handshake,
-      handshakeProtocols: customHandshakeProtocols,
-      autoAcceptConnection,
-      messages,
-      routing,
-    } = config
+  public async createMessage(config: CreateOutOfBandMessageConfig = {}): Promise<OutOfBandRecord> {
+    const multiUseInvitation = config.multiUseInvitation ?? false
+    const handshake = config.handshake ?? true
+    const customHandshakeProtocols = config.handshakeProtocols
+    const autoAcceptConnection = config.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections
+    const messages = config.messages
+    const routing = config.routing
+
     if (!handshake && !messages) {
       throw new AriesFrameworkError(
         'One or both of handshake_protocols and requests~attach MUST be included in the message.'
       )
+    }
+
+    if (!handshake && customHandshakeProtocols) {
+      throw new AriesFrameworkError(`Attribute 'handshake' can not be 'false' when 'hansdhakeProtocols' is defined.`)
     }
 
     let handshakeProtocols
@@ -142,7 +146,7 @@ export class OutOfBandModule {
     })
 
     const options = {
-      label,
+      label: config.label || this.agentConfig.label,
       accept: didCommProfiles,
       services,
       handshakeProtocols,
@@ -172,23 +176,24 @@ export class OutOfBandModule {
   }
 
   /**
-   * Parses URL, decodes invitation and eventually creates a new connection record.
-   * It supports both OOB (Aries RFC 0434: Out-of-Band Protocol 1.1) and Connection Invitation (0160: Connection Protocol).
+   * Parses URL, decodes invitation and calls `receiveMessage` with parsed invitation message.
    *
-   * @param urlMessage URL containing encoded invitation
-   * @param config Configuration of how to process given invitation.
-   * @returns Connection record if it has been created.
+   * Agent role: receiver (invitee)
+   *
+   * @param invitationUrl url containing a base64 encoded invitation to receive
+   * @param config config for handling of invitation
+   * @returns OutOfBand record and connection record if one has been created.
    */
-  public async receiveInvitationFromUrl(urlMessage: string, config: ReceiveOutOfBandMessageConfig) {
-    const message = await this.parseMessage(urlMessage)
+  public async receiveInvitationFromUrl(invitationUrl: string, config: ReceiveOutOfBandMessageConfig = {}) {
+    const message = await this.parseMessage(invitationUrl)
     return this.receiveMessage(message, config)
   }
 
   /**
    * Parses URL and decodes invitation.
-   * It supports both OOB (Aries RFC 0434: Out-of-Band Protocol 1.1) and Connection Invitation (0160: Connection Protocol).
    *
    * @param urlMessage URL containing encoded invitation
+   *
    * @returns OutOfBandMessage
    */
   public async parseMessage(urlMessage: string) {
@@ -206,7 +211,12 @@ export class OutOfBandModule {
   }
 
   /**
-   * Processes out-of-band message and passes all messages from `requests~attach` attribute to the agent.
+   * Stores OutOfBand record with the invitation message. It automatically accepts the invitation
+   * for further processing. If you don't want to do that you can set `autoAcceptMessage` to
+   * `false`.
+   *
+   * If auto accepting is enabled via either the config passed in the function or the global agent
+   * config, a connection request message will be send.
    *
    * If the message contains `hanshake_protocols` attribute it either creates or reuse an existing connection.
    * It waits until the connection is ready and then it passes all messages from `requests~attach` attribute to the agent.
@@ -214,14 +224,24 @@ export class OutOfBandModule {
    *
    * If there is no `hanshake_protocols` attribute it just passes the messages to the agent.
    *
+   * It supports both OOB (Aries RFC 0434: Out-of-Band Protocol 1.1) and Connection Invitation (0160: Connection Protocol).
+   *
    * @param outOfBandMessage
+   * @param config config for handling of invitation
+   *
+   * @returns OutOfBand record and connection record if one has been created.
    */
   public async receiveMessage(
     outOfBandMessage: OutOfBandMessage,
-    config: ReceiveOutOfBandMessageConfig
+    config: ReceiveOutOfBandMessageConfig = {}
   ): Promise<{ outOfBandRecord: OutOfBandRecord; connectionRecord?: ConnectionRecord }> {
     const { handshakeProtocols } = outOfBandMessage
-    const { autoAcceptMessage, autoAcceptConnection, reuseConnection, label, routing } = config
+    const { label, routing } = config
+
+    const autoAcceptMessage = config.autoAcceptMessage ?? true
+    const autoAcceptConnection = config.autoAcceptConnection ?? true
+    const reuseConnection = config.reuseConnection ?? false
+
     const messages = outOfBandMessage.getRequests()
 
     if ((!handshakeProtocols || handshakeProtocols.length === 0) && (!messages || messages?.length === 0)) {
