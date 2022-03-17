@@ -3,7 +3,7 @@ import type { HandshakeProtocol } from '../../connections'
 import type { DidCommService } from '../../dids'
 
 import { Expose, Type } from 'class-transformer'
-import { ArrayNotEmpty, Equals, IsArray, IsInstance, IsOptional, ValidateNested } from 'class-validator'
+import { ArrayNotEmpty, Equals, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
 import { parseUrl } from 'query-string'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
@@ -21,6 +21,7 @@ interface OutOfBandMessageOptions {
   accept?: string[]
   handshakeProtocols?: HandshakeProtocol[]
   services: Array<DidCommService | string>
+  imageUrl?: string
 }
 
 export class OutOfBandMessage extends AgentMessage {
@@ -112,4 +113,11 @@ export class OutOfBandMessage extends AgentMessage {
   @IsArray()
   @ArrayNotEmpty()
   public services: Array<DidCommService | string> = []
+
+  /**
+   * Custom property. It is not part of the RFC.
+   */
+  @IsOptional()
+  @IsUrl()
+  public readonly imageUrl?: string
 }

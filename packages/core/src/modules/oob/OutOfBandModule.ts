@@ -30,6 +30,8 @@ const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
 
 export interface CreateOutOfBandMessageConfig {
   label?: string
+  alias?: string
+  imageUrl?: string
   goalCode?: string
   goal?: string
   handshake?: boolean
@@ -38,14 +40,15 @@ export interface CreateOutOfBandMessageConfig {
   multiUseInvitation?: boolean
   autoAcceptConnection?: boolean
   routing?: Routing
-  myImageUrl?: string
 }
 
 export interface ReceiveOutOfBandMessageConfig {
+  label?: string
+  alias?: string
+  imageUrl?: string
   autoAcceptMessage?: boolean
   autoAcceptConnection?: boolean
   reuseConnection?: boolean
-  label?: string
   routing?: Routing
 }
 
@@ -110,6 +113,8 @@ export class OutOfBandModule {
     const autoAcceptConnection = config.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections
     const messages = config.messages
     const routing = config.routing
+    const label = config.label ?? this.agentConfig.label
+    const imageUrl = config.imageUrl ?? this.agentConfig.connectionImageUrl
 
     if (!handshake && !messages) {
       throw new AriesFrameworkError(
@@ -147,7 +152,8 @@ export class OutOfBandModule {
     })
 
     const options = {
-      label: config.label || this.agentConfig.label,
+      label,
+      imageUrl,
       accept: didCommProfiles,
       services,
       handshakeProtocols,
@@ -237,11 +243,14 @@ export class OutOfBandModule {
     config: ReceiveOutOfBandMessageConfig = {}
   ): Promise<{ outOfBandRecord: OutOfBandRecord; connectionRecord?: ConnectionRecord }> {
     const { handshakeProtocols } = outOfBandMessage
-    const { label, routing } = config
+    const { routing } = config
 
     const autoAcceptMessage = config.autoAcceptMessage ?? true
     const autoAcceptConnection = config.autoAcceptConnection ?? true
     const reuseConnection = config.reuseConnection ?? false
+    const label = config.label ?? this.agentConfig.label
+    const alias = config.alias
+    const imageUrl = config.imageUrl ?? this.agentConfig.connectionImageUrl
 
     const messages = outOfBandMessage.getRequests()
 
@@ -260,7 +269,14 @@ export class OutOfBandModule {
     await this.outOfBandService.save(outOfBandRecord)
 
     if (autoAcceptMessage) {
-      return await this.acceptInvitation(outOfBandRecord, { label, autoAcceptConnection, reuseConnection, routing })
+      return await this.acceptInvitation(outOfBandRecord, {
+        label,
+        alias,
+        imageUrl,
+        autoAcceptConnection,
+        reuseConnection,
+        routing,
+      })
     }
 
     return { outOfBandRecord }
@@ -272,12 +288,14 @@ export class OutOfBandModule {
       autoAcceptConnection?: boolean
       reuseConnection?: boolean
       label?: string
+      alias?: string
+      imageUrl?: string
       mediatorId?: string
       routing?: Routing
     }
   ) {
     const { outOfBandMessage } = outOfBandRecord
-    const { label, autoAcceptConnection, reuseConnection, routing } = config
+    const { label, alias, imageUrl, autoAcceptConnection, reuseConnection, routing } = config
     const { handshakeProtocols, services } = outOfBandMessage
     const messages = outOfBandMessage.getRequests()
 
@@ -300,6 +318,8 @@ export class OutOfBandModule {
         this.logger.debug('Reuse is disabled or connection does not exist.')
         connectionRecord = await this.createConnection(outOfBandRecord, {
           label,
+          alias,
+          imageUrl,
           autoAcceptConnection,
           routing,
         })
@@ -415,12 +435,12 @@ export class OutOfBandModule {
 
   private async createConnection(
     outOfBandRecord: OutOfBandRecord,
-    config: { label?: string; autoAcceptConnection?: boolean; routing?: Routing }
+    config: { label?: string; alias?: string; imageUrl?: string; autoAcceptConnection?: boolean; routing?: Routing }
   ) {
     this.logger.debug('Creating a new connection.', { outOfBandRecord, config })
     const { outOfBandMessage } = outOfBandRecord
     const { handshakeProtocols } = outOfBandMessage
-    const { label, autoAcceptConnection, routing } = config
+    const { label, alias, imageUrl, autoAcceptConnection, routing } = config
 
     if (!handshakeProtocols) {
       throw new AriesFrameworkError('Threre are no handshake protocols in out-of-band message')
@@ -429,6 +449,8 @@ export class OutOfBandModule {
     const handshakeProtocol = this.getFirstSupportedProtocol(handshakeProtocols)
     const connectionRecord = await this.connectionsModule.acceptOutOfBandInvitation(outOfBandRecord, {
       label,
+      alias,
+      imageUrl,
       autoAcceptConnection,
       protocol: handshakeProtocol,
       routing,

@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { Equals, IsOptional, IsString, IsUrl, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
@@ -11,6 +11,7 @@ export interface DidExchangeRequestMessageOptions {
   goalCode?: string
   goal?: string
   did: string
+  imageUrl?: string
 }
 
 /**
@@ -32,6 +33,7 @@ export class DidExchangeRequestMessage extends AgentMessage {
       this.goalCode = options.goalCode
       this.goal = options.goal
       this.did = options.did
+      this.imageUrl = options.imageUrl
 
       this.setThread({
         threadId: this.id,
@@ -62,4 +64,11 @@ export class DidExchangeRequestMessage extends AgentMessage {
   @Type(() => Attachment)
   @ValidateNested()
   public didDoc?: Attachment
+
+  /**
+   * Custom property. It is not part of the RFC.
+   */
+  @IsOptional()
+  @IsUrl()
+  public readonly imageUrl?: string
 }

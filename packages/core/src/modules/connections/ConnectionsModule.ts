@@ -62,12 +62,14 @@ export class ConnectionsModule {
     config: {
       autoAcceptConnection?: boolean
       label?: string
+      alias?: string
+      imageUrl?: string
       mediatorId?: string
       protocol: HandshakeProtocol
       routing?: Routing
     }
   ) {
-    const { protocol, label, autoAcceptConnection } = config
+    const { protocol, label, alias, imageUrl, autoAcceptConnection } = config
 
     const routing =
       config.routing || (await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId }))
@@ -75,13 +77,17 @@ export class ConnectionsModule {
     let result
     if (protocol === HandshakeProtocol.DidExchange) {
       result = await this.didExchangeProtocol.createRequest(outOfBandRecord, {
-        label: label || this.agentConfig.label,
+        label,
+        imageUrl,
+        alias,
         routing,
         autoAcceptConnection,
       })
     } else if (protocol === HandshakeProtocol.Connections) {
       result = await this.connectionService.protocolCreateRequest(outOfBandRecord, {
-        myLabel: label || this.agentConfig.label,
+        myLabel: label,
+        alias,
+        myImageUrl: imageUrl,
         routing,
         autoAcceptConnection,
       })
