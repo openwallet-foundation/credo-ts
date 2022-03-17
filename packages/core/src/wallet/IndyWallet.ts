@@ -1,7 +1,7 @@
 import type { Logger } from '../logger'
 import type { EncryptedMessage, DecryptedMessageContext, WalletConfig, WalletExportImportConfig } from '../types'
 import type { Buffer } from '../utils/buffer'
-import type { Wallet, DidInfo, DidConfig, CreateKeyOptions } from './Wallet'
+import type { Wallet, DidInfo, DidConfig, CreateKeyOptions, VerifyOptions, SignOptions } from './Wallet'
 import type { default as Indy } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -368,7 +368,7 @@ export class IndyWallet implements Wallet {
    *
    * @returns A signature for the data
    */
-  public async sign(data: Buffer, key: Key): Promise<Buffer> {
+  public async sign({ data, key }: SignOptions): Promise<Buffer> {
     try {
       switch (key.keyType) {
         case KeyType.Ed25519:
@@ -398,7 +398,7 @@ export class IndyWallet implements Wallet {
    * @throws {WalletError} When it could not do the verification
    * @throws {WalletError} When an unsupported keytype is used
    */
-  public async verify(data: Buffer, key: Key, signature: Buffer): Promise<boolean> {
+  public async verify({ data, key, signature }: VerifyOptions): Promise<boolean> {
     try {
       switch (key.keyType) {
         case KeyType.Ed25519:
