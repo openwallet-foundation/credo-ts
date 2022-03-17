@@ -1,4 +1,4 @@
-export * from './CredentialAckHandler'
+export * from './V1CredentialAckHandler'
 export * from './V1IssueCredentialHandler'
 export * from './V1OfferCredentialHandler'
 export * from './V1ProposeCredentialHandler'

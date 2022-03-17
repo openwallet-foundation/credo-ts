@@ -11,7 +11,7 @@ import type { AcceptOfferOptions, RequestCredentialOptions, AcceptRequestOptions
 import type { CredentialPreviewAttribute } from './models/CredentialPreviewAttributes'
 import type { V1CredentialPreview } from './protocol/v1/V1CredentialPreview'
 import type { ProposeCredentialMessageOptions } from './protocol/v1/messages'
-import type { CredentialExchangeRecord } from './repository/CredentialRecord'
+import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
 
 export interface IndyCredentialPreview {
   credentialDefinitionId?: string
@@ -51,7 +51,6 @@ export interface ServiceAcceptOfferOptions extends AcceptOfferOptions {
 export interface ServiceRequestCredentialOptions extends RequestCredentialOptions {
   attachId?: string
   connectionId?: string
-  // holderDid: string
   // As indy cannot start from request and w3c is not supported in v1 we always use v2 here
   credentialFormats?: CredentialRequestFormat
   autoAcceptCredential?: AutoAcceptCredential

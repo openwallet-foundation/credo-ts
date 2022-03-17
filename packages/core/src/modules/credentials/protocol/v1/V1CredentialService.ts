@@ -31,7 +31,6 @@ import { Dispatcher } from '../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { ServiceDecorator } from '../../../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../../../error'
-import { ConsoleLogger, LogLevel } from '../../../../logger'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
 import { isLinkedAttachment } from '../../../../utils/attachment'
 import { uuid } from '../../../../utils/uuid'
@@ -47,11 +46,12 @@ import { CredentialState } from '../../CredentialState'
 import { CredentialUtils } from '../../CredentialUtils'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
+import { CredentialRecordType } from '../../interfaces'
 import { CredentialRepository, CredentialMetadataKeys, CredentialExchangeRecord } from '../../repository'
 
 import { V1CredentialPreview } from './V1CredentialPreview'
 import {
-  CredentialAckHandler,
+  V1CredentialAckHandler,
   V1CredentialProblemReportHandler,
   V1IssueCredentialHandler,
   V1OfferCredentialHandler as V1OfferCredentialHandler,
@@ -66,10 +66,8 @@ import {
   V1IssueCredentialMessage,
   V1RequestCredentialMessage,
   V1OfferCredentialMessage,
-  CredentialAckMessage,
+  V1CredentialAckMessage,
 } from './messages'
-
-const logger = new ConsoleLogger(LogLevel.info)
 
 @scoped(Lifecycle.ContainerScoped)
 export class V1CredentialService extends CredentialService {
@@ -123,8 +121,7 @@ export class V1CredentialService extends CredentialService {
    */
   public async createRequest(
     record: CredentialExchangeRecord,
-    options: ServiceRequestCredentialOptions,
-    did?: string
+    options: ServiceRequestCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<V1RequestCredentialMessage>> {
     // Assert credential
     record.assertState(CredentialState.OfferReceived)
@@ -147,9 +144,8 @@ export class V1CredentialService extends CredentialService {
     } else {
       throw new AriesFrameworkError(`Missing data payload in attachment in credential Record ${record.id}`)
     }
-    // options.offer = offer
     options.attachId = INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID
-    const { attachment: requestAttach } = await this.formatService.createRequest(options, record, did)
+    const { attachment: requestAttach } = await this.formatService.createRequest(options, record)
     if (!requestAttach) {
       throw new AriesFrameworkError(`Failed to create attachment for request; credential record = ${record.id}`)
     }
@@ -186,7 +182,7 @@ export class V1CredentialService extends CredentialService {
   ): Promise<CredentialExchangeRecord> {
     const { message: issueMessage, connection } = messageContext
 
-    logger.debug(`Processing credential with id ${issueMessage.id}`)
+    this.logger.debug(`Processing credential with id ${issueMessage.id}`)
 
     const credentialRecord = await this.getByThreadAndConnectionId(issueMessage.threadId, connection?.id)
 
@@ -231,7 +227,10 @@ export class V1CredentialService extends CredentialService {
       credential: indyCredential,
       credentialDefinition,
     })
-    credentialRecord.credentialId = credentialId
+    credentialRecord.credentials.push({
+      credentialRecordType: CredentialRecordType.Indy,
+      credentialRecordId: credentialId,
+    })
     await this.updateState(credentialRecord, CredentialState.CredentialReceived)
     await this.didCommMessageRepository.saveAgentMessage({
       agentMessage: issueMessage,
@@ -255,7 +254,7 @@ export class V1CredentialService extends CredentialService {
   ): Promise<CredentialExchangeRecord> {
     const { message: requestMessage, connection } = messageContext
 
-    logger.debug(`Processing credential request with id ${requestMessage.id}`)
+    this.logger.debug(`Processing credential request with id ${requestMessage.id}`)
 
     const credentialRecord = await this.getByThreadAndConnectionId(requestMessage.threadId, connection?.id)
 
@@ -276,7 +275,7 @@ export class V1CredentialService extends CredentialService {
       previousSentMessage: offerMessage ? offerMessage : undefined,
     })
 
-    logger.trace('Credential record found when processing credential request', credentialRecord)
+    this.logger.trace('Credential record found when processing credential request', credentialRecord)
     await this.didCommMessageRepository.saveAgentMessage({
       agentMessage: requestMessage,
       role: DidCommMessageRole.Receiver,
@@ -303,7 +302,7 @@ export class V1CredentialService extends CredentialService {
     let credentialRecord: CredentialExchangeRecord
     const { message: offerMessage, connection } = messageContext
 
-    logger.debug(`Processing credential offer with id ${offerMessage.id}`)
+    this.logger.debug(`Processing credential offer with id ${offerMessage.id}`)
 
     const indyCredentialOffer = offerMessage.indyCredentialOffer
 
@@ -521,11 +520,11 @@ export class V1CredentialService extends CredentialService {
    *
    */
   public async processAck(
-    messageContext: InboundMessageContext<CredentialAckMessage>
+    messageContext: InboundMessageContext<V1CredentialAckMessage>
   ): Promise<CredentialExchangeRecord> {
     const { message: credentialAckMessage, connection } = messageContext
 
-    logger.debug(`Processing credential ack with id ${credentialAckMessage.id}`)
+    this.logger.debug(`Processing credential ack with id ${credentialAckMessage.id}`)
 
     const credentialRecord = await this.getByThreadAndConnectionId(credentialAckMessage.threadId, connection?.id)
 
@@ -566,7 +565,7 @@ export class V1CredentialService extends CredentialService {
     let credentialRecord: CredentialExchangeRecord
     const { message: proposalMessage, connection } = messageContext
 
-    logger.debug(`Processing credential proposal with id ${proposalMessage.id}`)
+    this.logger.debug(`Processing credential proposal with id ${proposalMessage.id}`)
 
     try {
       // Credential record already exists
@@ -714,7 +713,7 @@ export class V1CredentialService extends CredentialService {
       new V1RequestCredentialHandler(this, this.agentConfig, this.didCommMessageRepository)
     )
     this.dispatcher.registerHandler(new V1IssueCredentialHandler(this, this.agentConfig, this.didCommMessageRepository))
-    this.dispatcher.registerHandler(new CredentialAckHandler(this))
+    this.dispatcher.registerHandler(new V1CredentialAckHandler(this))
     this.dispatcher.registerHandler(new V1CredentialProblemReportHandler(this))
   }
 
@@ -737,7 +736,7 @@ export class V1CredentialService extends CredentialService {
    */
   public async createProposal(
     proposal: ProposeCredentialOptions
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V1ProposeCredentialMessage>> {
     const connection = await this.connectionService.getById(proposal.connectionId)
     connection.assertReady()
 
@@ -815,7 +814,7 @@ export class V1CredentialService extends CredentialService {
   public async acceptProposal(
     proposal: AcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
@@ -863,7 +862,7 @@ export class V1CredentialService extends CredentialService {
   public async negotiateProposal(
     credentialOptions: NegotiateProposalOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
@@ -922,7 +921,7 @@ export class V1CredentialService extends CredentialService {
   public async negotiateOffer(
     credentialOptions: ProposeCredentialOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V1ProposeCredentialMessage>> {
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
@@ -961,7 +960,7 @@ export class V1CredentialService extends CredentialService {
 
   public async createOutOfBandOffer(
     credentialOptions: OfferCredentialOptions
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     if (!credentialOptions.credentialFormats.indy?.credentialDefinitionId) {
       throw new AriesFrameworkError('Missing credential definition id for out of band credential')
     }
@@ -1009,7 +1008,7 @@ export class V1CredentialService extends CredentialService {
    */
   public async createOffer(
     credentialOptions: OfferCredentialOptions
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     if (!credentialOptions.connectionId) {
       throw new AriesFrameworkError('Connection id missing from offer credential options')
     }
@@ -1082,11 +1081,11 @@ export class V1CredentialService extends CredentialService {
    */
   public async createAck(
     credentialRecord: CredentialExchangeRecord
-  ): Promise<CredentialProtocolMsgReturnType<CredentialAckMessage>> {
+  ): Promise<CredentialProtocolMsgReturnType<V1CredentialAckMessage>> {
     credentialRecord.assertState(CredentialState.CredentialReceived)
 
     // Create message
-    const ackMessage = new CredentialAckMessage({
+    const ackMessage = new V1CredentialAckMessage({
       status: AckStatus.OK,
       threadId: credentialRecord.threadId,
     })

@@ -1,6 +1,6 @@
 import type { Attachment } from '../../decorators/attachment/Attachment'
+import type { JsonValue } from '../../types'
 import type { LinkedAttachment } from '../../utils/LinkedAttachment'
-import type { AnyJson } from '../generic'
 import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
 import type {
@@ -26,7 +26,7 @@ export enum CredentialFormatType {
 
 interface IssuerNode {
   id: string
-  [x: string]: AnyJson
+  [x: string]: JsonValue
 }
 
 export type Issuer = IssuerId | IssuerNode
@@ -50,7 +50,7 @@ interface OfferCredentialOptions {
   credentialFormats: OfferCredentialFormats
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
-  offer?: Attachment
+  offerAttachment?: Attachment
 }
 
 interface AcceptOfferOptions {
@@ -61,7 +61,7 @@ interface AcceptOfferOptions {
 
 interface NegotiateOfferOptions extends ProposeCredentialOptions {
   credentialRecordId?: string
-  offer?: Attachment
+  offerAttachment?: Attachment
 }
 
 /// CREDENTIAL PROPOSAL
@@ -87,7 +87,7 @@ interface AcceptProposalOptions {
   comment?: string
   autoAcceptCredential?: AutoAcceptCredential
   offerAttachment?: Attachment
-  proposal?: Attachment
+  proposalAttachment?: Attachment
   credentialFormats: {
     indy?: IndyCredentialPreview
     w3c?: {
@@ -108,6 +108,8 @@ interface NegotiateProposalOptions {
 // CREDENTIAL REQUEST
 interface RequestCredentialOptions {
   connectionId?: string
+  // Indy specific. temporary workaround while we figure out out of band
+  holderDid: string
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
   offerAttachment?: Attachment

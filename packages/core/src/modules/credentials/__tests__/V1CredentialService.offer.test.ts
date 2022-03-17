@@ -22,7 +22,7 @@ import { CredentialState } from '../CredentialState'
 import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
 import { V1CredentialService } from '../protocol/v1/V1CredentialService'
 import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V1OfferCredentialMessage } from '../protocol/v1/messages'
-import { CredentialExchangeRecord } from '../repository/CredentialRecord'
+import { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
 
 import { credDef } from './fixtures'

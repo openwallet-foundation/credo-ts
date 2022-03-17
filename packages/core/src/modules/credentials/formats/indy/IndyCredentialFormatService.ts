@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { EventEmitter } from '../../../../agent/EventEmitter'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
@@ -19,7 +20,7 @@ import type {
   ServiceRequestCredentialOptions,
 } from '../../protocol'
 import type { CredPropose } from '../../protocol/v1/models/CredentialFormatOptions'
-import type { CredentialExchangeRecord, CredentialRecordBinding } from '../../repository/CredentialRecord'
+import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 import type { CredentialRepository } from '../../repository/CredentialRepository'
 import type {
   CredentialAttachmentFormats,
@@ -67,8 +68,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   /**
    * Not implemented; there for future versions
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public processRequest(options: RequestCredentialOptions, credentialRecord: CredentialExchangeRecord): void {
+  public async processRequest(
+    options: RequestCredentialOptions,
+    credentialRecord: CredentialExchangeRecord
+  ): Promise<void> {
     // not needed for Indy
   }
 
@@ -77,7 +80,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @param options object containing the offer attachment for use here to retreive the actual cred offer
    * @param credentialRecord the credential exchange record for this offer
    */
-  public processOffer(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): void {
+  public async processOffer(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): Promise<void> {
     if (options.offerAttachment) {
       const credOffer: CredOffer = options.offerAttachment.getDataAsJson<CredOffer>()
 
@@ -155,8 +158,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    */
   public async createRequest(
     options: ServiceRequestCredentialOptions,
-    credentialRecord: CredentialExchangeRecord,
-    did?: string // temporary workaround as this is not in the options object
+    credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialAttachmentFormats> {
     if (options.offerAttachment) {
       const offer = options.offerAttachment.getDataAsJson<CredOffer>()
@@ -164,18 +166,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       // format service -> get the credential definition and create the [indy] credential request
       options.credentialDefinition = await this.getCredentialDefinition(offer)
 
-      let connection, holderDid
-      if (credentialRecord.connectionId) {
-        connection = await this.connectionService.getById(credentialRecord.connectionId)
-        holderDid = connection.did
-      } else {
-        // could be the case for out of band messages
-        if (!did) {
-          throw new AriesFrameworkError('No holder did found to create credential request')
-        }
-        holderDid = did
-      }
-      const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(options, offer, holderDid)
+      const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(options, offer)
       credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, credReqMetadata)
 
       const formats: CredentialFormatSpec = {
@@ -183,12 +174,12 @@ export class IndyCredentialFormatService extends CredentialFormatService {
         format: 'hlindy/cred-req@v2.0',
       }
 
-      const attachmentId = options.attachId ? options.attachId : formats.attachId
+      const attachmentId = options.attachId ?? formats.attachId
       const requestAttach: Attachment = this.getFormatData(credReq, attachmentId)
       return { format: formats, attachment: requestAttach }
     } else {
       throw new AriesFrameworkError(
-        `Missing attachment from offer messagte, credential record id = ${credentialRecord.id}`
+        `Missing attachment from offer message, credential record id = ${credentialRecord.id}`
       )
     }
   }
@@ -300,12 +291,11 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    */
   private async createIndyCredentialRequest(
     options: RequestCredentialOptions,
-    offer: CredOffer,
-    holderDid: string
+    offer: CredOffer
   ): Promise<{ credReq: CredReq; credReqMetadata: CredReqMetadata }> {
     if (this.indyHolderService && options.credentialDefinition && options.credentialDefinition.indy?.credDef) {
       const [credReq, credReqMetadata] = await this.indyHolderService.createCredentialRequest({
-        holderDid,
+        holderDid: options.holderDid,
         credentialOffer: offer,
         credentialDefinition: options.credentialDefinition.indy?.credDef,
       })
@@ -319,8 +309,8 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     credentialRecord: CredentialExchangeRecord
   ): Promise<AcceptProposalOptions> {
     let credPropose: CredPropose | undefined
-    if (options.proposal) {
-      credPropose = options.proposal.getDataAsJson<CredPropose>()
+    if (options.proposalAttachment) {
+      credPropose = options.proposalAttachment.getDataAsJson<CredPropose>()
       if (credPropose) {
         credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
           schemaId: credPropose.schemaId,
@@ -432,13 +422,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
         credential: indyCredential,
         credentialDefinition,
       })
-      // credentialRecord.credentialId = credentialId
-      // For v2 we no longer store the credential id but add to the credential record bindings array
-      const binding: CredentialRecordBinding = {
+      credentialRecord.credentials.push({
         credentialRecordType: CredentialRecordType.Indy,
         credentialRecordId: credentialId,
-      }
-      credentialRecord.credentials.push(binding)
+      })
     } else {
       throw new AriesFrameworkError(`Missing credential for record id ${credentialRecord.id}`)
     }

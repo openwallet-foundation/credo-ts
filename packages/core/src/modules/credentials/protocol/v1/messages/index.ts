@@ -1,4 +1,4 @@
-export * from './CredentialAckMessage'
+export * from './V1CredentialAckMessage'
 export * from '../V1CredentialPreview'
 export * from './V1RequestCredentialMessage'
 export * from './V1IssueCredentialMessage'

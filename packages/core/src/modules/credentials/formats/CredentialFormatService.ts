@@ -36,12 +36,11 @@ export abstract class CredentialFormatService {
 
   abstract createOffer(options: AcceptProposalOptions): Promise<OfferAttachmentFormats>
 
-  abstract processOffer(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): void
+  abstract processOffer(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): Promise<void>
 
   abstract createRequest(
     options: RequestCredentialOptions,
-    credentialRecord: CredentialExchangeRecord,
-    holderDid?: string // temporary workaround as this is not in the options object
+    credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialAttachmentFormats>
 
   abstract processRequest(options: RequestCredentialOptions, credentialRecord: CredentialExchangeRecord): void
@@ -56,7 +55,6 @@ export abstract class CredentialFormatService {
     credentialRecord: CredentialExchangeRecord
   ): Promise<void>
 
-  // methods previously in the CredentialResponseCoordinator
   abstract shouldAutoRespondToProposal(options: HandlerAutoAcceptOptions): boolean
   abstract shouldAutoRespondToRequest(options: HandlerAutoAcceptOptions): boolean
   abstract shouldAutoRespondToCredential(options: HandlerAutoAcceptOptions): boolean

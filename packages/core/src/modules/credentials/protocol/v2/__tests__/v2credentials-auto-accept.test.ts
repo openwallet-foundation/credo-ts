@@ -17,7 +17,7 @@ import { sleep } from '../../../../../utils/sleep'
 import { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
-import { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 import { V2CredentialPreview } from '../V2CredentialPreview'
 
@@ -127,7 +127,6 @@ describe('credentials', () => {
         offerOptions
       )
       testLogger.test('Alice waits for credential from Faber')
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.OfferReceived,
@@ -319,6 +318,7 @@ describe('credentials', () => {
         threadId: aliceCredentialRecord.threadId,
         state: aliceCredentialRecord.state,
         connectionId: aliceConnection.id,
+        credentialIds: [],
       })
       expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
 
@@ -452,6 +452,7 @@ describe('credentials', () => {
         threadId: record.threadId,
         state: record.state,
         connectionId: aliceConnection.id,
+        credentialIds: [],
       })
       expect(record.type).toBe(CredentialExchangeRecord.name)
 
@@ -511,6 +512,7 @@ describe('credentials', () => {
         threadId: aliceCredentialRecord.threadId,
         state: aliceCredentialRecord.state,
         connectionId: aliceConnection.id,
+        credentialIds: [],
       })
       expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
 

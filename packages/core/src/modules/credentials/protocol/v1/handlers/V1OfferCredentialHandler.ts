@@ -6,7 +6,7 @@ import type { MediationRecipientService } from '../../../../routing/services/Med
 import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
 import type { HandlerAutoAcceptOptions } from '../../../formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttributes'
-import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
@@ -83,7 +83,9 @@ export class V1OfferCredentialHandler implements Handler {
       `Automatically sending request with autoAccept on ${this.agentConfig.autoAcceptCredentials}`
     )
     if (messageContext.connection) {
-      const { message, credentialRecord } = await this.credentialService.createRequest(record, {})
+      const { message, credentialRecord } = await this.credentialService.createRequest(record, {
+        holderDid: messageContext.connection.did,
+      })
       await this.didCommMessageRepository.saveAgentMessage({
         agentMessage: message,
         role: DidCommMessageRole.Sender,
@@ -100,11 +102,9 @@ export class V1OfferCredentialHandler implements Handler {
       })
       const recipientService = offerMessage.service
 
-      const { message, credentialRecord } = await this.credentialService.createRequest(
-        record,
-        {},
-        ourService.recipientKeys[0]
-      )
+      const { message, credentialRecord } = await this.credentialService.createRequest(record, {
+        holderDid: ourService.recipientKeys[0],
+      })
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
