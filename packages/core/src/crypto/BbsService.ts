@@ -1,7 +1,7 @@
-import type { CreateKeyOptions, SignOptions, VerifyOptions } from '../wallet'
+import type { CreateKeyOptions } from '../wallet'
 import type { BlsKeyPair } from '@mattrglobal/bbs-signatures'
 
-import { generateBls12381G2KeyPair, generateBls12381G1KeyPair } from '@mattrglobal/bbs-signatures'
+import { generateBls12381G2KeyPair, generateBls12381G1KeyPair, sign, verify } from '@mattrglobal/bbs-signatures'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { KeyPairRecord } from '../storage/keyPair'
@@ -26,12 +26,14 @@ export class BbsService {
    *  - Bls12381g1
    *  - Bls12381g2
    *
+   * @param keyType KeyType The type of key to be created (see above for the accepted types)
+   *
    * @returns A Key class with the public key and key type
    *
    * @throws {WalletError} When a key could not be created
    * @throws {WalletError} When the method is called with an invalid keytype
    */
-  public async createKey({ keyType, seed }: CreateKeyOptions): Promise<Key> {
+  public async createKey({ keyType, seed }: BbsCreateKeyOptions): Promise<Key> {
     // Generate bytes from the seed as required by the bbs-signatures libraries
     const seedBytes = seed ? BufferEncoder.fromString(seed) : undefined
 
@@ -64,9 +66,80 @@ export class BbsService {
     return Key.fromPublicKey(blsKeyPair.publicKey, keyType)
   }
 
-  public static async sign({ data, key }: SignOptions): Promise<Buffer> {
-    return Buffer.from([0])
+  /**
+   * Sign an arbitrary amount of messages, in byte form, with a keypair
+   *
+   * @param messages Buffer[] List of messages in Buffer form
+   * @param publicKey Buffer Publickey required for the signing process
+   * @param privateKey Buffer PrivateKey required for the signing process
+   *
+   * @returns A Buffer containing the signature of the messages
+   *
+   * @throws {WalletError} When there are no supplied messages
+   */
+  public static async sign({ messages, publicKey, privateKey }: BbsSignOptions): Promise<Buffer> {
+    if (messages.length === 0) {
+      throw new WalletError('Unable to create a signature without any messages')
+    }
+
+    // Get the Uint8Array variant of all the messages
+    const messageBuffers = messages.map(Uint8Array.from)
+
+    // Sign the messages via the keyPair
+    const signature = await sign({
+      keyPair: {
+        publicKey: Uint8Array.from(publicKey),
+        secretKey: Uint8Array.from(privateKey),
+        messageCount: messages.length,
+      },
+      messages: messageBuffers,
+    })
+
+    // Convert the Uint8Array signature to a Buffer type
+    return Buffer.from(signature)
   }
 
-  public static async verify({ key, data, signature }: VerifyOptions): Promise<boolean> {}
+  /**
+   * Verify an arbitrary amount of messages with their signature created by with their public key
+   *
+   * @param publicKey Buffer The public key used to sign the messages
+   * @param messages Buffer[] The messages that have to be verified if they are signed
+   * @param signature Buffer The signature that has to be verified if it was created with the messages and public key
+   *
+   * @returns A boolean whether the signature is create with the public key over the messages
+   *
+   * @throws {WalletError} When the message list is empty
+   * @throws {WalletError} When the verification process failed
+   */
+  public static async verify({ signature, messages, publicKey }: BbsVerifyOptions): Promise<boolean> {
+    if (messages.length === 0) {
+      throw new WalletError('Unable to verify without any messages')
+    }
+
+    // Verify the signature against the messages with their public key
+    const { verified, error } = await verify({ signature, messages, publicKey })
+
+    // If the messages could not be verified and an error occured
+    if (!verified && error) {
+      throw new WalletError(`Could not verify the signature against the messages: ${error}`)
+    }
+
+    return verified
+  }
+}
+
+interface BbsCreateKeyOptions extends CreateKeyOptions {
+  keyType: Exclude<KeyType, KeyType.X25519 | KeyType.Ed25519 | KeyType.Bls12381g1g2>
+}
+
+interface BbsSignOptions {
+  messages: Buffer[]
+  publicKey: Buffer
+  privateKey: Buffer
+}
+
+interface BbsVerifyOptions {
+  publicKey: Buffer
+  signature: Buffer
+  messages: Buffer[]
 }

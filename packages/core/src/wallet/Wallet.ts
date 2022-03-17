@@ -37,7 +37,7 @@ export interface CreateKeyOptions {
 }
 
 export interface SignOptions {
-  data: Buffer
+  data: Buffer | Buffer[]
   key: Key
 }
 
