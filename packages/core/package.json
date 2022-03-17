@@ -24,7 +24,6 @@
   },
   "dependencies": {
     "@mattrglobal/bbs-signatures": "^1.0.0",
-    "@mattrglobal/jsonld-signatures-bbs": "^1.0.1",
     "@multiformats/base-x": "^4.0.1",
     "@stablelib/ed25519": "^1.0.2",
     "@stablelib/sha256": "^1.0.1",
