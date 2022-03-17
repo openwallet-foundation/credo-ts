@@ -45,7 +45,7 @@ export interface SignOptions {
 }
 
 export interface VerifyOptions {
-  data: Buffer
+  data: Buffer | Buffer[]
   key: Key
   signature: Buffer
 }
