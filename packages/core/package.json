@@ -23,7 +23,7 @@
     "prepublishOnly": "yarn run build"
   },
   "dependencies": {
-    "@digitalcredentials/jsonld-signatures": "^9.3.1",
+    "@mattrglobal/bbs-signatures": "^1.0.0",
     "@multiformats/base-x": "^4.0.1",
     "@stablelib/ed25519": "^1.0.2",
     "@stablelib/sha256": "^1.0.1",

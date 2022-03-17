@@ -1,1 +1,0 @@
-export { KeyPairRecord } from './KeyPairRecord'
