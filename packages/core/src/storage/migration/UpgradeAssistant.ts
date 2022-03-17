@@ -1,6 +1,7 @@
 import type { AgentDependencies } from '../../agent/AgentDependencies'
 import type { Logger } from '../../logger'
 import type { WalletConfig } from '../../types'
+import type { UpgradeOptions } from './upgrades'
 
 import { Agent } from '../../agent/Agent'
 import { AriesFrameworkError } from '../../error'
@@ -14,15 +15,18 @@ import { isFirstVersionHigherThanSecond, parseVersionString } from './version'
 export interface UpgradeConfig {
   walletConfig: WalletConfig
   logger?: Logger
+  upgradeOptions: UpgradeOptions
 }
 
 export class UpgradeAssistant {
   private agent: Agent
   private storageUpgradeService: StorageUpgradeService
   private walletConfig: WalletConfig
+  private upgradeConfig: UpgradeConfig
 
   public constructor(upgradeConfig: UpgradeConfig, agentDependencies: AgentDependencies) {
     this.walletConfig = upgradeConfig.walletConfig
+    this.upgradeConfig = upgradeConfig
 
     this.agent = new Agent(
       {
@@ -48,7 +52,7 @@ export class UpgradeAssistant {
     return this.storageUpgradeService.isUpToDate()
   }
 
-  private async getNeededUpgrades() {
+  public async getNeededUpgrades() {
     const currentStorageVersion = parseVersionString(await this.storageUpgradeService.getCurrentStorageVersion())
 
     // Filter upgrades. We don't want older upgrades we already applied
@@ -99,7 +103,7 @@ export class UpgradeAssistant {
           this.agent.config.logger.info(
             `Starting upgrade of agent storage from version ${upgrade.fromVersion} to version ${upgrade.toVersion}`
           )
-          await upgrade.doUpgrade(this.agent)
+          await upgrade.doUpgrade(this.agent, this.upgradeConfig.upgradeOptions)
 
           // Update the framework version in storage
           await this.storageUpgradeService.setCurrentStorageVersion(upgrade.toVersion)
@@ -108,7 +112,7 @@ export class UpgradeAssistant {
           )
         }
       } catch (error) {
-        this.agent.config.logger.fatal('An error occured while updating the wallet. Restoring backup', {
+        this.agent.config.logger.fatal('An error occurred while updating the wallet. Restoring backup', {
           error,
         })
         // In the case of an error we want to restore the backup
@@ -119,6 +123,10 @@ export class UpgradeAssistant {
         cause: error,
       })
     }
+  }
+
+  public async shutdown() {
+    await this.agent.shutdown()
   }
 
   private async createBackup(backupIdentifier: string) {

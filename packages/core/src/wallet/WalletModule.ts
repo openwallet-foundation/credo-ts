@@ -61,7 +61,7 @@ export class WalletModule {
 
   public async createAndOpen(walletConfig: WalletConfig): Promise<void> {
     // Always keep the wallet open, as we still need to store the storage version in the wallet.
-    await this.wallet.create(walletConfig)
+    await this.wallet.createAndOpen(walletConfig)
 
     // Store the storage version in the wallet
     await this.storageUpgradeService.setCurrentStorageVersion(this.storageUpgradeService.frameworkStorageVersion)
