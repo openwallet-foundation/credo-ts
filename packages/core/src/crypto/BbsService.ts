@@ -68,7 +68,7 @@ export class BbsService {
 
     return {
       keyType,
-      publicKeyBase58: BufferEncoder.toBase58(blsKeyPair.Publickey),
+      publicKeyBase58: BufferEncoder.toBase58(blsKeyPair.publicKey),
       privateKeyBase58: BufferEncoder.toBase58(blsKeyPair.secretKey),
     }
   }
