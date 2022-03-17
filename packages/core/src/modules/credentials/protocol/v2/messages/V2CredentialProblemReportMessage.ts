@@ -9,7 +9,7 @@ export type CredentialProblemReportMessageOptions = ProblemReportMessageOptions
 /**
  * @see https://github.com/hyperledger/aries-rfcs/blob/main/features/0035-report-problem/README.md
  */
-export class CredentialProblemReportMessage extends ProblemReportMessage {
+export class V2CredentialProblemReportMessage extends ProblemReportMessage {
   /**
    * Create new CredentialProblemReportMessage instance.
    * @param options
@@ -18,7 +18,7 @@ export class CredentialProblemReportMessage extends ProblemReportMessage {
     super(options)
   }
 
-  @Equals(CredentialProblemReportMessage.type)
-  public readonly type = CredentialProblemReportMessage.type
-  public static readonly type = 'https://didcomm.org/issue-credential/1.0/problem-report'
+  @Equals(V2CredentialProblemReportMessage.type)
+  public readonly type = V2CredentialProblemReportMessage.type
+  public static readonly type = 'https://didcomm.org/issue-credential/2.0/problem-report'
 }

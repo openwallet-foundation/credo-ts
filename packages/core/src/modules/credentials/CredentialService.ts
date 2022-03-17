@@ -29,11 +29,12 @@ import type {
 import type { V1CredentialService } from './protocol/v1/V1CredentialService'
 import type {
   CredentialAckMessage,
-  CredentialProblemReportMessage,
+  V1CredentialProblemReportMessage,
   V1IssueCredentialMessage,
   V1RequestCredentialMessage,
 } from './protocol/v1/messages'
 import type { V2CredentialService } from './protocol/v2/V2CredentialService'
+import type { V2CredentialProblemReportMessage } from './protocol/v2/messages/V2CredentialProblemReportMessage'
 import type { V2IssueCredentialMessage } from './protocol/v2/messages/V2IssueCredentialMessage'
 import type { V2RequestCredentialMessage } from './protocol/v2/messages/V2RequestCredentialMessage'
 import type { CredentialExchangeRecord, CredentialRepository } from './repository'
@@ -96,11 +97,6 @@ export abstract class CredentialService {
   abstract negotiateProposal(
     options: NegotiateProposalOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
-
-  abstract createProposalAsResponse(
-    credentialRecord: CredentialExchangeRecord,
-    options: ProposeCredentialOptions
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }>
 
   // methods for offer
@@ -170,7 +166,7 @@ export abstract class CredentialService {
    *
    */
   public async processProblemReport(
-    messageContext: InboundMessageContext<CredentialProblemReportMessage>
+    messageContext: InboundMessageContext<V1CredentialProblemReportMessage | V2CredentialProblemReportMessage>
   ): Promise<CredentialExchangeRecord> {
     const { message: credentialProblemReportMessage } = messageContext
 
@@ -188,6 +184,13 @@ export abstract class CredentialService {
     await this.update(credentialRecord)
     return credentialRecord
   }
+
+  abstract getOfferMessage(id: string): Promise<AgentMessage | null>
+
+  abstract getRequestMessage(id: string): Promise<AgentMessage | null>
+
+  abstract getCredentialMessage(id: string): Promise<AgentMessage | null>
+
   /**
    * Update the record to a new state and emit an state changed event. Also updates the record
    * in storage.

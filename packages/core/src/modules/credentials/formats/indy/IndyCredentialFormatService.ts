@@ -1,3 +1,4 @@
+import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { EventEmitter } from '../../../../agent/EventEmitter'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { ConnectionService } from '../../../connections'
@@ -68,7 +69,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public processRequest(options: RequestCredentialOptions, credentialRecord: CredentialExchangeRecord): void {
-    throw new Error('Method not implemented.')
+    // not needed for Indy
   }
 
   /**
@@ -84,6 +85,8 @@ export class IndyCredentialFormatService extends CredentialFormatService {
         schemaId: credOffer.schema_id,
         credentialDefinitionId: credOffer.cred_def_id,
       })
+    } else {
+      throw new AriesFrameworkError('Missing offer attachment in processOffer')
     }
   }
   /**
@@ -252,6 +255,18 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       const credPropose: CredPropose = options.credentialFormats.indy?.payload.credentialPayload as CredPropose
       return credPropose.credentialDefinitionId
     }
+  }
+
+  /**
+   * Gets the attachment object for a given attachId. We need to get out the correct attachId for
+   * indy and then find the corresponding attachment (if there is one)
+   * @param message Gets the
+   * @returns The Attachment if found or undefined
+   */
+  public getAttachment(message: AgentMessage): Attachment | undefined {
+    const formatId = message.formats.find((f) => f.format.includes('indy'))
+    const attachment = message.messageAttachment?.find((attachment) => attachment.id === formatId?.attachId)
+    return attachment
   }
 
   /**

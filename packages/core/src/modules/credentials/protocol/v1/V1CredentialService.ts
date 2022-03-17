@@ -52,7 +52,7 @@ import { CredentialRepository, CredentialMetadataKeys, CredentialExchangeRecord 
 import { V1CredentialPreview } from './V1CredentialPreview'
 import {
   CredentialAckHandler,
-  CredentialProblemReportHandler,
+  V1CredentialProblemReportHandler,
   V1IssueCredentialHandler,
   V1OfferCredentialHandler as V1OfferCredentialHandler,
   V1RequestCredentialHandler,
@@ -285,38 +285,6 @@ export class V1CredentialService extends CredentialService {
     await this.updateState(credentialRecord, CredentialState.RequestReceived)
 
     return credentialRecord
-  }
-  /**
-   * Create a {@link ProposePresentationMessage} as response to a received credential offer.
-   * To create a proposal not bound to an existing credential exchange, use {@link createProposal}.
-   *
-   * @param credentialRecord The credential record for which to create the credential proposal
-   * @param config Additional configuration to use for the proposal
-   * @returns Object containing proposal message and associated credential record
-   *
-   */
-  public async createProposalAsResponse(
-    credentialRecord: CredentialExchangeRecord,
-    options: CredentialProposeOptions
-  ): Promise<CredentialProtocolMsgReturnType<V1ProposeCredentialMessage>> {
-    // Assert
-    credentialRecord.assertState(CredentialState.OfferReceived)
-
-    // Create message
-    const proposalMessage = new V1ProposeCredentialMessage(options ?? {})
-
-    proposalMessage.setThread({ threadId: credentialRecord.threadId })
-
-    // Update record
-    credentialRecord.credentialAttributes = proposalMessage.credentialProposal?.attributes
-    this.updateState(credentialRecord, CredentialState.ProposalSent)
-    await this.didCommMessageRepository.saveAgentMessage({
-      agentMessage: proposalMessage,
-      role: DidCommMessageRole.Sender,
-      associatedRecordId: credentialRecord.id,
-    })
-
-    return { message: proposalMessage, credentialRecord }
   }
 
   /**
@@ -747,7 +715,7 @@ export class V1CredentialService extends CredentialService {
     )
     this.dispatcher.registerHandler(new V1IssueCredentialHandler(this, this.agentConfig, this.didCommMessageRepository))
     this.dispatcher.registerHandler(new CredentialAckHandler(this))
-    this.dispatcher.registerHandler(new CredentialProblemReportHandler(this))
+    this.dispatcher.registerHandler(new V1CredentialProblemReportHandler(this))
   }
 
   /**
@@ -969,7 +937,23 @@ export class V1CredentialService extends CredentialService {
       const options: CredentialProposeOptions = {
         credentialProposal: credentialPreview,
       }
-      const { message } = await this.createProposalAsResponse(credentialRecord, options)
+
+      credentialRecord.assertState(CredentialState.OfferReceived)
+
+      // Create message
+      const message = new V1ProposeCredentialMessage(options ?? {})
+
+      message.setThread({ threadId: credentialRecord.threadId })
+
+      // Update record
+      credentialRecord.credentialAttributes = message.credentialProposal?.attributes
+      this.updateState(credentialRecord, CredentialState.ProposalSent)
+      await this.didCommMessageRepository.saveAgentMessage({
+        agentMessage: message,
+        role: DidCommMessageRole.Sender,
+        associatedRecordId: credentialRecord.id,
+      })
+
       return { credentialRecord, message }
     }
     throw new AriesFrameworkError('Missing attributes in V1 Negotiate Offer Options')
@@ -1058,12 +1042,37 @@ export class V1CredentialService extends CredentialService {
           previousState: null,
         },
       })
+      await this.didCommMessageRepository.saveAgentMessage({
+        agentMessage: message,
+        role: DidCommMessageRole.Sender,
+        associatedRecordId: credentialRecord.id,
+      })
       return { credentialRecord, message }
     }
 
     throw new AriesFrameworkError('Missing properties from OfferCredentialOptions object: cannot create Offer!')
   }
 
+  public async getOfferMessage(id: string): Promise<AgentMessage | null> {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: id,
+      messageClass: V1OfferCredentialMessage,
+    })
+  }
+
+  public async getRequestMessage(id: string): Promise<AgentMessage | null> {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: id,
+      messageClass: V1RequestCredentialMessage,
+    })
+  }
+
+  public async getCredentialMessage(id: string): Promise<AgentMessage | null> {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: id,
+      messageClass: V1IssueCredentialMessage,
+    })
+  }
   /**
    * Create a {@link CredentialAckMessage} as response to a received credential.
    *

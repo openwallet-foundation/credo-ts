@@ -36,7 +36,7 @@ import {
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   V1OfferCredentialMessage,
   V1IssueCredentialMessage,
-  CredentialProblemReportMessage,
+  V1CredentialProblemReportMessage,
 } from '../protocol/v1/messages'
 import { CredentialMetadataKeys } from '../repository/CredentialMetadataTypes'
 import { CredentialExchangeRecord } from '../repository/CredentialRecord'
@@ -655,7 +655,7 @@ describe('CredentialService', () => {
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
 
       // when
-      const credentialProblemReportMessage = new CredentialProblemReportMessage({
+      const credentialProblemReportMessage = new V1CredentialProblemReportMessage({
         description: {
           en: 'Indy error',
           code: CredentialProblemReportReason.IssuanceAbandoned,
@@ -676,14 +676,14 @@ describe('CredentialService', () => {
 
   describe('processProblemReport', () => {
     let credential: CredentialExchangeRecord
-    let messageContext: InboundMessageContext<CredentialProblemReportMessage>
+    let messageContext: InboundMessageContext<V1CredentialProblemReportMessage>
 
     beforeEach(() => {
       credential = mockCredentialRecord({
         state: CredentialState.OfferReceived,
       })
 
-      const credentialProblemReportMessage = new CredentialProblemReportMessage({
+      const credentialProblemReportMessage = new V1CredentialProblemReportMessage({
         description: {
           en: 'Indy error',
           code: CredentialProblemReportReason.IssuanceAbandoned,

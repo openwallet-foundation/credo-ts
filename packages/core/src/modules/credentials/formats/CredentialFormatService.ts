@@ -87,9 +87,5 @@ export abstract class CredentialFormatService {
    * @param message Gets the
    * @returns The Attachment if found or undefined
    */
-  public getAttachment(message: AgentMessage): Attachment | undefined {
-    const formatId = message.formats.find((f) => f.format.includes('indy'))
-    const attachment = message.messageAttachment?.find((attachment) => attachment.id === formatId?.attachId)
-    return attachment
-  }
+  abstract getAttachment(message: AgentMessage): Attachment | undefined
 }

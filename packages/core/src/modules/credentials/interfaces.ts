@@ -45,7 +45,7 @@ export interface OfferCredentialFormats {
 }
 
 interface OfferCredentialOptions {
-  connectionId?: string // this needs to be optional for out of band messages
+  connectionId: string // this needs to be optional for out of band messages
   protocolVersion?: CredentialProtocolVersion
   credentialFormats: OfferCredentialFormats
   autoAcceptCredential?: AutoAcceptCredential

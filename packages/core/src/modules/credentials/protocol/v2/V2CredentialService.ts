@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/explicit-member-accessibility */
 import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { HandlerInboundMessage } from '../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
@@ -51,6 +49,7 @@ import { CredentialRepository, CredentialExchangeRecord } from '../../repository
 
 import { CredentialMessageBuilder } from './CredentialMessageBuilder'
 import { V2CredentialAckHandler } from './handlers/V2CredentialAckHandler'
+import { V2CredentialProblemReportHandler } from './handlers/V2CredentialProblemReportHandler'
 import { V2IssueCredentialHandler } from './handlers/V2IssueCredentialHandler'
 import { V2OfferCredentialHandler } from './handlers/V2OfferCredentialHandler'
 import { V2ProposeCredentialHandler } from './handlers/V2ProposeCredentialHandler'
@@ -331,10 +330,6 @@ export class V2CredentialService extends CredentialService {
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
       )
     }
-    const proposeCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: credentialRecord.id,
-      messageClass: V2ProposeCredentialMessage,
-    })
 
     const message = await this.createOfferAsResponse(credentialRecord, proposal)
 
@@ -494,6 +489,7 @@ export class V2CredentialService extends CredentialService {
 
     this.dispatcher.registerHandler(new V2IssueCredentialHandler(this, this.agentConfig, this.didCommMessageRepository))
     this.dispatcher.registerHandler(new V2CredentialAckHandler(this))
+    this.dispatcher.registerHandler(new V2CredentialProblemReportHandler(this))
   }
 
   /**
@@ -615,28 +611,6 @@ export class V2CredentialService extends CredentialService {
   }
 
   /**
-   * Negotiate a credential offer as holder (by sending a credential proposal message) to the connection
-   * associated with the credential record.
-   *
-   * @param credentialOptions configuration for the offer see {@link NegotiateProposalOptions}
-   * @returns Credential record associated with the credential offer and the corresponding new offer message
-   *
-   */
-  public async negotiateOffer(
-    credentialOptions: NegotiateOfferOptions,
-    credentialRecord: CredentialExchangeRecord
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
-    if (!credentialRecord.connectionId) {
-      throw new AriesFrameworkError(
-        `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
-      )
-    }
-    const { message } = await this.createProposalAsResponse(credentialRecord, credentialOptions)
-
-    return { credentialRecord, message }
-  }
-
-  /**
    * Create a {@link ProposePresentationMessage} as response to a received credential offer.
    * To create a proposal not bound to an existing credential exchange, use {@link createProposal}.
    *
@@ -645,9 +619,9 @@ export class V2CredentialService extends CredentialService {
    * @returns Object containing proposal message and associated credential record
    *
    */
-  public async createProposalAsResponse(
-    credentialRecord: CredentialExchangeRecord,
-    options: ProposeCredentialOptions
+  public async negotiateOffer(
+    options: NegotiateOfferOptions,
+    credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialProtocolMsgReturnType<V2ProposeCredentialMessage>> {
     // Assert
     credentialRecord.assertState(CredentialState.OfferReceived)
@@ -702,6 +676,13 @@ export class V2CredentialService extends CredentialService {
     }
     await this.credentialRepository.save(credentialRecord)
     await this.emitEvent(credentialRecord)
+
+    await this.didCommMessageRepository.saveAgentMessage({
+      agentMessage: message,
+      role: DidCommMessageRole.Sender,
+      associatedRecordId: credentialRecord.id,
+    })
+
     return { credentialRecord, message }
   }
 
@@ -915,6 +896,25 @@ export class V2CredentialService extends CredentialService {
     return credentialRecord
   }
 
+  public async getOfferMessage(id: string): Promise<AgentMessage | null> {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: id,
+      messageClass: V2OfferCredentialMessage,
+    })
+  }
+  public async getRequestMessage(id: string): Promise<AgentMessage | null> {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: id,
+      messageClass: V2RequestCredentialMessage,
+    })
+  }
+
+  public async getCredentialMessage(id: string): Promise<AgentMessage | null> {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: id,
+      messageClass: V2IssueCredentialMessage,
+    })
+  }
   /**
    * Create an offer message for an out-of-band (connectionless) credential
    * @param credentialOptions the options (parameters) object for the offer

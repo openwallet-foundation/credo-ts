@@ -34,13 +34,14 @@ import { CredentialProblemReportReason } from '../errors/CredentialProblemReport
 import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
 import {
   CredentialAckMessage,
-  CredentialProblemReportMessage,
+  V1CredentialProblemReportMessage,
   INDY_CREDENTIAL_ATTACHMENT_ID,
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   V1OfferCredentialMessage,
 } from '../protocol/v1/messages'
 import { V2CredentialService } from '../protocol/v2/V2CredentialService'
+import { V2CredentialProblemReportMessage } from '../protocol/v2/messages/V2CredentialProblemReportMessage'
 import { V2IssueCredentialMessage } from '../protocol/v2/messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from '../protocol/v2/messages/V2OfferCredentialMessage'
 import { V2RequestCredentialMessage } from '../protocol/v2/messages/V2RequestCredentialMessage'
@@ -672,7 +673,7 @@ describe('CredentialService', () => {
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
 
       // when
-      const credentialProblemReportMessage = new CredentialProblemReportMessage({
+      const credentialProblemReportMessage = new V1CredentialProblemReportMessage({
         description: {
           en: 'Indy error',
           code: CredentialProblemReportReason.IssuanceAbandoned,
@@ -693,14 +694,14 @@ describe('CredentialService', () => {
 
   describe('processProblemReport', () => {
     let credential: CredentialExchangeRecord
-    let messageContext: InboundMessageContext<CredentialProblemReportMessage>
+    let messageContext: InboundMessageContext<V2CredentialProblemReportMessage>
 
     beforeEach(() => {
       credential = mockCredentialRecord({
         state: CredentialState.OfferReceived,
       })
 
-      const credentialProblemReportMessage = new CredentialProblemReportMessage({
+      const credentialProblemReportMessage = new V2CredentialProblemReportMessage({
         description: {
           en: 'Indy error',
           code: CredentialProblemReportReason.IssuanceAbandoned,
