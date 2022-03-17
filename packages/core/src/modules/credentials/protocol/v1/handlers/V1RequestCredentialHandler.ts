@@ -5,7 +5,7 @@ import type { DidCommMessageRepository } from '../../../../../storage'
 import type { ServiceAcceptRequestOptions } from '../../../CredentialServiceOptions'
 import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
 import type { HandlerAutoAcceptOptions } from '../../../formats/models/CredentialFormatServiceOptions'
-import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'

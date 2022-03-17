@@ -9,7 +9,7 @@ export type CredentialAckMessageOptions = AckMessageOptions
 /**
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0015-acks/README.md#explicit-acks
  */
-export class CredentialAckMessage extends AckMessage {
+export class V1CredentialAckMessage extends AckMessage {
   /**
    * Create new CredentialAckMessage instance.
    * @param options
@@ -18,7 +18,7 @@ export class CredentialAckMessage extends AckMessage {
     super(options)
   }
 
-  @Equals(CredentialAckMessage.type)
-  public readonly type = CredentialAckMessage.type
+  @Equals(V1CredentialAckMessage.type)
+  public readonly type = V1CredentialAckMessage.type
   public static readonly type = 'https://didcomm.org/issue-credential/1.0/ack'
 }

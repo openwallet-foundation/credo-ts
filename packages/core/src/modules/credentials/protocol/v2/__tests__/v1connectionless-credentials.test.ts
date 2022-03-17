@@ -13,7 +13,7 @@ import { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
-import { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 
 const faberConfig = getBaseConfig('Faber connection-less Credentials', {
@@ -77,7 +77,6 @@ describe('credentials', () => {
 
   test('Faber starts with connection-less credential offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
-    // eslint-disable-next-line prefer-const
 
     const offerOptions: OfferCredentialOptions = {
       comment: 'V1 Out of Band offer',
@@ -118,7 +117,7 @@ describe('credentials', () => {
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V1 Indy Credential',
     }
-    faberCredentialRecord = await faberAgent.credentials.acceptCredentialRequest(options)
+    faberCredentialRecord = await faberAgent.credentials.acceptRequest(options)
 
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
@@ -146,7 +145,12 @@ describe('credentials', () => {
           },
         },
       },
-      credentialId: expect.any(String),
+      credentials: [
+        {
+          credentialRecordType: 'Indy',
+          credentialRecordId: expect.any(String),
+        },
+      ],
       state: CredentialState.Done,
       threadId: expect.any(String),
     })
@@ -168,7 +172,6 @@ describe('credentials', () => {
   })
 
   test('Faber starts with connection-less credential offer to Alice with auto-accept enabled', async () => {
-    // eslint-disable-next-line prefer-const
     const offerOptions: OfferCredentialOptions = {
       comment: 'V1 Out of Band offer',
       credentialFormats: {
@@ -222,7 +225,12 @@ describe('credentials', () => {
           },
         },
       },
-      credentialId: expect.any(String),
+      credentials: [
+        {
+          credentialRecordType: 'Indy',
+          credentialRecordId: expect.any(String),
+        },
+      ],
       state: CredentialState.Done,
       threadId: expect.any(String),
     })

@@ -4,7 +4,7 @@ import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handle
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { HandlerAutoAcceptOptions } from '../../../formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttributes'
-import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 import type { CredOffer } from 'indy-sdk'
 

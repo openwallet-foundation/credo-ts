@@ -28,7 +28,7 @@ export function AttachmentDecorated<T extends BaseMessageConstructor>(Base: T) {
 
     public addAppendedAttachment(attachment: Attachment): void {
       if (this.appendedAttachments) {
-        this.appendedAttachments?.push(attachment)
+        this.appendedAttachments.push(attachment)
       } else {
         this.appendedAttachments = [attachment]
       }

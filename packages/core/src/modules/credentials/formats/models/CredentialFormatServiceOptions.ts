@@ -3,7 +3,7 @@ import type { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
 import type { CredPropose } from '../../protocol/v1/models/CredentialFormatOptions'
 import type { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
-import type { CredentialExchangeRecord } from '../../repository/CredentialRecord'
+import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 import type { Cred, CredDef, CredOffer, CredReq } from 'indy-sdk'
 
 import { CredentialFormatType } from '../../interfaces'

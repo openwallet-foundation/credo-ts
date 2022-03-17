@@ -18,7 +18,7 @@ import { JsonTransformer } from '../../../../../utils'
 import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
-import { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 import { V1OfferCredentialMessage } from '../../v1/messages/V1OfferCredentialMessage'
 import { V2CredentialPreview } from '../V2CredentialPreview'
@@ -160,6 +160,7 @@ describe('credentials', () => {
       threadId: faberCredentialRecord.threadId,
       connectionId: aliceCredentialRecord.connectionId,
       state: aliceCredentialRecord.state,
+      credentialIds: [],
     })
     expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
     if (aliceCredentialRecord.connectionId) {
@@ -184,7 +185,7 @@ describe('credentials', () => {
         comment: 'V1 Indy Credential',
       }
       testLogger.test('Faber sends credential to Alice')
-      await faberAgent.credentials.acceptCredentialRequest(options)
+      await faberAgent.credentials.acceptRequest(options)
 
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -310,6 +311,7 @@ describe('credentials', () => {
     expect(aliceCredentialRecord.id).not.toBeNull()
     expect(aliceCredentialRecord.getTags()).toEqual({
       threadId: faberCredentialRecord.threadId,
+      credentialIds: [],
       connectionId: aliceCredentialRecord.connectionId,
       state: aliceCredentialRecord.state,
     })
@@ -343,7 +345,7 @@ describe('credentials', () => {
         credentialRecordId: faberCredentialRecord.id,
         comment: 'V2 Indy Credential',
       }
-      await faberAgent.credentials.acceptCredentialRequest(options)
+      await faberAgent.credentials.acceptRequest(options)
 
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -371,7 +373,7 @@ describe('credentials', () => {
       throw new AriesFrameworkError('Missing Connection Id')
     }
   })
-  test('Feber starts with V2 offer; Alice declines', async () => {
+  test('Faber starts with V2 offer; Alice declines', async () => {
     testLogger.test('Faber sends credential offer to Alice')
     const credentialPreview = V2CredentialPreview.fromRecord({
       name: 'John',
@@ -401,11 +403,12 @@ describe('credentials', () => {
       threadId: aliceCredentialRecord.threadId,
       state: aliceCredentialRecord.state,
       connectionId: aliceConnection.id,
+      credentialIds: [],
     })
     expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
     testLogger.test('Alice declines offer')
     if (aliceCredentialRecord.id) {
-      await aliceAgent.credentials.declineCredentialOffer(aliceCredentialRecord.id, CredentialProtocolVersion.V2)
+      await aliceAgent.credentials.declineCredentialOffer(aliceCredentialRecord.id)
     } else {
       throw new AriesFrameworkError('Missing credential record id')
     }
