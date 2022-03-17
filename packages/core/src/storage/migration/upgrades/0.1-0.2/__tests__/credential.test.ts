@@ -7,11 +7,11 @@ import * as testModule from '../credential'
 
 const agentConfig = getAgentConfig('Migration CredentialRecord 0.1-0.2')
 
-jest.mock('../../../../modules/credentials/repository/CredentialRepository')
+jest.mock('../../../../../modules/credentials/repository/CredentialRepository')
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
 const credentialRepository = new CredentialRepositoryMock()
 
-jest.mock('../../../../agent/Agent', () => {
+jest.mock('../../../../../agent/Agent', () => {
   return {
     Agent: jest.fn(() => ({
       config: agentConfig,

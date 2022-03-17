@@ -77,7 +77,7 @@ export class UpgradeAssistant {
     const upgradeIdentifier = uuid()
 
     try {
-      this.agent.config.logger.info('Starting upgrade of agent storage')
+      this.agent.config.logger.info(`Starting upgrade of agent storage with upgradeIdentifier ${upgradeIdentifier}`)
       const neededUpgrades = await this.getNeededUpgrades()
 
       if (neededUpgrades.length == 0) {
@@ -94,17 +94,25 @@ export class UpgradeAssistant {
       // Create backup in case migration goes wrong
       await this.createBackup(upgradeIdentifier)
 
-      for (const upgrade of neededUpgrades) {
-        this.agent.config.logger.info(
-          `Starting upgrade of agent storage from version ${upgrade.fromVersion} to version ${upgrade.toVersion}`
-        )
-        await upgrade.doUpgrade(this.agent)
+      try {
+        for (const upgrade of neededUpgrades) {
+          this.agent.config.logger.info(
+            `Starting upgrade of agent storage from version ${upgrade.fromVersion} to version ${upgrade.toVersion}`
+          )
+          await upgrade.doUpgrade(this.agent)
 
-        // Update the framework version in storage
-        await this.storageUpgradeService.setCurrentStorageVersion(upgrade.toVersion)
-        this.agent.config.logger.info(
-          `Successfully updated agent storage from version ${upgrade.fromVersion} to version ${upgrade.toVersion}`
-        )
+          // Update the framework version in storage
+          await this.storageUpgradeService.setCurrentStorageVersion(upgrade.toVersion)
+          this.agent.config.logger.info(
+            `Successfully updated agent storage from version ${upgrade.fromVersion} to version ${upgrade.toVersion}`
+          )
+        }
+      } catch (error) {
+        this.agent.config.logger.fatal('An error occured while updating the wallet. Restoring backup', {
+          error,
+        })
+        // In the case of an error we want to restore the backup
+        await this.restoreBackup(upgradeIdentifier)
       }
     } catch (error) {
       throw new StorageUpgradeError(`Error upgrading storage (upgradeIdentifier: ${upgradeIdentifier})`, {
@@ -118,5 +126,22 @@ export class UpgradeAssistant {
     const backupPath = `${fileSystem.basePath}/afj/backup/${backupIdentifier}`
 
     await this.agent.wallet.export({ key: this.walletConfig.key, path: backupPath })
+    this.agent.config.logger.info('Created backup of the wallet', {
+      backupPath,
+    })
+  }
+
+  private async restoreBackup(backupIdentifier: string) {
+    const fileSystem = this.agent.config.fileSystem
+    const backupPath = `${fileSystem.basePath}/afj/backup/${backupIdentifier}`
+
+    // FIXME: this feels risky. How can we restore a backup without removing the corrupted wallet?
+    // await this.agent.wallet.delete()
+    await this.agent.wallet.import(this.walletConfig, { key: this.walletConfig.key, path: backupPath })
+    await this.agent.wallet.initialize(this.walletConfig)
+
+    this.agent.config.logger.info(`Successfully restored wallet from backup ${backupIdentifier}`, {
+      backupPath,
+    })
   }
 }

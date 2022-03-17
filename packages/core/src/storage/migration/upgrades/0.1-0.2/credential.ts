@@ -17,7 +17,7 @@ export async function migrateCredentialRecordToV0_2(agent: Agent) {
   agent.config.logger.info('Migrating credential records to storage version 0.2')
   const credentialRepository = agent.injectionContainer.resolve(CredentialRepository)
 
-  agent.config.logger.debug(`Fetching all credential record from storage`)
+  agent.config.logger.debug(`Fetching all credential records from storage`)
   const allCredentials = await credentialRepository.getAll()
 
   agent.config.logger.debug(`Found a total of ${allCredentials} credential records to update.`)
