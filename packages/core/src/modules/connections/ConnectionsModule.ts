@@ -1,5 +1,4 @@
 import type { OutOfBandRecord } from '../oob/repository'
-import type { ConnectionInvitationMessage } from './messages'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
 
@@ -93,34 +92,6 @@ export class ConnectionsModule {
     const { message, connectionRecord } = result
     await this.messageSender.sendMessageToOutOfBand(outOfBandRecord, connectionRecord, message)
     return connectionRecord
-  }
-
-  public async createConnection(config?: {
-    autoAcceptConnection?: boolean
-    alias?: string
-    mediatorId?: string
-    multiUseInvitation?: boolean
-    myLabel?: string
-    myImageUrl?: string
-  }): Promise<{
-    invitation: ConnectionInvitationMessage
-    connectionRecord: ConnectionRecord
-  }> {
-    const myRouting = await this.mediationRecipientService.getRouting({
-      mediatorId: config?.mediatorId,
-      useDefaultMediator: true,
-    })
-
-    const { connectionRecord, message: invitation } = await this.connectionService.createInvitation({
-      autoAcceptConnection: config?.autoAcceptConnection,
-      alias: config?.alias,
-      routing: myRouting,
-      multiUseInvitation: config?.multiUseInvitation,
-      myLabel: config?.myLabel,
-      myImageUrl: config?.myImageUrl,
-    })
-
-    return { connectionRecord, invitation }
   }
 
   /**

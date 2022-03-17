@@ -1,11 +1,10 @@
-import type { ConnectionInvitationMessage } from '../connections'
-
-import { HandshakeProtocol } from '../connections'
+import { AriesFrameworkError } from '../../error'
+import { ConnectionInvitationMessage, HandshakeProtocol } from '../connections'
 import { DidCommService } from '../dids'
 
 import { OutOfBandMessage } from './messages'
 
-export function convertOldInvitation(oldInvitation: ConnectionInvitationMessage) {
+export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessage) {
   const options = {
     id: oldInvitation.id,
     label: oldInvitation.label,
@@ -20,6 +19,35 @@ export function convertOldInvitation(oldInvitation: ConnectionInvitationMessage)
     ],
     handshakeProtocols: [HandshakeProtocol.Connections],
   }
-  const outOfBandMessage = new OutOfBandMessage(options)
-  return outOfBandMessage
+  return new OutOfBandMessage(options)
+}
+
+export function convertToOldInvitation(newInvitation: OutOfBandMessage) {
+  if (newInvitation.services.length > 1) {
+    throw new AriesFrameworkError(
+      `Attribute 'services' MUST have exactly one entry. It contains ${newInvitation.services.length}.`
+    )
+  }
+
+  const [service] = newInvitation.services
+
+  let options
+  if (typeof service === 'string') {
+    options = {
+      id: newInvitation.id,
+      label: newInvitation.label,
+      did: service,
+    }
+  } else {
+    options = {
+      id: newInvitation.id,
+      label: newInvitation.label,
+      recipientKeys: service.recipientKeys || [],
+      routingKeys: service.routingKeys || [],
+      serviceEndpoint: service.serviceEndpoint || '',
+    }
+  }
+
+  const connectionInvitationMessage = new ConnectionInvitationMessage(options)
+  return connectionInvitationMessage
 }

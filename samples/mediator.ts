@@ -75,10 +75,9 @@ httpInboundTransport.app.get('/invitation', async (req, res) => {
     const invitation = await ConnectionInvitationMessage.fromUrl(req.url)
     res.send(invitation.toJSON())
   } else {
-    const { invitation } = await agent.connections.createConnection()
-
+    const { outOfBandMessage } = await agent.createInvitation()
     const httpEndpoint = config.endpoints.find((e) => e.startsWith('http'))
-    res.send(invitation.toUrl({ domain: httpEndpoint + '/invitation' }))
+    res.send(outOfBandMessage.toUrl({ domain: httpEndpoint + '/invitation' }))
   }
 })
 

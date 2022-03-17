@@ -22,7 +22,7 @@ import { OutOfBandService } from './OutOfBandService'
 import { OutOfBandRole } from './domain/OutOfBandRole'
 import { OutOfBandState } from './domain/OutOfBandState'
 import { HandshakeReuseHandler } from './handlers'
-import { convertOldInvitation } from './helpers'
+import { convertToNewInvitation } from './helpers'
 import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
 
@@ -38,6 +38,7 @@ export interface CreateOutOfBandMessageConfig {
   multiUseInvitation?: boolean
   autoAcceptConnection?: boolean
   routing?: Routing
+  myImageUrl?: string
 }
 
 export interface ReceiveOutOfBandMessageConfig {
@@ -203,7 +204,7 @@ export class OutOfBandModule {
       return outOfBandMessage
     } else if (parsedUrl['c_i'] || parsedUrl['d_m']) {
       const invitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
-      return convertOldInvitation(invitation)
+      return convertToNewInvitation(invitation)
     }
     throw new AriesFrameworkError(
       'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`.'

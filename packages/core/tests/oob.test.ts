@@ -12,6 +12,7 @@ import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
 import { DidCommService } from '../src/modules/dids'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
+import { convertToOldInvitation } from '../src/modules/oob/helpers'
 import { OutOfBandMessage } from '../src/modules/oob/messages'
 
 import { TestMessage } from './TestMessage'
@@ -255,20 +256,24 @@ describe('out of band', () => {
     })
 
     test('make a connection based on old connection invitation encoded in URL', async () => {
-      // eslint-disable-next-line prefer-const
-      let { invitation, connectionRecord: faberAliceConnection } = await faberAgent.connections.createConnection()
+      const outOfBandRecord = await faberAgent.createInvitation({
+        ...makeConnectionConfig,
+        handshakeProtocols: [HandshakeProtocol.Connections],
+      })
+      const invitation = convertToOldInvitation(outOfBandRecord.outOfBandMessage)
       const urlMessage = invitation.toUrl({ domain: 'http://example.com' })
 
       let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage)
 
       aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
-      expect(aliceFaberConnection.state).toBe(ConnectionState.Complete)
-
+      let faberAliceConnection = await faberAgent.connections.findByOutOfBandId(outOfBandRecord.id)
       faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
+
+      expect(aliceFaberConnection.state).toBe(ConnectionState.Complete)
+      expect(faberAliceConnection.state).toBe(ConnectionState.Complete)
+
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
-
-      expect(faberAliceConnection.state).toBe(ConnectionState.Complete)
     })
 
     test('process credential offer requests based on OOB message', async () => {
