@@ -102,7 +102,7 @@ export class OutOfBandModule {
    * @param messages Messages that will be sent inside out-of-band message
    * @returns Out-of-band record and optionally connection record created based on `handshakeProtocol`
    */
-  public async createMessage(config: CreateOutOfBandMessageConfig = {}): Promise<OutOfBandRecord> {
+  public async createInvitation(config: CreateOutOfBandMessageConfig = {}): Promise<OutOfBandRecord> {
     const multiUseInvitation = config.multiUseInvitation ?? false
     const handshake = config.handshake ?? true
     const customHandshakeProtocols = config.handshakeProtocols
@@ -185,24 +185,24 @@ export class OutOfBandModule {
    * @returns OutOfBand record and connection record if one has been created.
    */
   public async receiveInvitationFromUrl(invitationUrl: string, config: ReceiveOutOfBandMessageConfig = {}) {
-    const message = await this.parseMessage(invitationUrl)
-    return this.receiveMessage(message, config)
+    const message = await this.parseInvitation(invitationUrl)
+    return this.receiveInvitation(message, config)
   }
 
   /**
-   * Parses URL and decodes invitation.
+   * Parses URL containing encoded invitation and returns invitation message.
    *
-   * @param urlMessage URL containing encoded invitation
+   * @param invitationUrl URL containing encoded invitation
    *
    * @returns OutOfBandMessage
    */
-  public async parseMessage(urlMessage: string) {
-    const parsedUrl = parseUrl(urlMessage).query
+  public async parseInvitation(invitationUrl: string) {
+    const parsedUrl = parseUrl(invitationUrl).query
     if (parsedUrl['oob']) {
-      const outOfBandMessage = await OutOfBandMessage.fromUrl(urlMessage)
+      const outOfBandMessage = await OutOfBandMessage.fromUrl(invitationUrl)
       return outOfBandMessage
     } else if (parsedUrl['c_i'] || parsedUrl['d_m']) {
-      const invitation = await ConnectionInvitationMessage.fromUrl(urlMessage)
+      const invitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
       return convertOldInvitation(invitation)
     }
     throw new AriesFrameworkError(
@@ -231,7 +231,7 @@ export class OutOfBandModule {
    *
    * @returns OutOfBand record and connection record if one has been created.
    */
-  public async receiveMessage(
+  public async receiveInvitation(
     outOfBandMessage: OutOfBandMessage,
     config: ReceiveOutOfBandMessageConfig = {}
   ): Promise<{ outOfBandRecord: OutOfBandRecord; connectionRecord?: ConnectionRecord }> {
@@ -259,13 +259,13 @@ export class OutOfBandModule {
     await this.outOfBandService.save(outOfBandRecord)
 
     if (autoAcceptMessage) {
-      return await this.acceptMessage(outOfBandRecord, { label, autoAcceptConnection, reuseConnection, routing })
+      return await this.acceptInvitation(outOfBandRecord, { label, autoAcceptConnection, reuseConnection, routing })
     }
 
     return { outOfBandRecord }
   }
 
-  public async acceptMessage(
+  public async acceptInvitation(
     outOfBandRecord: OutOfBandRecord,
     config: {
       autoAcceptConnection?: boolean

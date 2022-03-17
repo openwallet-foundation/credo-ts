@@ -263,10 +263,7 @@ export async function makeConnection(agentA: Agent, agentB: Agent) {
     handshakeProtocols: [HandshakeProtocol.Connections],
   })
 
-  let { connectionRecord: agentBConnection } = await agentB.oob.receiveMessage(agentAOutOfBand.outOfBandMessage, {
-    autoAcceptMessage: true,
-    autoAcceptConnection: true,
-  })
+  let { connectionRecord: agentBConnection } = await agentB.oob.receiveInvitation(agentAOutOfBand.outOfBandMessage)
 
   agentBConnection = await agentB.connections.returnWhenIsConnected(agentBConnection!.id)
   let agentAConnection = await agentA.connections.findByOutOfBandId(agentAOutOfBand.id)

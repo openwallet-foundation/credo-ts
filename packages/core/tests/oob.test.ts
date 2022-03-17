@@ -52,7 +52,6 @@ describe('out of band', () => {
   }
 
   const receiveMessageConfig = {
-    autoAcceptMessage: true,
     autoAcceptConnection: false,
   }
 
@@ -198,7 +197,7 @@ describe('out of band', () => {
       const outOfBandRecord = await faberAgent.createInvitation(makeConnectionConfig)
       const { outOfBandMessage } = outOfBandRecord
 
-      const { outOfBandRecord: receivedOutOfBandRecord, connectionRecord } = await aliceAgent.oob.receiveMessage(
+      const { outOfBandRecord: receivedOutOfBandRecord, connectionRecord } = await aliceAgent.oob.receiveInvitation(
         outOfBandMessage,
         {
           autoAcceptMessage: false,
@@ -305,7 +304,7 @@ describe('out of band', () => {
       })
 
       // First, we crate a connection but we won't accept it, therefore it won't be ready
-      await aliceAgent.oob.receiveMessage(outOfBandMessage, { autoAcceptMessage: true, autoAcceptConnection: false })
+      await aliceAgent.oob.receiveInvitation(outOfBandMessage, { autoAcceptConnection: false })
 
       // Event should not be emitted because an agent must wait until the connection is ready
       expect(eventListener).toHaveBeenCalledTimes(0)
@@ -322,16 +321,19 @@ describe('out of band', () => {
       const { outOfBandMessage } = outOfBandRecord
 
       // First, we crate a connection but we won't accept it, therefore it won't be ready
-      const { outOfBandRecord: aliceFaberOutOfBandRecord } = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
+      const { outOfBandRecord: aliceFaberOutOfBandRecord } = await aliceAgent.oob.receiveInvitation(outOfBandMessage, {
         autoAcceptMessage: false,
         autoAcceptConnection: false,
       })
 
       // Accept connection invitation
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.acceptMessage(aliceFaberOutOfBandRecord, {
-        label: 'alice',
-        autoAcceptConnection: true,
-      })
+      let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.acceptInvitation(
+        aliceFaberOutOfBandRecord,
+        {
+          label: 'alice',
+          autoAcceptConnection: true,
+        }
+      )
 
       // Wait until connection is ready
       aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
@@ -356,7 +358,7 @@ describe('out of band', () => {
     test('do not create a new connection when connection exists', async () => {
       const outOfBandRecord = await faberAgent.createInvitation(makeConnectionConfig)
       const { outOfBandMessage } = outOfBandRecord
-      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.oob.receiveMessage(outOfBandMessage)
+      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.oob.receiveInvitation(outOfBandMessage)
       firstAliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(firstAliceFaberConnection!.id)
 
       // To simulate the usage of the same connection we set up the same service as it is in
@@ -364,11 +366,10 @@ describe('out of band', () => {
       const theirDidDoc = await aliceAgent.dids.resolve(firstAliceFaberConnection.theirDid!)
       outOfBandMessage.services = [theirDidDoc.didDocument?.service[0] as DidCommService]
 
-      const { connectionRecord: secondAliceFaberConnection } = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
-        autoAcceptMessage: true,
-        autoAcceptConnection: true,
-        reuseConnection: true,
-      })
+      const { connectionRecord: secondAliceFaberConnection } = await aliceAgent.oob.receiveInvitation(
+        outOfBandMessage,
+        { reuseConnection: true }
+      )
 
       await aliceAgent.connections.returnWhenIsConnected(secondAliceFaberConnection!.id)
 
@@ -386,14 +387,10 @@ describe('out of band', () => {
       })
       const { outOfBandMessage } = outOfBandRecord
 
-      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.oob.receiveMessage(outOfBandMessage)
+      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.oob.receiveInvitation(outOfBandMessage)
       firstAliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(firstAliceFaberConnection!.id)
 
-      await aliceAgent.oob.receiveMessage(outOfBandMessage, {
-        autoAcceptMessage: true,
-        autoAcceptConnection: true,
-        reuseConnection: false,
-      })
+      await aliceAgent.oob.receiveInvitation(outOfBandMessage)
 
       // TODO Somehow check agents throws an error or sends problem report
 
@@ -412,17 +409,10 @@ describe('out of band', () => {
         handshakeProtocols: [HandshakeProtocol.DidExchange],
         multiUseInvitation: true,
       })
-      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
-        autoAcceptMessage: true,
-        autoAcceptConnection: true,
-      })
+      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.oob.receiveInvitation(outOfBandMessage)
       firstAliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(firstAliceFaberConnection!.id)
 
-      let { connectionRecord: secondAliceFaberConnection } = await aliceAgent.oob.receiveMessage(outOfBandMessage, {
-        autoAcceptMessage: true,
-        autoAcceptConnection: true,
-        reuseConnection: false,
-      })
+      let { connectionRecord: secondAliceFaberConnection } = await aliceAgent.oob.receiveInvitation(outOfBandMessage)
       secondAliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(secondAliceFaberConnection!.id)
 
       expect(firstAliceFaberConnection.id).not.toEqual(secondAliceFaberConnection?.id)
@@ -449,7 +439,7 @@ describe('out of band', () => {
       const unsupportedProtocol = 'https://didcomm.org/unsupported-connections-protocol/1.0'
       outOfBandMessage.handshakeProtocols = [unsupportedProtocol as HandshakeProtocol]
 
-      await expect(aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)).rejects.toEqual(
+      await expect(aliceAgent.oob.receiveInvitation(outOfBandMessage, receiveMessageConfig)).rejects.toEqual(
         new AriesFrameworkError(
           `Handshake protocols [${unsupportedProtocol}] are not supported. Supported protocols are [https://didcomm.org/didexchange/1.0,https://didcomm.org/connections/1.0]`
         )
@@ -459,7 +449,7 @@ describe('out of band', () => {
     test('throw an error when the OOB message does not contain either handshake or requests', async () => {
       const outOfBandMessage = new OutOfBandMessage({ label: 'test-connection', services: [] })
 
-      await expect(aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)).rejects.toEqual(
+      await expect(aliceAgent.oob.receiveInvitation(outOfBandMessage, receiveMessageConfig)).rejects.toEqual(
         new AriesFrameworkError(
           'One or both of handshake_protocols and requests~attach MUST be included in the message.'
         )
@@ -474,7 +464,7 @@ describe('out of band', () => {
         messages: [testMessage],
       })
 
-      await expect(aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)).rejects.toEqual(
+      await expect(aliceAgent.oob.receiveInvitation(outOfBandMessage, receiveMessageConfig)).rejects.toEqual(
         new AriesFrameworkError('There is no message in requests~attach supported by agent.')
       )
     })
@@ -487,7 +477,7 @@ describe('out of band', () => {
       })
       outOfBandMessage.services = ['somedid']
 
-      await expect(aliceAgent.oob.receiveMessage(outOfBandMessage, receiveMessageConfig)).rejects.toEqual(
+      await expect(aliceAgent.oob.receiveInvitation(outOfBandMessage, receiveMessageConfig)).rejects.toEqual(
         new AriesFrameworkError('Dids are not currently supported in out-of-band message services attribute.')
       )
     })
@@ -499,7 +489,3 @@ function wait(ms = 1000) {
     setTimeout(resolve, ms)
   })
 }
-
-// When Alice use the same out-of-band message twice and the message is not reusable, then Faber should throw an error.
-// When Alice use the same out-of-band message twice and the message is reusable, then Alice should create a new connection
-// When Alice use out-of-band message containg services for already existing connection and reuse is false then Alice should create a new connection.

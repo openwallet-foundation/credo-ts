@@ -274,7 +274,7 @@ export class RecipientModule {
     // Also requests mediation and sets as default mediator
     // We assume that mediatorConnInvite is a URL-encoded invitation
 
-    const outOfBandMessage = await this.outOfBandModule.parseMessage(mediatorConnInvite)
+    const outOfBandMessage = await this.outOfBandModule.parseInvitation(mediatorConnInvite)
     const outOfBandRecord = await this.outOfBandModule.findByMessageId(outOfBandMessage.id)
     const connection = outOfBandRecord && (await this.connectionService.findByOutOfBandId(outOfBandRecord.id))
 
@@ -286,11 +286,7 @@ export class RecipientModule {
 
       this.logger.debug('Routing created', routing)
       const { outOfBandRecord, connectionRecord: invitationConnectionRecord } =
-        await this.outOfBandModule.receiveMessage(outOfBandMessage, {
-          autoAcceptMessage: true,
-          autoAcceptConnection: true,
-          routing,
-        })
+        await this.outOfBandModule.receiveInvitation(outOfBandMessage, { routing })
       this.logger.debug('Processed mediation invitation', { outOfBandRecord })
       if (!invitationConnectionRecord) {
         throw new AriesFrameworkError('No connection record to provision do some change mediation.')

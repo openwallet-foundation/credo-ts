@@ -54,12 +54,8 @@ describe('agents', () => {
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    const { connectionRecord: bobConnectionAtBobAlice } = await bobAgent.oob.receiveMessage(
-      aliceBobOutOfBandRecord.outOfBandMessage,
-      {
-        autoAcceptMessage: true,
-        autoAcceptConnection: true,
-      }
+    const { connectionRecord: bobConnectionAtBobAlice } = await bobAgent.oob.receiveInvitation(
+      aliceBobOutOfBandRecord.outOfBandMessage
     )
     bobConnection = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice!.id)
 

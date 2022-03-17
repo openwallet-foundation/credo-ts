@@ -68,7 +68,7 @@ describe('out of band with mediation set up with provision method', () => {
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(faberMessages, subjectMap))
     const mediatorRouting = await mediatorAgent.mediationRecipient.getRouting({})
-    const mediationOutOfBandRecord = await mediatorAgent.oob.createMessage({
+    const mediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
       ...makeConnectionConfig,
       routing: mediatorRouting,
     })
@@ -106,7 +106,7 @@ describe('out of band with mediation set up with provision method', () => {
 
     // Make a connection between Alice and Faber
     const faberRouting = await faberAgent.mediationRecipient.getRouting({})
-    const outOfBandRecord = await faberAgent.oob.createMessage({ ...makeConnectionConfig, routing: faberRouting })
+    const outOfBandRecord = await faberAgent.oob.createInvitation({ ...makeConnectionConfig, routing: faberRouting })
     const { outOfBandMessage } = outOfBandRecord
     const urlMessage = outOfBandMessage.toUrl({ domain: 'http://example.com' })
 

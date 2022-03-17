@@ -1,4 +1,5 @@
 import type { OutOfBandRecord } from '../oob/repository'
+import type { ConnectionInvitationMessage } from './messages'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
 
@@ -23,7 +24,6 @@ import {
   DidExchangeResponseHandler,
   DidExchangeCompleteHandler,
 } from './handlers'
-import { ConnectionInvitationMessage } from './messages'
 import { HandshakeProtocol } from './models'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'

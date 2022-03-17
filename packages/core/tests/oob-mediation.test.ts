@@ -79,7 +79,7 @@ describe('out of band with mediation', () => {
   test(`make a connection with ${HandshakeProtocol.DidExchange} on OOB invitation encoded in URL`, async () => {
     // ========== Make a connection between Alice and Mediator agents ==========
     const mediatorRouting = await mediatorAgent.mediationRecipient.getRouting({})
-    const mediationOutOfBandRecord = await mediatorAgent.oob.createMessage({
+    const mediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
       ...makeConnectionConfig,
       routing: mediatorRouting,
     })
@@ -108,7 +108,7 @@ describe('out of band with mediation', () => {
 
     // ========== Make a connection between Alice and Faber ==========
     const faberRouting = await faberAgent.mediationRecipient.getRouting({})
-    const outOfBandRecord = await faberAgent.oob.createMessage({ ...makeConnectionConfig, routing: faberRouting })
+    const outOfBandRecord = await faberAgent.oob.createInvitation({ ...makeConnectionConfig, routing: faberRouting })
     const { outOfBandMessage } = outOfBandRecord
     const urlMessage = outOfBandMessage.toUrl({ domain: 'http://example.com' })
 

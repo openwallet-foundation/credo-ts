@@ -236,6 +236,6 @@ export class Agent {
 
   public async createInvitation(config: CreateOutOfBandMessageConfig = {}) {
     const routing = await this.mediationRecipient.getRouting({})
-    return this.oob.createMessage({ ...config, routing })
+    return this.oob.createInvitation({ ...config, routing })
   }
 }
