@@ -1,6 +1,14 @@
-import type { KeyType } from './KeyType'
+import type { KeyType } from '.'
 
-import { Buffer, BufferEncoder, MultiBaseEncoder, VarintEncoder } from '../utils'
+import {
+  Buffer,
+  BufferEncoder,
+  MultiBaseEncoder,
+  VarintEncoder,
+  Buffer,
+  BufferEncoder,
+  MultiBaseEncoder,
+} from '../utils'
 
 import { getKeyTypeByMultiCodecPrefix, getMultiCodecPrefixByKeytype } from './multiCodecKey'
 
