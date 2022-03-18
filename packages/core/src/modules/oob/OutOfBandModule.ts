@@ -1,7 +1,7 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
 import type { Logger } from '../../logger'
-import type { ConnectionRecord, Routing, HandshakeProtocol } from '../../modules/connections'
+import { ConnectionRecord, Routing, HandshakeProtocol } from '../../modules/connections'
 import type { PlaintextMessage } from '../../types'
 
 import { parseUrl } from 'query-string'
@@ -22,7 +22,7 @@ import { OutOfBandService } from './OutOfBandService'
 import { OutOfBandRole } from './domain/OutOfBandRole'
 import { OutOfBandState } from './domain/OutOfBandState'
 import { HandshakeReuseHandler } from './handlers'
-import { convertToNewInvitation } from './helpers'
+import { convertToNewInvitation, convertToOldInvitation } from './helpers'
 import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
 import { MediationRecipientService } from '../routing'
@@ -85,6 +85,27 @@ export class OutOfBandModule {
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.registerHandlers(dispatcher)
+  }
+
+  public async createLegacyInvitation(config: CreateOutOfBandMessageConfig = {}) {
+    if (config.handshake === false) {
+      throw new AriesFrameworkError(
+        `Invalid value of handshake in config. Value is ${config.handshake}, but this method supports only 'true' or 'undefined'.`
+      )
+    }
+    if (
+      !config.handshakeProtocols ||
+      (config.handshakeProtocols?.length === 1 && config.handshakeProtocols.includes(HandshakeProtocol.Connections))
+    ) {
+      const outOfBandRecord = await this.createInvitation({
+        ...config,
+        handshakeProtocols: [HandshakeProtocol.Connections],
+      })
+      return { outOfBandRecord, invitation: convertToOldInvitation(outOfBandRecord.outOfBandMessage) }
+    }
+    throw new AriesFrameworkError(
+      `Invalid value of handshakeProtocols in config. Value is ${config.handshakeProtocols}, but this method supports only ${HandshakeProtocol.Connections}.`
+    )
   }
 
   /**
