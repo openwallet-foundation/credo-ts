@@ -25,6 +25,7 @@ import { HandshakeReuseHandler } from './handlers'
 import { convertToNewInvitation } from './helpers'
 import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
+import { MediationRecipientService } from '../routing'
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
 
@@ -55,6 +56,7 @@ export interface ReceiveOutOfBandMessageConfig {
 @scoped(Lifecycle.ContainerScoped)
 export class OutOfBandModule {
   private outOfBandService: OutOfBandService
+  private mediationRecipientService: MediationRecipientService
   private connectionsModule: ConnectionsModule
   private dids: DidsModule
   private dispatcher: Dispatcher
@@ -67,6 +69,7 @@ export class OutOfBandModule {
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     outOfBandService: OutOfBandService,
+    mediationRecipientService: MediationRecipientService,
     connectionsModule: ConnectionsModule,
     dids: DidsModule,
     messageSender: MessageSender,
@@ -76,6 +79,7 @@ export class OutOfBandModule {
     this.agentConfig = agentConfig
     this.logger = agentConfig.logger
     this.outOfBandService = outOfBandService
+    this.mediationRecipientService = mediationRecipientService
     this.connectionsModule = connectionsModule
     this.dids = dids
     this.messageSender = messageSender
@@ -112,7 +116,6 @@ export class OutOfBandModule {
     const customHandshakeProtocols = config.handshakeProtocols
     const autoAcceptConnection = config.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections
     const messages = config.messages
-    const routing = config.routing
     const label = config.label ?? this.agentConfig.label
     const imageUrl = config.imageUrl ?? this.agentConfig.connectionImageUrl
 
@@ -137,9 +140,7 @@ export class OutOfBandModule {
       }
     }
 
-    if (!routing) {
-      throw new AriesFrameworkError('Something went wrong... Missing routing...')
-    }
+    const routing = config.routing ?? (await this.mediationRecipientService.getRouting({}))
 
     const services = routing.endpoints.map((endpoint, index) => {
       return new DidCommService({

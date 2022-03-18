@@ -1,7 +1,7 @@
 import type { Logger } from '../../logger'
 import type { OutboundWebSocketClosedEvent } from '../../transport'
 import type { OutboundMessage } from '../../types'
-import type { ConnectionRecord } from '../connections'
+import { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './index'
 import type { GetRoutingOptions } from './services/MediationRecipientService'
@@ -268,59 +268,30 @@ export class RecipientModule {
     return event.payload.mediationRecord
   }
 
-  public async provision(mediatorConnInvite: string) {
-    this.logger.debug('Provision Mediation with invitation', { invite: mediatorConnInvite })
-    // Connect to mediator through provided invitation
-    // Also requests mediation and sets as default mediator
-    // We assume that mediatorConnInvite is a URL-encoded invitation
+  /**
+   * Connects to mediator through provided invitation and requests mediation and sets
+   * as default mediator.
+   *
+   * @param connectionRecord connection record which will be used for mediation
+   * @returns mediation record
+   */
+  public async provision(connection: ConnectionRecord) {
+    this.logger.debug('Connection completed, requesting mediation')
 
-    const outOfBandMessage = await this.outOfBandModule.parseInvitation(mediatorConnInvite)
-    const outOfBandRecord = await this.outOfBandModule.findByMessageId(outOfBandMessage.id)
-    const connection = outOfBandRecord && (await this.connectionService.findByOutOfBandId(outOfBandRecord.id))
-
-    let mediationRecord: MediationRecord | null = null
-    if (!connection) {
-      this.logger.debug('Mediation Connection does not exist, creating connection')
-      // We don't want to use the current default mediator when connecting to another mediator
-      const routing = await this.mediationRecipientService.getRouting({ useDefaultMediator: false })
-
-      this.logger.debug('Routing created', routing)
-      const { outOfBandRecord, connectionRecord: invitationConnectionRecord } =
-        await this.outOfBandModule.receiveInvitation(outOfBandMessage, { routing })
-      this.logger.debug('Processed mediation invitation', { outOfBandRecord })
-      if (!invitationConnectionRecord) {
-        throw new AriesFrameworkError('No connection record to provision do some change mediation.')
-      }
-
-      const completedConnectionRecord = await this.connectionService.returnWhenIsConnected(
-        invitationConnectionRecord.id
-      )
-      this.logger.debug('Connection completed, requesting mediation')
-      mediationRecord = await this.requestAndAwaitGrant(completedConnectionRecord, 60000) // TODO: put timeout as a config parameter
-      this.logger.debug('Mediation Granted, setting as default mediator')
-      await this.setDefaultMediator(mediationRecord)
+    let mediation = await this.findByConnectionId(connection.id)
+    if (!mediation) {
+      this.agentConfig.logger.info(`Requesting mediation for connection ${connection.id}`)
+      mediation = await this.requestAndAwaitGrant(connection, 60000) // TODO: put timeout as a config parameter
+      this.logger.debug('Mediation granted, setting as default mediator')
+      await this.setDefaultMediator(mediation)
       this.logger.debug('Default mediator set')
-    } else if (connection && !connection.isReady) {
-      const connectionRecord = await this.connectionService.returnWhenIsConnected(connection.id)
-      mediationRecord = await this.requestAndAwaitGrant(connectionRecord, 60000) // TODO: put timeout as a config parameter
-      await this.setDefaultMediator(mediationRecord)
     } else {
-      this.agentConfig.logger.warn('Mediator Invitation in configuration has already been used to create a connection.')
-      const mediator = await this.findByConnectionId(connection.id)
-      if (!mediator) {
-        this.agentConfig.logger.warn('requesting mediation over connection.')
-        mediationRecord = await this.requestAndAwaitGrant(connection, 60000) // TODO: put timeout as a config parameter
-        await this.setDefaultMediator(mediationRecord)
-      } else {
-        this.agentConfig.logger.warn(
-          `Mediator Invitation in configuration has already been ${
-            mediator.isReady ? 'granted' : 'requested'
-          } mediation`
-        )
-      }
+      this.agentConfig.logger.warn(
+        `Mediator invitation has already been ${mediation.isReady ? 'granted' : 'requested'}`
+      )
     }
 
-    return mediationRecord
+    return mediation
   }
 
   public async getRouting(options: GetRoutingOptions) {

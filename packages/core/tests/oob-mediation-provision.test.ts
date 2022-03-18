@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { DidCommService } from '../src/modules/dids'
+import type { OutOfBandMessage } from '../src/modules/oob/messages'
 
 import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
-import { ConnectionInvitationMessage, DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
+import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
 import { MediationState } from '../src/modules/routing'
 
 import { getBaseConfig, waitForBasicMessage } from './helpers'
@@ -42,7 +42,7 @@ describe('out of band with mediation set up with provision method', () => {
   let aliceAgent: Agent
   let mediatorAgent: Agent
 
-  let mediatorUrlMessage: string
+  let mediatorOutOfBandMessage: OutOfBandMessage
 
   beforeAll(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -72,20 +72,12 @@ describe('out of band with mediation set up with provision method', () => {
       ...makeConnectionConfig,
       routing: mediatorRouting,
     })
-    const { outOfBandMessage: mediatorOutOfBandMessage } = mediationOutOfBandRecord
+    mediatorOutOfBandMessage = mediationOutOfBandRecord.outOfBandMessage
 
-    const service = mediatorOutOfBandMessage.services[0] as DidCommService
-    const oldInvitation = new ConnectionInvitationMessage({
-      id: mediatorOutOfBandMessage.id,
-      label: '',
-      recipientKeys: service.recipientKeys,
-      serviceEndpoint: service.serviceEndpoint,
-      routingKeys: service.routingKeys,
-    })
-
-    mediatorUrlMessage = oldInvitation.toUrl({ domain: 'http://example.com' })
     await aliceAgent.initialize()
-    await aliceAgent.mediationRecipient.provision(mediatorUrlMessage)
+    let { connectionRecord } = await aliceAgent.oob.receiveInvitation(mediatorOutOfBandMessage)
+    connectionRecord = await aliceAgent.connections.returnWhenIsConnected(connectionRecord!.id)
+    await aliceAgent.mediationRecipient.provision(connectionRecord!)
     await aliceAgent.mediationRecipient.initialize()
   })
 
@@ -127,7 +119,11 @@ describe('out of band with mediation set up with provision method', () => {
 
     expect(basicMessage.content).toBe('hello')
 
-    await aliceAgent.mediationRecipient.provision(mediatorUrlMessage)
+    // Test if we can call provision for the same out-of-band record, respectively connection
+    const reusedOutOfBandRecord = await aliceAgent.oob.findByMessageId(mediatorOutOfBandMessage.id)
+    const reusedAliceMediatorConnection =
+      reusedOutOfBandRecord && (await aliceAgent.connections.findByOutOfBandId(reusedOutOfBandRecord.id))
+    await aliceAgent.mediationRecipient.provision(reusedAliceMediatorConnection!)
     const mediators = await aliceAgent.mediationRecipient.getMediators()
     expect(mediators).toHaveLength(1)
   })
