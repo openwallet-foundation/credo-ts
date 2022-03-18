@@ -1,10 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AgentMessage } from '../../../../agent/AgentMessage'
-import type { EventEmitter } from '../../../../agent/EventEmitter'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { ConnectionService } from '../../../connections'
-import type { IndyHolderService, IndyIssuerService } from '../../../indy'
-import type { IndyLedgerService } from '../../../ledger'
 import type {
   AcceptCredentialOptions,
   AcceptProposalOptions,
@@ -21,7 +18,6 @@ import type {
 } from '../../protocol'
 import type { CredPropose } from '../../protocol/v1/models/CredentialFormatOptions'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
-import type { CredentialRepository } from '../../repository/CredentialRepository'
 import type {
   CredentialAttachmentFormats,
   CredentialFormatSpec,
@@ -31,8 +27,13 @@ import type {
 } from '../models/CredentialFormatServiceOptions'
 import type { Cred, CredOffer, CredReq, CredReqMetadata } from 'indy-sdk'
 
+import { Lifecycle, scoped } from 'tsyringe'
+
 import { AriesFrameworkError } from '../../../../../src/error'
+import { EventEmitter } from '../../../../agent/EventEmitter'
 import { uuid } from '../../../../utils/uuid'
+import { IndyHolderService, IndyIssuerService } from '../../../indy'
+import { IndyLedgerService } from '../../../ledger'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import { CredentialUtils } from '../../CredentialUtils'
@@ -40,13 +41,14 @@ import { CredentialProblemReportError, CredentialProblemReportReason } from '../
 import { CredentialRecordType } from '../../interfaces'
 import { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import { CredentialMetadataKeys } from '../../repository/CredentialMetadataTypes'
+import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
 
+@scoped(Lifecycle.ContainerScoped)
 export class IndyCredentialFormatService extends CredentialFormatService {
   private indyIssuerService: IndyIssuerService
   private indyLedgerService: IndyLedgerService
   private indyHolderService: IndyHolderService
-  private connectionService: ConnectionService
   protected credentialRepository: CredentialRepository // protected as in base class
 
   public constructor(
@@ -54,15 +56,13 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     eventEmitter: EventEmitter,
     indyIssuerService: IndyIssuerService,
     indyLedgerService: IndyLedgerService,
-    indyHolderService: IndyHolderService,
-    connectionService: ConnectionService
+    indyHolderService: IndyHolderService
   ) {
     super(credentialRepository, eventEmitter)
     this.credentialRepository = credentialRepository
     this.indyIssuerService = indyIssuerService
     this.indyLedgerService = indyLedgerService
     this.indyHolderService = indyHolderService
-    this.connectionService = connectionService
   }
 
   /**
@@ -81,16 +81,15 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @param credentialRecord the credential exchange record for this offer
    */
   public async processOffer(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): Promise<void> {
-    if (options.offerAttachment) {
-      const credOffer: CredOffer = options.offerAttachment.getDataAsJson<CredOffer>()
-
-      credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
-        schemaId: credOffer.schema_id,
-        credentialDefinitionId: credOffer.cred_def_id,
-      })
-    } else {
+    if (!options.offerAttachment) {
       throw new AriesFrameworkError('Missing offer attachment in processOffer')
     }
+    const credOffer: CredOffer = options.offerAttachment.getDataAsJson<CredOffer>()
+
+    credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
+      schemaId: credOffer.schema_id,
+      credentialDefinitionId: credOffer.cred_def_id,
+    })
   }
   /**
    * Create a {@link AttachmentFormats} object dependent on the message type.
@@ -160,28 +159,27 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     options: ServiceRequestCredentialOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialAttachmentFormats> {
-    if (options.offerAttachment) {
-      const offer = options.offerAttachment.getDataAsJson<CredOffer>()
-
-      // format service -> get the credential definition and create the [indy] credential request
-      options.credentialDefinition = await this.getCredentialDefinition(offer)
-
-      const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(options, offer)
-      credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, credReqMetadata)
-
-      const formats: CredentialFormatSpec = {
-        attachId: this.generateId(),
-        format: 'hlindy/cred-req@v2.0',
-      }
-
-      const attachmentId = options.attachId ?? formats.attachId
-      const requestAttach: Attachment = this.getFormatData(credReq, attachmentId)
-      return { format: formats, attachment: requestAttach }
-    } else {
+    if (!options.offerAttachment) {
       throw new AriesFrameworkError(
         `Missing attachment from offer message, credential record id = ${credentialRecord.id}`
       )
     }
+    const offer = options.offerAttachment.getDataAsJson<CredOffer>()
+
+    // format service -> get the credential definition and create the [indy] credential request
+    options.credentialDefinition = await this.getCredentialDefinition(offer)
+
+    const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(options, offer)
+    credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, credReqMetadata)
+
+    const formats: CredentialFormatSpec = {
+      attachId: this.generateId(),
+      format: 'hlindy/cred-req@v2.0',
+    }
+
+    const attachmentId = options.attachId ?? formats.attachId
+    const requestAttach: Attachment = this.getFormatData(credReq, attachmentId)
+    return { format: formats, attachment: requestAttach }
   }
 
   private async getCredentialDefinition(credOffer: CredOffer) {
@@ -205,35 +203,34 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     previewWithAttachments: V2CredentialPreview
   } {
     // Add the linked attachments to the credentialProposal
-    let credPropose: CredPropose
-    if (options.credentialFormats.indy?.payload && options.credentialFormats.indy?.payload) {
-      credPropose = options.credentialFormats.indy?.payload.credentialPayload as CredPropose
-
-      let attachments: Attachment[] | undefined
-      let previewWithAttachments: V2CredentialPreview = new V2CredentialPreview({
-        attributes: credPropose.attributes ? credPropose.attributes : [],
-      })
-
-      if (options.credentialFormats.indy && credPropose.linkedAttachments) {
-        // there are linked attachments so transform into the attribute field of the CredentialPreview object for
-        // this proposal
-        if (credPropose.attributes && credPropose.credentialDefinitionId) {
-          previewWithAttachments = CredentialUtils.createAndLinkAttachmentsToPreview(
-            credPropose.linkedAttachments,
-            new V2CredentialPreview({
-              attributes: credPropose.attributes,
-            })
-          )
-        }
-        attachments = credPropose.linkedAttachments.map((linkedAttachment) => linkedAttachment.attachment)
-
-        credPropose.credentialDefinitionId = this.getCredentialDefinitionId(options)
-
-        options.credentialFormats.indy.payload.credentialPayload = credPropose
-      }
-      return { attachments, previewWithAttachments }
+    if (!options.credentialFormats.indy?.payload) {
+      throw new AriesFrameworkError('Missing payload in getCredentialLinkedAttachments')
     }
-    throw new AriesFrameworkError('Missing payload in getCredentialLinkedAttachments')
+    const credPropose = options.credentialFormats.indy?.payload.credentialPayload as CredPropose
+
+    let attachments: Attachment[] | undefined
+    let previewWithAttachments: V2CredentialPreview = new V2CredentialPreview({
+      attributes: credPropose.attributes ? credPropose.attributes : [],
+    })
+
+    if (options.credentialFormats.indy && credPropose.linkedAttachments) {
+      // there are linked attachments so transform into the attribute field of the CredentialPreview object for
+      // this proposal
+      if (credPropose.attributes && credPropose.credentialDefinitionId) {
+        previewWithAttachments = CredentialUtils.createAndLinkAttachmentsToPreview(
+          credPropose.linkedAttachments,
+          new V2CredentialPreview({
+            attributes: credPropose.attributes,
+          })
+        )
+      }
+      attachments = credPropose.linkedAttachments.map((linkedAttachment) => linkedAttachment.attachment)
+
+      credPropose.credentialDefinitionId = this.getCredentialDefinitionId(options)
+
+      options.credentialFormats.indy.payload.credentialPayload = credPropose
+    }
+    return { attachments, previewWithAttachments }
   }
 
   /**
@@ -269,17 +266,13 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   private async createCredentialOffer(
     proposal: ServiceAcceptOfferOptions | NegotiateProposalOptions | OfferCredentialOptions
   ): Promise<CredOffer> {
-    if (this.indyIssuerService && proposal.credentialFormats?.indy?.credentialDefinitionId) {
-      const credOffer: CredOffer = await this.indyIssuerService.createCredentialOffer(
-        proposal.credentialFormats.indy.credentialDefinitionId
-      )
-      return credOffer
-    }
-    if (!this.indyIssuerService) {
-      throw new AriesFrameworkError('Missing Indy Issuer Service')
-    } else {
+    if (!proposal.credentialFormats?.indy?.credentialDefinitionId) {
       throw new AriesFrameworkError('Missing Credential Definition id')
     }
+    const credOffer: CredOffer = await this.indyIssuerService.createCredentialOffer(
+      proposal.credentialFormats.indy.credentialDefinitionId
+    )
+    return credOffer
   }
 
   /**
@@ -293,7 +286,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     options: RequestCredentialOptions,
     offer: CredOffer
   ): Promise<{ credReq: CredReq; credReqMetadata: CredReqMetadata }> {
-    if (this.indyHolderService && options.credentialDefinition && options.credentialDefinition.indy?.credDef) {
+    if (options.credentialDefinition && options.credentialDefinition.indy?.credDef) {
       const [credReq, credReqMetadata] = await this.indyHolderService.createCredentialRequest({
         holderDid: options.holderDid,
         credentialOffer: offer,
@@ -307,29 +300,22 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   public async processProposal(
     options: AcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<AcceptProposalOptions> {
-    let credPropose: CredPropose | undefined
-    if (options.proposalAttachment) {
-      credPropose = options.proposalAttachment.getDataAsJson<CredPropose>()
-      if (credPropose) {
-        credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
-          schemaId: credPropose.schemaId,
-          credentialDefinitionId: credPropose.credentialDefinitionId,
-        })
-      } else {
-        throw new AriesFrameworkError(`Missing data payload in attachment in credential Record ${credentialRecord.id}`)
-      }
+  ): Promise<void> {
+    const credPropose = options.proposalAttachment?.getDataAsJson<CredPropose>()
 
-      options.credentialFormats = {
-        indy: {
-          attributes: credentialRecord.credentialAttributes,
-          credentialDefinitionId: credPropose?.credentialDefinitionId,
-        },
-      }
-      return options
+    if (!credPropose) {
+      throw new AriesFrameworkError('Missing indy credential proposal data payload')
     }
-
-    throw new AriesFrameworkError('Unable to create accept proposal options object')
+    options.credentialFormats = {
+      indy: {
+        attributes: credentialRecord.credentialAttributes,
+        credentialDefinitionId: credPropose?.credentialDefinitionId,
+      },
+    }
+    credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
+      schemaId: credPropose.schemaId,
+      credentialDefinitionId: credPropose.credentialDefinitionId,
+    })
   }
 
   /**
@@ -354,34 +340,29 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       )
     }
 
-    let credOffer: CredOffer | undefined
-    let credRequest: CredReq | undefined
-    if (options.offerAttachment) {
-      credOffer = options.offerAttachment.getDataAsJson<CredOffer>()
+    const credOffer = options.offerAttachment?.getDataAsJson<CredOffer>()
+    const credRequest = options.requestAttachment?.getDataAsJson<CredReq>()
+
+    if (!credOffer || !credRequest) {
+      throw new AriesFrameworkError('Missing CredOffer or CredReq in createCredential')
     }
-    if (options.requestAttachment) {
-      credRequest = options.requestAttachment.getDataAsJson<CredReq>()
+    if (!this.indyIssuerService) {
+      throw new AriesFrameworkError('Missing indyIssuerService in createCredential')
+    }
+    const [credential] = await this.indyIssuerService.createCredential({
+      credentialOffer: credOffer,
+      credentialRequest: credRequest,
+      credentialValues: CredentialUtils.convertAttributesToValues(credentialAttributes),
+    })
+
+    const formats: CredentialFormatSpec = {
+      attachId: this.generateId(),
+      format: 'hlindy/cred-abstract@v2.0',
     }
 
-    if (credOffer && credRequest) {
-      if (this.indyIssuerService) {
-        const [credential] = await this.indyIssuerService.createCredential({
-          credentialOffer: credOffer,
-          credentialRequest: credRequest,
-          credentialValues: CredentialUtils.convertAttributesToValues(credentialAttributes),
-        })
-
-        const formats: CredentialFormatSpec = {
-          attachId: this.generateId(),
-          format: 'hlindy/cred-abstract@v2.0',
-        }
-
-        const attachmentId = options.attachId ? options.attachId : formats.attachId
-        const issueAttachment: Attachment = this.getFormatData(credential, attachmentId)
-        return { format: formats, attachment: issueAttachment }
-      }
-    }
-    throw new AriesFrameworkError('Missing CredOffer or CredReq for createIssueCredentialAttachFormats')
+    const attachmentId = options.attachId ? options.attachId : formats.attachId
+    const issueAttachment: Attachment = this.getFormatData(credential, attachmentId)
+    return { format: formats, attachment: issueAttachment }
   }
   /**
    * Processes an incoming credential - retreive metadata, retrievepayload and store it in the Indy wallet
@@ -405,30 +386,23 @@ export class IndyCredentialFormatService extends CredentialFormatService {
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
-    if (options.credential) {
-      const indyCredential: Cred = options.credential.getDataAsJson<Cred>()
-
-      const credentialDefinition = await this.indyLedgerService.getCredentialDefinition(indyCredential.cred_def_id)
-
-      if (!this.indyHolderService) {
-        throw new CredentialProblemReportError(
-          `Missing required indy holder service for credential with record id ${credentialRecord.id}`,
-          { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
-        )
-      }
-      const credentialId = await this.indyHolderService.storeCredential({
-        credentialId: this.generateId(),
-        credentialRequestMetadata,
-        credential: indyCredential,
-        credentialDefinition,
-      })
-      credentialRecord.credentials.push({
-        credentialRecordType: CredentialRecordType.Indy,
-        credentialRecordId: credentialId,
-      })
-    } else {
+    if (!options.credential) {
       throw new AriesFrameworkError(`Missing credential for record id ${credentialRecord.id}`)
     }
+    const indyCredential: Cred = options.credential.getDataAsJson<Cred>()
+
+    const credentialDefinition = await this.indyLedgerService.getCredentialDefinition(indyCredential.cred_def_id)
+
+    const credentialId = await this.indyHolderService.storeCredential({
+      credentialId: this.generateId(),
+      credentialRequestMetadata,
+      credential: indyCredential,
+      credentialDefinition,
+    })
+    credentialRecord.credentials.push({
+      credentialRecordType: CredentialRecordType.Indy,
+      credentialRecordId: credentialId,
+    })
   }
 
   /**
@@ -445,9 +419,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       handlerOptions.autoAcceptType
     )
 
-    if (autoAccept === AutoAcceptCredential.Always) {
-      return true
-    } else if (autoAccept === AutoAcceptCredential.ContentApproved) {
+    if (autoAccept === AutoAcceptCredential.ContentApproved) {
       return (
         this.areProposalValuesValid(handlerOptions.credentialRecord, handlerOptions.messageAttributes) &&
         this.areProposalAndOfferDefinitionIdEqual(handlerOptions.proposalAttachment, handlerOptions.offerAttachment)
@@ -474,9 +446,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     if (!options.requestAttachment) {
       throw new AriesFrameworkError(`Missing Request Attachment for Credential Record ${options.credentialRecord.id}`)
     }
-    if (autoAccept === AutoAcceptCredential.Always) {
-      return true
-    } else if (autoAccept === AutoAcceptCredential.ContentApproved) {
+    if (autoAccept === AutoAcceptCredential.ContentApproved) {
       return this.isRequestDefinitionIdValid(
         options.requestAttachment,
         options.offerAttachment,
@@ -499,9 +469,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       options.autoAcceptType
     )
 
-    if (autoAccept === AutoAcceptCredential.Always) {
-      return true
-    } else if (autoAccept === AutoAcceptCredential.ContentApproved) {
+    if (autoAccept === AutoAcceptCredential.ContentApproved) {
       if (options.credentialAttachment) {
         return this.areCredentialValuesValid(options.credentialRecord, options.credentialAttachment)
       }
@@ -525,21 +493,15 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   }
 
   private areProposalAndOfferDefinitionIdEqual(proposalAttachment?: Attachment, offerAttachment?: Attachment) {
-    let credOffer: CredOffer | undefined
-    let credPropose: CredPropose | undefined
-
-    if (offerAttachment) {
-      credOffer = offerAttachment.getDataAsJson<CredOffer>()
-    }
-    if (proposalAttachment) {
-      credPropose = proposalAttachment?.getDataAsJson<CredPropose>()
-    }
+    const credOffer = offerAttachment?.getDataAsJson<CredOffer>()
+    const credPropose = proposalAttachment?.getDataAsJson<CredPropose>()
 
     const proposalCredentialDefinitionId = credPropose?.credentialDefinitionId
     const offerCredentialDefinitionId = credOffer?.cred_def_id
 
     return proposalCredentialDefinitionId === offerCredentialDefinitionId
   }
+
   private areCredentialValuesValid(credentialRecord: CredentialExchangeRecord, credentialAttachment: Attachment) {
     const indyCredential = credentialAttachment.getDataAsJson<Cred>()
 

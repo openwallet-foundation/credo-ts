@@ -82,7 +82,7 @@ export interface IndyCredentialPreview {
 export type FormatType = AcceptProposalOptions | ProposeCredentialOptions | NegotiateProposalOptions
 
 interface AcceptProposalOptions {
-  connectionId: string
+  connectionId?: string
   credentialRecordId: string
   comment?: string
   autoAcceptCredential?: AutoAcceptCredential

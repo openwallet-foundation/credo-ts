@@ -1,12 +1,9 @@
-import type { CredentialFormatSpec } from '../../../formats/models/CredentialFormatServiceOptions'
-
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
-
-export const CRED_20_REQUEST = 'https://didcomm.org/issue-credential/2.0/request-credential'
+import { CredentialFormatSpec } from '../../../formats/models/CredentialFormatServiceOptions'
 
 export interface V2RequestCredentialMessageOptions {
   id: string
@@ -16,8 +13,6 @@ export interface V2RequestCredentialMessageOptions {
 }
 
 export class V2RequestCredentialMessage extends AgentMessage {
-  public formats!: CredentialFormatSpec[]
-
   public constructor(options: V2RequestCredentialMessageOptions) {
     super()
     if (options) {
@@ -28,9 +23,15 @@ export class V2RequestCredentialMessage extends AgentMessage {
     }
   }
 
+  @Type(() => CredentialFormatSpec)
+  @ValidateNested()
+  @IsArray()
+  // @IsInstance(CredentialFormatSpec, { each: true }) -> this causes message validation to fail
+  public formats!: CredentialFormatSpec[]
+
   @Equals(V2RequestCredentialMessage.type)
   public readonly type = V2RequestCredentialMessage.type
-  public static readonly type = CRED_20_REQUEST
+  public static readonly type = 'https://didcomm.org/issue-credential/2.0/request-credential'
 
   @Expose({ name: 'requests~attach' })
   @Type(() => Attachment)
@@ -42,7 +43,7 @@ export class V2RequestCredentialMessage extends AgentMessage {
   public messageAttachment!: Attachment[]
 
   /**
-   * Human readable information about this Credential Proposal,
+   * Human readable information about this Credential Request,
    * so the proposal can be evaluated by human judgment.
    */
   @IsOptional()

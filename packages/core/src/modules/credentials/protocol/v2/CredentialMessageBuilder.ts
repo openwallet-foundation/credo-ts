@@ -79,6 +79,7 @@ export class CredentialMessageBuilder {
       state: CredentialState.ProposalSent,
       autoAcceptCredential: proposal?.autoAcceptCredential,
       protocolVersion: CredentialProtocolVersion.V2,
+      credentials: [],
     }
 
     // Create the v2 record
@@ -102,6 +103,7 @@ export class CredentialMessageBuilder {
       state: CredentialState.ProposalReceived,
       credentialAttributes: message.credentialProposal?.attributes,
       protocolVersion: CredentialProtocolVersion.V2,
+      credentials: [],
     }
     return new CredentialExchangeRecord(props)
   }
@@ -270,6 +272,7 @@ export class CredentialMessageBuilder {
       state: CredentialState.OfferSent,
       credentialAttributes: previewAttachments?.attributes,
       protocolVersion: CredentialProtocolVersion.V2,
+      credentials: [],
     }
 
     const credentialRecord = new CredentialExchangeRecord(recordProps)

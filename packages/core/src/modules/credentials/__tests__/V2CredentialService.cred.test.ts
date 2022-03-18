@@ -2,7 +2,7 @@ import type { AgentConfig } from '../../../../src/agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { ServiceRequestCredentialOptions } from '../CredentialServiceOptions'
-import type { CredentialRequestFormat } from '../formats/models/CredentialFormatServiceOptions'
+import type { CredentialFormatSpec, CredentialRequestFormat } from '../formats/models/CredentialFormatServiceOptions'
 import type { AcceptRequestOptions, RequestCredentialOptions } from '../interfaces'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
 import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
@@ -30,6 +30,7 @@ import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
 import { CredentialProblemReportReason } from '../errors/CredentialProblemReportReason'
+import { IndyCredentialFormatService } from '../formats'
 import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
 import {
   V1CredentialAckMessage,
@@ -122,14 +123,14 @@ const offerOptions: V2OfferCredentialMessageOptions = {
   offerAttachments: [offerAttachment],
   replacementId: '',
 }
+const requestFormat: CredentialFormatSpec = {
+  attachId: INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
+  format: 'hlindy/cred-req@v2.0',
+}
+
 const requestOptions: V2RequestCredentialMessageOptions = {
   id: '',
-  formats: [
-    {
-      attachId: INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
-      format: 'hlindy/cred-req@v2.0',
-    },
-  ],
+  formats: [requestFormat],
   requestsAttach: [requestAttachment],
 }
 
@@ -166,6 +167,7 @@ const mockCredentialRecord = ({
     connectionId: connectionId ?? '123',
     tags,
     protocolVersion: CredentialProtocolVersion.V2,
+    credentials: [],
   })
 
   if (metadata?.indyRequest) {
@@ -239,11 +241,15 @@ describe('CredentialService', () => {
       eventEmitter,
       dispatcher,
       agentConfig,
-      indyIssuerService,
       mediationRecipientService,
-      indyLedgerService,
-      indyHolderService,
-      didCommMessageRepository
+      didCommMessageRepository,
+      new IndyCredentialFormatService(
+        credentialRepository,
+        eventEmitter,
+        indyIssuerService,
+        indyLedgerService,
+        indyHolderService
+      )
     )
   })
 

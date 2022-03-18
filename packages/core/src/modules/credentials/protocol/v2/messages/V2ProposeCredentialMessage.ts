@@ -1,10 +1,9 @@
-import type { CredentialFormatSpec } from '../../../formats/models/CredentialFormatServiceOptions'
-
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
+import { CredentialFormatSpec } from '../../../formats/models/CredentialFormatServiceOptions'
 import { V2CredentialPreview } from '../V2CredentialPreview'
 
 export interface V2ProposeCredentialMessageProps {
@@ -17,8 +16,6 @@ export interface V2ProposeCredentialMessageProps {
 }
 
 export class V2ProposeCredentialMessage extends AgentMessage {
-  public formats!: CredentialFormatSpec[]
-
   public constructor(props: V2ProposeCredentialMessageProps) {
     super()
     if (props) {
@@ -30,6 +27,11 @@ export class V2ProposeCredentialMessage extends AgentMessage {
       this.appendedAttachments = props.attachments
     }
   }
+
+  @Type(() => CredentialFormatSpec)
+  @ValidateNested()
+  @IsArray()
+  public formats!: CredentialFormatSpec[]
 
   @Equals(V2ProposeCredentialMessage.type)
   public readonly type = V2ProposeCredentialMessage.type

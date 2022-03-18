@@ -89,6 +89,7 @@ describe('credentials', () => {
         },
       },
       protocolVersion: CredentialProtocolVersion.V2,
+      connectionId: '',
     }
     // eslint-disable-next-line prefer-const
     let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOutOfBandOffer(
@@ -183,6 +184,7 @@ describe('credentials', () => {
       },
       protocolVersion: CredentialProtocolVersion.V2,
       autoAcceptCredential: AutoAcceptCredential.ContentApproved,
+      connectionId: '',
     }
     // eslint-disable-next-line prefer-const
     let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOutOfBandOffer(

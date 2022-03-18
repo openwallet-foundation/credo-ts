@@ -289,28 +289,6 @@ describe('credentials', () => {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.OfferReceived,
       })
-      // expect(aliceCredentialRecord.offerMessage?.messageAttachment).toBeTruthy()
-      // expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
-      //   createdAt: expect.any(Date),
-      //   offerMessage: {
-      //     '@id': expect.any(String),
-      //     '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
-      //     credential_preview: {
-      //       '@type': 'https://didcomm.org/issue-credential/2.0/credential-preview',
-      //       attributes: [
-      //         {
-      //           name: 'name',
-      //           value: 'John',
-      //         },
-      //         {
-      //           name: 'age',
-      //           value: '99',
-      //         },
-      //       ],
-      //     },
-      //   },
-      //   state: CredentialState.OfferReceived,
-      // })
 
       // below values are not in json object
       expect(aliceCredentialRecord.id).not.toBeNull()
@@ -419,32 +397,6 @@ describe('credentials', () => {
         threadId: faberCredentialRecord.threadId,
         state: CredentialState.OfferReceived,
       })
-      // expect(record.offerMessage?.messageAttachment).toBeTruthy()
-      // expect(JsonTransformer.toJSON(record)).toMatchObject({
-      //   createdAt: expect.any(Date),
-      //   offerMessage: {
-      //     '@id': expect.any(String),
-      //     '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
-      //     credential_preview: {
-      //       '@type': 'https://didcomm.org/issue-credential/2.0/credential-preview',
-      //       attributes: [
-      //         {
-      //           name: 'name',
-      //           value: 'John',
-      //         },
-      //         {
-      //           name: 'age',
-      //           value: '99',
-      //         },
-      //         {
-      //           name: 'lastname',
-      //           value: 'Appleseed',
-      //         },
-      //       ],
-      //     },
-      //   },
-      //   state: CredentialState.OfferReceived,
-      // })
 
       // below values are not in json object
       expect(record.id).not.toBeNull()
@@ -483,28 +435,6 @@ describe('credentials', () => {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.OfferReceived,
       })
-      // expect(aliceCredentialRecord.offerMessage?.messageAttachment).toBeTruthy()
-      // expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
-      //   createdAt: expect.any(Date),
-      //   offerMessage: {
-      //     '@id': expect.any(String),
-      //     '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
-      //     credential_preview: {
-      //       '@type': 'https://didcomm.org/issue-credential/2.0/credential-preview',
-      //       attributes: [
-      //         {
-      //           name: 'name',
-      //           value: 'John',
-      //         },
-      //         {
-      //           name: 'age',
-      //           value: '99',
-      //         },
-      //       ],
-      //     },
-      //   },
-      //   state: CredentialState.OfferReceived,
-      // })
 
       // below values are not in json object
       expect(aliceCredentialRecord.id).not.toBeNull()

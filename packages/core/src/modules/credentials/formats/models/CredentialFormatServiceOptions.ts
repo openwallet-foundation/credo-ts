@@ -6,6 +6,9 @@ import type { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 import type { Cred, CredDef, CredOffer, CredReq } from 'indy-sdk'
 
+import { Expose } from 'class-transformer'
+import { IsString } from 'class-validator'
+
 import { CredentialFormatType } from '../../interfaces'
 
 export type CredProposeOfferRequestFormat =
@@ -55,9 +58,14 @@ export interface CredentialIssueFormat {
     }
   }
 }
-export type CredentialFormatSpec = {
-  attachId: string
-  format: string
+
+export class CredentialFormatSpec {
+  @Expose({ name: 'attach_id' })
+  @IsString()
+  public attachId!: string
+
+  @IsString()
+  public format!: string
 }
 
 export type FormatKeys = {

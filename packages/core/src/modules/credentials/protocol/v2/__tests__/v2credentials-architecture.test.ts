@@ -47,29 +47,6 @@ const multiFormatProposal: ProposeCredentialOptions = {
         credentialPayload: testAttributes,
       },
     },
-    // jsonld: {
-    //   credential: {
-    //     '@context': 'https://www.w3.org/2018/',
-    //     issuer: 'did:key:z6MkodKV3mnjQQMB9jhMZtKD9Sm75ajiYq51JDLuRSPZTXrr',
-    //     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-    //     issuanceDate: '2020-01-01T19:23:24Z',
-    //     expirationDate: '2021-01-01T19:23:24Z',
-    //     credentialSubject: {
-    //       id: 'did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
-    //       degree: {
-    //         type: 'BachelorDegree',
-    //         name: 'Bachelor of Science and Arts',
-    //       },
-    //     },
-    //   },
-    //   options: {
-    //     proofPurpose: 'assertionMethod',
-    //     created: '2020-04-02T18:48:36Z',
-    //     domain: 'example.com',
-    //     challenge: '9450a9c1-4db5-4ab9-bc0c-b7a9b2edac38',
-    //     proofType: 'Ed25519Signature2018',
-    //   },
-    // },
   },
   comment: 'v2 propose credential test',
 }

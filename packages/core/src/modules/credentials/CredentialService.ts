@@ -28,13 +28,16 @@ import type {
   ProposeCredentialOptions,
 } from './interfaces'
 import type {
-  V1CredentialAckMessage,
   V1CredentialProblemReportMessage,
   V1IssueCredentialMessage,
+  V1OfferCredentialMessage,
+  V1ProposeCredentialMessage,
   V1RequestCredentialMessage,
 } from './protocol/v1/messages'
 import type { V2CredentialProblemReportMessage } from './protocol/v2/messages/V2CredentialProblemReportMessage'
 import type { V2IssueCredentialMessage } from './protocol/v2/messages/V2IssueCredentialMessage'
+import type { V2OfferCredentialMessage } from './protocol/v2/messages/V2OfferCredentialMessage'
+import type { V2ProposeCredentialMessage } from './protocol/v2/messages/V2ProposeCredentialMessage'
 import type { V2RequestCredentialMessage } from './protocol/v2/messages/V2RequestCredentialMessage'
 import type { CredentialExchangeRecord, CredentialRepository } from './repository'
 
@@ -104,7 +107,7 @@ export abstract class CredentialService {
     options: ServiceRequestCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
-  abstract processAck(messageContext: InboundMessageContext<V1CredentialAckMessage>): Promise<CredentialExchangeRecord>
+  abstract processAck(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
 
   abstract negotiateOffer(
     options: NegotiateOfferOptions,
@@ -170,6 +173,29 @@ export abstract class CredentialService {
     await this.update(credentialRecord)
     return credentialRecord
   }
+  abstract shouldAutoRespondToProposal(
+    credentialRecord: CredentialExchangeRecord,
+    proposeMessage: V1ProposeCredentialMessage | V2ProposeCredentialMessage,
+    offerMessage?: V1OfferCredentialMessage | V2OfferCredentialMessage
+  ): boolean
+
+  abstract shouldAutoRespondToOffer(
+    credentialRecord: CredentialExchangeRecord,
+    offerMessage: V1OfferCredentialMessage | V2OfferCredentialMessage,
+    proposeMessage?: V1ProposeCredentialMessage | V2ProposeCredentialMessage
+  ): boolean
+
+  abstract shouldAutoRespondToRequest(
+    credentialRecord: CredentialExchangeRecord,
+    requestMessage: V1RequestCredentialMessage | V2RequestCredentialMessage,
+    proposeMessage?: V1ProposeCredentialMessage | V2ProposeCredentialMessage,
+    offerMessage?: V1OfferCredentialMessage | V2OfferCredentialMessage
+  ): boolean
+
+  abstract shouldAutoRespondToCredential(
+    credentialRecord: CredentialExchangeRecord,
+    credentialMessage: V1IssueCredentialMessage | V2IssueCredentialMessage
+  ): boolean
 
   abstract getOfferMessage(id: string): Promise<AgentMessage | null>
 

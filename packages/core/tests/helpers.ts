@@ -367,7 +367,6 @@ export async function issueCredential({
         linkedAttachments: credentialTemplate.linkedAttachments,
       },
     },
-    protocolVersion: CredentialProtocolVersion.V1,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   }
   let issuerCredentialRecord = await issuerAgent.credentials.offerCredential(offerOptions)
@@ -381,7 +380,6 @@ export async function issueCredential({
     credentialRecordId: holderCredentialRecord.id,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   }
-  holderCredentialRecord.protocolVersion = CredentialProtocolVersion.V1
 
   await holderAgent.credentials.acceptOffer(acceptOfferOptions)
 
@@ -429,8 +427,8 @@ export async function issueConnectionLessCredential({
         credentialDefinitionId: credentialTemplate.credentialDefinitionId,
       },
     },
-    protocolVersion: CredentialProtocolVersion.V1,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
+    connectionId: '',
   }
   // eslint-disable-next-line prefer-const
   let { credentialRecord: issuerCredentialRecord, message } = await issuerAgent.credentials.createOutOfBandOffer(
@@ -447,7 +445,6 @@ export async function issueConnectionLessCredential({
     credentialRecordId: holderCredentialRecord.id,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   }
-  holderCredentialRecord.protocolVersion = CredentialProtocolVersion.V1
 
   await holderAgent.credentials.acceptOffer(acceptOfferOptions)
 

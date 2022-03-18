@@ -160,8 +160,6 @@ export class CredentialsModule implements CredentialsModule {
     // get the version
     const version = credentialOptions.protocolVersion
 
-    this.logger.debug(`version =${version}`)
-
     // with version we can get the Service
     const service = this.getService(version)
 
@@ -192,6 +190,9 @@ export class CredentialsModule implements CredentialsModule {
    *
    */
   public async acceptCredentialProposal(credentialOptions: AcceptProposalOptions): Promise<CredentialExchangeRecord> {
+    if (!credentialOptions.connectionId) {
+      throw new AriesFrameworkError('Missing connection id in v2 acceptCredentialProposal')
+    }
     const credentialRecord = await this.getById(credentialOptions.credentialRecordId)
     const version = credentialRecord.protocolVersion
 
@@ -338,8 +339,6 @@ export class CredentialsModule implements CredentialsModule {
     // get the version
     const version = credentialRecord.protocolVersion
 
-    this.logger.debug(`version =${version}`)
-
     // with version we can get the Service
     const service = this.getService(version)
     const { message } = await service.negotiateProposal(credentialOptions, credentialRecord)
@@ -368,9 +367,6 @@ export class CredentialsModule implements CredentialsModule {
    * @returns Credential exchange record associated with the sent credential offer message
    */
   public async offerCredential(credentialOptions: OfferCredentialOptions): Promise<CredentialExchangeRecord> {
-    // if (!credentialOptions.connectionId) {
-    //   throw new AriesFrameworkError('Connection id missing from offer credential options')
-    // }
     const connection = await this.connectionService.getById(credentialOptions.connectionId)
 
     // with version we can get the Service

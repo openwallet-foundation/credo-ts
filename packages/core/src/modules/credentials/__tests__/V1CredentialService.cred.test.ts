@@ -26,6 +26,7 @@ import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
 import { CredentialProblemReportReason } from '../errors/CredentialProblemReportReason'
+import { IndyCredentialFormatService } from '../formats/indy/IndyCredentialFormatService'
 import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
 import { V1CredentialService } from '../protocol/v1/V1CredentialService'
 import {
@@ -228,9 +229,13 @@ describe('CredentialService', () => {
       dispatcher,
       eventEmitter,
       credentialRepository,
-      indyIssuerService,
-      indyLedgerService,
-      indyHolderService
+      new IndyCredentialFormatService(
+        credentialRepository,
+        eventEmitter,
+        indyIssuerService,
+        indyLedgerService,
+        indyHolderService
+      )
     )
   })
 

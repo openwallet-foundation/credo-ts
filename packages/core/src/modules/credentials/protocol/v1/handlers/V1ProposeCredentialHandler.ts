@@ -70,7 +70,10 @@ export class V1ProposeCredentialHandler implements Handler {
       offerAttachment,
       credentialDefinitionId: proposalMessage.credentialDefinitionId,
     }
-    if (this.shouldAutoRespondToProposal(handlerOptions)) {
+    if (
+      this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Always ||
+      this.shouldAutoRespondToProposal(handlerOptions)
+    ) {
       return await this.createOffer(credentialRecord, messageContext, proposalMessage)
     }
   }
@@ -81,9 +84,7 @@ export class V1ProposeCredentialHandler implements Handler {
       handlerOptions.autoAcceptType
     )
 
-    if (autoAccept === AutoAcceptCredential.Always) {
-      return true
-    } else if (autoAccept === AutoAcceptCredential.ContentApproved) {
+    if (autoAccept === AutoAcceptCredential.ContentApproved) {
       return (
         this.areProposalValuesValid(handlerOptions.credentialRecord, handlerOptions.messageAttributes) &&
         this.areProposalAndOfferDefinitionIdEqual(handlerOptions.credentialDefinitionId, handlerOptions.offerAttachment)

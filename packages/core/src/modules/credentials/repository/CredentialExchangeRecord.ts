@@ -27,6 +27,7 @@ export interface CredentialExchangeRecordProps {
   autoAcceptCredential?: AutoAcceptCredential
   linkedAttachments?: Attachment[]
   errorMessage?: string
+  credentials?: CredentialRecordBinding[]
 }
 
 export type CustomCredentialTags = TagsBase
@@ -80,8 +81,8 @@ export class CredentialExchangeRecord extends BaseRecord<
       this.autoAcceptCredential = props.autoAcceptCredential
       this.linkedAttachments = props.linkedAttachments
       this.errorMessage = props.errorMessage
+      this.credentials = props.credentials ?? []
     }
-    this.credentials = []
   }
 
   public getTags() {

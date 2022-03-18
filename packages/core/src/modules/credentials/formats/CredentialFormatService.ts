@@ -29,10 +29,7 @@ export abstract class CredentialFormatService {
 
   abstract createProposal(options: ProposeCredentialOptions): ProposeAttachmentFormats
 
-  abstract processProposal(
-    options: AcceptProposalOptions,
-    credentialRecord: CredentialExchangeRecord
-  ): Promise<AcceptProposalOptions>
+  abstract processProposal(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): Promise<void>
 
   abstract createOffer(options: AcceptProposalOptions): Promise<OfferAttachmentFormats>
 
