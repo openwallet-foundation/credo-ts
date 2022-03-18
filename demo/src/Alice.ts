@@ -27,7 +27,7 @@ export class Alice extends BaseAgent {
   }
 
   private async printConnectionInvite() {
-    const outOfBand = await this.agent.createInvitation()
+    const outOfBand = await this.agent.oob.createInvitation()
     const connectionRecord = await this.agent.connections.findByOutOfBandId(outOfBand.id)
     if (!connectionRecord) {
       throw new Error(redText(Output.NoConnectionRecordFromOutOfBand))

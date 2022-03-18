@@ -12,7 +12,6 @@ import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
 import { DidCommService } from '../src/modules/dids'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
-import { convertToOldInvitation } from '../src/modules/oob/helpers'
 import { OutOfBandMessage } from '../src/modules/oob/messages'
 
 import { TestMessage } from './TestMessage'

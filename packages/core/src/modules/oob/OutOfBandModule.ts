@@ -1,7 +1,7 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
 import type { Logger } from '../../logger'
-import { ConnectionRecord, Routing, HandshakeProtocol } from '../../modules/connections'
+import type { ConnectionRecord, Routing } from '../../modules/connections'
 import type { PlaintextMessage } from '../../types'
 
 import { parseUrl } from 'query-string'
@@ -15,8 +15,14 @@ import { AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
-import { ConnectionInvitationMessage, ConnectionState, ConnectionsModule } from '../connections'
+import {
+  HandshakeProtocol,
+  ConnectionInvitationMessage,
+  ConnectionState,
+  ConnectionsModule,
+} from '../../modules/connections'
 import { DidCommService, DidsModule } from '../dids'
+import { MediationRecipientService } from '../routing'
 
 import { OutOfBandService } from './OutOfBandService'
 import { OutOfBandRole } from './domain/OutOfBandRole'
@@ -25,7 +31,6 @@ import { HandshakeReuseHandler } from './handlers'
 import { convertToNewInvitation, convertToOldInvitation } from './helpers'
 import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
-import { MediationRecipientService } from '../routing'
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
 

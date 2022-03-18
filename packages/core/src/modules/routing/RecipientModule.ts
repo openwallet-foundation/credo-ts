@@ -1,7 +1,7 @@
 import type { Logger } from '../../logger'
 import type { OutboundWebSocketClosedEvent } from '../../transport'
 import type { OutboundMessage } from '../../types'
-import { ConnectionRecord } from '../connections'
+import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './index'
 import type { GetRoutingOptions } from './services/MediationRecipientService'
@@ -18,7 +18,6 @@ import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { TransportEventTypes } from '../../transport'
 import { ConnectionService } from '../connections/services'
-import { OutOfBandModule } from '../oob/OutOfBandModule'
 
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
 import { RoutingEventTypes } from './RoutingEvents'
@@ -37,20 +36,17 @@ export class RecipientModule {
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
   private logger: Logger
-  private outOfBandModule: OutOfBandModule
 
   public constructor(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     mediationRecipientService: MediationRecipientService,
     connectionService: ConnectionService,
-    outOfBandModule: OutOfBandModule,
     messageSender: MessageSender,
     eventEmitter: EventEmitter
   ) {
     this.agentConfig = agentConfig
     this.connectionService = connectionService
-    this.outOfBandModule = outOfBandModule
     this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
