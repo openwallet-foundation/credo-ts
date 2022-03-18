@@ -8,7 +8,6 @@ import cbor from 'borc'
 
 import { MultiBaseEncoder } from './MultiBaseEncoder'
 import { MultiHashEncoder } from './MultiHashEncoder'
-import { TypedArrayEncoder } from './TypedArrayEncoder'
 
 type Metadata = {
   urls?: string[]

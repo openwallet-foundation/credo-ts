@@ -1,6 +1,5 @@
 import { Hasher } from '../Hasher'
 import { MultiHashEncoder } from '../MultiHashEncoder'
-import { TypedArrayEncoder } from '../TypedArrayEncoder'
 import { Buffer } from '../buffer'
 
 const validData = Buffer.from('Hello World!')
