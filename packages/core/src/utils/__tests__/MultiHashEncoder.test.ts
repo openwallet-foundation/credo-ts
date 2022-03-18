@@ -22,7 +22,6 @@ describe('MultiHashEncoder', () => {
     it('Decodes multihash', () => {
       const { data, hashName } = MultiHashEncoder.decode(validMultiHash)
       expect(hashName).toEqual('sha2-256')
-
       expect(data.equals(Buffer.from(validHash))).toBe(true)
     })
 
