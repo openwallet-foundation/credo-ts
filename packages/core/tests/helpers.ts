@@ -259,7 +259,7 @@ export function getMockConnection({
 }
 
 export async function makeConnection(agentA: Agent, agentB: Agent) {
-  const agentAOutOfBand = await agentA.createInvitation({
+  const agentAOutOfBand = await agentA.oob.createInvitation({
     handshakeProtocols: [HandshakeProtocol.Connections],
   })
 

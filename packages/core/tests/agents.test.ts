@@ -50,7 +50,7 @@ describe('agents', () => {
     bobAgent.registerOutboundTransport(new SubjectOutboundTransport(bobMessages, subjectMap))
     await bobAgent.initialize()
 
-    const aliceBobOutOfBandRecord = await aliceAgent.createInvitation({
+    const aliceBobOutOfBandRecord = await aliceAgent.oob.createInvitation({
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 

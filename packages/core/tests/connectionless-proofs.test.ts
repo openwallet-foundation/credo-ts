@@ -204,12 +204,12 @@ describe('Present Proof', () => {
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
-    const faberMediationOutOfBandRecord = await mediatorAgent.createInvitation({
+    const faberMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
       label: 'faber invitation',
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    const aliceMediationOutOfBandRecord = await mediatorAgent.createInvitation({
+    const aliceMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
       label: 'alice invitation',
       handshakeProtocols: [HandshakeProtocol.Connections],
     })

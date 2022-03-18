@@ -51,7 +51,7 @@ describe('connections', () => {
   })
 
   it('should be able to make multiple connections using a multi use invite', async () => {
-    const faberOutOfBandRecord = await faberAgent.createInvitation({
+    const faberOutOfBandRecord = await faberAgent.oob.createInvitation({
       handshakeProtocols: [HandshakeProtocol.Connections],
       multiUseInvitation: true,
     })

@@ -61,7 +61,7 @@ describe('mediator establishment', () => {
     await mediatorAgent.initialize()
 
     // Create connection to use for recipient
-    const mediatorOutOfBandRecord = await mediatorAgent.createInvitation({
+    const mediatorOutOfBandRecord = await mediatorAgent.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
       handshakeProtocols: [HandshakeProtocol.DidExchange],
@@ -102,7 +102,7 @@ describe('mediator establishment', () => {
     senderAgent.registerInboundTransport(new SubjectInboundTransport(senderMessages))
     await senderAgent.initialize()
 
-    const recipientOutOfBandRecord = await recipientAgent.createInvitation({
+    const recipientOutOfBandRecord = await recipientAgent.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
       handshakeProtocols: [HandshakeProtocol.Connections],
@@ -148,7 +148,7 @@ describe('mediator establishment', () => {
     await mediatorAgent.initialize()
 
     // Create connection to use for recipient
-    const mediatorOutOfBandRecord = await mediatorAgent.createInvitation({
+    const mediatorOutOfBandRecord = await mediatorAgent.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
       handshakeProtocols: [HandshakeProtocol.Connections],
@@ -202,7 +202,7 @@ describe('mediator establishment', () => {
     senderAgent.registerInboundTransport(new SubjectInboundTransport(senderMessages))
     await senderAgent.initialize()
 
-    const recipientOutOfBandRecord = await recipientAgent.createInvitation({
+    const recipientOutOfBandRecord = await recipientAgent.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
       handshakeProtocols: [HandshakeProtocol.Connections],
