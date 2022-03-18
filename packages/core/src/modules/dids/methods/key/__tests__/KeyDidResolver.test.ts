@@ -33,7 +33,7 @@ describe('DidResolver', () => {
         didDocumentMetadata: {},
         didResolutionMetadata: {
           error: 'notFound',
-          message: `resolver_error: Unable to resolve did 'did:key:asdfkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th': Error: Invalid multibase: asdfkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th`,
+          message: `resolver_error: Unable to resolve did 'did:key:asdfkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th': Error: No decoder found for multibase prefix 'a'`,
         },
       })
     })
