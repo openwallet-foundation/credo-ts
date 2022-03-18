@@ -330,7 +330,8 @@ export class IndyWallet implements Wallet {
   }
 
   /**
-   * Create a key with an optional seed and keyType
+   * Create a key with an optional seed and keyType.
+   * The keypair is also automatically stored in the wallet afterwards
    *
    * Bls12381g1g2 is not supported.
    *
@@ -465,17 +466,9 @@ export class IndyWallet implements Wallet {
     }
   }
 
-  /**
-   * @todo fix the query
-   */
   private async retrieveKeyPair(publicKeyBase58: string): Promise<BlsKeyPair> {
     try {
-      const { value } = await this.indy.getWalletRecord(
-        this.handle,
-        'KeyPairRecord',
-        `{publicKeyBase58: ${publicKeyBase58}}`,
-        {}
-      )
+      const { value } = await this.indy.getWalletRecord(this.handle, 'KeyPairRecord', `keypair-${publicKeyBase58}`, {})
       if (value) {
         return JsonEncoder.fromString(value) as BlsKeyPair
       } else {
@@ -492,17 +485,19 @@ export class IndyWallet implements Wallet {
     }
   }
 
-  /**
-   * @todo fix the query
-   */
   private async storeKeyPair(blsKeyPair: BlsKeyPair): Promise<void> {
     try {
-      await this.indy.addWalletRecord(this.handle, 'KeyPairRecord', 'ID', JSON.stringify(blsKeyPair), {})
+      await this.indy.addWalletRecord(
+        this.handle,
+        'KeyPairRecord',
+        `keypair-${blsKeyPair.publicKeyBase58}`,
+        JSON.stringify(blsKeyPair),
+        {}
+      )
     } catch (error) {
       if (isIndyError(error, 'WalletItemAlreadyExists')) {
         throw new RecordDuplicateError(`Record already exists`, { recordType: 'KeyPairRecord' })
       }
-
       throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
