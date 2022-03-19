@@ -1,5 +1,5 @@
-import { BufferEncoder } from '../BufferEncoder'
 import { MultiBaseEncoder } from '../MultiBaseEncoder'
+import { TypedArrayEncoder } from '../TypedArrayEncoder'
 import { Buffer } from '../buffer'
 
 const validData = Buffer.from('Hello World!')
@@ -17,7 +17,7 @@ describe('MultiBaseEncoder', () => {
   describe('Decodes()', () => {
     it('Decodes multibase', () => {
       const { data, baseName } = MultiBaseEncoder.decode(validMultiBase)
-      expect(BufferEncoder.toUtf8String(data)).toEqual('This is a valid base58btc encoded string!')
+      expect(TypedArrayEncoder.toUtf8String(data)).toEqual('This is a valid base58btc encoded string!')
       expect(baseName).toEqual('base58btc')
     })
 
