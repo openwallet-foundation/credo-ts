@@ -3,13 +3,8 @@ import type { ParsedDid } from '../../types'
 
 import { instanceToInstance } from 'class-transformer'
 
-<<<<<<< HEAD
-import { Key } from '../../../../crypto'
-import { JsonEncoder, MultiBaseEncoder, MultiHashEncoder } from '../../../../utils'
-=======
 import { Key } from '../../../../crypto/Key'
-import { BufferEncoder, JsonEncoder, MultiBaseEncoder, MultiHashEncoder, Buffer } from '../../../../utils'
->>>>>>> 890551ee94d995f0bab16070669f8db2df419320
+import { JsonEncoder, MultiBaseEncoder, MultiHashEncoder } from '../../../../utils'
 import { getKeyDidMappingByKeyType } from '../../domain/key-type'
 import { parseDid } from '../../domain/parse'
 
