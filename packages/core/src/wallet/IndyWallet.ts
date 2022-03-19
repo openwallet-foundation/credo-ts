@@ -1,13 +1,18 @@
+import type { BlsKeyPair } from '../crypto/BbsService'
 import type { Logger } from '../logger'
 import type { EncryptedMessage, DecryptedMessageContext, WalletConfig, WalletExportImportConfig } from '../types'
 import type { Buffer } from '../utils/buffer'
-import type { Wallet, DidInfo, DidConfig } from './Wallet'
+import type { Wallet, DidInfo, DidConfig, CreateKeyOptions, VerifyOptions, SignOptions } from './Wallet'
 import type { default as Indy } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../agent/AgentConfig'
-import { AriesFrameworkError } from '../error'
+import { KeyType } from '../crypto'
+import { BbsService } from '../crypto/BbsService'
+import { Key } from '../crypto/Key'
+import { AriesFrameworkError, IndySdkError, RecordDuplicateError, RecordNotFoundError } from '../error'
+import { BufferEncoder } from '../utils'
 import { JsonEncoder } from '../utils/JsonEncoder'
 import { isIndyError } from '../utils/indyError'
 
@@ -324,6 +329,106 @@ export class IndyWallet implements Wallet {
     }
   }
 
+  /**
+   * Create a key with an optional seed and keyType
+   *
+   * Bls12381g1g2 is not supported.
+   *
+   * @param seed string The seed for creating a key
+   * @param keyType KeyType the type of key that should be created
+   *
+   * @returns a Key instance with a publicKeyBase58
+   *
+   * @throws {WalletError} When an unsupported keytype is requested
+   * @throws {WalletError} When the key could not be created
+   */
+  public async createKey({ seed, keyType }: CreateKeyOptions): Promise<Key> {
+    try {
+      if (keyType === KeyType.Ed25519) {
+        return Key.fromPublicKeyBase58(await this.indy.createKey(this.handle, { seed }), keyType)
+      }
+
+      if (keyType === KeyType.Bls12381g1 || keyType === KeyType.Bls12381g2) {
+        const blsKeyPair = await BbsService.createKey({ keyType, seed })
+        this.storeKeyPair(blsKeyPair)
+        return Key.fromPublicKeyBase58(blsKeyPair.publicKeyBase58, keyType)
+      }
+    } catch (error) {
+      throw new WalletError(`Error creating key with key type '${keyType}': ${error.message}`, { cause: error })
+    }
+
+    throw new WalletError(`Unsupported key type: '${keyType}' for wallet IndyWallet`)
+  }
+
+  /**
+   * sign a Buffer with an instance of a Key class
+   *
+   * Bls12381g1g2 and Bls12381g1 are not supported.
+   *
+   * @param data Buffer The data that needs to be signed
+   * @param key Key The key that is used to sign the data
+   *
+   * @returns A signature for the data
+   */
+  public async sign({ data, key }: SignOptions): Promise<Buffer> {
+    try {
+      if (key.keyType === KeyType.Ed25519) {
+        // Checks to see if it is an not an Array of messages, but just a single one
+        if (typeof data[0] !== 'number') {
+          throw new WalletError(`${KeyType.Ed25519} does not support multiple singing of multiple messages`)
+        }
+        return await this.indy.cryptoSign(this.handle, key.publicKeyBase58, data as Buffer)
+      }
+
+      if (key.keyType === KeyType.Bls12381g2) {
+        const blsKeyPair = await this.retrieveKeyPair(key.publicKeyBase58)
+        return BbsService.sign({
+          messages: data,
+          publicKey: key.publicKey,
+          privateKey: BufferEncoder.fromBase58(blsKeyPair.publicKeyBase58),
+        })
+      }
+    } catch (error) {
+      throw new WalletError(`Error signing data with verkey ${key.publicKeyBase58}`, { cause: error })
+    }
+    throw new WalletError(`Unsupported keyType: ${key.keyType}`)
+  }
+
+  /**
+   * Verify the signature with the data and the used key
+   *
+   * Bls12381g1g2 and Bls12381g1 are not supported.
+   *
+   * @param data Buffer The data that has to be confirmed to be signed
+   * @param key Key The key that was used in the signing process
+   * @param signature Buffer The signature that was created by the signing process
+   *
+   * @returns A boolean whether the signature was created with the supplied data and key
+   *
+   * @throws {WalletError} When it could not do the verification
+   * @throws {WalletError} When an unsupported keytype is used
+   */
+  public async verify({ data, key, signature }: VerifyOptions): Promise<boolean> {
+    try {
+      if (key.keyType === KeyType.Ed25519) {
+        // Checks to see if it is an not an Array of messages, but just a single one
+        if (typeof data[0] !== 'number') {
+          throw new WalletError(`${KeyType.Ed25519} does not support multiple singing of multiple messages`)
+        }
+        return await this.indy.cryptoVerify(key.publicKeyBase58, data as Buffer, signature)
+      }
+
+      if (key.keyType === KeyType.Bls12381g2) {
+        return await BbsService.verify({ signature, publicKey: key.publicKey, messages: data })
+      }
+    } catch (error) {
+      throw new WalletError(`Error verifying signature of data signed with verkey ${key.publicKeyBase58}`, {
+        cause: error,
+      })
+    }
+    throw new WalletError(`Unsupported keyType: ${key.keyType}`)
+  }
+
   public async pack(
     payload: Record<string, unknown>,
     recipientKeys: string[],
@@ -352,30 +457,53 @@ export class IndyWallet implements Wallet {
     }
   }
 
-  public async sign(data: Buffer, verkey: string): Promise<Buffer> {
-    try {
-      return await this.indy.cryptoSign(this.handle, verkey, data)
-    } catch (error) {
-      throw new WalletError(`Error signing data with verkey ${verkey}`, { cause: error })
-    }
-  }
-
-  public async verify(signerVerkey: string, data: Buffer, signature: Buffer): Promise<boolean> {
-    try {
-      // check signature
-      const isValid = await this.indy.cryptoVerify(signerVerkey, data, signature)
-
-      return isValid
-    } catch (error) {
-      throw new WalletError(`Error verifying signature of data signed with verkey ${signerVerkey}`, { cause: error })
-    }
-  }
-
   public async generateNonce() {
     try {
       return await this.indy.generateNonce()
     } catch (error) {
       throw new WalletError('Error generating nonce', { cause: error })
+    }
+  }
+
+  /**
+   * @todo fix the query
+   */
+  private async retrieveKeyPair(publicKeyBase58: string): Promise<BlsKeyPair> {
+    try {
+      const { value } = await this.indy.getWalletRecord(
+        this.handle,
+        'KeyPairRecord',
+        `{publicKeyBase58: ${publicKeyBase58}}`,
+        {}
+      )
+      if (value) {
+        return JsonEncoder.fromString(value) as BlsKeyPair
+      } else {
+        throw new WalletError(`No content found for record with public key: ${publicKeyBase58}`)
+      }
+    } catch (error) {
+      if (isIndyError(error, 'WalletItemNotFound')) {
+        throw new RecordNotFoundError(`KeyPairRecord not found for public key: ${publicKeyBase58}.`, {
+          recordType: 'KeyPairRecord',
+          cause: error,
+        })
+      }
+      throw isIndyError(error) ? new IndySdkError(error) : error
+    }
+  }
+
+  /**
+   * @todo fix the query
+   */
+  private async storeKeyPair(blsKeyPair: BlsKeyPair): Promise<void> {
+    try {
+      await this.indy.addWalletRecord(this.handle, 'KeyPairRecord', 'ID', JSON.stringify(blsKeyPair), {})
+    } catch (error) {
+      if (isIndyError(error, 'WalletItemAlreadyExists')) {
+        throw new RecordDuplicateError(`Record already exists`, { recordType: 'KeyPairRecord' })
+      }
+
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 }

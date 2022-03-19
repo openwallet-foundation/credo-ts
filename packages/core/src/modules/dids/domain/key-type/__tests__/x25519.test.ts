@@ -1,7 +1,6 @@
 import { KeyType } from '../../../../../crypto'
 import { JsonTransformer, TypedArrayEncoder, Buffer } from '../../../../../utils'
 import didKeyX25519Fixture from '../../../__tests__/__fixtures__/didKeyX25519.json'
-import { Key } from '../../Key'
 import { VerificationMethod } from '../../verificationMethod'
 import { keyDidX25519 } from '../x25519'
 
