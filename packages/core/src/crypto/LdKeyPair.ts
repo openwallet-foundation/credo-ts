@@ -14,25 +14,26 @@ export abstract class KeyPair {
   abstract fromVerificationMethod(verificationMethod: Record<string, any>): KeyPair
 }
 
-export interface KeyPairReworkOptions {
+export interface LdKeyPairOptions {
   id: string
   controller: string
-  revoked: string
+  revoked?: string
 }
 
 // K-TODO Rename to LDKeyClass
-export abstract class LDKeyClass {
+export abstract class LdKeyPair {
   public readonly id: string
   public readonly controller: string
-  public readonly revoked: string
+  public readonly revoked?: string
+  public abstract type: string
 
-  public constructor(options: KeyPairReworkOptions) {
+  public constructor(options: LdKeyPairOptions) {
     this.id = options.id
     this.controller = options.controller
     this.revoked = options.revoked
   }
 
-  public static async generate(): Promise<KeyPairRework> {
+  public static async generate(): Promise<LdKeyPair> {
     throw new Error('Not implemented')
   }
 

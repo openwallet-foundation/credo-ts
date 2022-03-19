@@ -1,11 +1,9 @@
 /*!
  * Copyright (c) 2020-2021 Digital Bazaar, Inc. All rights reserved.
  */
-import type { KeyPair, LDKeyClass } from './KeyPair'
-import type { JsonLdDocument } from 'jsonld'
+import type { LdKeyPair } from './LdKeyPair'
 
 import jsigs from '@digitalcredentials/jsonld-signatures'
-import { Stringifiable } from 'query-string'
 
 import { BufferEncoder, JsonEncoder } from '../utils'
 
@@ -31,8 +29,8 @@ export type ProofPurpose = unknown
 export interface JwsLinkedDataSignatureOptions {
   type: string
   algorithm: string
-  LDKeyClass: typeof LDKeyClass
-  key: LDKeyClass
+  LDKeyClass: typeof LdKeyPair
+  key: LdKeyPair
   proof: Proof
   date: string
   contextUrl: string
