@@ -52,7 +52,7 @@ export interface ReceiveOutOfBandMessageConfig {
   label?: string
   alias?: string
   imageUrl?: string
-  autoAcceptMessage?: boolean
+  autoAcceptInvitation?: boolean
   autoAcceptConnection?: boolean
   reuseConnection?: boolean
   routing?: Routing
@@ -92,49 +92,20 @@ export class OutOfBandModule {
     this.registerHandlers(dispatcher)
   }
 
-  public async createLegacyInvitation(config: CreateOutOfBandMessageConfig = {}) {
-    if (config.handshake === false) {
-      throw new AriesFrameworkError(
-        `Invalid value of handshake in config. Value is ${config.handshake}, but this method supports only 'true' or 'undefined'.`
-      )
-    }
-    if (
-      !config.handshakeProtocols ||
-      (config.handshakeProtocols?.length === 1 && config.handshakeProtocols.includes(HandshakeProtocol.Connections))
-    ) {
-      const outOfBandRecord = await this.createInvitation({
-        ...config,
-        handshakeProtocols: [HandshakeProtocol.Connections],
-      })
-      return { outOfBandRecord, invitation: convertToOldInvitation(outOfBandRecord.outOfBandMessage) }
-    }
-    throw new AriesFrameworkError(
-      `Invalid value of handshakeProtocols in config. Value is ${config.handshakeProtocols}, but this method supports only ${HandshakeProtocol.Connections}.`
-    )
-  }
-
   /**
-   * Creates an out-of-band message and adds given agent messages to `requests~attach` attribute.
+   * Creates an outbound out-of-band record containing out-of-band invitation message defined in
+   * Aries RFC 0434: Out-of-Band Protocol 1.1.
    *
-   * If you want to create a new connection you need to set `handshake` to `true`. You can define
-   * what patricular handshakre protocols should be used by setting `handshakeProtocols` to one or
-   * more supported protocols from `HandhsakeProtocol`, for example:
+   * It automatically adds all supported handshake protocols by agent to `hanshake_protocols`. You
+   * can modify this by setting `handshakeProtocols` in `config` parameter. If you want to create
+   * invitation without handhsake, you can set `handshake` to `false`.
    *
-   * ```ts
-   *  const config = {
-   *    handshake: true
-   *    handshakeProtocols: [HandshakeProtocol.DidExchange]
-   *  }
-   *  const message = outOfBandModule.createMessage(config)
-   * ```
-   *
-   * Then, the out-of-band will use its keys and will work as a connection invitation.
+   * If `config` parameter contains `messages` it adds them to `requests~attach` attribute.
    *
    * Agent role: sender (inviter)
    *
-   * @param config Configuration and other attributes of out-of-band message
-   * @param messages Messages that will be sent inside out-of-band message
-   * @returns Out-of-band record and optionally connection record created based on `handshakeProtocol`
+   * @param config configuration of how out-of-band invitation should be created
+   * @returns out-of-band record
    */
   public async createInvitation(config: CreateOutOfBandMessageConfig = {}): Promise<OutOfBandRecord> {
     const multiUseInvitation = config.multiUseInvitation ?? false
@@ -157,7 +128,8 @@ export class OutOfBandModule {
 
     let handshakeProtocols
     if (handshake) {
-      // Find first supported handshake protocol preserving the order of handshake protocols defined by agent
+      // Find first supported handshake protocol preserving the order of handshake protocols defined
+      // by agent
       if (customHandshakeProtocols) {
         this.assertHandshakeProtocols(customHandshakeProtocols)
         handshakeProtocols = customHandshakeProtocols
@@ -210,13 +182,44 @@ export class OutOfBandModule {
   }
 
   /**
+   * Creates an outbound out-of-band record in the same way how `createInvitation` method does it,
+   * but it also converts out-of-band invitation message to an "legacy" invitation message defined
+   * in RFC 0160: Connection Protocol and returns it togheter with out-of-band record.
+   *
+   * Agent role: sender (inviter)
+   *
+   * @param config configuration of how out-of-band invitation should be created
+   * @returns out-of-band record and connection invitation
+   */
+  public async createLegacyInvitation(config: CreateOutOfBandMessageConfig = {}) {
+    if (config.handshake === false) {
+      throw new AriesFrameworkError(
+        `Invalid value of handshake in config. Value is ${config.handshake}, but this method supports only 'true' or 'undefined'.`
+      )
+    }
+    if (
+      !config.handshakeProtocols ||
+      (config.handshakeProtocols?.length === 1 && config.handshakeProtocols.includes(HandshakeProtocol.Connections))
+    ) {
+      const outOfBandRecord = await this.createInvitation({
+        ...config,
+        handshakeProtocols: [HandshakeProtocol.Connections],
+      })
+      return { outOfBandRecord, invitation: convertToOldInvitation(outOfBandRecord.outOfBandMessage) }
+    }
+    throw new AriesFrameworkError(
+      `Invalid value of handshakeProtocols in config. Value is ${config.handshakeProtocols}, but this method supports only ${HandshakeProtocol.Connections}.`
+    )
+  }
+
+  /**
    * Parses URL, decodes invitation and calls `receiveMessage` with parsed invitation message.
    *
    * Agent role: receiver (invitee)
    *
    * @param invitationUrl url containing a base64 encoded invitation to receive
-   * @param config config for handling of invitation
-   * @returns OutOfBand record and connection record if one has been created.
+   * @param config configuration of how out-of-band invitation should be processed
+   * @returns out-of-band record and connection record if one has been created
    */
   public async receiveInvitationFromUrl(invitationUrl: string, config: ReceiveOutOfBandMessageConfig = {}) {
     const message = await this.parseInvitation(invitationUrl)
@@ -245,25 +248,21 @@ export class OutOfBandModule {
   }
 
   /**
-   * Stores OutOfBand record with the invitation message. It automatically accepts the invitation
-   * for further processing. If you don't want to do that you can set `autoAcceptMessage` to
-   * `false`.
+   * Creates inbound out-of-band record and assings out-of-band invitation message to it if the
+   * message is valid. It automatically passes out-of-band invitation for further processing to
+   * `acceptInvitation` method. If you don't want to do that you can set `autoAcceptInvitation`
+   * attribute in `config` parameter to `false` and accept the message later by calling
+   * `acceptInvitation`.
    *
-   * If auto accepting is enabled via either the config passed in the function or the global agent
-   * config, a connection request message will be send.
+   * It supports both OOB (Aries RFC 0434: Out-of-Band Protocol 1.1) and Connection Invitation
+   * (0160: Connection Protocol).
    *
-   * If the message contains `hanshake_protocols` attribute it either creates or reuse an existing connection.
-   * It waits until the connection is ready and then it passes all messages from `requests~attach` attribute to the agent.
-   * Reuse of connection can be enabled or disabled by `config.reuseConnection` attribute.
-   *
-   * If there is no `hanshake_protocols` attribute it just passes the messages to the agent.
-   *
-   * It supports both OOB (Aries RFC 0434: Out-of-Band Protocol 1.1) and Connection Invitation (0160: Connection Protocol).
+   * Agent role: receiver (invitee)
    *
    * @param outOfBandMessage
    * @param config config for handling of invitation
    *
-   * @returns OutOfBand record and connection record if one has been created.
+   * @returns out-of-band record and connection record if one has been created.
    */
   public async receiveInvitation(
     outOfBandMessage: OutOfBandMessage,
@@ -272,7 +271,7 @@ export class OutOfBandModule {
     const { handshakeProtocols } = outOfBandMessage
     const { routing } = config
 
-    const autoAcceptMessage = config.autoAcceptMessage ?? true
+    const autoAcceptInvitation = config.autoAcceptInvitation ?? true
     const autoAcceptConnection = config.autoAcceptConnection ?? true
     const reuseConnection = config.reuseConnection ?? false
     const label = config.label ?? this.agentConfig.label
@@ -295,7 +294,7 @@ export class OutOfBandModule {
     })
     await this.outOfBandService.save(outOfBandRecord)
 
-    if (autoAcceptMessage) {
+    if (autoAcceptInvitation) {
       return await this.acceptInvitation(outOfBandRecord, {
         label,
         alias,
@@ -309,6 +308,20 @@ export class OutOfBandModule {
     return { outOfBandRecord }
   }
 
+  /**
+   * Creates a connection if the out-of-band invitation message contains `hanshake_protocols`
+   * attribute, except for the case when connection already exists and `reuseConnection` is enabled.
+   *
+   * It passes first supported message from `requests~attach` attribute to the agent, execpt for the
+   * case reuse of connection is applied when it just sends `handshake-reuse` message to existing
+   * connection.
+   *
+   * Agent role: receiver (invitee)
+   *
+   * @param outOfBandRecord
+   * @param config
+   * @returns out-of-band record and connection record if one has been created.
+   */
   public async acceptInvitation(
     outOfBandRecord: OutOfBandRecord,
     config: {
@@ -330,24 +343,28 @@ export class OutOfBandModule {
 
     if (handshakeProtocols) {
       this.logger.debug('Out of band message contains handshake protocols.')
-      // Find first supported handshake protocol preserving the order of `handshake_protocols`
-      // in out-of-band message.
 
       let connectionRecord
       if (existingConnection && reuseConnection) {
-        this.logger.debug(`Reuse is enabled. Reusing an existing connection with ID ${existingConnection.id}.`)
+        this.logger.debug(
+          `Connection already exists and reuse is enabled. Reusing an existing connection with ID ${existingConnection.id}.`
+        )
         connectionRecord = existingConnection
         if (!messages) {
           this.logger.debug('Out of band message does not contain any request messages.')
           await this.sendReuse(outOfBandMessage, connectionRecord)
         }
       } else {
-        this.logger.debug('Reuse is disabled or connection does not exist.')
-        connectionRecord = await this.createConnection(outOfBandRecord, {
+        this.logger.debug('Connection does not exist or reuse is disabled. Creating a new connection.')
+        // Find first supported handshake protocol preserving the order of handshake protocols
+        // defined by `handshake_protocols` attribute in the invitation message
+        const handshakeProtocol = this.getFirstSupportedProtocol(handshakeProtocols)
+        connectionRecord = await this.connectionsModule.acceptOutOfBandInvitation(outOfBandRecord, {
           label,
           alias,
           imageUrl,
           autoAcceptConnection,
+          protocol: handshakeProtocol,
           routing,
         })
       }
@@ -458,32 +475,6 @@ export class OutOfBandModule {
         return existingConnection
       }
     }
-  }
-
-  private async createConnection(
-    outOfBandRecord: OutOfBandRecord,
-    config: { label?: string; alias?: string; imageUrl?: string; autoAcceptConnection?: boolean; routing?: Routing }
-  ) {
-    this.logger.debug('Creating a new connection.', { outOfBandRecord, config })
-    const { outOfBandMessage } = outOfBandRecord
-    const { handshakeProtocols } = outOfBandMessage
-    const { label, alias, imageUrl, autoAcceptConnection, routing } = config
-
-    if (!handshakeProtocols) {
-      throw new AriesFrameworkError('Threre are no handshake protocols in out-of-band message')
-    }
-
-    const handshakeProtocol = this.getFirstSupportedProtocol(handshakeProtocols)
-    const connectionRecord = await this.connectionsModule.acceptOutOfBandInvitation(outOfBandRecord, {
-      label,
-      alias,
-      imageUrl,
-      autoAcceptConnection,
-      protocol: handshakeProtocol,
-      routing,
-    })
-
-    return connectionRecord
   }
 
   private async emitWithConnection(connectionRecord: ConnectionRecord, messages: PlaintextMessage[]) {

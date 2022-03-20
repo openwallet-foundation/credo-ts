@@ -200,7 +200,7 @@ describe('out of band', () => {
       const { outOfBandRecord: receivedOutOfBandRecord, connectionRecord } = await aliceAgent.oob.receiveInvitation(
         outOfBandMessage,
         {
-          autoAcceptMessage: false,
+          autoAcceptInvitation: false,
           autoAcceptConnection: false,
         }
       )
@@ -325,7 +325,7 @@ describe('out of band', () => {
 
       // First, we crate a connection but we won't accept it, therefore it won't be ready
       const { outOfBandRecord: aliceFaberOutOfBandRecord } = await aliceAgent.oob.receiveInvitation(outOfBandMessage, {
-        autoAcceptMessage: false,
+        autoAcceptInvitation: false,
         autoAcceptConnection: false,
       })
 
