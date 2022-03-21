@@ -201,7 +201,7 @@ export class DidExchangeProtocol {
 
   public async createResponse(
     connectionRecord: ConnectionRecord,
-    outOfBandRecord?: OutOfBandRecord,
+    outOfBandRecord: OutOfBandRecord,
     routing?: Routing
   ): Promise<DidExchangeResponseMessage> {
     this.logger.debug(`Create message ${DidExchangeResponseMessage.type} start`, connectionRecord)

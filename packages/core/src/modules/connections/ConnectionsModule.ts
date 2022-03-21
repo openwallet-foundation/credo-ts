@@ -108,14 +108,25 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptRequest(connectionId: string): Promise<ConnectionRecord> {
-    const connectionRecord = await this.connectionService.getById(connectionId)
+    const connectionRecord = await this.connectionService.findById(connectionId)
+    if (!connectionRecord) {
+      throw new AriesFrameworkError(`Connection record ${connectionId} not found.`)
+    }
+    if (!connectionRecord.outOfBandId) {
+      throw new AriesFrameworkError(`Connection record ${connectionId} does not have out-of-band record.`)
+    }
+
+    const outOfBandRecord = await this.outOfBandService.findById(connectionRecord.outOfBandId)
+    if (!outOfBandRecord) {
+      throw new AriesFrameworkError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
+    }
 
     let outboundMessage
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
-      const message = await this.didExchangeProtocol.createResponse(connectionRecord)
+      const message = await this.didExchangeProtocol.createResponse(connectionRecord, outOfBandRecord)
       outboundMessage = createOutboundMessage(connectionRecord, message)
     } else {
-      const { message } = await this.connectionService.createResponse(connectionRecord)
+      const { message } = await this.connectionService.createResponse(connectionRecord, outOfBandRecord)
       outboundMessage = createOutboundMessage(connectionRecord, message)
     }
 
@@ -221,17 +232,6 @@ export class ConnectionsModule {
    */
   public findByTheirKey(verkey: string): Promise<ConnectionRecord | null> {
     return this.connectionService.findByTheirKey(verkey)
-  }
-
-  /**
-   * Find connection by Invitation key.
-   *
-   * @param key the invitation key to search for
-   * @returns the connection record, or null if not found
-   * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
-   */
-  public findByInvitationKey(key: string): Promise<ConnectionRecord | null> {
-    return this.connectionService.findByInvitationKey(key)
   }
 
   public async findByOutOfBandId(outOfBandId: string) {

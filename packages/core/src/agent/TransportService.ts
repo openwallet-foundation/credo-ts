@@ -1,6 +1,6 @@
 import type { DidDoc } from '../modules/connections/models'
 import type { ConnectionRecord } from '../modules/connections/repository'
-import type { IndyAgentService } from '../modules/dids/domain/service'
+import type { IndyAgentService, DidCommService } from '../modules/dids/domain/service'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { EncryptedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
@@ -10,7 +10,6 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { ConnectionRole, DidExchangeRole } from '../modules/connections/models'
-import { DidCommService } from '../modules/dids/domain/service'
 
 @scoped(Lifecycle.ContainerScoped)
 export class TransportService {
@@ -40,26 +39,19 @@ export class TransportService {
     delete this.transportSessionTable[session.id]
   }
 
-  public findDidCommServices(connection: ConnectionRecord): Array<DidCommService | IndyAgentService> {
+  public findDidCommServices(
+    connection: ConnectionRecord,
+    outOfBand?: OutOfBandRecord
+  ): Array<DidCommService | IndyAgentService> {
     if (connection.theirDidDoc) {
       return connection.theirDidDoc.didCommServices
     }
 
-    if (
-      (connection.role === ConnectionRole.Invitee || connection.role === DidExchangeRole.Requester) &&
-      connection.invitation
-    ) {
-      const { invitation } = connection
-      if (invitation.serviceEndpoint) {
-        const service = new DidCommService({
-          id: `${connection.id}-invitation`,
-          serviceEndpoint: invitation.serviceEndpoint,
-          recipientKeys: invitation.recipientKeys || [],
-          routingKeys: invitation.routingKeys || [],
-        })
-        return [service]
-      }
+    if ((connection.role === ConnectionRole.Invitee || connection.role === DidExchangeRole.Requester) && outOfBand) {
+      // TODO: Resolve dids here or allow to return it as part of returned array
+      return outOfBand.outOfBandMessage.services.filter((s): s is DidCommService => typeof s !== 'string')
     }
+
     return []
   }
 }

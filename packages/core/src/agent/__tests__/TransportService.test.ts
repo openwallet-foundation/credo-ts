@@ -1,5 +1,5 @@
-import { getMockConnection } from '../../../tests/helpers'
-import { ConnectionInvitationMessage, ConnectionRole, DidDoc } from '../../modules/connections'
+import { getMockConnection, getMockOutOfBand } from '../../../tests/helpers'
+import { ConnectionRole, DidDoc } from '../../modules/connections'
 import { DidCommService } from '../../modules/dids/domain/service/DidCommService'
 import { TransportService } from '../TransportService'
 
@@ -28,14 +28,14 @@ describe('TransportService', () => {
 
     test(`returns empty array when there is no their DidDoc and role is ${ConnectionRole.Inviter}`, () => {
       const connection = getMockConnection({ id: 'test-123', role: ConnectionRole.Inviter })
+      const outOfBand = getMockOutOfBand()
       connection.theirDidDoc = undefined
-      expect(transportService.findDidCommServices(connection)).toEqual([])
+      expect(transportService.findDidCommServices(connection, outOfBand)).toEqual([])
     })
 
-    test(`returns empty array when there is no their DidDoc, no invitation and role is ${ConnectionRole.Invitee}`, () => {
+    test(`returns empty array when there is no their DidDoc, no OutOfBand and role is ${ConnectionRole.Invitee}`, () => {
       const connection = getMockConnection({ id: 'test-123', role: ConnectionRole.Invitee })
       connection.theirDidDoc = undefined
-      connection.invitation = undefined
       expect(transportService.findDidCommServices(connection)).toEqual([])
     })
 
@@ -45,16 +45,16 @@ describe('TransportService', () => {
     })
 
     test(`returns service from invitation when there is no their DidDoc and role is ${ConnectionRole.Invitee}`, () => {
-      const invitation = new ConnectionInvitationMessage({
+      const outOfBand = getMockOutOfBand({
         label: 'test',
         recipientKeys: ['verkey'],
         serviceEndpoint: 'ws://invitationEndpoint.com',
       })
-      const connection = getMockConnection({ id: 'test-123', role: ConnectionRole.Invitee, invitation })
+      const connection = getMockConnection({ id: 'test-123', role: ConnectionRole.Invitee })
       connection.theirDidDoc = undefined
-      expect(transportService.findDidCommServices(connection)).toEqual([
+      expect(transportService.findDidCommServices(connection, outOfBand)).toEqual([
         new DidCommService({
-          id: 'test-123-invitation',
+          id: '#inline-0',
           serviceEndpoint: 'ws://invitationEndpoint.com',
           routingKeys: [],
           recipientKeys: ['verkey'],

@@ -312,7 +312,8 @@ export class MessageSender {
 
   private async retrieveServicesByConnection(
     connection: ConnectionRecord,
-    transportPriority?: TransportPriorityOptions
+    transportPriority?: TransportPriorityOptions,
+    outOfBand?: OutOfBandRecord
   ) {
     this.logger.debug(`Retrieving services for connection '${connection.id}' (${connection.theirLabel})`, {
       transportPriority,
@@ -336,11 +337,10 @@ export class MessageSender {
       }
 
       didCommServices = didDocument.didCommServices
-    }
-    // Old school method, did document is stored inside the connection record
-    else {
+    } else {
+      // Old school method, did document is stored inside the connection record or out-of-band record
       // Retrieve DIDComm services
-      didCommServices = this.transportService.findDidCommServices(connection)
+      didCommServices = this.transportService.findDidCommServices(connection, outOfBand)
     }
 
     // Separate queue service out
