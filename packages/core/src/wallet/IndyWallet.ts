@@ -1,5 +1,11 @@
 import type { Logger } from '../logger'
-import type { EncryptedMessage, DecryptedMessageContext, WalletConfig, WalletExportImportConfig } from '../types'
+import type {
+  EncryptedMessage,
+  DecryptedMessageContext,
+  WalletConfig,
+  WalletExportImportConfig,
+  WalletConfigRekey,
+} from '../types'
 import type { Buffer } from '../utils/buffer'
 import type { Wallet, DidInfo, DidConfig } from './Wallet'
 import type { default as Indy } from 'indy-sdk'
@@ -120,6 +126,28 @@ export class IndyWallet implements Wallet {
    * @throws {WalletError} if another error occurs
    */
   public async open(walletConfig: WalletConfig): Promise<void> {
+    await this._open(walletConfig)
+  }
+
+  /**
+   * @throws {WalletNotFoundError} if the wallet does not exist
+   * @throws {WalletError} if another error occurs
+   */
+  public async rotateKey(walletConfig: WalletConfigRekey): Promise<void> {
+    if (!walletConfig.rekey) {
+      throw new WalletError('Wallet rekey undefined!. Please specify the new wallet key')
+    }
+    await this._open(
+      { id: walletConfig.id, key: walletConfig.key, keyDerivationMethod: walletConfig.keyDerivationMethod },
+      walletConfig.rekey
+    )
+  }
+
+  /**
+   * @throws {WalletNotFoundError} if the wallet does not exist
+   * @throws {WalletError} if another error occurs
+   */
+  private async _open(walletConfig: WalletConfig, rekey?: string | undefined): Promise<void> {
     if (this.walletHandle) {
       throw new WalletError(
         'Wallet instance already opened. Close the currently opened wallet before re-opening the wallet'
@@ -129,9 +157,13 @@ export class IndyWallet implements Wallet {
     try {
       this.walletHandle = await this.indy.openWallet(
         { id: walletConfig.id },
-        { key: walletConfig.key, rekey: walletConfig.rekey, key_derivation_method: walletConfig.keyDerivationMethod }
+        { key: walletConfig.key, rekey: rekey, key_derivation_method: walletConfig.keyDerivationMethod }
       )
-      this.walletConfig = walletConfig
+      if (this.walletConfig) {
+        this.walletConfig = { ...this.walletConfig, ...walletConfig }
+      } else {
+        this.walletConfig = walletConfig
+      }
     } catch (error) {
       if (isIndyError(error, 'WalletNotFoundError')) {
         const errorMessage = `Wallet '${walletConfig.id}' not found`

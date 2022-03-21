@@ -19,6 +19,12 @@ export const enum KeyDerivationMethod {
 export interface WalletConfig {
   id: string
   key: string
+  keyDerivationMethod?: KeyDerivationMethod
+}
+
+export interface WalletConfigRekey {
+  id: string
+  key: string
   rekey?: string
   keyDerivationMethod?: KeyDerivationMethod
 }
