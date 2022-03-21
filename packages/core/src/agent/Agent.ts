@@ -60,9 +60,13 @@ export class Agent {
   public readonly dids: DidsModule
   public readonly wallet: WalletModule
 
-  public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
-    // Create child container so we don't interfere with anything outside of this agent
-    this.container = baseContainer.createChildContainer()
+  public constructor(
+    initialConfig: InitConfig,
+    dependencies: AgentDependencies,
+    injectionContainer?: DependencyContainer
+  ) {
+    // Take input container or child container so we don't interfere with anything outside of this agent
+    this.container = injectionContainer ?? baseContainer.createChildContainer()
 
     this.agentConfig = new AgentConfig(initialConfig, dependencies)
     this.logger = this.agentConfig.logger
@@ -71,10 +75,18 @@ export class Agent {
     this.container.registerInstance(AgentConfig, this.agentConfig)
 
     // Based on interfaces. Need to register which class to use
-    this.container.registerInstance(InjectionSymbols.Logger, this.logger)
-    this.container.register(InjectionSymbols.Wallet, { useToken: IndyWallet })
-    this.container.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
-    this.container.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
+    if (!this.container.isRegistered(InjectionSymbols.Wallet)) {
+      this.container.register(InjectionSymbols.Wallet, { useToken: IndyWallet })
+    }
+    if (!this.container.isRegistered(InjectionSymbols.Logger)) {
+      this.container.registerInstance(InjectionSymbols.Logger, this.logger)
+    }
+    if (!this.container.isRegistered(InjectionSymbols.StorageService)) {
+      this.container.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
+    }
+    if (!this.container.isRegistered(InjectionSymbols.MessageRepository)) {
+      this.container.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
+    }
 
     this.logger.info('Creating agent with config', {
       ...initialConfig,
