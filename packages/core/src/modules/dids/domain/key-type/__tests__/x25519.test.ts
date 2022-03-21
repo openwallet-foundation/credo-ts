@@ -1,5 +1,5 @@
 import { KeyType } from '../../../../../crypto'
-import { JsonTransformer, BufferEncoder, Buffer } from '../../../../../utils'
+import { JsonTransformer, TypedArrayEncoder, Buffer } from '../../../../../utils'
 import didKeyX25519Fixture from '../../../__tests__/__fixtures__/didKeyX25519.json'
 import { Key } from '../../Key'
 import { VerificationMethod } from '../../verificationMethod'
@@ -10,12 +10,12 @@ const TEST_X25519_FINGERPRINT = 'z6LShLeXRTzevtwcfehaGEzCMyL3bNsAeKCwcqwJxyCo63y
 const TEST_X25519_DID = `did:key:${TEST_X25519_FINGERPRINT}`
 const TEST_X25519_PREFIX_BYTES = Buffer.concat([
   new Uint8Array([236, 1]),
-  BufferEncoder.fromBase58(TEST_X25519_BASE58_KEY),
+  TypedArrayEncoder.fromBase58(TEST_X25519_BASE58_KEY),
 ])
 
 describe('x25519', () => {
   it('creates a Key instance from public key bytes and x25519 key type', async () => {
-    const publicKeyBytes = BufferEncoder.fromBase58(TEST_X25519_BASE58_KEY)
+    const publicKeyBytes = TypedArrayEncoder.fromBase58(TEST_X25519_BASE58_KEY)
 
     const didKey = Key.fromPublicKey(publicKeyBytes, KeyType.X25519)
 
@@ -39,7 +39,7 @@ describe('x25519', () => {
 
     expect(didKey.fingerprint).toBe(TEST_X25519_FINGERPRINT)
     expect(didKey.publicKeyBase58).toBe(TEST_X25519_BASE58_KEY)
-    expect(didKey.publicKey).toEqual(BufferEncoder.fromBase58(TEST_X25519_BASE58_KEY))
+    expect(didKey.publicKey).toEqual(TypedArrayEncoder.fromBase58(TEST_X25519_BASE58_KEY))
     expect(didKey.keyType).toBe(KeyType.X25519)
     expect(didKey.prefixedPublicKey.equals(TEST_X25519_PREFIX_BYTES)).toBe(true)
   })
