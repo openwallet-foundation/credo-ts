@@ -57,7 +57,7 @@ export class MediationRecipientService {
     const mediationRecord = new MediationRecord({
       threadId: message.threadId,
       state: MediationState.Requested,
-      role: MediationRole.Mediator,
+      role: MediationRole.Recipient,
       connectionId: connection.id,
     })
     await this.mediatorRepository.save(mediationRecord)
@@ -81,6 +81,7 @@ export class MediationRecipientService {
 
     // Assert
     mediationRecord.assertState(MediationState.Requested)
+    mediationRecord.assertRole(MediationRole.Recipient)
 
     // Update record
     mediationRecord.endpoint = messageContext.message.endpoint
@@ -93,16 +94,23 @@ export class MediationRecipientService {
     const connection = messageContext.assertReadyConnection()
 
     const mediationRecord = await this.mediatorRepository.getByConnectionId(connection.id)
+
+    // Assert
+    mediationRecord.assertReady()
+    mediationRecord.assertRole(MediationRole.Recipient)
+
     const keylist = messageContext.message.updated
 
     // update keylist in mediationRecord
     for (const update of keylist) {
       if (update.action === KeylistUpdateAction.add) {
-        await this.saveRoute(update.recipientKey, mediationRecord)
+        mediationRecord.addRecipientKey(update.recipientKey)
       } else if (update.action === KeylistUpdateAction.remove) {
-        await this.removeRoute(update.recipientKey, mediationRecord)
+        mediationRecord.removeRecipientKey(update.recipientKey)
       }
     }
+
+    await this.mediatorRepository.update(mediationRecord)
     this.eventEmitter.emit<KeylistUpdatedEvent>({
       type: RoutingEventTypes.RecipientKeylistUpdated,
       payload: {
@@ -119,6 +127,9 @@ export class MediationRecipientService {
   ): Promise<MediationRecord> {
     const message = this.createKeylistUpdateMessage(verKey)
     const connection = await this.connectionService.getById(mediationRecord.connectionId)
+
+    mediationRecord.assertReady()
+    mediationRecord.assertRole(MediationRole.Recipient)
 
     // Create observable for event
     const observable = this.eventEmitter.observable<KeylistUpdatedEvent>(RoutingEventTypes.RecipientKeylistUpdated)
@@ -182,19 +193,6 @@ export class MediationRecipientService {
     return { endpoints, routingKeys, did, verkey, mediatorId: mediationRecord?.id }
   }
 
-  public async saveRoute(recipientKey: string, mediationRecord: MediationRecord) {
-    mediationRecord.recipientKeys.push(recipientKey)
-    this.mediatorRepository.update(mediationRecord)
-  }
-
-  public async removeRoute(recipientKey: string, mediationRecord: MediationRecord) {
-    const index = mediationRecord.recipientKeys.indexOf(recipientKey, 0)
-    if (index > -1) {
-      mediationRecord.recipientKeys.splice(index, 1)
-    }
-    this.mediatorRepository.update(mediationRecord)
-  }
-
   public async processMediationDeny(messageContext: InboundMessageContext<MediationDenyMessage>) {
     const connection = messageContext.assertReadyConnection()
 
@@ -206,6 +204,7 @@ export class MediationRecipientService {
     }
 
     // Assert
+    mediationRecord.assertRole(MediationRole.Recipient)
     mediationRecord.assertState(MediationState.Requested)
 
     // Update record
