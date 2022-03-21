@@ -1,6 +1,5 @@
 import type { DidDoc } from '../modules/connections/models'
 import type { ConnectionRecord } from '../modules/connections/repository'
-import type { IndyAgentService, DidCommService } from '../modules/dids/domain/service'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { EncryptedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
@@ -9,7 +8,6 @@ import type { EnvelopeKeys } from './EnvelopeService'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
-import { ConnectionRole, DidExchangeRole } from '../modules/connections/models'
 
 @scoped(Lifecycle.ContainerScoped)
 export class TransportService {
@@ -37,22 +35,6 @@ export class TransportService {
 
   public removeSession(session: TransportSession) {
     delete this.transportSessionTable[session.id]
-  }
-
-  public findDidCommServices(
-    connection: ConnectionRecord,
-    outOfBand?: OutOfBandRecord
-  ): Array<DidCommService | IndyAgentService> {
-    if (connection.theirDidDoc) {
-      return connection.theirDidDoc.didCommServices
-    }
-
-    if ((connection.role === ConnectionRole.Invitee || connection.role === DidExchangeRole.Requester) && outOfBand) {
-      // TODO: Resolve dids here or allow to return it as part of returned array
-      return outOfBand.outOfBandMessage.services.filter((s): s is DidCommService => typeof s !== 'string')
-    }
-
-    return []
   }
 }
 

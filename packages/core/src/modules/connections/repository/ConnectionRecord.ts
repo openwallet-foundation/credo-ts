@@ -1,12 +1,12 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { ConnectionRole, DidExchangeRole, HandshakeProtocol } from '../models'
+import type { HandshakeProtocol } from '../models'
 
 import { Type } from 'class-transformer'
 
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { DidDoc, ConnectionState, DidExchangeState } from '../models'
+import { ConnectionRole, DidExchangeRole, DidDoc, ConnectionState, DidExchangeState } from '../models'
 
 export interface ConnectionRecordProps {
   id?: string
@@ -135,6 +135,10 @@ export class ConnectionRecord
     }
 
     return service.recipientKeys[0]
+  }
+
+  public get isRequester() {
+    return this.role === ConnectionRole.Invitee || this.role === DidExchangeRole.Requester
   }
 
   public get isReady() {

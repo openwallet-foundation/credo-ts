@@ -96,7 +96,8 @@ export class ConnectionsModule {
     }
 
     const { message, connectionRecord } = result
-    await this.messageSender.sendMessageToOutOfBand(outOfBandRecord, connectionRecord, message)
+    const outboundMessage = createOutboundMessage(connectionRecord, message, outOfBandRecord)
+    await this.messageSender.sendMessage(outboundMessage)
     return connectionRecord
   }
 

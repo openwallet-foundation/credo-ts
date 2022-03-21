@@ -1,5 +1,5 @@
 import type { ConnectionRecord } from '../modules/connections'
-import type { IndyAgentService } from '../modules/dids/domain/service'
+import type { IndyAgentService, DidCommService } from '../modules/dids/domain/service'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { OutboundMessage, OutboundPackage, EncryptedMessage } from '../types'
@@ -13,7 +13,6 @@ import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
-import { DidCommService } from '../modules/dids/domain/service'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
 import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
@@ -187,7 +186,11 @@ export class MessageSender {
     }
 
     // Retrieve DIDComm services
-    const { services, queueService } = await this.retrieveServicesByConnection(connection, options?.transportPriority)
+    const { services, queueService } = await this.retrieveServicesByConnection(
+      connection,
+      options?.transportPriority,
+      outOfBand
+    )
 
     // Loop trough all available services and try to send the message
     for await (const service of services) {
@@ -240,21 +243,6 @@ export class MessageSender {
     throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
   }
 
-  public async sendMessageToOutOfBand(
-    outOfBandRecord: OutOfBandRecord,
-    connectionRecord: ConnectionRecord,
-    message: AgentMessage
-  ) {
-    // TODO iterate over all services
-    const shouldUseReturnRoute = !this.transportService.hasInboundEndpoint(connectionRecord.didDoc)
-    return this.sendMessageToService({
-      message,
-      service: new DidCommService(outOfBandRecord.outOfBandMessage.services[0] as DidCommService),
-      senderKey: connectionRecord.verkey,
-      returnRoute: shouldUseReturnRoute,
-    })
-  }
-
   public async sendMessageToService({
     message,
     service,
@@ -303,7 +291,10 @@ export class MessageSender {
     outboundPackage.endpoint = service.serviceEndpoint
     outboundPackage.connectionId = connectionId
     for (const transport of this.outboundTransports) {
-      if (transport.supportedSchemes.includes(service.protocolScheme)) {
+      const protocolScheme = service.protocolScheme ?? service.serviceEndpoint.split(':')[0]
+      if (!protocolScheme) {
+        this.logger.warn('Service does not have valid procolScheme.')
+      } else if (transport.supportedSchemes.includes(protocolScheme)) {
         await transport.sendMessage(outboundPackage)
         break
       }
@@ -320,27 +311,32 @@ export class MessageSender {
       connection,
     })
 
-    let didCommServices: Array<IndyAgentService | DidCommService>
-
+    let didCommServices: Array<IndyAgentService | DidCommService> = []
     // If theirDid starts with a did: prefix it means we're using the new did syntax
     // and we should use the did resolver
     if (connection.theirDid?.startsWith('did:')) {
-      const {
-        didDocument,
-        didResolutionMetadata: { error, message },
-      } = await this.didResolverService.resolve(connection.theirDid)
-
-      if (!didDocument) {
-        throw new AriesFrameworkError(
-          `Unable to resolve did document for did '${connection.theirDid}': ${error} ${message}`
-        )
-      }
-
+      this.logger.debug(`Resolving services for connection theirDid ${connection.theirDid}.`)
+      const didDocument = await this.resolveDidDocument(connection.theirDid)
       didCommServices = didDocument.didCommServices
-    } else {
+    } else if (connection.theirDidDoc) {
+      this.logger.debug(`Resolving services from connection theirDidDoc.`)
       // Old school method, did document is stored inside the connection record or out-of-band record
-      // Retrieve DIDComm services
-      didCommServices = this.transportService.findDidCommServices(connection, outOfBand)
+      didCommServices = connection.theirDidDoc.didCommServices
+    } else if (outOfBand) {
+      this.logger.debug(`Resolving services from out-of-band record ${outOfBand?.id}.`)
+      if (connection.isRequester && outOfBand) {
+        for (const service of outOfBand.outOfBandMessage.services) {
+          // Resolve dids to DIDDocs to retrieve services
+          if (typeof service === 'string') {
+            const did = service
+            const didDocument = await this.resolveDidDocument(did)
+            didCommServices = [...didCommServices, ...didDocument.didCommServices]
+          } else {
+            // Inline service blocks can just be pushed
+            didCommServices.push(service)
+          }
+        }
+      }
     }
 
     // Separate queue service out
@@ -368,6 +364,18 @@ export class MessageSender {
       `Retrieved ${services.length} services for message to connection '${connection.id}'(${connection.theirLabel})'`
     )
     return { services, queueService }
+  }
+
+  private async resolveDidDocument(did: string) {
+    const {
+      didDocument,
+      didResolutionMetadata: { error, message },
+    } = await this.didResolverService.resolve(did)
+
+    if (!didDocument) {
+      throw new AriesFrameworkError(`Unable to resolve did document for did '${did}': ${error} ${message}`)
+    }
+    return didDocument
   }
 }
 
