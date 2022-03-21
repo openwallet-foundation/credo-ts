@@ -159,8 +159,9 @@ export class IndyWallet implements Wallet {
         { id: walletConfig.id },
         { key: walletConfig.key, rekey: rekey, key_derivation_method: walletConfig.keyDerivationMethod }
       )
-      if (this.walletConfig) {
-        this.walletConfig = { ...this.walletConfig, ...walletConfig }
+      if (walletConfig.rekey) {
+        const { rekey, key, keyDerivationMethod, rekeyDerivationMethod, ...rest } = walletConfig
+        this.walletConfig = { ...rest, key: rekey, keyDerivationMethod: rekeyDerivationMethod }
       } else {
         this.walletConfig = walletConfig
       }
