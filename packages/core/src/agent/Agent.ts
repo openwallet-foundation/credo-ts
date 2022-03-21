@@ -1,7 +1,7 @@
 import type { Logger } from '../logger'
 import type { InboundTransport } from '../transport/InboundTransport'
 import type { OutboundTransport } from '../transport/OutboundTransport'
-import type { InitConfig, WalletConfig } from '../types'
+import type { InitConfig } from '../types'
 import type { Wallet } from '../wallet/Wallet'
 import type { AgentDependencies } from './AgentDependencies'
 import type { AgentMessageReceivedEvent } from './Events'
