@@ -2,7 +2,7 @@ import { decodeFromBase58, encodeToBase58 } from './base58'
 import { base64ToBase64URL } from './base64'
 import { Buffer } from './buffer'
 
-export class BufferEncoder {
+export class TypedArrayEncoder {
   /**
    * Encode buffer into base64 string.
    *
@@ -18,7 +18,7 @@ export class BufferEncoder {
    * @param buffer the buffer to encode into base64url string
    */
   public static toBase64URL(buffer: Buffer) {
-    return base64ToBase64URL(BufferEncoder.toBase64(buffer))
+    return base64ToBase64URL(TypedArrayEncoder.toBase64(buffer))
   }
 
   /**

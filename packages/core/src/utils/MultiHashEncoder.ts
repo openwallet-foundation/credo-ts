@@ -1,4 +1,25 @@
-import * as multihash from 'multihashes'
+import type { HashName } from './Hasher'
+
+import { Hasher } from './Hasher'
+import { VarintEncoder } from './VarintEncoder'
+import { Buffer } from './buffer'
+
+type MultiHashNameMap = {
+  [key in HashName]: number
+}
+
+type MultiHashCodeMap = {
+  [key: number]: HashName
+}
+
+const multiHashNameMap: MultiHashNameMap = {
+  'sha2-256': 0x12,
+}
+
+const multiHashCodeMap: MultiHashCodeMap = Object.entries(multiHashNameMap).reduce(
+  (map, [hashName, hashCode]) => ({ ...map, [hashCode]: hashName }),
+  {}
+)
 
 export class MultiHashEncoder {
   /**
@@ -10,8 +31,14 @@ export class MultiHashEncoder {
    *
    * @returns a multihash
    */
-  public static encode(buffer: Uint8Array, hashName: 'sha2-256'): Uint8Array {
-    return multihash.encode(buffer, hashName)
+  public static encode(data: Uint8Array, hashName: 'sha2-256'): Buffer {
+    const hash = Hasher.hash(data, hashName)
+    const hashCode = multiHashNameMap[hashName]
+
+    const hashPrefix = VarintEncoder.encode(hashCode)
+    const hashLengthPrefix = VarintEncoder.encode(hash.length)
+
+    return Buffer.concat([hashPrefix, hashLengthPrefix, hash])
   }
 
   /**
@@ -22,12 +49,23 @@ export class MultiHashEncoder {
    *
    * @returns object with the data and the hashing algorithm
    */
-  public static decode(data: Uint8Array): { data: Uint8Array; hashName: string } {
-    if (this.isValid(data)) {
-      const decodedHash = multihash.decode(data)
-      return { data: decodedHash.digest, hashName: decodedHash.name }
+  public static decode(data: Uint8Array): { data: Buffer; hashName: string } {
+    const [hashPrefix, hashPrefixByteLength] = VarintEncoder.decode(data)
+    const withoutHashPrefix = data.slice(hashPrefixByteLength)
+
+    const [, lengthPrefixByteLength] = VarintEncoder.decode(withoutHashPrefix)
+    const withoutLengthPrefix = withoutHashPrefix.slice(lengthPrefixByteLength)
+
+    const hashName = multiHashCodeMap[hashPrefix]
+
+    if (!hashName) {
+      throw new Error(`Unsupported hash code 0x${hashPrefix.toString(16)}`)
     }
-    throw new Error(`Invalid multihash: ${data}`)
+
+    return {
+      data: Buffer.from(withoutLengthPrefix),
+      hashName: multiHashCodeMap[hashPrefix],
+    }
   }
 
   /**
@@ -40,7 +78,7 @@ export class MultiHashEncoder {
    */
   public static isValid(data: Uint8Array): boolean {
     try {
-      multihash.validate(data)
+      MultiHashEncoder.decode(data)
       return true
     } catch (e) {
       return false
