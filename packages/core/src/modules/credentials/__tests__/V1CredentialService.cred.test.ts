@@ -2,7 +2,9 @@ import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
-import type { ServiceAcceptRequestOptions, ServiceRequestCredentialOptions } from '../CredentialServiceOptions'
+import type { ServiceAcceptRequestOptions } from '../CredentialServiceOptions'
+import type { ServiceRequestCredentialOptions } from '../formats/models/CredentialFormatServiceOptions'
+import type { RequestCredentialOptions } from '../interfaces'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
 import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
 import type { CustomCredentialTags } from '../repository/CredentialExchangeRecord'
@@ -256,9 +258,8 @@ describe('CredentialService', () => {
       // mock offer so that the request works
 
       // when
-      await credentialService.createRequest(credentialRecord, {
-        holderDid: 'holderDid',
-      })
+      const options: RequestCredentialOptions = {}
+      await credentialService.createRequest(credentialRecord, options, 'holderDid')
 
       // then
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
@@ -275,7 +276,6 @@ describe('CredentialService', () => {
       const options: ServiceRequestCredentialOptions = {
         connectionId: credentialRecord.connectionId,
         comment: 'credential request comment',
-        holderDid: 'holderDid',
         credentialDefinition: {
           indy: {
             credDef: credDef,
@@ -284,7 +284,11 @@ describe('CredentialService', () => {
       }
 
       // when
-      const { message: credentialRequest } = await credentialService.createRequest(credentialRecord, options)
+      const { message: credentialRequest } = await credentialService.createRequest(
+        credentialRecord,
+        options,
+        'holderDid'
+      )
 
       // then
       expect(credentialRequest.toJSON()).toMatchObject({
@@ -312,9 +316,7 @@ describe('CredentialService', () => {
       await Promise.all(
         invalidCredentialStates.map(async (state) => {
           await expect(
-            credentialService.createRequest(mockCredentialRecord({ state }), {
-              holderDid: 'holderDid',
-            })
+            credentialService.createRequest(mockCredentialRecord({ state }), {}, 'holderDid')
           ).rejects.toThrowError(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
         })
       )

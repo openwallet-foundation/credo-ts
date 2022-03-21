@@ -360,6 +360,7 @@ export async function issueCredential({
   const offerOptions: OfferCredentialOptions = {
     comment: 'some comment about credential',
     connectionId: issuerConnectionId,
+    protocolVersion: CredentialProtocolVersion.V1,
     credentialFormats: {
       indy: {
         attributes: credentialTemplate.preview.attributes,
@@ -421,6 +422,7 @@ export async function issueConnectionLessCredential({
 
   const offerOptions: OfferCredentialOptions = {
     comment: 'V1 Out of Band offer',
+    protocolVersion: CredentialProtocolVersion.V1,
     credentialFormats: {
       indy: {
         attributes: credentialTemplate.preview.attributes,

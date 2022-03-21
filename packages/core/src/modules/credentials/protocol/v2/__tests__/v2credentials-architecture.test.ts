@@ -10,7 +10,7 @@ import { CredentialFormatType } from '../../../interfaces'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 import { CredentialMessageBuilder } from '../CredentialMessageBuilder'
 
-const { config, agentDependencies: dependencies } = getBaseConfig('Format Servive Test')
+const { config, agentDependencies: dependencies } = getBaseConfig('Format Service Test')
 
 const credentialPreview = V1CredentialPreview.fromRecord({
   name: 'John',

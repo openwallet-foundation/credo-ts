@@ -1,4 +1,3 @@
-import type { AgentMessage } from '../../../../src/agent/AgentMessage'
 import type { EventEmitter } from '../../../agent/EventEmitter'
 import type {
   AcceptCredentialOptions,
@@ -10,6 +9,7 @@ import type {
 import type { CredentialExchangeRecord, CredentialRepository } from '../repository'
 import type {
   CredentialAttachmentFormats,
+  CredentialFormatSpec,
   HandlerAutoAcceptOptions,
   OfferAttachmentFormats,
   ProposeAttachmentFormats,
@@ -37,7 +37,8 @@ export abstract class CredentialFormatService {
 
   abstract createRequest(
     options: RequestCredentialOptions,
-    credentialRecord: CredentialExchangeRecord
+    credentialRecord: CredentialExchangeRecord,
+    holderDid?: string
   ): Promise<CredentialAttachmentFormats>
 
   abstract processRequest(options: RequestCredentialOptions, credentialRecord: CredentialExchangeRecord): void
@@ -79,8 +80,9 @@ export abstract class CredentialFormatService {
   /**
    * Gets the attachment object for a given attachId. We need to get out the correct attachId for
    * indy and then find the corresponding attachment (if there is one)
-   * @param message Gets the
+   * @param formats the formats object containing the attachid
+   * @param messageAttachment the attachment containing the payload
    * @returns The Attachment if found or undefined
    */
-  abstract getAttachment(message: AgentMessage): Attachment | undefined
+  abstract getAttachment(formats: CredentialFormatSpec[], messageAttachment: Attachment[]): Attachment | undefined
 }

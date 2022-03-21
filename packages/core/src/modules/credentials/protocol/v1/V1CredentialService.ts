@@ -11,12 +11,12 @@ import type {
   CredentialProtocolMsgReturnType,
   ServiceAcceptOfferOptions,
   ServiceAcceptRequestOptions,
-  ServiceRequestCredentialOptions,
 } from '../../CredentialServiceOptions'
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
 import type {
   CredProposeOfferRequestFormat,
   HandlerAutoAcceptOptions,
+  ServiceRequestCredentialOptions,
 } from '../../formats/models/CredentialFormatServiceOptions'
 import type {
   AcceptCredentialOptions,
@@ -198,7 +198,8 @@ export class V1CredentialService extends CredentialService {
    */
   public async createRequest(
     record: CredentialExchangeRecord,
-    options: ServiceRequestCredentialOptions
+    options: ServiceRequestCredentialOptions,
+    holderDid: string
   ): Promise<CredentialProtocolMsgReturnType<V1RequestCredentialMessage>> {
     // Assert credential
     record.assertState(CredentialState.OfferReceived)
@@ -222,7 +223,7 @@ export class V1CredentialService extends CredentialService {
       throw new AriesFrameworkError(`Missing data payload in attachment in credential Record ${record.id}`)
     }
     options.attachId = INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID
-    const { attachment: requestAttach } = await this.formatService.createRequest(options, record)
+    const { attachment: requestAttach } = await this.formatService.createRequest(options, record, holderDid)
     if (!requestAttach) {
       throw new AriesFrameworkError(`Failed to create attachment for request; credential record = ${record.id}`)
     }
@@ -480,7 +481,7 @@ export class V1CredentialService extends CredentialService {
       throw new AriesFrameworkError('Missing offers attach in Offer')
     }
 
-    // Create and link credential to attacment
+    // Create and link credential to attachment
     const credentialPreview = linkedAttachments
       ? CredentialUtils.createAndLinkAttachmentsToPreview(linkedAttachments, preview)
       : preview
@@ -1172,7 +1173,6 @@ export class V1CredentialService extends CredentialService {
 
     return { message: ackMessage, credentialRecord }
   }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public getFormats(credentialFormats: CredProposeOfferRequestFormat): CredentialFormatService[] {
     throw new Error('Method not implemented.')
   }

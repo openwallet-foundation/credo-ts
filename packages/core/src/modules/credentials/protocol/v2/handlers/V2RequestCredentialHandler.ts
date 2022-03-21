@@ -21,11 +21,11 @@ export class V2RequestCredentialHandler implements Handler {
   public constructor(
     credentialService: V2CredentialService,
     agentConfig: AgentConfig,
-    didCommMessageRepostitory: DidCommMessageRepository
+    didCommMessageRepository: DidCommMessageRepository
   ) {
     this.credentialService = credentialService
     this.agentConfig = agentConfig
-    this.didCommMessageRepository = didCommMessageRepostitory
+    this.didCommMessageRepository = didCommMessageRepository
   }
 
   public async handle(messageContext: InboundMessageContext<V2RequestCredentialMessage>) {

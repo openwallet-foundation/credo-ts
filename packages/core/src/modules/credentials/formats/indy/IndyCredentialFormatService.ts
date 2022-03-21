@@ -11,11 +11,7 @@ import type {
   RequestCredentialOptions,
 } from '../../interfaces'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
-import type {
-  ServiceAcceptOfferOptions,
-  ServiceAcceptRequestOptions,
-  ServiceRequestCredentialOptions,
-} from '../../protocol'
+import type { ServiceAcceptOfferOptions, ServiceAcceptRequestOptions } from '../../protocol'
 import type { CredPropose } from '../../protocol/v1/models/CredentialFormatOptions'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 import type {
@@ -24,6 +20,7 @@ import type {
   HandlerAutoAcceptOptions,
   OfferAttachmentFormats,
   ProposeAttachmentFormats,
+  ServiceRequestCredentialOptions,
 } from '../models/CredentialFormatServiceOptions'
 import type { Cred, CredOffer, CredReq, CredReqMetadata } from 'indy-sdk'
 
@@ -77,7 +74,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
 
   /**
    * Process offer - just sets the metadata for now
-   * @param options object containing the offer attachment for use here to retreive the actual cred offer
+   * @param options object containing the offer attachment for use here to retrieve the actual cred offer
    * @param credentialRecord the credential exchange record for this offer
    */
   public async processOffer(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): Promise<void> {
@@ -157,7 +154,8 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    */
   public async createRequest(
     options: ServiceRequestCredentialOptions,
-    credentialRecord: CredentialExchangeRecord
+    credentialRecord: CredentialExchangeRecord,
+    holderDid: string
   ): Promise<CredentialAttachmentFormats> {
     if (!options.offerAttachment) {
       throw new AriesFrameworkError(
@@ -169,7 +167,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     // format service -> get the credential definition and create the [indy] credential request
     options.credentialDefinition = await this.getCredentialDefinition(offer)
 
-    const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(options, offer)
+    const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(options, offer, holderDid)
     credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, credReqMetadata)
 
     const formats: CredentialFormatSpec = {
@@ -248,15 +246,16 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   /**
    * Gets the attachment object for a given attachId. We need to get out the correct attachId for
    * indy and then find the corresponding attachment (if there is one)
-   * @param message Gets the
+   * @param formats the formats object containing the attachid
+   * @param messageAttachment the attachment containing the payload
    * @returns The Attachment if found or undefined
    */
-  public getAttachment(message: AgentMessage): Attachment | undefined {
-    const formatId = message.formats.find((f) => f.format.includes('indy'))
-    const attachment = message.messageAttachment?.find((attachment) => attachment.id === formatId?.attachId)
+
+  public getAttachment(formats: CredentialFormatSpec[], messageAttachment: Attachment[]): Attachment | undefined {
+    const formatId = formats.find((f) => f.format.includes('indy'))
+    const attachment = messageAttachment?.find((attachment) => attachment.id === formatId?.attachId)
     return attachment
   }
-
   /**
    * Create a credential offer for the given credential definition id.
    *
@@ -283,12 +282,13 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @returns The created credential offer
    */
   private async createIndyCredentialRequest(
-    options: RequestCredentialOptions,
-    offer: CredOffer
+    options: ServiceRequestCredentialOptions,
+    offer: CredOffer,
+    holderDid: string
   ): Promise<{ credReq: CredReq; credReqMetadata: CredReqMetadata }> {
     if (options.credentialDefinition && options.credentialDefinition.indy?.credDef) {
       const [credReq, credReqMetadata] = await this.indyHolderService.createCredentialRequest({
-        holderDid: options.holderDid,
+        holderDid: holderDid,
         credentialOffer: offer,
         credentialDefinition: options.credentialDefinition.indy?.credDef,
       })
@@ -365,12 +365,12 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     return { format: formats, attachment: issueAttachment }
   }
   /**
-   * Processes an incoming credential - retreive metadata, retrievepayload and store it in the Indy wallet
+   * Processes an incoming credential - retrieve metadata, retrieve payload and store it in the Indy wallet
    * @param message the issue credential message
    */
 
   /**
-   * Processes an incoming credential - retreive metadata, retrievepayload and store it in the Indy wallet
+   * Processes an incoming credential - retrieve metadata, retrieve payload and store it in the Indy wallet
    * @param options the issue credential message wrapped inside this object
    * @param credentialRecord the credential exchange record for this credential
    */

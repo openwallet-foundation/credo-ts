@@ -1,9 +1,12 @@
 import type { AgentConfig } from '../../../../src/agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
-import type { ServiceRequestCredentialOptions } from '../CredentialServiceOptions'
-import type { CredentialFormatSpec, CredentialRequestFormat } from '../formats/models/CredentialFormatServiceOptions'
-import type { AcceptRequestOptions, RequestCredentialOptions } from '../interfaces'
+import type {
+  CredentialFormatSpec,
+  CredentialRequestFormat,
+  ServiceRequestCredentialOptions,
+} from '../formats/models/CredentialFormatServiceOptions'
+import type { AcceptRequestOptions } from '../interfaces'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
 import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
 import type { V2IssueCredentialMessageProps } from '../protocol/v2/messages/V2IssueCredentialMessage'
@@ -33,14 +36,13 @@ import { CredentialProblemReportReason } from '../errors/CredentialProblemReport
 import { IndyCredentialFormatService } from '../formats'
 import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
 import {
-  V1CredentialAckMessage,
-  V1CredentialProblemReportMessage,
   INDY_CREDENTIAL_ATTACHMENT_ID,
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   V1OfferCredentialMessage,
 } from '../protocol/v1/messages'
 import { V2CredentialService } from '../protocol/v2/V2CredentialService'
+import { V2CredentialAckMessage } from '../protocol/v2/messages/V2CredentialAckMessage'
 import { V2CredentialProblemReportMessage } from '../protocol/v2/messages/V2CredentialProblemReportMessage'
 import { V2IssueCredentialMessage } from '../protocol/v2/messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from '../protocol/v2/messages/V2OfferCredentialMessage'
@@ -279,12 +281,11 @@ describe('CredentialService', () => {
 
       const requestOptions: ServiceRequestCredentialOptions = {
         credentialFormats: v2CredentialRequest,
-        holderDid: 'holderDid',
       }
 
       // when
 
-      await credentialService.createRequest(credentialRecord, requestOptions)
+      await credentialService.createRequest(credentialRecord, requestOptions, 'holderDid')
 
       // then
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
@@ -298,10 +299,9 @@ describe('CredentialService', () => {
     test('returns credential request message base on existing credential offer message', async () => {
       // given
       const comment = 'credential request comment'
-      const options: RequestCredentialOptions = {
+      const options: ServiceRequestCredentialOptions = {
         connectionId: credentialRecord.connectionId,
         comment: 'credential request comment',
-        holderDid: 'holderDid',
         credentialDefinition: {
           indy: {
             credDef: credDef,
@@ -309,7 +309,11 @@ describe('CredentialService', () => {
         },
       }
       // when
-      const { message: credentialRequest } = await credentialService.createRequest(credentialRecord, options)
+      const { message: credentialRequest } = await credentialService.createRequest(
+        credentialRecord,
+        options,
+        'holderDid'
+      )
 
       // then
       expect(credentialRequest.toJSON()).toMatchObject({
@@ -337,7 +341,7 @@ describe('CredentialService', () => {
       await Promise.all(
         invalidCredentialStates.map(async (state) => {
           await expect(
-            credentialService.createRequest(mockCredentialRecord({ state }), { holderDid: 'mockDid' })
+            credentialService.createRequest(mockCredentialRecord({ state }), {}, 'mockDid')
           ).rejects.toThrowError(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
         })
       )
@@ -618,13 +622,13 @@ describe('CredentialService', () => {
 
   describe('processAck', () => {
     let credential: CredentialExchangeRecord
-    let messageContext: InboundMessageContext<V1CredentialAckMessage>
+    let messageContext: InboundMessageContext<V2CredentialAckMessage>
     beforeEach(() => {
       credential = mockCredentialRecord({
         state: CredentialState.CredentialIssued,
       })
 
-      const credentialRequest = new V1CredentialAckMessage({
+      const credentialRequest = new V2CredentialAckMessage({
         status: AckStatus.OK,
         threadId: 'somethreadid',
       })
@@ -675,7 +679,7 @@ describe('CredentialService', () => {
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
 
       // when
-      const credentialProblemReportMessage = new V1CredentialProblemReportMessage({
+      const credentialProblemReportMessage = new V2CredentialProblemReportMessage({
         description: {
           en: 'Indy error',
           code: CredentialProblemReportReason.IssuanceAbandoned,
@@ -686,7 +690,7 @@ describe('CredentialService', () => {
       // then
       expect(credentialProblemReportMessage.toJSON()).toMatchObject({
         '@id': expect.any(String),
-        '@type': 'https://didcomm.org/issue-credential/1.0/problem-report',
+        '@type': 'https://didcomm.org/issue-credential/2.0/problem-report',
         '~thread': {
           thid: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
         },

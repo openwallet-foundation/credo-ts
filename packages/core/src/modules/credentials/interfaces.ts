@@ -3,10 +3,7 @@ import type { JsonValue } from '../../types'
 import type { LinkedAttachment } from '../../utils/LinkedAttachment'
 import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
-import type {
-  CredentialDefinitionFormat,
-  CredentialProposeFormat,
-} from './formats/models/CredentialFormatServiceOptions'
+import type { CredentialProposeFormat, CredentialRequestFormat } from './formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from './models/CredentialPreviewAttributes'
 import type { CredOffer } from 'indy-sdk'
 
@@ -46,7 +43,7 @@ export interface OfferCredentialFormats {
 
 interface OfferCredentialOptions {
   connectionId: string // this needs to be optional for out of band messages
-  protocolVersion?: CredentialProtocolVersion
+  protocolVersion: CredentialProtocolVersion
   credentialFormats: OfferCredentialFormats
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
@@ -108,13 +105,11 @@ interface NegotiateProposalOptions {
 // CREDENTIAL REQUEST
 interface RequestCredentialOptions {
   connectionId?: string
-  // Indy specific. temporary workaround while we figure out out of band
-  holderDid: string
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
+  credentialFormats?: CredentialRequestFormat
   offerAttachment?: Attachment
   requestAttachment?: Attachment
-  credentialDefinition?: CredentialDefinitionFormat
 }
 
 interface AcceptRequestOptions {

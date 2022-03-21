@@ -1,5 +1,4 @@
 import type { BaseMessageConstructor } from '../../agent/BaseMessage'
-import type { CredentialFormatSpec } from '../../modules/credentials/formats/models/CredentialFormatServiceOptions'
 
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, ValidateNested } from 'class-validator'
@@ -17,10 +16,6 @@ export function AttachmentDecorated<T extends BaseMessageConstructor>(Base: T) {
     @IsInstance(Attachment, { each: true })
     @IsOptional()
     public appendedAttachments?: Attachment[]
-
-    public formats!: CredentialFormatSpec[]
-
-    public messageAttachment!: Attachment[]
 
     public getAppendedAttachmentById(id: string): Attachment | undefined {
       return this.appendedAttachments?.find((attachment) => attachment.id === id)

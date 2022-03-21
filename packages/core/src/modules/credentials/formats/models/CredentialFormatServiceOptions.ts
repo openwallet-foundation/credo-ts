@@ -1,5 +1,6 @@
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
+import type { RequestCredentialOptions } from '../../interfaces'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
 import type { CredPropose } from '../../protocol/v1/models/CredentialFormatOptions'
 import type { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
@@ -26,6 +27,13 @@ export interface CredentialDefinitionFormat {
   }
 }
 
+// COMBINE THESE TWO...
+// export interface IndyOfferCredentialFormat {
+//   credentialDefinitionId: string
+//   attributes: CredentialPreviewAttribute[]
+//   linkedAttachments?: LinkedAttachment[]
+//   payload?: CredOffer
+// }
 export interface CredentialOfferFormat {
   indy?: {
     payload: {
@@ -86,6 +94,11 @@ export interface OfferAttachmentFormats extends CredentialAttachmentFormats {
 }
 export const FORMAT_KEYS: FormatKeys = {
   indy: CredentialFormatType.Indy,
+}
+
+export interface ServiceRequestCredentialOptions extends RequestCredentialOptions {
+  attachId?: string
+  credentialDefinition?: CredentialDefinitionFormat
 }
 
 export interface HandlerAutoAcceptOptions {

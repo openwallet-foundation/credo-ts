@@ -102,11 +102,11 @@ export class V2CredentialService extends CredentialService {
     for (const formatService of formatServices) {
       let proposalAttachment, offerAttachment: Attachment | undefined
       if (proposeMessage && proposeMessage.appendedAttachments) {
-        proposalAttachment = formatService.getAttachment(proposeMessage)
+        proposalAttachment = formatService.getAttachment(proposeMessage.formats, proposeMessage.messageAttachment)
         proposalValues = proposeMessage.credentialProposal?.attributes
       }
       if (offerMessage) {
-        offerAttachment = formatService.getAttachment(proposeMessage)
+        offerAttachment = formatService.getAttachment(offerMessage.formats, offerMessage.messageAttachment)
       }
       const handlerOptions: HandlerAutoAcceptOptions = {
         credentialRecord,
@@ -136,9 +136,10 @@ export class V2CredentialService extends CredentialService {
       let proposalAttachment: Attachment | undefined
 
       if (proposeMessage) {
-        proposalAttachment = formatService.getAttachment(proposeMessage)
+        proposalAttachment = formatService.getAttachment(proposeMessage.formats, proposeMessage.messageAttachment)
       }
-      const offerAttachment = formatService.getAttachment(offerMessage)
+      const offerAttachment = formatService.getAttachment(offerMessage.formats, offerMessage.messageAttachment)
+
       offerValues = offerMessage.credentialPreview?.attributes
 
       const handlerOptions: HandlerAutoAcceptOptions = {
@@ -170,13 +171,13 @@ export class V2CredentialService extends CredentialService {
     for (const formatService of formatServices) {
       let proposalAttachment, offerAttachment, requestAttachment: Attachment | undefined
       if (proposeMessage) {
-        proposalAttachment = formatService.getAttachment(proposeMessage)
+        proposalAttachment = formatService.getAttachment(proposeMessage.formats, proposeMessage.messageAttachment)
       }
       if (offerMessage) {
-        offerAttachment = formatService.getAttachment(offerMessage)
+        offerAttachment = formatService.getAttachment(offerMessage.formats, offerMessage.messageAttachment)
       }
       if (requestMessage) {
-        requestAttachment = formatService.getAttachment(requestMessage)
+        requestAttachment = formatService.getAttachment(requestMessage.formats, requestMessage.messageAttachment)
       }
       const handlerOptions: HandlerAutoAcceptOptions = {
         credentialRecord,
@@ -207,7 +208,10 @@ export class V2CredentialService extends CredentialService {
 
     for (const formatService of formatServices) {
       if (credentialMessage) {
-        credentialAttachment = formatService.getAttachment(credentialMessage)
+        credentialAttachment = formatService.getAttachment(
+          credentialMessage.formats,
+          credentialMessage.messageAttachment
+        )
       }
       const handlerOptions: HandlerAutoAcceptOptions = {
         credentialRecord,
@@ -298,8 +302,7 @@ export class V2CredentialService extends CredentialService {
         credentialRecordId: record.id,
         credentialFormats: {},
       }
-      options.proposalAttachment = format.getAttachment(proposalMessage)
-
+      options.proposalAttachment = format.getAttachment(proposalMessage.formats, proposalMessage.messageAttachment)
       // used to set the meta data
       await format.processProposal(options, record)
     }
@@ -354,8 +357,6 @@ export class V2CredentialService extends CredentialService {
     const { message: proposalMessage, connection } = messageContext
 
     this.logger.debug(`Processing credential proposal with id ${proposalMessage.id}`)
-
-    // get the format service here to format correctly...
 
     try {
       // Credential record already exists
@@ -477,7 +478,6 @@ export class V2CredentialService extends CredentialService {
       credentialRecord,
       proposal
     )
-    credentialRecord.protocolVersion = CredentialProtocolVersion.V2
     await this.updateState(credentialRecord, CredentialState.OfferSent)
     await this.didCommMessageRepository.saveAgentMessage({
       agentMessage: credentialOfferMessage,
@@ -529,7 +529,11 @@ export class V2CredentialService extends CredentialService {
       })
 
       for (const format of formats) {
-        options.offerAttachment = format.getAttachment(credentialOfferMessage)
+        options.offerAttachment = format.getAttachment(
+          credentialOfferMessage.formats,
+          credentialOfferMessage.messageAttachment
+        )
+
         this.logger.debug('Save metadata for offer')
         format.processOffer(options, credentialRecord)
       }
@@ -554,7 +558,10 @@ export class V2CredentialService extends CredentialService {
       })
 
       for (const format of formats) {
-        options.offerAttachment = format.getAttachment(credentialOfferMessage)
+        options.offerAttachment = format.getAttachment(
+          credentialOfferMessage.formats,
+          credentialOfferMessage.messageAttachment
+        )
         this.logger.debug('Save metadata for offer')
         format.processOffer(options, credentialRecord)
       }
@@ -619,7 +626,8 @@ export class V2CredentialService extends CredentialService {
    */
   public async createRequest(
     record: CredentialExchangeRecord,
-    options: RequestCredentialOptions
+    options: RequestCredentialOptions,
+    holderDid?: string // temporary workaround
   ): Promise<CredentialProtocolMsgReturnType<V2RequestCredentialMessage>> {
     this.logger.debug('Get the Format Service and Create Request Message')
 
@@ -644,7 +652,8 @@ export class V2CredentialService extends CredentialService {
       formats,
       record,
       options,
-      offerMessage
+      offerMessage,
+      holderDid
     )
 
     await this.updateState(credentialRecord, CredentialState.RequestSent)
@@ -755,7 +764,7 @@ export class V2CredentialService extends CredentialService {
     return { message: proposalMessage, credentialRecord }
   }
   /**
-   * Create a {@link V2OfferCredentialMessage} as begonning of protocol process.
+   * Create a {@link V2OfferCredentialMessage} as beginning of protocol process.
    *
    * @param formatService {@link CredentialFormatService} the format service object containing format-specific logic
    * @param options attributes of the original offer
@@ -780,7 +789,7 @@ export class V2CredentialService extends CredentialService {
 
     for (const format of formats) {
       const options: AcceptProposalOptions = credentialOptions as unknown as AcceptProposalOptions
-      options.offerAttachment = format.getAttachment(message)
+      options.offerAttachment = format.getAttachment(message.formats, message.messageAttachment)
       format.processOffer(options, credentialRecord)
     }
     await this.credentialRepository.save(credentialRecord)
@@ -809,7 +818,7 @@ export class V2CredentialService extends CredentialService {
     })
 
     if (!proposalMessage) {
-      throw new AriesFrameworkError(`Missing proposal message for credentia record ${credentialRecord.id}`)
+      throw new AriesFrameworkError(`Missing proposal message for credential record ${credentialRecord.id}`)
     }
     const formats: CredentialFormatService[] = this.getFormatsFromMessage(proposalMessage.formats)
 
@@ -819,7 +828,10 @@ export class V2CredentialService extends CredentialService {
     }
 
     for (const formatService of formats) {
-      options.proposalAttachment = formatService.getAttachment(proposalMessage)
+      options.proposalAttachment = formatService.getAttachment(
+        proposalMessage.formats,
+        proposalMessage.messageAttachment
+      )
       // should fill in the credential formats
       await formatService.processProposal(options, credentialRecord)
     }
@@ -917,7 +929,10 @@ export class V2CredentialService extends CredentialService {
 
     for (const formatService of formatServices) {
       const options: AcceptCredentialOptions = {
-        credential: formatService.getAttachment(issueCredentialMessage),
+        credential: formatService.getAttachment(
+          issueCredentialMessage.formats,
+          issueCredentialMessage.messageAttachment
+        ),
       }
       await formatService.processCredential(options, credentialRecord)
     }
@@ -1022,10 +1037,6 @@ export class V2CredentialService extends CredentialService {
   public async createOutOfBandOffer(
     credentialOptions: OfferCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
-    if (!credentialOptions.credentialFormats.indy?.credentialDefinitionId) {
-      throw new AriesFrameworkError('Missing credential definition id for out of band credential')
-    }
-
     const formats: CredentialFormatService[] = this.getFormats(credentialOptions.credentialFormats)
 
     // Create message
@@ -1036,7 +1047,11 @@ export class V2CredentialService extends CredentialService {
 
     const options: AcceptProposalOptions = credentialOptions as unknown as AcceptProposalOptions
     for (const format of formats) {
-      options.offerAttachment = format.getAttachment(offerCredentialMessage)
+      options.offerAttachment = format.getAttachment(
+        offerCredentialMessage.formats,
+        offerCredentialMessage.messageAttachment
+      )
+
       this.logger.debug('Save metadata for offer')
       format.processOffer(options, credentialRecord)
     }

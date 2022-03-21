@@ -472,33 +472,6 @@ describe('credentials', () => {
         threadId: aliceExchangeCredentialRecord.threadId,
         state: CredentialState.ProposalReceived,
       })
-      // expect(faberCredentialRecord.offerMessage?.messageAttachment).toBeTruthy()
-      // expect(JsonTransformer.toJSON(faberCredentialRecord)).toMatchObject({
-      //   createdAt: expect.any(Date),
-      //   proposalMessage: {
-      //     '@type': 'https://didcomm.org/issue-credential/2.0/propose-credential',
-      //     '@id': expect.any(String),
-      //     credential_proposal: {
-      //       '@type': 'https://didcomm.org/issue-credential/2.0/credential-preview',
-      //       attributes: [
-      //         {
-      //           name: 'name',
-      //           value: 'John',
-      //         },
-      //         {
-      //           name: 'age',
-      //           value: '99',
-      //         },
-      //         {
-      //           name: 'lastname',
-      //           value: 'Appleseed',
-      //         },
-      //       ],
-      //     },
-      //     '~thread': { thid: expect.any(String) },
-      //   },
-      //   state: CredentialState.ProposalReceived,
-      // })
 
       // Check if the state of fabers credential record did not change
       const faberRecord = await faberAgent.credentials.getById(faberCredentialRecord.id)

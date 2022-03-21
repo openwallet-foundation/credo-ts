@@ -64,9 +64,11 @@ export class V1OfferCredentialHandler implements Handler {
       `Automatically sending request with autoAccept on ${this.agentConfig.autoAcceptCredentials}`
     )
     if (messageContext.connection) {
-      const { message, credentialRecord } = await this.credentialService.createRequest(record, {
-        holderDid: messageContext.connection.did,
-      })
+      const { message, credentialRecord } = await this.credentialService.createRequest(
+        record,
+        {},
+        messageContext.connection.did
+      )
       await this.didCommMessageRepository.saveAgentMessage({
         agentMessage: message,
         role: DidCommMessageRole.Sender,
@@ -83,9 +85,11 @@ export class V1OfferCredentialHandler implements Handler {
       })
       const recipientService = offerMessage.service
 
-      const { message, credentialRecord } = await this.credentialService.createRequest(record, {
-        holderDid: ourService.recipientKeys[0],
-      })
+      const { message, credentialRecord } = await this.credentialService.createRequest(
+        record,
+        {},
+        ourService.recipientKeys[0]
+      )
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService

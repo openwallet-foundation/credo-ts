@@ -1,7 +1,6 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Logger } from '../../logger'
 import type { CredentialService } from './CredentialService'
-import type { ServiceRequestCredentialOptions } from './CredentialServiceOptions'
 import type {
   AcceptOfferOptions,
   AcceptProposalOptions,
@@ -10,6 +9,7 @@ import type {
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
+  RequestCredentialOptions,
 } from './interfaces'
 import type { CredentialExchangeRecord } from './repository'
 
@@ -255,12 +255,11 @@ export class CredentialsModule implements CredentialsModule {
     if (record.connectionId) {
       const connection = await this.connectionService.getById(record.connectionId)
 
-      const requestOptions: ServiceRequestCredentialOptions = {
+      const requestOptions: RequestCredentialOptions = {
         comment: offer.comment,
         autoAcceptCredential: offer.autoAcceptCredential,
-        holderDid: connection.did,
       }
-      const { message, credentialRecord } = await service.createRequest(record, requestOptions)
+      const { message, credentialRecord } = await service.createRequest(record, requestOptions, connection.did)
 
       await this.didCommMessageRepo.saveAgentMessage({
         agentMessage: message,
@@ -288,12 +287,15 @@ export class CredentialsModule implements CredentialsModule {
       })
       const recipientService = offerMessage.service
 
-      const requestOptions: ServiceRequestCredentialOptions = {
+      const requestOptions: RequestCredentialOptions = {
         comment: offer.comment,
         autoAcceptCredential: offer.autoAcceptCredential,
-        holderDid: ourService.recipientKeys[0],
       }
-      const { message, credentialRecord } = await service.createRequest(record, requestOptions)
+      const { message, credentialRecord } = await service.createRequest(
+        record,
+        requestOptions,
+        ourService.recipientKeys[0]
+      )
 
       credentialRecord.protocolVersion = record.protocolVersion
 
@@ -556,7 +558,7 @@ export class CredentialsModule implements CredentialsModule {
   }> {
     // with version we can get the Service
     if (!credentialOptions.protocolVersion) {
-      credentialOptions.protocolVersion = CredentialProtocolVersion.V1 // default
+      throw new AriesFrameworkError('Missing protocol version in createOutOfBandOffer')
     }
     const service = this.getService(credentialOptions.protocolVersion)
 

@@ -180,7 +180,8 @@ export class CredentialMessageBuilder {
     formatServices: CredentialFormatService[],
     record: CredentialExchangeRecord,
     requestOptions: RequestCredentialOptions,
-    offerMessage: V2OfferCredentialMessage
+    offerMessage: V2OfferCredentialMessage,
+    holderDid?: string
   ): Promise<CredentialProtocolMsgReturnType<V2RequestCredentialMessage>> {
     // Assert credential
     record.assertState(CredentialState.OfferReceived)
@@ -191,13 +192,18 @@ export class CredentialMessageBuilder {
     const requestAttachArray: Attachment[] | undefined = []
     for (const format of formatServices) {
       // use the attach id in the formats object to find the correct attachment
-      const attachment = format.getAttachment(offerMessage)
+      const attachment = format.getAttachment(offerMessage.formats, offerMessage.messageAttachment)
+
       if (attachment) {
         requestOptions.offerAttachment = attachment
       } else {
         throw new AriesFrameworkError(`Missing data payload in attachment in credential Record ${record.id}`)
       }
-      const { format: formats, attachment: requestAttach } = await format.createRequest(requestOptions, record)
+      const { format: formats, attachment: requestAttach } = await format.createRequest(
+        requestOptions,
+        record,
+        holderDid
+      )
 
       requestOptions.requestAttachment = requestAttach
       if (formats && requestAttach) {
@@ -220,7 +226,7 @@ export class CredentialMessageBuilder {
   }
 
   /**
-   * Create a {@link V2OfferCredentialMessage} as begonning of protocol process.
+   * Create a {@link V2OfferCredentialMessage} as beginning of protocol process.
    *
    * @param formatService {@link CredentialFormatService} the format service object containing format-specific logic
    * @param options attributes of the original offer
@@ -307,11 +313,11 @@ export class CredentialMessageBuilder {
 
     for (const formatService of credentialFormats) {
       if (offerMessage) {
-        options.offerAttachment = formatService.getAttachment(offerMessage)
+        options.offerAttachment = formatService.getAttachment(offerMessage.formats, offerMessage.messageAttachment)
       } else {
         throw new AriesFrameworkError(`Missing data payload in attachment in credential Record ${record.id}`)
       }
-      options.requestAttachment = formatService.getAttachment(requestMessage)
+      options.requestAttachment = formatService.getAttachment(requestMessage.formats, requestMessage.messageAttachment)
 
       const { format: formats, attachment: credentialsAttach } = await formatService.createCredential(options, record)
 
