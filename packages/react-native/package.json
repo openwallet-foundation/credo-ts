@@ -24,7 +24,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/core": "0.3.0-alpha.34",
+    "@aries-framework/core": "0.1.0",
     "@azure/core-asynciterator-polyfill": "^1.0.0",
     "events": "^3.3.0"
   },
