@@ -182,6 +182,8 @@ export class Agent {
 
     if (!isStorageUpToDate) {
       const currentVersion = await storageUpgradeService.getCurrentStorageVersion()
+      // Close wallet to prevent un-initialized agent with initialized wallet
+      await this.wallet.close()
       throw new AriesFrameworkError(
         // TODO: add link to where documentation on how to upgrade can be found.
         `Current agent storage is not up to date. ` +
