@@ -66,11 +66,12 @@ export class MessageReceiver {
    */
   public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
     this.logger.debug(`Agent ${this.config.label} received message`)
-
-    if (this.isPlaintextMessage(inboundMessage)) {
+    if (this.isEncryptedMessage(inboundMessage)) {
+      await this.receiveEncryptedMessage(inboundMessage as EncryptedMessage, session)
+    } else if (this.isPlaintextMessage(inboundMessage)) {
       await this.receivePlaintextMessage(inboundMessage)
     } else {
-      await this.receiveEncryptedMessage(inboundMessage as EncryptedMessage, session)
+      throw new AriesFrameworkError('Unable to parse incoming message: unrecognized format')
     }
   }
 
@@ -147,6 +148,14 @@ export class MessageReceiver {
     }
     // If the message does have an @type field we assume the message is in plaintext and it is not encrypted.
     return '@type' in message
+  }
+
+  private isEncryptedMessage(message: unknown): message is EncryptedMessage {
+    if (typeof message !== 'object' || message == null) {
+      throw new AriesFrameworkError('Invalid message received. Message should be object')
+    }
+    // If the message does has both the ciphertext and protected fields, we can assume the message is encrypted.
+    return 'ciphertext' in message && 'protected' in message
   }
 
   private async transformAndValidate(
