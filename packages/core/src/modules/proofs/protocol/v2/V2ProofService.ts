@@ -32,12 +32,12 @@ import { ConnectionService } from '../../../connections'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
+import { PresentationPreview } from '../../models/PresentationPreview'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
 import { ProofState } from '../../models/ProofState'
 import { PresentationRecordType, ProofRecord, ProofRepository } from '../../repository'
 import { V1PresentationProblemReportError } from '../v1/errors/V1PresentationProblemReportError'
 import { V1PresentationProblemReportReason } from '../v1/errors/V1PresentationProblemReportReason'
-import { PresentationPreview } from '../v1/models/PresentationPreview'
 import { ProofRequest } from '../v1/models/ProofRequest'
 
 import { V2PresentationProblemReportError, V2PresentationProblemReportReason } from './errors'
@@ -81,8 +81,6 @@ export class V2ProofService extends ProofService {
   public async createProposal(
     options: CreateProposalOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
-    options.connectionRecord.assertReady() // K-TODO: move to module
-
     const formats = []
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
@@ -330,12 +328,6 @@ export class V2ProofService extends ProofService {
       )
     }
 
-    // // K-TODO remove this
-    // proofRequestMessage.getAttachmentFormats().forEach(async (x) => {
-    //   await validateOrReject(x.format)
-    //   await validateOrReject(x.attachment)
-    // })
-
     this.logger.debug(`Received proof request`, proofRequestMessage)
 
     let proofRecord: ProofRecord
@@ -544,6 +536,8 @@ export class V2ProofService extends ProofService {
       threadId: options.proofRecord.threadId,
       status: AckStatus.OK,
     })
+
+    await this.updateState(options.proofRecord, ProofState.Done)
 
     return {
       message: msg,

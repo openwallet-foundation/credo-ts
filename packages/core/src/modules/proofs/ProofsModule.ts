@@ -89,6 +89,9 @@ export class ProofsModule {
 
     const connection = await this.connectionService.getById(connectionId)
 
+    // Assert
+    connection.assertReady()
+
     const proposalOptions: CreateProposalOptions = {
       connectionRecord: connection,
       protocolVersion: version,
@@ -130,6 +133,9 @@ export class ProofsModule {
     }
 
     const connection = await this.connectionService.getById(proofRecord.connectionId)
+
+    // Assert
+    connection.assertReady()
 
     const proofRequest = await service.createProofRequestFromProposal({
       formats: {
@@ -179,6 +185,9 @@ export class ProofsModule {
     const service = this.getService(version)
 
     const connection = await this.connectionService.getById(options.connectionId)
+
+    // Assert
+    connection.assertReady()
 
     const createProofRequest: CreateRequestOptions = {
       connectionRecord: connection,
@@ -272,6 +281,9 @@ export class ProofsModule {
     if (proofRecord.connectionId) {
       const connection = await this.connectionService.getById(proofRecord.connectionId)
 
+      // Assert
+      connection.assertReady()
+
       const outboundMessage = createOutboundMessage(connection, message)
       await this.messageSender.sendMessage(outboundMessage)
 
@@ -348,6 +360,10 @@ export class ProofsModule {
     // Use connection if present
     if (proofRecord.connectionId) {
       const connection = await this.connectionService.getById(proofRecord.connectionId)
+
+      // Assert
+      connection.assertReady()
+
       const outboundMessage = createOutboundMessage(connection, message)
       await this.messageSender.sendMessage(outboundMessage)
     }
@@ -451,6 +467,9 @@ export class ProofsModule {
       throw new AriesFrameworkError(`No connectionId found for proof record '${record.id}'.`)
     }
     const connection = await this.connectionService.getById(record.connectionId)
+
+    // Assert
+    connection.assertReady()
 
     const { message: problemReport } = await service.createProblemReport({
       proofRecord: record,

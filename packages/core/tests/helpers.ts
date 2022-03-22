@@ -45,12 +45,12 @@ import {
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
 import { DidCommService } from '../src/modules/dids'
-import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import {
   PresentationPreview,
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
-} from '../src/modules/proofs/protocol/v1/models/PresentationPreview'
+} from '../src/modules/proofs/models/PresentationPreview'
+import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 

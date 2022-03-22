@@ -1,8 +1,8 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
 import type { AcceptProposalOptions, ProposeProofOptions } from '../../../models/ModuleOptions'
+import type { PresentationPreview } from '../../../models/PresentationPreview'
 import type { ProofRecord } from '../../../repository/ProofRecord'
-import type { PresentationPreview } from '../models/PresentationPreview'
 
 import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'

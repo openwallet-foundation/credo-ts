@@ -11,11 +11,11 @@ import {
   ValidateNested,
 } from 'class-validator'
 
-import { JsonTransformer } from '../../../../../utils/JsonTransformer'
-import { replaceLegacyDidSovPrefix } from '../../../../../utils/messageType'
-import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
+import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
+import { PredicateType } from '../protocol/v1/models/PredicateType'
 
-import { PredicateType } from './PredicateType'
+import { ProofProtocolVersion } from './ProofProtocolVersion'
 
 export interface PresentationPreviewAttributeOptions {
   name: string

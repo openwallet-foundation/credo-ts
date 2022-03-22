@@ -64,7 +64,7 @@ export abstract class ProofService {
   }
 
   public async generateProofRequestNonce() {
-    return this.wallet.generateNonce()
+    return await this.wallet.generateNonce()
   }
 
   /**

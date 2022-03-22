@@ -2,7 +2,7 @@ import type { RetrievedCredentials, RequestedCredentials, ProofRequest } from '.
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type { DidCommMessageRepository } from '../../../storage'
 import type { GetRequestedCredentialsConfig } from '../models/GetRequestedCredentialsConfig'
-import type { PresentationPreview } from '../protocol/v1/models/PresentationPreview'
+import type { PresentationPreview } from '../models/PresentationPreview'
 import type { ProofAttachmentFormat } from './models/ProofAttachmentFormat'
 import type {
   CreatePresentationOptions,

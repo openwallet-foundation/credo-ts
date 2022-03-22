@@ -5,7 +5,7 @@ import type {
   ProposeProofOptions,
   RequestProofsOptions,
 } from '../src/modules/proofs/models/ModuleOptions'
-import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/PresentationPreview'
+import type { PresentationPreview } from '../src/modules/proofs/models/PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
 import { AttributeFilter, PredicateType, ProofAttributeInfo, ProofPredicateInfo, ProofState } from '../src'

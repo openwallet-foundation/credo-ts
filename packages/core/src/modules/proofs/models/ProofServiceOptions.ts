@@ -1,6 +1,6 @@
 import type { AutoAcceptProof, ProofRecord, ProofRequest } from '..'
 import type { ConnectionRecord } from '../../connections'
-import type { PresentationPreview } from '../protocol/v1/models/PresentationPreview'
+import type { PresentationPreview } from './PresentationPreview'
 import type { ProofProtocolVersion } from './ProofProtocolVersion'
 import type { CreatePresentationFormats, ProposeProofFormats, RequestProofFormats } from './SharedOptions'
 

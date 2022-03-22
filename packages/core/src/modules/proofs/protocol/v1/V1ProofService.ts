@@ -7,6 +7,7 @@ import type { ProofStateChangedEvent } from '../../ProofEvents'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
 import type { GetRequestedCredentialsConfig } from '../../models/GetRequestedCredentialsConfig'
+import type { PresentationPreviewAttribute } from '../../models/PresentationPreview'
 import type {
   CreateAckOptions,
   CreatePresentationOptions,
@@ -16,7 +17,6 @@ import type {
   CreateRequestOptions,
 } from '../../models/ProofServiceOptions'
 import type { RetrievedCredentials } from './models'
-import type { PresentationPreviewAttribute } from './models/PresentationPreview'
 import type { CredDef, Schema } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
@@ -40,6 +40,7 @@ import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
+import { PresentationPreview } from '../../models/PresentationPreview'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
 import { ProofState } from '../../models/ProofState'
 import { ProofRecord } from '../../repository/ProofRecord'
@@ -63,7 +64,6 @@ import {
   V1RequestPresentationMessage,
 } from './messages'
 import { AttributeFilter, ProofPredicateInfo, ProofRequest, RequestedCredentials, ProofAttributeInfo } from './models'
-import { PresentationPreview } from './models/PresentationPreview'
 
 // const logger = new ConsoleLogger(LogLevel.debug)
 
@@ -111,6 +111,9 @@ export class V1ProofService extends ProofService {
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     const { connectionRecord, proofFormats } = options
 
+    // Assert
+    connectionRecord.assertReady()
+
     const presentationProposal = proofFormats.indy?.proofPreview
       ? new PresentationPreview({
           attributes: proofFormats.indy?.proofPreview.attributes,
@@ -120,9 +123,6 @@ export class V1ProofService extends ProofService {
           attributes: [],
           predicates: [],
         })
-
-    // Assert
-    connectionRecord.assertReady()
 
     // Create message
     const proposalMessage = new V1ProposePresentationMessage({

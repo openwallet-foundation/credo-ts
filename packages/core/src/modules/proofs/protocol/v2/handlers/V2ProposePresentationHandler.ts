@@ -63,9 +63,12 @@ export class V2ProposePresentationHandler implements Handler {
     const proofRequestsOptions = {
       name: 'proof-request',
       version: '1.0',
+      nonce: await this.proofService.generateProofRequestNonce(),
     }
 
-    const proposalAttachment = proposalMessage.getAttachmentById('hlindy/proof-req@v2.0')
+    const proposalAttachment = proposalMessage
+      .getAttachmentFormats()
+      .find((x) => x.format.format === 'hlindy/proof-req@v2.0')
 
     if (!proposalAttachment) {
       throw new AriesFrameworkError('No proposal message could be found')

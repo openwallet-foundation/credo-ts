@@ -1,6 +1,6 @@
 import type { Logger } from '../../../../logger'
 import type { GetRequestedCredentialsConfig } from '../../models/GetRequestedCredentialsConfig'
-import type { PresentationPreview, PresentationPreviewAttribute } from '../../protocol/v1/models/PresentationPreview'
+import type { PresentationPreview, PresentationPreviewAttribute } from '../../models/PresentationPreview'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
   CreatePresentationOptions,

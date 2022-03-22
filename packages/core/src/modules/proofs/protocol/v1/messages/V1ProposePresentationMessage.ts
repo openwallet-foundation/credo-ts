@@ -2,7 +2,7 @@ import { Expose, Type } from 'class-transformer'
 import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
-import { PresentationPreview } from '../models/PresentationPreview'
+import { PresentationPreview } from '../../../models/PresentationPreview'
 
 export interface ProposePresentationMessageOptions {
   id?: string
