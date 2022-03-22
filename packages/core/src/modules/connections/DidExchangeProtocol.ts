@@ -34,7 +34,6 @@ import { ConnectionService } from './services'
 
 interface DidExchangeRequestParams {
   label?: string
-  imageUrl?: string
   alias?: string
   goal?: string
   goalCode?: string
@@ -70,13 +69,12 @@ export class DidExchangeProtocol {
     this.logger.debug(`Create message ${DidExchangeRequestMessage.type} start`, { outOfBandRecord, params })
 
     const { outOfBandMessage } = outOfBandRecord
-    const { imageUrl, alias, goal, goalCode, routing, autoAcceptConnection } = params
+    const { alias, goal, goalCode, routing, autoAcceptConnection } = params
 
     const connectionRecord = await this.connectionService.createConnection({
       protocol: HandshakeProtocol.DidExchange,
       role: DidExchangeRole.Requester,
       alias,
-      imageUrl,
       state: DidExchangeState.InvitationReceived,
       theirLabel: outOfBandMessage.label,
       multiUseInvitation: false,

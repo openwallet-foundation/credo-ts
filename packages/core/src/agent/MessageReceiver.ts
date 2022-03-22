@@ -211,11 +211,6 @@ export class MessageReceiver {
     // If no connection was found, we search in the connection record, where legacy did documents are stored
     if (!connection) {
       connection = await this.connectionRepository.findByVerkey(recipientKey)
-
-      // Throw error if the recipient key (ourKey) does not match the key of the connection record
-      if (connection && connection.theirKey !== null && connection.theirKey !== senderKey) {
-        return null
-      }
     }
 
     return connection

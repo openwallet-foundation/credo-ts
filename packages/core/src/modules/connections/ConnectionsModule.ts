@@ -78,7 +78,6 @@ export class ConnectionsModule {
     if (protocol === HandshakeProtocol.DidExchange) {
       result = await this.didExchangeProtocol.createRequest(outOfBandRecord, {
         label,
-        imageUrl,
         alias,
         routing,
         autoAcceptConnection,

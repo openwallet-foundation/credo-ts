@@ -265,10 +265,9 @@ export class RecipientModule {
   }
 
   /**
-   * Connects to mediator through provided invitation and requests mediation and sets
-   * as default mediator.
+   * Requests mediation for a given connection and sets that as default mediator.
    *
-   * @param connectionRecord connection record which will be used for mediation
+   * @param connection connection record which will be used for mediation
    * @returns mediation record
    */
   public async provision(connection: ConnectionRecord) {

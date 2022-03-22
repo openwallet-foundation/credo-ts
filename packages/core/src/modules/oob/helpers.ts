@@ -42,9 +42,9 @@ export function convertToOldInvitation(newInvitation: OutOfBandMessage) {
     options = {
       id: newInvitation.id,
       label: newInvitation.label,
-      recipientKeys: service.recipientKeys || [],
-      routingKeys: service.routingKeys || [],
-      serviceEndpoint: service.serviceEndpoint || '',
+      recipientKeys: service.recipientKeys,
+      routingKeys: service.routingKeys,
+      serviceEndpoint: service.serviceEndpoint,
     }
   }
 
