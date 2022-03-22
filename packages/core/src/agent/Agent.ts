@@ -240,6 +240,7 @@ export class Agent {
     if (this.wallet.isInitialized) {
       await this.wallet.close()
     }
+    this._isInitialized = false
   }
 
   public get publicDid() {

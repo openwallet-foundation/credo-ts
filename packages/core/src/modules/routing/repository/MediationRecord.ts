@@ -71,6 +71,20 @@ export class MediationRecord
     }
   }
 
+  public addRecipientKey(recipientKey: string) {
+    this.recipientKeys.push(recipientKey)
+  }
+
+  public removeRecipientKey(recipientKey: string): boolean {
+    const index = this.recipientKeys.indexOf(recipientKey, 0)
+    if (index > -1) {
+      this.recipientKeys.splice(index, 1)
+      return true
+    }
+
+    return false
+  }
+
   public get isReady() {
     return this.state === MediationState.Granted
   }
