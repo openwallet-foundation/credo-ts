@@ -2,6 +2,7 @@ import type { AgentDependencies } from '../../agent/AgentDependencies'
 import type { Logger } from '../../logger'
 import type { WalletConfig } from '../../types'
 import type { UpgradeOptions } from './upgrades'
+import type { DependencyContainer } from 'tsyringe'
 
 import { Agent } from '../../agent/Agent'
 import { AriesFrameworkError } from '../../error'
@@ -19,12 +20,17 @@ export interface UpgradeConfig {
 }
 
 export class UpgradeAssistant {
+  private isInitialized = false
   private agent: Agent
   private storageUpgradeService: StorageUpgradeService
   private walletConfig: WalletConfig
   private upgradeConfig: UpgradeConfig
 
-  public constructor(upgradeConfig: UpgradeConfig, agentDependencies: AgentDependencies) {
+  public constructor(
+    upgradeConfig: UpgradeConfig,
+    agentDependencies: AgentDependencies,
+    injectionContainer?: DependencyContainer
+  ) {
     this.walletConfig = upgradeConfig.walletConfig
     this.upgradeConfig = upgradeConfig
 
@@ -34,18 +40,30 @@ export class UpgradeAssistant {
         walletConfig: upgradeConfig.walletConfig,
         logger: upgradeConfig.logger,
       },
-      agentDependencies
+      agentDependencies,
+      injectionContainer
     )
 
     this.storageUpgradeService = this.agent.injectionContainer.resolve(StorageUpgradeService)
   }
 
   public async initialize() {
-    if (this.agent.isInitialized) {
-      throw new AriesFrameworkError('Agent already initialized')
+    if (this.isInitialized) {
+      throw new AriesFrameworkError('UpgradeAssistant already initialized')
     }
 
-    await this.agent.initialize()
+    await this.agent.wallet.initialize(this.upgradeConfig.walletConfig)
+  }
+
+  public async shutdown({ deleteWallet }: { deleteWallet?: boolean } = {}) {
+    await this.agent.shutdown()
+
+    // FIXME: Remove this. But how do we get the wallet in the upgrade assistant?
+    if (deleteWallet) {
+      await this.agent.wallet.delete()
+    }
+
+    this.isInitialized = false
   }
 
   public async isUpToDate() {
@@ -123,10 +141,6 @@ export class UpgradeAssistant {
         cause: error,
       })
     }
-  }
-
-  public async shutdown() {
-    await this.agent.shutdown()
   }
 
   private async createBackup(backupIdentifier: string) {

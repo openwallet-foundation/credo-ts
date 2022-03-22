@@ -14,7 +14,11 @@ interface StorageRecord {
 
 @scoped(Lifecycle.ContainerScoped)
 export class InMemoryStorageService<T extends BaseRecord> implements StorageService<T> {
-  public readonly records: { [id: string]: StorageRecord } = {}
+  public records: { [id: string]: StorageRecord }
+
+  public constructor(records: { [id: string]: StorageRecord } = {}) {
+    this.records = records
+  }
 
   private recordToInstance(record: StorageRecord, recordClass: BaseRecordConstructor<T>): T {
     const instance = JsonTransformer.fromJSON<T>(record.value, recordClass)
@@ -43,6 +47,7 @@ export class InMemoryStorageService<T extends BaseRecord> implements StorageServ
   /** @inheritDoc */
   public async update(record: T): Promise<void> {
     const value = JsonTransformer.toJSON(record)
+    delete value._tags
 
     if (!this.records[record.id]) {
       throw new RecordNotFoundError(`record with id ${record.id} not found.`, {
