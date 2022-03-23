@@ -69,7 +69,7 @@ describe('BasicMessageService', () => {
         payload: {
           basicMessageRecord: expect.objectContaining({
             connectionId: mockConnectionRecord.id,
-            id: basicMessage.id,
+            id: expect.any(String),
             sentTime: basicMessage.sentTime.toISOString(),
             content: basicMessage.content,
             role: BasicMessageRole.Receiver,
