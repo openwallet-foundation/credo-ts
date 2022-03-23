@@ -3,7 +3,7 @@ import type { BlsKeyPair as _BlsKeyPair } from '@mattrglobal/bbs-signatures'
 
 import { generateBls12381G2KeyPair, generateBls12381G1KeyPair, sign, verify } from '@mattrglobal/bbs-signatures'
 
-import { BufferEncoder } from '../utils'
+import { BufferEncoder } from '../utils/BufferEncoder'
 import { Buffer } from '../utils/buffer'
 import { WalletError } from '../wallet/error'
 
@@ -86,6 +86,7 @@ export class BbsService {
    */
   public static async sign({ messages, publicKey, privateKey }: BbsSignOptions): Promise<Buffer> {
     if (messages.length === 0) throw new WalletError('Unable to create a signature without any messages')
+    // Check if it is a single message or list and if it is a single message convert it to a list
     if (typeof messages[0] === 'number') messages = [messages as Buffer]
 
     // Get the Uint8Array variant of all the messages
@@ -119,6 +120,7 @@ export class BbsService {
    */
   public static async verify({ signature, messages, publicKey }: BbsVerifyOptions): Promise<boolean> {
     if (messages.length === 0) throw new WalletError('Unable to verify without any messages')
+    // Check if it is a single message or list and if it is a single message convert it to a list
     if (typeof messages[0] === 'number') messages = [messages as Buffer]
 
     // Get the Uint8Array variant of all the messages
