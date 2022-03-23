@@ -10,6 +10,9 @@ import { didDocumentToNumAlgo2Did, didToNumAlgo2DidDocument } from './peerDidNum
 
 
 
+
+
+
 const PEER_DID_REGEX = new RegExp(
   '^did:peer:(([01](z)([1-9a-km-zA-HJ-NP-Z]{5,200}))|(2((.[AEVID](z)([1-9a-km-zA-HJ-NP-Z]{5,200}))+(.(S)[0-9a-zA-Z=]*)?)))$'
 )

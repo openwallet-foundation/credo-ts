@@ -3,7 +3,7 @@ import type { BlsKeyPair as _BlsKeyPair } from '@mattrglobal/bbs-signatures'
 
 import { generateBls12381G2KeyPair, generateBls12381G1KeyPair, sign, verify } from '@mattrglobal/bbs-signatures'
 
-import { BufferEncoder } from '../utils/BufferEncoder'
+import { TypedArrayEncoder } from '../utils/TypedArrayEncoder'
 import { Buffer } from '../utils/buffer'
 import { WalletError } from '../wallet/error'
 
@@ -46,7 +46,7 @@ export class BbsService {
    */
   public static async createKey({ keyType, seed }: BbsCreateKeyOptions): Promise<BlsKeyPair> {
     // Generate bytes from the seed as required by the bbs-signatures libraries
-    const seedBytes = seed ? BufferEncoder.fromString(seed) : undefined
+    const seedBytes = seed ? TypedArrayEncoder.fromString(seed) : undefined
 
     // Temporary keypair holder
     let blsKeyPair: Required<_BlsKeyPair>
@@ -68,8 +68,8 @@ export class BbsService {
 
     return {
       keyType,
-      publicKeyBase58: BufferEncoder.toBase58(blsKeyPair.publicKey),
-      privateKeyBase58: BufferEncoder.toBase58(blsKeyPair.secretKey),
+      publicKeyBase58: TypedArrayEncoder.toBase58(blsKeyPair.publicKey),
+      privateKeyBase58: TypedArrayEncoder.toBase58(blsKeyPair.secretKey),
     }
   }
 
