@@ -286,6 +286,9 @@ export class CredentialMessageBuilder {
 
     for (const service of formatServices) {
       const offerOptions: AcceptProposalOptions = options as unknown as AcceptProposalOptions
+
+      console.log("QUACK >>> offer Attach= ", options.offer)
+
       if (options.offer) {
         service.processOffer(offerOptions, credentialRecord)
       }
