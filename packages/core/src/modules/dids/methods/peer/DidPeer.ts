@@ -1,10 +1,13 @@
+import type { DidDocument } from '../../domain'
+import type { ParsedDid } from '../../types'
+
 import { instanceToInstance } from 'class-transformer'
+
 import { Key } from '../../../../crypto/Key'
 import { JsonEncoder, MultiBaseEncoder, MultiHashEncoder } from '../../../../utils'
-import type { DidDocument } from '../../domain'
 import { getKeyDidMappingByKeyType } from '../../domain/key-type'
 import { parseDid } from '../../domain/parse'
-import type { ParsedDid } from '../../types'
+
 import { didDocumentToNumAlgo2Did, didToNumAlgo2DidDocument } from './peerDidNumAlgo2'
 
 const PEER_DID_REGEX = new RegExp(
