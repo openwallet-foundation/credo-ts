@@ -1,4 +1,4 @@
-export * from './BufferEncoder'
+export * from './TypedArrayEncoder'
 export * from './JsonEncoder'
 export * from './JsonTransformer'
 export * from './MultiBaseEncoder'
