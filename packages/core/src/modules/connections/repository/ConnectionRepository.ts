@@ -31,12 +31,6 @@ export class ConnectionRepository extends Repository<ConnectionRecord> {
     })
   }
 
-  public findByInvitationKey(key: string): Promise<ConnectionRecord | null> {
-    return this.findSingleByQuery({
-      invitationKey: key,
-    })
-  }
-
   public getByThreadId(threadId: string): Promise<ConnectionRecord> {
     return this.getSingleByQuery({ threadId })
   }

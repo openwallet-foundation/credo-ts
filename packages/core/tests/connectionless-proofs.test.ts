@@ -7,6 +7,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
+import { HandshakeProtocol } from '../src/modules/connections'
 import { CredentialPreview } from '../src/modules/credentials'
 import {
   PredicateType,
@@ -203,18 +204,28 @@ describe('Present Proof', () => {
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
-    const faberMediationInvitation = await mediatorAgent.connections.createConnection()
-    const aliceMediationInvitation = await mediatorAgent.connections.createConnection()
+    const faberMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
+      label: 'faber invitation',
+      handshakeProtocols: [HandshakeProtocol.Connections],
+    })
+
+    const aliceMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
+      label: 'alice invitation',
+      handshakeProtocols: [HandshakeProtocol.Connections],
+    })
 
     const faberConfig = getBaseConfig(`Connectionless proofs with mediator Faber-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
-      mediatorConnectionsInvite: faberMediationInvitation.invitation.toUrl({ domain: 'https://example.com' }),
+      mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandMessage.toUrl({
+        domain: 'https://example.com',
+      }),
     })
 
     const aliceConfig = getBaseConfig(`Connectionless proofs with mediator Alice-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
-      // logger: new TestLogger(LogLevel.test),
-      mediatorConnectionsInvite: aliceMediationInvitation.invitation.toUrl({ domain: 'https://example.com' }),
+      mediatorConnectionsInvite: aliceMediationOutOfBandRecord.outOfBandMessage.toUrl({
+        domain: 'https://example.com',
+      }),
     })
 
     const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)

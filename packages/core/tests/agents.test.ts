@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { ConnectionRecord } from '../src/modules/connections'
 
@@ -6,6 +7,7 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
+import { HandshakeProtocol } from '../src/modules/connections'
 
 import { waitForBasicMessage, getBaseConfig } from './helpers'
 
@@ -48,11 +50,17 @@ describe('agents', () => {
     bobAgent.registerOutboundTransport(new SubjectOutboundTransport(bobMessages, subjectMap))
     await bobAgent.initialize()
 
-    const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection()
-    const bobConnectionAtBobAlice = await bobAgent.connections.receiveInvitation(aliceConnectionAtAliceBob.invitation)
+    const aliceBobOutOfBandRecord = await aliceAgent.oob.createInvitation({
+      handshakeProtocols: [HandshakeProtocol.Connections],
+    })
 
-    aliceConnection = await aliceAgent.connections.returnWhenIsConnected(aliceConnectionAtAliceBob.connectionRecord.id)
-    bobConnection = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice.id)
+    const { connectionRecord: bobConnectionAtBobAlice } = await bobAgent.oob.receiveInvitation(
+      aliceBobOutOfBandRecord.outOfBandMessage
+    )
+    bobConnection = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice!.id)
+
+    const aliceConnectionAtAliceBob = await aliceAgent.connections.findByOutOfBandId(aliceBobOutOfBandRecord.id)
+    aliceConnection = await aliceAgent.connections.returnWhenIsConnected(aliceConnectionAtAliceBob!.id)
 
     expect(aliceConnection).toBeConnectedWith(bobConnection)
     expect(bobConnection).toBeConnectedWith(aliceConnection)

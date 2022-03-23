@@ -32,7 +32,11 @@ export class Faber extends BaseAgent {
   }
 
   private async receiveConnectionRequest(invitationUrl: string) {
-    return await this.agent.connections.receiveInvitationFromUrl(invitationUrl)
+    const { connectionRecord } = await this.agent.oob.receiveInvitationFromUrl(invitationUrl)
+    if (!connectionRecord) {
+      throw new Error(redText(Output.NoConnectionRecordFromOutOfBand))
+    }
+    return connectionRecord
   }
 
   private async waitForConnection(connectionRecord: ConnectionRecord) {

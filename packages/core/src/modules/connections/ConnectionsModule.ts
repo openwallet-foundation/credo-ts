@@ -1,5 +1,6 @@
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
+import type { Routing } from './services'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -8,7 +9,6 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
-import { DidCommService } from '../dids'
 import { OutOfBandService } from '../oob/OutOfBandService'
 import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 
@@ -23,7 +23,6 @@ import {
   DidExchangeResponseHandler,
   DidExchangeCompleteHandler,
 } from './handlers'
-import { ConnectionInvitationMessage } from './messages'
 import { HandshakeProtocol } from './models'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
@@ -63,23 +62,31 @@ export class ConnectionsModule {
     config: {
       autoAcceptConnection?: boolean
       label?: string
+      alias?: string
+      imageUrl?: string
       mediatorId?: string
       protocol: HandshakeProtocol
+      routing?: Routing
     }
   ) {
-    const { protocol, label, autoAcceptConnection } = config
-    const routing = await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId })
+    const { protocol, label, alias, imageUrl, autoAcceptConnection } = config
+
+    const routing =
+      config.routing || (await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId }))
 
     let result
     if (protocol === HandshakeProtocol.DidExchange) {
       result = await this.didExchangeProtocol.createRequest(outOfBandRecord, {
-        label: label || this.agentConfig.label,
+        label,
+        alias,
         routing,
         autoAcceptConnection,
       })
     } else if (protocol === HandshakeProtocol.Connections) {
       result = await this.connectionService.protocolCreateRequest(outOfBandRecord, {
-        myLabel: label || this.agentConfig.label,
+        myLabel: label,
+        alias,
+        myImageUrl: imageUrl,
         routing,
         autoAcceptConnection,
       })
@@ -88,119 +95,7 @@ export class ConnectionsModule {
     }
 
     const { message, connectionRecord } = result
-    await this.messageSender.sendMessageToService({
-      message,
-      service: new DidCommService(outOfBandRecord.outOfBandMessage.services[0] as DidCommService),
-      senderKey: connectionRecord.verkey,
-    })
-    return connectionRecord
-  }
-
-  public async createConnection(config?: {
-    autoAcceptConnection?: boolean
-    alias?: string
-    mediatorId?: string
-    multiUseInvitation?: boolean
-    myLabel?: string
-    myImageUrl?: string
-  }): Promise<{
-    invitation: ConnectionInvitationMessage
-    connectionRecord: ConnectionRecord
-  }> {
-    const myRouting = await this.mediationRecipientService.getRouting({
-      mediatorId: config?.mediatorId,
-      useDefaultMediator: true,
-    })
-
-    const { connectionRecord, message: invitation } = await this.connectionService.createInvitation({
-      autoAcceptConnection: config?.autoAcceptConnection,
-      alias: config?.alias,
-      routing: myRouting,
-      multiUseInvitation: config?.multiUseInvitation,
-      myLabel: config?.myLabel,
-      myImageUrl: config?.myImageUrl,
-    })
-
-    return { connectionRecord, invitation }
-  }
-
-  /**
-   * Receive connection invitation as invitee and create connection. If auto accepting is enabled
-   * via either the config passed in the function or the global agent config, a connection
-   * request message will be send.
-   *
-   * @param invitationJson json object containing the invitation to receive
-   * @param config config for handling of invitation
-   * @returns new connection record
-   */
-  public async receiveInvitation(
-    invitation: ConnectionInvitationMessage,
-    config?: {
-      autoAcceptConnection?: boolean
-      alias?: string
-      mediatorId?: string
-    }
-  ): Promise<ConnectionRecord> {
-    const { alias, autoAcceptConnection, mediatorId } = config || {}
-    const routing = await this.mediationRecipientService.getRouting({ mediatorId })
-
-    let connection = await this.connectionService.processInvitation(invitation, {
-      autoAcceptConnection,
-      alias,
-      routing,
-      protocol: HandshakeProtocol.Connections,
-    })
-
-    if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      connection = await this.acceptInvitation(connection.id)
-    }
-
-    return connection
-  }
-
-  /**
-   * Receive connection invitation as invitee encoded as url and create connection. If auto accepting is enabled
-   * via either the config passed in the function or the global agent config, a connection
-   * request message will be send.
-   *
-   * @param invitationUrl url containing a base64 encoded invitation to receive
-   * @param config config for handling of invitation
-   * @returns new connection record
-   */
-  public async receiveInvitationFromUrl(
-    invitationUrl: string,
-    config?: {
-      autoAcceptConnection?: boolean
-      alias?: string
-      mediatorId?: string
-      protocol?: HandshakeProtocol
-    }
-  ): Promise<ConnectionRecord> {
-    const invitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
-    return this.receiveInvitation(invitation, config)
-  }
-
-  /**
-   * Accept a connection invitation as invitee (by sending a connection request message) for the connection with the specified connection id.
-   * This is not needed when auto accepting of connections is enabled.
-   *
-   * @param connectionId the id of the connection for which to accept the invitation
-   * @returns connection record
-   */
-  public async acceptInvitation(
-    connectionId: string,
-    config?: {
-      autoAcceptConnection?: boolean
-      label: string
-      mediatorId?: string
-    }
-  ): Promise<ConnectionRecord> {
-    this.agentConfig.logger.debug('Accepting invitaion', { connectionId, config })
-    const connectionRecord = await this.connectionService.getById(connectionId)
-
-    const { message } = await this.connectionService.createRequest(connectionRecord, config)
-    const outboundMessage = createOutboundMessage(connectionRecord, message)
-
+    const outboundMessage = createOutboundMessage(connectionRecord, message, outOfBandRecord)
     await this.messageSender.sendMessage(outboundMessage)
     return connectionRecord
   }
@@ -213,14 +108,25 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptRequest(connectionId: string): Promise<ConnectionRecord> {
-    const connectionRecord = await this.connectionService.getById(connectionId)
+    const connectionRecord = await this.connectionService.findById(connectionId)
+    if (!connectionRecord) {
+      throw new AriesFrameworkError(`Connection record ${connectionId} not found.`)
+    }
+    if (!connectionRecord.outOfBandId) {
+      throw new AriesFrameworkError(`Connection record ${connectionId} does not have out-of-band record.`)
+    }
+
+    const outOfBandRecord = await this.outOfBandService.findById(connectionRecord.outOfBandId)
+    if (!outOfBandRecord) {
+      throw new AriesFrameworkError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
+    }
 
     let outboundMessage
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
-      const message = await this.didExchangeProtocol.createResponse(connectionRecord)
+      const message = await this.didExchangeProtocol.createResponse(connectionRecord, outOfBandRecord)
       outboundMessage = createOutboundMessage(connectionRecord, message)
     } else {
-      const { message } = await this.connectionService.createResponse(connectionRecord)
+      const { message } = await this.connectionService.createResponse(connectionRecord, outOfBandRecord)
       outboundMessage = createOutboundMessage(connectionRecord, message)
     }
 
@@ -326,17 +232,6 @@ export class ConnectionsModule {
    */
   public findByTheirKey(verkey: string): Promise<ConnectionRecord | null> {
     return this.connectionService.findByTheirKey(verkey)
-  }
-
-  /**
-   * Find connection by Invitation key.
-   *
-   * @param key the invitation key to search for
-   * @returns the connection record, or null if not found
-   * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
-   */
-  public findByInvitationKey(key: string): Promise<ConnectionRecord | null> {
-    return this.connectionService.findByInvitationKey(key)
   }
 
   public async findByOutOfBandId(outOfBandId: string) {
