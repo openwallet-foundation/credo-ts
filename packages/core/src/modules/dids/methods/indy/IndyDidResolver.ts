@@ -4,7 +4,7 @@ import type { ParsedDid, DidResolutionResult } from '../../types'
 
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
-import { BufferEncoder } from '../../../../utils/BufferEncoder'
+import { TypedArrayEncoder } from '../../../../utils/TypedArrayEncoder'
 import { getFullVerkey } from '../../../../utils/did'
 import { DidDocumentService } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
@@ -31,8 +31,8 @@ export class IndyDidResolver implements DidResolver {
       const keyAgreementId = `${parsed.did}#key-agreement-1`
 
       const publicKeyBase58 = getFullVerkey(nym.did, nym.verkey)
-      const publicKeyX25519 = BufferEncoder.toBase58(
-        convertPublicKeyToX25519(BufferEncoder.fromBase58(publicKeyBase58))
+      const publicKeyX25519 = TypedArrayEncoder.toBase58(
+        convertPublicKeyToX25519(TypedArrayEncoder.fromBase58(publicKeyBase58))
       )
 
       const builder = new DidDocumentBuilder(parsed.did)

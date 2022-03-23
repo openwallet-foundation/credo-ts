@@ -1,12 +1,11 @@
+import type { HashName } from './Hasher'
 import type { BaseName } from './MultiBaseEncoder'
 import type { Buffer } from './buffer'
 
-import { hash as sha256 } from '@stablelib/sha256'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore ts is giving me headaches because this package has no types
 import cbor from 'borc'
 
-import { BufferEncoder } from './BufferEncoder'
 import { MultiBaseEncoder } from './MultiBaseEncoder'
 import { MultiHashEncoder } from './MultiHashEncoder'
 
@@ -38,7 +37,7 @@ export class HashlinkEncoder {
    */
   public static encode(
     buffer: Buffer | Uint8Array,
-    hashAlgorithm: 'sha2-256',
+    hashAlgorithm: HashName,
     baseEncoding: BaseName = 'base58btc',
     metadata?: Metadata
   ) {
@@ -84,15 +83,13 @@ export class HashlinkEncoder {
   }
 
   private static encodeMultiHash(
-    buffer: Buffer | Uint8Array,
-    hashName: 'sha2-256',
+    data: Buffer | Uint8Array,
+    hashName: HashName,
     baseEncoding: BaseName = 'base58btc'
   ): string {
-    // TODO: Support more hashing algorithms
-    const hash = sha256(buffer)
-    const mh = MultiHashEncoder.encode(hash, hashName)
+    const mh = MultiHashEncoder.encode(data, hashName)
     const mb = MultiBaseEncoder.encode(mh, baseEncoding)
-    return BufferEncoder.toUtf8String(mb)
+    return mb
   }
 
   private static encodeMetadata(metadata: Metadata, baseEncoding: BaseName): string {
@@ -110,7 +107,7 @@ export class HashlinkEncoder {
 
     const multibaseMetadata = MultiBaseEncoder.encode(cborData, baseEncoding)
 
-    return BufferEncoder.toUtf8String(multibaseMetadata)
+    return multibaseMetadata
   }
 
   private static decodeMetadata(mb: string): Metadata {

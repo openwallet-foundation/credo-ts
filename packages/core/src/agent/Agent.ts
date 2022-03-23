@@ -26,6 +26,7 @@ import { RecipientModule } from '../modules/routing/RecipientModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
 import { IndyWallet } from '../wallet/IndyWallet'
+import { WalletModule } from '../wallet/WalletModule'
 import { WalletError } from '../wallet/error'
 
 import { AgentConfig } from './AgentConfig'
@@ -45,6 +46,7 @@ export class Agent {
   protected messageSender: MessageSender
   private _isInitialized = false
   public messageSubscription: Subscription
+  private walletService: Wallet
 
   public readonly connections: ConnectionsModule
   public readonly proofs: ProofsModule
@@ -55,7 +57,7 @@ export class Agent {
   public readonly mediator: MediatorModule
   public readonly discovery: DiscoverFeaturesModule
   public readonly dids: DidsModule
-  public readonly wallet: Wallet
+  public readonly wallet: WalletModule
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
     // Create child container so we don't interfere with anything outside of this agent
@@ -93,7 +95,7 @@ export class Agent {
     this.messageSender = this.container.resolve(MessageSender)
     this.messageReceiver = this.container.resolve(MessageReceiver)
     this.transportService = this.container.resolve(TransportService)
-    this.wallet = this.container.resolve(InjectionSymbols.Wallet)
+    this.walletService = this.container.resolve(InjectionSymbols.Wallet)
 
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.container.resolve(ConnectionsModule)
@@ -105,6 +107,7 @@ export class Agent {
     this.ledger = this.container.resolve(LedgerModule)
     this.discovery = this.container.resolve(DiscoverFeaturesModule)
     this.dids = this.container.resolve(DidsModule)
+    this.wallet = this.container.resolve(WalletModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
     this.messageSubscription = this.eventEmitter
@@ -161,7 +164,7 @@ export class Agent {
 
     if (publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
-      await this.wallet.initPublicDid({ seed: publicDidSeed })
+      await this.walletService.initPublicDid({ seed: publicDidSeed })
     }
 
     // As long as value isn't false we will async connect to all genesis pools on startup
@@ -208,10 +211,11 @@ export class Agent {
     if (this.wallet.isInitialized) {
       await this.wallet.close()
     }
+    this._isInitialized = false
   }
 
   public get publicDid() {
-    return this.wallet.publicDid
+    return this.walletService.publicDid
   }
 
   public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
