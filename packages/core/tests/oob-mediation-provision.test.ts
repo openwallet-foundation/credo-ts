@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
+import type { OutOfBandMessage } from '../src/modules/oob/messages'
 
 import { Subject } from 'rxjs'
 
@@ -14,21 +15,21 @@ import { TestLogger } from './logger'
 
 import { LogLevel } from '@aries-framework/core' // Maybe it's not bad to import from package?
 
-const faberConfig = getBaseConfig('OOB mediation - Faber Agent', {
+const faberConfig = getBaseConfig('OOB mediation provision - Faber Agent', {
   endpoints: ['rxjs:faber'],
   logger: new TestLogger(LogLevel.debug, 'rxjs:faber'),
 })
-const aliceConfig = getBaseConfig('OOB mediation - Alice Recipient Agent', {
+const aliceConfig = getBaseConfig('OOB mediation provision - Alice Recipient Agent', {
   endpoints: ['rxjs:alice'],
   logger: new TestLogger(LogLevel.debug, 'rxjs:alice'),
 })
-const mediatorConfig = getBaseConfig('OOB mediation - Mediator Agent', {
+const mediatorConfig = getBaseConfig('OOB mediation provision - Mediator Agent', {
   endpoints: ['rxjs:mediator'],
   logger: new TestLogger(LogLevel.debug, 'rxjs:mediator'),
   autoAcceptMediationRequests: true,
 })
 
-describe('out of band with mediation', () => {
+describe('out of band with mediation set up with provision method', () => {
   const makeConnectionConfig = {
     goal: 'To make a connection',
     goalCode: 'p2p-messaging',
@@ -41,6 +42,8 @@ describe('out of band with mediation', () => {
   let aliceAgent: Agent
   let mediatorAgent: Agent
 
+  let mediatorOutOfBandMessage: OutOfBandMessage
+
   beforeAll(async () => {
     const faberMessages = new Subject<SubjectMessage>()
     const aliceMessages = new Subject<SubjectMessage>()
@@ -51,6 +54,11 @@ describe('out of band with mediation', () => {
       'rxjs:mediator': mediatorMessages,
     }
 
+    mediatorAgent = new Agent(mediatorConfig.config, mediatorConfig.agentDependencies)
+    mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
+    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
+    await mediatorAgent.initialize()
+
     faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
     faberAgent.registerOutboundTransport(new SubjectOutboundTransport(mediatorMessages, subjectMap))
@@ -59,12 +67,18 @@ describe('out of band with mediation', () => {
     aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(faberMessages, subjectMap))
-    await aliceAgent.initialize()
+    const mediatorRouting = await mediatorAgent.mediationRecipient.getRouting({})
+    const mediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
+      ...makeConnectionConfig,
+      routing: mediatorRouting,
+    })
+    mediatorOutOfBandMessage = mediationOutOfBandRecord.outOfBandMessage
 
-    mediatorAgent = new Agent(mediatorConfig.config, mediatorConfig.agentDependencies)
-    mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
-    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
-    await mediatorAgent.initialize()
+    await aliceAgent.initialize()
+    let { connectionRecord } = await aliceAgent.oob.receiveInvitation(mediatorOutOfBandMessage)
+    connectionRecord = await aliceAgent.connections.returnWhenIsConnected(connectionRecord!.id)
+    await aliceAgent.mediationRecipient.provision(connectionRecord!)
+    await aliceAgent.mediationRecipient.initialize()
   })
 
   afterAll(async () => {
@@ -77,36 +91,12 @@ describe('out of band with mediation', () => {
   })
 
   test(`make a connection with ${HandshakeProtocol.DidExchange} on OOB invitation encoded in URL`, async () => {
-    // ========== Make a connection between Alice and Mediator agents ==========
-    const mediatorRouting = await mediatorAgent.mediationRecipient.getRouting({})
-    const mediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
-      ...makeConnectionConfig,
-      routing: mediatorRouting,
-    })
-    const { outOfBandMessage: mediatorOutOfBandMessage } = mediationOutOfBandRecord
-    const mediatorUrlMessage = mediatorOutOfBandMessage.toUrl({ domain: 'http://example.com' })
-
-    let { connectionRecord: aliceMediatorConnection } = await aliceAgent.oob.receiveInvitationFromUrl(
-      mediatorUrlMessage
-    )
-
-    aliceMediatorConnection = await aliceAgent.connections.returnWhenIsConnected(aliceMediatorConnection!.id)
-    expect(aliceMediatorConnection.state).toBe(DidExchangeState.Completed)
-
-    let mediatorAliceConnection = await mediatorAgent.connections.findByOutOfBandId(mediationOutOfBandRecord.id)
-    mediatorAliceConnection = await mediatorAgent.connections.returnWhenIsConnected(mediatorAliceConnection!.id)
-    expect(mediatorAliceConnection.state).toBe(DidExchangeState.Completed)
-
-    // ========== Set meadiation between Alice and Mediator agents ==========
-    const mediationRecord = await aliceAgent.mediationRecipient.requestAndAwaitGrant(aliceMediatorConnection)
-    expect(mediationRecord.state).toBe(MediationState.Granted)
-
-    await aliceAgent.mediationRecipient.setDefaultMediator(mediationRecord)
-    await aliceAgent.mediationRecipient.initiateMessagePickup(mediationRecord)
+    // Check if mediation between Alice and Mediator has been set
     const defaultMediator = await aliceAgent.mediationRecipient.findDefaultMediator()
-    expect(defaultMediator?.id).toBe(mediationRecord.id)
+    expect(defaultMediator).not.toBeNull()
+    expect(defaultMediator?.state).toBe(MediationState.Granted)
 
-    // ========== Make a connection between Alice and Faber ==========
+    // Make a connection between Alice and Faber
     const faberRouting = await faberAgent.mediationRecipient.getRouting({})
     const outOfBandRecord = await faberAgent.oob.createInvitation({ ...makeConnectionConfig, routing: faberRouting })
     const { outOfBandMessage } = outOfBandRecord
@@ -128,5 +118,13 @@ describe('out of band with mediation', () => {
     const basicMessage = await waitForBasicMessage(faberAgent, {})
 
     expect(basicMessage.content).toBe('hello')
+
+    // Test if we can call provision for the same out-of-band record, respectively connection
+    const reusedOutOfBandRecord = await aliceAgent.oob.findByMessageId(mediatorOutOfBandMessage.id)
+    const reusedAliceMediatorConnection =
+      reusedOutOfBandRecord && (await aliceAgent.connections.findByOutOfBandId(reusedOutOfBandRecord.id))
+    await aliceAgent.mediationRecipient.provision(reusedAliceMediatorConnection!)
+    const mediators = await aliceAgent.mediationRecipient.getMediators()
+    expect(mediators).toHaveLength(1)
   })
 })

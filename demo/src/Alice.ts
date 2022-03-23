@@ -27,11 +27,19 @@ export class Alice extends BaseAgent {
   }
 
   private async printConnectionInvite() {
-    const invite = await this.agent.connections.createConnection()
-    this.connectionRecordFaberId = invite.connectionRecord.id
+    const outOfBand = await this.agent.oob.createInvitation()
+    const connectionRecord = await this.agent.connections.findByOutOfBandId(outOfBand.id)
+    if (!connectionRecord) {
+      throw new Error(redText(Output.NoConnectionRecordFromOutOfBand))
+    }
+    this.connectionRecordFaberId = connectionRecord.id
 
-    console.log(Output.ConnectionLink, invite.invitation.toUrl({ domain: `http://localhost:${this.port}` }), '\n')
-    return invite.connectionRecord
+    console.log(
+      Output.ConnectionLink,
+      outOfBand.outOfBandMessage.toUrl({ domain: `http://localhost:${this.port}` }),
+      '\n'
+    )
+    return connectionRecord
   }
 
   private async waitForConnection() {

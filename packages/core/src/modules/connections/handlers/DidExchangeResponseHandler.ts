@@ -6,6 +6,7 @@ import type { ConnectionService } from '../services'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
+import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeResponseMessage } from '../messages'
 import { HandshakeProtocol } from '../models'
 
@@ -73,6 +74,9 @@ export class DidExchangeResponseHandler implements Handler {
     // if auto accept is enable
     if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
       const message = await this.didExchangeProtocol.createComplete(connection, outOfBandRecord)
+      if (!outOfBandRecord.reusable) {
+        await this.outOfBandService.updateState(outOfBandRecord, OutOfBandState.Done)
+      }
       return createOutboundMessage(connection, message)
     }
   }
