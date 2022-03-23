@@ -10,13 +10,6 @@ import type { MediationRecipientService } from '../routing'
 import type { CredentialStateChangedEvent } from './CredentialEvents'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
 import type { CredentialProtocolMsgReturnType } from './CredentialServiceOptions'
-import type { CredentialFormatService } from './formats/CredentialFormatService'
-import type {
-  CredentialIssueFormat,
-  CredentialOfferFormat,
-  CredentialProposeFormat,
-  ServiceRequestCredentialOptions,
-} from './formats/models/CredentialFormatServiceOptions'
 import type {
   AcceptProposalOptions,
   AcceptRequestOptions,
@@ -25,7 +18,12 @@ import type {
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
-} from './interfaces'
+} from './CredentialsModuleOptions'
+import type { CredentialFormatService } from './formats/CredentialFormatService'
+import type {
+  CredentialFormats,
+  FormatServiceRequestCredentialOptions,
+} from './formats/models/CredentialFormatServiceOptions'
 import type {
   V1CredentialProblemReportMessage,
   V1IssueCredentialMessage,
@@ -42,8 +40,6 @@ import type { CredentialExchangeRecord, CredentialRepository } from './repositor
 
 import { CredentialEventTypes } from './CredentialEvents'
 import { CredentialState } from './CredentialState'
-
-export type CredProposeOfferRequestFormat = CredentialOfferFormat | CredentialProposeFormat | CredentialIssueFormat
 
 export abstract class CredentialService {
   protected credentialRepository: CredentialRepository
@@ -75,7 +71,7 @@ export abstract class CredentialService {
 
   abstract getVersion(): CredentialProtocolVersion
 
-  abstract getFormats(credentialFormats: CredProposeOfferRequestFormat): CredentialFormatService[]
+  abstract getFormats(cred: CredentialFormats): CredentialFormatService[]
 
   // methods for proposal
   abstract createProposal(proposal: ProposeCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
@@ -98,7 +94,7 @@ export abstract class CredentialService {
   // methods for request
   abstract createRequest(
     credentialRecord: CredentialExchangeRecord,
-    options: ServiceRequestCredentialOptions,
+    options: FormatServiceRequestCredentialOptions,
     holderDid: string
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 

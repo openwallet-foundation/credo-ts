@@ -2,7 +2,7 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler } from '../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { DidCommMessageRepository } from '../../../../../storage'
-import type { AcceptRequestOptions } from '../../../interfaces'
+import type { AcceptRequestOptions } from '../../../CredentialsModuleOptions'
 import type { CredentialExchangeRecord } from '../../../repository'
 import type { V2CredentialService } from '../V2CredentialService'
 

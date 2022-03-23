@@ -2,7 +2,16 @@ import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { LinkedAttachment } from '../../utils/LinkedAttachment'
 import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
-import type { AcceptOfferOptions, AcceptRequestOptions } from './interfaces'
+import type {
+  AcceptOfferOptions,
+  AcceptProposalOptions,
+  AcceptRequestOptions,
+  NegotiateOfferOptions,
+  NegotiateProposalOptions,
+  OfferCredentialOptions,
+  RequestCredentialOptions,
+} from './CredentialsModuleOptions'
+import type { RevocationRegistry } from './formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from './models/CredentialPreviewAttributes'
 import type { V1CredentialPreview } from './protocol/v1/V1CredentialPreview'
 import type { ProposeCredentialMessageOptions } from './protocol/v1/messages'
@@ -27,24 +36,47 @@ export interface CredentialOfferTemplate {
   linkedAttachments?: LinkedAttachment[]
 }
 
-export interface CredentialRequestOptions {
-  holderDid: string
-  comment?: string
-  autoAcceptCredential?: AutoAcceptCredential
-}
-
 export interface ServiceAcceptOfferOptions extends AcceptOfferOptions {
   attachId?: string
   credentialFormats: {
     indy?: IndyCredentialPreview
-    w3c?: {
+    jsonld?: {
       // todo
     }
   }
 }
 
+export interface ServiceOfferCredentialOptions extends OfferCredentialOptions {
+  offerAttachment?: Attachment
+}
+
+export interface ServiceAcceptProposalOptions extends AcceptProposalOptions {
+  offerAttachment?: Attachment
+  proposalAttachment?: Attachment
+}
+
 export interface ServiceAcceptRequestOptions extends AcceptRequestOptions {
   attachId?: string
+  offerAttachment?: Attachment
+  requestAttachment?: Attachment
+}
+export interface ServiceNegotiateProposalOptions extends NegotiateProposalOptions {
+  offerAttachment?: Attachment
+}
+
+export interface ServiceNegotiateOfferOptions extends NegotiateOfferOptions {
+  offerAttachment?: Attachment
+}
+
+export interface ServiceRequestCredentialOptions extends RequestCredentialOptions {
+  attachId?: string
+  offerAttachment?: Attachment
+  requestAttachment?: Attachment
+}
+
+export interface AcceptCredentialOptions {
+  credential?: Attachment
+  revocationRegistry: RevocationRegistry
 }
 
 export type CredentialProposeOptions = Omit<ProposeCredentialMessageOptions, 'id'> & {

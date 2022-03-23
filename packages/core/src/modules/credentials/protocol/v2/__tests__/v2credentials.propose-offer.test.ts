@@ -7,7 +7,7 @@ import type {
   AcceptRequestOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
-} from '../../../interfaces'
+} from '../../../CredentialsModuleOptions'
 
 import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
 import { DidCommMessageRepository } from '../../../../../../src/storage'
@@ -57,11 +57,6 @@ describe('credentials', () => {
     })
     const testAttributes = {
       attributes: credentialPreview.attributes,
-      schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
-      schemaName: 'ahoy',
-      schemaVersion: '1.0',
-      schemaId: '1560364003',
-      issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
       credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
       linkedAttachments: [
         new LinkedAttachment({
@@ -72,6 +67,13 @@ describe('credentials', () => {
           }),
         }),
       ],
+      payload: {
+        schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+        schemaName: 'ahoy',
+        schemaVersion: '1.0',
+        schemaId: '1560364003',
+        issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+      },
     }
     testLogger.test('Alice sends (v1) credential proposal to Faber')
     // set the propose options
@@ -79,11 +81,7 @@ describe('credentials', () => {
       connectionId: aliceConnection.id,
       protocolVersion: CredentialProtocolVersion.V1,
       credentialFormats: {
-        indy: {
-          payload: {
-            credentialPayload: testAttributes,
-          },
-        },
+        indy: testAttributes,
       },
       comment: 'v1 propose credential test',
     }
@@ -224,6 +222,13 @@ describe('credentials', () => {
           }),
         }),
       ],
+      payload: {
+        schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+        schemaName: 'ahoy',
+        schemaVersion: '1.0',
+        schemaId: '1560364003',
+        issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+      },
     }
     testLogger.test('Alice sends (v2) credential proposal to Faber')
     // set the propose options
@@ -232,11 +237,7 @@ describe('credentials', () => {
       connectionId: aliceConnection.id,
       protocolVersion: CredentialProtocolVersion.V2,
       credentialFormats: {
-        indy: {
-          payload: {
-            credentialPayload: testAttributes,
-          },
-        },
+        indy: testAttributes,
       },
       comment: 'v2 propose credential test',
     }
@@ -322,7 +323,6 @@ describe('credentials', () => {
         credentialRecordId: aliceCredentialRecord.id,
         credentialFormats: {
           indy: undefined,
-          w3c: undefined,
         },
       }
       const offerCredentialExchangeRecord: CredentialExchangeRecord =

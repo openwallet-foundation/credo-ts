@@ -1,70 +1,52 @@
+import type { LinkedAttachment } from '../../../../../src/utils/LinkedAttachment'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
+import type { ParseRevocationRegistryDefitinionTemplate } from '../../../ledger/services'
 import type { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
-import type { RequestCredentialOptions } from '../../interfaces'
+import type { ServiceRequestCredentialOptions } from '../../CredentialServiceOptions'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
-import type { CredPropose } from '../../protocol/v1/models/CredentialFormatOptions'
 import type { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
-import type { Cred, CredDef, CredOffer, CredReq } from 'indy-sdk'
+import type { CredOffer, CredReq, Cred, CredDef } from 'indy-sdk'
 
 import { Expose } from 'class-transformer'
 import { IsString } from 'class-validator'
 
-import { CredentialFormatType } from '../../interfaces'
+import { CredentialFormatType } from '../../CredentialsModuleOptions'
 
-export type CredProposeOfferRequestFormat =
-  | CredentialOfferFormat
-  | CredentialProposeFormat
-  | CredentialRequestFormat
-  | CredentialIssueFormat
-
-export interface CredentialDefinitionFormat {
-  indy?: {
-    credDef: CredDef
-  }
-  w3c?: {
-    // todo
-  }
+export type CredentialFormats = OfferCredentialFormats | ProposeCredentialFormats | RequestCredentialFormats
+export interface IndyCredentialPreview {
+  credentialDefinitionId?: string
+  attributes?: CredentialPreviewAttribute[]
 }
 
-// COMBINE THESE TWO...
-// export interface IndyOfferCredentialFormat {
-//   credentialDefinitionId: string
-//   attributes: CredentialPreviewAttribute[]
-//   linkedAttachments?: LinkedAttachment[]
-//   payload?: CredOffer
-// }
-export interface CredentialOfferFormat {
-  indy?: {
-    payload: {
-      credentialPayload: CredOffer
-    }
-  }
+export interface CredPropose {
+  schemaIssuerDid?: string
+  schemaName?: string
+  schemaVersion?: string
+  schemaId?: string
+  issuerDid?: string
+  credentialDefinitionId?: string
 }
-
-export interface CredentialProposeFormat {
-  indy?: {
-    payload: {
-      credentialPayload: CredPropose
-    }
-  }
+export interface IndyProposeCredentialFormat {
+  attributes: CredentialPreviewAttribute[]
+  linkedAttachments?: LinkedAttachment[]
+  payload?: CredPropose
 }
-export interface CredentialRequestFormat {
-  indy?: {
-    credentialDefinitionId?: string
-    attributes?: CredentialPreviewAttribute[]
-    payload?: {
-      credentialPayload: CredReq
-    }
-  }
+export interface IndyOfferCredentialFormat {
+  credentialDefinitionId: string
+  attributes: CredentialPreviewAttribute[]
+  linkedAttachments?: LinkedAttachment[]
+  payload?: CredOffer
 }
-
-export interface CredentialIssueFormat {
-  indy?: {
-    payload: {
-      credentialPayload: Cred
-    }
-  }
+export interface IndyRequestCredentialFormat {
+  credentialDefinitionId?: string
+  attributes?: CredentialPreviewAttribute[]
+  payload?: CredReq
+}
+export interface IndyIssueCredentialFormat {
+  credentialDefinitionId?: string
+  attributes?: CredentialPreviewAttribute[]
+  payload?: Cred
 }
 
 export class CredentialFormatSpec {
@@ -96,9 +78,30 @@ export const FORMAT_KEYS: FormatKeys = {
   indy: CredentialFormatType.Indy,
 }
 
-export interface ServiceRequestCredentialOptions extends RequestCredentialOptions {
-  attachId?: string
-  credentialDefinition?: CredentialDefinitionFormat
+export interface FormatServiceRequestCredentialOptions extends ServiceRequestCredentialOptions {
+  credentialDefinition?: {
+    credDef: CredDef
+  }
+}
+
+export interface OfferCredentialFormats {
+  indy?: IndyOfferCredentialFormat
+  jsonld?: undefined
+}
+
+export interface ProposeCredentialFormats {
+  indy?: IndyProposeCredentialFormat
+  jsonld?: undefined
+}
+
+export interface RequestCredentialFormats {
+  indy?: IndyRequestCredentialFormat
+  jsonld?: undefined
+}
+
+export interface IssueCredentialFormats {
+  indy?: IndyIssueCredentialFormat
+  jsonld?: undefined
 }
 
 export interface HandlerAutoAcceptOptions {
@@ -109,4 +112,9 @@ export interface HandlerAutoAcceptOptions {
   offerAttachment?: Attachment
   requestAttachment?: Attachment
   credentialAttachment?: Attachment
+}
+
+export interface RevocationRegistry {
+  indy?: ParseRevocationRegistryDefitinionTemplate
+  jsonld?: undefined
 }

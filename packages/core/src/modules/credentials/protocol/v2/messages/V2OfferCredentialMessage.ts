@@ -11,7 +11,7 @@ export interface V2OfferCredentialMessageOptions {
   formats: CredentialFormatSpec[]
   offerAttachments: Attachment[]
   credentialPreview?: V2CredentialPreview
-  replacementId: string
+  replacementId?: string
   comment?: string
 }
 

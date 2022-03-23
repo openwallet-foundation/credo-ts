@@ -2,7 +2,7 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { DidCommMessageRepository } from '../../../../../storage'
-import type { AcceptProposalOptions } from '../../../interfaces'
+import type { AcceptProposalOptions } from '../../../CredentialsModuleOptions'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
@@ -76,6 +76,7 @@ export class V2ProposeCredentialHandler implements Handler {
 
     const options: AcceptProposalOptions = await this.credentialService.createAcceptProposalOptions(credentialRecord)
     const message = await this.credentialService.createOfferAsResponse(credentialRecord, options)
+
     return createOutboundMessage(messageContext.connection, message)
   }
 }

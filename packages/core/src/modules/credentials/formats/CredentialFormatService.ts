@@ -1,11 +1,11 @@
 import type { EventEmitter } from '../../../agent/EventEmitter'
+import type { AcceptCredentialOptions, ServiceAcceptProposalOptions } from '../CredentialServiceOptions'
 import type {
-  AcceptCredentialOptions,
   AcceptProposalOptions,
   AcceptRequestOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
-} from '../interfaces'
+} from '../CredentialsModuleOptions'
 import type { CredentialExchangeRecord, CredentialRepository } from '../repository'
 import type {
   CredentialAttachmentFormats,
@@ -13,6 +13,7 @@ import type {
   HandlerAutoAcceptOptions,
   OfferAttachmentFormats,
   ProposeAttachmentFormats,
+  RevocationRegistry,
 } from './models/CredentialFormatServiceOptions'
 
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
@@ -29,11 +30,14 @@ export abstract class CredentialFormatService {
 
   abstract createProposal(options: ProposeCredentialOptions): ProposeAttachmentFormats
 
-  abstract processProposal(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): Promise<void>
+  abstract processProposal(
+    options: ServiceAcceptProposalOptions,
+    credentialRecord: CredentialExchangeRecord
+  ): Promise<void>
 
   abstract createOffer(options: AcceptProposalOptions): Promise<OfferAttachmentFormats>
 
-  abstract processOffer(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): Promise<void>
+  abstract processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord): Promise<void>
 
   abstract createRequest(
     options: RequestCredentialOptions,
@@ -56,6 +60,8 @@ export abstract class CredentialFormatService {
   abstract shouldAutoRespondToProposal(options: HandlerAutoAcceptOptions): boolean
   abstract shouldAutoRespondToRequest(options: HandlerAutoAcceptOptions): boolean
   abstract shouldAutoRespondToCredential(options: HandlerAutoAcceptOptions): boolean
+
+  abstract getRevocationRegistry(issueAttachment: Attachment): Promise<RevocationRegistry>
 
   /**
    *

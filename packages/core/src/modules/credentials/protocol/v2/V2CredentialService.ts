@@ -3,24 +3,26 @@ import type { HandlerInboundMessage } from '../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { CredentialStateChangedEvent } from '../../CredentialEvents'
-import type { CredentialProtocolMsgReturnType } from '../../CredentialServiceOptions'
-import type { CredentialFormatService } from '../../formats/CredentialFormatService'
-import type {
-  CredentialFormatSpec,
-  CredProposeOfferRequestFormat,
-  HandlerAutoAcceptOptions,
-} from '../../formats/models/CredentialFormatServiceOptions'
 import type {
   AcceptCredentialOptions,
+  CredentialProtocolMsgReturnType,
+  ServiceAcceptProposalOptions,
+} from '../../CredentialServiceOptions'
+import type {
   AcceptProposalOptions,
   AcceptRequestOptions,
   NegotiateOfferOptions,
   NegotiateProposalOptions,
-  OfferCredentialFormats,
   OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
-} from '../../interfaces'
+} from '../../CredentialsModuleOptions'
+import type { CredentialFormatService } from '../../formats/CredentialFormatService'
+import type {
+  CredentialFormats,
+  CredentialFormatSpec,
+  HandlerAutoAcceptOptions,
+} from '../../formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -39,11 +41,12 @@ import { CredentialEventTypes } from '../../CredentialEvents'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
 import { CredentialService } from '../../CredentialService'
 import { CredentialState } from '../../CredentialState'
+import { CredentialFormatType } from '../../CredentialsModuleOptions'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
 import { FORMAT_KEYS } from '../../formats/models/CredentialFormatServiceOptions'
-import { CredentialFormatType } from '../../interfaces'
 import { CredentialRepository, CredentialExchangeRecord } from '../../repository'
+import { INDY_CREDENTIAL_ATTACHMENT_ID } from '../v1/messages'
 
 import { CredentialMessageBuilder } from './CredentialMessageBuilder'
 import { V2CredentialAckHandler } from './handlers/V2CredentialAckHandler'
@@ -298,7 +301,7 @@ export class V2CredentialService extends CredentialService {
     formats: CredentialFormatService[]
   ) {
     for (const format of formats) {
-      const options: AcceptProposalOptions = {
+      const options: ServiceAcceptProposalOptions = {
         credentialRecordId: record.id,
         credentialFormats: {},
       }
@@ -315,6 +318,7 @@ export class V2CredentialService extends CredentialService {
    */
   public getFormatsFromMessage(messageFormats: CredentialFormatSpec[]): CredentialFormatService[] {
     const formats: CredentialFormatService[] = []
+
     for (const msg of messageFormats) {
       if (msg.format.includes('indy')) {
         formats.push(this.getFormatService(CredentialFormatType.Indy))
@@ -331,9 +335,7 @@ export class V2CredentialService extends CredentialService {
    * @param credentialFormats the format object containing various optional parameters
    * @return the credential format service objects in an array - derived from format object keys
    */
-  public getFormats(
-    credentialFormats: OfferCredentialFormats | CredProposeOfferRequestFormat
-  ): CredentialFormatService[] {
+  public getFormats(credentialFormats: CredentialFormats): CredentialFormatService[] {
     const formats: CredentialFormatService[] = []
     const formatKeys = Object.keys(credentialFormats)
 
@@ -503,11 +505,6 @@ export class V2CredentialService extends CredentialService {
     this.logger.debug(`Processing credential offer with id ${credentialOfferMessage.id}`)
 
     const formats: CredentialFormatService[] = this.getFormatsFromMessage(credentialOfferMessage.formats)
-    const options: AcceptProposalOptions = {
-      connectionId: '',
-      credentialRecordId: '',
-      credentialFormats: {},
-    }
     try {
       // Credential record already exists
       credentialRecord = await this.getByThreadAndConnectionId(credentialOfferMessage.threadId, connection?.id)
@@ -529,13 +526,16 @@ export class V2CredentialService extends CredentialService {
       })
 
       for (const format of formats) {
-        options.offerAttachment = format.getAttachment(
+        const attachment = format.getAttachment(
           credentialOfferMessage.formats,
           credentialOfferMessage.messageAttachment
         )
 
+        if (!attachment) {
+          throw new AriesFrameworkError(`Missing offer attachment in credential offer message`)
+        }
         this.logger.debug('Save metadata for offer')
-        format.processOffer(options, credentialRecord)
+        format.processOffer(attachment, credentialRecord)
       }
       await this.updateState(credentialRecord, CredentialState.OfferReceived)
       await this.didCommMessageRepository.saveAgentMessage({
@@ -558,12 +558,16 @@ export class V2CredentialService extends CredentialService {
       })
 
       for (const format of formats) {
-        options.offerAttachment = format.getAttachment(
+        const attachment = format.getAttachment(
           credentialOfferMessage.formats,
           credentialOfferMessage.messageAttachment
         )
+
+        if (!attachment) {
+          throw new AriesFrameworkError(`Missing offer attachment in credential offer message`)
+        }
         this.logger.debug('Save metadata for offer')
-        format.processOffer(options, credentialRecord)
+        format.processOffer(attachment, credentialRecord)
       }
 
       // Save in repository
@@ -788,9 +792,12 @@ export class V2CredentialService extends CredentialService {
     credentialRecord.connectionId = credentialOptions.connectionId
 
     for (const format of formats) {
-      const options: AcceptProposalOptions = credentialOptions as unknown as AcceptProposalOptions
-      options.offerAttachment = format.getAttachment(message.formats, message.messageAttachment)
-      format.processOffer(options, credentialRecord)
+      const attachment = format.getAttachment(message.formats, message.messageAttachment)
+
+      if (!attachment) {
+        throw new AriesFrameworkError(`Missing offer attachment in credential offer message`)
+      }
+      format.processOffer(attachment, credentialRecord)
     }
     await this.credentialRepository.save(credentialRecord)
     await this.emitEvent(credentialRecord)
@@ -822,7 +829,7 @@ export class V2CredentialService extends CredentialService {
     }
     const formats: CredentialFormatService[] = this.getFormatsFromMessage(proposalMessage.formats)
 
-    const options: AcceptProposalOptions = {
+    const options: ServiceAcceptProposalOptions = {
       credentialRecordId: credentialRecord.id,
       credentialFormats: {},
     }
@@ -928,11 +935,20 @@ export class V2CredentialService extends CredentialService {
     const formatServices: CredentialFormatService[] = this.getFormatsFromMessage(issueCredentialMessage.formats)
 
     for (const formatService of formatServices) {
+      // get the revocation registry and pass it to the process (store) credential method
+      const issueAttachment = formatService.getAttachment(
+        issueCredentialMessage.formats,
+        issueCredentialMessage.messageAttachment
+      )
+
+      if (!issueAttachment) {
+        throw new AriesFrameworkError('Missing credential attachment in processCredential')
+      }
+      const revocationRegistry = await formatService.getRevocationRegistry(issueAttachment)
+
       const options: AcceptCredentialOptions = {
-        credential: formatService.getAttachment(
-          issueCredentialMessage.formats,
-          issueCredentialMessage.messageAttachment
-        ),
+        credential: issueAttachment,
+        revocationRegistry,
       }
       await formatService.processCredential(options, credentialRecord)
     }
@@ -1045,15 +1061,14 @@ export class V2CredentialService extends CredentialService {
       credentialOptions
     )
 
-    const options: AcceptProposalOptions = credentialOptions as unknown as AcceptProposalOptions
     for (const format of formats) {
-      options.offerAttachment = format.getAttachment(
-        offerCredentialMessage.formats,
-        offerCredentialMessage.messageAttachment
-      )
+      const attachment = format.getAttachment(offerCredentialMessage.formats, offerCredentialMessage.messageAttachment)
 
+      if (!attachment) {
+        throw new AriesFrameworkError(`Missing offer attachment in credential offer message`)
+      }
       this.logger.debug('Save metadata for offer')
-      format.processOffer(options, credentialRecord)
+      format.processOffer(attachment, credentialRecord)
     }
 
     // Create and set ~service decorator

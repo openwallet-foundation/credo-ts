@@ -10,7 +10,7 @@ import type {
   OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
-} from './interfaces'
+} from './CredentialsModuleOptions'
 import type { CredentialExchangeRecord } from './repository'
 
 import { Lifecycle, scoped } from 'tsyringe'

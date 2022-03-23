@@ -7,7 +7,7 @@ import type {
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
-} from '../../../interfaces'
+} from '../../../CredentialsModuleOptions'
 import type { Schema } from 'indy-sdk'
 
 import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
@@ -66,16 +66,9 @@ describe('credentials', () => {
         protocolVersion: CredentialProtocolVersion.V1,
         credentialFormats: {
           indy: {
+            attributes: credentialPreview.attributes,
             payload: {
-              credentialPayload: {
-                attributes: credentialPreview.attributes,
-                schemaIssuerDid: faberAgent.publicDid?.did,
-                schemaName: schema.name,
-                schemaVersion: schema.version,
-                schemaId: schema.id,
-                issuerDid: faberAgent.publicDid?.did,
-                credentialDefinitionId: credDefId,
-              },
+              credentialDefinitionId: credDefId,
             },
           },
         },
@@ -199,16 +192,9 @@ describe('credentials', () => {
         protocolVersion: CredentialProtocolVersion.V1,
         credentialFormats: {
           indy: {
+            attributes: credentialPreview.attributes,
             payload: {
-              credentialPayload: {
-                attributes: credentialPreview.attributes,
-                schemaIssuerDid: faberAgent.publicDid?.did,
-                schemaName: schema.name,
-                schemaVersion: schema.version,
-                schemaId: schema.id,
-                issuerDid: faberAgent.publicDid?.did,
-                credentialDefinitionId: credDefId,
-              },
+              credentialDefinitionId: credDefId,
             },
           },
         },
@@ -402,16 +388,9 @@ describe('credentials', () => {
         protocolVersion: CredentialProtocolVersion.V1,
         credentialFormats: {
           indy: {
+            attributes: credentialPreview.attributes,
             payload: {
-              credentialPayload: {
-                attributes: credentialPreview.attributes,
-                schemaIssuerDid: faberAgent.publicDid?.did,
-                schemaName: schema.name,
-                schemaVersion: schema.version,
-                schemaId: schema.id,
-                issuerDid: faberAgent.publicDid?.did,
-                credentialDefinitionId: credDefId,
-              },
+              credentialDefinitionId: credDefId,
             },
           },
         },
@@ -500,11 +479,9 @@ describe('credentials', () => {
         credentialRecordId: aliceCredentialExchangeRecord.id,
         credentialFormats: {
           indy: {
+            attributes: newCredentialPreview.attributes,
             payload: {
-              credentialPayload: {
-                attributes: newCredentialPreview.attributes,
-                credentialDefinitionId: credDefId,
-              },
+              credentialDefinitionId: credDefId,
             },
           },
         },

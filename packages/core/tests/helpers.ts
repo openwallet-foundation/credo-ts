@@ -12,7 +12,7 @@ import type {
   ProofStateChangedEvent,
   SchemaTemplate,
 } from '../src'
-import type { AcceptOfferOptions, OfferCredentialOptions } from '../src/modules/credentials/interfaces'
+import type { AcceptOfferOptions, OfferCredentialOptions } from '../src/modules/credentials/CredentialsModuleOptions'
 import type { CredentialOfferTemplate } from '../src/modules/credentials/protocol'
 import type { Schema, CredDef } from 'indy-sdk'
 import type { Observable } from 'rxjs'

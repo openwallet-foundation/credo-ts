@@ -1,12 +1,12 @@
 import type { AgentConfig } from '../../../../src/agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
+import type { AcceptRequestOptions } from '../CredentialsModuleOptions'
 import type {
   CredentialFormatSpec,
-  CredentialRequestFormat,
-  ServiceRequestCredentialOptions,
+  FormatServiceRequestCredentialOptions,
+  RequestCredentialFormats,
 } from '../formats/models/CredentialFormatServiceOptions'
-import type { AcceptRequestOptions } from '../interfaces'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
 import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
 import type { V2IssueCredentialMessageProps } from '../protocol/v2/messages/V2IssueCredentialMessage'
@@ -105,7 +105,7 @@ const credentialAttachment = new Attachment({
   }),
 })
 
-const v2CredentialRequest: CredentialRequestFormat = {
+const v2CredentialRequest: RequestCredentialFormats = {
   indy: {
     attributes: credentialPreview.attributes,
     credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
@@ -279,7 +279,7 @@ describe('CredentialService', () => {
         associatedRecordId: credentialRecord.id,
       })
 
-      const requestOptions: ServiceRequestCredentialOptions = {
+      const requestOptions: FormatServiceRequestCredentialOptions = {
         credentialFormats: v2CredentialRequest,
       }
 
@@ -299,13 +299,11 @@ describe('CredentialService', () => {
     test('returns credential request message base on existing credential offer message', async () => {
       // given
       const comment = 'credential request comment'
-      const options: ServiceRequestCredentialOptions = {
+      const options: FormatServiceRequestCredentialOptions = {
         connectionId: credentialRecord.connectionId,
         comment: 'credential request comment',
         credentialDefinition: {
-          indy: {
-            credDef: credDef,
-          },
+          credDef: credDef,
         },
       }
       // when

@@ -1,15 +1,15 @@
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
-import type { CredentialProtocolMsgReturnType } from '../../CredentialServiceOptions'
+import type {
+  CredentialProtocolMsgReturnType,
+  ServiceAcceptProposalOptions,
+  ServiceAcceptRequestOptions,
+  ServiceNegotiateProposalOptions,
+  ServiceOfferCredentialOptions,
+  ServiceRequestCredentialOptions,
+} from '../../CredentialServiceOptions'
+import type { AcceptProposalOptions, ProposeCredentialOptions } from '../../CredentialsModuleOptions'
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
 import type { CredentialFormatSpec } from '../../formats/models/CredentialFormatServiceOptions'
-import type {
-  AcceptProposalOptions,
-  AcceptRequestOptions,
-  NegotiateProposalOptions,
-  OfferCredentialOptions,
-  ProposeCredentialOptions,
-  RequestCredentialOptions,
-} from '../../interfaces'
 import type { CredentialExchangeRecordProps } from '../../repository/CredentialExchangeRecord'
 import type { V2CredentialPreview } from './V2CredentialPreview'
 import type { V2IssueCredentialMessageProps } from './messages/V2IssueCredentialMessage'
@@ -111,7 +111,7 @@ export class CredentialMessageBuilder {
   public async createOfferAsResponse(
     formatServices: CredentialFormatService[],
     credentialRecord: CredentialExchangeRecord,
-    proposal: AcceptProposalOptions | NegotiateProposalOptions
+    proposal: ServiceAcceptProposalOptions | ServiceNegotiateProposalOptions
   ): Promise<V2OfferCredentialMessage> {
     assert(formatServices.length > 0)
 
@@ -121,14 +121,10 @@ export class CredentialMessageBuilder {
     const offersAttachArray: Attachment[] | undefined = []
     let previewAttachments: V2CredentialPreview | undefined
 
-    const options = proposal as AcceptProposalOptions
     for (const service of formatServices) {
-      if (proposal.offerAttachment) {
-        options.offerAttachment = proposal.offerAttachment
-      }
-      const { attachment: offersAttach, preview, format } = await service.createOffer(options)
+      const { attachment: offersAttach, preview, format } = await service.createOffer(proposal)
 
-      options.offerAttachment = offersAttach
+      proposal.offerAttachment = offersAttach
       if (offersAttach === undefined) {
         throw new AriesFrameworkError('offersAttach not initialized for credential offer')
       }
@@ -142,18 +138,16 @@ export class CredentialMessageBuilder {
       }
       formatsArray.push(format)
 
-      if (options.offerAttachment) {
-        service.processOffer(options, credentialRecord)
+      if (proposal.offerAttachment) {
+        service.processOffer(proposal.offerAttachment, credentialRecord)
       }
     }
-    const comment: string = proposal.comment ? proposal.comment : ''
 
     const messageProps: V2OfferCredentialMessageOptions = {
       id: this.generateId(),
       formats: formatsArray,
-      comment,
+      comment: proposal.comment,
       offerAttachments: offersAttachArray,
-      replacementId: '', // replacementId
       credentialPreview: previewAttachments,
     }
     const credentialOfferMessage: V2OfferCredentialMessage = new V2OfferCredentialMessage(messageProps)
@@ -179,7 +173,7 @@ export class CredentialMessageBuilder {
   public async createRequest(
     formatServices: CredentialFormatService[],
     record: CredentialExchangeRecord,
-    requestOptions: RequestCredentialOptions,
+    requestOptions: ServiceRequestCredentialOptions,
     offerMessage: V2OfferCredentialMessage,
     holderDid?: string
   ): Promise<CredentialProtocolMsgReturnType<V2RequestCredentialMessage>> {
@@ -235,7 +229,7 @@ export class CredentialMessageBuilder {
    */
   public async createOffer(
     formatServices: CredentialFormatService[],
-    options: OfferCredentialOptions
+    options: ServiceOfferCredentialOptions
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: V2OfferCredentialMessage }> {
     const formatsArray: CredentialFormatSpec[] = []
     const offersAttachArray: Attachment[] | undefined = []
@@ -257,12 +251,10 @@ export class CredentialMessageBuilder {
       formatsArray.push(format)
     }
 
-    const comment: string = options.comment ? options.comment : ''
-
     const messageProps: V2OfferCredentialMessageOptions = {
       id: this.generateId(),
       formats: formatsArray,
-      comment,
+      comment: options.comment,
       offerAttachments: offersAttachArray,
       replacementId: '', // replacementId
       credentialPreview: previewAttachments,
@@ -284,10 +276,8 @@ export class CredentialMessageBuilder {
     const credentialRecord = new CredentialExchangeRecord(recordProps)
 
     for (const service of formatServices) {
-      const offerOptions: AcceptProposalOptions = options as unknown as AcceptProposalOptions
-
       if (options.offerAttachment) {
-        service.processOffer(offerOptions, credentialRecord)
+        service.processOffer(options.offerAttachment, credentialRecord)
       }
     }
     return { credentialRecord, message: credentialOfferMessage }
@@ -304,7 +294,7 @@ export class CredentialMessageBuilder {
   public async createCredential(
     credentialFormats: CredentialFormatService[],
     record: CredentialExchangeRecord,
-    options: AcceptRequestOptions,
+    options: ServiceAcceptRequestOptions,
     requestMessage: V2RequestCredentialMessage,
     offerMessage?: V2OfferCredentialMessage
   ): Promise<CredentialProtocolMsgReturnType<V2IssueCredentialMessage>> {

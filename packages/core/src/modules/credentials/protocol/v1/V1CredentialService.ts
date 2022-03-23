@@ -6,27 +6,28 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { ConnectionRecord } from '../../../connections'
 import type { CredentialStateChangedEvent } from '../../CredentialEvents'
 import type {
+  AcceptCredentialOptions,
   CredentialOfferTemplate,
   CredentialProposeOptions,
   CredentialProtocolMsgReturnType,
   ServiceAcceptOfferOptions,
   ServiceAcceptRequestOptions,
-} from '../../CredentialServiceOptions'
-import type { CredentialFormatService } from '../../formats/CredentialFormatService'
-import type {
-  CredProposeOfferRequestFormat,
-  HandlerAutoAcceptOptions,
   ServiceRequestCredentialOptions,
-} from '../../formats/models/CredentialFormatServiceOptions'
+} from '../../CredentialServiceOptions'
 import type {
-  AcceptCredentialOptions,
   AcceptProposalOptions,
   CredentialFormatType,
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
-} from '../../interfaces'
-import type { CredPropose } from './models/CredentialFormatOptions'
+} from '../../CredentialsModuleOptions'
+import type { CredentialFormatService } from '../../formats/CredentialFormatService'
+import type {
+  CredentialFormats,
+  CredPropose,
+  FormatServiceRequestCredentialOptions,
+  HandlerAutoAcceptOptions,
+} from '../../formats/models/CredentialFormatServiceOptions'
 import type { CredOffer } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -198,7 +199,7 @@ export class V1CredentialService extends CredentialService {
    */
   public async createRequest(
     record: CredentialExchangeRecord,
-    options: ServiceRequestCredentialOptions,
+    options: FormatServiceRequestCredentialOptions,
     holderDid: string
   ): Promise<CredentialProtocolMsgReturnType<V1RequestCredentialMessage>> {
     // Assert credential
@@ -297,8 +298,16 @@ export class V1CredentialService extends CredentialService {
       )
     }
 
+    // get the revocation registry and pass it to the process (store) credential method
+    const issueAttachment = issueMessage.getAttachmentById(INDY_CREDENTIAL_ATTACHMENT_ID)
+    if (!issueAttachment) {
+      throw new AriesFrameworkError('Missing credential attachment in processCredential')
+    }
+    const revocationRegistry = await this.formatService.getRevocationRegistry(issueAttachment)
+
     const options: AcceptCredentialOptions = {
-      credential: issueMessage.getAttachmentById(INDY_CREDENTIAL_ATTACHMENT_ID),
+      credential: issueAttachment,
+      revocationRegistry,
     }
 
     await this.formatService.processCredential(options, credentialRecord)
@@ -472,7 +481,6 @@ export class V1CredentialService extends CredentialService {
         indy: {
           credentialDefinitionId,
         },
-        w3c: undefined,
       },
     }
     const { attachment: offersAttach } = await this.formatService.createOffer(options)
@@ -726,12 +734,11 @@ export class V1CredentialService extends CredentialService {
 
     const options: ServiceAcceptOfferOptions = {
       attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
-      credentialRecordId: '',
+      credentialRecordId: credentialRecord.id,
       credentialFormats: {
         indy: {
           credentialDefinitionId,
         },
-        w3c: undefined,
       },
     }
 
@@ -822,16 +829,16 @@ export class V1CredentialService extends CredentialService {
 
     let credentialProposal: V1CredentialPreview | undefined
 
-    const credPropose: CredPropose = proposal.credentialFormats.indy?.payload.credentialPayload as CredPropose
+    const credPropose: CredPropose = proposal.credentialFormats.indy?.payload as CredPropose
 
-    if (credPropose.attributes) {
-      credentialProposal = new V1CredentialPreview({ attributes: credPropose.attributes })
+    if (proposal.credentialFormats.indy?.attributes) {
+      credentialProposal = new V1CredentialPreview({ attributes: proposal.credentialFormats.indy?.attributes })
     }
 
     const config: CredentialProposeOptions = {
       credentialProposal: credentialProposal,
       credentialDefinitionId: credPropose.credentialDefinitionId,
-      linkedAttachments: credPropose.linkedAttachments,
+      linkedAttachments: proposal.credentialFormats.indy?.linkedAttachments,
       schemaId: credPropose.schemaId,
     }
 
@@ -1008,12 +1015,11 @@ export class V1CredentialService extends CredentialService {
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
       )
     }
-    const proposal: CredPropose = credentialOptions.credentialFormats.indy?.payload.credentialPayload as CredPropose
-    if (!proposal.attributes) {
+    if (!credentialOptions.credentialFormats.indy?.attributes) {
       throw new AriesFrameworkError('Missing attributes in V1 Negotiate Offer Options')
     }
     const credentialPreview = new V1CredentialPreview({
-      attributes: proposal.attributes,
+      attributes: credentialOptions.credentialFormats.indy?.attributes,
     })
     const options: CredentialProposeOptions = {
       credentialProposal: credentialPreview,
@@ -1173,7 +1179,7 @@ export class V1CredentialService extends CredentialService {
 
     return { message: ackMessage, credentialRecord }
   }
-  public getFormats(credentialFormats: CredProposeOfferRequestFormat): CredentialFormatService[] {
+  public getFormats(credentialFormats: CredentialFormats): CredentialFormatService[] {
     throw new Error('Method not implemented.')
   }
 

@@ -1,5 +1,6 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
+import type { CredPropose } from '../../../formats/models/CredentialFormatServiceOptions'
 import type {
   AcceptOfferOptions,
   AcceptProposalOptions,
@@ -7,7 +8,7 @@ import type {
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
-} from '../../../interfaces'
+} from '../../../CredentialsModuleOptions'
 import type { Schema } from 'indy-sdk'
 
 import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
@@ -18,7 +19,6 @@ import { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 import { V2CredentialPreview } from '../V2CredentialPreview'
 
 describe('credentials', () => {
@@ -30,11 +30,11 @@ describe('credentials', () => {
   let aliceConnection: ConnectionRecord
   // let faberCredentialRecord: CredentialRecord
   let aliceCredentialRecord: CredentialExchangeRecord
-  const credentialPreview = V1CredentialPreview.fromRecord({
+  const credentialPreview = V2CredentialPreview.fromRecord({
     name: 'John',
     age: '99',
   })
-  const newCredentialPreview = V1CredentialPreview.fromRecord({
+  const newCredentialPreview = V2CredentialPreview.fromRecord({
     name: 'John',
     age: '99',
     lastname: 'Appleseed',
@@ -65,16 +65,14 @@ describe('credentials', () => {
         protocolVersion: CredentialProtocolVersion.V2,
         credentialFormats: {
           indy: {
+            attributes: credentialPreview.attributes,
             payload: {
-              credentialPayload: {
-                attributes: credentialPreview.attributes,
-                schemaIssuerDid: faberAgent.publicDid?.did,
-                schemaName: schema.name,
-                schemaVersion: schema.version,
-                schemaId: schema.id,
-                issuerDid: faberAgent.publicDid?.did,
-                credentialDefinitionId: credDefId,
-              },
+              schemaIssuerDid: faberAgent.publicDid?.did,
+              schemaName: schema.name,
+              schemaVersion: schema.version,
+              schemaId: schema.id,
+              issuerDid: faberAgent.publicDid?.did,
+              credentialDefinitionId: credDefId,
             },
           },
         },
@@ -189,16 +187,14 @@ describe('credentials', () => {
         protocolVersion: CredentialProtocolVersion.V2,
         credentialFormats: {
           indy: {
+            attributes: credentialPreview.attributes,
             payload: {
-              credentialPayload: {
-                attributes: credentialPreview.attributes,
-                schemaIssuerDid: faberAgent.publicDid?.did,
-                schemaName: schema.name,
-                schemaVersion: schema.version,
-                schemaId: schema.id,
-                issuerDid: faberAgent.publicDid?.did,
-                credentialDefinitionId: credDefId,
-              },
+              schemaIssuerDid: faberAgent.publicDid?.did,
+              schemaName: schema.name,
+              schemaVersion: schema.version,
+              schemaId: schema.id,
+              issuerDid: faberAgent.publicDid?.did,
+              credentialDefinitionId: credDefId,
             },
           },
         },
@@ -351,22 +347,21 @@ describe('credentials', () => {
       }
     })
     test('Alice starts with V2 credential proposal to Faber, both have autoAcceptCredential on `contentApproved` and attributes did change', async () => {
+      const credPropose: CredPropose = {
+        schemaIssuerDid: faberAgent.publicDid?.did,
+        schemaName: schema.name,
+        schemaVersion: schema.version,
+        schemaId: schema.id,
+        issuerDid: faberAgent.publicDid?.did,
+        credentialDefinitionId: credDefId,
+      }
       const proposeOptions: ProposeCredentialOptions = {
         connectionId: aliceConnection.id,
         protocolVersion: CredentialProtocolVersion.V2,
         credentialFormats: {
           indy: {
-            payload: {
-              credentialPayload: {
-                attributes: credentialPreview.attributes,
-                schemaIssuerDid: faberAgent.publicDid?.did,
-                schemaName: schema.name,
-                schemaVersion: schema.version,
-                schemaId: schema.id,
-                issuerDid: faberAgent.publicDid?.did,
-                credentialDefinitionId: credDefId,
-              },
-            },
+            payload: credPropose,
+            attributes: credentialPreview.attributes,
           },
         },
         comment: 'v2 propose credential test',
@@ -453,11 +448,9 @@ describe('credentials', () => {
         credentialRecordId: aliceCredentialRecord.id,
         credentialFormats: {
           indy: {
+            attributes: newCredentialPreview.attributes,
             payload: {
-              credentialPayload: {
-                attributes: newCredentialPreview.attributes,
-                credentialDefinitionId: credDefId,
-              },
+              credentialDefinitionId: credDefId,
             },
           },
         },

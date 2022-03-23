@@ -2,7 +2,7 @@ import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import type { CredentialState } from '../CredentialState'
-import type { CredentialRecordType } from '../interfaces'
+import type { CredentialFormatType } from '../CredentialsModuleOptions'
 import type { CredentialMetadata } from './CredentialMetadataTypes'
 
 import { Type } from 'class-transformer'
@@ -39,7 +39,7 @@ export type DefaultCredentialTags = {
 }
 
 export interface CredentialRecordBinding {
-  credentialRecordType: CredentialRecordType
+  credentialRecordType: CredentialFormatType
   credentialRecordId: string
 }
 
