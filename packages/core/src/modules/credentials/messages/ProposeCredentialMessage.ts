@@ -1,7 +1,7 @@
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { Equals, IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 
@@ -95,6 +95,9 @@ export class ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'schema_version' })
   @IsString()
   @IsOptional()
+  @Matches(/^(\d+\.)?(\d+\.)?(\*|\d+)$/, {
+    message: 'Version must be X.X or X.X.X',
+  })
   public schemaVersion?: string
 
   /**
@@ -111,5 +114,6 @@ export class ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'issuer_did' })
   @IsString()
   @IsOptional()
+  @Matches(/^(did:sov:)?[a-zA-Z0-9]{21,22}$/)
   public issuerDid?: string
 }

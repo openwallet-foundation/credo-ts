@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer'
-import { IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsNumber, IsOptional, IsString, Matches } from 'class-validator'
 
 export class ProofIdentifier {
   public constructor(options: ProofIdentifier) {
@@ -17,6 +17,7 @@ export class ProofIdentifier {
 
   @Expose({ name: 'cred_def_id' })
   @IsString()
+  @Matches(/^([a-zA-Z0-9]{21,22}):3:CL:(([1-9][0-9]*)|([a-zA-Z0-9]{21,22}:2:.+:[0-9.]+)):(.+)?$/)
   public credentialDefinitionId!: string
 
   @Expose({ name: 'rev_reg_id' })

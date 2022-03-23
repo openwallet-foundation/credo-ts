@@ -7,6 +7,7 @@ import {
   IsMimeType,
   IsOptional,
   IsString,
+  Matches,
   ValidateIf,
   ValidateNested,
 } from 'class-validator'
@@ -81,6 +82,7 @@ export class PresentationPreviewPredicate {
 
   @Expose({ name: 'cred_def_id' })
   @IsString()
+  @Matches(/^([a-zA-Z0-9]{21,22}):3:CL:(([1-9][0-9]*)|([a-zA-Z0-9]{21,22}:2:.+:[0-9.]+)):(.+)?$/)
   public credentialDefinitionId!: string
 
   @IsEnum(PredicateType)
