@@ -67,6 +67,13 @@ export class ConnectionService {
     this.logger = config.logger
   }
 
+  /**
+   * Create a connection request message for a given out-of-band.
+   *
+   * @param outOfBandRecord out-of-band record for which to create a connection request
+   * @param config config for creation of connection request
+   * @returns outbound message containing connection request
+   */
   public async protocolCreateRequest(
     outOfBandRecord: OutOfBandRecord,
     config: ConnectionRequestParams
@@ -144,45 +151,6 @@ export class ConnectionService {
     await this.updateState(connectionRecord, ConnectionState.Requested)
     this.logger.debug(`Process message ${ConnectionRequestMessage.type} end`, connectionRecord)
     return connectionRecord
-  }
-
-  /**
-   * Create a connection request message for the connection with the specified connection id.
-   *
-   * @param connectionRecord the connection for which to create a connection request
-   * @param config config for creation of connection request
-   * @returns outbound message containing connection request
-   */
-  public async createRequest(
-    connectionRecord: ConnectionRecord,
-    config: {
-      myLabel?: string
-      myImageUrl?: string
-      autoAcceptConnection?: boolean
-    } = {}
-  ): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
-    connectionRecord.assertState(ConnectionState.Invited)
-    connectionRecord.assertRole(ConnectionRole.Invitee)
-
-    const { myLabel, myImageUrl, autoAcceptConnection } = config
-
-    const connectionRequest = new ConnectionRequestMessage({
-      label: myLabel ?? this.config.label,
-      did: connectionRecord.did,
-      didDoc: connectionRecord.didDoc,
-      imageUrl: myImageUrl ?? this.config.connectionImageUrl,
-    })
-
-    if (autoAcceptConnection !== undefined || autoAcceptConnection !== null) {
-      connectionRecord.autoAcceptConnection = config?.autoAcceptConnection
-    }
-
-    await this.updateState(connectionRecord, ConnectionState.Requested)
-
-    return {
-      connectionRecord,
-      message: connectionRequest,
-    }
   }
 
   /**
