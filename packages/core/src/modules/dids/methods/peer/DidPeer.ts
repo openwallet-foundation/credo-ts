@@ -1,14 +1,10 @@
-import type { DidDocument } from '../../domain'
-import type { ParsedDid } from '../../types'
-
-import { hash as sha256 } from '@stablelib/sha256'
 import { instanceToInstance } from 'class-transformer'
-
 import { Key } from '../../../../crypto/Key'
-import { BufferEncoder, JsonEncoder, MultiBaseEncoder, MultiHashEncoder, Buffer } from '../../../../utils'
+import { JsonEncoder, MultiBaseEncoder, MultiHashEncoder } from '../../../../utils'
+import type { DidDocument } from '../../domain'
 import { getKeyDidMappingByKeyType } from '../../domain/key-type'
 import { parseDid } from '../../domain/parse'
-
+import type { ParsedDid } from '../../types'
 import { didDocumentToNumAlgo2Did, didToNumAlgo2DidDocument } from './peerDidNumAlgo2'
 
 const PEER_DID_REGEX = new RegExp(
@@ -73,13 +69,7 @@ export class DidPeer {
       // Remove id from did document as the id should be generated without an id.
       const didDocumentBuffer = JsonEncoder.toBuffer({ ...didDocument.toJSON(), id: undefined })
 
-      // TODO: we should improve the buffer/multibase/multihash API.
-      const didIdentifier = BufferEncoder.toUtf8String(
-        MultiBaseEncoder.encode(
-          Buffer.from(MultiHashEncoder.encode(sha256(didDocumentBuffer), 'sha2-256')),
-          'base58btc'
-        )
-      )
+      const didIdentifier = MultiBaseEncoder.encode(MultiHashEncoder.encode(didDocumentBuffer, 'sha2-256'), 'base58btc')
 
       const did = `did:peer:1${didIdentifier}`
 
