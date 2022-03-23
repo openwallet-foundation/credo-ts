@@ -19,8 +19,7 @@ import { KeyType } from '../crypto'
 import { BbsService } from '../crypto/BbsService'
 import { Key } from '../crypto/Key'
 import { AriesFrameworkError, IndySdkError, RecordDuplicateError, RecordNotFoundError } from '../error'
-import { BufferEncoder } from '../utils'
-import { JsonEncoder } from '../utils/JsonEncoder'
+import { TypedArrayEncoder, JsonEncoder } from '../utils'
 import { isIndyError } from '../utils/indyError'
 
 import { WalletDuplicateError, WalletNotFoundError, WalletError } from './error'
@@ -433,7 +432,7 @@ export class IndyWallet implements Wallet {
         return BbsService.sign({
           messages: data,
           publicKey: key.publicKey,
-          privateKey: BufferEncoder.fromBase58(blsKeyPair.publicKeyBase58),
+          privateKey: TypedArrayEncoder.fromBase58(blsKeyPair.publicKeyBase58),
         })
       }
     } catch (error) {
