@@ -37,8 +37,12 @@ export class ConnectionResponseHandler implements Handler {
     const outOfBandRecord =
       connectionRecord.outOfBandId && (await this.outOfBandService.findById(connectionRecord.outOfBandId))
 
+    if (!outOfBandRecord) {
+      throw new AriesFrameworkError(`Out-of-band record ${connectionRecord.outOfBandId} was not found.`)
+    }
+
     // The presence of outOfBandRecord is not mandatory when the old connection invitation is used
-    const connection = await this.connectionService.processResponse(messageContext, outOfBandRecord || undefined)
+    const connection = await this.connectionService.processResponse(messageContext, outOfBandRecord)
 
     // TODO: should we only send ping message in case of autoAcceptConnection or always?
     // In AATH we have a separate step to send the ping. So for now we'll only do it

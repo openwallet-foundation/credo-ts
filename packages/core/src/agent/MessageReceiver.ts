@@ -10,6 +10,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AriesFrameworkError } from '../error'
 import { ConnectionRepository } from '../modules/connections'
 import { DidRepository } from '../modules/dids/repository/DidRepository'
+import { OutOfBandService } from '../modules/oob/OutOfBandService'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
 import { isValidJweStructure } from '../utils/JWE'
 import { JsonTransformer } from '../utils/JsonTransformer'
@@ -35,6 +36,7 @@ export class MessageReceiver {
   private didRepository: DidRepository
   private connectionRepository: ConnectionRepository
   public readonly inboundTransports: InboundTransport[] = []
+  private outOfBandService: OutOfBandService
 
   public constructor(
     config: AgentConfig,
@@ -42,6 +44,7 @@ export class MessageReceiver {
     transportService: TransportService,
     messageSender: MessageSender,
     connectionRepository: ConnectionRepository,
+    outOfBandService: OutOfBandService,
     dispatcher: Dispatcher,
     didRepository: DidRepository
   ) {
@@ -50,6 +53,7 @@ export class MessageReceiver {
     this.transportService = transportService
     this.messageSender = messageSender
     this.connectionRepository = connectionRepository
+    this.outOfBandService = outOfBandService
     this.dispatcher = dispatcher
     this.didRepository = didRepository
     this.logger = this.config.logger
@@ -95,6 +99,7 @@ export class MessageReceiver {
     )
 
     const connection = await this.findConnectionByMessageKeys(decryptedMessage)
+    const outOfBand = (recipientKey && (await this.outOfBandService.findByRecipientKey(recipientKey))) || undefined
 
     const message = await this.transformAndValidate(plaintextMessage, connection)
 
@@ -115,6 +120,7 @@ export class MessageReceiver {
       // with mediators when you don't have a public endpoint yet.
       // session.connection = connection ?? unverifiedConnection ?? undefined
       session.connection = connection ?? undefined
+      session.outOfBand = outOfBand
       this.transportService.saveSession(session)
     }
 
@@ -212,13 +218,6 @@ export class MessageReceiver {
     // If no connection was found, we search in the connection record, where legacy did documents are stored
     if (!connection) {
       connection = await this.connectionRepository.findByVerkey(recipientKey)
-
-      // Throw error if the recipient key (ourKey) does not match the key of the connection record
-      if (connection && connection.theirKey !== null && connection.theirKey !== senderKey) {
-        throw new AriesFrameworkError(
-          `Inbound message senderKey '${senderKey}' is different from connection.theirKey '${connection.theirKey}'`
-        )
-      }
     }
 
     return connection

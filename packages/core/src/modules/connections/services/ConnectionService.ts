@@ -23,12 +23,7 @@ import { Wallet } from '../../../wallet/Wallet'
 import { IndyAgentService } from '../../dids'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
-import {
-  ConnectionInvitationMessage,
-  ConnectionRequestMessage,
-  ConnectionResponseMessage,
-  TrustPingMessage,
-} from '../messages'
+import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
 import {
   DidExchangeState,
   Connection,
@@ -72,6 +67,13 @@ export class ConnectionService {
     this.logger = config.logger
   }
 
+  /**
+   * Create a connection request message for a given out-of-band.
+   *
+   * @param outOfBandRecord out-of-band record for which to create a connection request
+   * @param config config for creation of connection request
+   * @returns outbound message containing connection request
+   */
   public async protocolCreateRequest(
     outOfBandRecord: OutOfBandRecord,
     config: ConnectionRequestParams
@@ -152,206 +154,6 @@ export class ConnectionService {
   }
 
   /**
-   * Create a new connection record containing a connection invitation message
-   *
-   * @param config config for creation of connection and invitation
-   * @returns new connection record
-   */
-  public async createInvitation(config: {
-    routing: Routing
-    autoAcceptConnection?: boolean
-    alias?: string
-    multiUseInvitation?: boolean
-    myLabel?: string
-    myImageUrl?: string
-  }): Promise<ConnectionProtocolMsgReturnType<ConnectionInvitationMessage>> {
-    // TODO: public did
-
-    const connectionRecord = await this.createConnection({
-      alias: config?.alias,
-      routing: config.routing,
-      autoAcceptConnection: config?.autoAcceptConnection,
-      multiUseInvitation: config.multiUseInvitation ?? false,
-    })
-    const { didDoc } = connectionRecord
-    const [service] = didDoc.didCommServices
-    const invitation = new ConnectionInvitationMessage({
-      label: config?.myLabel ?? this.config.label,
-      recipientKeys: service.recipientKeys,
-      serviceEndpoint: service.serviceEndpoint,
-      routingKeys: service.routingKeys,
-      imageUrl: config?.myImageUrl ?? this.config.connectionImageUrl,
-    })
-
-    connectionRecord.invitation = invitation
-
-    await this.connectionRepository.update(connectionRecord)
-
-    this.eventEmitter.emit<ConnectionStateChangedEvent>({
-      type: ConnectionEventTypes.ConnectionStateChanged,
-      payload: {
-        connectionRecord: connectionRecord,
-        previousState: null,
-      },
-    })
-
-    return { connectionRecord, message: invitation }
-  }
-
-  /**
-   * Process a received invitation message. This will not accept the invitation
-   * or send an invitation request message. It will only create a connection record
-   * with all the information about the invitation stored. Use {@link ConnectionService.createRequest}
-   * after calling this function to create a connection request.
-   *
-   * @param invitation the invitation message to process
-   * @returns new connection record.
-   */
-  public async processInvitation(
-    invitation: ConnectionInvitationMessage,
-    config: {
-      routing: Routing
-      autoAcceptConnection?: boolean
-      alias?: string
-      protocol?: HandshakeProtocol
-    }
-  ): Promise<ConnectionRecord> {
-    const connectionRecord = await this.createConnection({
-      role: ConnectionRole.Invitee,
-      state: ConnectionState.Invited,
-      alias: config.alias,
-      theirLabel: invitation.label,
-      autoAcceptConnection: config.autoAcceptConnection,
-      routing: config.routing,
-      invitation,
-      imageUrl: invitation.imageUrl,
-      tags: {
-        invitationKey: invitation.recipientKeys && invitation.recipientKeys[0],
-      },
-      multiUseInvitation: false,
-      protocol: config.protocol,
-    })
-    await this.connectionRepository.update(connectionRecord)
-    this.eventEmitter.emit<ConnectionStateChangedEvent>({
-      type: ConnectionEventTypes.ConnectionStateChanged,
-      payload: {
-        connectionRecord: connectionRecord,
-        previousState: null,
-      },
-    })
-
-    return connectionRecord
-  }
-
-  /**
-   * Create a connection request message for the connection with the specified connection id.
-   *
-   * @param connectionRecord the connection for which to create a connection request
-   * @param config config for creation of connection request
-   * @returns outbound message containing connection request
-   */
-  public async createRequest(
-    connectionRecord: ConnectionRecord,
-    config: {
-      myLabel?: string
-      myImageUrl?: string
-      autoAcceptConnection?: boolean
-    } = {}
-  ): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
-    connectionRecord.assertState(ConnectionState.Invited)
-    connectionRecord.assertRole(ConnectionRole.Invitee)
-
-    const { myLabel, myImageUrl, autoAcceptConnection } = config
-
-    const connectionRequest = new ConnectionRequestMessage({
-      label: myLabel ?? this.config.label,
-      did: connectionRecord.did,
-      didDoc: connectionRecord.didDoc,
-      imageUrl: myImageUrl ?? this.config.connectionImageUrl,
-    })
-
-    if (autoAcceptConnection !== undefined || autoAcceptConnection !== null) {
-      connectionRecord.autoAcceptConnection = config?.autoAcceptConnection
-    }
-
-    await this.updateState(connectionRecord, ConnectionState.Requested)
-
-    return {
-      connectionRecord,
-      message: connectionRequest,
-    }
-  }
-
-  /**
-   * Process a received connection request message. This will not accept the connection request
-   * or send a connection response message. It will only update the existing connection record
-   * with all the new information from the connection request message. Use {@link ConnectionService.createResponse}
-   * after calling this function to create a connection response.
-   *
-   * @param messageContext the message context containing a connection request message
-   * @returns updated connection record
-   */
-  public async processRequest(
-    messageContext: InboundMessageContext<ConnectionRequestMessage>,
-    routing?: Routing
-  ): Promise<ConnectionRecord> {
-    const { message, recipientVerkey, senderVerkey } = messageContext
-
-    if (!recipientVerkey || !senderVerkey) {
-      throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
-    }
-
-    let connectionRecord = await this.findByVerkey(recipientVerkey)
-    if (!connectionRecord) {
-      throw new AriesFrameworkError(
-        `Unable to process connection request: connection for verkey ${recipientVerkey} not found`
-      )
-    }
-    connectionRecord.role = ConnectionRole.Inviter
-    connectionRecord.assertState(ConnectionState.Invited)
-    connectionRecord.assertRole(ConnectionRole.Inviter)
-
-    if (!message.connection.didDoc) {
-      throw new ConnectionProblemReportError('Public DIDs are not supported yet', {
-        problemCode: ConnectionProblemReportReason.RequestNotAccepted,
-      })
-    }
-
-    // Create new connection if using a multi use invitation
-    if (connectionRecord.multiUseInvitation) {
-      if (!routing) {
-        throw new AriesFrameworkError(
-          'Cannot process request for multi-use invitation without routing object. Make sure to call processRequest with the routing parameter provided.'
-        )
-      }
-
-      connectionRecord = await this.createConnection({
-        role: connectionRecord.role,
-        state: connectionRecord.state,
-        multiUseInvitation: false,
-        routing,
-        autoAcceptConnection: connectionRecord.autoAcceptConnection,
-        invitation: connectionRecord.invitation,
-        tags: connectionRecord.getTags(),
-      })
-    }
-
-    connectionRecord.theirDidDoc = message.connection.didDoc
-    connectionRecord.theirLabel = message.label
-    connectionRecord.threadId = message.id
-    connectionRecord.theirDid = message.connection.did
-    connectionRecord.imageUrl = message.imageUrl
-
-    if (!connectionRecord.theirKey) {
-      throw new AriesFrameworkError(`Connection with id ${connectionRecord.id} has no recipient keys.`)
-    }
-
-    await this.updateState(connectionRecord, ConnectionState.Requested)
-
-    return connectionRecord
-  }
-
-  /**
    * Create a connection response message for the connection with the specified connection id.
    *
    * @param connectionRecord the connection for which to create a connection response
@@ -359,9 +161,9 @@ export class ConnectionService {
    */
   public async createResponse(
     connectionRecord: ConnectionRecord,
-    outOfBandRecord?: OutOfBandRecord
+    outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionResponseMessage>> {
-    this.logger.debug(`Process message ${ConnectionResponseMessage.type} start`, connectionRecord)
+    this.logger.debug(`Create message ${ConnectionResponseMessage.type} start`, connectionRecord)
     connectionRecord.assertState(ConnectionState.Requested)
     connectionRecord.assertRole(ConnectionRole.Inviter)
 
@@ -376,12 +178,7 @@ export class ConnectionService {
       throw new AriesFrameworkError(`Connection record with id ${connectionRecord.id} does not have a thread id`)
     }
 
-    let invitationKey
-    if (outOfBandRecord) {
-      invitationKey = outOfBandRecord.getTags().recipientKey
-    } else {
-      invitationKey = connectionRecord.getTags().invitationKey
-    }
+    const invitationKey = outOfBandRecord.getTags().recipientKey
 
     // Use invitationKey by default, fall back to verkey
     const signingKey = invitationKey ?? connectionRecord.verkey
@@ -393,6 +190,10 @@ export class ConnectionService {
 
     await this.updateState(connectionRecord, ConnectionState.Responded)
 
+    this.logger.debug(`Create message ${ConnectionResponseMessage.type} end`, {
+      connectionRecord,
+      message: connectionResponse,
+    })
     return {
       connectionRecord,
       message: connectionResponse,
@@ -410,7 +211,7 @@ export class ConnectionService {
    */
   public async processResponse(
     messageContext: InboundMessageContext<ConnectionResponseMessage>,
-    outOfBandRecord?: OutOfBandRecord
+    outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${ConnectionResponseMessage.type} start`, messageContext)
     const { message, recipientVerkey, senderVerkey } = messageContext
@@ -448,12 +249,7 @@ export class ConnectionService {
     // as the recipient key(s) in the connection invitation message
     const signerVerkey = message.connectionSig.signer
 
-    let invitationKey
-    if (outOfBandRecord) {
-      invitationKey = outOfBandRecord.getTags().recipientKey
-    } else {
-      invitationKey = connectionRecord.getTags().invitationKey
-    }
+    const invitationKey = outOfBandRecord.getTags().recipientKey
 
     if (signerVerkey !== invitationKey) {
       throw new ConnectionProblemReportError(
@@ -725,17 +521,6 @@ export class ConnectionService {
   }
 
   /**
-   * Find connection by invitation key.
-   *
-   * @param key the invitation key to search for
-   * @returns the connection record, or null if not found
-   * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
-   */
-  public findByInvitationKey(key: string): Promise<ConnectionRecord | null> {
-    return this.connectionRepository.findByInvitationKey(key)
-  }
-
-  /**
    * Retrieve a connection record by thread id
    *
    * @param threadId The thread id
@@ -758,7 +543,6 @@ export class ConnectionService {
   public async createConnection(options: {
     role?: ConnectionRole | DidExchangeRole
     state?: ConnectionState | DidExchangeState
-    invitation?: ConnectionInvitationMessage
     alias?: string
     routing: Routing
     theirLabel?: string
@@ -808,7 +592,6 @@ export class ConnectionService {
       state: options.state,
       role: options.role,
       tags: options.tags,
-      invitation: options.invitation,
       alias: options.alias,
       theirLabel: options.theirLabel,
       autoAcceptConnection: options.autoAcceptConnection,

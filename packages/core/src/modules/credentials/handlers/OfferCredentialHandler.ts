@@ -30,7 +30,6 @@ export class OfferCredentialHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<OfferCredentialHandler>) {
     const credentialRecord = await this.credentialService.processOffer(messageContext)
-
     if (this.credentialResponseCoordinator.shouldAutoRespondToOffer(credentialRecord)) {
       return await this.createRequest(credentialRecord, messageContext)
     }
