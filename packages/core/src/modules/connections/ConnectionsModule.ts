@@ -83,7 +83,7 @@ export class ConnectionsModule {
         autoAcceptConnection,
       })
     } else if (protocol === HandshakeProtocol.Connections) {
-      result = await this.connectionService.protocolCreateRequest(outOfBandRecord, {
+      result = await this.connectionService.createRequest(outOfBandRecord, {
         label,
         alias,
         imageUrl,

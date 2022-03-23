@@ -75,21 +75,13 @@ export class ConnectionService {
    * @param config config for creation of connection request
    * @returns outbound message containing connection request
    */
-  public async protocolCreateRequest(
+  public async createRequest(
     outOfBandRecord: OutOfBandRecord,
     config: ConnectionRequestParams
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
-    if (outOfBandRecord.role !== OutOfBandRole.Receiver) {
-      throw new AriesFrameworkError(
-        `Invalid out-of-band record role ${outOfBandRecord.role}, expected is ${OutOfBandRole.Receiver}.`
-      )
-    }
-
-    const state = outOfBandRecord.state
-    const expectedStates = [OutOfBandState.Initial, OutOfBandState.PrepareResponse]
-    if (state && !expectedStates.includes(state)) {
-      throw new AriesFrameworkError(`Invalid out-of-band record state ${state}. Valid states are: ${[expectedStates]}.`)
-    }
+    this.logger.debug(`Create message ${ConnectionRequestMessage.type} start`, outOfBandRecord)
+    outOfBandRecord.assertRole(OutOfBandRole.Receiver)
+    outOfBandRecord.assertState([OutOfBandState.Initial, OutOfBandState.PrepareResponse])
 
     // TODO check there is no connection record for particular oob record
 
@@ -128,24 +120,14 @@ export class ConnectionService {
     }
   }
 
-  public async protocolProcessRequest(
+  public async processRequest(
     messageContext: InboundMessageContext<ConnectionRequestMessage>,
     outOfBandRecord: OutOfBandRecord,
     routing: Routing
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${ConnectionRequestMessage.type} start`, messageContext)
-
-    if (outOfBandRecord.role !== OutOfBandRole.Sender) {
-      throw new AriesFrameworkError(
-        `Invalid out-of-band record role ${outOfBandRecord.role}, expected is ${OutOfBandRole.Sender}.`
-      )
-    }
-
-    const state = outOfBandRecord.state
-    const expectedStates = [OutOfBandState.Initial, OutOfBandState.AwaitResponse]
-    if (state && !expectedStates.includes(state)) {
-      throw new AriesFrameworkError(`Invalid out-of-band record state ${state}. Valid states are: ${[expectedStates]}.`)
-    }
+    outOfBandRecord.assertRole(OutOfBandRole.Sender)
+    outOfBandRecord.assertState([OutOfBandState.Initial, OutOfBandState.AwaitResponse])
 
     // TODO check there is no connection record for particular oob record
 
