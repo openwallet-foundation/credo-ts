@@ -5,6 +5,7 @@ import type {
   WalletConfig,
   WalletExportImportConfig,
   WalletConfigRekey,
+  KeyDerivationMethod,
 } from '../types'
 import type { Buffer } from '../utils/buffer'
 import type { Wallet, DidInfo, DidConfig } from './Wallet'
@@ -139,7 +140,8 @@ export class IndyWallet implements Wallet {
     }
     await this._open(
       { id: walletConfig.id, key: walletConfig.key, keyDerivationMethod: walletConfig.keyDerivationMethod },
-      walletConfig.rekey
+      walletConfig.rekey,
+      walletConfig.rekeyDerivationMethod
     )
   }
 
@@ -147,7 +149,11 @@ export class IndyWallet implements Wallet {
    * @throws {WalletNotFoundError} if the wallet does not exist
    * @throws {WalletError} if another error occurs
    */
-  private async _open(walletConfig: WalletConfig, rekey?: string | undefined): Promise<void> {
+  private async _open(
+    walletConfig: WalletConfig,
+    rekey?: string,
+    rekeyDerivation?: KeyDerivationMethod
+  ): Promise<void> {
     if (this.walletHandle) {
       throw new WalletError(
         'Wallet instance already opened. Close the currently opened wallet before re-opening the wallet'
@@ -157,10 +163,15 @@ export class IndyWallet implements Wallet {
     try {
       this.walletHandle = await this.indy.openWallet(
         { id: walletConfig.id },
-        { key: walletConfig.key, rekey: rekey, key_derivation_method: walletConfig.keyDerivationMethod }
+        {
+          key: walletConfig.key,
+          rekey: rekey,
+          key_derivation_method: walletConfig.keyDerivationMethod,
+          rekey_derivation_method: rekeyDerivation,
+        }
       )
       if (rekey) {
-        this.walletConfig = { ...walletConfig, key: rekey }
+        this.walletConfig = { ...walletConfig, key: rekey, keyDerivationMethod: rekeyDerivation }
       } else {
         this.walletConfig = walletConfig
       }

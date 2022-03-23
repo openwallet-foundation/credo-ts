@@ -27,6 +27,7 @@ export interface WalletConfigRekey {
   key: string
   rekey: string
   keyDerivationMethod?: KeyDerivationMethod
+  rekeyDerivationMethod?: KeyDerivationMethod
 }
 
 export interface WalletExportImportConfig {
