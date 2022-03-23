@@ -5,6 +5,7 @@ import type { Buffer } from '../utils/buffer'
 import type { Wallet, DidInfo, DidConfig, CreateKeyOptions, VerifyOptions, SignOptions } from './Wallet'
 import type { default as Indy } from 'indy-sdk'
 
+import { bls12381toBbs } from '@mattrglobal/bbs-signatures'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../agent/AgentConfig'
@@ -332,7 +333,7 @@ export class IndyWallet implements Wallet {
    * Create a key with an optional seed and keyType.
    * The keypair is also automatically stored in the wallet afterwards
    *
-   * Bls12381g1g2 is not supported.
+   * Bls12381g1g2 and X25519 are not supported.
    *
    * @param seed string The seed for creating a key
    * @param keyType KeyType the type of key that should be created
@@ -345,7 +346,10 @@ export class IndyWallet implements Wallet {
   public async createKey({ seed, keyType }: CreateKeyOptions): Promise<Key> {
     try {
       if (keyType === KeyType.Ed25519) {
-        return Key.fromPublicKeyBase58(await this.indy.createKey(this.handle, { seed }), keyType)
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        //@ts-ignore
+        const verkey = await this.indy.createKey(this.handle, { seed, crypto_type: 'ed25519' })
+        return Key.fromPublicKeyBase58(verkey, keyType)
       }
 
       if (keyType === KeyType.Bls12381g1 || keyType === KeyType.Bls12381g2) {
@@ -385,7 +389,7 @@ export class IndyWallet implements Wallet {
         return BbsService.sign({
           messages: data,
           publicKey: key.publicKey,
-          privateKey: TypedArrayEncoder.fromBase58(blsKeyPair.publicKeyBase58),
+          privateKey: TypedArrayEncoder.fromBase58(blsKeyPair.privateKeyBase58),
         })
       }
     } catch (error) {

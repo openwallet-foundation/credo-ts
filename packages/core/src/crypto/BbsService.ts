@@ -1,7 +1,13 @@
 import type { CreateKeyOptions } from '../wallet'
-import type { BlsKeyPair as _BlsKeyPair } from '@mattrglobal/bbs-signatures'
+import type { BbsSignRequest, BlsKeyPair as _BlsKeyPair } from '@mattrglobal/bbs-signatures'
 
-import { generateBls12381G2KeyPair, generateBls12381G1KeyPair, sign, verify } from '@mattrglobal/bbs-signatures'
+import {
+  bls12381toBbs,
+  generateBls12381G2KeyPair,
+  generateBls12381G1KeyPair,
+  sign,
+  verify,
+} from '@mattrglobal/bbs-signatures'
 
 import { TypedArrayEncoder } from '../utils/TypedArrayEncoder'
 import { Buffer } from '../utils/buffer'
@@ -87,18 +93,19 @@ export class BbsService {
   public static async sign({ messages, publicKey, privateKey }: BbsSignOptions): Promise<Buffer> {
     if (messages.length === 0) throw new WalletError('Unable to create a signature without any messages')
     // Check if it is a single message or list and if it is a single message convert it to a list
-    if (typeof messages[0] === 'number') messages = [messages as Buffer]
+    const normalizedMessages = (typeof messages[0] === 'number' ? [messages as Buffer] : messages) as Buffer[]
 
     // Get the Uint8Array variant of all the messages
-    const messageBuffers = (messages as Buffer[]).map(Uint8Array.from)
+    const messageBuffers = normalizedMessages.map((m) => Uint8Array.from(m))
+
+    const bbsKeyPair = await bls12381toBbs({
+      keyPair: { publicKey: Uint8Array.from(publicKey), secretKey: Uint8Array.from(privateKey) },
+      messageCount: normalizedMessages.length,
+    })
 
     // Sign the messages via the keyPair
     const signature = await sign({
-      keyPair: {
-        publicKey: Uint8Array.from(publicKey),
-        secretKey: Uint8Array.from(privateKey),
-        messageCount: messages.length,
-      },
+      keyPair: bbsKeyPair,
       messages: messageBuffers,
     })
 
