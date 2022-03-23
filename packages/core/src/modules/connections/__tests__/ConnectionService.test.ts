@@ -12,7 +12,9 @@ import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { AckMessage, AckStatus } from '../../common'
 import { DidCommService } from '../../dids/domain/service/DidCommService'
-import { ConnectionResponseMessage, TrustPingMessage } from '../messages'
+import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
+import { OutOfBandState } from '../../oob/domain/OutOfBandState'
+import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
 import { Connection, ConnectionState, ConnectionRole, DidDoc } from '../models'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
 import { ConnectionService } from '../services/ConnectionService'
@@ -23,7 +25,7 @@ const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRep
 const connectionImageUrl = 'https://example.com/image.png'
 
 describe('ConnectionService', () => {
-  const config = getAgentConfig('ConnectionServiceTest', {
+  const agentConfig = getAgentConfig('ConnectionServiceTest', {
     endpoints: ['http://agent.com:8080'],
     connectionImageUrl,
   })
@@ -35,9 +37,9 @@ describe('ConnectionService', () => {
   let myRouting: Routing
 
   beforeAll(async () => {
-    wallet = new IndyWallet(config)
+    wallet = new IndyWallet(agentConfig)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.createAndOpen(config.walletConfig!)
+    await wallet.createAndOpen(agentConfig.walletConfig!)
   })
 
   afterAll(async () => {
@@ -45,16 +47,249 @@ describe('ConnectionService', () => {
   })
 
   beforeEach(async () => {
-    eventEmitter = new EventEmitter(config)
+    eventEmitter = new EventEmitter(agentConfig)
     connectionRepository = new ConnectionRepositoryMock()
-    connectionService = new ConnectionService(wallet, config, connectionRepository, eventEmitter)
+    connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, eventEmitter)
     myRouting = {
       did: 'fakeDid',
       verkey: 'fakeVerkey',
-      endpoints: config.endpoints ?? [],
+      endpoints: agentConfig.endpoints ?? [],
       routingKeys: [],
       mediatorId: 'fakeMediatorId',
     }
+  })
+
+  describe('createRequest', () => {
+    it('returns a connection request message containing the information from the connection record', async () => {
+      expect.assertions(5)
+
+      const outOfBand = getMockOutOfBand()
+      const config = { routing: myRouting }
+
+      const { connectionRecord, message } = await connectionService.protocolCreateRequest(outOfBand, config)
+
+      expect(connectionRecord.state).toBe(ConnectionState.Requested)
+      expect(message.label).toBe(agentConfig.label)
+      expect(message.connection.did).toBe('fakeDid')
+      expect(message.connection.didDoc).toEqual(connectionRecord.didDoc)
+      expect(message.imageUrl).toBe(connectionImageUrl)
+    })
+
+    it('returns a connection request message containing a custom label', async () => {
+      expect.assertions(1)
+
+      const outOfBand = getMockOutOfBand()
+      const config = { label: 'Custom label', routing: myRouting }
+
+      const { message } = await connectionService.protocolCreateRequest(outOfBand, config)
+
+      expect(message.label).toBe('Custom label')
+    })
+
+    it('returns a connection request message containing a custom image url', async () => {
+      expect.assertions(1)
+
+      const outOfBand = getMockOutOfBand()
+      const config = { imageUrl: 'custom-image-url', routing: myRouting }
+
+      const { message } = await connectionService.protocolCreateRequest(outOfBand, config)
+
+      expect(message.imageUrl).toBe('custom-image-url')
+    })
+
+    it(`throws an error when out-of-band role is not ${OutOfBandRole.Receiver}`, async () => {
+      expect.assertions(1)
+
+      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender })
+      const config = { routing: myRouting }
+
+      mockFunction(connectionRepository.getById).mockReturnValue(
+        Promise.resolve(getMockConnection({ role: ConnectionRole.Inviter }))
+      )
+      return expect(connectionService.protocolCreateRequest(outOfBand, config)).rejects.toThrowError(
+        `Invalid out-of-band record role ${OutOfBandRole.Sender}, expected is ${OutOfBandRole.Receiver}.`
+      )
+    })
+
+    const invalidConnectionStates = [OutOfBandState.AwaitResponse, OutOfBandState.Done]
+    test.each(invalidConnectionStates)(
+      `throws an error when out-of-band state is %s and not ${[
+        OutOfBandState.Initial,
+        OutOfBandState.PrepareResponse,
+      ]}`,
+      (state) => {
+        expect.assertions(1)
+
+        const outOfBand = getMockOutOfBand({ state })
+        const config = { routing: myRouting }
+
+        return expect(connectionService.protocolCreateRequest(outOfBand, config)).rejects.toThrowError(
+          `Invalid out-of-band record state ${state}. Valid states are: ${[
+            OutOfBandState.Initial,
+            OutOfBandState.PrepareResponse,
+          ]}.`
+        )
+      }
+    )
+  })
+
+  describe('processRequest', () => {
+    it('returns a connection record containing the information from the connection request', async () => {
+      expect.assertions(7)
+
+      const theirDid = 'their-did'
+      const theirVerkey = 'their-verkey'
+      const theirDidDoc = new DidDoc({
+        id: theirDid,
+        publicKey: [],
+        authentication: [],
+        service: [
+          new DidCommService({
+            id: `${theirDid};indy`,
+            serviceEndpoint: 'https://endpoint.com',
+            recipientKeys: [theirVerkey],
+          }),
+        ],
+      })
+
+      const connectionRequest = new ConnectionRequestMessage({
+        did: theirDid,
+        didDoc: theirDidDoc,
+        label: 'test-label',
+        imageUrl: connectionImageUrl,
+      })
+
+      const messageContext = new InboundMessageContext(connectionRequest, {
+        senderVerkey: theirVerkey,
+        recipientVerkey: 'my-key',
+      })
+
+      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender })
+      const processedConnection = await connectionService.protocolProcessRequest(messageContext, outOfBand, myRouting)
+
+      expect(processedConnection.state).toBe(ConnectionState.Requested)
+      expect(processedConnection.theirDid).toBe(theirDid)
+      expect(processedConnection.theirDidDoc).toEqual(theirDidDoc)
+      expect(processedConnection.theirKey).toBe(theirVerkey)
+      expect(processedConnection.theirLabel).toBe('test-label')
+      expect(processedConnection.threadId).toBe(connectionRequest.id)
+      expect(processedConnection.imageUrl).toBe(connectionImageUrl)
+    })
+
+    it('returns a new connection record containing the information from the connection request when multiUseInvitation is enabled on the connection', async () => {
+      expect.assertions(10)
+
+      const connectionRecord = getMockConnection({
+        id: 'test',
+        state: ConnectionState.Invited,
+        verkey: 'my-key',
+        role: ConnectionRole.Inviter,
+        multiUseInvitation: true,
+      })
+      mockFunction(connectionRepository.findByVerkey).mockReturnValue(Promise.resolve(connectionRecord))
+
+      const theirDid = 'their-did'
+      const theirVerkey = 'their-verkey'
+      const theirDidDoc = new DidDoc({
+        id: theirDid,
+        publicKey: [],
+        authentication: [],
+        service: [
+          new DidCommService({
+            id: `${theirDid};indy`,
+            serviceEndpoint: 'https://endpoint.com',
+            recipientKeys: [theirVerkey],
+          }),
+        ],
+      })
+
+      const connectionRequest = new ConnectionRequestMessage({
+        did: theirDid,
+        didDoc: theirDidDoc,
+        label: 'test-label',
+      })
+
+      const messageContext = new InboundMessageContext(connectionRequest, {
+        connection: connectionRecord,
+        senderVerkey: theirVerkey,
+        recipientVerkey: 'my-key',
+      })
+
+      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender })
+      const processedConnection = await connectionService.protocolProcessRequest(messageContext, outOfBand, myRouting)
+
+      expect(processedConnection.state).toBe(ConnectionState.Requested)
+      expect(processedConnection.theirDid).toBe(theirDid)
+      expect(processedConnection.theirDidDoc).toEqual(theirDidDoc)
+      expect(processedConnection.theirKey).toBe(theirVerkey)
+      expect(processedConnection.theirLabel).toBe('test-label')
+      expect(processedConnection.threadId).toBe(connectionRequest.id)
+
+      expect(connectionRepository.save).toHaveBeenCalledTimes(1)
+      expect(processedConnection.id).not.toBe(connectionRecord.id)
+      expect(connectionRecord.id).toBe('test')
+      expect(connectionRecord.state).toBe(ConnectionState.Invited)
+    })
+
+    it('throws an error when the message does not contain a did doc', async () => {
+      expect.assertions(1)
+
+      const connectionRequest = new ConnectionRequestMessage({
+        did: 'did',
+        label: 'test-label',
+      })
+
+      const messageContext = new InboundMessageContext(connectionRequest, {
+        recipientVerkey: 'recipientVerkey',
+        senderVerkey: 'senderVerkey',
+      })
+
+      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender })
+
+      return expect(
+        connectionService.protocolProcessRequest(messageContext, outOfBand, myRouting)
+      ).rejects.toThrowError(`Public DIDs are not supported yet`)
+    })
+
+    it(`throws an error when out-of-band role is not ${OutOfBandRole.Sender}`, async () => {
+      expect.assertions(1)
+
+      const inboundMessage = new InboundMessageContext(jest.fn()(), {
+        recipientVerkey: 'recipientVerkey',
+        senderVerkey: 'senderVerkey',
+      })
+
+      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Receiver })
+
+      return expect(
+        connectionService.protocolProcessRequest(inboundMessage, outOfBand, myRouting)
+      ).rejects.toThrowError(
+        `Invalid out-of-band record role ${OutOfBandRole.Receiver}, expected is ${OutOfBandRole.Sender}.`
+      )
+    })
+
+    const invalidOutOfBandStates = [OutOfBandState.PrepareResponse, OutOfBandState.Done]
+    test.each(invalidOutOfBandStates)(
+      `throws an error when out-of-band state is %s and not ${[OutOfBandState.Initial, OutOfBandState.AwaitResponse]}`,
+      (state) => {
+        expect.assertions(1)
+
+        const inboundMessage = new InboundMessageContext(jest.fn()(), {
+          recipientVerkey: 'recipientVerkey',
+          senderVerkey: 'senderVerkey',
+        })
+        const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state })
+
+        return expect(
+          connectionService.protocolProcessRequest(inboundMessage, outOfBand, myRouting)
+        ).rejects.toThrowError(
+          `Invalid out-of-band record state ${state}. Valid states are: ${[
+            OutOfBandState.Initial,
+            OutOfBandState.AwaitResponse,
+          ]}.`
+        )
+      }
+    )
   })
 
   describe('createResponse', () => {
@@ -103,8 +338,8 @@ describe('ConnectionService', () => {
       )
     })
 
-    const invalidConnectionStates = [ConnectionState.Invited, ConnectionState.Responded, ConnectionState.Complete]
-    test.each(invalidConnectionStates)(
+    const invalidOutOfBandStates = [ConnectionState.Invited, ConnectionState.Responded, ConnectionState.Complete]
+    test.each(invalidOutOfBandStates)(
       `throws an error when connection state is %s and not ${ConnectionState.Requested}`,
       async (state) => {
         expect.assertions(1)

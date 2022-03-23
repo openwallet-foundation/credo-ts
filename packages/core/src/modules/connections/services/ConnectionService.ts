@@ -21,6 +21,8 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
 import { IndyAgentService } from '../../dids'
+import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
+import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
 import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
@@ -39,8 +41,7 @@ import { ConnectionRepository } from '../repository/ConnectionRepository'
 
 export interface ConnectionRequestParams {
   label?: string
-  myLabel?: string
-  myImageUrl?: string
+  imageUrl?: string
   alias?: string
   routing: Routing
   autoAcceptConnection?: boolean
@@ -78,8 +79,18 @@ export class ConnectionService {
     outOfBandRecord: OutOfBandRecord,
     config: ConnectionRequestParams
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
-    // TODO check oob role is sender
-    // TODO check oob state is await-response
+    if (outOfBandRecord.role !== OutOfBandRole.Receiver) {
+      throw new AriesFrameworkError(
+        `Invalid out-of-band record role ${outOfBandRecord.role}, expected is ${OutOfBandRole.Receiver}.`
+      )
+    }
+
+    const state = outOfBandRecord.state
+    const expectedStates = [OutOfBandState.Initial, OutOfBandState.PrepareResponse]
+    if (state && !expectedStates.includes(state)) {
+      throw new AriesFrameworkError(`Invalid out-of-band record state ${state}. Valid states are: ${[expectedStates]}.`)
+    }
+
     // TODO check there is no connection record for particular oob record
 
     const { outOfBandMessage } = outOfBandRecord
@@ -96,13 +107,13 @@ export class ConnectionService {
     })
     connectionRecord.outOfBandId = outOfBandRecord.id
 
-    const { myLabel, myImageUrl, autoAcceptConnection } = config
+    const { label, imageUrl, autoAcceptConnection } = config
 
     const connectionRequest = new ConnectionRequestMessage({
-      label: myLabel ?? this.config.label,
+      label: label ?? this.config.label,
       did: connectionRecord.did,
       didDoc: connectionRecord.didDoc,
-      imageUrl: myImageUrl ?? this.config.connectionImageUrl,
+      imageUrl: imageUrl ?? this.config.connectionImageUrl,
     })
 
     if (autoAcceptConnection !== undefined || autoAcceptConnection !== null) {
@@ -124,11 +135,27 @@ export class ConnectionService {
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${ConnectionRequestMessage.type} start`, messageContext)
 
-    // TODO check oob role is sender
-    // TODO check oob state is await-response
+    if (outOfBandRecord.role !== OutOfBandRole.Sender) {
+      throw new AriesFrameworkError(
+        `Invalid out-of-band record role ${outOfBandRecord.role}, expected is ${OutOfBandRole.Sender}.`
+      )
+    }
+
+    const state = outOfBandRecord.state
+    const expectedStates = [OutOfBandState.Initial, OutOfBandState.AwaitResponse]
+    if (state && !expectedStates.includes(state)) {
+      throw new AriesFrameworkError(`Invalid out-of-band record state ${state}. Valid states are: ${[expectedStates]}.`)
+    }
+
     // TODO check there is no connection record for particular oob record
 
     const { message } = messageContext
+
+    if (!message.connection.didDoc) {
+      throw new ConnectionProblemReportError('Public DIDs are not supported yet', {
+        problemCode: ConnectionProblemReportReason.RequestNotAccepted,
+      })
+    }
 
     const connectionRecord = await this.createConnection({
       protocol: HandshakeProtocol.Connections,

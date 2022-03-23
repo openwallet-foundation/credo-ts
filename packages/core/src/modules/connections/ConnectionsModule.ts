@@ -84,9 +84,9 @@ export class ConnectionsModule {
       })
     } else if (protocol === HandshakeProtocol.Connections) {
       result = await this.connectionService.protocolCreateRequest(outOfBandRecord, {
-        myLabel: label,
+        label,
         alias,
-        myImageUrl: imageUrl,
+        imageUrl,
         routing,
         autoAcceptConnection,
       })
